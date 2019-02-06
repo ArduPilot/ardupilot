@@ -21,11 +21,14 @@
 
 #include "AP_UAVCAN_Servers.h"
 
+#include <GCS_MAVLink/GCS.h>
+
 #ifdef HAS_UAVCAN_SERVERS
 
 #include <uavcan/protocol/dynamic_node_id_server/event.hpp>
 #include <uavcan/protocol/dynamic_node_id_server/storage_backend.hpp>
 #include <uavcan/protocol/dynamic_node_id_server/centralized.hpp>
+#include <uavcan/protocol/param_server.hpp>
 #include <uavcan/protocol/HardwareVersion.hpp>
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -85,6 +88,162 @@ public:
         hal.scheduler->reboot(false);
         return true;
     }
+};
+
+/*
+ * the ParamServer allows other CAN nodes to read and set ArduPilot parameters
+ *
+ * this can be tested by using uavcan_gui_tool against an SLCAN
+ * adapter connected to an ArduPilot autopilot.  Use the
+ * Node-Properties window to FetchAll parameters.
+ */
+class AP_UAVCAN_ParamServer : public uavcan::ParamServer {
+public:
+    AP_UAVCAN_ParamServer(uavcan::INode& node) :
+        uavcan::ParamServer(node) {}
+};
+
+class AP_UAVCAN_ParamManager : public uavcan::IParamManager {
+public:
+
+    /**
+     * Copy the parameter name to @ref out_name if it exists, otherwise do nothing.
+     */
+    void getParamNameByIndex(uavcan::IParamManager::Index index, uavcan::IParamManager::Name& out_name) const override {
+        if (!const_cast<AP_UAVCAN_ParamManager*>(this)->update_queued_parameter_to_index(index)) {
+            return;
+        }
+
+        _queued_parameter->copy_name_token(_queued_parameter_token,
+                                           (char*)last_param_name,
+                                           AP_MAX_NAME_SIZE,
+                                           true);
+        out_name = last_param_name; // no, really, we can do this....
+    };
+
+    /**
+     * Assign by name if exists.
+     */
+    void assignParamValue(const uavcan::IParamManager::Name& name,
+                          const uavcan::IParamManager::Value& value) override {
+        ap_var_type p_type;
+        AP_Param *p = get_param_by_name(name.c_str(), &p_type);
+        if (p == nullptr) {
+            return;
+        }
+
+        float set_value;
+        const float *float_value = value.as<uavcan::protocol::param::Value::Tag::real_value>();
+        if (float_value != nullptr) {
+            set_value = *float_value;
+        } else {
+            auto *y = value.as<uavcan::protocol::param::Value::Tag::integer_value>();
+            if (y == nullptr) {
+                return;
+            }
+            set_value = *y;
+        }
+
+        p->user_set_value(set_value, p_type);
+
+        AP::logger().Write_Parameter(name.c_str(), p->cast_to_float(p_type));
+    }
+
+    /**
+     * Read by name if exists, otherwise do nothing.
+     */
+    void readParamValue(const uavcan::IParamManager::Name& name,
+                        uavcan::IParamManager::Value& out_value) const override {
+        ap_var_type p_type;
+        const AP_Param *p = const_cast<AP_UAVCAN_ParamManager*>(this)->get_param_by_name(name.c_str(), &p_type);
+        if (p == nullptr) {
+            return;
+        }
+        switch (p_type) {
+        case AP_PARAM_INT8:
+            out_value.to<uavcan::protocol::param::Value::Tag::integer_value>() = p->as_int8_t(p_type);
+            break;
+        case AP_PARAM_INT16:
+            out_value.to<uavcan::protocol::param::Value::Tag::integer_value>() = p->as_int16_t(p_type);
+            break;
+        case AP_PARAM_INT32:
+            out_value.to<uavcan::protocol::param::Value::Tag::integer_value>() = p->as_int32_t(p_type);
+            break;
+        case AP_PARAM_FLOAT:
+            out_value.to<uavcan::protocol::param::Value::Tag::real_value>() = p->cast_to_float(p_type);
+            break;
+        case AP_PARAM_VECTOR3F:
+        case AP_PARAM_GROUP:
+        case AP_PARAM_NONE:
+            break;
+        }
+    }
+
+    /**
+     * Save all params to non-volatile storage.
+     * @return Negative if failed.
+     */
+    int saveAllParams() override {
+        return 0;
+    };
+
+    /**
+     * Clear the non-volatile storage.
+     * @return Negative if failed.
+     */
+    int eraseAllParams() override {
+        return -1;
+    }
+
+private:
+
+    // return pointer to parameter using current queued parameter
+    // opportunistically
+    AP_Param *get_param_by_name(const char *name, ap_var_type *p_type) {
+        if (name == last_param_name) {
+            *p_type = _queued_parameter_type;
+            return _queued_parameter;
+        }
+        AP_Param *ret = AP_Param::find(name, p_type);
+        return ret;
+    }
+
+    // if the queued parameter isn't for parameter at index index, make it so:
+    bool update_queued_parameter_to_index(uint16_t index) {
+        if (index == 0 || index < _queued_parameter_index+1) {
+            // well... darn.... step through the list again until we
+            // get what we're after...
+            _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
+            _queued_parameter_index = 0;
+            if (_queued_parameter == nullptr) {
+                // well.... that's strange...
+                return false;
+            }
+        }
+
+        while (_queued_parameter_index != index) {
+            _queued_parameter = AP_Param::next_scalar(&_queued_parameter_token, &_queued_parameter_type);
+            if (_queued_parameter == nullptr) {
+                return false;
+            }
+            _queued_parameter_index++;
+        }
+        return true;
+    }
+
+    AP_Param *_queued_parameter;      ///< next parameter to be sent in queue
+
+    enum ap_var_type            _queued_parameter_type; ///< type of the next
+                                                        // parameter
+    AP_Param::ParamToken        _queued_parameter_token; ///AP_Param token for
+                                                         // next() call
+    uint16_t                    _queued_parameter_index; ///< next queued
+                                                         // parameter's index
+    uint16_t                    _queued_parameter_count; ///< saved count of
+                                                         // parameters for
+                                                         // queued send
+
+    char last_param_name[AP_MAX_NAME_SIZE+1]{};
 };
 
 class AP_UAVCAN_FileStorageBackend : public uavcan::dynamic_node_id_server::IStorageBackend
@@ -274,7 +433,17 @@ bool AP_UAVCAN_Servers::init(uavcan::Node<0> &node)
             goto failed;
         }
     }
+
     node.setRestartRequestHandler(_restart_request_handler);
+    _param_manager = new AP_UAVCAN_ParamManager();
+    if (_param_manager == nullptr) {
+        goto failed;
+    }
+    _param_server = new AP_UAVCAN_ParamServer(node);
+    if (_param_server == nullptr) {
+        goto failed;
+    }
+    _param_server->start(_param_manager);
 
     //Start Dynamic Node Server
     ret = _server_instance->init(node.getHardwareVersion().unique_id);
@@ -290,6 +459,8 @@ failed:
     delete _storage_backend;
     delete _tracer;
     delete _server_instance;
+    delete _param_manager;
+    delete _param_server;
     return false;
 }
 

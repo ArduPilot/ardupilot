@@ -13,6 +13,8 @@ class AP_UAVCAN_FileEventTracer;
 class AP_UAVCAN_FileStorageBackend;
 class AP_UAVCAN_CentralizedServer;
 class AP_UAVCAN_RestartRequestHandler;
+class AP_UAVCAN_ParamManager;
+class AP_UAVCAN_ParamServer;
 
 class AP_UAVCAN_Servers
 {
@@ -27,6 +29,9 @@ private:
     AP_UAVCAN_FileStorageBackend *_storage_backend;
     AP_UAVCAN_RestartRequestHandler *_restart_request_handler; // one for all nodes....
 
+
+    AP_UAVCAN_ParamManager *_param_manager;
+    AP_UAVCAN_ParamServer *_param_server;
 };
 
 #endif
