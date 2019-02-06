@@ -56,6 +56,21 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOOP_RATE",  1, AP_Scheduler, _loop_rate_hz, SCHEDULER_DEFAULT_LOOP_RATE),
 
+    // @Param: TASK_NO
+    // @DisplayName: task number
+    // @Description: Specify the task number to measure the maximum execution time.
+    // @Range: 0 99
+    // @User: Standard
+    AP_GROUPINFO("TASK_NO",  2, AP_Scheduler, _task_no, 0),
+
+    // @Param: EXEC_TIME
+    // @DisplayName: the maximum execution time
+    // @Description:
+    // @Unit: us
+    // @Range: 0 3600000000
+    // @User: Standard
+    AP_GROUPINFO("EXEC_TIME",  3, AP_Scheduler, _exec_time_usec, 0),
+
     AP_GROUPEND
 };
 
@@ -188,6 +203,14 @@ void AP_Scheduler::run(uint32_t time_available)
                   (unsigned)time_taken,
                   (unsigned)_task_time_allowed);
         }
+
+        if (_execTime[i] < time_taken) {
+            _execTime[i] = time_taken;
+        }
+        if (i == _task_no) {
+            _exec_time_usec = _execTime[i];
+        }
+
         if (time_taken >= time_available) {
             time_available = 0;
             break;

@@ -160,7 +160,12 @@ private:
 
     // loop rate in Hz as set at startup
     AP_Int16 _active_loop_rate_hz;
-    
+
+    //
+    AP_Int8 _task_no;
+    //
+    AP_Int32 _exec_time_usec;
+
     // calculated loop period in usec
     uint16_t _loop_period_us;
 
@@ -203,6 +208,9 @@ private:
 
     // bitmask bit which indicates if we should log PERF message to dataflash
     uint32_t _log_performance_bit;
+
+    //
+    uint32_t _execTime[100];
 };
 
 namespace AP {
