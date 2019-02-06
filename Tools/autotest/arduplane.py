@@ -50,7 +50,6 @@ class AutoTestPlane(AutoTest):
         self.speedup = speedup
 
         self.sitl = None
-        self.hasInit = False
 
         self.log_name = "ArduPlane"
 
@@ -90,7 +89,6 @@ class AutoTestPlane(AutoTest):
 
         self.get_mavlink_connection_going()
 
-        self.hasInit = True
         self.progress("Ready to start testing!")
 
     def takeoff(self):

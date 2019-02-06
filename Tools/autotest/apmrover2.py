@@ -56,7 +56,6 @@ class AutoTestRover(AutoTest):
         self.speedup = speedup
 
         self.sitl = None
-        self.hasInit = False
 
         self.log_name = "APMrover2"
 
@@ -95,8 +94,6 @@ class AutoTestRover(AutoTest):
         self.progress("Started simulator")
 
         self.get_mavlink_connection_going()
-
-        self.hasInit = True
 
         self.apply_defaultfile_parameters()
 
