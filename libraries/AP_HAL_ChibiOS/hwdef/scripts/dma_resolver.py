@@ -121,6 +121,10 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             continue
         assigned = False
         check_list = []
+        if dma_map is None:
+            curr_dict[periph] = "STM32_DMA_STREAM_ID_ANY"
+            assigned = True
+            continue
         if not periph in dma_map:
             print("Unknown peripheral function %s in DMA map for %s" %
                   (periph, mcu_type))
@@ -176,9 +180,14 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
         shared = ''
         if len(stream_assign[stream]) > 1:
             shared = ' // shared %s' % ','.join(stream_assign[stream])
-        f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
-                (chibios_dma_define_name(key)+'STREAM', curr_dict[key][0],
-                 curr_dict[key][1], shared))
+        if curr_dict[key] == "STM32_DMA_STREAM_ID_ANY":
+            f.write("#define %-30s STM32_DMA_STREAM_ID_ANY\n" % (chibios_dma_define_name(key)+'STREAM'))
+            f.write("#define %-30s 0U\n" % (chibios_dma_define_name(key)+'CHAN'))
+            continue
+        else:
+                f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
+                    (chibios_dma_define_name(key)+'STREAM', curr_dict[key][0],
+                    curr_dict[key][1], shared))
         for streamchan in dma_map[key]:
             if stream == (streamchan[0], streamchan[1]):
                 f.write("#define %-30s %u\n" %
@@ -199,18 +208,25 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             key = 'UART%u' % u
         if key is None:
             continue
+        if dma_map is None:
+            dma_rx_chn = "0"
+            dma_tx_chn = "0"
+        else:
+            dma_rx_chn = "STM32_%s_RX_DMA_CHN" % key
+            dma_tx_chn = "STM32_%s_TX_DMA_CHN" % key
+
         f.write("#define STM32_%s_RX_DMA_CONFIG " % key)
         if key + "_RX" in curr_dict:
             f.write(
-                "true, STM32_UART_%s_RX_DMA_STREAM, STM32_%s_RX_DMA_CHN\n" %
-                (key, key))
+                "true, STM32_UART_%s_RX_DMA_STREAM, %s\n" %
+                (key, dma_rx_chn))
         else:
             f.write("false, 0, 0\n")
         f.write("#define STM32_%s_TX_DMA_CONFIG " % key)
         if key + "_TX" in curr_dict:
             f.write(
-                "true, STM32_UART_%s_TX_DMA_STREAM, STM32_%s_TX_DMA_CHN\n" %
-                (key, key))
+                "true, STM32_UART_%s_TX_DMA_STREAM, %s\n" %
+                (key, dma_tx_chn))
         else:
             f.write("false, 0, 0\n")
 

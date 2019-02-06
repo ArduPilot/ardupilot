@@ -860,7 +860,11 @@ def write_UART_config_bootloader(f):
             have_uart = True
     f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
     if not have_uart:
-        f.write('#define HAL_USE_SERIAL FALSE\n')
+        f.write('''
+#ifndef HAL_USE_SERIAL
+#define HAL_USE_SERIAL FALSE
+#endif
+''')
 
 def write_I2C_config(f):
     '''write I2C config defines'''
@@ -1040,11 +1044,11 @@ def write_PWM_config(f):
             advanced_timer = 'false'
         pwm_clock = 1000000
         period = 20000 * pwm_clock / 1000000
-        f.write('''#ifdef STM32_TIM_TIM%u_UP_DMA_STREAM
+        f.write('''#if defined(STM32_TIM_TIM%u_UP_DMA_STREAM) && defined(STM32_TIM_TIM%u_UP_DMA_CHAN)
 # define HAL_PWM%u_DMA_CONFIG true, STM32_TIM_TIM%u_UP_DMA_STREAM, STM32_TIM_TIM%u_UP_DMA_CHAN
 #else
 # define HAL_PWM%u_DMA_CONFIG false, 0, 0
-#endif\n''' % (n, n, n, n, n))
+#endif\n''' % (n, n, n, n, n, n))
         f.write('''#define HAL_PWM_GROUP%u { %s, \\
         {%u, %u, %u, %u}, \\
         /* Group Initial Config */ \\
