@@ -111,7 +111,21 @@ AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm) :
     rpm(_rpm),
     state(ICE_OFF)
 {
+    if (singleton) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Too many ICEngine instances");
+#endif
+        return;
+    }
+    singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+AP_ICEngine *AP_ICEngine::singleton;
+AP_ICEngine *AP_ICEngine::get_singleton()
+{
+    return singleton;
 }
 
 /*
@@ -289,3 +303,12 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     state = ICE_STARTING;
     return true;
 }
+
+namespace AP {
+
+AP_ICEngine *ice()
+{
+    return AP_ICEngine::get_singleton();
+}
+
+};

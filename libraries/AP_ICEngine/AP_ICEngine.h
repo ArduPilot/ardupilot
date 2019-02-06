@@ -25,6 +25,12 @@ public:
     // constructor
     AP_ICEngine(const AP_RPM &_rpm);
 
+    /* Do not allow copies */
+    AP_ICEngine(const AP_ICEngine &other) = delete;
+    AP_ICEngine &operator=(const AP_ICEngine&) = delete;
+
+    static AP_ICEngine *get_singleton();
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // update engine state. Should be called at 10Hz or more
@@ -48,6 +54,8 @@ public:
     bool engine_control(float start_control, float cold_start, float height_delay);
     
 private:
+    static AP_ICEngine *singleton;
+
     const AP_RPM &rpm;
 
     enum ICE_State state;
@@ -93,5 +101,9 @@ private:
 
     // we are waiting for valid height data
     bool height_pending:1;
+};
+
+namespace AP {
+    AP_ICEngine *ice();
 };
 
