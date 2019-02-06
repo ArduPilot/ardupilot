@@ -716,14 +716,9 @@ class AutoTest(ABC):
         self.set_rc(chan, out_trim)
 
     def get_rudder_channel(self):
-        if self.is_copter():
-            return int(self.get_parameter("RCMAP_YAW"))
-        if self.is_plane():
-            return int(self.get_parameter("RCMAP_YAW"))
-        if self.is_rover():
-            return int(self.get_parameter("RCMAP_ROLL"))
-        if self.is_sub():
-            raise ErrorException("Arming with rudder is not supported by Submarine")
+        """Return the Rudder channel number as set in parameter."""
+        raise ErrorException("Rudder parameter is not supported by vehicle %s frame %s", (self.vehicleinfo_key(), self.frame))
+
 
     def armed(self):
         """Return true if vehicle is armed and safetyoff"""

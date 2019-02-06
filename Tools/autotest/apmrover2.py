@@ -102,6 +102,8 @@ class AutoTestRover(AutoTest):
 
         self.progress("Ready to start testing!")
 
+    def get_rudder_channel(self):
+        return int(self.get_parameter("RCMAP_ROLL"))
 
     ##########################################################
     #   TESTS DRIVE

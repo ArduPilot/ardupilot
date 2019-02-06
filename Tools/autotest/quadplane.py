@@ -90,6 +90,9 @@ class AutoTestQuadPlane(AutoTest):
         self.progress("Ready to start testing!")
 
 
+    def get_rudder_channel(self):
+        return int(self.get_parameter("RCMAP_YAW"))
+
     def fly_mission(self, filename, fence, height_accuracy=-1):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
