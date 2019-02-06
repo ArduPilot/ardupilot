@@ -89,26 +89,6 @@ class AutoTestQuadPlane(AutoTest):
         self.hasInit = True
         self.progress("Ready to start testing!")
 
-    # def test_arm_motors_radio(self):
-    #     super(AutotestQuadPlane, self).test_arm_motors_radio()
-    #
-    # def test_disarm_motors_radio(self):
-    #     super(AutotestQuadPlane, self).test_disarm_motors_radio()
-    #
-    # def test_autodisarm_motors(self):
-    #     super(AutotestQuadPlane, self).test_autodisarm_motors()
-    #
-    # def test_rtl(self, home, distance_min=10, timeout=250):
-    #     super(AutotestQuadPlane, self).test_rtl(home,
-    #                              distance_min=10, timeout=250)
-    #
-    # def test_throttle_failsafe(self, home, distance_min=10,
-    #                                   side=60, timeout=180):
-    #     super(AutotestQuadPlane, self).test_throttle_failsafe(home,
-    #                          distance_min=10, side=60, timeout=180)
-    #
-    # def test_mission(self, filename):
-    #     super(AutotestQuadPlane, self).test_mission(filename)
 
     def fly_mission(self, filename, fence, height_accuracy=-1):
         """Fly a mission from a file."""

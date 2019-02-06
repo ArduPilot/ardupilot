@@ -102,40 +102,6 @@ class AutoTestRover(AutoTest):
 
         self.progress("Ready to start testing!")
 
-    # def reset_and_arm(self):
-    #     """Reset RC, set to MANUAL and arm."""
-    #     self.wait_heartbeat()
-    #     # ensure all sticks in the middle
-    #     self.set_rc_default()
-    #     self.mavproxy.send('switch 1\n')
-    #     self.wait_heartbeat()
-    #     self.disarm_vehicle()
-    #     self.wait_heartbeat()
-    #     self.arm_vehicle()
-    #
-
-    # # TEST RC OVERRIDE
-    # # TEST RC OVERRIDE TIMEOUT
-    # def test_rtl(self, home, distance_min=5, timeout=250):
-    #     """Return, land."""
-    #     super(AutoTestRover, self).test_rtl(home, distance_min, timeout)
-    #
-    # def test_mission(self, filename):
-    #     """Test a mission from a file."""
-    #     self.progress("Test mission %s" % filename)
-    #     num_wp = self.load_mission(filename)
-    #     self.mavproxy.send('wp set 1\n')
-    #     self.wait_heartbeat()
-    #     self.mavproxy.send('switch 4\n')  # auto mode
-    #     self.wait_mode('AUTO')
-    #     ret = self.wait_waypoint(0, num_wp-1, max_dist=5, timeout=500)
-    #
-    #     if ret:
-    #         self.mavproxy.expect("Mission Complete")
-    #     self.wait_heartbeat()
-    #     self.wait_mode('HOLD')
-    #     self.progress("test: MISSION COMPLETE: passed=%s" % ret)
-    #     return ret
 
     ##########################################################
     #   TESTS DRIVE
