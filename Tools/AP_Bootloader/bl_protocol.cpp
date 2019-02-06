@@ -130,7 +130,9 @@ volatile unsigned timer[NTIMERS];
  */
 static void sys_tick_handler(void *ctx)
 {
+    chSysLock();
     chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
+    chSysUnlock();
     uint8_t i;
     for (i = 0; i < NTIMERS; i++)
         if (timer[i] > 0) {
@@ -338,28 +340,47 @@ static void test_flash()
         delay(300);
     }
     uint32_t loop = 1;
+    bool init_done = false;
     while (true) {
         uint32_t addr = 0;
-        for (uint8_t p=0; p<15; p++) {
+        uint32_t page = 0;
+        while (true) {
             uint32_t v[8];
             for (uint8_t i=0; i<8; i++) {
-                v[i] = (p<<16) + loop;
+                v[i] = (page<<16) + loop;
             }
-            if (flash_func_sector_size(p) == 0) {
+            if (flash_func_sector_size(page) == 0) {
                 continue;
             }
-            uprintf("page %u size %u addr=0x%08x v=0x%08x\n", p, flash_func_sector_size(p), addr, v[0]); delay(10);
-            uprintf("CR1=0x%08x CR2=0x%08x SR1=0x%08x SR2=0x%08x\n",
-                    FLASH->CR1, FLASH->CR2, FLASH->SR1, FLASH->SR2); delay(100);
-            uprintf("page %u 0x%08x\n", p, flash_func_read_word(addr)); delay(100);
-            flash_func_erase_sector(p);
-            uprintf("page %u 0x%08x\n", p, flash_func_read_word(addr)); delay(10);
-            flash_func_write_words(addr, v, ARRAY_SIZE(v));
-            uprintf("page %u 0x%08x\n", p, flash_func_read_word(addr)); delay(10);
-            uprintf("CR1=0x%08x CR2=0x%08x SR1=0x%08x SR2=0x%08x\n",
-                    FLASH->CR1, FLASH->CR2, FLASH->SR1, FLASH->SR2);
-            addr += flash_func_sector_size(p);
+            uint32_t num_writes = flash_func_sector_size(page) / sizeof(v);
+            uprintf("page %u size %u addr=0x%08x v=0x%08x\n",
+                    page, flash_func_sector_size(page), addr, v[0]); delay(10);
+            if (init_done) {
+                for (uint32_t j=0; j<flash_func_sector_size(page)/4; j++) {
+                    uint32_t v1 = (page<<16) + (loop-1);
+                    uint32_t v2 = flash_func_read_word(addr+j*4);
+                    if (v2 != v1) {
+                        uprintf("read error at 0x%08x v=0x%08x v2=0x%08x\n", addr+j*4, v1, v2);
+                        break;
+                    }
+                }
+            }
+            if (!flash_func_erase_sector(page)) {
+                uprintf("erase of %u failed\n", page);
+            }
+            for (uint32_t j=0; j<num_writes; j++) {
+                if (!flash_func_write_words(addr+j*sizeof(v), v, ARRAY_SIZE(v))) {
+                    uprintf("write failed at 0x%08x\n", addr+j*sizeof(v));
+                    break;
+                }
+            }
+            addr += flash_func_sector_size(page);
+            page++;
+            if (flash_func_sector_size(page) == 0) {
+                break;
+            }
         }
+        init_done = true;
         delay(1000);
         loop++;
     }
