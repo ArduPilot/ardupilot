@@ -195,12 +195,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)cmd.content.do_vtol_transition.target_state);
         break;
 
-    case MAV_CMD_DO_ENGINE_CONTROL:
-        plane.g2.ice_control.engine_control(cmd.content.do_engine_control.start_control,
-                                            cmd.content.do_engine_control.cold_start,
-                                            cmd.content.do_engine_control.height_delay_cm*0.01f);
-        break;
-
     default:
         // unable to use the command, allow the vehicle to try the next command
         return false;
@@ -304,7 +298,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_VTOL_TRANSITION:
-    case MAV_CMD_DO_ENGINE_CONTROL:
         return true;
 
     default:
