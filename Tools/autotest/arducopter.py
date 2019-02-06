@@ -128,6 +128,9 @@ class AutoTestCopter(AutoTest):
     def get_rudder_channel(self):
         return int(self.get_parameter("RCMAP_YAW"))
 
+    def get_disarm_delay(self):
+        return self.get_parameter("DISARM_DELAY")
+
     def user_takeoff(self, alt_min=30):
         '''takeoff using mavlink takeoff command'''
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,

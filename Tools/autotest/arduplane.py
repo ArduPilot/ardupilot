@@ -96,6 +96,9 @@ class AutoTestPlane(AutoTest):
     def get_rudder_channel(self):
         return int(self.get_parameter("RCMAP_YAW"))
 
+    def get_disarm_delay(self):
+        return self.get_parameter("LAND_DISARMDELAY")
+
     def takeoff(self):
         """Takeoff get to 30m altitude."""
 

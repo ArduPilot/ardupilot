@@ -719,6 +719,9 @@ class AutoTest(ABC):
         """Return the Rudder channel number as set in parameter."""
         raise ErrorException("Rudder parameter is not supported by vehicle %s frame %s", (self.vehicleinfo_key(), self.frame))
 
+    def get_disarm_delay(self):
+        """Return disarm delay value."""
+        raise ErrorException("Disarm delay is not supported by vehicle %s frame %s", (self.vehicleinfo_key(), self.frame))
 
     def armed(self):
         """Return true if vehicle is armed and safetyoff"""
@@ -848,11 +851,7 @@ class AutoTest(ABC):
         """Wait for Autodisarm motors within disarm delay
         this feature is only available in copter (DISARM_DELAY) and plane (LAND_DISARMDELAY)."""
         self.progress("Wait autodisarming motors")
-        disarm_delay = None
-        if self.is_copter():
-            disarm_delay = self.get_parameter("DISARM_DELAY")
-        if self.is_plane():
-            disarm_delay = self.get_parameter("LAND_DISARMDELAY")
+        disarm_delay = self.get_disarm_delay()
         tstart = self.get_sim_time()
         timeout = disarm_delay * 2
         while self.get_sim_time() < tstart + timeout:

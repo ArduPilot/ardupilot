@@ -93,6 +93,9 @@ class AutoTestQuadPlane(AutoTest):
     def get_rudder_channel(self):
         return int(self.get_parameter("RCMAP_YAW"))
 
+    def get_disarm_delay(self):
+        return int(self.get_parameter("LAND_DISARMDELAY"))
+
     def fly_mission(self, filename, fence, height_accuracy=-1):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
