@@ -581,6 +581,7 @@ private:
 
     // mission items common to all vehicles:
     bool start_command_do_gripper(const AP_Mission::Mission_Command& cmd);
+    bool start_command_do_engine_control(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd);
     bool start_command_camera(const AP_Mission::Mission_Command& cmd);
 };
