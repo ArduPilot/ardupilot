@@ -7,7 +7,7 @@ void ModeSteering::update()
     float speed;
     if (!attitude_control.get_forward_speed(speed)) {
         // no valid speed so stop
-        g2.motors.set_throttle(0.0f);
+        rover.set_throttle(0.0f);
         g2.motors.set_steering(0.0f);
         return;
     }

@@ -325,7 +325,7 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
     rover.sailboat_update_mainsail(target_speed);
 
     // send to motor
-    g2.motors.set_throttle(throttle_out);
+    rover.set_throttle(throttle_out);
 }
 
 // performs a controlled stop with steering centered
@@ -344,7 +344,7 @@ bool Mode::stop_vehicle()
     g2.motors.set_mainsail(100.0f);
 
     // send to motor
-    g2.motors.set_throttle(throttle_out);
+    rover.set_throttle(throttle_out);
 
     // do not attempt to steer
     g2.motors.set_steering(0.0f);

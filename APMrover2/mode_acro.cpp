@@ -10,7 +10,7 @@ void ModeAcro::update()
         // convert pilot stick input into desired steering and throttle
         get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
         // no valid speed, just use the provided throttle
-        g2.motors.set_throttle(desired_throttle);
+        rover.set_throttle(desired_throttle);
     } else {
         float desired_speed;
         // convert pilot stick input into desired steering and speed
