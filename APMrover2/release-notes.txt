@@ -1,5 +1,11 @@
 Rover Release Notes:
-========================
+--------------------------------
+Rover 3.5.0 06-Feb-2019
+Changes from 3.5.0-rc3
+1) Bug fixes and minor enhancements
+    a) Avoid potential divide-by-zero when waypoints are almost in a straight line
+    b) LOIT_TYPE parameter description fix
+--------------------------------
 Rover 3.5.0-rc3 30-Jan-2019
 Changes from 3.5.0-rc2
 1) Fix build issue affecting fmuv2
