@@ -234,7 +234,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                                             (void *)this);
                     osalDbgAssert(rxdma, "stream alloc failed");
                     chSysUnlock();
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
 #else
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -322,7 +322,7 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
                             (void *)this);
     osalDbgAssert(txdma, "stream alloc failed");
     chSysUnlock();
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
 #else
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -368,7 +368,7 @@ void UARTDriver::rx_irq_cb(void* self)
     if (!uart_drv->sdef.dma_rx) {
         return;
     }
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
     //disable dma, triggering DMA transfer complete interrupt
     uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
 #else

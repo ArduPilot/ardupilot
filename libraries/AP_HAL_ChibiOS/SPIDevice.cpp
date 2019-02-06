@@ -29,10 +29,17 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
 // SPI mode numbers
+#if defined(STM32H7)
+#define SPIDEV_MODE0    0
+#define SPIDEV_MODE1    SPI_CFG2_CPHA
+#define SPIDEV_MODE2    SPI_CFG2_CPOL
+#define SPIDEV_MODE3    SPI_CFG2_CPOL | SPI_CFG2_CPHA
+#else
 #define SPIDEV_MODE0    0
 #define SPIDEV_MODE1    SPI_CR1_CPHA
 #define SPIDEV_MODE2    SPI_CR1_CPOL
 #define SPIDEV_MODE3    SPI_CR1_CPOL | SPI_CR1_CPHA
+#endif
 
 #define SPI1_CLOCK  STM32_PCLK2
 #define SPI2_CLOCK  STM32_PCLK1
@@ -190,7 +197,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
     return true;
 }
 
-uint16_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
+uint32_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
 {
     uint32_t spi_clock_freq = SPI1_CLOCK;
     if (busid > 0 && uint8_t(busid-1) < ARRAY_SIZE(bus_clocks)) {
@@ -207,10 +214,14 @@ uint16_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
     // assuming the bitrate bits are consecutive in the CR1 register,
     // we can just multiply by BR_0 to get the right bits for the desired
     // scaling
+#if defined(STM32H7)
+    return (i * SPI_CFG1_MBR_0) | SPI_CFG1_DSIZE_VALUE(7); // 8 bit transfers
+#else
     return i * SPI_CR1_BR_0;
+#endif
 }
 
-uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
+uint32_t SPIDevice::derive_freq_flag(uint32_t _frequency)
 {
     uint8_t busid = spi_devices[device_desc.bus].busid;
     return derive_freq_flag_bus(busid, _frequency);
@@ -293,8 +304,13 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
         bus.spicfg.end_cb = nullptr;
         bus.spicfg.ssport = PAL_PORT(device_desc.pal_line);
         bus.spicfg.sspad = PAL_PAD(device_desc.pal_line);
+#if defined(STM32H7)
+        bus.spicfg.cfg1 = freq_flag;
+        bus.spicfg.cfg2 = device_desc.mode;
+#else
         bus.spicfg.cr1 = (uint16_t)(freq_flag | device_desc.mode);
         bus.spicfg.cr2 = 0;
+#endif
         if (bus.spi_started) {
             spiStop(spi_devices[device_desc.bus].driver);
             bus.spi_started = false;
@@ -379,7 +395,11 @@ void SPIDevice::test_clock_freq(void)
         SPIConfig spicfg {};
         const uint32_t target_freq = 2000000UL;
         // use a clock divisor of 256 for maximum resolution
+#if defined(STM32H7)
+        spicfg.cfg1 = derive_freq_flag_bus(spi_devices[i].busid, target_freq);
+#else
         spicfg.cr1 = derive_freq_flag_bus(spi_devices[i].busid, target_freq);
+#endif
         spiAcquireBus(spi_devices[i].driver);
         spiStart(spi_devices[i].driver, &spicfg);
         uint32_t t0 = AP_HAL::micros();
