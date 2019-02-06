@@ -694,6 +694,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 39, ParametersG2, AP_Gripper),
 #endif
 
+    // @Group: ICE_
+    // @Path: ../libraries/AP_ICEngine/AP_ICEngine.cpp
+    AP_SUBGROUPINFO(ice_control, "ICE_", 40, ParametersG2, AP_ICEngine),
+
     AP_GROUPEND
 };
 
@@ -711,8 +715,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 // @Description: RC Channel to use for auxiliary functions including saving waypoints
 // @User: Advanced
 
-ParametersG2::ParametersG2(void)
-    :
+ParametersG2::ParametersG2(void) :
+    ice_control(rover.rpm_sensor),
 #if ADVANCED_FAILSAFE == ENABLED
     afs(rover.mission, rover.gps),
 #endif

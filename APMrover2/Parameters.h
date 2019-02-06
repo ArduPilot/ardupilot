@@ -298,6 +298,9 @@ public:
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
 
+    // internal combustion engine control
+    AP_ICEngine ice_control;
+
     // RC input channels
     RC_Channels_Rover rc_channels;
 
