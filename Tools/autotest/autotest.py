@@ -484,6 +484,31 @@ class TestResults(object):
         for f in glob.glob(buildlogs_path(pattern)):
             self.addimage(name, os.path.basename(f))
 
+    def generate_badge(self):
+        """
+        Gets the badge template, populates and saves the result to buildlogs
+        path.
+        """
+        passed_tests = len([t for t in self.tests if "PASSED" in t.result])
+        total_tests = len(self.tests)
+        badge_color = "#4c1" if passed_tests == total_tests else "#e05d44"
+
+        badge_text = "{0}/{1}".format(passed_tests, total_tests)
+        # Text length so it is not stretched by svg
+        text_length = len(badge_text) * 70
+
+        # Load template file
+        template_path = 'Tools/autotest/web/autotest-badge-template.svg'
+        with open(util.reltopdir(template_path), "r") as f:
+            template = f.read()
+
+        # Add our results to the template
+        badge = template.format(color=badge_color,
+                                text=badge_text,
+                                text_length=text_length)
+        with open(buildlogs_path("autotest-badge.svg"), "w") as f:
+            f.write(badge)
+
 
 def write_webresults(results_to_write):
     """Write webpage results."""
@@ -495,6 +520,7 @@ def write_webresults(results_to_write):
         f.close()
     for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
         shutil.copy(f, buildlogs_path(os.path.basename(f)))
+    results_to_write.generate_badge()
 
 
 def write_fullresults():
