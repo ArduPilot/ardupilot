@@ -126,6 +126,7 @@ void Plane::update_home()
         }
     }
     barometer.update_calibration();
+    ahrs.resetHeightDatum();
 }
 
 void Plane::set_home_persistently(const Location &loc)
