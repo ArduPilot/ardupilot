@@ -369,6 +369,13 @@ public:
     */
     void set_float(float value, enum ap_var_type var_type);
 
+    /*
+      handle the case where the user has explicity set a value for a
+      parameter.  This may force-write the parameter if required to
+      ensure value is persistent.
+    */
+    void user_set_value(float value, const enum ap_var_type var_type);
+
     // load default values for scalars in a group
     static void         setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info);
 

@@ -1897,6 +1897,35 @@ void AP_Param::set_float(float value, enum ap_var_type var_type)
     }
 }
 
+void AP_Param::user_set_value(const float value, const enum ap_var_type var_type)
+{
+    const float old_value = vp->cast_to_float(var_type);
+
+    if (parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY || vp->is_read_only()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
+        // echo back the incorrect value so that we fulfull the
+        // parameter state machine requirements:
+        send_parameter_value(key, var_type, packet.param_value);
+        // and then announce what the correct value is:
+        send_parameter_value(key, var_type, old_value);
+        return;
+    }
+
+    // set the value
+    vp->set_float(value, var_type);
+
+    /*
+      we force the save if the value is not equal to the old
+      value. This copes with the use of override values in
+      constructors, such as PID elements. Otherwise a set to the
+      default value which differs from the constructor value doesn't
+      save the change
+     */
+    const bool force_save = !is_equal(value, old_value);
+
+    // save the change
+    vp->save(force_save);
+}
 
 /*
   parse a parameter file line
