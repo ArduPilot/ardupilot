@@ -110,7 +110,8 @@ const struct UnitStructure log_Units[] = {
     { 'P', "Pa" },            // Pascal
     { 'w', "Ohm" },           // Ohm
     { 'Y', "us" },            // pulse width modulation in microseconds
-    { 'z', "Hz" }             // Hertz
+    { 'z', "Hz" },            // Hertz
+    { '#', "instance" }       // (e.g.)Sensor instance number
 };
 
 // this multiplier information applies to the raw value present in the
