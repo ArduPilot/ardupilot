@@ -105,7 +105,7 @@ def process_vehicle():
                 setattr(group_lib, field[0], field[1])
             else:
                 error("group: unknown parameter metadata field '%s'" % field[0])
-        if not any(group_lib.name == parsed_l.name for parsed_l in libraries_list):
+        if group_lib.name not in libraries_list:
             libraries_list.append(group_lib)
 
     debug("Found %u documented parameters" % len(param_matches))
@@ -226,7 +226,7 @@ def process_library(library, pathprefix=None):
                     setattr(group_lib, field[0], field[1])
                 else:
                     error("group: unknown parameter metadata field '%s'" % field[0])
-            if not any(group_lib.name == parsed_l.name for parsed_l in libraries_list):
+            if group_lib.name not in libraries_list:
                 group_lib.name = library.name + group_lib.name
                 debug("Group name: %s" % group_lib.name)
                 if hasattr(group_lib, "Path"):
@@ -234,7 +234,6 @@ def process_library(library, pathprefix=None):
                 else:
                     error("Skipped: no Path found")
                 alllibs.append(group_lib)
-
     current_file = None
 
 
