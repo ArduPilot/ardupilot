@@ -196,20 +196,7 @@ void AP_Compass_RM3100::timer()
 
     field((int32_t)magx * _scaler, (int32_t)magy * _scaler, (int32_t)magz * _scaler);
 
-    // rotate raw_field from sensor frame to body frame
-    rotate_field(field, compass_instance);
-
-    // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(field, compass_instance);
-
-    // correct raw_field for known errors
-    correct_field(field, compass_instance);
-
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        accum += field;
-        accum_count++;
-        _sem->give();
-    }
+    accumulate_sample(field, compass_instance);
 
 check_registers:
     dev->check_next_register();
@@ -217,34 +204,5 @@ check_registers:
 
 void AP_Compass_RM3100::read()
 {
-    if (!_sem->take_nonblocking()) {
-        return;
-    }
-    if (accum_count == 0) {
-        _sem->give();
-        return;
-    }
-
-#if 0
-    // debugging code for sample rate
-    static uint32_t lastt;
-    static uint32_t total;
-    total += accum_count;
-    uint32_t now = AP_HAL::micros();
-    float dt = (now - lastt) * 1.0e-6;
-    if (dt > 1) {
-    	printf("%u %f samples RM3100 \n", total, dt);
-        lastt = now;
-        total = 0;
-    }
-#endif
-
-    accum /= accum_count;
-
-    publish_filtered_field(accum, compass_instance);
-
-    accum.zero();
-    accum_count = 0;
-
-    _sem->give();
+	drain_accumulated_samples(compass_instance);
 }
