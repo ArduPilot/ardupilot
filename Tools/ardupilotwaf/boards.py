@@ -309,7 +309,8 @@ class sitl(Board):
         )
 
         env.CXXFLAGS += [
-            '-Werror=float-equal'
+            '-Werror=float-equal',
+            '-Werror=switch-bool',
         ]
 
         if not cfg.env.DEBUG:
@@ -404,7 +405,6 @@ class chibios(Board):
             '-Wframe-larger-than=1024',
             '-Werror=unused-but-set-variable',
             '-Wno-missing-field-initializers',
-            '-Wno-trigraphs',
             '-Os',
             '-fno-strict-aliasing',
             '-fomit-frame-pointer',
