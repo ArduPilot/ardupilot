@@ -79,11 +79,11 @@ truename_map = {
 
 vehicle_name = os.path.basename(os.path.dirname(vehicle_path))
 vehicle_path = os.path.normpath(os.path.dirname(vehicle_path))
-vehicle = Vehicle(vehicle_name, vehicle_path, truename_map[vehicle_name])
+current_vehicle = Vehicle(vehicle_name, vehicle_path, truename_map[vehicle_name])
 debug("Found vehicle type %s" % vehicle_name)
 
 
-def process_vehicle():
+def process_vehicle(vehicle):
     debug("===\n\n\nProcessing %s" % vehicle.name)
     global current_file, current_param
     current_file = vehicle.path + "/Parameters.cpp"
@@ -132,12 +132,12 @@ def process_vehicle():
     debug("Processed %u params" % len(vehicle.params))
 
 
-process_vehicle()
+process_vehicle(current_vehicle)
 debug("Found %u documented libraries" % len(libraries_list))
 alllibs = libraries_list[:]
 
 
-def process_library(library, pathprefix=None):
+def process_library(vehicle, library, pathprefix=None):
     """process one library"""
     paths = library.Path.split(',')
     for path in paths:
@@ -230,7 +230,7 @@ def process_library(library, pathprefix=None):
                 group_lib.name = library.name + group_lib.name
                 debug("Group name: %s" % group_lib.name)
                 if hasattr(group_lib, "Path"):
-                    process_library(group_lib, os.path.dirname(libraryfname))
+                    process_library(current_vehicle, group_lib, os.path.dirname(libraryfname))
                 else:
                     error("Skipped: no Path found")
                 alllibs.append(group_lib)
@@ -241,7 +241,7 @@ for lib in libraries_list:
     debug("===\n\n\nProcessing library %s" % lib.name)
 
     if hasattr(lib, "Path"):
-        process_library(lib)
+        process_library(current_vehicle, lib)
     else:
         error("Skipped: no Path found")
 
@@ -289,7 +289,7 @@ def validate(parameter):
             error("unknown units field '%s'" % parameter.__dict__["Units"])
 
 
-for param in vehicle.params:
+for param in current_vehicle.params:
     validate(param)
 
 # Find duplicate names in library and fix up path
@@ -316,7 +316,7 @@ for lib in libraries_list:
 
 def do_emit(emit):
     emit.set_annotate_with_vehicle(False)
-    emit.emit(vehicle)
+    emit.emit(current_vehicle)
 
     emit.start_libraries()
 
