@@ -446,6 +446,8 @@ protected:
 
 private:
 
+    void log_mavlink_stats();
+
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
 
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
@@ -687,6 +689,9 @@ private:
 
     void zero_rc_outputs();
 
+    uint8_t last_tx_seq;
+    uint16_t send_packet_count;
+
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     struct {
         uint32_t longest_time_us;
@@ -701,6 +706,7 @@ private:
     uint16_t max_slowdown_ms;
 #endif
 
+    uint32_t last_mavlink_stats_logged;
 };
 
 /// @class GCS
