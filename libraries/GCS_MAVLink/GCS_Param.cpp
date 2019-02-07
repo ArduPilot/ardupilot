@@ -81,7 +81,7 @@ GCS_MAVLINK::queued_param_send()
             chan,
             param_name,
             _queued_parameter->cast_to_float(_queued_parameter_type),
-            mav_var_type(_queued_parameter_type),
+            mav_param_type(_queued_parameter_type),
             _queued_parameter_count,
             _queued_parameter_index);
 
@@ -312,7 +312,7 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
                     _chan,
                     param_name,
                     param_value,
-                    mav_var_type(param_type),
+                    mav_param_type(param_type),
                     AP_Param::count_parameters(),
                     -1);
             }
@@ -391,7 +391,7 @@ bool GCS_MAVLINK::send_parameter_reply(void)
         reply.chan,
         reply.param_name,
         reply.value,
-        mav_var_type(reply.p_type),
+        mav_param_type(reply.p_type),
         reply.count,
         reply.param_index);
 
