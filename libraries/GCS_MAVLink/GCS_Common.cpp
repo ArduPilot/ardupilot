@@ -1266,6 +1266,15 @@ void GCS_MAVLINK::update_send()
         try_send_message_stats.max_retry_deferred_body_type = 4;
     }
 #endif
+
+    // update the number of packets transmitted base on seqno, making
+    // the assumption that we don't send more than 256 messages
+    // between the last pass through here
+    mavlink_status_t *status = mavlink_get_channel_status(chan);
+    if (status != nullptr) {
+        send_packet_count += (status->current_tx_seq - last_tx_seq);
+        last_tx_seq = status->current_tx_seq;
+    }
 }
 
 void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
@@ -1510,6 +1519,14 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         }
     }
 
+    // consider logging mavlink stats to dataflash:
+    if (is_active() || is_streaming()) {
+        if (tnow - last_mavlink_stats_logged > 1000) {
+            log_mavlink_stats();
+            last_mavlink_stats_logged = tnow;
+        }
+    }
+
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
 
     const uint16_t now16_ms{AP_HAL::millis16()};
@@ -1593,6 +1610,27 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     hal.util->perf_end(_perf_update);    
 }
 
+/*
+  record stats about this link to dataflash
+*/
+void GCS_MAVLINK::log_mavlink_stats()
+{
+    mavlink_status_t *status = mavlink_get_channel_status(chan);
+    if (status == nullptr) {
+        return;
+    }
+
+    const struct log_MAV pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_MAV_MSG),
+    time_us                : AP_HAL::micros64(),
+    chan                   : (uint8_t)chan,
+    packet_tx_count        : send_packet_count,
+    packet_rx_success_count: status->packet_rx_success_count,
+    packet_rx_drop_count   : status->packet_rx_drop_count
+    };
+
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
 
 /*
   send the SYSTEM_TIME message
