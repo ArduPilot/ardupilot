@@ -6,7 +6,7 @@
 #include <AP_HAL/Semaphores.h>
 #include "HAL_ESP32_Namespace.h"
 
-class HALESP32::Semaphore : public AP_HAL::Semaphore {
+class ESP32::Semaphore : public AP_HAL::Semaphore {
 public:
     Semaphore();
     bool give();
@@ -18,7 +18,7 @@ protected:
 };
 
 
-class HALESP32::Semaphore_Recursive : public HALESP32::Semaphore {
+class ESP32::Semaphore_Recursive : public ESP32::Semaphore {
 public:
     Semaphore_Recursive();
     bool give();

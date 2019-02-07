@@ -1,8 +1,11 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_ESP32/HAL_ESP32_Class.h>
 #include <stdint.h>
 #include "esp_timer.h"
 
 namespace AP_HAL {
+
+HAL_ESP32 hal;
 
 void panic(const char *errormsg, ...)
 {
@@ -12,7 +15,7 @@ void panic(const char *errormsg, ...)
     vprintf(errormsg, ap);
     va_end(ap);
 
-    while(1) {}
+    while (1) {}
 }
 
 uint32_t micros()
@@ -37,7 +40,7 @@ uint64_t millis64()
 
 } // namespace AP_HAL
 
-const AP_HAL::HAL& AP_HAL::get_HAL() {
-    AP_HAL::HAL *hal = reinterpret_cast<AP_HAL::HAL *>(0);
-    return *hal;
+const AP_HAL::HAL& AP_HAL::get_HAL()
+{
+    return hal;
 }

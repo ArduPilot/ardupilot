@@ -3,7 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-using namespace HALESP32;
+using namespace ESP32;
 
 Semaphore::Semaphore()
 {
