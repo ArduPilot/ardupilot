@@ -371,6 +371,10 @@ public:
     // Sprayer
     AC_Sprayer sprayer;
 
+#if GRIPPER_ENABLED
+    AP_Gripper gripper;
+#endif
+
     // Rally point library
     AP_Rally_Rover rally;
 
