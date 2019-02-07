@@ -93,6 +93,9 @@ class AutoTestPlane(AutoTest):
         self.hasInit = True
         self.progress("Ready to start testing!")
 
+    def is_plane(self):
+        return True
+
     def get_rudder_channel(self):
         return int(self.get_parameter("RCMAP_YAW"))
 

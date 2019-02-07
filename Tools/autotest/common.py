@@ -1986,24 +1986,19 @@ class AutoTest(ABC):
         self.reboot_sitl()
 
     def is_copter(self):
-        return self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
-                                     mavutil.mavlink.MAV_TYPE_HELICOPTER,
-                                     mavutil.mavlink.MAV_TYPE_HEXAROTOR,
-                                     mavutil.mavlink.MAV_TYPE_OCTOROTOR,
-                                     mavutil.mavlink.MAV_TYPE_COAXIAL,
-                                     mavutil.mavlink.MAV_TYPE_TRICOPTER]
+        return False
 
     def is_sub(self):
-        return self.mav.mav_type == mavutil.mavlink.MAV_TYPE_SUBMARINE
+        return False
 
     def is_plane(self):
-        return self.mav.mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING
+        return False
 
     def is_rover(self):
-        return self.mav.mav_type == mavutil.mavlink.MAV_TYPE_GROUND_ROVER
+        return False
 
     def is_heli(self):
-        return self.mav.mav_type == mavutil.mavlink.MAV_TYPE_HELICOPTER
+        return False
 
     def initial_mode(self):
         '''return mode vehicle should start in with no RC inputs set'''

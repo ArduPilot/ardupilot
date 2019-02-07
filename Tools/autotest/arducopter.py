@@ -125,6 +125,9 @@ class AutoTestCopter(AutoTest):
         if self.copy_tlog:
             shutil.copy(self.logfile, self.buildlog)
 
+    def is_copter(self):
+        return True
+
     def get_rudder_channel(self):
         return int(self.get_parameter("RCMAP_YAW"))
 
@@ -2825,6 +2828,9 @@ class AutoTestHeli(AutoTestCopter):
                                      AVCHOME.alt,
                                      AVCHOME.heading)
         self.frame = 'heli'
+
+    def is_heli(self):
+        return True
 
     def rc_defaults(self):
         ret = super(AutoTestHeli, self).rc_defaults()
