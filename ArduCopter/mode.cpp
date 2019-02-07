@@ -453,44 +453,16 @@ void Copter::Mode::land_run_vertical_control(bool pause_descent)
 
 void Copter::Mode::land_run_horizontal_control()
 {
-    float target_roll = 0.0f;
-    float target_pitch = 0.0f;
-    float target_yaw_rate = 0;
-
     // relax loiter target if we might be landed
     if (ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();
     }
 
-    // process pilot inputs
-    if (!copter.failsafe.radio) {
-        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
-            copter.Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
-            // exit land if throttle is high
-            if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
-                set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
-            }
-        }
-
-        if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
-            // convert pilot input to lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
-
-            // record if pilot has overriden roll or pitch
-            if (!is_zero(target_roll) || !is_zero(target_pitch)) {
-                if (!ap.land_repo_active) {
-                    copter.Log_Write_Event(DATA_LAND_REPO_ACTIVE);
-                }
-                ap.land_repo_active = true;
-            }
-        }
-
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-    }
+    float target_roll = 0.0f;
+    float target_pitch = 0.0f;
+    float target_yaw_rate = 0.0f;
+    // process LAND_CANCEL, repositioning, yaw control
+    process_pilot_land_correction(true, target_roll, target_pitch, target_yaw_rate);
 
 #if PRECISION_LANDING == ENABLED
     bool doing_precision_landing = !ap.land_repo_active && copter.precland.target_acquired();
@@ -509,9 +481,6 @@ void Copter::Mode::land_run_horizontal_control()
         pos_control->override_vehicle_velocity_xy(-target_vel_rel);
     }
 #endif
-
-    // process roll, pitch inputs
-    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
 
     // run loiter controller
     loiter_nav->update();
@@ -612,3 +581,56 @@ uint16_t Copter::Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
 }
+
+void Copter::Mode::process_pilot_land_correction(bool has_position, float &target_roll, float &target_pitch, float &target_yaw_rate) const
+{
+    // process pilot's input
+    if (!copter.failsafe.radio) {
+        if ((copter.g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 &&
+            copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR) {
+            copter.Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            if (has_position) {
+                if (!copter.set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
+                    copter.set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
+                }
+            } else {
+                copter.set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
+            }
+        }
+
+        if (copter.g.land_repositioning) {
+            // apply SIMPLE mode transform to pilot inputs
+            copter.update_simple_mode();
+
+            // convert pilot input to lean angles
+            if (has_position) {
+                get_pilot_desired_lean_angles(target_roll, target_pitch, copter.loiter_nav->get_angle_max_cd(),
+                                              copter.attitude_control->get_althold_lean_angle_max());
+            } else {
+                get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max,
+                                              copter.attitude_control->get_althold_lean_angle_max());
+            }
+
+            // record if pilot has overriden roll or pitch
+            if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+                if (!ap.land_repo_active) {
+                    ap.land_repo_active = true;
+                    copter.Log_Write_Event(DATA_LAND_REPO_ACTIVE);
+                }
+            }
+        }
+
+        // process roll, pitch inputs
+        if (has_position) {
+            copter.loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
+        }
+        // get pilot's desired yaw rate
+        target_yaw_rate = copter.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
+    } else {
+        copter.loiter_nav->clear_pilot_desired_acceleration();
+    }
+};

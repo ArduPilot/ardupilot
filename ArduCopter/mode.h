@@ -193,6 +193,7 @@ protected:
     void set_throttle_takeoff(void);
     float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
+    void process_pilot_land_correction(bool has_position, float &target_roll, float &target_pitch, float &target_yaw_rate) const;
 
     // end pass-through functions
 };
