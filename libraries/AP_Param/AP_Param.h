@@ -422,6 +422,12 @@ public:
     /// cast a variable to a float given its type
     float                   cast_to_float(enum ap_var_type type) const;
 
+    // return types value, validating in SITL as type must be appropriate
+    int8_t                 as_int8_t(enum ap_var_type type) const;
+    int16_t                as_int16_t(enum ap_var_type type) const;
+    int32_t                as_int32_t(enum ap_var_type type) const;
+    float                  as_float(enum ap_var_type type) const;
+
     // check var table for consistency
     static bool             check_var_info(void);
 

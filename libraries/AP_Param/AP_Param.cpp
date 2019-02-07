@@ -1710,6 +1710,35 @@ float AP_Param::cast_to_float(enum ap_var_type type) const
     }
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define assert_type(have, want) \
+        if (have != want) { AP_HAL::panic("Attempt to convert to incorrect type"); }
+#else
+#define assert_type(have, want)
+#endif
+
+int8_t AP_Param::as_int8_t(enum ap_var_type type) const
+{
+    assert_type(type, AP_PARAM_INT8);
+    return ((AP_Int8 *)this)->get();
+}
+int16_t AP_Param::as_int16_t(enum ap_var_type type) const
+{
+    assert_type(type, AP_PARAM_INT16);
+    return ((AP_Int16 *)this)->get();
+}
+int32_t AP_Param::as_int32_t(enum ap_var_type type) const
+{
+    assert_type(type, AP_PARAM_INT32);
+    return ((AP_Int32 *)this)->get();
+}
+float AP_Param::as_float(enum ap_var_type type) const
+{
+    assert_type(type, AP_PARAM_FLOAT);
+    return ((AP_Int32 *)this)->get();
+};
+#undef assert_type
+
 /*
   find an old parameter and return it.
  */
