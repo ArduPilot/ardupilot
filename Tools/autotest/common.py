@@ -683,7 +683,7 @@ class AutoTest(ABC):
                 return True
         raise SetRCTimeout("Failed to send RC commands to channel %s" % str(chan))
 
-    def set_throttle_zero(self):
+    def zero_throttle(self):
         """Set throttle to zero."""
         if self.is_rover():
             self.set_rc(3, 1500)
@@ -1633,7 +1633,7 @@ class AutoTest(ABC):
             interlock_channel = 9
             self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
         self.set_rc(interlock_channel, 1000)
-        self.set_throttle_zero()
+        self.zero_throttle()
         # Disable auto disarm for next tests
         # Rover and Sub don't have auto disarm
         if self.is_copter() or self.is_plane():
@@ -1688,7 +1688,7 @@ class AutoTest(ABC):
                         "Armed via RC when throttle too high")
                 if self.arm_motors_with_switch(arming_switch):
                     raise NotAchievedException("Armed via RC when switch too high")
-                self.set_throttle_zero()
+                self.zero_throttle()
                 self.set_rc(arming_switch, 1000)
 
             # Sub doesn't have 'stick commands'

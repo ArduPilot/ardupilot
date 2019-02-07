@@ -633,7 +633,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_rc_override_cancel(self):
         self.change_mode('MANUAL')
         self.wait_ready_to_arm()
-        self.set_throttle_zero()
+        self.zero_throttle()
         self.arm_vehicle()
         # start moving forward a little:
         normal_rc_throttle = 1700

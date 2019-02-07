@@ -160,7 +160,7 @@ class AutoTestCopter(AutoTest):
         if not self.armed():
             self.progress("Waiting reading for arm")
             self.wait_ready_to_arm(require_absolute=require_absolute)
-            self.set_rc(3, 1000)
+            self.zero_throttle()
             self.arm_vehicle()
         self.set_rc(3, takeoff_throttle)
         self.wait_for_alt(alt_min=alt_min, timeout=timeout)
@@ -500,7 +500,7 @@ class AutoTestCopter(AutoTest):
                 self.mav.motors_disarmed_wait()
                 self.progress("Reached failsafe home OK")
                 self.change_mode('STABILIZE')
-                self.set_rc(3, 1000)
+                self.zero_throttle()
                 return
 
         self.reboot_sitl()
@@ -621,13 +621,13 @@ class AutoTestCopter(AutoTest):
                 self.set_parameter("FENCE_ENABLE", 0)
             if (alt <= 1 and home_distance < 10) or (not self.armed() and home_distance < 10):
                 # reduce throttle
-                self.set_rc(3, 1000)
+                self.zero_throttle()
                 self.change_mode("LAND")
                 self.progress("Waiting for disarm")
                 self.mav.motors_disarmed_wait()
                 self.progress("Reached home OK")
                 self.change_mode("STABILIZE")
-                self.set_rc(3, 1000)
+                self.zero_throttle()
                 # remove if we ever clear battery failsafe flag on disarm:
                 self.mavproxy.send('arm uncheck all\n')
                 self.arm_vehicle()
@@ -679,7 +679,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Waiting for disarm")
         self.mav.motors_disarmed_wait()
 
-        self.set_rc(3, 1000)
+        self.zero_throttle()
 
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_mode('STABILIZE')
@@ -833,7 +833,7 @@ class AutoTestCopter(AutoTest):
 
         self.change_mode("STABILIZE")
         self.wait_ready_to_arm()
-        self.set_rc(3, 1000)
+        self.zero_throttle()
         self.arm_vehicle()
 
         # switch into AUTO mode and raise throttle
@@ -1210,7 +1210,7 @@ class AutoTestCopter(AutoTest):
         self.wait_waypoint(0, num_wp-1, timeout=500)
 
         # set throttle to minimum
-        self.set_rc(3, 1000)
+        self.zero_throttle()
 
         # wait for disarm
         self.mav.motors_disarmed_wait()
@@ -1252,7 +1252,7 @@ class AutoTestCopter(AutoTest):
         self.wait_waypoint(0, num_wp-1, timeout=500)
 
         # set throttle to minimum
-        self.set_rc(3, 1000)
+        self.zero_throttle()
 
         # wait for disarm
         self.mav.motors_disarmed_wait()
@@ -1453,7 +1453,7 @@ class AutoTestCopter(AutoTest):
             ex = e
 
         self.context_pop()
-        self.set_rc(3, 1000)
+        self.zero_throttle()
         self.reboot_sitl()
 
         if ex is not None:
@@ -1544,7 +1544,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Exception caught")
             ex = e
 
-        self.set_rc(3, 1000)
+        self.zero_throttle()
 
         if ex is not None:
             raise ex
@@ -1699,7 +1699,7 @@ class AutoTestCopter(AutoTest):
 
             self.progress("Waiting for location")
             old_pos = self.mav.location()
-            self.set_rc(3, 1000)
+            self.zero_throttle()
             self.takeoff(10, 1800)
             # move away a little
             self.set_rc(2, 1550)
@@ -1718,7 +1718,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Exception caught")
             ex = e
 
-        self.set_rc(3, 1000)
+        self.zero_throttle()
         self.context_pop()
         self.reboot_sitl()
         self.progress("All done")
@@ -1920,7 +1920,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Exception caught")
             ex = e
 
-        self.set_rc(3, 1000)
+        self.zero_throttle()
 
         if ex is not None:
             raise ex
@@ -1980,7 +1980,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Exception caught")
             ex = e
 
-        self.set_rc(3, 1000)
+        self.zero_throttle()
 
         if ex is not None:
             raise ex
@@ -2163,7 +2163,7 @@ class AutoTestCopter(AutoTest):
 
             self.progress("Waiting for location")
             self.mav.location()
-            self.set_rc(3, 1000)
+            self.zero_throttle()
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_heartbeat()
             self.wait_mode('STABILIZE')
@@ -2227,7 +2227,7 @@ class AutoTestCopter(AutoTest):
             ex = e
 
         self.context_pop()
-        self.set_rc(3, 1000)
+        self.zero_throttle()
         self.reboot_sitl()
 
         if ex is not None:
@@ -2599,7 +2599,7 @@ class AutoTestCopter(AutoTest):
 
             self.progress("Waiting for location")
             self.mav.location()
-            self.set_rc(3, 1000)
+            self.zero_throttle()
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_heartbeat()
             self.wait_mode('STABILIZE')
@@ -2636,7 +2636,7 @@ class AutoTestCopter(AutoTest):
             ex = e
 
         self.context_pop()
-        self.set_rc(3, 1000)
+        self.zero_throttle()
         self.reboot_sitl()
         self.progress("All done")
 
