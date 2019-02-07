@@ -64,15 +64,14 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_RM3100::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_RM3100::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_RM3100 *sensor = new AP_Compass_RM3100(compass, std::move(dev), force_external, rotation);
+    AP_Compass_RM3100 *sensor = new AP_Compass_RM3100(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -81,12 +80,10 @@ AP_Compass_Backend *AP_Compass_RM3100::probe(Compass &compass,
     return sensor;
 }
 
-AP_Compass_RM3100::AP_Compass_RM3100(Compass &compass,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev,
+AP_Compass_RM3100::AP_Compass_RM3100(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
                                        bool _force_external,
                                        enum Rotation _rotation)
-    : AP_Compass_Backend(compass)
-    , dev(std::move(_dev))
+    : dev(std::move(_dev))
     , force_external(_force_external)
     , rotation(_rotation)
 {
