@@ -1,6 +1,6 @@
 #pragma once
 
-namespace HALESP32 {
+namespace ESP32 {
 class UARTDriver;
 class Scheduler;
 class EEPROMStorage;
@@ -14,4 +14,4 @@ class Semaphore;
 class Semaphore_Recursive;
 class GPIO;
 class DigitalSource;
-}  // namespace HALESP32
+}  // namespace ESP32

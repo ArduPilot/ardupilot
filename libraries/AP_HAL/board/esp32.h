@@ -9,7 +9,7 @@
 #endif
 
 #define HAL_STORAGE_SIZE (128*1024)
-
+#define HAL_BARO_ALLOW_INIT_NO_BARO
 
 #define HAL_WITH_UAVCAN 0
 
@@ -21,5 +21,5 @@
 
 // allow for static semaphores
 #include <AP_HAL_ESP32/Semaphores.h>
-#define HAL_Semaphore HALESP32::Semaphore
-#define HAL_Semaphore_Recursive HALESP32::Semaphore_Recursive
+#define HAL_Semaphore ESP32::Semaphore
+#define HAL_Semaphore_Recursive ESP32::Semaphore_Recursive

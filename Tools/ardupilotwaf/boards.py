@@ -150,7 +150,6 @@ class Board:
             '-Wshadow',
             '-Wpointer-arith',
             '-Wcast-align',
-            '-Wundef',
             '-Wno-unused-parameter',
             '-Wno-missing-field-initializers',
             '-Wno-reorder',
@@ -375,6 +374,7 @@ class esp32(Board):
                           expand_path('/components/soc/esp32/include'),
                           expand_path('/components/soc/include'),
                           expand_path('/components/heap/include'),
+                          expand_path('/components/esp_ringbuf/include'),
                           cfg.bldnode.make_node('esp32/idf-plane/include').abspath()] 
         env.CXXFLAGS += ['-mlongcalls',
                          '-Os',
