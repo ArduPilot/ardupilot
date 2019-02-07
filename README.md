@@ -8,6 +8,8 @@
 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/5331/badge.svg)](https://scan.coverity.com/projects/ardupilot-ardupilot)
 
+[![Autotest Status](http://autotest.ardupilot.org/autotest-badge.svg)](http://autotest.ardupilot.org/)
+
 ## The ArduPilot project is made up of: ##
 
 - ArduCopter (or APM:Copter) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](http://ardupilot.org/copter/index.html)
