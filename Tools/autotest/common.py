@@ -1679,8 +1679,6 @@ class AutoTest(ABC):
                 try:
                     if self.arm_vehicle():
                         raise NotAchievedException("Armed when throttle too high")
-                except AutoTestTimeoutException():
-                    pass
                 except ValueError:
                     pass
                 if self.arm_motors_with_rc_input():
