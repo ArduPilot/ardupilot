@@ -98,7 +98,7 @@ void Copter::failsafe_gcs_check()
         return;
     } else if (RC_Channels::has_active_overrides()) {
         // GCS is currently telling us what to do!
-    } else if (control_mode == GUIDED) {
+    } else if (control_mode == GUIDED || control_mode == GUIDED_NOGPS) {
         // GCS is currently telling us what to do!
     } else {
         return;
