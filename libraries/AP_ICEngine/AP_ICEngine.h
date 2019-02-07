@@ -47,10 +47,38 @@ public:
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
     bool engine_control(float start_control, float cold_start, float height_delay);
     
+    // Engine temperature status
+    bool too_hot() const;
+    bool too_cold() const;
+    bool get_temperature(float& value) const;
+
 private:
     const AP_RPM &rpm;
 
-    enum ICE_State state;
+    enum ICE_State state = ICE_OFF;
+
+    // engine temperature for feedback
+    struct {
+        AP_Int8 pin;
+        AP_Float scaler;
+        AP_Int16 min;
+        AP_Int16 max;
+        AP_Int8 ratiometric;
+        AP_Float offset;
+        AP_Int8 function;
+
+        AP_HAL::AnalogSource *source;
+        float value;
+        bool is_valid() const { return (source != nullptr && pin > 0); }
+    } temperature;
+
+    enum Temperature_Function {
+        FUNCTION_LINEAR    = 0,
+        FUNCTION_INVERTED  = 1,
+        FUNCTION_HYPERBOLA = 2
+    };
+
+    void update_temperature();
 
     // enable library
     AP_Int8 enable;
