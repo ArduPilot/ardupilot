@@ -96,6 +96,9 @@ class AutoTestQuadPlane(AutoTest):
     def get_disarm_delay(self):
         return int(self.get_parameter("LAND_DISARMDELAY"))
 
+    def set_autodisarm_delay(self, delay):
+        self.set_parameter("LAND_DISARMDELAY", delay)
+
     def fly_mission(self, filename, fence, height_accuracy=-1):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)

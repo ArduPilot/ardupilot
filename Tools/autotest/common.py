@@ -865,10 +865,7 @@ class AutoTest(ABC):
 
     def set_autodisarm_delay(self, delay):
         """Set autodisarm delay"""
-        if self.is_copter():
-            self.set_parameter("DISARM_DELAY", delay)
-        if self.is_plane():
-            self.set_parameter("LAND_DISARMDELAY", delay)
+        raise ErrorException("Auto disarm is not supported by vehicle %s frame %s", (self.vehicleinfo_key(), self.frame))
 
     @staticmethod
     def should_fetch_all_for_parameter_change(param_name):
@@ -1639,7 +1636,8 @@ class AutoTest(ABC):
         self.set_throttle_zero()
         # Disable auto disarm for next tests
         # Rover and Sub don't have auto disarm
-        self.set_autodisarm_delay(0)
+        if self.is_copter() or self.is_plane():
+            self.set_autodisarm_delay(0)
         self.start_test("Test normal arm and disarm features")
         self.wait_ready_to_arm()
         self.progress("default arm_vehicle() call")

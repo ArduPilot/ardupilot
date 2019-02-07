@@ -97,7 +97,10 @@ class AutoTestPlane(AutoTest):
         return int(self.get_parameter("RCMAP_YAW"))
 
     def get_disarm_delay(self):
-        return self.get_parameter("LAND_DISARMDELAY")
+        return int(self.get_parameter("LAND_DISARMDELAY"))
+
+    def set_autodisarm_delay(self, delay):
+        self.set_parameter("LAND_DISARMDELAY", delay)
 
     def takeoff(self):
         """Takeoff get to 30m altitude."""

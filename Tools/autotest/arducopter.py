@@ -129,7 +129,10 @@ class AutoTestCopter(AutoTest):
         return int(self.get_parameter("RCMAP_YAW"))
 
     def get_disarm_delay(self):
-        return self.get_parameter("DISARM_DELAY")
+        return int(self.get_parameter("DISARM_DELAY"))
+
+    def set_autodisarm_delay(self, delay):
+        self.set_parameter("DISARM_DELAY", delay)
 
     def user_takeoff(self, alt_min=30):
         '''takeoff using mavlink takeoff command'''
