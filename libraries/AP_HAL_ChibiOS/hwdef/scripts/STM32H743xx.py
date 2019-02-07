@@ -37,8 +37,8 @@ pincount = {
     'G': 16,
     'H': 16,
     'I': 16,
-    'J': 0,
-    'K': 0
+    'J': 16,
+    'K': 16
 }
     
 # no DMA map as we will dynamically allocate DMA channels using the DMAMUX
