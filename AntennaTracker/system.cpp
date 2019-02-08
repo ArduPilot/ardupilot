@@ -53,14 +53,8 @@ void Tracker::init_tracker()
     log_init();
 #endif
 
-    if (g.compass_enabled==true) {
-        if (!compass.init() || !compass.read()) {
-            hal.console->printf("Compass initialisation failed!\n");
-            g.compass_enabled = false;
-        } else {
-            ahrs.set_compass(&compass);
-        }
-    }
+    // initialise compass
+    init_compass();
 
     // GPS Initialization
     gps.set_log_gps_bit(MASK_LOG_GPS);
