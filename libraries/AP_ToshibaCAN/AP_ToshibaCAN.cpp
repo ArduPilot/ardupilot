@@ -243,7 +243,7 @@ bool AP_ToshibaCAN::write_frame(uavcan::CanFrame &out_frame, uavcan::MonotonicTi
     } while (!inout_mask.write);
 
     // send frame and return success
-    return (_can_driver->getIface(CAN_IFACE_INDEX)->send(out_frame, timeout, 0) == 1);
+    return (_can_driver->getIface(CAN_IFACE_INDEX)->send(out_frame, timeout, uavcan::CanIOFlagAbortOnError) == 1);
 }
 
 // called from SRV_Channels
