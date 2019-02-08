@@ -938,13 +938,13 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 // consume velocity and turn rate
                 rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, speed_dir * target_speed);
             } else if (pos_ignore && !vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
-                // consume velocity
+                // consume velocity and heading
                 rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
             } else if (pos_ignore && vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
                 // consume just target heading (probably only skid steering vehicles can do this)
                 rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, 0.0f);
             } else if (pos_ignore && vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
-                // consume just turn rate(probably only skid steering vehicles can do this)
+                // consume just turn rate (probably only skid steering vehicles can do this)
                 rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
             }
             break;
