@@ -178,9 +178,9 @@ void AP_Compass_RM3100::timer()
     } data;
     Vector3f field;
 
-    uint32_t magx = 0;
-    uint32_t magy = 0;
-    uint32_t magz = 0;
+    int32_t magx = 0;
+    int32_t magy = 0;
+    int32_t magz = 0;
 
     // check data ready on 3 axis
     uint8_t status;
@@ -197,23 +197,19 @@ void AP_Compass_RM3100::timer()
         goto check_registers;
     }
 
+    // the 24 bits of data for each axis are in 2s complement representation
+    // each byte is shifted to its position in a 24-bit unsigned integer and from 8 more bits to be left-aligned in a 32-bit integer
+    magx = ((uint32_t)data.magx_2 << 24) | ((uint32_t)data.magx_1 << 16) | ((uint32_t)data.magx_0 << 8);
+    magy = ((uint32_t)data.magy_2 << 24) | ((uint32_t)data.magy_1 << 16) | ((uint32_t)data.magy_0 << 8);
+    magz = ((uint32_t)data.magz_2 << 24) | ((uint32_t)data.magz_1 << 16) | ((uint32_t)data.magz_0 << 8);
 
+    // right-shift signed integer back to get correct measurement value
+    magx >>= 8;
+    magy >>= 8;
+    magz >>= 8;
 
-    magx = ((uint32_t)data.magx_2 << 16) | ((uint32_t)data.magx_1 << 8) | (uint32_t)data.magx_0;
-    magy = ((uint32_t)data.magy_2 << 16) | ((uint32_t)data.magy_1 << 8) | (uint32_t)data.magy_0;
-    magz = ((uint32_t)data.magz_2 << 16) | ((uint32_t)data.magz_1 << 8) | (uint32_t)data.magz_0;
-
-    if (magx & 0x800000) {
-    	magx |= 0xFF000000;
-    }
-    if (magy & 0x800000) {
-        magy |= 0xFF000000;
-    }
-    if (magz & 0x800000) {
-        magz |= 0xFF000000;
-	}
-
-    field((int32_t)magx * _scaler, (int32_t)magy * _scaler, (int32_t)magz * _scaler);
+    // apply scaler and store in field vector
+    field(magx * _scaler, magy * _scaler, magz * _scaler);
 
     accumulate_sample(field, compass_instance);
 
