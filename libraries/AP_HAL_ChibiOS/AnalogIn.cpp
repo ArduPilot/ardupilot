@@ -212,12 +212,20 @@ void AnalogIn::init()
     adcgrpcfg.circular = true;
     adcgrpcfg.num_channels = ADC_GRP1_NUM_CHANNELS;
     adcgrpcfg.end_cb = adccallback;
-    adcgrpcfg.cr2 = ADC_CR2_SWSTART;
+#if defined(STM32H7)
+    adcgrpcfg.sqr[0] = ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS);
+#else
     adcgrpcfg.sqr1 = ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS);
+    adcgrpcfg.cr2 = ADC_CR2_SWSTART;
+#endif
 
     for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
         uint8_t chan = pin_config[i].channel;
         // setup cycles per sample for the channel
+#if defined(STM32H7)
+        adcgrpcfg.smpr[i/10] |= ADC_SMPR_SMP_384P5 << (3*(chan%10));
+        adcgrpcfg.sqr[i/6] |= chan << (5*(i%6));
+#else
         if (chan < 10) {
             adcgrpcfg.smpr2 |= ADC_SAMPLE_480 << (3*chan);
         } else {
@@ -231,6 +239,7 @@ void AnalogIn::init()
         } else {
             adcgrpcfg.sqr1 |= chan << (5*(i-12));
         }
+#endif
     }
     adcStartConversion(&ADCD1, &adcgrpcfg, samples, ADC_DMA_BUF_DEPTH);
 }
