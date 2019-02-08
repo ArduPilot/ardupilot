@@ -17,6 +17,7 @@
 
 #if HAL_WITH_UAVCAN
 
+#include <AP_HAL/utility/sparse-endian.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Common/AP_Common.h>
@@ -24,6 +25,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_ToshibaCAN.h"
 
 extern const AP_HAL::HAL& hal;
@@ -49,6 +51,9 @@ static const uint16_t TOSHIBACAN_OUTPUT_MIN = 6300;
 static const uint16_t TOSHIBACAN_OUTPUT_MAX = 32000;
 static const uint16_t TOSHIBACAN_SEND_TIMEOUT_US = 500;
 static const uint8_t CAN_IFACE_INDEX = 0;
+
+// telemetry definitions
+static const uint32_t TOSHIBA_CAN_ESC_UPDATE_MS = 100;
 
 AP_ToshibaCAN::AP_ToshibaCAN()
 {
@@ -215,6 +220,72 @@ void AP_ToshibaCAN::loop()
             if (!write_frame(mot_rot_frame1, timeout)) {
                 continue;
             }
+            send_stage++;
+        }
+
+        // check if we should request update from ESCs
+        if (send_stage == 5) {
+            uint32_t now_ms = AP_HAL::millis();
+            uint32_t diff_ms = now_ms - _telemetry_req_ms;
+
+            // check if 100ms has passed since last update request
+            if (diff_ms >= TOSHIBA_CAN_ESC_UPDATE_MS) {
+                // set _telem_req_ms to time we ideally should have requested update
+                if (diff_ms >= 2 * TOSHIBA_CAN_ESC_UPDATE_MS) {
+                    _telemetry_req_ms = now_ms;
+                } else {
+                    _telemetry_req_ms += TOSHIBA_CAN_ESC_UPDATE_MS;
+                }
+
+                // prepare command to request data1 (rpm and voltage) from all ESCs
+                motor_request_data_cmd_t request_data_cmd = {};
+                request_data_cmd.motor1 = 1;
+                request_data_cmd.motor2 = 1;
+                request_data_cmd.motor3 = 1;
+                request_data_cmd.motor4 = 1;
+                request_data_cmd.motor5 = 1;
+                request_data_cmd.motor6 = 1;
+                request_data_cmd.motor7 = 1;
+                request_data_cmd.motor8 = 1;
+                request_data_cmd.motor9 = 1;
+                request_data_cmd.motor10 = 1;
+                request_data_cmd.motor11 = 1;
+                request_data_cmd.motor12 = 1;
+                uavcan::CanFrame request_data_frame;
+                request_data_frame = {(uint8_t)COMMAND_REQUEST_DATA, request_data_cmd.data, sizeof(request_data_cmd.data)};
+
+                // send request data command
+                timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
+                if (!write_frame(request_data_frame, timeout)) {
+                    continue;
+                }
+            }
+
+            send_stage++;
+        }
+
+        // check for replies with rpm and voltage
+        if (send_stage == 6) {
+            uavcan::CanFrame recv_frame;
+            while (read_frame(recv_frame, timeout)) {
+                if ((recv_frame.id >= MOTOR_DATA1) && (recv_frame.id <= MOTOR_DATA1 + 12)) {
+                    // copy contents to our structure
+                    motor_reply_data1_t reply_data;
+                    memcpy(reply_data.data, recv_frame.data, sizeof(reply_data.data));
+                    // store response in telemetry array
+                    uint8_t esc_id = recv_frame.id - MOTOR_DATA1;
+                    if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
+                        // take semaphore to read scaled motor outputs
+                        WITH_SEMAPHORE(_telem_sem);
+                        _telemetry[esc_id].rpm = be16toh(reply_data.rpm);
+                        _telemetry[esc_id].millivolts = be16toh(reply_data.millivolts);
+                        _telemetry[esc_id].count++;
+                        _telemetry[esc_id].new_data = true;
+                        // record ESC as present
+                        _esc_present_bitmask |= ((uint32_t)1 << esc_id);
+                    }
+                }
+            }
         }
 
         // success!
@@ -228,7 +299,7 @@ void AP_ToshibaCAN::loop()
 // write frame on CAN bus
 bool AP_ToshibaCAN::write_frame(uavcan::CanFrame &out_frame, uavcan::MonotonicTime timeout)
 {
-    // wait for space in buffer to send unlock command
+    // wait for space in buffer to send command
     uavcan::CanSelectMasks inout_mask;
     do {
         inout_mask.read = 0;
@@ -246,27 +317,128 @@ bool AP_ToshibaCAN::write_frame(uavcan::CanFrame &out_frame, uavcan::MonotonicTi
     return (_can_driver->getIface(CAN_IFACE_INDEX)->send(out_frame, timeout, uavcan::CanIOFlagAbortOnError) == 1);
 }
 
+// read frame on CAN bus, returns true on success
+bool AP_ToshibaCAN::read_frame(uavcan::CanFrame &recv_frame, uavcan::MonotonicTime timeout)
+{
+    // wait for space in buffer to read
+    uavcan::CanSelectMasks inout_mask;
+    inout_mask.read = 1 << CAN_IFACE_INDEX;
+    inout_mask.write = 0;
+    _select_frames[CAN_IFACE_INDEX] = &recv_frame;
+    _can_driver->select(inout_mask, _select_frames, timeout);
+
+    // return false if no data is available to read
+    if (!inout_mask.read) {
+        return false;
+    }
+    uavcan::MonotonicTime time;
+    uavcan::UtcTime utc_time;
+    uavcan::CanIOFlags flags {};
+
+    // read frame and return success
+    return (_can_driver->getIface(CAN_IFACE_INDEX)->receive(recv_frame, time, utc_time, flags) == 1);
+}
+
 // called from SRV_Channels
 void AP_ToshibaCAN::update()
 {
     // take semaphore and update outputs
-    WITH_SEMAPHORE(_rc_out_sem);
-    for (uint8_t i = 0; i < MIN(TOSHIBACAN_MAX_NUM_ESCS, 16); i++) {
-        SRV_Channel *c = SRV_Channels::srv_channel(i);
-        if (c == nullptr) {
-            _scaled_output[i] = 0;
-        } else {
-            uint16_t pwm_out = c->get_output_pwm();
-            if (pwm_out <= 1000) {
+    {
+        WITH_SEMAPHORE(_rc_out_sem);
+        for (uint8_t i = 0; i < MIN(TOSHIBACAN_MAX_NUM_ESCS, 16); i++) {
+            SRV_Channel *c = SRV_Channels::srv_channel(i);
+            if (c == nullptr) {
                 _scaled_output[i] = 0;
-            } else if (pwm_out >= 2000) {
-                _scaled_output[i] = TOSHIBACAN_OUTPUT_MAX;
             } else {
-                _scaled_output[i] = TOSHIBACAN_OUTPUT_MIN + (pwm_out - 1000) * 0.001f * (TOSHIBACAN_OUTPUT_MAX - TOSHIBACAN_OUTPUT_MIN);
+                uint16_t pwm_out = c->get_output_pwm();
+                if (pwm_out <= 1000) {
+                    _scaled_output[i] = 0;
+                } else if (pwm_out >= 2000) {
+                    _scaled_output[i] = TOSHIBACAN_OUTPUT_MAX;
+                } else {
+                    _scaled_output[i] = TOSHIBACAN_OUTPUT_MIN + (pwm_out - 1000) * 0.001f * (TOSHIBACAN_OUTPUT_MAX - TOSHIBACAN_OUTPUT_MIN);
+                }
+            }
+        }
+        update_count++;
+    }
+
+    // log ESCs telemetry info
+    AP_Logger *df = AP_Logger::get_singleton();
+    if (df && df->logging_enabled()) {
+        WITH_SEMAPHORE(_telem_sem);
+
+        // log if any new data received.  Logging only supports up to 8 ESCs
+        uint64_t time_us = AP_HAL::micros64();
+        for (uint8_t i = 0; i < MIN(TOSHIBACAN_MAX_NUM_ESCS, 8); i++) {
+            if (_telemetry[i].new_data) {
+                df->Write_ESC(i, time_us, _telemetry[i].rpm * 100U, _telemetry[i].millivolts * 0.1f, 0, 0, 0);
+                _telemetry[i].new_data = false;
             }
         }
     }
-    update_count++;
+}
+
+// send ESC telemetry messages over MAVLink
+void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
+{
+    // compile time check this method handles the correct number of motors
+    static_assert(TOSHIBACAN_MAX_NUM_ESCS == 12, "update AP_ToshibaCAN::send_esc_telemetry_mavlink only handles 12 motors");
+
+    // return immediately if no ESCs have been found
+    if (_esc_present_bitmask == 0) {
+        return;
+    }
+
+    // return if no space in output buffer to send mavlink messages
+    if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
+        return;
+    }
+
+    // output telemetry messages
+    {
+        // take semaphore to access telemetry data
+        WITH_SEMAPHORE(_telem_sem);
+
+        // loop through 3 groups of 4 ESCs
+        for (uint8_t i = 0; i < 3; i++) {
+
+            // skip this group of ESCs if no data to send
+            if ((_esc_present_bitmask & ((uint32_t)0x0F << i*4)) == 0) {
+                continue;
+            }
+
+            // arrays to hold output
+            uint8_t temperature[4] {};
+            uint16_t voltage[4] {};
+            uint16_t rpm[4] {};
+            uint16_t count[4] {};
+            uint16_t nosup[4] {};   // single empty array for unsupported current and current_tot
+
+            // fill in output arrays
+            for (uint8_t j = 0; j < 4; j++) {
+                uint8_t esc_id = i * 4 + j;
+                voltage[j] = _telemetry[esc_id].millivolts * 0.1f;
+                rpm[j] = _telemetry[esc_id].rpm;
+                count[j] = _telemetry[esc_id].count;
+            }
+
+            // send messages
+            switch (i) {
+                case 0:
+                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, nosup, nosup, rpm, count);
+                    break;
+                case 1:
+                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, nosup, nosup, rpm, count);
+                    break;
+                case 2:
+                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, nosup, nosup, rpm, count);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 }
 
 #endif // HAL_WITH_UAVCAN
