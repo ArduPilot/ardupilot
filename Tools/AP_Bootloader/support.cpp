@@ -25,6 +25,8 @@ static uint8_t last_uart;
 #define BOOTLOADER_BAUDRATE 115200
 #endif
 
+// #pragma GCC optimize("O0")
+
 int16_t cin(unsigned timeout_ms)
 {
     uint8_t b = 0;
@@ -254,12 +256,18 @@ extern "C" {
 void uprintf(const char *fmt, ...)
 {
 #if HAL_USE_SERIAL_USB == TRUE
-    char msg[200];
     va_list ap;
+    static bool initialised;
+    char umsg[200];
+    if (!initialised) {
+        initialised = true;
+        sercfg.speed = 57600;
+        sdStart(&SD7, &sercfg);
+    }
     va_start(ap, fmt);
-    uint32_t n = vsnprintf(msg, sizeof(msg), fmt, ap);
+    uint32_t n = vsnprintf(umsg, sizeof(umsg), fmt, ap);
     va_end(ap);
-    chnWriteTimeout(&SDU1, (const uint8_t *)msg, n, chTimeMS2I(100));
+    chnWriteTimeout(&SD7, (const uint8_t *)umsg, n, chTimeMS2I(100));
 #endif
 }
 
