@@ -59,7 +59,7 @@
 #define STM32_CSI_ENABLED                   TRUE
 #define STM32_HSI48_ENABLED                 TRUE
 #define STM32_HSE_ENABLED                   TRUE
-#define STM32_LSE_ENABLED                   TRUE
+#define STM32_LSE_ENABLED                   FALSE
 #define STM32_HSIDIV                        STM32_HSIDIV_DIV1
 
 /*
@@ -69,45 +69,91 @@
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE_CK
 #define STM32_PLLCFGR_MASK                  ~0
 
+/*
+  setup PLLs based on HSE clock
+ */
+#if STM32_HSECLK == 8000000U
+#define STM32_PLL1_DIVM_VALUE               1
+#define STM32_PLL1_DIVN_VALUE               24
+#define STM32_PLL1_DIVP_VALUE               2
+#define STM32_PLL1_DIVQ_VALUE               4
+#define STM32_PLL1_DIVR_VALUE               2
+
+#define STM32_PLL2_DIVM_VALUE               1
+#define STM32_PLL2_DIVN_VALUE               19
+#define STM32_PLL2_DIVP_VALUE               1
+#define STM32_PLL2_DIVQ_VALUE               2
+#define STM32_PLL2_DIVR_VALUE               2
+
+#define STM32_PLL3_DIVM_VALUE               4
+#define STM32_PLL3_DIVN_VALUE               129
+#define STM32_PLL3_DIVP_VALUE               2
+#define STM32_PLL3_DIVQ_VALUE               2
+#define STM32_PLL3_DIVR_VALUE               2
+#elif STM32_HSECLK == 16000000U
+#define STM32_PLL1_DIVM_VALUE               1
+#define STM32_PLL1_DIVN_VALUE               12
+#define STM32_PLL1_DIVP_VALUE               2
+#define STM32_PLL1_DIVQ_VALUE               4
+#define STM32_PLL1_DIVR_VALUE               2
+
+#define STM32_PLL2_DIVM_VALUE               1
+#define STM32_PLL2_DIVN_VALUE               10
+#define STM32_PLL2_DIVP_VALUE               1
+#define STM32_PLL2_DIVQ_VALUE               2
+#define STM32_PLL2_DIVR_VALUE               2
+
+#define STM32_PLL3_DIVM_VALUE               8
+#define STM32_PLL3_DIVN_VALUE               129
+#define STM32_PLL3_DIVP_VALUE               2
+#define STM32_PLL3_DIVQ_VALUE               2
+#define STM32_PLL3_DIVR_VALUE               2
+#elif STM32_HSECLK == 24000000U
+#define STM32_PLL1_DIVM_VALUE               2
+#define STM32_PLL1_DIVN_VALUE               16
+#define STM32_PLL1_DIVP_VALUE               2
+#define STM32_PLL1_DIVQ_VALUE               4
+#define STM32_PLL1_DIVR_VALUE               2
+
+#define STM32_PLL2_DIVM_VALUE               2
+#define STM32_PLL2_DIVN_VALUE               13
+#define STM32_PLL2_DIVP_VALUE               1
+#define STM32_PLL2_DIVQ_VALUE               2
+#define STM32_PLL2_DIVR_VALUE               2
+
+#define STM32_PLL3_DIVM_VALUE               12
+#define STM32_PLL3_DIVN_VALUE               129
+#define STM32_PLL3_DIVP_VALUE               2
+#define STM32_PLL3_DIVQ_VALUE               2
+#define STM32_PLL3_DIVR_VALUE               2
+#else
+#error "Unsupported HSE clock"
+#endif
+
 #define STM32_PLL1_ENABLED                  TRUE
 #define STM32_PLL1_P_ENABLED                TRUE
 #define STM32_PLL1_Q_ENABLED                TRUE
 #define STM32_PLL1_R_ENABLED                TRUE
-#define STM32_PLL1_DIVM_VALUE               (STM32_HSECLK / 8000000U)
-#define STM32_PLL1_DIVN_VALUE               24
 #define STM32_PLL1_FRACN_VALUE              0
-#define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               4
-#define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_ENABLED                  TRUE
 #define STM32_PLL2_P_ENABLED                TRUE
 #define STM32_PLL2_Q_ENABLED                TRUE
 #define STM32_PLL2_R_ENABLED                TRUE
-#define STM32_PLL2_DIVM_VALUE               (STM32_HSECLK / 8000000U)
-#define STM32_PLL2_DIVN_VALUE               19
 #define STM32_PLL2_FRACN_VALUE              0
-#define STM32_PLL2_DIVP_VALUE               1
-#define STM32_PLL2_DIVQ_VALUE               2
-#define STM32_PLL2_DIVR_VALUE               2
 
 #define STM32_PLL3_ENABLED                  TRUE
 #define STM32_PLL3_P_ENABLED                TRUE
 #define STM32_PLL3_Q_ENABLED                TRUE
 #define STM32_PLL3_R_ENABLED                TRUE
-#define STM32_PLL3_DIVM_VALUE               (STM32_HSECLK / 2000000U)
-#define STM32_PLL3_DIVN_VALUE               129
 #define STM32_PLL3_FRACN_VALUE              0
-#define STM32_PLL3_DIVP_VALUE               2
-#define STM32_PLL3_DIVQ_VALUE               2
-#define STM32_PLL3_DIVR_VALUE               2
 
 /*
  * Core clocks dynamic settings (can be changed at runtime).
  * Reading STM32 Reference Manual is required.
  */
 #define STM32_SW                            STM32_SW_PLL1_P_CK
-#define STM32_RTCSEL                        STM32_RTCSEL_LSE_CK
+#define STM32_RTCSEL                        STM32_RTCSEL_NOCLK
 #define STM32_D1CPRE                        STM32_D1CPRE_DIV1
 #define STM32_D1HPRE                        STM32_D1HPRE_DIV2
 #define STM32_D1PPRE3                       STM32_D1PPRE3_DIV2
@@ -141,7 +187,7 @@
 #define STM32_SAI23SEL                      STM32_SAI23SEL_PLL1_Q_CK
 #define STM32_SAI1SEL                       STM32_SAI1SEL_PLL1_Q_CK
 #define STM32_LPTIM1SEL                     STM32_LPTIM1SEL_PCLK1
-#define STM32_CECSEL                        STM32_CECSEL_LSE_CK
+#define STM32_CECSEL                        STM32_CECSEL_DISABLE
 #define STM32_USBSEL                        STM32_USBSEL_PLL1_Q_CK
 #define STM32_I2C123SEL                     STM32_I2C123SEL_PCLK1
 #define STM32_RNGSEL                        STM32_RNGSEL_HSI48_CK
