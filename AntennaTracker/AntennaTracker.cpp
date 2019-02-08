@@ -101,11 +101,12 @@ void Tracker::one_second_loop()
     one_second_counter++;
 
     if (one_second_counter >= 60) {
-        if (g.compass_enabled) {
-            compass.save_offsets();
-        }
+        compass_save();
         one_second_counter = 0;
     }
+
+    // init compass location for declination
+    init_compass_location();
 
     if (!ahrs.home_is_set()) {
         // set home to current location

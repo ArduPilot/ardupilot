@@ -193,6 +193,9 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
+     // true if the compass's initial location has been set
+    bool compass_init_location;
+
     // AntennaTracker.cpp
     void one_second_loop();
     void ten_hz_logging_loop();
@@ -231,6 +234,9 @@ private:
 
     // sensors.cpp
     void update_ahrs();
+    void init_compass();
+    void compass_save();
+    void init_compass_location();
     void update_compass(void);
     void compass_cal_update();
     void accel_cal_update(void);
