@@ -1032,6 +1032,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Test MAV_CMD_SET_MESSAGE_INTERVAL",
              self.test_set_message_interval),
 
+            ("REQUEST_MESSAGE",
+             "Test MAV_CMD_REQUEST_MESSAGE",
+             self.test_request_message),
+
             ("SYSID_ENFORCE",
              "Test enforcement of SYSID_MYGCS",
              self.test_sysid_enforce),
