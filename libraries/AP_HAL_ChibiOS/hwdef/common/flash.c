@@ -145,7 +145,8 @@ static inline void putreg16(uint16_t val, unsigned int addr)
 /* # define getreg32(a)       (*(volatile uint32_t *)(a)) */
 static inline uint32_t getreg32(unsigned int addr)
 {
-    uint32_t retval = *(volatile uint32_t *)addr;
+    uint32_t retval;
+    __asm__ __volatile__("\tldr %0, [%1]\n\t" : "=r"(retval) : "r"(addr));
     return retval;
 }
 
@@ -421,7 +422,7 @@ bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
             return false;
         }
         // check contents
-        if (memcmp((void *)addr, buf, 32) != 0) {
+        if (memcmp((void *)addr, b, 32) != 0) {
             stm32_flash_lock();
             return false;
         }
