@@ -2308,6 +2308,9 @@ class AutoTest(ABC):
             if abs(rate - want_rate) > 2:
                 raise NotAchievedException("Did not get expected rate")
 
+            self.progress("Resetting CAMERA_FEEDBACK rate to zero")
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
+
             non_existant_id = 145
             self.mavproxy.send("long GET_MESSAGE_INTERVAL %u\n" %
                                (non_existant_id))
@@ -2326,6 +2329,26 @@ class AutoTest(ABC):
             sr = self.sitl_streamrate()
             self.mavproxy.send("set streamrate %u\n" % sr)
             raise e
+
+    def test_request_message(self, timeout=60):
+        rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
+        if rate != 0:
+            raise PreconditionFailedException("Receving camera feedback")
+        # temporarily use a constant in place of
+        # mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE until we have a
+        # pymavlink release:
+        self.run_cmd(512,
+                     180,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=timeout)
+        m = self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True, timeout=1)
+        if m is None:
+            raise NotAchievedException("Requested CAMERA_FEEDBACK did not arrive")
 
     def clear_mission(self):
         self.mavproxy.send("wp clear\n")
