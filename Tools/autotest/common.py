@@ -1459,6 +1459,18 @@ class AutoTest(ABC):
         self.set_parameter("RNGFND1_SCALING", 12.12)
         self.set_parameter("RNGFND1_PIN", 0)
 
+    def send_debug_trap(self, timeout=6000):
+        self.progress("Sending trap to autopilot")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DEBUG_TRAP,
+                     32451, # magic number to trap
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=timeout)
+
     def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
