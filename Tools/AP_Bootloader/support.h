@@ -41,7 +41,7 @@ void led_on(unsigned led);
 void led_off(unsigned led);
 void led_toggle(unsigned led);
 
-// printf to USB
+// printf to debug uart (or USB)
 extern "C" {
 void uprintf(const char *fmt, ...);
 }
