@@ -3608,6 +3608,18 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_l
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_debug_trap(const mavlink_command_long_t &packet)
+{
+    // magic number must be supplied to trap; you must *really* mean it.
+    if (uint32_t(packet.param1) != 32451) {
+        return MAV_RESULT_DENIED;
+    }
+    if (hal.util->trap()) {
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_UNSUPPORTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_long_t &packet)
 {
     AP_Gripper *gripper = AP::gripper();
@@ -3773,6 +3785,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_GET_HOME_POSITION:
         result = handle_command_get_home_position(packet);
+        break;
+
+    case MAV_CMD_DEBUG_TRAP:
+        result = handle_command_debug_trap(packet);
         break;
 
     case MAV_CMD_PREFLIGHT_STORAGE:
