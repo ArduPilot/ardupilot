@@ -52,8 +52,10 @@
 #define RM3100_HSHAKE_REG     0x34
 #define RM3100_REVID_REG      0x36
 
-#define CCP0    0xC8      // Default Cycle Count
+#define CCP0    0xC8      // Cycle Count values
 #define CCP1    0x00
+#define CCP0_DEFAULT 0xC8 // Default Cycle Count values (used as a whoami check)
+#define CCP1_DEFAULT 0x00
 #define GAIN_CC50 20.0f   // LSB/uT
 #define GAIN_CC100 38.0f
 #define GAIN_CC200 75.0f
@@ -98,8 +100,25 @@ bool AP_Compass_RM3100::init()
     // high retries for init
     dev->set_retries(10);
 
-    // maybe add a test for revision id value here and goto fail if not correct
-    // it is not clear if revision id is the same for all compasses, in the same manner as a whoami
+    // use default cycle count values as a whoami test
+    uint8_t ccx0;
+    uint8_t ccx1;
+    uint8_t ccy0;
+    uint8_t ccy1;
+    uint8_t ccz0;
+    uint8_t ccz1;
+    if (!dev->read_registers(RM3100_CCX1_REG, &ccx1, 1) ||
+        !dev->read_registers(RM3100_CCX0_REG, &ccx0, 1) ||
+        !dev->read_registers(RM3100_CCY1_REG, &ccy1, 1) ||
+        !dev->read_registers(RM3100_CCY0_REG, &ccy0, 1) ||
+        !dev->read_registers(RM3100_CCZ1_REG, &ccz1, 1) ||
+        !dev->read_registers(RM3100_CCZ0_REG, &ccz0, 1) ||
+        ccx1 != CCP1_DEFAULT || ccx0 != CCP0_DEFAULT ||
+        ccy1 != CCP1_DEFAULT || ccy0 != CCP0_DEFAULT ||
+        ccz1 != CCP1_DEFAULT || ccz0 != CCP0_DEFAULT) {
+        // couldn't read one of the cycle count registers or didn't recognize the default cycle count values
+        goto fail;
+    }
 
     dev->setup_checked_registers(8);
 
@@ -139,9 +158,9 @@ bool AP_Compass_RM3100::init()
 
     return true;
 
-//fail:
-//    dev->get_semaphore()->give();
-//    return false;
+fail:
+    dev->get_semaphore()->give();
+    return false;
 }
 
 void AP_Compass_RM3100::timer()
