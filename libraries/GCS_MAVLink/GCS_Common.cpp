@@ -2316,6 +2316,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_comman
     return MAV_RESULT_FAILED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_long_t &packet)
+{
+    const uint32_t mavlink_id = (uint32_t)packet.param1;
+    const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
+    if (id == MSG_LAST) {
+        return MAV_RESULT_FAILED;
+    }
+    send_message(id);
+    return MAV_RESULT_ACCEPTED;
+}
+
 bool GCS_MAVLINK::get_ap_message_interval(ap_message id, uint16_t &interval_ms) const
 {
     // check if it's a specially-handled message:
@@ -3655,6 +3666,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_GET_MESSAGE_INTERVAL:
         result = handle_command_get_message_interval(packet);
+        break;
+
+    case MAV_CMD_REQUEST_MESSAGE:
+        result = handle_command_request_message(packet);
         break;
 
     case MAV_CMD_DO_SET_SERVO:
