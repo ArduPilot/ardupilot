@@ -40,12 +40,15 @@
  ****************************************************************************/
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include "ch.h"
 #include "hal.h"
 #include "hwdef.h"
 
 #include "bl_protocol.h"
 #include "support.h"
+
+// #pragma GCC optimize("O0")
 
 
 // bootloader flash update protocol.
@@ -125,6 +128,10 @@ static enum led_state {LED_BLINK, LED_ON, LED_OFF} led_state;
 
 volatile unsigned timer[NTIMERS];
 
+// keep back 32 bytes at the front of flash. This is long enough to allow for aligned
+// access on STM32H7
+#define RESERVE_LEAD_WORDS 8
+
 /*
   1ms timer tick callback
  */
@@ -174,7 +181,7 @@ led_set(enum led_state state)
 static void
 do_jump(uint32_t stacktop, uint32_t entrypoint)
 {
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
     // disable caches on F7 before starting program
     __DSB();
     __ISB();
@@ -200,11 +207,14 @@ jump_to_app()
     const uint32_t *app_base = (const uint32_t *)(APP_START_ADDRESS);
 
     /*
-     * We refuse to program the first word of the app until the upload is marked
-     * complete by the host.  So if it's not 0xffffffff, we should try booting it.
+     * We hold back the programming of the lead words until the upload
+     * is marked complete by the host. So if they are not 0xffffffff,
+     * we should try booting it.
      */
-    if (app_base[0] == 0xffffffff) {
-        return;
+    for (uint8_t i=0; i<RESERVE_LEAD_WORDS; i++) {
+        if (app_base[i] == 0xffffffff) {
+            return;
+        }
     }
 
     /*
@@ -330,15 +340,68 @@ crc32(const uint8_t *src, unsigned len, unsigned state)
     return state;
 }
 
+
+/*
+  we use a write buffer for flashing, both for efficiency and to
+  ensure that we only ever do 32 byte aligned writes on STM32H7. If
+  you attempt to do writes on a H7 of less than 32 bytes or not
+  aligned then the flash can end up in a CRC error state, which can
+  generate a hardware fault (a double ECC error) on flash read, even
+  after a power cycle
+ */
+static struct {
+    uint32_t buffer[8];
+    uint32_t address;
+    uint8_t n;
+} fbuf;
+
+/*
+  flush the write buffer
+ */
+static bool flash_write_flush(void)
+{
+    if (fbuf.n == 0) {
+        return true;
+    }
+    fbuf.n = 0;
+    return flash_func_write_words(fbuf.address, fbuf.buffer, ARRAY_SIZE(fbuf.buffer));
+}
+
+/*
+  write to flash with buffering to 32 bytes alignment
+ */
+static bool flash_write_buffer(uint32_t address, const uint32_t *v, uint8_t nwords)
+{
+    if (fbuf.n > 0 && address != fbuf.address + fbuf.n*4) {
+        if (!flash_write_flush()) {
+            return false;
+        }
+    }
+    while (nwords > 0) {
+        if (fbuf.n == 0) {
+            fbuf.address = address;
+            memset(fbuf.buffer, 0xff, sizeof(fbuf.buffer));
+        }
+        uint8_t n = MIN(ARRAY_SIZE(fbuf.buffer)-fbuf.n, nwords);
+        memcpy(&fbuf.buffer[fbuf.n], v, n*4);
+        address += n*4;
+        v += n;
+        nwords -= n;
+        fbuf.n += n;
+        if (fbuf.n == ARRAY_SIZE(fbuf.buffer)) {
+            if (!flash_write_flush()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 #define TEST_FLASH 0
 
 #if TEST_FLASH
 static void test_flash()
 {
-    for (uint8_t i=0; i<10; i++) {
-        uprintf("waiting %u...\n", i);
-        delay(300);
-    }
     uint32_t loop = 1;
     bool init_done = false;
     while (true) {
@@ -395,12 +458,18 @@ bootloader(unsigned timeout)
 #endif
 
     uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
-    uint32_t	first_word = 0xffffffff;
+    uint32_t	first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
     bool done_get_device = false;
+    static bool done_timer_init;
 
-    chVTObjectInit(&systick_vt);
-    chVTSet(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
+    memset(first_words, 0xFF, sizeof(first_words));
+
+    if (!done_timer_init) {
+        done_timer_init = true;
+        chVTObjectInit(&systick_vt);
+        chVTSet(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
+    }
 
     /* if we are working with a timeout, start it running */
     if (timeout) {
@@ -533,7 +602,9 @@ bootloader(unsigned timeout)
 
             // erase all sectors
             for (uint8_t i = 0; flash_func_sector_size(i) != 0; i++) {
-                flash_func_erase_sector(i);
+                if (!flash_func_erase_sector(i)) {
+                    goto cmd_fail;
+                }
             }
 
             // enable the LED while verifying the erase
@@ -601,18 +672,20 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
-            if (address == 0) {
-                // save the first word and don't program it until everything else is done
-                first_word = flash_buffer.w[0];
-                // replace first word with bits we can overwrite later
-                flash_buffer.w[0] = 0xffffffff;
+            // save the first words and don't program it until everything else is done
+            if (address < sizeof(first_words)) {
+                uint8_t n = MIN(sizeof(first_words)-address, arg);
+                memcpy(&first_words[address/4], &flash_buffer.w[0], n);
+                // replace first words with 1 bits we can overwrite later
+                memset(&flash_buffer.w[0], 0xFF, n);
             }
 
             arg /= 4;
             // program the words
-            if (!flash_func_write_words(address, flash_buffer.w, arg)) {
+            if (!flash_write_buffer(address, flash_buffer.w, arg)) {
                 goto cmd_fail;
             }
+            address += arg * 4;
             break;
 
         // fetch CRC of the entire flash area
@@ -626,19 +699,21 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
+            if (!flash_write_flush()) {
+                goto cmd_bad;
+            }
+
             // compute CRC of the programmed area
             uint32_t sum = 0;
 
             for (unsigned p = 0; p < board_info.fw_size; p += 4) {
                 uint32_t bytes;
 
-                if ((p == 0) && (first_word != 0xffffffff)) {
-                    bytes = first_word;
-
+                if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
+                    bytes = first_words[p/4];
                 } else {
                     bytes = flash_func_read_word(p);
                 }
-
                 sum = crc32((uint8_t *)&bytes, sizeof(bytes), sum);
             }
 
@@ -779,16 +854,17 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
-            // program the deferred first word
-            if (first_word != 0xffffffff) {
-                flash_func_write_word(0, first_word);
+            if (!flash_write_flush()) {
+                goto cmd_fail;
+            }
 
-                if (flash_func_read_word(0) != first_word) {
+            // program the deferred first word
+            if (first_words[0] != 0xffffffff) {
+                if (!flash_write_buffer(0, first_words, RESERVE_LEAD_WORDS)) {
                     goto cmd_fail;
                 }
-
                 // revert in case the flash was bad...
-                first_word = 0xffffffff;
+                memset(first_words, 0xff, sizeof(first_words));
             }
 
             // send a sync and wait for it to be collected
