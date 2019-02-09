@@ -466,6 +466,17 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
 
     bool success = false;
 
+    // HOW TO create a new frame class
+    // step 1: Watch this video
+    //      https://youtu.be/c6aCwSHr_is?t=138
+    //
+    // step 2: Use this tool from the video
+    //      https://www.iforce2d.net/mixercalc/
+    //
+    // step 3: Create a new MOTOR_FRAME_TYPE_ enum (don't replace thewhole thing like in the video)
+    //
+    // step 4: Paste source code from the tool into your new enum entry
+
     switch (frame_class) {
 
         case MOTOR_FRAME_QUAD:
