@@ -378,9 +378,11 @@ class esp32(Board):
                           cfg.bldnode.make_node('esp32/idf-plane/include').abspath()] 
         env.CXXFLAGS += ['-mlongcalls',
                          '-Os',
-                         '-g3',
                          '-ffunction-sections',
                          '-fdata-sections',
+                         '-fno-exceptions',
+                         '-fno-rtti',
+                         '-nostdlib',
                          '-fstrict-volatile-bitfields']
         env.AP_PROGRAM_AS_STLIB = True
     def build(self, bld):

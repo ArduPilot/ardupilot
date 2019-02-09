@@ -5,8 +5,6 @@
 
 namespace AP_HAL {
 
-HAL_ESP32 hal;
-
 void panic(const char *errormsg, ...)
 {
     va_list ap;
@@ -42,5 +40,6 @@ uint64_t millis64()
 
 const AP_HAL::HAL& AP_HAL::get_HAL()
 {
+    static const HAL_ESP32 hal;
     return hal;
 }

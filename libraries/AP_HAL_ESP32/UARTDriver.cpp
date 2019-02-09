@@ -7,8 +7,8 @@ UARTDriver::UARTDriver(uint8_t serial_num)
 {
     _initialized = false;
     uart_num = (uart_port_t)serial_num;
-    rx_pin = GPIO_NUM_3;
-    tx_pin = GPIO_NUM_1;
+    rx_pin = 3;
+    tx_pin = 1;
 }
 
 void UARTDriver::begin(uint32_t b)
@@ -18,20 +18,24 @@ void UARTDriver::begin(uint32_t b)
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    uart_config_t config = {
-        .baud_rate = (int)b,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-    };
-    uart_param_config(uart_num, &config);
-    uart_set_pin(uart_num,tx_pin,rx_pin,
-                 UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-    uart_driver_install(uart_num, UART_FIFO_LEN, 0, 0, nullptr, 0);
-    _readbuf.set_size(RX_BUF_SIZE);
-    _writebuf.set_size(TX_BUF_SIZE);
-    _initialized = true;
+    if (!_initialized) {
+        uart_config_t config = {
+            .baud_rate = (int)b,
+            .data_bits = UART_DATA_8_BITS,
+            .parity = UART_PARITY_DISABLE,
+            .stop_bits = UART_STOP_BITS_1,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        };
+        uart_param_config(uart_num, &config);
+        uart_set_pin(uart_num,tx_pin,rx_pin,
+                     UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+        uart_driver_install(uart_num, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
+        _readbuf.set_size(RX_BUF_SIZE);
+        _writebuf.set_size(TX_BUF_SIZE);
+        _initialized = true;
+    } else {
+        uart_set_baudrate(uart_num, b);
+    }
 }
 
 void UARTDriver::end()
