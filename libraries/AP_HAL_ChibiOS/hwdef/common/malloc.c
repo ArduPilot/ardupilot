@@ -35,6 +35,12 @@
 
 #define MIN_ALIGNMENT 8
 
+#if defined(STM32H7)
+#define DMA_ALIGNMENT 32
+#else
+#define DMA_ALIGNMENT 8
+#endif
+
 #ifdef HAL_NO_CCM
 #undef CCM_RAM_SIZE_KB
 #endif
@@ -102,7 +108,7 @@ static void *malloc_dtcm(size_t size)
 {
     void *p = NULL;
 #if defined(DTCM_RAM_SIZE_KB)
-    p = chHeapAllocAligned(&dtcm_heap, size, CH_HEAP_ALIGNMENT);
+    p = chHeapAllocAligned(&dtcm_heap, size, DMA_ALIGNMENT);
 #else
     (void)size;
 #endif
@@ -153,21 +159,26 @@ void *malloc(size_t size)
  */
 void *malloc_dma(size_t size)
 {
+#if defined(STM32H7)
+    size = (size + (DMA_ALIGNMENT-1)) & ~(DMA_ALIGNMENT-1);
+#endif
     void *p;
 #if defined(DTCM_RAM_SIZE_KB)
     p = malloc_dtcm(size);
 #else
     // if we don't have DTCM memory then assume that main heap is DMA-safe
-    p = chHeapAllocAligned(NULL, size, MIN_ALIGNMENT);
+    p = chHeapAllocAligned(NULL, size, DMA_ALIGNMENT);
 #endif
 #if DMA_RESERVE_SIZE != 0
     if (p == NULL) {
-        p = chHeapAllocAligned(&dma_reserve_heap, size, MIN_ALIGNMENT);
+        p = chHeapAllocAligned(&dma_reserve_heap, size, DMA_ALIGNMENT);
     }
 #endif
+
     if (p) {
         memset(p, 0, size);
     }
+    osalDbgAssert((((uint32_t)p) & (DMA_ALIGNMENT-1)) == 0, "DMA alignment");
     return p;
 }
 
