@@ -24,7 +24,7 @@
 
 using namespace ChibiOS;
 
-Shared_DMA::dma_lock Shared_DMA::locks[SHARED_DMA_MAX_STREAM_ID];
+Shared_DMA::dma_lock Shared_DMA::locks[SHARED_DMA_MAX_STREAM_ID+1];
 
 void Shared_DMA::init(void)
 {
@@ -58,6 +58,40 @@ void Shared_DMA::unregister()
         locks[stream_id2].obj = nullptr;
     }
 }
+
+// lock one stream
+void Shared_DMA::lock_stream(uint8_t stream_id)
+{
+    if (stream_id != STM32_DMA_STREAM_ID_ANY) {
+        chBSemWait(&locks[stream_id].semaphore);
+    }
+}
+
+// unlock one stream
+void Shared_DMA::unlock_stream(uint8_t stream_id)
+{
+    if (stream_id != STM32_DMA_STREAM_ID_ANY) {
+        chBSemSignal(&locks[stream_id].semaphore);
+    }
+}
+
+// unlock one stream from an IRQ handler
+void Shared_DMA::unlock_stream_from_IRQ(uint8_t stream_id)
+{
+    if (stream_id != STM32_DMA_STREAM_ID_ANY) {
+        chBSemSignalI(&locks[stream_id].semaphore);
+    }
+}
+
+// lock one stream, non-blocking
+bool Shared_DMA::lock_stream_nonblocking(uint8_t stream_id)
+{
+    if (stream_id != STM32_DMA_STREAM_ID_ANY) {
+        return chBSemWaitTimeout(&locks[stream_id].semaphore, 1) == MSG_OK;
+    }
+    return true;
+}
+
 
 // lock the DMA channels
 void Shared_DMA::lock_core(void)
@@ -94,10 +128,10 @@ void Shared_DMA::lock_core(void)
 void Shared_DMA::lock(void)
 {
     if (stream_id1 != SHARED_DMA_NONE) {
-        chBSemWait(&locks[stream_id1].semaphore);
+        lock_stream(stream_id1);
     }
     if (stream_id2 != SHARED_DMA_NONE) {
-        chBSemWait(&locks[stream_id2].semaphore);
+        lock_stream(stream_id2);
     }
     lock_core();
 }
@@ -106,7 +140,7 @@ void Shared_DMA::lock(void)
 bool Shared_DMA::lock_nonblock(void)
 {
     if (stream_id1 != SHARED_DMA_NONE) {
-        if (chBSemWaitTimeout(&locks[stream_id1].semaphore, 1) != MSG_OK) {
+        if (!lock_stream_nonblocking(stream_id1)) {
             chSysDisable();
             if (locks[stream_id1].obj != nullptr && locks[stream_id1].obj != this) {
                 locks[stream_id1].obj->contention = true;
@@ -117,9 +151,9 @@ bool Shared_DMA::lock_nonblock(void)
         }
     }
     if (stream_id2 != SHARED_DMA_NONE) {
-        if (chBSemWaitTimeout(&locks[stream_id2].semaphore, 1) != MSG_OK) {
+        if (!lock_stream_nonblocking(stream_id2)) {
             if (stream_id1 != SHARED_DMA_NONE) {
-                chBSemSignal(&locks[stream_id1].semaphore);
+                unlock_stream(stream_id1);
             }
             chSysDisable();
             if (locks[stream_id2].obj != nullptr && locks[stream_id2].obj != this) {
@@ -139,10 +173,10 @@ void Shared_DMA::unlock(void)
 {
     osalDbgAssert(have_lock, "must have lock");
     if (stream_id2 != SHARED_DMA_NONE) {
-        chBSemSignal(&locks[stream_id2].semaphore);        
+        unlock_stream(stream_id2);
     }
     if (stream_id1 != SHARED_DMA_NONE) {
-        chBSemSignal(&locks[stream_id1].semaphore);
+        unlock_stream(stream_id1);
     }
     have_lock = false;
 }
@@ -152,11 +186,11 @@ void Shared_DMA::unlock_from_lockzone(void)
 {
     osalDbgAssert(have_lock, "must have lock");
     if (stream_id2 != SHARED_DMA_NONE) {
-        chBSemSignalI(&locks[stream_id2].semaphore);
+        unlock_stream_from_IRQ(stream_id2);
         chSchRescheduleS();
     }
     if (stream_id1 != SHARED_DMA_NONE) {
-        chBSemSignalI(&locks[stream_id1].semaphore);
+        unlock_stream_from_IRQ(stream_id1);
         chSchRescheduleS();
     }
     have_lock = false;
@@ -167,10 +201,10 @@ void Shared_DMA::unlock_from_IRQ(void)
 {
     osalDbgAssert(have_lock, "must have lock");
     if (stream_id2 != SHARED_DMA_NONE) {
-        chBSemSignalI(&locks[stream_id2].semaphore);        
+        unlock_stream_from_IRQ(stream_id2);
     }
     if (stream_id1 != SHARED_DMA_NONE) {
-        chBSemSignalI(&locks[stream_id1].semaphore);
+        unlock_stream_from_IRQ(stream_id1);
     }
     have_lock = false;
 }
@@ -182,7 +216,7 @@ void Shared_DMA::unlock_from_IRQ(void)
 void Shared_DMA::lock_all(void)
 {
     for (uint8_t i=0; i<SHARED_DMA_MAX_STREAM_ID; i++) {
-        chBSemWait(&locks[i].semaphore);
+        lock_stream(i);
     }
 }
 
