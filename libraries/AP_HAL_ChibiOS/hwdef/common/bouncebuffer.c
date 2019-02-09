@@ -21,7 +21,10 @@
 #include <stdio.h>
 #include "bouncebuffer.h"
 
-#if DTCM_RAM_SIZE_KB > 0
+#if defined(STM32H7)
+// always use a bouncebuffer on H7, to ensure alignment and padding
+#define IS_DMA_SAFE(addr) false
+#elif DTCM_RAM_SIZE_KB > 0
 // on F7 and H7 we check we are in the DTCM region, and 16 bit aligned
 #define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & ((0xFFFFFFFF & ~(DTCM_RAM_SIZE_KB*1024U-1)) | 1U)) == 0x20000000)
 #else
@@ -63,6 +66,10 @@ void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
         bouncebuffer->size = size;
     }
     *buf = bouncebuffer->dma_buf;
+#if defined(STM32H7)
+    osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer read align");
+    cacheBufferInvalidate(*buf, (size+31)&~31);
+#endif
     bouncebuffer->busy = true;
 }
 
@@ -99,6 +106,10 @@ void bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t
     }
     memcpy(bouncebuffer->dma_buf, *buf, size);
     *buf = bouncebuffer->dma_buf;
+#if defined(STM32H7)
+    osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer write align");
+    cacheBufferFlush(*buf, (size+31)&~31);
+#endif
     bouncebuffer->busy = true;
 }
 
