@@ -178,6 +178,23 @@ float AP_MotorsHeli_Swash::get_servo_out(int8_t CH_num, float pitch, float roll,
     // rescale from -1..1, so we can use the pwm calc that includes trim
     servo = 2.0f * servo - 1.0f;
 
+    if (_make_servo_linear == 1) {
+        servo = get_linear_servo_output(servo);
+    }
+
     return servo;
+}
+
+float AP_MotorsHeli_Swash::get_linear_servo_output(float input)
+{
+    float ret;
+
+    input = constrain_float(input, -1.0f, 1.0f);
+
+    //servo output is normalized to 0.866 for a linear throw
+    ret = asin(0.766044f * input) * 1.145916;
+
+    return ret;
+
 }
 

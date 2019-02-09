@@ -193,6 +193,11 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RSC_THRCRV_100", 24, AP_MotorsHeli, _rsc_thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
 
+    // @Param: LIN_SW_SERVO
+    // @DisplayName: Linearize swashplate servo mechanical throw
+    // @Description: This linearizes the swashplate servo's mechanical output to account for nonlinear output due to arm rotation.  This requires a specific setup procedure to work properly.  The servo arm must be centered on the mechanical throw at the servo trim position and the servo trim position kept as close to 1500 as possible. Leveling the swashplate can only be done through the pitch links.  See the ardupilot wiki for more details on setup.
+    // @User: Standard
+    AP_GROUPINFO("LIN_SW_SERVO", 25, AP_MotorsHeli, _linear_swash_servo, 0),
     AP_GROUPEND
 };
 
