@@ -49,6 +49,11 @@ public:
     void set_servo3_pos(int16_t servo_pos) { _servo3_pos = servo_pos; }
     void set_servo4_pos(int16_t servo_pos) { _servo4_pos = servo_pos; }
 
+    // set_linear_servo_out - sets swashplate servo output to be linear
+    void set_linear_servo_out(int8_t linear_servo) { _make_servo_linear = linear_servo; }
+
+    //linearize mechanical output of swashplate servo
+    float get_linear_servo_output(float input);
 
 private:
     // internal variables
@@ -62,6 +67,7 @@ private:
     int16_t         _servo2_pos;
     int16_t         _servo3_pos;
     int16_t         _servo4_pos;
+    int8_t          _make_servo_linear;
 
 };
 class SwashInt16Param {

@@ -268,6 +268,7 @@ void AP_MotorsHeli_Single::calculate_scalars()
     _swashplate.set_swash_type(static_cast<SwashPlateType>((uint8_t)_swashplate_type));
     _swashplate.set_collective_direction(static_cast<CollectiveDirection>((uint8_t)_swash_coll_dir));
     _swashplate.calculate_roll_pitch_collective_factors();
+    _swashplate.set_linear_servo_out(_linear_swash_servo);
 
     // send setpoints to main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
