@@ -1,5 +1,14 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.6-rc2 09-Feb-2019
+Changes from 3.6.6-rc1
+1) Bug fixes
+    a) EKF compass switching fix for vehicles with 3 compasses
+    b) CAN fixed on Pixhawk4 and PH4-mini
+    c) Mini-pix uart telem1 and telem2 reversed
+    d) Divide-by-zero protection if _FILT_HZ params set to zero
+    e) Guided_NoGPS skips GPS pre-arm check
+------------------------------------------------------------------
 Copter 3.6.6-rc1 02-Feb-2019
 Changes from 3.6.5
 1) AP_RSSI fixes and minor enhancements
