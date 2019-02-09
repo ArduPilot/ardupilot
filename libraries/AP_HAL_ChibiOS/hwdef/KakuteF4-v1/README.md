@@ -1,6 +1,8 @@
-# KakuteF4 AIO Flight Controller
+# KakuteF4 V1 AIO/non-AIO Flight Controller
 
-The [KakuteF4 AIO](http://www.holybro.com/product/47) is a flight controller produced by [Holybro](http://www.holybro.com).
+The [KakuteF4 V1 AIO](http://www.holybro.com/product/47) is a flight controller produced by [Holybro](http://www.holybro.com).
+
+Note this firmware works with both the AIO and non-AIO editions of the Kakute F4 V1.
 
 ## Features
 
@@ -13,8 +15,8 @@ The [KakuteF4 AIO](http://www.holybro.com/product/47) is a flight controller pro
 
 ## Pinout
 
-![KakuteF4 Top](kakutef4_top.jpg "KakuteF4Top")
-![KakuteF4 Bot](kakutef4_bot.jpg "KakuteF4Bot")
+![KakuteF4 V1 Top](kakutef4_top.jpg "KakuteF4Top")
+![KakuteF4 V1 Bot](kakutef4_bot.jpg "KakuteF4Bot")
 
 ## UART Mapping
 
@@ -47,11 +49,11 @@ pin with no special adapters.
   
 ## OSD Support
 
-The KakuteF4 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+The KakuteF4 V1 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
-The KakuteF4 supports up to 4 PWM outputs. The pads for motor output
+The KakuteF4 V1 supports up to 4 PWM outputs. The pads for motor output
 M1 to M4 on the above diagram are for the 4 outputs. All 4 outputs
 support DShot as well as all PWM types. The M5 and M6 outputs are not
 currently available with ArduPilot.
@@ -67,7 +69,7 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The voltage
+The AIO board has a builtin voltage and current sensor. The voltage
 sensor can handle up to 6S LiPo batteries.
 
 The correct battery setting parameters are:
@@ -80,11 +82,11 @@ The correct battery setting parameters are:
 
 ## Compass
 
-The KakuteF4 AIO does not have a builting compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+The KakuteF4 V1 AIO does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
 ## Logging
 
-The KakuteF4 does not support on-board logging at this time.
+The KakuteF4 V1 does not support on-board logging at this time.
 
 ## Loading Firmware
 
