@@ -177,7 +177,7 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     }
 
     bus.bouncebuffer_finish(send, recv, len);
-    
+
     set_chip_select(old_cs_forced);
 }
 
@@ -374,6 +374,7 @@ SPIDeviceManager::get_device(const char *name)
 }
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
+
 /*
   test clock frequencies. This measures the actual SPI clock
   frequencies on all configured SPI buses. Used during board bringup
@@ -383,14 +384,18 @@ void SPIDevice::test_clock_freq(void)
 {
     // delay for USB to come up
     hal.console->printf("Waiting for USB\n");
-    hal.scheduler->delay(1000);
+    for (uint8_t i=0; i<3; i++) {
+        hal.scheduler->delay(1000);
+        hal.console->printf("Waiting %u\n", AP_HAL::millis());
+    }
     hal.console->printf("SPI1_CLOCK=%u SPI2_CLOCK=%u SPI3_CLOCK=%u SPI4_CLOCK=%u\n",
                         SPI1_CLOCK, SPI2_CLOCK, SPI3_CLOCK, SPI4_CLOCK);
 
     // we will send 1024 bytes without any CS asserted and measure the
     // time it takes to do the transfer
     uint16_t len = 1024;
-    uint8_t *buf = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
+    uint8_t *buf1 = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
+    uint8_t *buf2 = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
     for (uint8_t i=0; i<ARRAY_SIZE(spi_devices); i++) {
         SPIConfig spicfg {};
         const uint32_t target_freq = 2000000UL;
@@ -403,13 +408,24 @@ void SPIDevice::test_clock_freq(void)
         spiAcquireBus(spi_devices[i].driver);
         spiStart(spi_devices[i].driver, &spicfg);
         uint32_t t0 = AP_HAL::micros();
-        spiExchange(spi_devices[i].driver, len, buf, buf);
+        spiStartExchange(spi_devices[i].driver, len, buf1, buf2);
+        chSysLock();
+        msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[i].driver->thread, TIME_MS2I(100));
+        chSysUnlock();
+        if (msg == MSG_TIMEOUT) {
+            spiAbort(spi_devices[i].driver);
+            hal.console->printf("SPI[%u] FAIL %p %p\n", spi_devices[i].busid, buf1, buf2);
+            spiStop(spi_devices[i].driver);
+            spiReleaseBus(spi_devices[i].driver);
+            continue;
+        }
         uint32_t t1 = AP_HAL::micros();
         spiStop(spi_devices[i].driver);
         spiReleaseBus(spi_devices[i].driver);
         hal.console->printf("SPI[%u] clock=%u\n", spi_devices[i].busid, unsigned(1000000ULL * len * 8ULL / uint64_t(t1 - t0)));
     }
-    hal.util->free_type(buf, len, AP_HAL::Util::MEM_DMA_SAFE);
+    hal.util->free_type(buf1, len, AP_HAL::Util::MEM_DMA_SAFE);
+    hal.util->free_type(buf2, len, AP_HAL::Util::MEM_DMA_SAFE);
 }
 #endif // HAL_SPI_CHECK_CLOCK_FREQ
 
