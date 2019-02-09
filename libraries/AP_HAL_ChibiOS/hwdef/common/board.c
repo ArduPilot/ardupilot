@@ -225,6 +225,9 @@ void __early_init(void) {
   stm32_gpio_init();
 #endif
   stm32_clock_init();
+#if defined(HAL_DISABLE_DCACHE)
+  SCB_DisableDCache();
+#endif
 }
 
 void __late_init(void) {
