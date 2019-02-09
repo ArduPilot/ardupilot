@@ -23,8 +23,8 @@ mcu = {
     'RAM_SIZE_KB' : 512,
 
     # DTCM ram address and size
-    'DTCM_BASE_ADDRESS' : 0x20000000,
-    'DTCM_RAM_SIZE_KB' : 128,
+#    'DTCM_BASE_ADDRESS' : 0x20000000,
+#    'DTCM_RAM_SIZE_KB' : 128,
 }
 
 pincount = {
