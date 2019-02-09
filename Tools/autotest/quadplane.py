@@ -8,6 +8,7 @@ from pymavlink import mavutil
 
 from common import AutoTest
 from pysim import util
+from pysim import vehicleinfo
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -55,7 +56,9 @@ class AutoTestQuadPlane(AutoTest):
 
         self.mavproxy_logfile = self.open_mavproxy_logfile()
 
-        defaults_file = os.path.join(testdir, 'default_params/quadplane.parm')
+        vinfo = vehicleinfo.VehicleInfo()
+        defaults_file = vinfo.options["ArduPlane"]["frames"][self.frame]["default_params_filename"]
+
         self.sitl = util.start_SITL(self.binary,
                                     wipe=True,
                                     model=self.frame,
