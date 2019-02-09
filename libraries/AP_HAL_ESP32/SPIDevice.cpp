@@ -16,35 +16,36 @@ ESP32::SPIDesc SPIDeviceManager::device_table[] = {
     {
         .name = "MPU9250",
         .device = 1,
-        .bus = 1,
-        .cs_gpio = 15,
+        .bus = 2,
+        .cs_gpio = 5,
         .mode = 0,
-        .lowspeed = 2 * MHZ,
-        .highspeed = 8 * MHZ,
+        .lowspeed = 1 * MHZ,
+        .highspeed = 1 * MHZ,
 
     },
     {
         .name = "BMP280",
         .device = 2,
-        .bus = 1,
-        .cs_gpio = 16,
+        .bus = 2,
+        .cs_gpio = 26,
         .mode = 3,
-        .lowspeed = 1 * MHZ,
-        .highspeed = 8 * MHZ,
+        .lowspeed =  1 * MHZ,
+        .highspeed = 1 * MHZ,
     }
 };
+
 
 //two available spi buses : 1 and 2, device 0 is connected to internal flash
 spi_bus_config_t bus_config[3] = {
     {},
+    {},
     {
-        .mosi_io_num = 13,
-        .miso_io_num = 12,
-        .sclk_io_num = 14,
+        .mosi_io_num = 23,
+        .miso_io_num = 19,
+        .sclk_io_num = 18,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1
     },
-    {}
 };
 
 SPIBus::SPIBus(uint8_t _bus):
@@ -60,28 +61,33 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     set_device_bus(bus.bus);
     set_device_address(_device_desc.device);
     set_speed(AP_HAL::Device::SPEED_LOW);
+    gpio_pad_select_gpio((gpio_num_t)device_desc.cs_gpio);
+    gpio_set_direction((gpio_num_t)device_desc.cs_gpio, GPIO_MODE_OUTPUT);
     gpio_set_level((gpio_num_t)device_desc.cs_gpio, 1);
     cs_forced = false;
 
-    spi_device_interface_config_t cfg_low = {
-        .clock_speed_hz = _device_desc.lowspeed,
-        .mode = _device_desc.mode,
-        .spics_io_num = -1,
-        .queue_size = 1
-    };
+    spi_device_interface_config_t cfg_low;
+    memset(&cfg_low, 0, sizeof(cfg_low));
+    cfg_low.mode = _device_desc.mode;
+    cfg_low.clock_speed_hz = _device_desc.lowspeed;
+    cfg_low.spics_io_num = -1;
+    cfg_low.queue_size = 5;
     spi_bus_add_device((spi_host_device_t)bus.bus, &cfg_low, &low_speed_dev_handle);
 
-    spi_device_interface_config_t cfg_high = {
-        .clock_speed_hz = _device_desc.highspeed,
-        .mode = _device_desc.mode,
-        .spics_io_num = -1,
-        .queue_size = 1
-    };
-    spi_bus_add_device((spi_host_device_t)bus.bus, &cfg_high, &high_speed_dev_handle);
+    if(_device_desc.highspeed != _device_desc.lowspeed) {
+        spi_device_interface_config_t cfg_high;
+        memset(&cfg_high, 0, sizeof(cfg_high));
+        cfg_high.mode = _device_desc.mode;
+        cfg_high.clock_speed_hz = _device_desc.highspeed;
+        cfg_high.spics_io_num = -1;
+        cfg_high.queue_size = 5;
+        spi_bus_add_device((spi_host_device_t)bus.bus, &cfg_high, &high_speed_dev_handle);
+    }
 
 
     asprintf(&pname, "SPI:%s:%u:%u",
              device_desc.name, 0, (unsigned)device_desc.device);
+    printf("spi device constructed %s\n", pname);
 }
 
 SPIDevice::~SPIDevice()
@@ -91,12 +97,10 @@ SPIDevice::~SPIDevice()
 
 spi_device_handle_t SPIDevice::current_handle()
 {
-    if (speed == AP_HAL::Device::SPEED_HIGH) {
+    if (speed == AP_HAL::Device::SPEED_HIGH && high_speed_dev_handle != nullptr) {
         return high_speed_dev_handle;
-    } else if (speed == AP_HAL::Device::SPEED_LOW) {
-        return low_speed_dev_handle;
-    }
-    return nullptr;
+    } 
+    return low_speed_dev_handle;
 }
 
 bool SPIDevice::set_speed(AP_HAL::Device::Speed _speed)
@@ -133,13 +137,14 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t
     if (!set_chip_select(true)) {
         return  true;
     }
-    spi_transaction_t t = {
-        .length = len,
-        .tx_buffer = send,
-        .rxlength = len,
-        .rx_buffer = recv
-    };
-    spi_device_transmit(current_handle(), &t);
+    spi_transaction_t t;
+    memset(&t, 0, sizeof(t));
+    t.length = len*8;
+    t.tx_buffer = send;
+    t.rxlength = len*8;
+    t.rx_buffer = recv;
+
+    int code = spi_device_transmit(current_handle(), &t);
     set_chip_select(old_cs_forced);
     return true;
 }

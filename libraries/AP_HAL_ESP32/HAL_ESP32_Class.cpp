@@ -24,7 +24,7 @@ static ESP32::Scheduler schedulerInstance;
 static Empty::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
-extern HAL_ESP32 hal;
+extern const AP_HAL::HAL& hal;
 
 HAL_ESP32::HAL_ESP32() :
     AP_HAL::HAL(
@@ -63,6 +63,7 @@ void HAL_ESP32::run(int argc, char * const argv[], Callbacks* callbacks) const
 
     while (true) {
         callbacks->loop();
+        hal.scheduler->delay_microseconds(1);
     }
 
 }
