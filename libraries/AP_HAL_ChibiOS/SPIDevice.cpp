@@ -34,12 +34,19 @@ extern const AP_HAL::HAL& hal;
 #define SPIDEV_MODE1    SPI_CFG2_CPHA
 #define SPIDEV_MODE2    SPI_CFG2_CPOL
 #define SPIDEV_MODE3    SPI_CFG2_CPOL | SPI_CFG2_CPHA
-#else
+
+#define SPI1_CLOCK  STM32_SPI1CLK
+#define SPI2_CLOCK  STM32_SPI2CLK
+#define SPI3_CLOCK  STM32_SPI3CLK
+#define SPI4_CLOCK  STM32_SPI4CLK
+#define SPI5_CLOCK  STM32_SPI5CLK
+#define SPI6_CLOCK  STM32_SPI6CLK
+
+#else // F4 and F7
 #define SPIDEV_MODE0    0
 #define SPIDEV_MODE1    SPI_CR1_CPHA
 #define SPIDEV_MODE2    SPI_CR1_CPOL
 #define SPIDEV_MODE3    SPI_CR1_CPOL | SPI_CR1_CPHA
-#endif
 
 #define SPI1_CLOCK  STM32_PCLK2
 #define SPI2_CLOCK  STM32_PCLK1
@@ -47,6 +54,7 @@ extern const AP_HAL::HAL& hal;
 #define SPI4_CLOCK  STM32_PCLK2
 #define SPI5_CLOCK  STM32_PCLK2
 #define SPI6_CLOCK  STM32_PCLK2
+#endif
 
 // expected bus clock speeds
 static const uint32_t bus_clocks[6] = {
