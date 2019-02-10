@@ -314,7 +314,9 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 {
 #if HAL_USE_SERIAL == TRUE
-    osalDbgAssert(txdma == nullptr, "double DMA allocation");
+    if (txdma != nullptr) {
+        return;
+    }
     chSysLock();
     txdma = dmaStreamAllocI(sdef.dma_tx_stream_id,
                             12,  //IRQ Priority
