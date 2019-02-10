@@ -58,13 +58,14 @@ class AutoTestQuadPlane(AutoTest):
 
         vinfo = vehicleinfo.VehicleInfo()
         defaults_file = vinfo.options["ArduPlane"]["frames"][self.frame]["default_params_filename"]
+        defaults_filepath = os.path.join(testdir, defaults_file)
 
         self.sitl = util.start_SITL(self.binary,
                                     wipe=True,
                                     model=self.frame,
                                     home=self.home,
                                     speedup=self.speedup,
-                                    defaults_file=defaults_file,
+                                    defaults_file=defaults_filepath,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver,
