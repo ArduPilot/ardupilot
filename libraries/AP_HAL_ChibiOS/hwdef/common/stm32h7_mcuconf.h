@@ -430,7 +430,9 @@
  * ST driver system settings.
  */
 #define STM32_ST_IRQ_PRIORITY               8
-#define STM32_ST_USE_TIMER                  2
+#ifndef STM32_ST_USE_TIMER
+#define STM32_ST_USE_TIMER                  5
+#endif
 
 /*
  * UART driver system settings.
