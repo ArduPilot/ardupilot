@@ -665,7 +665,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         break;
 
     case LANDING_GEAR: {
-        AP_LandingGear *lg = AP_LandingGear::instance();
+        AP_LandingGear *lg = AP_LandingGear::get_singleton();
         if (lg == nullptr) {
             break;
         }
