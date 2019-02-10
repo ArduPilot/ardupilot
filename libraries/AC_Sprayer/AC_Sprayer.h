@@ -38,8 +38,8 @@ public:
     AC_Sprayer(const AC_Sprayer &other) = delete;
     AC_Sprayer &operator=(const AC_Sprayer&) = delete;
 
-    static AC_Sprayer *get_instance();
-    static AC_Sprayer *_s_instance;
+    static AC_Sprayer *get_singleton();
+    static AC_Sprayer *_singleton;
 
     /// run - allow or disallow spraying to occur
     void run(bool true_false);
