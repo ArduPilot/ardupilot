@@ -455,16 +455,16 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     AP_GROUPEND
 };
 
-AP_InertialSensor *AP_InertialSensor::_s_instance = nullptr;
+AP_InertialSensor *AP_InertialSensor::_singleton = nullptr;
 
 AP_InertialSensor::AP_InertialSensor() :
     _board_orientation(ROTATION_NONE),
     _log_raw_bit(-1)
 {
-    if (_s_instance) {
+    if (_singleton) {
         AP_HAL::panic("Too many inertial sensors");
     }
-    _s_instance = this;
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _gyro_cal_ok[i] = true;
@@ -481,12 +481,12 @@ AP_InertialSensor::AP_InertialSensor() :
 /*
  * Get the AP_InertialSensor singleton
  */
-AP_InertialSensor *AP_InertialSensor::get_instance()
+AP_InertialSensor *AP_InertialSensor::get_singleton()
 {
-    if (!_s_instance) {
-        _s_instance = new AP_InertialSensor();
+    if (!_singleton) {
+        _singleton = new AP_InertialSensor();
     }
-    return _s_instance;
+    return _singleton;
 }
 
 /*
@@ -1994,7 +1994,7 @@ namespace AP {
 
 AP_InertialSensor &ins()
 {
-    return *AP_InertialSensor::get_instance();
+    return *AP_InertialSensor::get_singleton();
 }
 
 };
