@@ -140,10 +140,10 @@ AP_Radio *AP_Radio::_instance;
 AP_Radio::AP_Radio(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    if (_instance != nullptr) {
+    if (_singleton != nullptr) {
         AP_HAL::panic("Multiple AP_Radio declarations");
     }
-    _instance = this;
+    _singleton = this;
 }
 
 bool AP_Radio::init(void)

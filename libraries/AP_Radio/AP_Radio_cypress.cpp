@@ -241,7 +241,7 @@ enum {
 #define AUTOBIND_CHANNEL 12
 
 // object instance for trampoline
-AP_Radio_cypress *AP_Radio_cypress::radio_instance;
+AP_Radio_cypress *AP_Radio_cypress::radio_singleton;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 thread_t *AP_Radio_cypress::_irq_handler_ctx;
 #endif
@@ -252,7 +252,7 @@ AP_Radio_cypress::AP_Radio_cypress(AP_Radio &_radio) :
     AP_Radio_backend(_radio)
 {
     // link to instance for irq_trampoline
-    radio_instance = this;
+    radio_singleton = this;
 }
 
 /*
@@ -1197,10 +1197,10 @@ void AP_Radio_cypress::irq_handler_thd(void *arg)
     while(true) {
         eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
         if (evt & EVT_IRQ) {
-            radio_instance->irq_handler();
+            radio_singleton->irq_handler();
         }
         if (evt & EVT_TIMEOUT) {
-            radio_instance->irq_timeout();
+            radio_singleton->irq_timeout();
         }
     }
 }
