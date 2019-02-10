@@ -819,8 +819,7 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (group.dma_handle == ctx) {
-            osalDbgAssert(group.dma == nullptr, "double DMA allocation");
+        if (group.dma_handle == ctx && group.dma == nullptr) {
             chSysLock();
             group.dma = dmaStreamAllocI(group.dma_up_stream_id, 10, dma_irq_callback, &group);
             chSysUnlock();
