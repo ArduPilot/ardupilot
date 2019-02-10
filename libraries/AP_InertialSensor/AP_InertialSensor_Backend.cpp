@@ -216,7 +216,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
 {
-    AP_Logger *dataflash = AP_Logger::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (dataflash == nullptr) {
         // should not have been called
         return;
@@ -348,7 +348,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t inst
 
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
 {
-    AP_Logger *dataflash = AP_Logger::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (dataflash == nullptr) {
         // should not have been called
         return;
@@ -465,7 +465,7 @@ bool AP_InertialSensor_Backend::should_log_imu_raw() const
         // tracker does not set a bit
         return false;
     }
-    const AP_Logger *instance = AP_Logger::instance();
+    const AP_Logger *instance = AP_Logger::get_singleton();
     if (instance == nullptr) {
         return false;
     }
