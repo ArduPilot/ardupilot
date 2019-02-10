@@ -74,8 +74,8 @@ void SITL_State::_sitl_setup(const char *home_str)
 
     // find the barometer object if it exists
     _sitl = AP::sitl();
-    _barometer = AP_Baro::get_instance();
-    _ins = AP_InertialSensor::get_instance();
+    _barometer = AP_Baro::get_singleton();
+    _ins = AP_InertialSensor::get_singleton();
     _compass = Compass::get_singleton();
 #if AP_TERRAIN_AVAILABLE
     _terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
