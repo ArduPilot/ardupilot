@@ -561,7 +561,7 @@ AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
 
 bool AP_GPS::should_df_log() const
 {
-    AP_Logger *instance = AP_Logger::instance();
+    AP_Logger *instance = AP_Logger::get_singleton();
     if (instance == nullptr) {
         return false;
     }
@@ -1546,7 +1546,7 @@ namespace AP {
 
 AP_GPS &gps()
 {
-    return AP_GPS::gps();
+    return AP_GPS::get_singleton();
 }
 
 };
