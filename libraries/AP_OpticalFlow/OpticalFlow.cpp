@@ -156,7 +156,7 @@ void OpticalFlow::update_state(const OpticalFlow_state &state)
 
 void OpticalFlow::Log_Write_Optflow()
 {
-    AP_Logger *instance = AP_Logger::instance();
+    AP_Logger *instance = AP_Logger::get_singleton();
     if (instance == nullptr) {
         return;
     }
