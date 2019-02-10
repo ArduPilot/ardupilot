@@ -100,10 +100,10 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 AP_RSSI::AP_RSSI()
 {       
     AP_Param::setup_object_defaults(this, var_info);
-    if (_s_instance) {
+    if (_singleton) {
         AP_HAL::panic("Too many RSSI sensors");
     }
-    _s_instance = this;
+    _singleton = this;
 }
 
 // destructor
@@ -114,9 +114,9 @@ AP_RSSI::~AP_RSSI(void)
 /*
  * Get the AP_RSSI singleton
  */
-AP_RSSI *AP_RSSI::get_instance()
+AP_RSSI *AP_RSSI::get_singleton()
 {
-    return _s_instance;
+    return _singleton;
 }
 
 // Initialize the rssi object and prepare it for use
@@ -310,13 +310,13 @@ void AP_RSSI::irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us)
     }
 }
 
-AP_RSSI *AP_RSSI::_s_instance = nullptr;
+AP_RSSI *AP_RSSI::_singleton = nullptr;
 
 namespace AP {
 
 AP_RSSI *rssi()
 {
-    return AP_RSSI::get_instance();
+    return AP_RSSI::get_singleton();
 }
 
 };
