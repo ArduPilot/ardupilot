@@ -158,7 +158,7 @@ public:
      * Calls clock::init() as needed.
      * This function is thread safe.
      */
-    static SystemClock& instance();
+    static SystemClock& get_singleton();
 };
 
 }
