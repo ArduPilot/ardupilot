@@ -509,6 +509,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "pxf",
                 "pxfmini",
                 "KakuteF4-v1",
+                "KakuteF4-v2",
                 "KakuteF7",
                 "MatekF405",
                 "MatekF405-STD",
