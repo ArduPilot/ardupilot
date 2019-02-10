@@ -1842,7 +1842,7 @@ void GCS_MAVLINK::send_ahrs()
 */
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
-    AP_Logger *dataflash = AP_Logger::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (dataflash != nullptr) {
         dataflash->Write_Message(text);
     }
@@ -1852,7 +1852,7 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
         frsky_telemetry_p->queue_message(severity, text);
     }
 
-    AP_Notify *notify = AP_Notify::instance();
+    AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
         notify->send_text(text);
     }
@@ -2481,7 +2481,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     // send ack before we reboot
     mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
     // Notify might want to blink some LEDs:
-    AP_Notify *notify = AP_Notify::instance();
+    AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
         AP_Notify::flags.firmware_update = 1;
         notify->update();
@@ -2574,7 +2574,7 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
                         msg->sysid,
                         round_trip_time_us*0.001f);
 #endif
-        AP_Logger *df = AP_Logger::instance();
+        AP_Logger *df = AP_Logger::get_singleton();
         if (df != nullptr) {
             AP::logger().Write(
                 "TSYN",
@@ -2625,7 +2625,7 @@ void GCS_MAVLINK::send_timesync()
 
 void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 {
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
     if (df == nullptr) {
         return;
     }
@@ -2757,7 +2757,7 @@ void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
     case 42:
     case 43: {
         // pass to AP_Radio (for firmware upload and playing test tunes)
-        AP_Radio *radio = AP_Radio::instance();
+        AP_Radio *radio = AP_Radio::get_singleton();
         if (radio != nullptr) {
             radio->handle_data_packet(chan, m);
         }
@@ -4317,5 +4317,5 @@ void GCS::passthru_timer(void)
 
 GCS &gcs()
 {
-    return *GCS::instance();
+    return *GCS::get_singleton();
 }
