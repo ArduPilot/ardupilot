@@ -75,22 +75,22 @@ public:
 
     perf_counter_t perf_alloc(enum perf_counter_type t, const char *name) override
     {
-        return Perf::get_instance()->add(t, name);
+        return Perf::get_singleton()->add(t, name);
     }
 
     void perf_begin(perf_counter_t perf) override
     {
-        return Perf::get_instance()->begin(perf);
+        return Perf::get_singleton()->begin(perf);
     }
 
     void perf_end(perf_counter_t perf) override
     {
-        return Perf::get_instance()->end(perf);
+        return Perf::get_singleton()->end(perf);
     }
 
     void perf_count(perf_counter_t perf) override
     {
-        return Perf::get_instance()->count(perf);
+        return Perf::get_singleton()->count(perf);
     }
 
     int get_hw_arm32();
