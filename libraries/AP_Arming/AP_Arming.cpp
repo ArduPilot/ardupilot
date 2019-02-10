@@ -731,7 +731,7 @@ bool AP_Arming::arm_checks(ArmingMethod method)
     // the arming check flag is set - disabling the arming check
     // should not stop logging from working.
 
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
     if (df->logging_present()) {
         // If we're configured to log, prep it
         df->PrepForArming();
@@ -794,7 +794,7 @@ bool AP_Arming::disarm()
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
 #if HAL_HAVE_SAFETY_SWITCH
-    AP_BoardConfig *board_cfg = AP_BoardConfig::get_instance();
+    AP_BoardConfig *board_cfg = AP_BoardConfig::get_singleton();
     if ((board_cfg != nullptr) &&
         (board_cfg->get_safety_button_options() & AP_BoardConfig::BOARD_SAFETY_OPTION_SAFETY_ON_DISARM)) {
         hal.rcout->force_safety_on();
