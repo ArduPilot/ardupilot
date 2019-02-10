@@ -600,7 +600,7 @@ void AP_KDECAN::update()
         debug_can(2, "KDECAN: failed to get PWM semaphore on write\n\r");
     }
 
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
 
     if (df == nullptr || !df->should_log(0xFFFFFFFF)) {
         return;
@@ -658,7 +658,7 @@ bool AP_KDECAN::pre_arm_check(const char* &reason)
     _enum_sem.give();
 
     uint16_t motors_mask = 0;
-    AP_Motors *motors = AP_Motors::get_instance();
+    AP_Motors *motors = AP_Motors::get_singleton();
 
     if (motors) {
         motors_mask = motors->get_motor_mask();
