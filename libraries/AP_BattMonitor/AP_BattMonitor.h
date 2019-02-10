@@ -54,8 +54,8 @@ public:
     AP_BattMonitor(const AP_BattMonitor &other) = delete;
     AP_BattMonitor &operator=(const AP_BattMonitor&) = delete;
 
-    static AP_BattMonitor &battery() {
-        return *_singleton;
+    static AP_BattMonitor *get_singleton() {
+        return _singleton;
     }
 
     struct cells {

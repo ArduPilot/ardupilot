@@ -238,7 +238,7 @@ AP_BattMonitor::read()
         }
     }
 
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
     if (df->should_log(_log_battery_bit)) {
         df->Write_Current();
         df->Write_Power();
@@ -494,7 +494,7 @@ namespace AP {
 
 AP_BattMonitor &battery()
 {
-    return AP_BattMonitor::battery();
+    return *AP_BattMonitor::get_singleton();
 }
 
 };
