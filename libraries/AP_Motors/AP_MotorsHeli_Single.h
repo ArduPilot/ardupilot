@@ -73,10 +73,10 @@ public:
     bool rotor_speed_above_critical() const  override { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
     
     // get_governor_output
-    float get_governor_output() const { return _main_rotor.get_governor_output(); }
+    float get_governor_output() const override { return _main_rotor.get_governor_output(); }
     
     // get_control_output
-    float get_control_output() const { return _main_rotor.get_control_output(); }
+    float get_control_output() const override{ return _main_rotor.get_control_output(); }
 
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
