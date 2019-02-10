@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-SITL *SITL::_s_instance = nullptr;
+SITL *SITL::_singleton = nullptr;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] = {
@@ -254,7 +254,7 @@ namespace AP {
 
 SITL::SITL *sitl()
 {
-    return SITL::SITL::get_instance();
+    return SITL::SITL::get_singleton();
 }
 
 };
