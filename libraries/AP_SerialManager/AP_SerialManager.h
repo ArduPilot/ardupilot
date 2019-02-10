@@ -109,8 +109,8 @@ public:
     };
 
     // get singleton instance
-    static AP_SerialManager *get_instance(void) {
-        return _instance;
+    static AP_SerialManager *get_singleton(void) {
+        return _singleton;
     }
     
     // init_console - initialise console at default baud rate
@@ -154,7 +154,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    static AP_SerialManager *_instance;
+    static AP_SerialManager *_singleton;
     
     // array of uart info
     struct UARTState {

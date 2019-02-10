@@ -226,12 +226,12 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 };
 
 // singleton instance
-AP_SerialManager *AP_SerialManager::_instance;
+AP_SerialManager *AP_SerialManager::_singleton;
 
 // Constructor
 AP_SerialManager::AP_SerialManager()
 {
-    _instance = this;
+    _singleton = this;
     // setup parameter defaults
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -555,7 +555,7 @@ namespace AP {
 
 AP_SerialManager &serialmanager()
 {
-    return *AP_SerialManager::get_instance();
+    return *AP_SerialManager::get_singleton();
 }
 
 }
