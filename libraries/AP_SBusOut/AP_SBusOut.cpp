@@ -181,7 +181,7 @@ void AP_SBusOut::init() {
         sbus_frame_interval = 3700;
     }
 
-    AP_SerialManager *serial_manager = AP_SerialManager::get_instance();
+    AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
     if (!serial_manager) {
         return;
     }
