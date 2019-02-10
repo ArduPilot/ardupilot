@@ -475,7 +475,7 @@ Vector2f AP_AHRS::rotate_body_to_earth2D(const Vector2f &bf) const
 // log ahrs home and EKF origin to dataflash
 void AP_AHRS::Log_Write_Home_And_Origin()
 {
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
     if (df == nullptr) {
         return;
     }
