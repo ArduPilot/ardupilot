@@ -35,16 +35,16 @@ public:
     SoftSigReaderInt &operator=(const SoftSigReaderInt&) = delete;
 
     // get singleton
-    static SoftSigReaderInt *get_instance(void)
+    static SoftSigReaderInt *get_singleton(void)
     {
-        return _instance;
+        return _singleton;
     }
 
     void init(EICUDriver* icu_drv, eicuchannel_t chan);
     bool read(uint32_t &widths0, uint32_t &widths1);
 private:
     // singleton
-    static SoftSigReaderInt *_instance;
+    static SoftSigReaderInt *_singleton;
 
     static void _irq_handler(EICUDriver *eicup, eicuchannel_t channel);
     
