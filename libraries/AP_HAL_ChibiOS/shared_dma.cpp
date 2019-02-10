@@ -114,11 +114,11 @@ void Shared_DMA::lock_core(void)
         (stream_id2 < SHARED_DMA_MAX_STREAM_ID && locks[stream_id2].obj == nullptr)) {
         // allocate the DMA channels and put our deallocation function in place
         allocate(this);
-        if (stream_id1 != SHARED_DMA_NONE) {
+        if (stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
             locks[stream_id1].deallocate = deallocate;
             locks[stream_id1].obj = this;
         }
-        if (stream_id2 != SHARED_DMA_NONE) {
+        if (stream_id2 < SHARED_DMA_MAX_STREAM_ID) {
             locks[stream_id2].deallocate = deallocate;
             locks[stream_id2].obj = this;
         }
@@ -133,42 +133,32 @@ void Shared_DMA::lock_core(void)
 // lock the DMA channels, blocking method
 void Shared_DMA::lock(void)
 {
-    if (stream_id1 != SHARED_DMA_NONE) {
-        lock_stream(stream_id1);
-    }
-    if (stream_id2 != SHARED_DMA_NONE) {
-        lock_stream(stream_id2);
-    }
+    lock_stream(stream_id1);
+    lock_stream(stream_id2);
     lock_core();
 }
 
 // lock the DMA channels, non-blocking
 bool Shared_DMA::lock_nonblock(void)
 {
-    if (stream_id1 != SHARED_DMA_NONE) {
-        if (!lock_stream_nonblocking(stream_id1)) {
-            chSysDisable();
-            if (locks[stream_id1].obj != nullptr && locks[stream_id1].obj != this) {
-                locks[stream_id1].obj->contention = true;
-            }
-            chSysEnable();
-            contention = true;
-            return false;
+    if (!lock_stream_nonblocking(stream_id1)) {
+        chSysDisable();
+        if (locks[stream_id1].obj != nullptr && locks[stream_id1].obj != this) {
+            locks[stream_id1].obj->contention = true;
         }
+        chSysEnable();
+        contention = true;
+        return false;
     }
-    if (stream_id2 != SHARED_DMA_NONE) {
-        if (!lock_stream_nonblocking(stream_id2)) {
-            if (stream_id1 != SHARED_DMA_NONE) {
-                unlock_stream(stream_id1);
-            }
-            chSysDisable();
-            if (locks[stream_id2].obj != nullptr && locks[stream_id2].obj != this) {
-                locks[stream_id2].obj->contention = true;
-            }
-            chSysEnable();
-            contention = true;
-            return false;
+    if (!lock_stream_nonblocking(stream_id2)) {
+        unlock_stream(stream_id1);
+        chSysDisable();
+        if (locks[stream_id2].obj != nullptr && locks[stream_id2].obj != this) {
+            locks[stream_id2].obj->contention = true;
         }
+        chSysEnable();
+        contention = true;
+        return false;
     }
     lock_core();
     return true;
@@ -178,12 +168,8 @@ bool Shared_DMA::lock_nonblock(void)
 void Shared_DMA::unlock(void)
 {
     osalDbgAssert(have_lock, "must have lock");
-    if (stream_id2 != SHARED_DMA_NONE) {
-        unlock_stream(stream_id2);
-    }
-    if (stream_id1 != SHARED_DMA_NONE) {
-        unlock_stream(stream_id1);
-    }
+    unlock_stream(stream_id2);
+    unlock_stream(stream_id1);
     have_lock = false;
 }
 
@@ -191,11 +177,11 @@ void Shared_DMA::unlock(void)
 void Shared_DMA::unlock_from_lockzone(void)
 {
     osalDbgAssert(have_lock, "must have lock");
-    if (stream_id2 != SHARED_DMA_NONE) {
+    if (stream_id2 < SHARED_DMA_MAX_STREAM_ID) {
         unlock_stream_from_IRQ(stream_id2);
         chSchRescheduleS();
     }
-    if (stream_id1 != SHARED_DMA_NONE) {
+    if (stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
         unlock_stream_from_IRQ(stream_id1);
         chSchRescheduleS();
     }
@@ -206,12 +192,8 @@ void Shared_DMA::unlock_from_lockzone(void)
 void Shared_DMA::unlock_from_IRQ(void)
 {
     osalDbgAssert(have_lock, "must have lock");
-    if (stream_id2 != SHARED_DMA_NONE) {
-        unlock_stream_from_IRQ(stream_id2);
-    }
-    if (stream_id1 != SHARED_DMA_NONE) {
-        unlock_stream_from_IRQ(stream_id1);
-    }
+    unlock_stream_from_IRQ(stream_id2);
+    unlock_stream_from_IRQ(stream_id1);
     have_lock = false;
 }
 
