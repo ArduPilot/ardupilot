@@ -27,7 +27,7 @@
 extern const AP_HAL::HAL& hal;
 
 // singleton instance
-AP_Motors *AP_Motors::_instance;
+AP_Motors *AP_Motors::_singleton;
 
 // Constructor
 AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
@@ -38,7 +38,7 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _spool_mode(SHUT_DOWN),
     _air_density_ratio(1.0f)
 {
-    _instance = this;
+    _singleton = this;
 
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
