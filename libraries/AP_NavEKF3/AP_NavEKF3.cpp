@@ -635,7 +635,7 @@ bool NavEKF3::InitialiseFilter(void)
     if (core == nullptr) {
 
         // see if we will be doing logging
-        AP_Logger *dataflash = AP_Logger::instance();
+        AP_Logger *dataflash = AP_Logger::get_singleton();
         if (dataflash != nullptr) {
             logging.enabled = dataflash->log_replay();
         }
