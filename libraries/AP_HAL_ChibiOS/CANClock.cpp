@@ -348,7 +348,7 @@ void setUtcSyncParams(const UtcSyncParams& params)
 
 } // namespace clock
 
-SystemClock& SystemClock::instance()
+SystemClock& SystemClock::get_singleton()
 {
     static union SystemClockStorage {
         uavcan::uint8_t buffer[sizeof(SystemClock)];

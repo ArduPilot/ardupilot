@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 
 SLCANRouter &slcan_router()
 {
-    return *SLCANRouter::instance();
+    return *SLCANRouter::get_singleton();
 }
 
 void SLCANRouter::init(ChibiOS_CAN::CanIface* can_if, ChibiOS_CAN::BusEvent* update_event)
@@ -38,7 +38,7 @@ void SLCANRouter::init(ChibiOS_CAN::CanIface* can_if, ChibiOS_CAN::BusEvent* upd
 
 void SLCANRouter::run()
 {
-    _port = AP_SerialManager::get_instance()->get_serial_by_id(AP::can().get_slcan_serial());
+    _port = AP_SerialManager::get_singleton()->get_serial_by_id(AP::can().get_slcan_serial());
     if (_slcan_if.init(921600, SLCAN::CAN::OperatingMode::NormalMode, _port) < 0) {
         return;
     }

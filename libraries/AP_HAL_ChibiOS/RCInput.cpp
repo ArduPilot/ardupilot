@@ -66,7 +66,7 @@ bool RCInput::new_input()
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (!_radio_init) {
         _radio_init = true;
-        radio = AP_Radio::instance();
+        radio = AP_Radio::get_singleton();
         if (radio) {
             radio->init();
         }
