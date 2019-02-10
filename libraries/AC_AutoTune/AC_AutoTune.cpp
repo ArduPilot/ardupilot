@@ -140,7 +140,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
     pos_control = _pos_control;
     ahrs_view = _ahrs_view;
     inertial_nav = _inertial_nav;
-    motors = AP_Motors::get_instance();
+    motors = AP_Motors::get_singleton();
 
     switch (mode) {
     case FAILED:
