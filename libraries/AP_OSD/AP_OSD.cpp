@@ -252,7 +252,7 @@ void AP_OSD::stats()
     alt = -alt;
     max_alt_m = fmaxf(max_alt_m, alt);
     // maximum current
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     float amps = battery.current_amps();
     max_current_a = fmaxf(max_current_a, amps);
 }
