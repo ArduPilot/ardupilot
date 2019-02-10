@@ -48,12 +48,14 @@ Shared_DMA::Shared_DMA(uint8_t _stream_id1,
 //remove any assigned deallocator or allocator
 void Shared_DMA::unregister()
 {
-    if (locks[stream_id1].obj == this) {
+    if (stream_id1 < SHARED_DMA_MAX_STREAM_ID &&
+        locks[stream_id1].obj == this) {
         locks[stream_id1].deallocate(this);
         locks[stream_id1].obj = nullptr;
     }
 
-    if (locks[stream_id2].obj == this) {
+    if (stream_id2 < SHARED_DMA_MAX_STREAM_ID &&
+        locks[stream_id2].obj == this) {
         locks[stream_id2].deallocate(this);
         locks[stream_id2].obj = nullptr;
     }
@@ -62,7 +64,7 @@ void Shared_DMA::unregister()
 // lock one stream
 void Shared_DMA::lock_stream(uint8_t stream_id)
 {
-    if (stream_id != STM32_DMA_STREAM_ID_ANY) {
+    if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
         chBSemWait(&locks[stream_id].semaphore);
     }
 }
@@ -70,7 +72,7 @@ void Shared_DMA::lock_stream(uint8_t stream_id)
 // unlock one stream
 void Shared_DMA::unlock_stream(uint8_t stream_id)
 {
-    if (stream_id != STM32_DMA_STREAM_ID_ANY) {
+    if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
         chBSemSignal(&locks[stream_id].semaphore);
     }
 }
@@ -78,7 +80,7 @@ void Shared_DMA::unlock_stream(uint8_t stream_id)
 // unlock one stream from an IRQ handler
 void Shared_DMA::unlock_stream_from_IRQ(uint8_t stream_id)
 {
-    if (stream_id != STM32_DMA_STREAM_ID_ANY) {
+    if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
         chBSemSignalI(&locks[stream_id].semaphore);
     }
 }
@@ -86,7 +88,7 @@ void Shared_DMA::unlock_stream_from_IRQ(uint8_t stream_id)
 // lock one stream, non-blocking
 bool Shared_DMA::lock_stream_nonblocking(uint8_t stream_id)
 {
-    if (stream_id != STM32_DMA_STREAM_ID_ANY) {
+    if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
         return chBSemWaitTimeout(&locks[stream_id].semaphore, 1) == MSG_OK;
     }
     return true;
@@ -98,18 +100,18 @@ void Shared_DMA::lock_core(void)
 {
     // see if another driver has DMA allocated. If so, call their
     // deallocation function
-    if (stream_id1 != SHARED_DMA_NONE &&
+    if (stream_id1 < SHARED_DMA_MAX_STREAM_ID &&
         locks[stream_id1].obj && locks[stream_id1].obj != this) {
         locks[stream_id1].deallocate(locks[stream_id1].obj);
         locks[stream_id1].obj = nullptr;
     }
-    if (stream_id2 != SHARED_DMA_NONE &&
+    if (stream_id2 < SHARED_DMA_MAX_STREAM_ID &&
         locks[stream_id2].obj && locks[stream_id2].obj != this) {
         locks[stream_id2].deallocate(locks[stream_id2].obj);
         locks[stream_id2].obj = nullptr;
     }
-    if ((stream_id1 != SHARED_DMA_NONE && locks[stream_id1].obj == nullptr) ||
-        (stream_id2 != SHARED_DMA_NONE && locks[stream_id2].obj == nullptr)) {
+    if ((stream_id1 < SHARED_DMA_MAX_STREAM_ID && locks[stream_id1].obj == nullptr) ||
+        (stream_id2 < SHARED_DMA_MAX_STREAM_ID && locks[stream_id2].obj == nullptr)) {
         // allocate the DMA channels and put our deallocation function in place
         allocate(this);
         if (stream_id1 != SHARED_DMA_NONE) {
@@ -120,6 +122,10 @@ void Shared_DMA::lock_core(void)
             locks[stream_id2].deallocate = deallocate;
             locks[stream_id2].obj = this;
         }
+    } else if (stream_id1 == STM32_DMA_STREAM_ID_ANY ||
+               stream_id2 == STM32_DMA_STREAM_ID_ANY) {
+        // call allocator without needing locking
+        allocate(this);
     }
     have_lock = true;
 }
