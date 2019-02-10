@@ -8,7 +8,7 @@
 #include "AP_Logger_MAVLink.h"
 #include <GCS_MAVLink/GCS.h>
 
-AP_Logger *AP_Logger::_instance;
+AP_Logger *AP_Logger::_singleton;
 
 extern const AP_HAL::HAL& hal;
 
@@ -79,11 +79,11 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
     : _log_bitmask(log_bitmask)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    if (_instance != nullptr) {
+    if (_singleton != nullptr) {
         AP_HAL::panic("AP_Logger must be singleton");
     }
 
-    _instance = this;
+    _singleton = this;
 }
 
 void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
@@ -1067,7 +1067,11 @@ void AP_Logger::Write_Event(Log_Event id)
     WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-AP_Logger &AP::logger()
+namespace AP {
+
+AP_Logger &logger()
 {
-    return *AP_Logger::instance();
+    return *AP_Logger::get_singleton();
 }
+
+};

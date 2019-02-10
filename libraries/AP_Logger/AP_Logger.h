@@ -123,8 +123,8 @@ public:
     AP_Logger &operator=(const AP_Logger&) = delete;
 
     // get singleton instance
-    static AP_Logger *instance(void) {
-        return _instance;
+    static AP_Logger *get_singleton(void) {
+        return _singleton;
     }
 
     // initialisation
@@ -376,7 +376,7 @@ private:
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);
 
-    static AP_Logger *_instance;
+    static AP_Logger *_singleton;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     bool validate_structure(const struct LogStructure *logstructure, int16_t offset);
