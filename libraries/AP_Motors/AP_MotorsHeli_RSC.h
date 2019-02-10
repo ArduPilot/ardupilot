@@ -69,7 +69,7 @@ public:
     float       get_rotor_speed() const;
     
     // set_rotor_rpm - when speed sensor is available for governor
-    void        set_rotor_rpm(int16_t rotor_rpm) {_rotor_rpm = rotor_rpm; }
+    void        set_rotor_rpm(int16_t rotor_rpm) {_rotor_rpm = (float)rotor_rpm; }
     
     // get_governor_output
     float       get_governor_output() const { return _governor_output; }
@@ -113,11 +113,11 @@ private:
     float           _thrcrv_poly[4][4];             // spline polynomials for throttle curve interpolation
     uint16_t        _power_slewrate = 0;            // slewrate for throttle (percentage per second)
     float           _collective_in;                 // collective in for throttle curve calculation, range 0-1.0f
-    int16_t         _rotor_rpm;                     // rotor rpm from speed sensor for governor
+    float           _rotor_rpm;                     // rotor rpm from speed sensor for governor
     float           _governor_disengage = 0.0f;     // throttle percentage where governor disenages to allow return to flight idle
     float           _governor_droop_setting = 0.0f; // governor droop setting, range 0-100%
     float           _governor_output = 0.0f;        // governor output for rotor speed control
-    int16_t         _governor_setpoint = 0.0f;      // governor speed setpoint, range 800-3500 rpm
+    float           _governor_setpoint = 0.0f;      // governor speed setpoint, range 800-3500 rpm
     bool            _governor_engage = false;       // RSC governor status flag for soft-start
     float           _governor_tc = 0.0f;            // governor throttle curve gain, range 50-100%
 
