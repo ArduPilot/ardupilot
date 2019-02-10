@@ -40,7 +40,7 @@ void Scheduler::delay(uint16_t ms)
 
 void Scheduler::delay_microseconds(uint16_t us)
 {
-    vTaskDelay(us/(portTICK_PERIOD_MS * 1000));
+    vTaskDelay(us/(portTICK_PERIOD_MS * 1000) + 1);
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)

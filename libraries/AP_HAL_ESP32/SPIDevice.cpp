@@ -19,8 +19,8 @@ ESP32::SPIDesc SPIDeviceManager::device_table[] = {
         .bus = 2,
         .cs_gpio = 5,
         .mode = 0,
-        .lowspeed = 1 * MHZ,
-        .highspeed = 1 * MHZ,
+        .lowspeed = 2 * MHZ,
+        .highspeed = 8 * MHZ,
 
     },
     {
@@ -64,7 +64,6 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     gpio_pad_select_gpio((gpio_num_t)device_desc.cs_gpio);
     gpio_set_direction((gpio_num_t)device_desc.cs_gpio, GPIO_MODE_OUTPUT);
     gpio_set_level((gpio_num_t)device_desc.cs_gpio, 1);
-    cs_forced = false;
 
     spi_device_interface_config_t cfg_low;
     memset(&cfg_low, 0, sizeof(cfg_low));
@@ -74,7 +73,7 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     cfg_low.queue_size = 5;
     spi_bus_add_device((spi_host_device_t)bus.bus, &cfg_low, &low_speed_dev_handle);
 
-    if(_device_desc.highspeed != _device_desc.lowspeed) {
+    if (_device_desc.highspeed != _device_desc.lowspeed) {
         spi_device_interface_config_t cfg_high;
         memset(&cfg_high, 0, sizeof(cfg_high));
         cfg_high.mode = _device_desc.mode;
@@ -99,7 +98,7 @@ spi_device_handle_t SPIDevice::current_handle()
 {
     if (speed == AP_HAL::Device::SPEED_HIGH && high_speed_dev_handle != nullptr) {
         return high_speed_dev_handle;
-    } 
+    }
     return low_speed_dev_handle;
 }
 
@@ -133,41 +132,27 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
 
 bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t len)
 {
-    bool old_cs_forced = cs_forced;
-    if (!set_chip_select(true)) {
-        return  true;
-    }
+    acquire_bus(true);
     spi_transaction_t t;
     memset(&t, 0, sizeof(t));
     t.length = len*8;
     t.tx_buffer = send;
     t.rxlength = len*8;
     t.rx_buffer = recv;
-
-    int code = spi_device_transmit(current_handle(), &t);
-    set_chip_select(old_cs_forced);
+    spi_device_transmit(current_handle(), &t);
+    acquire_bus(false);
     return true;
 }
 
-bool SPIDevice::set_chip_select(bool set)
+void SPIDevice::acquire_bus(bool accuire)
 {
-    if (set && cs_forced) {
-        return true;
-    }
-    if (!set && !cs_forced) {
-        return true;
-    }
-    if (set && !cs_forced) {
+    if (accuire) {
         spi_device_acquire_bus(current_handle(), portMAX_DELAY);
         gpio_set_level((gpio_num_t)device_desc.cs_gpio, 0);
-        cs_forced = true;
-    }
-    if (!set && cs_forced) {
+    } else {
         gpio_set_level((gpio_num_t)device_desc.cs_gpio, 1);
         spi_device_release_bus(current_handle());
-        cs_forced = false;
     }
-    return true;
 }
 
 AP_HAL::Semaphore *SPIDevice::get_semaphore()
