@@ -713,7 +713,7 @@ public:
         }
     };
 
-    static class GCS *instance() {
+    static class GCS *get_singleton() {
         return _singleton;
     }
 
