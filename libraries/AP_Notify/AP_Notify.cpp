@@ -36,7 +36,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Notify *AP_Notify::_instance;
+AP_Notify *AP_Notify::_singleton;
 
 #define CONFIG_NOTIFY_DEVICES_MAX 6
 
@@ -154,10 +154,10 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
 AP_Notify::AP_Notify()
 {
     AP_Param::setup_object_defaults(this, var_info);
-    if (_instance != nullptr) {
+    if (_singleton != nullptr) {
         AP_HAL::panic("AP_Notify must be singleton");
     }
-    _instance = this;
+    _singleton = this;
 }
 
 // static flags, to allow for direct class update from device drivers
