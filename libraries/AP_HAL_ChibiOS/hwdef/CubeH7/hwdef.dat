@@ -17,7 +17,6 @@ FLASH_RESERVE_START_KB 128
 # board voltage
 STM32_VDD 330U
 
-define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
 
 # order of I2C buses
@@ -29,7 +28,7 @@ UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7
 # If the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU.
 
-# UART for IOMCU
+# UART for IOMCU (disabled for now)
 #IOMCU_UART USART6
 
 # UART4 serial GPS
@@ -262,6 +261,3 @@ define HAL_I2C_MAX_CLOCK 100000
 # ardupilot root.
 ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
 
-define HAL_SPI_CHECK_CLOCK_FREQ
-
-#  define HAL_DISABLE_DCACHE
