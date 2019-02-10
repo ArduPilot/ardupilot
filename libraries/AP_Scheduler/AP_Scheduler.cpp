@@ -63,13 +63,13 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
     _fastloop_fn(fastloop_fn)
 {
-    if (_s_instance) {
+    if (_singleton) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Too many schedulers");
 #endif
         return;
     }
-    _s_instance = this;
+    _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -85,10 +85,10 @@ AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
 /*
  * Get the AP_Scheduler singleton
  */
-AP_Scheduler *AP_Scheduler::_s_instance = nullptr;
-AP_Scheduler *AP_Scheduler::get_instance()
+AP_Scheduler *AP_Scheduler::_singleton;
+AP_Scheduler *AP_Scheduler::get_singleton()
 {
-    return _s_instance;
+    return _singleton;
 }
 
 // initialise the scheduler
@@ -305,7 +305,7 @@ namespace AP {
 
 AP_Scheduler &scheduler()
 {
-    return *AP_Scheduler::get_instance();
+    return *AP_Scheduler::get_singleton();
 }
 
 };
