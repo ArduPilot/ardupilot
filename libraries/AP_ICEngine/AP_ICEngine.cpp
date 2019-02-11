@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Description: This is the measured RPM above which the engine is considered to be running
     // @User: Standard
     // @Range: 100 100000
-    AP_GROUPINFO("RPM_THRESH", 4, AP_ICEngine, rpm_threshold, 100),
+    AP_GROUPINFO("RPM_THRESH", 4, AP_ICEngine, rpm_threshold_running, 100),
 
     // @Param: PWM_IGN_ON
     // @DisplayName: PWM value for ignition on
@@ -102,6 +102,20 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Range: 0 100
     AP_GROUPINFO("START_PCT", 10, AP_ICEngine, start_percent, 5),
 
+    // @Param: IGN_START
+    // @DisplayName: Ignition state during starting
+    // @Description: Ignition state during starting. When set to 1, ignition (aka accessory) is active during starting. Set to 0 to disable ignition/accessory during starting
+    // @User: Advanced
+    // @Range: 0 1
+    AP_GROUPINFO("IGN_START", 18, AP_ICEngine, ignition_during_start, 1),
+
+    // @Param: RPM_THRESH2
+    // @DisplayName: RPM threshold 2 starting
+    // @Description: This is the measured RPM above which the engine is considered to be successfully started and the remaining starter time (ICE_STARTER_TIME) will be skipped. Use 0 to diable and always start for the full STARTER_TIME duration
+    // @User: Standard
+    // @Range: 0 100000
+    AP_GROUPINFO("RPM_THRESH2", 19, AP_ICEngine, rpm_threshold_starting, 0),
+
     AP_GROUPEND    
 };
 
@@ -137,6 +151,28 @@ void AP_ICEngine::update(void)
         return;
     }
 
+    determine_state();
+
+    if (!hal.util->get_soft_armed()) {
+        if (state == ICE_START_HEIGHT_DELAY) {
+            // when disarmed we can be waiting for takeoff
+            Vector3f pos;
+            if (AP::ahrs().get_relative_position_NED_origin(pos)) {
+                // reset initial height while disarmed
+                initial_height = -pos.z;
+            }
+        } else if (state != ICE_OFF) {
+            // force ignition off when disarmed
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine disarmed");
+            state = ICE_OFF;
+        }
+    }
+
+    set_output_channels();
+}
+
+void AP_ICEngine::determine_state()
+{
     uint16_t cvalue = 1500;
     RC_Channel *c = rc().channel(start_chan-1);
     if (c != nullptr) {
@@ -145,14 +181,17 @@ void AP_ICEngine::update(void)
     }
 
     bool should_run = false;
-    uint32_t now = AP_HAL::millis();
-
     if (state == ICE_OFF && cvalue >= 1700) {
         should_run = true;
     } else if (cvalue <= 1300) {
         should_run = false;
     } else if (state != ICE_OFF) {
         should_run = true;
+    }
+
+    float current_rpm = -1;
+    if (rpm_instance > 0 && rpm.healthy(rpm_instance-1)) {
+        current_rpm = rpm.get_rpm(rpm_instance-1);
     }
 
     // switch on current state to work out new state
@@ -167,12 +206,13 @@ void AP_ICEngine::update(void)
         Vector3f pos;
         if (!should_run) {
             state = ICE_OFF;
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine stopped");
         } else if (AP::ahrs().get_relative_position_NED_origin(pos)) {
             if (height_pending) {
                 height_pending = false;
                 initial_height = -pos.z;
             } else if ((-pos.z) >= initial_height + height_required) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Starting height reached %.1f",
+                gcs().send_text(MAV_SEVERITY_INFO, "Engine starting height reached %.1f",
                                                  (double)(-pos.z - initial_height));
                 state = ICE_STARTING;
             }
@@ -183,8 +223,9 @@ void AP_ICEngine::update(void)
     case ICE_START_DELAY:
         if (!should_run) {
             state = ICE_OFF;
-        } else if (now - starter_last_run_ms >= starter_delay*1000) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Starting engine");
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine stopped");
+        } else if (AP_HAL::millis() - starter_last_run_ms >= starter_delay*1000) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine starting for %.1fs", starter_delay);
             state = ICE_STARTING;
         }
         break;
@@ -192,7 +233,10 @@ void AP_ICEngine::update(void)
     case ICE_STARTING:
         if (!should_run) {
             state = ICE_OFF;
-        } else if (now - starter_start_time_ms >= starter_time*1000) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine stopped while starting");
+        } else if ((AP_HAL::millis() - starter_start_time_ms >= starter_time*1000) ||    // STARTER_TIME expired, assume we're running
+                (rpm_threshold_starting > 0 && current_rpm >= rpm_threshold_starting)) {    // RPM_THRESH2 exceeded, we know we're running
+            // check RPM to see if we've started or if we'ved tried fo rlong enought. If so, skip to running
             state = ICE_RUNNING;
         }
         break;
@@ -200,33 +244,19 @@ void AP_ICEngine::update(void)
     case ICE_RUNNING:
         if (!should_run) {
             state = ICE_OFF;
-            gcs().send_text(MAV_SEVERITY_INFO, "Stopped engine");
-        } else if (rpm_instance > 0) {
-            // check RPM to see if still running
-            if (!rpm.healthy(rpm_instance-1) ||
-                rpm.get_rpm(rpm_instance-1) < rpm_threshold) {
-                // engine has stopped when it should be running
-                state = ICE_START_DELAY;
-            }
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine stopped while running");
+        } else if (current_rpm > 0 && rpm_threshold_running > 0 && current_rpm < rpm_threshold_running) {
+            // engine has stopped when it should be running
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine died while running");
+            state = ICE_START_DELAY;
         }
         break;
-    }
+    } // switch
+}
 
-    if (!hal.util->get_soft_armed()) {
-        if (state == ICE_START_HEIGHT_DELAY) {
-            // when disarmed we can be waiting for takeoff
-            Vector3f pos;
-            if (AP::ahrs().get_relative_position_NED_origin(pos)) {
-                // reset initial height while disarmed
-                initial_height = -pos.z;
-            }
-        } else {
-            // force ignition off when disarmed
-            state = ICE_OFF;
-        }
-    }
 
-    /* now set output channels */
+void AP_ICEngine::set_output_channels()
+{
     switch (state) {
     case ICE_OFF:
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_off);
@@ -241,12 +271,16 @@ void AP_ICEngine::update(void)
         break;
 
     case ICE_STARTING:
-        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
+        if (ignition_during_start) {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
+        } else {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_off);
+        }
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_on);
         if (starter_start_time_ms == 0) {
-            starter_start_time_ms = now;
+            starter_start_time_ms = AP_HAL::millis();
         }
-        starter_last_run_ms = now;
+        starter_last_run_ms = AP_HAL::millis();
         break;
 
     case ICE_RUNNING:

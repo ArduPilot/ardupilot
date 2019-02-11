@@ -60,6 +60,11 @@ private:
 
     enum ICE_State state;
 
+    void set_output_channels();
+
+    void determine_state();
+
+
     // enable library
     AP_Int8 enable;
 
@@ -82,8 +87,11 @@ private:
     AP_Int16 pwm_starter_off;
     
     // RPM above which engine is considered to be running
-    AP_Int32 rpm_threshold;
+    AP_Int32 rpm_threshold_running;
     
+    // RPM above which engine is considered to be running and remaining starting time should be skipped
+    AP_Int32 rpm_threshold_starting;
+
     // time when we started the starter
     uint32_t starter_start_time_ms;
 
@@ -92,6 +100,9 @@ private:
 
     // throttle percentage for engine start
     AP_Int8 start_percent;
+
+    // Ignition state during starting. On or off.
+    AP_Int8 ignition_during_start;
 
     // height when we enter ICE_START_HEIGHT_DELAY
     float initial_height;
