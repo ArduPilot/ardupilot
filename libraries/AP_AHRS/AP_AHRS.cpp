@@ -472,24 +472,22 @@ Vector2f AP_AHRS::rotate_body_to_earth2D(const Vector2f &bf) const
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }
 
-// log ahrs home and EKF origin to dataflash
+// log ahrs home and EKF origin
 void AP_AHRS::Log_Write_Home_And_Origin()
 {
-    AP_Logger *df = AP_Logger::get_singleton();
-    if (df == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return;
     }
 #if AP_AHRS_NAVEKF_AVAILABLE
-    // log ekf origin if set
     Location ekf_orig;
     if (get_origin(ekf_orig)) {
-        df->Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+        logger->Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }
 #endif
 
-    // log ahrs home if set
     if (home_is_set()) {
-        df->Write_Origin(LogOriginType::ahrs_home, _home);
+        logger->Write_Origin(LogOriginType::ahrs_home, _home);
     }
 }
 
