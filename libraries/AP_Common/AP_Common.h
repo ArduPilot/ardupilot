@@ -136,3 +136,18 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 #else
 #define SITL_printf(fmt, args ...)
 #endif
+
+
+/*
+ * Singleton macros
+ */
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+  #define SINGLETON_INIT_FAIL_MSG()     AP_HAL::panic("%s must be singleton", __FUNCTION__);
+#else
+  #define SINGLETON_INIT_FAIL_MSG()     gcs().send_text(MAV_SEVERITY_EMERGENCY,"%s must be singleton", __FUNCTION__);
+#endif
+
+#define SINGLETON_INIT()    if (_singleton != nullptr) { \
+                                SINGLETON_INIT_FAIL_MSG(); \
+                            } \
+                            _singleton = this;
