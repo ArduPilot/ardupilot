@@ -335,9 +335,6 @@ void AP_Terrain::update(void)
 
 }
 
-/*
-  log terrain data to dataflash log
- */
 void AP_Terrain::log_terrain_data()
 {
     if (!allocate()) {
