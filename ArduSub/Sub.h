@@ -166,7 +166,6 @@ private:
     RC_Channel *channel_forward;
     RC_Channel *channel_lateral;
 
-    // Dataflash
     AP_Logger logger;
 
     AP_GPS gps;
@@ -229,7 +228,7 @@ private:
     union {
         struct {
             uint8_t pre_arm_check       : 1; // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-            uint8_t logging_started     : 1; // true if dataflash logging has started
+            uint8_t logging_started     : 1; // true if logging has started
             uint8_t compass_mot         : 1; // true if we are currently performing compassmot calibration
             uint8_t motor_test          : 1; // true if we are currently performing the motors test
             uint8_t initialised         : 1; // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
