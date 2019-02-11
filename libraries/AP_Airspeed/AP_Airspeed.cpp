@@ -457,9 +457,9 @@ void AP_Airspeed::update(bool log)
     check_sensor_failures();
 
     if (log) {
-        AP_Logger *_dataflash = AP_Logger::get_singleton();
-        if (_dataflash != nullptr) {
-            _dataflash->Write_Airspeed(*this);
+        AP_Logger *logger = AP_Logger::get_singleton();
+        if (logger != nullptr) {
+            logger->Write_Airspeed(*this);
         }
     }
 }
