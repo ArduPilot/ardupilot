@@ -623,7 +623,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Dataflash logging control
+// Logging control
 //
 #ifndef LOGGING_ENABLED
  # define LOGGING_ENABLED                ENABLED

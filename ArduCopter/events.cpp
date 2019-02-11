@@ -35,7 +35,6 @@ void Copter::failsafe_radio_on_event()
         }
     }
 
-    // log the error to the dataflash
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
 
 }
@@ -116,7 +115,6 @@ void Copter::failsafe_gcs_check()
     }
 
     // GCS failsafe event has occurred
-    // update state, log to dataflash
     set_failsafe_gcs(true);
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
 
@@ -141,7 +139,6 @@ void Copter::failsafe_gcs_check()
 // failsafe_gcs_off_event - actions to take when GCS contact is restored
 void Copter::failsafe_gcs_off_event(void)
 {
-    // log recovery of GCS in logs?
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
 }
 

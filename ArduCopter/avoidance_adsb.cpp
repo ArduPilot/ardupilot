@@ -88,7 +88,6 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
         }
     }
 
-    // log to dataflash
     if (failsafe_state_change) {
         AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_ADSB,
                                  LogErrorCode(actual_action));
