@@ -1051,7 +1051,7 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     _home = tmp;
     _home_is_set = true;
 
-    // log ahrs home and ekf origin dataflash
+    // log ahrs home and ekf origin
     Log_Write_Home_And_Origin();
 
     // send new home and ekf origin to GCS
