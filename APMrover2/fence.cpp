@@ -28,7 +28,6 @@ void Rover::fence_check()
                 set_mode(mode_hold, MODE_REASON_FENCE_BREACH);
             }
         }
-        // log an error in the dataflash
         AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
 
     } else if (orig_breaches) {

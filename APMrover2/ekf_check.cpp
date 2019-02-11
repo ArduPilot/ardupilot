@@ -52,7 +52,7 @@ void Rover::ekf_check()
                 // limit count from climbing too high
                 ekf_check_state.fail_count = EKF_CHECK_ITERATIONS_MAX;
                 ekf_check_state.bad_variance = true;
-                // log an error in the dataflash
+
                 AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK,
                                          LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
@@ -71,7 +71,7 @@ void Rover::ekf_check()
             // if variance is flagged as bad and the counter reaches zero then clear flag
             if (ekf_check_state.bad_variance && ekf_check_state.fail_count == 0) {
                 ekf_check_state.bad_variance = false;
-                // log recovery in the dataflash
+                // log recovery
                 AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK,
                                          LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
                 // clear failsafe
