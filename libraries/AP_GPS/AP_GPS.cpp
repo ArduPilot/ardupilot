@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: RAW_DATA
     // @DisplayName: Raw data logging
-    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into dataflash log; on Septentrio this will log on the equipment's SD card and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
+    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into logger; on Septentrio this will log on the equipment's SD card and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
     // @Values: 0:Ignore,1:Always log,2:Stop logging when disarmed (SBF only),5:Only log every five samples (uBlox only)
     // @RebootRequired: True
     // @User: Advanced
@@ -559,16 +559,16 @@ AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
     return AP_GPS::GPS_OK_FIX_3D;
 }
 
-bool AP_GPS::should_df_log() const
+bool AP_GPS::should_log() const
 {
-    AP_Logger *instance = AP_Logger::get_singleton();
-    if (instance == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return false;
     }
     if (_log_gps_bit == (uint32_t)-1) {
         return false;
     }
-    if (!instance->should_log(_log_gps_bit)) {
+    if (!logger->should_log(_log_gps_bit)) {
         return false;
     }
     return true;
@@ -655,7 +655,7 @@ void AP_GPS::update_instance(uint8_t instance)
     }
 
     if (data_should_be_logged &&
-        should_df_log() &&
+        should_log() &&
         !AP::ahrs().have_ekf_logging()) {
         AP::logger().Write_GPS(instance);
     }
