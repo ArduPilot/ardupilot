@@ -11,6 +11,7 @@ import time
 import traceback
 import pexpect
 import fnmatch
+import operator
 
 from pymavlink import mavwp, mavutil
 from pysim import util, vehicleinfo
@@ -261,7 +262,7 @@ class AutoTest(ABC):
 
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
-        old_bootcount= self.get_parameter('STAT_BOOTCNT')
+        old_bootcount = self.get_parameter('STAT_BOOTCNT')
         self.mavproxy.send("reboot\n")
         tstart = time.time()
         while True:
@@ -1304,26 +1305,27 @@ class AutoTest(ABC):
                                           % (delta, distance))
         raise WaitDistanceTimeout("Failed to attain distance %u" % distance)
 
-    def wait_servo_channel_value(self, channel, value, timeout=2):
-        """wait for channel to hit value"""
+    def wait_servo_channel_value(self, channel, value, timeout=2, comparator=operator.eq):
+        """wait for channel value comparison (default condition is equality)"""
         channel_field = "servo%u_raw" % channel
+        opstring = ("%s" % comparator)[-3:-1]
         tstart = self.get_sim_time()
         while True:
             remaining = timeout - (self.get_sim_time_cached() - tstart)
             if remaining <= 0:
-                raise NotAchievedException("Channel never achieved value")
+                raise NotAchievedException("Channel value condition not met")
             m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
                                     blocking=True,
                                     timeout=remaining)
             if m is None:
                 continue
             m_value = getattr(m, channel_field, None)
-            self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
-                          (channel_field, m_value, value))
+            self.progress("want SERVO_OUTPUT_RAW.%s=%u %s %u" %
+                          (channel_field, m_value, opstring, value))
             if m_value is None:
                 raise ValueError("message (%s) has no field %s" %
                                  (str(m), channel_field))
-            if m_value == value:
+            if comparator(m_value, value):
                 return
 
     def wait_location(self,
@@ -1439,7 +1441,7 @@ class AutoTest(ABC):
 
     def wait_ready_to_arm(self, timeout=None, require_absolute=True):
         # wait for EKF checks to pass
-        self.progress("Waiting reading for arm")
+        self.progress("Waiting for ready to arm")
         return self.wait_ekf_happy(timeout=timeout,
                                    require_absolute=require_absolute)
 
@@ -1999,7 +2001,7 @@ class AutoTest(ABC):
         self.set_parameter("RC9_OPTION", 19)
         self.set_rc(9, 1500)
         self.reboot_sitl()
-        self.progress("Waiting reading for arm")
+        self.progress("Waiting for ready to arm")
         self.wait_ready_to_arm()
         self.progress("Test gripper with RC9_OPTION")
         self.progress("Releasing load")
