@@ -71,10 +71,12 @@ private:
     struct telemetry_info_t {
         uint16_t rpm;
         uint16_t millivolts;
+        uint16_t temperature;
         uint16_t count;
         bool new_data;
     } _telemetry[TOSHIBACAN_MAX_NUM_ESCS];
     uint32_t _telemetry_req_ms;     // system time (in milliseconds) to request data from escs (updated at 10hz)
+    uint8_t _telemetry_temp_req_counter;    // counter used to trigger temp data requests from ESCs (10x slower than other telem data)
 
     // bitmask of which escs seem to be present
     uint16_t _esc_present_bitmask;
