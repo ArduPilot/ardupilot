@@ -9,6 +9,7 @@ from pymavlink import mavutil
 from common import AutoTest
 from pysim import util
 from pysim import vehicleinfo
+import operator
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -103,6 +104,33 @@ class AutoTestQuadPlane(AutoTest):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
 
+    def test_motor_mask(self):
+        """Check operation of output_motor_mask"""
+        """copter tailsitters will add condition: or (int(self.get_parameter('Q_TAILSIT_MOTMX')) & 1)"""
+        if not(int(self.get_parameter('Q_TILT_MASK')) & 1):
+            self.progress("output_motor_mask not in use")
+            return
+        self.progress("Testing output_motor_mask")
+        self.wait_ready_to_arm()
+
+        """Default channel for Motor1 is 5"""
+        self.progress('Assert that SERVO5 is Motor1')
+        assert(33 == self.get_parameter('SERVO5_FUNCTION'))
+
+        modes = ('MANUAL', 'FBWA', 'QHOVER')
+        for mode in modes:
+            self.progress("Testing %s mode" % mode)
+            self.change_mode(mode)
+            self.arm_vehicle()
+            self.progress("Raising throttle")
+            self.set_rc(3, 1800)
+            self.progress("Waiting for Motor1 to start")
+            self.wait_servo_channel_value(5, 1100, comparator=operator.gt)
+
+            self.set_rc(3, 1000)
+            self.disarm_vehicle()
+            self.wait_ready_to_arm()
+
     def fly_mission(self, filename, fence, height_accuracy=-1):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
@@ -158,7 +186,7 @@ class AutoTestQuadPlane(AutoTest):
         self.mav.motors_disarmed_wait()
 
     def default_mode(self):
-        return "FBWA"
+        return "MANUAL"
 
     def disabled_tests(self):
         return {
@@ -174,6 +202,8 @@ class AutoTestQuadPlane(AutoTest):
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
             ("ArmFeatures", "Arm features", self.test_arm_feature),
+
+            ("TestMotorMask", "Test output_motor_mask", self.test_motor_mask),
 
             ("QAutoTune", "Fly QAUTOTUNE mode", self.fly_qautotune),
 
