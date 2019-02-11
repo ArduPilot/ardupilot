@@ -47,6 +47,7 @@
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
+  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -4125,8 +4126,15 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
                     if (ap_kdecan != nullptr) {
                         ap_kdecan->send_mavlink(uint8_t(chan));
                     }
-                    break;
 #endif
+                    break;
+                }
+                case AP_BoardConfig_CAN::Protocol_Type_ToshibaCAN: {
+                    AP_ToshibaCAN *ap_tcan = AP_ToshibaCAN::get_tcan(i);
+                    if (ap_tcan != nullptr) {
+                        ap_tcan->send_esc_telemetry_mavlink(uint8_t(chan));
+                    }
+                    break;
                 }
                 case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
                 case AP_BoardConfig_CAN::Protocol_Type_None:
