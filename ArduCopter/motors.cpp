@@ -156,7 +156,7 @@ bool Copter::init_arm_motors(const AP_Arming::Method method, const bool do_armin
         return false;
     }
 
-    // let dataflash know that we're armed (it may open logs e.g.)
+    // let logger know that we're armed (it may open logs e.g.)
     AP::logger().set_vehicle_armed(true);
 
     // disable cpu failsafe because initialising everything takes a while
@@ -217,7 +217,6 @@ bool Copter::init_arm_motors(const AP_Arming::Method method, const bool do_armin
     // finally actually arm the motors
     motors->armed(true);
 
-    // log arming to dataflash
     Log_Write_Event(DATA_ARMED);
 
     // log flight mode in case it was changed while vehicle was disarmed
@@ -276,7 +275,6 @@ void Copter::init_disarm_motors()
     set_land_complete(true);
     set_land_complete_maybe(true);
 
-    // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
 
     // send disarm command to motors
