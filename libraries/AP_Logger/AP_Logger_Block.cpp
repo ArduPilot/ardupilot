@@ -66,7 +66,7 @@ uint32_t AP_Logger_Block::bufferspace_available()
     return df_NumPages * df_PageSize;
 }
 
-// *** DATAFLASH PUBLIC FUNCTIONS ***
+// *** LOGGER PUBLIC FUNCTIONS ***
 void AP_Logger_Block::StartWrite(uint32_t PageAdr)
 {
     df_PageAdr    = PageAdr;
