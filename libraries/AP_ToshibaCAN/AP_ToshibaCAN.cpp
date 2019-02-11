@@ -259,15 +259,51 @@ void AP_ToshibaCAN::loop()
                 if (!write_frame(request_data_frame, timeout)) {
                     continue;
                 }
+
+                // increment count to request temperature
+                _telemetry_temp_req_counter++;
             }
 
             send_stage++;
         }
 
-        // check for replies with rpm and voltage
+        // check if we should request temperature from ESCs
         if (send_stage == 6) {
+            if (_telemetry_temp_req_counter > 10) {
+                _telemetry_temp_req_counter = 0;
+
+                // prepare command to request data2 (temperature) from all ESCs
+                motor_request_data_cmd_t request_data_cmd = {};
+                request_data_cmd.motor1 = 2;
+                request_data_cmd.motor2 = 2;
+                request_data_cmd.motor3 = 2;
+                request_data_cmd.motor4 = 2;
+                request_data_cmd.motor5 = 2;
+                request_data_cmd.motor6 = 2;
+                request_data_cmd.motor7 = 2;
+                request_data_cmd.motor8 = 2;
+                request_data_cmd.motor9 = 2;
+                request_data_cmd.motor10 = 2;
+                request_data_cmd.motor11 = 2;
+                request_data_cmd.motor12 = 2;
+                uavcan::CanFrame request_data_frame;
+                request_data_frame = {(uint8_t)COMMAND_REQUEST_DATA, request_data_cmd.data, sizeof(request_data_cmd.data)};
+
+                // send request data command
+                timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
+                if (!write_frame(request_data_frame, timeout)) {
+                    continue;
+                }
+            }
+
+            send_stage++;
+        }
+
+        // check for replies from ESCs
+        if (send_stage == 7) {
             uavcan::CanFrame recv_frame;
             while (read_frame(recv_frame, timeout)) {
+                // decode rpm and voltage data
                 if ((recv_frame.id >= MOTOR_DATA1) && (recv_frame.id <= MOTOR_DATA1 + 12)) {
                     // copy contents to our structure
                     motor_reply_data1_t reply_data;
@@ -275,13 +311,33 @@ void AP_ToshibaCAN::loop()
                     // store response in telemetry array
                     uint8_t esc_id = recv_frame.id - MOTOR_DATA1;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
-                        // take semaphore to read scaled motor outputs
                         WITH_SEMAPHORE(_telem_sem);
                         _telemetry[esc_id].rpm = be16toh(reply_data.rpm);
                         _telemetry[esc_id].millivolts = be16toh(reply_data.millivolts);
                         _telemetry[esc_id].count++;
                         _telemetry[esc_id].new_data = true;
-                        // record ESC as present
+                        _esc_present_bitmask |= ((uint32_t)1 << esc_id);
+                    }
+                }
+
+                // decode temperature data
+                if ((recv_frame.id >= MOTOR_DATA2) && (recv_frame.id <= MOTOR_DATA2 + 12)) {
+                    // motor data2 data format is 8 bytes (64 bits)
+                    //    10 bits: U temperature
+                    //    10 bits: V temperature
+                    //    10 bits: W temperature
+                    //    10 bits: motor temperature
+                    //    remaining 24 bits: reserved
+                    uint16_t u_temp = ((uint16_t)recv_frame.data[0] << 2) | ((uint16_t)recv_frame.data[1] >> 6);
+                    uint16_t v_temp = (((uint16_t)recv_frame.data[1] & (uint16_t)0x3F) << 4) | (((uint16_t)recv_frame.data[2] & (uint16_t)0xF0) >> 4);
+                    uint16_t w_temp = (((uint16_t)recv_frame.data[2] & (uint16_t)0x0F) << 6) | (((uint16_t)recv_frame.data[3] & (uint16_t)0xFC) >> 2);
+                    uint16_t temp_max = MAX(u_temp, MAX(v_temp, w_temp));
+
+                    // store repose in telemetry array
+                    uint8_t esc_id = recv_frame.id - MOTOR_DATA2;
+                    if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
+                        WITH_SEMAPHORE(_telem_sem);
+                        _telemetry[esc_id].temperature = temp_max < 20 ? 0 : temp_max / 5 - 20;
                         _esc_present_bitmask |= ((uint32_t)1 << esc_id);
                     }
                 }
@@ -372,7 +428,12 @@ void AP_ToshibaCAN::update()
         uint64_t time_us = AP_HAL::micros64();
         for (uint8_t i = 0; i < MIN(TOSHIBACAN_MAX_NUM_ESCS, 8); i++) {
             if (_telemetry[i].new_data) {
-                df->Write_ESC(i, time_us, _telemetry[i].rpm * 100U, _telemetry[i].millivolts * 0.1f, 0, 0, 0);
+                df->Write_ESC(i, time_us,
+                              _telemetry[i].rpm * 100U,
+                              _telemetry[i].millivolts * 0.1f,
+                              0,
+                              _telemetry[i].temperature * 100.0f,
+                              0);
                 _telemetry[i].new_data = false;
             }
         }
@@ -418,6 +479,7 @@ void AP_ToshibaCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
             // fill in output arrays
             for (uint8_t j = 0; j < 4; j++) {
                 uint8_t esc_id = i * 4 + j;
+                temperature[j] = _telemetry[esc_id].temperature;
                 voltage[j] = _telemetry[esc_id].millivolts * 0.1f;
                 rpm[j] = _telemetry[esc_id].rpm;
                 count[j] = _telemetry[esc_id].count;
