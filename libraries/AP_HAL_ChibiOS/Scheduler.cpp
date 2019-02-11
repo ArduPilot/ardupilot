@@ -238,7 +238,9 @@ void Scheduler::reboot(bool hold_in_bootloader)
 
 #ifndef NO_DATAFLASH
     //stop logging
-    AP::logger().StopLogging();
+    if (AP_Logger::get_singleton()) {
+        AP::logger().StopLogging();
+    }
 
     // stop sdcard driver, if active
     sdcard_stop();
