@@ -179,7 +179,7 @@ public:
 
     // indicate which bit in LOG_BITMASK indicates baro logging enabled
     void set_log_baro_bit(uint32_t bit) { _log_baro_bit = bit; }
-    bool should_df_log() const;
+    bool should_log() const;
 
 private:
     // singleton
