@@ -362,15 +362,18 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_PLI2C:
     case RangeFinder_TYPE_PLI2CV3:
     case RangeFinder_TYPE_PLI2CV3HP:
-        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, state[instance], params[instance], _type))) {
-            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, state[instance], params[instance], _type));
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_PulsedLightLRF::detect(i, state[instance], params[instance], _type))) {
+                break;
+            }
         }
         break;
     case RangeFinder_TYPE_MBI2C:
-        if (!_add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
-                                                hal.i2c_mgr->get_device(1, AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR)))) {
-            _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
-                                               hal.i2c_mgr->get_device(0, AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR)));
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
+                                                                  hal.i2c_mgr->get_device(i, AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR)))) {
+                break;
+            }
         }
         break;
     case RangeFinder_TYPE_LWI2C:
@@ -379,35 +382,36 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
                 hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address)));
 #else
-            if (!_add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
-                                                                  hal.i2c_mgr->get_device(1, params[instance].address)))) {
-                _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
-                                                                 hal.i2c_mgr->get_device(0, params[instance].address)));
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
+                                                                     hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
             }
 #endif
         }
         break;
     case RangeFinder_TYPE_TRI2C:
         if (params[instance].address) {
-            if (!_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
-                                                                   hal.i2c_mgr->get_device(1, params[instance].address)))) {
-                _add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
-                                                                  hal.i2c_mgr->get_device(0, params[instance].address)));
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
+                                                                      hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
             }
         }
         break;
     case RangeFinder_TYPE_VL53L0X:
-        if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
-                                                         hal.i2c_mgr->get_device(1, params[instance].address)))) {
-            if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
-                                                             hal.i2c_mgr->get_device(0, params[instance].address)))) {
-                if (!_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance], params[instance],
-                                                                 hal.i2c_mgr->get_device(1, params[instance].address)))) {
-                    _add_backend(AP_RangeFinder_VL53L1X::detect(state[instance], params[instance],
-                                                                hal.i2c_mgr->get_device(0, params[instance].address)));
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
+                                                                 hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
+                if (_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance], params[instance],
+                                                                hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
                 }
             }
-        }
         break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     case RangeFinder_TYPE_PX4_PWM:
