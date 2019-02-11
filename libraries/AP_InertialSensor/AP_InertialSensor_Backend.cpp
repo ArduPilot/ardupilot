@@ -216,8 +216,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
 {
-    AP_Logger *dataflash = AP_Logger::get_singleton();
-    if (dataflash == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         // should not have been called
         return;
     }
@@ -231,7 +231,7 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
             GyrY      : gyro.y,
             GyrZ      : gyro.z
         };
-        dataflash->WriteBlock(&pkt, sizeof(pkt));
+        logger->WriteBlock(&pkt, sizeof(pkt));
     } else {
         if (!_imu.batchsampler.doing_sensor_rate_logging()) {
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
@@ -348,8 +348,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t inst
 
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
 {
-    AP_Logger *dataflash = AP_Logger::get_singleton();
-    if (dataflash == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         // should not have been called
         return;
     }
@@ -363,7 +363,7 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
             AccY      : accel.y,
             AccZ      : accel.z
         };
-        dataflash->WriteBlock(&pkt, sizeof(pkt));
+        logger->WriteBlock(&pkt, sizeof(pkt));
     } else {
         if (!_imu.batchsampler.doing_sensor_rate_logging()) {
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
@@ -465,11 +465,11 @@ bool AP_InertialSensor_Backend::should_log_imu_raw() const
         // tracker does not set a bit
         return false;
     }
-    const AP_Logger *instance = AP_Logger::get_singleton();
-    if (instance == nullptr) {
+    const AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return false;
     }
-    if (!instance->should_log(_imu._log_raw_bit)) {
+    if (!logger->should_log(_imu._log_raw_bit)) {
         return false;
     }
     return true;
