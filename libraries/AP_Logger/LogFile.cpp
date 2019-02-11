@@ -242,7 +242,6 @@ void AP_Logger::Write_RCOUT(void)
         chan14        : hal.rcout->read(13)
     };
     WriteBlock(&pkt, sizeof(pkt));
-    Write_ESC();
 }
 
 // Write an RSSI packet
@@ -1507,8 +1506,28 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, uint8_t reason)
 }
 
 // Write ESC status messages
-void AP_Logger::Write_ESC(void)
+//   id starts from 0
+//   rpm is eRPM (rpm * 100)
+//   voltage is in centi-volts
+//   current is in centi-amps
+//   temperature is in centi-degrees Celsius
+//   current_tot is in centi-amp hours
+void AP_Logger::Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t temperature, uint16_t current_tot)
 {
+    // sanity check id
+    if (id >= 8) {
+        return;
+    }
+    struct log_Esc pkt = {
+        LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+id)),
+        time_us     : time_us,
+        rpm         : rpm,
+        voltage     : voltage,
+        current     : current,
+        temperature : temperature,
+        current_tot : current_tot
+    };
+    WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write a AIRSPEED packet
