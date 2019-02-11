@@ -627,16 +627,11 @@ void AP_KDECAN::update()
     // log ESC telemetry data
     for (uint8_t i = 0; i < _esc_max_node_id; i++) {
         if (telem_buffer[i].new_data) {
-            struct log_Esc pkt = {
-                LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+i)),
-                time_us     : telem_buffer[i].time,
-                rpm         : int32_t(telem_buffer[i].rpm * 60UL * 2 / num_poles * 100),
-                voltage     : telem_buffer[i].voltage,
-                current     : telem_buffer[i].current,
-                temperature : int16_t(telem_buffer[i].temp * 100U),
-                current_tot : 0
-            };
-            df->WriteBlock(&pkt, sizeof(pkt));
+            df->Write_ESC(i, telem_buffer[i].time,
+                          int32_t(telem_buffer[i].rpm * 60UL * 2 / num_poles * 100),
+                          telem_buffer[i].voltage,
+                          telem_buffer[i].current,
+                          int16_t(telem_buffer[i].temp * 100U), 0);
         }
     }
 }
