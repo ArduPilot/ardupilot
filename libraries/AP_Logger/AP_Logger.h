@@ -377,9 +377,9 @@ protected:
                                bool is_critical);
 
 private:
-    #define DATAFLASH_MAX_BACKENDS 2
+    #define LOGGER_MAX_BACKENDS 2
     uint8_t _next_backend;
-    AP_Logger_Backend *backends[DATAFLASH_MAX_BACKENDS];
+    AP_Logger_Backend *backends[LOGGER_MAX_BACKENDS];
     const AP_Int32 &_log_bitmask;
 
     enum class Backend_Type : uint8_t {
