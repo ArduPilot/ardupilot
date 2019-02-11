@@ -1074,11 +1074,13 @@ private:
         Failsafe_Action_Land      = 2,
         Failsafe_Action_Terminate = 3,
         Failsafe_Action_QLand     = 4,
+        Failsafe_Action_Parachute = 5
     };
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
+                                                      Failsafe_Action_Parachute,
                                                       Failsafe_Action_QLand,
                                                       Failsafe_Action_Land,
                                                       Failsafe_Action_RTL,

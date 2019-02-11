@@ -178,6 +178,10 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #endif
             break;
 
+        case Failsafe_Action_Parachute:
+            parachute_release();
+            break;
+
         case Failsafe_Action_None:
             // don't actually do anything, however we should still flag the system as having hit a failsafe
             // and ensure all appropriate flags are going off to the user
