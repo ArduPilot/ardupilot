@@ -155,7 +155,7 @@ private:
     // get the closest distance between 2 line segments and the point midway between the closest points
     static dist_point segment_segment_dist(const Vector3f& p1, const Vector3f& p2, const Vector3f& p3, const Vector3f& p4);
 
-    // de-activate SmartRTL, send warning to GCS and log to dataflash
+    // de-activate SmartRTL, send warning to GCS and logger
     void deactivate(SRTL_Actions action, const char *reason);
 
     // logging
