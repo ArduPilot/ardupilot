@@ -907,7 +907,7 @@ struct PACKED log_GYRO {
     float GyrX, GyrY, GyrZ;
 };
 
-struct PACKED log_DF_MAV_Stats {
+struct PACKED log_MAV_Stats {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
     uint32_t seqno;
@@ -1310,7 +1310,7 @@ Format characters in the format string for binary log messages
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QCBBCBB", "TimeUS,Dist1,Stat1,Orient1,Dist2,Stat2,Orient2", "sm--m--", "FB--B--" }, \
-    { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
+    { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "IIIIIBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "C-------------" }, \
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
       "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--BBBBBBB" }, \
@@ -1625,7 +1625,7 @@ enum LogMessages : uint8_t {
     LOG_GPAB_MSG,
     LOG_RFND_MSG,
     LOG_BAR3_MSG,
-    LOG_DF_MAV_STATS,
+    LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,
     LOG_MULT_MSG,

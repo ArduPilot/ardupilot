@@ -12,13 +12,13 @@ public:
     virtual void process() = 0;
     virtual bool finished() { return _finished; }
 
-    virtual void set_dataflash_backend(class AP_Logger_Backend *backend) {
-        _dataflash_backend = backend;
+    virtual void set_logger_backend(class AP_Logger_Backend *backend) {
+        _logger_backend = backend;
     }
 
 protected:
     bool _finished = false;
-    AP_Logger_Backend *_dataflash_backend = nullptr;
+    AP_Logger_Backend *_logger_backend = nullptr;
 };
 
 
@@ -81,11 +81,11 @@ public:
         {
         }
 
-    virtual void set_dataflash_backend(class AP_Logger_Backend *backend) override {
-        LoggerMessageWriter::set_dataflash_backend(backend);
-        _writesysinfo.set_dataflash_backend(backend);
-        _writeentiremission.set_dataflash_backend(backend);
-        _writeallrallypoints.set_dataflash_backend(backend);
+    virtual void set_logger_backend(class AP_Logger_Backend *backend) override {
+        LoggerMessageWriter::set_logger_backend(backend);
+        _writesysinfo.set_logger_backend(backend);
+        _writeentiremission.set_logger_backend(backend);
+        _writeallrallypoints.set_logger_backend(backend);
     }
 
     void reset() override;

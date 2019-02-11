@@ -4,7 +4,7 @@
 
 #include "AP_Logger_MAVLink.h"
 
-#if DATAFLASH_MAVLINK_SUPPORT
+#if LOGGER_MAVLINK_SUPPORT
 
 #include "LogStructure.h"
 
@@ -318,27 +318,27 @@ void AP_Logger_MAVLink::stats_reset() {
     stats.collection_count = 0;
 }
 
-void AP_Logger_MAVLink::Write_DF_MAV(AP_Logger_MAVLink &df)
+void AP_Logger_MAVLink::Write_logger_MAV(AP_Logger_MAVLink &logger_mav)
 {
-    if (df.stats.collection_count == 0) {
+    if (logger_mav.stats.collection_count == 0) {
         return;
     }
-    struct log_DF_MAV_Stats pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_DF_MAV_STATS),
+    struct log_MAV_Stats pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MAV_STATS),
         timestamp         : AP_HAL::millis(),
-        seqno             : df._next_seq_num-1,
-        dropped           : df._dropped,
-        retries           : df._blocks_retry.sent_count,
-        resends           : df.stats.resends,
-        state_free_avg    : (uint8_t)(df.stats.state_free/df.stats.collection_count),
-        state_free_min    : df.stats.state_free_min,
-        state_free_max    : df.stats.state_free_max,
-        state_pending_avg : (uint8_t)(df.stats.state_pending/df.stats.collection_count),
-        state_pending_min : df.stats.state_pending_min,
-        state_pending_max : df.stats.state_pending_max,
-        state_sent_avg    : (uint8_t)(df.stats.state_sent/df.stats.collection_count),
-        state_sent_min    : df.stats.state_sent_min,
-        state_sent_max    : df.stats.state_sent_max,
+        seqno             : logger_mav._next_seq_num-1,
+        dropped           : logger_mav._dropped,
+        retries           : logger_mav._blocks_retry.sent_count,
+        resends           : logger_mav.stats.resends,
+        state_free_avg    : (uint8_t)(logger_mav.stats.state_free/logger_mav.stats.collection_count),
+        state_free_min    : logger_mav.stats.state_free_min,
+        state_free_max    : logger_mav.stats.state_free_max,
+        state_pending_avg : (uint8_t)(logger_mav.stats.state_pending/logger_mav.stats.collection_count),
+        state_pending_min : logger_mav.stats.state_pending_min,
+        state_pending_max : logger_mav.stats.state_pending_max,
+        state_sent_avg    : (uint8_t)(logger_mav.stats.state_sent/logger_mav.stats.collection_count),
+        state_sent_min    : logger_mav.stats.state_sent_min,
+        state_sent_max    : logger_mav.stats.state_sent_max,
     };
     WriteBlock(&pkt,sizeof(pkt));
 }
@@ -351,7 +351,7 @@ void AP_Logger_MAVLink::stats_log()
     if (stats.collection_count == 0) {
         return;
     }
-    Write_DF_MAV(*this);
+    Write_logger_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
     printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
            dropped,
