@@ -25,7 +25,7 @@ bool Sub::init_arm_motors(AP_Arming::Method method)
         return false;
     }
 
-    // let dataflash know that we're armed (it may open logs e.g.)
+    // let logger know that we're armed (it may open logs e.g.)
     AP::logger().set_vehicle_armed(true);
 
     // disable cpu failsafe because initialising everything takes a while
@@ -67,7 +67,6 @@ bool Sub::init_arm_motors(AP_Arming::Method method)
     // finally actually arm the motors
     motors.armed(true);
 
-    // log arming to dataflash
     Log_Write_Event(DATA_ARMED);
 
     // log flight mode in case it was changed while vehicle was disarmed
@@ -108,7 +107,6 @@ void Sub::init_disarm_motors()
         }
     }
 
-    // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
 
     // send disarm command to motors

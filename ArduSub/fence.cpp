@@ -41,7 +41,6 @@ void Sub::fence_check()
             //            }
         }
 
-        // log an error in the dataflash
         AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
     } else if (orig_breaches) {
         // record clearing of breach
