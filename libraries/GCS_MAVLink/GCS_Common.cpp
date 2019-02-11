@@ -1531,7 +1531,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         }
     }
 
-    // consider logging mavlink stats to dataflash:
+    // consider logging mavlink stats:
     if (is_active() || is_streaming()) {
         if (tnow - last_mavlink_stats_logged > 1000) {
             log_mavlink_stats();
@@ -1623,7 +1623,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 }
 
 /*
-  record stats about this link to dataflash
+  record stats about this link to logger
 */
 void GCS_MAVLINK::log_mavlink_stats()
 {
@@ -1894,9 +1894,9 @@ void GCS_MAVLINK::send_ahrs()
 */
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
-    AP_Logger *dataflash = AP_Logger::get_singleton();
-    if (dataflash != nullptr) {
-        dataflash->Write_Message(text);
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger != nullptr) {
+        logger->Write_Message(text);
     }
 
     // add statustext message to FrSky lib queue
@@ -2641,8 +2641,8 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
                         msg->sysid,
                         round_trip_time_us*0.001f);
 #endif
-        AP_Logger *df = AP_Logger::get_singleton();
-        if (df != nullptr) {
+        AP_Logger *logger = AP_Logger::get_singleton();
+        if (logger != nullptr) {
             AP::logger().Write(
                 "TSYN",
                 "TimeUS,SysID,RTT",
@@ -2692,8 +2692,8 @@ void GCS_MAVLINK::send_timesync()
 
 void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 {
-    AP_Logger *df = AP_Logger::get_singleton();
-    if (df == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return;
     }
 
@@ -2714,7 +2714,7 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
 
-    df->Write_Message(text);
+    logger->Write_Message(text);
 }
 
 
@@ -2787,7 +2787,6 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
         return;
     }
 
-    // log ahrs home and ekf origin dataflash
     ahrs.Log_Write_Home_And_Origin();
 
     // send ekf origin to GCS
