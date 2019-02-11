@@ -219,15 +219,12 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
 AP_Airspeed::AP_Airspeed()
 {
+    SINGLETON_INIT();
+
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         state[i].EAS2TAS = 1;
     }
     AP_Param::setup_object_defaults(this, var_info);
-
-    if (_singleton != nullptr) {
-        AP_HAL::panic("AP_Airspeed must be singleton");
-    }
-    _singleton = this;
 }
 
 void AP_Airspeed::init()
@@ -502,5 +499,10 @@ bool AP_Airspeed::all_healthy(void) const
     return true;
 }
 
-// singleton instance
+// singleton instance. Should only ever be set in the constructor.
 AP_Airspeed *AP_Airspeed::_singleton;
+namespace AP {
+    AP_Airspeed *airspeed() {
+        return AP_Airspeed::get_singleton();
+    }
+}
