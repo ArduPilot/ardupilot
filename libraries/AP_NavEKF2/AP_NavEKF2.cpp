@@ -35,6 +35,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_MASK           1
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -60,6 +61,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_MASK           1
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -85,6 +87,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    150
+#define FLOW_USE_MASK           2
 
 #else
 // build type not specified, use copter defaults
@@ -110,6 +113,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_MASK           3
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -552,6 +556,15 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: ms
     // @RebootRequired: True
     AP_GROUPINFO("EXTNAV_DELAY", 50, NavEKF2, _extnavDelay_ms, 10),
+
+    // @Param: FLOW_MASK
+    // @DisplayName: Optical flow use bitmask
+    // @Description: Bitmask controlling if the optical flow dara is fused into the main navigation estimator and/or the terrain estimator.
+    // @User: Advanced
+    // @Values: 0:None,1:Navigation,2:Terrain,3:Both
+    // @Bitmask: 0:Navigation,1:Terrain
+    // @RebootRequired: True
+    AP_GROUPINFO("FLOW_MASK", 51, NavEKF2, _flowUseMask, FLOW_USE_MASK),
 
     AP_GROUPEND
 };
