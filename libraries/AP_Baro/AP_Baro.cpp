@@ -706,16 +706,16 @@ void AP_Baro::_probe_i2c_barometers(void)
     }
 }
 
-bool AP_Baro::should_df_log() const
+bool AP_Baro::should_log() const
 {
-    AP_Logger *instance = AP_Logger::get_singleton();
-    if (instance == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return false;
     }
     if (_log_baro_bit == (uint32_t)-1) {
         return false;
     }
-    if (!instance->should_log(_log_baro_bit)) {
+    if (!logger->should_log(_log_baro_bit)) {
         return false;
     }
     return true;
@@ -789,7 +789,7 @@ void AP_Baro::update(void)
     }
 
     // logging
-    if (should_df_log() && !AP::ahrs().have_ekf_logging()) {
+    if (should_log() && !AP::ahrs().have_ekf_logging()) {
         AP::logger().Write_Baro();
     }
 }
