@@ -318,7 +318,7 @@ RC_Channel::percent_input() const
 }
 
 /*
-  Return true if the channel is at trim and within the DZ
+  return true if input is within deadzone of trim
 */
 bool RC_Channel::in_trim_dz() const
 {
