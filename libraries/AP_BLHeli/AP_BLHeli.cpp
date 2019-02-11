@@ -1348,16 +1348,13 @@ void AP_BLHeli::read_telemetry_packet(void)
 
     AP_Logger *df = AP_Logger::get_singleton();
     if (df && df->logging_enabled()) {
-        struct log_Esc pkt = {
-            LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+last_telem_esc)),
-            time_us     : AP_HAL::micros64(),
-            rpm         : int32_t(td.rpm*100U),
-            voltage     : td.voltage,
-            current     : td.current,
-            temperature : int16_t(td.temperature * 100U),
-            current_tot : td.consumption
-        };
-        df->WriteBlock(&pkt, sizeof(pkt));
+        df->Write_ESC(uint8_t(last_telem_esc),
+                      AP_HAL::micros64(),
+                      td.rpm*100U,
+                      td.voltage,
+                      td.current,
+                      td.temperature * 100U,
+                      td.consumption);
     }
     if (debug_level >= 2) {
         hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u t=%u\n",
