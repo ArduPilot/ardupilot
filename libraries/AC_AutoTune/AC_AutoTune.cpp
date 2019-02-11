@@ -168,7 +168,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         if (success) {
             // reset gains to tuning-start gains (i.e. low I term)
             load_gains(GAIN_INTRA_TEST);
-            // write dataflash log even and send message to ground station
+            // write log event and send message to ground station
             Log_Write_Event(EVENT_AUTOTUNE_RESTART);
             update_gcs(AUTOTUNE_MESSAGE_STARTED);
         }
