@@ -57,7 +57,7 @@ void Copter::failsafe_check()
         if (motors->armed()) {
             motors->output_min();
         }
-        // log an error
+
         AP::logger().Write_Error(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_OCCURRED);
     }
 
