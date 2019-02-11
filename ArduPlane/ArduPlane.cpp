@@ -108,7 +108,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif
 };
 
-constexpr int8_t Plane::_failsafe_priorities[6];
+constexpr int8_t Plane::_failsafe_priorities[7];
 
 void Plane::setup() 
 {
@@ -577,7 +577,9 @@ void Plane::update_alt()
 
     // low pass the sink rate to take some of the noise out
     auto_state.sink_rate = 0.8f * auto_state.sink_rate + 0.2f*sink_rate;
-    
+#if PARACHUTE == ENABLED
+    parachute.set_sink_rate(auto_state.sink_rate);
+#endif
     geofence_check(true);
 
     update_flight_stage();
