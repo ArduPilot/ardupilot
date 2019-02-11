@@ -291,7 +291,6 @@ public:
     // time_since_last_xy_update - returns time in seconds since the horizontal position controller was last run
     float time_since_last_xy_update() const;
 
-    // write log to dataflash
     void write_log();
 
     // provide feedback on whether arming would be a good idea right now:
