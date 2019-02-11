@@ -242,10 +242,10 @@ AP_BattMonitor::read()
         }
     }
 
-    AP_Logger *df = AP_Logger::get_singleton();
-    if (df->should_log(_log_battery_bit)) {
-        df->Write_Current();
-        df->Write_Power();
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger->should_log(_log_battery_bit)) {
+        logger->Write_Current();
+        logger->Write_Power();
     }
 
     check_failsafes();
