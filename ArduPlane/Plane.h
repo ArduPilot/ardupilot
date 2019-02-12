@@ -514,8 +514,11 @@ private:
         // turn angle for next leg of mission
         float next_turn_angle {90};
 
-        // filtered sink rate for landing
+        // filtered current sink rate for landing
         float sink_rate;
+
+        // sink-rate demand override for missions that dictate altitude changes
+        float sink_rate_demand_override;
 
         // time when we first pass min GPS speed on takeoff
         uint32_t takeoff_speed_time_ms;
@@ -904,6 +907,7 @@ private:
     void geofence_disable_and_send_error_msg(const char *errorMsg);
     void disarm_if_autoland_complete();
     float tecs_hgt_afe(void);
+    float tecs_sink_climb_rate_override(void);
     void set_nav_controller(void);
     void loiter_angle_reset(void);
     void loiter_angle_update(void);

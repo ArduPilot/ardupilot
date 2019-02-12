@@ -730,7 +730,7 @@ bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
 
-    update_loiter(cmd.p1);
+    update_loiter(cmd.content.loiter_to_alt.radius);
 
     // condition_value == 0 means alt has never been reached
     if (condition_value == 0) {

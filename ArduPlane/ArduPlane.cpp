@@ -841,6 +841,7 @@ void Plane::update_alt()
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
                                                  aerodynamic_load_factor,
+                                                 tecs_sink_climb_rate_override(),
                                                  soaring_active);
     }
 }
@@ -913,7 +914,23 @@ void Plane::disarm_if_autoland_complete()
     }
 }
 
+/*
+  the sink/climb rate override that we pass to TECS
+ */
+float Plane::tecs_sink_climb_rate_override(void)
+{
+    float rate = 0;
 
+    if (control_mode == AUTO &&
+        mission.state() == AP_Mission::MISSION_RUNNING &&
+        mission.get_current_nav_cmd().id == MAV_CMD_NAV_LOITER_TO_ALT &&
+        mission.get_current_nav_cmd().content.loiter_to_alt.rate >= 0.1)
+    {
+        return mission.get_current_nav_cmd().content.loiter_to_alt.rate;
+    }
+
+    return 0;
+}
 
 /*
   the height above field elevation that we pass to TECS
