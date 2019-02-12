@@ -928,16 +928,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        // check for supported coordinate frames
-        if (packet.coordinate_frame != MAV_FRAME_GLOBAL &&
-                packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
-                packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT && // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
-                packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
-                packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT &&
-                packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
-            break;
-        }
-
         bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
         bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
         bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
@@ -956,29 +946,20 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
                 break;
             }
-            Location loc;
-            loc.lat = packet.lat_int;
-            loc.lng = packet.lon_int;
-            loc.alt = packet.alt*100;
-            switch (packet.coordinate_frame) {
-            case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
-            case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
-                loc.relative_alt = true;
-                loc.terrain_alt = false;
-                break;
-            case MAV_FRAME_GLOBAL_TERRAIN_ALT:
-            case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-                loc.relative_alt = true;
-                loc.terrain_alt = true;
-                break;
-            case MAV_FRAME_GLOBAL:
-            case MAV_FRAME_GLOBAL_INT:
-            default:
-                loc.relative_alt = false;
-                loc.terrain_alt = false;
+            Location::ALT_FRAME frame;
+            if (!mavlink_coordinate_frame_to_location_alt_frame(packet.coordinate_frame, frame)) {
+                // unknown coordinate frame
                 break;
             }
-            pos_neu_cm = sub.pv_location_to_vector(loc);
+            const Location loc{
+                packet.lat_int,
+                packet.lon_int,
+                int32_t(packet.alt*100),
+                frame,
+            };
+            if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
+                break;
+            }
         }
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
