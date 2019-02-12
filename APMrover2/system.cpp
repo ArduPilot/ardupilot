@@ -80,10 +80,6 @@ void Rover::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
-    // setup frsky telemetry
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init((is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
-#endif
 #if DEVO_TELEM_ENABLED == ENABLED
     devo_telemetry.init();
 #endif
@@ -260,9 +256,6 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     // but it should be harmless to disable the fence temporarily in these situations as well
     g2.fence.manual_recovery_start();
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.update_control_mode(control_mode->mode_number());
-#endif
 #if DEVO_TELEM_ENABLED == ENABLED
     devo_telemetry.update_control_mode(control_mode->mode_number());
 #endif

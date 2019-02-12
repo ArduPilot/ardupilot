@@ -4,7 +4,7 @@
 
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
-MAV_TYPE GCS_MAVLINK_Rover::frame_type() const
+MAV_TYPE GCS_Rover::frame_type() const
 {
     if (rover.is_boat()) {
         return MAV_TYPE_SURFACE_BOAT;
@@ -55,7 +55,7 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
 return (MAV_MODE)_base_mode;
 }
 
-uint32_t GCS_MAVLINK_Rover::custom_mode() const
+uint32_t GCS_Rover::custom_mode() const
 {
     return rover.control_mode->mode_number();
 }
