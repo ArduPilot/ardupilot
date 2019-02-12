@@ -221,9 +221,9 @@ The Pixhawk4 has 7 analog inputs
 ## I2C Buses
 
  - the internal I2C port is bus 0 in ArduPilot (I2C3 in hardware)
- - the port labelled I2CA is bus 3 in ArduPilot (I2C1 in hardware)
+ - the port labelled I2CA is bus 3 in ArduPilot (I2C4 in hardware)
  - the port labelled I2CB is bus 2 in ArduPilot (I2c2 in hardware)
- - there is no external connector for I2C4
+ - the port labelled GPS is bus 1 in ArduPilot (I2c1 in hardware)
 
 ### Pinout for I2CA
 
