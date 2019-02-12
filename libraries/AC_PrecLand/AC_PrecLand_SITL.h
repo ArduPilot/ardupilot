@@ -1,7 +1,6 @@
 #pragma once
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
 #include <SITL/SITL.h>

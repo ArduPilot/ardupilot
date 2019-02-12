@@ -1,16 +1,11 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
  #include <AP_IRLock/AP_IRLock_SITL.h>
 #else
  #include <AP_IRLock/AP_IRLock.h>
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_IRLock/AP_IRLock_SITL.h>
 #endif
 
 /*

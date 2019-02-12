@@ -1,12 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PrecLand_SITL.h"
 
-extern const AP_HAL::HAL& hal;
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <stdio.h>
-
+#include "AP_AHRS/AP_AHRS.h"
 // init - perform initialisation of this backend
 void AC_PrecLand_SITL::init()
 {
