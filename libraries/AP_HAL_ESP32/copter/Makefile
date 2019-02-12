@@ -8,3 +8,6 @@ BUILD_DIR_BASE = ../../../build/esp32/idf-copter
 
 include $(IDF_PATH)/make/project.mk
 
+showinc:
+	echo INCLUDES: $(COMPONENT_INCLUDES)
+

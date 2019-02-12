@@ -98,6 +98,15 @@ int16_t UARTDriver::read()
 
 void UARTDriver::_timer_tick(void)
 {
+    if (!_initialized) {
+        return;
+    }
+    read_data();
+    write_data();
+}
+
+void UARTDriver::read_data()
+{
     int count = 0;
     do {
         count = uart_read_bytes(uart_num, _buffer, sizeof(_buffer), 0);
@@ -105,7 +114,11 @@ void UARTDriver::_timer_tick(void)
             _readbuf.write(_buffer, count);
         }
     } while (count > 0);
+}
 
+void UARTDriver::write_data()
+{
+    int count = 0;
     _write_mutex.take_blocking();
     do {
         count = _writebuf.peekbytes(_buffer, sizeof(_buffer));
@@ -115,7 +128,6 @@ void UARTDriver::_timer_tick(void)
         }
     } while (count > 0);
     _write_mutex.give();
-
 }
 
 size_t UARTDriver::write(uint8_t c)

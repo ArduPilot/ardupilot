@@ -29,12 +29,14 @@ public:
     static const int I2C_PRIORITY = 19;
     static const int TIMER_PRIO = 15;
     static const int RCIN_PRIO = 10;
+    static const int WIFI_PRIO = 7;
     static const int UART_PRIO = 6;
     static const int IO_PRIO = 5;
     static const int STORAGE_PRIO = 4;
 
     static const int TIMER_SS = 4096;
     static const int RCIN_SS = 1024;
+    static const int WIFI_SS = 4096;
     static const int UART_SS = 1024;
     static const int DEVICE_SS = 4096;
     static const int IO_SS = 4096;

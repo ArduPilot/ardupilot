@@ -78,19 +78,17 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
 {
     if (!thread_started) {
         thread_started = true;
-
         hal_device = _hal_device;
         // setup a name for the thread
-        const uint8_t name_len = 7;
-        char *name = (char *)malloc(name_len);
+        char name[configMAX_TASK_NAME_LEN];
         switch (hal_device->bus_type()) {
         case AP_HAL::Device::BUS_TYPE_I2C:
-            snprintf(name, name_len, "I2C:%u",
+            snprintf(name, sizeof(name), "APM_I2C:%u",
                      hal_device->bus_num());
             break;
 
         case AP_HAL::Device::BUS_TYPE_SPI:
-            snprintf(name, name_len, "SPI:%u",
+            snprintf(name, sizeof(name), "APM_SPI:%u",
                      hal_device->bus_num());
             break;
         default:

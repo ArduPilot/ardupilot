@@ -1,14 +1,17 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "HAL_ESP32_Class.h"
 #include "Scheduler.h"
 #include "SPIDevice.h"
 #include "UARTDriver.h"
-#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include "WiFiDriver.h"
 
-static ESP32::UARTDriver uartADriver(0);
+static ESP32::UARTDriver cons(0);
+static Empty::UARTDriver uartADriver;
 static Empty::UARTDriver uartBDriver;
-static Empty::UARTDriver uartCDriver;
+static ESP32::WiFiDriver uartCDriver;
 static Empty::UARTDriver uartDDriver;
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
@@ -39,7 +42,7 @@ HAL_ESP32::HAL_ESP32() :
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
-        &uartADriver,
+        &cons,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,
@@ -53,7 +56,7 @@ HAL_ESP32::HAL_ESP32() :
 void print_stats()
 {
     static int64_t last_run = 0;
-    if (AP_HAL::millis64() - last_run > 20000) {
+    if (AP_HAL::millis64() - last_run > 60000) {
         char buffer[1024];
         vTaskGetRunTimeStats(buffer);
         printf("\n\n%s\n", buffer);
