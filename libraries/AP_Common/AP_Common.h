@@ -62,8 +62,6 @@
     inline uint8_t &operator[](size_t i) { return reinterpret_cast<uint8_t *>(this)[i]; }           \
     inline uint8_t operator[](size_t i) const { return reinterpret_cast<const uint8_t *>(this)[i]; }
 
-#define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
-
 /*
   check if bit bitnumber is set in value, returned as a
   bool. Bitnumber starts at 0 for the first bit
