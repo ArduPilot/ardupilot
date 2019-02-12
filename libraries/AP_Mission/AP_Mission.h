@@ -184,6 +184,12 @@ public:
         uint8_t relative_angle; // 0 = absolute angle, 1 = relative angle
     };
 
+    // LOITER_TO_ALT structure
+    struct PACKED Loiter_To_Alt_Command {
+        uint16_t radius;        // abs(radius) packet.param2 in meters
+        float rate;             // climb/sink rate in meters/second. If positive, it temporarily overrides the system param for both sink and climb rate
+    };
+
     // winch command structure
     struct PACKED Winch_Command {
         uint8_t num;            // winch number
@@ -250,8 +256,11 @@ public:
         // navigation delay
         Navigation_Delay_Command nav_delay;
 
-        // navigation delay
+        // NAV_SET_YAW_SPEED
         Set_Yaw_Speed set_yaw_speed;
+
+        // LOITER_TO_ALT
+        Loiter_To_Alt_Command loiter_to_alt;
 
         // do-winch
         Winch_Command winch;

@@ -771,9 +771,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
-        cmd.p1 = fabsf(packet.param2);                  // param2 is radius in meters
+        cmd.content.loiter_to_alt.radius = fabsf(packet.param2);    // radius in meters
         cmd.content.location.loiter_ccw = (packet.param2 < 0);
         cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        cmd.content.loiter_to_alt.rate = isnan(packet.param3)?0:fabsf(packet.param3);   // climb/sink rate in meters/second
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
@@ -1206,10 +1207,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
-        packet.param2 = cmd.p1;                        // loiter radius(m)
+        packet.param2 = abs(cmd.content.loiter_to_alt.radius);   // loiter radius(m)
         if (cmd.content.location.loiter_ccw) {
             packet.param2 = -packet.param2;
         }
+        packet.param3 = cmd.content.loiter_to_alt.rate;     // climb/sink rate in meters/second
         packet.param4 = cmd.content.location.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
