@@ -25,6 +25,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
@@ -32,11 +33,6 @@
 extern const AP_HAL::HAL& hal;
 
 ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
-
-//constructor
-AP_Frsky_Telem::AP_Frsky_Telem(const RangeFinder &rng) :
-    _rng(rng)
-    {}
 
 /*
  * init - perform required initialisation
@@ -785,6 +781,7 @@ uint32_t AP_Frsky_Telem::calc_velandyaw(void)
 uint32_t AP_Frsky_Telem::calc_attiandrng(void)
 {
     const AP_AHRS &_ahrs = AP::ahrs();
+    const RangeFinder *_rng = RangeFinder::get_singleton();
 
     uint32_t attiandrng;
 
@@ -793,7 +790,7 @@ uint32_t AP_Frsky_Telem::calc_attiandrng(void)
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
     attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
-    attiandrng |= prep_number(_rng.distance_cm_orient(ROTATION_PITCH_270), 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+    attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
 }
 
