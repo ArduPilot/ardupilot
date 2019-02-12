@@ -6,13 +6,15 @@
  */
 #pragma once
 
+#include <AP_HAL/utility/Socket.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "IRLock.h"
-#include <SITL/SITL.h>
 
-class AP_IRLock_SITL : public IRLock
+class AP_IRLock_SITL_Gazebo : public IRLock
 {
 public:
+    AP_IRLock_SITL_Gazebo();
+
     // init - initialize sensor library
     void init(int8_t bus) override;
 
@@ -20,7 +22,8 @@ public:
     bool update() override;
 
 private:
-    SITL::SITL          *_sitl;                 // sitl instance pointer
-    uint32_t _last_timestamp = 0;
+
+    uint32_t _last_timestamp;
+    SocketAPM sock;
 };
 #endif // CONFIG_HAL_BOARD
