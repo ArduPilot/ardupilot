@@ -37,8 +37,7 @@ ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_
 /*
  * init - perform required initialisation
  */
-void AP_Frsky_Telem::init(const uint8_t mav_type,
-                          const uint32_t *ap_valuep)
+void AP_Frsky_Telem::init(const uint32_t *ap_valuep)
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
@@ -50,7 +49,6 @@ void AP_Frsky_Telem::init(const uint8_t mav_type,
     } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
         // make frsky_telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
-        gcs().register_frsky_telemetry_callback(this);
         // add firmware and frame info to message queue
         if (_frame_string == nullptr) {
             queue_message(MAV_SEVERITY_INFO, AP::fwversion().fw_string);
@@ -60,7 +58,6 @@ void AP_Frsky_Telem::init(const uint8_t mav_type,
             queue_message(MAV_SEVERITY_INFO, firmware_buf);
         }
         // save main parameters locally
-        _params.mav_type = mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
         if (ap_valuep == nullptr) { // ap bit-field
             _ap.value = 0x2000; // set "initialised" to 1 for rover and plane
             _ap.valuep = &_ap.value;
@@ -271,7 +268,7 @@ void AP_Frsky_Telem::send_SPort(void)
                             send_uint32(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
                             break;
                         case 1:
-                            send_uint32(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
+                            send_uint32(DATA_ID_TEMP1, gcs().custom_mode()); // send flight mode
                             break;
                     }
                     if (_SPort.various_call++ > 1) _SPort.various_call = 0;
@@ -298,7 +295,7 @@ void AP_Frsky_Telem::send_D(void)
     if (now - _D.last_200ms_frame >= 200) {
         _D.last_200ms_frame = now;
         send_uint16(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
-        send_uint16(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
+        send_uint16(DATA_ID_TEMP1, gcs().custom_mode()); // send flight mode
         send_uint16(DATA_ID_FUEL, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining
         send_uint16(DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
         send_uint16(DATA_ID_CURRENT, (uint16_t)roundf(_battery.current_amps() * 10.0f)); // send current consumption
@@ -499,42 +496,44 @@ void AP_Frsky_Telem::check_sensor_status_flags(void)
 {
     uint32_t now = AP_HAL::millis();
 
+    const uint32_t _sensor_status_flags = sensor_status_flags();
+
     if ((now - check_sensor_status_timer) >= 5000) { // prevent repeating any system_status messages unless 5 seconds have passed
         // only one error is reported at a time (in order of preference). Same setup and displayed messages as Mission Planner.
-        if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_GPS) > 0) {
+        if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_GPS) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad GPS Health");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_GYRO) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_GYRO) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Gyro Health");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_ACCEL) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_ACCEL) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Accel Health");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_MAG) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_3D_MAG) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Compass Health");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Baro Health");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_LASER_POSITION) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_LASER_POSITION) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad LiDAR Health");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad OptFlow Health");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_TERRAIN) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_TERRAIN) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad or No Terrain Data");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_GEOFENCE) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_GEOFENCE) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Geofence Breach");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_AHRS) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_AHRS) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad AHRS");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_SENSOR_RC_RECEIVER) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_SENSOR_RC_RECEIVER) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "No RC Receiver");
             check_sensor_status_timer = now;
-        } else if ((_ap.sensor_status_flags & MAV_SYS_STATUS_LOGGING) > 0) {
+        } else if ((_sensor_status_flags & MAV_SYS_STATUS_LOGGING) > 0) {
             queue_message(MAV_SEVERITY_CRITICAL, "Bad Logging");
             check_sensor_status_timer = now;
         }
@@ -598,7 +597,7 @@ uint32_t AP_Frsky_Telem::calc_param(void)
     _paramID++;
     switch(_paramID) {
     case 1:
-        param = _params.mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
+        param = gcs().frame_type(); // see MAV_TYPE in Mavlink definition file common.h
         break;
     case 2: // was used to send the battery failsafe voltage
     case 3: // was used to send the battery failsafe capacity in mAh
@@ -699,7 +698,7 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     uint8_t imu_temp = (uint8_t) roundf(constrain_float(AP::ins().get_temperature(0), AP_IMU_TEMP_MIN, AP_IMU_TEMP_MAX) - AP_IMU_TEMP_MIN);
 
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
-    ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
+    ap_status = (uint8_t)((gcs().custom_mode()+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
     ap_status |= (uint8_t)((*_ap.valuep) & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
     // is_flying flag
@@ -934,4 +933,14 @@ void AP_Frsky_Telem::calc_gps_position(void)
         _gps.speed_in_meter = 0;
         _gps.speed_in_centimeter = 0;
     }
+}
+
+uint32_t AP_Frsky_Telem::sensor_status_flags() const
+{
+    uint32_t present;
+    uint32_t enabled;
+    uint32_t health;
+    gcs().get_sensor_status_flags(present, enabled, health);
+
+    return ~health & enabled & present;
 }
