@@ -26,7 +26,7 @@ else
     echo "pip installed"
 fi
 
-pip2 --user install pyserial future empy mavproxy
+pip2 install --user pyserial future empy mavproxy
 
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
