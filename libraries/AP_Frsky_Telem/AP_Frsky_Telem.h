@@ -120,14 +120,10 @@ public:
     AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
 
     // init - perform required initialisation
-    void init(const uint8_t mav_type,
-              const uint32_t *ap_valuep = nullptr);
+    void init(const uint32_t *ap_valuep = nullptr);
 
     // add statustext message to FrSky lib message queue
     void queue_message(MAV_SEVERITY severity, const char *text);
-
-    // update flight control mode. The control mode is vehicle type specific
-    void update_control_mode(uint8_t mode) { _ap.control_mode = mode; }
 
     // update whether we're flying (used for Plane)
     // set land_complete flag to 0 if is_flying
@@ -138,7 +134,7 @@ public:
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_flags = error_mask; }
+    uint32_t sensor_status_flags() const;
 
     static ObjectArray<mavlink_statustext_t> _statustext_queue;
 
@@ -154,15 +150,8 @@ private:
 
     struct
     {
-        uint8_t mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
-    } _params;
-    
-    struct
-    {
-        uint8_t control_mode;
         uint32_t value;
         const uint32_t *valuep;
-        uint32_t sensor_status_flags;
     } _ap;
 
     uint32_t check_sensor_status_timer;
