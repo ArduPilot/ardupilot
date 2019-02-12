@@ -304,9 +304,7 @@ protected:
     virtual bool set_mode(uint8_t mode) = 0;
     void set_ekf_origin(const Location& loc);
 
-    virtual MAV_TYPE frame_type() const = 0;
     virtual MAV_MODE base_mode() const = 0;
-    virtual uint32_t custom_mode() const = 0;
     virtual MAV_STATE system_status() const = 0;
 
     virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_UNDEFINED; }
@@ -602,9 +600,6 @@ private:
     // mavlink routing object
     static MAVLink_routing routing;
 
-    // pointer to static frsky_telem for queueing of text messages
-    static AP_Frsky_Telem *frsky_telemetry_p;
- 
     static const AP_SerialManager *serialmanager_p;
 
     struct pending_param_request {
@@ -738,6 +733,9 @@ public:
         return _singleton;
     }
 
+    virtual uint32_t custom_mode() const = 0;
+    virtual MAV_TYPE frame_type() const = 0;
+
     void send_text(MAV_SEVERITY severity, const char *fmt, ...);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     virtual void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text);
@@ -764,17 +762,9 @@ public:
         _out_of_time = val;
     }
 
-    /*
-      set a frsky_telem pointer for queueing
-     */
-    void register_frsky_telemetry_callback(AP_Frsky_Telem *frsky_telemetry) {
-        frsky_telemetry_p = frsky_telemetry;
-    }
+    // frsky backend
+    AP_Frsky_Telem frsky;
 
-    // static frsky_telem pointer to support queueing text messages
-    AP_Frsky_Telem *frsky_telemetry_p;
-
-    
     // install an alternative protocol handler
     bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
 

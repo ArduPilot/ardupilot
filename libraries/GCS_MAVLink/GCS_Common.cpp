@@ -1892,9 +1892,7 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
     }
 
     // add statustext message to FrSky lib queue
-    if (frsky_telemetry_p != NULL) {
-        frsky_telemetry_p->queue_message(severity, text);
-    }
+    frsky.queue_message(severity, text);
 
     AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
@@ -2017,6 +2015,8 @@ void GCS::setup_uarts(AP_SerialManager &serial_manager)
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         chan(i).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
+
+    frsky.init();
 }
 
 // report battery2 state
@@ -2271,10 +2271,10 @@ void GCS_MAVLINK::send_heartbeat() const
 {
     mavlink_msg_heartbeat_send(
         chan,
-        frame_type(),
+        gcs().frame_type(),
         MAV_AUTOPILOT_ARDUPILOTMEGA,
         base_mode(),
-        custom_mode(),
+        gcs().custom_mode(),
         system_status());
 }
 
