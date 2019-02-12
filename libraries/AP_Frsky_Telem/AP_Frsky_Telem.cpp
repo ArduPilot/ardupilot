@@ -23,6 +23,7 @@
 #include "AP_Frsky_Telem.h"
 
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -33,8 +34,7 @@ extern const AP_HAL::HAL& hal;
 ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
 
 //constructor
-AP_Frsky_Telem::AP_Frsky_Telem(const AP_BattMonitor &battery, const RangeFinder &rng) :
-    _battery(battery),
+AP_Frsky_Telem::AP_Frsky_Telem(const RangeFinder &rng) :
     _rng(rng)
     {}
 
@@ -139,7 +139,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 _passthrough.batt_timer = AP_HAL::millis();
                 return;
             }
-            if (_battery.num_instances() > 1) {
+            if (AP::battery().num_instances() > 1) {
                 if ((now - _passthrough.batt_timer2) >= 1000) {
                     send_uint32(DIY_FIRST_ID+8, calc_batt(1));
                     _passthrough.batt_timer2 = AP_HAL::millis();
@@ -202,6 +202,7 @@ void AP_Frsky_Telem::send_SPort(void)
                 _SPort.sport_status = true;
             }
         } else {
+            const AP_BattMonitor &_battery = AP::battery();
             switch(readbyte) {
                 case SENSOR_ID_FAS:
                     switch (_SPort.fas_call) {
@@ -294,6 +295,7 @@ void AP_Frsky_Telem::send_SPort(void)
 void AP_Frsky_Telem::send_D(void)
 {
     const AP_AHRS &_ahrs = AP::ahrs();
+    const AP_BattMonitor &_battery = AP::battery();
 
     uint32_t now = AP_HAL::millis();
     // send frame1 every 200ms
@@ -589,6 +591,8 @@ void AP_Frsky_Telem::check_ekf_status(void)
  */
 uint32_t AP_Frsky_Telem::calc_param(void)
 {
+    const AP_BattMonitor &_battery = AP::battery();
+
     uint32_t param = 0;
 
     // cycle through paramIDs
@@ -674,6 +678,8 @@ uint32_t AP_Frsky_Telem::calc_gps_status(void)
  */
 uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
 {
+    const AP_BattMonitor &_battery = AP::battery();
+
     uint32_t batt;
     
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
