@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <utility>
 #include <AP_HAL/I2CDevice.h>
+#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 

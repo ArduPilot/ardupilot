@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Math/AP_Math.h>
 
 class IRLock
 {
