@@ -22,6 +22,7 @@
 
 #include "AP_Frsky_Telem.h"
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -32,8 +33,7 @@ extern const AP_HAL::HAL& hal;
 ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
 
 //constructor
-AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng) :
-    _ahrs(ahrs),
+AP_Frsky_Telem::AP_Frsky_Telem(const AP_BattMonitor &battery, const RangeFinder &rng) :
     _battery(battery),
     _rng(rng)
     {}
@@ -180,6 +180,8 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
  */
 void AP_Frsky_Telem::send_SPort(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     int16_t numc;
     numc = _port->available();
 
@@ -291,6 +293,8 @@ void AP_Frsky_Telem::send_SPort(void)
  */
 void AP_Frsky_Telem::send_D(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     uint32_t now = AP_HAL::millis();
     // send frame1 every 200ms
     if (now - _D.last_200ms_frame >= 200) {
@@ -545,6 +549,8 @@ void AP_Frsky_Telem::check_sensor_status_flags(void)
  */
 void AP_Frsky_Telem::check_ekf_status(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     // get variances
     float velVar, posVar, hgtVar, tasVar;
     Vector3f magVar;
@@ -713,6 +719,8 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
  */
 uint32_t AP_Frsky_Telem::calc_home(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     uint32_t home = 0;
     Location loc;
     float _relative_home_altitude = 0;
@@ -743,6 +751,8 @@ uint32_t AP_Frsky_Telem::calc_home(void)
  */
 uint32_t AP_Frsky_Telem::calc_velandyaw(void)
 {
+    AP_AHRS &_ahrs = AP::ahrs();
+
     uint32_t velandyaw;
     Vector3f velNED {};
 
@@ -768,6 +778,8 @@ uint32_t AP_Frsky_Telem::calc_velandyaw(void)
  */
 uint32_t AP_Frsky_Telem::calc_attiandrng(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     uint32_t attiandrng;
 
     // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
@@ -850,6 +862,8 @@ uint16_t AP_Frsky_Telem::prep_number(int32_t number, uint8_t digits, uint8_t pow
  */
 void AP_Frsky_Telem::calc_nav_alt(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     Location loc;
     float current_height = 0; // in centimeters above home
     if (_ahrs.get_position(loc)) {

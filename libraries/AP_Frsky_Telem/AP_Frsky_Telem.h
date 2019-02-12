@@ -15,7 +15,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -116,7 +115,7 @@ for FrSky SPort Passthrough
 
 class AP_Frsky_Telem {
 public:
-    AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
+    AP_Frsky_Telem(const AP_BattMonitor &battery, const RangeFinder &rng);
 
     /* Do not allow copies */
     AP_Frsky_Telem(const AP_Frsky_Telem &other) = delete;
@@ -148,7 +147,6 @@ public:
     void set_frame_string(const char *string) { _frame_string = string; }
 
 private:
-    AP_AHRS &_ahrs;
     const AP_BattMonitor &_battery;
     const RangeFinder &_rng;
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
