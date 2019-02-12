@@ -33,8 +33,8 @@ function prompt_user() {
 sudo usermod -a -G uucp $USER
 
 sudo pacman -Sy --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
-pip2 -q install -U $PYTHON2_PKGS --user
-pip3 -q install -U $PYTHON3_PKGS --user
+pip2 --user -q install -U $PYTHON2_PKGS
+pip3 --user -q install -U $PYTHON3_PKGS
 
 (
     cd /usr/lib/ccache
