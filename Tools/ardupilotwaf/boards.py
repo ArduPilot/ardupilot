@@ -368,14 +368,6 @@ class esp32(Board):
         env.AP_LIBRARIES += [
             'AP_HAL_ESP32',
         ]
-        env.INCLUDES += [ expand_path('/components/driver/include'),
-                          expand_path('/components/esp32/include'),
-                          expand_path('/components/freertos/include'),
-                          expand_path('/components/soc/esp32/include'),
-                          expand_path('/components/soc/include'),
-                          expand_path('/components/heap/include'),
-                          expand_path('/components/esp_ringbuf/include'),
-                          cfg.bldnode.make_node('esp32/idf-plane/include').abspath()] 
         env.CXXFLAGS += ['-mlongcalls',
                          '-Os',
                          '-ffunction-sections',
