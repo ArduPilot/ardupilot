@@ -33,6 +33,7 @@ public:
 										int16_t throttle_nudge,
                                         float hgt_afe,
 										float load_factor,
+										float sink_climb_rate_override,
                                         bool soaring_active) = 0;
 
 	// demanded throttle in percentage

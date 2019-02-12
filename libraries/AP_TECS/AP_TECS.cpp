@@ -20,7 +20,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Increment: 0.1
     // @Range: 0.1 20.0
     // @User: Standard
-    AP_GROUPINFO("CLMB_MAX",    0, AP_TECS, _maxClimbRate, 5.0f),
+    AP_GROUPINFO("CLMB_MAX",    0, AP_TECS, _maxClimbRate_param, 5.0f),
 
     // @Param: SINK_MIN
     // @DisplayName: Minimum Sink Rate (metres/sec)
@@ -108,7 +108,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Increment: 0.1
     // @Range: 0.0 20.0
     // @User: User
-    AP_GROUPINFO("SINK_MAX",  11, AP_TECS, _maxSinkRate, 5.0f),
+    AP_GROUPINFO("SINK_MAX",  11, AP_TECS, _maxSinkRate_param, 5.0f),
 
     // @Param: LAND_ARSPD
     // @DisplayName: Airspeed during landing approach (m/s)
@@ -886,7 +886,7 @@ void AP_TECS::_update_pitch(void)
     _last_pitch_dem = _pitch_dem;
 }
 
-void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
+void AP_TECS::_initialise_states(const int32_t ptchMinCO_cd, const float hgt_afe, const float sink_climb_rate_override)
 {
     // Initialise states and variables if DT > 1 second or in climbout
     if (_DT > 1.0f)
@@ -919,6 +919,15 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _flags.badDescent  = false;
     }
     
+    if (sink_climb_rate_override < 0.1f) {
+        // disabled or value too low to be useful so don't use override. use params.
+        _maxClimbRate = _maxClimbRate_param;
+        _maxSinkRate = _maxSinkRate_param;
+    } else {
+        _maxClimbRate = sink_climb_rate_override;
+        _maxSinkRate = sink_climb_rate_override;
+    }
+
     if (_flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF && _flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         // reset takeoff speed flag when not in takeoff
         _flags.reached_speed_takeoff = false;        
@@ -942,6 +951,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
                                     float load_factor,
+                                    float sink_climb_rate_override,
                                     bool soaring_active)
 {
     // Calculate time in seconds since last update
@@ -1036,7 +1046,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _PITCHminf = radians(_PITCHminf);
 
     // initialise selected states and variables if DT > 1 second or in climbout
-    _initialise_states(ptchMinCO_cd, hgt_afe);
+    _initialise_states(ptchMinCO_cd, hgt_afe, sink_climb_rate_override);
 
     // Calculate Specific Total Energy Rate Limits
     _update_STE_rate_lim();

@@ -54,6 +54,7 @@ public:
                                int16_t throttle_nudge,
                                float hgt_afe,
                                float load_factor,
+                               float sink_climb_rate_override,
                                bool soaring_active) override;
 
     // demanded throttle in percentage
@@ -139,12 +140,17 @@ private:
     // reference to const AP_Landing to access it's params
     const AP_Landing &_landing;
     
+
+    // active value for param data
+    float _maxClimbRate;
+    float _maxSinkRate;
+
     // TECS tuning parameters
     AP_Float _hgtCompFiltOmega;
     AP_Float _spdCompFiltOmega;
-    AP_Float _maxClimbRate;
+    AP_Float _maxClimbRate_param;
     AP_Float _minSinkRate;
-    AP_Float _maxSinkRate;
+    AP_Float _maxSinkRate_param;
     AP_Float _timeConst;
     AP_Float _landTimeConst;
     AP_Float _ptchDamp;
@@ -359,7 +365,7 @@ private:
     void _update_pitch(void);
 
     // Initialise states and variables
-    void _initialise_states(int32_t ptchMinCO_cd, float hgt_afe);
+    void _initialise_states(const int32_t ptchMinCO_cd, const float hgt_afe, const float sink_climb_rate_override);
 
     // Calculate specific total energy rate limits
     void _update_STE_rate_lim(void);
