@@ -123,8 +123,7 @@ public:
     AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager,
-              const uint8_t mav_type,
+    void init(const uint8_t mav_type,
               const uint32_t *ap_valuep = nullptr);
 
     // add statustext message to FrSky lib message queue
