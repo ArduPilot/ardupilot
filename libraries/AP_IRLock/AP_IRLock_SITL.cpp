@@ -23,64 +23,35 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_IRLock_SITL.h"
-#include <SITL/SITL.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-#include <iostream>
-
-extern const AP_HAL::HAL& hal;
-
-AP_IRLock_SITL::AP_IRLock_SITL() :
-    _last_timestamp(0),
-    sock(true)
-{}
+#include "AP_AHRS/AP_AHRS.h"
 
 void AP_IRLock_SITL::init(int8_t bus)
 {
-    SITL::SITL *sitl = AP::sitl();
-    // try to bind to a specific port so that if we restart ArduPilot
-    // Gazebo keeps sending us packets. Not strictly necessary but
-    // useful for debugging
-    sock.bind("127.0.0.1", sitl->irlock_port);
-
-    sock.reuseaddress();
-    sock.set_blocking(false);
-
-    hal.console->printf("AP_IRLock_SITL::init()\n");
-
-    _flags.healthy = true;
+    _sitl = AP::sitl();
+    _sitl->precland_sim._type.set_and_notify(SITL::SIM_Precland::PreclandType::PRECLAND_TYPE_CONE);
 }
 
 // retrieve latest sensor data - returns true if new data is available
 bool AP_IRLock_SITL::update()
 {
     // return immediately if not healthy
+    _flags.healthy = _sitl->precland_sim.healthy();
     if (!_flags.healthy) {
         return false;
     }
 
-    // receive packet from Gazebo IRLock plugin
-    irlock_packet pkt;
-    const int wait_ms = 0;
-    ssize_t s = sock.recv(&pkt, sizeof(irlock_packet), wait_ms);
-
-    bool new_data = false;
-
-    if (s == sizeof(irlock_packet) && pkt.timestamp > _last_timestamp) {
-        // fprintf(stderr, "     posx %f posy %f sizex %f sizey %f\n", pkt.pos_x, pkt.pos_y, pkt.size_x, pkt.size_y);
-        _target_info.timestamp = pkt.timestamp;
-        _target_info.pos_x = pkt.pos_x;
-        _target_info.pos_y = pkt.pos_y;
-        _target_info.size_x = pkt.size_x;
-        _target_info.size_y = pkt.size_y;
-        _last_timestamp = pkt.timestamp;
+    if (_sitl->precland_sim.last_update_ms() != _last_timestamp) {
+        const Vector3f position = _sitl->precland_sim.get_target_position();
+        const Matrix3f &body_to_ned = AP::ahrs().get_rotation_body_to_ned();
+        const Vector3f real_position =  body_to_ned.mul_transpose(-position);
+        _last_timestamp = _sitl->precland_sim.last_update_ms();
         _last_update_ms = _last_timestamp;
-        new_data = true;
+        _target_info.timestamp = _last_timestamp;
+        _target_info.pos_x = real_position.y;
+        _target_info.pos_y = -real_position.x;
+        return true;
     }
-
-    // return true if new data found
-    return new_data;
+    return false;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
