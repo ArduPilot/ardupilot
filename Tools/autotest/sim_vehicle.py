@@ -22,6 +22,7 @@ import textwrap
 import time
 import shlex
 
+from MAVProxy.modules.lib import mp_util
 from pysim import vehicleinfo
 
 # List of open terminal windows for macosx
@@ -156,7 +157,7 @@ def cygwin_pidof(proc_name):
         if cmd == proc_name:
             try:
                 pid = int(line_split[0].strip())
-            except:
+            except Exception as e:
                 pid = int(line_split[1].strip())
             if pid not in pids:
                 pids.append(pid)
@@ -252,34 +253,6 @@ def kill_tasks():
         progress("kill_tasks failed: {}".format(str(e)))
 
 
-def check_jsbsim_version():
-    """Assert that the JSBSim we will run is the one we expect to run"""
-    jsbsim_cmd = ["JSBSim", "--version"]
-    progress_cmd("Get JSBSim version", jsbsim_cmd)
-    try:
-        jsbsim = subprocess.Popen(jsbsim_cmd, stdout=subprocess.PIPE)
-        jsbsim_version = jsbsim.communicate()[0]
-    except OSError:
-        # this value will trigger the ".index" check below and produce
-        # a reasonable error message:
-        jsbsim_version = ''
-    try:
-        jsbsim_version.index(b"ArduPilot")
-    except ValueError:
-        print(r"""
-=========================================================
-You need the latest ArduPilot version of JSBSim installed
-and in your \$PATH
-
-Please get it from git://github.com/tridge/jsbsim.git
-See
-http://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html
-for more details
-=========================================================
-""")
-        sys.exit(1)
-
-
 def progress(text):
     """Display sim_vehicle progress text"""
     print("SIM_VEHICLE: " + text)
@@ -321,6 +294,9 @@ def do_build_waf(opts, frame_options):
     if opts.OSD:
         cmd_configure.append("--enable-sfml")
 
+    if opts.flash_storage:
+        cmd_configure.append("--sitl-flash-storage")
+        
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -418,6 +394,27 @@ def get_user_locations_path():
     return user_locations_path
 
 
+def find_new_spawn(loc, file_path):
+    (lat, lon, alt, heading) = loc.split(",")
+    swarminit_filepath = os.path.join(find_autotest_dir(), "swarminit.txt")
+    for path2 in [file_path, swarminit_filepath]:
+        if os.path.isfile(path2):
+            with open(path2, 'r') as swd:
+                next(swd)
+                for lines in swd:
+                    if len(lines) == 0:
+                        continue
+                    (instance, offset) = lines.split("=")
+                    if ((int)(instance) == (int)(cmd_opts.instance)):
+                        (x, y, z, head) = offset.split(",")
+                        g = mp_util.gps_offset((float)(lat), (float)(lon), (float)(x), (float)(y))
+                        loc = str(g[0])+","+str(g[1])+","+str(alt+z)+","+str(head)
+                        return loc
+        g = mp_util.gps_newpos((float)(lat), (float)(lon), 90, 20*(int)(cmd_opts.instance))
+        loc = str(g[0])+","+str(g[1])+","+str(alt)+","+str(heading)
+        return loc
+
+
 def find_location_by_name(autotest, locname):
     """Search locations.txt for locname, return GPS coords"""
     locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
@@ -427,7 +424,6 @@ def find_location_by_name(autotest, locname):
     for path in [locations_userpath, locations_filepath]:
         if not os.path.isfile(path):
             continue
-
         with open(path, 'r') as fd:
             for line in fd:
                 line = re.sub(comment_regex, "", line)
@@ -436,6 +432,8 @@ def find_location_by_name(autotest, locname):
                     continue
                 (name, loc) = line.split("=")
                 if name == locname:
+                    if cmd_opts.swarm is not None:
+                        loc = find_new_spawn(loc, cmd_opts.swarm)
                     return loc
 
     print("Failed to find location (%s)" % cmd_opts.location)
@@ -539,9 +537,13 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     if opts.valgrind:
         cmd_name += " (valgrind)"
         cmd.append("valgrind")
+        # adding this option allows valgrind to cope with the overload
+        # of operator new
+        cmd.append("--soname-synonyms=somalloc=nouserintercepts")
     if opts.callgrind:
         cmd_name += " (callgrind)"
-        cmd.append("valgrind --tool=callgrind")
+        cmd.append("valgrind")
+        cmd.append("--tool=callgrind")
     if opts.gdb or opts.gdb_stopped:
         cmd_name += " (gdb)"
         cmd.append("gdb")
@@ -595,6 +597,8 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
     if path is not None:
         cmd.extend(["--defaults", path])
+    if opts.mcast:
+        cmd.extend(["--uartA mcast:"])
 
     run_in_terminal_window(autotest, cmd_name, cmd)
 
@@ -609,14 +613,17 @@ def start_mavproxy(opts, stuff):
     if under_cygwin():
         cmd.append("/usr/bin/cygstart")
         cmd.append("-w")
-        cmd.append("/cygdrive/c/Program Files (x86)/MAVProxy/mavproxy.exe")
+        cmd.append("mavproxy.exe")
     else:
         cmd.append("mavproxy.py")
 
     if opts.hil:
         cmd.extend(["--load-module", "HIL"])
     else:
-        cmd.extend(["--master", mavlink_port])
+        if opts.mcast:
+            cmd.extend(["--master", "mcast:"])
+        else:
+            cmd.extend(["--master", mavlink_port])
         if stuff["sitl-port"]:
             cmd.extend(["--sitl", simout_port])
 
@@ -844,7 +851,7 @@ group_sim.add_option("-L", "--location", type='string',
 group_sim.add_option("-l", "--custom-location",
                      type='string',
                      default=None,
-                     help="set custom start location")
+                     help="set custom start location (lat,lon,alt,heading)")
 group_sim.add_option("-S", "--speedup",
                      default=1,
                      type='int',
@@ -881,6 +888,10 @@ group_sim.add_option("", "--fresh-params",
                      dest='fresh_params',
                      default=False,
                      help="Generate and use local parameter help XML")
+group_sim.add_option("", "--mcast",
+                     action="store_true",
+                     default=False,
+                     help="Use multicasting at default 239.255.145.50:14550")
 group_sim.add_option("", "--osd",
                      action='store_true',
                      dest='OSD',
@@ -895,6 +906,13 @@ group_sim.add_option("", "--no-extra-ports",
                      dest='no_extra_ports',
                      default=False,
                      help="Disable setup of UDP 14550 and 14551 output")
+group_sim.add_option("-Z", "--swarm",
+                     type='string',
+                     default=None,
+                     help="Specify path of swarminit.txt for shifting spawn location")
+group_sim.add_option("--flash-storage",
+                     action='store_true',
+                     help="enable use of flash storage emulation")
 parser.add_option_group(group_sim)
 
 
@@ -1001,9 +1019,6 @@ simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
 frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
                                       cmd_opts)
-
-if frame_infos["model"] == "jsbsim":
-    check_jsbsim_version()
 
 vehicle_dir = os.path.realpath(os.path.join(find_root_dir(), cmd_opts.vehicle))
 if not os.path.exists(vehicle_dir):

@@ -12,8 +12,6 @@ bool Copter::ModeStabilize::init(bool ignore_checks)
             (get_pilot_desired_throttle(channel_throttle->get_control_in()) > get_non_takeoff_throttle())) {
         return false;
     }
-    // set target altitude to zero for reporting
-    pos_control->set_alt_target(0);
 
     return true;
 }
@@ -40,10 +38,8 @@ void Copter::ModeStabilize::run()
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
-    AP_Vehicle::MultiCopter &aparm = copter.aparm;
-
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(target_roll, target_pitch, aparm.angle_max, aparm.angle_max);
+    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());

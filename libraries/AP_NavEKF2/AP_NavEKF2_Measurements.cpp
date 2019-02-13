@@ -200,6 +200,19 @@ void NavEKF2_core::readMagData()
         return;
     }
 
+    if (_ahrs->get_compass()->learn_offsets_enabled()) {
+        // while learning offsets keep all mag states reset
+        InitialiseVariablesMag();
+        wasLearningCompass_ms = imuSampleTime_ms;
+    } else if (wasLearningCompass_ms != 0 && imuSampleTime_ms - wasLearningCompass_ms > 1000) {
+        wasLearningCompass_ms = 0;
+        // force a new yaw alignment 1s after learning completes. The
+        // delay is to ensure any buffered mag samples are discarded
+        yawAlignComplete = false;
+        InitialiseVariablesMag();
+    }
+
+    
     // do not accept new compass data faster than 14Hz (nominal rate is 10Hz) to prevent high processor loading
     // because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
     if (use_compass() && _ahrs->get_compass()->last_update_usec() - lastMagUpdate_us > 70000) {
@@ -234,6 +247,7 @@ void NavEKF2_core::readMagData()
                     magStateResetRequest = true;
                     // declare the field unlearned so that the reset request will be obeyed
                     magFieldLearned = false;
+                    break;
                 }
             }
         }
@@ -825,9 +839,18 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
 
     extNavDataNew.pos = pos;
     extNavDataNew.quat = quat;
-    extNavDataNew.posErr = posErr;
+    if (posErr > 0) {
+        extNavDataNew.posErr = posErr;
+    } else {
+        extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
+    }
     extNavDataNew.angErr = angErr;
     extNavDataNew.body_offset = &sensOffset;
+    timeStamp_ms = timeStamp_ms - frontend->_extnavDelay_ms;
+    // Correct for the average intersampling delay due to the filter updaterate
+    timeStamp_ms -= localFilterTimeStep_ms/2;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer
+    timeStamp_ms = MAX(timeStamp_ms,imuDataDelayed.time_ms);
     extNavDataNew.time_ms = timeStamp_ms;
 
     storedExtNav.push(extNavDataNew);

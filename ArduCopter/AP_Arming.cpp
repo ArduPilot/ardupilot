@@ -125,7 +125,7 @@ bool AP_Arming_Copter::ins_checks(bool display_failure)
 
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
-            check_failed(ARMING_CHECK_INS, display_failure, "gyros still settling");
+            check_failed(ARMING_CHECK_INS, display_failure, "EKF attitude is bad");
             ret = false;
         }
     }
@@ -211,6 +211,14 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             }
             return false;
         }
+        // Ensure an Aux Channel is configured for motor interlock
+        if (rc().find_channel_for_option(RC_Channel::aux_func_t::MOTOR_INTERLOCK) == nullptr) {
+            if (display_failure) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motor Interlock not configured");
+            }
+            return false;
+        }
+
         #endif // HELI_FRAME
 
         // check for missing terrain data
@@ -348,7 +356,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Waiting for Nav Checks");
+        check_failed(ARMING_CHECK_NONE, display_failure, "AHRS not healthy");
         return false;
     }
 
@@ -497,10 +505,8 @@ bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
     }
 #endif
 
-    return true;
-#else
-    return true;
 #endif
+    return true;
 }
 
 // arm_checks - perform final checks before arming
@@ -512,7 +518,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::ArmingMethod 
 
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Waiting for Nav Checks");
+        check_failed(ARMING_CHECK_NONE, display_failure, "AHRS not healthy");
         return false;
     }
 

@@ -19,7 +19,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_WITH_UAVCAN
-
 #include "AP_UAVCAN.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -108,9 +107,6 @@ AP_UAVCAN::AP_UAVCAN() :
         _SRV_conf[i].servo_pending = false;
     }
 
-    SRV_sem = hal.util->new_semaphore();
-    _led_out_sem = hal.util->new_semaphore();
-
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
 }
 
@@ -127,7 +123,7 @@ AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t driver_index)
     return static_cast<AP_UAVCAN*>(AP::can().get_driver(driver_index));
 }
 
-void AP_UAVCAN::init(uint8_t driver_index)
+void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
     if (_initialized) {
         debug_uavcan(2, "UAVCAN: init called more than once\n\r");
@@ -183,6 +179,14 @@ void AP_UAVCAN::init(uint8_t driver_index)
 
     hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
     hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
+
+    const uint8_t uid_buf_len = hw_version.unique_id.capacity();
+    uint8_t uid_len = uid_buf_len;
+    uint8_t unique_id[uid_buf_len];
+
+    if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
+        uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
+    }
     _node->setHardwareVersion(hw_version);
 
     int start_res = _node->start();
@@ -191,6 +195,10 @@ void AP_UAVCAN::init(uint8_t driver_index)
         return;
     }
 
+    //Start Servers
+#ifdef HAS_UAVCAN_SERVERS
+    _servers.init(*_node);
+#endif
     // Roundup all subscribers from supported drivers
     AP_GPS_UAVCAN::subscribe_msgs(this);
     AP_Compass_UAVCAN::subscribe_msgs(this);
@@ -211,8 +219,9 @@ void AP_UAVCAN::init(uint8_t driver_index)
     rgb_led[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
     _led_conf.devices_count = 0;
-
-    configureCanAcceptanceFilters(*_node);
+    if (enable_filters) {
+        configureCanAcceptanceFilters(*_node);
+    }
 
     /*
      * Informing other nodes that we're ready to work.
@@ -289,7 +298,7 @@ void AP_UAVCAN::SRV_send_actuator(void)
     uint8_t starting_servo = 0;
     bool repeat_send;
 
-    SRV_sem->take_blocking();
+    WITH_SEMAPHORE(SRV_sem);
 
     do {
         repeat_send = false;
@@ -332,8 +341,6 @@ void AP_UAVCAN::SRV_send_actuator(void)
             }
         }
     } while (repeat_send);
-
-    SRV_sem->give();
 }
 
 void AP_UAVCAN::SRV_send_esc(void)
@@ -344,7 +351,7 @@ void AP_UAVCAN::SRV_send_esc(void)
     uint8_t active_esc_num = 0, max_esc_num = 0;
     uint8_t k = 0;
 
-    SRV_sem->take_blocking();
+    WITH_SEMAPHORE(SRV_sem);
 
     // find out how many esc we have enabled and if they are active at all
     for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
@@ -377,13 +384,11 @@ void AP_UAVCAN::SRV_send_esc(void)
 
         esc_raw[_driver_index]->broadcast(esc_msg);
     }
-
-    SRV_sem->give();
 }
 
 void AP_UAVCAN::SRV_push_servos()
 {
-    SRV_sem->take_blocking();
+    WITH_SEMAPHORE(SRV_sem);
 
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         // Check if this channels has any function assigned
@@ -393,8 +398,6 @@ void AP_UAVCAN::SRV_push_servos()
             _SRV_conf[i].servo_pending = true;
         }
     }
-
-    SRV_sem->give();
 
     _SRV_armed = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
 }
@@ -410,29 +413,25 @@ void AP_UAVCAN::led_out_send()
         return;
     }
 
-    if (!_led_out_sem->take(1)) {
-        return;
-    }
-
-
-    if (_led_conf.devices_count == 0) {
-        _led_out_sem->give();
-        return;
-    }
-
     uavcan::equipment::indication::LightsCommand msg;
-    uavcan::equipment::indication::SingleLightCommand cmd;
+    {
+        WITH_SEMAPHORE(_led_out_sem);
 
-    for (uint8_t i = 0; i < _led_conf.devices_count; i++) {
-        cmd.light_id =_led_conf.devices[i].led_index;
-        cmd.color.red = _led_conf.devices[i].red >> 3;
-        cmd.color.green = _led_conf.devices[i].green >> 2;
-        cmd.color.blue = _led_conf.devices[i].blue >> 3;
+        if (_led_conf.devices_count == 0) {
+            return;
+        }
 
-        msg.commands.push_back(cmd);
+        uavcan::equipment::indication::SingleLightCommand cmd;
+
+        for (uint8_t i = 0; i < _led_conf.devices_count; i++) {
+            cmd.light_id =_led_conf.devices[i].led_index;
+            cmd.color.red = _led_conf.devices[i].red >> 3;
+            cmd.color.green = _led_conf.devices[i].green >> 2;
+            cmd.color.blue = _led_conf.devices[i].blue >> 3;
+
+            msg.commands.push_back(cmd);
+        }
     }
-
-    _led_out_sem->give();
 
     rgb_led[_driver_index]->broadcast(msg);
     _led_conf.last_update = now;
@@ -444,9 +443,7 @@ bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t
         return false;
     }
 
-    if (!_led_out_sem->take(1)) {
-        return false;
-    }
+    WITH_SEMAPHORE(_led_out_sem);
 
     // check if a device instance exists. if so, break so the instance index is remembered
     uint8_t instance = 0;
@@ -469,8 +466,6 @@ bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t
     if (instance == _led_conf.devices_count) {
         _led_conf.devices_count++;
     }
-
-    _led_out_sem->give();
 
     return true;
 }

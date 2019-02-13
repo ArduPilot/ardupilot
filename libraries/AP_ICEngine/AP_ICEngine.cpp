@@ -16,6 +16,7 @@
 
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include "AP_ICEngine.h"
 
 extern const AP_HAL::HAL& hal;
@@ -24,7 +25,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable ICEngine control
-    // @Description: This enables internal combusion engine control
+    // @Description: This enables internal combustion engine control
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE", 0, AP_ICEngine, enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -51,10 +52,10 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Units: s
     // @Range: 1 10
     AP_GROUPINFO("START_DELAY", 3, AP_ICEngine, starter_delay, 2),
-    
+
     // @Param: RPM_THRESH
     // @DisplayName: RPM threshold
-    // @Description: This is the measured RPM above which tne engine is considered to be running
+    // @Description: This is the measured RPM above which the engine is considered to be running
     // @User: Standard
     // @Range: 100 100000
     AP_GROUPINFO("RPM_THRESH", 4, AP_ICEngine, rpm_threshold, 100),
@@ -100,15 +101,14 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @User: Standard
     // @Range: 0 100
     AP_GROUPINFO("START_PCT", 10, AP_ICEngine, start_percent, 5),
-    
+
     AP_GROUPEND    
 };
 
 
 // constructor
-AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm, const AP_AHRS &_ahrs) :
+AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm) :
     rpm(_rpm),
-    ahrs(_ahrs),
     state(ICE_OFF)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -153,7 +153,7 @@ void AP_ICEngine::update(void)
         Vector3f pos;
         if (!should_run) {
             state = ICE_OFF;
-        } else if (ahrs.get_relative_position_NED_origin(pos)) {
+        } else if (AP::ahrs().get_relative_position_NED_origin(pos)) {
             if (height_pending) {
                 height_pending = false;
                 initial_height = -pos.z;
@@ -202,7 +202,7 @@ void AP_ICEngine::update(void)
         if (state == ICE_START_HEIGHT_DELAY) {
             // when disarmed we can be waiting for takeoff
             Vector3f pos;
-            if (ahrs.get_relative_position_NED_origin(pos)) {
+            if (AP::ahrs().get_relative_position_NED_origin(pos)) {
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }
@@ -211,7 +211,7 @@ void AP_ICEngine::update(void)
             state = ICE_OFF;
         }
     }
-    
+
     /* now set output channels */
     switch (state) {
     case ICE_OFF:
@@ -225,7 +225,7 @@ void AP_ICEngine::update(void)
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
         break;
-        
+
     case ICE_STARTING:
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_on);

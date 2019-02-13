@@ -50,7 +50,7 @@ void Copter::crash_check()
         // log an error in the dataflash
         Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
         // keep logging even if disarmed:
-        DataFlash_Class::instance()->set_force_log_disarmed(true);
+        AP::logger().set_force_log_disarmed(true);
         // send message to gcs
         gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming");
         // disarm motors
@@ -209,10 +209,6 @@ void Copter::parachute_check()
 // parachute_release - trigger the release of the parachute, disarm the motors and notify the user
 void Copter::parachute_release()
 {
-    // send message to gcs and dataflash
-    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
-    Log_Write_Event(DATA_PARACHUTE_RELEASED);
-
     // disarm motors
     init_disarm_motors();
 

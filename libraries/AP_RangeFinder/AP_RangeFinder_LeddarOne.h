@@ -43,6 +43,7 @@ class AP_RangeFinder_LeddarOne : public AP_RangeFinder_Backend
 public:
     // constructor
     AP_RangeFinder_LeddarOne(RangeFinder::RangeFinder_State &_state,
+                             AP_RangeFinder_Params &_params,
                              AP_SerialManager &serial_manager,
                              uint8_t serial_instance);
 
@@ -50,7 +51,7 @@ public:
     static bool detect(AP_SerialManager &serial_manager, uint8_t serial_instance);
 
     // update state
-    void update(void);
+    void update(void) override;
 
 protected:
 

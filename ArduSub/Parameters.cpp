@@ -482,8 +482,8 @@ const AP_Param::Info Sub::var_info[] = {
 #endif
 
     // @Group: LOG
-    // @Path: ../libraries/DataFlash/DataFlash.cpp
-    GOBJECT(DataFlash,           "LOG",  DataFlash_Class),
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(logger,           "LOG",  AP_Logger),
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
@@ -649,8 +649,8 @@ ParametersG2::ParametersG2()
 }
 
 const AP_Param::ConversionInfo conversion_table[] = {
-    { Parameters::k_param_fs_batt_voltage,   0,      AP_PARAM_FLOAT,  "BATT_FS_LOW_VOLT" },
-    { Parameters::k_param_fs_batt_mah,       0,      AP_PARAM_FLOAT,  "BATT_FS_LOW_MAH" },
+    { Parameters::k_param_fs_batt_voltage,   0,      AP_PARAM_FLOAT,  "BATT_LOW_VOLT" },
+    { Parameters::k_param_fs_batt_mah,       0,      AP_PARAM_FLOAT,  "BATT_LOW_MAH" },
     { Parameters::k_param_failsafe_battery_enabled,       0,      AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
 };
 
@@ -670,6 +670,7 @@ void Sub::load_parameters()
 
         // erase all parameters
         hal.console->printf("Firmware change: erasing EEPROM...\n");
+        StorageManager::erase();
         AP_Param::erase_all();
 
         // save the current format version

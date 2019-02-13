@@ -17,9 +17,6 @@ protected:
     // as currently Tracker may brick XBees
     uint32_t telem_delay() const override { return 0; }
 
-    AP_Mission *get_mission() override { return nullptr; };
-    AP_Rally *get_rally() const override { return nullptr; };
-
     uint8_t sysid_my_gcs() const override;
 
     bool set_mode(uint8_t mode) override;
@@ -27,9 +24,12 @@ protected:
     MAV_RESULT _handle_command_preflight_calibration_baro() override;
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
 
-    int32_t global_position_int_relative_alt() const {
+    int32_t global_position_int_relative_alt() const override {
         return 0; // what if we have been picked up and carried somewhere?
     }
+
+    bool set_home_to_current_location(bool lock) override { return false; }
+    bool set_home(const Location& loc, bool lock) override { return false; }
 
 private:
 
@@ -44,4 +44,6 @@ private:
     MAV_MODE base_mode() const override;
     uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+
 };

@@ -57,7 +57,7 @@ void Plane::failsafe_check(void)
 
         int16_t roll = channel_roll->get_control_in_zero_dz();
         int16_t pitch = channel_pitch->get_control_in_zero_dz();
-        int16_t throttle = channel_throttle->get_control_in_zero_dz();
+        int16_t throttle = get_throttle_input(true);
         int16_t rudder = channel_rudder->get_control_in_zero_dz();
 
         if (!hal.util->get_soft_armed()) {

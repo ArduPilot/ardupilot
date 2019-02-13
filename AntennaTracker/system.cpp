@@ -17,10 +17,10 @@ void Tracker::init_tracker()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
+    init_capabilities();
+
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
-
-    gcs().set_dataflash(&DataFlash);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -76,8 +76,8 @@ void Tracker::init_tracker()
 
     barometer.calibrate();
 
-    // initialise DataFlash library
-    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
+    // initialise AP_Logger library
+    logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
 
     // set serial ports non-blocking
     serial_manager.set_blocking_writes_all(false);
@@ -99,8 +99,6 @@ void Tracker::init_tracker()
     if (current_loc.lat == 0 && current_loc.lng == 0) {
         get_home_eeprom(current_loc);
     }
-
-    init_capabilities();
 
     gcs().send_text(MAV_SEVERITY_INFO,"Ready to track");
     hal.scheduler->delay(1000); // Why????
@@ -129,17 +127,19 @@ bool Tracker::get_home_eeprom(struct Location &loc)
     }
 
     // read WP position
-    loc.options = wp_storage.read_byte(0);
-    loc.alt = wp_storage.read_uint32(1);
-    loc.lat = wp_storage.read_uint32(5);
-    loc.lng = wp_storage.read_uint32(9);
+    loc = {
+        int32_t(wp_storage.read_uint32(5)),
+        int32_t(wp_storage.read_uint32(9)),
+        int32_t(wp_storage.read_uint32(1)),
+        Location::ALT_FRAME_ABSOLUTE
+    };
 
     return true;
 }
 
 void Tracker::set_home_eeprom(struct Location temp)
 {
-    wp_storage.write_byte(0, temp.options);
+    wp_storage.write_byte(0, 0);
     wp_storage.write_uint32(1, temp.alt);
     wp_storage.write_uint32(5, temp.lat);
     wp_storage.write_uint32(9, temp.lng);
@@ -158,21 +158,18 @@ void Tracker::set_home(struct Location temp)
     if (ahrs.get_origin(ekf_origin)) {
         ahrs.set_home(temp);
     }
-
-    gcs().send_home();
-    gcs().send_ekf_origin();
 }
 
 void Tracker::arm_servos()
 {
     hal.util->set_soft_armed(true);
-    DataFlash.set_vehicle_armed(true);
+    logger.set_vehicle_armed(true);
 }
 
 void Tracker::disarm_servos()
 {
     hal.util->set_soft_armed(false);
-    DataFlash.set_vehicle_armed(false);
+    logger.set_vehicle_armed(false);
 }
 
 /*
@@ -210,7 +207,7 @@ void Tracker::set_mode(enum ControlMode mode, mode_reason_t reason)
     }
 
 	// log mode change
-	DataFlash.Log_Write_Mode(control_mode, reason);
+	logger.Write_Mode(control_mode, reason);
 }
 
 /*
@@ -218,7 +215,7 @@ void Tracker::set_mode(enum ControlMode mode, mode_reason_t reason)
  */
 bool Tracker::should_log(uint32_t mask)
 {
-    if (!DataFlash.should_log(mask)) {
+    if (!logger.should_log(mask)) {
         return false;
     }
     return true;

@@ -200,10 +200,6 @@ void AP_Compass_QMC5883L::timer()
 
 void AP_Compass_QMC5883L::read()
 {
-    if (!_sem->take_nonblocking()) {
-        return;
-    }
-
     drain_accumulated_samples(_instance);
 }
 

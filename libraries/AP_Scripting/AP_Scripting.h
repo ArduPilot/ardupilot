@@ -30,18 +30,18 @@ public:
 
     bool init(void);
 
-    bool is_running(void) const { return _running; }
-
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    void load_script(const char *filename); // load a script from a file
+
     void thread(void); // main script execution thread
 
-    bool _running;
-
     AP_Int8 _enable;
+    AP_Int32 _script_vm_exec_count;
+    AP_Int32 _script_heap_size;
 
     static AP_Scripting *_singleton;
 

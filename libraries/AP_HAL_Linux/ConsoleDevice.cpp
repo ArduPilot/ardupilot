@@ -42,7 +42,7 @@ bool ConsoleDevice::open()
 
 bool ConsoleDevice::_set_signal_handlers(void) const
 {
-    struct sigaction sa;
+    struct sigaction sa {};
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = SIG_IGN;
 

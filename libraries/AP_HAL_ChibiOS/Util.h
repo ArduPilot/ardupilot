@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"
+#include <ch.h>
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
@@ -27,12 +28,17 @@ public:
     }
 
     bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
-    AP_HAL::Semaphore *new_semaphore(void) override { return new ChibiOS::Semaphore; }
     uint32_t available_memory() override;
 
     // Special Allocation Routines
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
+
+#ifdef ENABLE_HEAP
+    // heap functions, note that a heap once alloc'd cannot be dealloc'd
+    virtual void *allocate_heap_memory(size_t size);
+    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size);
+#endif // ENABLE_HEAP
 
     /*
       return state of safety switch, if applicable
@@ -45,12 +51,20 @@ public:
 
     // get system ID as a string
     bool get_system_id(char buf[40]) override;
-    
+    bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
+
 #ifdef HAL_PWM_ALARM
     bool toneAlarm_init() override;
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 #endif
 
+#ifdef USE_POSIX
+    /*
+      initialise (or re-initialise) filesystem storage
+     */
+    bool fs_init(void) override;
+#endif
+    
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
@@ -86,4 +100,9 @@ private:
 #ifndef HAL_NO_FLASH_SUPPORT
     bool flash_bootloader() override;
 #endif
+
+#ifdef ENABLE_HEAP
+    static memory_heap_t scripting_heap;
+#endif // ENABLE_HEAP
+
 };

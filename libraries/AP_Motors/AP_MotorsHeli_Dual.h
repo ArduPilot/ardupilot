@@ -61,6 +61,9 @@ public:
     // output_test_seq - spin a motor at the pwm value specified
     virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
+    // output_to_motors - sends values out to the motors
+    void output_to_motors() override;
+
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(float desired_speed) override;
 
@@ -117,6 +120,7 @@ protected:
     float _collective_test = 0.0f;                  // over-ride for collective output, used by servo_test function
     float _roll_test = 0.0f;                        // over-ride for roll output, used by servo_test function
     float _pitch_test = 0.0f;                       // over-ride for pitch output, used by servo_test function
+    float _servo_out[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];    // output value sent to motor
 
     // parameters
     AP_Int16        _collective2_min;               // Lowest possible servo position for the rear swashplate

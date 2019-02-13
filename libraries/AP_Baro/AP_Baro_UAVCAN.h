@@ -47,5 +47,5 @@ private:
         AP_Baro_UAVCAN* driver;
     } _detected_modules[BARO_MAX_DRIVERS];
 
-    static AP_HAL::Semaphore *_sem_registry;
+    static HAL_Semaphore _sem_registry;
 };

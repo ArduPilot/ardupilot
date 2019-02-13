@@ -23,26 +23,36 @@
 #if HAL_USE_ICU == TRUE
 
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
-#define MAX_SIGNAL_TRANSITIONS 256
-#define DEFAULT_BOUNCE_BUF_SIZE 32
+
+#ifndef SOFTSIG_MAX_SIGNAL_TRANSITIONS
+#define SOFTSIG_MAX_SIGNAL_TRANSITIONS 128
+#endif
+
+// we use a small bounce buffer size to minimise time in the DMA
+// callback IRQ
+#define SOFTSIG_BOUNCE_BUF_SIZE 8
 
 class ChibiOS::SoftSigReader {
+    friend class ChibiOS::RCInput;
 public:
     bool attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, uint8_t dma_stream, uint32_t dma_channel);
-    bool read(uint32_t &widths0, uint32_t &widths1);
-    //This sets the size of bounce buffer size, which in turn controls the rate of interrupt from DMA
-    bool set_bounce_buf_size(uint16_t buf_size);
+
 private:
     uint32_t *signal;
+    uint32_t signal2[SOFTSIG_BOUNCE_BUF_SIZE];
     static void _irq_handler(void* self, uint32_t flags);
     uint8_t num_timer_channels;
-    ObjectBuffer<uint32_t> sigbuf{MAX_SIGNAL_TRANSITIONS};
     uint8_t enable_chan_mask;
     uint8_t max_pulse_width;
     const stm32_dma_stream_t* dma;
+    uint32_t dmamode;
     ICUConfig icucfg;
     ICUDriver* _icu_drv = nullptr;
-    uint16_t _bounce_buf_size = DEFAULT_BOUNCE_BUF_SIZE;
+    typedef struct PACKED {
+        uint32_t w0;
+        uint32_t w1;
+    } pulse_t;
+    ObjectBuffer<pulse_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
     bool need_swap;
 };
 

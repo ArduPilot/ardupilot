@@ -19,7 +19,7 @@ UC_REGISTRY_BINDER(PressureCb, uavcan::equipment::air_data::StaticPressure);
 UC_REGISTRY_BINDER(TemperatureCb, uavcan::equipment::air_data::StaticTemperature);
 
 AP_Baro_UAVCAN::DetectedModules AP_Baro_UAVCAN::_detected_modules[] = {0};
-AP_HAL::Semaphore* AP_Baro_UAVCAN::_sem_registry = nullptr;
+HAL_Semaphore AP_Baro_UAVCAN::_sem_registry;
 
 /*
   constructor - registers instance at top Baro driver
@@ -57,15 +57,12 @@ void AP_Baro_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 
 bool AP_Baro_UAVCAN::take_registry()
 {
-    if (_sem_registry == nullptr) {
-        _sem_registry = hal.util->new_semaphore();
-    }
-    return _sem_registry->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    return _sem_registry.take(HAL_SEMAPHORE_BLOCK_FOREVER);
 }
 
 void AP_Baro_UAVCAN::give_registry()
 {
-    _sem_registry->give();
+    _sem_registry.give();
 }
 
 AP_Baro_Backend* AP_Baro_UAVCAN::probe(AP_Baro &baro)

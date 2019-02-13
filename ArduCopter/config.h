@@ -236,9 +236,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// winch support - enabled only on larger firmwares
+// winch support
 #ifndef WINCH_ENABLED
-# define WINCH_ENABLED !HAL_MINIMIZE_FEATURES
+# define WINCH_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -293,6 +293,12 @@
 // Drift - fly vehicle in altitude-held, coordinated-turn mode
 #ifndef MODE_DRIFT_ENABLED
 # define MODE_DRIFT_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// flip - fly vehicle in flip in pitch and roll direction mode
+#ifndef MODE_FLIP_ENABLED
+# define MODE_FLIP_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -737,4 +743,8 @@
 
 #ifndef OSD_ENABLED
  #define OSD_ENABLED DISABLED
+#endif
+
+#ifndef HAL_FRAME_TYPE_DEFAULT
+#define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif

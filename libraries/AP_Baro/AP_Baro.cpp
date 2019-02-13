@@ -165,14 +165,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 };
 
 // singleton instance
-AP_Baro *AP_Baro::_instance;
+AP_Baro *AP_Baro::_singleton;
 
 /*
   AP_Baro constructor
  */
 AP_Baro::AP_Baro()
 {
-    _instance = this;
+    _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -319,7 +319,11 @@ float AP_Baro::get_EAS2TAS(void)
     // provides a more consistent reading then trying to estimate a complete
     // ISA model atmosphere
     float tempK = get_ground_temperature() + C_TO_KELVIN - ISA_LAPSE_RATE * altitude;
-    _EAS2TAS = safe_sqrt(SSL_AIR_DENSITY / ((float)get_pressure() / (ISA_GAS_CONSTANT * tempK)));
+    const float eas2tas_squared = SSL_AIR_DENSITY / ((float)get_pressure() / (ISA_GAS_CONSTANT * tempK));
+    if (!is_positive(eas2tas_squared)) {
+        return 1.0;
+    }
+    _EAS2TAS = sqrtf(eas2tas_squared);
     _last_altitude_EAS2TAS = altitude;
     return _EAS2TAS;
 }
@@ -378,9 +382,20 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
     if (_last_external_temperature_ms != 0 && AP_HAL::millis() - _last_external_temperature_ms < 10000) {
         return _external_temperature;
     }
-    // if we don't have an external temperature then use the minimum
-    // of the barometer temperature and 35 degrees C. The reason for
-    // not just using the baro temperature is it tends to read high,
+    
+    // if we don't have an external temperature then try to use temperature
+    // from the airspeed sensor
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed != nullptr) {
+        float temperature;
+        if (airspeed->healthy() && airspeed->get_temperature(temperature)) {
+            return temperature;
+        }
+    }
+    
+    // if we don't have an external temperature and airspeed temperature
+    // then use the minimum of the barometer temperature and 35 degrees C.
+    // The reason for not just using the baro temperature is it tends to read high,
     // often 30 degrees above the actual temperature. That means the
     // EAS2TAS tends to be off by quite a large margin, as well as
     // the calculation of altitude difference betweeen two pressures
@@ -574,21 +589,6 @@ void AP_Baro::init(void)
                                       std::move(hal.spi->get_device(HAL_BARO_LPS22H_NAME))));
 #endif
 
-#if defined(BOARD_I2C_BUS_EXT) && CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_MS5611_I2C_ADDR))));
-
-    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP280_I2C_ADDR))));
-  #ifdef HAL_BARO_BMP280_I2C_ADDR_ALT
-    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP280_I2C_ADDR_ALT))));
-  #endif
-
-    ADD_BACKEND(AP_Baro_BMP085::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP085_I2C_ADDR))));
-#endif
-
     // can optionally have baro on I2C too
     if (_ext_bus >= 0) {
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -600,18 +600,6 @@ void AP_Baro::init(void)
 #else
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
-
- #if CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT // we don't know which baro user will solder
-
-        ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP280_I2C_ADDR))));
-  #ifdef HAL_BARO_BMP280_I2C_ADDR_ALT
-        ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP280_I2C_ADDR_ALT))));
-  #endif
-        ADD_BACKEND(AP_Baro_BMP085::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP085_I2C_ADDR))));
- #endif
 #endif
     }
 
@@ -619,7 +607,7 @@ void AP_Baro::init(void)
     _probe_i2c_barometers();
 #endif
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_F4LIGHT && !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
+#if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::sensor_config_error("Baro: unable to initialise driver");
@@ -719,7 +707,7 @@ void AP_Baro::_probe_i2c_barometers(void)
 
 bool AP_Baro::should_df_log() const
 {
-    DataFlash_Class *instance = DataFlash_Class::instance();
+    AP_Logger *instance = AP_Logger::get_singleton();
     if (instance == nullptr) {
         return false;
     }
@@ -801,7 +789,7 @@ void AP_Baro::update(void)
 
     // logging
     if (should_df_log() && !AP::ahrs().have_ekf_logging()) {
-        DataFlash_Class::instance()->Log_Write_Baro();
+        AP::logger().Write_Baro();
     }
 }
 
@@ -853,7 +841,7 @@ namespace AP {
 
 AP_Baro &baro()
 {
-    return *AP_Baro::get_instance();
+    return *AP_Baro::get_singleton();
 }
 
 };

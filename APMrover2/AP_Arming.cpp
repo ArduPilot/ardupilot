@@ -47,6 +47,24 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         return true;
     }
 
+    // check for ekf failsafe
+    if (rover.failsafe.ekf) {
+        if (display_failure) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: EKF failsafe");
+        }
+        return false;
+    }
+
+    // ensure position esetimate is ok
+    if (!rover.ekf_position_ok()) {
+        const char *reason = AP::ahrs().prearm_failure_reason();
+        if (reason == nullptr) {
+            reason = "Need Position Estimate";
+        }
+        check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
+        return false;
+    }
+
     // call parent gps checks
     return AP_Arming::gps_checks(display_failure);
 }
@@ -86,18 +104,6 @@ bool AP_Arming_Rover::proximity_check(bool report)
             gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
         }
         return false;
-    }
-
-    // get closest object if we might use it for avoidance
-    float angle_deg, distance;
-    if (rover.g2.avoid.proximity_avoidance_enabled() && rover.g2.proximity.get_closest_object(angle_deg, distance)) {
-        // display error if something is within 60cm
-        if (distance <= 0.6f) {
-            if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Proximity %d deg, %4.2fm", static_cast<int32_t>(angle_deg), static_cast<double>(distance));
-            }
-            return false;
-        }
     }
 
     return true;

@@ -14,7 +14,6 @@
  */
 
 #include "AP_RPM.h"
-#include "RPM_PX4_PWM.h"
 #include "RPM_Pin.h"
 #include "RPM_SITL.h"
 
@@ -105,13 +104,12 @@ void AP_RPM::init(void)
         return;
     }
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
-        const uint8_t type = _type[i];
+        uint8_t type = _type[i];
 
-#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) || ((CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN) && (!defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) && !defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)))
         if (type == RPM_TYPE_PX4_PWM) {
-            drivers[i] = new AP_RPM_PX4_PWM(*this, i, state[i]);
+            // on non-PX4 treat PX4-pin as AUXPIN option, for upgrade
+            type = RPM_TYPE_PIN;
         }
-#endif
         if (type == RPM_TYPE_PIN) {
             drivers[i] = new AP_RPM_Pin(*this, i, state[i]);
         }
@@ -134,9 +132,11 @@ void AP_RPM::update(void)
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr) {
             if (_type[i] == RPM_TYPE_NONE) {
-                // allow user to disable a RPM sensor at runtime
+                // allow user to disable an RPM sensor at runtime and force it to re-learn the quality if re-enabled.
+                state[i].signal_quality = 0;
                 continue;
             }
+
             drivers[i]->update();
         }
     }
@@ -147,7 +147,7 @@ void AP_RPM::update(void)
  */
 bool AP_RPM::healthy(uint8_t instance) const
 {
-    if (instance >= num_instances) {
+    if (instance >= num_instances || _type[instance] == RPM_TYPE_NONE) {
         return false;
     }
 

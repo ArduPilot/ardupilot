@@ -36,7 +36,7 @@ UC_REGISTRY_BINDER(FixCb, uavcan::equipment::gnss::Fix);
 UC_REGISTRY_BINDER(AuxCb, uavcan::equipment::gnss::Auxiliary);
 
 AP_GPS_UAVCAN::DetectedModules AP_GPS_UAVCAN::_detected_modules[] = {0};
-AP_HAL::Semaphore* AP_GPS_UAVCAN::_sem_registry = nullptr;
+HAL_Semaphore AP_GPS_UAVCAN::_sem_registry;
 
 // Member Methods
 AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state) :
@@ -78,15 +78,12 @@ void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 
 bool AP_GPS_UAVCAN::take_registry()
 {
-    if (_sem_registry == nullptr) {
-        _sem_registry = hal.util->new_semaphore();
-    }
-    return _sem_registry->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    return _sem_registry.take(HAL_SEMAPHORE_BLOCK_FOREVER);
 }
 
 void AP_GPS_UAVCAN::give_registry()
 {
-    _sem_registry->give();
+    _sem_registry.give();
 }
 
 AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
@@ -189,7 +186,6 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
         loc.lng = cb.msg->longitude_deg_1e8 / 10;
         loc.alt = cb.msg->height_msl_mm / 10;
         interim_state.location = loc;
-        interim_state.location.options = 0;
 
         if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
             Vector3f vel(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);

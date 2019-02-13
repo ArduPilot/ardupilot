@@ -57,6 +57,8 @@ public:
         DEVTYPE_QMC5883L = 0x0D,
         DEVTYPE_MAG3110  = 0x0E,
         DEVTYPE_SITL  = 0x0F,
+        DEVTYPE_IST8308 = 0x10,
+		DEVTYPE_RM3100 = 0x11,
     };
 
 
@@ -110,11 +112,7 @@ protected:
     Compass &_compass;
 
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;
-
-    // accumulated samples, protected by _sem
-    Vector3f    _accum;
-    uint32_t    _accum_count;
+    HAL_Semaphore_Recursive _sem;
 
     // Check that the compass field is valid by using a mean filter on the vector length
     bool field_ok(const Vector3f &field);

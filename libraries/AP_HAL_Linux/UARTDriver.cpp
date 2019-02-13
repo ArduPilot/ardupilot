@@ -25,6 +25,7 @@
 #include "UDPDevice.h"
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_HAL/utility/packetise.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -378,58 +379,10 @@ bool UARTDriver::_write_pending_bytes(void)
     // write any pending bytes
     uint32_t available_bytes = _writebuf.available();
     uint16_t n = available_bytes;
-    int16_t b = _writebuf.peek(0);
-    if (_packetise && n > 0 &&
-        b != MAVLINK_STX_MAVLINK1 && b != MAVLINK_STX) {
-        /*
-          we have a non-mavlink packet at the start of the
-          buffer. Look ahead for a MAVLink start byte, up to 256 bytes
-          ahead
-         */
-        uint16_t limit = n>256?256:n;
-        uint16_t i;
-        for (i=0; i<limit; i++) {
-            b = _writebuf.peek(i);
-            if (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX) {
-                n = i;
-                break;
-            }
-        }
-        // if we didn't find a MAVLink marker then limit the send size to 256
-        if (i == limit) {
-            n = limit;
-        }
-    }
-    b = _writebuf.peek(0);
-    if (_packetise && n > 0 &&
-        (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX)) {
-        uint8_t min_length = (b == MAVLINK_STX_MAVLINK1)?8:12;
-        // this looks like a MAVLink packet - try to write on
-        // packet boundaries when possible
-        if (n < min_length) {
-            // we need to wait for more data to arrive
-            n = 0;
-        } else {
-            // the length of the packet is the 2nd byte, and mavlink
-            // packets have a 6 byte header plus 2 byte checksum,
-            // giving len+8 bytes
-            int16_t len = _writebuf.peek(1);
-            if (b == MAVLINK_STX) {
-                // check for signed packet with extra 13 bytes
-                int16_t incompat_flags = _writebuf.peek(2);
-                if (incompat_flags & MAVLINK_IFLAG_SIGNED) {
-                    min_length += MAVLINK_SIGNATURE_BLOCK_LEN;
-                }
-            }
-            if (n < len+min_length) {
-                // we don't have a full packet yet
-                n = 0;
-            } else if (n > len+min_length) {
-                // send just 1 packet at a time (so MAVLink packets
-                // are aligned on UDP boundaries)
-                n = len+min_length;
-            }
-        }
+
+    if (_packetise && n > 0) {
+        // send on MAVLink packet boundaries if possible
+        n = mavlink_packetise(_writebuf, n);
     }
 
     if (n > 0) {

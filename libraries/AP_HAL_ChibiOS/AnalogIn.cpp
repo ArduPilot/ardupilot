@@ -17,8 +17,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "ch.h"
 #include "hal.h"
+#include <AP_Common/Semaphore.h>
 
-#if HAL_USE_ADC == TRUE
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 
 #include "AnalogIn.h"
 
@@ -76,24 +77,22 @@ AnalogSource::AnalogSource(int16_t pin, float initial_value) :
     _sum_value(0),
     _sum_ratiometric(0)
 {
-    _semaphore = hal.util->new_semaphore();
 }
 
 
 float AnalogSource::read_average() 
 {
-    if (_semaphore->take(1)) {
-        if (_sum_count == 0) {
-            _semaphore->give();
-            return _value;
-        }
-        _value = _sum_value / _sum_count;
-        _value_ratiometric = _sum_ratiometric / _sum_count;
-        _sum_value = 0;
-        _sum_ratiometric = 0;
-        _sum_count = 0;
-        _semaphore->give();
+    WITH_SEMAPHORE(_semaphore);
+
+    if (_sum_count == 0) {
+        return _value;
     }
+    _value = _sum_value / _sum_count;
+    _value_ratiometric = _sum_ratiometric / _sum_count;
+    _sum_value = 0;
+    _sum_ratiometric = 0;
+    _sum_count = 0;
+
     return _value;
 }
 
@@ -148,16 +147,14 @@ void AnalogSource::set_pin(uint8_t pin)
     if (_pin == pin) {
         return;
     }
-    if (_semaphore->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _pin = pin;
-        _sum_value = 0;
-        _sum_ratiometric = 0;
-        _sum_count = 0;
-        _latest_value = 0;
-        _value = 0;
-        _value_ratiometric = 0;
-        _semaphore->give();
-    }
+    WITH_SEMAPHORE(_semaphore);
+    _pin = pin;
+    _sum_value = 0;
+    _sum_ratiometric = 0;
+    _sum_count = 0;
+    _latest_value = 0;
+    _value = 0;
+    _value_ratiometric = 0;
 }
 
 /*
@@ -165,23 +162,22 @@ void AnalogSource::set_pin(uint8_t pin)
  */
 void AnalogSource::_add_value(float v, float vcc5V)
 {
-    if (_semaphore->take(1)) {
-        _latest_value = v;
-        _sum_value += v;
-        if (vcc5V < 3.0f) {
-            _sum_ratiometric += v;
-        } else {
-            // this compensates for changes in the 5V rail relative to the
-            // 3.3V reference used by the ADC.
-            _sum_ratiometric += v * 5.0f / vcc5V;
-        }
-        _sum_count++;
-        if (_sum_count == 254) {
-            _sum_value /= 2;
-            _sum_ratiometric /= 2;
-            _sum_count /= 2;
-        }
-        _semaphore->give();
+    WITH_SEMAPHORE(_semaphore);
+
+    _latest_value = v;
+    _sum_value += v;
+    if (vcc5V < 3.0f) {
+        _sum_ratiometric += v;
+    } else {
+        // this compensates for changes in the 5V rail relative to the
+        // 3.3V reference used by the ADC.
+        _sum_ratiometric += v * 5.0f / vcc5V;
+    }
+    _sum_count++;
+    if (_sum_count == 254) {
+        _sum_value /= 2;
+        _sum_ratiometric /= 2;
+        _sum_count /= 2;
     }
 }
 

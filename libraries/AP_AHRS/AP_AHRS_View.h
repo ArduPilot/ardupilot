@@ -26,7 +26,7 @@ class AP_AHRS_View
 {
 public:
     // Constructor
-    AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation);
+    AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation, float pitch_trim_deg=0);
 
     // update state
     void update(bool skip_ins_update=false);
@@ -47,6 +47,9 @@ public:
     const Matrix3f &get_rotation_body_to_ned(void) const {
         return rot_body_to_ned;
     }
+
+    // apply pitch trim
+    void set_pitch_trim(float trim_deg);
 
     // helper trig value accessors
     float cos_roll() const {
@@ -188,4 +191,7 @@ private:
         float sin_pitch;
         float sin_yaw;
     } trig;
+
+    float y_angle;
+    float _pitch_trim_deg;
 };

@@ -169,7 +169,7 @@ is bob we will attempt to checkout bob-AVR'''
     def skip_frame(self, board, frame):
         '''returns true if this board/frame combination should not be built'''
         if frame == "heli":
-            if board in ["bebop", "aerofc-v1", "skyviper-v2450"]:
+            if board in ["bebop", "aerofc-v1", "skyviper-v2450", "CubeBlack-solo", "CubeGreen-solo"]:
                 self.progress("Skipping heli build for %s" % board)
                 return True
         return False
@@ -402,6 +402,17 @@ is bob we will attempt to checkout bob-AVR'''
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
 
+        if not self.checkout(vehicle, tag, "PX4", None):
+            self.checkout(vehicle, "latest")
+            return
+
+        board_list = self.run_program('BB-WAF', ['./waf', 'list_boards'])
+        board_list = board_list.split(' ')
+        self.checkout(vehicle, "latest")
+        if not 'px4-v2' in board_list:
+            print("Skipping px4 builds")
+            return
+
         # PX4-building
         board = "px4"
         for frame in frames:
@@ -500,27 +511,39 @@ is bob we will attempt to checkout bob-AVR'''
                 "KakuteF4",
                 "KakuteF7",
                 "MatekF405",
+                "MatekF405-STD",
                 "MatekF405-Wing",
                 "OMNIBUSF7V2",
                 "sparky2",
                 "omnibusf4pro",
+                "omnibusf4v6",
                 "OmnibusNanoV6",
                 "mini-pix",
                 "airbotf4",
                 "revo-mini",
                 "CubeBlack",
+                "CubePurple",
                 "Pixhawk1",
                 "Pixhawk4",
                 "PH4-mini",
                 "CUAVv5",
                 "mRoX21",
                 "Pixracer",
-                "F4BY"]
+                "F4BY",
+                "mRoX21-777",
+                "F35Lightning",
+                "speedybeef4",
+                "DrotekP3Pro",
+                "VRBrain-v51",
+                "VRBrain-v52",
+                "VRUBrain-v51",
+                "VRCore-v10",
+                "VRBrain-v54"]
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
         boards = []
-        boards.extend(["skyviper-v2450", "aerofc-v1", "bebop"])
+        boards.extend(["skyviper-v2450", "aerofc-v1", "bebop", "CubeBlack-solo", "CubeGreen-solo"])
         boards.extend(self.common_boards()[:])
         self.build_vehicle(tag,
                            "ArduCopter",

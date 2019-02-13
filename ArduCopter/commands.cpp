@@ -88,8 +88,8 @@ bool Copter::set_home(const Location& loc, bool lock)
         // log new home position which mission library will pull from ahrs
         if (should_log(MASK_LOG_CMD)) {
             AP_Mission::Mission_Command temp_cmd;
-            if (mission.read_cmd_from_storage(0, temp_cmd)) {
-                DataFlash.Log_Write_Mission_Cmd(mission, temp_cmd);
+            if (mode_auto.mission.read_cmd_from_storage(0, temp_cmd)) {
+                logger.Write_Mission_Cmd(mode_auto.mission, temp_cmd);
             }
         }
 #endif
@@ -99,13 +99,6 @@ bool Copter::set_home(const Location& loc, bool lock)
     if (lock) {
         ahrs.lock_home();
     }
-
-    // log ahrs home and ekf origin dataflash
-    ahrs.Log_Write_Home_And_Origin();
-
-    // send new home and ekf origin to GCS
-    gcs().send_home();
-    gcs().send_ekf_origin();
 
     // return success
     return true;

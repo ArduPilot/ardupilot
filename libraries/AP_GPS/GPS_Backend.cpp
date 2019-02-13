@@ -158,16 +158,16 @@ void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) cons
 
 void AP_GPS_Backend::broadcast_gps_type() const
 {
-    char buffer[64];
+    char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     _detection_message(buffer, sizeof(buffer));
     gcs().send_text(MAV_SEVERITY_INFO, buffer);
 }
 
-void AP_GPS_Backend::Write_DataFlash_Log_Startup_messages() const
+void AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages() const
 {
-    char buffer[64];
+    char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     _detection_message(buffer, sizeof(buffer));
-    DataFlash_Class::instance()->Log_Write_Message(buffer);
+    AP::logger().Write_Message(buffer);
 }
 
 bool AP_GPS_Backend::should_df_log() const
@@ -216,3 +216,69 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
     }
 }
 
+
+/*
+  set a timestamp based on arrival time on uart at current byte,
+  assuming the message started nbytes ago
+*/
+void AP_GPS_Backend::set_uart_timestamp(uint16_t nbytes)
+{
+    if (port) {
+        state.uart_timestamp_ms = port->receive_time_constraint_us(nbytes) / 1000U;
+    }
+}
+
+
+void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
+{
+    if (itow != _last_itow) {
+        _last_itow = itow;
+
+        /*
+          we need to calculate a pseudo-itow, which copes with the
+          iTow from the GPS changing in unexpected ways. We assume
+          that timestamps from the GPS are always in multiples of
+          50ms. That means we can't handle a GPS with an update rate
+          of more than 20Hz. We could do more, but we'd need the GPS
+          poll time to be higher
+         */
+        const uint32_t gps_min_period_ms = 50;
+
+        // get the time the packet arrived on the UART
+        uint64_t uart_us = port->receive_time_constraint_us(msg_length);
+
+        uint32_t now = AP_HAL::millis();
+        uint32_t dt_ms = now - _last_ms;
+        _last_ms = now;
+
+        // round to nearest 50ms period
+        dt_ms = ((dt_ms + (gps_min_period_ms/2)) / gps_min_period_ms) * gps_min_period_ms;
+
+        // work out an actual message rate. If we get 5 messages in a
+        // row with a new rate we switch rate
+        if (_last_rate_ms == dt_ms) {
+            if (_rate_counter < 5) {
+                _rate_counter++;
+            } else if (_rate_ms != dt_ms) {
+                _rate_ms = dt_ms;
+            }
+        } else {
+            _rate_counter = 0;
+            _last_rate_ms = dt_ms;
+        }
+        if (_rate_ms == 0) {
+            // only allow 5Hz to 20Hz in user config
+            _rate_ms = constrain_int16(gps.get_rate_ms(state.instance), 50, 200);
+        }
+
+        // round to calculated message rate
+        dt_ms = ((dt_ms + (_rate_ms/2)) / _rate_ms) * _rate_ms;
+
+        // calculate pseudo-itow
+        _pseudo_itow += dt_ms * 1000U;
+
+        // use msg arrival time, and correct for jitter
+        uint64_t local_us = jitter_correction.correct_offboard_timestamp_usec(_pseudo_itow, uart_us);
+        state.uart_timestamp_ms = local_us / 1000U;
+    }
+}

@@ -11,7 +11,6 @@ extern const AP_HAL::HAL& hal;
 AP_Compass_Backend::AP_Compass_Backend()
     : _compass(AP::compass())
 {
-    _sem = hal.util->new_semaphore();
 }
 
 void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
@@ -115,37 +114,35 @@ void AP_Compass_Backend::accumulate_sample(Vector3f &field, uint8_t instance,
 
     WITH_SEMAPHORE(_sem);
 
-    _accum += field;
-    _accum_count++;
-    if (max_samples && _accum_count >= max_samples) {
-        _accum_count /= 2;
-        _accum /= 2;
+    Compass::mag_state &state = _compass._state[instance];
+    state.accum += field;
+    state.accum_count++;
+    if (max_samples && state.accum_count >= max_samples) {
+        state.accum_count /= 2;
+        state.accum /= 2;
     }
 }
 
 void AP_Compass_Backend::drain_accumulated_samples(uint8_t instance,
                                                    const Vector3f *scaling)
 {
-    if (!_sem->take_nonblocking()) {
-        return;
-    }
+    WITH_SEMAPHORE(_sem);
 
-    if (_accum_count == 0) {
-        _sem->give();
+    Compass::mag_state &state = _compass._state[instance];
+
+    if (state.accum_count == 0) {
         return;
     }
 
     if (scaling) {
-        _accum *= *scaling;
+        state.accum *= *scaling;
     }
-    _accum /= _accum_count;
+    state.accum /= state.accum_count;
 
-    publish_filtered_field(_accum, instance);
+    publish_filtered_field(state.accum, instance);
 
-    _accum.zero();
-    _accum_count = 0;
-
-    _sem->give();
+    state.accum.zero();
+    state.accum_count = 0;
 }
 
 /*

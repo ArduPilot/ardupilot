@@ -21,9 +21,9 @@
 
 extern const AP_HAL::HAL& hal;
 
-// #define DEBUG
-#ifdef DEBUG
-# define debug(fmt, args...)	hal.console->printf(fmt "\n", ##args)
+// #define DSM_DEBUG
+#ifdef DSM_DEBUG
+# define debug(fmt, args...)	printf(fmt "\n", ##args)
 #else
 # define debug(fmt, args...)	do {} while(0)
 #endif
@@ -34,76 +34,10 @@ extern const AP_HAL::HAL& hal;
 
 void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
-    // convert to bit widths, allowing for up to about 4usec error, assuming 115200 bps
-    uint16_t bits_s0 = ((width_s0+4)*(uint32_t)115200) / 1000000;
-    uint16_t bits_s1 = ((width_s1+4)*(uint32_t)115200) / 1000000;
-    uint8_t bit_ofs, byte_ofs;
-    uint16_t nbits;
-
-    if (bits_s0 == 0 || bits_s1 == 0) {
-        // invalid data
-        goto reset;
+    uint8_t b;
+    if (ss.process_pulse(width_s0, width_s1, b)) {
+        _process_byte(ss.get_byte_timestamp_us()/1000U, b);
     }
-
-    byte_ofs = dsm_state.bit_ofs/10;
-    bit_ofs = dsm_state.bit_ofs%10;
-
-    if (byte_ofs > 15) {
-        // invalid data
-        goto reset;
-    }
-
-    // pull in the high bits
-    nbits = bits_s0;
-    if (nbits+bit_ofs > 10) {
-        nbits = 10 - bit_ofs;
-    }
-    dsm_state.bytes[byte_ofs] |= ((1U<<nbits)-1) << bit_ofs;
-    dsm_state.bit_ofs += nbits;
-    bit_ofs += nbits;
-
-    if (bits_s0 - nbits > 10) {
-        if (dsm_state.bit_ofs == 16*10) {
-            // we have a full frame
-            uint8_t bytes[16];
-            uint8_t i;
-            for (i=0; i<16; i++) {
-                // get raw data
-                uint16_t v = dsm_state.bytes[i];
-
-                // check start bit
-                if ((v & 1) != 0) {
-                    goto reset;
-                }
-                // check stop bits
-                if ((v & 0x200) != 0x200) {
-                    goto reset;
-                }
-                bytes[i] = ((v>>1) & 0xFF);
-            }
-            uint16_t values[8];
-            uint16_t num_values=0;
-            if (dsm_decode(AP_HAL::micros64(), bytes, values, &num_values, 8) &&
-                num_values >= MIN_RCIN_CHANNELS) {
-                add_input(num_values, values, false);
-            }
-        }
-        memset(&dsm_state, 0, sizeof(dsm_state));
-    }
-
-    byte_ofs = dsm_state.bit_ofs/10;
-    bit_ofs = dsm_state.bit_ofs%10;
-
-    if (bits_s1+bit_ofs > 10) {
-        // invalid data
-        goto reset;
-    }
-
-    // pull in the low bits
-    dsm_state.bit_ofs += bits_s1;
-    return;
-reset:
-    memset(&dsm_state, 0, sizeof(dsm_state));
 }
 
 /**
@@ -155,16 +89,12 @@ bool AP_RCProtocol_DSM::dsm_decode_channel(uint16_t raw, unsigned shift, unsigne
  */
 void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16])
 {
-    static uint32_t	cs10;
-    static uint32_t	cs11;
-    static unsigned samples;
-
     /* reset the 10/11 bit sniffed channel masks */
     if (reset) {
         cs10 = 0;
         cs11 = 0;
         samples = 0;
-        dsm_channel_shift = 0;
+        channel_shift = 0;
         return;
     }
 
@@ -203,7 +133,7 @@ void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16]
      *     See e.g. http://git.openpilot.org/cru/OPReview-116 for a discussion
      *     of this issue.
      */
-    static uint32_t masks[] = {
+    static const uint32_t masks[] = {
         0x3f,	/* 6 channels (DX6) */
         0x7f,	/* 7 channels (DX7) */
         0xff,	/* 8 channels (DX8) */
@@ -227,13 +157,13 @@ void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16]
     }
 
     if ((votes11 == 1) && (votes10 == 0)) {
-        dsm_channel_shift = 11;
+        channel_shift = 11;
         debug("DSM: 11-bit format");
         return;
     }
 
     if ((votes10 == 1) && (votes11 == 0)) {
-        dsm_channel_shift = 10;
+        channel_shift = 10;
         debug("DSM: 10-bit format");
         return;
     }
@@ -247,27 +177,22 @@ void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16]
  * Decode the entire dsm frame (all contained channels)
  *
  */
-bool AP_RCProtocol_DSM::dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[16],
+bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_frame[16],
                                    uint16_t *values, uint16_t *num_values, uint16_t max_values)
 {
-#if 0
-    debug("DSM dsm_frame %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x",
-          dsm_frame[0], dsm_frame[1], dsm_frame[2], dsm_frame[3], dsm_frame[4], dsm_frame[5], dsm_frame[6], dsm_frame[7],
-          dsm_frame[8], dsm_frame[9], dsm_frame[10], dsm_frame[11], dsm_frame[12], dsm_frame[13], dsm_frame[14], dsm_frame[15]);
-#endif
     /*
-     * If we have lost signal for at least a second, reset the
+     * If we have lost signal for at least 200ms, reset the
      * format guessing heuristic.
      */
-    if (((frame_time - dsm_last_frame_time) > 1000000) && (dsm_channel_shift != 0)) {
+    if (((frame_time_ms - last_frame_time_ms) > 200U) && (channel_shift != 0)) {
         dsm_guess_format(true, dsm_frame);
     }
 
     /* we have received something we think is a dsm_frame */
-    dsm_last_frame_time = frame_time;
+    last_frame_time_ms = frame_time_ms;
 
     /* if we don't know the dsm_frame format, update the guessing state machine */
-    if (dsm_channel_shift == 0) {
+    if (channel_shift == 0) {
         dsm_guess_format(false, dsm_frame);
         return false;
     }
@@ -289,7 +214,7 @@ bool AP_RCProtocol_DSM::dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[
         uint16_t raw = (dp[0] << 8) | dp[1];
         unsigned channel, value;
 
-        if (!dsm_decode_channel(raw, dsm_channel_shift, &channel, &value)) {
+        if (!dsm_decode_channel(raw, channel_shift, &channel, &value)) {
             continue;
         }
 
@@ -304,7 +229,7 @@ bool AP_RCProtocol_DSM::dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[
         }
 
         /* convert 0-1024 / 0-2048 values to 1000-2000 ppm encoding. */
-        if (dsm_channel_shift == 10) {
+        if (channel_shift == 10) {
             value *= 2;
         }
 
@@ -361,7 +286,7 @@ bool AP_RCProtocol_DSM::dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[
     }
 
 #if 0
-    if (dsm_channel_shift == 11) {
+    if (channel_shift == 11) {
         /* Set the 11-bit data indicator */
         *num_values |= 0x8000;
     }
@@ -439,4 +364,115 @@ void AP_RCProtocol_DSM::update(void)
     }
     }
 #endif
+}
+
+/*
+  parse one DSM byte, maintaining decoder state
+ */
+bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16_t *values,
+                                       uint16_t *num_values, uint16_t max_channels)
+{
+    /* this is set by the decoding state machine and will default to false
+	 * once everything that was decodable has been decoded.
+	 */
+	bool decode_ret = false;
+
+    /* overflow check */
+    if (byte_input.ofs == sizeof(byte_input.buf) / sizeof(byte_input.buf[0])) {
+        byte_input.ofs = 0;
+        dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+        debug("DSM: RESET (BUF LIM)\n");
+    }
+
+    if (byte_input.ofs == DSM_FRAME_SIZE) {
+        byte_input.ofs = 0;
+        dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+        debug("DSM: RESET (PACKET LIM)\n");
+    }
+
+#ifdef DSM_DEBUG
+    debug("dsm state: %s%s, count: %d, val: %02x\n",
+          (dsm_decode_state == DSM_DECODE_STATE_DESYNC) ? "DSM_DECODE_STATE_DESYNC" : "",
+          (dsm_decode_state == DSM_DECODE_STATE_SYNC) ? "DSM_DECODE_STATE_SYNC" : "",
+          byte_input.ofs,
+          (unsigned)b);
+#endif
+
+    switch (dsm_decode_state) {
+    case DSM_DECODE_STATE_DESYNC:
+
+        /* we are de-synced and only interested in the frame marker */
+        if ((frame_time_ms - last_rx_time_ms) >= 5) {
+            dsm_decode_state = DSM_DECODE_STATE_SYNC;
+            byte_input.ofs = 0;
+            byte_input.buf[byte_input.ofs++] = b;
+        }
+        break;
+
+    case DSM_DECODE_STATE_SYNC: {
+        if ((frame_time_ms - last_rx_time_ms) >= 5 && byte_input.ofs > 0) {
+            byte_input.ofs = 0;
+            dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+            break;
+        }
+        byte_input.buf[byte_input.ofs++] = b;
+
+        /* decode whatever we got and expect */
+        if (byte_input.ofs < DSM_FRAME_SIZE) {
+            break;
+        }
+
+        /*
+         * Great, it looks like we might have a frame.  Go ahead and
+         * decode it.
+         */
+        decode_ret = dsm_decode(frame_time_ms, byte_input.buf, values, &chan_count, max_channels);
+
+        /* we consumed the partial frame, reset */
+        byte_input.ofs = 0;
+
+        /* if decoding failed, set proto to desync */
+        if (decode_ret == false) {
+            dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+        }
+        break;
+    }
+
+    default:
+        debug("UNKNOWN PROTO STATE");
+        decode_ret = false;
+    }
+
+
+    if (decode_ret) {
+		*num_values = chan_count;
+	}
+
+    last_rx_time_ms = frame_time_ms;
+
+	/* return false as default */
+	return decode_ret;
+}
+
+// support byte input
+void AP_RCProtocol_DSM::_process_byte(uint32_t timestamp_ms, uint8_t b)
+{
+    uint16_t v[AP_DSM_MAX_CHANNELS];
+    uint16_t nchan;
+    memcpy(v, last_values, sizeof(v));
+    if (dsm_parse_byte(timestamp_ms, b, v, &nchan, AP_DSM_MAX_CHANNELS)) {
+        memcpy(last_values, v, sizeof(v));
+        if (nchan >= MIN_RCIN_CHANNELS) {
+            add_input(nchan, last_values, false);
+        }
+    }
+}
+
+// support byte input
+void AP_RCProtocol_DSM::process_byte(uint8_t b, uint32_t baudrate)
+{
+    if (baudrate != 115200) {
+        return;
+    }
+    _process_byte(AP_HAL::millis(), b);
 }

@@ -156,6 +156,7 @@ define HAL_PROBE_EXTERNAL_I2C_BAROS
 
 # OSD support
 define OSD_ENABLED ENABLED
+define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # available storage
@@ -163,7 +164,8 @@ define HAL_STORAGE_SIZE 15360
 define STORAGE_FLASH_PAGE 1
 
 # defaults for battery monitoring
+define HAL_BATT_MONITOR_DEFAULT 4
 define HAL_BATT_VOLT_PIN 11
 define HAL_BATT_CURR_PIN 12
 define HAL_BATT_VOLT_SCALE 11
-define HAL_BATT_CURR_SCALE 18.2
+define HAL_BATT_CURR_SCALE 25

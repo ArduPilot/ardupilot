@@ -54,7 +54,7 @@ class upload_fw(Task.Task):
     def run(self):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         src = self.inputs[0]
-        return self.exec_command("{} '{}/px_uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src))
+        return self.exec_command("{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src))
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
@@ -92,13 +92,30 @@ class generate_bin(Task.Task):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
 class generate_apj(Task.Task):
+    '''generate an apj firmware file'''
     color='CYAN'
-    run_str="${PYTHON} '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
     always_run = True
     def keyword(self):
-        return "Generating"
-    def __str__(self):
-        return self.outputs[0].path_from(self.generator.bld.bldnode)
+        return "apj_gen"
+    def run(self):
+        import json, time, base64, zlib
+        img = open(self.inputs[0].abspath(),'rb').read()
+        d = {
+            "board_id": int(self.env.APJ_BOARD_ID),
+            "magic": "APJFWv1",
+            "description": "Firmware for a %s board" % self.env.APJ_BOARD_TYPE,
+            "image": base64.b64encode(zlib.compress(img,9)).decode('utf-8'),
+            "build_time": int(time.time()),
+            "summary": self.env.BOARD,
+            "version": "0.1",
+            "image_size": len(img),
+            "git_identity": self.generator.bld.git_head_hash(short=True),
+            "board_revision": 0
+        }
+        apj_file = self.outputs[0].abspath()
+        f = open(apj_file, "w")
+        f.write(json.dumps(d, indent=4))
+        f.close()
 
 class build_abin(Task.Task):
     '''build an abin file for skyviper firmware upload via web UI'''
@@ -240,7 +257,8 @@ def configure(cfg):
     env.BUILDROOT = bldpath('')
     env.SRCROOT = srcpath('')
     env.PT_DIR = srcpath('Tools/ardupilotwaf/chibios/image')
-    env.UPLOAD_TOOLS = srcpath('Tools/ardupilotwaf')
+    env.MKFW_TOOLS = srcpath('Tools/ardupilotwaf')
+    env.UPLOAD_TOOLS = srcpath('Tools/scripts')
     env.CHIBIOS_SCRIPTS = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts')
     env.TOOLS_SCRIPTS = srcpath('Tools/scripts')
     env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
@@ -299,13 +317,12 @@ def pre_build(bld):
 def build(bld):
 
     bld(
-        # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
+        # build hwdef.h from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
         rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s" % (
             bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION),
         group='dynamic_sources',
         target=[bld.bldnode.find_or_declare('hwdef.h'),
-                bld.bldnode.find_or_declare('apj.prototype'),
                 bld.bldnode.find_or_declare('ldscript.ld')]
     )
     

@@ -26,9 +26,9 @@
 #include <uavcan/uavcan.hpp>
 #include <uavcan/time.hpp>
 
-#include <uavcan_stm32/thread.hpp>
-#include <uavcan_stm32/clock.hpp>
-#include <uavcan_stm32/can.hpp>
+#include "CANThread.h"
+#include "CANClock.h"
+#include "CANIface.h"
 
 #define MAX_NUMBER_OF_CAN_INTERFACES    2
 #define MAX_NUMBER_OF_CAN_DRIVERS       2
@@ -66,7 +66,7 @@ public:
 
 private:
     bool initialized_;
-    uavcan_stm32::CanInitHelper<CAN_STM32_RX_QUEUE_SIZE> can_helper;
+    ChibiOS_CAN::CanInitHelper<CAN_STM32_RX_QUEUE_SIZE> can_helper;
 };
 
 }

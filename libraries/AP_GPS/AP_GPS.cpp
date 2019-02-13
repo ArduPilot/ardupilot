@@ -191,18 +191,21 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: Antenna X position offset
     // @Description: X position of the first GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: POS1_Y
     // @DisplayName: Antenna Y position offset
     // @Description: Y position of the first GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: POS1_Z
     // @DisplayName: Antenna Z position offset
     // @Description: Z position of the first GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("POS1", 16, AP_GPS, _antenna_offset[0], 0.0f),
 
@@ -210,18 +213,21 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: Antenna X position offset
     // @Description: X position of the second GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: POS2_Y
     // @DisplayName: Antenna Y position offset
     // @Description: Y position of the second GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: POS2_Z
     // @DisplayName: Antenna Z position offset
     // @Description: Z position of the second GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("POS2", 17, AP_GPS, _antenna_offset[1], 0.0f),
 
@@ -265,7 +271,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 AP_GPS::AP_GPS()
 {
     static_assert((sizeof(_initialisation_blob) * (CHAR_BIT + 2)) < (4800 * GPS_BAUD_TIME_MS * 1e-3),
-                    "GPS initilisation blob is to large to be completely sent before the baud rate changes");
+                    "GPS initilisation blob is too large to be completely sent before the baud rate changes");
 
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -555,7 +561,7 @@ AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
 
 bool AP_GPS::should_df_log() const
 {
-    DataFlash_Class *instance = DataFlash_Class::instance();
+    AP_Logger *instance = AP_Logger::get_singleton();
     if (instance == nullptr) {
         return false;
     }
@@ -603,7 +609,7 @@ void AP_GPS::update_instance(uint8_t instance)
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
-    const uint32_t tnow = AP_HAL::millis();
+    uint32_t tnow = AP_HAL::millis();
 
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
@@ -611,7 +617,7 @@ void AP_GPS::update_instance(uint8_t instance)
     bool data_should_be_logged = false;
     if (!result) {
         if (tnow - timing[instance].last_message_time_ms > GPS_TIMEOUT_MS) {
-            memset(&state[instance], 0, sizeof(state[instance]));
+            memset((void *)&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
             state[instance].hdop = GPS_UNKNOWN_DOP;
             state[instance].vdop = GPS_UNKNOWN_DOP;
@@ -632,6 +638,12 @@ void AP_GPS::update_instance(uint8_t instance)
             data_should_be_logged = true;
         }
     } else {
+        if (state[instance].uart_timestamp_ms != 0) {
+            // set the timestamp for this messages based on
+            // set_uart_timestamp() in backend, if available
+            tnow = state[instance].uart_timestamp_ms;
+            state[instance].uart_timestamp_ms = 0;
+        }
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
@@ -645,7 +657,7 @@ void AP_GPS::update_instance(uint8_t instance)
     if (data_should_be_logged &&
         should_df_log() &&
         !AP::ahrs().have_ekf_logging()) {
-        DataFlash_Class::instance()->Log_Write_GPS(instance);
+        AP::logger().Write_GPS(instance);
     }
 
     if (state[instance].status >= GPS_OK_FIX_3D) {
@@ -807,7 +819,6 @@ void AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms
     GPS_State &istate = state[instance];
     istate.status = _status;
     istate.location = _location;
-    istate.location.options = 0;
     istate.velocity = _velocity;
     istate.ground_speed = norm(istate.velocity.x, istate.velocity.y);
     istate.ground_course = wrap_360(degrees(atan2f(istate.velocity.y, istate.velocity.x)));
@@ -1075,13 +1086,13 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
     }
 }
 
-void AP_GPS::Write_DataFlash_Log_Startup_messages()
+void AP_GPS::Write_AP_Logger_Log_Startup_messages()
 {
     for (uint8_t instance=0; instance<num_instances; instance++) {
         if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
             continue;
         }
-        drivers[instance]->Write_DataFlash_Log_Startup_messages();
+        drivers[instance]->Write_AP_Logger_Log_Startup_messages();
     }
 }
 
@@ -1330,7 +1341,7 @@ void AP_GPS::calc_blended_state(void)
     state[GPS_BLENDED_INSTANCE].have_speed_accuracy = false;
     state[GPS_BLENDED_INSTANCE].have_horizontal_accuracy = false;
     state[GPS_BLENDED_INSTANCE].have_vertical_accuracy = false;
-    memset(&state[GPS_BLENDED_INSTANCE].location, 0, sizeof(state[GPS_BLENDED_INSTANCE].location));
+    state[GPS_BLENDED_INSTANCE].location = {};
 
     _blended_antenna_offset.zero();
     _blended_lag_sec = 0;
@@ -1535,7 +1546,7 @@ namespace AP {
 
 AP_GPS &gps()
 {
-    return AP_GPS::gps();
+    return AP_GPS::get_singleton();
 }
 
 };

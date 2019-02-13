@@ -14,15 +14,12 @@ protected:
 
     uint32_t telem_delay() const override;
 
-    bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) override;
-
-    AP_Mission *get_mission() override;
-    AP_Rally *get_rally() const override;
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_VisualOdom *get_visual_odom() const override;
 
     uint8_t sysid_my_gcs() const override;
+    bool sysid_enforce() const override;
 
     bool set_mode(uint8_t mode) override;
 
@@ -33,8 +30,16 @@ protected:
 
     void send_position_target_global_int() override;
 
+    MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
+
+    MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet) override;
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
+
+    void handle_mount_message(const mavlink_message_t* msg) override;
+
+    bool set_home_to_current_location(bool lock) override;
+    bool set_home(const Location& loc, bool lock) override;
 
 private:
 
@@ -42,7 +47,12 @@ private:
     void handle_command_ack(const mavlink_message_t* msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
+    void handle_rc_channels_override(const mavlink_message_t *msg) override;
     bool try_send_message(enum ap_message id) override;
+
+    bool vehicle_initialised() const override;
+
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
 
     void packetReceived(const mavlink_status_t &status,
                         mavlink_message_t &msg) override;
@@ -53,5 +63,8 @@ private:
     MAV_STATE system_status() const override;
 
     int16_t vfr_hud_throttle() const override;
+    float vfr_hud_alt() const override;
+
+    void send_pid_tuning();
 
 };

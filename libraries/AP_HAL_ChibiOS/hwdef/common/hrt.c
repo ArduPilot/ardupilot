@@ -31,6 +31,9 @@ static volatile systime_t last_systime;
 static uint32_t get_systime_us32(void)
 {
     systime_t now = chVTGetSystemTimeX();
+#if CH_CFG_ST_FREQUENCY != 1000000
+    now *= (1000000UL / CH_CFG_ST_FREQUENCY);
+#endif
     if (now < last_systime) {
         uint32_t last_u32 = timer_base_us32;
         timer_base_us32 += (uint32_t)TIME_MAX_SYSTIME;
@@ -47,6 +50,9 @@ static uint32_t get_systime_us32(void)
 static uint32_t get_systime_us32(void)
 {
     systime_t now = chVTGetSystemTimeX();
+#if CH_CFG_ST_FREQUENCY != 1000000
+    now *= (1000000UL / CH_CFG_ST_FREQUENCY);
+#endif
     if (now < last_systime) {
         timer_base_us64 += TIME_MAX_SYSTIME;
         timer_base_ms += TIME_MAX_SYSTIME/1000;

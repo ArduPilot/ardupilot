@@ -49,66 +49,10 @@ uint16_t AP_RCProtocol_SRXL::srxl_crc16(uint16_t crc, uint8_t new_byte)
 
 void AP_RCProtocol_SRXL::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
-    // convert to bit widths, allowing for up to about 4usec error, assuming 115200 bps
-    uint16_t bits_s0 = ((width_s0+4)*(uint32_t)115200) / 1000000;
-    uint16_t bits_s1 = ((width_s1+4)*(uint32_t)115200) / 1000000;
-    uint8_t bit_ofs, byte_ofs;
-    uint16_t nbits;
-
-    if (bits_s0 == 0 || bits_s1 == 0) {
-        // invalid data
-        goto reset;
+    uint8_t b;
+    if (ss.process_pulse(width_s0, width_s1, b)) {
+        _process_byte(ss.get_byte_timestamp_us(), b);
     }
-
-    byte_ofs = srxl_state.bit_ofs/10;
-    bit_ofs = srxl_state.bit_ofs%10;
-    if (byte_ofs >= SRXL_FRAMELEN_MAX) {
-        goto reset;
-    }
-    // pull in the high bits
-    nbits = bits_s0;
-    if (nbits+bit_ofs > 10) {
-        nbits = 10 - bit_ofs;
-    }
-    srxl_state.bytes[byte_ofs] |= ((1U<<nbits)-1) << bit_ofs;
-    srxl_state.bit_ofs += nbits;
-    bit_ofs += nbits;
-    if (bits_s0 - nbits > 10) {
-        // we have a full frame
-        uint8_t byte;
-        uint8_t i;
-        for (i=0; i <= byte_ofs; i++) {
-            // get raw data
-            uint16_t v = srxl_state.bytes[i];
-
-            // check start bit
-            if ((v & 1) != 0) {
-                break;
-            }
-            // check stop bits
-            if ((v & 0x200) != 0x200) {
-                break;
-            }
-            byte = ((v>>1) & 0xFF);
-            process_byte(byte);
-        }
-        memset(&srxl_state, 0, sizeof(srxl_state));
-    }
-
-    byte_ofs = srxl_state.bit_ofs/10;
-    bit_ofs = srxl_state.bit_ofs%10;
-
-    if (bits_s1+bit_ofs > 10) {
-        // invalid data
-        goto reset;
-    }
-
-    // pull in the low bits
-    srxl_state.bit_ofs += bits_s1;
-
-    return;
-reset:
-    memset(&srxl_state, 0, sizeof(srxl_state));
 }
 
 
@@ -249,9 +193,8 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v5(uint16_t max_values, uint8_t *num_v
     return 0;
 }
 
-void AP_RCProtocol_SRXL::process_byte(uint8_t byte)
+void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
 {
-    uint64_t timestamp_us = AP_HAL::micros64();
     /*----------------------------------------distinguish different srxl variants at the beginning of each frame---------------------------------------------- */
     /* Check if we have a new begin of a frame --> indicators: Time gap in datastream + SRXL header 0xA<VARIANT>*/
     if ((timestamp_us - last_data_us) >= SRXL_MIN_FRAMESPACE_US) {
@@ -309,8 +252,8 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte)
         if (buflen == frame_len_full) {
             /* CRC check here */
             crc_receiver = ((uint16_t)buffer[buflen-2] << 8U) | ((uint16_t)buffer[buflen-1]);
-            if (crc_receiver == crc_fmu) {
-                /* at this point buffer contains all frame data and crc is valid --> extract channel info according to SRXL variant */
+             if (crc_receiver == crc_fmu) {
+               /* at this point buffer contains all frame data and crc is valid --> extract channel info according to SRXL variant */
                 uint16_t values[SRXL_MAX_CHANNELS];
                 uint8_t num_values;
                 bool failsafe_state;
@@ -330,7 +273,7 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte)
                 default:
                     break;
                 }
-            }
+             }
             decode_state_next = STATE_IDLE; /* frame data buffering and decoding finished --> statemachine not in use until new header drops is */
         } else {
             /* frame not completely received --> frame data buffering still ongoing  */
@@ -344,4 +287,15 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte)
 
     decode_state = decode_state_next;
     last_data_us = timestamp_us;
+}
+
+/*
+  process a byte provided by a uart
+ */
+void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
+{
+    if (baudrate != 115200) {
+        return;
+    }
+    _process_byte(AP_HAL::micros(), byte);
 }

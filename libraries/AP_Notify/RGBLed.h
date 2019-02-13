@@ -27,14 +27,14 @@ public:
     RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim);
 
     // init - initialised the LED
-    virtual bool init(void);
+    virtual bool init(void) override;
 
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
     virtual void set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
     // update - updates led according to timed_updated.  Should be
     // called at 50Hz
-    virtual void update();
+    virtual void update() override;
 
     // handle LED control, only used when LED_OVERRIDE=1
     virtual void handle_led_control(mavlink_message_t *msg) override;

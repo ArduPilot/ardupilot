@@ -423,7 +423,7 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
     case EKF_TYPE_SITL: {
         if (_sitl) {
             const struct SITL::sitl_fdm &fdm = _sitl->state;
-            memset(&loc, 0, sizeof(loc));
+            loc = {};
             loc.lat = fdm.latitude * 1e7;
             loc.lng = fdm.longitude * 1e7;
             loc.alt = fdm.altitude*100;

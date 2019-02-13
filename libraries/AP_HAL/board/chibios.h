@@ -21,6 +21,10 @@
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #endif
 
+#ifndef HAL_HAVE_SERVO_VOLTAGE
+#define HAL_HAVE_SERVO_VOLTAGE 0
+#endif
+
 #ifdef HAL_GPIO_PIN_SAFETY_IN
 #define HAL_HAVE_SAFETY_SWITCH 1
 #endif
@@ -92,3 +96,7 @@
 #define HAL_I2C_INTERNAL_MASK 1
 #endif
 
+// put all storage of files under /APM directory
+#ifndef HAL_BOARD_STORAGE_DIRECTORY
+#define HAL_BOARD_STORAGE_DIRECTORY "/APM"
+#endif

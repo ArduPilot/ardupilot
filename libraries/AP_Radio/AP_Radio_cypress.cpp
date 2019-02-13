@@ -3,9 +3,6 @@
 #if HAL_RCINPUT_WITH_AP_RADIO
 
 #include <AP_Math/AP_Math.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <board_config.h>
-#endif
 #include "AP_Radio_cypress.h"
 #include <utility>
 #include <stdio.h>
@@ -244,7 +241,7 @@ enum {
 #define AUTOBIND_CHANNEL 12
 
 // object instance for trampoline
-AP_Radio_cypress *AP_Radio_cypress::radio_instance;
+AP_Radio_cypress *AP_Radio_cypress::radio_singleton;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 thread_t *AP_Radio_cypress::_irq_handler_ctx;
 #endif
@@ -255,7 +252,7 @@ AP_Radio_cypress::AP_Radio_cypress(AP_Radio &_radio) :
     AP_Radio_backend(_radio)
 {
     // link to instance for irq_trampoline
-    radio_instance = this;
+    radio_singleton = this;
 }
 
 /*
@@ -277,8 +274,6 @@ bool AP_Radio_cypress::init(void)
 #endif
     load_bind_info();
 
-    sem = hal.util->new_semaphore();    
-    
     return reset();
 }
 
@@ -294,15 +289,7 @@ bool AP_Radio_cypress::reset(void)
     /*
       to reset radio hold reset high for 0.5s, then low for 0.5s
      */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    stm32_configgpio(CYRF_RESET_PIN);
-    stm32_gpiowrite(CYRF_RESET_PIN, 1);
-    hal.scheduler->delay(500);
-    stm32_gpiowrite(CYRF_RESET_PIN, 0);
-    hal.scheduler->delay(500);
-    // use AUX5 as radio IRQ pin
-    stm32_configgpio(CYRF_IRQ_INPUT);
-#elif defined(HAL_GPIO_RADIO_RESET)
+#if defined(HAL_GPIO_RADIO_RESET)
     hal.gpio->write(HAL_GPIO_RADIO_RESET, 1);
     hal.scheduler->delay(500);
     hal.gpio->write(HAL_GPIO_RADIO_RESET, 0);
@@ -418,7 +405,7 @@ uint8_t AP_Radio_cypress::num_channels(void)
 void AP_Radio_cypress::check_fw_ack(void)
 {
     Debug(4,"check need_ack\n");
-    if (fwupload.need_ack && sem->take_nonblocking()) {
+    if (fwupload.need_ack && sem.take_nonblocking()) {
         // ack the send of a DATA96 fw packet to TX
         fwupload.need_ack = false;
         uint8_t data16[16] {};
@@ -426,7 +413,7 @@ void AP_Radio_cypress::check_fw_ack(void)
         memcpy(&data16[0], &ack_to, 4);
         mavlink_msg_data16_send(fwupload.chan, 42, 4, data16);
         Debug(4,"sent ack DATA16\n");
-        sem->give();
+        sem.give();
     }
 }
 
@@ -645,9 +632,7 @@ void AP_Radio_cypress::radio_init(void)
     start_receive();
 
     // setup handler for rising edge of IRQ pin
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    stm32_gpiosetevent(CYRF_IRQ_INPUT, true, false, false, irq_radio_trampoline);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     hal.gpio->attach_interrupt(HAL_GPIO_RADIO_IRQ, trigger_irq_radio_event, AP_HAL::GPIO::INTERRUPT_RISING);
 #endif
 }
@@ -808,14 +793,14 @@ bool AP_Radio_cypress::parse_dsm_channels(const uint8_t *data)
             // got an ack from key 0
             Debug(4, "ack %u seq=%u acked=%u length=%u len=%u\n",
                   v, fwupload.sequence, unsigned(fwupload.acked), unsigned(fwupload.length), fwupload.len);
-            if (fwupload.sequence == v && sem->take_nonblocking()) {
+            if (fwupload.sequence == v && sem.take_nonblocking()) {
                 fwupload.sequence++;
                 fwupload.acked += fwupload.len;
                 if (fwupload.acked == fwupload.length) {
                     // trigger send of DATA16 ack to client
                     fwupload.need_ack = true;
                 }
-                sem->give();
+                sem.give();
             }
         }
         if (chan == 7) {
@@ -947,9 +932,7 @@ void AP_Radio_cypress::dsm2_start_sync(void)
  */
 void AP_Radio_cypress::setup_timeout(uint32_t timeout_ms)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    hrt_call_after(&wait_call, timeout_ms*1000, (hrt_callout)irq_timeout_trampoline, nullptr);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     chVTSet(&timeout_vt, chTimeMS2I(timeout_ms), trigger_timeout_event, nullptr);
 #endif
 }
@@ -1204,26 +1187,9 @@ void AP_Radio_cypress::irq_timeout(void)
 
 
 /*
-  called on rising edge of radio IRQ pin
- */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-int AP_Radio_cypress::irq_radio_trampoline(int irq, void *context)
-{
-    radio_instance->irq_handler();
-    return 0;
-}
-#endif
-
-/*
   called on HRT timeout
  */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-int AP_Radio_cypress::irq_timeout_trampoline(int irq, void *context)
-{
-    radio_instance->irq_timeout();
-    return 0;
-}
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 void AP_Radio_cypress::irq_handler_thd(void *arg)
 {
     _irq_handler_ctx = chThdGetSelfX();
@@ -1231,10 +1197,10 @@ void AP_Radio_cypress::irq_handler_thd(void *arg)
     while(true) {
         eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
         if (evt & EVT_IRQ) {
-            radio_instance->irq_handler();
+            radio_singleton->irq_handler();
         }
         if (evt & EVT_TIMEOUT) {
-            radio_instance->irq_timeout();
+            radio_singleton->irq_timeout();
         }
     }
 }
@@ -1596,7 +1562,7 @@ void AP_Radio_cypress::send_telem_packet(void)
     if (fwupload.length != 0 &&
         fwupload.length > fwupload.acked &&
         ((fwupload.counter++ & 0x07) != 0) &&
-        sem->take_nonblocking()) {
+        sem.take_nonblocking()) {
         pkt.type = fwupload.fw_type;
         pkt.payload.fw.seq = fwupload.sequence;
         uint32_t len = fwupload.length>fwupload.acked?fwupload.length - fwupload.acked:0;
@@ -1609,7 +1575,7 @@ void AP_Radio_cypress::send_telem_packet(void)
                pkt.payload.fw.offset,
                pkt.payload.fw.len,
                pkt.type);
-        sem->give();
+        sem.give();
         pkt.crc = crc_crc8((const uint8_t *)&pkt.type, 15);
     } else {
         pkt.type = TELEM_STATUS;
@@ -1702,7 +1668,7 @@ void AP_Radio_cypress::handle_data_packet(mavlink_channel_t chan, const mavlink_
     uint32_t ofs=0;
     memcpy(&ofs, &m.data[0], 4);
     Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, unsigned(ofs));
-    if (sem->take_nonblocking()) {
+    if (sem.take_nonblocking()) {
         fwupload.chan = chan;
         fwupload.need_ack = false;
         fwupload.offset = ofs;
@@ -1720,7 +1686,7 @@ void AP_Radio_cypress::handle_data_packet(mavlink_channel_t chan, const mavlink_
             fwupload.fw_type = TELEM_FW;
             memcpy(&fwupload.pending_data[0], &m.data[4], fwupload.length);
         }
-        sem->give();
+        sem.give();
     } 
 }
 

@@ -71,19 +71,19 @@ public:
     {}
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager);
+    virtual void init(const AP_SerialManager& serial_manager) override;
 
     // update mount position - should be called periodically
-    virtual void update();
+    virtual void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    virtual bool has_pan_control() const;
+    virtual bool has_pan_control() const override;
 
     // set_mode - sets mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) ;
+    virtual void set_mode(enum MAV_MOUNT_MODE mode) override;
 
-    // status_msg - called to allow mounts to send their status to GCS via MAVLink
-    virtual void status_msg(mavlink_channel_t chan) ;
+    // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
+    virtual void send_mount_status(mavlink_channel_t chan) override;
 
 private:
 

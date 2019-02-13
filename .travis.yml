@@ -58,9 +58,9 @@ matrix:
   include:
     - if: type != cron
       compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v2 revo-bootloader iofirmware"
+      env: CI_BUILD_TARGET="revo-bootloader iofirmware"
     - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v4 revo-mini"
+      env: CI_BUILD_TARGET="revo-mini"
     - if: type != cron
       compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-copter"
@@ -69,4 +69,13 @@ matrix:
       env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane"
     - if: type != cron
       compiler: "clang"
-      env: CI_BUILD_TARGET="sitltest-rover"
+      env: CI_BUILD_TARGET="sitltest-rover sitltest-sub""
+    - language: python
+      python: 3.7
+      addons:  # speedup: This test does not need addons
+      compiler:
+      dist: xenial  # required for Python >= 3.7 (travis-ci/travis-ci#9069)
+      before_install: pip install flake8
+      script:
+        - EXCLUDE=./.*,./modules/gtest,./modules/ChibiOS/test,./modules/uavcan/libuavcan
+        - flake8 . --count --exclude=$EXCLUDE --select=E901,E999,F821,F822,F823 --show-source --statistics

@@ -29,7 +29,7 @@
 #include <mmsystem.h>
 #endif
 
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Param/AP_Param.h>
 
 using namespace SITL;
@@ -125,10 +125,10 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
         return false;
     }
 
-    memset(&loc, 0, sizeof(loc));
-    loc.lat = static_cast<int32_t>(strtof(lat_s, nullptr) * 1.0e7f);
-    loc.lng = static_cast<int32_t>(strtof(lon_s, nullptr) * 1.0e7f);
-    loc.alt = static_cast<int32_t>(strtof(alt_s, nullptr) * 1.0e2f);
+    loc = {};
+    loc.lat = static_cast<int32_t>(strtod(lat_s, nullptr) * 1.0e7);
+    loc.lng = static_cast<int32_t>(strtod(lon_s, nullptr) * 1.0e7);
+    loc.alt = static_cast<int32_t>(strtod(alt_s, nullptr) * 1.0e2);
 
     if (loc.lat == 0 && loc.lng == 0) {
         // default to CMAC instead of middle of the ocean. This makes
@@ -187,7 +187,7 @@ void Aircraft::update_position(void)
 #if 0
     // logging of raw sitl data
     Vector3f accel_ef = dcm * accel_body;
-    DataFlash_Class::instance()->Log_Write("SITL", "TimeUS,VN,VE,VD,AN,AE,AD,PN,PE,PD", "Qfffffffff",
+    AP::logger().Write("SITL", "TimeUS,VN,VE,VD,AN,AE,AD,PN,PE,PD", "Qfffffffff",
                                            AP_HAL::micros64(),
                                            velocity_ef.x, velocity_ef.y, velocity_ef.z,
                                            accel_ef.x, accel_ef.y, accel_ef.z,
@@ -214,6 +214,11 @@ void Aircraft::update_mag_field_bf()
 
     // calculate frame height above ground
     const float frame_height_agl = fmaxf((-position.z) + home.alt * 0.01f - ground_level, 0.0f);
+
+    if (!sitl) {
+        // running example program
+        return;
+    }
 
     // calculate scaling factor that varies from 1 at ground level to 1/8 at sitl->mag_anomaly_hgt
     // Assume magnetic anomaly strength scales with 1/R**3
@@ -388,6 +393,10 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.range = range;
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
+
+    // copy laser scanner results
+    fdm.scanner.points = scanner.points;
+    fdm.scanner.ranges = scanner.ranges;
 
     if (smoothing.enabled) {
         fdm.xAccel = smoothing.accel_body.x;
@@ -653,7 +662,7 @@ void Aircraft::smooth_sensors(void)
     dcm.to_euler(&R2, &P2, &Y2);
 
 #if 0
-    DataFlash_Class::instance()->Log_Write("SMOO", "TimeUS,AEx,AEy,AEz,DPx,DPy,DPz,R,P,Y,R2,P2,Y2",
+    AP::logger().Write("SMOO", "TimeUS,AEx,AEy,AEz,DPx,DPy,DPz,R,P,Y,R2,P2,Y2",
                                            "Qffffffffffff",
                                            AP_HAL::micros64(),
                                            degrees(angle_differential.x),
@@ -755,5 +764,12 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (gripper_epm && gripper_epm->is_enabled()) {
         gripper_epm->update(input);
         external_payload_mass += gripper_epm->payload_mass();
+    }
+
+
+    // update parachute
+    if (parachute && parachute->is_enabled()) {
+        parachute->update(input);
+        // TODO: add drag to vehicle, presumably proportional to velocity
     }
 }

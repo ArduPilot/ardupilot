@@ -33,17 +33,19 @@
 //#define MODE_BRAKE_ENABLED    DISABLED            // disable brake mode support
 //#define MODE_CIRCLE_ENABLED   DISABLED            // disable circle mode support
 //#define MODE_DRIFT_ENABLED    DISABLED            // disable drift mode support
+//#define MODE_FLIP_ENABLED     DISABLED            // disable flip mode support
 //#define MODE_FOLLOW_ENABLED   DISABLED            // disable follow mode support
 //#define MODE_GUIDED_ENABLED   DISABLED            // disable guided mode support
 //#define MODE_GUIDED_NOGPS_ENABLED   DISABLED      // disable guided/nogps mode support
 //#define MODE_LOITER_ENABLED   DISABLED            // disable loiter mode support
 //#define MODE_POSHOLD_ENABLED  DISABLED            // disable poshold mode support
-//#define MODE_RTL_ENABLED DISABLED                 // disable rtl mode support
+//#define MODE_RTL_ENABLED      DISABLED            // disable rtl mode support
 //#define MODE_SMARTRTL_ENABLED DISABLED            // disable smartrtl mode support
-//#define MODE_SPORT_ENABLED DISABLED               // disable sport mode support
+//#define MODE_SPORT_ENABLED    DISABLED            // disable sport mode support
 //#define MODE_THROW_ENABLED    DISABLED            // disable throw mode support
 //#define MODE_ZIGZAG_ENABLED   DISABLED            // disable zigzag mode support
-//#define DEVO_TELEM_ENABLED DISABLED               // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
+//#define DEVO_TELEM_ENABLED    DISABLED            // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
+//#define OSD_ENABLED           DISABLED            // disable on-screen-display support
 
 
 // features below are disabled by default on all boards

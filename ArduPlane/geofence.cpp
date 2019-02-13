@@ -396,6 +396,7 @@ void Plane::geofence_check(bool altitude_check_only)
             guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
 
         } else { //return to fence return point, not a rally point
+            guided_WP_loc = {};
             if (g.fence_retalt > 0) {
                 //fly to the return point using fence_retalt
                 guided_WP_loc.alt = home.alt + 100.0f*g.fence_retalt;
@@ -407,7 +408,6 @@ void Plane::geofence_check(bool altitude_check_only)
                 // min and max
                 guided_WP_loc.alt = home.alt + 100.0f*(g.fence_minalt + g.fence_maxalt)/2;
             }
-            guided_WP_loc.options = 0;
             guided_WP_loc.lat = geofence_state->boundary[0].x;
             guided_WP_loc.lng = geofence_state->boundary[0].y;
         }

@@ -49,23 +49,18 @@ bool AP_Gripper_Servo::has_state_pwm(const uint16_t pwm) const
         // (e.g. last action was a grab not a release)
         return false;
     }
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (is_releasing && AP::sitl()->gripper_sim.is_jaw_open()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper load released");
-        return true;
-    }
-    if (!is_releasing && !AP::sitl()->gripper_sim.is_jaw_open()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper load grabbed");
-        return true;
-    }
-    return false;
-#else
     if (AP_HAL::millis() - action_timestamp < action_time) {
         // servo still moving....
         return false;
     }
-    return true;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (is_releasing) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Gripper load released");
+    } else {
+        gcs().send_text(MAV_SEVERITY_INFO, "Gripper load grabbed");
+    }
 #endif
+    return true;
 }
 
 

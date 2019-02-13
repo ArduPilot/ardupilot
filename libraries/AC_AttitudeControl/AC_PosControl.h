@@ -31,7 +31,7 @@
 #define POSCONTROL_DT_50HZ                      0.02f   // time difference in seconds for 50hz update rate
 #define POSCONTROL_DT_400HZ                     0.0025f // time difference in seconds for 400hz update rate
 
-#define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 0.2 seconds
+#define POSCONTROL_ACTIVE_TIMEOUT_US            200000  // position controller is considered active if it has been called within the past 0.2 seconds
 
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // low-pass filter on velocity error (unit: hz)
 #define POSCONTROL_THROTTLE_CUTOFF_FREQ         2.0f    // low-pass filter on accel error (unit: hz)
@@ -123,8 +123,7 @@ public:
     /// relax_alt_hold_controllers - set all desired and targets to measured
     void relax_alt_hold_controllers(float throttle_setting);
 
-    /// get_alt_target, get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
-    /// To-Do: remove one of the two functions below
+    /// get_alt_target - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
     float get_alt_target() const { return _pos_target.z; }
 
     /// get_alt_error - returns altitude error in cm
@@ -381,8 +380,8 @@ protected:
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
-    uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
-    uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
+    uint64_t    _last_update_xy_us;     // system time (in microseconds) since last update_xy_controller call
+    uint64_t    _last_update_z_us;      // system time (in microseconds) of last update_z_controller call
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
@@ -408,7 +407,6 @@ protected:
     Vector3f    _accel_target;          // acceleration target in cm/s/s
     Vector3f    _accel_error;           // acceleration error in cm/s/s
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
-    float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 
     LowPassFilterVector2f _accel_target_filter; // acceleration target filter

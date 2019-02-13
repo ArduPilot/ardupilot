@@ -382,7 +382,7 @@ AltFunction_map = {
 	"PE14:TIM1_CH4"     	:	1,
 	"PE15:TIM1_BKIN"    	:	1,
 	"PE15:FSMC_D12"    	:	12,
-	"PE15:EVENTOUT"    	:	1,
+	"PE15:EVENTOUT"    	:	15,
 	"PE1:DCMI_D3"       	:	13,
 	"PE1:EVENTOUT"      	:	15,
 	"PE1:FSMC_NBL1"     	:	12,

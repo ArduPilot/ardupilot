@@ -69,6 +69,15 @@ void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
     }
 }
 
+// set a channel as private. Private channels get sent heartbeats, but
+// don't get broadcast packets or forwarded packets
+void GCS_MAVLINK::set_channel_private(mavlink_channel_t _chan)
+{
+    const uint8_t mask = (1U<<(unsigned)_chan);
+    mavlink_private |= mask;
+    mavlink_active &= ~mask;
+}
+
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t)
 {

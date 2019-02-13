@@ -5,6 +5,8 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
+#define SITL_WOW_ALTITUDE 0.01
+
 void GPIO::init()
 {}
 
@@ -16,6 +18,12 @@ uint8_t GPIO::read(uint8_t pin)
     if (!_sitlState->_sitl) {
         return 0;
     }
+    
+    // weight on wheels pin support
+    if (pin == _sitlState->_sitl->wow_pin.get()) {
+        return _sitlState->_sitl->state.altitude < SITL_WOW_ALTITUDE ? 1 : 0;
+    }
+    
     uint16_t mask = static_cast<uint16_t>(_sitlState->_sitl->pin_mask.get());
     return static_cast<uint16_t>((mask & (1U << pin)) ? 1 : 0);
 }
@@ -27,6 +35,11 @@ void GPIO::write(uint8_t pin, uint8_t value)
     }
     uint16_t mask = static_cast<uint16_t>(_sitlState->_sitl->pin_mask.get());
     uint16_t new_mask = mask;
+
+    if (pin == _sitlState->_sitl->wow_pin.get()) {
+        return;
+    }
+
     if (value) {
         new_mask |= (1U << pin);
     } else {

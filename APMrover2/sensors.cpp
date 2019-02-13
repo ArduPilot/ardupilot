@@ -58,7 +58,7 @@ void Rover::update_visual_odom()
                                 visual_odom_last_update_ms,
                                 g2.visual_odom.get_pos_offset());
         // log sensor data
-        DataFlash.Log_Write_VisualOdom(time_delta_sec,
+        logger.Write_VisualOdom(time_delta_sec,
                                        g2.visual_odom.get_angle_delta(),
                                        g2.visual_odom.get_position_delta(),
                                        g2.visual_odom.get_confidence());
@@ -99,6 +99,9 @@ void Rover::update_wheel_encoder()
         const float delta_angle = curr_angle_rad - wheel_encoder_last_angle_rad[i];
         wheel_encoder_last_angle_rad[i] = curr_angle_rad;
 
+        // save cumulative distances at current time (in meters)
+        wheel_encoder_last_distance_m[i] = g2.wheel_encoder.get_distance(i);
+
         // calculate delta time
         float delta_time;
         const uint32_t latest_sensor_update_ms = g2.wheel_encoder.get_last_reading_ms(i);
@@ -119,14 +122,7 @@ void Rover::update_wheel_encoder()
          * timeStamp_ms is the time when the rotation was last measured (msec)
          * posOffset is the XYZ body frame position of the wheel hub (m)
          */
-        EKF3.writeWheelOdom(delta_angle, delta_time, wheel_encoder_last_update_ms[i], g2.wheel_encoder.get_position(i), g2.wheel_encoder.get_wheel_radius(i));
-
-        // calculate rpm for reporting to GCS
-        if (is_positive(delta_time)) {
-            wheel_encoder_rpm[i] = (delta_angle / M_2PI) / (delta_time / 60.0f);
-        } else {
-            wheel_encoder_rpm[i] = 0.0f;
-        }
+        EKF3.writeWheelOdom(delta_angle, delta_time, wheel_encoder_last_update_ms[i], g2.wheel_encoder.get_pos_offset(i), g2.wheel_encoder.get_wheel_radius(i));
     }
 
     // record system time update for next iteration
@@ -241,6 +237,26 @@ void Rover::init_proximity(void)
     g2.proximity.set_rangefinder(&rangefinder);
 }
 
+/*
+  ask airspeed sensor for a new value, duplicated from plane
+ */
+void Rover::read_airspeed(void)
+{
+    g2.airspeed.update(should_log(MASK_LOG_IMU));
+}
+
+/*
+  update RPM sensors
+ */
+void Rover::rpm_update(void)
+{
+    rpm_sensor.update();
+    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
+        if (should_log(MASK_LOG_RC)) {
+            logger.Write_RPM(rpm_sensor);
+        }
+    }
+}
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but
@@ -260,7 +276,7 @@ void Rover::update_sensor_status_flags(void)
     if (g2.visual_odom.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
-    if (rover.DataFlash.logging_present()) {  // primary logging only (usually File)
+    if (rover.logger.logging_present()) {  // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
     if (rover.g2.proximity.get_status() > AP_Proximity::Proximity_NotConnected) {
@@ -284,7 +300,7 @@ void Rover::update_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
     }
 
-    if (rover.DataFlash.logging_enabled()) {
+    if (rover.logger.logging_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
@@ -331,7 +347,7 @@ void Rover::update_sensor_status_flags(void)
     if (rover.g2.proximity.get_status() == AP_Proximity::Proximity_NoData) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
     }
-    if (rover.DataFlash.logging_failed()) {
+    if (rover.logger.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }
 

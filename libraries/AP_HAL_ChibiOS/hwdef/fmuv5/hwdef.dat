@@ -1,5 +1,5 @@
 # hw definition file for processing by chibios_hwdef.py
-# for FMUv3 hardware (ie. for CUAV-PixHack-v5 and Pixhawk4)
+# for FMUv5 hardware (ie. for CUAV-PixHack-v5 and Pixhawk4)
 
 # MCU class and specific type. It is a F765, which is the same as F767
 # but without the TFT interface
@@ -139,7 +139,9 @@ PD1 UART4_TX UART4 NODMA
 
 # USART6 is telem3
 PG9 USART6_RX USART6 NODMA
-PG14 USART6_TX USART6 NODMA
+# we leave PG14 as an input to prevent it acting as a pullup
+# on the IOMCU SBUS input
+# PG14 USART6_TX USART6 NODMA
 PG15 USART6_CTS USART6
 PG8 USART6_RTS USART6
 
@@ -208,6 +210,10 @@ PH13 CAN1_TX CAN1
 PB12 CAN2_RX CAN2
 PB13 CAN2_TX CAN2
 
+PH2 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
+PH3 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(71)
+PH4 GPIO_CAN3_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(72)
+
 # GPIOs
 PA7 HEATER_EN OUTPUT LOW GPIO(80)
 define HAL_HEATER_GPIO_PIN 80
@@ -240,6 +246,22 @@ PC10 SDMMC_D2 SDMMC1
 PC11 SDMMC_D3 SDMMC1
 PC12 SDMMC_CK SDMMC1
 PD2 SDMMC_CMD SDMMC1
+
+# red LED marked as B/E
+PB1 LED_RED OUTPUT GPIO(90)
+
+# green LED marked as PWR. We leave this solid on, but allow
+# for it to be controlled as a relay if needed
+PC6 LED_GREEN OUTPUT GPIO(91) LOW
+
+# blue LED marked as ACT
+PC7 LED_BLUE OUTPUT GPIO(92) HIGH
+
+# setup for BoardLED2
+define HAL_GPIO_A_LED_PIN 90
+define HAL_GPIO_B_LED_PIN 92
+define HAL_GPIO_LED_ON 0
+
 
 # enable RAMTROM parameter storage
 define HAL_STORAGE_SIZE 16384

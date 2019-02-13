@@ -17,6 +17,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Common/Semaphore.h>
 
 #include "AP_Compass_AK8963.h"
 #include <AP_InertialSensor/AP_InertialSensor_Invensense.h>
@@ -90,7 +91,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::I2CD
     if (!dev) {
         return nullptr;
     }
-    AP_InertialSensor &ins = *AP_InertialSensor::get_instance();
+    AP_InertialSensor &ins = *AP_InertialSensor::get_singleton();
 
     /* Allow MPU9250 to shortcut auxiliary bus and host bus */
     ins.detect_backends();
@@ -101,7 +102,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::I2CD
 AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(uint8_t mpu9250_instance,
                                                      enum Rotation rotation)
 {
-    AP_InertialSensor &ins = *AP_InertialSensor::get_instance();
+    AP_InertialSensor &ins = *AP_InertialSensor::get_singleton();
 
     AP_AK8963_BusDriver *bus =
         new AP_AK8963_BusDriver_Auxiliary(ins, HAL_INS_MPU9250_SPI, mpu9250_instance, AK8963_I2C_ADDR);
@@ -179,19 +180,7 @@ void AP_Compass_AK8963::read()
         return;
     }
 
-    if (_sem->take_nonblocking()) {
-        if (_accum_count == 0) {
-            /* We're not ready to publish */
-            _sem->give();
-            return;
-        }
-
-        Vector3f field = Vector3f(_mag_x_accum, _mag_y_accum, _mag_z_accum) / _accum_count;
-        _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-        _accum_count = 0;
-        _sem->give();
-        publish_filtered_field(field, _compass_instance);
-    }
+    drain_accumulated_samples(_compass_instance);
 }
 
 void AP_Compass_AK8963::_make_adc_sensitivity_adjustment(Vector3f& field) const
@@ -233,28 +222,7 @@ void AP_Compass_AK8963::_update()
     _make_adc_sensitivity_adjustment(raw_field);
     raw_field *= AK8963_MILLIGAUSS_SCALE;
 
-    // rotate raw_field from sensor frame to body frame
-    rotate_field(raw_field, _compass_instance);
-
-    // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, _compass_instance);
-
-    // correct raw_field for known errors
-    correct_field(raw_field, _compass_instance);
-
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _mag_x_accum += raw_field.x;
-        _mag_y_accum += raw_field.y;
-        _mag_z_accum += raw_field.z;
-        _accum_count++;
-        if (_accum_count == 10) {
-            _mag_x_accum /= 2;
-            _mag_y_accum /= 2;
-            _mag_z_accum /= 2;
-        _accum_count = 5;
-        }
-        _sem->give();
-    }
+    accumulate_sample(raw_field, _compass_instance, 10);
 }
 
 bool AP_Compass_AK8963::_check_id()

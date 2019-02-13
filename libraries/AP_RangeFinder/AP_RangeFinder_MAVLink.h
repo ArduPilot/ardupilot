@@ -11,16 +11,16 @@ class AP_RangeFinder_MAVLink : public AP_RangeFinder_Backend
 
 public:
     // constructor
-    AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
     // static detection function
     static bool detect();
 
     // update state
-    void update(void);
+    void update(void) override;
 
     // Get update from mavlink
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(mavlink_message_t *msg) override;
 
 protected:
 

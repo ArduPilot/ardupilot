@@ -23,22 +23,31 @@
 #include "SRV_Channel.h"
 
 #if HAL_WITH_UAVCAN
-#include <AP_UAVCAN/AP_UAVCAN.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+  #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+  #include <AP_UAVCAN/AP_UAVCAN.h>
+
+  // To be replaced with macro saying if KDECAN library is included
+  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    #include <AP_KDECAN/AP_KDECAN.h>
+  #endif
+  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
-SRV_Channels *SRV_Channels::instance;
+SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
+AP_RobotisServo *SRV_Channels::robotis_ptr;
 
 #if HAL_SUPPORT_RCOUT_SERIAL
 AP_BLHeli *SRV_Channels::blheli_ptr;
 #endif
 
 uint16_t SRV_Channels::disabled_mask;
+uint16_t SRV_Channels::digital_mask;
+uint16_t SRV_Channels::reversible_mask;
 
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
@@ -139,6 +148,10 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
 #endif
 
+    // @Group: _ROB_
+    // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
+    AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
+    
     AP_GROUPEND
 };
 
@@ -147,7 +160,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
  */
 SRV_Channels::SRV_Channels(void)
 {
-    instance = this;
+    _singleton = this;
     channels = obj_channels;
 
     // set defaults from the parameter table
@@ -160,6 +173,7 @@ SRV_Channels::SRV_Channels(void)
 
     volz_ptr = &volz;
     sbus_ptr = &sbus;
+    robotis_ptr = &robotis;
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
@@ -226,20 +240,50 @@ void SRV_Channels::push()
     // give sbus library a chance to update
     sbus_ptr->update();
 
+    // give robotis library a chance to update
+    robotis_ptr->update();
+    
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
 #endif
 
 #if HAL_WITH_UAVCAN
-    // push outputs to UAVCAN
+    // push outputs to CAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
-        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
-        if (ap_uavcan == nullptr) {
-            continue;
+        switch (AP::can().get_protocol_type(i)) {
+            case AP_BoardConfig_CAN::Protocol_Type_UAVCAN: {
+                AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+                if (ap_uavcan == nullptr) {
+                    continue;
+                }
+                ap_uavcan->SRV_push_servos();
+                break;
+            }
+            case AP_BoardConfig_CAN::Protocol_Type_KDECAN: {
+// To be replaced with macro saying if KDECAN library is included
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+                AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
+                if (ap_kdecan == nullptr) {
+                    continue;
+                }
+                ap_kdecan->update();
+                break;
+#endif
+            }
+            case AP_BoardConfig_CAN::Protocol_Type_ToshibaCAN: {
+                AP_ToshibaCAN *ap_tcan = AP_ToshibaCAN::get_tcan(i);
+                if (ap_tcan == nullptr) {
+                    continue;
+                }
+                ap_tcan->update();
+                break;
+            }
+            case AP_BoardConfig_CAN::Protocol_Type_None:
+            default:
+                break;
         }
-        ap_uavcan->SRV_push_servos();
     }
 #endif // HAL_WITH_UAVCAN
 }

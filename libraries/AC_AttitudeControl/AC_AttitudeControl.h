@@ -251,13 +251,13 @@ public:
 
     // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
     // This function can be used to predict the delay associated with angle requests.
-    void input_shaping_rate_predictor(Vector2f error_angle, Vector2f& target_ang_vel, float dt) const;
+    void input_shaping_rate_predictor(const Vector2f &error_angle, Vector2f& target_ang_vel, float dt) const;
 
     // translates body frame acceleration limits to the euler axis
     void ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max, float ang_vel_pitch_max, float ang_vel_yaw_max) const;
 
     // translates body frame acceleration limits to the euler axis
-    Vector3f euler_accel_limit(Vector3f euler_rad, Vector3f euler_accel);
+    Vector3f euler_accel_limit(const Vector3f &euler_rad, const Vector3f &euler_accel);
 
     // thrust_heading_rotation_angles - calculates two ordered rotations to move the att_from_quat quaternion to the att_to_quat quaternion.
     // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
@@ -300,7 +300,7 @@ public:
 protected:
 
     // Update rate_target_ang_vel using attitude_error_rot_vec_rad
-    Vector3f update_ang_vel_target_from_att_error(Vector3f attitude_error_rot_vec_rad);
+    Vector3f update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad);
 
     // Run the roll angular velocity PID controller and return the output
     float rate_target_to_motor_roll(float rate_actual_rads, float rate_target_rads);

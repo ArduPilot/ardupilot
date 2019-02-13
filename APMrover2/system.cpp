@@ -27,6 +27,8 @@ void Rover::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
+    init_capabilities();
+
     //
     // Check the EEPROM format version before loading any parameters from EEPROM.
     //
@@ -36,8 +38,6 @@ void Rover::init_ardupilot()
     // initialise stats module
     g2.stats.init();
 #endif
-
-    gcs().set_dataflash(&DataFlash);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -56,13 +56,23 @@ void Rover::init_ardupilot()
     BoardConfig_CAN.init();
 #endif
 
+    // init gripper
+#if GRIPPER_ENABLED == ENABLED
+    g2.gripper.init();
+#endif
+
     // initialise notify system
     notify.init();
     notify_mode(control_mode);
 
     battery.init();
 
+    // Initialise RPM sensor
+    rpm_sensor.init();
+
     rssi.init();
+
+    g2.airspeed.init();
 
     g2.windvane.init();
 
@@ -74,7 +84,7 @@ void Rover::init_ardupilot()
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager, (is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
+    frsky_telemetry.init((is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
     devo_telemetry.init(serial_manager);
@@ -116,7 +126,7 @@ void Rover::init_ardupilot()
     set_control_channels();  // setup radio channels and ouputs ranges
     init_rc_in();            // sets up rc channels deadzone
     g2.motors.init();        // init motors including setting servo out channels ranges
-    init_rc_out();           // enable output
+    SRV_Channels::enable_aux_servos();
 
     // init wheel encoders
     g2.wheel_encoder.init();
@@ -139,8 +149,6 @@ void Rover::init_ardupilot()
 
     // initialize SmartRTL
     g2.smart_rtl.init();
-
-    init_capabilities();
 
     startup_ground();
 
@@ -181,12 +189,11 @@ void Rover::startup_ground(void)
     startup_INS_ground();
 
     // initialise mission library
-    mission.init();
+    mode_auto.mission.init();
 
-    // initialise DataFlash library
+    // initialise AP_Logger library
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.set_mission(&mission);
-    DataFlash.setVehicle_Startup_Log_Writer(
+    logger.setVehicle_Startup_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
 #endif
@@ -263,7 +270,7 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     old_mode.exit();
 
     control_mode_reason = reason;
-    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
+    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
 
     notify_mode(control_mode);
     return true;
@@ -309,7 +316,7 @@ uint8_t Rover::check_digital_pin(uint8_t pin)
  */
 bool Rover::should_log(uint32_t mask)
 {
-    return DataFlash.should_log(mask);
+    return logger.should_log(mask);
 }
 
 /*
@@ -354,7 +361,7 @@ bool Rover::disarm_motors(void)
     }
     if (control_mode != &mode_auto) {
         // reset the mission on disarm if we are not in auto
-        mission.reset();
+        mode_auto.mission.reset();
     }
 
     // only log if disarming was successful

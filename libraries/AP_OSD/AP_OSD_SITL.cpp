@@ -23,6 +23,7 @@
 #ifdef WITH_SITL_OSD
 
 #include "AP_OSD_SITL.h"
+#include <AP_Common/Semaphore.h>
 #include <AP_HAL/Util.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Scheduler.h>
@@ -103,21 +104,20 @@ void AP_OSD_SITL::write(uint8_t x, uint8_t y, const char* text)
     if (y >= video_lines || text == nullptr) {
         return;
     }
-    mutex->take_blocking();
+    WITH_SEMAPHORE(mutex);
+
     while ((x < video_cols) && (*text != 0)) {
         buffer[y][x] = *text;
         ++text;
         ++x;
     }
-    mutex->give();
 }
 
 void AP_OSD_SITL::clear(void)
 {
     AP_OSD_Backend::clear();
-    mutex->take_blocking();
+    WITH_SEMAPHORE(mutex);
     memset(buffer, 0, sizeof(buffer));
-    mutex->give();
 }
 
 void AP_OSD_SITL::flush(void)
@@ -150,9 +150,10 @@ void AP_OSD_SITL::update_thread(void)
         last_counter = counter;
 
         uint8_t buffer2[video_lines][video_cols];
-        mutex->take_blocking();
-        memcpy(buffer2, buffer, sizeof(buffer2));
-        mutex->give();
+        {
+            WITH_SEMAPHORE(mutex);
+            memcpy(buffer2, buffer, sizeof(buffer2));
+        }
         w->clear();
 
         for (uint8_t y=0; y<video_lines; y++) {
@@ -186,7 +187,6 @@ void *AP_OSD_SITL::update_thread_start(void *obj)
 // initialise backend
 bool AP_OSD_SITL::init(void)
 {
-    mutex = hal.util->new_semaphore();
     pthread_create(&thread, NULL, update_thread_start, this);
     return true;
 }

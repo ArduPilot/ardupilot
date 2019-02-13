@@ -20,6 +20,7 @@
 #include "AP_Landing.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_LandingGear/AP_LandingGear.h>
 
 void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
@@ -40,7 +41,6 @@ void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Lo
     throttle_suppressed = false;
     nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
 }
-
 
 /*
   update navigation for landing. Called when on landing approach or
@@ -65,7 +65,6 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             type_slope_stage = SLOPE_STAGE_APPROACH;
         }
     }
-
 
     /* Set land_complete (which starts the flare) under 3 conditions:
        1) we are within LAND_FLARE_ALT meters of the landing altitude
@@ -103,9 +102,17 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
                                   (double)AP::gps().ground_speed(),
                                   (double)get_distance(current_loc, next_WP_loc));
             }
+            
             type_slope_stage = SLOPE_STAGE_FINAL;
+            
+            // Check if the landing gear was deployed before landing
+            // If not - go around
+            AP_LandingGear *LG_inst = AP_LandingGear::get_singleton();
+            if (LG_inst != nullptr && !LG_inst->check_before_land()) {
+                type_slope_request_go_around();
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Landing gear was not deployed");
+            }
         }
-
 
         if (AP::gps().ground_speed() < 3) {
             // reload any airspeed or groundspeed parameters that may have
@@ -206,7 +213,6 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
     }
 }
 
-
 bool AP_Landing::type_slope_request_go_around(void)
 {
     flags.commanded_go_around = true;
@@ -221,7 +227,6 @@ bool AP_Landing::type_slope_request_go_around(void)
   itself as that leads to discontinuities close to the landing point,
   which can lead to erratic pitch control
  */
-
 void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm)
 {
     float total_distance = get_distance(prev_WP_loc, next_WP_loc);
@@ -268,7 +273,6 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
         gcs().send_text(MAV_SEVERITY_INFO, "Landing glide slope %.1f degrees", (double)degrees(atanf(slope)));
     }
 
-
     // time before landing that we will flare
     float flare_time = aim_height / SpdHgt_Controller->get_land_sinkrate();
 
@@ -309,8 +313,8 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     constrain_target_altitude_location_fn(loc, prev_WP_loc);
 }
 
-int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
-
+int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
+{
     // we're landing, check for custom approach and
     // pre-flare airspeeds. Also increase for head-winds
 
@@ -345,7 +349,8 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void) {
     return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
 }
 
-int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd) {
+int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd)
+{
     if (type_slope_stage == SLOPE_STAGE_FINAL) {
         return constrain_int32(desired_roll_cd, level_roll_limit_cd * -1, level_roll_limit_cd);
     } else {
@@ -357,7 +362,6 @@ bool AP_Landing::type_slope_is_flaring(void) const
 {
     return (type_slope_stage == SLOPE_STAGE_FINAL);
 }
-
 
 bool AP_Landing::type_slope_is_on_approach(void) const
 {
@@ -378,8 +382,8 @@ bool AP_Landing::type_slope_is_complete(void) const
 
 void AP_Landing::type_slope_log(void) const
 {
-    // log to DataFlash
-    DataFlash_Class::instance()->Log_Write("LAND", "TimeUS,stage,f1,f2,slope,slopeInit,altO", "QBBBfff",
+    // log to AP_Logger
+    AP::logger().Write("LAND", "TimeUS,stage,f1,f2,slope,slopeInit,altO", "QBBBfff",
                                             AP_HAL::micros64(),
                                             type_slope_stage,
                                             flags,

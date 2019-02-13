@@ -1,0 +1,8 @@
+
+# setup rover for skid steering
+SERVO1_FUNCTION 73
+SERVO3_FUNCTION 74
+
+# setup laser scanner
+PRX_TYPE 11
+AVOID_ENABLE 7

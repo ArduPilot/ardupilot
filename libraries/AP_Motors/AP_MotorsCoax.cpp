@@ -75,16 +75,18 @@ void AP_MotorsCoax::output_to_motors()
             rc_write_angle(AP_MOTORS_MOT_2, _pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
             rc_write_angle(AP_MOTORS_MOT_3, -_roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
             rc_write_angle(AP_MOTORS_MOT_4, -_pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-            rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
-            rc_write(AP_MOTORS_MOT_6, get_pwm_output_min());
+            rc_write(AP_MOTORS_MOT_5, output_to_pwm(0));
+            rc_write(AP_MOTORS_MOT_6, output_to_pwm(0));
             break;
-        case SPIN_WHEN_ARMED:
+        case GROUND_IDLE:
             // sends output to motors when armed but not flying
             for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
                 rc_write_angle(AP_MOTORS_MOT_1+i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
             }
-            rc_write(AP_MOTORS_MOT_5, calc_spin_up_to_pwm());
-            rc_write(AP_MOTORS_MOT_6, calc_spin_up_to_pwm());
+            set_actuator_with_slew(_actuator[5], actuator_spin_up_to_ground_idle());
+            set_actuator_with_slew(_actuator[6], actuator_spin_up_to_ground_idle());
+            rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[5]));
+            rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[6]));
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
@@ -93,8 +95,10 @@ void AP_MotorsCoax::output_to_motors()
             for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
                 rc_write_angle(AP_MOTORS_MOT_1+i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
             }
-            rc_write(AP_MOTORS_MOT_5, calc_thrust_to_pwm(_thrust_yt_ccw));
-            rc_write(AP_MOTORS_MOT_6, calc_thrust_to_pwm(_thrust_yt_cw));
+            set_actuator_with_slew(_actuator[5], thrust_to_actuator(_thrust_yt_ccw));
+            set_actuator_with_slew(_actuator[6], thrust_to_actuator(_thrust_yt_cw));
+            rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[5]));
+            rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[6]));
             break;
     }
 }

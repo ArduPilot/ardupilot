@@ -42,7 +42,7 @@ private:
     int16_t     _pin;
     int         _pin_fd;
     int         fd_analog_sources[IIO_ANALOG_IN_COUNT];
-    AP_HAL::Semaphore *_semaphore;
+    HAL_Semaphore _semaphore;
 
     void init_pins(void);
     void select_pin(void);

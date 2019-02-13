@@ -22,7 +22,10 @@
 
 #include "AP_Frsky_Telem.h"
 
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
@@ -31,20 +34,14 @@ extern const AP_HAL::HAL& hal;
 
 ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
 
-//constructor
-AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng) :
-    _ahrs(ahrs),
-    _battery(battery),
-    _rng(rng)
-    {}
-
 /*
  * init - perform required initialisation
  */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager,
-                          const uint8_t mav_type,
+void AP_Frsky_Telem::init(const uint8_t mav_type,
                           const uint32_t *ap_valuep)
 {
+    const AP_SerialManager &serial_manager = AP::serialmanager();
+
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
         _protocol = AP_SerialManager::SerialProtocol_FrSky_D; // FrSky D protocol (D-receivers)
@@ -58,7 +55,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager,
         if (_frame_string == nullptr) {
             queue_message(MAV_SEVERITY_INFO, AP::fwversion().fw_string);
         } else {
-            char firmware_buf[50];
+            char firmware_buf[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
             snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", AP::fwversion().fw_string, _frame_string);
             queue_message(MAV_SEVERITY_INFO, firmware_buf);
         }
@@ -138,7 +135,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 _passthrough.batt_timer = AP_HAL::millis();
                 return;
             }
-            if (_battery.num_instances() > 1) {
+            if (AP::battery().num_instances() > 1) {
                 if ((now - _passthrough.batt_timer2) >= 1000) {
                     send_uint32(DIY_FIRST_ID+8, calc_batt(1));
                     _passthrough.batt_timer2 = AP_HAL::millis();
@@ -179,6 +176,8 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
  */
 void AP_Frsky_Telem::send_SPort(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     int16_t numc;
     numc = _port->available();
 
@@ -199,6 +198,7 @@ void AP_Frsky_Telem::send_SPort(void)
                 _SPort.sport_status = true;
             }
         } else {
+            const AP_BattMonitor &_battery = AP::battery();
             switch(readbyte) {
                 case SENSOR_ID_FAS:
                     switch (_SPort.fas_call) {
@@ -290,6 +290,9 @@ void AP_Frsky_Telem::send_SPort(void)
  */
 void AP_Frsky_Telem::send_D(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+    const AP_BattMonitor &_battery = AP::battery();
+
     uint32_t now = AP_HAL::millis();
     // send frame1 every 200ms
     if (now - _D.last_200ms_frame >= 200) {
@@ -544,6 +547,8 @@ void AP_Frsky_Telem::check_sensor_status_flags(void)
  */
 void AP_Frsky_Telem::check_ekf_status(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     // get variances
     float velVar, posVar, hgtVar, tasVar;
     Vector3f magVar;
@@ -582,6 +587,8 @@ void AP_Frsky_Telem::check_ekf_status(void)
  */
 uint32_t AP_Frsky_Telem::calc_param(void)
 {
+    const AP_BattMonitor &_battery = AP::battery();
+
     uint32_t param = 0;
 
     // cycle through paramIDs
@@ -667,6 +674,8 @@ uint32_t AP_Frsky_Telem::calc_gps_status(void)
  */
 uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
 {
+    const AP_BattMonitor &_battery = AP::battery();
+
     uint32_t batt;
     
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
@@ -712,6 +721,8 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
  */
 uint32_t AP_Frsky_Telem::calc_home(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     uint32_t home = 0;
     Location loc;
     float _relative_home_altitude = 0;
@@ -726,7 +737,7 @@ uint32_t AP_Frsky_Telem::calc_home(void)
         }
         // altitude between vehicle and home_loc
         _relative_home_altitude = loc.alt;
-        if (!loc.flags.relative_alt) {
+        if (!loc.relative_alt) {
             // loc.alt has home altitude added, remove it
             _relative_home_altitude -= _ahrs.get_home().alt;
         }
@@ -742,6 +753,8 @@ uint32_t AP_Frsky_Telem::calc_home(void)
  */
 uint32_t AP_Frsky_Telem::calc_velandyaw(void)
 {
+    AP_AHRS &_ahrs = AP::ahrs();
+
     uint32_t velandyaw;
     Vector3f velNED {};
 
@@ -767,6 +780,9 @@ uint32_t AP_Frsky_Telem::calc_velandyaw(void)
  */
 uint32_t AP_Frsky_Telem::calc_attiandrng(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+    const RangeFinder *_rng = RangeFinder::get_singleton();
+
     uint32_t attiandrng;
 
     // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
@@ -774,7 +790,7 @@ uint32_t AP_Frsky_Telem::calc_attiandrng(void)
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
     attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
-    attiandrng |= prep_number(_rng.distance_cm_orient(ROTATION_PITCH_270), 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+    attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
 }
 
@@ -849,11 +865,13 @@ uint16_t AP_Frsky_Telem::prep_number(int32_t number, uint8_t digits, uint8_t pow
  */
 void AP_Frsky_Telem::calc_nav_alt(void)
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     Location loc;
     float current_height = 0; // in centimeters above home
     if (_ahrs.get_position(loc)) {
         current_height = loc.alt*0.01f;
-        if (!loc.flags.relative_alt) {
+        if (!loc.relative_alt) {
             // loc.alt has home altitude added, remove it
             current_height -= _ahrs.get_home().alt*0.01f;
         }

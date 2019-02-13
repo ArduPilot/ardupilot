@@ -6,13 +6,13 @@ def build(bld):
         name= 'iofirmware_libs',
         ap_vehicle='iofirmware',
         ap_libraries= [
-        'AP_Buffer',
         'AP_Common',
         'AP_HAL',
         'AP_HAL_Empty',
         'AP_Math',
         'AP_RCProtocol',
-        'AP_BoardConfig'
+        'AP_BoardConfig',
+        'AP_SBusOut'
         ],
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'

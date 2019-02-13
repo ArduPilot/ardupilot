@@ -23,16 +23,14 @@ public:
 
 
     // validate array of boundary points (expressed as either floats or long ints)
-    //   contains_return_point should be true for plane which stores the return point as the first point in the array
     //   returns true if boundary is valid
     template <typename T>
-    bool boundary_valid(uint16_t num_points, const Vector2<T>* points, bool contains_return_point) const;
+    bool boundary_valid(uint16_t num_points, const Vector2<T>* points) const;
 
     // check if a location (expressed as either floats or long ints) is within the boundary
-    //   contains_return_point should be true for plane which stores the return point as the first point in the array
     //   returns true if location is outside the boundary
     template <typename T>
-    bool boundary_breached(const Vector2<T>& location, uint16_t num_points, const Vector2<T>* points, bool contains_return_point) const;
+    bool boundary_breached(const Vector2<T>& location, uint16_t num_points, const Vector2<T>* points) const;
 
 };
 

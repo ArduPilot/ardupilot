@@ -19,6 +19,8 @@
 #include "AP_Beacon_Marvelmind.h"
 #include "AP_Beacon_SITL.h"
 
+#include <AP_Common/Location.h>
+
 extern const AP_HAL::HAL &hal;
 
 // table of user settable parameters
@@ -137,10 +139,10 @@ bool AP_Beacon::get_origin(Location &origin_loc) const
     }
 
     // return origin
+    origin_loc = {};
     origin_loc.lat = origin_lat * 1.0e7;
     origin_loc.lng = origin_lon * 1.0e7;
     origin_loc.alt = origin_alt * 100;
-    origin_loc.options = 0; // all flags to zero meaning alt-above-sea-level
 
     return true;
 }

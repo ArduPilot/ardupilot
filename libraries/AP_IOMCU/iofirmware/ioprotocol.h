@@ -2,7 +2,8 @@
   common protocol definitions between AP_IOMCU and iofirmware
  */
 
-#define PKT_MAX_REGS 32
+// 22 is enough for the rc_input page in one transfer
+#define PKT_MAX_REGS 22
 #define IOMCU_MAX_CHANNELS 16
 
 //#define IOMCU_DEBUG
@@ -49,7 +50,8 @@ enum iopage {
     PAGE_SETUP = 50,
     PAGE_DIRECT_PWM = 54,
     PAGE_FAILSAFE_PWM = 55,
-    PAGE_DISARMED_PWM = 108,
+    PAGE_SAFETY_PWM = 108,
+    PAGE_MIXING = 200,
 };
 
 // setup page registers
@@ -76,6 +78,13 @@ enum iopage {
 #define PAGE_REG_SETUP_SBUS_RATE    19
 #define PAGE_REG_SETUP_IGNORE_SAFETY 20 /* bitmask of surfaces to ignore the safety status */
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
+#define PAGE_REG_SETUP_DSM_BIND     22
+
+// config page registers
+#define PAGE_CONFIG_PROTOCOL_VERSION  0
+#define PAGE_CONFIG_PROTOCOL_VERSION2 1
+#define IOMCU_PROTOCOL_VERSION       4
+#define IOMCU_PROTOCOL_VERSION2     10
 
 // magic value for rebooting to bootloader
 #define REBOOT_BL_MAGIC 14662
@@ -83,6 +92,11 @@ enum iopage {
 #define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
 #define FORCE_SAFETY_MAGIC 22027
+
+struct PACKED page_config {
+    uint16_t protocol_version;
+    uint16_t protocol_version2;
+};
 
 struct PACKED page_reg_status {
     uint16_t freemem;
@@ -127,6 +141,42 @@ struct PACKED page_rc_input {
     uint16_t frame_count;
     uint16_t lost_frame_count;
     uint16_t pwm[IOMCU_MAX_CHANNELS];
+    // the following two fields are not transferred to the FMU
     uint16_t last_frame_count;
-    uint32_t last_input_us;
+    uint32_t last_input_ms;
+};
+
+/*
+  data for mixing on FMU failsafe
+ */
+struct PACKED page_mixing {
+    uint16_t servo_min[IOMCU_MAX_CHANNELS];
+    uint16_t servo_max[IOMCU_MAX_CHANNELS];
+    uint16_t servo_trim[IOMCU_MAX_CHANNELS];
+    uint8_t servo_function[IOMCU_MAX_CHANNELS];
+    uint8_t servo_reversed[IOMCU_MAX_CHANNELS];
+
+    // RC input arrays are in AETR order
+    uint16_t rc_min[4];
+    uint16_t rc_max[4];
+    uint16_t rc_trim[4];
+    uint8_t rc_reversed[IOMCU_MAX_CHANNELS];
+    uint8_t rc_channel[4];
+
+    // gain for elevon and vtail mixing, x1000
+    uint16_t mixing_gain;
+
+    // channel which when high forces mixer
+    int8_t rc_chan_override;
+
+    // is the throttle an angle input?
+    uint8_t throttle_is_angle;
+
+    // mask of channels which are pure manual in override
+    uint16_t manual_rc_mask;
+
+    // enabled needs to be 1 to enable mixing
+    uint8_t enabled;
+
+    uint8_t pad; // pad to even size
 };

@@ -23,6 +23,7 @@
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
+#include "sdcard.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -33,7 +34,6 @@ extern AP_IOMCU iomcu;
 extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
-
 #if CH_CFG_USE_HEAP == TRUE
 
 /**
@@ -77,6 +77,46 @@ void* Util::try_alloc_from_ccm_ram(size_t size)
     }
     return ret;
 }
+
+#ifdef ENABLE_HEAP
+
+void *Util::allocate_heap_memory(size_t size)
+{
+    void *buf = malloc(size);
+    if (buf == nullptr) {
+        return nullptr;
+    }
+
+    memory_heap_t *heap = (memory_heap_t *)malloc(sizeof(memory_heap_t));
+    if (heap != nullptr) {
+        chHeapObjectInit(heap, buf, size);
+    }
+
+    return heap;
+}
+
+void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
+{
+    if (heap == nullptr) {
+        return nullptr;
+    }
+    if (new_size == 0) {
+        if (ptr != nullptr) {
+            chHeapFree(ptr);
+        }
+        return nullptr;
+    }
+    if (ptr == nullptr) {
+        return chHeapAlloc((memory_heap_t *)heap, new_size);
+    }
+    void *new_mem = chHeapAlloc((memory_heap_t *)heap, new_size);
+    if (new_mem != nullptr) {
+        memcpy(new_mem, ptr, chHeapGetSize(ptr) > new_size ? new_size : chHeapGetSize(ptr));
+        chHeapFree(ptr);
+    }
+    return new_mem;
+}
+#endif // ENABLE_HEAP
 
 #endif // CH_CFG_USE_HEAP
 
@@ -253,3 +293,20 @@ bool Util::get_system_id(char buf[40])
     buf[39] = 0;
     return true;
 }
+
+bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
+{
+    len = MIN(12, len);
+    memcpy(buf, (const void *)UDID_START, len);
+    return true;
+}
+
+#ifdef USE_POSIX
+/*
+  initialise filesystem
+ */
+bool Util::fs_init(void)
+{
+    return sdcard_init();
+}
+#endif

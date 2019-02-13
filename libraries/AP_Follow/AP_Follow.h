@@ -21,6 +21,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AC_PID/AC_P.h>
+#include <AP_RTC/JitterCorrection.h>
 
 class AP_Follow
 {
@@ -37,6 +38,9 @@ public:
 
     // constructor
     AP_Follow();
+
+    // returns true if library is enabled
+    bool enabled() const { return _enabled; }
 
     // set which target to follow
     void set_target_sysid(uint8_t sysid) { _sysid = sysid; }
@@ -70,11 +74,18 @@ public:
     // parse mavlink messages which may hold target's position, velocity and attitude
     void handle_msg(const mavlink_message_t &msg);
 
+    //
+    // GCS reporting functions
+    //
+
+    // get horizontal distance to target (including offset) in meters (for reporting purposes)
+    float get_distance_to_target() const { return _dist_to_target; }
+
+    // get bearing to target (including offset) in degrees (for reporting purposes)
+    float get_bearing_to_target() const { return _bearing_to_target; }
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
-
-    // returns true if library is enabled
-    bool enabled() const { return _enabled; }
 
 private:
 
@@ -90,6 +101,9 @@ private:
     // rotate 3D vector clockwise by specified angle (in degrees)
     Vector3f rotate_vector(const Vector3f &vec, float angle_deg) const;
 
+    // set recorded distance and bearing to target to zero
+    void clear_dist_and_bearing_to_target();
+
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
     AP_Int16    _sysid;             // target's mavlink system id (0 to use first sysid seen)
@@ -102,12 +116,16 @@ private:
 
     // local variables
     bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
-    uint8_t _sysid_to_follow = 0;   // mavlink system id of vehicle to follow
     uint32_t _last_location_update_ms;  // system time of last position update
     Location _target_location;      // last known location of target
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
     Vector3f _target_accel_ned;     // last known acceleration of target in NED frame in m/s/s
     uint32_t _last_heading_update_ms;   // system time of last heading update
     float _target_heading;          // heading in degrees
-    uint32_t _last_location_sent_to_gcs; // last time GCS was told position
+    bool _automatic_sysid;          // did we lock onto a sysid automatically?
+    float   _dist_to_target;        // latest distance to target in meters (for reporting purposes)
+    float   _bearing_to_target;     // latest bearing to target in degrees (for reporting purposes)
+
+    // setup jitter correction with max transport lag of 3s
+    JitterCorrection _jitter{3000};
 };

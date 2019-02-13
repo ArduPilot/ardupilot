@@ -3,10 +3,18 @@
 #include "LR_MsgHandler.h"
 #include "Parameters.h"
 
-class LogReader : public DataFlashFileReader
+class LogReader : public AP_LoggerFileReader
 {
 public:
-    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const char **&nottypes);
+    LogReader(AP_AHRS &_ahrs,
+              AP_InertialSensor &_ins,
+              Compass &_compass,
+              AP_GPS &_gps,
+              AP_Airspeed &_airspeed,
+              AP_Logger &_dataflash,
+              struct LogStructure *log_structure,
+              uint8_t log_structure_count,
+              const char **&nottypes);
     bool wait_type(const char *type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
@@ -32,7 +40,6 @@ public:
     static bool in_list(const char *type, const char *list[]);
 
 protected:
-    virtual void end_format_msgs(void) override;
 
 private:
     AP_AHRS &ahrs;
@@ -40,7 +47,9 @@ private:
     Compass &compass;
     AP_GPS &gps;
     AP_Airspeed &airspeed;
-    DataFlash_Class &dataflash;
+    AP_Logger &dataflash;
+    struct LogStructure *_log_structure;
+    uint8_t _log_structure_count;
 
     uint8_t accel_mask;
     uint8_t gyro_mask;
@@ -72,6 +81,7 @@ private:
 
     void maybe_install_vehicle_specific_parsers();
 
+    void initialise_fmt_map();
     uint8_t map_fmt_type(const char *name, uint8_t intype);
 
     bool save_message_type(const char *name);

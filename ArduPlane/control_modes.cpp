@@ -59,37 +59,6 @@ void Plane::read_control_switch()
         }
     }
 #endif
-    
-#if HAVE_PX4_MIXER
-    if (g.override_channel > 0) {
-        // if the user has configured an override channel then check it
-        bool override_requested = (RC_Channels::get_radio_in(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
-        if (override_requested && !px4io_override_enabled) {
-            if (hal.util->get_soft_armed() || (last_mixer_crc != -1)) {
-                px4io_override_enabled = true;
-                // disable output channels to force PX4IO override
-                gcs().send_text(MAV_SEVERITY_WARNING, "PX4IO override enabled");
-            } else {
-                // we'll let the one second loop reconfigure the mixer. The
-                // PX4IO code sometimes rejects a mixer, probably due to it
-                // being busy in some way?
-                gcs().send_text(MAV_SEVERITY_WARNING, "PX4IO override enable failed");
-            }
-        } else if (!override_requested && px4io_override_enabled) {
-            px4io_override_enabled = false;
-            SRV_Channels::enable_aux_servos();
-            gcs().send_text(MAV_SEVERITY_WARNING, "PX4IO override disabled");
-        }
-        if (px4io_override_enabled && 
-            hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED &&
-            g.override_safety == 1) {
-            // we force safety off, so that if this override is used
-            // with a in-flight reboot it gives a way for the pilot to
-            // re-arm and take manual control
-            hal.rcout->force_safety_off();
-        }
-    }
-#endif // HAVE_PX4_MIXER
 }
 
 uint8_t Plane::readSwitch(void)

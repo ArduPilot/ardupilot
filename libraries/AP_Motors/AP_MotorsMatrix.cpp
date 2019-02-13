@@ -72,28 +72,22 @@ void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, mo
 void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;
-    int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final pwm values sent to the motor
 
     switch (_spool_mode) {
         case SHUT_DOWN: {
-            // sends minimum values out to the motors
-            // set motor output based on thrust requests
+            // no output
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    if (_disarm_disable_pwm && _disarm_safety_timer == 0 && !armed()) {
-                        motor_out[i] = 0;
-                    } else {
-                        motor_out[i] = get_pwm_output_min();
-                    }
+                    _actuator[i] = 0.0f;
                 }
             }
             break;
         }
-        case SPIN_WHEN_ARMED:
+        case GROUND_IDLE:
             // sends output to motors when armed but not flying
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    motor_out[i] = calc_spin_up_to_pwm();
+                    set_actuator_with_slew(_actuator[i], actuator_spin_up_to_ground_idle());
                 }
             }
             break;
@@ -103,16 +97,16 @@ void AP_MotorsMatrix::output_to_motors()
             // set motor output based on thrust requests
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    motor_out[i] = calc_thrust_to_pwm(_thrust_rpyt_out[i]);
+                    set_actuator_with_slew(_actuator[i], thrust_to_actuator(_thrust_rpyt_out[i]));
                 }
             }
             break;
     }
 
-    // send output to each motor
+    // convert output to PWM and send to each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            rc_write(i, motor_out[i]);
+            rc_write(i, output_to_pwm(_actuator[i]));
         }
     }
 }
@@ -490,6 +484,33 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
                     success = true;
                     break;
+                case MOTOR_FRAME_TYPE_BF_X:
+                    // betaflight quad X order
+                    // see: https://fpvfrenzy.com/betaflight-motor-order/
+                    add_motor(AP_MOTORS_MOT_1,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+                    add_motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,1);
+                    add_motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,3);
+                    add_motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
+                    success = true;
+                    break;
+                case MOTOR_FRAME_TYPE_DJI_X:
+                    // DJI quad X order
+                    // see https://forum44.djicdn.com/data/attachment/forum/201711/26/172348bppvtt1ot1nrtp5j.jpg
+                    add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+                    add_motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+                    add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+                    success = true;
+                    break;
+                case MOTOR_FRAME_TYPE_CW_X:
+                    // "clockwise X" motor order. Motors are ordered clockwise from front right
+                    // matching test order
+                    add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_2,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+                    add_motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+                    add_motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+                    success = true;
+                    break;
                 case MOTOR_FRAME_TYPE_V:
                     add_motor(AP_MOTORS_MOT_1,   45,  0.7981f,  1);
                     add_motor(AP_MOTORS_MOT_2, -135,  1.0000f,  3);
@@ -545,6 +566,14 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
                     add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
                     add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+                    success = true;
+                    break;
+                case MOTOR_FRAME_TYPE_PLUSREV:
+                    // plus with reversed motor directions
+                    add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+                    add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
+                    add_motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,1);
+                    add_motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,3);
                     success = true;
                     break;
                 default:

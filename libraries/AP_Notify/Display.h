@@ -13,8 +13,8 @@ class Display: public NotifyDevice {
 public:
     friend class Display_Backend;
 
-    bool init(void);
-    void update();
+    bool init(void) override;
+    void update() override;
 
 private:
     void draw_char(uint16_t x, uint16_t y, const char c);

@@ -181,7 +181,7 @@ private:
     uint16_t controller_port = 18083;
 
     pthread_t thread;
-    AP_HAL::Semaphore *mutex;
+    HAL_Semaphore mutex;
 };
 
 

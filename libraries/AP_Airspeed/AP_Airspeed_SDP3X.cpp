@@ -180,14 +180,13 @@ void AP_Airspeed_SDP3X::_timer()
     float diff_press_pa = float(P) / float(_scale);
     float temperature = float(temp) / SDP3X_SCALE_TEMPERATURE;
 
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _press_sum += diff_press_pa;
-        _temp_sum += temperature;
-        _press_count++;
-        _temp_count++;
-        _last_sample_time_ms = now;
-        sem->give();
-    }
+    WITH_SEMAPHORE(sem);
+
+    _press_sum += diff_press_pa;
+    _temp_sum += temperature;
+    _press_count++;
+    _temp_count++;
+    _last_sample_time_ms = now;
 }
 
 /*
@@ -198,7 +197,7 @@ void AP_Airspeed_SDP3X::_timer()
 float AP_Airspeed_SDP3X::_correct_pressure(float press)
 {
     float temperature;
-    AP_Baro *baro = AP_Baro::get_instance();
+    AP_Baro *baro = AP_Baro::get_singleton();
 
     if (baro == nullptr) {
         return press;
@@ -279,14 +278,16 @@ bool AP_Airspeed_SDP3X::get_differential_pressure(float &pressure)
     if (now - _last_sample_time_ms > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+
+    {
+        WITH_SEMAPHORE(sem);
         if (_press_count > 0) {
             _press = _press_sum / _press_count;
             _press_count = 0;
             _press_sum = 0;
         }
-        sem->give();
     }
+
     pressure = _correct_pressure(_press);
     return true;
 }
@@ -297,14 +298,15 @@ bool AP_Airspeed_SDP3X::get_temperature(float &temperature)
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (_temp_count > 0) {
-            _temp = _temp_sum / _temp_count;
-            _temp_count = 0;
-            _temp_sum = 0;
-        }
-        sem->give();
+
+    WITH_SEMAPHORE(sem);
+
+    if (_temp_count > 0) {
+        _temp = _temp_sum / _temp_count;
+        _temp_count = 0;
+        _temp_sum = 0;
     }
+
     temperature = _temp;
     return true;
 }

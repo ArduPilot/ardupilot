@@ -17,7 +17,7 @@ extern const AP_HAL::HAL& hal;
 UC_REGISTRY_BINDER(AirspeedCb, uavcan::equipment::air_data::RawAirData);
 
 AP_Airspeed_UAVCAN::DetectedModules AP_Airspeed_UAVCAN::_detected_modules[] = {0};
-AP_HAL::Semaphore* AP_Airspeed_UAVCAN::_sem_registry = nullptr;
+HAL_Semaphore AP_Airspeed_UAVCAN::_sem_registry;
 
 // constructor
 AP_Airspeed_UAVCAN::AP_Airspeed_UAVCAN(AP_Airspeed &_frontend, uint8_t _instance) :
@@ -43,16 +43,12 @@ void AP_Airspeed_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 
 bool AP_Airspeed_UAVCAN::take_registry()
 {
-    if (_sem_registry == nullptr) {
-        _sem_registry = hal.util->new_semaphore();
-    }
-
-    return _sem_registry->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    return _sem_registry.take(HAL_SEMAPHORE_BLOCK_FOREVER);
 }
 
 void AP_Airspeed_UAVCAN::give_registry()
 {
-    _sem_registry->give();
+    _sem_registry.give();
 }
 
 AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _instance)
@@ -133,7 +129,7 @@ void AP_Airspeed_UAVCAN::handle_airspeed(AP_UAVCAN* ap_uavcan, uint8_t node_id, 
         if (driver != nullptr) {
             WITH_SEMAPHORE(driver->_sem_airspeed);
             driver->_pressure = cb.msg->differential_pressure;
-            driver->_temperature = cb.msg->static_air_temperature;
+            driver->_temperature = cb.msg->static_air_temperature - C_TO_KELVIN;
             driver->_last_sample_time_ms = AP_HAL::millis();
         }
 
@@ -168,7 +164,7 @@ bool AP_Airspeed_UAVCAN::get_temperature(float &temperature)
         return false;
     }
 
-    temperature = _temperature - C_TO_KELVIN;
+    temperature = _temperature;
 
     return true;
 }

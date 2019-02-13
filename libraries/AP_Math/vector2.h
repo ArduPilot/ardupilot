@@ -24,12 +24,15 @@
 *          18-12-2003
 *          06-06-2004
 *
-* © 2003, This code is provided "as is" and you can use it freely as long as
+* Copyright 2003, This code is provided "as is" and you can use it freely as long as
 * credit is given to Bill Perone in the application it is used in
 ****************************************/
 #pragma once
 
 #include <cmath>
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 template <typename T>
 struct Vector2
@@ -151,7 +154,7 @@ struct Vector2
     // reflects this vector about n
     void    reflect(const Vector2<T> &n)
     {
-        Vector2<T>        orig(*this);
+        const Vector2<T>        orig(*this);
         project(n);
         *this= *this*2 - orig;
     }
@@ -172,10 +175,10 @@ struct Vector2
     // perpendicular to v1 maximising distance from p1
     static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1)
     {
-        Vector2<T> perpendicular1 = Vector2<T>(-v1[1], v1[0]);
-        Vector2<T> perpendicular2 = Vector2<T>(v1[1], -v1[0]);
-        T d1 = perpendicular1 * pos_delta;
-        T d2 = perpendicular2 * pos_delta;
+        const Vector2<T> perpendicular1 = Vector2<T>(-v1[1], v1[0]);
+        const Vector2<T> perpendicular2 = Vector2<T>(v1[1], -v1[0]);
+        const T d1 = perpendicular1 * pos_delta;
+        const T d2 = perpendicular2 * pos_delta;
         if (d1 > d2) {
             return perpendicular1;
         }

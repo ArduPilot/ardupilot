@@ -89,7 +89,7 @@ void Sub::auto_wp_start(const Vector3f& destination)
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void Sub::auto_wp_start(const Location_Class& dest_loc)
+void Sub::auto_wp_start(const Location& dest_loc)
 {
     auto_mode = Auto_WP;
 
@@ -117,7 +117,7 @@ void Sub::auto_wp_run()
         //    (of course it would be better if people just used take-off)
         // call attitude controller
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
         return;
@@ -174,9 +174,9 @@ void Sub::auto_wp_run()
 
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
 //  seg_end_type can be SEGMENT_END_STOP, SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE.  If Straight or Spline the next_destination should be provided
-void Sub::auto_spline_start(const Location_Class& destination, bool stopped_at_start,
+void Sub::auto_spline_start(const Location& destination, bool stopped_at_start,
                             AC_WPNav::spline_segment_end_type seg_end_type,
-                            const Location_Class& next_destination)
+                            const Location& next_destination)
 {
     auto_mode = Auto_Spline;
 
@@ -204,7 +204,7 @@ void Sub::auto_spline_run()
         //    (of course it would be better if people just used take-off)
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
 
         return;
     }
@@ -252,7 +252,7 @@ void Sub::auto_spline_run()
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
 //  we assume the caller has set the circle's circle with circle_nav.set_center()
 //  we assume the caller has performed all required GPS_ok checks
-void Sub::auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m)
+void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radius_m)
 {
     // convert location to vector from ekf origin
     Vector3f circle_center_neu;
@@ -278,8 +278,8 @@ void Sub::auto_circle_movetoedge_start(const Location_Class &circle_center, floa
         // set the state to move to the edge of the circle
         auto_mode = Auto_CircleMoveToEdge;
 
-        // convert circle_edge_neu to Location_Class
-        Location_Class circle_edge(circle_edge_neu);
+        // convert circle_edge_neu to Location
+        Location circle_edge(circle_edge_neu);
 
         // convert altitude to same as command
         circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
@@ -389,7 +389,7 @@ void Sub::auto_loiter_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -653,7 +653,7 @@ bool Sub::auto_terrain_recover_start()
     pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
 
     // initialize vertical speeds and leash lengths
-    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
     pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // Reset vertical position and velocity targets
@@ -674,7 +674,7 @@ void Sub::auto_terrain_recover_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }
@@ -682,12 +682,12 @@ void Sub::auto_terrain_recover_run()
     switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
 
     case RangeFinder::RangeFinder_OutOfRangeLow:
-        target_climb_rate = wp_nav.get_speed_up();
+        target_climb_rate = wp_nav.get_default_speed_up();
         rangefinder_recovery_ms = 0;
         break;
 
     case RangeFinder::RangeFinder_OutOfRangeHigh:
-        target_climb_rate = wp_nav.get_speed_down();
+        target_climb_rate = wp_nav.get_default_speed_down();
         rangefinder_recovery_ms = 0;
         break;
 

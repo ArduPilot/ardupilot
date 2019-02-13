@@ -14,6 +14,9 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_ROMFS/AP_ROMFS.h>
 #include <AP_Math/crc.h>
+#include <SRV_Channel/SRV_Channel.h>
+#include <RC_Channel/RC_Channel.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -21,22 +24,27 @@ extern const AP_HAL::HAL &hal;
 enum ioevents {
     IOEVENT_INIT=1,
     IOEVENT_SEND_PWM_OUT,
-    IOEVENT_SET_DISARMED_PWM,
-    IOEVENT_SET_FAILSAFE_PWM,
     IOEVENT_FORCE_SAFETY_OFF,
     IOEVENT_FORCE_SAFETY_ON,
     IOEVENT_SET_ONESHOT_ON,
+    IOEVENT_SET_BRUSHED_ON,
     IOEVENT_SET_RATES,
-    IOEVENT_GET_RCIN,
     IOEVENT_ENABLE_SBUS,
     IOEVENT_SET_HEATER_TARGET,
     IOEVENT_SET_DEFAULT_RATE,
     IOEVENT_SET_SAFETY_MASK,
+    IOEVENT_MIXING
 };
 
 AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     uart(_uart)
 {}
+
+#if 0
+#define debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+#else
+#define debug(fmt, args ...)
+#endif
 
 /*
   initialise library, starting thread
@@ -51,15 +59,18 @@ void AP_IOMCU::init(void)
     // check IO firmware CRC
     hal.scheduler->delay(2000);
     
-    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
     if (!boardconfig || boardconfig->io_enabled() == 1) {
         check_crc();
+    } else {
+        crc_is_ok = true;
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_IOMCU::thread_main, void), "IOMCU",
                                       1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
         AP_HAL::panic("Unable to allocate IOMCU thread");
     }
+    initialised = true;
 }
 
 /*
@@ -78,6 +89,7 @@ void AP_IOMCU::event_failed(uint8_t event)
 void AP_IOMCU::thread_main(void)
 {
     thread_ctx = chThdGetSelfX();
+    chEvtSignal(thread_ctx, initial_event_mask);
 
     uart.begin(1500*1000, 256, 256);
     uart.set_blocking_writes(false);
@@ -85,7 +97,7 @@ void AP_IOMCU::thread_main(void)
     
     trigger_event(IOEVENT_INIT);
     
-    while (true) {
+    while (!do_shutdown) {
         eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(10));
 
         // check for pending IO events
@@ -94,6 +106,14 @@ void AP_IOMCU::thread_main(void)
         }
 
         if (mask & EVENT_MASK(IOEVENT_INIT)) {
+            // get protocol version
+            if (!read_registers(PAGE_CONFIG, 0, sizeof(config)/2, (uint16_t *)&config)) {
+                event_failed(IOEVENT_INIT);
+                continue;
+            }
+            is_chibios_backend = (config.protocol_version == IOMCU_PROTOCOL_VERSION &&
+                                  config.protocol_version2 == IOMCU_PROTOCOL_VERSION2);
+
             // set IO_ARM_OK and FMU_ARMED
             if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
                                  P_SETUP_ARMING_IO_ARM_OK |
@@ -104,7 +124,13 @@ void AP_IOMCU::thread_main(void)
             }
         }
 
-        
+        if (mask & EVENT_MASK(IOEVENT_MIXING)) {
+            if (!write_registers(PAGE_MIXING, 0, sizeof(mixing)/2, (const uint16_t *)&mixing)) {
+                event_failed(IOEVENT_MIXING);
+                continue;
+            }
+        }
+
         if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_OFF)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_OFF, FORCE_SAFETY_MAGIC)) {
                 event_failed(IOEVENT_FORCE_SAFETY_OFF);
@@ -158,13 +184,20 @@ void AP_IOMCU::thread_main(void)
             }
         }
 
+        if (mask & EVENT_MASK(IOEVENT_SET_BRUSHED_ON)) {
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_BRUSHED)) {
+                event_failed(IOEVENT_SET_BRUSHED_ON);
+                continue;
+            }
+        }
+        
         if (mask & EVENT_MASK(IOEVENT_SET_SAFETY_MASK)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_IGNORE_SAFETY, pwm_out.safety_mask)) {
                 event_failed(IOEVENT_SET_SAFETY_MASK);
                 continue;
             }
         }
-        
+
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
         if (now - last_rc_read_ms > 20) {
@@ -200,7 +233,7 @@ void AP_IOMCU::thread_main(void)
         // update safety pwm
         if (pwm_out.safety_pwm_set != pwm_out.safety_pwm_sent) {
             uint8_t set = pwm_out.safety_pwm_set;
-            if (write_registers(PAGE_DISARMED_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm)) {
+            if (write_registers(PAGE_SAFETY_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm)) {
                 pwm_out.safety_pwm_sent = set;
             }
         }
@@ -213,6 +246,7 @@ void AP_IOMCU::thread_main(void)
             }
         }
     }
+    done_shutdown = true;
 }
 
 /*
@@ -230,6 +264,8 @@ void AP_IOMCU::send_servo_out()
         uint8_t n = pwm_out.num_channels;
         if (rate.sbus_rate_hz == 0) {
             n = MIN(n, 8);
+        } else {
+            n = MIN(n, IOMCU_MAX_CHANNELS);
         }
         uint32_t now = AP_HAL::micros();
         if (now - last_servo_out_us >= 2000) {
@@ -250,7 +286,7 @@ void AP_IOMCU::read_rc_input()
     uint8_t n = MIN(MAX(9, rc_input.count), IOMCU_MAX_CHANNELS);
     read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input);
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
-        rc_input.last_input_us = AP_HAL::micros();
+        rc_input.last_input_ms = AP_HAL::millis();
     }
 }
 
@@ -268,7 +304,7 @@ void AP_IOMCU::read_status()
         last_safety_options = 0xFFFF;
 
         // also check if the safety should be definately off.
-        AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+        AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
         if (!boardconfig) {
             return;
         }
@@ -311,6 +347,15 @@ void AP_IOMCU::discard_input(void)
 */
 bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint16_t *regs)
 {
+    while (count > PKT_MAX_REGS) {
+        if (!read_registers(page, offset, PKT_MAX_REGS, regs)) {
+            return false;
+        }
+        offset += PKT_MAX_REGS;
+        count -= PKT_MAX_REGS;
+        regs += PKT_MAX_REGS;
+    }
+
     IOPacket pkt;
 
     discard_input();
@@ -322,14 +367,21 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     pkt.page = page;
     pkt.offset = offset;
     pkt.crc = 0;
+
+    uint8_t pkt_size = pkt.get_size();
+    if (is_chibios_backend) {
+        // save bandwidth on reads
+        pkt_size = 4;
+    }
     
     /*
       the protocol is a bit strange, as it unnecessarily sends the
       same size packet that it expects to receive. This means reading
       a large number of registers wastes a lot of serial bandwidth
      */
-    pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
-    if (uart.write((uint8_t *)&pkt, pkt.get_size()) != pkt.get_size()) {
+    pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt_size);
+    if (uart.write((uint8_t *)&pkt, pkt_size) != pkt_size) {
+        protocol_fail_count++;
         return false;
     }
 
@@ -350,21 +402,25 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     pkt.crc = 0;
     uint8_t expected_crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
     if (got_crc != expected_crc) {
-        hal.console->printf("bad crc %02x should be %02x n=%u %u/%u/%u\n",
-                            got_crc, expected_crc,
-                            n, page, offset, count);
+        debug("bad crc %02x should be %02x n=%u %u/%u/%u\n",
+              got_crc, expected_crc,
+              n, page, offset, count);
+        protocol_fail_count++;
         return false;
     }
 
     if (pkt.code != CODE_SUCCESS) {
-        hal.console->printf("bad code %02x read %u/%u/%u\n", pkt.code, page, offset, count);
+        debug("bad code %02x read %u/%u/%u\n", pkt.code, page, offset, count);
+        protocol_fail_count++;
         return false;
     }
     if (pkt.count < count) {
-        hal.console->printf("bad count %u read %u/%u/%u n=%u\n", pkt.count, page, offset, count, n);
+        debug("bad count %u read %u/%u/%u n=%u\n", pkt.count, page, offset, count, n);
+        protocol_fail_count++;
         return false;
     }
     memcpy(regs, pkt.regs, count*2);
+    protocol_fail_count = 0;
     return true;
 }
 
@@ -373,6 +429,14 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
 */
 bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs)
 {
+    while (count > PKT_MAX_REGS) {
+        if (!write_registers(page, offset, PKT_MAX_REGS, regs)) {
+            return false;
+        }
+        offset += PKT_MAX_REGS;
+        count -= PKT_MAX_REGS;
+        regs += PKT_MAX_REGS;
+    }
     IOPacket pkt;
     
     discard_input();
@@ -387,12 +451,14 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     memcpy(pkt.regs, regs, 2*count);
     pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
     if (uart.write((uint8_t *)&pkt, pkt.get_size()) != pkt.get_size()) {
+        protocol_fail_count++;
         return false;
     }
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(4, 10)) {
-        //hal.console->printf("no reply for %u/%u/%u\n", page, offset, count);
+        //debug("no reply for %u/%u/%u\n", page, offset, count);
+        protocol_fail_count++;
         return false;
     }
     
@@ -405,18 +471,21 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     }
 
     if (pkt.code != CODE_SUCCESS) {
-        hal.console->printf("bad code %02x write %u/%u/%u %02x/%02x n=%u\n",
-                            pkt.code, page, offset, count,
-                            pkt.page, pkt.offset, n);
+        debug("bad code %02x write %u/%u/%u %02x/%02x n=%u\n",
+              pkt.code, page, offset, count,
+              pkt.page, pkt.offset, n);
+        protocol_fail_count++;
         return false;
     }
     uint8_t got_crc = pkt.crc;
     pkt.crc = 0;
     uint8_t expected_crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
     if (got_crc != expected_crc) {
-        hal.console->printf("bad crc %02x should be %02x\n", got_crc, expected_crc);
+        debug("bad crc %02x should be %02x\n", got_crc, expected_crc);
+        protocol_fail_count++;
         return false;
     }
+    protocol_fail_count = 0;
     return true;
 }
 
@@ -464,6 +533,9 @@ void AP_IOMCU::trigger_event(uint8_t event)
 {
     if (thread_ctx != nullptr) {
         chEvtSignal(thread_ctx, EVENT_MASK(event));
+    } else {
+        // thread isn't started yet, trigger this event once it is started
+        initial_event_mask |= EVENT_MASK(event);
     }
 }
 
@@ -544,10 +616,10 @@ bool AP_IOMCU::enable_sbus_out(uint16_t rate_hz)
 */
 bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_chan)
 {
-    if (last_frame_us != rc_input.last_input_us) {
+    if (last_frame_us != uint32_t(rc_input.last_input_ms * 1000U)) {
         num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_CHANNELS), max_chan);
         memcpy(channels, rc_input.pwm, num_channels*2);
-        last_frame_us = rc_input.last_input_us;
+        last_frame_us = uint32_t(rc_input.last_input_ms * 1000U);
         return true;
     }
     return false;
@@ -575,10 +647,16 @@ void AP_IOMCU::set_oneshot_mode(void)
     trigger_event(IOEVENT_SET_ONESHOT_ON);
 }
 
+// setup for brushed mode
+void AP_IOMCU::set_brushed_mode(void)
+{
+    trigger_event(IOEVENT_SET_BRUSHED_ON);
+}
+
 // handling of BRD_SAFETYOPTION parameter
 void AP_IOMCU::update_safety_options(void)
 {
-    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
     if (!boardconfig) {
         return;
     }
@@ -625,8 +703,13 @@ bool AP_IOMCU::check_crc(void)
 	}
 
     uint32_t io_crc = 0;
-    if (read_registers(PAGE_SETUP, PAGE_REG_SETUP_CRC, 2, (uint16_t *)&io_crc) &&
-        io_crc == crc) {
+    uint8_t tries = 32;
+    while (tries--) {
+        if (read_registers(PAGE_SETUP, PAGE_REG_SETUP_CRC, 2, (uint16_t *)&io_crc)) {
+            break;
+        }
+    }
+    if (io_crc == crc) {
         hal.console->printf("IOMCU: CRC ok\n");
         crc_is_ok = true;
         free(fw);
@@ -703,8 +786,102 @@ void AP_IOMCU::set_safety_mask(uint16_t chmask)
  */
 bool AP_IOMCU::healthy(void)
 {
-    // for now just check CRC
-    return crc_is_ok;
+    return crc_is_ok && protocol_fail_count == 0;
+}
+
+/*
+  shutdown protocol, ready for reboot
+ */
+void AP_IOMCU::shutdown(void)
+{
+    do_shutdown = true;
+    while (!done_shutdown) {
+        hal.scheduler->delay(1);
+    }
+}
+
+/*
+  request bind on a DSM radio
+ */
+void AP_IOMCU::bind_dsm(uint8_t mode)
+{
+    if (!is_chibios_backend || hal.util->get_soft_armed()) {
+        // only with ChibiOS IO firmware, and disarmed
+        return;
+    }
+    uint16_t reg = mode;
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM_BIND, 1, &reg);
+}
+
+/*
+  setup for mixing. This allows fixed wing aircraft to fly in manual
+  mode if the FMU dies
+ */
+bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
+                            float mixing_gain, uint16_t manual_rc_mask)
+{
+    if (!is_chibios_backend) {
+        return false;
+    }
+    bool changed = false;
+#define MIX_UPDATE(a,b) do { if ((a) != (b)) { a = b; changed = true; }} while (0)
+
+    // update mixing structure, checking for changes
+    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+        const SRV_Channel *ch = SRV_Channels::srv_channel(i);
+        if (!ch) {
+            continue;
+        }
+        MIX_UPDATE(mixing.servo_trim[i], ch->get_trim());
+        MIX_UPDATE(mixing.servo_min[i], ch->get_output_min());
+        MIX_UPDATE(mixing.servo_max[i], ch->get_output_max());
+        MIX_UPDATE(mixing.servo_function[i], ch->get_function());
+        MIX_UPDATE(mixing.servo_reversed[i], ch->get_reversed());
+    }
+    // update RCMap
+    MIX_UPDATE(mixing.rc_channel[0], rcmap->roll());
+    MIX_UPDATE(mixing.rc_channel[1], rcmap->pitch());
+    MIX_UPDATE(mixing.rc_channel[2], rcmap->throttle());
+    MIX_UPDATE(mixing.rc_channel[3], rcmap->yaw());
+    for (uint8_t i=0; i<4; i++) {
+        const RC_Channel *ch = RC_Channels::rc_channel(mixing.rc_channel[i]-1);
+        if (!ch) {
+            continue;
+        }
+        MIX_UPDATE(mixing.rc_min[i], ch->get_radio_min());
+        MIX_UPDATE(mixing.rc_max[i], ch->get_radio_max());
+        MIX_UPDATE(mixing.rc_trim[i], ch->get_radio_trim());
+        MIX_UPDATE(mixing.rc_reversed[i], ch->get_reverse());
+
+        // cope with reversible throttle
+        if (i == 2 && ch->get_type() == RC_Channel::RC_CHANNEL_TYPE_ANGLE) {
+            MIX_UPDATE(mixing.throttle_is_angle, 1);
+        } else {
+            MIX_UPDATE(mixing.throttle_is_angle, 0);
+        }
+    }
+
+    MIX_UPDATE(mixing.rc_chan_override, override_chan);
+    MIX_UPDATE(mixing.mixing_gain, (uint16_t)(mixing_gain*1000));
+    MIX_UPDATE(mixing.manual_rc_mask, manual_rc_mask);
+
+    // and enable
+    MIX_UPDATE(mixing.enabled, 1);
+    if (changed) {
+        trigger_event(IOEVENT_MIXING);
+    }
+    return true;
+}
+
+/*
+  return the RC protocol name
+ */
+const char *AP_IOMCU::get_rc_protocol(void)
+{
+    if (!is_chibios_backend) {
+        return nullptr;
+    }
+    return AP_RCProtocol::protocol_name_from_protocol((AP_RCProtocol::rcprotocol_t)rc_input.data);
 }
 
 #endif // HAL_WITH_IO_MCU

@@ -60,6 +60,7 @@ void AP_RPM_Pin::update(void)
         // attach to new pin
         last_pin = get_pin();
         if (last_pin) {
+            hal.gpio->pinMode(last_pin, HAL_GPIO_INPUT);
             if (!hal.gpio->attach_interrupt(
                     last_pin,
                     FUNCTOR_BIND_MEMBER(&AP_RPM_Pin::irq_handler, void, uint8_t, bool, uint32_t),

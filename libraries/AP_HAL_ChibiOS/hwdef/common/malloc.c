@@ -52,7 +52,9 @@ static memory_heap_t dtcm_heap;
 #define DMA_RESERVE_SIZE 4096
 #endif
 
+#if DMA_RESERVE_SIZE != 0
 static memory_heap_t dma_reserve_heap;
+#endif
 
 static void *malloc_dtcm(size_t size);
 
@@ -212,47 +214,6 @@ size_t mem_available(void)
 #endif
 
     return totalp;
-}
-
-/*
-  realloc implementation thanks to wolfssl, used by AP_Scripting
- */
-void *realloc(void *addr, size_t size)
-{
-    union heap_header *hp;
-    uint32_t prev_size, new_size;
-
-    void *ptr;
-
-    if(addr == NULL) {
-        return chHeapAlloc(NULL, size);
-    }
-
-    /* previous allocated segment is preceded by an heap_header */
-    hp = addr - sizeof(union heap_header);
-    prev_size = hp->used.size; /* size is always multiple of 8 */
-
-    /* check new size memory alignment */
-    if (size % 8 == 0) {
-        new_size = size;
-    } else {
-        new_size = ((int) (size / 8)) * 8 + 8;
-    }
-
-    if(prev_size >= new_size) {
-        return addr;
-    }
-
-    ptr = chHeapAlloc(NULL, size);
-    if (ptr == NULL) {
-        return NULL;
-    }
-
-    memcpy(ptr, addr, prev_size);
-
-    chHeapFree(addr);
-
-    return ptr;
 }
 
 #endif // CH_CFG_USE_HEAP

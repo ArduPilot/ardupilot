@@ -63,6 +63,9 @@ void MultiCopter::update(const struct sitl_input &input)
 
     calculate_forces(input, rot_accel, accel_body);
 
+    // estimate voltage and current
+    frame->current_and_voltage(input, battery_voltage, battery_current);
+
     update_dynamics(rot_accel);
     update_external_payload(input);
 

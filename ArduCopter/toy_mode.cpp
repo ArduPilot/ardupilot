@@ -702,14 +702,14 @@ void ToyMode::trim_update(void)
     // get throttle mid from channel trim
     uint16_t throttle_trim = copter.channel_throttle->get_radio_trim();
     if (abs(throttle_trim - 1500) <= trim_auto) {
-        RC_Channel *ch = copter.channel_throttle;
-        uint16_t ch_min = ch->get_radio_min();
-        uint16_t ch_max = ch->get_radio_max();
+        RC_Channel *c = copter.channel_throttle;
+        uint16_t ch_min = c->get_radio_min();
+        uint16_t ch_max = c->get_radio_max();
         // remember the throttle midpoint
         int16_t new_value = 1000UL * (throttle_trim - ch_min) / (ch_max - ch_min);
         if (new_value != throttle_mid) {
             throttle_mid = new_value;
-            gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: thr mid %d\n",
+            gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: thr mid %d",
                                              throttle_mid);
         }
     }
@@ -758,8 +758,8 @@ void ToyMode::trim_update(void)
     
     uint8_t need_trim = 0;
     for (uint8_t i=0; i<4; i++) {
-        RC_Channel *ch = RC_Channels::rc_channel(i);
-        if (ch && abs(chan[i] - ch->get_radio_trim()) > noise_limit) {
+        RC_Channel *c = RC_Channels::rc_channel(i);
+        if (c && abs(chan[i] - c->get_radio_trim()) > noise_limit) {
             need_trim |= 1U<<i;
         }
     }
@@ -768,12 +768,12 @@ void ToyMode::trim_update(void)
     }
     for (uint8_t i=0; i<4; i++) {
         if (need_trim & (1U<<i)) {
-            RC_Channel *ch = RC_Channels::rc_channel(i);
-            ch->set_and_save_radio_trim(chan[i]);
+            RC_Channel *c = RC_Channels::rc_channel(i);
+            c->set_and_save_radio_trim(chan[i]);
         }
     }
 
-    gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: trim %u %u %u %u\n",
+    gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: trim %u %u %u %u",
                                      chan[0], chan[1], chan[2], chan[3]);
 }
 
@@ -792,7 +792,7 @@ void ToyMode::action_arm(void)
         copter.channel_yaw->get_control_in() == 0;
 
     if (!sticks_centered) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: sticks not centered\n");
+        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: sticks not centered");
         return;
     }
 
@@ -957,7 +957,7 @@ void ToyMode::handle_message(mavlink_message_t *msg)
         AP_Notify::flags.video_recording = 1;
     } else if (strncmp(m.name, "WIFICHAN", 10) == 0) {
 #if HAL_RCINPUT_WITH_AP_RADIO
-        AP_Radio *radio = AP_Radio::instance();
+        AP_Radio *radio = AP_Radio::get_singleton();
         if (radio) {
             radio->set_wifi_channel(m.value);
         }
@@ -991,7 +991,7 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
     uint16_t pwm[4];
     hal.rcout->read(pwm, 4);
     if (motor_log_counter++ % 10 == 0) {
-        DataFlash_Class::instance()->Log_Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
+        AP::logger().Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
                                                AP_HAL::micros64(),
                                                (double)filtered_voltage,
                                                (double)thrust_mul,

@@ -82,13 +82,13 @@ void AP_Airspeed_DLVR::timer()
     float press_h2o = 1.25f * 2.0f * DLVR_FSS * ((pres_raw - DLVR_OFFSET) / DLVR_SCALE);
     float temp = temp_raw * (200.0f / 2047.0f) - 50.0f;
 
-    sem->take_blocking();
+    WITH_SEMAPHORE(sem);
+
     pressure_sum += INCH_OF_H2O_TO_PASCAL * press_h2o;
     temperature_sum += temp;
     press_count++;
     temp_count++;
     last_sample_time_ms = AP_HAL::millis();
-    sem->give();
 }
 
 // return the current differential_pressure in Pascal
@@ -97,14 +97,16 @@ bool AP_Airspeed_DLVR::get_differential_pressure(float &_pressure)
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+
+    {
+        WITH_SEMAPHORE(sem);
         if (press_count > 0) {
             pressure = pressure_sum / press_count;
             press_count = 0;
             pressure_sum = 0;
         }
-        sem->give();
     }
+
     _pressure = pressure;
     return true;
 }
@@ -115,14 +117,15 @@ bool AP_Airspeed_DLVR::get_temperature(float &_temperature)
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (temp_count > 0) {
-            temperature = temperature_sum / temp_count;
-            temp_count = 0;
-            temperature_sum = 0;
-        }
-        sem->give();
+
+    WITH_SEMAPHORE(sem);
+
+    if (temp_count > 0) {
+        temperature = temperature_sum / temp_count;
+        temp_count = 0;
+        temperature_sum = 0;
     }
+
     _temperature = temperature;
     return true;
 }

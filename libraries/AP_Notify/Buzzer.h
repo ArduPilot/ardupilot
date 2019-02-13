@@ -30,10 +30,10 @@ public:
     Buzzer() {}
 
     /// init - initialise the buzzer
-    bool init(void);
+    bool init(void) override;
 
     /// update - updates buzzer according to timed_updated.  Should be called at 50Hz
-    void update();
+    void update() override;
 
     /// on - turns the buzzer on or off
     void on(bool on_off);

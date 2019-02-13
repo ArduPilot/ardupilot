@@ -10,52 +10,6 @@
 
 #include <RC_Channel/RC_Channels_VarInfo.h>
 
-Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
-{
-    Mode *ret = nullptr;
-    switch (num) {
-    case Mode::Number::MANUAL:
-        ret = &mode_manual;
-        break;
-    case Mode::Number::ACRO:
-        ret = &mode_acro;
-        break;
-    case Mode::Number::STEERING:
-        ret = &mode_steering;
-        break;
-    case Mode::Number::HOLD:
-        ret = &mode_hold;
-        break;
-    case Mode::Number::LOITER:
-        ret = &mode_loiter;
-        break;
-    case Mode::Number::FOLLOW:
-        ret = &mode_follow;
-        break;
-    case Mode::Number::SIMPLE:
-        ret = &mode_simple;
-        break;
-    case Mode::Number::AUTO:
-        ret = &mode_auto;
-        break;
-    case Mode::Number::RTL:
-        ret = &mode_rtl;
-        break;
-    case Mode::Number::SMART_RTL:
-        ret = &mode_smartrtl;
-        break;
-    case Mode::Number::GUIDED:
-       ret = &mode_guided;
-        break;
-    case Mode::Number::INITIALISING:
-        ret = &mode_initializing;
-        break;
-    default:
-        break;
-    }
-    return ret;
-}
-
 int8_t RC_Channels_Rover::flight_mode_channel_number() const
 {
     return rover.g.mode_channel;
@@ -90,6 +44,7 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     case GUIDED:
     case LOITER:
     case FOLLOW:
+    case SAILBOAT_TACK:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -137,7 +92,7 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
 
             // if disarmed clear mission and set home to current location
             if (!rover.arming.is_armed()) {
-                rover.mission.clear();
+                rover.mode_auto.mission.clear();
                 rover.set_home_to_current_location(false);
                 return;
             }
@@ -154,8 +109,8 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
                 cmd.id = MAV_CMD_NAV_WAYPOINT;
 
                 // save command
-                if (rover.mission.add_cmd(cmd)) {
-                    hal.console->printf("Added waypoint %u", (unsigned)rover.mission.num_commands());
+                if (rover.mode_auto.mission.add_cmd(cmd)) {
+                    hal.console->printf("Added waypoint %u", (unsigned)rover.mode_auto.mission.num_commands());
                 }
             }
         }
@@ -165,8 +120,6 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
     case LEARN_CRUISE:
         if (ch_flag == HIGH) {
             rover.cruise_learn_start();
-        } else if (ch_flag == LOW) {
-            rover.cruise_learn_complete();
         }
         break;
 
@@ -232,6 +185,12 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
     // set mode to Simple
     case SIMPLE:
         do_aux_function_change_mode(rover.mode_simple, ch_flag);
+        break;
+
+    // trigger sailboat tack
+    case SAILBOAT_TACK:
+        // any switch movement interpreted as request to tack
+        rover.control_mode->handle_tack_request();
         break;
 
     default:

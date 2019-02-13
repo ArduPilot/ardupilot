@@ -33,9 +33,6 @@ private:
     uint8_t  _instance;
     bool _initialized;
 
-    Vector3f _sum;
-    uint32_t _count;
-
     AP_UAVCAN* _ap_uavcan;
     uint8_t _node_id;
     uint8_t _sensor_id;
@@ -48,5 +45,5 @@ private:
         AP_Compass_UAVCAN *driver;
     } _detected_modules[COMPASS_MAX_BACKEND];
 
-    static AP_HAL::Semaphore *_sem_registry;
+    static HAL_Semaphore _sem_registry;
 };

@@ -15,15 +15,13 @@ unset CXX CC
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
 export GIT_VERSION="ci_test"
-export NUTTX_GIT_VERSION="ci_test"
-export PX4_GIT_VERSION="ci_test"
 export CHIBIOS_GIT_VERSION="ci_test"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
 autotest_args=""
 
 # If CI_BUILD_TARGET is not set, build 3 different ones
 if [ -z "$CI_BUILD_TARGET" ]; then
-    CI_BUILD_TARGET="sitl linux px4-v2"
+    CI_BUILD_TARGET="sitl linux"
 fi
 
 declare -A waf_supported_boards
@@ -57,8 +55,12 @@ function run_autotest() {
     unset BUILDROOT
     echo "Running SITL $NAME test"
 
+    w=""
     if [ $c_compiler == "clang" ]; then
-        w="--check-c-compiler=clang --check-cxx-compiler=clang++"
+        w="$w --check-c-compiler=clang --check-cxx-compiler=clang++"
+    fi
+    if [ $NAME == "Rover" ]; then
+        w="$w --enable-math-check-indexes"
     fi
     Tools/autotest/autotest.py --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
@@ -82,6 +84,10 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Rover" "build.APMrover2" "drive.APMrover2"
         continue
     fi
+    if [ "$t" == "sitltest-sub" ]; then
+        run_autotest "Sub" "build.ArduSub" "dive.ArduSub"
+        continue
+    fi
 
     if [ "$t" == "revo-bootloader" ]; then
         echo "Building revo bootloader"
@@ -98,7 +104,7 @@ for t in $CI_BUILD_TARGET; do
         $waf iofirmware
         continue
     fi
-    
+
     if [ "$t" == "revo-mini" ]; then
         # save some time by only building one target for revo-mini
         echo "Building revo-mini"
@@ -106,26 +112,6 @@ for t in $CI_BUILD_TARGET; do
         $waf clean
         $waf plane
         continue
-    fi
-    
-    # only do make-based builds for GCC, when target is PX4-v3 or build is launched by a scheduled job and target is a PX4 board or SITL
-    if [[ "$cxx_compiler" != "clang++" && ($t == "px4-v3" || (-n ${CI_CRON_JOB+1} && ($t == "px4"* || $t == "sitl"))) ]]; then
-        echo "Starting make based build for target ${t}..."
-        for v in "ArduPlane" "ArduCopter" "APMrover2" "ArduSub" "AntennaTracker"; do
-            echo "Building $v for ${t}..."
-
-            pushd $v
-            make clean
-            if [[ $t == "px4"* ]]; then
-                make px4-cleandep
-            fi
-
-            start_time=$(get_time)
-            make "$t" -j$(nproc)
-            diff_time=$(($(get_time)-$start_time))
-            echo -e "\033[32m'make' finished successfully (${diff_time}s)\033[0m"
-            popd
-        done
     fi
 
     if [[ -n ${waf_supported_boards[$t]} && -z ${CI_CRON_JOB+1} ]]; then

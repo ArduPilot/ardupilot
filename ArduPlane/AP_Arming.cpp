@@ -53,6 +53,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+    if (plane.quadplane.enabled() && !plane.quadplane.available()) {
+        check_failed(ARMING_CHECK_NONE, display_failure, "Quadplane enabled but not running");
+        ret = false;
+    }
+
     if (plane.quadplane.available() && plane.scheduler.get_loop_rate_hz() < 100) {
         check_failed(ARMING_CHECK_NONE, display_failure, "quadplane needs SCHED_LOOP_RATE >= 100");
         ret = false;
@@ -68,13 +73,6 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         check_failed(ARMING_CHECK_NONE, display_failure, "ADSB threat detected");
         ret = false;
     }
-
-#if HAVE_PX4_MIXER
-    if (plane.last_mixer_crc == -1) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Mixer error");
-        ret = false;
-    }
-#endif // CONFIG_HAL_BOARD
 
     return ret;
 }

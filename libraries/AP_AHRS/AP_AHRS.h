@@ -304,6 +304,11 @@ public:
         return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
     }
 
+    // return the parameter AHRS_WIND_MAX in metres per second
+    uint8_t get_max_wind() const {
+        return _wind_max;
+    }
+
     // return a ground vector estimate in meters/second, in North/East order
     virtual Vector2f groundspeed_vector(void);
 
@@ -391,10 +396,10 @@ public:
     }
 
     // set trim
-    virtual void            set_trim(Vector3f new_trim);
+    void set_trim(const Vector3f &new_trim);
 
     // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
-    virtual void            add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
+    void add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
 
     // helper trig value accessors
     float cos_roll() const  {
@@ -546,8 +551,8 @@ public:
     }
 
     // create a view
-    AP_AHRS_View *create_view(enum Rotation rotation);
-    
+    AP_AHRS_View *create_view(enum Rotation rotation, float pitch_trim_deg=0);
+
     // return calculated AOA
     float getAOA(void);
 

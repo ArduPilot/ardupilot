@@ -20,6 +20,8 @@ const AP_FWVersion AP_FWVersion::fwver
     fw_string: "routing example"
 };
 
+const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
+
 class GCS_MAVLINK_routing : public GCS_MAVLINK
 {
 
@@ -28,8 +30,6 @@ public:
 protected:
 
     uint32_t telem_delay() const override { return 0; }
-    AP_Mission *get_mission() override { return nullptr; }
-    AP_Rally *get_rally() const override { return nullptr; }
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };
 
@@ -38,6 +38,10 @@ protected:
     MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
     uint32_t custom_mode() const override { return 3; } // magic number
     MAV_STATE system_status() const override { return MAV_STATE_CALIBRATING; }
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health) override { present = 0; enabled = 0; health = 0; }
+
+    bool set_home_to_current_location(bool lock) override { return false; }
+    bool set_home(const Location& loc, bool lock) override { return false; }
 
 private:
 

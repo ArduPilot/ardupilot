@@ -13,7 +13,7 @@ bool Copter::ModeCircle::init(bool ignore_checks)
         pilot_yaw_override = false;
 
         // initialize speeds and accelerations
-        pos_control->set_max_speed_xy(wp_nav->get_speed_xy());
+        pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
         pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
         pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
         pos_control->set_max_accel_z(g.pilot_accel_z);
@@ -35,7 +35,7 @@ void Copter::ModeCircle::run()
     float target_climb_rate = 0;
 
     // initialize speeds and accelerations
-    pos_control->set_max_speed_xy(wp_nav->get_speed_xy());
+    pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
     pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);

@@ -2,8 +2,7 @@
 /// @brief   Handles rally point storage and retrieval.
 #include "AP_Rally.h"
 
-#include <AP_HAL/AP_HAL.h>
-extern const AP_HAL::HAL& hal;
+#include <AP_Logger/AP_Logger.h>
 
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
@@ -52,6 +51,12 @@ AP_Rally::AP_Rally(AP_AHRS &ahrs)
     : _ahrs(ahrs)
     , _last_change_time_ms(0xFFFFFFFF)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Rally must be singleton");
+    }
+#endif
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -86,6 +91,8 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
 
     _last_change_time_ms = AP_HAL::millis();
 
+    AP::logger().Write_RallyPoint(_rally_point_total_count, i, rallyLoc);
+
     return true;
 }
 
@@ -95,7 +102,7 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) co
     Location ret = {};
 
     // we return an absolute altitude, as we add homeloc.alt below
-    ret.flags.relative_alt = false;
+    ret.relative_alt = false;
 
     //Currently can't do true AGL on the APM.  Relative altitudes are
     //relative to HOME point's altitude.  Terrain on the board is inbound
@@ -112,7 +119,6 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) co
 bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocation &return_loc) const
 {
     float min_dis = -1;
-    const struct Location &home_loc = _ahrs.get_home();
 
     for (uint8_t i = 0; i < (uint8_t) _rally_point_total_count; i++) {
         RallyLocation next_rally;
@@ -128,13 +134,8 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
         }
     }
 
-    // if home is included, return false (meaning use home) if it is closer than all rally points
-    if (_rally_incl_home && (get_distance(current_loc, home_loc) < min_dis)) {
-        return false;
-    }
-
     // if a limit is defined and all rally points are beyond that limit, use home if it is closer
-    if ((_rally_limit_km > 0) && (min_dis > _rally_limit_km*1000.0f) && (get_distance(current_loc, home_loc) < min_dis)) {
+    if ((_rally_limit_km > 0) && (min_dis > _rally_limit_km*1000.0f)) {
         return false; // use home position
     }
 
@@ -149,15 +150,30 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     Location return_loc = {};
     const struct Location &home_loc = _ahrs.get_home();
     
+    // no valid rally point, return home position
+    return_loc = home_loc;
+    return_loc.alt = rtl_home_alt;
+    return_loc.relative_alt = false; // read_alt_to_hold returns an absolute altitude
+
     if (find_nearest_rally_point(current_loc, ral_loc)) {
-        // valid rally point found
-        return_loc = rally_location_to_location(ral_loc);
-    } else {
-        // no valid rally point, return home position
-        return_loc = home_loc;
-        return_loc.alt = rtl_home_alt;
-        return_loc.flags.relative_alt = false; // read_alt_to_hold returns an absolute altitude
+        Location loc = rally_location_to_location(ral_loc);
+        // use the rally point if it's closer then home, or we aren't generally considering home as acceptable
+        if (!_rally_incl_home  || (get_distance(current_loc, loc) < get_distance(current_loc, return_loc))) {
+            return_loc = rally_location_to_location(ral_loc);
+        }
     }
 
     return return_loc;
+}
+
+// singleton instance
+AP_Rally *AP_Rally::_singleton;
+
+namespace AP {
+
+AP_Rally *rally()
+{
+    return AP_Rally::get_singleton();
+}
+
 }

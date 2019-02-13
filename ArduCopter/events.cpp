@@ -269,7 +269,7 @@ bool Copter::should_disarm_on_failsafe() {
         return true;
     }
 
-    switch(control_mode) {
+    switch (control_mode) {
         case STABILIZE:
         case ACRO:
             // if throttle is zero OR vehicle is landed disarm motors

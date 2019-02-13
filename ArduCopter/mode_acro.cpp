@@ -15,8 +15,6 @@ bool Copter::ModeAcro::init(bool ignore_checks)
            (get_pilot_desired_throttle(channel_throttle->get_control_in(), copter.g2.acro_thr_mid) > copter.get_non_takeoff_throttle())) {
        return false;
    }
-   // set target altitude to zero for reporting
-   pos_control->set_alt_target(0);
 
    return true;
 }
@@ -57,8 +55,6 @@ void Copter::ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pi
 {
     float rate_limit;
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;
-
-    AP_Vehicle::MultiCopter &aparm = copter.aparm;
 
     // apply circular limit to pitch and roll inputs
     float total_in = norm(pitch_in, roll_in);
@@ -118,16 +114,17 @@ void Copter::ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pi
 
         // Calculate angle limiting earth frame rate commands
         if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-            if (roll_angle > aparm.angle_max){
-                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle-aparm.angle_max);
-            }else if (roll_angle < -aparm.angle_max) {
-                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle+aparm.angle_max);
+            const float angle_max = copter.aparm.angle_max;
+            if (roll_angle > angle_max){
+                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle-angle_max);
+            }else if (roll_angle < -angle_max) {
+                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle+angle_max);
             }
 
-            if (pitch_angle > aparm.angle_max){
-                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle-aparm.angle_max);
-            }else if (pitch_angle < -aparm.angle_max) {
-                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle+aparm.angle_max);
+            if (pitch_angle > angle_max){
+                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle-angle_max);
+            }else if (pitch_angle < -angle_max) {
+                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle+angle_max);
             }
         }
 

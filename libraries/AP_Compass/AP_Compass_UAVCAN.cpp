@@ -36,7 +36,7 @@ UC_REGISTRY_BINDER(MagCb, uavcan::equipment::ahrs::MagneticFieldStrength);
 UC_REGISTRY_BINDER(Mag2Cb, uavcan::equipment::ahrs::MagneticFieldStrength2);
 
 AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[] = {0};
-AP_HAL::Semaphore* AP_Compass_UAVCAN::_sem_registry = nullptr;
+HAL_Semaphore AP_Compass_UAVCAN::_sem_registry;
 
 AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id)
     : _ap_uavcan(ap_uavcan)
@@ -72,15 +72,12 @@ void AP_Compass_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 
 bool AP_Compass_UAVCAN::take_registry()
 {
-    if (_sem_registry == nullptr) {
-        _sem_registry = hal.util->new_semaphore();
-    }
-    return _sem_registry->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    return _sem_registry.take(HAL_SEMAPHORE_BLOCK_FOREVER);
 }
 
 void AP_Compass_UAVCAN::give_registry()
 {
-    _sem_registry->give();
+    _sem_registry.give();
 }
 
 AP_Compass_Backend* AP_Compass_UAVCAN::probe()
@@ -134,9 +131,6 @@ void AP_Compass_UAVCAN::init()
     set_dev_id(_instance, d.devid);
     set_external(_instance, true);
 
-    _sum.zero();
-    _count = 0;
-
     debug_mag_uavcan(2, _ap_uavcan->get_driver_index(),  "AP_Compass_UAVCAN loaded\n\r");
 }
 
@@ -182,19 +176,7 @@ void AP_Compass_UAVCAN::handle_mag_msg(const Vector3f &mag)
 {
     Vector3f raw_field = mag * 1000.0;
 
-    // rotate raw_field from sensor frame to body frame
-    rotate_field(raw_field, _instance);
-
-    // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, _instance);
-
-    // correct raw_field for known errors
-    correct_field(raw_field, _instance);
-
-    WITH_SEMAPHORE(_sem);
-    // accumulate into averaging filter
-    _sum += raw_field;
-    _count++;
+    accumulate_sample(raw_field, _instance);
 }
 
 void AP_Compass_UAVCAN::handle_magnetic_field(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MagCb &cb)
@@ -230,18 +212,7 @@ void AP_Compass_UAVCAN::handle_magnetic_field_2(AP_UAVCAN* ap_uavcan, uint8_t no
 
 void AP_Compass_UAVCAN::read(void)
 {
-    // avoid division by zero if we haven't received any mag reports
-    if (_count == 0) {
-        return;
-    }
-
-    WITH_SEMAPHORE(_sem);
-    _sum /= _count;
-
-    publish_filtered_field(_sum, _instance);
-
-    _sum.zero();
-    _count = 0;
+    drain_accumulated_samples(_instance);
 }
 
 #endif

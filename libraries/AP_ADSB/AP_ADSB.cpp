@@ -66,9 +66,10 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: LIST_RADIUS
     // @DisplayName: ADSB vehicle list radius filter
-    // @Description: ADSB vehicle list radius filter. Vehicles detected outside this radius will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations.
-    // @Range: 1 100000
+    // @Description: ADSB vehicle list radius filter. Vehicles detected outside this radius will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations. A value of 0 will disable this filter.
+    // @Range: 0 100000
     // @User: Advanced
+    // @Units: m
     AP_GROUPINFO("LIST_RADIUS",   3, AP_ADSB, in_state.list_radius, ADSB_LIST_RADIUS_DEFAULT),
 
     // @Param: ICAO_ID
@@ -128,6 +129,14 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Bitmask: 0:UAT_in,1:1090ES_in,2:UAT_out,3:1090ES_out
     // @User: Advanced
     AP_GROUPINFO("RF_CAPABLE",  11, AP_ADSB, out_state.cfg.rf_capable, 0),
+
+    // @Param: LIST_ALT
+    // @DisplayName: ADSB vehicle list altitude filter
+    // @Description: ADSB vehicle list altitude filter. Vehicles detected above this altitude will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations. A value of 0 will disable this filter.
+    // @Range: 0 32767
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("LIST_ALT",   12, AP_ADSB, in_state.list_altitude, 0),
 
 
     AP_GROUPEND
@@ -300,13 +309,13 @@ void AP_ADSB::determine_furthest_aircraft(void)
 /*
  * Convert/Extract a Location from a vehicle
  */
-Location_Class AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
+Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
-    Location_Class loc = Location_Class(
+    Location loc = Location(
         vehicle.info.lat,
         vehicle.info.lon,
         vehicle.info.altitude * 0.1f,
-        Location_Class::ALT_FRAME_ABSOLUTE);
+        Location::ALT_FRAME_ABSOLUTE);
 
     return loc;
 }
@@ -362,10 +371,11 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
     uint16_t index = in_state.list_size + 1; // initialize with invalid index
     adsb_vehicle_t vehicle {};
     mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
-    Location_Class vehicle_loc = Location_Class(AP_ADSB::get_location(vehicle));
+    const Location vehicle_loc = AP_ADSB::get_location(vehicle);
     bool my_loc_is_zero = _my_loc.is_zero();
     float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
     bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius;
+    bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude*100;
     bool is_tracked_in_list = find_index(vehicle, &index);
     uint32_t now = AP_HAL::millis();
 
@@ -377,6 +387,7 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
 
     if (vehicle_loc.is_zero() ||
             out_of_range ||
+            out_of_range_alt ||
             detected_ourself ||
             (vehicle.info.ICAO_address > 0x00FFFFFF) || // ICAO address is 24bits, so ignore higher values.
             !(vehicle.info.flags & required_flags_position) ||
@@ -640,7 +651,7 @@ uint8_t AP_ADSB::get_encoded_callsign_null_char()
 
     // using the above logic, we must always assign the squawk. once we get configured
     // externally then get_encoded_callsign_null_char() stops getting called
-    snprintf(out_state.cfg.callsign, 5, "%04d", unsigned(out_state.cfg.squawk_octal));
+    snprintf(out_state.cfg.callsign, 5, "%04d", unsigned(out_state.cfg.squawk_octal) & 0x1FFF);
     memset(&out_state.cfg.callsign[4], 0, 5); // clear remaining 5 chars
     encoded_null |= 0x40;
 
@@ -740,7 +751,7 @@ void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavl
 
  Note gps.time is the number of seconds since UTC midnight
 */
-uint32_t AP_ADSB::genICAO(const Location_Class &loc)
+uint32_t AP_ADSB::genICAO(const Location &loc)
 {
     // gps_time is not seconds since UTC midnight, but it is an equivalent random number
     // TODO: use UTC time instead of GPS time

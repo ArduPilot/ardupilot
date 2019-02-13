@@ -73,6 +73,46 @@ AP_SBusOut::AP_SBusOut(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+/*
+  format a SBUS output frame into a 25 byte buffer
+ */
+void AP_SBusOut::sbus_format_frame(uint16_t *channels, uint8_t num_channels, uint8_t buffer[SBUS_BSIZE])
+{
+    uint8_t index = 1;
+    uint8_t offset = 0;
+
+    memset(buffer, 0, SBUS_BSIZE);
+    buffer[0] = 0x0f;
+
+    /* construct sbus frame representing channels 1 through 16 (max) */
+    uint8_t nchan = MIN(num_channels, SBUS_CHANNELS);
+    for (unsigned i = 0; i < nchan; ++i) {
+        /*protect from out of bounds values and limit to 11 bits*/
+        uint16_t pwmval = MAX(channels[i], SBUS_MIN);
+        uint16_t value = (uint16_t)((pwmval - SBUS_MIN) * SBUS_SCALE);
+        if (value > 0x07ff) {
+            value = 0x07ff;
+        }
+
+#if SBUS_DEBUG
+        static uint16_t lastch9 = 0;
+        if ((i==8) && (pwmval != lastch9)) {
+            lastch9 = pwmval;
+            hal.console->printf("channel 9 pwm: %04d\n", pwmval);
+        }
+#endif
+
+        while (offset >= 8) {
+            ++index;
+            offset -= 8;
+        }
+
+        buffer[index] |= (value << (offset)) & 0xff;
+        buffer[index + 1] |= (value >> (8 - offset)) & 0xff;
+        buffer[index + 2] |= (value >> (16 - offset)) & 0xff;
+        offset += 11;
+    }
+}
 
 /*
  * build and send sbus1 frame representing first 16 servo channels
@@ -93,59 +133,37 @@ AP_SBusOut::update()
     // constrain output rate using sbus_frame_interval
     static uint32_t last_micros = 0;
     uint32_t now = AP_HAL::micros();
-    if ((now - last_micros) > sbus_frame_interval) {
-        last_micros = now;
-        uint8_t buffer[SBUS_BSIZE] = { 0x0f };  // first byte is always 0x0f
-        uint8_t index = 1;
-        uint8_t offset = 0;
-        uint16_t value;
+    if ((now - last_micros) <= sbus_frame_interval) {
+        return;
+    }
 
-        /* construct sbus frame representing channels 1 through 16 (max) */
-        uint8_t nchan = MIN(NUM_SERVO_CHANNELS, SBUS_CHANNELS);
-        for (unsigned i = 0; i < nchan; ++i) {
-            SRV_Channel *ch = SRV_Channels::srv_channel(i);
-            if (ch == nullptr) {
-                continue;
-            }
-            /*protect from out of bounds values and limit to 11 bits*/
-            uint16_t pwmval = MAX(ch->get_output_pwm(), SBUS_MIN);
-            value = (uint16_t)((pwmval - SBUS_MIN) * SBUS_SCALE);
-            if (value > 0x07ff) {
-                value = 0x07ff;
-            }
+    last_micros = now;
 
-#if SBUS_DEBUG
-            static uint16_t lastch9 = 0;
-            if ((i==8) && (pwmval != lastch9)) {
-                lastch9 = pwmval;
-                hal.console->printf("channel 9 pwm: %04d\n", pwmval);
-            }
-#endif
+    /* construct sbus frame representing channels 1 through 16 (max) */
+    uint8_t nchan = MIN(NUM_SERVO_CHANNELS, SBUS_CHANNELS);
+    uint16_t channels[SBUS_CHANNELS] {};
 
-            while (offset >= 8) {
-                ++index;
-                offset -= 8;
-            }
-
-            buffer[index] |= (value << (offset)) & 0xff;
-            buffer[index + 1] |= (value >> (8 - offset)) & 0xff;
-            buffer[index + 2] |= (value >> (16 - offset)) & 0xff;
-            offset += 11;
+    for (unsigned i = 0; i < nchan; ++i) {
+        SRV_Channel *c = SRV_Channels::srv_channel(i);
+        if (c == nullptr) {
+            continue;
         }
+        channels[i] = c->get_output_pwm();
+    }
+    uint8_t buffer[SBUS_BSIZE];
+    sbus_format_frame(channels, nchan, buffer);
 
 #if SBUS_DEBUG
-        hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
-        hal.gpio->write(55, 1);
+    hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
+    hal.gpio->write(55, 1);
 #endif
 
     sbus1_uart->write(buffer, sizeof(buffer));
 
 #if SBUS_DEBUG
-        hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
-        hal.gpio->write(55, 0);
+    hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
+    hal.gpio->write(55, 0);
 #endif
-
-    }
 }
 
 void AP_SBusOut::init() {
@@ -163,7 +181,7 @@ void AP_SBusOut::init() {
         sbus_frame_interval = 3700;
     }
 
-    AP_SerialManager *serial_manager = AP_SerialManager::get_instance();
+    AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
     if (!serial_manager) {
         return;
     }

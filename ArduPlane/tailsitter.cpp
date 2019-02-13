@@ -52,19 +52,21 @@ void QuadPlane::tailsitter_output(void)
     if (!is_tailsitter()) {
         return;
     }
+
+    float tilt_left = 0.0f;
+    float tilt_right = 0.0f;
+
     if (!tailsitter_active() || in_tailsitter_vtol_transition()) {
         if (tailsitter.vectored_forward_gain > 0) {
             // thrust vectoring in fixed wing flight
             float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
             float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-            float tilt_left  = (elevator + aileron) * tailsitter.vectored_forward_gain;
-            float tilt_right = (elevator - aileron) * tailsitter.vectored_forward_gain;
-            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
-        } else {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 0);
+            tilt_left  = (elevator + aileron) * tailsitter.vectored_forward_gain;
+            tilt_right = (elevator - aileron) * tailsitter.vectored_forward_gain;
         }
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
+        
         if (in_tailsitter_vtol_transition() && !throttle_wait && is_flying() && hal.util->get_soft_armed()) {
             /*
               during transitions to vtol mode set the throttle to the
@@ -90,11 +92,10 @@ void QuadPlane::tailsitter_output(void)
         tailsitter_speed_scaling();
     }
 
-    
     if (tailsitter.vectored_hover_gain > 0) {
         // thrust vectoring VTOL modes
-        float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-        float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+        tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);
+        tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight);
         /*
           apply extra elevator when at high pitch errors, using a
           power law. This allows the motors to point straight up for
@@ -104,8 +105,8 @@ void QuadPlane::tailsitter_output(void)
         float extra_pitch = constrain_float(pitch_error_cd, -4500, 4500) / 4500.0;
         float extra_sign = extra_pitch > 0?1:-1;
         float extra_elevator = extra_sign * powf(fabsf(extra_pitch), tailsitter.vectored_hover_power) * 4500;
-        float tilt_left  = extra_elevator + (elevator + aileron) * tailsitter.vectored_hover_gain;
-        float tilt_right = extra_elevator + (elevator - aileron) * tailsitter.vectored_hover_gain;
+        tilt_left  = extra_elevator + tilt_left * tailsitter.vectored_hover_gain;
+        tilt_right = extra_elevator + tilt_right * tailsitter.vectored_hover_gain;
         if (fabsf(tilt_left) >= 4500 || fabsf(tilt_right) >= 4500) {
             // prevent integrator windup
             motors->limit.roll_pitch = 1;
@@ -114,8 +115,8 @@ void QuadPlane::tailsitter_output(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
     }
-    
-    
+
+
     if (tailsitter.input_mask_chan > 0 &&
         tailsitter.input_mask > 0 &&
         RC_Channels::get_radio_in(tailsitter.input_mask_chan-1) > 1700) {
@@ -127,7 +128,7 @@ void QuadPlane::tailsitter_output(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.channel_pitch->get_control_in_zero_dz());
         }
         if (tailsitter.input_mask & TAILSITTER_MASK_THROTTLE) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.channel_throttle->get_control_in_zero_dz());
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
         }
         if (tailsitter.input_mask & TAILSITTER_MASK_RUDDER) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, plane.channel_rudder->get_control_in_zero_dz());
@@ -217,9 +218,11 @@ void QuadPlane::tailsitter_speed_scaling(void)
         scaling = constrain_float(hover_throttle / throttle, 0, tailsitter.throttle_scale_max);
     }
 
-    const SRV_Channel::Aux_servo_function_t functions[2] = {
+    const SRV_Channel::Aux_servo_function_t functions[4] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
-        SRV_Channel::Aux_servo_function_t::k_elevator};
+        SRV_Channel::Aux_servo_function_t::k_elevator,
+        SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft,
+        SRV_Channel::Aux_servo_function_t::k_tiltMotorRight};
     for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
         int32_t v = SRV_Channels::get_output_scaled(functions[i]);
         v *= scaling;

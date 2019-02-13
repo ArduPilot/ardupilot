@@ -65,5 +65,5 @@ private:
         AP_GPS_UAVCAN* driver;
     } _detected_modules[GPS_MAX_RECEIVERS];
 
-    static AP_HAL::Semaphore *_sem_registry;
+    static HAL_Semaphore _sem_registry;
 };

@@ -4,6 +4,8 @@
 #include "AP_OpticalFlow_SITL.h"
 #include "AP_OpticalFlow_Pixart.h"
 #include "AP_OpticalFlow_PX4Flow.h"
+#include "AP_OpticalFlow_CXOF.h"
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -43,18 +45,21 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @DisplayName:  X position offset
     // @Description: X position of the optical flow sensor focal point in body frame. Positive X is forward of the origin.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: _POS_Y
     // @DisplayName: Y position offset
     // @Description: Y position of the optical flow sensor focal point in body frame. Positive Y is to the right of the origin.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: _POS_Z
     // @DisplayName: Z position offset
     // @Description: Z position of the optical flow sensor focal point in body frame. Positive Z is down from the origin.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("_POS", 4, OpticalFlow, _pos_offset, 0.0f),
 
@@ -69,20 +74,17 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
 };
 
 // default constructor
-OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
-    : _ahrs(ahrs),
-      _last_update_ms(0)
+OpticalFlow::OpticalFlow()
 {
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
-
-    memset(&_state, 0, sizeof(_state));
-
-    // healthy flag will be overwritten on update
-    _flags.healthy = false;
 }
 
-void OpticalFlow::init(void)
+void OpticalFlow::init(uint32_t log_bit)
 {
+     _log_bit = log_bit;
+
     // return immediately if not enabled
     if (!_enabled) {
         return;
@@ -102,6 +104,9 @@ void OpticalFlow::init(void)
         if (backend == nullptr) {
             backend = AP_OpticalFlow_PX4Flow::detect(*this);
         }
+        if (backend == nullptr) {
+            backend = AP_OpticalFlow_CXOF::detect(*this);
+        }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
         backend = new AP_OpticalFlow_SITL(*this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
@@ -109,6 +114,8 @@ void OpticalFlow::init(void)
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         backend = AP_OpticalFlow_PX4Flow::detect(*this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+        backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
+#elif defined(HAL_HAVE_PIXARTFLOW_SPI)
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #endif
     }
@@ -120,10 +127,66 @@ void OpticalFlow::init(void)
 
 void OpticalFlow::update(void)
 {
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
     if (backend != nullptr) {
         backend->update();
     }
+
     // only healthy if the data is less than 0.5s old
     _flags.healthy = (AP_HAL::millis() - _last_update_ms < 500);
 }
 
+void OpticalFlow::update_state(const OpticalFlow_state &state)
+{
+    _state = state;
+    _last_update_ms = AP_HAL::millis();
+
+    // write to log and send to EKF if new data has arrived
+    AP::ahrs_navekf().writeOptFlowMeas(quality(),
+                                       _state.flowRate,
+                                       _state.bodyRate,
+                                       _last_update_ms,
+                                       get_pos_offset());
+    Log_Write_Optflow();
+}
+
+void OpticalFlow::Log_Write_Optflow()
+{
+    AP_Logger *instance = AP_Logger::get_singleton();
+    if (instance == nullptr) {
+        return;
+    }
+    if (_log_bit != (uint32_t)-1 &&
+        !instance->should_log(_log_bit)) {
+        return;
+    }
+
+    struct log_Optflow pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
+        time_us         : AP_HAL::micros64(),
+        surface_quality : _state.surface_quality,
+        flow_x          : _state.flowRate.x,
+        flow_y          : _state.flowRate.y,
+        body_x          : _state.bodyRate.x,
+        body_y          : _state.bodyRate.y
+    };
+    instance->WriteBlock(&pkt, sizeof(pkt));
+}
+
+
+
+// singleton instance
+OpticalFlow *OpticalFlow::_singleton;
+
+namespace AP {
+
+OpticalFlow *opticalflow()
+{
+    return OpticalFlow::get_singleton();
+}
+
+}
