@@ -25,6 +25,8 @@
 #define AP_SERIALMANAGER_DEVO_BUFSIZE_TX        32
 
 #include "AP_Devo_Telem.h"
+
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 
@@ -32,8 +34,7 @@ extern const AP_HAL::HAL& hal;
 
 
 //constructor
-AP_DEVO_Telem::AP_DEVO_Telem(const AP_AHRS &ahrs) :
-    _ahrs(ahrs)
+AP_DEVO_Telem::AP_DEVO_Telem()
 {
     devoPacket.header = DEVOM_SYNC_BYTE;
 }
@@ -81,6 +82,7 @@ void AP_DEVO_Telem::send_frames(uint8_t control_mode)
         return;
     }
 
+    const AP_AHRS &_ahrs = AP::ahrs();
     const AP_GPS &gps = AP::gps();
     Location loc;
 
