@@ -681,10 +681,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
             if (!is_zero(packet.param1)) {
                 return MAV_RESULT_FAILED;
             }
-            // sanity check location
-            if (!check_latlng(packet.param5, packet.param6)) {
-                return MAV_RESULT_FAILED;
-            }
             Location new_home_loc;
             new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
             new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
@@ -949,10 +945,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 // ignore this failure
             }
         } else {
-            // sanity check location
-            if (!check_latlng(packet.latitude, packet.longitude)) {
-                break;
-            }
             Location new_home_loc;
             new_home_loc.lat = packet.latitude;
             new_home_loc.lng = packet.longitude;
