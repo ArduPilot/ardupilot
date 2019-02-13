@@ -3631,20 +3631,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int
     if (!is_zero(packet.param1)) {
         return MAV_RESULT_FAILED;
     }
-    if ((packet.x == 0) && (packet.y == 0) && is_zero(packet.z)) {
-        // don't allow the 0,0 position
-        return MAV_RESULT_FAILED;
-    }
     // check frame type is supported
     if (packet.frame != MAV_FRAME_GLOBAL &&
         packet.frame != MAV_FRAME_GLOBAL_INT &&
         packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
         packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
         return MAV_RESULT_UNSUPPORTED;
-    }
-    // sanity check location
-    if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_FAILED;
     }
     Location new_home_loc {};
     new_home_loc.lat = packet.x;
