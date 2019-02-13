@@ -24,7 +24,7 @@
 #if defined(STM32H7)
 // always use a bouncebuffer on H7, to ensure alignment and padding
 #define IS_DMA_SAFE(addr) false
-#elif DTCM_RAM_SIZE_KB > 0
+#elif defined(DTCM_RAM_SIZE_KB)
 // on F7 and H7 we check we are in the DTCM region, and 16 bit aligned
 #define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & ((0xFFFFFFFF & ~(DTCM_RAM_SIZE_KB*1024U-1)) | 1U)) == 0x20000000)
 #else
