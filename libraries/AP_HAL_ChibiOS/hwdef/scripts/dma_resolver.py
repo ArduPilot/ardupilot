@@ -182,7 +182,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             shared = ' // shared %s' % ','.join(stream_assign[stream])
         if curr_dict[key] == "STM32_DMA_STREAM_ID_ANY":
             f.write("#define %-30s STM32_DMA_STREAM_ID_ANY\n" % (chibios_dma_define_name(key)+'STREAM'))
-            f.write("#define %-30s 0U\n" % (chibios_dma_define_name(key)+'CHAN'))
+            f.write("#define %-30s STM32_DMAMUX1_%s\n" % (chibios_dma_define_name(key)+'CHAN', key))
             continue
         else:
                 f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
