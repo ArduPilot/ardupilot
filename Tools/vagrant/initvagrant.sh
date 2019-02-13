@@ -50,10 +50,11 @@ pip install pexpect
 
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
-# build JSB sim
+# install tools suitable for building JSB sim:
 apt-get install -y libtool automake autoconf libexpat1-dev
 #  libtool-bin
-sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
+# we no longer build JSBSIM by default, but leaving this here anyway:
+#sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
 
 # adjust environment for every login shell:
 DOT_PROFILE=/home/$VAGRANT_USER/.profile
