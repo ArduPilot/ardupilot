@@ -284,6 +284,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                     dmamode |= STM32_DMA_CR_CHSEL(STM32_DMA_GETCHANNEL(sdef.dma_rx_stream_id,
                                                                        sdef.dma_rx_channel_id));
                     dmamode |= STM32_DMA_CR_PL(0);
+                    cacheBufferInvalidate(rx_bounce_buf, RX_BOUNCE_BUFSIZE);
                     dmaStreamSetMemory0(rxdma, rx_bounce_buf);
                     dmaStreamSetTransactionSize(rxdma, RX_BOUNCE_BUFSIZE);
                     dmaStreamSetMode(rxdma, dmamode    | STM32_DMA_CR_DIR_P2M |
@@ -412,6 +413,7 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     uart_drv->receive_timestamp_update();
     
     //restart the DMA transfers
+    cacheBufferInvalidate(uart_drv->rx_bounce_buf, RX_BOUNCE_BUFSIZE);
     dmaStreamSetMemory0(uart_drv->rxdma, uart_drv->rx_bounce_buf);
     dmaStreamSetTransactionSize(uart_drv->rxdma, RX_BOUNCE_BUFSIZE);
     dmaStreamEnable(uart_drv->rxdma);
@@ -724,6 +726,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
 
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
+    cacheBufferFlush(tx_bounce_buf, tx_len);
     dmaStreamSetMemory0(txdma, tx_bounce_buf);
     dmaStreamSetTransactionSize(txdma, tx_len);
     uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
@@ -875,6 +878,7 @@ void UARTDriver::_timer_tick(void)
             }
             //DMA disabled by idle interrupt never got a chance to be handled
             //we will enable it here
+            cacheBufferInvalidate(rx_bounce_buf, RX_BOUNCE_BUFSIZE);
             dmaStreamSetMemory0(rxdma, rx_bounce_buf);
             dmaStreamSetTransactionSize(rxdma, RX_BOUNCE_BUFSIZE);
             dmaStreamEnable(rxdma);

@@ -52,6 +52,7 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     dmamode |= STM32_DMA_CR_PL(0);
     dmamode |= STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_PSIZE_WORD |
         STM32_DMA_CR_MSIZE_WORD | STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE;
+    cacheBufferInvalidate(signal, SOFTSIG_BOUNCE_BUF_SIZE*4);
     dmaStreamSetMemory0(dma, signal);
     dmaStreamSetTransactionSize(dma, SOFTSIG_BOUNCE_BUF_SIZE);
     dmaStreamSetMode(dma, dmamode);
@@ -98,6 +99,7 @@ void SoftSigReader::_irq_handler(void* self, uint32_t flags)
     //restart the DMA transfers
     dmaStreamDisable(sig_reader->dma);
     dmaStreamSetPeripheral(sig_reader->dma, &sig_reader->_icu_drv->tim->DMAR);
+    cacheBufferInvalidate(sig_reader->signal, SOFTSIG_BOUNCE_BUF_SIZE*4);
     dmaStreamSetMemory0(sig_reader->dma, sig_reader->signal);
     dmaStreamSetTransactionSize(sig_reader->dma, SOFTSIG_BOUNCE_BUF_SIZE);
     dmaStreamSetMode(sig_reader->dma, sig_reader->dmamode);
