@@ -75,11 +75,9 @@ class set_default_parameters(Task.Task):
         sys.path.append(os.path.dirname(apj_tool))
         from apj_tool import embedded_defaults
         defaults = embedded_defaults(self.inputs[0].abspath())
-        if not defaults.find():
-            print("Error: Param defaults support not found in firmware")
-            sys.exit(1)
-        defaults.set_file(abs_default_parameters)
-        defaults.save()
+        if defaults.find():
+            defaults.set_file(abs_default_parameters)
+            defaults.save()
 
 
 class generate_bin(Task.Task):
