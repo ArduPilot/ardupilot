@@ -299,7 +299,7 @@ private:
     AP_Frsky_Telem frsky_telemetry;
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
-    AP_DEVO_Telem devo_telemetry{ahrs};
+    AP_DEVO_Telem devo_telemetry;
 #endif
 
     uint32_t control_sensors_present;
