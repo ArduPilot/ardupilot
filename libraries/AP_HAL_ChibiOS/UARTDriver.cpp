@@ -401,22 +401,21 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     if (!uart_drv->sdef.dma_rx) {
         return;
     }
+    cacheBufferInvalidate(uart_drv->rx_bounce_buf, RX_BOUNCE_BUFSIZE);
     uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->rxdma);
-    if (len == 0) {
-        return;
-    }
-
-    if (uart_drv->half_duplex) {
-        uint32_t now = AP_HAL::micros();
-        if (now - uart_drv->hd_write_us < uart_drv->hd_read_delay_us) {
-            len = 0;
+    if (len > 0) {
+        if (uart_drv->half_duplex) {
+            uint32_t now = AP_HAL::micros();
+            if (now - uart_drv->hd_write_us < uart_drv->hd_read_delay_us) {
+                len = 0;
+            }
         }
+
+        cacheBufferInvalidate(uart_drv->rx_bounce_buf, len);
+        uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
+
+        uart_drv->receive_timestamp_update();
     }
-
-    cacheBufferInvalidate(uart_drv->rx_bounce_buf, len);
-    uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
-
-    uart_drv->receive_timestamp_update();
     
     //restart the DMA transfers
     dmaStreamSetMemory0(uart_drv->rxdma, uart_drv->rx_bounce_buf);
