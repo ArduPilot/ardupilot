@@ -122,11 +122,14 @@ void Shared_DMA::lock_core(void)
             locks[stream_id2].deallocate = deallocate;
             locks[stream_id2].obj = this;
         }
-    } else if (stream_id1 == STM32_DMA_STREAM_ID_ANY ||
-               stream_id2 == STM32_DMA_STREAM_ID_ANY) {
+    }
+#ifdef STM32_DMA_STREAM_ID_ANY
+    else if (stream_id1 == STM32_DMA_STREAM_ID_ANY ||
+             stream_id2 == STM32_DMA_STREAM_ID_ANY) {
         // call allocator without needing locking
         allocate(this);
     }
+#endif
     have_lock = true;
 }
 
