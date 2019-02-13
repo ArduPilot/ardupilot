@@ -40,7 +40,7 @@ extern AP_IOMCU iomcu;
 #define ANLOGIN_DEBUGGING 0
 
 // base voltage scaling for 12 bit 3.3V ADC
-#define VOLTAGE_SCALING (3.3f/4096.0f)
+#define VOLTAGE_SCALING (3.3f/(1<<12))
 
 #if ANLOGIN_DEBUGGING
  # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
@@ -188,6 +188,8 @@ void AnalogSource::_add_value(float v, float vcc5V)
 void AnalogIn::adccallback(ADCDriver *adcp)
 {
     const adcsample_t *buffer = samples;
+
+    cacheBufferInvalidate(buffer, sizeof(adcsample_t)*ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS);
     for (uint8_t i = 0; i < ADC_DMA_BUF_DEPTH; i++) {
         for (uint8_t j = 0; j < ADC_GRP1_NUM_CHANNELS; j++) { 
             sample_sum[j] += *buffer++;
@@ -213,7 +215,9 @@ void AnalogIn::init()
     adcgrpcfg.num_channels = ADC_GRP1_NUM_CHANNELS;
     adcgrpcfg.end_cb = adccallback;
 #if defined(STM32H7)
-    adcgrpcfg.sqr[0] = ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS);
+    // use 12 bits resolution to keep scaling factors the same as other boards.
+    // todo: enable oversampling in cfgr2 ?
+    adcgrpcfg.cfgr = ADC_CFGR_CONT | ADC_CFGR_RES_12BITS;
 #else
     adcgrpcfg.sqr1 = ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS);
     adcgrpcfg.cr2 = ADC_CR2_SWSTART;
@@ -223,8 +227,15 @@ void AnalogIn::init()
         uint8_t chan = pin_config[i].channel;
         // setup cycles per sample for the channel
 #if defined(STM32H7)
-        adcgrpcfg.smpr[i/10] |= ADC_SMPR_SMP_384P5 << (3*(chan%10));
-        adcgrpcfg.sqr[i/6] |= chan << (5*(i%6));
+        adcgrpcfg.pcsel |= (1<<chan);
+        adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_384P5 << (3*(chan%10));
+        if (i < 4) {
+            adcgrpcfg.sqr[0] |= chan << (6*(i+1));
+        } else if (i < 9) {
+            adcgrpcfg.sqr[1] |= chan << (6*(i-4));
+        } else {
+            adcgrpcfg.sqr[2] |= chan << (6*(i-9));
+        }
 #else
         if (chan < 10) {
             adcgrpcfg.smpr2 |= ADC_SAMPLE_480 << (3*chan);
