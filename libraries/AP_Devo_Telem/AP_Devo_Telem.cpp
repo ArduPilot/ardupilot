@@ -40,8 +40,10 @@ AP_DEVO_Telem::AP_DEVO_Telem()
 }
 
 // init - perform require initialisation including detecting which protocol to use
-void AP_DEVO_Telem::init(const AP_SerialManager& serial_manager)
+void AP_DEVO_Telem::init()
 {
+    const AP_SerialManager& serial_manager = AP::serialmanager();
+
     // check for DEVO_DPort
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Devo_Telem, 0))) {
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
