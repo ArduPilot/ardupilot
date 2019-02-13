@@ -239,6 +239,9 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 #else
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
 #endif // STM32F7
+#if STM32_DMA_SUPPORTS_DMAMUX
+                    dmaSetRequestSource(rxdma, sdef.dma_rx_channel_id);
+#endif
                 }
                 if (sdef.dma_tx) {
                     // we only allow for sharing of the TX DMA channel, not the RX
@@ -330,6 +333,9 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 #else
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
 #endif // STM32F7
+#if STM32_DMA_SUPPORTS_DMAMUX
+    dmaSetRequestSource(txdma, sdef.dma_tx_channel_id);
+#endif
 #endif // HAL_USE_SERIAL
 }
 
