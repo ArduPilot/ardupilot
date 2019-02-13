@@ -80,10 +80,6 @@ void Rover::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
-#if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.init();
-#endif
-
 #if OSD_ENABLED == ENABLED
     osd.init();
 #endif
@@ -255,10 +251,6 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
     // but it should be harmless to disable the fence temporarily in these situations as well
     g2.fence.manual_recovery_start();
-
-#if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.update_control_mode(control_mode->mode_number());
-#endif
 
 #if CAMERA == ENABLED
     camera.set_is_auto_mode(control_mode->mode_number() == Mode::Number::AUTO);
