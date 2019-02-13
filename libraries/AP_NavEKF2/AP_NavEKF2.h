@@ -423,7 +423,6 @@ private:
     const uint8_t flowIntervalMax_ms = 100;       // maximum allowable time between flow fusion events
     const uint16_t gndEffectTimeout_ms = 1000;     // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
-    const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint8_t fusionTimeStep_ms = 10;          // The minimum time interval between covariance predictions and measurement fusions in msec
 
     struct {

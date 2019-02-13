@@ -78,23 +78,20 @@ void NavEKF2_core::SelectFlowFusion()
 /*
 Estimation of terrain offset using a single state EKF
 The filter can fuse motion compensated optical flow rates and range finder measurements
+Equations generated using https://github.com/PX4/ecl/tree/master/EKF/matlab/scripts/Terrain%20Estimator
 */
 void NavEKF2_core::EstimateTerrainOffset()
 {
     // start performance timer
     hal.util->perf_begin(_perf_TerrainOffset);
 
-    // constrain height above ground to be above range measured on ground
-    float heightAboveGndEst = MAX((terrainState - stateStruct.position.z), rngOnGnd);
-
     // calculate a predicted LOS rate squared
     float velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
-    float losRateSq = velHorizSq / sq(heightAboveGndEst);
 
-    // don't update terrain offset state if there is no range finder
-    // don't update terrain state if not generating enough LOS rate, or without GPS, as it is poorly observable
+    // don't fuse flow data if LOS rate is misaligned, without GPS, or insufficient velocity, as it is poorly observable
+    // don't fuse flow data if it exceeds validity limits
     // don't update terrain state if we are using it as a height reference in the main filter
-    bool cantFuseFlowData = (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f);
+    bool cantFuseFlowData = (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));
     if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == HGT_SOURCE_RNG)) {
         // skip update
         inhibitGndState = true;
@@ -112,7 +109,7 @@ void NavEKF2_core::EstimateTerrainOffset()
 
         // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copters vertical velocity
         float timeLapsed = MIN(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
-        float Pincrement = (distanceTravelledSq * sq(0.01f*float(frontend->gndGradientSigma))) + sq(timeLapsed)*P[5][5];
+        float Pincrement = (distanceTravelledSq * sq(frontend->_terrGradMax)) + sq(timeLapsed)*P[5][5];
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
@@ -165,88 +162,109 @@ void NavEKF2_core::EstimateTerrainOffset()
 
         if (fuseOptFlowData && !cantFuseFlowData) {
 
-            Vector3f relVelSensor; // velocity of sensor relative to ground in sensor axes
-            float losPred; // predicted optical flow angular rate measurement
+            Vector3f relVelSensor;          // velocity of sensor relative to ground in sensor axes
+            Vector2f losPred;               // predicted optical flow angular rate measurement
             float q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
             float q1 = stateStruct.quat[1]; // quaternion at optical flow measurement time
             float q2 = stateStruct.quat[2]; // quaternion at optical flow measurement time
             float q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
             float K_OPT;
             float H_OPT;
+            Vector2f auxFlowObsInnovVar;
 
             // predict range to centre of image
-            float flowRngPred = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / prevTnb.c.z;
+            float flowRngPred = MAX((terrainState - stateStruct.position.z),rngOnGnd) / prevTnb.c.z;
 
             // constrain terrain height to be below the vehicle
-            terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
+            terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
 
             // calculate relative velocity in sensor frame
             relVelSensor = prevTnb*stateStruct.velocity;
 
             // divide velocity by range, subtract body rates and apply scale factor to
             // get predicted sensed angular optical rates relative to X and Y sensor axes
-            losPred =   norm(relVelSensor.x, relVelSensor.y)/flowRngPred;
+            losPred.x =   relVelSensor.y / flowRngPred;
+            losPred.y = - relVelSensor.x / flowRngPred;
 
             // calculate innovations
-            auxFlowObsInnov = losPred - norm(ofDataDelayed.flowRadXYcomp.x, ofDataDelayed.flowRadXYcomp.y);
+            auxFlowObsInnov = losPred - ofDataDelayed.flowRadXYcomp;
 
-            // calculate observation jacobian
-            float t3 = sq(q0);
-            float t4 = sq(q1);
-            float t5 = sq(q2);
-            float t6 = sq(q3);
-            float t10 = q0*q3*2.0f;
-            float t11 = q1*q2*2.0f;
-            float t14 = t3+t4-t5-t6;
-            float t15 = t14*stateStruct.velocity.x;
-            float t16 = t10+t11;
-            float t17 = t16*stateStruct.velocity.y;
-            float t18 = q0*q2*2.0f;
-            float t19 = q1*q3*2.0f;
-            float t20 = t18-t19;
-            float t21 = t20*stateStruct.velocity.z;
-            float t2 = t15+t17-t21;
-            float t7 = t3-t4-t5+t6;
-            float t8 = stateStruct.position[2]-terrainState;
-            float t9 = 1.0f/sq(t8);
-            float t24 = t3-t4+t5-t6;
-            float t25 = t24*stateStruct.velocity.y;
-            float t26 = t10-t11;
-            float t27 = t26*stateStruct.velocity.x;
-            float t28 = q0*q1*2.0f;
-            float t29 = q2*q3*2.0f;
-            float t30 = t28+t29;
-            float t31 = t30*stateStruct.velocity.z;
-            float t12 = t25-t27+t31;
-            float t13 = sq(t7);
-            float t22 = sq(t2);
-            float t23 = 1.0f/(t8*t8*t8);
-            float t32 = sq(t12);
-            H_OPT = 0.5f*(t13*t22*t23*2.0f+t13*t23*t32*2.0f)/sqrtf(t9*t13*t22+t9*t13*t32);
+            // calculate observation jacobians 
+            float t2 = q0*q0;
+            float t3 = q1*q1;
+            float t4 = q2*q2;
+            float t5 = q3*q3;
+            float t6 = stateStruct.position.z - terrainState;
+            float t7 = 1.0f / (t6*t6);
+            float t8 = q0*q3*2.0f;
+            float t9 = t2-t3-t4+t5;
 
-            // calculate innovation variances
-            auxFlowObsInnovVar = H_OPT*Popt*H_OPT + R_LOS;
+            // prevent the state variances from becoming badly conditioned
+            Popt = MAX(Popt,1E-6f);
+
+            // calculate observation noise variance from parameter
+            float flow_noise_variance = sq(MAX(frontend->_flowNoise, 0.05f));
+
+            // Fuse Y axis data
+
+            // Calculate observation partial derivative
+            H_OPT = t7*t9*(-stateStruct.velocity.z*(q0*q2*2.0-q1*q3*2.0)+stateStruct.velocity.x*(t2+t3-t4-t5)+stateStruct.velocity.y*(t8+q1*q2*2.0));
+
+            // calculate innovation variance
+            auxFlowObsInnovVar.y = H_OPT * Popt * H_OPT + flow_noise_variance;
 
             // calculate Kalman gain
-            K_OPT = Popt*H_OPT/auxFlowObsInnovVar;
+            K_OPT = Popt * H_OPT / auxFlowObsInnovVar.y;
 
             // calculate the innovation consistency test ratio
-            auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar);
+            auxFlowTestRatio.y = sq(auxFlowObsInnov.y) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.y);
 
             // don't fuse if optical flow data is outside valid range
-            if (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) < frontend->_maxFlowRate) {
+            if (auxFlowTestRatio.y < 1.0f) {
 
                 // correct the state
-                terrainState -= K_OPT * auxFlowObsInnov;
+                terrainState -= K_OPT * auxFlowObsInnov.y;
 
                 // constrain the state
-                terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
+                terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
+
+                // update intermediate variables used when fusing the X axis
+                t6 = stateStruct.position.z - terrainState;
+                t7 = 1.0f / (t6*t6);
 
                 // correct the covariance
                 Popt = Popt - K_OPT * H_OPT * Popt;
 
-                // prevent the state variances from becoming negative
-                Popt = MAX(Popt,0.0f);
+                // prevent the state variances from becoming badly conditioned
+                Popt = MAX(Popt,1E-6f);
+            }
+
+            // fuse X axis data
+            H_OPT = -t7*t9*(stateStruct.velocity.z*(q0*q1*2.0+q2*q3*2.0)+stateStruct.velocity.y*(t2-t3+t4-t5)-stateStruct.velocity.x*(t8-q1*q2*2.0));
+
+            // calculate innovation variances
+            auxFlowObsInnovVar.x = H_OPT * Popt * H_OPT + flow_noise_variance;
+
+            // calculate Kalman gain
+            K_OPT = Popt * H_OPT / auxFlowObsInnovVar.x;
+
+            // calculate the innovation consistency test ratio
+            auxFlowTestRatio.x = sq(auxFlowObsInnov.x) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.x);
+
+            // don't fuse if optical flow data is outside valid range
+            if (auxFlowTestRatio.x < 1.0f) {
+
+                // correct the state
+                terrainState -= K_OPT * auxFlowObsInnov.x;
+
+                // constrain the state
+                terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
+
+                // correct the covariance
+                Popt = Popt - K_OPT * H_OPT * Popt;
+
+                // prevent the state variances from becoming badly conditioned
+                Popt = MAX(Popt,1E-6f);
             }
         }
     }

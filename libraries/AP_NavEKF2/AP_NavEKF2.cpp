@@ -489,7 +489,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: TERR_GRAD
     // @DisplayName: Maximum terrain gradient
-    // @Description: Specifies the maximum gradient of the terrain below the vehicle when it is using range finder as a height reference
+    // @Description: Specifies the maximum gradient of the terrain below the vehicle assumed when it is fusing range finder or optical flow to estimate terrain height.
     // @Range: 0 0.2
     // @Increment: 0.01
     // @User: Advanced

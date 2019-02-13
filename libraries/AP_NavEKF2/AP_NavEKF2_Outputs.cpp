@@ -61,7 +61,7 @@ void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     gndOffset = terrainState;
     flowInnovX = innovOptFlow[0];
     flowInnovY = innovOptFlow[1];
-    auxInnov = auxFlowObsInnov;
+    auxInnov = norm(auxFlowObsInnov.x,auxFlowObsInnov.y);
     HAGL = terrainState - stateStruct.position.z;
     rngInnov = innovRng;
     range = rangeDataDelayed.rng;
