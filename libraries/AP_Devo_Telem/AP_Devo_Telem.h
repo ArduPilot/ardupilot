@@ -27,8 +27,7 @@ public:
     AP_DEVO_Telem(const AP_DEVO_Telem &other) = delete;
     AP_DEVO_Telem &operator=(const AP_DEVO_Telem&) = delete;
 
-    // init - perform require initialisation including detecting which protocol to use
-    void init(const AP_SerialManager& serial_manager);
+    void init();
 
     // update flight control mode. The control mode is vehicle type specific
     void update_control_mode(uint8_t mode)
