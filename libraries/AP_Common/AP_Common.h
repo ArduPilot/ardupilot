@@ -58,12 +58,6 @@
  #define WARN_IF_UNUSED
 #endif
 
-// use this to avoid issues between C++11 with NuttX and C++10 on
-// other platforms.
-#if !(defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L)
-# define constexpr const
-#endif
-
 #define NORETURN __attribute__ ((noreturn))
 
 #define ToRad(x) radians(x)	// *pi/180
