@@ -206,10 +206,10 @@ SPIDEV icm20608-am    SPI1 DEVID2  ACCEL_EXT_CS MODE3  4*MHZ  8*MHZ
 SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
 SPIDEV mpu9250_ext    SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
 SPIDEV hmc5843        SPI1 DEVID5  MAG_CS       MODE3 11*MHZ 11*MHZ
-SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ 
-SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ 
-SPIDEV lsm9ds0_ext_g  SPI4 DEVID4  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ 
-SPIDEV lsm9ds0_ext_am SPI4 DEVID3  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ 
+SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_ext_g  SPI4 DEVID4  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_ext_am SPI4 DEVID3  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
 SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ 
 SPIDEV external0m0    SPI4 DEVID5  MPU_EXT_CS   MODE0  2*MHZ  2*MHZ
 SPIDEV external0m1    SPI4 DEVID5  MPU_EXT_CS   MODE1  2*MHZ  2*MHZ
@@ -238,8 +238,7 @@ define HAL_HAVE_IMU_HEATER 1
 # Enable FAT filesystem support (needs a microSD defined via SDIO).
 # define HAL_OS_FATFS_IO 1
 
-# Enable RTSCTS support. You should define this if you have any UARTs
-with RTS/CTS pins.
+# Enable RTSCTS support. You should define this if you have any UARTs with RTS/CTS pins.
 define AP_FEATURE_RTSCTS 1
 
 # Enable SBUS_OUT on IOMCU (if you have an IOMCU).
@@ -252,12 +251,8 @@ define HAL_BATT_CURR_PIN 3
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 
-# This defines the default maximum clock on I2C devices.
-define HAL_I2C_MAX_CLOCK 100000
-
 # List of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
 ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
-
