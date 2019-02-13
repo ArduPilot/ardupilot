@@ -414,7 +414,7 @@ private:
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
     // DEVO-M telemetry support
-    AP_DEVO_Telem devo_telemetry {ahrs};
+    AP_DEVO_Telem devo_telemetry;
 #endif
 
     // Variables for extended status MAVLink messages
