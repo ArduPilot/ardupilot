@@ -840,7 +840,7 @@ def write_UART_config(f):
     if not need_uart_driver and not args.bootloader:
         f.write('''
 #ifndef HAL_USE_SERIAL
-#define HAL_USE_SERIAL FALSE
+#define HAL_USE_SERIAL HAL_USE_SERIAL_USB
 #endif
 ''')
 
@@ -933,7 +933,11 @@ def write_PWM_config(f):
 
     if not pwm_out:
         print("No PWM output defined")
-        f.write('#define HAL_USE_PWM FALSE\n')
+        f.write('''
+#ifndef HAL_USE_PWM
+#define HAL_USE_PWM FALSE
+#endif
+''')
         
     if rc_in is not None:
         (n, chan, compl) = parse_timer(rc_in.label)
