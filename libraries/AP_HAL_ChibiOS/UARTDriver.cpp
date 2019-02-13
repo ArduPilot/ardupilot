@@ -287,7 +287,6 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                     dmamode |= STM32_DMA_CR_CHSEL(STM32_DMA_GETCHANNEL(sdef.dma_rx_stream_id,
                                                                        sdef.dma_rx_channel_id));
                     dmamode |= STM32_DMA_CR_PL(0);
-                    cacheBufferInvalidate(rx_bounce_buf, RX_BOUNCE_BUFSIZE);
                     dmaStreamSetMemory0(rxdma, rx_bounce_buf);
                     dmaStreamSetTransactionSize(rxdma, RX_BOUNCE_BUFSIZE);
                     dmaStreamSetMode(rxdma, dmamode    | STM32_DMA_CR_DIR_P2M |
@@ -414,12 +413,12 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
         }
     }
 
+    cacheBufferInvalidate(uart_drv->rx_bounce_buf, len);
     uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
 
     uart_drv->receive_timestamp_update();
     
     //restart the DMA transfers
-    cacheBufferInvalidate(uart_drv->rx_bounce_buf, RX_BOUNCE_BUFSIZE);
     dmaStreamSetMemory0(uart_drv->rxdma, uart_drv->rx_bounce_buf);
     dmaStreamSetTransactionSize(uart_drv->rxdma, RX_BOUNCE_BUFSIZE);
     dmaStreamEnable(uart_drv->rxdma);
@@ -875,6 +874,7 @@ void UARTDriver::_timer_tick(void)
         if (!(rxdma->stream->CR & STM32_DMA_CR_EN)) {
             uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(rxdma);
             if (len != 0) {
+                cacheBufferInvalidate(rx_bounce_buf, len);
                 _readbuf.write(rx_bounce_buf, len);
 
                 receive_timestamp_update();
@@ -884,7 +884,6 @@ void UARTDriver::_timer_tick(void)
             }
             //DMA disabled by idle interrupt never got a chance to be handled
             //we will enable it here
-            cacheBufferInvalidate(rx_bounce_buf, RX_BOUNCE_BUFSIZE);
             dmaStreamSetMemory0(rxdma, rx_bounce_buf);
             dmaStreamSetTransactionSize(rxdma, RX_BOUNCE_BUFSIZE);
             dmaStreamEnable(rxdma);
