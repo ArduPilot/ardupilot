@@ -2017,6 +2017,8 @@ void GCS::setup_uarts(AP_SerialManager &serial_manager)
     }
 
     frsky.init();
+
+    devo_telemetry.init();
 }
 
 // report battery2 state
