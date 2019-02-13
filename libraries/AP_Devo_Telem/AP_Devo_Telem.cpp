@@ -33,13 +33,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-
-//constructor
-AP_DEVO_Telem::AP_DEVO_Telem()
-{
-    devoPacket.header = DEVOM_SYNC_BYTE;
-}
-
 void AP_DEVO_Telem::init()
 {
     const AP_SerialManager& serial_manager = AP::serialmanager();
@@ -84,6 +77,19 @@ void AP_DEVO_Telem::send_frames()
         return;
     }
 
+    struct PACKED {
+        uint8_t header;                                ///< 0xAA for a valid packet
+        int32_t lon;
+        int32_t lat;
+        int32_t alt;
+        int16_t speed;
+        int16_t temp;
+        int16_t volt;
+        uint8_t checksum8;
+    } devoPacket{};
+
+    devoPacket.header = DEVOM_SYNC_BYTE;
+
     const AP_AHRS &_ahrs = AP::ahrs();
     const AP_GPS &gps = AP::gps();
     Location loc;
@@ -100,11 +106,6 @@ void AP_DEVO_Telem::send_frames()
         float alt;
         _ahrs.get_relative_position_D_home(alt);
         devoPacket.alt   = alt * -100.0f; // coordinates was in NED, so it needs to change sign. Protocol requires in cm!
-    } else {
-        devoPacket.lat = 0;
-        devoPacket.lon = 0;
-        devoPacket.speed = 0;
-        devoPacket.alt=0;
     }
 
 
@@ -112,8 +113,9 @@ void AP_DEVO_Telem::send_frames()
     devoPacket.volt = roundf(AP::battery().voltage() * 10.0f);
     devoPacket.temp = gcs().custom_mode(); // Send mode as temperature
 
-    devoPacket.checksum8 = 0; // Init Checksum with zero Byte
-
+    // emit the packet to the port byte-by-byte, calculating checksum
+    // as we go.  Note we are stepping backwards through the structure
+    // - presumably to get endianness correct on the entries!
     uint8_t *b = (uint8_t *)&devoPacket;
     for (uint8_t i = sizeof(devoPacket)-1; i !=0; i--) {
         _port->write(b, 1);
