@@ -23,6 +23,7 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_RTC/JitterCorrection.h>
 #include <AP_Common/Bitmask.h>
+#include <AP_Devo_Telem/AP_Devo_Telem.h>
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
@@ -763,6 +764,9 @@ public:
 
     // frsky backend
     AP_Frsky_Telem frsky;
+
+    // Devo backend
+    AP_DEVO_Telem devo_telemetry;
 
     // install an alternative protocol handler
     bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
