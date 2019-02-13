@@ -37,7 +37,6 @@
 #include <AP_Camera/AP_Camera.h>                    // Camera triggering
 #include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
 #include <AP_Declination/AP_Declination.h>          // Compass declination library
-#include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
 #include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
 #include <AP_L1_Control/AP_L1_Control.h>
@@ -297,10 +296,6 @@ private:
     AP_BattMonitor battery{MASK_LOG_CURRENT,
                            FUNCTOR_BIND_MEMBER(&Rover::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
-
-#if DEVO_TELEM_ENABLED == ENABLED
-    AP_DEVO_Telem devo_telemetry;
-#endif
 
     // 3D Location vectors
     // Location structure defined in AP_Common
