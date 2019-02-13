@@ -39,7 +39,6 @@ AP_DEVO_Telem::AP_DEVO_Telem()
     devoPacket.header = DEVOM_SYNC_BYTE;
 }
 
-// init - perform require initialisation including detecting which protocol to use
 void AP_DEVO_Telem::init()
 {
     const AP_SerialManager& serial_manager = AP::serialmanager();
@@ -72,7 +71,7 @@ uint32_t AP_DEVO_Telem::gpsDdToDmsFormat(float ddm)
 
 /*
   send_frames - sends updates down telemetry link
-  should be called by main program at 1hz
+  should be called at 1hz
 */
 
 #define DEVO_SPEED_FACTOR 0.0194384f
