@@ -16,13 +16,12 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 class AP_DEVO_Telem {
 public:
     //constructor
-    AP_DEVO_Telem(const AP_AHRS &ahrs);
+    AP_DEVO_Telem();
 
     /* Do not allow copies */
     AP_DEVO_Telem(const AP_DEVO_Telem &other) = delete;
@@ -62,7 +61,6 @@ private:
 
     uint8_t _control_mode;
 
-    const AP_AHRS &_ahrs;                   // reference to attitude estimate
     AP_HAL::UARTDriver *_port;              // UART used to send data to receiver
     uint32_t _last_frame_ms;
 
