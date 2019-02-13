@@ -53,7 +53,7 @@ void ModeGuided::update()
             if (have_attitude_target) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, true);
+                calc_throttle(_desired_speed, true, true);
             } else {
                 // we have reached the destination so stay here
                 if (rover.is_boat()) {
