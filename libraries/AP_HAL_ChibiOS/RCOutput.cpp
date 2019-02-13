@@ -823,6 +823,9 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
             chSysLock();
             group.dma = dmaStreamAllocI(group.dma_up_stream_id, 10, dma_irq_callback, &group);
             chSysUnlock();
+#if STM32_DMA_SUPPORTS_DMAMUX
+            dmaSetRequestSource(group.dma, group.dma_up_channel);
+#endif
         }
     }
 }

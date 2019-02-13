@@ -44,6 +44,9 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
                           (void *)this);
     osalDbgAssert(dma, "stream allocation failed");
     chSysUnlock();
+#if STM32_DMA_SUPPORTS_DMAMUX
+    dmaSetRequestSource(dma, dma_channel);
+#endif
     //setup address for full word transfer from Timer
     dmaStreamSetPeripheral(dma, &icu_drv->tim->DMAR);
 
