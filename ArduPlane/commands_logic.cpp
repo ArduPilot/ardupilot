@@ -905,8 +905,8 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
             // silently ignore error
         }
     } else {
-        if (AP::ahrs().set_home(cmd.content.location)) {
-            gcs().send_ekf_origin();
+        if (!AP::ahrs().set_home(cmd.content.location)) {
+            // silently ignore failure
         }
     }
 }
