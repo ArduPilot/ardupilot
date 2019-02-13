@@ -104,7 +104,7 @@ void Plane::init_ardupilot()
     frsky_telemetry.init(MAV_TYPE_FIXED_WING);
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.init(serial_manager);
+    devo_telemetry.init();
 #endif
 
 #if OSD_ENABLED == ENABLED
