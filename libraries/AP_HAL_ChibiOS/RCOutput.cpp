@@ -985,6 +985,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
       up with this great method.
      */
     dmaStreamSetPeripheral(group.dma, &(group.pwm_drv->tim->DMAR));
+    cacheBufferInvalidate(group.dma_buffer, buffer_length);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
     dmaStreamSetTransactionSize(group.dma, buffer_length/sizeof(uint32_t));
     dmaStreamSetFIFO(group.dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
