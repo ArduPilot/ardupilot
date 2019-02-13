@@ -50,7 +50,7 @@ private:
 
     uint32_t gpsDdToDmsFormat(float ddm);
 
-    // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
+    // tick - main call to send updates to transmitter
     void tick(void);
 
     // send_frames - sends updates down telemetry link
