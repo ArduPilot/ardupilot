@@ -20,7 +20,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_Navigation/AP_Navigation.h>
-#include <GCS_MAVLink/GCS.h>
 #include "AP_Landing_Deepstall.h"
 
 /// @class  AP_Landing
