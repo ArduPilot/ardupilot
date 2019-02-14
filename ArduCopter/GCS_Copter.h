@@ -20,6 +20,8 @@ public:
         return _chan[ofs];
     };
 
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+
 private:
 
     GCS_MAVLINK_Copter _chan[MAVLINK_COMM_NUM_BUFFERS];
