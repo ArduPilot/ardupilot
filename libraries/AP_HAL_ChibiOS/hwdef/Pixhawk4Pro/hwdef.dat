@@ -12,6 +12,9 @@ APJ_BOARD_ID 139
 
 FLASH_SIZE_KB 2048
 
+# with 2M flash we can afford to optimize for speed
+env OPTIMIZE -O3
+
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
 
