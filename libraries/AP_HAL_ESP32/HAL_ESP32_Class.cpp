@@ -53,36 +53,12 @@ HAL_ESP32::HAL_ESP32() :
     )
 {}
 
-void print_stats()
-{
-    static int64_t last_run = 0;
-    if (AP_HAL::millis64() - last_run > 60000) {
-        char buffer[1024];
-        vTaskGetRunTimeStats(buffer);
-        printf("\n\n%s\n", buffer);
-        heap_caps_print_heap_info(0);
-        last_run = AP_HAL::millis64();
-    }
-}
-
 void HAL_ESP32::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
-    hal.uartA->begin(115200);
-    hal.uartB->begin(38400);
-    hal.uartC->begin(57600);
-    hal.analogin->init();
+    ((ESP32::Scheduler *)hal.scheduler)->set_callbacks(callbacks);
     hal.scheduler->init();
-
-    callbacks->setup();
-    hal.scheduler->system_initialized();
-
-    while (true) {
-        callbacks->loop();
-        hal.scheduler->delay_microseconds(1);
-        print_stats();
-    }
-
 }
+
 
 void AP_HAL::init()
 {
