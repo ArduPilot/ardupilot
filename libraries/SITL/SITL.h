@@ -175,6 +175,7 @@ public:
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
     AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
+    AP_Float flow_noise; // optical flow measurement noise (rad/sec)
 
     // wind control
     enum WindType {
