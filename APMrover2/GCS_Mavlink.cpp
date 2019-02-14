@@ -75,17 +75,6 @@ MAV_STATE GCS_MAVLINK_Rover::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void GCS_Rover::get_sensor_status_flags(uint32_t &present,
-                                                uint32_t &enabled,
-                                                uint32_t &health)
-{
-    rover.update_sensor_status_flags();
-
-    present = rover.control_sensors_present;
-    enabled = rover.control_sensors_enabled;
-    health = rover.control_sensors_health;
-}
-
 void GCS_MAVLINK_Rover::send_nav_controller_output() const
 {
     if (!rover.control_mode->is_autopilot_mode()) {

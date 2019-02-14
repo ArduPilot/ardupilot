@@ -299,7 +299,7 @@ void Rover::one_second_loop(void)
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    update_sensor_status_flags();
+    gcs().update_sensor_status_flags();
 
     // need to set "likely flying" when armed to allow for compass
     // learning to run
