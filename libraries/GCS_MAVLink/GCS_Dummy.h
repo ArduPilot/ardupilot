@@ -54,5 +54,5 @@ class GCS_Dummy : public GCS
 
     void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) { hal.console->printf("TOGCS: %s\n", text); }
 
-    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health) override { present = 0; enabled = 0; health = 0; }
+    void update_sensor_status_flags(void) override {};
 };
