@@ -933,6 +933,7 @@ private:
     void loiterathome_run();
     void build_path(bool terrain_following_allowed);
     void compute_return_target(bool terrain_following_allowed);
+    void compute_cruise_descent();
 
     // RTL
     RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)

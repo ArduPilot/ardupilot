@@ -94,7 +94,7 @@ void Copter::ModeRTL::climb_start()
     _state_complete = false;
 
     // RTL_SPEED == 0 means use WPNAV_SPEED
-    if (g.rtl_speed_cms != 0) {
+    if (is_positive((float)g.rtl_speed_cms)) {
         wp_nav->set_speed_xy(g.rtl_speed_cms);
     }
 
@@ -403,6 +403,11 @@ void Copter::ModeRTL::build_path(bool terrain_following_allowed)
 
     // set land flag
     rtl_path.land = g.rtl_alt_final <= 0;
+
+    // calculate cruise descent
+    if (is_positive((float)g2.rtl_cruise_descent) && copter.current_loc.alt > g.rtl_altitude ) {
+        compute_cruise_descent();
+    }
 }
 
 // compute the return target - home or rally point
@@ -481,6 +486,48 @@ void Copter::ModeRTL::compute_return_target(bool terrain_following_allowed)
 
     // ensure we do not descend
     rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt);
+}
+
+// compute a descent profile to use during RTL while cruising towards home
+void Copter::ModeRTL::compute_cruise_descent()
+{
+    uint32_t startinig_alt_cm = rtl_path.return_target.alt;
+    uint32_t new_descent_alt_cm;
+    uint16_t max_descent_rate_cms = wp_nav->get_default_speed_down();
+
+
+    // Caclulate cruising time based on speed and distance
+    uint16_t cruise_time_sec;
+    float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
+    if (is_positive((float)g.rtl_speed_cms)) {
+        // user RTL speed parameter
+        cruise_time_sec = rtl_return_dist_cm / g.rtl_speed_cms;
+    } else {
+        // user wpnav speed parameter
+        cruise_time_sec = rtl_return_dist_cm /  wp_nav->get_max_speed_xy();
+    }
+    printf("Cruise time %d sec\n", cruise_time_sec);
+
+    // cm to descend to RTL altitude setting
+    uint32_t descent_dist_cm = startinig_alt_cm - g.rtl_altitude;
+
+    // required descent rate to hit RTL altitude at home
+    uint32_t required_descent_rate_cms = descent_dist_cm / cruise_time_sec;
+    printf("Descending to RTL altitude requires a %dcms decent rate \n", required_descent_rate_cms);
+
+    if ((required_descent_rate_cms) <= max_descent_rate_cms) {
+        // can descend to RTL altitude at set speed and at the WPNAV_SPEED_DN descent rate
+        new_descent_alt_cm = g.rtl_altitude;
+        printf("Using calculated %d cms descent rate to reach RTL altitude %dcm\n",required_descent_rate_cms,new_descent_alt_cm);
+    } else {
+        // Cannot decend to RTL altitude fast enough, so set new altitude target
+        // Descend to this new altitude at the WPNAV_SPEED_DN descent rate
+        new_descent_alt_cm= MAX((uint32_t)g.rtl_altitude, startinig_alt_cm - (max_descent_rate_cms * cruise_time_sec));
+        printf("Using max descent rate %d cms to reach new target altitude %dcm\n",max_descent_rate_cms, new_descent_alt_cm);
+    }
+
+    rtl_path.return_target.alt = new_descent_alt_cm;
+
 }
 
 uint32_t Copter::ModeRTL::wp_distance() const
