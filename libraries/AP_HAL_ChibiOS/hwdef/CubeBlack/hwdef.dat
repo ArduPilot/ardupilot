@@ -4,6 +4,8 @@
 
 include ../fmuv3/hwdef.dat
 
+env OPTIMIZE -O3
+
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
 USB_PRODUCT 0x1011
