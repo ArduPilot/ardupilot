@@ -302,10 +302,6 @@ private:
     AP_DEVO_Telem devo_telemetry;
 #endif
 
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
-
     // 3D Location vectors
     // Location structure defined in AP_Common
     // The home location used for RTL.  The location is set when we first get stable GPS lock
@@ -493,7 +489,6 @@ private:
     void read_rangefinders(void);
     void init_proximity();
     void read_airspeed();
-    void update_sensor_status_flags(void);
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);
