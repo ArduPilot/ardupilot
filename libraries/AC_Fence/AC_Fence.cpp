@@ -1,7 +1,7 @@
-#include <AP_HAL/AP_HAL.h>
 #include "AC_Fence.h"
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
+
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 

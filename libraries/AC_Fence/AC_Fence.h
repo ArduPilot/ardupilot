@@ -4,8 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AC_Fence/AC_PolyFence_loader.h>
 #include <AP_Common/Location.h>
 
