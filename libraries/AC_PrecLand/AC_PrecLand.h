@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include "PosVelEKF.h"
 #include <AP_HAL/utility/RingBuffer.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 // declare backend classes
 class AC_PrecLand_Backend;
