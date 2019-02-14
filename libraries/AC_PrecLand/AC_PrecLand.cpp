@@ -7,6 +7,8 @@
 #include "AC_PrecLand_SITL_Gazebo.h"
 #include "AC_PrecLand_SITL.h"
 
+#include <AP_AHRS/AP_AHRS.h>
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
