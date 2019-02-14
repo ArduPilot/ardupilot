@@ -417,11 +417,6 @@ private:
     AP_DEVO_Telem devo_telemetry;
 #endif
 
-    // Variables for extended status MAVLink messages
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
- 
     // Airspeed Sensors
     AP_Airspeed airspeed;
 
@@ -798,7 +793,6 @@ private:
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_fence_status(mavlink_channel_t chan);
-    void update_sensor_status_flags(void);
     void send_servo_out(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
     void send_pid_info(const mavlink_channel_t chan, const AP_Logger::PID_Info *pid_info, const uint8_t axis, const float achieved);

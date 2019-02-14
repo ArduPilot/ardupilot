@@ -153,17 +153,6 @@ void Plane::send_fence_status(mavlink_channel_t chan)
 #endif
 
 
-void GCS_Plane::get_sensor_status_flags(uint32_t &present,
-                                                uint32_t &enabled,
-                                                uint32_t &health)
-{
-    plane.update_sensor_status_flags();
-
-    present = plane.control_sensors_present;
-    enabled = plane.control_sensors_enabled;
-    health = plane.control_sensors_health;
-}
-
 void GCS_MAVLINK_Plane::send_nav_controller_output() const
 {
     if (plane.control_mode == MANUAL) {
