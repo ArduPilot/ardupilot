@@ -583,6 +583,9 @@ public:
     // we need a pointer to autotune for the G2 table
     void *autotune_ptr;
 #endif
+
+    // RTL Cruise Descent enable/disable
+    AP_Int8 rtl_cruise_descent;
 };
 
 extern const AP_Param::Info        var_info[];

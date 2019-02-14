@@ -929,7 +929,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AC_AutoTune/AC_AutoTune.cpp
     AP_SUBGROUPPTR(autotune_ptr, "AUTOTUNE_",  29, ParametersG2, Copter::AutoTune),
 #endif
-    
+
+    // @Param: RTL_CRUISE_DESC
+    // @DisplayName: RTL Cruise Descent
+    // @Description: Copter will descend to the RTL altitude while flying towards home if above the RTL altitude
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("RTL_CRUISE_DESC", 30, ParametersG2, rtl_cruise_descent, 0),
+
     AP_GROUPEND
 };
 
