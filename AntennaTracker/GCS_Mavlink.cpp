@@ -71,17 +71,6 @@ MAV_STATE GCS_MAVLINK_Tracker::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void GCS_Tracker::get_sensor_status_flags(uint32_t &present,
-                                                  uint32_t &enabled,
-                                                  uint32_t &health)
-{
-    tracker.update_sensor_status_flags();
-
-    present = tracker.control_sensors_present;
-    enabled = tracker.control_sensors_enabled;
-    health = tracker.control_sensors_health;
-}
-
 void GCS_MAVLINK_Tracker::send_nav_controller_output() const
 {
 	float alt_diff = (tracker.g.alt_source == ALT_SOURCE_BARO) ? tracker.nav_status.alt_difference_baro : tracker.nav_status.alt_difference_gps;

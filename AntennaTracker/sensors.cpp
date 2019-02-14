@@ -91,18 +91,20 @@ void Tracker::handle_battery_failsafe(const char* type_str, const int8_t action)
 }
 
 // update sensors and subsystems present, enabled and healthy flags for reporting to GCS
-void Tracker::update_sensor_status_flags()
+void GCS_Tracker::update_sensor_status_flags()
 {
     // default sensors present
     control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
 
     // first what sensors/controllers we have
-    if (g.compass_enabled) {
+    if (tracker.g.compass_enabled) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;  // compass present
     }
+    const AP_GPS &gps = AP::gps();
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+    const AP_Logger &logger = AP::logger();
     if (logger.logging_present()) {  // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
@@ -121,18 +123,23 @@ void Tracker::update_sensor_status_flags()
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
     }
 
+    const AP_BattMonitor &battery = AP::battery();
     if (battery.num_instances() > 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 
+    AP_AHRS &ahrs = AP::ahrs();
+
     // default to all healthy except compass and gps which we set individually
     control_sensors_health = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_3D_MAG & ~MAV_SYS_STATUS_SENSOR_GPS);
-    if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
+    const Compass &compass = AP::compass();
+    if (tracker.g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
     if (gps.is_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+    const AP_InertialSensor &ins = AP::ins();
     if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
     }
