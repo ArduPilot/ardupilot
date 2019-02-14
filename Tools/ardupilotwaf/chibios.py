@@ -233,6 +233,18 @@ def load_env_vars(env):
     if env.ENABLE_ASSERTS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
 
+def setup_optimization(env):
+    '''setup optimization flags for build'''
+    if env.DEBUG:
+        OPTIMIZE = "-Og"
+    elif env.OPTIMIZE:
+        OPTIMIZE = env.OPTIMIZE
+    else:
+        OPTIMIZE = "-Os"
+    env.CFLAGS += [ OPTIMIZE ]
+    env.CXXFLAGS += [ OPTIMIZE ]
+    env.CHIBIOS_BUILD_FLAGS += ' USE_COPT=%s' % OPTIMIZE
+
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
@@ -305,6 +317,7 @@ def configure(cfg):
     load_env_vars(cfg.env)
     if env.HAL_WITH_UAVCAN:
         setup_can_build(cfg)
+    setup_optimization(cfg.env)
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''
