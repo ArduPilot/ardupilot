@@ -1073,9 +1073,13 @@ class AutoTest(ABC):
             m = self.mav.recv_match(type='AUTOPILOT_VERSION',
                                     blocking=True,
                                     timeout=10)
-            if m is not None:
-                self.progress("AUTOPILOT_VERSION received")
-                return
+            if m is None:
+                continue
+            if not (m.capabilities & mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT):
+                # all AP vehicles support PARAM_FLOAT
+                raise ValueError("Vehicle did not report itself as supporting PARAM_FLOAT")
+            self.progress("AUTOPILOT_VERSION received")
+            return
         raise AutoTestTimeoutException("No AUTOPILOT_VERSION received")
 
     def get_mode_from_mode_mapping(self, mode):
