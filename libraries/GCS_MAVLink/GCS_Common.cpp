@@ -3799,7 +3799,7 @@ void GCS_MAVLINK::send_sys_status()
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
 
-    get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health);
+    gcs().get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health);
 
     mavlink_msg_sys_status_send(
         chan,
