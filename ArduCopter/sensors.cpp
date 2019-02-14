@@ -186,37 +186,43 @@ void Copter::init_proximity(void)
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but
 // not functioning correctly.
-void Copter::update_sensor_status_flags(void)
+void GCS_Copter::update_sensor_status_flags(void)
 {
     // default sensors present
     control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
 
     // first what sensors/controllers we have
-    if (g.compass_enabled) {
+    if (copter.g.compass_enabled) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG; // compass present
     }
+    const AP_GPS &gps = AP::gps();
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
-    if (optflow.enabled()) {
+    const OpticalFlow *optflow = AP::opticalflow();
+    if (optflow && optflow->enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
 #if PRECISION_LANDING == ENABLED
-    if (precland.enabled()) {
+    if (copter.precland.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
-    if (g2.visual_odom.enabled()) {
+    const AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom && visual_odom->enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
+    const Copter::ap_t &ap = copter.ap;
+
     if (ap.rc_receiver_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
-    if (copter.logger.logging_present()) { // primary logging only (usually File)
+    const AP_Logger &logger = AP::logger();
+    if (logger.logging_present()) { // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
 #if PROXIMITY_ENABLED == ENABLED
@@ -230,7 +236,8 @@ void Copter::update_sensor_status_flags(void)
     }
 #endif
 #if RANGEFINDER_ENABLED == ENABLED
-    if (rangefinder.has_orientation(ROTATION_PITCH_270)) {
+    const RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder && rangefinder->has_orientation(ROTATION_PITCH_270)) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
     }
 #endif
@@ -245,7 +252,7 @@ void Copter::update_sensor_status_flags(void)
                                                          ~MAV_SYS_STATUS_SENSOR_LASER_POSITION &
                                                          ~MAV_SYS_STATUS_SENSOR_PROXIMITY);
 
-    switch (control_mode) {
+    switch (copter.control_mode) {
     case AUTO:
     case AVOID_ADSB:
     case GUIDED:
@@ -277,10 +284,11 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
     }
 
-    if (copter.logger.logging_enabled()) {
+    if (logger.logging_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
+    const AP_BattMonitor &battery = AP::battery();
     if (battery.num_instances() > 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
@@ -299,33 +307,37 @@ void Copter::update_sensor_status_flags(void)
     // default to all healthy
     control_sensors_health = control_sensors_present;
 
+    const AP_Baro &barometer = AP::baro();
     if (!barometer.all_healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
-    if (!g.compass_enabled || !compass.healthy() || !ahrs.use_compass()) {
+    AP_AHRS &ahrs = AP::ahrs();
+    const Compass &compass = AP::compass();
+    if (!copter.g.compass_enabled || !compass.healthy() || !ahrs.use_compass()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
     if (!gps.is_healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_GPS;
     }
-    if (!ap.rc_receiver_present || failsafe.radio) {
+    if (!ap.rc_receiver_present || copter.failsafe.radio) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
 #if OPTFLOW == ENABLED
-    if (!optflow.healthy()) {
+    if (!optflow || !optflow->healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
 #if PRECISION_LANDING == ENABLED
-    if (precland.enabled() && !precland.healthy()) {
+    if (copter.precland.enabled() && !copter.precland.healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
-    if (g2.visual_odom.enabled() && !g2.visual_odom.healthy()) {
+    if (visual_odom && visual_odom->enabled() && visual_odom->healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
+    const AP_InertialSensor &ins = AP::ins();
     if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
     }
@@ -338,7 +350,7 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
 
-    if (copter.logger.logging_failed()) {
+    if (logger.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }
 
@@ -349,7 +361,7 @@ void Copter::update_sensor_status_flags(void)
 #endif
 
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    switch (terrain.status()) {
+    switch (copter.terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
         break;
     case AP_Terrain::TerrainStatusUnhealthy:
@@ -366,9 +378,9 @@ void Copter::update_sensor_status_flags(void)
 #endif
 
 #if RANGEFINDER_ENABLED == ENABLED
-    if (rangefinder_state.enabled) {
+    if (copter.rangefinder_state.enabled) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
+        if (!rangefinder || !rangefinder->has_data_orient(ROTATION_PITCH_270)) {
             control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
@@ -391,7 +403,7 @@ void Copter::update_sensor_status_flags(void)
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
-    frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
+    copter.frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
 #endif
 }
 
