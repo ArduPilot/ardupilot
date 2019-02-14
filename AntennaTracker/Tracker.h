@@ -139,11 +139,6 @@ private:
     GCS_Tracker _gcs; // avoid using this; use gcs()
     GCS_Tracker &gcs() { return _gcs; }
 
-    // variables for extended status MAVLink messages
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
-
     AP_BoardConfig BoardConfig;
 
 #if HAL_WITH_UAVCAN
@@ -241,7 +236,6 @@ private:
     void accel_cal_update(void);
     void update_GPS(void);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
-    void update_sensor_status_flags();
 
     // servos.cpp
     void init_servos();
