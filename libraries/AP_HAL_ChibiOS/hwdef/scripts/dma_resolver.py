@@ -306,8 +306,8 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             dma_rx_chn = "STM32_DMAMUX1_" + key + "_RX"
             dma_tx_chn = "STM32_DMAMUX1_" + key + "_TX"
         else:
-            dma_rx_chn = "STM32_UART_%s_RX_DMA_CHN" % key
-            dma_tx_chn = "STM32_UART_%s_TX_DMA_CHN" % key
+            dma_rx_chn = "STM32_UART_%s_RX_DMA_CHAN" % key
+            dma_tx_chn = "STM32_UART_%s_TX_DMA_CHAN" % key
 
         f.write("#define STM32_%s_RX_DMA_CONFIG " % key)
         if key + "_RX" in curr_dict:
