@@ -118,17 +118,6 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
         0.0f); // yaw_rate
 }
 
-void GCS_Copter::get_sensor_status_flags(uint32_t &present,
-                                                uint32_t &enabled,
-                                                uint32_t &health)
-{
-    copter.update_sensor_status_flags();
-
-    present = copter.control_sensors_present;
-    enabled = copter.control_sensors_enabled;
-    health = copter.control_sensors_health;
-}
-
 void GCS_MAVLINK_Copter::send_nav_controller_output() const
 {
     const Vector3f &targets = copter.attitude_control->get_att_target_euler_cd();
