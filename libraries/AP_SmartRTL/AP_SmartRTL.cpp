@@ -13,6 +13,8 @@
 
 #include "AP_SmartRTL.h"
 
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
