@@ -17,6 +17,8 @@ public:
     // return GCS link at offset ofs
     const GCS_MAVLINK_Rover &chan(const uint8_t ofs) const override { return _chan[ofs]; };
 
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+
 private:
 
     GCS_MAVLINK_Rover _chan[MAVLINK_COMM_NUM_BUFFERS];
