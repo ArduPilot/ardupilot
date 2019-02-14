@@ -2,6 +2,17 @@
 
 extern const AP_HAL::HAL& hal;
 
+void GCS::get_sensor_status_flags(uint32_t &present,
+                                  uint32_t &enabled,
+                                  uint32_t &health)
+{
+    update_sensor_status_flags();
+
+    present = control_sensors_present;
+    enabled = control_sensors_enabled;
+    health = control_sensors_health;
+}
+
 /*
   send a text message to all GCS
  */

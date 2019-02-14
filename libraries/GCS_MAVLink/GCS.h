@@ -774,7 +774,14 @@ public:
     // update uart pass-thru
     void update_passthru();
 
-    virtual void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health) = 0;
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+
+protected:
+
+    uint32_t control_sensors_present;
+    uint32_t control_sensors_enabled;
+    uint32_t control_sensors_health;
+    virtual void update_sensor_status_flags(void) = 0;
 
 private:
 
