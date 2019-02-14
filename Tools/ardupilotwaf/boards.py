@@ -406,7 +406,6 @@ class chibios(Board):
             '-Werror=unused-but-set-variable',
             '-Wno-missing-field-initializers',
             '-Wno-trigraphs',
-            '-Os',
             '-fno-strict-aliasing',
             '-fomit-frame-pointer',
             '-falign-functions=16',
@@ -435,7 +434,6 @@ class chibios(Board):
         bldnode = cfg.bldnode.make_node(self.name)
         env.BUILDROOT = bldnode.make_node('').abspath()
         env.LINKFLAGS = cfg.env.CPU_FLAGS + [
-            '-Os',
             '-fomit-frame-pointer',
             '-falign-functions=16',
             '-ffunction-sections',
