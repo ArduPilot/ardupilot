@@ -152,6 +152,10 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("SHOVE_Y",     31, SITL,  shove.y, 0),
     AP_GROUPINFO("SHOVE_Z",     32, SITL,  shove.z, 0),
     AP_GROUPINFO("SHOVE_TIME",  33, SITL,  shove.t, 0),
+    
+    // optical flow sensor measurement noise in rad/sec
+    AP_GROUPINFO("FLOW_RND",   34, SITL,  flow_noise,  0.05f),
+
     AP_GROUPEND
 };
     
