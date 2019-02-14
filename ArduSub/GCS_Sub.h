@@ -20,7 +20,7 @@ public:
         return _chan[ofs];
     };
 
-    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+    void update_sensor_status_flags() override;
 
 private:
 

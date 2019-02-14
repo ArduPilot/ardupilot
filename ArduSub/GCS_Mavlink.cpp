@@ -84,25 +84,25 @@ MAV_STATE GCS_MAVLINK_Sub::system_status() const
     return MAV_STATE_STANDBY;
 }
 
-void Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
-                                  uint32_t &control_sensors_enabled,
-                                  uint32_t &control_sensors_health)
+void GCS_Sub::update_sensor_status_flags()
 {
     // default sensors present
     control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
 
     // first what sensors/controllers we have
-    if (g.compass_enabled) {
+    if (sub.g.compass_enabled) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG; // compass present
     }
-    if (ap.depth_sensor_present) {
+    if (sub.ap.depth_sensor_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
+    const AP_GPS &gps = AP::gps();
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
-    if (optflow.enabled()) {
+    const OpticalFlow *optflow = AP::opticalflow();
+    if (optflow && optflow->enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
@@ -112,7 +112,7 @@ void Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
                               ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
                               ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_SENSOR_BATTERY);
 
-    switch (control_mode) {
+    switch (sub.control_mode) {
     case ALT_HOLD:
     case AUTO:
     case GUIDED:
@@ -131,6 +131,7 @@ void Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
     }
 
+    const AP_BattMonitor &battery = AP::battery();
     if (battery.num_instances() > 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
@@ -141,21 +142,24 @@ void Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
                              MAV_SYS_STATUS_SENSOR_GPS |
                              MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
 
-    if (sensor_health.depth) { // check the internal barometer only
+    if (sub.sensor_health.depth) { // check the internal barometer only
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
-    if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
+    AP_AHRS &ahrs = AP::ahrs();
+    const Compass &compass = AP::compass();
+    if (sub.g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
     if (gps.is_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
-    if (optflow.healthy()) {
+    if (optflow && optflow->healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
 
+    const AP_InertialSensor &ins = AP::ins();
     if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
     }
@@ -190,27 +194,21 @@ void Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
 #endif
 
 #if RANGEFINDER_ENABLED == ENABLED
-    if (rangefinder_state.enabled) {
+    const RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (sub.rangefinder_state.enabled) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (rangefinder.has_data_orient(ROTATION_PITCH_270)) {
+        if (rangefinder && rangefinder->has_data_orient(ROTATION_PITCH_270)) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
 #endif
 
-    if (!ap.initialised || ins.calibrating()) {
+    if (!sub.ap.initialised || ins.calibrating()) {
         // while initialising the gyros and accels are not enabled
         control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
-}
-
-void GCS_Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
-                                              uint32_t &control_sensors_enabled,
-                                              uint32_t &control_sensors_health)
-{
-    return sub.get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health);
 }
 
 void GCS_MAVLINK_Sub::send_nav_controller_output() const
