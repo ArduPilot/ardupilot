@@ -283,4 +283,5 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
 
 # don't share IOMCU DMA
-DMA_NOSHARE UART8*
+DMA_NOSHARE UART8* SPI1* TIM*UP*
+
