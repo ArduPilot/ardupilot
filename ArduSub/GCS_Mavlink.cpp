@@ -206,7 +206,7 @@ void Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
     }
 }
 
-void GCS_MAVLINK_Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
+void GCS_Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
                                               uint32_t &control_sensors_enabled,
                                               uint32_t &control_sensors_health)
 {
