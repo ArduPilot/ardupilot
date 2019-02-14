@@ -15,9 +15,8 @@ Scheduler::Scheduler()
 }
 
 void Scheduler::init()
-{
-    _main_task_handle = xTaskGetCurrentTaskHandle();
-    vTaskPrioritySet(_main_task_handle, 20);
+{    
+    xTaskCreate(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle);
     xTaskCreate(_timer_thread, "APM_TIMER", TIMER_SS, this, TIMER_PRIO, &_timer_task_handle);
     xTaskCreate(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle);
     xTaskCreate(_uart_thread, "APM_UART", UART_SS, this, UART_PRIO, &_uart_task_handle);
@@ -40,7 +39,8 @@ void Scheduler::delay(uint16_t ms)
 
 void Scheduler::delay_microseconds(uint16_t us)
 {
-    vTaskDelay(us/(portTICK_PERIOD_MS * 1000) + 1);
+    uint16_t count = us/(portTICK_PERIOD_MS * 1000);
+    vTaskDelay(count == 0 ? 1 : count);
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -221,3 +221,33 @@ void Scheduler::_uart_thread(void *arg)
         hal.console->_timer_tick();
     }
 }
+
+void print_stats()
+{
+    static int64_t last_run = 0;
+    if (AP_HAL::millis64() - last_run > 60000) {
+        char buffer[1024];
+        vTaskGetRunTimeStats(buffer);
+        printf("\n\n%s\n", buffer);
+        heap_caps_print_heap_info(0);
+        last_run = AP_HAL::millis64();
+    }
+}
+
+void Scheduler::_main_thread(void *arg) {
+    Scheduler *sched = (Scheduler *)arg;
+    hal.uartA->begin(115200);
+    hal.uartB->begin(38400);
+    hal.uartC->begin(57600);
+    hal.analogin->init();
+    
+    sched->callbacks->setup();
+    sched->system_initialized();
+
+    while (true) {
+        sched->callbacks->loop();
+        sched->delay_microseconds(1);
+        //print_stats();
+    }    
+}
+

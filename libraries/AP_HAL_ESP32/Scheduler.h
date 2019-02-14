@@ -15,6 +15,7 @@ public:
     Scheduler();
     /* AP_HAL::Scheduler methods */
     void     init() override;
+    void     set_callbacks(AP_HAL::HAL::Callbacks *cb) {callbacks = cb;};
     void     delay(uint16_t ms) override;
     void     delay_microseconds(uint16_t us) override;
     void     register_timer_process(AP_HAL::MemberProc) override;
@@ -35,6 +36,7 @@ public:
     static const int STORAGE_PRIO = 4;
 
     static const int TIMER_SS = 4096;
+    static const int MAIN_SS = 4096;
     static const int RCIN_SS = 1024;
     static const int WIFI_SS = 4096;
     static const int UART_SS = 1024;
@@ -43,6 +45,7 @@ public:
     static const int STORAGE_SS = 4096;
 
 private:
+    AP_HAL::HAL::Callbacks *callbacks;
     AP_HAL::Proc _failsafe;
 
     AP_HAL::MemberProc _timer_proc[ESP32_SCHEDULER_MAX_TIMER_PROCS];
@@ -60,6 +63,7 @@ private:
     void *_io_task_handle;
     void *_storage_task_handle;
 
+    static void _main_thread(void *arg);
     static void _timer_thread(void *arg);
     static void _rcin_thread(void *arg);
     static void _uart_thread(void *arg);

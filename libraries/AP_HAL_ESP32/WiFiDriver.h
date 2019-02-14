@@ -23,6 +23,10 @@ public:
 
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
+    
+    uint32_t bw_in_kilobytes_per_second() const {
+            return 1000;
+    }
 
     bool _more_data;
 private:
