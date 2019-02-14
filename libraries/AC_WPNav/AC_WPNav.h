@@ -78,6 +78,15 @@ public:
     /// set current target horizontal speed during wp navigation
     void set_speed_xy(float speed_cms);
 
+    /// get current target horizontal velocity during wp navigation
+    float get_max_speed_xy() const { return _pos_control.get_max_speed_xy(); }
+
+    /// get current target descent velocity during wp navigation
+    float get_max_speed_down() const { return _pos_control.get_max_speed_down(); }
+
+    /// get current target climb velocity during wp navigation
+    float get_max_speed_up() const { return _pos_control.get_max_speed_up(); }
+
     /// set current target climb or descent rate during wp navigation
     void set_speed_up(float speed_up_cms);
     void set_speed_down(float speed_down_cms);
