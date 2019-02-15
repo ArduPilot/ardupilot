@@ -25,8 +25,6 @@ public:
     static void handle_temperature(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TemperatureCb &cb);
 
 private:
-    static bool take_registry();
-    static void give_registry();
 
     uint8_t _instance;
 
