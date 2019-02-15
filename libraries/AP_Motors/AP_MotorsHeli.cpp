@@ -153,77 +153,15 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
 
-    // @Param: RSC_THRCRV_0
-    // @DisplayName: Throttle Servo Position for 0 percent collective
-    // @Description: Throttle Servo Position for 0 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_0", 20, AP_MotorsHeli, _rsc_thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
+    // indices 20 to 25 was throttle curve. Do not use this index in the future.
 
-    // @Param: RSC_THRCRV_25
-    // @DisplayName: Throttle Servo Position for 25 percent collective
-    // @Description: Throttle Servo Position for 25 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_25", 21, AP_MotorsHeli, _rsc_thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
+    // @Group: RSC_CRV_
+    // @Path: AP_MotorsHeli_RSC.cpp
+    AP_SUBGROUPINFO(_rsc_thrcrv, "RSC_CRV_", 27, AP_MotorsHeli, RSCThrCrvInt16Param),
 
-    // @Param: RSC_THRCRV_50
-    // @DisplayName: Throttle Servo Position for 50 percent collective
-    // @Description: Throttle Servo Position for 50 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_50", 22, AP_MotorsHeli, _rsc_thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
-
-    // @Param: RSC_THRCRV_75
-    // @DisplayName: Throttle Servo Position for 75 percent collective
-    // @Description: Throttle Servo Position for 75 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_75", 23, AP_MotorsHeli, _rsc_thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
-
-    // @Param: RSC_THRCRV_100
-    // @DisplayName: Throttle Servo Position for 100 percent collective
-    // @Description: Throttle Servo Position for 100 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_100", 24, AP_MotorsHeli, _rsc_thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
-
-    // @Param: RSC_GOV_SET
-    // @DisplayName: Governor RPM Setting
-    // @Description: Main rotor rpm setting that governor maintains when engaged
-    // @Range: 800 3500
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_GOV_SET", 25, AP_MotorsHeli, _rsc_governor_setpoint, AP_MOTORS_HELI_RSC_GOVERNOR_SET_DEFAULT),
-    
-    // @Param: RSC_GOV_DISGAG
-    // @DisplayName: Throttle Percentage for Governor Disengage
-    // @Description: Percentage of throttle where the governor will disenage to allow return to flight idle power
-    // @Range: 0 50
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("RSC_GOV_DISGAG", 26, AP_MotorsHeli, _rsc_governor_disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE),
-
-    // @Param: RSC_GOV_DROOP
-    // @DisplayName: Governor Droop Setting
-    // @Description: Governor droop response under load, 0-100%. Higher value is quicker response but may cause surging
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("RSC_GOV_DROOP", 27, AP_MotorsHeli, _rsc_governor_droop_setting, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
-
-    // @Param: RSC_GOV_TC
-    // @DisplayName: Governor Throttle Curve Gain
-    // @Description: Percentage of throttle curve gain in governor output
-    // @Range: 50 100
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("RSC_GOV_TC", 28, AP_MotorsHeli, _rsc_governor_tc, AP_MOTORS_HELI_RSC_GOVERNOR_TC),
+    // @Group: RSC_GOV_
+    // @Path: AP_MotorsHeli_RSC.cpp
+    AP_SUBGROUPINFO(_rsc_gov, "RSC_GOV_", 28, AP_MotorsHeli, RSCGovFloatParam),
 
     AP_GROUPEND
 };
@@ -559,5 +497,18 @@ void AP_MotorsHeli::rc_write_swash(uint8_t chan, float swash_in)
     SRV_Channels::set_output_pwm_trimmed(function, pwm);
 }
 
-
+// enable_parameters - enables the rsc parameters for the rsc mode
+void AP_MotorsHeli::enable_rsc_parameters(void)
+{
+    if (_rsc_mode == (int8_t)ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT || _rsc_mode == (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+        _rsc_thrcrv.set_thrcrv_enable(1);
+    } else {
+        _rsc_thrcrv.set_thrcrv_enable(0);
+    }
+    if (_rsc_mode == (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+        _rsc_gov.set_gov_enable(1);
+    } else {
+        _rsc_gov.set_gov_enable(0);
+    }
+}
 
