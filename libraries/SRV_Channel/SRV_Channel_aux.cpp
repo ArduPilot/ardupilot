@@ -128,6 +128,8 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_roll_out:
     case k_pitch_out:
     case k_yaw_out:
+    case k_crow_inner:
+    case k_crow_outer:
         set_angle(4500);
         break;
     case k_throttle:

@@ -572,6 +572,8 @@ public:
 #endif
 
     AP_Int8 airbrake_in_channel;
+
+    AP_Int8 airbrake_slewrate;
 };
 
 extern const AP_Param::Info var_info[];

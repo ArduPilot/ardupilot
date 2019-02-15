@@ -1038,6 +1038,11 @@ private:
         Failsafe_Action_Parachute = 5
     };
 
+    void crow_update(void);
+    float airbrake_function_output;
+    float flap_function_output;
+
+
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,

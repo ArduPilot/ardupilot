@@ -144,6 +144,8 @@ public:
         k_scripting15           = 108,
         k_scripting16           = 109,
         k_airbrake              = 110,
+        k_crow_inner            = 111,
+        k_crow_outer            = 112,
         k_LED_neopixel1         = 120,
         k_LED_neopixel2         = 121,
         k_LED_neopixel3         = 122,

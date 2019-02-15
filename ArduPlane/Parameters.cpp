@@ -1249,6 +1249,16 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: User
     AP_GROUPINFO("AIRBRK_IN_CH", 23, ParametersG2, airbrake_in_channel, 0),
 
+
+    // @Param: AIRBRK_SLEWRATE
+    // @DisplayName: Airbrake slew rate
+    // @Description: maximum percentage change in airbrake output per second. A setting of 25 means to not change the airbrake by more than 25% of the full airbrake range in one second. A value of 0 means no rate limiting.
+    // @Units: %/s
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("AIRBRK_SLEWRATE", 24, ParametersG2, airbrake_slewrate, 0),
+
     AP_GROUPEND
 };
 
