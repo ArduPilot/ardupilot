@@ -1295,6 +1295,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(guidedHeading, "GUIDED_", 28, ParametersG2, AC_PID),
 #endif // OFFBOARD_GUIDED == ENABLED
 
+    // @Param: AIRBRK_SLEWRATE
+    // @DisplayName: Airbrake slew rate
+    // @Description: maximum percentage change in airbrake output per second. A setting of 25 means to not change the airbrake by more than 25% of the full airbrake range in one second. A value of 0 means no rate limiting.
+    // @Units: %/s
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("AIRBRK_SLEWRATE", 29, ParametersG2, airbrake_slewrate, 0),
+
     AP_GROUPEND
 };
 
