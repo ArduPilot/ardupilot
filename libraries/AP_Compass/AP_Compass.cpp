@@ -622,13 +622,11 @@ void Compass::_probe_external_i2c_compasses(void)
     // AK09916 on ICM20948
     FOREACH_I2C_EXTERNAL(i) {
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
-                                                                        GET_I2C_DEVICE(i, HAL_COMPASS_ICM20948_I2C_ADDR),
                                                                         true, ROTATION_PITCH_180_YAW_90));
     }
     
     FOREACH_I2C_INTERNAL(i) {
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
-                                                                        GET_I2C_DEVICE(i, HAL_COMPASS_ICM20948_I2C_ADDR),
                                                                         all_external, ROTATION_PITCH_180_YAW_90));
     }
     
@@ -789,6 +787,7 @@ void Compass::_detect_backends(void)
         // we run the AK8963 only on the 2nd MPU9250, which leaves the
         // first MPU9250 to run without disturbance at high rate
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(1, ROTATION_YAW_270));
+        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe_ICM20948(0, ROTATION_ROLL_180_YAW_270));
         break;
 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
