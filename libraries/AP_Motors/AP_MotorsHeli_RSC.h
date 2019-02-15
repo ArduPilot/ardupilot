@@ -5,6 +5,22 @@
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 
+// default main rotor speed (ch8 out) as a number from 0 ~ 1000
+#define AP_MOTORS_HELI_RSC_SETPOINT             700
+
+// Throttle Curve Defaults
+#define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     250
+#define AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT    320
+#define AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT    380
+#define AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT    500
+#define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   1000
+
+// RSC governor defaults
+#define AP_MOTORS_HELI_RSC_GOVERNOR_SET_DEFAULT   1500
+#define AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE     25
+#define AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT 30
+#define AP_MOTORS_HELI_RSC_GOVERNOR_TC            90
+
 // rotor controller states
 enum RotorControlState {
     ROTOR_CONTROL_STOP = 0,
@@ -83,8 +99,11 @@ public:
     // set_runup_time
     void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
 
+    // set_slewrate
+    void        set_slewrate(int16_t slewrate) { _power_slewrate = slewrate; }
+
     // set_throttle_curve
-    void        set_throttle_curve(float thrcrv[5], uint16_t slewrate);
+    void        set_throttle_curve(float thrcrv[5]);
 
     // set_collective. collective for throttle curve calculation
     void        set_collective(float collective) { _collective_in = collective; }
@@ -132,4 +151,46 @@ private:
 
     // calculate_desired_throttle - uses throttle curve and collective input to determine throttle setting
     float           calculate_desired_throttle(float collective_in);
+};
+
+class RSCThrCrvInt16Param {
+public:
+    RSCThrCrvInt16Param(void);
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+    void set_thrcrv_enable(int8_t setenable) {enable = setenable; }
+    float * get_thrcrv() {
+        static float throttlecurve[5];
+        for (uint8_t i = 0; i < 5; i++) {
+            throttlecurve[i] = (float)thrcrv[i] * 0.001f;
+        }
+        return throttlecurve;
+    }
+
+private:
+    AP_Int8   enable;
+    AP_Int16  thrcrv[5]; // throttle value sent to throttle servo at 0, 25, 50, 75 and 100 percent collective
+
+};
+
+class RSCGovFloatParam {
+public:
+    RSCGovFloatParam(void);
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+    void set_gov_enable(int8_t setenable) {enable = setenable; }
+    int16_t get_setpoint() { return setpoint; }
+    float get_disengage() { return disengage; }
+    float get_droop_setting() { return droop_setting; }
+    float get_tc() { return tc; }
+
+private:
+    AP_Int8   enable;
+    AP_Float  disengage;    // sets the throttle percent where the governor disengages for return to flight idle
+    AP_Int16  setpoint;     // sets rotor speed for governor
+    AP_Float  droop_setting;// governor response to droop under load
+    AP_Float  tc;           // governor throttle curve weighting, range 50-100%
+
 };

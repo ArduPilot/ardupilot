@@ -105,19 +105,23 @@ void AP_MotorsHeli_Quad::set_rpm(int16_t rotor_rpm)
 // calculate_armed_scalars
 void AP_MotorsHeli_Quad::calculate_armed_scalars()
 {
-    float thrcrv[5];
-    for (uint8_t i = 0; i < 5; i++) {
-        thrcrv[i]=_rsc_thrcrv[i]*0.001f;
-    }
+    // Set common RSC variables
     _rotor.set_ramp_time(_rsc_ramp_time);
     _rotor.set_runup_time(_rsc_runup_time);
     _rotor.set_critical_speed(_rsc_critical*0.001f);
     _rotor.set_idle_output(_rsc_idle_output*0.001f);
-    _rotor.set_throttle_curve(thrcrv, (uint16_t)_rsc_slewrate.get());
-    _rotor.set_governor_disengage(_rsc_governor_disengage*0.01f);
-    _rotor.set_governor_droop_setting(_rsc_governor_droop_setting*0.01f);
-    _rotor.set_governor_setpoint(_rsc_governor_setpoint);
-    _rotor.set_governor_tc(_rsc_governor_tc*0.01f);
+    _rotor.set_slewrate(_rsc_slewrate);
+
+    // Set rsc mode specific parameters
+    if (_rsc_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
+        _rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
+    } else if (_rsc_mode == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+        _rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
+        _rotor.set_governor_disengage(_rsc_gov.get_disengage()*0.01f);
+        _rotor.set_governor_droop_setting(_rsc_gov.get_droop_setting()*0.01f);
+        _rotor.set_governor_setpoint(_rsc_gov.get_setpoint());
+        _rotor.set_governor_tc(_rsc_gov.get_tc()*0.01f);
+    }
 }
 
 // calculate_scalars
@@ -139,6 +143,7 @@ void AP_MotorsHeli_Quad::calculate_scalars()
 
     // set mode of main rotor controller and trigger recalculation of scalars
     _rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
+    enable_rsc_parameters();
     calculate_armed_scalars();
 }
 
