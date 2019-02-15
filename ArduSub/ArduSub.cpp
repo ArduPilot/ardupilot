@@ -94,7 +94,7 @@ void Sub::setup()
 void Sub::loop()
 {
     scheduler.loop();
-    G_Dt = scheduler.get_loop_period_s();
+    G_Dt = scheduler.get_last_loop_time_s();
 }
 
 
