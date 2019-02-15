@@ -70,21 +70,10 @@ void AP_Compass_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     }
 }
 
-bool AP_Compass_UAVCAN::take_registry()
-{
-    return _sem_registry.take(HAL_SEMAPHORE_BLOCK_FOREVER);
-}
-
-void AP_Compass_UAVCAN::give_registry()
-{
-    _sem_registry.give();
-}
-
 AP_Compass_Backend* AP_Compass_UAVCAN::probe()
 {
-    if (!take_registry()) {
-        return nullptr;
-    }
+    WITH_SEMAPHORE(_sem_registry);
+
     AP_Compass_UAVCAN* driver = nullptr;
     for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
         if (!_detected_modules[i].driver && _detected_modules[i].ap_uavcan) {
@@ -103,7 +92,6 @@ AP_Compass_Backend* AP_Compass_UAVCAN::probe()
             break;
         }
     }
-    give_registry();
     return driver;
 }
 
@@ -181,7 +169,8 @@ void AP_Compass_UAVCAN::handle_mag_msg(const Vector3f &mag)
 
 void AP_Compass_UAVCAN::handle_magnetic_field(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MagCb &cb)
 {
-    if (take_registry()) {
+    WITH_SEMAPHORE(_sem_registry);
+
         Vector3f mag_vector;
         AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, 0);
         if (driver != nullptr) {
@@ -190,13 +179,12 @@ void AP_Compass_UAVCAN::handle_magnetic_field(AP_UAVCAN* ap_uavcan, uint8_t node
             mag_vector[2] = cb.msg->magnetic_field_ga[2];
             driver->handle_mag_msg(mag_vector);
         }
-        give_registry();
-    }
 }
 
 void AP_Compass_UAVCAN::handle_magnetic_field_2(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Mag2Cb &cb)
 {
-    if (take_registry()) {
+    WITH_SEMAPHORE(_sem_registry);
+
         Vector3f mag_vector;
         uint8_t sensor_id = cb.msg->sensor_id;
         AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, sensor_id);
@@ -206,8 +194,6 @@ void AP_Compass_UAVCAN::handle_magnetic_field_2(AP_UAVCAN* ap_uavcan, uint8_t no
             mag_vector[2] = cb.msg->magnetic_field_ga[2];
             driver->handle_mag_msg(mag_vector);
         }
-        give_registry();
-    }
 }
 
 void AP_Compass_UAVCAN::read(void)
