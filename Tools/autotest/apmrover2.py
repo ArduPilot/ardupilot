@@ -119,13 +119,13 @@ class AutoTestRover(AutoTest):
             self.set_parameter("RC7_OPTION", 7)
             self.set_parameter("RC8_OPTION", 58)
 
-            self.clear_wp()
-
             self.mavproxy.send('switch 5\n')
             self.wait_mode('MANUAL')
 
             self.wait_ready_to_arm()
             self.arm_vehicle()
+
+            self.clear_wp()
 
             # first aim north
             self.progress("\nTurn right towards north")
@@ -171,8 +171,10 @@ class AutoTestRover(AutoTest):
             self.progress("Checking number of saved waypoints")
             num_wp = self.save_mission_to_file(
                 os.path.join(testdir, "rover-ch7_mission.txt"))
-            if num_wp != 6:
-                raise NotAchievedException("Did not get 6 waypoints")
+            expected = 7 # home + 6 toggled in
+            if num_wp != expected:
+                raise NotAchievedException("Did not get %u waypoints; got %u" %
+                                           (expected, num_wp))
 
             # TODO: actually drive the mission
 
