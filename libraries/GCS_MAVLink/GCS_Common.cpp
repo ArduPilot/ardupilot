@@ -1428,10 +1428,15 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
             cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
         }
     }
-    if (routing.check_and_forward(chan, &msg) &&
-        accept_packet(status, msg)) {
-        handleMessage(&msg);
+    if (!routing.check_and_forward(chan, &msg)) {
+        // the routing code has indicated we should not handle this packet locally
+        return;
     }
+    if (!accept_packet(status, msg)) {
+        // e.g. enforce-sysid says we shouldn't look at this packet
+        return;
+    }
+    handleMessage(&msg);
 }
 
 void
