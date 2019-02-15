@@ -145,6 +145,19 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Units: s
     AP_GROUPINFO("RC_FAIL_TIME",   19, AP_AdvancedFailsafe, _rc_fail_time_seconds,    0),
 
+    // @Param: TERM_DLY
+    // @DisplayName: Termination Delay
+    // @Description: This is the time in seconds the aircraft will stay at a failsafe waypoint before aero termination.
+    // @User: Advanced
+    // @Units: seconds 
+    AP_GROUPINFO("TERM_DLY",   20, AP_AdvancedFailsafe, _terminal_delay,   30),
+
+    // @Param: TERM_ENABLE
+    // @DisplayName: Termination Delay Enable
+    // @Description: Enable Terminal Delay                                  
+    // @User Advanced
+    AP_GROUPINFO("TERM_ENABLE",   21, AP_AdvancedFailsafe, _terminate_enable,   1), 
+
     AP_GROUPEND
 };
 
@@ -192,6 +205,9 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
     uint32_t now = AP_HAL::millis();
     bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
     bool gps_lock_ok = ((now - gps.last_fix_time_ms()) < 3000);
+
+    bool terminate_delay_comms = ((now - last_heartbeat_ms) > ((_terminal_delay * 1000) + 10000);
+    bool terminate_delay_gps   = ((now - gps.last_fix_time_ms()) > ((_terminal_delay * 1000) + 3000);
 
     switch (_state) {
     case STATE_PREFLIGHT:
@@ -255,6 +271,13 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
                 mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
             }
+        } else if (terminate_delay_comms) {
+            if (_terminate_enable) {
+                if (!_terminate) {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "TERM_DLY Comms Long Failsafe: Terminating!");
+                    _terminate.set_and_notify(1);
+                }
+            }
         }
         break;
 
@@ -274,6 +297,13 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
                 (_max_gps_loss <= 0 || _gps_loss_count <= _max_gps_loss)) {
                 mission.set_current_cmd(_saved_wp);            
                 _saved_wp = 0;
+            }
+        } else if (terminate_delay_gps) {
+            if (_terminate_enable) {
+                if (!_terminate) {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "TERM_DLY GPS Long Failsafe: Terminating!");
+                    _terminate.set_and_notify(1);
+                }
             }
         }
         break;

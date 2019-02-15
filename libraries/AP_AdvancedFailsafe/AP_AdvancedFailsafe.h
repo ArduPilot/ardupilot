@@ -119,6 +119,9 @@ protected:
     AP_Int8  _rc_term_manual_only;
     AP_Int8  _enable_dual_loss;
 
+    AP_Float _terminate_delay;
+    AP_Float _terminate_enable;   
+
     bool _heartbeat_pin_value;
 
     // saved waypoint for resuming mission
