@@ -61,6 +61,12 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
 AP_VisualOdom::AP_VisualOdom()
 {
     AP_Param::setup_object_defaults(this, var_info);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("VisualOdom must be singleton");
+    }
+#endif
+    _singleton = this;
 }
 
 // detect and initialise any sensors
@@ -103,3 +109,14 @@ void AP_VisualOdom::handle_msg(mavlink_message_t *msg)
     }
 }
 
+// singleton instance
+AP_VisualOdom *AP_VisualOdom::_singleton;
+
+namespace AP {
+
+AP_VisualOdom *visualodom()
+{
+    return AP_VisualOdom::get_singleton();
+}
+
+}

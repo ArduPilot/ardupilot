@@ -699,10 +699,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             if (!is_zero(packet.param1)) {
                 return MAV_RESULT_FAILED;
             }
-            // sanity check location
-            if (!check_latlng(packet.param5, packet.param6)) {
-                return MAV_RESULT_FAILED;
-            }
             Location new_home_loc;
             new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
             new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
@@ -1249,17 +1245,17 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_set_home_position_t packet;
         mavlink_msg_set_home_position_decode(msg, &packet);
         if((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
-            copter.set_home_to_current_location(true);
-        } else {
-            // sanity check location
-            if (!check_latlng(packet.latitude, packet.longitude)) {
-                break;
+            if (!copter.set_home_to_current_location(true)) {
+                // silently ignored
             }
+        } else {
             Location new_home_loc;
             new_home_loc.lat = packet.latitude;
             new_home_loc.lng = packet.longitude;
             new_home_loc.alt = packet.altitude / 10;
-            copter.set_home(new_home_loc, true);
+            if (!copter.set_home(new_home_loc, true)) {
+                // silently ignored
+            }
         }
         break;
     }
@@ -1327,16 +1323,6 @@ AP_AdvancedFailsafe *GCS_MAVLINK_Copter::get_advanced_failsafe() const
     return nullptr;
 #endif
 }
-
-AP_VisualOdom *GCS_MAVLINK_Copter::get_visual_odom() const
-{
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    return &copter.g2.visual_odom;
-#else
-    return nullptr;
-#endif
-}
-
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_long_t &packet) {
     MAV_RESULT result = MAV_RESULT_FAILED;

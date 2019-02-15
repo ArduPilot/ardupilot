@@ -98,7 +98,7 @@ void Copter::init_ardupilot()
 
 #if DEVO_TELEM_ENABLED == ENABLED
     // setup devo
-    devo_telemetry.init(serial_manager);
+    devo_telemetry.init();
 #endif
 
 #if OSD_ENABLED == ENABLED

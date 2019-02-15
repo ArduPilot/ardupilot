@@ -765,10 +765,14 @@ void Sub::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
-        set_home_to_current_location(false);
+        if (!set_home_to_current_location(false)) {
+            // silently ignore this failure
+        }
     } else {
         if (!far_from_EKF_origin(cmd.content.location)) {
-            set_home(cmd.content.location, false);
+            if (!set_home(cmd.content.location, false)) {
+                // silently ignore this failure
+            }
         }
     }
 }

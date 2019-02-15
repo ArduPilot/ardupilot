@@ -19,18 +19,12 @@ bool Rover::set_home_to_current_location(bool lock)
 //  returns true if home location set successfully
 bool Rover::set_home(const Location& loc, bool lock)
 {
-    // check location is valid
-    if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
-        return false;
-    }
-    if (!check_latlng(loc)) {
-        return false;
-    }
-
     const bool home_was_set = ahrs.home_is_set();
 
     // set ahrs home
-    ahrs.set_home(loc);
+    if (!ahrs.set_home(loc)) {
+        return false;
+    }
 
     if (!home_was_set) {
         // log new home position which mission library will pull from ahrs
@@ -82,5 +76,7 @@ void Rover::update_home()
         return;
     }
 
-    ahrs.set_home(loc);
+    if (!ahrs.set_home(loc)) {
+        // silently ignored...
+    }
 }

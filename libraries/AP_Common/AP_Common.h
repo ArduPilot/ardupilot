@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -52,6 +51,14 @@
 #ifndef FALLTHROUGH
 #  define FALLTHROUGH
 #endif
+
+#ifdef __GNUC__
+ #define WARN_IF_UNUSED __attribute__ ((warn_unused_result))
+#else
+ #define WARN_IF_UNUSED
+#endif
+
+#define NORETURN __attribute__ ((noreturn))
 
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
@@ -124,13 +131,3 @@ template<typename s, int t> struct assert_storage_size {
   False otherwise.
 */
 bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
-
-/*
-  useful debugging macro for SITL
- */
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <stdio.h>
-#define SITL_printf(fmt, args ...) do { ::printf("%s(%u): " fmt, __FILE__, __LINE__, ##args); } while(0)
-#else
-#define SITL_printf(fmt, args ...)
-#endif

@@ -14,10 +14,11 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS.h>
 #include "AP_Follow.h"
 #include <ctype.h>
 #include <stdio.h>
+
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 

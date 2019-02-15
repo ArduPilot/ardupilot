@@ -414,7 +414,7 @@ private:
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
     // DEVO-M telemetry support
-    AP_DEVO_Telem devo_telemetry {ahrs};
+    AP_DEVO_Telem devo_telemetry;
 #endif
 
     // Variables for extended status MAVLink messages
@@ -854,7 +854,7 @@ private:
     void set_guided_WP(void);
     void update_home();
     // set home location and store it persistently:
-    void set_home_persistently(const Location &loc);
+    bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
     void do_RTL(int32_t alt);
     bool verify_takeoff();
     bool verify_loiter_unlim(const AP_Mission::Mission_Command &cmd);
