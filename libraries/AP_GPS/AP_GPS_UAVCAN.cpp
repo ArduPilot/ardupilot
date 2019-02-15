@@ -45,10 +45,9 @@ AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state) :
 
 AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
 {
-    if (take_registry()) {
+    WITH_SEMAPHORE(_sem_registry);
+
         _detected_modules[_detected_module].driver = nullptr;
-        give_registry();
-    }
 }
 
 void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
@@ -76,21 +75,10 @@ void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     }
 }
 
-bool AP_GPS_UAVCAN::take_registry()
-{
-    return _sem_registry.take(HAL_SEMAPHORE_BLOCK_FOREVER);
-}
-
-void AP_GPS_UAVCAN::give_registry()
-{
-    _sem_registry.give();
-}
-
 AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 {
-    if (!take_registry()) {
-        return nullptr;
-    }
+    WITH_SEMAPHORE(_sem_registry);
+
     AP_GPS_UAVCAN* backend = nullptr;
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
@@ -113,7 +101,6 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
             break;
         }
     }
-    give_registry();
     return backend;
 }
 
@@ -260,24 +247,22 @@ void AP_GPS_UAVCAN::handle_aux_msg(const AuxCb &cb)
 
 void AP_GPS_UAVCAN::handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const FixCb &cb)
 {
-    if (take_registry()) {
+    WITH_SEMAPHORE(_sem_registry);
+
         AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
         if (driver != nullptr) {
             driver->handle_fix_msg(cb);
         }
-        give_registry();
-    }
 }
 
 void AP_GPS_UAVCAN::handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AuxCb &cb)
 {
-    if (take_registry()) {
+    WITH_SEMAPHORE(_sem_registry);
+
         AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
         if (driver != nullptr) {
             driver->handle_aux_msg(cb);
         }
-        give_registry();
-    }
 }
 
 // Consume new data and mark it received
