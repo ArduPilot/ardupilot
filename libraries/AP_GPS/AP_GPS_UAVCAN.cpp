@@ -47,7 +47,7 @@ AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
 {
     WITH_SEMAPHORE(_sem_registry);
 
-        _detected_modules[_detected_module].driver = nullptr;
+    _detected_modules[_detected_module].driver = nullptr;
 }
 
 void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
@@ -249,20 +249,20 @@ void AP_GPS_UAVCAN::handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node
 {
     WITH_SEMAPHORE(_sem_registry);
 
-        AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
-        if (driver != nullptr) {
-            driver->handle_fix_msg(cb);
-        }
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
+    if (driver != nullptr) {
+        driver->handle_fix_msg(cb);
+    }
 }
 
 void AP_GPS_UAVCAN::handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AuxCb &cb)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-        AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
-        if (driver != nullptr) {
-            driver->handle_aux_msg(cb);
-        }
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
+    if (driver != nullptr) {
+        driver->handle_aux_msg(cb);
+    }
 }
 
 // Consume new data and mark it received
