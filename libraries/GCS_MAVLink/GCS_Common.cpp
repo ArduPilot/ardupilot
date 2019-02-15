@@ -3633,26 +3633,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int
     if (!is_zero(packet.param1)) {
         return MAV_RESULT_FAILED;
     }
-    // check frame type is supported
-    if (packet.frame != MAV_FRAME_GLOBAL &&
-        packet.frame != MAV_FRAME_GLOBAL_INT &&
-        packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-        packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+    Location::ALT_FRAME frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame(packet.frame, frame)) {
+        // unknown coordinate frame
         return MAV_RESULT_UNSUPPORTED;
     }
-    Location new_home_loc {};
-    new_home_loc.lat = packet.x;
-    new_home_loc.lng = packet.y;
-    new_home_loc.alt = packet.z * 100;
-    // handle relative altitude
-    if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT ||
-        packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-        if (!AP::ahrs().home_is_set()) {
-            // cannot use relative altitude if home is not set
-            return MAV_RESULT_FAILED;
-        }
-        new_home_loc.alt += AP::ahrs().get_home().alt;
-    }
+    const Location new_home_loc{
+        packet.x,
+        packet.y,
+        int32_t(packet.z * 100),
+        frame,
+    };
     if (!set_home(new_home_loc, true)) {
         return MAV_RESULT_FAILED;
     }
