@@ -127,29 +127,29 @@ void AP_Baro_UAVCAN::handle_pressure(AP_UAVCAN* ap_uavcan, uint8_t node_id, cons
 {
     WITH_SEMAPHORE(_sem_registry);
 
-        AP_Baro_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, true);
-        if (driver == nullptr) {
-            return;
-        }
-        {
-            WITH_SEMAPHORE(driver->_sem_baro);
-            driver->_pressure = cb.msg->static_pressure;
-            driver->new_pressure = true;
-        }
+    AP_Baro_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, true);
+    if (driver == nullptr) {
+        return;
+    }
+    {
+        WITH_SEMAPHORE(driver->_sem_baro);
+        driver->_pressure = cb.msg->static_pressure;
+        driver->new_pressure = true;
+    }
 }
 
 void AP_Baro_UAVCAN::handle_temperature(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TemperatureCb &cb)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-        AP_Baro_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, false);
-        if (driver == nullptr) {
-            return;
-        }
-        {
-            WITH_SEMAPHORE(driver->_sem_baro);
-            driver->_temperature = cb.msg->static_temperature - C_TO_KELVIN;
-        }
+    AP_Baro_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, false);
+    if (driver == nullptr) {
+        return;
+    }
+    {
+        WITH_SEMAPHORE(driver->_sem_baro);
+        driver->_temperature = cb.msg->static_temperature - C_TO_KELVIN;
+    }
 }
 
 // Read the sensor
