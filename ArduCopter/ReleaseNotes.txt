@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.6-rc2 09-Feb-2019
+Copter 3.6.6 15-Feb-2019 / Copter 3.6.6-rc2 09-Feb-2019
 Changes from 3.6.6-rc1
 1) Bug fixes
     a) EKF compass switching fix for vehicles with 3 compasses
