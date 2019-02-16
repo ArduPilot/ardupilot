@@ -117,6 +117,10 @@ public:
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
 
+    void update_servo_output(const struct sitl_input &input);
+    float servo_voltage() const { return static_cast<float>(out_servo_voltage); };
+    float servo_current() const { return static_cast<float>(out_servo_current); };
+
 protected:
     SITL *sitl;
     Location home;
@@ -242,6 +246,8 @@ protected:
     void update_external_payload(const struct sitl_input &input);
 
     Battery *battery;
+    AP_Float out_servo_voltage;
+    AP_Float out_servo_current;
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;

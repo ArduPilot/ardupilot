@@ -766,10 +766,12 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         external_payload_mass += gripper_epm->payload_mass();
     }
 
-
     // update parachute
     if (parachute && parachute->is_enabled()) {
         parachute->update(input);
         // TODO: add drag to vehicle, presumably proportional to velocity
     }
+}
+
+void Aircraft::update_servo_output(const struct sitl_input &input){
 }
