@@ -484,8 +484,7 @@ class AutoTest(ABC):
         """Load a mission from a file and return number of waypoints."""
         wploader = mavwp.MAVWPLoader()
         wploader.load(filename)
-        num_wp = wploader.count()
-        return num_wp
+        return wploader.count()
 
     def mission_directory(self):
         return testdir
@@ -609,10 +608,14 @@ class AutoTest(ABC):
         if status_have != save_count:
             raise ValueError("status have not equal to save count")
 
-        # update num_wp
         wploader = mavwp.MAVWPLoader()
         wploader.load(path)
         num_wp = wploader.count()
+        if num_wp != int(status_have):
+            raise ValueError("num_wp=%u != status_have=%u" %
+            (num_wp, int(status_have)))
+        if num_wp == 0:
+            raise ValueError("No waypoints loaded?!")
         return num_wp
 
     def save_mission_to_file(self, filename):
