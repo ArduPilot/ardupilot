@@ -13,7 +13,7 @@ import operator
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-HOME = mavutil.location(-27.274439, 151.290064, 343, 8.7)
+SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 MISSION = 'ArduPlane-Missions/Dalby-OBC2016.txt'
 FENCE = 'ArduPlane-Missions/Dalby-OBC2016-fence.txt'
 WIND = "0,180,0.2"  # speed,direction,variance
@@ -39,17 +39,24 @@ class AutoTestQuadPlane(AutoTest):
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
 
-        self.home = "%f,%f,%u,%u" % (HOME.lat,
-                                     HOME.lng,
-                                     HOME.alt,
-                                     HOME.heading)
-        self.homeloc = None
         self.speedup = speedup
 
         self.log_name = "QuadPlane"
         self.logfile = None
 
         self.sitl = None
+
+    # def initial_mode(self):
+    #     return "FBWA"
+
+    def initial_mode_switch_mode(self):
+        return "FBWA"
+
+    def default_mode(self):
+        return "FBWA"
+
+    def sitl_start_location(self):
+        return SITL_START_LOCATION
 
     def init(self):
         if self.frame is None:
@@ -64,7 +71,7 @@ class AutoTestQuadPlane(AutoTest):
         self.sitl = util.start_SITL(self.binary,
                                     wipe=True,
                                     model=self.frame,
-                                    home=self.home,
+                                    home=self.sitl_home(),
                                     speedup=self.speedup,
                                     defaults_file=defaults_filepath,
                                     valgrind=self.valgrind,
