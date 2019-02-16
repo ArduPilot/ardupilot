@@ -5,15 +5,12 @@
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 
-// default main rotor speed (ch8 out) as a number from 0 ~ 1000
-#define AP_MOTORS_HELI_RSC_SETPOINT             700
-
 // Throttle Curve Defaults
-#define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     250
-#define AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT    320
-#define AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT    380
-#define AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT    500
-#define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   1000
+#define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     25
+#define AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT    32
+#define AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT    38
+#define AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT    50
+#define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   100
 
 // RSC governor defaults
 #define AP_MOTORS_HELI_RSC_GOVERNOR_SET_DEFAULT   1500
@@ -163,7 +160,7 @@ public:
     float * get_thrcrv() {
         static float throttlecurve[5];
         for (uint8_t i = 0; i < 5; i++) {
-            throttlecurve[i] = (float)thrcrv[i] * 0.001f;
+            throttlecurve[i] = (float)thrcrv[i] * 0.01f;
         }
         return throttlecurve;
     }
