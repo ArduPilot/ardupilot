@@ -706,23 +706,23 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, AP_Logger &datafla
     // use the state of the transmit buffer in the radio to
     // control the stream rate, giving us adaptive software
     // flow control
-    if (packet.txbuf < 20 && stream_slowdown < 100) {
+    if (packet.txbuf < 20 && stream_slowdown_ms < 2000) {
         // we are very low on space - slow down a lot
-        stream_slowdown += 3;
-    } else if (packet.txbuf < 50 && stream_slowdown < 100) {
+        stream_slowdown_ms += 60;
+    } else if (packet.txbuf < 50 && stream_slowdown_ms < 2000) {
         // we are a bit low on space, slow down slightly
-        stream_slowdown += 1;
-    } else if (packet.txbuf > 95 && stream_slowdown > 10) {
+        stream_slowdown_ms += 20;
+    } else if (packet.txbuf > 95 && stream_slowdown_ms > 200) {
         // the buffer has plenty of space, speed up a lot
-        stream_slowdown -= 2;
-    } else if (packet.txbuf > 90 && stream_slowdown != 0) {
+        stream_slowdown_ms -= 40;
+    } else if (packet.txbuf > 90 && stream_slowdown_ms != 0) {
         // the buffer has enough space, speed up a bit
-        stream_slowdown--;
+        stream_slowdown_ms -= 20;
     }
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
-    if (stream_slowdown > max_slowdown) {
-        max_slowdown = stream_slowdown;
+    if (stream_slowdown_ms > max_slowdown_ms) {
+        max_slowdown_ms = stream_slowdown_ms;
     }
 #endif
 
@@ -991,10 +991,7 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
 {
     uint32_t interval_ms = deferred.interval_ms;
 
-    // add in adjustments for streamrate-slowdown (e.g. based
-    // on feedback from telemetry radio on its state).
-    // slowdown is basically 50ths of a second
-    interval_ms += stream_slowdown * 20;
+    interval_ms += stream_slowdown_ms;
 
     // slow most messages down if we're transfering parameters or
     // waypoints:
@@ -1530,12 +1527,12 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
                             try_send_message_stats.no_space_for_message);
             try_send_message_stats.no_space_for_message = 0;
         }
-        if (max_slowdown) {
+        if (max_slowdown_ms) {
             gcs().send_text(MAV_SEVERITY_INFO,
                             "GCS.chan(%u): max slowdown=%u",
                             chan,
-                            max_slowdown);
-            max_slowdown = 0;
+                            max_slowdown_ms);
+            max_slowdown_ms = 0;
         }
         if (try_send_message_stats.behind) {
             gcs().send_text(MAV_SEVERITY_INFO,
@@ -1577,7 +1574,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 #endif
 
     if (waypoint_receiving) {
-        const uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
+        const uint32_t wp_recv_time = 1000U + stream_slowdown_ms;
 
         // stop waypoint receiving if timeout
         if (tnow - waypoint_timelast_receive > wp_recv_time+waypoint_receive_timeout) {
