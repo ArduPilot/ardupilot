@@ -17,6 +17,10 @@ Next, copy the file gdb-black-magic.init to the ArduPilot source
 directory, in the same directory where you will be starting the
 debugger. Rename the file to ".gdbinit"
 
+Now either edit the .gdbinit to give the path to the serial port for
+your black magic probe, or install the provided udev rules file so
+that the probe will be loaded as /dev/ttyBmpGdb
+
 Now make sure you have the right version of arm-none-eabi-gdb
 installed. We recommend version 6-2017-q2-update, which is available
 here: http://firmware.ardupilot.org/Tools/STM32-tools/
