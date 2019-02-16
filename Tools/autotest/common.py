@@ -184,6 +184,13 @@ class AutoTest(ABC):
     def buildlogs_dirpath():
         return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
 
+    def sitl_home(self):
+        HOME = self.sitl_start_location()
+        return "%f,%f,%u,%u" % (HOME.lat,
+                                HOME.lng,
+                                HOME.alt,
+                                HOME.heading)
+
     def open_mavproxy_logfile(self):
         return MAVProxyLogFile()
 
@@ -1669,6 +1676,14 @@ class AutoTest(ABC):
         if old is not None and m._timestamp == old._timestamp:
             raise NotAchievedException("home position not updated")
         return m
+
+    def distance_to_home(self):
+        m = self.poll_home_position()
+        loc = mavutil.location(m.latitude * 1.0e-7,
+                               m.longitude * 1.0e-7,
+                               m.altitude * 1.0e-3,
+                               0)
+        return self.get_distance(loc, self.mav.location())
 
     def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
         tstart = self.get_sim_time()
