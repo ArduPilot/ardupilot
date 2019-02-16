@@ -14,7 +14,8 @@ from common import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-HOME = mavutil.location(33.810313, -118.393867, 0, 185)
+
+SITL_START_LOCATION = mavutil.location(33.810313, -118.393867, 0, 185)
 
 
 class AutoTestSub(AutoTest):
@@ -37,11 +38,6 @@ class AutoTestSub(AutoTest):
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
 
-        self.home = "%f,%f,%u,%u" % (HOME.lat,
-                                     HOME.lng,
-                                     HOME.alt,
-                                     HOME.heading)
-        self.homeloc = None
         self.speedup = speedup
 
         self.sitl = None
@@ -51,6 +47,9 @@ class AutoTestSub(AutoTest):
     def default_mode(self):
         return 'MANUAL'
 
+    def sitl_start_location(self):
+        return SITL_START_LOCATION
+
     def init(self):
         if self.frame is None:
             self.frame = 'vectored'
@@ -59,7 +58,7 @@ class AutoTestSub(AutoTest):
 
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
-                                    home=self.home,
+                                    home=self.sitl_home(),
                                     speedup=self.speedup,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,

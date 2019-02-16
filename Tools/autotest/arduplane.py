@@ -18,7 +18,7 @@ from common import PreconditionFailedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-HOME = mavutil.location(-35.362938, 149.165085, 585, 354)
+SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 585, 354)
 WIND = "0,180,0.2"  # speed,direction,variance
 
 
@@ -42,16 +42,15 @@ class AutoTestPlane(AutoTest):
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
 
-        self.home = "%f,%f,%u,%u" % (HOME.lat,
-                                     HOME.lng,
-                                     HOME.alt,
-                                     HOME.heading)
         self.homeloc = None
         self.speedup = speedup
 
         self.sitl = None
 
         self.log_name = "ArduPlane"
+
+    def sitl_start_location(self):
+        return SITL_START_LOCATION
 
     def init(self):
         if self.frame is None:
@@ -64,7 +63,7 @@ class AutoTestPlane(AutoTest):
         self.sitl = util.start_SITL(self.binary,
                                     wipe=True,
                                     model=self.frame,
-                                    home=self.home,
+                                    home=self.sitl_home(),
                                     speedup=self.speedup,
                                     defaults_file=defaults_file,
                                     valgrind=self.valgrind,
