@@ -29,41 +29,41 @@ const AP_Param::GroupInfo RSCThrCrvInt16Param::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE", 1, RSCThrCrvInt16Param, enable, 0, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: 0
+    // @Param: 000
     // @DisplayName: Throttle Servo Position in percent for 0 percent collective
     // @Description: Throttle Servo Position in percent for 0 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("0", 2, RSCThrCrvInt16Param, thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
+    AP_GROUPINFO("000", 2, RSCThrCrvInt16Param, thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
 
-    // @Param: 25
-    // @DisplayName: Throttle Servo Position for 25 percent collective
-    // @Description: Throttle Servo Position for 25 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Param: 025
+    // @DisplayName: Throttle Servo Position in percent for 25 percent collective
+    // @Description: Throttle Servo Position in percent for 25 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("25", 3, RSCThrCrvInt16Param, thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
+    AP_GROUPINFO("025", 3, RSCThrCrvInt16Param, thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
 
-    // @Param: 50
-    // @DisplayName: Throttle Servo Position for 50 percent collective
-    // @Description: Throttle Servo Position for 50 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Param: 050
+    // @DisplayName: Throttle Servo Position in percent for 50 percent collective
+    // @Description: Throttle Servo Position in percent for 50 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("50", 4, RSCThrCrvInt16Param, thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
+    AP_GROUPINFO("050", 4, RSCThrCrvInt16Param, thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
 
-    // @Param: 75
-    // @DisplayName: Throttle Servo Position for 75 percent collective
-    // @Description: Throttle Servo Position for 75 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Param: 075
+    // @DisplayName: Throttle Servo Position in percent for 75 percent collective
+    // @Description: Throttle Servo Position in percent for 75 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("75", 5, RSCThrCrvInt16Param, thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
+    AP_GROUPINFO("075", 5, RSCThrCrvInt16Param, thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
 
     // @Param: 100
-    // @DisplayName: Throttle Servo Position for 100 percent collective
-    // @Description: Throttle Servo Position for 100 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @DisplayName: Throttle Servo Position in percent for 100 percent collective
+    // @Description: Throttle Servo Position in percent for 100 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
