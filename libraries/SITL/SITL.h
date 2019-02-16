@@ -4,6 +4,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Common/Location.h>
 
+#include "SIM_Battery.h"
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
@@ -242,6 +243,8 @@ public:
     Gripper_EPM gripper_epm_sim;
 
     Parachute parachute_sim;
+
+    Battery battery_sim;
 };
 
 } // namespace SITL
