@@ -19,8 +19,8 @@ from common import NotAchievedException, AutoTestTimeoutException, PreconditionF
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-HOME = mavutil.location(-35.362938, 149.165085, 584, 270)
-AVCHOME = mavutil.location(40.072842, -105.230575, 1586, 0)
+SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 584, 270)
+SITL_START_LOCATION_AVC = mavutil.location(40.072842, -105.230575, 1586, 0)
 
 
 # Flight mode switch positions are set-up in arducopter.param to be
@@ -51,16 +51,14 @@ class AutoTestCopter(AutoTest):
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
 
-        self.home = "%f,%f,%u,%u" % (HOME.lat,
-                                     HOME.lng,
-                                     HOME.alt,
-                                     HOME.heading)
-        self.homeloc = None
         self.speedup = speedup
 
         self.log_name = "ArduCopter"
 
         self.sitl = None
+
+    def sitl_start_location(self):
+        return SITL_START_LOCATION
 
     def mavproxy_options(self):
         ret = super(AutoTestCopter, self).mavproxy_options()
@@ -82,7 +80,7 @@ class AutoTestCopter(AutoTest):
 
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
-                                    home=self.home,
+                                    home=self.sitl_home(),
                                     speedup=self.speedup,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
@@ -372,8 +370,7 @@ class AutoTestCopter(AutoTest):
         while self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
-            pos = self.mav.location() # requires a GPS fix to function
-            home_distance = self.get_distance(HOME, pos)
+            home_distance = self.distance_to_home()
             home = ""
             if alt <= 1 and home_distance < 10:
                 home = "HOME"
@@ -604,8 +601,7 @@ class AutoTestCopter(AutoTest):
         while self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
-            pos = self.mav.location()
-            home_distance = self.get_distance(HOME, pos)
+            home_distance = self.distance_to_home()
             self.progress("Alt: %.02f  HomeDistance: %.02f" %
                           (alt, home_distance))
             # recenter pitch sticks once we're home so we don't fly off again
@@ -878,18 +874,14 @@ class AutoTestCopter(AutoTest):
 
         # wait for arrival back home
         self.mav.recv_match(type='VFR_HUD', blocking=True)
-        pos = self.mav.location()
-        dist_to_home = self.get_distance(HOME, pos)
-        while dist_to_home > 5:
+        while self.distance_to_home() > 5:
             if self.get_sim_time() > (tstart + timeout):
                 raise AutoTestTimeoutException(
                     ("GPS Glitch testing failed"
                      "- exceeded timeout %u seconds" % timeout))
 
             self.mav.recv_match(type='VFR_HUD', blocking=True)
-            pos = self.mav.location()
-            dist_to_home = self.get_distance(HOME, pos)
-            self.progress("Dist from home: %.02f" % dist_to_home)
+            self.progress("Dist from home: %.02f" % self.distance_to_home())
 
         # turn off simulator display of gps and actual position
         if self.use_map:
@@ -2830,11 +2822,10 @@ class AutoTestHeli(AutoTestCopter):
         super(AutoTestHeli, self).__init__(*args, **kwargs)
 
         self.log_name = "HeliCopter"
-        self.home = "%f,%f,%u,%u" % (AVCHOME.lat,
-                                     AVCHOME.lng,
-                                     AVCHOME.alt,
-                                     AVCHOME.heading)
         self.frame = 'heli'
+
+    def sitl_start_location(self):
+        return SITL_START_LOCATION_AVC
 
     def is_heli(self):
         return True
