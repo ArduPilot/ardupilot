@@ -487,8 +487,8 @@ private:
     uint32_t        waypoint_timelast_request; // milliseconds
     const uint16_t  waypoint_receive_timeout = 8000; // milliseconds
 
-    // number of extra 20ms intervals to add to slow things down for the radio
-    uint8_t         stream_slowdown;
+    // number of extra ms to add to slow things down for the radio
+    uint16_t         stream_slowdown_ms;
 
     // perf counters
     AP_HAL::Util::perf_counter_t _perf_packet;
@@ -696,7 +696,7 @@ private:
         uint32_t max_retry_deferred_body_us;
         uint8_t max_retry_deferred_body_type;
     } try_send_message_stats;
-    uint8_t max_slowdown;
+    uint16_t max_slowdown_ms;
 #endif
 
 };
