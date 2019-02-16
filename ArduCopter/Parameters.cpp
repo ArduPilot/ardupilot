@@ -1339,5 +1339,17 @@ void Copter::convert_tradheli_parameters(void)
             AP_Param::convert_old_parameter(&dualheli_conversion_info[i], 1.0f);
         }
     }
+    const AP_Param::ConversionInfo allheli_conversion_info[] = {
+        { Parameters::k_param_motors, 1280, AP_PARAM_INT16, "H_RSC_CRV_000" },
+        { Parameters::k_param_motors, 1344, AP_PARAM_INT16, "H_RSC_CRV_025" },
+        { Parameters::k_param_motors, 1408, AP_PARAM_INT16, "H_RSC_CRV_050" },
+        { Parameters::k_param_motors, 1472, AP_PARAM_INT16, "H_RSC_CRV_075" },
+        { Parameters::k_param_motors, 1536, AP_PARAM_INT16, "H_RSC_CRV_100" },
+    };
+    // convert dual heli parameters without scaling
+    uint8_t table_size = ARRAY_SIZE(allheli_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&allheli_conversion_info[i], 0.1f);
+    }
 }
 #endif
