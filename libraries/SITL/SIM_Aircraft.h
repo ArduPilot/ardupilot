@@ -23,6 +23,8 @@
 #include "SITL.h"
 #include "SITL_Input.h"
 #include <AP_Terrain/AP_Terrain.h>
+
+#include "SIM_Battery.h"
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
@@ -109,6 +111,7 @@ public:
         attitude.from_rotation_matrix(dcm);
     }
 
+    void set_battery(Battery *_battery) { battery = _battery; }
     void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
     void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
@@ -238,6 +241,7 @@ protected:
     // update external payload/sensor dynamic
     void update_external_payload(const struct sitl_input &input);
 
+    Battery *battery;
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;
