@@ -117,7 +117,9 @@ public:
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
 
+    bool servo_updated = false;
     void update_servo_output(const struct sitl_input &input);
+
     float servo_voltage() const { return static_cast<float>(out_servo_voltage); };
     float servo_current() const { return static_cast<float>(out_servo_current); };
 
@@ -156,7 +158,7 @@ protected:
         struct vector3f_array points;
         struct float_array ranges;
     } scanner;
-    
+
     // Wind Turbulence simulated Data
     float turbulence_azimuth = 0.0f;
     float turbulence_horizontal_speed = 0.0f;  // m/s

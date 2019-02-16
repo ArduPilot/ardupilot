@@ -41,6 +41,7 @@ public:
         return new Submarine(home_str, frame_str);
     }
 
+    void update_servo_output(const struct sitl_input &input);
 
 protected:
     const float water_density = 1023.6; // (kg/m^3) At a temperature of 25 °C, salinity of 35 g/kg and 1 atm pressure

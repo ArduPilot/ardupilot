@@ -41,6 +41,8 @@ Submarine::Submarine(const char *home_str, const char *frame_str) :
 {
     frame_height = 0.0;
     ground_behavior = GROUND_BEHAVIOR_NONE;
+
+    servo_updated = true;
 }
 
 // calculate rotational and linear accelerations
@@ -129,6 +131,9 @@ void Submarine::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    // update servo output
+    update_servo_output(input);
 }
 
 /*
@@ -137,4 +142,18 @@ void Submarine::update(const struct sitl_input &input)
 bool Submarine::on_ground() const
 {
 	return false;
+}
+
+void Submarine::update_servo_output(const struct sitl_input &input)
+{
+    out_servo_voltage = battery->batt_voltage();
+    out_servo_current = 0;
+
+    for (int i = 0; i < 6; i++) {
+        float pwm = input.servos[i];
+        float fraction = fabsf((pwm - 1500) / 500.0f);
+
+        out_servo_voltage -= fraction * 0.5f;
+        out_servo_current += fraction * 15; // amt of draw
+    }
 }
