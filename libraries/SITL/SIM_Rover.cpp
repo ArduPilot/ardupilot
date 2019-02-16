@@ -41,9 +41,9 @@ SimRover::SimRover(const char *home_str, const char *frame_str) :
         max_accel = 14;
         max_speed = 4;
     }
+
+    servo_updated = true;
 }
-
-
 
 /*
   return turning circle (diameter) in meters for steering angle proportion in degrees
@@ -155,6 +155,22 @@ void SimRover::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    update_servo_output(input);
+}
+
+void SimRover::update_servo_output(const struct sitl_input &input)
+{
+    float base = battery->batt_voltage();
+
+    // simulate simple battery setup
+    float throttle = sitl->motors_on ? (input.servos[2] - 1000) / 500.0f : 0;
+
+    // lose 0.7V at full throttle
+    out_servo_voltage = base - 0.7f*fabsf(throttle);
+
+    // assume 50A at full throttle
+    out_servo_current = 50.0f * fabsf(throttle);
 }
 
 } // namespace SITL

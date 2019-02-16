@@ -37,6 +37,8 @@ public:
         return new SimRover(home_str, frame_str);
     }
 
+    void update_servo_output(const struct sitl_input &input);
+
 private:
     float max_speed;
     float max_accel;
