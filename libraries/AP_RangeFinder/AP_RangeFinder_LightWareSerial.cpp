@@ -74,8 +74,18 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
         }
     }
 
-    // we need to write a byte to prompt another reading
-    uart->write('d');
+    uint32_t now = AP_HAL::millis();
+    if (last_init_ms == 0 ||
+        (now - last_init_ms > 1000 &&
+         now - state.last_reading_ms > 1000)) {
+        // send enough serial transitions to trigger LW20 into serial
+        // mode. It starts in dual I2C/serial mode, and wants to see
+        // enough transitions to switch into serial mode.
+        uart->write("www\r\n");
+        last_init_ms = now;
+    } else {
+        uart->write('d');
+    }
 
     if (count == 0) {
         return false;
