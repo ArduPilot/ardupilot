@@ -845,3 +845,21 @@ void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message
     }
 
 }
+
+// If that ICAO is found in the database then return true with a fully populated vehicle
+bool AP_ADSB::get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const
+{
+    adsb_vehicle_t temp_vehicle;
+    temp_vehicle.info.ICAO_address = icao;
+
+    uint16_t i;
+    if (find_index(temp_vehicle, &i)) {
+        // vehicle is tracked in list.
+        // we must memcpy it because the database may reorganize itself and we don't
+        // want the reference to magically start pointing at a different vehicle
+        memcpy(&vehicle, &in_state.vehicle_list[i], sizeof(adsb_vehicle_t));
+        return true;
+    }
+    return false;
+}
+
