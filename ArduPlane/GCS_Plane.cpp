@@ -77,6 +77,7 @@ void GCS_Plane::update_sensor_status_flags(void)
         break;
 
     case ACRO:
+    case QACRO:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         break;
 
