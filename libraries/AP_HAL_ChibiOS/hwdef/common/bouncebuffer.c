@@ -48,6 +48,8 @@ void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_b
 
 /*
   setup for reading from a device into memory, allocating a bouncebuffer if needed
+  Note that *buf can be NULL, in which case we allocate DMA capable memory, but don't
+  copy to it in bouncebuffer_finish_read(). This avoids DMA failures in dummyrx in the SPI LLD
  */
 void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf, uint32_t size)
 {
@@ -79,8 +81,10 @@ void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
 void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t *buf, uint32_t size)
 {
     if (bouncebuffer && buf == bouncebuffer->dma_buf) {
-        osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_read");        
-        memcpy(bouncebuffer->orig_buf, buf, size);
+        osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_read");
+        if (bouncebuffer->orig_buf) {
+            memcpy(bouncebuffer->orig_buf, buf, size);
+        }
         bouncebuffer->busy = false;
     }
 }
@@ -104,7 +108,9 @@ void bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t
         osalDbgAssert((bouncebuffer->dma_buf != NULL), "bouncebuffer write allocate");
         bouncebuffer->size = size;
     }
-    memcpy(bouncebuffer->dma_buf, *buf, size);
+    if (*buf) {
+        memcpy(bouncebuffer->dma_buf, *buf, size);
+    }
     *buf = bouncebuffer->dma_buf;
 #if defined(STM32H7)
     osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer write align");
