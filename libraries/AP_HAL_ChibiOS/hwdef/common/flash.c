@@ -383,13 +383,15 @@ bool stm32_flash_erasepage(uint32_t page)
  */
 static bool stm32h7_flash_write32(uint32_t addr, const void *buf)
 {
-    volatile uint32_t *CR, *CCR;
+    volatile uint32_t *CR, *CCR, *SR;
     if (addr - STM32_FLASH_BASE < 8 * STM32_FLASH_FIXED_PAGE_SIZE * 1024) {
         CR = &FLASH->CR1;
         CCR = &FLASH->CCR1;
+        SR = &FLASH->SR1;
     } else {
         CR = &FLASH->CR2;
         CCR = &FLASH->CCR2;
+        SR = &FLASH->SR2;
     }
     stm32_flash_wait_idle();
     *CCR = ~0;
@@ -397,6 +399,9 @@ static bool stm32h7_flash_write32(uint32_t addr, const void *buf)
 
     const uint32_t *v = (const uint32_t *)buf;
     for (uint8_t i=0; i<8; i++) {
+        while ((FLASH->SR1 & (FLASH_SR_BSY|FLASH_SR_QW)) ||
+               (FLASH->SR2 & (FLASH_SR_BSY|FLASH_SR_QW))) { // nop
+        }
         putreg32(*v, addr);
         v++;
         addr += 4;
