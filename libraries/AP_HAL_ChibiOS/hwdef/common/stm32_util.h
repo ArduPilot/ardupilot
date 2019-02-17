@@ -30,8 +30,8 @@ void show_stack_usage(void);
 
 // allocation functions in malloc.c    
 size_t mem_available(void);
-void *malloc_ccm(size_t size);
 void *malloc_dma(size_t size);
+void *malloc_fastmem(size_t size);
 
 // flush all dcache
 void memory_flush_all(void);

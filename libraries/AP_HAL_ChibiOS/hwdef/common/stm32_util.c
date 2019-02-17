@@ -96,14 +96,6 @@ void show_stack_usage(void)
 #endif
 
 /*
-  flush all memory. Used in chSysHalt()
- */
-void memory_flush_all(void)
-{
-    cacheBufferFlush(HAL_RAM_BASE_ADDRESS, HAL_RAM_SIZE_KB * 1024U);
-}
-
-/*
   set the utc time
  */
 void stm32_set_utc_usec(uint64_t time_utc_usec)
