@@ -161,10 +161,10 @@ bool DeviceBus::adjust_timer(AP_HAL::Device::PeriodicHandle h, uint32_t period_u
 void DeviceBus::bouncebuffer_setup(const uint8_t *&buf_tx, uint16_t tx_len,
                                    uint8_t *&buf_rx, uint16_t rx_len)
 {
-    if (buf_rx) {
+    if (rx_len != 0) {
         bouncebuffer_setup_read(bounce_buffer_rx, &buf_rx, rx_len);
     }
-    if (buf_tx) {
+    if (tx_len != 0) {
         bouncebuffer_setup_write(bounce_buffer_tx, &buf_tx, tx_len);
     }
 }
