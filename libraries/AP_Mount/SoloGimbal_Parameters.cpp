@@ -185,7 +185,7 @@ void SoloGimbal_Parameters::handle_param_value(const mavlink_message_t *msg)
     mavlink_param_value_t packet;
     mavlink_msg_param_value_decode(msg, &packet);
 
-    AP_Logger *dataflash = AP_Logger::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (dataflash != nullptr) {
         dataflash->Write_Parameter(packet.param_id, packet.param_value);
     }

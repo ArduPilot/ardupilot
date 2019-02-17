@@ -269,6 +269,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_PARACHUTE:
         return true;
     default:
         return _cmd_verify_fn(cmd);
@@ -290,6 +291,8 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return start_command_camera(cmd);
+    case MAV_CMD_DO_PARACHUTE:
+        return start_command_parachute(cmd);
     default:
         return _cmd_start_fn(cmd);
     }

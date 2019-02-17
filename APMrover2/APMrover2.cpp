@@ -54,7 +54,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200),
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200),
     SCHED_TASK_CLASS(AP_WindVane,         &rover.g2.windvane,      update,         20,  100),
-    SCHED_TASK(update_visual_odom,     50,    200),
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    SCHED_TASK_CLASS(AP_VisualOdom,       &rover.g2.visual_odom,   update,         50,  200),
+#endif
     SCHED_TASK(update_wheel_encoder,   50,    200),
     SCHED_TASK(update_compass,         10,    200),
     SCHED_TASK(update_mission,         50,    200),
@@ -66,6 +68,10 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(RC_Channels,         (RC_Channels*)&rover.g2.rc_channels, read_aux_all,           10,    200),
     SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300),
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200),
+#if GRIPPER_ENABLED == ENABLED
+    SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,      update,         10,   75),
+#endif
+    SCHED_TASK(rpm_update,             10,    100),
 #if MOUNT == ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200),
 #endif
@@ -160,8 +166,12 @@ void Rover::ahrs_update()
     // update position
     have_position = ahrs.get_position(current_loc);
 
-    // update home from EKF if necessary
-    update_home_from_EKF();
+    // set home from EKF if necessary and possible
+    if (!ahrs.home_is_set()) {
+        if (!set_home_to_current_location(false)) {
+            // ignore this failure
+        }
+    }
 
     // if using the EKF get a speed update now (from accelerometers)
     Vector3f velocity;
@@ -244,7 +254,7 @@ void Rover::update_logging2(void)
 
     if (should_log(MASK_LOG_RC)) {
         Log_Write_RC();
-        Log_Write_WheelEncoder();
+        g2.wheel_encoder.Log_Write();
     }
 
     if (should_log(MASK_LOG_IMU)) {
@@ -252,14 +262,6 @@ void Rover::update_logging2(void)
     }
 }
 
-
-/*
-  update aux servo mappings
- */
-void Rover::update_aux(void)
-{
-    SRV_Channels::enable_aux_servos();
-}
 
 /*
   once a second events
@@ -275,7 +277,7 @@ void Rover::one_second_loop(void)
     set_control_channels();
 
     // cope with changes to aux functions
-    update_aux();
+    SRV_Channels::enable_aux_servos();
 
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
@@ -285,10 +287,8 @@ void Rover::one_second_loop(void)
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
-    // update home position if not soft armed and gps position has
-    // changed. Update every 1s at most
-    if (!hal.util->get_soft_armed() &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    // attempt to update home position and baro calibration if not armed:
+    if (!hal.util->get_soft_armed()) {
         update_home();
     }
 

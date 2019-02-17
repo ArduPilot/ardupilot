@@ -91,15 +91,14 @@ void Copter::init_ardupilot()
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
-    frsky_telemetry.init(serial_manager,
-                         get_frame_mav_type(),
+    frsky_telemetry.init(get_frame_mav_type(),
                          &ap.value);
     frsky_telemetry.set_frame_string(get_frame_string());
 #endif
 
 #if DEVO_TELEM_ENABLED == ENABLED
     // setup devo
-    devo_telemetry.init(serial_manager);
+    devo_telemetry.init();
 #endif
 
 #if OSD_ENABLED == ENABLED

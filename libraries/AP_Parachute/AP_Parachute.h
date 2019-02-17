@@ -30,6 +30,12 @@ public:
         : _relay(relay)
     {
         // setup parameter defaults
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (_singleton != nullptr) {
+            AP_HAL::panic("Rally must be singleton");
+        }
+#endif
+        _singleton = this;
         AP_Param::setup_object_defaults(this, var_info);
     }
 
@@ -64,7 +70,11 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
+    // get singleton instance
+    static AP_Parachute *get_singleton() { return _singleton; }
+
 private:
+    static AP_Parachute *_singleton;
     // Parameters
     AP_Int8     _enabled;       // 1 if parachute release is enabled
     AP_Int8     _release_type;  // 0:Servo,1:Relay
@@ -79,4 +89,8 @@ private:
     bool        _release_initiated:1;    // true if the parachute release initiated (may still be waiting for engine to be suppressed etc.)
     bool        _release_in_progress:1;  // true if the parachute release is in progress
     bool        _released:1;             // true if the parachute has been released
+};
+
+namespace AP {
+    AP_Parachute *parachute();
 };

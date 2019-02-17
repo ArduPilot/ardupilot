@@ -1377,8 +1377,8 @@ void AP_Logger::Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets)
         roll            : (int16_t)ahrs.roll_sensor,
         control_pitch   : (int16_t)targets.y,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        control_yaw     : (uint16_t)targets.z,
-        yaw             : (uint16_t)ahrs.yaw_sensor,
+        control_yaw     : (uint16_t)wrap_360_cd(targets.z),
+        yaw             : (uint16_t)wrap_360_cd(ahrs.yaw_sensor),
         error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
         error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100)
     };
@@ -1533,6 +1533,7 @@ void AP_Logger::Write_Airspeed(AP_Airspeed &airspeed)
             offset        : airspeed.get_offset(i),
             use           : airspeed.use(i),
             healthy       : airspeed.healthy(i),
+            health_prob   : airspeed.get_health_failure_probability(i),
             primary       : airspeed.get_primary()
         };
         WriteBlock(&pkt, sizeof(pkt));
@@ -1605,30 +1606,6 @@ void AP_Logger::Write_Rate(const AP_AHRS_View *ahrs,
         accel_out       : motors.get_throttle()
     };
     WriteBlock(&pkt_rate, sizeof(pkt_rate));
-}
-
-// Write rally points
-void AP_Logger::Write_Rally()
-{
-    const AP_Rally *rally = AP::rally();
-    if (rally == nullptr) {
-        return;
-    }
-    RallyLocation rally_point;
-    for (uint8_t i=0; i<rally->get_rally_total(); i++) {
-        if (rally->get_rally_point_with_index(i, rally_point)) {
-            struct log_Rally pkt_rally = {
-                LOG_PACKET_HEADER_INIT(LOG_RALLY_MSG),
-                time_us         : AP_HAL::micros64(),
-                total           : rally->get_rally_total(),
-                sequence        : i,
-                latitude        : rally_point.lat,
-                longitude       : rally_point.lng,
-                altitude        : rally_point.alt
-            };
-            WriteBlock(&pkt_rally, sizeof(pkt_rally));
-        }
-    }
 }
 
 // Write visual odometry sensor data

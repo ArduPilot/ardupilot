@@ -67,9 +67,10 @@ const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
 };
 
 AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
+                                         AP_RangeFinder_Params &_params,
                                          AP_SerialManager &serial_manager,
                                          uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state) {
+    AP_RangeFinder_Backend(_state, _params) {
     AP_Param::setup_object_defaults(this, var_info);
 
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);

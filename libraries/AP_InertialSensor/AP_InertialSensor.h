@@ -55,7 +55,7 @@ public:
     AP_InertialSensor(const AP_InertialSensor &other) = delete;
     AP_InertialSensor &operator=(const AP_InertialSensor&) = delete;
 
-    static AP_InertialSensor *get_instance();
+    static AP_InertialSensor *get_singleton();
 
     enum Gyro_Calibration_Timing {
         GYRO_CAL_NEVER = 0,
@@ -553,7 +553,7 @@ private:
     AP_Int8 _acc_body_aligned;
     AP_Int8 _trim_option;
 
-    static AP_InertialSensor *_s_instance;
+    static AP_InertialSensor *_singleton;
     AP_AccelCal* _acal;
 
     AccelCalibrator *_accel_calibrator;

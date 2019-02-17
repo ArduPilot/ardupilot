@@ -416,6 +416,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_A_RAT_PIT_I",    0.25 },
     { "Q_A_RAT_PIT_FILT", 10.0 },
     { "Q_M_SPOOL_TIME",   0.25 },
+    { "Q_M_HOVER_LEARN",     0 },
     { "Q_LOIT_ANG_MAX",   15.0 },
     { "Q_LOIT_ACC_MAX",   250.0 },
     { "Q_LOIT_BRK_ACCEL", 50.0 },
@@ -491,7 +492,7 @@ bool QuadPlane::setup(void)
 
     enum AP_Motors::motor_frame_class motor_class;
     enum Rotation rotation = ROTATION_NONE;
-        
+
     /*
       cope with upgrade from old AP_Motors values for frame_class
      */
@@ -781,6 +782,7 @@ void QuadPlane::run_z_controller(void)
         // controller. We need to assume the integrator may be way off
 
         // the base throttle we start at is the current throttle we are using
+        // note that AC_PosControl::run_z_controller() adds the Z pid (_pid_accel_z) output to _motors.get_throttle_hover()
         float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), -1, 1) * 1000;
         pos_control->get_accel_z_pid().set_integrator(base_throttle);
 
@@ -1104,7 +1106,8 @@ void QuadPlane::control_loiter()
  */
 float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
-    if (plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode) {
+    if (plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode &&
+        plane.arming.get_rudder_arming_type() != AP_Arming::ARMING_RUDDER_DISABLED) {
         // the user may be trying to disarm
         return 0;
     }
@@ -1497,7 +1500,12 @@ void QuadPlane::update(void)
     if (!setup()) {
         return;
     }
-    
+
+    if ((ahrs_view != NULL) && !is_equal(_last_ahrs_trim_pitch, ahrs_trim_pitch.get())) {
+        _last_ahrs_trim_pitch = ahrs_trim_pitch.get();
+        ahrs_view->set_pitch_trim(_last_ahrs_trim_pitch);
+    }
+
     if (plane.afs.should_crash_vehicle()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         motors->output();
@@ -1530,9 +1538,6 @@ void QuadPlane::update(void)
 
         assisted_flight = false;
         
-        // give full authority to attitude control
-        attitude_control->set_throttle_mix_max();
-
         // output to motors
         motors_output();
 
@@ -1645,6 +1650,34 @@ void QuadPlane::check_throttle_suppression(void)
     last_motors_active_ms = 0;
 }
 
+// update estimated throttle required to hover (if necessary)
+//  called at 100hz
+void QuadPlane::update_throttle_hover()
+{
+    if (!enable) {
+        return;
+    }
+    
+    // if not armed or landed exit
+    if (!motors->armed() || !is_flying_vtol()) {
+        return;
+    }
+
+    // do not update while climbing or descending
+    if (!is_zero(pos_control->get_desired_velocity().z)) {
+        return;
+    }
+
+    // get throttle output
+    float throttle = motors->get_throttle();
+
+    // calc average throttle if we are in a level hover
+    if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z()) < 60 &&
+            labs(ahrs_view->roll_sensor) < 500 && labs(ahrs_view->pitch_sensor) < 500) {
+        // Can we set the time constant automatically
+        motors->update_throttle_hover(0.01f);
+    }
+}
 /*
   output motors and do any copter needed
  */
@@ -2782,4 +2815,55 @@ float QuadPlane::stopping_distance(void)
     // varies with pitch, but it gives something for the user to
     // control the transition distance in a reasonable way
     return plane.ahrs.groundspeed_vector().length_squared() / (2 * transition_decel);
+}
+
+#define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing
+#define LAND_CHECK_LARGE_ANGLE_CD   1500.0f     // maximum angle target to be considered landing
+#define LAND_CHECK_ACCEL_MOVING     3.0f        // maximum acceleration after subtracting gravity
+
+void QuadPlane::update_throttle_thr_mix(void)
+{
+    // transition will directly manage the mix
+    if (in_transition()) {
+      return;
+    }
+
+    // if disarmed or landed prioritise throttle
+    if(!motors->armed()) {
+        attitude_control->set_throttle_mix_min();
+        return;
+    }
+
+    if (plane.control_mode == QSTABILIZE) {
+        // manual throttle
+        if (plane.get_throttle_input() <= 0) {
+            attitude_control->set_throttle_mix_min();
+        } else {
+            attitude_control->set_throttle_mix_man();
+        }
+    } else {
+        // autopilot controlled throttle
+
+        // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
+        const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
+        bool large_angle_request = (norm(angle_target.x, angle_target.y) > LAND_CHECK_LARGE_ANGLE_CD);
+
+        // check for large external disturbance - angle error over 30 degrees
+        const float angle_error = attitude_control->get_att_error_angle_deg();
+        bool large_angle_error = (angle_error > LAND_CHECK_ANGLE_ERROR_DEG);
+
+        // check for large acceleration - falling or high turbulence
+        Vector3f accel_ef = plane.ahrs.get_accel_ef_blended();
+        accel_ef.z += GRAVITY_MSS;
+        bool accel_moving = (accel_ef.length() > LAND_CHECK_ACCEL_MOVING);
+
+        // check for requested decent
+        bool descent_not_demanded = pos_control->get_desired_velocity().z >= 0.0f;
+
+        if ( large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
+            attitude_control->set_throttle_mix_max();
+        } else {
+            attitude_control->set_throttle_mix_min();
+        }
+    }
 }

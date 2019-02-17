@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 #define LP_FIFO_SIZE  16      // Physical data FIFO lengths in Radio
 
 // object instance for trampoline
-AP_Radio_cc2500 *AP_Radio_cc2500::radio_instance;
+AP_Radio_cc2500 *AP_Radio_cc2500::radio_singleton;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 thread_t *AP_Radio_cc2500::_irq_handler_ctx;
 virtual_timer_t AP_Radio_cc2500::timeout_vt;
@@ -49,7 +49,7 @@ AP_Radio_cc2500::AP_Radio_cc2500(AP_Radio &_radio) :
     cc2500(hal.spi->get_device("cc2500"))
 {
     // link to instance for irq_trampoline
-    radio_instance = this;
+    radio_singleton = this;
 }
 
 /*
@@ -704,31 +704,31 @@ void AP_Radio_cc2500::irq_handler_thd(void *arg)
     while(true) {
         eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
 
-        radio_instance->cc2500.lock_bus();
+        radio_singleton->cc2500.lock_bus();
         
         switch(evt) {
         case EVT_IRQ:
-            if (radio_instance->protocolState == STATE_FCCTEST) {
+            if (radio_singleton->protocolState == STATE_FCCTEST) {
                 hal.console->printf("IRQ FCC\n");
             }
-            radio_instance->irq_handler();
+            radio_singleton->irq_handler();
             break;
         case EVT_TIMEOUT:
-            if (radio_instance->cc2500.ReadReg(CC2500_3B_RXBYTES | CC2500_READ_BURST) & 0x80) {
+            if (radio_singleton->cc2500.ReadReg(CC2500_3B_RXBYTES | CC2500_READ_BURST) & 0x80) {
                 irq_time_us = AP_HAL::micros();
-                radio_instance->irq_handler();
+                radio_singleton->irq_handler();
             } else {
-                radio_instance->irq_timeout();
+                radio_singleton->irq_timeout();
             }
             break;
         case EVT_BIND:
-            radio_instance->initTuneRx();
+            radio_singleton->initTuneRx();
             break;
         default:
             break;
         }
 
-        radio_instance->cc2500.unlock_bus();
+        radio_singleton->cc2500.unlock_bus();
     }
 }
 

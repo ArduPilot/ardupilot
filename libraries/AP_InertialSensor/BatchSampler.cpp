@@ -176,7 +176,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
         // avoid flooding AP_Logger's buffer
         return;
     }
-    AP_Logger *dataflash = AP_Logger::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (dataflash == nullptr) {
         // should not have been called
         return;
@@ -250,7 +250,7 @@ bool AP_InertialSensor::BatchSampler::should_log(uint8_t _instance, IMU_SENSOR_T
     if (data_write_offset >= _required_count) {
         return false;
     }
-    AP_Logger *dataflash = AP_Logger::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (dataflash == nullptr) {
         return false;
     }

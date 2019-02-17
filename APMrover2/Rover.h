@@ -54,10 +54,12 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
 #include <AP_Relay/AP_Relay.h>                      // APM relay
+#include <AP_RPM/AP_RPM.h>
 #include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_Gripper/AP_Gripper.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
@@ -177,6 +179,9 @@ private:
     AP_Int8 *modes;
     const uint8_t num_modes = 6;
 
+    // AP_RPM Module
+    AP_RPM rpm_sensor;
+
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF2 EKF2{&ahrs, rangefinder};
@@ -291,10 +296,10 @@ private:
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
+    AP_Frsky_Telem frsky_telemetry;
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
-    AP_DEVO_Telem devo_telemetry{ahrs};
+    AP_DEVO_Telem devo_telemetry;
 #endif
 
     uint32_t control_sensors_present;
@@ -331,15 +336,11 @@ private:
     // Store the time the last GPS message was received.
     uint32_t last_gps_msg_ms{0};
 
-    // last visual odometry update time
-    uint32_t visual_odom_last_update_ms;
-
     // last wheel encoder update times
     float wheel_encoder_last_angle_rad[WHEELENCODER_MAX_INSTANCES];     // distance in radians at time of last update to EKF
     float wheel_encoder_last_distance_m[WHEELENCODER_MAX_INSTANCES];    // distance in meters at time of last update to EKF (for reporting to GCS)
     uint32_t wheel_encoder_last_update_ms[WHEELENCODER_MAX_INSTANCES];  // system time of last ping from each encoder
     uint32_t wheel_encoder_last_ekf_update_ms;                          // system time of last encoder data push to EKF
-    float wheel_encoder_rpm[WHEELENCODER_MAX_INSTANCES];                // for reporting to GCS
 
     // True when we are doing motor test
     bool motor_test;
@@ -387,7 +388,6 @@ private:
     void update_compass(void);
     void update_logging1(void);
     void update_logging2(void);
-    void update_aux(void);
     void one_second_loop(void);
     void update_GPS(void);
     void update_current_mode(void);
@@ -403,9 +403,8 @@ private:
     void update_mission(void);
 
     // commands.cpp
-    void update_home_from_EKF();
-    bool set_home_to_current_location(bool lock);
-    bool set_home(const Location& loc, bool lock);
+    bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
     void update_home();
 
     // compat.cpp
@@ -438,11 +437,10 @@ private:
     void fence_check();
 
     // GCS_Mavlink.cpp
-    void send_sys_status(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
-    void send_wheel_encoder(mavlink_channel_t chan);
+    void send_rpm(mavlink_channel_t chan);
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
     // Log.cpp
@@ -458,7 +456,6 @@ private:
     void Log_Write_Throttle();
     void Log_Write_Rangefinder();
     void Log_Write_RC(void);
-    void Log_Write_WheelEncoder();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
@@ -472,7 +469,6 @@ private:
     // radio.cpp
     void set_control_channels(void);
     void init_rc_in();
-    void init_rc_out();
     void rudder_arm_disarm_check();
     void read_radio();
     void radio_failsafe_check(uint16_t pwm);
@@ -494,7 +490,6 @@ private:
     void init_compass_location(void);
     void init_beacon();
     void init_visual_odom();
-    void update_visual_odom();
     void update_wheel_encoder();
     void compass_cal_update(void);
     void compass_save(void);
@@ -510,6 +505,7 @@ private:
     void set_servos(void);
 
     // system.cpp
+    void rpm_update(void);
     void init_ardupilot();
     void startup_ground(void);
     void update_ahrs_flyforward();

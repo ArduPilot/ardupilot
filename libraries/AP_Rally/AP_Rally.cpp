@@ -2,8 +2,7 @@
 /// @brief   Handles rally point storage and retrieval.
 #include "AP_Rally.h"
 
-#include <AP_HAL/AP_HAL.h>
-extern const AP_HAL::HAL& hal;
+#include <AP_Logger/AP_Logger.h>
 
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
@@ -91,6 +90,8 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
     _storage.write_block(i * sizeof(RallyLocation), &rallyLoc, sizeof(RallyLocation));
 
     _last_change_time_ms = AP_HAL::millis();
+
+    AP::logger().Write_RallyPoint(_rally_point_total_count, i, rallyLoc);
 
     return true;
 }

@@ -23,6 +23,7 @@ void LoggerMessageWriter_DFLogStart::reset()
     _fmt_done = false;
     _writesysinfo.reset();
     _writeentiremission.reset();
+    _writeallrallypoints.reset();
 
     stage = ls_blockwriter_stage_init;
     next_format_to_send = 0;
@@ -105,6 +106,14 @@ void LoggerMessageWriter_DFLogStart::process()
         if (!_writeentiremission.finished()) {
             return;
         }
+        stage = ls_blockwriter_stage_write_all_rally_points;
+        FALLTHROUGH;
+
+    case ls_blockwriter_stage_write_all_rally_points:
+        _writeallrallypoints.process();
+        if (!_writeallrallypoints.finished()) {
+            return;
+        }
         stage = ls_blockwriter_stage_vehicle_messages;
         FALLTHROUGH;
 
@@ -179,6 +188,61 @@ void LoggerMessageWriter_WriteSysInfo::process() {
     }
 
     _finished = true;  // all done!
+}
+
+void LoggerMessageWriter_WriteAllRallyPoints::process()
+{
+    const AP_Rally *_rally = AP::rally();
+    if (_rally == nullptr) {
+        _finished = true;
+        return;
+    }
+
+    switch(stage) {
+
+    case ar_blockwriter_stage_init:
+        if (_rally == nullptr) {
+            stage = ar_blockwriter_stage_done;
+            break;
+        }
+        stage = ar_blockwriter_stage_write_new_rally_message;
+        FALLTHROUGH;
+
+    case ar_blockwriter_stage_write_new_rally_message:
+        if (! _dataflash_backend->Write_Message("New rally")) {
+            return; // call me again
+        }
+        stage = ar_blockwriter_stage_write_all_rally_points;
+        FALLTHROUGH;
+
+    case ar_blockwriter_stage_write_all_rally_points:
+        while (_rally_number_to_send < _rally->get_rally_total()) {
+            RallyLocation rallypoint;
+            if (_rally->get_rally_point_with_index(_rally_number_to_send, rallypoint)) {
+                if (!_dataflash_backend->Write_RallyPoint(
+                        _rally->get_rally_total(),
+                        _rally_number_to_send,
+                        rallypoint)) {
+                    return; // call me again
+                }
+            }
+            _rally_number_to_send++;
+        }
+        stage = ar_blockwriter_stage_done;
+        FALLTHROUGH;
+
+    case ar_blockwriter_stage_done:
+        break;
+    }
+
+    _finished = true;
+}
+
+void LoggerMessageWriter_WriteAllRallyPoints::reset()
+{
+    LoggerMessageWriter::reset();
+    stage = ar_blockwriter_stage_init;
+    _rally_number_to_send = 0;
 }
 
 void LoggerMessageWriter_WriteEntireMission::process() {

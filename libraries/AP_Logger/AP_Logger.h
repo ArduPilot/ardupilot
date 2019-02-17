@@ -37,6 +37,74 @@ enum AP_Logger_Backend_Type {
     DATAFLASH_BACKEND_BLOCK     = (1<<2),
 };
 
+// do not do anything here apart from add stuff; maintaining older
+// entries means log analysis is easier
+enum Log_Event : uint8_t {
+    DATA_AP_STATE = 7,
+// DATA_SYSTEM_TIME_SET = 8,
+    DATA_INIT_SIMPLE_BEARING = 9,
+    DATA_ARMED = 10,
+    DATA_DISARMED = 11,
+    DATA_AUTO_ARMED = 15,
+    DATA_LAND_COMPLETE_MAYBE = 17,
+    DATA_LAND_COMPLETE = 18,
+    DATA_NOT_LANDED = 28,
+    DATA_LOST_GPS = 19,
+    DATA_FLIP_START = 21,
+    DATA_FLIP_END = 22,
+    DATA_SET_HOME = 25,
+    DATA_SET_SIMPLE_ON = 26,
+    DATA_SET_SIMPLE_OFF = 27,
+    DATA_SET_SUPERSIMPLE_ON = 29,
+    DATA_AUTOTUNE_INITIALISED = 30,
+    DATA_AUTOTUNE_OFF = 31,
+    DATA_AUTOTUNE_RESTART = 32,
+    DATA_AUTOTUNE_SUCCESS = 33,
+    DATA_AUTOTUNE_FAILED = 34,
+    DATA_AUTOTUNE_REACHED_LIMIT = 35,
+    DATA_AUTOTUNE_PILOT_TESTING = 36,
+    DATA_AUTOTUNE_SAVEDGAINS = 37,
+    DATA_SAVE_TRIM = 38,
+    DATA_SAVEWP_ADD_WP = 39,
+    DATA_FENCE_ENABLE = 41,
+    DATA_FENCE_DISABLE = 42,
+    DATA_ACRO_TRAINER_DISABLED = 43,
+    DATA_ACRO_TRAINER_LEVELING = 44,
+    DATA_ACRO_TRAINER_LIMITED = 45,
+    DATA_GRIPPER_GRAB = 46,
+    DATA_GRIPPER_RELEASE = 47,
+    DATA_PARACHUTE_DISABLED = 49,
+    DATA_PARACHUTE_ENABLED = 50,
+    DATA_PARACHUTE_RELEASED = 51,
+    DATA_LANDING_GEAR_DEPLOYED = 52,
+    DATA_LANDING_GEAR_RETRACTED = 53,
+    DATA_MOTORS_EMERGENCY_STOPPED = 54,
+    DATA_MOTORS_EMERGENCY_STOP_CLEARED = 55,
+    DATA_MOTORS_INTERLOCK_DISABLED = 56,
+    DATA_MOTORS_INTERLOCK_ENABLED = 57,
+    DATA_ROTOR_RUNUP_COMPLETE = 58, // Heli only
+    DATA_ROTOR_SPEED_BELOW_CRITICAL = 59, // Heli only
+    DATA_EKF_ALT_RESET = 60,
+    DATA_LAND_CANCELLED_BY_PILOT = 61,
+    DATA_EKF_YAW_RESET = 62,
+    DATA_AVOIDANCE_ADSB_ENABLE = 63,
+    DATA_AVOIDANCE_ADSB_DISABLE = 64,
+    DATA_AVOIDANCE_PROXIMITY_ENABLE = 65,
+    DATA_AVOIDANCE_PROXIMITY_DISABLE = 66,
+    DATA_GPS_PRIMARY_CHANGED = 67,
+    DATA_WINCH_RELAXED = 68,
+    DATA_WINCH_LENGTH_CONTROL = 69,
+    DATA_WINCH_RATE_CONTROL = 70,
+    DATA_ZIGZAG_STORE_A = 71,
+    DATA_ZIGZAG_STORE_B = 72,
+    DATA_LAND_REPO_ACTIVE = 73,
+
+    DATA_SURFACED = 163,
+    DATA_NOT_SURFACED = 164,
+    DATA_BOTTOMED = 165,
+    DATA_NOT_BOTTOMED = 166,
+};
+
 // fwd declarations to avoid include errors
 class AC_AttitudeControl;
 class AC_PosControl;
@@ -55,8 +123,8 @@ public:
     AP_Logger &operator=(const AP_Logger&) = delete;
 
     // get singleton instance
-    static AP_Logger *instance(void) {
-        return _instance;
+    static AP_Logger *get_singleton(void) {
+        return _singleton;
     }
 
     // initialisation
@@ -88,6 +156,7 @@ public:
     void StopLogging();
 
     void Write_Parameter(const char *name, float value);
+    void Write_Event(Log_Event id);
     void Write_GPS(uint8_t instance, uint64_t time_us=0);
     void Write_RFND(const RangeFinder &rangefinder);
     void Write_IMU();
@@ -138,7 +207,9 @@ public:
                         const AP_Motors &motors,
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);
-    void Write_Rally();
+    void Write_RallyPoint(uint8_t total,
+                          uint8_t sequence,
+                          const RallyLocation &rally_point);
     void Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
     void Write_AOA_SSA(AP_AHRS &ahrs);
     void Write_Beacon(AP_Beacon &beacon);
@@ -307,7 +378,7 @@ private:
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);
 
-    static AP_Logger *_instance;
+    static AP_Logger *_singleton;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     bool validate_structure(const struct LogStructure *logstructure, int16_t offset);

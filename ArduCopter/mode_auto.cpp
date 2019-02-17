@@ -485,12 +485,6 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 #endif //AC_FENCE == ENABLED
         break;
 
-#if PARACHUTE == ENABLED
-    case MAV_CMD_DO_PARACHUTE:                          // Mission command to configure or release parachute
-        do_parachute(cmd);
-        break;
-#endif
-
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
         do_guided_limits(cmd);
@@ -679,7 +673,6 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_MOUNT_CONTROL:
-    case MAV_CMD_DO_PARACHUTE:  // assume parachute was released successfully
     case MAV_CMD_DO_GUIDED_LIMITS:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_WINCH:
@@ -1367,9 +1360,13 @@ void Copter::ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Copter::ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
-        copter.set_home_to_current_location(false);
+        if (!copter.set_home_to_current_location(false)) {
+            // ignore failure
+        }
     } else {
-        copter.set_home(cmd.content.location, false);
+        if (!copter.set_home(cmd.content.location, false)) {
+            // ignore failure
+        }
     }
 }
 
@@ -1392,29 +1389,6 @@ void Copter::ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
     copter.camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }
-
-#if PARACHUTE == ENABLED
-// do_parachute - configure or release parachute
-void Copter::ModeAuto::do_parachute(const AP_Mission::Mission_Command& cmd)
-{
-    switch (cmd.p1) {
-        case PARACHUTE_DISABLE:
-            copter.parachute.enabled(false);
-            Log_Write_Event(DATA_PARACHUTE_DISABLED);
-            break;
-        case PARACHUTE_ENABLE:
-            copter.parachute.enabled(true);
-            Log_Write_Event(DATA_PARACHUTE_ENABLED);
-            break;
-        case PARACHUTE_RELEASE:
-            copter.parachute_release();
-            break;
-        default:
-            // do nothing
-            break;
-    }
-}
-#endif
 
 #if WINCH_ENABLED == ENABLED
 // control winch based on mission command
@@ -1787,9 +1761,12 @@ bool Copter::ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
     // check if we've reached the edge
     if (mode() == Auto_CircleMoveToEdge) {
         if (copter.wp_nav->reached_wp_destination()) {
+            Vector3f circle_center;
+            if (!cmd.content.location.get_vector_from_origin_NEU(circle_center)) {
+                // should never happen
+                return true;
+            }
             const Vector3f curr_pos = copter.inertial_nav.get_position();
-            Vector3f circle_center = copter.pv_location_to_vector(cmd.content.location);
-
             // set target altitude if not provided
             if (is_zero(circle_center.z)) {
                 circle_center.z = curr_pos.z;

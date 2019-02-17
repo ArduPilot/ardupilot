@@ -307,38 +307,6 @@ void Rover::Log_Write_RC(void)
     }
 }
 
-// wheel encoder packet
-struct PACKED log_WheelEncoder {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float distance_0;
-    uint8_t quality_0;
-    float rpm_0;
-    float distance_1;
-    uint8_t quality_1;
-    float rpm_1;
-};
-
-// log wheel encoder information
-void Rover::Log_Write_WheelEncoder()
-{
-    // return immediately if no wheel encoders are enabled
-    if (!g2.wheel_encoder.enabled(0) && !g2.wheel_encoder.enabled(1)) {
-        return;
-    }
-    struct log_WheelEncoder pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_WHEELENCODER_MSG),
-        time_us     : AP_HAL::micros64(),
-        distance_0  : g2.wheel_encoder.get_distance(0),
-        quality_0   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(0), 0.0f, 100.0f),
-        rpm_0       : wheel_encoder_rpm[0],
-        distance_1  : g2.wheel_encoder.get_distance(1),
-        quality_1   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(1), 0.0f, 100.0f),
-        rpm_1       : wheel_encoder_rpm[1]
-    };
-    logger.WriteBlock(&pkt, sizeof(pkt));
-}
-
 void Rover::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
@@ -369,8 +337,6 @@ const LogStructure Rover::log_structure[] = {
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
     { LOG_ERROR_MSG, sizeof(log_Error),
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" },
-    { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder),
-      "WENC",  "Qfbffbf", "TimeUS,Dist0,Qual0,RPM0,Dist1,Qual1,RPM1", "sm-qm-q", "F0--0--" },
 };
 
 void Rover::log_init(void)
@@ -393,7 +359,6 @@ void Rover::Log_Write_Throttle() {}
 void Rover::Log_Write_Rangefinder() {}
 void Rover::Log_Write_RC(void) {}
 void Rover::Log_Write_Steering() {}
-void Rover::Log_Write_WheelEncoder() {}
 void Rover::Log_Write_Vehicle_Startup_Messages() {}
 
 #endif  // LOGGING_ENABLED

@@ -47,8 +47,8 @@ public:
     AP_Notify &operator=(const AP_Notify&) = delete;
 
     // get singleton instance
-    static AP_Notify *instance(void) {
-        return _instance;
+    static AP_Notify *get_singleton(void) {
+        return _singleton;
     }
     
     // Oreo LED Themes
@@ -154,7 +154,7 @@ public:
 
 private:
 
-    static AP_Notify *_instance;
+    static AP_Notify *_singleton;
 
     void add_backend_helper(NotifyDevice *backend);
 

@@ -26,8 +26,6 @@ private:
     // callback for UAVCAN messages
     void handle_mag_msg(const Vector3f &mag);
 
-    static bool take_registry();
-    static void give_registry();
     static AP_Compass_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id);
 
     uint8_t  _instance;

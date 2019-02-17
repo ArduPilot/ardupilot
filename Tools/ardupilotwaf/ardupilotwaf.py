@@ -65,6 +65,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Volz_Protocol',
     'AP_SBusOut',
     'AP_IOMCU',
+    'AP_Parachute',
     'AP_RAMTRON',
     'AP_RCProtocol',
     'AP_Radio',

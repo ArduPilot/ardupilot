@@ -197,7 +197,7 @@ void AP_Airspeed_SDP3X::_timer()
 float AP_Airspeed_SDP3X::_correct_pressure(float press)
 {
     float temperature;
-    AP_Baro *baro = AP_Baro::get_instance();
+    AP_Baro *baro = AP_Baro::get_singleton();
 
     if (baro == nullptr) {
         return press;

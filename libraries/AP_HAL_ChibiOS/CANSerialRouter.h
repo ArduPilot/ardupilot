@@ -67,7 +67,7 @@ public:
     void slcan2can_router_trampoline(void);
     void can2slcan_router_trampoline(void);
     void run(void);
-    static SLCANRouter* instance()
+    static SLCANRouter* get_singleton()
     {
         if (_singleton == nullptr) {
             _singleton = new SLCANRouter;

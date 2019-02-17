@@ -28,6 +28,9 @@ protected:
         return 0; // what if we have been picked up and carried somewhere?
     }
 
+    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED { return false; }
+    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED { return false; }
+
 private:
 
     void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;
@@ -41,4 +44,6 @@ private:
     MAV_MODE base_mode() const override;
     uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+
 };

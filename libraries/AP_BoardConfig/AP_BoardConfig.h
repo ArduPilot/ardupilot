@@ -32,7 +32,7 @@ extern "C" typedef int (*main_fn_t)(int argc, char **);
 class AP_BoardConfig {
 public:
     AP_BoardConfig() {
-        instance = this;
+        _singleton = this;
         AP_Param::setup_object_defaults(this, var_info);
     };
 
@@ -41,8 +41,8 @@ public:
     AP_BoardConfig &operator=(const AP_BoardConfig&) = delete;
 
     // singleton support
-    static AP_BoardConfig *get_instance(void) {
-        return instance;
+    static AP_BoardConfig *get_singleton(void) {
+        return _singleton;
     }
     
     void init(void);
@@ -106,7 +106,7 @@ public:
     // crc check of IO firmware on startup
     static uint8_t io_enabled(void) {
 #if AP_FEATURE_BOARD_DETECT
-        return instance?uint8_t(instance->state.io_enable.get()):0;
+        return _singleton?uint8_t(_singleton->state.io_enable.get()):0;
 #else
         return 0;
 #endif
@@ -114,7 +114,7 @@ public:
 
     // get number of PWM outputs enabled on FMU
     static uint8_t get_pwm_count(void) {
-        return instance?instance->pwm_count.get():8;
+        return _singleton?_singleton->pwm_count.get():8;
     }
 
 #if HAL_HAVE_SAFETY_SWITCH
@@ -143,25 +143,25 @@ public:
 #if HAL_HAVE_BOARD_VOLTAGE
     // get minimum board voltage
     static float get_minimum_board_voltage(void) {
-        return instance?instance->_vbus_min.get():0;
+        return _singleton?_singleton->_vbus_min.get():0;
     }
 #endif
 
 #if HAL_HAVE_SERVO_VOLTAGE
     // get minimum servo voltage
     static float get_minimum_servo_voltage(void) {
-        return instance?instance->_vservo_min.get():0;
+        return _singleton?_singleton->_vservo_min.get():0;
     }
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     static uint8_t get_sdcard_slowdown(void) {
-        return instance?instance->_sdcard_slowdown.get():0;
+        return _singleton?_singleton->_sdcard_slowdown.get():0;
     }
 #endif
     
 private:
-    static AP_BoardConfig *instance;
+    static AP_BoardConfig *_singleton;
     
     AP_Int16 vehicleSerialNumber;
     AP_Int8 pwm_count;

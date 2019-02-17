@@ -128,7 +128,7 @@ void Copter::AutoTune::Log_Write_Event(enum at_event id)
 {
     const struct {
         enum at_event eid;
-        uint8_t id;
+        Log_Event id;
     } map[] = {
         { EVENT_AUTOTUNE_INITIALISED, DATA_AUTOTUNE_INITIALISED },
         { EVENT_AUTOTUNE_OFF, DATA_AUTOTUNE_OFF },
