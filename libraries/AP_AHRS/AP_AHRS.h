@@ -87,7 +87,7 @@ public:
 
     // init sets up INS board orientation
     virtual void init() {
-        set_orientation();
+        update_orientation();
     };
 
     // Accessors
@@ -145,7 +145,7 @@ public:
 
     void set_compass(Compass *compass) {
         _compass = compass;
-        set_orientation();
+        update_orientation();
     }
 
     const Compass* get_compass() const {
@@ -162,7 +162,7 @@ public:
 
     // allow for runtime change of orientation
     // this makes initial config easier
-    void set_orientation();
+    void update_orientation();
 
     void set_airspeed(AP_Airspeed *airspeed) {
         _airspeed = airspeed;
