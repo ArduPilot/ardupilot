@@ -1,5 +1,4 @@
 #include <AP_HAL/AP_HAL.h>
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
 #include "AP_NavEKF2_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -1493,4 +1492,3 @@ void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, c
     }
 }
 
-#endif //HAL_CPU_CLASS
