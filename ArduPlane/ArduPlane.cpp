@@ -268,7 +268,7 @@ void Plane::one_second_loop()
 #endif
 
     // make it possible to change orientation at runtime
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     adsb.set_stall_speed_cm(aparm.airspeed_min);
     adsb.set_max_speed(aparm.airspeed_max);
