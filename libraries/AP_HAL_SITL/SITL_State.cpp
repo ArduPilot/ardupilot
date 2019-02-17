@@ -92,6 +92,7 @@ void SITL_State::_sitl_setup(const char *home_str)
             gimbal = new SITL::Gimbal(_sitl->state);
         }
 
+        sitl_model->set_battery(&_sitl->battery_sim);
         sitl_model->set_sprayer(&_sitl->sprayer_sim);
         sitl_model->set_gripper_servo(&_sitl->gripper_sim);
         sitl_model->set_gripper_epm(&_sitl->gripper_epm_sim);
@@ -465,35 +466,16 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
 
     float voltage = 0;
     _current = 0;
-    
+
     if (_sitl != nullptr) {
         if (_sitl->state.battery_voltage <= 0) {
-            if (_vehicle == ArduSub) {
-                voltage = _sitl->batt_voltage;
-                for (i = 0; i < 6; i++) {
-                    float pwm = input.servos[i];
-                    //printf("i: %d, pwm: %.2f\n", i, pwm);
-                    float fraction = fabsf((pwm - 1500) / 500.0f);
-
-                    voltage -= fraction * 0.5f;
-
-                    float draw = fraction * 15;
-                    _current += draw;
-                }
-            } else {
-                // simulate simple battery setup
-                float throttle;
-                if (_vehicle == APMrover2) {
-                    throttle = motors_on ? (input.servos[2] - 1500) / 500.0f : 0;
-                } else {
-                    throttle = motors_on ? (input.servos[2] - 1000) / 1000.0f : 0;
-                }
-                // lose 0.7V at full throttle
-                voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
-
-                // assume 50A at full throttle
-                _current = 50.0f * fabsf(throttle);
+            if (!sitl_model->servo_updated) {
+                printf("updated\n");
+                sitl_model->update_servo_output(input);
             }
+
+            voltage = sitl_model->servo_voltage();
+            _current = sitl_model->servo_current();
         } else {
             // FDM provides voltage and current
             voltage = _sitl->state.battery_voltage;
