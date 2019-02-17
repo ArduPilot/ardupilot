@@ -138,6 +138,11 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Units: m
     AP_GROUPINFO("LIST_ALT",   12, AP_ADSB, in_state.list_altitude, 0),
 
+    // @Param: ICAO_SPECL
+    // @DisplayName: ICAO_ID of special vehicle
+    // @Description: ICAO_ID of special vehicle that ignores ADSB_LIST_RADIUS and ADSB_LIST_ALT. The vehicle is always tracked. Use 0 to disable.
+    // @User: Advanced
+    AP_GROUPINFO("ICAO_SPECL",  13, AP_ADSB, _special_ICAO_target, 0),
 
     AP_GROUPEND
 };
@@ -295,6 +300,9 @@ void AP_ADSB::determine_furthest_aircraft(void)
     uint16_t max_distance_index = 0;
 
     for (uint16_t index = 0; index < in_state.vehicle_count; index++) {
+        if (is_special_vehicle(in_state.vehicle_list[index].info.ICAO_address)) {
+            continue;
+        }
         const float distance = _my_loc.get_distance(get_location(in_state.vehicle_list[index]));
         if (max_distance < distance || index == 0) {
             max_distance = distance;
@@ -377,8 +385,9 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
     const Location vehicle_loc = AP_ADSB::get_location(vehicle);
     const bool my_loc_is_zero = _my_loc.is_zero();
     const float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
-    const bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius;
-    const bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude*100;
+    const bool is_special = is_special_vehicle(vehicle.info.ICAO_address);
+    const bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius && !is_special;
+    const bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude*100 && !is_special;
     const bool is_tracked_in_list = find_index(vehicle, &index);
     const uint32_t now = AP_HAL::millis();
 
