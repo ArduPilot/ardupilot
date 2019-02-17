@@ -284,8 +284,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                 //Start DMA
                 if(!was_initialised) {
                     uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
-                    dmamode |= STM32_DMA_CR_CHSEL(STM32_DMA_GETCHANNEL(sdef.dma_rx_stream_id,
-                                                                       sdef.dma_rx_channel_id));
+                    dmamode |= STM32_DMA_CR_CHSEL(sdef.dma_rx_channel_id);
                     dmamode |= STM32_DMA_CR_PL(0);
                     dmaStreamSetMemory0(rxdma, rx_bounce_buf);
                     dmaStreamSetTransactionSize(rxdma, RX_BOUNCE_BUFSIZE);
@@ -734,8 +733,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     dmaStreamSetMemory0(txdma, tx_bounce_buf);
     dmaStreamSetTransactionSize(txdma, tx_len);
     uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
-    dmamode |= STM32_DMA_CR_CHSEL(STM32_DMA_GETCHANNEL(sdef.dma_tx_stream_id,
-                                                       sdef.dma_tx_channel_id));
+    dmamode |= STM32_DMA_CR_CHSEL(sdef.dma_tx_channel_id);
     dmamode |= STM32_DMA_CR_PL(0);
     dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
