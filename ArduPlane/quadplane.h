@@ -44,6 +44,7 @@ public:
     void setup_target_position(void);
     void takeoff_controller(void);
     void waypoint_controller(void);
+    float compute_descent_rate(float maxSpeedDiv, bool doing_precision_landing);
     
     // update transition handling
     void update(void);

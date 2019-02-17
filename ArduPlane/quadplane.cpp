@@ -1862,6 +1862,25 @@ bool QuadPlane::in_vtol_mode(void) const
             in_vtol_auto());
 }
 
+float QuadPlane::compute_descent_rate(float maxSpeedDiv, bool doing_precision_landing)
+{
+    const float precland_acceptable_error = 15.0f;
+    const float precland_min_descent_speed = 10.0f;
+    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+    float descentSpeed = 0.0f;
+    if (doing_precision_landing && plane.rangefinder_alt_ok() && height_above_ground > 35.0f && height_above_ground < 200.0f) {
+        float max_descent_speed = abs(land_speed_cms)/maxSpeedDiv;
+        float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
+        descentSpeed = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
+    }
+    else
+    {
+        descentSpeed = -landing_descent_rate_cms(height_above_ground);
+    }
+
+    return descentSpeed;
+}
+
 
 /*
   main landing controller. Used for landing and RTL.
@@ -1885,8 +1904,6 @@ void QuadPlane::vtol_position_controller(void)
     setup_target_position();
 
     const Location &loc = plane.next_WP_loc;
-    const float precland_acceptable_error = 15.0f;
-    const float precland_min_descent_speed = 10.0f;
     float cmb_rate = 0;
 
     check_attitude_relax();
@@ -2078,33 +2095,14 @@ void QuadPlane::vtol_position_controller(void)
     }
 
     case QPOS_LAND_DESCEND: {
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        if (doing_precision_landing && plane.rangefinder_alt_ok() && height_above_ground > 35.0f && height_above_ground < 200.0f) {
-            float max_descent_speed = abs(land_speed_cms)/2.0f;
-            float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
-            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
-            pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, plane.G_Dt, true);
-        }
-        else
-        {
-            pos_control->set_alt_target_from_climb_rate(-landing_descent_rate_cms(height_above_ground),
-                                                         plane.G_Dt, true);
-        }
+        cmb_rate = compute_descent_rate(2.0f, doing_precision_landing);
+        pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, plane.G_Dt, true);
         break;
     }
 
     case QPOS_LAND_FINAL: {
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        if (doing_precision_landing && plane.rangefinder_alt_ok() && height_above_ground > 35.0f && height_above_ground < 200.0f) {
-            float max_descent_speed = abs(land_speed_cms)/2.0f;
-            float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
-            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
-            pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, plane.G_Dt, true);
-        }
-        else
-        {
-            pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);
-        }
+        cmb_rate = compute_descent_rate(0.5f, doing_precision_landing);
+        pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, plane.G_Dt, true);
         break;
     }   
     case QPOS_LAND_COMPLETE:
