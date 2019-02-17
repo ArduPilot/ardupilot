@@ -14,17 +14,16 @@ mcu = {
     # location of MCU serial number
     'UDID_START' : 0x1FF1E800,
 
-    # base address of main memory. We use AXI SRAM as main memory
-    # for maximum speed (using the dcache). DMA will be done from DTCM
-    # memory. Other SRAM areas will be added later
-    'RAM_BASE_ADDRESS' : 0x24000000,
-
-    # size of main memory
-    'RAM_SIZE_KB' : 512,
-
-    # DTCM ram address and size
-#    'DTCM_BASE_ADDRESS' : 0x20000000,
-#    'DTCM_RAM_SIZE_KB' : 128,
+    # ram map, as list of (address, size-kb, flags)
+    # flags of 1 means DMA-capable
+    # flags of 2 means faster memory for CPU intensive work
+    'RAM_MAP' : [
+        (0x24000000, 512, 1), # AXI SRAM
+        (0x30000000, 288, 1), # SRAM1, SRAM2, SRAM3
+        (0x38000000,  64, 1), # SRAM4
+        (0x00004000,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
+        (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA
+    ]
 }
 
 pincount = {

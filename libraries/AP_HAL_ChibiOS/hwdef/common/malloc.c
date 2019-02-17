@@ -31,6 +31,20 @@
 #include <stdarg.h>
 #include "stm32_util.h"
 
+#define MEM_REGION_FLAG_DMA_OK 1
+#define MEM_REGION_FLAG_FAST   2
+
+static struct memory_region {
+    void *address;
+    uint32_t size;
+    uint32_t flags;
+    memory_heap_t heap;
+} memory_regions[] = { HAL_MEMORY_REGIONS };
+
+// the first memory region is already setup as the ChibiOS
+// default heap, so we will index from 1 in the allocators
+#define NUM_MEMORY_REGIONS (sizeof(memory_regions)/sizeof(memory_regions[0]))
+
 #if CH_CFG_USE_HEAP == TRUE
 
 #define MIN_ALIGNMENT 8
@@ -39,18 +53,6 @@
 #define DMA_ALIGNMENT 32
 #else
 #define DMA_ALIGNMENT 8
-#endif
-
-#ifdef HAL_NO_CCM
-#undef CCM_RAM_SIZE_KB
-#endif
-
-#if defined(CCM_RAM_SIZE_KB)
-static memory_heap_t ccm_heap;
-#endif
-
-#if defined(DTCM_RAM_SIZE_KB)
-static memory_heap_t dtcm_heap;
 #endif
 
 // size of memory reserved for dma-capable alloc
@@ -62,96 +64,102 @@ static memory_heap_t dtcm_heap;
 static memory_heap_t dma_reserve_heap;
 #endif
 
-static void *malloc_dtcm(size_t size);
-
 /*
   initialise memory handling
  */
 void malloc_init(void)
 {
-#if defined(CCM_RAM_SIZE_KB)
-    chHeapObjectInit(&ccm_heap, (void *)CCM_BASE_ADDRESS, CCM_RAM_SIZE_KB*1024);
-#endif
-
-#if defined(DTCM_RAM_SIZE_KB)
-    chHeapObjectInit(&dtcm_heap, (void *)DTCM_BASE_ADDRESS, DTCM_RAM_SIZE_KB*1024);
-#endif
+    for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
+        chHeapObjectInit(&memory_regions[i].heap, memory_regions[i].address, memory_regions[i].size);
+    }
 
 #if DMA_RESERVE_SIZE != 0
     /*
       create a DMA reserve heap, to ensure we keep some memory for DMA
       safe memory allocations
      */
-    void *dma_reserve = malloc_dtcm(DMA_RESERVE_SIZE);
-    if (!dma_reserve) {
-        dma_reserve = chHeapAllocAligned(NULL, DMA_RESERVE_SIZE, MIN_ALIGNMENT);
-    }
+    void *dma_reserve = malloc_dma(DMA_RESERVE_SIZE);
+    osalDbgAssert(dma_reserve != NULL, "DMA reserve");
     chHeapObjectInit(&dma_reserve_heap, dma_reserve, DMA_RESERVE_SIZE);
-#endif //#if DMA_RESERVE_SIZE != 0
-}
-
-void *malloc_ccm(size_t size)
-{
-    void *p = NULL;
-#if defined(CCM_RAM_SIZE_KB)
-    p = chHeapAllocAligned(&ccm_heap, size, CH_HEAP_ALIGNMENT);
-    if (p != NULL) {
-        memset(p, 0, size);
-    }
-#else
-    (void)size;
 #endif
-    return p;
 }
 
-static void *malloc_dtcm(size_t size)
-{
-    void *p = NULL;
-#if defined(DTCM_RAM_SIZE_KB)
-    p = chHeapAllocAligned(&dtcm_heap, size, DMA_ALIGNMENT);
-#else
-    (void)size;
-#endif
-    if (p != NULL) {
-        memset(p, 0, size);
-    }
-    return p;
-}
-
-void *malloc(size_t size)
+static void *malloc_flags(size_t size, uint32_t flags)
 {
     if (size == 0) {
         return NULL;
     }
-    void *p = chHeapAllocAligned(NULL, size, MIN_ALIGNMENT);
-    if (p) {
-        memset(p, 0, size);
-        return p;
+    const uint8_t alignment = (flags&MEM_REGION_FLAG_DMA_OK?DMA_ALIGNMENT:MIN_ALIGNMENT);
+    void *p = NULL;
+
+    if (flags & MEM_REGION_FLAG_DMA_OK) {
+        // allocate multiple of DMA alignment
+        size = (size + (DMA_ALIGNMENT-1)) & ~(DMA_ALIGNMENT-1);
     }
-    if (!p) {
-        // fall back to CCM memory
-        p = malloc_ccm(size);
+
+    // if no flags are set or this is a DMA request and default heap
+    // is DMA safe then start with default heap
+    if (flags == 0 || (flags == MEM_REGION_FLAG_DMA_OK &&
+                       (memory_regions[0].flags & MEM_REGION_FLAG_DMA_OK))) {
+        p = chHeapAllocAligned(NULL, size, alignment);
         if (p) {
-            return p;
+            goto found;
         }
     }
-    if (!p) {
-        // fall back to DTCM memory
-        p = malloc_dtcm(size);
+
+    // try with matching flags
+    for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
+        if ((flags & MEM_REGION_FLAG_DMA_OK) &&
+            !(memory_regions[i].flags & MEM_REGION_FLAG_DMA_OK)) {
+            continue;
+        }
+        if ((flags & MEM_REGION_FLAG_FAST) &&
+            !(memory_regions[i].flags & MEM_REGION_FLAG_FAST)) {
+            continue;
+        }
+        p = chHeapAllocAligned(&memory_regions[i].heap, size, alignment);
         if (p) {
-            return p;
+            goto found;
+        }
+    }
+
+    // if this is a not a DMA request then we can fall back to any heap
+    if (!(flags & MEM_REGION_FLAG_DMA_OK)) {
+        for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
+            p = chHeapAllocAligned(&memory_regions[i].heap, size, alignment);
+            if (p) {
+                goto found;
+            }
+        }
+        // try default heap
+        p = chHeapAllocAligned(NULL, size, alignment);
+        if (p) {
+            goto found;
         }
     }
 
 #if DMA_RESERVE_SIZE != 0
     // fall back to DMA reserve
-    p = chHeapAllocAligned(&dma_reserve_heap, size, MIN_ALIGNMENT);
+    p = chHeapAllocAligned(&dma_reserve_heap, size, alignment);
     if (p) {
         memset(p, 0, size);
         return p;
     }
 #endif
+
+    // failed
     return NULL;
+
+found:
+    memset(p, 0, size);
+    return p;
+}
+/*
+  allocate normal memory
+ */
+void *malloc(size_t size)
+{
+    return malloc_flags(size, 0);
 }
 
 /*
@@ -159,27 +167,15 @@ void *malloc(size_t size)
  */
 void *malloc_dma(size_t size)
 {
-#if defined(STM32H7)
-    size = (size + (DMA_ALIGNMENT-1)) & ~(DMA_ALIGNMENT-1);
-#endif
-    void *p;
-#if defined(DTCM_RAM_SIZE_KB)
-    p = malloc_dtcm(size);
-#else
-    // if we don't have DTCM memory then assume that main heap is DMA-safe
-    p = chHeapAllocAligned(NULL, size, DMA_ALIGNMENT);
-#endif
-#if DMA_RESERVE_SIZE != 0
-    if (p == NULL) {
-        p = chHeapAllocAligned(&dma_reserve_heap, size, DMA_ALIGNMENT);
-    }
-#endif
+    return malloc_flags(size, MEM_REGION_FLAG_DMA_OK);
+}
 
-    if (p) {
-        memset(p, 0, size);
-    }
-    osalDbgAssert((((uint32_t)p) & (DMA_ALIGNMENT-1)) == 0, "DMA alignment");
-    return p;
+/*
+  allocate fast memory
+ */
+void *malloc_fastmem(size_t size)
+{
+    return malloc_flags(size, MEM_REGION_FLAG_FAST);
 }
 
 void *calloc(size_t nmemb, size_t size)
@@ -200,31 +196,39 @@ void free(void *ptr)
 size_t mem_available(void)
 {
     size_t totalp = 0;
+
     // get memory available on main heap
     chHeapStatus(NULL, &totalp, NULL);
 
     // we also need to add in memory that is not yet allocated to the heap
     totalp += chCoreGetStatusX();
 
-#if defined(CCM_RAM_SIZE_KB)
-    size_t ccm_available = 0;
-    chHeapStatus(&ccm_heap, &ccm_available, NULL);
-    totalp += ccm_available;
-#endif
-
-#if defined(DTCM_RAM_SIZE_KB)
-    size_t dtcm_available = 0;
-    chHeapStatus(&dtcm_heap, &dtcm_available, NULL);
-    totalp += dtcm_available;
-#endif
+    // now our own heaps
+    for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
+        size_t available = 0;
+        chHeapStatus(&memory_regions[i].heap, &available, NULL);
+        totalp += available;
+    }
 
 #if DMA_RESERVE_SIZE != 0
-    size_t reserve_available = 0;
-    chHeapStatus(&dma_reserve_heap, &reserve_available, NULL);
-    totalp += reserve_available;
+    // and reserve DMA heap
+    size_t available = 0;
+    chHeapStatus(&dma_reserve_heap, &available, NULL);
+    totalp += available;
 #endif
 
     return totalp;
 }
 
 #endif // CH_CFG_USE_HEAP
+
+
+/*
+  flush all memory. Used in chSysHalt()
+ */
+void memory_flush_all(void)
+{
+    for (uint8_t i=0; i<NUM_MEMORY_REGIONS; i++) {
+        cacheBufferFlush(memory_regions[i].address, memory_regions[i].size);
+    }
+}

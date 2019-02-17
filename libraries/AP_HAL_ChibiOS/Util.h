@@ -75,8 +75,6 @@ private:
 
     static ToneAlarmPwmGroup _toneAlarm_pwm_group;
 #endif
-    void* try_alloc_from_ccm_ram(size_t size);
-    uint32_t available_memory_in_ccm_ram(void);
 
 #if HAL_HAVE_IMU_HEATER
     struct {

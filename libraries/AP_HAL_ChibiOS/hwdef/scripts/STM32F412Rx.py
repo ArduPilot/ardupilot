@@ -15,11 +15,12 @@ mcu = {
     # location of MCU serial number
     'UDID_START' : 0x1FFF7A10,
 
-    # base address of main memory
-    'RAM_BASE_ADDRESS' : 0x20000000,
-
-    # size of main memory
-    'RAM_SIZE_KB' : 256
+    # ram map, as list of (address, size-kb, flags)
+    # flags of 1 means DMA-capable
+    # flags of 2 means faster memory for CPU intensive work
+    'RAM_MAP' : [
+        (0x20000000, 256, 1), # main memory, DMA safe
+    ]
 }
 
 DMA_Map = {
