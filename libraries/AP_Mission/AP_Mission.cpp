@@ -272,7 +272,11 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_PARACHUTE:
         return true;
     default:
-        return _cmd_verify_fn(cmd);
+        if (_cmd_verify_fn) {
+            return _cmd_verify_fn(cmd);
+        } else {
+            return false;
+        }
     }
 }
 
@@ -294,7 +298,11 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_PARACHUTE:
         return start_command_parachute(cmd);
     default:
-        return _cmd_start_fn(cmd);
+        if (_cmd_start_fn) {
+            return _cmd_start_fn(cmd);
+        } else {
+            return false;
+        }
     }
 }
 
@@ -1452,7 +1460,9 @@ void AP_Mission::complete()
     _flags.state = MISSION_COMPLETE;
 
     // callback to main program's mission complete function
-    _mission_complete_fn();
+    if (_mission_complete_fn) {
+        _mission_complete_fn();
+    }
 }
 
 /// advance_current_nav_cmd - moves current nav command forward
