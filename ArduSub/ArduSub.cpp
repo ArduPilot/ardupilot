@@ -273,7 +273,7 @@ void Sub::one_hz_loop()
 
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config
-        ahrs.set_orientation();
+        ahrs.update_orientation();
 
         // set all throttle channel settings
         motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
