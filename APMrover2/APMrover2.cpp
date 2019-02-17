@@ -272,7 +272,7 @@ void Rover::one_second_loop(void)
     gcs().send_message(MSG_HEARTBEAT);
 
     // allow orientation change at runtime to aid config
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     set_control_channels();
 
