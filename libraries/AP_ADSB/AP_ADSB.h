@@ -80,6 +80,9 @@ public:
     // mavlink message handler
     void handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg);
 
+    // when true, a vehicle with that ICAO was found in database and the vehicle is populated.
+    bool get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const;
+
 private:
     // initialize _vehicle_list
     void init();
