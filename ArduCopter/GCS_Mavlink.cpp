@@ -120,6 +120,9 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
 
 void GCS_MAVLINK_Copter::send_nav_controller_output() const
 {
+    if (!copter.ap.initialised) {
+        return;
+    }
     const Vector3f &targets = copter.attitude_control->get_att_target_euler_cd();
     const Copter::Mode *flightmode = copter.flightmode;
     mavlink_msg_nav_controller_output_send(
