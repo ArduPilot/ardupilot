@@ -32,4 +32,5 @@ private:
     uint32_t last_reading_ms = 0;
     char linebuf[10];
     uint8_t linebuf_len = 0;
+    uint32_t last_init_ms;
 };
