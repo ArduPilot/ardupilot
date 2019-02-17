@@ -49,7 +49,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision "trusty32", type: "shell", path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (trusty32)"
-      vb.gui = true
     end
   end
 
@@ -59,7 +58,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision "trusty64", type: "shell", path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (trusty64)"
-      vb.gui = true
     end
   end
 
@@ -70,7 +68,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (xenial32)"
-      vb.gui = true
     end
   end
 
@@ -82,7 +79,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (zesty32)"
-      vb.gui = true
     end
   end
 
@@ -93,7 +89,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (artful32)"
-      vb.gui = true
     end
   end
 
@@ -103,7 +98,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (bionic32)"
-      vb.gui = true
     end
   end
 
@@ -113,7 +107,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (bionic64)"
-      vb.gui = true
     end
   end
 
@@ -124,7 +117,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (cosmic32)"
-      vb.gui = true
     end
   end
 
@@ -134,7 +126,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (cosmic64)"
-      vb.gui = true
     end
   end
 
