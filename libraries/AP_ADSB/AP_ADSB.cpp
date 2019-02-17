@@ -207,7 +207,7 @@ void AP_ADSB::update(void)
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // check current list for vehicles that time out
     uint16_t index = 0;
@@ -271,7 +271,7 @@ void AP_ADSB::update(void)
         out_state.chan = -1;
         gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
     } else if (out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
-        mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
+        const mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
         if (now - out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
             out_state.last_config_ms = now;
             send_configure(chan);
@@ -295,7 +295,7 @@ void AP_ADSB::determine_furthest_aircraft(void)
     uint16_t max_distance_index = 0;
 
     for (uint16_t index = 0; index < in_state.vehicle_count; index++) {
-        float distance = _my_loc.get_distance(get_location(in_state.vehicle_list[index]));
+        const float distance = _my_loc.get_distance(get_location(in_state.vehicle_list[index]));
         if (max_distance < distance || index == 0) {
             max_distance = distance;
             max_distance_index = index;
@@ -311,7 +311,7 @@ void AP_ADSB::determine_furthest_aircraft(void)
  */
 Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
-    Location loc = Location(
+    const Location loc = Location(
         vehicle.info.lat,
         vehicle.info.lon,
         vehicle.info.altitude * 0.1f,
@@ -326,19 +326,22 @@ Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
  */
 void AP_ADSB::delete_vehicle(const uint16_t index)
 {
-    if (index < in_state.vehicle_count) {
-        // if the vehicle is the furthest, invalidate it. It has been bumped
-        if (index == furthest_vehicle_index && furthest_vehicle_distance > 0) {
-            furthest_vehicle_distance = 0;
-            furthest_vehicle_index = 0;
-        }
-        if (index != (in_state.vehicle_count-1)) {
-            in_state.vehicle_list[index] = in_state.vehicle_list[in_state.vehicle_count-1];
-        }
-        // TODO: is memset needed? When we decrement the index we essentially forget about it
-        memset(&in_state.vehicle_list[in_state.vehicle_count-1], 0, sizeof(adsb_vehicle_t));
-        in_state.vehicle_count--;
+    if (index >= in_state.vehicle_count) {
+        // index out of range
+        return;
     }
+
+    // if the vehicle is the furthest, invalidate it. It has been bumped
+    if (index == furthest_vehicle_index && furthest_vehicle_distance > 0) {
+        furthest_vehicle_distance = 0;
+        furthest_vehicle_index = 0;
+    }
+    if (index != (in_state.vehicle_count-1)) {
+        in_state.vehicle_list[index] = in_state.vehicle_list[in_state.vehicle_count-1];
+    }
+    // TODO: is memset needed? When we decrement the index we essentially forget about it
+    memset(&in_state.vehicle_list[in_state.vehicle_count-1], 0, sizeof(adsb_vehicle_t));
+    in_state.vehicle_count--;
 }
 
 /*
@@ -372,12 +375,12 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
     adsb_vehicle_t vehicle {};
     mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
     const Location vehicle_loc = AP_ADSB::get_location(vehicle);
-    bool my_loc_is_zero = _my_loc.is_zero();
-    float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
-    bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius;
-    bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude*100;
-    bool is_tracked_in_list = find_index(vehicle, &index);
-    uint32_t now = AP_HAL::millis();
+    const bool my_loc_is_zero = _my_loc.is_zero();
+    const float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
+    const bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius;
+    const bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude*100;
+    const bool is_tracked_in_list = find_index(vehicle, &index);
+    const uint32_t now = AP_HAL::millis();
 
     // note the last time the receiver got a packet from the aircraft
     vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
@@ -452,9 +455,11 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
  */
 void AP_ADSB::set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle)
 {
-    if (index < in_state.list_size) {
-        in_state.vehicle_list[index] = vehicle;
+    if (index >= in_state.list_size) {
+        // out of range
+        return;
     }
+    in_state.vehicle_list[index] = vehicle;
 }
 
 void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
@@ -684,7 +689,7 @@ void AP_ADSB::handle_out_cfg(const mavlink_message_t* msg)
     out_state.cfg.stall_speed_cm = packet.stallSpeed;
 
     // guard against string with non-null end char
-    char c = out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1];
+    const char c = out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1];
     out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = 0;
     gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", out_state.cfg.ICAO_id, out_state.cfg.callsign);
     out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = c;
@@ -701,7 +706,7 @@ void AP_ADSB::send_configure(const mavlink_channel_t chan)
     // MAVLink spec says the 9 byte callsign field is 8 byte string with 9th byte as null.
     // Here we temporarily set some flags in that null char to signify the callsign
     // may be a flightplanID instead
-    int8_t callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN];
+    int8_t callsign[sizeof(out_state.cfg.callsign)];
     uint32_t icao;
 
     memcpy(callsign, out_state.cfg.callsign, sizeof(out_state.cfg.callsign));
@@ -759,7 +764,7 @@ uint32_t AP_ADSB::genICAO(const Location &loc)
     const uint64_t gps_time = gps.time_epoch_usec();
 
     uint32_t timeSum = 0;
-    uint32_t M3 = 4096 * (loc.lat & 0x00000FFF) + (loc.lng & 0x00000FFF);
+    const uint32_t M3 = 4096 * (loc.lat & 0x00000FFF) + (loc.lng & 0x00000FFF);
 
     for (uint8_t i=0; i<24; i++) {
         timeSum += (((gps_time & 0x00FFFFFF)>> i) & 0x00000001);
