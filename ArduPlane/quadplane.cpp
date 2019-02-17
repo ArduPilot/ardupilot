@@ -807,6 +807,16 @@ void QuadPlane::check_attitude_relax(void)
     last_att_control_ms = now;
 }
 
+/*
+  init QACRO mode
+ */
+void QuadPlane::init_qacro(void)
+{
+    throttle_wait = false;
+    transition_state = TRANSITION_DONE;
+    attitude_control->relax_attitude_controllers();
+}
+
 // init quadplane hover mode 
 void QuadPlane::init_hover(void)
 {
@@ -856,6 +866,66 @@ void QuadPlane::hold_hover(float target_climb_rate)
     // call position controller
     pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, plane.G_Dt, false);
     run_z_controller();
+}
+
+/*
+  control QACRO mode
+ */
+void QuadPlane::control_qacro(void)
+{
+    if (throttle_wait) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        attitude_control->set_throttle_out_unstabilized(0, true, 0);
+    } else {
+        check_attitude_relax();
+
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+        // convert the input to the desired body frame rate
+        float target_roll = 0;
+        float target_pitch = plane.channel_pitch->norm_input() * plane.g.acro_pitch_rate * 100.0f;
+        float target_yaw = 0;
+        if (is_tailsitter()) {
+            // Note that the 90 degree Y rotation for copter mode swaps body-frame roll and yaw
+            // acro_roll_rate param applies to yaw in copter frame
+            // no parameter for acro yaw rate; just use the normal one since the default is 100 deg/sec
+            target_roll =  plane.channel_rudder->norm_input() * yaw_rate_max * 100.0f;
+            target_yaw  = -plane.channel_roll->norm_input() * plane.g.acro_roll_rate * 100.0f;
+        } else {
+            target_roll = plane.channel_roll->norm_input() * plane.g.acro_roll_rate * 100.0f;
+            target_yaw  = plane.channel_rudder->norm_input() * yaw_rate_max * 100.0;
+        }
+
+        // get pilot's desired throttle
+        int16_t mid_stick = plane.channel_throttle->get_control_mid();
+        // protect against unlikely divide by zero
+        if (mid_stick <= 0) {
+            mid_stick = 50;
+        }
+        float thr_mid = motors->get_throttle_hover();
+        int16_t throttle_control = plane.channel_throttle->get_control_in();
+        float throttle_in;
+        if (throttle_control < mid_stick) {
+            // below the deadband
+            throttle_in = ((float)throttle_control) * 0.5f / (float)mid_stick;
+        } else if (throttle_control > mid_stick) {
+            // above the deadband
+            throttle_in = 0.5f + ((float)(throttle_control - mid_stick)) * 0.5f / (float)(100 - mid_stick);
+        } else {
+            // must be in the deadband
+            throttle_in = 0.5f;
+        }
+
+        float expo = constrain_float(-(thr_mid - 0.5) / 0.375, -0.5f, 1.0f);
+        // calculate the output throttle using the given expo function
+        float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
+
+        // run attitude controller
+        attitude_control->input_rate_bf_roll_pitch_yaw_3(target_roll, target_pitch, target_yaw);
+
+        // output pilot's throttle without angle boost
+        attitude_control->set_throttle_out(throttle_out, false, 10.0f);
+    }
 }
 
 /*
@@ -952,6 +1022,9 @@ bool QuadPlane::is_flying_vtol(void) const
     }
     if (motors->get_throttle() > 0.01f) {
         // if we are demanding more than 1% throttle then don't consider aircraft landed
+        return true;
+    }
+    if (plane.control_mode == QACRO) {
         return true;
     }
     if (plane.control_mode == GUIDED && guided_takeoff) {
@@ -1703,6 +1776,9 @@ void QuadPlane::control_run(void)
     }
 
     switch (plane.control_mode) {
+    case QACRO:
+        control_qacro();
+        break;
     case QSTABILIZE:
         control_stabilize();
         break;
@@ -1768,6 +1844,9 @@ bool QuadPlane::init_mode(void)
     case QAUTOTUNE:
         return qautotune.init();
 #endif
+    case QACRO:
+        init_qacro();
+        break;
     default:
         break;
     }
@@ -1857,6 +1936,7 @@ bool QuadPlane::in_vtol_mode(void) const
             plane.control_mode == QLOITER ||
             plane.control_mode == QLAND ||
             plane.control_mode == QRTL ||
+            plane.control_mode == QACRO ||
             plane.control_mode == QAUTOTUNE ||
             ((plane.control_mode == GUIDED || plane.control_mode == AVOID_ADSB) && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());

@@ -473,6 +473,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     case QLAND:
     case QRTL:
     case QAUTOTUNE:
+    case QACRO:
         throttle_allows_nudging = true;
         auto_navigation_mode = false;
         if (!quadplane.init_mode()) {
