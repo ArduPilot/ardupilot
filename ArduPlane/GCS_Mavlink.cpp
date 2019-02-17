@@ -23,6 +23,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case MANUAL:
     case TRAINING:
     case ACRO:
+    case QACRO:
         _base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case STABILIZE:

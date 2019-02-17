@@ -679,7 +679,7 @@ void Plane::update_flight_mode(void)
 
         break;
     }
-        
+    case QACRO:
     case INITIALISING:
         // handled elsewhere
         break;
@@ -775,6 +775,7 @@ void Plane::update_navigation()
     case QLAND:
     case QRTL:
     case QAUTOTUNE:
+    case QACRO:
         // nothing to do
         break;
     }

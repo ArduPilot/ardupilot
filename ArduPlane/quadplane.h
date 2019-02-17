@@ -196,6 +196,8 @@ private:
     void control_stabilize(void);
 
     void check_attitude_relax(void);
+    void init_qacro(void);
+    void control_qacro(void);
     void init_hover(void);
     void control_hover(void);
 
