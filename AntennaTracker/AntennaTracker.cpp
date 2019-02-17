@@ -87,7 +87,7 @@ void Tracker::one_second_loop()
     gcs().send_message(MSG_HEARTBEAT);
 
     // make it possible to change orientation at runtime
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
