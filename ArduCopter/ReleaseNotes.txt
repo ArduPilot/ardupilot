@@ -1,6 +1,25 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.5-rc3 21-Jan-2019
+Copter 3.6.6 15-Feb-2019 / Copter 3.6.6-rc2 09-Feb-2019
+Changes from 3.6.6-rc1
+1) Bug fixes
+    a) EKF compass switching fix for vehicles with 3 compasses
+    b) CAN fixed on Pixhawk4 and PH4-mini
+    c) Mini-pix uart telem1 and telem2 reversed
+    d) Divide-by-zero protection if _FILT_HZ params set to zero
+    e) Guided_NoGPS skips GPS pre-arm check
+------------------------------------------------------------------
+Copter 3.6.6-rc1 02-Feb-2019
+Changes from 3.6.5
+1) AP_RSSI fixes and minor enhancements
+    a) RSSI pwm input driver for ChibiOS
+    b) add V5 Nano to RSSI_ANA_PIN parameter description
+2) Bug fixes and minor enhancements
+    a) TradHeli roll trim ramp time fix
+    b) First Spline waypoint no longer skipped
+    c) RC override (from GCS Joystick) disable fix (command to disable overrides could be interpreted as real input)
+------------------------------------------------------------------
+Copter 3.6.5 24-Jan-2019 / 3.6.5-rc3 21-Jan-2019
 Changes from 3.6.5-rc2
 1) Bug fixes:
     a) Pixhawk4 SBUS input and Serial6 pin mapping conflict resolved

@@ -197,8 +197,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _p_pos_xy(POSCONTROL_POS_XY_P),
     _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ, POSCONTROL_DT_50HZ),
     _dt(POSCONTROL_DT_400HZ),
-    _last_update_xy_ms(0),
-    _last_update_z_ms(0),
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
@@ -465,19 +463,19 @@ void AC_PosControl::init_takeoff()
 // is_active_z - returns true if the z-axis position controller has been run very recently
 bool AC_PosControl::is_active_z() const
 {
-    return ((AP_HAL::millis() - _last_update_z_ms) <= POSCONTROL_ACTIVE_TIMEOUT_MS);
+    return ((AP_HAL::micros64() - _last_update_z_us) <= POSCONTROL_ACTIVE_TIMEOUT_US);
 }
 
 /// update_z_controller - fly to altitude in cm above home
 void AC_PosControl::update_z_controller()
 {
     // check time since last cast
-    uint32_t now = AP_HAL::millis();
-    if (now - _last_update_z_ms > POSCONTROL_ACTIVE_TIMEOUT_MS) {
+    const uint64_t now_us = AP_HAL::micros64();
+    if (now_us - _last_update_z_us > POSCONTROL_ACTIVE_TIMEOUT_US) {
         _flags.reset_rate_to_accel_z = true;
         _flags.reset_accel_to_throttle = true;
     }
-    _last_update_z_ms = now;
+    _last_update_z_us = now_us;
 
     // check for ekf altitude reset
     check_for_ekf_z_reset();
@@ -761,7 +759,7 @@ int32_t AC_PosControl::get_bearing_to_target() const
 // is_active_xy - returns true if the xy position controller has been run very recently
 bool AC_PosControl::is_active_xy() const
 {
-    return ((AP_HAL::millis() - _last_update_xy_ms) <= POSCONTROL_ACTIVE_TIMEOUT_MS);
+    return ((AP_HAL::micros64() - _last_update_xy_us) <= POSCONTROL_ACTIVE_TIMEOUT_US);
 }
 
 /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
@@ -802,11 +800,11 @@ void AC_PosControl::init_xy_controller()
 void AC_PosControl::update_xy_controller(float ekfNavVelGainScaler)
 {
     // compute dt
-    uint32_t now = AP_HAL::millis();
-    float dt = (now - _last_update_xy_ms)*0.001f;
+    const uint64_t now_us = AP_HAL::micros64();
+    float dt = (now_us - _last_update_xy_us) * 1.0e-6f;
 
     // sanity check dt
-    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_MS*1.0e-3f) {
+    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_US * 1.0e-6f) {
         dt = 0.0f;
     }
 
@@ -823,13 +821,13 @@ void AC_PosControl::update_xy_controller(float ekfNavVelGainScaler)
     run_xy_controller(dt, ekfNavVelGainScaler);
 
     // update xy update time
-    _last_update_xy_ms = now;
+    _last_update_xy_us = now_us;
 }
 
 float AC_PosControl::time_since_last_xy_update() const
 {
-    uint32_t now = AP_HAL::millis();
-    return (now - _last_update_xy_ms)*0.001f;
+    const uint64_t now_us = AP_HAL::micros64();
+    return (now_us - _last_update_xy_us) * 1.0e-6f;
 }
 
 // write log to dataflash
@@ -899,8 +897,8 @@ void AC_PosControl::init_vel_controller_xyz()
 void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
 {
     // capture time since last iteration
-    uint32_t now = AP_HAL::millis();
-    float dt = (now - _last_update_xy_ms)*0.001f;
+    const uint64_t now_us = AP_HAL::micros64();
+    float dt = (now_us - _last_update_xy_us) * 1.0e-6f;
 
     // sanity check dt
     if (dt >= 0.2f) {
@@ -921,7 +919,7 @@ void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
     run_xy_controller(dt, ekfNavVelGainScaler);
 
     // update xy update time
-    _last_update_xy_ms = now;
+    _last_update_xy_us = now_us;
 }
 
 
