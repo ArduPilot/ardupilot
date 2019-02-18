@@ -175,8 +175,9 @@ class Board:
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
 
+                '-Werror=inconsistent-missing-override',
+
                 '-Wno-gnu-designator',
-                '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
             ]
