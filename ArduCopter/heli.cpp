@@ -86,7 +86,7 @@ void Copter::update_heli_control_dynamics(void)
     hover_roll_trim_scalar_slew = constrain_int16(hover_roll_trim_scalar_slew, 0, scheduler.get_loop_rate_hz());
 
     // set hover roll trim scalar, will ramp from 0 to 1 over 1 second after we think helicopter has taken off
-    attitude_control->set_hover_roll_trim_scalar((float)(hover_roll_trim_scalar_slew/scheduler.get_loop_rate_hz()));
+    attitude_control->set_hover_roll_trim_scalar((float) hover_roll_trim_scalar_slew/(float) scheduler.get_loop_rate_hz());
 }
 
 // heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing

@@ -69,7 +69,15 @@ void peripheral_power_enable(void);
 
 // initialise allocation subsystem
 void malloc_init(void);
-    
+
+/*
+  read mode of a pin. This allows a pin config to be read, changed and
+  then written back
+ */
+#if defined(STM32F7) || defined(STM32F4)
+iomode_t palReadLineMode(ioline_t line);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

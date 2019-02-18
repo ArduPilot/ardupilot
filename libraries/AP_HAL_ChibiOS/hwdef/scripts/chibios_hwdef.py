@@ -678,6 +678,8 @@ def write_I2C_config(f):
     if len(i2c_list) == 0:
         error("I2C_ORDER invalid")
     devlist = []
+
+    # write out config structures
     for dev in i2c_list:
         if not dev.startswith('I2C') or dev[3] not in "1234":
             error("Bad I2C_ORDER element %s" % dev)
@@ -685,17 +687,12 @@ def write_I2C_config(f):
         devlist.append('HAL_I2C%u_CONFIG' % n)
         f.write('''
 #if defined(STM32_I2C_I2C%u_RX_DMA_STREAM) && defined(STM32_I2C_I2C%u_TX_DMA_STREAM)
-#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM }
+#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM, HAL_GPIO_PIN_I2C%u_SCL, HAL_GPIO_PIN_I2C%u_SDA }
 #else
-#define HAL_I2C%u_CONFIG { &I2CD%u, SHARED_DMA_NONE, SHARED_DMA_NONE }
+#define HAL_I2C%u_CONFIG { &I2CD%u, SHARED_DMA_NONE, SHARED_DMA_NONE, HAL_GPIO_PIN_I2C%u_SCL, HAL_GPIO_PIN_I2C%u_SDA }
 #endif
 '''
-            % (n, n, n, n, n, n, n, n))
-        if dev + "_SCL" in bylabel:
-            p = bylabel[dev + "_SCL"]
-            f.write(
-                '#define HAL_%s_SCL_AF %d\n' % (dev, p.af)
-            )
+            % (n, n, n, n, n, n, n, n, n, n, n, n))
     f.write('\n#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
 def parse_timer(str):
@@ -970,24 +967,10 @@ def write_ROMFS(outdir):
         romfs_list.append((k, romfs[k]))
     env_vars['ROMFS_FILES'] = romfs_list
 
-def write_prototype_file():
-    '''write the prototype file for apj generation'''
-    pf = open(os.path.join(outdir, "apj.prototype"), "w")
-    pf.write('''{
-    "board_id": %s, 
-    "magic": "PX4FWv1", 
-    "description": "Firmware for the %s board", 
-    "image": "", 
-    "build_time": 0, 
-    "summary": "PX4FMUv3",
-    "version": "0.1",
-    "image_size": 0,
-    "git_identity": "",
-    "board_revision": 0
-}
-''' % (get_config('APJ_BOARD_ID'),
-       get_config('APJ_BOARD_TYPE', default=mcu_type)))
-
+def setup_apj_IDs():
+    '''setup the APJ board IDs'''
+    env_vars['APJ_BOARD_ID'] = get_config('APJ_BOARD_ID')
+    env_vars['APJ_BOARD_TYPE'] = get_config('APJ_BOARD_TYPE', default=mcu_type)
 
 def write_peripheral_enable(f):
     '''write peripheral enable lines'''
@@ -1033,7 +1016,7 @@ def write_hwdef_header(outfilename):
     write_GPIO_config(f)
 
     write_peripheral_enable(f)
-    write_prototype_file()
+    setup_apj_IDs()
 
     dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                   dma_exclude=get_dma_exclude(periph_list),

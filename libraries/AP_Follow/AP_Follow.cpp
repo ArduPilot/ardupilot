@@ -23,7 +23,6 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_FOLLOW_TIMEOUT_MS    3000    // position estimate timeout after 1 second
 #define AP_FOLLOW_SYSID_TIMEOUT_MS 10000 // forget sysid we are following if we haave not heard from them in 10 seconds
-#define AP_GCS_INTERVAL_MS 1000 // interval between updating GCS on position of vehicle
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
@@ -127,7 +126,6 @@ AP_Follow::AP_Follow() :
         _p_pos(AP_FOLLOW_POS_P_DEFAULT)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    _sysid_to_follow = _sysid;
 }
 
 // get target's estimated location
@@ -167,6 +165,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     // get our location
     Location current_loc;
     if (!AP::ahrs().get_position(current_loc)) {
+        clear_dist_and_bearing_to_target();
          return false;
     }
 
@@ -174,6 +173,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     Location target_loc;
     Vector3f veh_vel;
     if (!get_target_location_and_velocity(target_loc, veh_vel)) {
+        clear_dist_and_bearing_to_target();
         return false;
     }
 
@@ -187,6 +187,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
 
     // fail if too far
     if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
+        clear_dist_and_bearing_to_target();
         return false;
     }
 
@@ -196,13 +197,23 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     // get offsets
     Vector3f offsets;
     if (!get_offsets_ned(offsets)) {
+        clear_dist_and_bearing_to_target();
         return false;
     }
 
-    // return results
+    // calculate results
     dist_ned = dist_vec;
     dist_with_offs = dist_vec + offsets;
     vel_ned = veh_vel;
+
+    // record distance and heading for reporting purposes
+    if (is_zero(dist_with_offs.x) && is_zero(dist_with_offs.y)) {
+        clear_dist_and_bearing_to_target();
+    } else {
+        _dist_to_target = safe_sqrt(sq(dist_with_offs.x) + sq(dist_with_offs.y));
+        _bearing_to_target = degrees(atan2f(dist_with_offs.y, dist_with_offs.x));
+    }
+
     return true;
 }
 
@@ -238,11 +249,11 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
     }
 
     // skip message if not from our target
-    if ((_sysid_to_follow != 0) && (msg.sysid != _sysid_to_follow)) {
-        if (_sysid == 0) {
+    if (_sysid != 0 && msg.sysid != _sysid) {
+        if (_automatic_sysid) {
             // maybe timeout who we were following...
             if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
-                _sysid_to_follow = 0;
+                _sysid.set(0);
             }
         }
         return;
@@ -290,16 +301,9 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
             _last_heading_update_ms = now;
         }
         // initialise _sysid if zero to sender's id
-        if (_sysid_to_follow == 0) {
-            _sysid_to_follow = msg.sysid;
-        }
-        if ((now - _last_location_sent_to_gcs) > AP_GCS_INTERVAL_MS) {
-            _last_location_sent_to_gcs = now;
-            gcs().send_text(MAV_SEVERITY_INFO, "Foll: %u %ld %ld %4.2f\n",
-                            (unsigned)_sysid_to_follow,
-                            (long)_target_location.lat,
-                            (long)_target_location.lng,
-                            (double)(_target_location.alt * 0.01f));    // cm to m
+        if (_sysid == 0) {
+            _sysid.set(msg.sysid);
+            _automatic_sysid = true;
         }
 
         // log lead's estimated vs reported position
@@ -380,3 +384,9 @@ Vector3f AP_Follow::rotate_vector(const Vector3f &vec, float angle_deg) const
     return Vector3f((vec.x * cos_yaw) - (vec.y * sin_yaw), (vec.y * cos_yaw) + (vec.x * sin_yaw), vec.z);
 }
 
+// set recorded distance and bearing to target to zero
+void AP_Follow::clear_dist_and_bearing_to_target()
+{
+    _dist_to_target = 0.0f;
+    _bearing_to_target = 0.0f;
+}

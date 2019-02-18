@@ -1,0 +1,246 @@
+# hw definition file for processing by chibios_hwdef.py
+# for FMUv4pro hardware (Pixhawk 3 Pro)
+
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4PRO
+
+define BOARD_TYPE_DEFAULT 14
+
+# MCU class and specific type
+MCU STM32F4xx STM32F469xx
+
+# board ID for firmware load
+APJ_BOARD_ID 13
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board voltage
+STM32_VDD 330U
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# serial port for stdout, disabled so console is on USB
+#STDOUT_SERIAL SD7
+#STDOUT_BAUDRATE 57600
+
+# order of I2C buses
+I2C_ORDER I2C1 I2C2
+
+# now the UART order. These map to the hal.uartA to hal.uartF
+# objects. If you use a shorter list then HAL_Empty::UARTDriver
+# objects are substituted for later UARTs, or you can leave a gap by
+# listing one or more of the uarts as EMPTY
+# 1) SERIAL0: console (primary mavlink, usually USB)
+# 2) SERIAL3: primary GPS
+# 3) SERIAL1: telem1
+# 4) SERIAL2: telem2
+# 5) SERIAL4: GPS2
+# 6) SERIAL5: extra UART (usually RTOS debug console)
+
+# order of UARTs (and USB)
+UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART1 UART7
+
+# UART for IOMCU
+IOMCU_UART USART6
+
+# we have a safety switch on IO
+define HAL_HAVE_SAFETY_SWITCH 1
+
+# UART4 serial GPS
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
+
+# battery connectors
+PA2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA3 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# VDD sense pin. This is used to sense primary board voltags
+PA4 VDD_5V_SENS ADC1 SCALE(2)
+
+# SPI1 is sensors bus
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI1 CS pins
+PC2 MPU9250_CS CS
+PC15 20608_CS CS
+PD7 BARO_CS CS
+PE15 MAG_CS CS
+PH5 EEPROM_CS CS
+
+PA9 VBUS INPUT OPENDRAIN
+PA10 FRSKY_INV OUTPUT GPIO(78)
+
+# now we define the pins that USB is connected on
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# these are the pins for SWD debugging with a STlinkv2 or black-magic probe
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# PWM output for buzzer
+PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
+
+# this defines a couple of general purpose outputs, mapped to GPIO
+# numbers 1 and 2 for users
+# PB0 EXTERN_GPIO1 OUTPUT GPIO(1)
+# PB1 EXTERN_GPIO2 OUTPUT GPIO(2)
+
+#PB0 INPUT PULLUP # RC Input PPM
+
+PB1 LED_GREEN OUTPUT GPIO(0)
+PB2 BOOT1 INPUT
+PB3 LED_BLUE OUTPUT GPIO(1)
+
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+PA8 USART1_RTS USART1
+# PE10 is not a hw CTS pin for USART1
+PE10 8266_CTS INPUT
+
+# make GPIOs for ESP8266 available via mavlink relay control as pins
+# 60 to 63
+PB4 8266_GPIO2 OUTPUT GPIO(60)
+PE2 8266_GPI0 INPUT PULLUP GPIO(61)
+PE5 8266_PD OUTPUT HIGH GPIO(62)
+PE6 8266_RST OUTPUT HIGH GPIO(63)
+
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+PF1 I2C2_SCL I2C2
+PF0 I2C2_SDA I2C2
+
+# SPI2 is FRAM
+PB10 SPI2_SCK SPI2
+PB11 LED_RED OUTPUT GPIO(2)
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+PC0 VBUS_VALID INPUT
+PC1 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PC3 BATT2_CURRENT_SENS ADC1 SCALE(1)
+#PC4 SAFETY_IN INPUT PULLDOWN
+
+# this sets up the UART for talking to the IOMCU. Note that it is
+# vital that this UART has DMA available. See the DMA settings below
+# for more information
+
+#  USART6 to IO
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+
+# now setup the pins for the microSD card, if available
+PC8 SDIO_D0 SDIO
+PC9 SDIO_D1 SDIO
+PC10 SDIO_D2 SDIO
+PC11 SDIO_D3 SDIO
+PC12 SDIO_CK SDIO
+PC13 SBUS_INV OUTPUT
+PC14 20608_DRDY INPUT
+
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+PD2 SDIO_CMD SDIO
+
+# USART2 serial2 telem1
+PD3 USART2_CTS USART2
+PD4 USART2_RTS USART2
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# USART3 serial3 telem2
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+PD10 FRAM_CS CS
+PD11 USART3_CTS USART3
+PD12 USART3_RTS USART3
+
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
+
+PD15 MPU9250_DRDY INPUT
+
+# UART8 serial4 FrSky
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8
+PE3 VDD_SENSORS_EN OUTPUT HIGH
+
+# start peripheral power off, then enable after init
+# this prevents a problem with radios that use RTS for
+# bootloader hold
+PC5  VDD_5V_WIFI_EN OUTPUT HIGH
+PF4  nVDD_5V_HIPOWER_EN OUTPUT HIGH
+PG10 nVDD_5V_PERIPH_EN OUTPUT HIGH
+
+# UART7 is debug
+PE7 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+PE9 TIM1_CH1 TIM1 PWM(4) GPIO(53)
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
+PE12 MAG_DRDY INPUT
+PE13 TIM1_CH3 TIM1 PWM(2) GPIO(51)
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50)
+
+# Power flag pins: these tell the MCU the status of the various power
+# supplies that are available. The pin names need to exactly match the
+# names used in AnalogIn.cpp. 
+PB5 VDD_BRICK_VALID INPUT PULLUP
+PG5 VDD_BRICK2_VALID INPUT PULLUP
+PF3 VDD_5V_HIPOWER_OC INPUT PULLUP
+PG4 VDD_5V_PERIPH_OC INPUT PULLUP
+
+# SPI device table
+SPIDEV ms5611      SPI1 DEVID3  BARO_CS    MODE3  20*MHZ 20*MHZ
+SPIDEV mpu9250     SPI1 DEVID4  MPU9250_CS MODE3   2*MHZ   4*MHZ
+SPIDEV icm20608    SPI1 DEVID6  20608_CS   MODE3   2*MHZ   8*MHZ
+SPIDEV lis3mdl     SPI1 DEVID5  MAG_CS     MODE3 500*KHZ 500*KHZ
+SPIDEV ramtron     SPI2 DEVID10 FRAM_CS    MODE3   8*MHZ   8*MHZ
+
+define HAL_CHIBIOS_ARCH_FMUV4PRO 1
+
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+define HAL_STORAGE_SIZE 16384
+define HAL_WITH_RAMTRON 1
+
+# fallback to flash is no FRAM fitted
+define STORAGE_FLASH_PAGE 22
+
+# enable FAT filesystem support (needs a microSD defined via SDIO)
+define HAL_OS_FATFS_IO 1
+
+# enable RTSCTS support
+define AP_FEATURE_RTSCTS 1
+
+# enable SBUS_OUT on IOMCU (if you have an IOMCU)
+define AP_FEATURE_SBUS_OUT 1
+
+# battery setup
+define HAL_BATT_VOLT_PIN 2
+define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+
+# setup serial port defaults for ESP8266
+define HAL_SERIAL5_PROTOCOL SerialProtocol_MAVLink
+define HAL_SERIAL5_BAUD 921600
+
+# 8 PWM available by default
+define BOARD_PWM_COUNT_DEFAULT 6
+
+# We can't share the IO UART (USART6).
+DMA_NOSHARE USART6_TX USART6_RX ADC1
+DMA_PRIORITY USART6*
+
+ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin

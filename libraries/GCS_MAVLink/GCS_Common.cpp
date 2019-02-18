@@ -1469,8 +1469,8 @@ void GCS_MAVLINK::send_opticalflow(const OpticalFlow &optflow)
         0, // sensor id is zero
         flowRate.x,
         flowRate.y,
-        bodyRate.x,
-        bodyRate.y,
+        flowRate.x - bodyRate.x,
+        flowRate.y - bodyRate.y,
         optflow.quality(),
         hagl,  // ground distance (in meters) set to zero
         flowRate.x,
