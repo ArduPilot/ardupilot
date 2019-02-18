@@ -438,13 +438,13 @@ bool AC_AutoTune::currently_level()
     }
 
     if (!check_level(LEVEL_ISSUE_ANGLE_ROLL,
-                     fabsf(ahrs_view->roll_sensor - roll_cd),
+                     abs(ahrs_view->roll_sensor - roll_cd),
                      threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
 
     if (!check_level(LEVEL_ISSUE_ANGLE_PITCH,
-                     fabsf(ahrs_view->pitch_sensor - pitch_cd),
+                     abs(ahrs_view->pitch_sensor - pitch_cd),
                      threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
