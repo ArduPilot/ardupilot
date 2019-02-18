@@ -501,7 +501,7 @@ private:
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally_Copter rally{ahrs};
+    AP_Rally_Copter rally;
 #endif
 
     // RSSI
