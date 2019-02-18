@@ -52,6 +52,7 @@ class AutoTestQuadPlane(AutoTest):
         self.sitl = None
 
     def init(self):
+        super(AutoTestQuadPlane, self).init(os.path.realpath(__file__))
         if self.frame is None:
             self.frame = 'quadplane'
 

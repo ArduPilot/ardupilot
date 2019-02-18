@@ -1624,18 +1624,19 @@ class AutoTest(ABC):
                 # check for lambda: test_function without paranthesis
                 faulty_strings = re.findall(r"lambda\s*:\s*\w+.\w+\s*\)", f.read())
                 if faulty_strings:
-                    desc = ("Syntax error in autotest lambda at : " +
-                            faulty_strings)
+                    desc = "Syntax error in autotest lambda at : \n"
+                    for x in range(len(faulty_strings)):
+                        desc += faulty_strings[x] + "\n"
                     raise ErrorException(desc)
-        except ErrorException:
-            self.progress('FAILED: "%s"' % "Check for syntax mistake in autotest lambda")
+        except ErrorException as msg:
+            self.progress("FAILED: Check for syntax mistake in autotest lambda. \n" + str(msg))
             exit(1)
-        self.progress('PASSED: "%s"' % "Check for syntax mistake in autotest lambda")
+        self.progress("PASSED: Check for syntax mistake in autotest lambda")
 
-    @abc.abstractmethod
-    def init(self):
+    def init(self, file):
         """Initilialize autotest feature."""
-        pass
+        self.check_test_syntax(test_file=os.path.realpath(file))
+
 
     def expect_command_ack(self, command):
         m = self.mav.recv_match(type='COMMAND_ACK', blocking=True, timeout=10)
@@ -2167,7 +2168,6 @@ switch value'''
 
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
-        self.check_test_syntax(test_file=os.path.realpath(__file__))
         if self.run_tests_called:
             raise ValueError("run_tests called twice")
         self.run_tests_called = True

@@ -51,6 +51,7 @@ class AutoTestSub(AutoTest):
         return SITL_START_LOCATION
 
     def init(self):
+        super(AutoTestSub, self).init(os.path.realpath(__file__))
         if self.frame is None:
             self.frame = 'vectored'
 
