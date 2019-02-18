@@ -297,11 +297,6 @@ private:
                            FUNCTOR_BIND_MEMBER(&Rover::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-    // 3D Location vectors
-    // Location structure defined in AP_Common
-    // The home location used for RTL.  The location is set when we first get stable GPS lock
-    const struct Location &home;
-
     // true if the compass's initial location has been set
     bool compass_init_location;
 
