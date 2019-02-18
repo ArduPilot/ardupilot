@@ -23,6 +23,7 @@
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
+#include "sdcard.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -250,3 +251,13 @@ bool Util::get_system_id(char buf[40])
     buf[39] = 0;
     return true;
 }
+
+#ifdef USE_POSIX
+/*
+  initialise filesystem
+ */
+bool Util::fs_init(void)
+{
+    return sdcard_init();
+}
+#endif

@@ -34,6 +34,7 @@ public:
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);
     bool spi_started;
+    uint8_t slowdown;
     
     // we need an additional lock in the dma_allocate and
     // dma_deallocate functions to cope with 3-way contention as we
@@ -108,7 +109,10 @@ public:
     // used to measure clock frequencies
     static void test_clock_freq(void);
 #endif
-    
+
+    // setup a bus clock slowdown factor
+    void set_slowdown(uint8_t slowdown) override;
+
 private:
     SPIBus &bus;
     SPIDesc &device_desc;

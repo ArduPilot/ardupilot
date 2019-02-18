@@ -3,6 +3,8 @@
 
 include ../fmuv5/hwdef.dat
 
-# use ChibiOS based IO firmware to avoid issue with SBUS
-# input. NuttX has no parity checking on UARTs
-ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO_ChibiOS.bin
+# setup for supplied power brick
+undef HAL_BATT_VOLT_SCALE
+define HAL_BATT_VOLT_SCALE 18.182
+undef HAL_BATT_CURR_SCALE
+define HAL_BATT_CURR_SCALE 36.364

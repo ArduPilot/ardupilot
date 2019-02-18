@@ -372,8 +372,8 @@ PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
-# define a LED, mapping it to GPIO(0)
-PE12 FMU_LED_AMBER OUTPUT GPIO(0)
+# Define a LED, mapping it to GPIO(0). LOW will illuminate the LED
+PE12 FMU_LED_AMBER OUTPUT HIGH OPENDRAIN GPIO(0)
 
 # power flag pins. These tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the

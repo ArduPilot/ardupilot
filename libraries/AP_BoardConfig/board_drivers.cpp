@@ -241,7 +241,7 @@ void AP_BoardConfig::board_autodetect(void)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
     hal.console->printf("Detected MindPX-V2\n");
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
     hal.console->printf("Detected Pixhawk Pro\n");	
