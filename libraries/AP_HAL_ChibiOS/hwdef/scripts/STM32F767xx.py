@@ -35,7 +35,9 @@ mcu = {
     # flags of 2 means faster memory for CPU intensive work
     'RAM_MAP' : [
         (0x20020000, 384, 0), # SRAM1/SRAM2
-        (0x20000000, 128, 1), # DTCM, DMA
+        # split DTCM in two to allow for fast checking of IS_DMA_SAFE in bouncebuffer code
+        (0x20000000,  64, 1), # DTCM, DMA safe
+        (0x20010000,  64, 2), # DTCM, 2nd half, used as fast memory. This lowers memory contention in the EKF code
     ]
 }
 
