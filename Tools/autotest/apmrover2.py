@@ -906,6 +906,23 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_rally_points(self):
+        self.load_rally("rover-test-rally.txt")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.reach_heading_manual(10)
+        self.reach_distance_manual(50)
+
+        self.change_mode("RTL")
+        # location copied in from rover-test-rally.txt:
+        loc = mavutil.location(40.071553,
+	                           -105.229401,
+                               0,
+                               0)
+        self.wait_location(loc)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -991,6 +1008,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("SYSID_ENFORCE",
              "Test enforcement of SYSID_MYGCS",
              self.test_sysid_enforce),
+
+            ("Rally",
+             "Test Rally Points",
+             self.test_rally_points),
 
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(
