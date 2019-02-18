@@ -10,8 +10,7 @@ STM32_ST_USE_TIMER 5
 
 # enabling PE3 on the Colibri causes it to reset on startup
 undef PE3
-undef VDD_3V3_SENSORS_EN
-PE3 DUMMY_PE3 INPUT
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
 
 # order of UARTs (and USB). Telem2 is UART4 on the mini, USART3 is not available
 UART_ORDER OTG1 USART1 USART2 UART4 USART6 UART7
@@ -38,6 +37,8 @@ PB3  TIM2_CH2 TIM2 PWM(10) GPIO(59)
 PB11 TIM2_CH4 TIM2 PWM(11) GPIO(60)
 
 # RCInput on the PPM pin, for all protocols
+undef PG9
+undef USART6_RX
 PI5 TIM8_CH1 TIM8 RCININT PULLUP LOW
 
 # setup for supplied power brick

@@ -262,7 +262,7 @@ void set_fast_reboot(enum rtc_boot_magic v)
 */
 void peripheral_power_enable(void)
 {
-#if defined(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN) || defined(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN)
+#if defined(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN) || defined(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN)
     // we don't know what state the bootloader had the CTS pin in, so
     // wait here with it pulled up from the PAL table for enough time
     // for the radio to be definately powered down
@@ -276,6 +276,10 @@ void peripheral_power_enable(void)
 #endif
 #ifdef HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN
     palWriteLine(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN, 0);
+#endif
+#ifdef HAL_GPIO_PIN_VDD_3V3_SENSORS_EN
+    // the TBS-Colibri-F7 needs PE3 low
+    palWriteLine(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN, 1);
 #endif
 #endif
 }
