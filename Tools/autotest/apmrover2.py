@@ -57,6 +57,7 @@ class AutoTestRover(AutoTest):
         return SITL_START_LOCATION
 
     def init(self):
+        super(AutoTestRover, self).init(os.path.realpath(__file__))
         if self.frame is None:
             self.frame = 'rover'
 
