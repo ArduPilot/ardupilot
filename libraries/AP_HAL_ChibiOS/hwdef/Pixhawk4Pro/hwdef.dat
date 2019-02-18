@@ -96,7 +96,7 @@ PH8 I2C3_SDA I2C3
 I2C_ORDER I2C3 I2C1 I2C2
 
 # enable pins
-PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
 
 # start peripheral power off, then enable after init
 # this prevents a problem with radios that use RTS for
@@ -290,4 +290,6 @@ ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
 
 # don't share IOMCU DMA
 DMA_NOSHARE UART8* SPI1* TIM*UP*
+
+define HAL_SPI_USE_POLLED
 
