@@ -27,4 +27,5 @@ def build(bld):
         program_name='ardusub',
         program_groups=['bin', 'sub'],
         use=vehicle + '_libs',
+        defines=list(bld.env.MACRO_LIST)
     )

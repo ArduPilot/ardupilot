@@ -16,4 +16,5 @@ def build(bld):
         program_name='antennatracker',
         program_groups=['bin', 'antennatracker'],
         use=vehicle + '_libs',
+        defines=list(bld.env.MACRO_LIST)
     )

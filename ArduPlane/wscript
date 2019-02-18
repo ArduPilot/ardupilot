@@ -40,4 +40,5 @@ def build(bld):
         program_name='arduplane',
         program_groups=['bin', 'plane'],
         use=vehicle + '_libs',
+        defines=list(bld.env.MACRO_LIST)
     )
