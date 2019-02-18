@@ -291,7 +291,7 @@ private:
 #endif
 
     // Rally Ponints
-    AP_Rally rally{ahrs};
+    AP_Rally rally;
 
     // RSSI
     AP_RSSI rssi;
