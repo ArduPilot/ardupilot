@@ -303,20 +303,17 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg)
  */
 void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, float param_value)
 {
-    const uint8_t mavlink_active = GCS_MAVLINK::active_channel_mask();
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if ((1U<<i) & mavlink_active) {
-            const mavlink_channel_t _chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (HAVE_PAYLOAD_SPACE(_chan, PARAM_VALUE)) {
-                mavlink_msg_param_value_send(
-                    _chan,
-                    param_name,
-                    param_value,
-                    mav_var_type(param_type),
-                    AP_Param::count_parameters(),
-                    -1);
-            }
+    for (uint8_t chan=0; chan<MAVLINK_COMM_NUM_BUFFERS; chan++) {
+        if (!GCS_MAVLINK::is_active_channel((mavlink_channel_t)chan) || !HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+            continue;
         }
+        mavlink_msg_param_value_send(
+            (mavlink_channel_t)chan,
+            param_name,
+            param_value,
+            mav_var_type(param_type),
+            AP_Param::count_parameters(),
+            -1);
     }
     // also log to AP_Logger
     AP_Logger *dataflash = AP_Logger::get_singleton();
