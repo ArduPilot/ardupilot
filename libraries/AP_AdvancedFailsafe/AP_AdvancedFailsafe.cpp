@@ -147,7 +147,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
 
     // @Param: TERM_DLY
     // @DisplayName: Termination Delay
-    // @Description: This is the time in seconds the aircraft will stay at a failsafe waypoint before aero termination.  If the time is set to zero, this feature is disabled.
+    // @Description: This is the time in seconds the aircraft will stay at a failsafe waypoint before aero termination.  Set to 0 to disable.
     // @User: Advanced
     // @Units: seconds 
     AP_GROUPINFO("TERM_DLY",   20, AP_AdvancedFailsafe, _terminal_delay,   0),
