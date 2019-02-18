@@ -59,7 +59,7 @@ void AP_IOMCU::init(void)
     // check IO firmware CRC
     hal.scheduler->delay(2000);
     
-    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
     if (!boardconfig || boardconfig->io_enabled() == 1) {
         check_crc();
     } else {
@@ -304,7 +304,7 @@ void AP_IOMCU::read_status()
         last_safety_options = 0xFFFF;
 
         // also check if the safety should be definately off.
-        AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+        AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
         if (!boardconfig) {
             return;
         }
@@ -656,7 +656,7 @@ void AP_IOMCU::set_brushed_mode(void)
 // handling of BRD_SAFETYOPTION parameter
 void AP_IOMCU::update_safety_options(void)
 {
-    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
     if (!boardconfig) {
         return;
     }

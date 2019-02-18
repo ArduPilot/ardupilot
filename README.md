@@ -8,6 +8,8 @@
 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/5331/badge.svg)](https://scan.coverity.com/projects/ardupilot-ardupilot)
 
+[![Autotest Status](http://autotest.ardupilot.org/autotest-badge.svg)](http://autotest.ardupilot.org/)
+
 ## The ArduPilot project is made up of: ##
 
 - ArduCopter (or APM:Copter) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](http://ardupilot.org/copter/index.html)
@@ -123,3 +125,5 @@ for reviewing patches on their specific area.  See also the list of developers w
   - ***Subsystem***: Copter SITL, Rover SITL
 - [Víctor Mayoral Vilches](https://github.com/vmayoral):
   - ***Board***: PXF, Erle-Brain 2, PXFmini
+- [Amilcar Lucas](https://github.com/amilcarlucas):
+  - ***Subsystem***: Marvelmind

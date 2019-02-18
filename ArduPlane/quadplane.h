@@ -39,6 +39,8 @@ public:
     void setup_target_position(void);
     void takeoff_controller(void);
     void waypoint_controller(void);
+
+    void update_throttle_thr_mix(void);
     
     // update transition handling
     void update(void);
@@ -74,6 +76,7 @@ public:
     bool verify_vtol_land(void);
     bool in_vtol_auto(void) const;
     bool in_vtol_mode(void) const;
+    void update_throttle_hover();
 
     // vtol help for is_flying()
     bool is_flying(void);
@@ -239,6 +242,7 @@ private:
 
     // Quadplane trim, degrees
     AP_Float ahrs_trim_pitch;
+    float _last_ahrs_trim_pitch;
 
     // fw landing approach radius
     AP_Float fw_land_approach_radius;

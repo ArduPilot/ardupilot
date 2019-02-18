@@ -44,27 +44,6 @@ void Rover::init_visual_odom()
     g2.visual_odom.init();
 }
 
-// update visual odometry sensor
-void Rover::update_visual_odom()
-{
-    // check for updates
-    if (g2.visual_odom.enabled() && (g2.visual_odom.get_last_update_ms() != visual_odom_last_update_ms)) {
-        visual_odom_last_update_ms = g2.visual_odom.get_last_update_ms();
-        const float time_delta_sec = g2.visual_odom.get_time_delta_usec() / 1000000.0f;
-        ahrs.writeBodyFrameOdom(g2.visual_odom.get_confidence(),
-                                g2.visual_odom.get_position_delta(),
-                                g2.visual_odom.get_angle_delta(),
-                                time_delta_sec,
-                                visual_odom_last_update_ms,
-                                g2.visual_odom.get_pos_offset());
-        // log sensor data
-        logger.Write_VisualOdom(time_delta_sec,
-                                       g2.visual_odom.get_angle_delta(),
-                                       g2.visual_odom.get_position_delta(),
-                                       g2.visual_odom.get_confidence());
-    }
-}
-
 // update wheel encoders
 void Rover::update_wheel_encoder()
 {
@@ -99,6 +78,9 @@ void Rover::update_wheel_encoder()
         const float delta_angle = curr_angle_rad - wheel_encoder_last_angle_rad[i];
         wheel_encoder_last_angle_rad[i] = curr_angle_rad;
 
+        // save cumulative distances at current time (in meters)
+        wheel_encoder_last_distance_m[i] = g2.wheel_encoder.get_distance(i);
+
         // calculate delta time
         float delta_time;
         const uint32_t latest_sensor_update_ms = g2.wheel_encoder.get_last_reading_ms(i);
@@ -119,14 +101,7 @@ void Rover::update_wheel_encoder()
          * timeStamp_ms is the time when the rotation was last measured (msec)
          * posOffset is the XYZ body frame position of the wheel hub (m)
          */
-        EKF3.writeWheelOdom(delta_angle, delta_time, wheel_encoder_last_update_ms[i], g2.wheel_encoder.get_position(i), g2.wheel_encoder.get_wheel_radius(i));
-
-        // calculate rpm for reporting to GCS
-        if (is_positive(delta_time)) {
-            wheel_encoder_rpm[i] = (delta_angle / M_2PI) / (delta_time / 60.0f);
-        } else {
-            wheel_encoder_rpm[i] = 0.0f;
-        }
+        EKF3.writeWheelOdom(delta_angle, delta_time, wheel_encoder_last_update_ms[i], g2.wheel_encoder.get_pos_offset(i), g2.wheel_encoder.get_wheel_radius(i));
     }
 
     // record system time update for next iteration
@@ -249,6 +224,18 @@ void Rover::read_airspeed(void)
     g2.airspeed.update(should_log(MASK_LOG_IMU));
 }
 
+/*
+  update RPM sensors
+ */
+void Rover::rpm_update(void)
+{
+    rpm_sensor.update();
+    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
+        if (should_log(MASK_LOG_RC)) {
+            logger.Write_RPM(rpm_sensor);
+        }
+    }
+}
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but

@@ -24,20 +24,21 @@ extern const AP_HAL::HAL& hal;
   base class constructor. 
   This incorporates initialisation as well.
 */
-AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state) :
-        state(_state)
+AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        state(_state),
+		params(_params)
 {
 }
 
 MAV_DISTANCE_SENSOR AP_RangeFinder_Backend::get_mav_distance_sensor_type() const {
-    if (state.type == RangeFinder::RangeFinder_TYPE_NONE) {
+    if (params.type == RangeFinder::RangeFinder_TYPE_NONE) {
         return MAV_DISTANCE_SENSOR_UNKNOWN;
     }
     return _get_mav_distance_sensor_type();
 }
 
 RangeFinder::RangeFinder_Status AP_RangeFinder_Backend::status() const {
-    if (state.type == RangeFinder::RangeFinder_TYPE_NONE) {
+    if (params.type == RangeFinder::RangeFinder_TYPE_NONE) {
         // turned off at runtime?
         return RangeFinder::RangeFinder_NotConnected;
     }
@@ -54,9 +55,9 @@ bool AP_RangeFinder_Backend::has_data() const {
 void AP_RangeFinder_Backend::update_status()
 {
     // check distance
-    if ((int16_t)state.distance_cm > state.max_distance_cm) {
+    if ((int16_t)state.distance_cm > params.max_distance_cm) {
         set_status(RangeFinder::RangeFinder_OutOfRangeHigh);
-    } else if ((int16_t)state.distance_cm < state.min_distance_cm) {
+    } else if ((int16_t)state.distance_cm < params.min_distance_cm) {
         set_status(RangeFinder::RangeFinder_OutOfRangeLow);
     } else {
         set_status(RangeFinder::RangeFinder_Good);
@@ -98,8 +99,8 @@ void AP_RangeFinder_Backend::update_pre_arm_check()
     // Check that the range finder has been exercised through a realistic range of movement
     if (((state.pre_arm_distance_max - state.pre_arm_distance_min) >= RANGEFINDER_PREARM_REQUIRED_CHANGE_CM) &&
          (state.pre_arm_distance_max < RANGEFINDER_PREARM_ALT_MAX_CM) &&
-         ((int16_t)state.pre_arm_distance_min < (MAX(state.ground_clearance_cm,state.min_distance_cm) + 10)) &&
-         ((int16_t)state.pre_arm_distance_min > (MIN(state.ground_clearance_cm,state.min_distance_cm) - 10))) {
+         ((int16_t)state.pre_arm_distance_min < (MAX(params.ground_clearance_cm,params.min_distance_cm) + 10)) &&
+         ((int16_t)state.pre_arm_distance_min > (MIN(params.ground_clearance_cm,params.min_distance_cm) - 10))) {
         state.pre_arm_check = true;
     }
 }

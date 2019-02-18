@@ -9,6 +9,7 @@ class AP_RangeFinder_TeraRangerI2C : public AP_RangeFinder_Backend
 public:
     // static detection function
     static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
+                                          AP_RangeFinder_Params &_params,
                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev);
 
     // update state
@@ -23,6 +24,7 @@ protected:
 private:
     // constructor
     AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state,
+    								AP_RangeFinder_Params &_params,
                                  AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev);
 
     bool measure(void);

@@ -120,21 +120,23 @@ void Plane::update_home()
     if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         Location loc;
         if(ahrs.get_position(loc)) {
-            plane.set_home(loc);
+            if (!AP::ahrs().set_home(loc)) {
+                // silently fail
+            }
         }
     }
     barometer.update_calibration();
+    ahrs.resetHeightDatum();
 }
 
-void Plane::set_home_persistently(const Location &loc)
+bool Plane::set_home_persistently(const Location &loc)
 {
-    set_home(loc);
+    if (!AP::ahrs().set_home(loc)) {
+        return false;
+    }
 
     // Save Home to EEPROM
     mission.write_home_to_storage();
-}
 
-void Plane::set_home(const Location &loc)
-{
-    ahrs.set_home(loc);
+    return true;
 }

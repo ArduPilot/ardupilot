@@ -36,7 +36,7 @@
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
-SRV_Channels *SRV_Channels::instance;
+SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_RobotisServo *SRV_Channels::robotis_ptr;
@@ -160,7 +160,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
  */
 SRV_Channels::SRV_Channels(void)
 {
-    instance = this;
+    _singleton = this;
     channels = obj_channels;
 
     // set defaults from the parameter table

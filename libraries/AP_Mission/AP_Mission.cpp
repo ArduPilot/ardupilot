@@ -269,6 +269,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_PARACHUTE:
         return true;
     default:
         return _cmd_verify_fn(cmd);
@@ -290,6 +291,8 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return start_command_camera(cmd);
+    case MAV_CMD_DO_PARACHUTE:
+        return start_command_parachute(cmd);
     default:
         return _cmd_start_fn(cmd);
     }
@@ -320,7 +323,7 @@ bool AP_Mission::add_cmd(Mission_Command& cmd)
 /// replace_cmd - replaces the command at position 'index' in the command list with the provided cmd
 ///     replacing the current active command will have no effect until the command is restarted
 ///     returns true if successfully replaced, false on failure
-bool AP_Mission::replace_cmd(uint16_t index, Mission_Command& cmd)
+bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
 {
     // sanity check index
     if (index >= (unsigned)_cmd_total) {
@@ -586,7 +589,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
 /// write_cmd_to_storage - write a command to storage
 ///     index is used to calculate the storage location
 ///     true is returned if successful
-bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
+bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd)
 {
     WITH_SEMAPHORE(_rsem);
     

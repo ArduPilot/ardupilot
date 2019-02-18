@@ -30,7 +30,6 @@
 #include <SITL/SITL.h>
 #endif
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
@@ -298,4 +297,3 @@ private:
     void update_SITL(void);
 #endif    
 };
-#endif

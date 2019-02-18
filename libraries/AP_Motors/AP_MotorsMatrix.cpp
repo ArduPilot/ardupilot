@@ -484,6 +484,33 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
                     success = true;
                     break;
+                case MOTOR_FRAME_TYPE_BF_X:
+                    // betaflight quad X order
+                    // see: https://fpvfrenzy.com/betaflight-motor-order/
+                    add_motor(AP_MOTORS_MOT_1,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+                    add_motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,1);
+                    add_motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,3);
+                    add_motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
+                    success = true;
+                    break;
+                case MOTOR_FRAME_TYPE_DJI_X:
+                    // DJI quad X order
+                    // see https://forum44.djicdn.com/data/attachment/forum/201711/26/172348bppvtt1ot1nrtp5j.jpg
+                    add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+                    add_motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+                    add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+                    success = true;
+                    break;
+                case MOTOR_FRAME_TYPE_CW_X:
+                    // "clockwise X" motor order. Motors are ordered clockwise from front right
+                    // matching test order
+                    add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
+                    add_motor(AP_MOTORS_MOT_2,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+                    add_motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
+                    add_motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
+                    success = true;
+                    break;
                 case MOTOR_FRAME_TYPE_V:
                     add_motor(AP_MOTORS_MOT_1,   45,  0.7981f,  1);
                     add_motor(AP_MOTORS_MOT_2, -135,  1.0000f,  3);

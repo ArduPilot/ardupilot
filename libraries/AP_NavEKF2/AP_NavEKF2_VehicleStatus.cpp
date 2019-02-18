@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -470,5 +468,3 @@ void NavEKF2_core::detectOptFlowTakeoff(void)
     }
 }
 
-
-#endif // HAL_CPU_CLASS

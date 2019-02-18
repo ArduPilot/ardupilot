@@ -52,7 +52,9 @@ bool Sub::init_arm_motors(AP_Arming::ArmingMethod method)
         // Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location(false);
+        if (!set_home_to_current_location(false)) {
+            // ignore this failure
+        }
     }
 	
     // enable gps velocity based centrefugal force compensation

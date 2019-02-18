@@ -403,29 +403,6 @@ void Copter::init_visual_odom()
 #endif
 }
 
-// update visual odometry sensor
-void Copter::update_visual_odom()
-{
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    // check for updates
-    if (g2.visual_odom.enabled() && (g2.visual_odom.get_last_update_ms() != visual_odom_last_update_ms)) {
-        visual_odom_last_update_ms = g2.visual_odom.get_last_update_ms();
-        float time_delta_sec = g2.visual_odom.get_time_delta_usec() / 1000000.0f;
-        ahrs.writeBodyFrameOdom(g2.visual_odom.get_confidence(),
-                                g2.visual_odom.get_position_delta(),
-                                g2.visual_odom.get_angle_delta(),
-                                time_delta_sec,
-                                visual_odom_last_update_ms,
-                                g2.visual_odom.get_pos_offset());
-        // log sensor data
-        logger.Write_VisualOdom(time_delta_sec,
-                                       g2.visual_odom.get_angle_delta(),
-                                       g2.visual_odom.get_position_delta(),
-                                       g2.visual_odom.get_confidence());
-    }
-#endif
-}
-
 // winch and wheel encoder initialisation
 void Copter::winch_init()
 {

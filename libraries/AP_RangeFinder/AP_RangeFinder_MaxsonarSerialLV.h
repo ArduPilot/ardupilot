@@ -9,6 +9,7 @@ class AP_RangeFinder_MaxsonarSerialLV : public AP_RangeFinder_Backend
 public:
     // constructor
     AP_RangeFinder_MaxsonarSerialLV(RangeFinder::RangeFinder_State &_state,
+                                   AP_RangeFinder_Params &_params,
                                    AP_SerialManager &serial_manager,
                                    uint8_t serial_instance);
 

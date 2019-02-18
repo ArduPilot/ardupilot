@@ -109,8 +109,8 @@ public:
     };
 
     // get singleton instance
-    static AP_SerialManager *get_instance(void) {
-        return _instance;
+    static AP_SerialManager *get_singleton(void) {
+        return _singleton;
     }
     
     // init_console - initialise console at default baud rate
@@ -146,12 +146,15 @@ public:
 
     // disable passthru by settings SERIAL_PASS2 to -1
     void disable_passthru(void);
-    
+
+    // get Serial Port
+    AP_HAL::UARTDriver *get_serial_by_id(uint8_t id);
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    static AP_SerialManager *_instance;
+    static AP_SerialManager *_singleton;
     
     // array of uart info
     struct UARTState {

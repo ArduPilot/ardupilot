@@ -1,5 +1,4 @@
 #include <AP_HAL/AP_HAL.h>
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
 #include "AP_NavEKF2_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -544,6 +543,16 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 49, NavEKF2, _originHgtMode, 0),
 
+    // @Param: EXTNAV_DELAY
+    // @DisplayName: external navigation system measurement delay (msec)
+    // @Description: This is the number of msec that the external navigation system measurements lag behind the inertial measurements.
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: Advanced
+    // @Units: ms
+    // @RebootRequired: True
+    AP_GROUPINFO("EXTNAV_DELAY", 50, NavEKF2, _extnavDelay_ms, 10),
+
     AP_GROUPEND
 };
 
@@ -601,7 +610,7 @@ bool NavEKF2::InitialiseFilter(void)
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
     // see if we will be doing logging
-    AP_Logger *dataflash = AP_Logger::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (dataflash != nullptr) {
         logging.enabled = dataflash->log_replay();
     }
@@ -1483,4 +1492,3 @@ void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, c
     }
 }
 
-#endif //HAL_CPU_CLASS

@@ -165,14 +165,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 };
 
 // singleton instance
-AP_Baro *AP_Baro::_instance;
+AP_Baro *AP_Baro::_singleton;
 
 /*
   AP_Baro constructor
  */
 AP_Baro::AP_Baro()
 {
-    _instance = this;
+    _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -707,7 +707,7 @@ void AP_Baro::_probe_i2c_barometers(void)
 
 bool AP_Baro::should_df_log() const
 {
-    AP_Logger *instance = AP_Logger::instance();
+    AP_Logger *instance = AP_Logger::get_singleton();
     if (instance == nullptr) {
         return false;
     }
@@ -841,7 +841,7 @@ namespace AP {
 
 AP_Baro &baro()
 {
-    return *AP_Baro::get_instance();
+    return *AP_Baro::get_singleton();
 }
 
 };

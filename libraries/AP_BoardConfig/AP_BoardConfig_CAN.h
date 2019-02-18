@@ -87,7 +87,11 @@ public:
     }
 
     static const struct AP_Param::GroupInfo var_info[];
-
+#if !HAL_MINIMIZE_FEATURES
+    int8_t get_slcan_serial() { return _slcan._ser_port; }
+    uint8_t get_slcan_timeout() { return _slcan._timeout; }
+    void reset_slcan_serial() { _slcan._ser_port.set_and_save_ifchanged(-1); }
+#endif
 private:
     class Interface {
         friend class AP_BoardConfig_CAN;
@@ -127,10 +131,27 @@ private:
         AP_HAL::CANProtocol* _tcan;
     };
 
+#if !HAL_MINIMIZE_FEATURES
+    class SLCAN_Interface {
+        friend class AP_BoardConfig_CAN;
+
+    public:
+        SLCAN_Interface() {
+            AP_Param::setup_object_defaults(this, var_info);
+        }
+
+        static const struct AP_Param::GroupInfo var_info[];
+
+    private:
+        AP_Int8 _can_port;
+        AP_Int8 _ser_port;
+        AP_Int16 _timeout;
+    };
+    SLCAN_Interface _slcan;
+#endif
     Interface _interfaces[MAX_NUMBER_OF_CAN_INTERFACES];
     Driver _drivers[MAX_NUMBER_OF_CAN_DRIVERS];
     uint8_t _num_drivers;
-
     static AP_BoardConfig_CAN *_singleton;
 };
 

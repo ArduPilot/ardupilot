@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -691,7 +689,7 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
  * The inspiration for using a complementary filter to correct for time delays in the EKF
  * is based on the work by A Khosravian.
  *
- * “Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements”
+ * "Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements"
  * A Khosravian, J Trumpf, R Mahony, T Hamel, Australian National University
 */
 void NavEKF3_core::calcOutputStates()
@@ -1779,4 +1777,3 @@ void NavEKF3_core::initialiseQuatCovariances(const Vector3f &rotVarVec)
     }
 }
 
-#endif // HAL_CPU_CLASS

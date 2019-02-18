@@ -74,8 +74,8 @@ void SITL_State::_sitl_setup(const char *home_str)
 
     // find the barometer object if it exists
     _sitl = AP::sitl();
-    _barometer = AP_Baro::get_instance();
-    _ins = AP_InertialSensor::get_instance();
+    _barometer = AP_Baro::get_singleton();
+    _ins = AP_InertialSensor::get_singleton();
     _compass = Compass::get_singleton();
 #if AP_TERRAIN_AVAILABLE
     _terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
@@ -161,7 +161,7 @@ void SITL_State::_fdm_input_step(void)
     }
 
     // simulate RC input at 50Hz
-    if (AP_HAL::millis() - last_pwm_input >= 20 && _sitl->rc_fail == 0) {
+    if (AP_HAL::millis() - last_pwm_input >= 20 && _sitl->rc_fail != SITL::SITL::SITL_RCFail_NoPulses) {
         last_pwm_input = AP_HAL::millis();
         new_rc_input = true;
     }
@@ -239,15 +239,24 @@ void SITL_State::_check_rc_input(void)
     case 8*2:
     case 16*2: {
         // a packet giving the receiver PWM inputs
-        uint8_t i;
-        for (i=0; i<size/2; i++) {
+        for (uint8_t i=0; i<size/2; i++) {
             // setup the pwm input for the RC channel inputs
             if (i < _sitl->state.rcin_chan_count) {
                 // we're using rc from simulator
                 continue;
             }
-            if (pwm_pkt.pwm[i] != 0) {
-                pwm_input[i] = pwm_pkt.pwm[i];
+            uint16_t pwm = pwm_pkt.pwm[i];
+            if (pwm != 0) {
+                if (_sitl->rc_fail == SITL::SITL::SITL_RCFail_Throttle950) {
+                    if (i == 2) {
+                        // set throttle (assumed to be on channel 3...)
+                        pwm = 950;
+                    } else {
+                        // centre all other inputs
+                        pwm = 1500;
+                    }
+                }
+                pwm_input[i] = pwm;
             }
         }
         break;
@@ -311,7 +320,7 @@ void SITL_State::_fdm_input_local(void)
         sitl_model->fill_fdm(_sitl->state);
         _sitl->update_rate_hz = sitl_model->get_rate_hz();
 
-        if (_sitl->rc_fail == 0) {
+        if (_sitl->rc_fail == SITL::SITL::SITL_RCFail_None) {
             for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
                 pwm_input[i] = 1000 + _sitl->state.rcin[i]*1000;
             }

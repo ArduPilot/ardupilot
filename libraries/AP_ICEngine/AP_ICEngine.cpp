@@ -16,6 +16,7 @@
 
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include "AP_ICEngine.h"
 
 extern const AP_HAL::HAL& hal;
@@ -106,9 +107,8 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
 
 // constructor
-AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm, const AP_AHRS &_ahrs) :
+AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm) :
     rpm(_rpm),
-    ahrs(_ahrs),
     state(ICE_OFF)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -153,7 +153,7 @@ void AP_ICEngine::update(void)
         Vector3f pos;
         if (!should_run) {
             state = ICE_OFF;
-        } else if (ahrs.get_relative_position_NED_origin(pos)) {
+        } else if (AP::ahrs().get_relative_position_NED_origin(pos)) {
             if (height_pending) {
                 height_pending = false;
                 initial_height = -pos.z;
@@ -202,7 +202,7 @@ void AP_ICEngine::update(void)
         if (state == ICE_START_HEIGHT_DELAY) {
             // when disarmed we can be waiting for takeoff
             Vector3f pos;
-            if (ahrs.get_relative_position_NED_origin(pos)) {
+            if (AP::ahrs().get_relative_position_NED_origin(pos)) {
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }

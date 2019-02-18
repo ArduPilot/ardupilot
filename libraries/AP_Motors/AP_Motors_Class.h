@@ -54,14 +54,17 @@ public:
         MOTOR_FRAME_TYPE_ATAIL = 5,
         MOTOR_FRAME_TYPE_PLUSREV = 6, // plus with reversed motor direction
         MOTOR_FRAME_TYPE_Y6B = 10,
-        MOTOR_FRAME_TYPE_Y6F = 11 // for FireFlyY6
+        MOTOR_FRAME_TYPE_Y6F = 11, // for FireFlyY6
+        MOTOR_FRAME_TYPE_BF_X = 12, // X frame, betaflight ordering
+        MOTOR_FRAME_TYPE_DJI_X = 13, // X frame, DJI ordering
+        MOTOR_FRAME_TYPE_CW_X = 14, // X frame, clockwise ordering
     };
 
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // singleton support
-    static AP_Motors *get_instance(void) { return _instance; }
+    static AP_Motors *get_singleton(void) { return _singleton; }
 
     // check initialisation succeeded
     bool                initialised_ok() const { return _flags.initialised_ok; }
@@ -241,5 +244,5 @@ protected:
     float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
 
 private:
-    static AP_Motors *_instance;
+    static AP_Motors *_singleton;
 };

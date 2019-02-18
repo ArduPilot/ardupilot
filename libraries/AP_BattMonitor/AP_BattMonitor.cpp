@@ -14,6 +14,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Notify/AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -237,13 +238,15 @@ AP_BattMonitor::read()
         }
     }
 
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
     if (df->should_log(_log_battery_bit)) {
         df->Write_Current();
         df->Write_Power();
     }
 
     check_failsafes();
+    
+    checkPoweringOff();
 }
 
 // healthy - returns true if monitor is functioning
@@ -464,11 +467,34 @@ bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
     return true;
 }
 
+// Check's each smart battery instance for its powering off state and broadcasts notifications
+void AP_BattMonitor::checkPoweringOff(void)
+{
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        if (state[i].is_powering_off && !state[i].powerOffNotified) {
+            // Set the AP_Notify flag, which plays the power off tones
+            AP_Notify::flags.powering_off = true;
+
+            // Send a Mavlink broadcast announcing the shutdown
+            mavlink_message_t msg;
+            mavlink_command_long_t cmd_msg{};
+            cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
+            cmd_msg.param1 = i+1;
+            mavlink_msg_command_long_encode(mavlink_system.sysid, MAV_COMP_ID_ALL, &msg, &cmd_msg);
+            GCS_MAVLINK::send_to_components(&msg);
+            gcs().send_text(MAV_SEVERITY_WARNING, "Vehicle %d battery %d is powering off", mavlink_system.sysid, i+1);
+
+            // only send this once
+            state[i].powerOffNotified = true;
+        }
+    }
+}
+
 namespace AP {
 
 AP_BattMonitor &battery()
 {
-    return AP_BattMonitor::battery();
+    return *AP_BattMonitor::get_singleton();
 }
 
 };

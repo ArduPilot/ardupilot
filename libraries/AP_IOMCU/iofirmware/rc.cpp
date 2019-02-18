@@ -66,7 +66,7 @@ void AP_IOMCU_FW::rcin_serial_init(void)
                                &sd3_listener,
                                EVENT_MASK(1),
                                SD_PARITY_ERROR);
-    rcprotocol = AP_RCProtocol::get_instance();
+    rcprotocol = AP_RCProtocol::get_singleton();
 
     // disable input for SBUS with pulses, we will use the UART for
     // SBUS.

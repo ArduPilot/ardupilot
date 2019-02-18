@@ -266,7 +266,7 @@ void AP_AutoTune::check_save(void)
  */
 void AP_AutoTune::log_param_change(float v, const char *suffix)
 {
-    AP_Logger *dataflash = AP_Logger::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (!dataflash->logging_started()) {
         return;
     }
@@ -327,7 +327,7 @@ void AP_AutoTune::save_gains(const ATGains &v)
 
 void AP_AutoTune::write_log(float servo, float demanded, float achieved)
 {
-    AP_Logger *dataflash = AP_Logger::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (!dataflash->logging_started()) {
         return;
     }

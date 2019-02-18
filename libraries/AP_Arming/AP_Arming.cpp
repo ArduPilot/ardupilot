@@ -200,6 +200,10 @@ bool AP_Arming::logging_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
+        if (!AP::logger().logging_present()) {
+            // Logging is disabled, so nothing to check.
+            return true;
+        }
         if (AP::logger().logging_failed()) {
             check_failed(ARMING_CHECK_LOGGING, report, "Logging failed");
             return false;
@@ -722,11 +726,18 @@ bool AP_Arming::arm_checks(ArmingMethod method)
     
     // note that this will prepare AP_Logger to start logging
     // so should be the last check to be done before arming
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        AP_Logger *df = AP_Logger::instance();
+
+    // Note also that we need to PrepForArming() regardless of whether
+    // the arming check flag is set - disabling the arming check
+    // should not stop logging from working.
+
+    AP_Logger *df = AP_Logger::get_singleton();
+    if (df->logging_present()) {
+        // If we're configured to log, prep it
         df->PrepForArming();
-        if (!df->logging_started()) {
+        if (!df->logging_started() &&
+            ((checks_to_perform & ARMING_CHECK_ALL) ||
+             (checks_to_perform & ARMING_CHECK_LOGGING))) {
             check_failed(ARMING_CHECK_LOGGING, true, "Logging not started");
             return false;
         }
@@ -783,7 +794,7 @@ bool AP_Arming::disarm()
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
 #if HAL_HAVE_SAFETY_SWITCH
-    AP_BoardConfig *board_cfg = AP_BoardConfig::get_instance();
+    AP_BoardConfig *board_cfg = AP_BoardConfig::get_singleton();
     if ((board_cfg != nullptr) &&
         (board_cfg->get_safety_button_options() & AP_BoardConfig::BOARD_SAFETY_OPTION_SAFETY_ON_DISARM)) {
         hal.rcout->force_safety_on();

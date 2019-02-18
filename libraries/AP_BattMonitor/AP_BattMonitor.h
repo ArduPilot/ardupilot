@@ -54,8 +54,8 @@ public:
     AP_BattMonitor(const AP_BattMonitor &other) = delete;
     AP_BattMonitor &operator=(const AP_BattMonitor&) = delete;
 
-    static AP_BattMonitor &battery() {
-        return *_singleton;
+    static AP_BattMonitor *get_singleton() {
+        return _singleton;
     }
 
     struct cells {
@@ -78,6 +78,8 @@ public:
         float       resistance;                // resistance, in Ohms, calculated by comparing resting voltage vs in flight voltage
         BatteryFailsafe failsafe;              // stage failsafe the battery is in
         bool        healthy;                   // battery monitor is communicating correctly
+        bool        is_powering_off;           // true when power button commands power off
+        bool        powerOffNotified;          // only send powering off notification once
     };
 
     // Return the number of battery monitor instances
@@ -167,6 +169,9 @@ public:
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     bool arming_checks(size_t buflen, char *buffer) const;
+
+    // sends powering off mavlink broadcasts and sets notify flag
+    void checkPoweringOff(void);
 
     static const struct AP_Param::GroupInfo var_info[];
 

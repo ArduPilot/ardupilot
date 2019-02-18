@@ -361,10 +361,10 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X, V, etc)
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
-    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B
+    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B, 11:Y6F, 12:BetaFlightX, 13:DJIX, 14:ClockwiseX
     // @User: Standard
     // @RebootRequired: True
-    GSCALAR(frame_type, "FRAME_TYPE", AP_Motors::MOTOR_FRAME_TYPE_X),
+    GSCALAR(frame_type, "FRAME_TYPE", HAL_FRAME_TYPE_DEFAULT),
 
     // @Group: ARMING_
     // @Path: ../libraries/AP_Arming/AP_Arming.cpp
@@ -1194,6 +1194,7 @@ void Copter::convert_pid_parameters(void)
         { "PSC_VELXY_D", 0.0f },
         { "PSC_VELXY_I", 0.5f },
         { "PSC_VELXY_P", 1.0f },
+        { "RC8_OPTION", 32 },
     };
     AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
 #endif

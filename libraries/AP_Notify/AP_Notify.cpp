@@ -36,7 +36,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Notify *AP_Notify::_instance;
+AP_Notify *AP_Notify::_singleton;
 
 #define CONFIG_NOTIFY_DEVICES_MAX 6
 
@@ -154,10 +154,10 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
 AP_Notify::AP_Notify()
 {
     AP_Param::setup_object_defaults(this, var_info);
-    if (_instance != nullptr) {
+    if (_singleton != nullptr) {
         AP_HAL::panic("AP_Notify must be singleton");
     }
-    _instance = this;
+    _singleton = this;
 }
 
 // static flags, to allow for direct class update from device drivers
@@ -206,14 +206,14 @@ void AP_Notify::add_backends(void)
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54
                 ADD_BACKEND(new ExternalLED()); // despite the name this is a built in set of onboard LED's
 #endif // CONFIG_HAL_BOARD_SUBTYPE == various CHIBIOS-VRBRAINs
 
 #if defined(HAL_HAVE_PIXRACER_LED)
                 ADD_BACKEND(new PixRacerLED());
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51
+  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54
                 ADD_BACKEND(new VRBoard_LED());
   #else
                 ADD_BACKEND(new AP_BoardLED());

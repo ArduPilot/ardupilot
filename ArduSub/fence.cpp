@@ -49,27 +49,4 @@ void Sub::fence_check()
     }
 }
 
-// fence_send_mavlink_status - send fence status to ground station
-void Sub::fence_send_mavlink_status(mavlink_channel_t chan)
-{
-    if (fence.enabled()) {
-        // traslate fence library breach types to mavlink breach types
-        uint8_t mavlink_breach_type = FENCE_BREACH_NONE;
-        uint8_t breaches = fence.get_breaches();
-        if ((breaches & AC_FENCE_TYPE_ALT_MAX) != 0) {
-            mavlink_breach_type = FENCE_BREACH_MAXALT;
-        }
-        if ((breaches & AC_FENCE_TYPE_CIRCLE) != 0) {
-            mavlink_breach_type = FENCE_BREACH_BOUNDARY;
-        }
-
-        // send status
-        mavlink_msg_fence_status_send(chan,
-                                      (int8_t)(fence.get_breaches()!=0),
-                                      fence.get_breach_count(),
-                                      mavlink_breach_type,
-                                      fence.get_breach_time());
-    }
-}
-
 #endif

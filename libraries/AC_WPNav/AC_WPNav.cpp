@@ -164,19 +164,24 @@ void AC_WPNav::set_speed_xy(float speed_cms)
 {
     // range check new target speed and update position controller
     if (speed_cms >= WPNAV_WP_SPEED_MIN) {
-        _wp_speed_cms = speed_cms;
-        _pos_control.set_max_speed_xy(_wp_speed_cms);
+        _pos_control.set_max_speed_xy(speed_cms);
         // flag that wp leash must be recalculated
         _flags.recalc_wp_leash = true;
     }
 }
 
-/// set_speed_z - allows main code to pass target vertical velocity for wp navigation
-void AC_WPNav::set_speed_z(float speed_down_cms, float speed_up_cms)
+/// set current target climb rate during wp navigation
+void AC_WPNav::set_speed_up(float speed_up_cms)
 {
-    _wp_speed_down_cms = speed_down_cms;
-    _wp_speed_up_cms = speed_up_cms;
-    _pos_control.set_max_speed_z(_wp_speed_down_cms, _wp_speed_up_cms);
+    _pos_control.set_max_speed_z(_pos_control.get_max_speed_down(), speed_up_cms);
+    // flag that wp leash must be recalculated
+    _flags.recalc_wp_leash = true;
+}
+
+/// set current target descent rate during wp navigation
+void AC_WPNav::set_speed_down(float speed_down_cms)
+{
+    _pos_control.set_max_speed_z(speed_down_cms, _pos_control.get_max_speed_up());
     // flag that wp leash must be recalculated
     _flags.recalc_wp_leash = true;
 }
@@ -291,7 +296,7 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     const Vector3f &curr_vel = _inav.get_velocity();
     // get speed along track (note: we convert vertical speed into horizontal speed equivalent)
     float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
-    _limited_speed_xy_cms = constrain_float(speed_along_track,0,_wp_speed_cms);
+    _limited_speed_xy_cms = constrain_float(speed_along_track, 0, _pos_control.get_max_speed_xy());
 
     return true;
 }
@@ -394,7 +399,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
 
     // calculate point at which velocity switches from linear to sqrt
-    float linear_velocity = _wp_speed_cms;
+    float linear_velocity = _pos_control.get_max_speed_xy();
     float kP = _pos_control.get_pos_xy_p().kP();
     if (is_positive(kP)) {   // avoid divide by zero
         linear_velocity = _track_accel/kP;
@@ -509,11 +514,8 @@ bool AC_WPNav::update_wpnav()
 {
     bool ret = true;
 
-    // calculate dt
-    float dt = _pos_control.time_since_last_xy_update();
-    if (dt >= 0.2f) {
-        dt = 0.0f;
-    }
+    // get dt from pos controller
+    float dt = _pos_control.get_dt();
 
     // allow the accel and speed values to be set without changing
     // out of auto mode. This makes it easier to tune auto flight
@@ -560,10 +562,10 @@ void AC_WPNav::calculate_wp_leash_length()
     float speed_z;
     float leash_z;
     if (_pos_delta_unit.z >= 0.0f) {
-        speed_z = _wp_speed_up_cms;
+        speed_z = _pos_control.get_max_speed_up();
         leash_z = _pos_control.get_leash_up_z();
     }else{
-        speed_z = _wp_speed_down_cms;
+        speed_z = fabsf(_pos_control.get_max_speed_down());
         leash_z = _pos_control.get_leash_down_z();
     }
 
@@ -574,7 +576,7 @@ void AC_WPNav::calculate_wp_leash_length()
         _track_leash_length = WPNAV_LEASH_LENGTH_MIN;
     }else if(is_zero(_pos_delta_unit.z)){
         _track_accel = _wp_accel_cmss/pos_delta_unit_xy;
-        _track_speed = _wp_speed_cms/pos_delta_unit_xy;
+        _track_speed = _pos_control.get_max_speed_xy() / pos_delta_unit_xy;
         _track_leash_length = _pos_control.get_leash_xy()/pos_delta_unit_xy;
     }else if(is_zero(pos_delta_unit_xy)){
         _track_accel = _wp_accel_z_cmss/pos_delta_unit_z;
@@ -582,7 +584,7 @@ void AC_WPNav::calculate_wp_leash_length()
         _track_leash_length = leash_z/pos_delta_unit_z;
     }else{
         _track_accel = MIN(_wp_accel_z_cmss/pos_delta_unit_z, _wp_accel_cmss/pos_delta_unit_xy);
-        _track_speed = MIN(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
+        _track_speed = MIN(speed_z/pos_delta_unit_z, _pos_control.get_max_speed_xy() / pos_delta_unit_xy);
         _track_leash_length = MIN(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
     }
 
@@ -685,10 +687,8 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     // mission is "active" if wpnav has been called recently and vehicle reached the previous waypoint
     bool prev_segment_exists = (_flags.reached_destination && ((AP_HAL::millis() - _wp_last_update) < 1000));
 
-    float dt = _pos_control.time_since_last_xy_update();
-    if (dt >= 0.2f) {
-        dt = 0.0f;
-    }
+    // get dt from pos controller
+    float dt = _pos_control.get_dt();
 
     // check _wp_accel_cmss is reasonable to avoid divide by zero
     if (_wp_accel_cmss <= 0) {
@@ -772,7 +772,7 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     _terrain_alt = terrain_alt;
 
     // calculate slow down distance
-    calc_slow_down_distance(_wp_speed_cms, _wp_accel_cmss);
+    calc_slow_down_distance(_pos_control.get_max_speed_xy(), _wp_accel_cmss);
 
     // get alt-above-terrain
     float terr_offset = 0.0f;
@@ -805,11 +805,8 @@ bool AC_WPNav::update_spline()
 
     bool ret = true;
 
-    // calculate dt
-    float dt = _pos_control.time_since_last_xy_update();
-    if (dt >= 0.2f) {
-        dt = 0.0f;
-    }
+    // get dt from pos controller
+    float dt = _pos_control.get_dt();
 
     // advance the target if necessary
     if (!advance_spline_target_along_track(dt)) {
@@ -897,7 +894,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
 
         // update velocity
         float spline_dist_to_wp = (_destination - target_pos).length();
-        float vel_limit = _wp_speed_cms;
+        float vel_limit = _pos_control.get_max_speed_xy();
         if (!is_zero(dt)) {
             vel_limit = MIN(vel_limit, track_leash_slack/dt);
         }

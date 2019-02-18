@@ -851,7 +851,7 @@ group_sim.add_option("-L", "--location", type='string',
 group_sim.add_option("-l", "--custom-location",
                      type='string',
                      default=None,
-                     help="set custom start location")
+                     help="set custom start location (lat,lon,alt,heading)")
 group_sim.add_option("-S", "--speedup",
                      default=1,
                      type='int',

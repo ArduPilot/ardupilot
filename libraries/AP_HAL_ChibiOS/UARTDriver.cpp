@@ -868,10 +868,6 @@ void UARTDriver::_timer_tick(void)
                 _readbuf.write(rx_bounce_buf, len);
 
                 receive_timestamp_update();
-                
-                if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
-                    chEvtSignal(_wait.thread_ctx, EVT_DATA);                    
-                }
                 if (_rts_is_active) {
                     update_rts_line();
                 }
@@ -936,7 +932,9 @@ void UARTDriver::_timer_tick(void)
             }
         }
     }
-
+    if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
+        chEvtSignal(_wait.thread_ctx, EVT_DATA);                    
+    }
     if (unbuffered_writes) {
         // now send pending bytes. If we are doing "unbuffered" writes
         // then the send normally happens as soon as the bytes are

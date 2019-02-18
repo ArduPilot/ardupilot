@@ -76,11 +76,11 @@ public:
     float    get_pos_z_derivative() const;
 
     /**
-     * get_velocity_xy - returns the current horizontal velocity in cm/s
+     * get_speed_xy - returns the current horizontal speed in cm/s
      *
-     * @returns the current horizontal velocity in cm/s
+     * @returns the current horizontal speed in cm/s
      */
-    float        get_velocity_xy() const override;
+    float        get_speed_xy() const override;
 
     /**
      * get_altitude - get latest altitude estimate in cm

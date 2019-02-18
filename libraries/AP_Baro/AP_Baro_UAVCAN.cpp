@@ -55,21 +55,10 @@ void AP_Baro_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     }
 }
 
-bool AP_Baro_UAVCAN::take_registry()
-{
-    return _sem_registry.take(HAL_SEMAPHORE_BLOCK_FOREVER);
-}
-
-void AP_Baro_UAVCAN::give_registry()
-{
-    _sem_registry.give();
-}
-
 AP_Baro_Backend* AP_Baro_UAVCAN::probe(AP_Baro &baro)
 {
-    if (!take_registry()) {
-        return nullptr;
-    }
+    WITH_SEMAPHORE(_sem_registry);
+
     AP_Baro_UAVCAN* backend = nullptr;
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
@@ -94,7 +83,6 @@ AP_Baro_Backend* AP_Baro_UAVCAN::probe(AP_Baro &baro)
             break;
         }
     }
-    give_registry();
     return backend;
 }
 
@@ -137,34 +125,30 @@ AP_Baro_UAVCAN* AP_Baro_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t
 
 void AP_Baro_UAVCAN::handle_pressure(AP_UAVCAN* ap_uavcan, uint8_t node_id, const PressureCb &cb)
 {
-    if (take_registry()) {
-        AP_Baro_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, true);
-        if (driver == nullptr) {
-            give_registry();
-            return;
-        }
-        {
-            WITH_SEMAPHORE(driver->_sem_baro);
-            driver->_pressure = cb.msg->static_pressure;
-            driver->new_pressure = true;
-        }
-        give_registry();
+    WITH_SEMAPHORE(_sem_registry);
+
+    AP_Baro_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, true);
+    if (driver == nullptr) {
+        return;
+    }
+    {
+        WITH_SEMAPHORE(driver->_sem_baro);
+        driver->_pressure = cb.msg->static_pressure;
+        driver->new_pressure = true;
     }
 }
 
 void AP_Baro_UAVCAN::handle_temperature(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TemperatureCb &cb)
 {
-    if (take_registry()) {
-        AP_Baro_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, false);
-        if (driver == nullptr) {
-            give_registry();
-            return;
-        }
-        {
-            WITH_SEMAPHORE(driver->_sem_baro);
-            driver->_temperature = cb.msg->static_temperature - C_TO_KELVIN;
-        }
-        give_registry();
+    WITH_SEMAPHORE(_sem_registry);
+
+    AP_Baro_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, false);
+    if (driver == nullptr) {
+        return;
+    }
+    {
+        WITH_SEMAPHORE(driver->_sem_baro);
+        driver->_temperature = cb.msg->static_temperature - C_TO_KELVIN;
     }
 }
 

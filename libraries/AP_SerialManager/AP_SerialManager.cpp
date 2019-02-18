@@ -226,12 +226,12 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 };
 
 // singleton instance
-AP_SerialManager *AP_SerialManager::_instance;
+AP_SerialManager *AP_SerialManager::_singleton;
 
 // Constructor
 AP_SerialManager::AP_SerialManager()
 {
-    _instance = this;
+    _singleton = this;
     // setup parameter defaults
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -437,6 +437,15 @@ AP_SerialManager::SerialProtocol AP_SerialManager::get_mavlink_protocol(mavlink_
     return SerialProtocol_None;
 }
 
+// get_serial_by_id - gets serial by serial id
+AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
+{
+    if (id < SERIALMANAGER_NUM_PORTS) {
+        return state[id].uart;
+    }
+    return nullptr;
+}
+
 // set_blocking_writes_all - sets block_writes on or off for all serial channels
 void AP_SerialManager::set_blocking_writes_all(bool blocking)
 {
@@ -546,7 +555,7 @@ namespace AP {
 
 AP_SerialManager &serialmanager()
 {
-    return *AP_SerialManager::get_instance();
+    return *AP_SerialManager::get_singleton();
 }
 
 }

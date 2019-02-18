@@ -3,12 +3,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-
+   
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-
+   
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -40,6 +40,9 @@ extern const AP_HAL::HAL &hal;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
  #define ARSPD_DEFAULT_TYPE TYPE_ANALOG
  #define ARSPD_DEFAULT_PIN 1
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+ #define ARSPD_DEFAULT_TYPE TYPE_NONE
+ #define ARSPD_DEFAULT_PIN 15
 #else
  #define ARSPD_DEFAULT_TYPE TYPE_I2C_MS4525
  #define ARSPD_DEFAULT_PIN 15
@@ -65,8 +68,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: _USE
     // @DisplayName: Airspeed use
-    // @Description: use airspeed for flight control. When set to 0 airspeed sensor can be logged and displayed on a GCS but won't be used for flight. When set to 1 it will be logged and used. When set to 2 it will be only used when the throttle is zero, which can be useful in gliders with airspeed sensors behind a propeller
-    // @Values: 0:Don't Use,1:use,2:UseWhenZeroThrottle
+    // @Description: Enables airspeed use for automatic throttle modes and replaces control from THR_TRIM. Continues to display and log airspeed if set to 0. Uses airspeed for control if set to 1. Only uses airspeed when throttle = 0 if set to 2 (useful for gliders with airspeed sensors behind propellers).
+    // @Values: 0:DoNotUse,1:Use,2:UseWhenZeroThrottle
     // @User: Standard
     AP_GROUPINFO("_USE",    1, AP_Airspeed, param[0].use, 0),
 
@@ -79,7 +82,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: _RATIO
     // @DisplayName: Airspeed ratio
-    // @Description: Airspeed calibration ratio
+    // @Description: Calibrates pitot tube pressure to velocity. Increasing this value will indicate a higher airspeed at any given dynamic pressure.
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("_RATIO",  3, AP_Airspeed, param[0].ratio, 1.9936f),
@@ -92,13 +95,13 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: _AUTOCAL
     // @DisplayName: Automatic airspeed ratio calibration
-    // @Description: If this is enabled then the autopilot will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%. This option should be enabled for a calibration flight then disabled again when calibration is complete. Leaving it enabled all the time is not recommended.
+    // @Description: Enables automatic adjustment of ARSPD_RATIO during a calibration flight based on estimation of ground speed and true airspeed. New ratio saved every 2 minutes if change is > 5%. Should not be left enabled.
     // @User: Advanced
     AP_GROUPINFO("_AUTOCAL",  5, AP_Airspeed, param[0].autocal, 0),
 
     // @Param: _TUBE_ORDER
     // @DisplayName: Control pitot tube order
-    // @Description: This parameter allows you to control whether the order in which the tubes are attached to your pitot tube matters. If you set this to 0 then the top connector on the sensor needs to be the dynamic pressure. If set to 1 then the bottom connector needs to be the dynamic pressure. If set to 2 (the default) then the airspeed driver will accept either order. The reason you may wish to specify the order is it will allow your airspeed sensor to detect if the aircraft it receiving excessive pressure on the static port, which would otherwise be seen as a positive airspeed.
+    // @Description: Changes the pitot tube order to specify the dynamic pressure side of the sensor. Accepts either if set to 2. Accepts only one side if set to 0 or 1 and can help detect excessive pressure on the static port without indicating positive airspeed.
     // @User: Advanced
     AP_GROUPINFO("_TUBE_ORDER",  6, AP_Airspeed, param[0].tube_order, 2),
 
@@ -117,7 +120,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: _BUS
     // @DisplayName: Airspeed I2C bus
-    // @Description: The bus number of the I2C bus to look for the sensor on
+    // @Description: Bus number of the I2C bus where the airspeed sensor is connected
     // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxillary)
     // @User: Advanced
     AP_GROUPINFO("_BUS",  9, AP_Airspeed, param[0].bus, 1),
@@ -128,6 +131,13 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Values: 0:FirstSensor,1:2ndSensor
     // @User: Advanced
     AP_GROUPINFO("_PRIMARY", 10, AP_Airspeed, primary_sensor, 0),
+
+    // @Param: _OPTIONS
+    // @DisplayName: Airspeed options bitmask
+    // @Description: Bitmask of options to use with airspeed.
+    // @Bitmask: 0:Disable on sensor failure,1:Re-enable on sensor recovery
+    // @User: Advanced
+    AP_GROUPINFO("_OPTIONS", 21, AP_Airspeed, _options, 0),
 
     // @Param: 2_TYPE
     // @DisplayName: Second Airspeed type
@@ -159,7 +169,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: 2_PIN
     // @DisplayName: Airspeed pin for 2nd airspeed sensor
-    // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Set to 15 on the Pixhawk for the analog airspeed port. 
+    // @Description: Pin number indicating location of analog airspeed sensors. Pixhawk/Cube if set to 15. 
     // @User: Advanced
     AP_GROUPINFO("2_PIN",  15, AP_Airspeed, param[1].pin, 0),
 
@@ -194,7 +204,9 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxillary)
     // @User: Advanced
     AP_GROUPINFO("2_BUS",  20, AP_Airspeed, param[1].bus, 1),
-    
+
+    // Note that 21 is used above by the _OPTIONS parameter.  Do not use 21.
+
     AP_GROUPEND
 };
 
@@ -228,6 +240,9 @@ void AP_Airspeed::init()
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         state[i].calibration.init(param[i].ratio);
         state[i].last_saved_ratio = param[i].ratio;
+
+        // Set the enable automatically to false and set the probability that the airspeed is healhy to start with
+        state[i].failures.health_probability = 1.0f;
 
         switch ((enum airspeed_type)param[i].type.get()) {
         case TYPE_NONE:
@@ -427,22 +442,24 @@ void AP_Airspeed::update(bool log)
     }
 #endif
 
-    if (log) {
-        AP_Logger *_dataflash = AP_Logger::instance();
-        if (_dataflash != nullptr) {
-            _dataflash->Write_Airspeed(*this);
-        }
-    }
-
     // setup primary
     if (healthy(primary_sensor.get())) {
         primary = primary_sensor.get();
-        return;
+    } else {
+        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+            if (healthy(i)) {
+                primary = i;
+                break;
+            }
+        }
     }
-    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        if (healthy(i)) {
-            primary = i;
-            break;
+
+    check_sensor_failures();
+
+    if (log) {
+        AP_Logger *_dataflash = AP_Logger::get_singleton();
+        if (_dataflash != nullptr) {
+            _dataflash->Write_Airspeed(*this);
         }
     }
 }
@@ -487,4 +504,3 @@ bool AP_Airspeed::all_healthy(void) const
 
 // singleton instance
 AP_Airspeed *AP_Airspeed::_singleton;
-

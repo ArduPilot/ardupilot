@@ -3,6 +3,8 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS.h>
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -390,7 +392,7 @@ void AP_Camera::setup_feedback_callback(void)
 // log_picture - log picture taken and send feedback to GCS
 void AP_Camera::log_picture()
 {
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
     if (df == nullptr) {
         return;
     }
@@ -437,7 +439,7 @@ void AP_Camera::update_trigger()
         _camera_trigger_logged = _camera_trigger_count;
 
         gcs().send_message(MSG_CAMERA_FEEDBACK);
-        AP_Logger *df = AP_Logger::instance();
+        AP_Logger *df = AP_Logger::get_singleton();
         if (df != nullptr) {
             if (df->should_log(log_camera_bit)) {
                 uint32_t tdiff = AP_HAL::micros() - timestamp32;

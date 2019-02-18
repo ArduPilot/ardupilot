@@ -94,6 +94,9 @@ void GCS_MAVLINK::handle_common_rally_message(mavlink_message_t *msg)
         handle_rally_fetch_point(msg);
         break;
     default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Unhandled common rally message");
+#endif
         break;
     }
 }

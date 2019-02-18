@@ -53,9 +53,10 @@ class AutoTestBalanceBot(AutoTestRover):
         self.do_set_mode_via_command_long("HOLD")
         self.do_set_mode_via_command_long("MANUAL")
 
-    def set_rc_default(self):
-        super(AutoTestBalanceBot, self).set_rc_default()
-        self.set_rc(3, 1500)
+    def rc_defaults(self):
+        ret = super(AutoTestBalanceBot, self).rc_defaults()
+        ret[3] = 1500
+        return ret
 
     def tests(self):
         '''return list of all tests'''

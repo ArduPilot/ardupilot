@@ -8,7 +8,7 @@ bool Sub::surface_init()
     }
 
     // initialize vertical speeds and leash lengths
-    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
     pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // initialise position and desired velocity
@@ -48,7 +48,7 @@ void Sub::surface_run()
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // set target climb rate
-    float cmb_rate = constrain_float(abs(wp_nav.get_speed_up()), 1, pos_control.get_max_speed_up());
+    float cmb_rate = constrain_float(abs(wp_nav.get_default_speed_up()), 1, pos_control.get_max_speed_up());
 
     // record desired climb rate for logging
     desired_climb_rate = cmb_rate;

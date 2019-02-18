@@ -34,8 +34,8 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
-    : AP_RangeFinder_Backend(_state)
+AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
+    : AP_RangeFinder_Backend(_state, _params)
     , dev(std::move(_dev)) {}
 
 /*
@@ -43,14 +43,14 @@ AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     if (!dev) {
         return nullptr;
     }
 
     AP_RangeFinder_VL53L1X *sensor
-        = new AP_RangeFinder_VL53L1X(_state, std::move(dev));
+        = new AP_RangeFinder_VL53L1X(_state, _params, std::move(dev));
 
     if (!sensor) {
         delete sensor;

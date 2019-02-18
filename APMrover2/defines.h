@@ -29,7 +29,6 @@
 #define LOG_ARM_DISARM_MSG      0x08
 #define LOG_STEERING_MSG        0x0D
 #define LOG_GUIDEDTARGET_MSG    0x0E
-#define LOG_WHEELENCODER_MSG    0x0F
 #define LOG_ERROR_MSG           0x13
 
 #define TYPE_AIRSTART_MSG       0x00
@@ -110,7 +109,7 @@ enum fs_ekf_action {
     FS_EFK_HOLD = 1
 };
 
-#define DISTANCE_HOME_MAX 0.5f  // Distance max to home location before changing it when disarm
+#define DISTANCE_HOME_MINCHANGE 0.5f  // minimum distance to adjust home location
 
 enum mode_reason_t {
     MODE_REASON_INITIALISED = 0,

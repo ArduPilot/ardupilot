@@ -8,7 +8,7 @@
 #include "AP_Logger_MAVLink.h"
 #include <GCS_MAVLink/GCS.h>
 
-AP_Logger *AP_Logger::_instance;
+AP_Logger *AP_Logger::_singleton;
 
 extern const AP_HAL::HAL& hal;
 
@@ -31,8 +31,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _BACKEND_TYPE
     // @DisplayName: AP_Logger Backend Storage type
-    // @Description: 0 for None, 1 for File, 2 for dataflash mavlink, 3 for both file and dataflash
-    // @Values: 0:None,1:File,2:MAVLink,3:BothFileAndMAVLink
+    // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       HAL_LOGGING_BACKENDS_DEFAULT),
@@ -80,11 +79,11 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
     : _log_bitmask(log_bitmask)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    if (_instance != nullptr) {
+    if (_singleton != nullptr) {
         AP_HAL::panic("AP_Logger must be singleton");
     }
 
-    _instance = this;
+    _singleton = this;
 }
 
 void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
@@ -642,9 +641,9 @@ void AP_Logger::flush(void) {
 #endif
 
 
-void AP_Logger::Write_EntireMission(const AP_Mission &mission)
+void AP_Logger::Write_EntireMission()
 {
-    FOR_EACH_BACKEND(Write_EntireMission(mission));
+    FOR_EACH_BACKEND(Write_EntireMission());
 }
 
 void AP_Logger::Write_Message(const char *message)
@@ -666,6 +665,13 @@ void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
                                             const AP_Mission::Mission_Command &cmd)
 {
     FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd));
+}
+
+void AP_Logger::Write_RallyPoint(uint8_t total,
+                                 uint8_t sequence,
+                                 const RallyLocation &rally_point)
+{
+    FOR_EACH_BACKEND(Write_RallyPoint(total, sequence, rally_point));
 }
 
 uint32_t AP_Logger::num_dropped() const
@@ -1057,7 +1063,22 @@ bool AP_Logger::Write_ISBD(const uint16_t isb_seqno,
     return backends[0]->WriteBlock(&pkt, sizeof(pkt));
 }
 
-AP_Logger &AP::logger()
+// Wrote an event packet
+void AP_Logger::Write_Event(Log_Event id)
 {
-    return *AP_Logger::instance();
+    struct log_Event pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
+        time_us  : AP_HAL::micros64(),
+        id       : id
+    };
+    WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+
+namespace AP {
+
+AP_Logger &logger()
+{
+    return *AP_Logger::get_singleton();
+}
+
+};

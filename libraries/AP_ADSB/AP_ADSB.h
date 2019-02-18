@@ -133,6 +133,7 @@ private:
         adsb_vehicle_t *vehicle_list = nullptr;
         uint16_t    vehicle_count;
         AP_Int32    list_radius;
+        AP_Int16    list_altitude;
 
         // streamrate stuff
         uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];

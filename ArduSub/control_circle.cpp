@@ -14,7 +14,7 @@ bool Sub::circle_init()
     circle_pilot_yaw_override = false;
 
     // initialize speeds and accelerations
-    pos_control.set_max_speed_xy(wp_nav.get_speed_xy());
+    pos_control.set_max_speed_xy(wp_nav.get_default_speed_xy());
     pos_control.set_max_accel_xy(wp_nav.get_wp_acceleration());
     pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_max_accel_z(g.pilot_accel_z);
@@ -33,7 +33,7 @@ void Sub::circle_run()
     float target_climb_rate = 0;
 
     // update parameters, to allow changing at runtime
-    pos_control.set_max_speed_xy(wp_nav.get_speed_xy());
+    pos_control.set_max_speed_xy(wp_nav.get_default_speed_xy());
     pos_control.set_max_accel_xy(wp_nav.get_wp_acceleration());
     pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_max_accel_z(g.pilot_accel_z);

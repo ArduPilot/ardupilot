@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <stdio.h>
 
 #define DF_PAGE_SIZE 256UL
 #define DF_PAGE_PER_SECTOR 16 // 4k sectors

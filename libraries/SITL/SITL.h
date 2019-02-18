@@ -65,18 +65,24 @@ public:
         mag_ofs.set(Vector3f(5, 13, -18));
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
-        if (_s_instance != nullptr) {
+        if (_singleton != nullptr) {
             AP_HAL::panic("Too many SITL instances");
         }
-        _s_instance = this;
+        _singleton = this;
     }
 
     /* Do not allow copies */
     SITL(const SITL &other) = delete;
     SITL &operator=(const SITL&) = delete;
 
-    static SITL *_s_instance;
-    static SITL *get_instance() { return _s_instance; }
+    static SITL *_singleton;
+    static SITL *get_singleton() { return _singleton; }
+
+    enum SITL_RCFail {
+        SITL_RCFail_None = 0,
+        SITL_RCFail_NoPulses = 1,
+        SITL_RCFail_Throttle950 = 2,
+    };
 
     enum GPSType {
         GPS_TYPE_NONE  = 0,
@@ -167,6 +173,7 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
+    AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
 
     // wind control
     enum WindType {

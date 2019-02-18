@@ -413,7 +413,7 @@ private:
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence fence{ahrs};
+    AC_Fence fence;
 #endif
 
 #if AVOIDANCE_ENABLED == ENABLED
@@ -475,7 +475,9 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
     void gcs_send_heartbeat(void);
     void send_heartbeat(mavlink_channel_t chan);
-    void send_sys_status(mavlink_channel_t chan);
+    void get_sensor_status_flags(uint32_t &control_sensors_present,
+                                 uint32_t &control_sensors_enabled,
+                                 uint32_t &control_sensors_health);
     void send_nav_controller_output(mavlink_channel_t chan);
 #if RPM_ENABLED == ENABLED
     void send_rpm(mavlink_channel_t chan);
@@ -486,7 +488,7 @@ private:
     void Log_Write_Performance();
     void Log_Write_Attitude();
     void Log_Write_MotBatt();
-    void Log_Write_Event(uint8_t id);
+    void Log_Write_Event(Log_Event id);
     void Log_Write_Data(uint8_t id, int32_t value);
     void Log_Write_Data(uint8_t id, uint32_t value);
     void Log_Write_Data(uint8_t id, int16_t value);
@@ -505,8 +507,8 @@ private:
     void userhook_SuperSlowLoop();
     void update_home_from_EKF();
     void set_home_to_current_location_inflight();
-    bool set_home_to_current_location(bool lock);
-    bool set_home(const Location& loc, bool lock);
+    bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
     bool far_from_EKF_origin(const Location& loc);
     void exit_mission();
     bool verify_loiter_unlimited();
@@ -579,7 +581,6 @@ private:
     void mainloop_failsafe_enable();
     void mainloop_failsafe_disable();
     void fence_check();
-    void fence_send_mavlink_status(mavlink_channel_t chan);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);

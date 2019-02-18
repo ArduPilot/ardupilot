@@ -471,7 +471,7 @@ private:
 
     // this static arrangement is to avoid having static objects in AP_Param tables
     static SRV_Channel *channels;
-    static SRV_Channels *instance;
+    static SRV_Channels *_singleton;
 
     // support for Volz protocol
     AP_Volz_Protocol volz;

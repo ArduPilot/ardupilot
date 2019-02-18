@@ -15,6 +15,7 @@
 
 #include "AP_WheelEncoder.h"
 #include "WheelEncoder_Quadrature.h"
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -182,6 +183,25 @@ void AP_WheelEncoder::update(void)
     }
 }
 
+// log wheel encoder information
+void AP_WheelEncoder::Log_Write()
+{
+    // return immediately if no wheel encoders are enabled
+    if (!enabled(0) && !enabled(1)) {
+        return;
+    }
+
+    struct log_WheelEncoder pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_WHEELENCODER_MSG),
+        time_us     : AP_HAL::micros64(),
+        distance_0  : get_distance(0),
+        quality_0   : (uint8_t)get_signal_quality(0),
+        distance_1  : get_distance(1),
+        quality_1   : (uint8_t)get_signal_quality(1),
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
 // check if an instance is healthy
 bool AP_WheelEncoder::healthy(uint8_t instance) const
 {
@@ -224,12 +244,12 @@ float AP_WheelEncoder::get_wheel_radius(uint8_t instance) const
     return _wheel_radius[instance];
 }
 
-// get the total distance travelled in meters
-Vector3f AP_WheelEncoder::get_position(uint8_t instance) const
+// return a 3D vector defining the position offset of the center of the wheel in meters relative to the body frame origin
+const Vector3f &AP_WheelEncoder::get_pos_offset(uint8_t instance) const
 {
     // for invalid instances return zero vector
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
-        return Vector3f();
+        return pos_offset_zero;
     }
     return _pos_offset[instance];
 }

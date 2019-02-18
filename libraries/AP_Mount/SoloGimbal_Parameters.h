@@ -84,6 +84,7 @@ private:
     } _params[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
 
     uint32_t _last_request_ms;
+    uint32_t _last_set_ms;
     gmb_flashing_step_t _flashing_step;
 
     mavlink_channel_t _chan;
