@@ -1055,7 +1055,7 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 
-    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < fabsf(aparm.loiter_radius)) {
+    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < abs(aparm.loiter_radius)) {
         /* Whenever next waypoint is within the loiter radius,
            maintaining loiter would prevent us from ever pointing toward the next waypoint.
            Hence break out of loiter immediately
