@@ -27,10 +27,10 @@
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
 // check if a message will fit in the payload space available
-#define PAYLOAD_SIZE(chan, id) (GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
-#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= PAYLOAD_SIZE(chan, id))
-#define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
-#define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
+#define PAYLOAD_SIZE(chan, id) (GCS_MAVLINK::packet_overhead_chan((mavlink_channel_t)chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
+#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace((mavlink_channel_t)chan) >= PAYLOAD_SIZE(chan, id))
+#define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace((mavlink_channel_t)chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
+#define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)chan, id)) return false
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
@@ -231,6 +231,7 @@ public:
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
     static uint8_t active_channel_mask(void) { return mavlink_active; }
+    static bool is_active_channel(const mavlink_channel_t chan) { return mavlink_active & (1U<<chan); }
 
     // return a bitmap of streaming channels
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
