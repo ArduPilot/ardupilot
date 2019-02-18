@@ -73,6 +73,7 @@ class AutoTestCopter(AutoTest):
         return 'ArduCopter'
 
     def init(self):
+        super(AutoTestCopter, self).init(os.path.realpath(__file__))
         if self.frame is None:
             self.frame = '+'
 
