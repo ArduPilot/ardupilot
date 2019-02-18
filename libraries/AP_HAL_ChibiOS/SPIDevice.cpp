@@ -174,11 +174,19 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
         return;
     }
 
+
+#if defined(HAL_SPI_USE_POLLED)
+    for (uint16_t i=0; i<len; i++) {
+        uint8_t ret = spiPolledExchange(spi_devices[device_desc.bus].driver, send?send[i]:0);
+        if (recv) {
+            recv[i] = ret;
+        }
+    }
+#else
     bus.bouncebuffer_setup(send, len, recv, len);
-
     spiExchange(spi_devices[device_desc.bus].driver, len, send, recv);
-
     bus.bouncebuffer_finish(send, recv, len);
+#endif
 
     set_chip_select(old_cs_forced);
 }
