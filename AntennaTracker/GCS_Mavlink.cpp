@@ -82,17 +82,17 @@ void GCS_MAVLINK_Tracker::get_sensor_status_flags(uint32_t &present,
     health = tracker.control_sensors_health;
 }
 
-void Tracker::send_nav_controller_output(mavlink_channel_t chan)
+void GCS_MAVLINK_Tracker::send_nav_controller_output() const
 {
-	float alt_diff = (g.alt_source == ALT_SOURCE_BARO) ? nav_status.alt_difference_baro : nav_status.alt_difference_gps;
+	float alt_diff = (tracker.g.alt_source == ALT_SOURCE_BARO) ? tracker.nav_status.alt_difference_baro : tracker.nav_status.alt_difference_gps;
 
     mavlink_msg_nav_controller_output_send(
         chan,
         0,
-        nav_status.pitch,
-        nav_status.bearing,
-        nav_status.bearing,
-        MIN(nav_status.distance, UINT16_MAX),
+        tracker.nav_status.pitch,
+        tracker.nav_status.bearing,
+        tracker.nav_status.bearing,
+        MIN(tracker.nav_status.distance, UINT16_MAX),
         alt_diff,
         0,
         0);
@@ -109,23 +109,6 @@ void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&
 {
     // do nothing
 }
-
-// try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
-{
-    switch (id) {
-
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        tracker.send_nav_controller_output(chan);
-        break;
-
-    default:
-        return GCS_MAVLINK::try_send_message(id);
-    }
-    return true;
-}
-
 
 /*
   default stream rates to 1Hz
