@@ -88,7 +88,7 @@ def get_sharing_priority(periph_list, priority_list):
             highest = prio
     return highest
 
-def generate_DMAMUX_map(peripheral_list, noshare_list):
+def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
     '''
     generate a dma map suitable for a board with a DMAMUX
 
@@ -106,22 +106,25 @@ def generate_DMAMUX_map(peripheral_list, noshare_list):
         idsets[p] = set()
 
     for p in peripheral_list:
-        if can_share(p, noshare_list):
+        if can_share(p, noshare_list) or p in dma_exclude:
             continue
         for i in range(16):
             mask = (1<<i)
             if available & mask != 0:
-                available ^= mask
+                available &= ~mask
                 dma = (i // 8) + 1
                 stream = i % 8
                 dma_map[p].append((dma,stream,0))
                 idsets[p].add(i)
                 break
 
+    if debug:
+        print('dma_map1: ', dma_map)
+
     # now shareable
     idx = 0
     for p in peripheral_list:
-        if not can_share(p, noshare_list):
+        if not can_share(p, noshare_list) or p in dma_exclude:
             continue
         base = idx % 16
         for i in range(16):
@@ -145,7 +148,7 @@ def generate_DMAMUX_map(peripheral_list, noshare_list):
                     other = None
 
                 if other is not None and ii in idsets[other]:
-                    if len(idsets[p]) >= len(idsets[other]):
+                    if len(idsets[p]) >= len(idsets[other]) and len(idsets[other]) > 0:
                         continue
                     idsets[other].remove(ii)
                     dma_map[other].remove((dma,stream))
@@ -190,7 +193,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
 
     if dma_map is None:
         have_DMAMUX = True
-        dma_map = generate_DMAMUX_map(peripheral_list, noshare_list)
+        dma_map = generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude)
     else:
         have_DMAMUX = False
 
