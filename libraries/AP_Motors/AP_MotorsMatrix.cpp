@@ -339,8 +339,8 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
             // record highest thrust command
             if (_thrust_rpyt_out_filt[i] > rpyt_high) {
                 rpyt_high = _thrust_rpyt_out_filt[i];
-                // hold motor lost index constant while thrust balance is true
-                if (_thrust_balanced) {
+                // hold motor lost index constant while thrust boost is active
+                if (!_thrust_boost) {
                     _motor_lost_index = i;
                 }
             }
