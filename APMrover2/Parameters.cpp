@@ -733,7 +733,6 @@ ParametersG2::ParametersG2(void)
     proximity(rover.serial_manager),
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
     follow(),
-    rally(rover.ahrs),
     windvane(),
     airspeed()
 {
