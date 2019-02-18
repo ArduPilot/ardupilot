@@ -568,6 +568,13 @@ class AutoTest(ABC):
                 raise ValueError("count %u not handled" % count)
         self.progress("Files same")
 
+    def load_rally(self, filename):
+        """Load rally points from a file to flight controller."""
+        self.progress("Loading rally points (%s)" % filename)
+        path = os.path.join(self.mission_directory(), filename)
+        self.mavproxy.send('rally load %s\n' % path)
+        self.mavproxy.expect("Loaded")
+
     def load_mission(self, filename):
         """Load a mission from a file to flight controller."""
         self.progress("Loading mission (%s)" % filename)
