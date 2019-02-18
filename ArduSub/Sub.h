@@ -422,7 +422,7 @@ private:
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally rally{ahrs};
+    AP_Rally rally;
 #endif
 
     // terrain handling
