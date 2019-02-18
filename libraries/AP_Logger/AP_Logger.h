@@ -437,6 +437,7 @@ private:
     uint32_t _log_data_page;
 
     GCS_MAVLINK *_log_sending_link;
+    HAL_Semaphore_Recursive _log_send_sem;
 
     bool should_handle_log_message();
     void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);
