@@ -470,7 +470,6 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     if (_sitl != nullptr) {
         if (_sitl->state.battery_voltage <= 0) {
             if (!sitl_model->servo_updated) {
-                printf("updated\n");
                 sitl_model->update_servo_output(input);
             }
 
