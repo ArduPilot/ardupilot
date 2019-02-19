@@ -59,10 +59,10 @@ PE2 SPI4_SCK SPI4
 PE13 SPI4_MISO SPI4
 PE6 SPI4_MOSI SPI4
 
-# SPI5 - external1 (disabled to save DMA channels)
-# PF7 SPI5_SCK SPI5
-# PF8 SPI5_MISO SPI5
-# PF9 SPI5_MOSI SPI5
+# SPI5 - external1
+PF7 SPI5_SCK SPI5
+PF8 SPI5_MISO SPI5
+PF9 SPI5_MOSI SPI5
 
 # SPI6 - external2 (disabled to save DMA channels)
 # PG13 SPI6_SCK SPI6
@@ -76,6 +76,16 @@ PF3  ICM20602_CS CS SPEED_VERYLOW
 PF4  BMI055_G_CS CS
 PG10 BMI055_A_CS CS
 PF5  FRAM_CS CS SPEED_VERYLOW
+
+# external CS pins, SPI5 connector
+PI4  EXT1_CS1 CS
+PI10 EXT1_CS2 CS
+
+# external CS pins, SPI6 connector
+PI6 EXT2_CS1 CS
+PI7 EXT2_CS2 CS
+PI8 EXT2_CS3 CS
+
 
 # I2C buses
 
@@ -244,6 +254,17 @@ SPIDEV bmi055_g       SPI1 DEVID3  BMI055_G_CS  MODE3 10*MHZ 10*MHZ
 SPIDEV bmi055_a       SPI1 DEVID4  BMI055_A_CS  MODE3 10*MHZ 10*MHZ
 SPIDEV ramtron        SPI2 DEVID1  FRAM_CS      MODE3  8*MHZ  8*MHZ 
 
+# SPI5 external connections
+SPIDEV external10m0   SPI5 DEVID1  EXT1_CS1   MODE0  2*MHZ  2*MHZ
+SPIDEV external10m1   SPI5 DEVID1  EXT1_CS1   MODE1  2*MHZ  2*MHZ
+SPIDEV external10m2   SPI5 DEVID1  EXT1_CS1   MODE2  2*MHZ  2*MHZ
+SPIDEV external10m3   SPI5 DEVID1  EXT1_CS1   MODE3  2*MHZ  2*MHZ
+SPIDEV external20m0   SPI5 DEVID2  EXT1_CS2   MODE0  2*MHZ  2*MHZ
+SPIDEV external20m1   SPI5 DEVID2  EXT1_CS2   MODE1  2*MHZ  2*MHZ
+SPIDEV external20m2   SPI5 DEVID2  EXT1_CS2   MODE2  2*MHZ  2*MHZ
+SPIDEV external20m3   SPI5 DEVID2  EXT1_CS2   MODE3  2*MHZ  2*MHZ
+
+
 # microSD support (disabled for now)
 #PC8 SDMMC_D0 SDMMC1
 #PC9 SDMMC_D1 SDMMC1
@@ -291,5 +312,7 @@ ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
 # don't share IOMCU DMA
 DMA_NOSHARE UART8* SPI1* TIM*UP*
 
+# there is an issue with DMA on SPI which needs to be solved
+# before we enable it
 define HAL_SPI_USE_POLLED
 
