@@ -433,7 +433,7 @@ private:
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
 
-    transition_state_t transition_state;
+    transition_state_t transition_state = QuadPlane::TRANSITION_DONE;
 
     // true when waiting for pilot throttle
     bool throttle_wait:1;
