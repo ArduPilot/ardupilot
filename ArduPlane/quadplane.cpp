@@ -1812,6 +1812,7 @@ void QuadPlane::update_transition(void)
     if (!hal.util->get_soft_armed()) {
         // reset the failure timer if we haven't started transitioning
         transition_start_ms = now;
+        transition_state = TRANSITION_DONE;
     } else if ((transition_state != TRANSITION_DONE) &&
         (transition_start_ms != 0) &&
         (transition_failure > 0) &&
@@ -2061,8 +2062,29 @@ void QuadPlane::update(void)
     if (!in_vtol_mode()) {
         // we're in a fixed wing mode, cope with transitions and check
         // for assistance needed
+        if (!to_fw_transition_initialised) {
+            /*
+              setup the transition state appropriately
+            */
+            transition_start_ms = 0;
+            transition_low_airspeed_ms = 0;
+            if (throttle_wait && !plane.is_flying()) {
+                transition_state = TRANSITION_DONE;
+            } else if (is_tailsitter()) {
+                /*
+                  setup for the transition back to fixed wing for later
+                 */
+                transition_state = TRANSITION_ANGLE_WAIT_FW;
+                transition_start_ms = AP_HAL::millis();
+            } else {
+                transition_state = TRANSITION_AIRSPEED_WAIT;
+            }
+            last_throttle = motors->get_throttle();
+            to_fw_transition_initialised = true;
+        }
         update_transition();
     } else {
+        to_fw_transition_initialised = false;
 
         assisted_flight = false;
 

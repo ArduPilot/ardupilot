@@ -92,6 +92,7 @@ public:
         TRANSITION_DONE
     };
     transition_state_t get_transition_state() const { return transition_state; }
+    bool to_fw_transition_initialised;
 
     /*
       return true if we are a tailsitter transitioning to VTOL flight
