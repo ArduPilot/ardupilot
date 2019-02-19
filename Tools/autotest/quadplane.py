@@ -307,6 +307,112 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         self.progress("Mission OK")
 
+    def enum_state_name(self, enum_name, state, pretrim=None):
+        e = mavutil.mavlink.enums[enum_name]
+        e_value = e[state]
+        name = e_value.name
+        if pretrim is not None:
+            if not pretrim.startswith(pretrim):
+                raise NotAchievedException("Expected %s to pretrim" % (pretrim))
+            name = name.replace(pretrim, "")
+        return name
+
+    def vtol_state_name(self, state):
+        return self.enum_state_name("MAV_VTOL_STATE", state, pretrim="MAV_VTOL_STATE_")
+
+    def landed_state_name(self, state):
+        return self.enum_state_name("MAV_LANDED_STATE", state, pretrim="MAV_LANDED_STATE_")
+
+    def assert_extended_sys_state(self, vtol_state, landed_state):
+        m = self.mav.recv_match(type='EXTENDED_SYS_STATE',
+                                blocking=True,
+                                timeout=1)
+        if m is None:
+            raise NotAchievedException("Did not get extended_sys_state message")
+        if m.vtol_state != vtol_state:
+            raise ValueError("Bad MAV_VTOL_STATE.  Want=%s got=%s" %
+                             (self.vtol_state_name(vtol_state),
+                              self.vtol_state_name(m.vtol_state)))
+        if m.landed_state != landed_state:
+            raise ValueError("Bad MAV_LANDED_STATE.  Want=%s got=%s" %
+                             (self.landed_state_name(landed_state),
+                              self.landed_state_name(m.landed_state)))
+
+    def wait_extended_sys_state(self, vtol_state, landed_state):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > 10:
+                raise NotAchievedException("Did not achieve vol/landed states")
+            self.progress("Waiting for MAV_VTOL_STATE=%s MAV_LANDED_STATE=%s" %
+                          (self.vtol_state_name(vtol_state),
+                           self.landed_state_name(landed_state)))
+            m = self.assert_receive_message('EXTENDED_SYS_STATE', verbose=True)
+            if m.landed_state != landed_state:
+                self.progress("Wrong MAV_LANDED_STATE (want=%s got=%s)" %
+                              (self.landed_state_name(landed_state),
+                               self.landed_state_name(m.landed_state)))
+                continue
+            if m.vtol_state != vtol_state:
+                self.progress("Wrong MAV_VTOL_STATE (want=%s got=%s)" %
+                              (self.vtol_state_name(vtol_state),
+                               self.vtol_state_name(m.vtol_state)))
+                continue
+
+            self.progress("vtol and landed states match")
+            return
+
+    def EXTENDED_SYS_STATE_SLT(self):
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.change_mode("QHOVER")
+        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                       mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+        self.change_mode("FBWA")
+        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_FW,
+                                       mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+        self.change_mode("QHOVER")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # should not change just because we arm:
+        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                       mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+        self.change_mode("MANUAL")
+        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_FW,
+                                       mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+        self.change_mode("QHOVER")
+
+        self.progress("Taking off")
+        self.set_rc(3, 1750)
+        self.wait_altitude(1, 5, relative=True)
+        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                       mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
+        self.wait_altitude(10, 15, relative=True)
+
+        self.progress("Transitioning to fixed wing")
+        self.change_mode("FBWA")
+        self.set_rc(3, 1900) # apply spurs
+        self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_TRANSITION_TO_FW,
+                                     mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
+        self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_FW,
+                                     mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
+
+        self.progress("Transitioning to multicopter")
+        self.set_rc(3, 1500) # apply reins
+        self.change_mode("QHOVER")
+        # for a standard quadplane there is no transition-to-mc stage.
+        # tailsitters do have such a state.
+        self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
+        self.change_mode("QLAND")
+        self.wait_altitude(0, 2, relative=True, timeout=60)
+        self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+        self.mav.motors_disarmed_wait()
+
+    def EXTENDED_SYS_STATE(self):
+        self.EXTENDED_SYS_STATE_SLT()
+
     def fly_qautotune(self):
         self.change_mode("QHOVER")
         self.wait_ready_to_arm()
@@ -708,6 +814,10 @@ class AutoTestQuadPlane(AutoTest):
             ("TestLogDownload",
              "Test Onboard Log Download",
              self.test_log_download),
+
+            ("EXTENDED_SYS_STATE",
+             "Check extended sys state works",
+             self.EXTENDED_SYS_STATE),
 
             ("Mission", "Dalby Mission",
              lambda: self.fly_mission("Dalby-OBC2016.txt", "Dalby-OBC2016-fence.txt")),
