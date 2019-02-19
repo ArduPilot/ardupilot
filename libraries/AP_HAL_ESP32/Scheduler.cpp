@@ -1,3 +1,18 @@
+/*
+ * This file is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "AP_HAL_ESP32/Scheduler.h"
 
 #include "freertos/FreeRTOS.h"
@@ -15,7 +30,7 @@ Scheduler::Scheduler()
 }
 
 void Scheduler::init()
-{    
+{
     xTaskCreate(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle);
     xTaskCreate(_timer_thread, "APM_TIMER", TIMER_SS, this, TIMER_PRIO, &_timer_task_handle);
     xTaskCreate(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle);
@@ -234,13 +249,14 @@ void print_stats()
     }
 }
 
-void Scheduler::_main_thread(void *arg) {
+void Scheduler::_main_thread(void *arg)
+{
     Scheduler *sched = (Scheduler *)arg;
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
     hal.analogin->init();
-    
+
     sched->callbacks->setup();
     sched->system_initialized();
 
@@ -248,6 +264,6 @@ void Scheduler::_main_thread(void *arg) {
         sched->callbacks->loop();
         sched->delay_microseconds(1);
         //print_stats();
-    }    
+    }
 }
 
