@@ -1053,6 +1053,10 @@ bool QuadPlane::is_flying_vtol(void) const
     if (!available()) {
         return false;
     }
+    if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+        // assume that with no motor outputs we're not flying in VTOL mode
+        return false;
+    }
     if (motors->get_throttle() > 0.01f) {
         // if we are demanding more than 1% throttle then don't consider aircraft landed
         return true;
