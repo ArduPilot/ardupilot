@@ -53,8 +53,6 @@ class GCS_Dummy : public GCS
 
     void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) { hal.console->printf("TOGCS: %s\n", text); }
 
-    void update_sensor_status_flags(void) override {};
-
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     uint32_t custom_mode() const override { return 3; } // magic number
 };
