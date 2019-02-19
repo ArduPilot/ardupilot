@@ -788,7 +788,8 @@ protected:
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
-    virtual void update_sensor_status_flags(void) = 0;
+    void update_sensor_status_flags();
+    virtual void update_vehicle_sensor_status_flags() {}
 
 private:
 
