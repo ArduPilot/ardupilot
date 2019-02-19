@@ -361,9 +361,8 @@ class AutoTestQuadPlane(AutoTest):
         # should not change just because we arm:
         # note that Q-modes always consider themselves as flying when armed,
         # thus the IN_AIR just here.
-# FIXME: removed because state isn't well-reflected; fixed in future PR
-#        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
-#                                       mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
+        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                       mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
         self.change_mode("MANUAL")
         self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_FW,
                                        mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
@@ -372,9 +371,8 @@ class AutoTestQuadPlane(AutoTest):
         self.progress("Taking off")
         self.set_rc(3, 1750)
         self.wait_altitude(1, 5, relative=True)
-# FIXME: removed because state isn't well-reflected; fixed in future PR
-#        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
-#                                       mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
+        self.assert_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                       mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
         self.wait_altitude(10, 15, relative=True)
 
         self.progress("Transitioning to fixed wing")
@@ -390,14 +388,12 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("QHOVER")
         # for a standard quadplane there is no transition-to-mc stage.
         # tailsitters do have such a state.
-# FIXME: removed because state isn't well-reflected; fixed in future PR
-#        self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
-#                                     mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
+        self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
         self.change_mode("QLAND")
         self.wait_altitude(0, 2, relative=True, timeout=60)
-# FIXME: removed because state isn't well-reflected; fixed in future PR
-#        self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
-#                                     mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+        self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
         self.mav.motors_disarmed_wait()
 
     def fly_qautotune(self):
