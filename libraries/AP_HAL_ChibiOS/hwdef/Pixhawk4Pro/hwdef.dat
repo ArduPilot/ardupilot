@@ -190,7 +190,7 @@ PH9  TIM12_CH2 TIM12 PWM(8) GPIO(57) NODMA
 define BOARD_PWM_COUNT_DEFAULT 8
 
 # PWM output for buzzer
-# PE5 TIM9_CH1 TIM9 GPIO(77) ALARM
+PE5 TIM15_CH1 TIM9 GPIO(77) ALARM
 
 # analog in
 PA0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
@@ -209,12 +209,6 @@ PB0 RSSI_IN ADC1 SCALE(1)
 
 PC0 VDD_5V_SENS ADC1 SCALE(2)
 PC1 SCALED_V3V3 ADC1 SCALE(2)
-
-# setup scaling defaults for PixHackV5 power brick
-define HAL_BATT_VOLT_SCALE 18.0
-define HAL_BATT_CURR_SCALE 24.0
-define HAL_BATT_VOLT_PIN 0
-define HAL_BATT_CURR_PIN 1
 
 # CAN bus
 #PI9  CAN1_RX CAN1
@@ -288,7 +282,6 @@ define HAL_GPIO_A_LED_PIN 90
 define HAL_GPIO_B_LED_PIN 92
 define HAL_GPIO_LED_ON 0
 
-
 # enable RAMTROM parameter storage
 define HAL_STORAGE_SIZE 16384
 define HAL_WITH_RAMTRON 1
@@ -311,6 +304,16 @@ ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
 
 # don't share IOMCU DMA
 DMA_NOSHARE UART8* SPI1* TIM*UP*
+
+# battery setup
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 16
+define HAL_BATT_CURR_PIN 17
+define HAL_BATT2_VOLT_PIN 14
+define HAL_BATT2_CURR_PIN 15
+define HAL_BATT_VOLT_SCALE 18
+define HAL_BATT_CURR_SCALE 24
+
 
 # there is an issue with DMA on SPI which needs to be solved
 # before we enable it
