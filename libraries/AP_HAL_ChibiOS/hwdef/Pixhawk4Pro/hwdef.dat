@@ -311,8 +311,8 @@ define HAL_BATT_VOLT_PIN 16
 define HAL_BATT_CURR_PIN 17
 define HAL_BATT2_VOLT_PIN 14
 define HAL_BATT2_CURR_PIN 15
-define HAL_BATT_VOLT_SCALE 18
-define HAL_BATT_CURR_SCALE 24
+define HAL_BATT_VOLT_SCALE 18.182
+define HAL_BATT_CURR_SCALE 36.364
 
 
 # there is an issue with DMA on SPI which needs to be solved
