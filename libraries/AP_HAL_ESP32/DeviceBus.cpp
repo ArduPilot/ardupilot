@@ -137,11 +137,8 @@ bool DeviceBus::adjust_timer(AP_HAL::Device::PeriodicHandle h, uint32_t period_u
     if (xTaskGetCurrentTaskHandle() != bus_thread_handle) {
         return false;
     }
-
     DeviceBus::callback_info *callback = static_cast<DeviceBus::callback_info *>(h);
-
     callback->period_usec = period_usec;
     callback->next_usec = AP_HAL::micros64() + period_usec;
-
     return true;
 }

@@ -375,7 +375,8 @@ class esp32(Board):
                          '-fno-exceptions',
                          '-fno-rtti',
                          '-nostdlib',
-                         '-fstrict-volatile-bitfields']
+                         '-fstrict-volatile-bitfields',
+                         '-D__IRAM__=__attribute__((section(".iram1")))']
         env.AP_PROGRAM_AS_STLIB = True
     def build(self, bld):
         super(esp32, self).build(bld)
