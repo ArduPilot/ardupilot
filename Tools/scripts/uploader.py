@@ -75,6 +75,7 @@ default_ports = [ '/dev/serial/by-id/usb-Ardu*',
                   '/dev/serial/by-id/usb-*_3DR_*',
                   '/dev/serial/by-id/usb-Hex_Technology_Limited*',
                   '/dev/serial/by-id/usb-Hex_ProfiCNC*',
+                  '/dev/serial/by-id/usb-Holybro*',
                   '/dev/tty.usbmodem*']
 
 if "cygwin" in _platform:
