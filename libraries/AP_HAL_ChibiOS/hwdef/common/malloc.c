@@ -34,11 +34,10 @@
 #define MEM_REGION_FLAG_DMA_OK 1
 #define MEM_REGION_FLAG_FAST   2
 
-static struct memory_region {
+static const struct memory_region {
     void *address;
     uint32_t size;
     uint32_t flags;
-    memory_heap_t heap;
 } memory_regions[] = { HAL_MEMORY_REGIONS };
 
 // the first memory region is already setup as the ChibiOS
@@ -46,6 +45,8 @@ static struct memory_region {
 #define NUM_MEMORY_REGIONS (sizeof(memory_regions)/sizeof(memory_regions[0]))
 
 #if CH_CFG_USE_HEAP == TRUE
+
+static memory_heap_t heaps[NUM_MEMORY_REGIONS];
 
 #define MIN_ALIGNMENT 8
 
@@ -70,7 +71,7 @@ static memory_heap_t dma_reserve_heap;
 void malloc_init(void)
 {
     for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
-        chHeapObjectInit(&memory_regions[i].heap, memory_regions[i].address, memory_regions[i].size);
+        chHeapObjectInit(&heaps[i], memory_regions[i].address, memory_regions[i].size);
     }
 
 #if DMA_RESERVE_SIZE != 0
@@ -117,7 +118,7 @@ static void *malloc_flags(size_t size, uint32_t flags)
             !(memory_regions[i].flags & MEM_REGION_FLAG_FAST)) {
             continue;
         }
-        p = chHeapAllocAligned(&memory_regions[i].heap, size, alignment);
+        p = chHeapAllocAligned(&heaps[i], size, alignment);
         if (p) {
             goto found;
         }
@@ -126,7 +127,7 @@ static void *malloc_flags(size_t size, uint32_t flags)
     // if this is a not a DMA request then we can fall back to any heap
     if (!(flags & MEM_REGION_FLAG_DMA_OK)) {
         for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
-            p = chHeapAllocAligned(&memory_regions[i].heap, size, alignment);
+            p = chHeapAllocAligned(&heaps[i], size, alignment);
             if (p) {
                 goto found;
             }
@@ -206,7 +207,7 @@ size_t mem_available(void)
     // now our own heaps
     for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
         size_t available = 0;
-        chHeapStatus(&memory_regions[i].heap, &available, NULL);
+        chHeapStatus(&heaps[i], &available, NULL);
         totalp += available;
     }
 
