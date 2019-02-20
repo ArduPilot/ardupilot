@@ -162,6 +162,7 @@ private:
         uint8_t new_byte;
         bool send_attiandrng;
         bool send_latitude;
+        bool send_chunk;
         uint32_t params_timer;
         uint32_t ap_status_timer;
         uint32_t batt_timer;
