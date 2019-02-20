@@ -332,10 +332,22 @@ bool AP_Arming::ins_checks(bool report)
 
 bool AP_Arming::compass_checks(bool report)
 {
+    Compass &_compass = AP::compass();
+
+    // check if compass is calibrating
+    if (_compass.is_calibrating()) {
+        check_failed(ARMING_CHECK_COMPASS, report, "Compass calibration running");
+        return false;
+    }
+
+    // check if compass has calibrated and requires reboot
+    if (_compass.compass_cal_requires_reboot()) {
+        check_failed(ARMING_CHECK_COMPASS, report, "Compass calibrated requires reboot");
+        return false;
+    }
+
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
-
-        Compass &_compass = AP::compass();
 
         // avoid Compass::use_for_yaw(void) as it implicitly calls healthy() which can
         // incorrectly skip the remaining checks, pass the primary instance directly
@@ -351,18 +363,6 @@ bool AP_Arming::compass_checks(bool report)
         // check compass learning is on or offsets have been set
         if (!_compass.learn_offsets_enabled() && !_compass.configured()) {
             check_failed(ARMING_CHECK_COMPASS, report, "Compass not calibrated");
-            return false;
-        }
-
-        //check if compass is calibrating
-        if (_compass.is_calibrating()) {
-            check_failed(ARMING_CHECK_COMPASS, report, "Compass calibration running");
-            return false;
-        }
-
-        //check if compass has calibrated and requires reboot
-        if (_compass.compass_cal_requires_reboot()) {
-            check_failed(ARMING_CHECK_COMPASS, report, "Compass calibrated requires reboot");
             return false;
         }
 
