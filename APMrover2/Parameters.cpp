@@ -294,6 +294,13 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(turn_max_g,             "TURN_MAX_G",      0.6f),
 
+    // @Param: NAV_CONTROLLER
+    // @DisplayName: Navigation controller selection
+    // @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental controllers will be added which are selected using this parameter.
+    // @Values: 0:Default,1:L1Controller,2:LQRController
+    // @User: Standard
+    GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
+
     // variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
@@ -703,6 +710,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BAL_PITCH_TRIM", 40, ParametersG2, bal_pitch_trim, 0),
 
+    // @Group: NAVLQR_
+    // @Path: ../libraries/AP_LQR_Control/AP_LQR_Control.cpp
+    AP_SUBGROUPINFO(LQR_controller, "NAVLQR_", 41, ParametersG2, AP_LQR_Control),
+
     AP_GROUPEND
 };
 
@@ -720,8 +731,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 // @Description: RC Channel to use for auxiliary functions including saving waypoints
 // @User: Advanced
 
-ParametersG2::ParametersG2(void)
-    :
+ParametersG2::ParametersG2(void) :
+
+    LQR_controller(nullptr),
 #if ADVANCED_FAILSAFE == ENABLED
     afs(rover.mission, rover.gps),
 #endif

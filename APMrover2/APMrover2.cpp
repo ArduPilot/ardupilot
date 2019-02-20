@@ -103,6 +103,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(afs_fs_check,           10,    200),
 #endif
     SCHED_TASK(read_airspeed,          10,    100),
+    SCHED_TASK(set_nav_controller,     10,    100),
 };
 
 constexpr int8_t Rover::_failsafe_priorities[7];
@@ -321,6 +322,24 @@ void Rover::update_GPS(void)
 void Rover::update_current_mode(void)
 {
     control_mode->update();
+}
+
+void Rover::set_nav_controller(void)
+{
+    switch ((AP_Navigation::ControllerType)g.nav_controller.get()) {
+
+    default:
+    case AP_Navigation::CONTROLLER_DEFAULT:
+        // no break, fall through to L1 as default controller
+
+    case AP_Navigation::CONTROLLER_L1:
+        Rover::nav_controller = &L1_controller;
+        break;
+
+    case AP_Navigation::CONTROLLER_LQR:
+        Rover::nav_controller = &g2.LQR_controller;
+        break;
+    }
 }
 
 AP_HAL_MAIN_CALLBACKS(&rover);
