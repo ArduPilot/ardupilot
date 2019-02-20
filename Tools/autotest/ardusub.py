@@ -239,7 +239,7 @@ class AutoTestSub(AutoTest):
 
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(
-                 self.buildlogs_path("APMrover2-log.bin"),
+                 self.buildlogs_path("ArduSub-log.bin"),
                  upload_logs=len(self.fail_list) > 0)),
         ])
 
