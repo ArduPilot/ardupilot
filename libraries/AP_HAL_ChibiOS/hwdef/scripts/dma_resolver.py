@@ -330,7 +330,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                         (chibios_dma_define_name(key)+'CHAN', chan))
                 break
 
-# now generate UARTDriver.cpp DMA config lines
+    # now generate UARTDriver.cpp DMA config lines
     f.write("\n\n// generated UART DMA configuration lines\n")
     for u in range(1, 9):
         key = None
@@ -364,6 +364,17 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                 "true, STM32_UART_%s_TX_%s_STREAM, %s\n" % (key, dma_name(key), dma_tx_chn))
         else:
             f.write("false, 0, 0\n")
+
+    # now generate SPI DMA streams lines
+    f.write("\n\n// generated SPI DMA configuration lines\n")
+    for u in range(1, 9):
+        if 'SPI%u_TX' % u in peripheral_list and 'SPI%u_RX' % u in peripheral_list:
+            key = 'SPI%u' % u
+        else:
+            continue
+        f.write('#define STM32_SPI_%s_DMA_STREAMS STM32_SPI_%s_TX_%s_STREAM, STM32_SPI_%s_RX_%s_STREAM\n' % (
+            key, key, dma_name(key), key, dma_name(key)))
+
 
 if __name__ == '__main__':
     import optparse
