@@ -325,6 +325,12 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(ARMING_CHECK_INS, report, "Gyros inconsistent");
             return false;
         }
+
+        // check AHRS attitudes are consistent
+        if (!AP::ahrs().attitudes_consistent()) {
+            check_failed(ARMING_CHECK_INS, report, "Attitudes inconsistent");
+            return false;
+        }
     }
 
     return true;
@@ -336,13 +342,13 @@ bool AP_Arming::compass_checks(bool report)
 
     // check if compass is calibrating
     if (_compass.is_calibrating()) {
-        check_failed(ARMING_CHECK_COMPASS, report, "Compass calibration running");
+        check_failed(ARMING_CHECK_NONE, report, "Compass calibration running");
         return false;
     }
 
     // check if compass has calibrated and requires reboot
     if (_compass.compass_cal_requires_reboot()) {
-        check_failed(ARMING_CHECK_COMPASS, report, "Compass calibrated requires reboot");
+        check_failed(ARMING_CHECK_NONE, report, "Compass calibrated requires reboot");
         return false;
     }
 
