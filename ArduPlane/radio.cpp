@@ -200,8 +200,6 @@ void Plane::read_radio()
 
     control_failsafe();
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input());
-
     if (g.throttle_nudge && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 50 && geofence_stickmixing()) {
         float nudge = (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) - 50) * 0.02f;
         if (ahrs.airspeed_sensor_enabled()) {
