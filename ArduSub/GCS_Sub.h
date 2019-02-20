@@ -20,7 +20,7 @@ public:
         return _chan[ofs];
     };
 
-    void update_sensor_status_flags() override;
+    void update_vehicle_sensor_status_flags() override;
 
     uint32_t custom_mode() const override;
     MAV_TYPE frame_type() const override;
