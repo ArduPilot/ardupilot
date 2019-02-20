@@ -1360,7 +1360,8 @@ bool QuadPlane::is_flying(void)
     if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
         return true;
     }
-    if (motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
+    if (motors->get_spool_state() != AP_Motors::SpoolState::SHUT_DOWN &&
+        motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
         return true;
     }
     if (in_tailsitter_vtol_transition()) {
