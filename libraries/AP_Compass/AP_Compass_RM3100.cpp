@@ -122,13 +122,14 @@ bool AP_Compass_RM3100::init()
         ccy1 != CCP1_DEFAULT || ccy0 != CCP0_DEFAULT ||
         ccz1 != CCP1_DEFAULT || ccz0 != CCP0_DEFAULT) {
         // couldn't read one of the cycle count registers or didn't recognize the default cycle count values
-        goto fail;
+        dev->get_semaphore()->give();
+        return false;
     }
 
     dev->setup_checked_registers(8);
 
-    dev->write_register(RM3100_TMRC_REG, TMRC, true); // cycle count z
-    dev->write_register(RM3100_CMM_REG, CMM, false); // CMM configuration
+    dev->write_register(RM3100_TMRC_REG, TMRC, true); // CMM data rate
+    dev->write_register(RM3100_CMM_REG, CMM, true); // CMM configuration
     dev->write_register(RM3100_CCX1_REG, CCP1, true); // cycle count x
     dev->write_register(RM3100_CCX0_REG, CCP0, true); // cycle count x
     dev->write_register(RM3100_CCY1_REG, CCP1, true); // cycle count y
@@ -140,20 +141,20 @@ bool AP_Compass_RM3100::init()
 
     // lower retries for run
     dev->set_retries(3);
-    
+
     dev->get_semaphore()->give();
 
     /* register the compass instance in the frontend */
     compass_instance = register_compass();
 
-    printf("Found a RM3100 at address 0x%x as compass %u\n", dev->get_bus_address(), compass_instance);
-    
+    hal.console->printf("RM3100: Found at address 0x%x as compass %u\n", dev->get_bus_address(), compass_instance);
+
     set_rotation(compass_instance, rotation);
 
     if (force_external) {
         set_external(compass_instance, true);
     }
-    
+
     dev->set_device_type(DEVTYPE_RM3100);
     set_dev_id(compass_instance, dev->get_bus_id());
 
@@ -162,10 +163,6 @@ bool AP_Compass_RM3100::init()
                                     FUNCTOR_BIND_MEMBER(&AP_Compass_RM3100::timer, void));
 
     return true;
-
-fail:
-    dev->get_semaphore()->give();
-    return false;
 }
 
 void AP_Compass_RM3100::timer()
