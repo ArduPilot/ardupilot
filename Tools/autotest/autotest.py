@@ -21,6 +21,7 @@ import apmrover2
 import arducopter
 import arduplane
 import ardusub
+import antennatracker
 import quadplane
 import balancebot
 
@@ -281,7 +282,7 @@ def binary_path(step, debug=False):
 
 def split_specific_test_step(step):
     print('step=%s' % str(step))
-    m = re.match("((fly|drive|dive)[.][^.]+)[.](.*)", step)
+    m = re.match("((fly|drive|dive|test)[.][^.]+)[.](.*)", step)
     if m is None:
         return None
     return ( (m.group(1), m.group(3)) )
@@ -307,6 +308,7 @@ def run_specific_test(step, *args, **kwargs):
         "drive.BalanceBot": balancebot.AutoTestBalanceBot,
         "fly.CopterAVC": arducopter.AutoTestHeli,
         "dive.ArduSub": ardusub.AutoTestSub,
+        "test.AntennaTracker": antennatracker.AutoTestTracker,
     }
     tester_class = tester_class_map[testname]
     tester = tester_class(*args, **kwargs)
@@ -403,6 +405,10 @@ def run_step(step):
 
     if step == 'dive.ArduSub':
         tester = ardusub.AutoTestSub(binary, **fly_opts)
+        return tester.autotest()
+
+    if step == 'test.AntennaTracker':
+        tester = antennatracker.AutoTestTracker(binary, **fly_opts)
         return tester.autotest()
 
     specific_test_to_run = find_specific_test_to_run(step)
@@ -755,6 +761,8 @@ if __name__ == "__main__":
         'fly.CopterAVC',
 
         'build.AntennaTracker',
+        'defaults.AntennaTracker',
+        'test.AntennaTracker',
 
         'build.ArduSub',
         'defaults.ArduSub',
