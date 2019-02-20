@@ -95,69 +95,75 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
     }
 
     if ((prev_byte == START_STOP_SPORT) && (_passthrough.new_byte == SENSOR_ID_28)) { // byte 0x7E is the header of each poll request
-        if (_passthrough.send_attiandrng) { // skip other data, send attitude (roll, pitch) and range only this iteration
-            _passthrough.send_attiandrng = false; // next iteration, check if we should send something other
-        } else { // send other sensor data if it's time for them, and reset the corresponding timer if sent
-            _passthrough.send_attiandrng = true; // next iteration, send attitude b/c it needs frequent updates to remain smooth
-            uint32_t now = AP_HAL::millis();
-            if ((now - _passthrough.params_timer) >= 1000) {
-                send_uint32(DIY_FIRST_ID+7, calc_param());
-                _passthrough.params_timer = AP_HAL::millis();
-                return;
+        if (_passthrough.send_chunk) { // skip other data and send a message chunk during this iteration
+            _passthrough.send_chunk = false;
+            if (get_next_msg_chunk()) {
+                send_uint32(DIY_FIRST_ID, _msg_chunk.chunk);
             }
+        } else {
             // build message queue for sensor_status_flags
             check_sensor_status_flags();
             // build message queue for ekf_status
             check_ekf_status();
-            // if there's any message in the queue, start sending them chunk by chunk; three times each chunk
-            if (get_next_msg_chunk()) {
-                send_uint32(DIY_FIRST_ID, _msg_chunk.chunk);
-                return;
+            // if there are pending messages in the queue, send them during next iteration
+            if (!_statustext_queue.empty()) {
+                _passthrough.send_chunk = true;
             }
-            if ((now - _passthrough.ap_status_timer) >= 500) {
-                if (gcs().vehicle_initialised()) {  // send ap status only once vehicle has been initialised
-                    send_uint32(DIY_FIRST_ID+1, calc_ap_status());
-                    _passthrough.ap_status_timer = AP_HAL::millis();
+            if (_passthrough.send_attiandrng) { // skip other data, send attitude (roll, pitch) and range only this iteration
+                _passthrough.send_attiandrng = false; // next iteration, check if we should send something other
+            } else { // send other sensor data if it's time for them, and reset the corresponding timer if sent
+                _passthrough.send_attiandrng = true; // next iteration, send attitude b/c it needs frequent updates to remain smooth
+                uint32_t now = AP_HAL::millis();
+                if ((now - _passthrough.params_timer) >= 1000) {
+                    send_uint32(DIY_FIRST_ID+7, calc_param());
+                    _passthrough.params_timer = AP_HAL::millis();
+                    return;
+                }
+                if ((now - _passthrough.ap_status_timer) >= 500) {
+                    if (gcs().vehicle_initialised()) {  // send ap status only once vehicle has been initialised
+                        send_uint32(DIY_FIRST_ID+1, calc_ap_status());
+                        _passthrough.ap_status_timer = AP_HAL::millis();
+                        return;
+                    }
+                }
+                if ((now - _passthrough.batt_timer) >= 1000) {
+                    send_uint32(DIY_FIRST_ID+3, calc_batt(0));
+                    _passthrough.batt_timer = AP_HAL::millis();
+                    return;
+                }
+                if (AP::battery().num_instances() > 1) {
+                    if ((now - _passthrough.batt_timer2) >= 1000) {
+                        send_uint32(DIY_FIRST_ID+8, calc_batt(1));
+                        _passthrough.batt_timer2 = AP_HAL::millis();
+                        return;
+                    }
+                }
+                if ((now - _passthrough.gps_status_timer) >= 1000) {
+                    send_uint32(DIY_FIRST_ID+2, calc_gps_status());
+                    _passthrough.gps_status_timer = AP_HAL::millis();
+                    return;
+                }
+                if ((now - _passthrough.home_timer) >= 500) {
+                    send_uint32(DIY_FIRST_ID+4, calc_home());
+                    _passthrough.home_timer = AP_HAL::millis();
+                    return;
+                }
+                if ((now - _passthrough.velandyaw_timer) >= 500) {
+                    send_uint32(DIY_FIRST_ID+5, calc_velandyaw());
+                    _passthrough.velandyaw_timer = AP_HAL::millis();
+                    return;
+                }
+                if ((now - _passthrough.gps_latlng_timer) >= 1000) {
+                    send_uint32(GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
+                    if (!_passthrough.send_latitude) { // we've cycled and sent one each of longitude then latitude, so reset the timer
+                        _passthrough.gps_latlng_timer = AP_HAL::millis();
+                    }
                     return;
                 }
             }
-            if ((now - _passthrough.batt_timer) >= 1000) {
-                send_uint32(DIY_FIRST_ID+3, calc_batt(0));
-                _passthrough.batt_timer = AP_HAL::millis();
-                return;
-            }
-            if (AP::battery().num_instances() > 1) {
-                if ((now - _passthrough.batt_timer2) >= 1000) {
-                    send_uint32(DIY_FIRST_ID+8, calc_batt(1));
-                    _passthrough.batt_timer2 = AP_HAL::millis();
-                    return;
-                }
-            }
-            if ((now - _passthrough.gps_status_timer) >= 1000) {
-                send_uint32(DIY_FIRST_ID+2, calc_gps_status());
-                _passthrough.gps_status_timer = AP_HAL::millis();
-                return;
-            }
-            if ((now - _passthrough.home_timer) >= 500) {
-                send_uint32(DIY_FIRST_ID+4, calc_home());
-                _passthrough.home_timer = AP_HAL::millis();
-                return;
-            }
-            if ((now - _passthrough.velandyaw_timer) >= 500) {
-                send_uint32(DIY_FIRST_ID+5, calc_velandyaw());
-                _passthrough.velandyaw_timer = AP_HAL::millis();
-                return;
-            }
-            if ((now - _passthrough.gps_latlng_timer) >= 1000) {
-                send_uint32(GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
-                if (!_passthrough.send_latitude) { // we've cycled and sent one each of longitude then latitude, so reset the timer
-                    _passthrough.gps_latlng_timer = AP_HAL::millis();
-                }
-                return;
-            }
+            // if nothing else needed to be sent, send attitude (roll, pitch) and range data
+            send_uint32(DIY_FIRST_ID+6, calc_attiandrng());
         }
-        // if nothing else needed to be sent, send attitude (roll, pitch) and range data
-        send_uint32(DIY_FIRST_ID+6, calc_attiandrng());
     }
 }
 
