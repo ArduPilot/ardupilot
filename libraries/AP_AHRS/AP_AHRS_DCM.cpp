@@ -1040,8 +1040,15 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     if (!check_latlng(loc)) {
         return false;
     }
+    // home must always be global frame at the moment as .alt is
+    // accessed directly by the vehicles and they may not be rigorous
+    // in checking the frame type.
+    Location tmp = loc;
+    if (!tmp.change_alt_frame(Location::ALT_FRAME_ABSOLUTE)) {
+        return false;
+    }
 
-    _home = loc;
+    _home = tmp;
     _home_is_set = true;
 
     // log ahrs home and ekf origin dataflash
