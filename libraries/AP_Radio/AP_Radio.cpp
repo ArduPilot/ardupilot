@@ -134,7 +134,7 @@ const AP_Param::GroupInfo AP_Radio::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Radio *AP_Radio::_instance;
+AP_Radio *AP_Radio::_singleton;
 
 // constructor
 AP_Radio::AP_Radio(void)
