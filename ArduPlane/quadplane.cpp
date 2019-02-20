@@ -1670,11 +1670,12 @@ void QuadPlane::motors_output(bool run_rate_controller)
     check_throttle_suppression();
     
     motors->output();
-    if (motors->armed() && motors->get_throttle() > 0) {
+    if (motors->armed() && motors->get_spool_mode() != AP_Motors::spool_up_down_mode::SHUT_DOWN) {
         plane.logger.Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
         Log_Write_QControl_Tuning();
         const uint32_t now = AP_HAL::millis();
         if (now - last_ctrl_log_ms > 100) {
+            last_ctrl_log_ms = now;
             attitude_control->control_monitor_log();
         }
     }
