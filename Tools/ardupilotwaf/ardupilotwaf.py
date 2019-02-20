@@ -498,7 +498,14 @@ special group "all" selects all programs.
 
     g.add_option('--upload',
         action='store_true',
-        help='''Upload applicable targets to a connected device. Not all
+        help='''Upload applicable targets to a connected device at 115200 baud. Not all
+platforms may support this. Example: `waf copter --upload` means "build
+arducopter and upload it to my board".
+''')
+
+    g.add_option('--uploadfast',
+        action='store_true',
+        help='''Upload applicable targets to a connected device at 921600 baud. Not all
 platforms may support this. Example: `waf copter --upload` means "build
 arducopter and upload it to my board".
 ''')

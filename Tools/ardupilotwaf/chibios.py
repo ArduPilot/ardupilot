@@ -54,7 +54,8 @@ class upload_fw(Task.Task):
     def run(self):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         src = self.inputs[0]
-        return self.exec_command("{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src))
+        print("Uploading at baudrate %s" % self.env.UPLOAD_BAUD)
+        return self.exec_command("{} '{}/uploader.py' '{}' --baud-bootloader='{}' --baud-bootloader-flash='{}'".format(self.env.get_flat('PYTHON'), upload_tools, src, self.env.UPLOAD_BAUD, self.env.UPLOAD_BAUD))
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
@@ -169,6 +170,12 @@ def chibios_firmware(self):
         generate_bin_task.set_run_after(default_params_task)
     
     if self.bld.options.upload:
+        self.env.UPLOAD_BAUD = "115200"
+        _upload_task = self.create_task('upload_fw', src=apj_target)
+        _upload_task.set_run_after(generate_apj_task)
+
+    if self.bld.options.uploadfast:
+        self.env.UPLOAD_BAUD = "921600"
         _upload_task = self.create_task('upload_fw', src=apj_target)
         _upload_task.set_run_after(generate_apj_task)
 

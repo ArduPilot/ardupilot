@@ -602,6 +602,8 @@ class uploader(object):
             self.__setbaud(self.baudrate_bootloader_flash)
             self.port.baudrate = self.baudrate_bootloader_flash
             self.__sync()
+        else:
+            print("Using baudrate %u" % self.baudrate_bootloader_flash)
 
         self.__erase("Erase  ")
         self.__program("Program", fw)
