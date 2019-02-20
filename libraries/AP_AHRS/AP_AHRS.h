@@ -216,6 +216,9 @@ public:
         return nullptr;
     }
 
+    // check all cores providing consistent attitudes for prearm checks
+    virtual bool attitudes_consistent() const { return true; }
+
     // is the EKF backend doing its own sensor logging?
     virtual bool have_ekf_logging(void) const {
         return false;

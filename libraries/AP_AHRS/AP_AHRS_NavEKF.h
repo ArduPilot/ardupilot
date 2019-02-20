@@ -188,6 +188,9 @@ public:
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const override;
 
+    // check all cores providing consistent attitudes for prearm checks
+    bool attitudes_consistent() const override;
+
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAng) const override;
