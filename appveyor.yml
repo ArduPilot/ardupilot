@@ -13,12 +13,10 @@ environment:
 install:
 - cmd: >-
 
-    C:\cygwin64\setup-x86_64.exe -qgnNdO -l C:\cygwin64\var\cache\setup -R c:\cygwin64 -s http://cygwin.mirror.constant.com -P gcc-g++,git,procps,libexpat,python,python-setuptools,cygwin32-gcc-g++ )
+    C:\cygwin64\setup-x86_64.exe -qgnNdO -l C:\cygwin64\var\cache\setup -R c:\cygwin64 -s http://cygwin.mirror.constant.com -P gcc-g++,git,procps,libexpat,python,python-setuptools,python-future,cygwin32-gcc-g++ )
 
     dir %CYG_ROOT%
     dir %CYG_ROOT%\bin
-
-    %CYG_ROOT%\bin\bash.exe -l -c "/usr/bin/easy_install-2.7 future"
 
 build_script:
 - cmd: >-
