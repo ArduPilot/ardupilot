@@ -115,7 +115,7 @@ public:
     bool get_relative_position_NED_origin(Vector3f &vec) const {
         return ahrs.get_relative_position_NED_origin(vec);
     }
-    
+
     bool get_relative_position_NE_home(Vector2f &vecNE) const {
         return ahrs.get_relative_position_NE_home(vecNE);
     }
@@ -123,7 +123,7 @@ public:
     bool get_relative_position_NE_origin(Vector2f &vecNE) const {
         return ahrs.get_relative_position_NE_origin(vecNE);
     }
-    
+
     void get_relative_position_D_home(float &posD) const {
         ahrs.get_relative_position_D_home(posD);
     }
@@ -131,7 +131,7 @@ public:
     bool get_relative_position_D_origin(float &posD) const {
         return ahrs.get_relative_position_D_origin(posD);
     }
-    
+
     float groundspeed(void) {
         return ahrs.groundspeed();
     }
@@ -155,7 +155,7 @@ public:
     // rotate a 2D vector from earth frame to body frame
     // in input, x is forward, y is right
     Vector2f rotate_body_to_earth2D(const Vector2f &bf) const;
-    
+
     // return the average size of the roll/pitch error estimate
     // since last call
     float get_error_rp(void) const {
@@ -167,7 +167,7 @@ public:
     float get_error_yaw(void) const {
         return ahrs.get_error_yaw();
     }
-    
+
     float roll;
     float pitch;
     float yaw;
