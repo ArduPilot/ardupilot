@@ -559,7 +559,7 @@ def write_mcu_config(f):
     f.write('// memory regions\n')
     regions = []
     for (address, size, flags) in ram_map:
-        regions.append('{(void*)0x%08x, 0x%08x, 0x%02x, {}}' % (address, size*1024, flags))
+        regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size*1024, flags))
     f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
 
     f.write('\n// CPU serial number (12 bytes)\n')
