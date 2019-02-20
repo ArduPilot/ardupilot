@@ -141,4 +141,7 @@ public:
     Quaternion operator*(const Quaternion &v) const;
     Quaternion &operator*=(const Quaternion &v);
     Quaternion operator/(const Quaternion &v) const;
+
+    // angular difference between quaternions
+    Quaternion angular_difference(const Quaternion &v) const;
 };
