@@ -50,22 +50,44 @@ def can_share(periph, noshare_list):
     return False
 
 
+# list of peripherals on H7 that are on DMAMUX2 and BDMA
+have_DMAMUX = False
+DMAMUX2_peripherals = [ 'I2C4', 'SPI6', 'ADC3' ]
+
+def dmamux_channel(key):
+    '''return DMAMUX channel for H7'''
+    for p in DMAMUX2_peripherals:
+        if key.find(p) != -1:
+            return 'STM32_DMAMUX2_' + key
+    # default to DMAMUX1
+    return 'STM32_DMAMUX1_' + key
+
+def dma_name(key):
+    '''return 'DMA' or 'BDMA' based on peripheral name'''
+    if not have_DMAMUX:
+        return "DMA"
+    for p in DMAMUX2_peripherals:
+        if key.find(p) != -1:
+            return 'BDMA'
+    return 'DMA'
+
 def chibios_dma_define_name(key):
     '''return define name needed for board.h for ChibiOS'''
+    dma_key = key + '_' + dma_name(key)
     if key.startswith('ADC'):
-        return 'STM32_ADC_%s_DMA_' % key
+        return 'STM32_ADC_%s_' % dma_key
     elif key.startswith('SPI'):
-        return 'STM32_SPI_%s_DMA_' % key
+        return 'STM32_SPI_%s_' % dma_key
     elif key.startswith('I2C'):
-        return 'STM32_I2C_%s_DMA_' % key
+        return 'STM32_I2C_%s_' % dma_key
     elif key.startswith('USART'):
-        return 'STM32_UART_%s_DMA_' % key
+        return 'STM32_UART_%s_' % dma_key
     elif key.startswith('UART'):
-        return 'STM32_UART_%s_DMA_' % key
+        return 'STM32_UART_%s_' % dma_key
     elif key.startswith('SDIO') or key.startswith('SDMMC'):
-        return 'STM32_SDC_%s_DMA_' % key
+        return 'STM32_SDC_%s_' % dma_key
     elif key.startswith('TIM'):
-        return 'STM32_TIM_%s_DMA_' % key
+        return 'STM32_TIM_%s_' % dma_key
     else:
         print("Error: Unknown key type %s" % key)
         sys.exit(1)
@@ -88,7 +110,7 @@ def get_sharing_priority(periph_list, priority_list):
             highest = prio
     return highest
 
-def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
+def generate_DMAMUX_map_mask(peripheral_list, channel_mask, noshare_list, dma_exclude):
     '''
     generate a dma map suitable for a board with a DMAMUX
 
@@ -100,7 +122,7 @@ def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
     idsets = {}
 
     # first unshareable peripherals
-    available = 0xFFFF
+    available = channel_mask
     for p in peripheral_list:
         dma_map[p] = []
         idsets[p] = set()
@@ -167,10 +189,30 @@ def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
         print('idsets: ', idsets)
     return dma_map
 
+def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
+    '''
+    generate a dma map suitable for a board with a DMAMUX1 and DMAMUX2
+    '''
+    # first split peripheral_list into those for DMAMUX1 and those for DMAMUX2
+    dmamux1_peripherals = []
+    dmamux2_peripherals = []
+    for p in peripheral_list:
+        if dma_name(p) == 'BDMA':
+            dmamux2_peripherals.append(p)
+        else:
+            dmamux1_peripherals.append(p)
+    map1 = generate_DMAMUX_map_mask(dmamux1_peripherals, 0xFFFF, noshare_list, dma_exclude)
+    map2 = generate_DMAMUX_map_mask(dmamux2_peripherals, 0xFF, noshare_list, dma_exclude)
+    both = map1
+    both.update(map2)
+    if debug:
+        print('dma_map_both: ', both)
+    return both
+
 def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                      dma_priority='', dma_noshare=''):
     '''write out a DMA resolver header file'''
-    global dma_map
+    global dma_map, have_DMAMUX
 
     # form a list of DMA priorities
     priority_list = dma_priority.split()
@@ -194,8 +236,6 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
     if dma_map is None:
         have_DMAMUX = True
         dma_map = generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude)
-    else:
-        have_DMAMUX = False
 
     print("Writing DMA map")
     unassigned = []
@@ -274,7 +314,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             shared = ' // shared %s' % ','.join(stream_assign[stream])
         if curr_dict[key] == "STM32_DMA_STREAM_ID_ANY":
             f.write("#define %-30s STM32_DMA_STREAM_ID_ANY\n" % (chibios_dma_define_name(key)+'STREAM'))
-            f.write("#define %-30s STM32_DMAMUX1_%s\n" % (chibios_dma_define_name(key)+'CHAN', key))
+            f.write("#define %-30s %s\n" % (chibios_dma_define_name(key)+'CHAN', dmamux_channel(key)))
             continue
         else:
                 f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
@@ -283,7 +323,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
         for streamchan in dma_map[key]:
             if stream == (streamchan[0], streamchan[1]):
                 if have_DMAMUX:
-                    chan = 'STM32_DMAMUX1_%s' % key
+                    chan = dmamux_channel(key)
                 else:
                     chan = streamchan[2]
                 f.write("#define %-30s %s\n" %
@@ -306,24 +346,22 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             continue
         if have_DMAMUX:
             # use DMAMUX ID as channel number
-            dma_rx_chn = "STM32_DMAMUX1_" + key + "_RX"
-            dma_tx_chn = "STM32_DMAMUX1_" + key + "_TX"
+            dma_rx_chn = dmamux_channel(key + "_RX")
+            dma_tx_chn = dmamux_channel(key + "_TX")
         else:
-            dma_rx_chn = "STM32_UART_%s_RX_DMA_CHAN" % key
-            dma_tx_chn = "STM32_UART_%s_TX_DMA_CHAN" % key
+            dma_rx_chn = "STM32_UART_%s_RX_%s_CHAN" % (key, dma_name(key))
+            dma_tx_chn = "STM32_UART_%s_TX_%s_CHAN" % (key, dma_name(key))
 
         f.write("#define STM32_%s_RX_DMA_CONFIG " % key)
         if key + "_RX" in curr_dict:
             f.write(
-                "true, STM32_UART_%s_RX_DMA_STREAM, %s\n" %
-                (key, dma_rx_chn))
+                "true, STM32_UART_%s_RX_%s_STREAM, %s\n" % (key, dma_name(key), dma_rx_chn))
         else:
             f.write("false, 0, 0\n")
         f.write("#define STM32_%s_TX_DMA_CONFIG " % key)
         if key + "_TX" in curr_dict:
             f.write(
-                "true, STM32_UART_%s_TX_DMA_STREAM, %s\n" %
-                (key, dma_tx_chn))
+                "true, STM32_UART_%s_TX_%s_STREAM, %s\n" % (key, dma_name(key), dma_tx_chn))
         else:
             f.write("false, 0, 0\n")
 
