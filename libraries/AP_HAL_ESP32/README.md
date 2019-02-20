@@ -55,7 +55,7 @@ Currently fw boots and runs on the test hw.
 - [ ] GPIO driver
 - [ ] AnalogIn driver
 - [ ] PWM driver
-- [ ] Storage
+- [x] Storage
 - [ ] SdCard
 - [ ] Buzzer
 - [ ] GSD

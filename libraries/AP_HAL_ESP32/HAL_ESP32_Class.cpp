@@ -22,6 +22,7 @@
 #include "SPIDevice.h"
 #include "UARTDriver.h"
 #include "WiFiDriver.h"
+#include "Storage.h"
 
 static ESP32::UARTDriver cons(0);
 static Empty::UARTDriver uartADriver;
@@ -34,7 +35,7 @@ static Empty::UARTDriver uartGDriver;
 static Empty::I2CDeviceManager i2cDeviceManager;
 static ESP32::SPIDeviceManager spiDeviceManager;
 static Empty::AnalogIn analogIn;
-static Empty::Storage storageDriver;
+static ESP32::Storage storageDriver;
 static Empty::GPIO gpioDriver;
 static Empty::RCInput rcinDriver;
 static Empty::RCOutput rcoutDriver;

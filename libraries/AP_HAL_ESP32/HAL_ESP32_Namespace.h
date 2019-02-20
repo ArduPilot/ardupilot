@@ -15,4 +15,5 @@ class Semaphore;
 class Semaphore_Recursive;
 class GPIO;
 class DigitalSource;
+class Storage;
 }  // namespace ESP32
