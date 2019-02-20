@@ -611,7 +611,9 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
         packed.location.lng = cmd.content.location.lng;
     } else {
         // all other options in Content are assumed to be packed:
-        memcpy(packed.bytes, &cmd.content.jump, sizeof(packed.bytes));
+        static_assert(sizeof(packed.bytes) >= 12,
+                      "packed.bytes is big enough to take content");
+        memcpy(packed.bytes, &cmd.content, 12);
     }
 
     // calculate where in storage the command should be placed
