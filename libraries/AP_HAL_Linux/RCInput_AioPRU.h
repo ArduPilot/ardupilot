@@ -30,8 +30,8 @@ namespace Linux {
 
 class RCInput_AioPRU : public RCInput {
 public:
-    void init();
-    void _timer_tick(void);
+    void init() override;
+    void _timer_tick(void) override;
 
 protected:
     static const uint32_t TICK_PER_US = 200;
