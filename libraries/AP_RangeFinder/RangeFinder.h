@@ -69,7 +69,7 @@ public:
         RangeFinder_TYPE_BenewakeTFmini = 20,
         RangeFinder_TYPE_PLI2CV3HP = 21,
         RangeFinder_TYPE_PWM = 22,
-        RangeFinder_TYPE_9xVL53L0X = 23
+        RangeFinder_TYPE_9xVL53LXX = 23
     };
 
     enum RangeFinder_Function {

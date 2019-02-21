@@ -21,9 +21,10 @@
 #include <AP_HAL/Device.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 #include "AP_RangeFinder_VL53L0X.h"
+#include "AP_RangeFinder_VL53L1X.h"
 #include <map>
 
-class AP_RangeFinder_9xVL53L0X {
+class AP_RangeFinder_9xVL53LXX {
 public:
 	static bool set_addr(uint8_t new_addr, uint8_t temp_addr, uint8_t orientation);
 
@@ -32,11 +33,11 @@ private:
 
 	static AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t address);
 	static bool is_mux(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev);
-	static bool is_sensor(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev);
+	static int identify_sensor(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev);
 
-    static void _write_register(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint8_t reg, uint8_t value);
-	static uint8_t _read_register(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint8_t reg);
+    static void _write_register(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint16_t reg, uint8_t value, uint8_t dev_type = 0);
+	static uint8_t _read_register(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint16_t reg, uint8_t dev_type = 0);
 	
-	static bool _write_check(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint8_t reg, uint8_t value, uint8_t attempts);
-	static bool set_addr_check(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &current_dev, uint8_t new_addr, uint8_t attempts);
+	static bool _write_check(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint8_t reg, uint8_t value, uint8_t attempts, uint8_t dev_type = 0);
+	static bool set_addr_check(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &current_dev, uint8_t new_addr, uint8_t attempts, uint8_t dev_type = 0);
 };

@@ -36,7 +36,7 @@
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake.h"
 #include "AP_RangeFinder_PWM.h"
-#include "AP_RangeFinder_9xVL53L0X.h"
+#include "AP_RangeFinder_9xVL53LXX.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -403,6 +403,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
     case RangeFinder_TYPE_VL53L0X:
+        if (params[instance].address) {
             FOREACH_I2C(i) {
                 if (_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
                                                                  hal.i2c_mgr->get_device(i, params[instance].address)))) {
@@ -413,14 +414,20 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
                     break;
                 }
             }
+        }
         break;
-    case RangeFinder_TYPE_9xVL53L0X:
-        AP_RangeFinder_9xVL53L0X::set_addr(params[instance].address, 0x2a, params[instance].orientation);
+    case RangeFinder_TYPE_9xVL53LXX:
         if (params[instance].address) {
-            if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
-                                                             hal.i2c_mgr->get_device(1, params[instance].address)))) {
-                _add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
-                                                            hal.i2c_mgr->get_device(0, params[instance].address)));
+            AP_RangeFinder_9xVL53LXX::set_addr(params[instance].address, 0x2a, params[instance].orientation);
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
+                                                                 hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
+                if (_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance], params[instance],
+                                                                hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
             }
         }
         break;
