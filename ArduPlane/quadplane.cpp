@@ -1565,7 +1565,7 @@ void QuadPlane::update(void)
   This is a safety check to prevent accidental motor runs on the
   ground, such as if RC fails and QRTL is started
  */
-void QuadPlane::check_throttle_suppression(void)
+void QuadPlane::update_throttle_suppression(void)
 {
     // if the motors have been running in the last 2 seconds then
     // allow them to run now
@@ -1614,7 +1614,7 @@ void QuadPlane::check_throttle_suppression(void)
 //  called at 100hz
 void QuadPlane::update_throttle_hover()
 {
-    if (!enable) {
+    if (!available()) {
         return;
     }
     
@@ -1667,7 +1667,7 @@ void QuadPlane::motors_output(bool run_rate_controller)
     }
 
     // see if motors should be shut down
-    check_throttle_suppression();
+    update_throttle_suppression();
     
     motors->output();
     if (motors->armed() && motors->get_throttle() > 0) {
@@ -1809,7 +1809,7 @@ bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state)
  */
 bool QuadPlane::in_vtol_auto(void) const
 {
-    if (!enable) {
+    if (!available()) {
         return false;
     }
     if (plane.control_mode != AUTO) {
@@ -1842,7 +1842,7 @@ bool QuadPlane::in_vtol_auto(void) const
  */
 bool QuadPlane::in_vtol_mode(void) const
 {
-    if (!enable) {
+    if (!available()) {
         return false;
     }
     return (plane.control_mode == QSTABILIZE ||
