@@ -788,10 +788,6 @@ private:
     void convert_pid_parameters(void);
     void convert_lgr_parameters(void);
 
-    // position_vector.cpp
-    float pv_alt_above_origin(float alt_above_home_cm);
-    float pv_alt_above_home(float alt_above_origin_cm);
-
     // precision_landing.cpp
     void init_precland();
     void update_precland();
