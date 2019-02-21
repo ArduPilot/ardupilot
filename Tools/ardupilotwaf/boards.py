@@ -35,7 +35,7 @@ class Board:
         self.with_uavcan = False
 
     def configure(self, cfg):
-        cfg.env.TOOLCHAIN = self.toolchain
+        cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
         cfg.env.ROMFS_FILES = []
         cfg.load('toolchain')
         cfg.load('cxx_checks')

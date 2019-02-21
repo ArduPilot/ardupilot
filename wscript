@@ -75,6 +75,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--toolchain',
+        action='store',
+        default=None,
+        help='Override default toolchain used for the board. Use "native" for using the host toolchain.')
+
     g.add_option('--disable-gccdeps',
         action='store_true',
         default=False,
