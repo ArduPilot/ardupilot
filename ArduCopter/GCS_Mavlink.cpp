@@ -1033,7 +1033,12 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 pos_vector += copter.inertial_nav.get_position();
             } else {
                 // convert from alt-above-home to alt-above-ekf-origin
-                pos_vector.z = copter.pv_alt_above_origin(pos_vector.z);
+                if (!AP::ahrs().home_is_set()) {
+                    break;
+                }
+                const Location &origin = copter.inertial_nav.get_origin();
+                pos_vector.z += AP::ahrs().get_home().alt;
+                pos_vector.z -= origin.alt;
             }
         }
 
