@@ -135,7 +135,7 @@ bool Tracker::get_home_eeprom(struct Location &loc)
     return true;
 }
 
-void Tracker::set_home_eeprom(struct Location temp)
+bool Tracker::set_home_eeprom(const Location &temp)
 {
     wp_storage.write_byte(0, 0);
     wp_storage.write_uint32(1, temp.alt);
@@ -144,20 +144,26 @@ void Tracker::set_home_eeprom(struct Location temp)
 
     // Now have a home location in EEPROM
     g.command_total.set_and_save(1); // At most 1 entry for HOME
+    return true;
 }
 
-void Tracker::set_home(struct Location temp)
+bool Tracker::set_home(const Location &temp)
 {
-    set_home_eeprom(temp);
-    current_loc = temp;
-
     // check EKF origin has been set
     Location ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
         if (!ahrs.set_home(temp)) {
-            // ignore error silently
+            return false;
         }
     }
+
+    if (!set_home_eeprom(temp)) {
+        return false;
+    }
+
+    current_loc = temp;
+
+    return true;
 }
 
 void Tracker::arm_servos()
