@@ -94,7 +94,7 @@ public:
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
-    // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+    // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state
     float getPosDownDerivative(void) const;
@@ -311,9 +311,9 @@ public:
     /*
      * Write position and quaternion data from an external navigation system
      *
-     * sensOffset : position of the external navigatoin sensor in body frame (m)
+     * sensOffset : position of the external navigation sensor in body frame (m)
      * pos        : position in the RH navigation frame. Frame is assumed to be NED if frameIsNED is true. (m)
-     * quat       : quaternion desribing the the rotation from navigation frame to body frame
+     * quat       : quaternion desribing the rotation from navigation frame to body frame
      * posErr     : 1-sigma spherical position error (m)
      * angErr     : 1-sigma spherical angle error (rad)
      * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
@@ -500,10 +500,10 @@ private:
     // fuse range beacon measurements
     void FuseRngBcn();
 
-    // use range beaon measurements to calculate a static position
+    // use range beacon measurements to calculate a static position
     void FuseRngBcnStatic();
 
-    // calculate the offset from EKF vetical position datum to the range beacon system datum
+    // calculate the offset from EKF vertical position datum to the range beacon system datum
     void CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehiclePosNED, bool aligning);
 
     // fuse magnetometer measurements
@@ -512,7 +512,7 @@ private:
     // fuse true airspeed measurements
     void FuseAirspeed();
 
-    // fuse sythetic sideslip measurement of zero
+    // fuse synthetic sideslip measurement of zero
     void FuseSideslip();
 
     // zero specified range of rows in the state covariance matrix
@@ -603,7 +603,7 @@ private:
     // determine when to perform fusion of GPS position and  velocity measurements
     void SelectVelPosFusion();
 
-    // determine when to perform fusion of range measurements take realtive to a beacon at a known NED position
+    // determine when to perform fusion of range measurements take relative to a beacon at a known NED position
     void SelectRngBcnFusion();
 
     // determine when to perform fusion of magnetometer measurements
@@ -807,8 +807,8 @@ private:
     Vector3f varInnovMag;           // innovation variance output from fusion of X,Y,Z compass measurements
     ftype innovVtas;                // innovation output from fusion of airspeed measurements
     ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
-    bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
-    bool magFuseRequired;           // boolean set to true when magnetometer fusion will be perfomred in the next time step
+    bool magFusePerformed;          // boolean set to true when magnetometer fusion has been performed in that time step
+    bool magFuseRequired;           // boolean set to true when magnetometer fusion will be performed in the next time step
     uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
     uint32_t prevBetaStep_ms;       // time stamp of last synthetic sideslip fusion step
     uint32_t lastMagUpdate_us;      // last time compass was updated in usec
@@ -926,7 +926,7 @@ private:
     Vector3f bodyMagFieldVar;       // XYZ body mag field variances for last learned field (mGauss^2)
     bool delAngBiasLearned;         // true when the gyro bias has been learned
     nav_filter_status filterStatus; // contains the status of various filter outputs
-    float ekfOriginHgtVar;          // Variance of the the EKF WGS-84 origin height estimate (m^2)
+    float ekfOriginHgtVar;          // Variance of the EKF WGS-84 origin height estimate (m^2)
     double ekfGpsRefHgt;            // floating point representation of the WGS-84 reference height used to convert GPS height to local height (m)
     uint32_t lastOriginHgtTime_ms;  // last time the ekf's WGS-84 origin height was corrected
     Vector3f outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
@@ -963,7 +963,7 @@ private:
     of_elements ofDataNew;          // OF data at the current time horizon
     of_elements ofDataDelayed;      // OF data at the fusion time horizon
     uint8_t ofStoreIndex;           // OF data storage index
-    bool flowDataToFuse;            // true when optical flow data has is ready for fusion
+    bool flowDataToFuse;            // true when optical flow data is ready for fusion
     bool flowDataValid;             // true while optical flow data is still fresh
     bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
     float auxFlowObsInnov;          // optical flow rate innovation from 1-state terrain offset estimator

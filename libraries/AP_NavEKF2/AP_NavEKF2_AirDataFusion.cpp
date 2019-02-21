@@ -178,7 +178,7 @@ void NavEKF2_core::FuseAirspeed()
         }
     }
 
-    // force the covariance matrix to me symmetrical and limit the variances to prevent ill-condiioning.
+    // force the covariance matrix to me symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
 
@@ -425,7 +425,7 @@ void NavEKF2_core::FuseSideslip()
         }
     }
 
-    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
 

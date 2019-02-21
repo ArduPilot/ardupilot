@@ -72,23 +72,23 @@ public:
     int8_t getPrimaryCoreIMUIndex(void) const;
     
     // Write the last calculated NE position relative to the reference point (m) for the specified instance.
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
     bool getPosNE(int8_t instance, Vector2f &posNE) const;
 
     // Write the last calculated D position relative to the reference point (m) for the specified instance.
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
     bool getPosD(int8_t instance, float &posD) const;
 
     // return NED velocity in m/s for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getVelNED(int8_t instance, Vector3f &vel) const;
 
-    // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s for the specified instance
+    // An out of range instance (eg -1) returns data for the primary instance
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state
     float getPosDownDerivative(int8_t instance) const;
@@ -97,15 +97,15 @@ public:
     void getAccelNED(Vector3f &accelNED) const;
 
     // return body axis gyro bias estimates in rad/sec for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getGyroBias(int8_t instance, Vector3f &gyroBias) const;
 
     // return body axis gyro scale factor error as a percentage for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getGyroScaleErrorPercentage(int8_t instance, Vector3f &gyroScale) const;
 
     // return tilt error convergence metric for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getTiltError(int8_t instance, float &ang) const;
 
     // reset body axis gyro bias estimates
@@ -135,23 +135,23 @@ public:
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
     // return the Z-accel bias estimate in m/s^2 for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getAccelZBias(int8_t instance, float &zbias) const;
 
     // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getWind(int8_t instance, Vector3f &wind) const;
 
     // return earth magnetic field estimates in measurement units / 1000 for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getMagNED(int8_t instance, Vector3f &magNED) const;
 
     // return body magnetic field estimates in measurement units / 1000 for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getMagXYZ(int8_t instance, Vector3f &magXYZ) const;
 
     // return the magnetometer in use for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     uint8_t getActiveMag(int8_t instance) const;
 
     // Return estimated magnetometer offsets
@@ -165,7 +165,7 @@ public:
     bool getLLH(struct Location &loc) const;
 
     // Return the latitude and longitude and height used to set the NED origin for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
     bool getOriginLLH(int8_t instance, struct Location &loc) const;
@@ -181,7 +181,7 @@ public:
     bool getHAGL(float &HAGL) const;
 
     // return the Euler roll, pitch and yaw angle in radians for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getEulerAngles(int8_t instance, Vector3f &eulers) const;
 
     // return the transformation matrix from XYZ (body) to NED axes
@@ -191,14 +191,14 @@ public:
     void getQuaternion(int8_t instance, Quaternion &quat) const;
 
     // return the innovations for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void  getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
     // publish output observer angular, velocity and position tracking error
     void getOutputTrackingError(int8_t instance, Vector3f &error) const;
 
     // return the innovation consistency test ratios for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void  getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
     // should we use the compass? This is public so it can be used for
@@ -215,12 +215,12 @@ public:
     void  writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
 
     // return data for debugging optical flow fusion for the specified instance
-    // An out of range instance (eg -1) returns data for the the primary instance
+    // An out of range instance (eg -1) returns data for the primary instance
     void getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
     /*
         Returns the following data for debugging range beacon fusion from the specified instance
-        An out of range instance (eg -1) returns data for the the primary instance
+        An out of range instance (eg -1) returns data for the primary instance
         ID : beacon identifier
         rng : measured range to beacon (m)
         innov : range innovation (m)
@@ -246,7 +246,7 @@ public:
 
     /*
     return the filter fault status as a bitmasked integer for the specified instance
-    An out of range instance (eg -1) returns data for the the primary instance
+    An out of range instance (eg -1) returns data for the primary instance
      0 = quaternions are NaN
      1 = velocities are NaN
      2 = badly conditioned X magnetometer fusion
@@ -260,7 +260,7 @@ public:
 
     /*
     return filter timeout status as a bitmasked integer for the specified instance
-    An out of range instance (eg -1) returns data for the the primary instance
+    An out of range instance (eg -1) returns data for the primary instance
      0 = position measurement timeout
      1 = velocity measurement timeout
      2 = height measurement timeout
@@ -274,13 +274,13 @@ public:
 
     /*
     return filter gps quality check status for the specified instance
-    An out of range instance (eg -1) returns data for the the primary instance
+    An out of range instance (eg -1) returns data for the primary instance
     */
     void  getFilterGpsStatus(int8_t instance, nav_gps_status &faults) const;
 
     /*
     return filter status flags for the specified instance
-    An out of range instance (eg -1) returns data for the the primary instance
+    An out of range instance (eg -1) returns data for the primary instance
     */
     void  getFilterStatus(int8_t instance, nav_filter_status &status) const;
 
@@ -327,7 +327,7 @@ public:
      * Write position and quaternion data from an external navigation system
      *
      * pos        : position in the RH navigation frame. Frame is assumed to be NED if frameIsNED is true. (m)
-     * quat       : quaternion desribing the the rotation from navigation frame to body frame
+     * quat       : quaternion desribing the rotation from navigation frame to body frame
      * posErr     : 1-sigma spherical position error (m)
      * angErr     : 1-sigma spherical angle error (rad)
      * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
