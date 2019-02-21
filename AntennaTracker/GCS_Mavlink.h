@@ -28,8 +28,8 @@ protected:
         return 0; // what if we have been picked up and carried somewhere?
     }
 
-    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED { return false; }
-    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED { return false; }
+    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     uint64_t capabilities() const override;
 
     void send_nav_controller_output() const override;
