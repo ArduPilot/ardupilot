@@ -112,8 +112,8 @@ void NavEKF2_core::controlMagYawReset()
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u ext nav yaw alignment complete",(unsigned)imu_index);
             }
 
-            // record the reset as complete and also record the in-flight reset as complete to stop further resets when hight is gained
-            // in-flight reset is unnecessary because we do not need to consider groudn based magnetic anomaly effects
+            // record the reset as complete and also record the in-flight reset as complete to stop further resets when height is gained
+            // in-flight reset is unnecessary because we do not need to consider ground based magnetic anomaly effects
             yawAlignComplete = true;
             finalInflightYawInit = true;
 
@@ -202,7 +202,7 @@ void NavEKF2_core::realignYawGPS()
             // send yaw alignment information to console
             gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
 
-            // zero the attitude covariances becasue the corelations will now be invalid
+            // zero the attitude covariances because the correlations will now be invalid
             zeroAttCovOnly();
 
             // record the yaw reset event
@@ -213,7 +213,7 @@ void NavEKF2_core::realignYawGPS()
             magYawResetRequest = false;
 
             if (use_compass()) {
-                // request a mag field reset which may enable us to use the magnetoemter if the previous fault was due to bad initialisation
+                // request a mag field reset which may enable us to use the magnetometer if the previous fault was due to bad initialisation
                 magStateResetRequest = true;
                 // clear the all sensors failed status so that the magnetometers sensors get a second chance now that we are flying
                 allMagSensorsFailed = false;
@@ -589,7 +589,7 @@ void NavEKF2_core::FuseMagnetometer()
             }
         }
 
-        // set flags to indicate to other processes that fusion has been performede and is required on the next frame
+        // set flags to indicate to other processes that fusion has been performed and is required on the next frame
         // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
         magFusePerformed = true;
         magFuseRequired = true;
@@ -654,7 +654,7 @@ void NavEKF2_core::FuseMagnetometer()
             }
         }
 
-        // set flags to indicate to other processes that fusion has been performede and is required on the next frame
+        // set flags to indicate to other processes that fusion has been performed and is required on the next frame
         // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
         magFusePerformed = true;
         magFuseRequired = false;
@@ -712,7 +712,7 @@ void NavEKF2_core::FuseMagnetometer()
             }
         }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
         ForceSymmetry();
         ConstrainVariances();
 
@@ -755,7 +755,7 @@ void NavEKF2_core::FuseMagnetometer()
  * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computationally cheaper.
  * It is suitable for use when the external magnetic field environment is disturbed (eg close to metal structures, on ground).
  * It is not as robust to magnetometer failures.
- * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degrees latitude of the the magnetic poles)
+ * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degrees latitude of the magnetic poles)
 */
 void NavEKF2_core::fuseEulerYaw()
 {
@@ -960,7 +960,7 @@ void NavEKF2_core::fuseEulerYaw()
             }
         }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
         ForceSymmetry();
         ConstrainVariances();
 
@@ -1090,7 +1090,7 @@ void NavEKF2_core::FuseDeclination(float declErr)
             }
         }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
         ForceSymmetry();
         ConstrainVariances();
 
