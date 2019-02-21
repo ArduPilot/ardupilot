@@ -62,6 +62,16 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
     
+    // @Param: CRT_SINK
+    // @DisplayName: Critical sink speed rate in m/s to trigger emergency parachute
+    // @Description: Release parachute when critical sink rate is reached
+    // @Range: 0 15
+    // @Units: m/s
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("CRT_SINK", 6, AP_Parachute, _critical_sink, AP_PARACHUTE_CRITICAL_SINK_DEFAULT),
+    
+    
     AP_GROUPEND
 };
 
@@ -105,7 +115,10 @@ void AP_Parachute::update()
     if (_enabled <= 0) {
         return;
     }
-
+    // check if the plane is sinking too fast and release parachute
+    if((_critical_sink > 0) && (_sink_rate > _critical_sink) && !_release_initiated && _is_flying) {
+        release();
+    }
     // calc time since release
     uint32_t time_diff = AP_HAL::millis() - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
