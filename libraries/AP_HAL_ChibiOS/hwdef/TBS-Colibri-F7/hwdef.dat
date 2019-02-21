@@ -24,6 +24,12 @@ undef UART8_TX
 undef UART8_RX
 undef AP_FEATURE_SBUS_OUT
 
+# SD power is active low on TBS board
+undef PG7
+undef VDD_3V3_SD_CARD_EN
+PG7 nVDD_3V3_SD_CARD_EN OUTPUT HIGH
+
+
 # allow the first 3 capture ports to be used as PWM outputs or GPIOs
 undef PA5
 undef PB3
