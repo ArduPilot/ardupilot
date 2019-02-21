@@ -74,7 +74,7 @@ void NavEKF2_core::SelectFlowFusion()
 
 /*
 Estimation of terrain offset using a single state EKF
-The filter can fuse motion compensated optiocal flow rates and range finder measurements
+The filter can fuse motion compensated optical flow rates and range finder measurements
 */
 void NavEKF2_core::EstimateTerrainOffset()
 {
@@ -679,7 +679,7 @@ void NavEKF2_core::FuseOptFlow()
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
                 ForceSymmetry();
                 ConstrainVariances();
 
