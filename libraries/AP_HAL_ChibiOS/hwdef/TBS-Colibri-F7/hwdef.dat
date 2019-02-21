@@ -53,6 +53,10 @@ define HAL_BATT_VOLT_SCALE 18.182
 undef HAL_BATT_CURR_SCALE
 define HAL_BATT_CURR_SCALE 36.364
 
+# setup for IMU heater, with 45C target default
+define HAL_HAVE_IMU_HEATER 1
+define HAL_IMU_TEMP_DEFAULT 45
+
 # setup safety switch
 PE12 LED_SAFETY OUTPUT
 PE10 SAFETY_IN INPUT PULLDOWN
