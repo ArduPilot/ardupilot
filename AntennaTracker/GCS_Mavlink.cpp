@@ -369,6 +369,13 @@ MAV_RESULT GCS_MAVLINK_Tracker::handle_command_long_packet(const mavlink_command
     }
 }
 
+bool GCS_MAVLINK_Tracker::set_home_to_current_location(bool lock) {
+    return tracker.set_home(AP::gps().location());
+}
+bool GCS_MAVLINK_Tracker::set_home(const Location& loc, bool lock) {
+    return tracker.set_home(loc);
+}
+
 void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
