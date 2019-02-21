@@ -71,7 +71,9 @@ void Tracker::update_GPS(void)
                 // Now have an initial GPS position
                 // use it as the HOME position in future startups
                 current_loc = gps.location();
-                set_home(current_loc);
+                if (!set_home(current_loc)) {
+                    // silently ignored
+                }
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically
