@@ -7,6 +7,9 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
+# Betaflight motor order for copter
+define HAL_FRAME_TYPE_DEFAULT 12
+
 # board ID for firmware load
 APJ_BOARD_ID 122
 
@@ -110,10 +113,10 @@ PA14 JTCK-SWCLK SWD
 
 # PWM out pins. Note that channel order follows the ArduPilot motor
 # order conventions
-PB1 TIM3_CH4 TIM3 PWM(1) GPIO(50)
-PA3 TIM5_CH4 TIM5 PWM(2) GPIO(51)
-PA2 TIM5_CH3 TIM5 PWM(3) GPIO(52)
-PB0 TIM3_CH3 TIM3 PWM(4) GPIO(53)
+PB0 TIM3_CH3 TIM3 PWM(1) GPIO(53)
+PB1 TIM3_CH4 TIM3 PWM(2) GPIO(50)
+PA3 TIM5_CH4 TIM5 PWM(3) GPIO(51)
+PA2 TIM5_CH3 TIM5 PWM(4) GPIO(52)
 
 # PC8 TIM8_CH3 TIM2 GPIO(54) # LED strip
 
