@@ -78,13 +78,15 @@ private:
     void* try_alloc_from_ccm_ram(size_t size);
     uint32_t available_memory_in_ccm_ram(void);
 
-#if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
+#if HAL_HAVE_IMU_HEATER
     struct {
         int8_t *target;
         float integrator;
         uint16_t count;
         float sum;
         uint32_t last_update_ms;
+        uint8_t duty_counter;
+        float output;
     } heater;
 #endif
 
