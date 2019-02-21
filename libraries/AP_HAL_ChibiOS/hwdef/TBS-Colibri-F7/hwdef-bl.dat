@@ -26,6 +26,15 @@ FLASH_RESERVE_START_KB 0
 # the location where the bootloader will put the firmware
 define FLASH_BOOTLOADER_LOAD_KB 32
 
+# enabling PE3 on the Colibri causes it to reset on startup
+undef PE3
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
+
+# SD power is active low on TBS board
+undef PG7
+undef VDD_3V3_SD_CARD_EN
+PG7 nVDD_3V3_SD_CARD_EN OUTPUT HIGH
+
 PC6 LED_BOOTLOADER OUTPUT HIGH
 PC7 LED_ACTIVITY OUTPUT HIGH
 define HAL_LED_ON 0
