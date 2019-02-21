@@ -470,7 +470,10 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 
         // check if this is the HOME wp
         if (packet.seq == 0) {
-            tracker.set_home(tell_command); // New home in EEPROM
+            if (!tracker.set_home(tell_command)) {
+                result = MAV_MISSION_ERROR;
+                goto mission_failed;
+            }
             send_text(MAV_SEVERITY_INFO,"New HOME received");
             waypoint_receiving = false;
         }

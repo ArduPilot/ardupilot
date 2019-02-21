@@ -251,8 +251,8 @@ private:
     // system.cpp
     void init_tracker();
     bool get_home_eeprom(struct Location &loc);
-    void set_home_eeprom(struct Location temp);
-    void set_home(struct Location temp);
+    bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
+    bool set_home(const Location &temp) WARN_IF_UNUSED;
     void arm_servos();
     void disarm_servos();
     void prepare_servos();
