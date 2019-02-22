@@ -189,7 +189,7 @@ private:
     void run_rate_controller(void);
 
     void init_loiter(void);
-    void init_land(void);
+    void init_qland(void);
     void control_loiter(void);
     void check_land_complete(void);
     bool land_detector(uint32_t timeout_ms);
