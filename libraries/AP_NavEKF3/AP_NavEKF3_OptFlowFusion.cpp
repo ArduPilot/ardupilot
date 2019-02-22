@@ -77,7 +77,7 @@ void NavEKF3_core::SelectFlowFusion()
 
 /*
 Estimation of terrain offset using a single state EKF
-The filter can fuse motion compensated optiocal flow rates and range finder measurements
+The filter can fuse motion compensated optical flow rates and range finder measurements
 */
 void NavEKF3_core::EstimateTerrainOffset()
 {
@@ -315,7 +315,7 @@ void NavEKF3_core::FuseOptFlow()
         // calculate relative velocity in sensor frame including the relative motion due to rotation
         relVelSensor = (prevTnb * stateStruct.velocity) + (ofDataDelayed.bodyRadXYZ % posOffsetBody);
 
-        // divide velocity by range  to get predicted angular LOS rates relative to X and Y axes
+        // divide velocity by range to get predicted angular LOS rates relative to X and Y axes
         losPred[0] =  relVelSensor.y/range;
         losPred[1] = -relVelSensor.x/range;
 
@@ -332,7 +332,7 @@ void NavEKF3_core::FuseOptFlow()
             H_LOS[5] = t2*(q0*q0-q1*q1+q2*q2-q3*q3);
             H_LOS[6] = t2*(q0*q1*2.0f+q2*q3*2.0f);
 
-            // calculate intermediate variables for the X observaton innovatoin variance and Kalman gains
+            // calculate intermediate variables for the X observation innovation variance and Kalman gains
             float t3 = q1*vd*2.0f;
             float t4 = q0*ve*2.0f;
             float t11 = q3*vn*2.0f;
@@ -503,7 +503,7 @@ void NavEKF3_core::FuseOptFlow()
             H_LOS[5] = -t2*(q0*q3*2.0f+q1*q2*2.0f);
             H_LOS[6] = t2*(q0*q2*2.0f-q1*q3*2.0f);
 
-            // calculate intermediate variables for the Y observaton innovatoin variance and Kalman gains
+            // calculate intermediate variables for the Y observation innovation variance and Kalman gains
             float t3 = q3*ve*2.0f;
             float t4 = q0*vn*2.0f;
             float t11 = q2*vd*2.0f;
@@ -597,8 +597,7 @@ void NavEKF3_core::FuseOptFlow()
             float t77 = R_LOS+t37+t43+t56+t63+t70-t85-t94;
             float t78;
 
-            // calculate innovation variance for X axis observation and protect against a badly conditioned calculation
-            // calculate innovation variance for X axis observation and protect against a badly conditioned calculation
+            // calculate innovation variance for Y axis observation and protect against a badly conditioned calculation
             if (t77 > R_LOS) {
                 t78 = 1.0f/t77;
                 faultStatus.bad_yflow = false;
@@ -717,7 +716,7 @@ void NavEKF3_core::FuseOptFlow()
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
                 ForceSymmetry();
                 ConstrainVariances();
 
