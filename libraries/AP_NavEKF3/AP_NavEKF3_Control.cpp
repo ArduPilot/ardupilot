@@ -209,7 +209,7 @@ void NavEKF3_core::setAidingMode()
             // GPS aiding is the preferred option unless excluded by the user
             if(readyToUseGPS() || readyToUseRangeBeacon()) {
                 PV_AidingMode = AID_ABSOLUTE;
-            } else if (readyToUseOptFlow() || readyToUseBodyOdm()) {
+            } else if ((readyToUseOptFlow()  && (frontend->_flowUseMask & (1<<0))) || readyToUseBodyOdm()) {
                 PV_AidingMode = AID_RELATIVE;
             }
             break;
