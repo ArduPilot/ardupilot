@@ -278,8 +278,6 @@ class AutoTestCopter(AutoTest):
         self.set_rc(4, 1580)
         self.wait_heading(10)
         self.set_rc(4, 1500)
-        self.mav.recv_match(condition='RC_CHANNELS.chan4_raw==1500',
-                            blocking=True)
 
         # save bottom left corner of box as waypoint
         self.progress("Save WP 1 & 2")
