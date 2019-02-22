@@ -514,8 +514,7 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
         }
     }
     // for dshot we setup for DMAR based output
-    if (!group.dma) {
-        group.dma = STM32_DMA_STREAM(group.dma_up_stream_id);
+    if (!group.dma_handle) {
         group.dma_handle = new Shared_DMA(group.dma_up_stream_id, SHARED_DMA_NONE,
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_allocate, void, Shared_DMA *),
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_deallocate, void, Shared_DMA *));
@@ -824,7 +823,9 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
             group.dma = dmaStreamAllocI(group.dma_up_stream_id, 10, dma_irq_callback, &group);
             chSysUnlock();
 #if STM32_DMA_SUPPORTS_DMAMUX
-            dmaSetRequestSource(group.dma, group.dma_up_channel);
+            if (group.dma) {
+                dmaSetRequestSource(group.dma, group.dma_up_channel);
+            }
 #endif
         }
     }
@@ -837,7 +838,7 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (group.dma_handle == ctx) {
+        if (group.dma_handle == ctx && group.dma != nullptr) {
             chSysLock();
             dmaStreamFreeI(group.dma);
             group.dma = nullptr;
