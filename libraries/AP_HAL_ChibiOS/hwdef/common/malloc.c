@@ -70,7 +70,8 @@ static memory_heap_t dma_reserve_heap;
  */
 void malloc_init(void)
 {
-    for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
+    uint8_t i;
+    for (i=1; i<NUM_MEMORY_REGIONS; i++) {
         chHeapObjectInit(&heaps[i], memory_regions[i].address, memory_regions[i].size);
     }
 
@@ -92,6 +93,7 @@ static void *malloc_flags(size_t size, uint32_t flags)
     }
     const uint8_t alignment = (flags&MEM_REGION_FLAG_DMA_OK?DMA_ALIGNMENT:MIN_ALIGNMENT);
     void *p = NULL;
+    uint8_t i;
 
     if (flags & MEM_REGION_FLAG_DMA_OK) {
         // allocate multiple of DMA alignment
@@ -109,7 +111,7 @@ static void *malloc_flags(size_t size, uint32_t flags)
     }
 
     // try with matching flags
-    for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
+    for (i=1; i<NUM_MEMORY_REGIONS; i++) {
         if ((flags & MEM_REGION_FLAG_DMA_OK) &&
             !(memory_regions[i].flags & MEM_REGION_FLAG_DMA_OK)) {
             continue;
@@ -126,7 +128,7 @@ static void *malloc_flags(size_t size, uint32_t flags)
 
     // if this is a not a DMA request then we can fall back to any heap
     if (!(flags & MEM_REGION_FLAG_DMA_OK)) {
-        for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
+        for (i=1; i<NUM_MEMORY_REGIONS; i++) {
             p = chHeapAllocAligned(&heaps[i], size, alignment);
             if (p) {
                 goto found;
@@ -197,6 +199,7 @@ void free(void *ptr)
 size_t mem_available(void)
 {
     size_t totalp = 0;
+    uint8_t i;
 
     // get memory available on main heap
     chHeapStatus(NULL, &totalp, NULL);
@@ -205,7 +208,7 @@ size_t mem_available(void)
     totalp += chCoreGetStatusX();
 
     // now our own heaps
-    for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
+    for (i=1; i<NUM_MEMORY_REGIONS; i++) {
         size_t available = 0;
         chHeapStatus(&heaps[i], &available, NULL);
         totalp += available;
@@ -229,7 +232,8 @@ size_t mem_available(void)
  */
 void memory_flush_all(void)
 {
-    for (uint8_t i=0; i<NUM_MEMORY_REGIONS; i++) {
+    uint8_t i;
+    for (i=0; i<NUM_MEMORY_REGIONS; i++) {
         cacheBufferFlush(memory_regions[i].address, memory_regions[i].size);
     }
 }
