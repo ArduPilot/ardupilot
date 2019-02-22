@@ -398,7 +398,8 @@ static bool stm32h7_flash_write32(uint32_t addr, const void *buf)
     *CR |= FLASH_CR_PG;
 
     const uint32_t *v = (const uint32_t *)buf;
-    for (uint8_t i=0; i<8; i++) {
+    uint8_t i;
+    for (i=0; i<8; i++) {
         while (*SR & (FLASH_SR_BSY|FLASH_SR_QW)) ;
         putreg32(*v, addr);
         v++;
