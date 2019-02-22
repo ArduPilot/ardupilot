@@ -115,10 +115,19 @@ void AP_Parachute::update()
     if (_enabled <= 0) {
         return;
     }
-    // check if the plane is sinking too fast and release parachute
+    // check if the plane is sinking too fast for more than a second and release parachute
+    uint32_t time = AP_HAL::millis();
     if((_critical_sink > 0) && (_sink_rate > _critical_sink) && !_release_initiated && _is_flying) {
-        release();
+        if(_sink_time == 0) {
+            _sink_time = AP_HAL::millis();
+        }
+        if((time - _sink_time) >= 1000) {
+            release();
+        }
+    } else {
+        _sink_time = 0;
     }
+    
     // calc time since release
     uint32_t time_diff = AP_HAL::millis() - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
