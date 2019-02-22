@@ -67,8 +67,9 @@ bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	uint8_t pin_config = 0;
 	int pin = channel_mapping.find(orientation)->second;
 	bool new_default = false;
-	bool default_used = false;
-	bool new_used = false;
+	uint8_t default_sensor_type = 0;
+	uint8_t new_sensor_type = 0;
+	uint8_t temp_sensor_type = 0;
 
 	//check for IO expander/multiplexer
 	if(!mux_dev || !temp_dev || !def_dev || !is_mux(mux_dev)) {
@@ -101,27 +102,27 @@ bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	new_default = (new_addr == SENSOR_DEFAULT_ADDR);
 	
 	//check if 0x29 is already in use
-	default_used = identify_sensor(def_dev);
+	default_sensor_type = identify_sensor(def_dev);
 	
 	//check if there is already a sensor on new_addr
-	new_used = identify_sensor(new_dev);
+	new_sensor_type = identify_sensor(new_dev);
 	
 	//handling default sensor
 	if(pin < 0) {
-		if(default_used) {
+		if(default_sensor_type > 0) {
 			if(!new_default) {
-				if(new_used) { //both default and new sensor addresses are used, so changing the address will cause a collision
+				if(new_sensor_type > 0) { //both default and new sensor addresses are used, so changing the address will cause a collision
 					printf("9xVL53LXX: error: changing the address of the default sensor to 0x%x will cause a collision, aborting\n", new_addr);
 					return false;
 				}
 				//default used and new address is free, so changing address
-				if(!set_addr_check(def_dev, new_addr, WRITE_CHECK_ATTEMPTS)) {
+				if(!set_addr_check(def_dev, new_addr, WRITE_CHECK_ATTEMPTS, default_sensor_type)) {
 					printf("9xVL53LXX: error when trying to set default sensor address to 0x%x, aborting\n", new_addr);
 					return false;
 				}
 			}
 			return true;
-		}else if(new_used) { //if default address is free but the new_addr is used, probably means the sensor was already set
+		}else if(new_sensor_type > 0) { //if default address is free but the new_addr is used, probably means the sensor was already set
 			return true;
 		}
 		//neither default nor new address is used, the configuration must have changed without resetting (power cycling) the sensor array
@@ -131,19 +132,20 @@ bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	
 	//if there is a sensor at new_addr, report warning and try to resolve the conflict
 	//if it cannot be resolved, report error and abort
-	if(new_used && !new_default) {
-		if(default_used || identify_sensor(temp_dev)) {
+	if(new_sensor_type > 0 && !new_default) {
+		if(default_sensor_type > 0 || (temp_sensor_type = identify_sensor(temp_dev)) > 0) {
 			printf("9xVL53LXX: error when trying to set address to 0x%x, aborting\n", new_addr);
 			return false;
 		}
 		
 		printf("9xVL53LXX: warning: address conflict found on 0x%x, attempting to resolve\n", new_addr);
 		
-		if(!set_addr_check(new_dev, temp_addr, WRITE_CHECK_ATTEMPTS)) {
+		if(!set_addr_check(new_dev, temp_addr, WRITE_CHECK_ATTEMPTS, new_sensor_type)) {
 			printf("9xVL53LXX: error when trying to set address to 0x%x, aborting\n", new_addr);
 			return false;
 		}
-		default_used = true; //make sure the presumed default sensor is set to correct address at the end of the procedure
+		default_sensor_type = new_sensor_type; //make sure the presumed default sensor is set to correct address at the end of the procedure (i.e. moved from temp to where it should be)
+		temp_sensor_type = new_sensor_type;
 	}
 	
 	//if the new_addr is default, just enable the sensor and it's set
@@ -158,9 +160,11 @@ bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	}
 	
 	//if in use, move to temp_addr
-	if(default_used) {
-		if(!set_addr_check(def_dev, temp_addr, WRITE_CHECK_ATTEMPTS)) {
+	if(default_sensor_type > 0) {
+		if(!set_addr_check(def_dev, temp_addr, WRITE_CHECK_ATTEMPTS, default_sensor_type)) {
 			printf("9xVL53LXX: failed to move sensor from SENSOR_DEFAULT_ADDR to temp_addr\n");
+		} else {
+		    temp_sensor_type = default_sensor_type;
 		}
 	}
 	
@@ -177,14 +181,17 @@ bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 		hal.scheduler->delay(delay_ms);
 	}
 	
+	//identify sensor that was just enabled
+	default_sensor_type = identify_sensor(def_dev);
+
 	//if new addr is not default, move to new_addr
-	if(!set_addr_check(def_dev, new_addr, WRITE_CHECK_ATTEMPTS)) {
+	if(!set_addr_check(def_dev, new_addr, WRITE_CHECK_ATTEMPTS, default_sensor_type)) {
 		printf("9xVL53LXX: failed to move new sensor to new_addr\n");
 	}
 	
 	//if 0x29 was in use, move from temp_addr back to 0x29
-	if(default_used) {
-		if(!set_addr_check(temp_dev, SENSOR_DEFAULT_ADDR, WRITE_CHECK_ATTEMPTS)) {
+	if(default_sensor_type) {
+		if(!set_addr_check(temp_dev, SENSOR_DEFAULT_ADDR, WRITE_CHECK_ATTEMPTS, temp_sensor_type)) {
 			printf("9xVL53LXX: failed to move default sensor back to SENSOR_DEFAULT_ADDR\n");
 		}
 	}
@@ -201,15 +208,15 @@ bool AP_RangeFinder_9xVL53LXX::is_mux(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev) {
 int AP_RangeFinder_9xVL53LXX::identify_sensor(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev) {
     uint8_t v1, v2;
 
-    v1 = _read_register(_dev, 0x010F);
-    v2 = _read_register(_dev, 0x0110);
+    v1 = _read_register(_dev, 0x010F, 2);
+    v2 = _read_register(_dev, 0x0110, 2);
     if ((v1 == 0xEA) &&
         (v2 == 0xCC)) {
         return 2;
     }
 
-    v1 = _read_register(_dev, 0xC0);
-    v2 = _read_register(_dev, 0xC1);
+    v1 = _read_register(_dev, 0xC0, 1);
+    v2 = _read_register(_dev, 0xC1, 1);
     if (v1 == 0xEE &&
         v2 == 0xAA) {
         return 1;
