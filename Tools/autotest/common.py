@@ -425,17 +425,11 @@ class AutoTest(ABC):
 
     def save_wp(self):
         """Trigger RC 7 to save waypoint."""
-        self.mavproxy.send('rc 7 1000\n')
-        self.mav.recv_match(condition='RC_CHANNELS.chan7_raw==1000',
-                            blocking=True)
+        self.set_rc(7, 1000)
         self.wait_seconds(1)
-        self.mavproxy.send('rc 7 2000\n')
-        self.mav.recv_match(condition='RC_CHANNELS.chan7_raw==2000',
-                            blocking=True)
+        self.set_rc(7, 2000)
         self.wait_seconds(1)
-        self.mavproxy.send('rc 7 1000\n')
-        self.mav.recv_match(condition='RC_CHANNELS.chan7_raw==1000',
-                            blocking=True)
+        self.set_rc(7, 1000)
         self.wait_seconds(1)
 
     def clear_wp(self):
@@ -1154,38 +1148,28 @@ class AutoTest(ABC):
         if self.is_copter():
             self.mavproxy.send('rc 4 1580\n')
             self.wait_heading(heading)
-            self.mavproxy.send('rc 4 1500\n')
-            self.mav.recv_match(condition='RC_CHANNELS.chan4_raw==1500',
-                                blocking=True)
+            self.set_rc(4, 1500)
         if self.is_plane():
             self.progress("NOT IMPLEMENTED")
         if self.is_rover():
             self.mavproxy.send('rc 1 1700\n')
             self.mavproxy.send('rc 3 1550\n')
             self.wait_heading(heading)
-            self.mavproxy.send('rc 3 1500\n')
-            self.mav.recv_match(condition='RC_CHANNELS.chan3_raw==1500',
-                                blocking=True)
-            self.mavproxy.send('rc 1 1500\n')
-            self.mav.recv_match(condition='RC_CHANNELS.chan1_raw==1500',
-                                blocking=True)
+            self.set_rc(3, 1500)
+            self.set_rc(1, 1500)
 
     def reach_distance_manual(self, distance):
         """Manually direct the vehicle to the target distance from home."""
         if self.is_copter():
-            self.mavproxy.send('rc 2 1350\n')
+            self.set_rc(2, 1350)
             self.wait_distance(distance, accuracy=5, timeout=60)
-            self.mavproxy.send('rc 2 1500\n')
-            self.mav.recv_match(condition='RC_CHANNELS.chan2_raw==1500',
-                                blocking=True)
+            self.set_rc(2, 1500)
         if self.is_plane():
             self.progress("NOT IMPLEMENTED")
         if self.is_rover():
             self.mavproxy.send('rc 3 1700\n')
             self.wait_distance(distance, accuracy=2)
-            self.mavproxy.send('rc 3 1500\n')
-            self.mav.recv_match(condition='RC_CHANNELS.chan3_raw==1500',
-                                blocking=True)
+            self.set_rc(3, 1500)
 
     def guided_achieve_heading(self, heading):
         tstart = self.get_sim_time()

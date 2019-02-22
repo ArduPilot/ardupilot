@@ -120,12 +120,12 @@ class AutoTestPlane(AutoTest):
 
         # get it moving a bit first
         self.set_rc(3, 1300)
-        self.mav.recv_match(condition='VFR_HUD.groundspeed>6', blocking=True)
+        self.wait_groundspeed(6, 100)
 
         # a bit faster again, straighten rudder
         self.set_rc(3, 1600)
         self.set_rc(4, 1500)
-        self.mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
+        self.wait_groundspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
         self.set_rc(2, 1100)
