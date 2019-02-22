@@ -218,7 +218,7 @@ void NavEKF3_core::getVelNED(Vector3f &vel) const
     vel = outputDataNew.velocity + velOffsetNED;
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) of the body frame origin in m/s
+// Return the rate of change of vertical position in the down direction (dPosD/dt) of the body frame origin in m/s
 float NavEKF3_core::getPosDownDerivative(void) const
 {
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
@@ -328,7 +328,7 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
             location_offset(loc, outputDataNew.position.x, outputDataNew.position.y);
             return true;
         } else {
-            // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
+            // we could be in constant position mode because the vehicle has taken off without GPS, or has lost GPS
             // in this mode we cannot use the EKF states to estimate position so will return the best available data
             if ((gps.status() >= AP_GPS::GPS_OK_FIX_2D)) {
                 // we have a GPS position fix to return
