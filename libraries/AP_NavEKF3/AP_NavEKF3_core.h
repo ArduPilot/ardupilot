@@ -1016,9 +1016,7 @@ private:
     uint8_t ofStoreIndex;           // OF data storage index
     bool flowDataToFuse;            // true when optical flow data has is ready for fusion
     bool flowDataValid;             // true while optical flow data is still fresh
-    bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
-    float auxFlowObsInnov;          // optical flow rate innovation from 1-state terrain offset estimator
-    float auxFlowObsInnovVar;       // innovation variance for optical flow observations from 1-state terrain offset estimator
+    Vector2f auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
@@ -1036,7 +1034,7 @@ private:
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
-    float auxFlowTestRatio;         // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
+    Vector2f auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
     float R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
     float auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2f flowGyroBias;          // bias error of optical flow sensor gyro output
