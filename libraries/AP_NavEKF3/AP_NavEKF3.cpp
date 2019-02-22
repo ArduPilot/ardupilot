@@ -581,10 +581,11 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: FLOW_MASK
     // @DisplayName: Optical flow use bitmask
-    // @Description: Bitmask controlling if the optical flow data is fused into the 24-state navigation estimator and/or the 1-state terrain height estimator.
+    // @Description: Bitmask controlling if the optical flow data is fused into the 24-state navigation estimator OR the 1-state terrain height estimator.
     // @User: Advanced
-    // @Values: 0:None,1:Navgation,2:Terrain,3:Both
+    // @Values: 0:None,1:Navigation,2:Terrain
     // @Bitmask: 0:Navigation,1:Terrain
+    // @Range: 0 2
     // @RebootRequired: True
     AP_GROUPINFO("FLOW_MASK", 54, NavEKF3, _flowUseMask, FLOW_USE_MASK_DEFAULT),
 
