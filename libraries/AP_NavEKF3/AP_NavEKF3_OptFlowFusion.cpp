@@ -57,16 +57,20 @@ void NavEKF3_core::SelectFlowFusion()
         // fuse optical flow data into the terrain estimator if available and if there is no range data (range data is better)
         fuseOptFlowData = (flowDataToFuse && !rangeDataToFuse);
         // Estimate the terrain offset (runs a one state EKF)
-        EstimateTerrainOffset();
+        if (frontend->_flowUseMask & (1<<1)) {
+            EstimateTerrainOffset();
+        }
     }
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK)
     {
+        if (frontend->_flowUseMask & (1<<0)) {
         // Set the flow noise used by the fusion processes
         R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
         // Fuse the optical flow X and Y axis data into the main filter sequentially
-        FuseOptFlow();
+            FuseOptFlow();
+        }
         // reset flag to indicate that no new flow data is available for fusion
         flowDataToFuse = false;
     }

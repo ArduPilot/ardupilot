@@ -34,6 +34,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_MASK_DEFAULT   1
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -58,6 +59,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_MASK_DEFAULT   1
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -82,6 +84,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_MASK_DEFAULT   2
 
 #else
 // build type not specified, use copter defaults
@@ -106,6 +109,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_MASK_DEFAULT   1
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -574,6 +578,15 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @User: Advanced
     // @Units: m/s
     AP_GROUPINFO("WENC_VERR", 53, NavEKF3, _wencOdmVelErr, 0.1f),
+
+    // @Param: FLOW_MASK
+    // @DisplayName: Optical flow use bitmask
+    // @Description: Bitmask controlling if the optical flow data is fused into the 24-state navigation estimator and/or the 1-state terrain height estimator.
+    // @User: Advanced
+    // @Values: 0:None,1:Navgation,2:Terrain,3:Both
+    // @Bitmask: 0:Navigation,1:Terrain
+    // @RebootRequired: True
+    AP_GROUPINFO("FLOW_MASK", 54, NavEKF3, _flowUseMask, FLOW_USE_MASK_DEFAULT),
 
     AP_GROUPEND
 };
