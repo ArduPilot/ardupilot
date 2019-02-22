@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -608,7 +606,7 @@ void NavEKF2_core::correctDeltaVelocity(Vector3f &delVel, float delVelDT)
  * Update the quaternion, velocity and position states using delayed IMU measurements
  * because the EKF is running on a delayed time horizon. Note that the quaternion is
  * not used by the EKF equations, which instead estimate the error in the attitude of
- * the vehicle when each observtion is fused. This attitude error is then used to correct
+ * the vehicle when each observation is fused. This attitude error is then used to correct
  * the quaternion.
 */
 void NavEKF2_core::UpdateStrapdownEquationsNED()
@@ -1523,7 +1521,7 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         lastYawReset_ms = imuSampleTime_ms;
         // calculate an initial quaternion using the new yaw value
         initQuat.from_euler(roll, pitch, yaw);
-        // zero the attitude covariances becasue the corelations will now be invalid
+        // zero the attitude covariances because the corelations will now be invalid
         zeroAttCovOnly();
 
         // calculate initial Tbn matrix and rotate Mag measurements into NED
@@ -1577,4 +1575,3 @@ void NavEKF2_core::zeroAttCovOnly()
     }
 }
 
-#endif // HAL_CPU_CLASS

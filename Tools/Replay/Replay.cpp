@@ -639,7 +639,9 @@ void Replay::read_sensors(const char *type)
                      loc.lng * 1.0e-7f,
                      loc.alt * 0.01f,
                      AP_HAL::millis()*0.001f);
-            _vehicle.ahrs.set_home(loc);
+            if (!_vehicle.ahrs.set_home(loc)) {
+                ::printf("Failed to set home to that location!");
+            }
             _vehicle.compass.set_initial_location(loc.lat, loc.lng);
             done_home_init = true;
         }

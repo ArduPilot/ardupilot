@@ -30,6 +30,7 @@ def run_examples(debug=False, valgrind=False, gdb=False):
 
     skip = {
         "BARO_generic": "Most linux computers don't have baros...",
+        "RCProtocolDecoder": "This assumes specific hardware is connected",
     }
     for afile in os.listdir(dirpath):
         if afile in skip:

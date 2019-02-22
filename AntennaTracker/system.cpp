@@ -17,8 +17,6 @@ void Tracker::init_tracker()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
-    init_capabilities();
-
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
 
@@ -156,7 +154,9 @@ void Tracker::set_home(struct Location temp)
     // check EKF origin has been set
     Location ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
-        ahrs.set_home(temp);
+        if (!ahrs.set_home(temp)) {
+            // ignore error silently
+        }
     }
 }
 

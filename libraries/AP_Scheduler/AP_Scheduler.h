@@ -62,8 +62,8 @@ public:
     AP_Scheduler(const AP_Scheduler &other) = delete;
     AP_Scheduler &operator=(const AP_Scheduler&) = delete;
 
-    static AP_Scheduler *get_instance();
-    static AP_Scheduler *_s_instance;
+    static AP_Scheduler *get_singleton();
+    static AP_Scheduler *_singleton;
 
     FUNCTOR_TYPEDEF(task_fn_t, void);
 

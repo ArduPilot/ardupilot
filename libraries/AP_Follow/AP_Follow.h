@@ -18,7 +18,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AC_PID/AC_P.h>
 #include <AP_RTC/JitterCorrection.h>

@@ -2,8 +2,9 @@
 /// @brief   Handles rally point storage and retrieval.
 #include "AP_Rally.h"
 
-#include <AP_HAL/AP_HAL.h>
-extern const AP_HAL::HAL& hal;
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
+#include <StorageManager/StorageManager.h>
 
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
@@ -48,9 +49,7 @@ const AP_Param::GroupInfo AP_Rally::var_info[] = {
 };
 
 // constructor
-AP_Rally::AP_Rally(AP_AHRS &ahrs) 
-    : _ahrs(ahrs)
-    , _last_change_time_ms(0xFFFFFFFF)
+AP_Rally::AP_Rally()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
@@ -92,6 +91,8 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
 
     _last_change_time_ms = AP_HAL::millis();
 
+    AP::logger().Write_RallyPoint(_rally_point_total_count, i, rallyLoc);
+
     return true;
 }
 
@@ -106,7 +107,7 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) co
     //Currently can't do true AGL on the APM.  Relative altitudes are
     //relative to HOME point's altitude.  Terrain on the board is inbound
     //for the PX4, though.  This line will need to be updated when that happens:
-    ret.alt = (rally_loc.alt*100UL) + _ahrs.get_home().alt;
+    ret.alt = (rally_loc.alt*100UL) + AP::ahrs().get_home().alt;
 
     ret.lat = rally_loc.lat;
     ret.lng = rally_loc.lng;
@@ -147,7 +148,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
 {
     RallyLocation ral_loc = {};
     Location return_loc = {};
-    const struct Location &home_loc = _ahrs.get_home();
+    const struct Location &home_loc = AP::ahrs().get_home();
     
     // no valid rally point, return home position
     return_loc = home_loc;

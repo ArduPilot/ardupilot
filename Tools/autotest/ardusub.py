@@ -14,7 +14,8 @@ from common import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-HOME = mavutil.location(33.810313, -118.393867, 0, 185)
+
+SITL_START_LOCATION = mavutil.location(33.810313, -118.393867, 0, 185)
 
 
 class AutoTestSub(AutoTest):
@@ -37,22 +38,20 @@ class AutoTestSub(AutoTest):
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
 
-        self.home = "%f,%f,%u,%u" % (HOME.lat,
-                                     HOME.lng,
-                                     HOME.alt,
-                                     HOME.heading)
-        self.homeloc = None
         self.speedup = speedup
 
         self.sitl = None
-        self.hasInit = False
 
         self.log_name = "ArduSub"
 
     def default_mode(self):
         return 'MANUAL'
 
+    def sitl_start_location(self):
+        return SITL_START_LOCATION
+
     def init(self):
+        super(AutoTestSub, self).init(os.path.realpath(__file__))
         if self.frame is None:
             self.frame = 'vectored'
 
@@ -60,7 +59,7 @@ class AutoTestSub(AutoTest):
 
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
-                                    home=self.home,
+                                    home=self.sitl_home(),
                                     speedup=self.speedup,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
@@ -86,14 +85,15 @@ class AutoTestSub(AutoTest):
 
         self.get_mavlink_connection_going()
 
-        self.hasInit = True
-
         self.apply_defaultfile_parameters()
 
         # FIXME:
         self.set_parameter("FS_GCS_ENABLE", 0)
 
         self.progress("Ready to start testing!")
+
+    def is_sub(self):
+        return True
 
     def dive_manual(self):
         self.wait_ready_to_arm()
@@ -164,6 +164,50 @@ class AutoTestSub(AutoTest):
         if ex is not None:
             raise ex
 
+    def dive_set_position_target(self):
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                       blocking=True)
+
+        lat = 5
+        lon = 5
+        alt = 10
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > 200:
+                raise NotAchievedException("Did not move far enough")
+            # send a position-control command
+            self.mav.mav.set_position_target_global_int_send(
+                0, # timestamp
+                1, # target system_id
+                1, # target component id
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                0b1111111111111000, # mask specifying use-only-lat-lon-alt
+                lat, # lat
+                lon, # lon
+                alt, # alt
+                0, # vx
+                0, # vy
+                0, # vz
+                0, # afx
+                0, # afy
+                0, # afz
+                0, # yaw
+                0, # yawrate
+            )
+            pos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                      blocking=True)
+            delta = self.get_distance_int(startpos, pos)
+            self.progress("delta=%f (want >10)" % delta)
+            if delta > 10:
+                break
+        self.change_mode('MANUAL')
+        self.disarm_vehicle()
+
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
         self.mavproxy.send("reboot\n")
@@ -190,9 +234,13 @@ class AutoTestSub(AutoTest):
              "Test gripper mission items",
              self.test_gripper_mission),
 
+            ("SET_POSITION_TARGET_GLOBAL_INT",
+             "Move vehicle using SET_POSITION_TARGET_GLOBAL_INT",
+             self.dive_set_position_target),
+
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(
-                 self.buildlogs_path("APMrover2-log.bin"),
+                 self.buildlogs_path("ArduSub-log.bin"),
                  upload_logs=len(self.fail_list) > 0)),
         ])
 

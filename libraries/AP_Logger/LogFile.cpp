@@ -242,7 +242,6 @@ void AP_Logger::Write_RCOUT(void)
         chan14        : hal.rcout->read(13)
     };
     WriteBlock(&pkt, sizeof(pkt));
-    Write_ESC();
 }
 
 // Write an RSSI packet
@@ -429,7 +428,7 @@ bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
     return WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger_Backend::Write_EntireMission(const AP_Mission &mission)
+void AP_Logger_Backend::Write_EntireMission()
 {
     LoggerMessageWriter_WriteEntireMission writer;
     writer.set_dataflash_backend(this);
@@ -1377,8 +1376,8 @@ void AP_Logger::Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets)
         roll            : (int16_t)ahrs.roll_sensor,
         control_pitch   : (int16_t)targets.y,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        control_yaw     : (uint16_t)targets.z,
-        yaw             : (uint16_t)ahrs.yaw_sensor,
+        control_yaw     : (uint16_t)wrap_360_cd(targets.z),
+        yaw             : (uint16_t)wrap_360_cd(ahrs.yaw_sensor),
         error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
         error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100)
     };
@@ -1507,8 +1506,28 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, uint8_t reason)
 }
 
 // Write ESC status messages
-void AP_Logger::Write_ESC(void)
+//   id starts from 0
+//   rpm is eRPM (rpm * 100)
+//   voltage is in centi-volts
+//   current is in centi-amps
+//   temperature is in centi-degrees Celsius
+//   current_tot is in centi-amp hours
+void AP_Logger::Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t temperature, uint16_t current_tot)
 {
+    // sanity check id
+    if (id >= 8) {
+        return;
+    }
+    struct log_Esc pkt = {
+        LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+id)),
+        time_us     : time_us,
+        rpm         : rpm,
+        voltage     : voltage,
+        current     : current,
+        temperature : temperature,
+        current_tot : current_tot
+    };
+    WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write a AIRSPEED packet
@@ -1533,6 +1552,7 @@ void AP_Logger::Write_Airspeed(AP_Airspeed &airspeed)
             offset        : airspeed.get_offset(i),
             use           : airspeed.use(i),
             healthy       : airspeed.healthy(i),
+            health_prob   : airspeed.get_health_failure_probability(i),
             primary       : airspeed.get_primary()
         };
         WriteBlock(&pkt, sizeof(pkt));
@@ -1605,26 +1625,6 @@ void AP_Logger::Write_Rate(const AP_AHRS_View *ahrs,
         accel_out       : motors.get_throttle()
     };
     WriteBlock(&pkt_rate, sizeof(pkt_rate));
-}
-
-// Write rally points
-void AP_Logger::Write_Rally(const AP_Rally &rally)
-{
-    RallyLocation rally_point;
-    for (uint8_t i=0; i<rally.get_rally_total(); i++) {
-        if (rally.get_rally_point_with_index(i, rally_point)) {
-            struct log_Rally pkt_rally = {
-                LOG_PACKET_HEADER_INIT(LOG_RALLY_MSG),
-                time_us         : AP_HAL::micros64(),
-                total           : rally.get_rally_total(),
-                sequence        : i,
-                latitude        : rally_point.lat,
-                longitude       : rally_point.lng,
-                altitude        : rally_point.alt
-            };
-            WriteBlock(&pkt_rally, sizeof(pkt_rally));
-        }
-    }
 }
 
 // Write visual odometry sensor data

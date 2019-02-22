@@ -27,8 +27,6 @@ void Plane::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
-    init_capabilities();
-
     //
     // Check the EEPROM format version before loading any parameters from EEPROM
     //
@@ -101,10 +99,10 @@ void Plane::init_ardupilot()
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
-    frsky_telemetry.init(serial_manager, MAV_TYPE_FIXED_WING);
+    frsky_telemetry.init(MAV_TYPE_FIXED_WING);
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.init(serial_manager);
+    devo_telemetry.init();
 #endif
 
 #if OSD_ENABLED == ENABLED
@@ -498,6 +496,9 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     // reset steering integrator on mode change
     steerController.reset_I();    
+
+    // update RC failsafe, as mode change may have necessitated changing the failsafe throttle
+    control_failsafe();
 }
 
 // exit_mode - perform any cleanup required when leaving a flight mode

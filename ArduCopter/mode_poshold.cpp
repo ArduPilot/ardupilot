@@ -605,7 +605,7 @@ void Copter::ModePosHold::poshold_update_wind_comp_estimate()
     }
 
     // check horizontal velocity is low
-    if (inertial_nav.get_velocity_xy() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX) {
+    if (inertial_nav.get_speed_xy() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX) {
         return;
     }
 

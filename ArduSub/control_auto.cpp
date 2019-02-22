@@ -653,7 +653,7 @@ bool Sub::auto_terrain_recover_start()
     pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
 
     // initialize vertical speeds and leash lengths
-    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
     pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // Reset vertical position and velocity targets
@@ -682,12 +682,12 @@ void Sub::auto_terrain_recover_run()
     switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
 
     case RangeFinder::RangeFinder_OutOfRangeLow:
-        target_climb_rate = wp_nav.get_speed_up();
+        target_climb_rate = wp_nav.get_default_speed_up();
         rangefinder_recovery_ms = 0;
         break;
 
     case RangeFinder::RangeFinder_OutOfRangeHigh:
-        target_climb_rate = wp_nav.get_speed_down();
+        target_climb_rate = wp_nav.get_default_speed_down();
         rangefinder_recovery_ms = 0;
         break;
 

@@ -19,7 +19,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_WITH_UAVCAN
+#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
 #include "CAN.h"
 #include <AP_UAVCAN/AP_UAVCAN_SLCAN.h>
 
@@ -67,7 +67,7 @@ public:
     void slcan2can_router_trampoline(void);
     void can2slcan_router_trampoline(void);
     void run(void);
-    static SLCANRouter* instance()
+    static SLCANRouter* get_singleton()
     {
         if (_singleton == nullptr) {
             _singleton = new SLCANRouter;

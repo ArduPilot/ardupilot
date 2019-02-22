@@ -35,7 +35,7 @@ class Board:
         self.with_uavcan = False
 
     def configure(self, cfg):
-        cfg.env.TOOLCHAIN = self.toolchain
+        cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
         cfg.env.ROMFS_FILES = []
         cfg.load('toolchain')
         cfg.load('cxx_checks')
@@ -175,8 +175,9 @@ class Board:
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
 
+                '-Werror=inconsistent-missing-override',
+
                 '-Wno-gnu-designator',
-                '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
             ]

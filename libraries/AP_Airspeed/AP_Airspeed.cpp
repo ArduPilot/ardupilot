@@ -40,6 +40,9 @@ extern const AP_HAL::HAL &hal;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
  #define ARSPD_DEFAULT_TYPE TYPE_ANALOG
  #define ARSPD_DEFAULT_PIN 1
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+ #define ARSPD_DEFAULT_TYPE TYPE_NONE
+ #define ARSPD_DEFAULT_PIN 15
 #else
  #define ARSPD_DEFAULT_TYPE TYPE_I2C_MS4525
  #define ARSPD_DEFAULT_PIN 15
@@ -129,6 +132,13 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_PRIMARY", 10, AP_Airspeed, primary_sensor, 0),
 
+    // @Param: _OPTIONS
+    // @DisplayName: Airspeed options bitmask
+    // @Description: Bitmask of options to use with airspeed.
+    // @Bitmask: 0:Disable on sensor failure,1:Re-enable on sensor recovery
+    // @User: Advanced
+    AP_GROUPINFO("_OPTIONS", 21, AP_Airspeed, _options, 0),
+
     // @Param: 2_TYPE
     // @DisplayName: Second Airspeed type
     // @Description: Type of 2nd airspeed sensor
@@ -194,7 +204,9 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxillary)
     // @User: Advanced
     AP_GROUPINFO("2_BUS",  20, AP_Airspeed, param[1].bus, 1),
-    
+
+    // Note that 21 is used above by the _OPTIONS parameter.  Do not use 21.
+
     AP_GROUPEND
 };
 
@@ -228,6 +240,9 @@ void AP_Airspeed::init()
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         state[i].calibration.init(param[i].ratio);
         state[i].last_saved_ratio = param[i].ratio;
+
+        // Set the enable automatically to false and set the probability that the airspeed is healhy to start with
+        state[i].failures.health_probability = 1.0f;
 
         switch ((enum airspeed_type)param[i].type.get()) {
         case TYPE_NONE:
@@ -427,22 +442,24 @@ void AP_Airspeed::update(bool log)
     }
 #endif
 
-    if (log) {
-        AP_Logger *_dataflash = AP_Logger::instance();
-        if (_dataflash != nullptr) {
-            _dataflash->Write_Airspeed(*this);
-        }
-    }
-
     // setup primary
     if (healthy(primary_sensor.get())) {
         primary = primary_sensor.get();
-        return;
+    } else {
+        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+            if (healthy(i)) {
+                primary = i;
+                break;
+            }
+        }
     }
-    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        if (healthy(i)) {
-            primary = i;
-            break;
+
+    check_sensor_failures();
+
+    if (log) {
+        AP_Logger *_dataflash = AP_Logger::get_singleton();
+        if (_dataflash != nullptr) {
+            _dataflash->Write_Airspeed(*this);
         }
     }
 }

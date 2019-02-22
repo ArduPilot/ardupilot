@@ -65,6 +65,8 @@ public:
             _saved_wp = 0;
         }
 
+    bool enabled() { return _enable; }
+
     // check that everything is OK
     void check(uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms);
 

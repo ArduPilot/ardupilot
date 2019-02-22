@@ -22,7 +22,7 @@
 /*****************************************
 * Throttle slew limit
 *****************************************/
-void Plane::throttle_slew_limit(void)
+void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
     if (control_mode==AUTO) {
@@ -34,9 +34,7 @@ void Plane::throttle_slew_limit(void)
     }
     // if slew limit rate is set to zero then do not slew limit
     if (slewrate) {                   
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, slewrate, G_Dt);
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleLeft, slewrate, G_Dt);
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleRight, slewrate, G_Dt);
+        SRV_Channels::limit_slew_rate(func, slewrate, G_Dt);
     }
 }
 
@@ -388,16 +386,21 @@ void Plane::set_servos_controlled(void)
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         }
-    } else if (g.throttle_passthru_stabilize && 
-               (control_mode == STABILIZE || 
-                control_mode == TRAINING ||
-                control_mode == ACRO ||
-                control_mode == FLY_BY_WIRE_A ||
-                control_mode == AUTOTUNE) &&
-               !failsafe.throttle_counter) {
-        // manual pass through of throttle while in FBWA or
-        // STABILIZE mode with THR_PASS_STAB set
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
+    } else if (control_mode == STABILIZE ||
+               control_mode == TRAINING ||
+               control_mode == ACRO ||
+               control_mode == FLY_BY_WIRE_A ||
+               control_mode == AUTOTUNE) {
+        // a manual throttle mode
+        if (failsafe.throttle_counter) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        } else if (g.throttle_passthru_stabilize) {
+            // manual pass through of throttle while in FBWA or
+            // STABILIZE mode with THR_PASS_STAB set
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
+        } else {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
+        }
     } else if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
                guided_throttle_passthru) {
         // manual pass through of throttle while in GUIDED
@@ -590,6 +593,8 @@ void Plane::servos_twin_engine_mix(void)
     } else {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
+        throttle_slew_limit(SRV_Channel::k_throttleLeft);
+        throttle_slew_limit(SRV_Channel::k_throttleRight);
     }
 }
 
@@ -675,7 +680,7 @@ void Plane::set_servos(void)
         quadplane.in_vtol_mode()) {
         /* only do throttle slew limiting in modes where throttle
          *  control is automatic */
-        throttle_slew_limit();
+        throttle_slew_limit(SRV_Channel::k_throttle);
     }
 
     if (!arming.is_armed()) {
@@ -779,6 +784,11 @@ void Plane::servos_output(void)
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();
     }
+}
+
+void Plane::update_throttle_hover() {
+    // update hover throttle at 100Hz
+    quadplane.update_throttle_hover();
 }
 
 /*

@@ -600,7 +600,7 @@ void AP_KDECAN::update()
         debug_can(2, "KDECAN: failed to get PWM semaphore on write\n\r");
     }
 
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
 
     if (df == nullptr || !df->should_log(0xFFFFFFFF)) {
         return;
@@ -627,16 +627,11 @@ void AP_KDECAN::update()
     // log ESC telemetry data
     for (uint8_t i = 0; i < _esc_max_node_id; i++) {
         if (telem_buffer[i].new_data) {
-            struct log_Esc pkt = {
-                LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+i)),
-                time_us     : telem_buffer[i].time,
-                rpm         : int32_t(telem_buffer[i].rpm * 60UL * 2 / num_poles * 100),
-                voltage     : telem_buffer[i].voltage,
-                current     : telem_buffer[i].current,
-                temperature : int16_t(telem_buffer[i].temp * 100U),
-                current_tot : 0
-            };
-            df->WriteBlock(&pkt, sizeof(pkt));
+            df->Write_ESC(i, telem_buffer[i].time,
+                          int32_t(telem_buffer[i].rpm * 60UL * 2 / num_poles * 100),
+                          telem_buffer[i].voltage,
+                          telem_buffer[i].current,
+                          int16_t(telem_buffer[i].temp * 100U), 0);
         }
     }
 }
@@ -658,7 +653,7 @@ bool AP_KDECAN::pre_arm_check(const char* &reason)
     _enum_sem.give();
 
     uint16_t motors_mask = 0;
-    AP_Motors *motors = AP_Motors::get_instance();
+    AP_Motors *motors = AP_Motors::get_singleton();
 
     if (motors) {
         motors_mask = motors->get_motor_mask();

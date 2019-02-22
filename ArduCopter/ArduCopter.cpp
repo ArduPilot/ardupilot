@@ -106,7 +106,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Beacon,            &copter.g2.beacon,           update,         400,  50),
 #endif
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
-    SCHED_TASK(update_visual_odom,   400,     50),
+    SCHED_TASK_CLASS(AP_VisualOdom,       &copter.g2.visual_odom,        update,         400,  50),
 #endif
     SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
@@ -449,7 +449,7 @@ void Copter::one_hz_loop()
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    update_sensor_status_flags();
+    gcs().update_sensor_status_flags();
 
     // init compass location for declination
     init_compass_location();

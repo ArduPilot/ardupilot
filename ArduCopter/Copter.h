@@ -386,10 +386,6 @@ private:
     MOTOR_CLASS *motors;
     const struct AP_Param::GroupInfo *motors_var_info;
 
-    // GPS variables
-    // Sometimes we need to remove the scaling for distance calcs
-    float scaleLongDown;
-
     int32_t _home_bearing;
     uint32_t _home_distance;
 
@@ -412,20 +408,15 @@ private:
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
+    AP_Frsky_Telem frsky_telemetry;
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
-    AP_DEVO_Telem devo_telemetry{ahrs};
+    AP_DEVO_Telem devo_telemetry;
 #endif
 
 #if OSD_ENABLED == ENABLED
     AP_OSD osd;
 #endif
-    
-    // Variables for extended status MAVLink messages
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
@@ -492,7 +483,7 @@ private:
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence fence{ahrs};
+    AC_Fence fence;
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
@@ -505,7 +496,7 @@ private:
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally_Copter rally{ahrs};
+    AP_Rally_Copter rally;
 #endif
 
     // RSSI
@@ -552,11 +543,6 @@ private:
 
     // last esc calibration notification update
     uint32_t esc_calibration_notify_update_ms;
-
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    // last visual odometry update time
-    uint32_t visual_odom_last_update_ms;
-#endif
 
     // Top-level logic
     // setup the var_info table
@@ -667,14 +653,11 @@ private:
     // baro_ground_effect.cpp
     void update_ground_effect_detector(void);
 
-    // capabilities.cpp
-    void init_capabilities(void);
-
     // commands.cpp
     void update_home_from_EKF();
     void set_home_to_current_location_inflight();
-    bool set_home_to_current_location(bool lock);
-    bool set_home(const Location& loc, bool lock);
+    bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
     bool far_from_EKF_origin(const Location& loc);
 
     // compassmot.cpp
@@ -724,13 +707,9 @@ private:
 
     // fence.cpp
     void fence_check();
-    void fence_send_mavlink_status(mavlink_channel_t chan);
 
     // GCS_Mavlink.cpp
     void gcs_send_heartbeat(void);
-    void send_fence_status(mavlink_channel_t chan);
-    void send_sys_status(mavlink_channel_t chan);
-    void send_nav_controller_output(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
 
     // heli.cpp
@@ -759,7 +738,7 @@ private:
     void Log_Write_Attitude();
     void Log_Write_EKF_POS();
     void Log_Write_MotBatt();
-    void Log_Write_Event(uint8_t id);
+    void Log_Write_Event(Log_Event id);
     void Log_Write_Data(uint8_t id, int32_t value);
     void Log_Write_Data(uint8_t id, uint32_t value);
     void Log_Write_Data(uint8_t id, int16_t value);
@@ -810,10 +789,8 @@ private:
     void convert_lgr_parameters(void);
 
     // position_vector.cpp
-    Vector3f pv_location_to_vector(const Location& loc);
     float pv_alt_above_origin(float alt_above_home_cm);
     float pv_alt_above_home(float alt_above_origin_cm);
-    float pv_distance_to_home_cm(const Vector3f &destination);
 
     // precision_landing.cpp
     void init_precland();
@@ -844,9 +821,7 @@ private:
     void accel_cal_update(void);
     void init_proximity();
     void update_proximity();
-    void update_sensor_status_flags(void);
     void init_visual_odom();
-    void update_visual_odom();
     void winch_init();
     void winch_update();
 

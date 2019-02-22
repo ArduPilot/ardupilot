@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include "PosVelEKF.h"
 #include <AP_HAL/utility/RingBuffer.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 // declare backend classes
 class AC_PrecLand_Backend;
@@ -105,7 +104,7 @@ private:
     // run target position estimator
     void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
-    // If a new measurement was retreived, sets _target_pos_rel_meas_NED and returns true
+    // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
     bool construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
     // get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
@@ -124,7 +123,7 @@ private:
     AP_Float                    _yaw_align;         // Yaw angle from body x-axis to sensor x-axis.
     AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
-    AP_Float                    _accel_noise;       // accelometer process noise
+    AP_Float                    _accel_noise;       // accelerometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called

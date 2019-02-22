@@ -52,7 +52,7 @@ class AP_AHRS
 {
 public:
     friend class AP_AHRS_View;
-    
+
     // Constructor
     AP_AHRS() :
         _vehicle_class(AHRS_VEHICLE_UNKNOWN),
@@ -130,7 +130,7 @@ public:
         }
         return AP_HAL::millis() - _last_flying_ms;
     }
-    
+
     AHRS_VehicleClass get_vehicle_class(void) const {
         return _vehicle_class;
     }
@@ -189,7 +189,7 @@ public:
     virtual uint8_t get_primary_gyro_index(void) const {
         return AP::ins().get_primary_gyro();
     }
-    
+
     // accelerometer values in the earth frame in m/s/s
     virtual const Vector3f &get_accel_ef(uint8_t i) const {
         return _accel_ef[i];
@@ -216,11 +216,14 @@ public:
         return nullptr;
     }
 
+    // check all cores providing consistent attitudes for prearm checks
+    virtual bool attitudes_consistent() const { return true; }
+
     // is the EKF backend doing its own sensor logging?
     virtual bool have_ekf_logging(void) const {
         return false;
     }
-    
+
     // Euler angles (radians)
     float roll;
     float pitch;
@@ -266,7 +269,7 @@ public:
 
     // get rotation matrix specifically from DCM backend (used for compass calibrator)
     virtual const Matrix3f &get_DCM_rotation_body_to_ned(void) const = 0;
-    
+
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
     virtual bool get_position(struct Location &loc) const = 0;
@@ -302,6 +305,11 @@ public:
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const {
         return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
+    }
+
+    // return the parameter AHRS_WIND_MAX in metres per second
+    uint8_t get_max_wind() const {
+        return _wind_max;
     }
 
     // return a ground vector estimate in meters/second, in North/East order
@@ -428,7 +436,7 @@ public:
     virtual bool get_secondary_quaternion(Quaternion &quat) const {
         return false;
     }
-    
+
     // return secondary position solution if available
     virtual bool get_secondary_position(struct Location &loc) const {
         return false;
@@ -457,7 +465,7 @@ public:
     // set the home location in 10e7 degrees. This should be called
     // when the vehicle is at this position. It is assumed that the
     // current barometer and GPS altitudes correspond to this altitude
-    virtual void set_home(const Location &loc) = 0;
+    virtual bool set_home(const Location &loc) WARN_IF_UNUSED = 0;
 
     // set the EKF's origin location in 10e7 degrees.  This should only
     // be called when the EKF has no absolute position reference (i.e. GPS)
@@ -520,7 +528,7 @@ public:
     virtual bool resetHeightDatum(void) {
         return false;
     }
-    
+
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
     // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
     // inconsistency that will be accepted by the filter
@@ -528,7 +536,7 @@ public:
     virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const {
         return false;
     }
-    
+
     // time that the AHRS has been up
     virtual uint32_t uptime_ms(void) const = 0;
 
@@ -561,7 +569,7 @@ public:
     // rotate a 2D vector from earth frame to body frame
     // in input, x is forward, y is right
     Vector2f rotate_body_to_earth2D(const Vector2f &bf) const;
-    
+
     virtual void update_AOA_SSA(void);
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the
@@ -576,12 +584,12 @@ public:
     HAL_Semaphore &get_semaphore(void) {
         return _rsem;
     }
-    
+
 protected:
-    
+
     // multi-thread access support
     HAL_Semaphore_Recursive _rsem;
-    
+
     AHRS_VehicleClass _vehicle_class;
 
     // settable parameters
@@ -619,7 +627,7 @@ protected:
     void calc_trig(const Matrix3f &rot,
                    float &cr, float &cp, float &cy,
                    float &sr, float &sp, float &sy) const;
-    
+
     // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
     //      should be called after _dcm_matrix is updated
     void update_trig(void);

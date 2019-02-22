@@ -22,6 +22,10 @@ public:
 
     void send_airspeed_calibration(const Vector3f &vg);
 
+protected:
+
+    void update_sensor_status_flags(void) override;
+
 private:
 
     GCS_MAVLINK_Plane _chan[MAVLINK_COMM_NUM_BUFFERS];

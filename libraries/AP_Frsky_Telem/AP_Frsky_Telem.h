@@ -15,10 +15,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
@@ -116,15 +113,14 @@ for FrSky SPort Passthrough
 
 class AP_Frsky_Telem {
 public:
-    AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
+    AP_Frsky_Telem() {}
 
     /* Do not allow copies */
     AP_Frsky_Telem(const AP_Frsky_Telem &other) = delete;
     AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager,
-              const uint8_t mav_type,
+    void init(const uint8_t mav_type,
               const uint32_t *ap_valuep = nullptr);
 
     // add statustext message to FrSky lib message queue
@@ -149,9 +145,6 @@ public:
     void set_frame_string(const char *string) { _frame_string = string; }
 
 private:
-    AP_AHRS &_ahrs;
-    const AP_BattMonitor &_battery;
-    const RangeFinder &_rng;
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
     AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
     bool _initialised_uart;

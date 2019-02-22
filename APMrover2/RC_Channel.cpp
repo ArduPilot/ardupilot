@@ -78,6 +78,23 @@ void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
     }
 }
 
+void RC_Channel_Rover::add_waypoint_for_current_loc()
+{
+    // create new mission command
+    AP_Mission::Mission_Command cmd = {};
+
+    // set new waypoint to current location
+    cmd.content.location = rover.current_loc;
+
+    // make the new command to a waypoint
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+
+    // save command
+    if (rover.mode_auto.mission.add_cmd(cmd)) {
+        hal.console->printf("Added waypoint %u", (unsigned)rover.mode_auto.mission.num_commands());
+    }
+}
+
 void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch (ch_option) {
@@ -93,25 +110,19 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
             // if disarmed clear mission and set home to current location
             if (!rover.arming.is_armed()) {
                 rover.mode_auto.mission.clear();
-                rover.set_home_to_current_location(false);
+                if (!rover.set_home_to_current_location(false)) {
+                    // ignored
+                }
                 return;
             }
 
             // record the waypoint if not in auto mode
             if (rover.control_mode != &rover.mode_auto) {
-                // create new mission command
-                AP_Mission::Mission_Command cmd = {};
-
-                // set new waypoint to current location
-                cmd.content.location = rover.current_loc;
-
-                // make the new command to a waypoint
-                cmd.id = MAV_CMD_NAV_WAYPOINT;
-
-                // save command
-                if (rover.mode_auto.mission.add_cmd(cmd)) {
-                    hal.console->printf("Added waypoint %u", (unsigned)rover.mode_auto.mission.num_commands());
+                if (rover.mode_auto.mission.num_commands() == 0) {
+                    // add a home location....
+                    add_waypoint_for_current_loc();
                 }
+                add_waypoint_for_current_loc();
             }
         }
         break;

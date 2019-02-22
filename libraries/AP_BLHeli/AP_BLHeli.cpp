@@ -118,14 +118,14 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     AP_GROUPEND
 };
 
-AP_BLHeli *AP_BLHeli::singleton;
+AP_BLHeli *AP_BLHeli::_singleton;
 
 // constructor
 AP_BLHeli::AP_BLHeli(void)
 {
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
-    singleton = this;
+    _singleton = this;
     last_control_port = -1;
 }
 
@@ -1250,7 +1250,7 @@ void AP_BLHeli::update(void)
       plane and copter can use AP_Motors to get an automatic mask
      */
     if (channel_auto.get() == 1) {
-        AP_Motors *motors = AP_Motors::get_instance();
+        AP_Motors *motors = AP_Motors::get_singleton();
         if (motors) {
             mask |= motors->get_motor_mask();
         }
@@ -1273,7 +1273,7 @@ void AP_BLHeli::update(void)
     debug("ESC: %u motors mask=0x%04x", num_motors, mask);
 
     if (telem_rate > 0) {
-        AP_SerialManager *serial_manager = AP_SerialManager::get_instance();
+        AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
         if (serial_manager) {
             telem_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry,0);
         }
@@ -1346,18 +1346,15 @@ void AP_BLHeli::read_telemetry_packet(void)
     last_telem[last_telem_esc] = td;
     last_telem[last_telem_esc].count++;
 
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
     if (df && df->logging_enabled()) {
-        struct log_Esc pkt = {
-            LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+last_telem_esc)),
-            time_us     : AP_HAL::micros64(),
-            rpm         : int32_t(td.rpm*100U),
-            voltage     : td.voltage,
-            current     : td.current,
-            temperature : int16_t(td.temperature * 100U),
-            current_tot : td.consumption
-        };
-        df->WriteBlock(&pkt, sizeof(pkt));
+        df->Write_ESC(uint8_t(last_telem_esc),
+                      AP_HAL::micros64(),
+                      td.rpm*100U,
+                      td.voltage,
+                      td.current,
+                      td.temperature * 100U,
+                      td.consumption);
     }
     if (debug_level >= 2) {
         hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u t=%u\n",

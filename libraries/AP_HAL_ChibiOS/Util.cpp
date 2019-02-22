@@ -134,8 +134,8 @@ Util::safety_state Util::safety_switch_state(void)
 
 void Util::set_imu_temp(float current)
 {
-#if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
-    if (!heater.target || *heater.target == -1 || !AP_BoardConfig::io_enabled()) {
+#if HAL_HAVE_IMU_HEATER
+    if (!heater.target || *heater.target == -1) {
         return;
     }
 
@@ -146,6 +146,11 @@ void Util::set_imu_temp(float current)
     // update once a second
     uint32_t now = AP_HAL::millis();
     if (now - heater.last_update_ms < 1000) {
+#if defined(HAL_HEATER_GPIO_PIN)
+        // output as duty cycle to local pin
+        hal.gpio->write(HAL_HEATER_GPIO_PIN, heater.duty_counter < heater.output);
+        heater.duty_counter = (heater.duty_counter+1) % 100;
+#endif
         return;
     }
     heater.last_update_ms = now;
@@ -167,17 +172,22 @@ void Util::set_imu_temp(float current)
     heater.integrator += kI * err;
     heater.integrator = constrain_float(heater.integrator, 0, 70);
 
-    float output = constrain_float(kP * err + heater.integrator, 0, 100);
+    heater.output = constrain_float(kP * err + heater.integrator, 0, 100);
     
-    // hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", heater.integrator, output, current, err);
+    //hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", heater.integrator, heater.output, current, err);
 
-    iomcu.set_heater_duty_cycle(output);
-#endif // HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        // tell IOMCU to setup heater
+        iomcu.set_heater_duty_cycle(heater.output);
+    }
+#endif
+#endif // HAL_HAVE_IMU_HEATER
 }
 
 void Util::set_imu_target_temp(int8_t *target)
 {
-#if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
+#if HAL_HAVE_IMU_HEATER
     heater.target = target;
 #endif
 }

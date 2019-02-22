@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -247,6 +246,7 @@ void NavEKF2_core::readMagData()
                     magStateResetRequest = true;
                     // declare the field unlearned so that the reset request will be obeyed
                     magFieldLearned = false;
+                    break;
                 }
             }
         }
@@ -845,10 +845,14 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
     }
     extNavDataNew.angErr = angErr;
     extNavDataNew.body_offset = &sensOffset;
+    timeStamp_ms = timeStamp_ms - frontend->_extnavDelay_ms;
+    // Correct for the average intersampling delay due to the filter updaterate
+    timeStamp_ms -= localFilterTimeStep_ms/2;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer
+    timeStamp_ms = MAX(timeStamp_ms,imuDataDelayed.time_ms);
     extNavDataNew.time_ms = timeStamp_ms;
 
     storedExtNav.push(extNavDataNew);
 
 }
 
-#endif // HAL_CPU_CLASS

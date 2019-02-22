@@ -291,7 +291,7 @@ private:
 #endif
 
     // Rally Ponints
-    AP_Rally rally{ahrs};
+    AP_Rally rally;
 
     // RSSI
     AP_RSSI rssi;
@@ -410,18 +410,13 @@ private:
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
+    AP_Frsky_Telem frsky_telemetry;
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
     // DEVO-M telemetry support
-    AP_DEVO_Telem devo_telemetry {ahrs};
+    AP_DEVO_Telem devo_telemetry;
 #endif
 
-    // Variables for extended status MAVLink messages
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
- 
     // Airspeed Sensors
     AP_Airspeed airspeed;
 
@@ -798,9 +793,6 @@ private:
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_fence_status(mavlink_channel_t chan);
-    void update_sensor_status_flags(void);
-    void send_sys_status(mavlink_channel_t chan);
-    void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
     void send_pid_info(const mavlink_channel_t chan, const AP_Logger::PID_Info *pid_info, const uint8_t axis, const float achieved);
@@ -855,9 +847,7 @@ private:
     void set_guided_WP(void);
     void update_home();
     // set home location and store it persistently:
-    void set_home_persistently(const Location &loc);
-    // set home location:
-    void set_home(const Location &loc);
+    bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
     void do_RTL(int32_t alt);
     bool verify_takeoff();
     bool verify_loiter_unlim(const AP_Mission::Mission_Command &cmd);
@@ -916,12 +906,6 @@ private:
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
     bool reached_loiter_target(void);
-    bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);
-    uint16_t create_mixer(char *buf, uint16_t buf_size, const char *filename);
-    bool mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan);
-    bool mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan1, uint8_t in_chan2, bool left_channel);
-    bool mix_passthrough(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan);
-    bool mix_trim_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan);
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out_main();
@@ -1011,8 +995,9 @@ private:
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
-    void throttle_slew_limit(void);
+    void throttle_slew_limit(SRV_Channel::Aux_servo_function_t func);
     bool suppress_throttle(void);
+    void update_throttle_hover();
     void channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
                                 SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out);
     void flaperon_update(int8_t flap_percent);
@@ -1041,7 +1026,6 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void notify_flight_mode(enum FlightMode mode);
     void log_init();
-    void init_capabilities(void);
     void parachute_check();
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);

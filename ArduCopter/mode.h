@@ -189,7 +189,7 @@ protected:
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void set_land_complete(bool b);
     GCS_Copter &gcs();
-    void Log_Write_Event(uint8_t id);
+    void Log_Write_Event(Log_Event id);
     void set_throttle_takeoff(void);
     float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
@@ -588,8 +588,21 @@ protected:
 private:
 
     // Flip
-    Vector3f flip_orig_attitude;         // original vehicle attitude before flip
+    Vector3f orig_attitude;         // original vehicle attitude before flip
 
+    enum FlipState {
+        Flip_Start,
+        Flip_Roll,
+        Flip_Pitch_A,
+        Flip_Pitch_B,
+        Flip_Recover,
+        Flip_Abandon
+    };
+    FlipState _state;               // current state of flip
+    control_mode_t   orig_control_mode;   // flight mode when flip was initated
+    uint32_t  start_time_ms;          // time since flip began
+    int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
+    int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
 };
 
 
@@ -751,7 +764,7 @@ public:
     bool init(bool ignore_checks) override;
     void run() override;
 
-    bool requires_GPS() const override { return true; }
+    bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return from_gcs; }
     bool is_autopilot() const override { return true; }

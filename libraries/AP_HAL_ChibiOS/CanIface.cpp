@@ -759,8 +759,9 @@ void CanIface::handleRxInterrupt(uavcan::uint8_t fifo_index, uavcan::uint64_t ut
      * Store with timeout into the FIFO buffer and signal update event
      */
     rx_queue_.push(frame, utc_usec, 0);
+ #if !HAL_MINIMIZE_FEATURES
     slcan_router().route_frame_to_slcan(this, frame, utc_usec);
-
+#endif
     had_activity_ = true;
     update_event_.signalFromInterrupt();
 

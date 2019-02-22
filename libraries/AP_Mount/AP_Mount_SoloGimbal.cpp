@@ -118,7 +118,7 @@ void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, const mav
     _gimbal.update_target(_angle_ef_target_rad);
     _gimbal.receive_feedback(chan,msg);
 
-    AP_Logger *df = AP_Logger::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
     if (df == nullptr) {
         return;
     }

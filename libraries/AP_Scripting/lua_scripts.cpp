@@ -96,6 +96,7 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     lua_getglobal(L, "get_sandbox_env");
     if (lua_pcall(L, 0, LUA_MULTRET, 0)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Could not create sandbox: %s", lua_tostring(L, -1));
+        hal.console->printf("Lua: Scripting: Could not create sandbox: %s", lua_tostring(L, -1));
         return nullptr;
     }
     lua_setupvalue(L, -2, 1);

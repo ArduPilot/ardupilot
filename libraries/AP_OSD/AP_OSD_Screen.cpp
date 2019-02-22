@@ -433,7 +433,7 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     uint8_t pct = battery.capacity_remaining_pct();
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
@@ -442,7 +442,7 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
-    AP_RSSI *ap_rssi = AP_RSSI::get_instance();
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         int rssiv = ap_rssi->read_receiver_rssi_uint8();
         rssiv = (rssiv * 99) / 255;
@@ -452,14 +452,14 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     float amps = battery.current_amps();
     backend->write(x, y, false, "%2.1f%c", (double)amps, SYM_AMP);
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 {
-    AP_Notify * notify = AP_Notify::instance();
+    AP_Notify * notify = AP_Notify::get_singleton();
     char arm;
     if (AP_Notify::flags.armed) {
         arm = SYM_ARMED;
@@ -481,7 +481,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(), SYM_MAH);
 }
 
@@ -489,7 +489,7 @@ void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 //Thanks to night-ghost for the approach.
 void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 {
-    AP_Notify * notify = AP_Notify::instance();
+    AP_Notify * notify = AP_Notify::get_singleton();
     if (notify) {
         int32_t visible_time = AP_HAL::millis() - notify->get_text_updated_millis();
         if (visible_time < osd->msgtime_s *1000) {
@@ -901,7 +901,7 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     AP_AHRS &ahrs = AP::ahrs();
     Vector2f v = ahrs.groundspeed_vector();
     float speed = u_scale(SPEED,v.length());
@@ -923,7 +923,7 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
         vspd = AP::baro().get_climb_rate();
     }
     if (vspd < 0.0) vspd = 0.0;
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     float amps = battery.current_amps();
     if (amps > 0.0) {
         backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(double)(3.6f * u_scale(VSPEED,vspd)/amps),unit_icon);
@@ -956,7 +956,7 @@ void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     uint8_t pct2 = battery.capacity_remaining_pct(1);
     uint8_t p2 = (100 - pct2) / 16.6;
     float v2 = battery.voltage(1);
@@ -965,7 +965,7 @@ void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     float ah = battery.consumed_mah(1) / 1000;
     if (battery.consumed_mah(1) <= 9999) {
         backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(1), SYM_MAH);

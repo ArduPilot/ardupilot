@@ -66,6 +66,9 @@ if $QUIET; then
     APT_GET="$APT_GET -qq"
 fi
 
+if ! dpkg-query -l "lsb-release"; then
+    $APT_GET install lsb-release
+fi
 # possibly grab a newer cmake for older ubuntu releases
 read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
 if [ "$UBUNTU_CODENAME" = "precise" ]; then
@@ -94,7 +97,7 @@ if [ -n "$RP" ]; then
 fi
 
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS
-sudo pip2 -q install -U $PYTHON_PKGS
+pip2 -q install --user -U $PYTHON_PKGS
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (
@@ -110,7 +113,7 @@ ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 grep -Fxq "$exportline" ~/.profile 2>/dev/null || {
-    if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [Y/n]?" ; then
+    if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
         echo $exportline >> ~/.profile
         eval $exportline
     else
@@ -120,7 +123,7 @@ grep -Fxq "$exportline" ~/.profile 2>/dev/null || {
 
 exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
 grep -Fxq "$exportline2" ~/.profile 2>/dev/null || {
-    if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [Y/n]?" ; then
+    if maybe_prompt_user "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
         echo $exportline2 >> ~/.profile
         eval $exportline2
     else

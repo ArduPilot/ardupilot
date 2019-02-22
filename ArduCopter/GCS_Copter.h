@@ -20,6 +20,8 @@ public:
         return _chan[ofs];
     };
 
+    void update_sensor_status_flags(void) override;
+
 private:
 
     GCS_MAVLINK_Copter _chan[MAVLINK_COMM_NUM_BUFFERS];

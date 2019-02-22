@@ -39,6 +39,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_flight_mode,    400,    100),
     SCHED_TASK(stabilize,             400,    100),
     SCHED_TASK(set_servos,            400,    100),
+    SCHED_TASK(update_throttle_hover, 100,     90),
     SCHED_TASK(read_control_switch,     7,    100),
     SCHED_TASK(update_GPS_50Hz,        50,    300),
     SCHED_TASK(update_GPS_10Hz,        10,    400),
@@ -184,6 +185,11 @@ void Plane::update_speed_height(void)
 	    // takeoff detection
         SpdHgt_Controller->update_50hz();
     }
+
+    if (quadplane.in_vtol_mode() ||
+        quadplane.in_assisted_flight()) {
+        quadplane.update_throttle_thr_mix();
+    }
 }
 
 
@@ -299,7 +305,7 @@ void Plane::one_second_loop()
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    update_sensor_status_flags();
+    gcs().update_sensor_status_flags();
 }
 
 void Plane::compass_save()
@@ -377,7 +383,9 @@ void Plane::update_GPS_10Hz(void)
                 ground_start_count = 5;
 
             } else {
-                set_home_persistently(gps.location());
+                if (!set_home_persistently(gps.location())) {
+                    // silently ignore failure...
+                }
 
                 next_WP_loc = prev_WP_loc = home;
 

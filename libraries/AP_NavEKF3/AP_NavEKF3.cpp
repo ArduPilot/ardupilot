@@ -1,5 +1,4 @@
 #include <AP_HAL/AP_HAL.h>
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
 #include "AP_NavEKF3_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -635,7 +634,7 @@ bool NavEKF3::InitialiseFilter(void)
     if (core == nullptr) {
 
         // see if we will be doing logging
-        AP_Logger *dataflash = AP_Logger::instance();
+        AP_Logger *dataflash = AP_Logger::get_singleton();
         if (dataflash != nullptr) {
             logging.enabled = dataflash->log_replay();
         }
@@ -1559,4 +1558,3 @@ void NavEKF3::getTimingStatistics(int8_t instance, struct ekf_timing &timing) co
     }
 }
 
-#endif //HAL_CPU_CLASS

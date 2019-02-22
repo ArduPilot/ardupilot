@@ -20,7 +20,7 @@
 class AP_Rally_Copter : public AP_Rally
 {
 public:
-    AP_Rally_Copter(AP_AHRS &ahrs) : AP_Rally(ahrs) { }
+    AP_Rally_Copter() : AP_Rally() { }
 
     /* Do not allow copies */
     AP_Rally_Copter(const AP_Rally_Copter &other) = delete;

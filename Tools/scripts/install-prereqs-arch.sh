@@ -33,8 +33,8 @@ function prompt_user() {
 sudo usermod -a -G uucp $USER
 
 sudo pacman -Sy --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
-sudo pip2 -q install -U $PYTHON2_PKGS
-sudo pip3 -q install -U $PYTHON3_PKGS
+pip2 -q install --user -U $PYTHON2_PKGS
+pip3 -q install --user -U $PYTHON3_PKGS
 
 (
     cd /usr/lib/ccache
@@ -57,7 +57,7 @@ fi
 
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 if ! grep -Fxq "$exportline" ~/.bashrc ; then
-    if prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [Y/n]?" ; then
+    if prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
         echo "$exportline" >> ~/.bashrc
         . ~/.bashrc
     else
@@ -67,7 +67,7 @@ fi
 
 exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
 if  ! grep -Fxq "$exportline2" ~/.bashrc ; then
-    if prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [Y/n]?" ; then
+    if prompt_user "Add $CWD/$ARDUPILOT_TOOLS to your PATH [N/y]?" ; then
         echo "$exportline2" >> ~/.bashrc
         . ~/.bashrc
     else

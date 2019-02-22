@@ -18,7 +18,7 @@ from common import PreconditionFailedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-HOME = mavutil.location(-35.362938, 149.165085, 585, 354)
+SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 585, 354)
 WIND = "0,180,0.2"  # speed,direction,variance
 
 
@@ -42,19 +42,18 @@ class AutoTestPlane(AutoTest):
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
 
-        self.home = "%f,%f,%u,%u" % (HOME.lat,
-                                     HOME.lng,
-                                     HOME.alt,
-                                     HOME.heading)
         self.homeloc = None
         self.speedup = speedup
 
         self.sitl = None
-        self.hasInit = False
 
         self.log_name = "ArduPlane"
 
+    def sitl_start_location(self):
+        return SITL_START_LOCATION
+
     def init(self):
+        super(AutoTestPlane, self).init(os.path.realpath(__file__))
         if self.frame is None:
             self.frame = 'plane-elevrev'
 
@@ -65,7 +64,7 @@ class AutoTestPlane(AutoTest):
         self.sitl = util.start_SITL(self.binary,
                                     wipe=True,
                                     model=self.frame,
-                                    home=self.home,
+                                    home=self.sitl_home(),
                                     speedup=self.speedup,
                                     defaults_file=defaults_file,
                                     valgrind=self.valgrind,
@@ -90,8 +89,19 @@ class AutoTestPlane(AutoTest):
 
         self.get_mavlink_connection_going()
 
-        self.hasInit = True
         self.progress("Ready to start testing!")
+
+    def is_plane(self):
+        return True
+
+    def get_rudder_channel(self):
+        return int(self.get_parameter("RCMAP_YAW"))
+
+    def get_disarm_delay(self):
+        return int(self.get_parameter("LAND_DISARMDELAY"))
+
+    def set_autodisarm_delay(self, delay):
+        self.set_parameter("LAND_DISARMDELAY", delay)
 
     def takeoff(self):
         """Takeoff get to 30m altitude."""
@@ -110,12 +120,12 @@ class AutoTestPlane(AutoTest):
 
         # get it moving a bit first
         self.set_rc(3, 1300)
-        self.mav.recv_match(condition='VFR_HUD.groundspeed>6', blocking=True)
+        self.wait_groundspeed(6, 100)
 
         # a bit faster again, straighten rudder
         self.set_rc(3, 1600)
         self.set_rc(4, 1500)
-        self.mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
+        self.wait_groundspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
         self.set_rc(2, 1100)
@@ -671,6 +681,111 @@ class AutoTestPlane(AutoTest):
         if x is None:
             raise NotAchievedException("No CAMERA_FEEDBACK message received")
 
+    def test_throttle_failsafe(self):
+        self.change_mode('MANUAL')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        receiver_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise PreconditionFailedException()
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise PreconditionFailedException()
+        self.progress("Testing receiver health")
+        if (not (m.onboard_control_sensors_health & receiver_bit)):
+            raise PreconditionFailedException()
+
+        self.progress("Ensure we know original throttle value")
+        self.wait_rc_channel_value(3, 1000)
+
+        self.set_parameter("THR_FS_VALUE", 960)
+        self.progress("Failing receiver (throttle-to-950)")
+        self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
+        self.wait_mode('CIRCLE') # short failsafe
+        self.wait_mode('RTL') # long failsafe
+        self.progress("Ensure we've had our throttle squashed to 950")
+        self.wait_rc_channel_value(3, 950)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise NotAchievedException("Receiver not enabled")
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise NotAchievedException("Receiver not present")
+        # skip this until RC is fixed
+#        self.progress("Testing receiver health")
+#        if (m.onboard_control_sensors_health & receiver_bit):
+#            raise NotAchievedException("Sensor healthy when it shouldn't be")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise NotAchievedException("Receiver not enabled")
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise NotAchievedException("Receiver not present")
+        self.progress("Testing receiver health")
+        if (not (m.onboard_control_sensors_health & receiver_bit)):
+            raise NotAchievedException("Receiver not healthy")
+        self.change_mode('MANUAL')
+
+        self.progress("Failing receiver (no-pulses)")
+        self.set_parameter("SIM_RC_FAIL", 1) # no-pulses
+        self.wait_mode('CIRCLE') # short failsafe
+        self.wait_mode('RTL') # long failsafe
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise NotAchievedException("Receiver not enabled")
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise NotAchievedException("Receiver not present")
+        self.progress("Testing receiver health")
+        if (m.onboard_control_sensors_health & receiver_bit):
+            raise NotAchievedException("Sensor healthy when it shouldn't be")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise NotAchievedException("Receiver not enabled")
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise NotAchievedException("Receiver not present")
+        self.progress("Testing receiver health")
+        if (not (m.onboard_control_sensors_health & receiver_bit)):
+            raise NotAchievedException("Receiver not healthy")
+        self.change_mode('MANUAL')
+
     def test_gripper_mission(self):
         self.context_push()
         ex = None
@@ -689,6 +804,22 @@ class AutoTestPlane(AutoTest):
         self.context_pop()
         if ex is not None:
             raise ex
+
+    def test_parachute(self):
+        self.set_rc(9, 1000)
+        self.set_parameter("CHUTE_ENABLED", 1)
+        self.set_parameter("CHUTE_TYPE", 10)
+        self.set_parameter("SERVO9_FUNCTION", 27)
+        self.set_parameter("SIM_PARA_ENABLE", 1)
+        self.set_parameter("SIM_PARA_PIN", 9)
+
+        self.load_mission("plane-parachute-mission.txt")
+        self.mavproxy.send("wp set 1\n")
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.mavproxy.expect("BANG")
+        self.reboot_sitl()
 
     def run_subtest(self, desc, func):
         self.start_subtest(desc)
@@ -730,10 +861,11 @@ class AutoTestPlane(AutoTest):
                          lambda: self.fly_mission(
                              os.path.join(testdir, "ap1.txt")))
 
-    def set_rc_default(self):
-        super(AutoTestPlane, self).set_rc_default()
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1800)
+    def rc_defaults(self):
+        ret = super(AutoTestPlane, self).rc_defaults()
+        ret[3] = 1000
+        ret[8] = 1800
+        return ret
 
     def default_mode(self):
         return "MANUAL"
@@ -749,7 +881,13 @@ class AutoTestPlane(AutoTest):
 
             ("TestRCRelay", "Test Relay RC Channel Option", self.test_rc_relay),
 
+            ("ThrottleFailsafe",
+             "Fly throttle failsafe",
+             self.test_throttle_failsafe),
+
             ("TestFlaps", "Flaps", self.fly_flaps),
+
+            ("ArmFeatures", "Arm features", self.test_arm_feature),
 
             ("MainFlight",
              "Lots of things in one flight",
@@ -759,10 +897,13 @@ class AutoTestPlane(AutoTest):
              "Test Gripper mission items",
              self.test_gripper_mission),
 
+            ("Parachute", "Test Parachute", self.test_parachute),
+
             ("LogDownLoad",
              "Log download",
              lambda: self.log_download(
                  self.buildlogs_path("ArduPlane-log.bin"),
+                 timeout=450,
                  upload_logs=True))
         ])
         return ret

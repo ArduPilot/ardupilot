@@ -71,43 +71,17 @@ MAV_STATE GCS_MAVLINK_Tracker::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void Tracker::send_sys_status(mavlink_channel_t chan)
+void GCS_MAVLINK_Tracker::send_nav_controller_output() const
 {
-    int16_t battery_current = -1;
-    int8_t battery_remaining = -1;
-
-    if (battery.has_current() && battery.healthy()) {
-        battery_remaining = battery.capacity_remaining_pct();
-        battery_current = battery.current_amps() * 100;
-    }
-
-    update_sensor_status_flags();
-
-    mavlink_msg_sys_status_send(
-        chan,
-        control_sensors_present,
-        control_sensors_enabled,
-        control_sensors_health,
-        static_cast<uint16_t>(scheduler.load_average() * 1000),
-        battery.voltage() * 1000,  // mV
-        battery_current,        // in 10mA units
-        battery_remaining,      // in %
-        0,  // comm drops %,
-        0,  // comm drops in pkts,
-        0, 0, 0, 0);
-}
-
-void Tracker::send_nav_controller_output(mavlink_channel_t chan)
-{
-	float alt_diff = (g.alt_source == ALT_SOURCE_BARO) ? nav_status.alt_difference_baro : nav_status.alt_difference_gps;
+	float alt_diff = (tracker.g.alt_source == ALT_SOURCE_BARO) ? tracker.nav_status.alt_difference_baro : tracker.nav_status.alt_difference_gps;
 
     mavlink_msg_nav_controller_output_send(
         chan,
         0,
-        nav_status.pitch,
-        nav_status.bearing,
-        nav_status.bearing,
-        MIN(nav_status.distance, UINT16_MAX),
+        tracker.nav_status.pitch,
+        tracker.nav_status.bearing,
+        tracker.nav_status.bearing,
+        MIN(tracker.nav_status.distance, UINT16_MAX),
         alt_diff,
         0,
         0);
@@ -124,28 +98,6 @@ void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&
 {
     // do nothing
 }
-
-// try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
-{
-    switch (id) {
-
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        tracker.send_nav_controller_output(chan);
-        break;
-
-    case MSG_SYS_STATUS:
-        CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        tracker.send_sys_status(chan);
-        break;
-
-    default:
-        return GCS_MAVLINK::try_send_message(id);
-    }
-    return true;
-}
-
 
 /*
   default stream rates to 1Hz
@@ -566,6 +518,13 @@ mission_failed:
     } // end switch
 } // end handle mavlink
 
+
+uint64_t GCS_MAVLINK_Tracker::capabilities() const
+{
+    return (MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION |
+            GCS_MAVLINK::capabilities());
+}
 
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the

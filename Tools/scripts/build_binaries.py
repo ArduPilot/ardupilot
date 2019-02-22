@@ -538,7 +538,8 @@ is bob we will attempt to checkout bob-AVR'''
                 "VRBrain-v52",
                 "VRUBrain-v51",
                 "VRCore-v10",
-                "VRBrain-v54"]
+                "VRBrain-v54",
+                "TBS-Colibri-F7"]
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''

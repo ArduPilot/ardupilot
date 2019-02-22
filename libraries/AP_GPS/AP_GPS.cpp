@@ -271,7 +271,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 AP_GPS::AP_GPS()
 {
     static_assert((sizeof(_initialisation_blob) * (CHAR_BIT + 2)) < (4800 * GPS_BAUD_TIME_MS * 1e-3),
-                    "GPS initilisation blob is to large to be completely sent before the baud rate changes");
+                    "GPS initilisation blob is too large to be completely sent before the baud rate changes");
 
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -561,7 +561,7 @@ AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
 
 bool AP_GPS::should_df_log() const
 {
-    AP_Logger *instance = AP_Logger::instance();
+    AP_Logger *instance = AP_Logger::get_singleton();
     if (instance == nullptr) {
         return false;
     }
@@ -1546,7 +1546,7 @@ namespace AP {
 
 AP_GPS &gps()
 {
-    return AP_GPS::gps();
+    return AP_GPS::get_singleton();
 }
 
 };

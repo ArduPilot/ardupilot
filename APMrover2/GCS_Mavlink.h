@@ -14,7 +14,6 @@ protected:
     uint32_t telem_delay() const override;
 
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
-    AP_VisualOdom *get_visual_odom() const override;
 
     uint8_t sysid_my_gcs() const override;
     bool sysid_enforce() const override;
@@ -31,11 +30,18 @@ protected:
 
     bool vehicle_initialised() const override;
 
+    bool set_home_to_current_location(bool lock) override;
+    bool set_home(const Location& loc, bool lock) override;
+    uint64_t capabilities() const override;
+
+    void send_nav_controller_output() const override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
+    void handle_rc_channels_override(const mavlink_message_t *msg) override;
     bool try_send_message(enum ap_message id) override;
 
     void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;

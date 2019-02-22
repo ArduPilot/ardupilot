@@ -158,6 +158,11 @@ struct PACKED log_DSF {
     uint32_t buf_space_avg;
 };
 
+struct PACKED log_Event {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t id;
+};
 struct PACKED log_GPS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -694,6 +699,15 @@ struct PACKED log_Current {
     float    resistance;
 };
 
+struct PACKED log_WheelEncoder {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float distance_0;
+    uint8_t quality_0;
+    float distance_1;
+    uint8_t quality_1;
+};
+
 struct PACKED log_Current_Cells {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -858,6 +872,7 @@ struct PACKED log_AIRSPEED {
     float   offset;
     bool    use;
     bool    healthy;
+    float   health_prob;
     uint8_t primary;
 };
 
@@ -1157,10 +1172,10 @@ struct PACKED log_DSTL {
 #define CURR_CELL_UNITS  "svvvvvvvvvvv"
 #define CURR_CELL_MULTS  "F00000000000"
 
-#define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Primary"
-#define ARSP_FMT "QffcffBBB"
-#define ARSP_UNITS "snPOPP---"
-#define ARSP_MULTS "F00B00---"
+#define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Hfp,Pri"
+#define ARSP_FMT "QffcffBBfB"
+#define ARSP_UNITS "snPOPP----"
+#define ARSP_MULTS "F00B00----"
 
 /*
 Format characters in the format string for binary log messages
@@ -1448,7 +1463,9 @@ Format characters in the format string for binary log messages
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" }
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" }, \
+    { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
+      "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" }
 
 
 // #if SBP_HW_LOGGING
@@ -1459,6 +1476,8 @@ Format characters in the format string for binary log messages
       "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6", "s--b----", "F--0----" }, \
     { LOG_MSG_SBPRAWM, sizeof(log_SbpRAWM), \
       "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13", "s??????????????", "F??????????????" }, \
+    { LOG_EVENT_MSG, sizeof(log_Event), \
+      "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
       "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }
 // #endif
@@ -1615,6 +1634,8 @@ enum LogMessages : uint8_t {
     LOG_ASP2_MSG,
     LOG_PERFORMANCE_MSG,
     LOG_OPTFLOW_MSG,
+    LOG_EVENT_MSG,
+    LOG_WHEELENCODER_MSG,
     _LOG_LAST_MSG_
 };
 

@@ -112,6 +112,11 @@ void ModeAuto::exit_mission()
     if (g2.mis_done_behave == MIS_DONE_BEHAVE_LOITER && rover.set_mode(rover.mode_loiter, MODE_REASON_MISSION_END)) {
         return;
     }
+
+    if (g2.mis_done_behave == MIS_DONE_BEHAVE_ACRO && rover.set_mode(rover.mode_acro, MODE_REASON_MISSION_END)) {
+        return;
+    }
+
     rover.set_mode(rover.mode_hold, MODE_REASON_MISSION_END);
 }
 
@@ -349,9 +354,13 @@ void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 && rover.have_position) {
-        rover.set_home_to_current_location(false);
+        if (!rover.set_home_to_current_location(false)) {
+            // ignored...
+        }
     } else {
-        rover.set_home(cmd.content.location, false);
+        if (!rover.set_home(cmd.content.location, false)) {
+            // ignored...
+        }
     }
 }
 

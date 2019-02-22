@@ -320,7 +320,6 @@ void AP_Terrain::update(void)
 
     // update capabilities and status
     if (allocate()) {
-        hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
         if (!pos_valid) {
             // we don't know where we are
             system_status = TerrainStatusUnhealthy;
@@ -331,7 +330,6 @@ void AP_Terrain::update(void)
             system_status = TerrainStatusOK;
         }
     } else {
-        hal.util->clear_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
         system_status = TerrainStatusDisabled;
     }
 
