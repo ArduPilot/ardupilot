@@ -27,6 +27,8 @@
 #include <limits.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
+
 
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
 #define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
@@ -143,6 +145,13 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Description: ICAO_ID of special vehicle that ignores ADSB_LIST_RADIUS and ADSB_LIST_ALT. The vehicle is always tracked. Use 0 to disable.
     // @User: Advanced
     AP_GROUPINFO("ICAO_SPECL",  13, AP_ADSB, _special_ICAO_target, 0),
+
+    // @Param: LOG
+    // @DisplayName: ADS-B logging
+    // @Description: 0: no logging, 1: log only special ID, 2:log all
+    // @Values: 0: no logging, 1: log only special ID, 2:log all
+    // @User: Advanced
+    AP_GROUPINFO("LOG",  14, AP_ADSB, _log, 1),
 
     AP_GROUPEND
 };
@@ -469,6 +478,8 @@ void AP_ADSB::set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle)
         return;
     }
     in_state.vehicle_list[index] = vehicle;
+
+    write_log(vehicle);
 }
 
 void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
@@ -877,3 +888,35 @@ bool AP_ADSB::get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) 
     return false;
 }
 
+/*
+ * Write dataflash log of a vehicle
+ */
+void AP_ADSB::write_log(const adsb_vehicle_t &vehicle)
+{
+    switch (_log) {
+        case logging::SPECIAL_ONLY:
+            if (!is_special_vehicle(vehicle.info.ICAO_address)) {
+                return;
+            }
+        case logging::ALL:
+            break;
+
+        case logging::NONE:
+        default:
+            return;
+    }
+
+    struct log_ADSB pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ADSB_MSG),
+        time_us       : AP_HAL::micros64(),
+        ICAO_address  : vehicle.info.ICAO_address,
+        lat           : vehicle.info.lat,
+        lng           : vehicle.info.lon,
+        alt           : vehicle.info.altitude,
+        heading       : vehicle.info.heading,
+        hor_velocity  : vehicle.info.hor_velocity,
+        ver_velocity  : vehicle.info.ver_velocity,
+        squawk        : vehicle.info.squawk,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
