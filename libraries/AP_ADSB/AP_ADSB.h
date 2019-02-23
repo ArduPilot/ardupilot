@@ -194,4 +194,12 @@ private:
 
     void push_sample(adsb_vehicle_t &vehicle);
 
+    // logging
+    AP_Int8 _log;
+    void write_log(const adsb_vehicle_t &vehicle);
+    enum logging {
+        NONE            = 0,
+        SPECIAL_ONLY    = 1,
+        ALL             = 2
+    };
 };
