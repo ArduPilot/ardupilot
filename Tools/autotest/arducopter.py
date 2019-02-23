@@ -3777,6 +3777,107 @@ class AutoTestCopter(AutoTest):
         self.do_RTL()
         self.progress("Ran brake  mode")
 
+    def fly_guided_move_to(self, destination, timeout=30):
+        '''move to mavutil.location location; absolute altitude'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > timeout:
+                raise NotAchievedException()
+            self.mav.mav.set_position_target_global_int_send(
+                0, # timestamp
+                1, # target system_id
+                1, # target component id
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                0b1111111111111000, # mask specifying use-only-lat-lon-alt
+                destination.lat *1e7, # lat
+                destination.lng *1e7, # lon
+                destination.alt, # alt
+                0, # vx
+                0, # vy
+                0, # vz
+                0, # afx
+                0, # afy
+                0, # afz
+                0, # yaw
+                0, # yawrate
+            )
+            delta = self.get_distance(self.mav.location(), destination)
+            self.progress("delta=%f (want <1)" % delta)
+            if delta < 1:
+                break
+
+    def test_altitude_types(self):
+        '''start by disabling GCS failsafe, otherwise we immediately disarm
+        due to (apparently) not receiving traffic from the GCS for
+        too long.  This is probably a function of --speedup'''
+
+        '''this test flies the vehicle somewhere lower than were it started.
+        It then disarms.  It then arms, which should reset home to the
+        new, lower altitude.  This delta should be outside 1m but
+        within a few metres of the old one.
+
+        '''
+
+        self.set_parameter("FS_GCS_ENABLE", 0)
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        max_initial_home_alt_m = 500
+        if m.relative_alt > max_initial_home_alt_m:
+            raise NotAchievedException("Initial home alt too high (%fm > %fm)" %
+                                       (m.relative_alt*1000, max_initial_home_alt_m*1000))
+        orig_home_offset_mm = m.alt - m.relative_alt
+        self.user_takeoff(5)
+
+        self.progress("Flying to low position")
+        current_alt = self.mav.location().alt
+# 10m delta        low_position = mavutil.location(-35.358273, 149.169165, current_alt, 0)
+        low_position = mavutil.location(-35.36200016, 149.16415599, current_alt, 0)
+        self.fly_guided_move_to(low_position, timeout=240)
+        self.change_mode('LAND')
+        # expecting home to change when disarmed
+        self.mav.motors_disarmed_wait()
+        # wait a while for home to move (it shouldn't):
+        self.delay_sim_time(10)
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        new_home_offset_mm = m.alt - m.relative_alt
+        home_offset_delta_mm = orig_home_offset_mm - new_home_offset_mm
+        self.progress("new home offset: %f delta=%f" %
+                      (new_home_offset_mm, home_offset_delta_mm))
+        self.progress("gpi=%s" % str(m))
+        max_home_offset_delta_mm = 10
+        if home_offset_delta_mm > max_home_offset_delta_mm:
+            raise NotAchievedException("Large home offset delta: want<%f got=%f" %
+                                       (max_home_offset_delta_mm, home_offset_delta_mm))
+        self.progress("Ensuring home moves when we arm")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        post_arming_home_offset_mm = m.alt - m.relative_alt
+        self.progress("post-arming home offset: %f" % (post_arming_home_offset_mm))
+        self.progress("gpi=%s" % str(m))
+        min_post_arming_home_offset_delta_mm = -3000
+        max_post_arming_home_offset_delta_mm = -4000
+        delta_between_original_home_alt_offset_and_new_home_alt_offset_mm = post_arming_home_offset_mm - orig_home_offset_mm
+        self.progress("delta=%f-%f=%f" % (
+            post_arming_home_offset_mm,
+            orig_home_offset_mm,
+            delta_between_original_home_alt_offset_and_new_home_alt_offset_mm))
+        self.progress("Home moved %fm vertically" % (delta_between_original_home_alt_offset_and_new_home_alt_offset_mm/1000.0))
+        if delta_between_original_home_alt_offset_and_new_home_alt_offset_mm > min_post_arming_home_offset_delta_mm:
+            raise NotAchievedException(
+                "Home did not move vertically on arming: want<=%f got=%f" %
+                (min_post_arming_home_offset_delta_mm, delta_between_original_home_alt_offset_and_new_home_alt_offset_mm))
+        if delta_between_original_home_alt_offset_and_new_home_alt_offset_mm < max_post_arming_home_offset_delta_mm:
+            raise NotAchievedException(
+                "Home moved too far vertically on arming: want>=%f got=%f" %
+                (max_post_arming_home_offset_delta_mm, delta_between_original_home_alt_offset_and_new_home_alt_offset_mm))
+
+        self.mav.motors_disarmed_wait()
+
+
     def fly_precision_companion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
 
@@ -4560,6 +4661,10 @@ class AutoTestCopter(AutoTest):
             ("ParameterValidation",
              "Test parameters are checked for validity",
              self.test_parameter_validation),
+
+            ("AltTypes",
+             "Test Different Altitude Types",
+             self.test_altitude_types),
 
             ("LogDownLoad",
              "Log download",
