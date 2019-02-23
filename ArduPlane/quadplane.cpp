@@ -2404,12 +2404,23 @@ int8_t QuadPlane::forward_throttle_pct(void)
     // inhibit reverse throttle and allow petrol engines with min > 0
     int8_t fwd_throttle_min = (plane.aparm.throttle_min <= 0) ? 0 : plane.aparm.throttle_min;
     vel_forward.integrator = constrain_float(vel_forward.integrator, fwd_throttle_min, plane.aparm.throttle_max);
-    
-    // If we are below alt_cutoff then scale down the effect until it turns off at alt_cutoff and decay the integrator
-    float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
-    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-    vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
-                                   height_above_ground, alt_cutoff, alt_cutoff+2);
+
+    if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
+        (poscontrol.state == QPOS_POSITION1 || poscontrol.state == QPOS_POSITION2)) {
+        // when we are doing horizontal positioning in a VTOL land
+        // we always allow the fwd motor to run. Otherwise a bad
+        // lidar could cause the aircraft not to be able to
+        // approach the landing point when landing below the takeoff point
+        vel_forward.last_pct = vel_forward.integrator;
+    } else {
+        // If we are below alt_cutoff then scale down the effect until
+        // it turns off at alt_cutoff and decay the integrator
+        float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
+        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+
+        vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
+                                                  height_above_ground, alt_cutoff, alt_cutoff+2);
+    }
     if (vel_forward.last_pct == 0) {
         // if the percent is 0 then decay the integrator
         vel_forward.integrator *= 0.95f;
