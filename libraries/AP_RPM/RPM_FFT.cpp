@@ -65,8 +65,8 @@ void AP_RPM_FFT::slow_timer_update(void)
         // not ready yet
         return;
     } 
-    if (arm_cfft_radix4_init_f32( fft, (uint16_t)RPM_FFT_WIDTH, 0, 1) == ARM_MATH_SUCCESS) {
-        arm_cfft_radix4_f32( fft , fft_buffer);
+    if (arm_cfft_radix4_init_f32(&fft, (uint16_t)RPM_FFT_WIDTH, 0, 1) == ARM_MATH_SUCCESS) {
+        arm_cfft_radix4_f32(&fft ,fft_buffer);
 
         //find first peak above a threshold
         float max_value = 0.0f;

@@ -39,7 +39,7 @@ private:
     uint32_t last_imu_sample_us;
 
     // rpm estimator variables
-    arm_cfft_radix4_instance_f32 * fft = new arm_cfft_radix4_instance_f32;
+    arm_cfft_radix4_instance_f32 fft;
     float dt;
 
     // fft data
