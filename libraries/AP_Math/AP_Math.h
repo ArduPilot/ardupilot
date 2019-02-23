@@ -174,7 +174,8 @@ static inline constexpr float degrees(float rad)
 template<typename T>
 float sq(const T val)
 {
-    return powf(static_cast<float>(val), 2);
+    float v = static_cast<float>(val);
+    return v*v;
 }
 
 /*
