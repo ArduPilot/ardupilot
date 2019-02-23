@@ -40,7 +40,6 @@ private:
 
     // rpm estimator variables
     arm_cfft_radix4_instance_f32 * fft = new arm_cfft_radix4_instance_f32;
-    float * cfft = new float[RPM_FFT_WIDTH];
     float dt;
 
     // fft data
@@ -50,5 +49,5 @@ private:
     float new_rpm;
     bool have_new_rpm;
 
-    float * fft_buffer = new float[2 * RPM_FFT_WIDTH];
+    float fft_buffer[2 * RPM_FFT_WIDTH];
 };

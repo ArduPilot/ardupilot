@@ -28,6 +28,8 @@ AP_RPM_FFT::AP_RPM_FFT(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_s
     instance = _instance;
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_RPM_FFT::fast_timer_update, void));
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_RPM_FFT::slow_timer_update, void));
+    // limit max RPM to half buffer size
+    ap_rpm._maximum[instance].set_and_notify(MIN(60*RPM_FFT_WIDTH/2, ap_rpm._maximum[instance]));
 }
 
 
@@ -43,17 +45,12 @@ void AP_RPM_FFT::fast_timer_update(void)
             // no new sample from INS
             return;
         }
-        dt = 1.0e-6f * (imu_sample_us - last_imu_sample_us);
         last_imu_sample_us = imu_sample_us;
 
         const Vector3f &accel = ins.get_accel(0);
-        // collecting accel data but added a stronger oscillatory component
-        // sets real part of complex input data
-        fft_buffer[nsamples] = accel.y + 0.2 * sinf(6.28e-6f*40.0f * dt * nsamples/2);
-        nsamples++;
-        // sets imaginary part of complex input data
-        fft_buffer[nsamples] = 0.0f;
-        nsamples++;
+        // collecting accel data. We leave the complex component at zero
+        fft_buffer[nsamples] = accel.y;
+        nsamples += 2;
     }
 }
 
@@ -62,7 +59,7 @@ void AP_RPM_FFT::fast_timer_update(void)
 */
 void AP_RPM_FFT::slow_timer_update(void)
 {
-    uint16_t max_f;
+    uint16_t max_f = 0;
 
     if (nsamples != ARRAY_SIZE(fft_buffer)) {
         // not ready yet
@@ -70,49 +67,53 @@ void AP_RPM_FFT::slow_timer_update(void)
     } 
     if (arm_cfft_radix4_init_f32( fft, (uint16_t)RPM_FFT_WIDTH, 0, 1) == ARM_MATH_SUCCESS) {
         arm_cfft_radix4_f32( fft , fft_buffer);
+
         //find first peak above a threshold
         float max_value = 0.0f;
-        max_f = 0;
+        const float sq_threshold = 0.01;
         bool first_max = false;
         bool thrsh = false;
-        uint16_t j = 0;
+
         for (uint16_t i = 0; i < 2*RPM_FFT_WIDTH ; i+=2) { 
-            cfft[j]= sqrtf(fft_buffer[i]*fft_buffer[i] + fft_buffer[i+1]*fft_buffer[i+1]);
-            if (cfft[j] > 0.1f) {
+            float cfft = sq(fft_buffer[i]) + sq(fft_buffer[i+1]);
+            if (cfft > sq_threshold) {
                 thrsh = true;
             } else {
                 thrsh = false;
             }
             if (thrsh && !first_max && i != 0) {
-                if (cfft[j] > max_value) {
-                    max_value = cfft[j];
-                    max_f = j;
+                if (cfft > max_value) {
+                    max_value = cfft;
+                    max_f = i/2;
                 }                
             } else if (!thrsh && max_f != 0) {
                 first_max = true;
             }
-            j++;
-        }  
-    } else {
-        max_f = 0;
+        }
     }
-//    float sample_rate = 1.0f / dt;
-//    new_rpm = 60.0f * sample_rate * (float)max_f * 2.0f / ((float)RPM_FFT_WIDTH - 1.0f);   
- 
+
     WITH_SEMAPHORE(sem);
     new_rpm = 60.0f *  400.0f * (float)max_f / ((float)RPM_FFT_WIDTH - 1.0f);
     have_new_rpm = true;
     // reset nsamples
     nsamples = 0;
+    memset(fft_buffer, 0, sizeof(fft_buffer));
 }
 
 void AP_RPM_FFT::update(void)
 {
     WITH_SEMAPHORE(sem);
     if (have_new_rpm) {
-        state.rate_rpm = new_rpm * ap_rpm._scaling[state.instance];
-        state.signal_quality = 0.5f;
-        state.last_reading_ms = AP_HAL::millis();
+        const float &maximum = ap_rpm._maximum[state.instance];
+        const float &minimum = ap_rpm._minimum[state.instance];
+
+        new_rpm *= ap_rpm._scaling[state.instance];
+
+        if ((maximum <= 0 || new_rpm <= maximum) && (new_rpm >= minimum)) {
+            state.rate_rpm = new_rpm;
+            state.signal_quality = 0.5f;
+            state.last_reading_ms = AP_HAL::millis();
+        }
         have_new_rpm = false;
     }
 }
