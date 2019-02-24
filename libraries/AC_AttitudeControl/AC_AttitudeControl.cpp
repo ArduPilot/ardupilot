@@ -211,8 +211,8 @@ void AC_AttitudeControl::reset_rate_controller_I_terms()
 //    _attitude_target_ang_vel have been defined. This ensures input modes can be changed without discontinuity.
 // 5. attitude_controller_run_quat is then run to pass the target angular velocities to the rate controllers and
 //    integrate them into the target attitude. Any errors between the target attitude and the measured attitude are
-//    corrected by first correcting the thrust vector until the angle between the target thrust vector measured
-//    trust vector drops below 2*AC_ATTITUDE_THRUST_ERROR_ANGLE. At this point the heading is also corrected.
+//    corrected by first correcting the thrust vector until the angle between the target thrust vector and measured
+//    thrust vector drops below 2*AC_ATTITUDE_THRUST_ERROR_ANGLE. At this point the heading is also corrected.
 
 
 
@@ -612,10 +612,10 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     Quaternion desired_ang_vel_quat = to_to_from_quat.inverse()*attitude_target_ang_vel_quat*to_to_from_quat;
 
     // Correct the thrust vector and smoothly add feedforward and yaw input
-    if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE*2.0f){
+    if(_thrust_error_angle > _thrust_error_thresh*2.0f){
         _rate_target_ang_vel.z = _ahrs.get_gyro().z;
-    }else if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE){
-        float feedforward_scalar = (1.0f - (_thrust_error_angle-AC_ATTITUDE_THRUST_ERROR_ANGLE)/AC_ATTITUDE_THRUST_ERROR_ANGLE);
+    }else if(_thrust_error_angle > _thrust_error_thresh){
+        float feedforward_scalar = (1.0f - (_thrust_error_angle-_thrust_error_thresh)/_thrust_error_thresh);
         _rate_target_ang_vel.x += desired_ang_vel_quat.q2*feedforward_scalar;
         _rate_target_ang_vel.y += desired_ang_vel_quat.q3*feedforward_scalar;
         _rate_target_ang_vel.z += desired_ang_vel_quat.q4;
