@@ -48,23 +48,18 @@ void NavEKF2_core::SelectFlowFusion()
         flowDataValid = true;
     }
 
-    // if we do have valid flow measurements, fuse data into a 1-state EKF to estimate terrain height
-    // we don't do terrain height estimation in optical flow only mode as the ground becomes our zero height reference
-    if ((flowDataToFuse || rangeDataToFuse) && tiltOK) {
-        // fuse optical flow data into the terrain estimator if available and if there is no range data (range data is better)
-        fuseOptFlowData = (flowDataToFuse && !rangeDataToFuse);
+    // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
+    if (((flowDataToFuse && (frontend->_flowUseMask & (1<<1))) || rangeDataToFuse) && tiltOK) {
         // Estimate the terrain offset (runs a one state EKF)
-        if (frontend->_flowUseMask & (1<<1)) {
-            EstimateTerrainOffset();
-        }
+        EstimateTerrainOffset();
     }
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
         if (frontend->_flowUseMask & (1<<0)) {
-        // Set the flow noise used by the fusion processes
-        R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
-        // Fuse the optical flow X and Y axis data into the main filter sequentially
+            // Set the flow noise used by the fusion processes
+            R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
+            // Fuse the optical flow X and Y axis data into the main filter sequentially
             FuseOptFlow();
         }
         // reset flag to indicate that no new flow data is available for fusion
@@ -85,13 +80,18 @@ void NavEKF2_core::EstimateTerrainOffset()
     // start performance timer
     hal.util->perf_begin(_perf_TerrainOffset);
 
-    // calculate a predicted LOS rate squared
+    // horizontal velocity squared
     float velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
 
     // don't fuse flow data if LOS rate is misaligned, without GPS, or insufficient velocity, as it is poorly observable
     // don't fuse flow data if it exceeds validity limits
-    // don't update terrain state if we are using it as a height reference in the main filter
-    bool cantFuseFlowData = (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));
+    // don't update terrain offset if grpund is being used as the zero height datum in the main filter
+    bool cantFuseFlowData = (!(frontend->_flowUseMask & (1<<1))
+    || gpsNotAvailable 
+    || PV_AidingMode == AID_RELATIVE 
+    || velHorizSq < 25.0f 
+    || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));
+
     if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == HGT_SOURCE_RNG)) {
         // skip update
         inhibitGndState = true;
@@ -160,7 +160,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             }
         }
 
-        if (fuseOptFlowData && !cantFuseFlowData) {
+        if (!cantFuseFlowData) {
 
             Vector3f relVelSensor;          // velocity of sensor relative to ground in sensor axes
             Vector2f losPred;               // predicted optical flow angular rate measurement
