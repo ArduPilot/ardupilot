@@ -137,6 +137,13 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         return altitude;
     }
 #endif
+
+    if (quadplane.in_vtol_land_descent()) {
+        // when doing a VTOL landing we can use the waypoint height as
+        // ground height
+        return height_above_target();
+    }
+
     return relative_altitude;
 }
 
