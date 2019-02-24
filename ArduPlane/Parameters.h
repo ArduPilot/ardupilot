@@ -557,8 +557,10 @@ public:
 #endif
 
     // crow flaps weighting
-    AP_Int8 crow_flap_weight1;
-    AP_Int8 crow_flap_weight2;
+    AP_Int8 crow_flap_weight_outer;
+    AP_Int8 crow_flap_weight_inner;
+    AP_Int8 crow_flap_options;
+    AP_Int8 crow_flap_aileron_matching;
 };
 
 extern const AP_Param::Info var_info[];
