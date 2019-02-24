@@ -1189,20 +1189,22 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #endif
 
     // @Param: DSPOILER_CROW_W1
-    // @DisplayName: Differential spoiler crow flaps inner weight
-    // @Description: This is amount of deflection applied to the two inner surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 25.
+    // @DisplayName: Differential spoiler crow flaps outer weight
+    // @Description: This is amount of deflection applied to the two outer surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 25.
     // @Range: 0 100
+    // @Units: %
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("DSPOILER_CROW_W1", 17, ParametersG2, crow_flap_weight1, 0),
+    AP_GROUPINFO("DSPOILER_CROW_W1", 17, ParametersG2, crow_flap_weight_outer, 0),
 
     // @Param: DSPOILER_CROW_W2
-    // @DisplayName: Differential spoiler crow flaps outer weight
-    // @Description: This is amount of deflection applied to the two outer  surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 45.
+    // @DisplayName: Differential spoiler crow flaps inner weight
+    // @Description: This is amount of deflection applied to the two inner surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 45.
     // @Range: 0 100
+    // @Units: %
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("DSPOILER_CROW_W2", 18, ParametersG2, crow_flap_weight2, 0),
+    AP_GROUPINFO("DSPOILER_CROW_W2", 18, ParametersG2, crow_flap_weight_inner, 0),
 
     // @Param: TKOFF_TIMEOUT
     // @DisplayName: Takeoff timeout
@@ -1212,7 +1214,24 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: s
     // @User: User
     AP_GROUPINFO("TKOFF_TIMEOUT", 19, ParametersG2, takeoff_timeout, 0),
-    
+
+    // @Param: DSPOILER_OPTS
+    // @DisplayName: Differential spoiler and crow flaps options
+    // @Description: Differential spoiler and crow flaps options
+    // @Values: 0: none, 1: D spoilers have pitch input, 2: use both control surfaces on each wing for roll, 4: Progressive crow, flaps only first (0-50% flap in) then crow flaps (50 - 100% flap in)
+    // @Bitmask: 0:pitch control, 1:full span, 2:Progressive crow
+    // @User: Advanced
+    AP_GROUPINFO("DSPOILER_OPTS", 20, ParametersG2, crow_flap_options, 3),
+
+    // @Param: DSPOILER_AILMTCH
+    // @DisplayName: Differential spoiler aileron matching
+    // @Description: This scales down the inner flaps so less than full downwards range can be used for differential spoiler and full span ailerons, 100 is use full range, upwards travel is unaffected
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("DSPOILER_AILMTCH", 21, ParametersG2, crow_flap_aileron_matching, 100),
+
     AP_GROUPEND
 };
 
