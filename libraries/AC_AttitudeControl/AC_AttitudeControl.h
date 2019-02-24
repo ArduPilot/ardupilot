@@ -301,6 +301,11 @@ public:
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
     
+    // set thrust error angle threshold
+    void set_thrust_error_thresh(float thresh) {
+        _thrust_error_thresh = thresh;
+    }
+    
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -438,6 +443,9 @@ protected:
     // (would be expensive to compute from _attitude_target_quat)
     float _last_body_roll;
     float _last_euler_pitch;
+    
+    // thrust error angle threshold
+    float _thrust_error_thresh = AC_ATTITUDE_THRUST_ERROR_ANGLE;
 
 public:
     // log a CTRL message
