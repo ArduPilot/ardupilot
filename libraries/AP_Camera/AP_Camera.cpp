@@ -312,7 +312,7 @@ void AP_Camera::update()
         return;
     }
 
-    if (get_distance(current_loc, _last_location) < _trigg_dist) {
+    if (current_loc.get_distance(_last_location) < _trigg_dist) {
         return;
     }
 
