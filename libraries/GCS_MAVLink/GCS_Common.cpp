@@ -883,7 +883,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 
     // MSG_NAMED_FLOAT messages can't really be "streamed"...
 
-    // this list is ordered by AP_MESSAGE ID - the value being returned:
     static const struct {
         uint32_t mavlink_id;
         ap_message msg_id;
@@ -891,6 +890,8 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_HEARTBEAT,             MSG_HEARTBEAT},
         { MAVLINK_MSG_ID_ATTITUDE,              MSG_ATTITUDE},
         { MAVLINK_MSG_ID_GLOBAL_POSITION_INT,   MSG_LOCATION},
+        { MAVLINK_MSG_ID_HOME_POSITION,         MSG_HOME},
+        { MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN,     MSG_ORIGIN},
         { MAVLINK_MSG_ID_SYS_STATUS,            MSG_SYS_STATUS},
         { MAVLINK_MSG_ID_POWER_STATUS,          MSG_POWER_STATUS},
         { MAVLINK_MSG_ID_MEMINFO,               MSG_MEMINFO},
@@ -2226,11 +2227,8 @@ void GCS_MAVLINK::send_named_float(const char *name, float value) const
     mavlink_msg_named_value_float_send(chan, AP_HAL::millis(), float_name, value);
 }
 
-void GCS_MAVLINK::send_home() const
+void GCS_MAVLINK::send_home_position() const
 {
-    if (!HAVE_PAYLOAD_SPACE(chan, HOME_POSITION)) {
-        return;
-    }
     if (!AP::ahrs().home_is_set()) {
         return;
     }
@@ -2249,11 +2247,8 @@ void GCS_MAVLINK::send_home() const
         AP_HAL::micros64());
 }
 
-void GCS_MAVLINK::send_ekf_origin() const
+void GCS_MAVLINK::send_gps_global_origin() const
 {
-    if (!HAVE_PAYLOAD_SPACE(chan, GPS_GLOBAL_ORIGIN)) {
-        return;
-    }
     Location ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
         return;
@@ -2764,7 +2759,10 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
     ahrs.Log_Write_Home_And_Origin();
 
     // send ekf origin to GCS
-    send_ekf_origin();
+    if (!try_send_message(MSG_ORIGIN)) {
+        // try again later
+        send_message(MSG_ORIGIN);
+    }
 }
 
 void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t *msg)
@@ -3451,8 +3449,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_l
     if (!AP::ahrs().home_is_set()) {
         return MAV_RESULT_FAILED;
     }
-    send_home();
-    send_ekf_origin();
+    if (!try_send_message(MSG_HOME)) {
+        // try again later
+        send_message(MSG_HOME);
+    }
+    if (!try_send_message(MSG_ORIGIN)) {
+        // try again later
+        send_message(MSG_ORIGIN);
+    }
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -3948,6 +3952,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_LOCATION:
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
         send_global_position_int();
+        break;
+
+    case MSG_HOME:
+        CHECK_PAYLOAD_SIZE(HOME_POSITION);
+        send_home_position();
+        break;
+
+    case MSG_ORIGIN:
+        CHECK_PAYLOAD_SIZE(GPS_GLOBAL_ORIGIN);
+        send_gps_global_origin();
         break;
 
     case MSG_CURRENT_WAYPOINT:

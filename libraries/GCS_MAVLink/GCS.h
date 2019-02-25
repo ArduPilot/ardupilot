@@ -95,6 +95,8 @@ enum ap_message : uint8_t {
     MSG_AOA_SSA,
     MSG_LANDING,
     MSG_ESC_TELEMETRY,
+    MSG_ORIGIN,
+    MSG_HOME,
     MSG_NAMED_FLOAT,
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
@@ -219,8 +221,8 @@ public:
     void send_mount_status() const;
     void send_named_float(const char *name, float value) const;
     void send_gimbal_report() const;
-    void send_home() const;
-    void send_ekf_origin() const;
+    void send_home_position() const;
+    void send_gps_global_origin() const;
     virtual void send_position_target_global_int() { };
     void send_servo_output_raw();
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
@@ -742,8 +744,6 @@ public:
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_named_float(const char *name, float value) const;
-    void send_home() const;
-    void send_ekf_origin() const;
 
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
