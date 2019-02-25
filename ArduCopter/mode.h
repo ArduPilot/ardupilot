@@ -402,7 +402,6 @@ private:
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
-    void auto_spline_start(const Location& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location& next_destination);
 
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
