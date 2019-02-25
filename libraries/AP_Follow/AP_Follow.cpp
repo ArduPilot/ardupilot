@@ -152,7 +152,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // project the vehicle position
     Location last_loc = _target_location;
-    location_offset(last_loc, vel_ned.x * dt, vel_ned.y * dt);
+    last_loc.offset(vel_ned.x * dt, vel_ned.y * dt);
     last_loc.alt -= vel_ned.z * 100.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
 
     // return latest position estimate
