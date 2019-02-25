@@ -49,7 +49,9 @@
 extern const AP_HAL::HAL &hal;
 
 struct PACKED sample_regs {
+    uint8_t st1;
     int16_t val[3];
+    uint8_t tmps;
     uint8_t st2;
 };
 
@@ -97,7 +99,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2
     }
     AP_InertialSensor &ins = AP::ins();
 
-    /* Allow MPU9250 to shortcut auxiliary bus and host bus */
+    /* Allow ICM20x48 to shortcut auxiliary bus and host bus */
     ins.detect_backends();
 
     return probe(std::move(dev), force_external, rotation);
@@ -134,6 +136,11 @@ bool AP_Compass_AK09916::init()
 
     if (!_bus->configure()) {
         hal.console->printf("AK09916: Could not configure the bus\n");
+        goto fail;
+    }
+
+    if (!_reset()) {
+        hal.console->printf("AK09916: Reset Failed\n");
         goto fail;
     }
 
@@ -195,10 +202,14 @@ void AP_Compass_AK09916::_make_adc_sensitivity_adjustment(Vector3f& field) const
 
 void AP_Compass_AK09916::_update()
 {
-    struct sample_regs regs;
+    struct sample_regs regs = {0};
     Vector3f raw_field;
 
-    if (!_bus->block_read(REG_HXL, (uint8_t *) &regs, sizeof(regs))) {
+    if (!_bus->block_read(REG_ST1, (uint8_t *) &regs, sizeof(regs))) {
+        return;
+    }
+
+    if (!(regs.st1 & 0x01)) {
         return;
     }
 
@@ -235,7 +246,7 @@ bool AP_Compass_AK09916::_check_id()
 }
 
 bool AP_Compass_AK09916::_setup_mode() {
-    return _bus->register_write(REG_CNTL2, 0x04); //Continuous Mode 2
+    return _bus->register_write(REG_CNTL2, 0x08); //Continuous Mode 2
 }
 
 bool AP_Compass_AK09916::_reset()
@@ -305,7 +316,7 @@ bool AP_AK09916_BusDriver_Auxiliary::block_read(uint8_t reg, uint8_t *buf, uint3
          * We can only read a block when reading the block of sample values -
          * calling with any other value is a mistake
          */
-        assert(reg == REG_HXL);
+        assert(reg == REG_ST1);
 
         int n = _slave->read(buf);
         return n == static_cast<int>(size);
@@ -341,7 +352,7 @@ bool AP_AK09916_BusDriver_Auxiliary::configure()
 
 bool AP_AK09916_BusDriver_Auxiliary::start_measurements()
 {
-    if (_bus->register_periodic_read(_slave, REG_HXL, sizeof(sample_regs)) < 0) {
+    if (_bus->register_periodic_read(_slave, REG_ST1, sizeof(sample_regs)) < 0) {
         return false;
     }
 
