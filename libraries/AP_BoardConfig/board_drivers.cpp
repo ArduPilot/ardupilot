@@ -333,11 +333,7 @@ void AP_BoardConfig::board_setup_sbus(void)
  */
 void AP_BoardConfig::board_setup()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    px4_setup_peripherals();
-    px4_setup_pwm();
-    px4_setup_safety_mask();
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     // init needs to be done after boardconfig is read so parameters are set
     hal.gpio->init();
     hal.rcin->init();
