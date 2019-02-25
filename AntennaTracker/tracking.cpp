@@ -15,7 +15,7 @@ void Tracker::update_vehicle_pos_estimate()
         vehicle.location_estimate = vehicle.location;
         float north_offset = vehicle.vel.x * dt;
         float east_offset = vehicle.vel.y * dt;
-        location_offset(vehicle.location_estimate, north_offset, east_offset);
+        vehicle.location_estimate.offset(north_offset, east_offset);
     	vehicle.location_estimate.alt += vehicle.vel.z * 100.0f * dt;
         // set valid_location flag
         vehicle.location_valid = true;
@@ -56,7 +56,7 @@ void Tracker::update_bearing_and_distance()
     }
 
     // calculate distance to vehicle
-    nav_status.distance = get_distance(current_loc, vehicle.location_estimate);
+    nav_status.distance = current_loc.get_distance(vehicle.location_estimate);
 
     // calculate altitude difference to vehicle using gps
     if (g.alt_source == ALT_SOURCE_GPS){
