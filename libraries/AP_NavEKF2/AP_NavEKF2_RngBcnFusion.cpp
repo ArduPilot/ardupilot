@@ -215,7 +215,7 @@ void NavEKF2_core::FuseRngBcn()
                 ConstrainVariances();
 
                 // update the states
-                // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+                // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
                 stateStruct.angErr.zero();
 
                 // correct the state vector

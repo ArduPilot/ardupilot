@@ -232,7 +232,7 @@ void NavEKF2_core::SelectMagFusion()
     // start performance timer
     hal.util->perf_begin(_perf_FuseMagnetometer);
 
-    // clear the flag that lets other processes know that the expensive magnetometer fusion operation has been perfomred on that time step
+    // clear the flag that lets other processes know that the expensive magnetometer fusion operation has been performed on that time step
     // used for load levelling
     magFusePerformed = false;
 
@@ -717,7 +717,7 @@ void NavEKF2_core::FuseMagnetometer()
         ConstrainVariances();
 
         // update the states
-        // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+        // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
         stateStruct.angErr.zero();
 
         // correct the state vector
@@ -821,7 +821,7 @@ void NavEKF2_core::fuseEulerYaw()
             measured_yaw = predicted_yaw;
         }
     } else {
-        // calculate observaton jacobian when we are observing a rotation in a 312 sequence
+        // calculate observation jacobian when we are observing a rotation in a 312 sequence
         float t2 = q0*q0;
         float t3 = q1*q1;
         float t4 = q2*q2;
@@ -964,7 +964,7 @@ void NavEKF2_core::fuseEulerYaw()
         ForceSymmetry();
         ConstrainVariances();
 
-        // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+        // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
         stateStruct.angErr.zero();
 
         // correct the state vector
@@ -1094,7 +1094,7 @@ void NavEKF2_core::FuseDeclination(float declErr)
         ForceSymmetry();
         ConstrainVariances();
 
-        // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+        // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
         stateStruct.angErr.zero();
 
         // correct the state vector
