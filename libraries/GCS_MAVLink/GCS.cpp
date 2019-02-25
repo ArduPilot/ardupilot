@@ -49,16 +49,6 @@ void GCS::send_named_float(const char *name, float value) const
     FOR_EACH_ACTIVE_CHANNEL(send_named_float(name, value));
 }
 
-void GCS::send_home() const
-{
-    FOR_EACH_ACTIVE_CHANNEL(send_home());
-}
-
-void GCS::send_ekf_origin() const
-{
-    FOR_EACH_ACTIVE_CHANNEL(send_ekf_origin());
-}
-
 /*
   install an alternative protocol handler. This allows another
   protocol to take over the link if MAVLink goes idle. It is used to
