@@ -325,7 +325,7 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
         if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
             loc.lat = EKF_origin.lat;
             loc.lng = EKF_origin.lng;
-            location_offset(loc, outputDataNew.position.x, outputDataNew.position.y);
+            loc.offset(outputDataNew.position.x, outputDataNew.position.y);
             return true;
         } else {
             // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
@@ -338,7 +338,7 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
                 return true;
             } else {
                 // if no GPS fix, provide last known position before entering the mode
-                location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
+                loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
                 return false;
             }
         }
