@@ -725,10 +725,10 @@ bool AP_InertialSensor_Invensensev2::_hardware_init(void)
 AP_Invensensev2_AuxiliaryBusSlave::AP_Invensensev2_AuxiliaryBusSlave(AuxiliaryBus &bus, uint8_t addr,
                                                          uint8_t instance)
     : AuxiliaryBusSlave(bus, addr, instance)
-    , _inv2_addr(INV2REG_I2C_SLV0_ADDR + _instance * 3)
+    , _inv2_addr(INV2REG_I2C_SLV0_ADDR + _instance * 4)
     , _inv2_reg(_inv2_addr + 1)
     , _inv2_ctrl(_inv2_addr + 2)
-    , _inv2_do(INV2REG_I2C_SLV0_DO + _instance)
+    , _inv2_do(_inv2_addr + 3)
 {
 }
 
