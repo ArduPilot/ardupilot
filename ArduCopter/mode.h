@@ -388,7 +388,7 @@ private:
     bool verify_land();
     bool verify_payload_place();
     bool verify_loiter_unlimited();
-    bool verify_loiter_time();
+    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_to_alt();
     bool verify_RTL();
     bool verify_wait_delay();
