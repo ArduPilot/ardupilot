@@ -984,7 +984,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     loc.alt = AP::baro().get_altitude() * 100 + _home.alt;
     loc.relative_alt = 0;
     loc.terrain_alt = 0;
-    location_offset(loc, _position_offset_north, _position_offset_east);
+    loc.offset(_position_offset_north, _position_offset_east);
     const AP_GPS &_gps = AP::gps();
     if (_flags.fly_forward && _have_position) {
         float gps_delay_sec = 0;
