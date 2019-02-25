@@ -118,7 +118,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Param: SPEED_TYPE
     // @DisplayName: Wind speed sensor Type
     // @Description: Wind speed sensor type
-    // @Values: 0:None,1:Airspeed library,2:Moden Devices Wind Sensor,3:SITL
+    // @Values: 0:None,1:Airspeed library,2:Modern Devices Wind Sensor,3:RPM library,10:SITL
     // @User: Standard
     AP_GROUPINFO("SPEED_TYPE", 11, AP_WindVane, _speed_sensor_type,  0),
 
@@ -131,7 +131,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: TEMP_PIN
     // @DisplayName: Wind vane speed sensor analog temp pin
-    // @Description: Wind speed sensor analog temp input pin for Moden Devices Wind Sensor rev. p, set to -1 to diasble temp readings
+    // @Description: Wind speed sensor analog temp input pin for Modern Devices Wind Sensor rev. p, set to -1 to diasble temp readings
     // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("TEMP_PIN", 13, AP_WindVane, _speed_sensor_temp_pin,  WINDSPEED_DEFAULT_TEMP_PIN),
@@ -289,7 +289,7 @@ float AP_WindVane::read_SITL_direction_ef()
     const float wind_speed = AP::sitl()->wind_speed_active;
     const float wind_dir_rad = radians(AP::sitl()->wind_direction_active);
 
-    // Note than the SITL wind direction is defined as the direction the wind is travelling to
+    // Note than the SITL wind direction is defined as the direction the wind is traveling to
     // This is accounted for in these calculations
 
     // convert true wind speed and direction into a 2D vector
@@ -360,7 +360,7 @@ void AP_WindVane::update_apparent_wind_speed()
             _speed_apparent = 0.0f;
             break;
         case WINDSPEED_AIRSPEED: {
-            AP_Airspeed* airspeed = AP_Airspeed::get_singleton();
+            const AP_Airspeed* airspeed = AP_Airspeed::get_singleton();
             if (airspeed != nullptr) {
                 apparent_speed_in = airspeed->get_airspeed();
             }
@@ -374,6 +374,16 @@ void AP_WindVane::update_apparent_wind_speed()
             apparent_speed_in = read_wind_speed_SITL();
 #endif
             break;
+        case WINDSPEED_RPM: {
+            const AP_RPM* rpm = AP_RPM::get_singleton();
+            if (rpm != nullptr) {
+                const float temp_speed = rpm->get_rpm(0);
+                if (!is_negative(temp_speed)) {
+                    apparent_speed_in = temp_speed;
+                }
+            }
+            break;
+        }
     }
 
     // apply low pass filter if enabled
