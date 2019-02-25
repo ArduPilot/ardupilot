@@ -100,7 +100,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
                 gcs().send_text(MAV_SEVERITY_INFO, "Flare %.1fm sink=%.2f speed=%.1f dist=%.1f",
                                   (double)height, (double)sink_rate,
                                   (double)AP::gps().ground_speed(),
-                                  (double)get_distance(current_loc, next_WP_loc));
+                                  (double)current_loc.get_distance(next_WP_loc));
             }
             
             type_slope_stage = SLOPE_STAGE_FINAL;
@@ -139,14 +139,14 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
     location_update(land_WP_loc,
                     land_bearing_cd*0.01f,
-                    get_distance(prev_WP_loc, current_loc) + 200);
+                    prev_WP_loc.get_distance(current_loc) + 200);
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
     // once landed and stationary, post some statistics
     // this is done before disarm_if_autoland_complete() so that it happens on the next loop after the disarm
     if (type_slope_flags.post_stats && !is_armed) {
         type_slope_flags.post_stats = false;
-        gcs().send_text(MAV_SEVERITY_INFO, "Distance from LAND point=%.2fm", (double)get_distance(current_loc, next_WP_loc));
+        gcs().send_text(MAV_SEVERITY_INFO, "Distance from LAND point=%.2fm", (double)current_loc.get_distance(next_WP_loc));
     }
 
     // check if we should auto-disarm after a confirmed landing
@@ -179,7 +179,7 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
     rangefinder_state.last_stable_correction = rangefinder_state.correction;
 
     float corrected_alt_m = (adjusted_altitude_cm_fn() - next_WP_loc.alt)*0.01f - rangefinder_state.correction;
-    float total_distance_m = get_distance(prev_WP_loc, next_WP_loc);
+    float total_distance_m = prev_WP_loc.get_distance(next_WP_loc);
     float top_of_glide_slope_alt_m = total_distance_m * corrected_alt_m / wp_distance;
     prev_WP_loc.alt = top_of_glide_slope_alt_m*100 + next_WP_loc.alt;
 
@@ -229,7 +229,7 @@ bool AP_Landing::type_slope_request_go_around(void)
  */
 void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm)
 {
-    float total_distance = get_distance(prev_WP_loc, next_WP_loc);
+    float total_distance = prev_WP_loc.get_distance(next_WP_loc);
 
     // If someone mistakenly puts all 0's in their LAND command then total_distance
     // will be calculated as 0 and cause a divide by 0 error below.  Lets avoid that.
