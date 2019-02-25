@@ -810,19 +810,19 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                     const float ne_x = packet.x * rover.ahrs.cos_yaw() - packet.y * rover.ahrs.sin_yaw();
                     const float ne_y = packet.x * rover.ahrs.sin_yaw() + packet.y * rover.ahrs.cos_yaw();
                     // add offset to current location
-                    location_offset(target_loc, ne_x, ne_y);
+                    target_loc.offset(ne_x, ne_y);
                     }
                     break;
 
                 case MAV_FRAME_LOCAL_OFFSET_NED:
                     // add offset to current location
-                    location_offset(target_loc, packet.x, packet.y);
+                    target_loc.offset(packet.x, packet.y);
                     break;
 
                 default:
                     // MAV_FRAME_LOCAL_NED interpret as an offset from home
                     target_loc = rover.ahrs.get_home();
-                    location_offset(target_loc, packet.x, packet.y);
+                    target_loc.offset(packet.x, packet.y);
                     break;
                 }
             }
