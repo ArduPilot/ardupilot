@@ -141,7 +141,7 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
 void SoaringController::get_target(Location &wp)
 {
     wp = _prev_update_location;
-    location_offset(wp, _ekf.X[2], _ekf.X[3]);
+    wp.offset(_ekf.X[2], _ekf.X[3]);
 }
 
 bool SoaringController::suppress_throttle()
