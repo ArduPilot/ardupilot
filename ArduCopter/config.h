@@ -704,6 +704,18 @@
   #error Helicopter frame requires acro mode support which is disabled
 #endif
 
+#if MODE_SMARTRTL_ENABLED && !MODE_RTL_ENABLED
+  #error SmartRTL requires ModeRTL which is disabled
+#endif
+
+#if ADSB_ENABLED && !MODE_GUIDED_ENABLED
+  #error ADSB requires ModeGuided which is disabled
+#endif
+
+#if MODE_FOLLOW_ENABLED && !MODE_GUIDED_ENABLED
+  #error Follow requires ModeGuided which is disabled
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
