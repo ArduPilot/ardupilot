@@ -1777,7 +1777,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
             continue;
         }
         if (tmp.id == MAV_CMD_DO_LAND_START) {
-            float tmp_distance = get_distance(tmp.content.location, current_loc);
+            float tmp_distance = tmp.content.location.get_distance(current_loc);
             if (min_distance < 0 || tmp_distance < min_distance) {
                 min_distance = tmp_distance;
                 landing_start_index = i;
@@ -1826,7 +1826,7 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
                 continue;
             }
             if (tmp.id == MAV_CMD_DO_GO_AROUND) {
-                float tmp_distance = get_distance(tmp.content.location, current_loc);
+                float tmp_distance = tmp.content.location.get_distance(current_loc);
                 if (tmp_distance < min_distance) {
                     min_distance = tmp_distance;
                     abort_index = i;
