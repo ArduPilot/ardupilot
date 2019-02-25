@@ -23,14 +23,7 @@
 
 #if HAL_WITH_UAVCAN
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-#include <AP_HAL_PX4/CAN.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/CAN.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CAN.h>
@@ -117,9 +110,7 @@ void AP_BoardConfig_CAN::init()
             if (hal.can_mgr[drv_num - 1] == nullptr) {
                 // CAN Manager is the driver
                 // So if this driver was not created before for other physical interface - do it
-                #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-                    const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new PX4::PX4CANManager;
-                #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+                #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new Linux::CANManager;
                 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new ChibiOS::CANManager;
