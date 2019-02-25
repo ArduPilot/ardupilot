@@ -21,7 +21,7 @@ bool ModeLoiter::_enter()
 void ModeLoiter::update()
 {
     // get distance (in meters) to destination
-    _distance_to_destination = get_distance(rover.current_loc, _destination);
+    _distance_to_destination = rover.current_loc.get_distance(_destination);
 
     // if within loiter radius slew desired speed towards zero and use existing desired heading
     if (_distance_to_destination <= g2.loit_radius) {
