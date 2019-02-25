@@ -180,7 +180,7 @@ bool Aircraft::on_ground() const
 void Aircraft::update_position(void)
 {
     location = home;
-    location_offset(location, position.x, position.y);
+    location.offset(position.x, position.y);
 
     location.alt  = static_cast<int32_t>(home.alt - position.z * 100.0f);
 
@@ -683,7 +683,7 @@ void Aircraft::smooth_sensors(void)
     smoothing.position += smoothing.velocity_ef * delta_time;
 
     smoothing.location = home;
-    location_offset(smoothing.location, smoothing.position.x, smoothing.position.y);
+    smoothing.location.offset(smoothing.position.x, smoothing.position.y);
     smoothing.location.alt  = static_cast<int32_t>(home.alt - smoothing.position.z * 100.0f);
 
     smoothing.last_update_us = now;
