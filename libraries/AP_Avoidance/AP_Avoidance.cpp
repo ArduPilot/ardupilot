@@ -371,7 +371,7 @@ void AP_Avoidance::update_threat_level(const Location &my_loc,
     // level is none - but only *once the GCS has been informed*!
     obstacle.closest_approach_xy = closest_xy;
     obstacle.closest_approach_z = closest_z;
-    float current_distance = get_distance(my_loc, obstacle_loc);
+    float current_distance = my_loc.get_distance(obstacle_loc);
     obstacle.distance_to_closest_approach = current_distance - closest_xy;
     Vector2f net_velocity_ne = Vector2f(my_vel[0] - obstacle_vel[0], my_vel[1] - obstacle_vel[1]);
     obstacle.time_to_closest_approach = 0.0f;
