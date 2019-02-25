@@ -328,7 +328,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
             loc.lat = EKF_origin.lat;
             loc.lng = EKF_origin.lng;
             // correct for IMU offset (EKF calculations are at the IMU position)
-            location_offset(loc, (outputDataNew.position.x + posOffsetNED.x), (outputDataNew.position.y + posOffsetNED.y));
+            loc.offset((outputDataNew.position.x + posOffsetNED.x), (outputDataNew.position.y + posOffsetNED.y));
             return true;
         } else {
             // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
@@ -342,7 +342,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
             } else {
                 // if no GPS fix, provide last known position before entering the mode
                 // correct for IMU offset (EKF calculations are at the IMU position)
-                location_offset(loc, (lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
+                loc.offset((lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
                 return false;
             }
         }
