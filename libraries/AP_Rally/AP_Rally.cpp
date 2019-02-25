@@ -126,7 +126,7 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
             continue;
         }
         Location rally_loc = rally_location_to_location(next_rally);
-        float dis = get_distance(current_loc, rally_loc);
+        float dis = current_loc.get_distance(rally_loc);
 
         if (is_valid(rally_loc) && (dis < min_dis || min_dis < 0)) {
             min_dis = dis;
@@ -158,7 +158,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         Location loc = rally_location_to_location(ral_loc);
         // use the rally point if it's closer then home, or we aren't generally considering home as acceptable
-        if (!_rally_incl_home  || (get_distance(current_loc, loc) < get_distance(current_loc, return_loc))) {
+        if (!_rally_incl_home  || (current_loc.get_distance(loc) < current_loc.get_distance(return_loc))) {
             return_loc = rally_location_to_location(ral_loc);
         }
     }
