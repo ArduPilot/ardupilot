@@ -2697,7 +2697,8 @@ void QuadPlane::update_throttle_thr_mix(void)
 bool QuadPlane::in_vtol_land_approach(void) const
 {
     if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
-        (poscontrol.state == QPOS_POSITION1 || poscontrol.state == QPOS_POSITION2)) {
+        (poscontrol.state == QPOS_POSITION1 || poscontrol.state == QPOS_POSITION2) &&
+        motors->get_desired_spool_state() >= AP_Motors::DESIRED_SPIN_WHEN_ARMED) {
         return true;
     }
     return false;
