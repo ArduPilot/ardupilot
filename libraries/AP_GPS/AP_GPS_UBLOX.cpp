@@ -880,7 +880,8 @@ AP_GPS_UBLOX::_parse_gps(void)
     	int32_t acc_d_mm = _buffer.rtk.acc_d_mm;
 
     	// rms of error terms
-    	state.rtk_accuracy = safe_sqrt(acc_n_mm*acc_n_mm + acc_e_mm*acc_e_mm + acc_d_mm*acc_d_mm);
+    	double rtk_accuracy = acc_n_mm*acc_n_mm + acc_e_mm*acc_e_mm + acc_d_mm*acc_d_mm;
+    	state.rtk_accuracy = (uint32_t) safe_sqrt(rtk_accuracy);
     	state.rtk_baseline_coords_type = 1; // NED
     	state.rtk_time_week_ms = _buffer.rtk.itow_ms;
     	state.rtk_week_number = state.time_week;
