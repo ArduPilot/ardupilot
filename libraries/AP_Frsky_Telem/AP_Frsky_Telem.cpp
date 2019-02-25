@@ -731,7 +731,7 @@ uint32_t AP_Frsky_Telem::calc_home(void)
         const Location &home_loc = _ahrs.get_home();
         if (home_loc.lat != 0 || home_loc.lng != 0) {
             // distance between vehicle and home_loc in meters
-            home = prep_number(roundf(get_distance(home_loc, loc)), 3, 2);
+            home = prep_number(roundf(home_loc.get_distance(loc)), 3, 2);
             // angle from front of vehicle to the direction of home_loc in 3 degree increments (just in case, limit to 127 (0x7F) since the value is stored on 7 bits)
             home |= (((uint8_t)roundf(get_bearing_cd(loc,home_loc) * 0.00333f)) & HOME_BEARING_LIMIT)<<HOME_BEARING_OFFSET;
         }
