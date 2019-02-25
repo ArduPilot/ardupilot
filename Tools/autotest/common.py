@@ -1689,6 +1689,7 @@ class AutoTest(ABC):
         while True:
             if self.get_sim_time() - tstart > 30:
                 raise NotAchievedException("Failed to poll home position")
+            self.progress("Sending MAV_CMD_GET_HOME_POSITION")
             try:
                 self.run_cmd(
                     mavutil.mavlink.MAV_CMD_GET_HOME_POSITION,
@@ -1701,10 +1702,13 @@ class AutoTest(ABC):
                     0)
             except ValueError as e:
                 continue
-            break
-        m = self.mav.messages.get("HOME_POSITION", None)
-        if old is not None and m._timestamp == old._timestamp:
-            raise NotAchievedException("home position not updated")
+            m = self.mav.messages.get("HOME_POSITION", None)
+            if m is None:
+                continue
+            if old is None:
+                break
+            if m._timestamp != old._timestamp:
+                break
         return m
 
     def distance_to_home(self):
