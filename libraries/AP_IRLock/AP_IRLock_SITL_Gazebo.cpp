@@ -83,8 +83,6 @@ bool AP_IRLock_SITL_Gazebo::update()
         _target_info.timestamp = pkt.timestamp;
         _target_info.pos_x = pkt.pos_x;
         _target_info.pos_y = pkt.pos_y;
-        _target_info.size_x = pkt.size_x;
-        _target_info.size_y = pkt.size_y;
         _last_timestamp = pkt.timestamp;
         _last_update_ms = _last_timestamp;
         new_data = true;
