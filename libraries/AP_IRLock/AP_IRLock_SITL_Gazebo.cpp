@@ -61,7 +61,18 @@ bool AP_IRLock_SITL_Gazebo::update()
     }
 
     // receive packet from Gazebo IRLock plugin
-    irlock_packet pkt;
+
+    /*
+      reply packet sent from simulator to ArduPilot
+     */
+    struct irlock_packet {
+        uint64_t timestamp;  // in miliseconds
+        uint16_t num_targets;
+        float pos_x;
+        float pos_y;
+        float size_x;
+        float size_y;
+    } pkt;
     const int wait_ms = 0;
     ssize_t s = sock.recv(&pkt, sizeof(irlock_packet), wait_ms);
 
