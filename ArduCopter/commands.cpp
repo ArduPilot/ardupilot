@@ -107,7 +107,7 @@ bool Copter::far_from_EKF_origin(const Location& loc)
 {
     // check distance to EKF origin
     const struct Location &ekf_origin = inertial_nav.get_origin();
-    if (get_distance(ekf_origin, loc) > EKF_ORIGIN_MAX_DIST_M) {
+    if (ekf_origin.get_distance(loc) > EKF_ORIGIN_MAX_DIST_M) {
         return true;
     }
 
