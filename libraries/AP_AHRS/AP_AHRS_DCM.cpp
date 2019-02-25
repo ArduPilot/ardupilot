@@ -1048,8 +1048,8 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     Log_Write_Home_And_Origin();
 
     // send new home and ekf origin to GCS
-    gcs().send_home();
-    gcs().send_ekf_origin();
+    gcs().send_message(MSG_HOME);
+    gcs().send_message(MSG_ORIGIN);
 
     return true;
 }
