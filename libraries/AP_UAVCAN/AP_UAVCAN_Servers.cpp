@@ -88,7 +88,7 @@ class AP_UAVCAN_RestartRequestHandler : public uavcan::IRestartRequestHandler {
 public:
     bool handleRestartRequest(uavcan::NodeID request_source) override {
         // swiped from reboot handling in GCS_Common.cpp
-        AP_Notify *notify = AP_Notify::instance();
+        AP_Notify *notify = AP_Notify::get_singleton();
         if (notify) {
             AP_Notify::flags.firmware_update = 1;
             notify->update();
