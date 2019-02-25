@@ -317,9 +317,6 @@ private:
     // This is used to enable the inverted flight feature
     bool inverted_flight;
 
-    // This is used to enable the PX4IO override for testing
-    bool px4io_override_enabled;
-
     // Failsafe
     struct {
         // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
