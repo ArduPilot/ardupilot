@@ -1,3 +1,42 @@
+Release 3.9.6beta1, 26th February 2019
+--------------------------------------
+
+This is a minor release with some important fixes for VTOL landings
+and EKF handling of compass switching.
+
+ - fixed throttle slew on dual-motor planes
+
+ - handle VTOL landings with incorrect height (or failed rangefinder)
+
+ - fixed EKF alt datum reset on barometer reset
+
+ - probe all I2C buses for rangefinders (fixes I2C lidar on boards
+   with more than 2 I2C buses)
+
+ - fixed lightware serial detection for newer lidars such as LW20
+
+ - fixed motor relax code on VTOL landing to prevent motors powering
+   up after touchdown
+
+ - fixed forward motor in quadplane landing transition to allow motors
+   when landing at a height lower than takeoff height
+
+ - fixed throttle mix handling for VTOL planes on descent
+
+ - use WP altitude for height of ground in VTOL landing, allowing for
+   good landings at heights well above or below takeoff height
+
+ - fixed EKF compass switching with 3 compasses
+
+ - fixed mini-pix UART order to match case markings
+
+ - added generated git hash to apj file
+
+ - fixed apj generation to not change based on time of build
+
+Happy flying!
+
+
 Release 3.9.5, 27th January 2019
 --------------------------------
 
