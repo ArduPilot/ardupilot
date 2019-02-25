@@ -86,7 +86,7 @@ void Plane::navigate()
 
     // waypoint distance from plane
     // ----------------------------
-    auto_state.wp_distance = get_distance(current_loc, next_WP_loc);
+    auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
     auto_state.wp_proportion = location_path_proportion(current_loc, 
                                                         prev_WP_loc, next_WP_loc);
     SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
@@ -225,7 +225,7 @@ void Plane::update_loiter(uint16_t radius)
     } else if ((loiter.start_time_ms == 0 &&
                 (control_mode == AUTO || control_mode == GUIDED) &&
                 auto_state.crosstrack &&
-                get_distance(current_loc, next_WP_loc) > radius*3) ||
+                current_loc.get_distance(next_WP_loc) > radius*3) ||
                (control_mode == RTL && quadplane.available() && quadplane.rtl_mode == 1)) {
         /*
           if never reached loiter point and using crosstrack and somewhat far away from loiter point
@@ -285,7 +285,7 @@ void Plane::update_cruise()
         // always look 1km ahead
         location_update(next_WP_loc,
                         cruise_state.locked_heading_cd*0.01f, 
-                        get_distance(prev_WP_loc, current_loc) + 1000);
+                        prev_WP_loc.get_distance(current_loc) + 1000);
         nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
     }
 }

@@ -194,7 +194,7 @@ bool AP_Avoidance_Plane::handle_avoidance_horizontal(const AP_Avoidance::Obstacl
         velocity_neu *= 10000;
 
         // set target
-        location_offset(plane.guided_WP_loc, velocity_neu.x, velocity_neu.y);
+        plane.guided_WP_loc.offset(velocity_neu.x, velocity_neu.y);
         return true;
     }
 

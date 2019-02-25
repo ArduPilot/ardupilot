@@ -223,7 +223,7 @@ void Plane::crash_detection_update(void)
 
                 // did we "crash" within 75m of the landing location? Probably just a hard landing
                 crashed_near_land_waypoint =
-                        get_distance(current_loc, mission.get_current_nav_cmd().content.location) < 75;
+                        current_loc.get_distance(mission.get_current_nav_cmd().content.location) < 75;
 
                 // trigger hard landing event right away, or never again. This inhibits a false hard landing
                 // event when, for example, a minute after a good landing you pick the plane up and
