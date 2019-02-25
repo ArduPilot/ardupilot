@@ -826,7 +826,7 @@ void Plane::update_alt()
 
         float distance_beyond_land_wp = 0;
         if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-            distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
+            distance_beyond_land_wp = current_loc.get_distance(next_WP_loc);
         }
 
         bool soaring_active = false;
