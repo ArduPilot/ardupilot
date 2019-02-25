@@ -140,6 +140,7 @@ void AP_IRLock_I2C::read_frames(void)
         _target_info.pos_y = 0.5f*(corner1_pos_y+corner2_pos_y);
         _target_info.size_x = corner2_pos_x-corner1_pos_x;
         _target_info.size_y = corner2_pos_y-corner1_pos_y;
+        _target_info.pos_z = 1.0f;
     }
 
 #if 0

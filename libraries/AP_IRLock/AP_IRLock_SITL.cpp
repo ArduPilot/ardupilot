@@ -49,6 +49,7 @@ bool AP_IRLock_SITL::update()
         _target_info.timestamp = _last_timestamp;
         _target_info.pos_x = real_position.y;
         _target_info.pos_y = -real_position.x;
+        _target_info.pos_z = real_position.z;
         return true;
     }
     return false;

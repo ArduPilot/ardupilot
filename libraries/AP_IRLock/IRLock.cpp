@@ -34,7 +34,7 @@ bool IRLock::get_unit_vector_body(Vector3f& ret) const
     // use data from first (largest) object
     ret.x = -_target_info.pos_y;
     ret.y = _target_info.pos_x;
-    ret.z = 1.0f;
+    ret.z = _target_info.pos_z;
     ret /= ret.length();
     return true;
 }
