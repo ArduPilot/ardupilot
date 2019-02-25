@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_SPORT_ENABLED == ENABLED
+
 /*
  * Init and run calls for sport flight mode
  */
@@ -165,3 +167,5 @@ void Copter::ModeSport::run()
         break;
     }
 }
+
+#endif
