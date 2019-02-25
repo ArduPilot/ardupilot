@@ -629,7 +629,7 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:
-        cmd_complete = verify_loiter_time();
+        cmd_complete = verify_loiter_time(cmd);
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
@@ -1656,7 +1656,7 @@ bool Copter::ModeAuto::verify_loiter_unlimited()
 }
 
 // verify_loiter_time - check if we have loitered long enough
-bool Copter::ModeAuto::verify_loiter_time()
+bool Copter::ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     // return immediately if we haven't reached our destination
     if (!copter.wp_nav->reached_wp_destination()) {
@@ -1669,7 +1669,12 @@ bool Copter::ModeAuto::verify_loiter_time()
     }
 
     // check if loiter timer has run out
-    return (((millis() - loiter_time) / 1000) >= loiter_time_max);
+    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        return true;
+    }
+
+    return false;
 }
 
 // verify_loiter_to_alt - check if we have reached both destination
