@@ -1096,8 +1096,33 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // if no delay as well as not final waypoint set the waypoint as "fast"
     AP_Mission::Mission_Command temp_cmd;
+    bool fast_waypoint = false;
     if (loiter_time_max == 0 && copter.mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
-        copter.wp_nav->set_fast_waypoint(true);
+
+        // whether vehicle should stop at the target position depends upon the next command
+        switch (temp_cmd.id) {
+            case MAV_CMD_NAV_WAYPOINT:
+            case MAV_CMD_NAV_LOITER_UNLIM:
+            case MAV_CMD_NAV_LOITER_TURNS:
+            case MAV_CMD_NAV_LOITER_TIME:
+            case MAV_CMD_NAV_LAND:
+            case MAV_CMD_NAV_SPLINE_WAYPOINT:
+                // if next command's lat, lon is specified then do not slowdown at this waypoint
+                if ((temp_cmd.content.location.lat != 0) || (temp_cmd.content.location.lng != 0)) {
+                    fast_waypoint = true;
+                }
+                break;
+            case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+                // do not stop for RTL
+                fast_waypoint = true;
+                break;
+            case MAV_CMD_NAV_TAKEOFF:
+            default:
+                // always stop for takeoff commands
+                // for unsupported commands it is safer to stop
+                break;
+        }
+        copter.wp_nav->set_fast_waypoint(fast_waypoint);
     }
 }
 
