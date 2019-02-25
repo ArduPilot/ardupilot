@@ -81,19 +81,19 @@ void AP_Beacon_SITL::update(void)
     switch (beacon_id) {
     case 0:
         // NE corner
-        location_offset(beacon_loc, ORIGIN_OFFSET_NORTH + BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST + BEACON_SPACING_EAST/2);
+        beacon_loc.offset(ORIGIN_OFFSET_NORTH + BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST + BEACON_SPACING_EAST/2);
         break;
     case 1:
         // SE corner
-        location_offset(beacon_loc, ORIGIN_OFFSET_NORTH - BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST + BEACON_SPACING_EAST/2);
+        beacon_loc.offset(ORIGIN_OFFSET_NORTH - BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST + BEACON_SPACING_EAST/2);
         break;
     case 2:
         // SW corner
-        location_offset(beacon_loc, ORIGIN_OFFSET_NORTH - BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST - BEACON_SPACING_EAST/2);
+        beacon_loc.offset(ORIGIN_OFFSET_NORTH - BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST - BEACON_SPACING_EAST/2);
         break;
     case 3:
         // NW corner
-        location_offset(beacon_loc, ORIGIN_OFFSET_NORTH + BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST - BEACON_SPACING_EAST/2);
+        beacon_loc.offset(ORIGIN_OFFSET_NORTH + BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST - BEACON_SPACING_EAST/2);
         break;
     }
 
