@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_POSHOLD_ENABLED == ENABLED
+
 /*
  * Init and run calls for PosHold flight mode
  *     PosHold tries to improve upon regular loiter by mixing the pilot input with the loiter controller
@@ -667,3 +669,5 @@ void Copter::ModePosHold::poshold_pitch_controller_to_pilot_override()
     // store final loiter outputs for mixing with pilot input
     poshold.controller_final_pitch = poshold.pitch;
 }
+
+#endif
