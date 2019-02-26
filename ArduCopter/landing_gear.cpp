@@ -30,7 +30,7 @@ void Copter::landinggear_update()
     last_deploy_status = landinggear.deployed();
 
     // support height based triggering using rangefinder or altitude above ground
-    int32_t height_cm = flightmode->get_alt_above_ground();
+    int32_t height_cm = flightmode->get_alt_above_ground_cm();
 
     // use rangefinder if available
     switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
