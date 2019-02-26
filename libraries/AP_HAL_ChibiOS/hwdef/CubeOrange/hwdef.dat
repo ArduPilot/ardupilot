@@ -1,6 +1,13 @@
 # hw definition file for processing by chibios_hwdef.py
 # for F743 bootloader
 
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+USB_PRODUCT 0x1016
+USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+USB_STRING_PRODUCT "CubeOrange"
+USB_STRING_SERIAL  "%SERIAL%"
+
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
@@ -8,7 +15,7 @@ MCU STM32H7xx STM32H743xx
 OSCILLATOR_HZ 24000000
 
 # board ID for firmware load
-APJ_BOARD_ID 139
+APJ_BOARD_ID 140
 
 FLASH_SIZE_KB 2048
 
