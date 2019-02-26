@@ -724,11 +724,9 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Sensor healthy when it shouldn't be")
         self.progress("Making RC work again")
         self.set_parameter("SIM_RC_FAIL", 0)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.progress("Giving receiver time to recover")
+        for i in range(1, 10):
+            m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
             raise NotAchievedException("Receiver not enabled")
@@ -773,6 +771,7 @@ class AutoTestPlane(AutoTest):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.mavproxy.expect("BANG")
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
     def run_subtest(self, desc, func):

@@ -269,8 +269,10 @@ class AutoTestRover(AutoTest):
 
             self.progress("Sprayer OK")
         except Exception as e:
+            self.progress("Caught exception: %s" % str(e))
             ex = e
         self.context_pop()
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex:
             raise ex
@@ -490,6 +492,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ex = e
         self.context_pop()
         self.mavproxy.send("fence clear\n")
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex:
             raise ex
@@ -757,6 +760,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ex = e
 
         self.context_pop()
+        self.disarm_vehicle()
         self.reboot_sitl()
 
         if ex is not None:

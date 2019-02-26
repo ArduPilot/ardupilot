@@ -291,10 +291,35 @@ class AutoTest(ABC):
         self.mavproxy.send("param fetch\n")
         self.mavproxy.expect("Received [0-9]+ parameters")
 
+    def reboot_sitl_mav(self):
+        """Reboot SITL instance using mavlink and wait for it to reconnect."""
+        old_bootcount = self.get_parameter('STAT_BOOTCNT')
+        # ardupilot SITL may actually NAK the reboot; replace with
+        # run_cmd when we don't do that.
+        self.mav.mav.command_long_send(self.sysid_thismav(),
+                                       1,
+                                       mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                                       1,  # confirmation
+                                       1, # reboot autopilot
+                                       0,
+                                       0,
+                                       0,
+                                       0,
+                                       0,
+                                       0)
+        self.detect_and_handle_reboot(old_bootcount)
+
     def reboot_sitl(self):
-        """Reboot SITL instance and wait it to reconnect."""
+        """Reboot SITL instance and wait for it to reconnect."""
+        self.reboot_sitl_mav()
+
+    def reboot_sitl_mavproxy(self):
+        """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
         self.mavproxy.send("reboot\n")
+        self.detect_and_handle_reboot(old_bootcount)
+
+    def detect_and_handle_reboot(self, old_bootcount):
         tstart = time.time()
         while True:
             if time.time() - tstart > 10:
@@ -439,7 +464,7 @@ class AutoTest(ABC):
         return m.time_boot_ms * 1.0e-3
 
     def get_sim_time_cached(self):
-        """Get SITL time."""
+        """Get SITL time in seconds."""
         x = self.mav.messages.get("SYSTEM_TIME", None)
         if x is None:
             return self.get_sim_time()
@@ -836,12 +861,15 @@ class AutoTest(ABC):
                 return True
         raise AutoTestTimeoutException("Failed to ARM with mavlink")
 
-    def disarm_vehicle(self, timeout=20):
+    def disarm_vehicle(self, timeout=60, force=False):
         """Disarm vehicle with mavlink disarm message."""
         self.progress("Disarm motors with MAVLink cmd")
+        p2 = 0
+        if force:
+            p2 = 21196 # magic force disarm value
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                      0,  # DISARM
-                     0,
+                     p2,
                      0,
                      0,
                      0,
@@ -1098,7 +1126,7 @@ class AutoTest(ABC):
                 raise AutoTestTimeoutException("Did not get good COMMAND_ACK within %fs" % timeout)
             m = self.mav.recv_match(type='COMMAND_ACK',
                                     blocking=True,
-                                    timeout=1)
+                                    timeout=0.1)
             if m is None:
                 continue
             if not quiet:
@@ -1703,6 +1731,8 @@ class AutoTest(ABC):
     def check_sitl_reset(self):
         self.wait_heartbeat()
         if self.armed():
+            self.progress("Armed at end of test; force-rebooting SITL")
+            self.disarm_vehicle(force=True)
             self.forced_post_test_sitl_reboots += 1
             self.progress("Force-resetting SITL")
             self.reboot_sitl() # that'll learn it
@@ -1897,6 +1927,9 @@ class AutoTest(ABC):
                           (m.groundspeed, want))
 
     def fly_test_set_home(self):
+        if self.is_tracker():
+            # tracker starts armed...
+            self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
         # HOME_POSITION is used as a surrogate for origin until we
