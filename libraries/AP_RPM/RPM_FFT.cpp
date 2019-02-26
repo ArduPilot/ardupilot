@@ -29,7 +29,7 @@ AP_RPM_FFT::AP_RPM_FFT(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_s
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_RPM_FFT::fast_timer_update, void));
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_RPM_FFT::slow_timer_update, void));
     // limit max RPM to half buffer size
-    ap_rpm._maximum[instance].set_and_notify(MIN(60*RPM_FFT_WIDTH/2, ap_rpm._maximum[instance]));
+    ap_rpm._maximum[instance].set_and_notify(MIN(60.0f/(dt*2.0f), ap_rpm._maximum[instance]));
 }
 
 
@@ -45,6 +45,7 @@ void AP_RPM_FFT::fast_timer_update(void)
             // no new sample from INS
             return;
         }
+        dt = 1.0e-6f * (imu_sample_us - last_imu_sample_us);
         last_imu_sample_us = imu_sample_us;
 
         const Vector3f &accel = ins.get_accel(0);
@@ -70,7 +71,7 @@ void AP_RPM_FFT::slow_timer_update(void)
 
         //find first peak above a threshold
         float max_value = 0.0f;
-        const float sq_threshold = 0.01;
+        const float sq_threshold = 1000.0f;
         bool first_max = false;
         bool thrsh = false;
 
@@ -93,7 +94,7 @@ void AP_RPM_FFT::slow_timer_update(void)
     }
 
     WITH_SEMAPHORE(sem);
-    new_rpm = 60.0f *  400.0f * (float)max_f / ((float)RPM_FFT_WIDTH - 1.0f);
+    new_rpm = 60.0f * (float)max_f / (dt * ((float)RPM_FFT_WIDTH - 1.0f));
     have_new_rpm = true;
     // reset nsamples
     nsamples = 0;

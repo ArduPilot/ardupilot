@@ -24,7 +24,7 @@ class AP_RPM_SITL : public AP_RPM_Backend
 {
 public:
     // constructor
-    AP_RPM_SITL(AP_RPM &ranger, uint8_t instance, AP_RPM::RPM_State &_state);
+    AP_RPM_SITL(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state);
 
     // update state
     void update(void) override;

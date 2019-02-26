@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PX4-PWM,2:AUXPIN,,3:FFT
+    // @Values: 0:None,1:PX4-PWM,2:AUXPIN,,3:FFT(1hz update rate)
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    10, AP_RPM, _type[1], 0),
 
