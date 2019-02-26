@@ -196,7 +196,7 @@ void QuadPlane::tailsitter_check_input(void)
 }
 
 /*
-  return true if we are a tailsitter transitioning to VTOL flight  
+  return true if we are a tailsitter transitioning to VTOL flight
  */
 bool QuadPlane::in_tailsitter_vtol_transition(void) const
 {
@@ -204,19 +204,83 @@ bool QuadPlane::in_tailsitter_vtol_transition(void) const
 }
 
 /*
-  account for speed scaling of control surfaces in hover
+  account for speed scaling of control surfaces in VTOL modes
 */
 void QuadPlane::tailsitter_speed_scaling(void)
 {
     const float hover_throttle = motors->get_throttle_hover();
     const float throttle = motors->get_throttle();
-    float scaling;
+    float spd_scaler = 1;
 
-    if (is_zero(throttle)) {
-        scaling = tailsitter.throttle_scale_max;
+    // If throttle_scale_max is > 1, boost gains at low throttle
+    if (tailsitter.throttle_scale_max > 1) {
+        if (is_zero(throttle)) {
+            spd_scaler = tailsitter.throttle_scale_max;
+        } else {
+            spd_scaler = constrain_float(hover_throttle / throttle, 0, tailsitter.throttle_scale_max);
+        }
     } else {
-        scaling = constrain_float(hover_throttle / throttle, 0, tailsitter.throttle_scale_max);
+        // reduce gains when flying at high speed in Q modes:
+
+        // critical parameter: violent oscillations if too high
+        // sudden loss of attitude control if too low
+        constexpr float max_atten = 0.2f;
+        float tthr = 1.25f * hover_throttle;
+        float aspeed;
+        bool airspeed_enabled = ahrs.airspeed_sensor_enabled();
+
+        // If there is an airspeed sensor use the measured airspeed
+        // The airspeed estimate based only on GPS and (estimated) wind is
+        // not sufficiently accurate for tailsitters.
+        // (based on tests in RealFlight 8 with 10kph wind)
+        if (airspeed_enabled && ahrs.airspeed_estimate(&aspeed)) {
+            // plane.get_speed_scaler() doesn't work well for copter tailsitters
+            // ramp down from 1 to max_atten as speed increases to airspeed_max
+            spd_scaler = constrain_float(1 - (aspeed / plane.aparm.airspeed_max), max_atten, 1.0f);
+        } else {
+            // if no airspeed sensor reduce control surface throws at large tilt
+            // angles (assuming high airspeed)
+
+            // ramp down from 1 to max_atten at tilt angles over trans_angle
+            // (angles here are represented by their cosines)
+            constexpr float c_trans_angle = cosf(.125f * M_PI);
+            constexpr float alpha = (1 - max_atten) / (c_trans_angle - cosf(radians(90)));
+            constexpr float beta = 1 - alpha * c_trans_angle;
+            const float c_tilt = ahrs_view->get_rotation_body_to_ned().c.z;
+            if (c_tilt < c_trans_angle) {
+                spd_scaler = constrain_float(beta + alpha * c_tilt, max_atten, 1.0f);
+                // reduce throttle attenuation threshold too
+                tthr = 0.5f * hover_throttle;
+            }
+        }
+        // if throttle is above hover thrust, apply additional attenuation
+        if (throttle > tthr) {
+            const float throttle_atten = 1 - (throttle - tthr) / (1 - tthr);
+            spd_scaler *= throttle_atten;
+            spd_scaler = constrain_float(spd_scaler, max_atten, 1.0f);
+        }
     }
+    // limit positive and negative slew rates of applied speed scaling
+    constexpr float posTC = 5.0f;   // seconds
+    constexpr float negTC = 2.0f;   // seconds
+    const float posdelta = plane.G_Dt / posTC;
+    const float negdelta = plane.G_Dt / negTC;
+    static float last_scale = 0;
+    static float scale = 0;
+    if ((spd_scaler - last_scale) > 0) {
+        if ((spd_scaler - last_scale) > posdelta) {
+            scale += posdelta;
+        } else {
+            scale = spd_scaler;
+        }
+    } else {
+        if ((spd_scaler - last_scale) < -negdelta) {
+            scale -= negdelta;
+        } else {
+            scale = spd_scaler;
+        }
+    }
+    last_scale = scale;
 
     const SRV_Channel::Aux_servo_function_t functions[4] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
@@ -225,9 +289,9 @@ void QuadPlane::tailsitter_speed_scaling(void)
         SRV_Channel::Aux_servo_function_t::k_tiltMotorRight};
     for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
         int32_t v = SRV_Channels::get_output_scaled(functions[i]);
-        v *= scaling;
+        v *= scale;
         v = constrain_int32(v, -SERVO_MAX, SERVO_MAX);
         SRV_Channels::set_output_scaled(functions[i], v);
     }
 }
-    
+
