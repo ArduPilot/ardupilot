@@ -393,7 +393,7 @@ void Copter::Mode::zero_throttle_and_relax_ac(bool spool_up)
 /*
   get a height above ground estimate for landing
  */
-int32_t Copter::Mode::get_alt_above_ground(void)
+int32_t Copter::Mode::get_alt_above_ground_cm(void)
 {
     int32_t alt_above_ground;
     if (copter.rangefinder_alt_ok()) {
@@ -419,7 +419,6 @@ void Copter::Mode::land_run_vertical_control(bool pause_descent)
     // compute desired velocity
     const float precland_acceptable_error = 15.0f;
     const float precland_min_descent_speed = 10.0f;
-    const int32_t alt_above_ground = get_alt_above_ground();
 
     float cmb_rate = 0;
     if (!pause_descent) {
@@ -434,7 +433,7 @@ void Copter::Mode::land_run_vertical_control(bool pause_descent)
         max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
 
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-        cmb_rate = AC_AttitudeControl::sqrt_controller(MAX(g2.land_alt_low,100)-alt_above_ground, pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), G_Dt);
+        cmb_rate = AC_AttitudeControl::sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
@@ -526,8 +525,7 @@ void Copter::Mode::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        const int alt_above_ground = get_alt_above_ground();
-        float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, alt_above_ground,
+        float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
         float total_angle_cd = norm(nav_roll, nav_pitch);
         if (total_angle_cd > attitude_limit_cd) {

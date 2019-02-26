@@ -116,7 +116,7 @@ protected:
 
     // functions to control landing
     // in modes that support landing
-    int32_t get_alt_above_ground(void);
+    int32_t get_alt_above_ground_cm(void);
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
 
