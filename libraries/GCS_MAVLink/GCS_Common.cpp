@@ -3011,9 +3011,13 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
 #endif
     }
 
+    // refuse reboot when armed:
     if (hal.util->get_soft_armed()) {
-        // refuse reboot when armed
-        return MAV_RESULT_FAILED;
+        /// but allow it if forced:
+        const float magic_force_reboot_value = 20190226;
+        if (!is_equal(packet.param6, magic_force_reboot_value)) {
+            return MAV_RESULT_FAILED;
+        }
     }
 
     if (!(is_equal(packet.param1, 1.0f) || is_equal(packet.param1, 3.0f))) {
