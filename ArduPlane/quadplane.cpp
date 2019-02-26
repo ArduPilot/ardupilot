@@ -1479,6 +1479,10 @@ void QuadPlane::update(void)
         return;
     }
 
+    if (SRV_Channels::get_emergency_stop()) {
+        attitude_control->reset_rate_controller_I_terms();
+    }
+
     if (!hal.util->get_soft_armed()) {
         /*
           make sure we don't have any residual control from previous flight stages
@@ -1649,7 +1653,7 @@ void QuadPlane::motors_output(bool run_rate_controller)
         attitude_control->rate_controller_run();
     }
 
-    if (!hal.util->get_soft_armed() || plane.afs.should_crash_vehicle()) {
+    if (!hal.util->get_soft_armed() || plane.afs.should_crash_vehicle() || SRV_Channels::get_emergency_stop()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         motors->output();
         return;

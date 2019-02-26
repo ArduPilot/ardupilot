@@ -74,6 +74,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(ARMING_CHECK_NONE, display_failure,"Motors Emergency Stopped");
+        ret = false;
+    }
+
     return ret;
 }
 
