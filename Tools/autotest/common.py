@@ -1897,7 +1897,7 @@ class AutoTest(ABC):
             0,  # p7
         )
 
-    def reboot_sitl_mav(self, required_bootcount=None):
+    def reboot_sitl_mav(self, required_bootcount=None, force=False):
         """Reboot SITL instance using mavlink and wait for it to reconnect."""
         # we must make sure that stats have been reset - otherwise
         # when we reboot we'll reset statistics again and lose our
@@ -1929,6 +1929,9 @@ class AutoTest(ABC):
             # receiving an ACK from the process turns out to be really
             # quite difficult.  So just send it and hope for the best.
             self.progress("Sending reboot command")
+            p6 = 0
+            if force:
+                p6 = 20190226  # magic force-reboot value
             self.send_cmd(
                 mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
                 1,
@@ -1936,7 +1939,7 @@ class AutoTest(ABC):
                 0,
                 0,
                 0,
-                0,
+                p6,
                 0)
             do_context = True
         if do_context:
@@ -1971,12 +1974,12 @@ class AutoTest(ABC):
                                        0,
                                        0)
 
-    def reboot_sitl(self, required_bootcount=None):
+    def reboot_sitl(self, required_bootcount=None, force=False):
         """Reboot SITL instance and wait for it to reconnect."""
-        if self.armed():
+        if self.armed() and not force:
             raise NotAchievedException("Reboot attempted while armed")
         self.progress("Rebooting SITL")
-        self.reboot_sitl_mav(required_bootcount=required_bootcount)
+        self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
         self.do_heartbeats(force=True)
         self.assert_simstate_location_is_at_startup_location()
 

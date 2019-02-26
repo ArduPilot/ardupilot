@@ -2192,8 +2192,7 @@ class AutoTestCopter(AutoTest):
 
         self.set_rc(2, 1500)
         self.context_pop()
-        self.disarm_vehicle(force=True)
-        self.reboot_sitl()
+        self.reboot_sitl(force=True)
 
         if ex is not None:
             raise ex
