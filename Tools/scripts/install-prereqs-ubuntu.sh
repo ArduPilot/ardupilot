@@ -11,7 +11,7 @@ PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
           zip genromfs python-empy cmake cmake-data"
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
 # python-wxgtk packages are added to SITL_PKGS below
-SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing xterm"
+SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing xterm lcov gcovr"
 ASSUME_YES=false
 QUIET=false
 
