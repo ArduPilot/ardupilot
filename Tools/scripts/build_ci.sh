@@ -21,7 +21,7 @@ autotest_args=""
 
 # If CI_BUILD_TARGET is not set, build 3 different ones
 if [ -z "$CI_BUILD_TARGET" ]; then
-    CI_BUILD_TARGET="sitl linux"
+    CI_BUILD_TARGET="sitl linux fmuv3"
 fi
 
 declare -A waf_supported_boards
@@ -30,10 +30,6 @@ waf=modules/waf/waf-light
 
 # get list of boards supported by the waf build
 for board in $($waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
-
-function get_time {
-    date -u "+%s"
-}
 
 echo "Targets: $CI_BUILD_TARGET"
 echo "Compiler: $c_compiler"
@@ -102,15 +98,6 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board iomcu
         $waf clean
         $waf iofirmware
-        continue
-    fi
-
-    if [ "$t" == "revo-mini" ]; then
-        # save some time by only building one target for revo-mini
-        echo "Building revo-mini"
-        $waf configure --board revo-mini
-        $waf clean
-        $waf plane
         continue
     fi
 
