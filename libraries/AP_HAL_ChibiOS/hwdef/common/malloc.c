@@ -224,6 +224,31 @@ size_t mem_available(void)
     return totalp;
 }
 
+/*
+  allocate a thread on any available heap
+ */
+thread_t *thread_create_alloc(size_t size,
+                              const char *name, tprio_t prio,
+                              tfunc_t pf, void *arg)
+{
+    thread_t *ret;
+    // first try default heap
+    ret = chThdCreateFromHeap(NULL, size, name, prio, pf, arg);
+    if (ret != NULL) {
+        return ret;
+    }
+
+    // now try other heaps
+    uint8_t i;
+    for (i=1; i<NUM_MEMORY_REGIONS; i++) {
+        ret = chThdCreateFromHeap(&heaps[i], size, name, prio, pf, arg);
+        if (ret != NULL) {
+            return ret;
+        }
+    }
+    return NULL;
+}
+
 #endif // CH_CFG_USE_HEAP
 
 
