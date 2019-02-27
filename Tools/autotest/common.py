@@ -1765,8 +1765,8 @@ class AutoTest(ABC):
             self.reboot_sitl()
             raise NotAchievedException(
                 "(%f, %f, %f) != (%f, %f, %f)" %
-                (home.latitude, home.longitude, home.altitude),
-                (new_x, new_y, new_z))
+                (home.latitude, home.longitude, home.altitude,
+                new_x, new_y, new_z))
 
         # watch it for a little while to ensure it doesn't drift at all:
         tstart = self.get_sim_time()
