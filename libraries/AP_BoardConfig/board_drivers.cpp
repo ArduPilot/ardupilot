@@ -45,25 +45,8 @@ void AP_BoardConfig::board_init_safety()
 
 AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-extern "C" {
-    int fmu_main(int, char **);
-};
-#endif
-
 void AP_BoardConfig::board_setup_drivers(void)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    /*
-      this works around an issue with some FMUv4 hardware (eg. copies
-      of the Pixracer) which have incorrect components leading to
-      sensor brownout on boot
-     */
-    if (px4_start_driver(fmu_main, "fmu", "sensor_reset 20")) {
-        printf("FMUv4 sensor reset complete\n");
-    }
-#endif
-
     if (state.board_type == PX4_BOARD_OLDDRIVERS) {
         printf("Old drivers no longer supported\n");
         state.board_type = PX4_BOARD_AUTO;
@@ -165,7 +148,7 @@ void AP_BoardConfig::validate_board_type(void)
        cook the IMUs if the user uses an old paramater file. We
        override the board type for that specific case
      */
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(HAL_CHIBIOS_ARCH_FMUV3)
+#if defined(HAL_CHIBIOS_ARCH_FMUV3)
     if (state.board_type == PX4_BOARD_PIXHAWK &&
         (spi_check_register("mpu6000_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
@@ -175,17 +158,13 @@ void AP_BoardConfig::validate_board_type(void)
         // Pixhawk2 has LSM303D and MPUxxxx on external bus. If we
         // detect those, then force PIXHAWK2, even if the user has
         // configured for PIXHAWK1
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V3) && !defined(HAL_CHIBIOS_ARCH_FMUV3)
+#if !defined(HAL_CHIBIOS_ARCH_FMUV3)
         // force user to load the right firmware
         sensor_config_error("Pixhawk2 requires FMUv3 firmware");        
 #endif
         state.board_type.set(PX4_BOARD_PIXHAWK2);
         hal.console->printf("Forced PIXHAWK2\n");
     }
-#endif
-
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
-	// Nothing to do for the moment
 #endif
 }
 
@@ -200,12 +179,7 @@ void AP_BoardConfig::board_autodetect(void)
         return;
     }
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    // only one choice
-    state.board_type.set(PX4_BOARD_PX4V1);
-    hal.console->printf("Detected PX4v1\n");
-
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(HAL_CHIBIOS_ARCH_FMUV3)
+#if defined(HAL_CHIBIOS_ARCH_FMUV3)
     if ((spi_check_register("mpu6000_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu6000_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
@@ -234,7 +208,7 @@ void AP_BoardConfig::board_autodetect(void)
     } else {
         sensor_config_error("Unable to detect board type");
     }
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(HAL_CHIBIOS_ARCH_FMUV4)
+#elif defined(HAL_CHIBIOS_ARCH_FMUV4)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXRACER);
     hal.console->printf("Detected Pixracer\n");
@@ -242,7 +216,7 @@ void AP_BoardConfig::board_autodetect(void)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
     hal.console->printf("Detected MindPX-V2\n");
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
+#elif defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
     hal.console->printf("Detected Pixhawk Pro\n");	
