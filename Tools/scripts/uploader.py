@@ -650,6 +650,34 @@ WARNING: You should uninstall ModemManager as it conflicts with any non-modem se
 ==========================================================================================================
 """)
 
+def find_bootloader(up, port):
+    while (True):
+        up.open()
+
+        # port is open, try talking to it
+        try:
+            # identify the bootloader
+            up.identify()
+            print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
+            return True
+
+        except Exception as e:
+            pass
+
+        reboot_sent = up.send_reboot()
+
+        # wait for the reboot, without we might run into Serial I/O Error 5
+        time.sleep(0.25)
+
+        # always close the port
+        up.close()
+
+        # wait for the close, without we might run into Serial I/O Error 6
+        time.sleep(0.3)
+
+        if not reboot_sent:
+            return False
+
 def main():
 
     # Parse commandline arguments
@@ -697,33 +725,7 @@ def main():
                     # and loop to the next port
                     continue
 
-                found_bootloader = False
-                while (True):
-                    up.open()
-
-                    # port is open, try talking to it
-                    try:
-                        # identify the bootloader
-                        up.identify()
-                        found_bootloader = True
-                        print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
-                        break
-
-                    except Exception:
-
-                        if not up.send_reboot():
-                            break
-
-                        # wait for the reboot, without we might run into Serial I/O Error 5
-                        time.sleep(0.25)
-
-                        # always close the port
-                        up.close()
-
-                        # wait for the close, without we might run into Serial I/O Error 6
-                        time.sleep(0.3)
-
-                if not found_bootloader:
+                if not find_bootloader(up, port):
                     # Go to the next port
                     continue
 
