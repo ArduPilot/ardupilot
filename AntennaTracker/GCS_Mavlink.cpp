@@ -380,9 +380,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
-    case MAVLINK_MSG_ID_HEARTBEAT:
-        break;
-
     // When mavproxy 'wp sethome' 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
     {
