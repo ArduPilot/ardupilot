@@ -642,6 +642,14 @@ def ports_to_try(args):
 
     return portlist
 
+def modemmanager_check():
+    if os.path.exists("/usr/sbin/ModemManager"):
+        print("""
+==========================================================================================================
+WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device (like Pixhawk)
+==========================================================================================================
+""")
+
 def main():
 
     # Parse commandline arguments
@@ -657,10 +665,7 @@ def main():
     args = parser.parse_args()
 
     # warn people about ModemManager which interferes badly with Pixhawk
-    if os.path.exists("/usr/sbin/ModemManager"):
-        print("==========================================================================================================")
-        print("WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device (like Pixhawk)")
-        print("==========================================================================================================")
+    modemmanager_check()
 
     # Load the firmware file
     fw = firmware(args.firmware)
