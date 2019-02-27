@@ -667,10 +667,11 @@ def main():
     print("Loaded firmware for %x,%x, size: %d bytes, waiting for the bootloader..." % (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size')))
     print("If the board does not respond within 1-2 seconds, unplug and re-plug the USB connector.")
 
+    baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
+
     # Spin waiting for a device to show up
     try:
         while True:
-            baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
 
             for port in ports_to_try(args):
 
