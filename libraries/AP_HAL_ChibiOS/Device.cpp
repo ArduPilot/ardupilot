@@ -113,12 +113,14 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
             break;
         }
 
-        thread_ctx = chThdCreateFromHeap(NULL,
-                         THD_WORKING_AREA_SIZE(1024),
-                         name,
-                         thread_priority,           /* Initial priority.    */
-                         DeviceBus::bus_thread,    /* Thread function.     */
-                         this);                     /* Thread parameter.    */
+        thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(1024),
+                                         name,
+                                         thread_priority,           /* Initial priority.    */
+                                         DeviceBus::bus_thread,    /* Thread function.     */
+                                         this);                     /* Thread parameter.    */
+        if (thread_ctx == nullptr) {
+            AP_HAL::panic("Failed to create bus thread %s", name);
+        }
     }
     DeviceBus::callback_info *callback = new DeviceBus::callback_info;
     if (callback == nullptr) {

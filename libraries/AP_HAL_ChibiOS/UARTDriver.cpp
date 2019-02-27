@@ -101,8 +101,7 @@ void UARTDriver::thread_init(void)
         return;
     }
 #if CH_CFG_USE_HEAP == TRUE
-    uart_thread_ctx = chThdCreateFromHeap(NULL,
-                                          THD_WORKING_AREA_SIZE(2048),
+    uart_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(2048),
                                           "apm_uart",
                                           APM_UART_PRIORITY,
                                           uart_thread,
