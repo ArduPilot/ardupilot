@@ -612,6 +612,35 @@ class uploader(object):
 
         return True
 
+def ports_to_try(args):
+    portlist = []
+    if args.port is None:
+        patterns = default_ports
+    else:
+        patterns = args.port.split(",")
+    # use glob to support wildcard ports. This allows the use of
+    # /dev/serial/by-id/usb-ArduPilot on Linux, which prevents the
+    # upload from causing modem hangups etc
+    if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
+        import glob
+        for pattern in patterns:
+            portlist += glob.glob(pattern)
+    else:
+        portlist = patterns
+
+    # filter ports based on platform:
+    if "cygwin" in _platform:
+        # Cygwin, don't open MAC OS and Win ports, we are more like
+        # Linux. Cygwin needs to be before Windows test
+        pass
+    elif "win" in _platform:
+        # Windows, don't open POSIX ports
+        portlist = [port for port in portlist if "/" not in port]
+    elif "darwin" in _platform:
+        # OS X, don't open Windows and Linux ports
+        portlist = [port for port in portlist if "COM" not in port and "ACM" not in port]
+
+    return portlist
 
 def main():
 
@@ -641,44 +670,21 @@ def main():
     # Spin waiting for a device to show up
     try:
         while True:
-            portlist = []
-            if args.port is None:
-                patterns = default_ports
-            else:
-                patterns = args.port.split(",")
-            # on unix-like platforms use glob to support wildcard ports. This allows
-            # the use of /dev/serial/by-id/usb-3D_Robotics on Linux, which prevents the upload from
-            # causing modem hangups etc
-            if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
-                import glob
-                for pattern in patterns:
-                    portlist += glob.glob(pattern)
-            else:
-                portlist = patterns
-
             baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
 
-            for port in portlist:
+            for port in ports_to_try(args):
 
                 # print("Trying %s" % port)
 
                 # create an uploader attached to the port
                 try:
-                    if "linux" in _platform:
-                        # Linux, don't open Mac OS and Win ports
-                        up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
-                    elif "darwin" in _platform:
-                        # OS X, don't open Windows and Linux ports
-                        if "COM" not in port and "ACM" not in port:
-                            up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
-                    elif "cygwin" in _platform:
-                        # Cygwin, don't open MAC OS and Win ports, we are more like Linux. Cygwin needs to be before Windows test
-                        up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
-                    elif "win" in _platform:
-                        # Windows, don't open POSIX ports
-                        if "/" not in port:
-                            up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
-                except Exception:
+                    up = uploader(port,
+                                  args.baud_bootloader,
+                                  baud_flightstack,
+                                  args.baud_bootloader_flash)
+
+                except Exception as e:
+                    print("Exception creating uploader: %s" % str(e))
                     # open failed, rate-limit our attempts
                     time.sleep(0.05)
 
