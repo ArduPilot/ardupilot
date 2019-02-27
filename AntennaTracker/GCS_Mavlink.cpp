@@ -343,16 +343,13 @@ MAV_RESULT GCS_MAVLINK_Tracker::handle_command_long_packet(const mavlink_command
     switch(packet.command) {
 
     case MAV_CMD_COMPONENT_ARM_DISARM:
-        if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
-            if (is_equal(packet.param1,1.0f)) {
-                tracker.arm_servos();
-                return MAV_RESULT_ACCEPTED;
-            } else if (is_zero(packet.param1))  {
-                tracker.disarm_servos();
-                return MAV_RESULT_ACCEPTED;
-            } else {
-                return MAV_RESULT_UNSUPPORTED;
-            }
+        if (is_equal(packet.param1,1.0f)) {
+            tracker.arm_servos();
+            return MAV_RESULT_ACCEPTED;
+        }
+        if (is_zero(packet.param1))  {
+            tracker.disarm_servos();
+            return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
 
