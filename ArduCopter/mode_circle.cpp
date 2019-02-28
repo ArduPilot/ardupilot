@@ -85,7 +85,12 @@ void Copter::ModeCircle::run()
     target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
 
     // update altitude target and call position controller
-    pos_control->set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+    // protects heli's from inflight motor interlock disable
+    if (motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE && !ap.land_complete) {
+        pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
+    } else {
+        pos_control->set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+    }
     pos_control->update_z_controller();
 }
 
