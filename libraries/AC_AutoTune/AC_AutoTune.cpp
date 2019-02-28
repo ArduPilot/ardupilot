@@ -363,6 +363,7 @@ void AC_AutoTune::run()
     const float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
 
     const bool zero_rp_input = is_zero(target_roll_cd) && is_zero(target_pitch_cd);
+    const uint32_t now = AP_HAL::millis();
     if (!zero_rp_input || !is_zero(target_yaw_rate_cds) || !is_zero(target_climb_rate_cms)) {
         if (!pilot_override) {
             pilot_override = true;
@@ -371,13 +372,12 @@ void AC_AutoTune::run()
             attitude_control->use_sqrt_controller(true);
         }
         // reset pilot override time
-        override_time = AP_HAL::millis();
+        override_time = now;
         if (!zero_rp_input) {
             // only reset position on roll or pitch input
             have_position = false;
         }
     } else if (pilot_override) {
-        uint32_t now = AP_HAL::millis();
         // check if we should resume tuning after pilot's override
         if (now - override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
             pilot_override = false;             // turn off pilot override
@@ -389,7 +389,12 @@ void AC_AutoTune::run()
             desired_yaw_cd = ahrs_view->yaw_sensor;
         }
     }
-
+    if (pilot_override) {
+        if (now - last_pilot_override_warning > 1000) {
+            gcs().send_text(MAV_SEVERITY_INFO, "AUTOTUNE: pilot overrides active");
+            last_pilot_override_warning = now;
+        }
+    }
     if (zero_rp_input) {
         // pilot input on throttle and yaw will still use position hold if enabled
         get_poshold_attitude(target_roll_cd, target_pitch_cd, desired_yaw_cd);
