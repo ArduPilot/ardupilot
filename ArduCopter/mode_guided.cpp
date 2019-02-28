@@ -40,13 +40,9 @@ struct Guided_Limit {
 // guided_init - initialise guided controller
 bool Copter::ModeGuided::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
         // start in position control mode
         pos_control_start();
         return true;
-    }else{
-        return false;
-    }
 }
 
 

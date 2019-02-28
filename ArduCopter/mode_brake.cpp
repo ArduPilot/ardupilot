@@ -9,8 +9,6 @@
 // brake_init - initialise brake controller
 bool Copter::ModeBrake::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
-
         // set target to current position
         wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
 
@@ -27,9 +25,6 @@ bool Copter::ModeBrake::init(bool ignore_checks)
         _timeout_ms = 0;
 
         return true;
-    }else{
-        return false;
-    }
 }
 
 // brake_run - runs the brake controller
