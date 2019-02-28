@@ -1,5 +1,4 @@
 # hw definition file for processing by chibios_hwdef.py
-# for F743 bootloader
 
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
