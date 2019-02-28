@@ -356,14 +356,14 @@ void AC_AutoTune::run()
         return;
     }
 
-    int32_t target_roll_cd, target_pitch_cd, target_yaw_rate_cds;
+    float target_roll_cd, target_pitch_cd, target_yaw_rate_cds;
     get_pilot_desired_rp_yrate_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
 
     // get pilot desired climb rate
     const float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
 
-    bool zero_rp_input = target_roll_cd == 0 && target_pitch_cd == 0;
-    if (!zero_rp_input || target_yaw_rate_cds != 0 || !is_zero(target_climb_rate_cms)) {
+    const bool zero_rp_input = is_zero(target_roll_cd) && is_zero(target_pitch_cd);
+    if (!zero_rp_input || !is_zero(target_yaw_rate_cds) || !is_zero(target_climb_rate_cms)) {
         if (!pilot_override) {
             pilot_override = true;
             // set gains to their original values
@@ -1618,7 +1618,7 @@ bool AC_AutoTune::position_ok(void)
 }
 
 // get attitude for slow position hold in autotune mode
-void AC_AutoTune::get_poshold_attitude(int32_t &roll_cd_out, int32_t &pitch_cd_out, int32_t &yaw_cd_out)
+void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, float &yaw_cd_out)
 {
     roll_cd_out = pitch_cd_out = 0;
 
