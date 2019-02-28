@@ -116,6 +116,8 @@ protected:
 
     // helper functions
     void zero_throttle_and_relax_ac(bool spool_up = false);
+    void zero_throttle_and_hold_attitude();
+    void make_safe_shut_down();
 
     // functions to control landing
     // in modes that support landing
@@ -125,6 +127,16 @@ protected:
 
     // return expected input throttle setting to hover:
     virtual float throttle_hover() const;
+
+    // Alt_Hold based flight mode states used in Alt_Hold, Loiter, and Sport
+    enum AltHoldModeState {
+        AltHold_MotorStopped,
+        AltHold_Takeoff,
+        AltHold_Landed_Ground_Idle,
+        AltHold_Landed_Pre_Takeoff,
+        AltHold_Flying
+    };
+    AltHoldModeState get_alt_hold_state(float target_climb_rate_cms);
 
     // convenience references to avoid code churn in conversion:
     Parameters &g;
