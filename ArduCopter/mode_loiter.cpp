@@ -9,7 +9,6 @@
 // loiter_init - initialise loiter controller
 bool Copter::ModeLoiter::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
         if (!copter.failsafe.radio) {
             float target_roll, target_pitch;
             // apply SIMPLE mode transform to pilot inputs
@@ -33,9 +32,6 @@ bool Copter::ModeLoiter::init(bool ignore_checks)
         }
 
         return true;
-    } else {
-        return false;
-    }
 }
 
 #if PRECISION_LANDING == ENABLED
