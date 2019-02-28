@@ -117,7 +117,6 @@ protected:
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
     AP_MotorsHeli_Swash _swashplate;            // swashplate
-    SwashInt16Param     _swash_H3;              // H3 servo positions for swash
 
     // internal variables
     float _oscillate_angle = 0.0f;              // cyclic oscillation angle, used by servo_test function
@@ -138,7 +137,6 @@ protected:
     AP_Int8         _swashplate_type;           // Swash Type Setting
     AP_Int16        _ext_gyro_gain_std;         // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
     AP_Int16        _ext_gyro_gain_acro;        // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro in ACRO
-    AP_Int16        _phase_angle;               // Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     AP_Float        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)

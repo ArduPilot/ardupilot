@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
     // @Values: 0:H3 Generic, 1:H1 non-CPPM, 2:H3_140, 3:H3_120, 4:H4_90, 5:H4_45
     // @User: Standard
-    AP_GROUPINFO("SWASH_TYPE", 5, AP_MotorsHeli_Single, _swashplate_type, (int8_t)SWASHPLATE_TYPE_H3),
+    AP_GROUPINFO("SWASH_TYPE", 5, AP_MotorsHeli_Single, _swashplate_type, SWASHPLATE_TYPE_H3),
 
     // @Param: GYR_GAIN
     // @DisplayName: External Gyro Gain
@@ -91,13 +91,11 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Description: Direction collective moves for positive pitch. 0 for Normal, 1 for Reversed
     // @Values: 0:Normal,1:Reversed
     // @User: Standard
-    AP_GROUPINFO("COL_CTRL_DIR", 19, AP_MotorsHeli_Single, _swash_coll_dir, (int8_t)COLLECTIVE_DIRECTION_NORMAL),
+    AP_GROUPINFO("COL_CTRL_DIR", 19, AP_MotorsHeli_Single, _swash_coll_dir, COLLECTIVE_DIRECTION_NORMAL),
 
-    // parameters up to and including 29 are reserved for tradheli
-
-    // @Group: H3_
-    // @Path: Swash.cpp
-    AP_SUBGROUPINFO(_swash_H3, "H3_", 20, AP_MotorsHeli_Single, SwashInt16Param),
+    // @Group: H3_SW_
+    // @Path: AP_MotorsHeli_Swash.cpp
+    AP_SUBGROUPINFO(_swashplate, "SW_H3_", 20, AP_MotorsHeli_Single, AP_MotorsHeli_Swash),
 
     AP_GROUPEND
 };
@@ -253,20 +251,16 @@ void AP_MotorsHeli_Single::calculate_scalars()
 
     // configure swashplate and update scalars
     if (_swashplate_type == SWASHPLATE_TYPE_H3) {
-        if (_swash_H3.get_enable() == 0) {
-            _swash_H3.set_enable(1);
+        if (_swashplate.get_enable() == 0) {
+            _swashplate.set_enable(1);
         }
-        _swashplate.set_servo1_pos(_swash_H3.get_servo1_pos());
-        _swashplate.set_servo2_pos(_swash_H3.get_servo2_pos());
-        _swashplate.set_servo3_pos(_swash_H3.get_servo3_pos());
-        _swashplate.set_phase_angle(_swash_H3.get_phase_angle());
     } else {
-        if (_swash_H3.get_enable() == 1) {
-            _swash_H3.set_enable(0);
+        if (_swashplate.get_enable() == 1) {
+            _swashplate.set_enable(0);
         }
     }
-    _swashplate.set_swash_type(static_cast<SwashPlateType>((uint8_t)_swashplate_type));
-    _swashplate.set_collective_direction(static_cast<CollectiveDirection>((uint8_t)_swash_coll_dir));
+    _swashplate.set_swash_type(static_cast<SwashPlateType>(_swashplate_type.get()));
+    _swashplate.set_collective_direction(static_cast<CollectiveDirection>(_swash_coll_dir.get()));
     _swashplate.calculate_roll_pitch_collective_factors();
     _swashplate.set_linear_servo_out(_linear_swash_servo);
 
@@ -552,7 +546,7 @@ void AP_MotorsHeli_Single::servo_test()
 bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
 {
     // returns false if Phase Angle is outside of range for H3 swashplate
-    if ((_phase_angle > 30) || (_phase_angle < -30)){
+    if (_swashplate_type == SWASHPLATE_TYPE_H3 && (_swashplate.get_phase_angle() > 30 || _swashplate.get_phase_angle() < -30)){
         if (display_msg) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_H3_PHANG out of range");
         }
