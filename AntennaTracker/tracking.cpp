@@ -31,10 +31,12 @@ void Tracker::update_vehicle_pos_estimate()
  */
 void Tracker::update_tracker_position()
 {
-    // update our position if we have at least a 2D fix
+    Location temp_loc;
+
     // REVISIT: what if we lose lock during a mission and the antenna is moving?
-    if (!ahrs.get_position(current_loc) && (gps.status() >= AP_GPS::GPS_OK_FIX_2D)) {
-        current_loc = gps.location();
+    if (ahrs.get_position(temp_loc)) {
+        stationary = false;
+        current_loc = temp_loc;
     }
 }
 
