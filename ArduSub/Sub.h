@@ -483,7 +483,6 @@ private:
     void send_rpm(mavlink_channel_t chan);
     void rpm_update();
 #endif
-    void send_pid_tuning(mavlink_channel_t chan);
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();
