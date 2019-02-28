@@ -2892,7 +2892,7 @@ class AutoTestCopter(AutoTest):
             ("LogDownLoad",
              "Log download",
              lambda: self.log_download(
-                 self.buildlogs_path("ArduPlane-log.bin"),
+                 self.buildlogs_path("ArduCopter-log.bin"),
                  upload_logs=len(self.fail_list) > 0))
         ])
         return ret
@@ -2932,7 +2932,7 @@ class AutoTestHeli(AutoTestCopter):
             ("LogDownLoad",
              "Log download",
              lambda: self.log_download(
-                 self.buildlogs_path("ArduPlane-log.bin"),
+                 self.buildlogs_path("ArduCopter-log.bin"),
                  upload_logs=len(self.fail_list) > 0))
         ])
         return ret
