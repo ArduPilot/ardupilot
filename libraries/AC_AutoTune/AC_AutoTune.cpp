@@ -226,19 +226,19 @@ bool AC_AutoTune::start(void)
 const char *AC_AutoTune::level_issue_string() const
 {
     switch (level_problem.issue) {
-    case LEVEL_ISSUE_NONE:
+    case LevelIssue::NONE:
         return "None";
-    case LEVEL_ISSUE_ANGLE_ROLL:
+    case LevelIssue::ANGLE_ROLL:
         return "Angle(R)";
-    case LEVEL_ISSUE_ANGLE_PITCH:
+    case LevelIssue::ANGLE_PITCH:
         return "Angle(P)";
-    case LEVEL_ISSUE_ANGLE_YAW:
+    case LevelIssue::ANGLE_YAW:
         return "Angle(Y)";
-    case LEVEL_ISSUE_RATE_ROLL:
+    case LevelIssue::RATE_ROLL:
         return "Rate(R)";
-    case LEVEL_ISSUE_RATE_PITCH:
+    case LevelIssue::RATE_PITCH:
         return "Rate(P)";
-    case LEVEL_ISSUE_RATE_YAW:
+    case LevelIssue::RATE_YAW:
         return "Rate(Y)";
     }
     return "Bug";
@@ -414,7 +414,7 @@ void AC_AutoTune::run()
 
 }
 
-bool AC_AutoTune::check_level(const LEVEL_ISSUE issue, const float current, const float maximum)
+bool AC_AutoTune::check_level(const LevelIssue issue, const float current, const float maximum)
 {
     if (current > maximum) {
         level_problem.current = current;
@@ -435,33 +435,33 @@ bool AC_AutoTune::currently_level()
         threshold_mul *= 2;
     }
 
-    if (!check_level(LEVEL_ISSUE_ANGLE_ROLL,
+    if (!check_level(LevelIssue::ANGLE_ROLL,
                      abs(ahrs_view->roll_sensor - roll_cd),
                      threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
 
-    if (!check_level(LEVEL_ISSUE_ANGLE_PITCH,
+    if (!check_level(LevelIssue::ANGLE_PITCH,
                      abs(ahrs_view->pitch_sensor - pitch_cd),
                      threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
-    if (!check_level(LEVEL_ISSUE_ANGLE_YAW,
+    if (!check_level(LevelIssue::ANGLE_YAW,
                      fabsf(wrap_180_cd(ahrs_view->yaw_sensor - desired_yaw_cd)),
                      threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
-    if (!check_level(LEVEL_ISSUE_RATE_ROLL,
+    if (!check_level(LevelIssue::RATE_ROLL,
                      (ToDeg(ahrs_view->get_gyro().x) * 100.0f),
                      threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD)) {
         return false;
     }
-    if (!check_level(LEVEL_ISSUE_RATE_PITCH,
+    if (!check_level(LevelIssue::RATE_PITCH,
                      (ToDeg(ahrs_view->get_gyro().y) * 100.0f),
                      threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD)) {
         return false;
     }
-    if (!check_level(LEVEL_ISSUE_RATE_YAW,
+    if (!check_level(LevelIssue::RATE_YAW,
                      (ToDeg(ahrs_view->get_gyro().z) * 100.0f),
                      threshold_mul*AUTOTUNE_LEVEL_RATE_Y_CD)) {
         return false;
