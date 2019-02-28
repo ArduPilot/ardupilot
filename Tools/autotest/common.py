@@ -2265,8 +2265,23 @@ switch value'''
     def disabled_tests(self):
         return {}
 
+    def test_pid_tuning(self):
+        self.progress("making sure we're not getting PID_TUNING messages")
+        m = self.mav.recv_match(type='PID_TUNING', blocking=True, timeout=1)
+        if m is not None:
+            raise PreconditionFailedException("Receiving PID_TUNING already")
+        self.set_parameter("GCS_PID_MASK", 1)
+        self.progress("making sure we are now getting PID_TUNING messages")
+        m = self.mav.recv_match(type='PID_TUNING', blocking=True, timeout=1)
+        if m is None:
+            raise PreconditionFailedException("Did not start to get PID_TUNING message")
+
     def tests(self):
         return [
+            ("PIDTuning",
+             "Test PID Tuning",
+             self.test_pid_tuning),
+
             ("ArmFeatures", "Arm features", self.test_arm_feature),
 
             ("SetHome",
