@@ -171,9 +171,14 @@ void Rover::send_rpm(mavlink_channel_t chan)
 /*
   send PID tuning message
  */
-void Rover::send_pid_tuning(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_pid_tuning()
 {
+    Parameters &g = rover.g;
+    ParametersG2 &g2 = rover.g2;
+    const AP_AHRS &ahrs = AP::ahrs();
+
     const AP_Logger::PID_Info *pid_info;
+
     // steering PID
     if (g.gcs_pid_mask & 1) {
         pid_info = &g2.attitude_control.get_steering_rate_pid().get_pid_info();
@@ -331,11 +336,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         rover.g2.windvane.send_wind(chan);
-        break;
-
-    case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        rover.send_pid_tuning(chan);
         break;
 
     default:
