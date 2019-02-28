@@ -116,6 +116,11 @@ class AutoTestTracker(AutoTest):
             pass
         self.initialise_after_reboot_sitl()
 
+    def disabled_tests(self):
+        return {
+            "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
+        }
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestTracker, self).tests()
