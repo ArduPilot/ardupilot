@@ -29,7 +29,7 @@ AP_RPM_FFT::AP_RPM_FFT(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_s
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_RPM_FFT::fast_timer_update, void));
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_RPM_FFT::slow_timer_update, void));
     // limit max RPM to half buffer size
-    ap_rpm._maximum[instance].set_and_notify(MIN(60.0f/(dt*2.0f), ap_rpm._maximum[instance]));
+//    ap_rpm._maximum[instance].set_and_notify(MIN(60.0f/(dt*2.0f), ap_rpm._maximum[instance]));
 }
 
 
@@ -51,6 +51,7 @@ void AP_RPM_FFT::fast_timer_update(void)
         const Vector3f &accel = ins.get_accel(0);
         // collecting accel data. We leave the complex component at zero
         fft_buffer[nsamples] = accel.y;
+
         nsamples += 2;
     }
 }
@@ -71,7 +72,7 @@ void AP_RPM_FFT::slow_timer_update(void)
 
         //find first peak above a threshold
         float max_value = 0.0f;
-        const float sq_threshold = 1000.0f;
+        const float sq_threshold = 500.0f;
         bool first_max = false;
         bool thrsh = false;
 
@@ -114,6 +115,8 @@ void AP_RPM_FFT::update(void)
             state.rate_rpm = new_rpm;
             state.signal_quality = 0.5f;
             state.last_reading_ms = AP_HAL::millis();
+        } else {
+            state.signal_quality = 0.0f;
         }
         have_new_rpm = false;
     }
