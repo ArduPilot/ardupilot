@@ -380,6 +380,7 @@ void Copter::Mode::auto_takeoff_run()
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed) {
         make_safe_shut_down();
+        wp_nav->shift_wp_origin_to_current_pos();
         return;
     }
 
