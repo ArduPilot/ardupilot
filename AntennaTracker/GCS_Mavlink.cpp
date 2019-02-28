@@ -588,6 +588,28 @@ bool GCS_MAVLINK_Tracker::set_mode(uint8_t mode)
     return false;
 }
 
+// send position tracker is using
+void GCS_MAVLINK_Tracker::send_global_position_int()
+{
+    if (!tracker.stationary) {
+        GCS_MAVLINK::send_global_position_int();
+        return;
+    }
+
+    mavlink_msg_global_position_int_send(
+        chan,
+        AP_HAL::millis(),
+        tracker.current_loc.lat,  // in 1E7 degrees
+        tracker.current_loc.lng,  // in 1E7 degrees
+        tracker.current_loc.alt,  // millimeters above ground/sea level
+        0,                        // millimeters above home
+        0,                        // X speed cm/s (+ve North)
+        0,                        // Y speed cm/s (+ve East)
+        0,                        // Z speed cm/s (+ve Down)
+        tracker.ahrs.yaw_sensor); // compass heading in 1/100 degree
+}
+
+
 /* dummy methods to avoid having to link against AP_Camera */
 void AP_Camera::control_msg(mavlink_message_t const*) {}
 void AP_Camera::configure(float, float, float, float, float, float, float) {}

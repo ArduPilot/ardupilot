@@ -188,6 +188,7 @@ private:
 
     uint8_t one_second_counter = 0;
     bool target_set = false;
+    bool stationary = true; // are we using the start lat and log?
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
