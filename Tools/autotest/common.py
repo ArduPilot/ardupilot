@@ -455,7 +455,7 @@ class AutoTest(ABC):
         self.mavproxy.expect("Finished downloading", timeout=timeout)
         self.wait_heartbeat()
         self.wait_heartbeat()
-        if upload_logs and not os.getenv("AUTOTEST_NO_UPLOAD"):
+        if upload_logs and os.getenv("AUTOTEST_UPLOAD"):
             # optionally upload logs to server so we can see travis failure logs
             import datetime
             import glob
