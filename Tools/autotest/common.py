@@ -2246,6 +2246,8 @@ switch value'''
 
     def tests(self):
         return [
+            ("ArmFeatures", "Arm features", self.test_arm_feature),
+
             ("SetHome",
             "Test Set Home",
              self.fly_test_set_home),

@@ -222,8 +222,6 @@ class AutoTestSub(AutoTest):
         ret = super(AutoTestSub, self).tests()
 
         ret.extend([
-            ("ArmFeatures", "Arm features", self.test_arm_feature),
-
             ("DiveManual", "Dive manual", self.dive_manual),
 
             ("DiveMission",
