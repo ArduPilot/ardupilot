@@ -42,8 +42,11 @@ protected:
     uint64_t capabilities() const override;
 
     void send_nav_controller_output() const override;
+    void send_pid_tuning() override;
 
 private:
+
+    void send_pid_info(const AP_Logger::PID_Info *pid_info, const uint8_t axis, const float achieved);
 
     void handleMessage(mavlink_message_t * msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
