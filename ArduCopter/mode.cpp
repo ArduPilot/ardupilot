@@ -425,10 +425,6 @@ void Copter::Mode::make_safe_shut_down()
         break;
     }
 
-    // we may need to move this out
-    wp_nav->wp_and_spline_init();
-    // we may need to move this out
-    loiter_nav->init_target();
     pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
     pos_control->update_z_controller();
     // we may need to move this out

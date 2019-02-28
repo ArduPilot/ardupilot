@@ -364,6 +364,7 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
         make_safe_shut_down();
+        loiter_nav->init_target();
         return;
     }
 
