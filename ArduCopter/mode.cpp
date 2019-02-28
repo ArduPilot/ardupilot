@@ -396,14 +396,43 @@ void Copter::Mode::zero_throttle_and_relax_ac(bool spool_up)
     } else {
         motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
     }
-#if FRAME_CONFIG == HELI_FRAME
-    // Helicopters always stabilize roll/pitch/yaw
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
-#else
-    // multicopters do not stabilize roll/pitch/yaw when disarmed
-    attitude_control->set_throttle_out_unstabilized(0.0f, true, copter.g.throttle_filt);
-#endif
+}
+
+void Copter::Mode::zero_throttle_and_hold_attitude()
+{
+    // run attitude controller
+    attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+    attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
+}
+
+void Copter::Mode::make_safe_shut_down()
+{
+    // command aircraft to initiate the shutdown process
+    motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+    switch (motors->get_spool_mode()) {
+
+    case AP_Motors::SHUT_DOWN:
+    case AP_Motors::GROUND_IDLE:
+        // relax controllers during idle states
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
+        break;
+
+    default:
+        // while transitioning though active states continue to operate normally
+        break;
+    }
+
+    // we may need to move this out
+    wp_nav->wp_and_spline_init();
+    // we may need to move this out
+    loiter_nav->init_target();
+    pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+    pos_control->update_z_controller();
+    // we may need to move this out
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -594,6 +623,58 @@ float Copter::Mode::get_pilot_desired_throttle() const
     // calculate the output throttle using the given expo function
     float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
     return throttle_out;
+}
+
+Copter::Mode::AltHoldModeState Copter::Mode::get_alt_hold_state(float target_climb_rate_cms)
+{
+    // Alt Hold State Machine Determination
+    if (!motors->armed()) {
+        // the aircraft should moved to a shut down state
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+
+        // transition through states as aircraft spools down
+        switch (motors->get_spool_mode()) {
+
+        case AP_Motors::SHUT_DOWN:
+            return AltHold_MotorStopped;
+
+        case AP_Motors::DESIRED_GROUND_IDLE:
+            return AltHold_Landed_Ground_Idle;
+
+        default:
+            return AltHold_Landed_Pre_Takeoff;
+        }
+
+    } else if (takeoff.running() || takeoff.triggered(target_climb_rate_cms)) {
+        // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
+        // the aircraft should progress through the take off procedure
+        return AltHold_Takeoff;
+
+    } else if (!ap.auto_armed || ap.land_complete) {
+        // the aircraft is armed and landed
+        if (target_climb_rate_cms < 0.0f && !ap.using_interlock) {
+            // the aircraft should move to a ground idle state
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+
+        } else {
+            // the aircraft should prepare for imminent take off
+            motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        }
+
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
+            // the aircraft is waiting in ground idle
+            return AltHold_Landed_Ground_Idle;
+
+        } else {
+            // the aircraft can leave the ground at any time
+            return AltHold_Landed_Pre_Takeoff;
+        }
+
+    } else {
+        // the aircraft is in a flying state
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        return AltHold_Flying;
+    }
 }
 
 // pass-through functions to reduce code churn on conversion;

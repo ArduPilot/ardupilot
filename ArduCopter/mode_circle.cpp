@@ -27,41 +27,30 @@ bool Copter::ModeCircle::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModeCircle::run()
 {
-    float target_yaw_rate = 0;
-    float target_climb_rate = 0;
-
     // initialize speeds and accelerations
     pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
     pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
-    
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
-        // To-Do: add some initialisation of position controllers
-        zero_throttle_and_relax_ac();
-        pos_control->set_alt_target_to_current_alt();
-        return;
+
+    // get pilot's desired yaw rate (or zero if in radio failsafe)
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    if (!is_zero(target_yaw_rate)) {
+        pilot_yaw_override = true;
     }
 
-    // process pilot inputs
-    if (!copter.failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
-            pilot_yaw_override = true;
-        }
+    // get pilot desired climb rate (or zero if in radio failsafe)
+    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    // adjust climb rate using rangefinder
+    if (copter.rangefinder_alt_ok()) {
+        // if rangefinder is ok, use surface tracking
+        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
+    }
 
-        // get pilot desired climb rate
-        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-
-        // check for pilot requested take-off
-        if (ap.land_complete && target_climb_rate > 0) {
-            // indicate we are taking off
-            set_land_complete(false);
-            // clear i term when we're taking off
-            set_throttle_takeoff();
-        }
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
+        return;
     }
 
     // set motors to full range
@@ -80,9 +69,6 @@ void Copter::ModeCircle::run()
                                                            copter.circle_nav->get_pitch(),
                                                            copter.circle_nav->get_yaw(), true);
     }
-
-    // adjust climb rate using rangefinder
-    target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
 
     // update altitude target and call position controller
     // protects heli's from inflight motor interlock disable

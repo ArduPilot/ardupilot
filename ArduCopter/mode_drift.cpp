@@ -40,21 +40,9 @@ void Copter::ModeDrift::run()
 {
     static float braker = 0.0f;
     static float roll_input = 0.0f;
-    float target_roll, target_pitch;
-    float target_yaw_rate;
-
-    // if landed and throttle at zero, set throttle to zero and exit immediately
-    if (!motors->armed() || !motors->get_interlock() || (ap.land_complete && ap.throttle_zero)) {
-        zero_throttle_and_relax_ac(copter.is_tradheli() && motors->get_interlock());
-        return;
-    }
-
-    // clear landing flag above zero throttle
-    if (!ap.throttle_zero) {
-        set_land_complete(false);
-    }
 
     // convert pilot input to lean angles
+    float target_roll, target_pitch;
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // Grab inertial velocity
@@ -66,7 +54,7 @@ void Copter::ModeDrift::run()
 
     // gain sceduling for Yaw
     float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
-    target_yaw_rate = ((float)target_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g.acro_yaw_p;
+    float target_yaw_rate = ((float)target_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g.acro_yaw_p;
 
     roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
@@ -90,8 +78,30 @@ void Copter::ModeDrift::run()
         braker = 0.0f;
     }
 
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    if (!motors->armed()) {
+        // Motors should be Stopped
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+    } else if (ap.throttle_zero) {
+        // Attempting to Land
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+    } else {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    }
+
+    if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+        // Motors Stopped
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_rate_controller_I_terms();
+    } else if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
+        // Landed
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_rate_controller_I_terms();
+    } else if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
+        // clear landing flag above zero throttle
+        if (!motors->limit.throttle_lower) {
+            set_land_complete(false);
+        }
+    }
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);

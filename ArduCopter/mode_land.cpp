@@ -53,29 +53,26 @@ void Copter::ModeLand::run()
 //      should be called at 100hz or more
 void Copter::ModeLand::gps_run()
 {
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
+    // disarm when the landing detector says we've landed
+    if (ap.land_complete) {
+        copter.init_disarm_motors();
+    }
 
-        // disarm when the landing detector says we've landed
-        if (ap.land_complete) {
-            copter.init_disarm_motors();
+    // Land State Machine Determination
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
+    } else {
+        // set motors to full range
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+        // pause before beginning land descent
+        if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+            land_pause = false;
         }
-        return;
+
+        land_run_horizontal_control();
+        land_run_vertical_control(land_pause);
     }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // pause before beginning land descent
-    if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
-        land_pause = false;
-    }
-
-    land_run_horizontal_control();
-    land_run_vertical_control(land_pause);
 }
 
 // land_nogps_run - runs the land controller
@@ -106,37 +103,28 @@ void Copter::ModeLand::nogps_run()
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
-#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
-        // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-        attitude_control->set_throttle_out(0,false,g.throttle_filt);
-#else
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        // multicopters do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out_unstabilized(0,true,g.throttle_filt);
-#endif
-
-        // disarm when the landing detector says we've landed
-        if (ap.land_complete) {
-            copter.init_disarm_motors();
-        }
-        return;
+    // disarm when the landing detector says we've landed
+    if (ap.land_complete) {
+        copter.init_disarm_motors();
     }
 
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    // Land State Machine Determination
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
+    } else {
+        // set motors to full range
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+        // pause before beginning land descent
+        if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+            land_pause = false;
+        }
+
+        land_run_vertical_control(land_pause);
+    }
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-
-    // pause before beginning land descent
-    if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
-        land_pause = false;
-    }
-
-    land_run_vertical_control(land_pause);
 }
 
 // do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
