@@ -77,7 +77,7 @@
 #define STM32_PLL1_DIVM_VALUE               1
 #define STM32_PLL1_DIVN_VALUE               96
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               8
+#define STM32_PLL1_DIVQ_VALUE               16
 #define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_DIVM_VALUE               1
@@ -96,7 +96,7 @@
 #define STM32_PLL1_DIVM_VALUE               2
 #define STM32_PLL1_DIVN_VALUE               96
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               8
+#define STM32_PLL1_DIVQ_VALUE               16
 #define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_DIVM_VALUE               2
@@ -115,7 +115,7 @@
 #define STM32_PLL1_DIVM_VALUE               3
 #define STM32_PLL1_DIVN_VALUE               96
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               8
+#define STM32_PLL1_DIVQ_VALUE               16
 #define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_DIVM_VALUE               3
@@ -204,6 +204,7 @@
 #define STM32_LPTIM2SEL                     STM32_LPTIM2SEL_PCLK4
 #define STM32_I2C4SEL                       STM32_I2C4SEL_PLL3_R_CK
 #define STM32_LPUART1SEL                    STM32_LPUART1SEL_PCLK4
+#define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
 
 /*
  * IRQ system settings.
@@ -360,7 +361,7 @@
 #define STM32_SDC_SDMMC_READ_TIMEOUT        1000
 #define STM32_SDC_SDMMC_CLOCK_DELAY         10
 #define STM32_SDC_SDMMC1_DMA_PRIORITY       3
-#define STM32_SDC_SDMMC1_IRQ_PRIORITY       9
+#define STM32_SDC_SDMMC1_IRQ_PRIORITY       2
 
 /*
  * SERIAL driver system settings.
