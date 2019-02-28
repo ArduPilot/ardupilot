@@ -200,6 +200,14 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     }
 #endif
 
+    if (!ignore_checks &&
+        new_flightmode->requires_GPS() &&
+        !copter.position_ok()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        return false;
+    }
+
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
