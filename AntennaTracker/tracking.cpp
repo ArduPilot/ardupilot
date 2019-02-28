@@ -101,6 +101,10 @@ void Tracker::update_tracking(void)
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         return;
     }
+    // do not move if we are not armed:
+    if (!hal.util->get_soft_armed()) {
+        return;
+    }
 
     switch (control_mode) {
     case AUTO:

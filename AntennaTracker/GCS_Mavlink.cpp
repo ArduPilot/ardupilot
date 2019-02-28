@@ -51,7 +51,9 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
     }
 
     // we are armed if safety switch is not disarmed
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED &&
+        tracker.control_mode != INITIALISING &&
+        hal.util->get_soft_armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
