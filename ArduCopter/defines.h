@@ -176,30 +176,6 @@ enum SmartRTLState {
     SmartRTL_Land
 };
 
-// Alt_Hold states
-enum AltHoldModeState {
-    AltHold_MotorStopped,
-    AltHold_Takeoff,
-    AltHold_Flying,
-    AltHold_Landed
-};
-
-// Loiter states
-enum LoiterModeState {
-    Loiter_MotorStopped,
-    Loiter_Takeoff,
-    Loiter_Flying,
-    Loiter_Landed
-};
-
-// Sport states
-enum SportModeState {
-    Sport_MotorStopped,
-    Sport_Takeoff,
-    Sport_Flying,
-    Sport_Landed
-};
-
 // Flip states
 enum FlipState {
     Flip_Start,

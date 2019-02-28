@@ -729,16 +729,6 @@ void Copter::ModeAuto::takeoff_run()
 //      called by auto_run at 100hz or more
 void Copter::ModeAuto::wp_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
-        //    (of course it would be better if people just used take-off)
-        zero_throttle_and_relax_ac();
-        // clear i term when we're taking off
-        set_throttle_takeoff();
-        return;
-    }
-
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
@@ -747,6 +737,12 @@ void Copter::ModeAuto::wp_run()
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
+    }
+
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
+        return;
     }
 
     // set motors to full range
@@ -772,13 +768,9 @@ void Copter::ModeAuto::wp_run()
 //      called by auto_run at 100hz or more
 void Copter::ModeAuto::spline_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
-        //    (of course it would be better if people just used take-off)
-        zero_throttle_and_relax_ac();
-        // clear i term when we're taking off
-        set_throttle_takeoff();
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -815,12 +807,14 @@ void Copter::ModeAuto::spline_run()
 //      called by auto_run at 100hz or more
 void Copter::ModeAuto::land_run()
 {
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        // set target to current position
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
+    // disarm when the landing detector says we've landed
+    if (ap.land_complete) {
+        copter.init_disarm_motors();
+    }
+
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -872,9 +866,9 @@ void Copter::ModeAuto::nav_guided_run()
 //      called by auto_run at 100hz or more
 void Copter::ModeAuto::loiter_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -1515,7 +1509,7 @@ bool Copter::ModeAuto::verify_land()
 
         case LandStateType_Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
-            retval = ap.land_complete;
+            retval = ap.land_complete && (motors->get_spool_mode() == AP_Motors::GROUND_IDLE);
             break;
 
         default:

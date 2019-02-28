@@ -31,26 +31,19 @@ bool Copter::ModeBrake::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModeBrake::run()
 {
-    // if not auto armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
-        zero_throttle_and_relax_ac();
-        pos_control->relax_alt_hold_controllers(0.0f);
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // relax stop target if we might be landed
     if (ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();
     }
-
-    // if landed immediately disarm
-    if (ap.land_complete) {
-        copter.init_disarm_motors();
-    }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run brake controller
     wp_nav->update_brake();
