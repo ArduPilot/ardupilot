@@ -61,7 +61,12 @@ void Copter::ModeBrake::run()
     // body-frame rate controller is run directly from 100hz loop
 
     // update altitude target and call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
+    // protects heli's from inflight motor interlock disable
+    if (motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE && !ap.land_complete) {
+        pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
+    } else {
+        pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
+    }
     pos_control->update_z_controller();
 
     if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {
