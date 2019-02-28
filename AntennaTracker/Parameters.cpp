@@ -386,6 +386,14 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery,                "BATT", AP_BattMonitor),
 
+    // @Param: GCS_PID_MASK
+    // @DisplayName: GCS PID tuning mask
+    // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
+    // @User: Advanced
+    // @Values: 0:None,1:Pitch,2:Yaw
+    // @Bitmask: 0:Pitch,1:Yaw
+    GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
+
     AP_VAREND
 };
 
