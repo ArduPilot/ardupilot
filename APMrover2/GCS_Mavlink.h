@@ -35,6 +35,7 @@ protected:
     uint64_t capabilities() const override;
 
     void send_nav_controller_output() const override;
+    void send_pid_tuning() override;
 
 private:
 
