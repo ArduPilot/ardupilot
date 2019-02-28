@@ -4137,6 +4137,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_ahrs3();
         break;
 
+    case MSG_PID_TUNING:
+        CHECK_PAYLOAD_SIZE(PID_TUNING);
+        send_pid_tuning();
+        break;
+
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
         send_nav_controller_output();

@@ -39,6 +39,7 @@ protected:
     uint32_t custom_mode() const override { return 3; } // magic number
     MAV_STATE system_status() const override { return MAV_STATE_CALIBRATING; }
     void send_nav_controller_output() const override {};
+    void send_pid_tuning() override {};
 
     bool set_home_to_current_location(bool lock) override { return false; }
     bool set_home(const Location& loc, bool lock) override { return false; }
