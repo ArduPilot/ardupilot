@@ -64,6 +64,6 @@ private:
     int16_t vfr_hud_throttle() const override;
     float vfr_hud_alt() const override;
 
-    void send_pid_tuning();
+    void send_pid_tuning() override;
 
 };
