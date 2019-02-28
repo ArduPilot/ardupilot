@@ -2794,8 +2794,6 @@ class AutoTestCopter(AutoTest):
              "Set modes via auxswitch",
              self.test_setting_modes_via_auxswitch),
 
-            ("ArmFeatures", "Arm features", self.test_arm_feature),
-
             ("AutoTune", "Fly AUTOTUNE mode", self.fly_autotune),
 
             ("RecordThenPlayMission",
@@ -2929,8 +2927,6 @@ class AutoTestHeli(AutoTestCopter):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
         ret.extend([
-            ("ArmFeatures", "Arm features", self.test_arm_feature),
-
             ("AVCMission", "Fly AVC mission", self.fly_avc_test),
 
             ("LogDownLoad",

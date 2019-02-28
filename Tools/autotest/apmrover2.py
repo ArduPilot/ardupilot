@@ -929,8 +929,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ret = super(AutoTestRover, self).tests()
 
         ret.extend([
-            ("ArmFeatures", "Arm features", self.test_arm_feature),
-
             ("MAVProxy_SetModeUsingSwitch",
              "Set modes via mavproxy switch",
              self.test_setting_modes_via_mavproxy_switch),

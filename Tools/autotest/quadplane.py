@@ -202,8 +202,6 @@ class AutoTestQuadPlane(AutoTest):
 
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
-            ("ArmFeatures", "Arm features", self.test_arm_feature),
-
             ("TestMotorMask", "Test output_motor_mask", self.test_motor_mask),
 
             ("QAutoTune", "Fly QAUTOTUNE mode", self.fly_qautotune),
