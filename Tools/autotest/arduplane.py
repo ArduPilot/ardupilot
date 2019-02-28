@@ -870,6 +870,10 @@ class AutoTestPlane(AutoTest):
     def default_mode(self):
         return "MANUAL"
 
+    def test_pid_tuning(self):
+        self.change_mode("FBWA") # we don't update PIDs in MANUAL
+        super(AutoTestPlane, self).test_pid_tuning()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()

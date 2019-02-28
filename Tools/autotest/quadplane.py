@@ -186,6 +186,10 @@ class AutoTestQuadPlane(AutoTest):
                 return
         self.mav.motors_disarmed_wait()
 
+    def test_pid_tuning(self):
+        self.change_mode("FBWA") # we don't update PIDs in MANUAL
+        super(AutoTestQuadPlane, self).test_pid_tuning()
+
     def default_mode(self):
         return "MANUAL"
 
