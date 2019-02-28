@@ -92,8 +92,9 @@ void GCS_MAVLINK_Tracker::send_nav_controller_output() const
 /*
   send PID tuning message
  */
-void Tracker::send_pid_tuning(mavlink_channel_t chan)
+void GCS_MAVLINK_Tracker::send_pid_tuning()
 {
+    const Parameters &g = tracker.g;
 
     // Pitch PID
     if (g.gcs_pid_mask & 1) {
@@ -137,23 +138,6 @@ bool GCS_MAVLINK_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&)
 {
     // do nothing
-}
-
-
-// try to send a message, return false if it won't fit in the serial tx buffer
-bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
-{
-    switch (id) {
-
-    case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        tracker.send_pid_tuning(chan);
-        break;
-
-    default:
-        return GCS_MAVLINK::try_send_message(id);
-    }
-    return true;
 }
 
 /*
