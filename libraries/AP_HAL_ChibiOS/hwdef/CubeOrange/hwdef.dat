@@ -1,5 +1,4 @@
 # hw definition file for processing by chibios_hwdef.py
-# for F743 bootloader
 
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
@@ -120,12 +119,12 @@ PC6 USART6_TX USART6
 PC7 USART6_RX USART6
 
 # Now setup the pins for the microSD card, if available.
-#PC8 SDIO_D0 SDIO
-#PC9 SDIO_D1 SDIO
-#PC10 SDIO_D2 SDIO
-#PC11 SDIO_D3 SDIO
-#PC12 SDIO_CK SDIO
-#PD2 SDIO_CMD SDIO
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
 
 # More CS pins for more sensors. The labels for all CS pins need to
 # match the SPI device table later in this file.
@@ -245,8 +244,8 @@ define HAL_WITH_RAMTRON 1
 # an IMU heater.
 define HAL_HAVE_IMU_HEATER 1
 
-# Enable FAT filesystem support (needs a microSD defined via SDIO).
-# define HAL_OS_FATFS_IO 1
+# Enable FAT filesystem support (needs a microSD defined via SDMMC).
+define HAL_OS_FATFS_IO 1
 
 # Enable RTSCTS support. You should define this if you have any UARTs with RTS/CTS pins.
 define AP_FEATURE_RTSCTS 1
