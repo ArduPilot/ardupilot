@@ -227,7 +227,6 @@ private:
 
     // GCS_Mavlink.cpp
     void send_nav_controller_output(mavlink_channel_t chan);
-    void send_pid_tuning(mavlink_channel_t chan);
 
     // Log.cpp
     void Log_Write_Attitude();
