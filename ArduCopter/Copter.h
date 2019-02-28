@@ -783,6 +783,7 @@ private:
     void load_parameters(void);
     void convert_pid_parameters(void);
     void convert_lgr_parameters(void);
+    void convert_tradheli_parameters(void);
 
     // precision_landing.cpp
     void init_precland();
