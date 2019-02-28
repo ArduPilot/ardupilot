@@ -268,11 +268,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         // unused
         break;
 
-    case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        send_pid_tuning();
-        break;
-
     case MSG_ADSB_VEHICLE:
 #if ADSB_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
