@@ -395,8 +395,8 @@ void Copter::Mode::auto_takeoff_run()
     }
 
 #if FRAME_CONFIG == HELI_FRAME
-    // helicopters stay in landed state until rotor speed runup has finished
-    if (motors->rotor_runup_complete()) {
+    // aircraft stays in landed state until rotor speed runup has finished
+    if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
         set_land_complete(false);
     } else {
         // initialise wpnav targets

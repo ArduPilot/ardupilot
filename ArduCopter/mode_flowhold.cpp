@@ -84,13 +84,6 @@ Copter::ModeFlowHold::ModeFlowHold(void) : Mode()
 // flowhold_init - initialise flowhold controller
 bool Copter::ModeFlowHold::init(bool ignore_checks)
 {
-#if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter Flow Hold if the Rotor Runup is not complete
-    if (!ignore_checks && !motors->rotor_runup_complete()){
-        return false;
-    }
-#endif
-
     if (!copter.optflow.enabled() || !copter.optflow.healthy()) {
         return false;
     }
