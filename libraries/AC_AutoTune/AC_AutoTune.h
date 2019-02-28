@@ -114,16 +114,16 @@ private:
     void announce_state_to_gcs();
     void do_gcs_announcements();
 
-    enum LEVEL_ISSUE {
-        LEVEL_ISSUE_NONE,
-        LEVEL_ISSUE_ANGLE_ROLL,
-        LEVEL_ISSUE_ANGLE_PITCH,
-        LEVEL_ISSUE_ANGLE_YAW,
-        LEVEL_ISSUE_RATE_ROLL,
-        LEVEL_ISSUE_RATE_PITCH,
-        LEVEL_ISSUE_RATE_YAW,
+    enum struct LevelIssue {
+        NONE,
+        ANGLE_ROLL,
+        ANGLE_PITCH,
+        ANGLE_YAW,
+        RATE_ROLL,
+        RATE_PITCH,
+        RATE_YAW,
     };
-    bool check_level(const enum LEVEL_ISSUE issue, const float current, const float maximum);
+    bool check_level(const enum LevelIssue issue, const float current, const float maximum);
     bool currently_level();
 
     // autotune modes (high level states)
@@ -216,7 +216,7 @@ private:
     int32_t roll_cd, pitch_cd;
 
     struct {
-        LEVEL_ISSUE issue{LEVEL_ISSUE_NONE};
+        LevelIssue issue{LevelIssue::NONE};
         float maximum;
         float current;
     } level_problem;
