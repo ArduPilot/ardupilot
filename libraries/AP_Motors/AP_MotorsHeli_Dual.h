@@ -88,6 +88,9 @@ public:
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
+    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
+    bool parameter_check(bool display_msg) const override;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -99,8 +102,8 @@ protected:
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state) override;
 
-    // calculate_swashplate_tilt - calculate tilt of each swashplate based on configuration
-    float get_swashplate (int8_t swash_num, int8_t swash_axis, float pitch_input, float roll_input, float yaw_input, float coll_input);
+    // get_swashplate - calculate movement of each swashplate based on configuration
+    float get_swashplate(int8_t swash_num, int8_t swash_axis, float pitch_input, float roll_input, float yaw_input, float coll_input);
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;
@@ -109,8 +112,6 @@ protected:
     AP_MotorsHeli_RSC           _rotor;             // main rotor controller
     AP_MotorsHeli_Swash        _swashplate1;        // swashplate1
     AP_MotorsHeli_Swash        _swashplate2;        // swashplate2
-    SwashInt16Param            _swash1_H3;          // H3 servo positions for swash 1
-    SwashInt16Param            _swash2_H3;          // H3 servo positions for swash 2
 
     // internal variables
     float _oscillate_angle = 0.0f;                  // cyclic oscillation angle, used by servo_test function
@@ -128,8 +129,6 @@ protected:
     AP_Int8         _swashplate2_type;              // Swash Type Setting
     AP_Int8         _swash1_coll_dir;               // Collective control direction, normal or reversed
     AP_Int8         _swash2_coll_dir;               // Collective control direction, normal or reversed
-    AP_Int16        _swash1_phase_angle;            // phase angle correction for 1st swash.
-    AP_Int16        _swash2_phase_angle;            // phase angle correction for 2nd swash.
     AP_Int8         _dual_mode;                     // which dual mode the heli is
     AP_Float        _dcp_scaler;                    // scaling factor applied to the differential-collective-pitch
     AP_Float        _dcp_yaw_effect;                // feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
