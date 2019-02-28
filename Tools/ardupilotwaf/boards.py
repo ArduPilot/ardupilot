@@ -158,6 +158,7 @@ class Board:
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
             '-Werror=format-security',
+            '-Werror=enum-compare',
             '-Werror=array-bounds',
             '-Werror=uninitialized',
             '-Werror=init-self',
