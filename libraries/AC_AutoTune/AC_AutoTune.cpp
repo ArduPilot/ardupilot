@@ -344,8 +344,6 @@ void AC_AutoTune::do_gcs_announcements()
 // should be called at 100hz or more
 void AC_AutoTune::run()
 {
-    int32_t target_climb_rate_cms;
-
     // initialize vertical speeds and acceleration
     init_z_limits();
 
@@ -362,10 +360,10 @@ void AC_AutoTune::run()
     get_pilot_desired_rp_yrate_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
 
     // get pilot desired climb rate
-    target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
+    const float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
 
     bool zero_rp_input = target_roll_cd == 0 && target_pitch_cd == 0;
-    if (!zero_rp_input || target_yaw_rate_cds != 0 || target_climb_rate_cms != 0) {
+    if (!zero_rp_input || target_yaw_rate_cds != 0 || !is_zero(target_climb_rate_cms)) {
         if (!pilot_override) {
             pilot_override = true;
             // set gains to their original values
