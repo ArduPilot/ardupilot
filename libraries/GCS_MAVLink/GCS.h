@@ -423,6 +423,7 @@ protected:
 
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);
+    virtual void send_global_position_int();
 
     // message sending functions:
     bool try_send_compass_message(enum ap_message id);
@@ -686,8 +687,6 @@ private:
     // we cache the current location and send it even if the AHRS has
     // no idea where we are:
     struct Location global_position_current_loc;
-
-    void send_global_position_int();
 
     void zero_rc_outputs();
 
