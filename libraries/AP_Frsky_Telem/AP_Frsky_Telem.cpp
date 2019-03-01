@@ -37,7 +37,7 @@ ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_
 /*
  * init - perform required initialisation
  */
-void AP_Frsky_Telem::init(const uint32_t *ap_valuep)
+void AP_Frsky_Telem::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
@@ -57,13 +57,6 @@ void AP_Frsky_Telem::init(const uint32_t *ap_valuep)
             char firmware_buf[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
             snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", AP::fwversion().fw_string, _frame_string);
             queue_message(MAV_SEVERITY_INFO, firmware_buf);
-        }
-        // save main parameters locally
-        if (ap_valuep == nullptr) { // ap bit-field
-            _ap.value = 0x2000; // set "initialised" to 1 for rover and plane
-            _ap.valuep = &_ap.value;
-        } else {
-            _ap.valuep = ap_valuep;
         }
     }
     
@@ -122,7 +115,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 return;
             }
             if ((now - _passthrough.ap_status_timer) >= 500) {
-                if (((*_ap.valuep) & AP_INITIALIZED_FLAG) > 0) {  // send ap status only once vehicle has been initialised
+                if (gcs().vehicle_initialised()) {  // send ap status only once vehicle has been initialised
                     send_uint32(DIY_FIRST_ID+1, calc_ap_status());
                     _passthrough.ap_status_timer = AP_HAL::millis();
                 }
@@ -701,7 +694,8 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
     ap_status = (uint8_t)((gcs().custom_mode()+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
-    ap_status |= (uint8_t)((*_ap.valuep) & AP_SSIMPLE_FLAGS)<<AP_SSIMPLE_OFFSET;
+    ap_status |= (uint8_t)(gcs().simple_input_active())<<AP_SIMPLE_OFFSET;
+    ap_status |= (uint8_t)(gcs().supersimple_input_active())<<AP_SSIMPLE_OFFSET;
     // is_flying flag
     ap_status |= (uint8_t)(AP_Notify::flags.flying) << AP_FLYING_OFFSET;
     // armed flag
