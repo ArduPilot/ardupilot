@@ -87,8 +87,8 @@ for FrSky SPort Passthrough
 #define AP_CONTROL_MODE_LIMIT       0x1F
 #define AP_SSIMPLE_FLAGS            0x6
 #define AP_SSIMPLE_OFFSET           4
-#define AP_LANDCOMPLETE_FLAG        0x80
 #define AP_INITIALIZED_FLAG         0x2000
+#define AP_FLYING_OFFSET            6
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
 #define AP_EKF_FS_OFFSET            10
@@ -124,11 +124,6 @@ public:
 
     // add statustext message to FrSky lib message queue
     void queue_message(MAV_SEVERITY severity, const char *text);
-
-    // update whether we're flying (used for Plane)
-    // set land_complete flag to 0 if is_flying
-    // set land_complete flag to 1 if not flying
-    void set_is_flying(bool is_flying) { (is_flying) ? (_ap.value &= ~AP_LANDCOMPLETE_FLAG) : (_ap.value |= AP_LANDCOMPLETE_FLAG); }
 
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
