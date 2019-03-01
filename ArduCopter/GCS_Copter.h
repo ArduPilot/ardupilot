@@ -27,6 +27,8 @@ public:
 
     const char* frame_string() const override;
 
+    bool vehicle_initialised() const override;
+
 private:
 
     GCS_MAVLINK_Copter _chan[MAVLINK_COMM_NUM_BUFFERS];
