@@ -22,9 +22,9 @@ extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
 # ifdef HAL_LOGGING_DATAFLASH
-#  define HAL_LOGGING_BACKENDS_DEFAULT DATAFLASH_BACKEND_BLOCK
+#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::BLOCK
 # else
-#  define HAL_LOGGING_BACKENDS_DEFAULT DATAFLASH_BACKEND_FILE
+#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
 # endif
 #endif
 
@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
-    AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       HAL_LOGGING_BACKENDS_DEFAULT),
+    AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
 
     // @Param: _FILE_BUFSIZE
     // @DisplayName: Maximum AP_Logger File Backend buffer size (in kilobytes)
@@ -102,7 +102,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 
 #if defined(HAL_BOARD_LOG_DIRECTORY)
  #if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
-    if (_params.backend_types & DATAFLASH_BACKEND_FILE) {
+    if (_params.backend_types & uint8_t(Backend_Type::FILESYSTEM)) {
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
@@ -120,7 +120,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 #endif // HAL_BOARD_LOG_DIRECTORY
 
 #if DATAFLASH_MAVLINK_SUPPORT
-    if (_params.backend_types & DATAFLASH_BACKEND_MAVLINK) {
+    if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
         if (_next_backend == DATAFLASH_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
@@ -140,7 +140,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (_params.backend_types & DATAFLASH_BACKEND_BLOCK) {
+    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == DATAFLASH_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
@@ -159,7 +159,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 #endif
 
 #ifdef HAL_LOGGING_DATAFLASH
-    if (_params.backend_types & DATAFLASH_BACKEND_BLOCK) {
+    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == DATAFLASH_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
