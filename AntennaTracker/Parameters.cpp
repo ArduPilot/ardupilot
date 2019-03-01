@@ -370,6 +370,11 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
 	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
+#ifdef ENABLE_SCRIPTING
+    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
+    GOBJECT(scripting, "SCR_", AP_Scripting),
+#endif
+
     // @Param: CMD_TOTAL
     // @DisplayName: Number of loaded mission items
     // @Description: Set to 1 if HOME location has been loaded by the ground station. Do not change this manually.
