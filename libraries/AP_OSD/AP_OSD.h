@@ -203,6 +203,7 @@ public:
         TOGGLE=0,
         PWM_RANGE=1,
         AUTO_SWITCH=2,
+        ARM_STATE=3,
     };
 
     AP_Int8 osd_type;
@@ -263,7 +264,8 @@ private:
     bool switch_debouncer;
     uint32_t last_switch_ms;
     struct NavInfo nav_info;
-
+    bool ever_armed;
+    
     uint32_t last_update_ms;
     float last_distance_m;
     float max_dist_m;
