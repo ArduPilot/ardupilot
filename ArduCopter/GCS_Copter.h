@@ -22,6 +22,11 @@ public:
 
     void update_sensor_status_flags(void) override;
 
+    uint32_t custom_mode() const override;
+    MAV_TYPE frame_type() const override;
+
+    const char* frame_string() const override;
+
 private:
 
     GCS_MAVLINK_Copter _chan[MAVLINK_COMM_NUM_BUFFERS];
