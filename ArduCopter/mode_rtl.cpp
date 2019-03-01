@@ -12,11 +12,11 @@
 // rtl_init - initialise rtl controller
 bool Copter::ModeRTL::init(bool ignore_checks)
 {
-        // initialise waypoint and spline controller
-        wp_nav->wp_and_spline_init();
-        build_path(!copter.failsafe.terrain);
-        climb_start();
-        return true;
+    // initialise waypoint and spline controller
+    wp_nav->wp_and_spline_init();
+    build_path(!copter.failsafe.terrain);
+    climb_start();
+    return true;
 }
 
 // re-start RTL with terrain following disabled
