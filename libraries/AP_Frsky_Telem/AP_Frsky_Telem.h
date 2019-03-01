@@ -138,15 +138,11 @@ public:
 
     static ObjectArray<mavlink_statustext_t> _statustext_queue;
 
-    void set_frame_string(const char *string) { _frame_string = string; }
-
 private:
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
     AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
     bool _initialised_uart;
     uint16_t _crc;
-
-    const char *_frame_string;
 
     struct
     {
