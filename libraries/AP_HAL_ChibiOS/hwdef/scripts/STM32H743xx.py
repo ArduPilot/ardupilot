@@ -21,7 +21,7 @@ mcu = {
         (0x24000000, 512, 1), # AXI SRAM
         (0x30000000, 288, 1), # SRAM1, SRAM2, SRAM3
         (0x38000000,  64, 1), # SRAM4
-        (0x00004000,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
+        (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA
     ]
 }
