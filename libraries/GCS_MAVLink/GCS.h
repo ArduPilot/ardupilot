@@ -776,6 +776,9 @@ public:
     void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
     virtual bool vehicle_initialised() const { return true; }
 
+    virtual bool simple_input_active() const { return false; }
+    virtual bool supersimple_input_active() const { return false; }
+
 protected:
 
     uint32_t control_sensors_present;
