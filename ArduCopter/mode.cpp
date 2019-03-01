@@ -234,9 +234,6 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     fence.manual_recovery_start();
 #endif
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.update_control_mode(control_mode);
-#endif
 #if DEVO_TELEM_ENABLED == ENABLED
     devo_telemetry.update_control_mode(control_mode);
 #endif

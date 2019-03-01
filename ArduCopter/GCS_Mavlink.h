@@ -59,9 +59,7 @@ private:
     void packetReceived(const mavlink_status_t &status,
                         mavlink_message_t &msg) override;
 
-    MAV_TYPE frame_type() const override;
     MAV_MODE base_mode() const override;
-    uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
 
     int16_t vfr_hud_throttle() const override;

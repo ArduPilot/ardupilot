@@ -18,7 +18,7 @@ void Copter::gcs_send_heartbeat(void)
  *  pattern below when adding any new messages
  */
 
-MAV_TYPE GCS_MAVLINK_Copter::frame_type() const
+MAV_TYPE GCS_Copter::frame_type() const
 {
     return copter.get_frame_mav_type();
 }
@@ -73,11 +73,10 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
     return (MAV_MODE)_base_mode;
 }
 
-uint32_t GCS_MAVLINK_Copter::custom_mode() const
+uint32_t GCS_Copter::custom_mode() const
 {
     return copter.control_mode;
 }
-
 
 MAV_STATE GCS_MAVLINK_Copter::system_status() const
 {
