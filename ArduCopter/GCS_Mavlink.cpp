@@ -208,7 +208,7 @@ uint32_t GCS_MAVLINK_Copter::telem_delay() const
     return (uint32_t)(copter.g.telem_delay);
 }
 
-bool GCS_MAVLINK_Copter::vehicle_initialised() const {
+bool GCS_Copter::vehicle_initialised() const {
     return copter.ap.initialised;
 }
 
