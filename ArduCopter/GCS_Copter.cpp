@@ -7,6 +7,16 @@ const char* GCS_Copter::frame_string() const
     return copter.get_frame_string();
 }
 
+bool GCS_Copter::simple_input_active() const
+{
+    return copter.ap.simple_mode == 1;
+}
+
+bool GCS_Copter::supersimple_input_active() const
+{
+    return copter.ap.simple_mode == 2;
+}
+
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but
