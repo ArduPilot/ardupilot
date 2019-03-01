@@ -3817,6 +3817,22 @@ void GCS_MAVLINK::send_hwstatus()
         0);
 }
 
+void GCS_MAVLINK::send_rpm() const
+{
+    AP_RPM *rpm = AP::rpm();
+    if (rpm == nullptr) {
+        return;
+    }
+
+    if (!rpm->enabled(0) && !rpm->enabled(1)) {
+        return;
+    }
+
+    mavlink_msg_rpm_send(
+        chan,
+        rpm->get_rpm(0),
+        rpm->get_rpm(1));
+}
 
 void GCS_MAVLINK::send_sys_status()
 {
@@ -3998,6 +4014,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_ORIGIN:
         CHECK_PAYLOAD_SIZE(GPS_GLOBAL_ORIGIN);
         send_gps_global_origin();
+        break;
+
+    case MSG_RPM:
+        CHECK_PAYLOAD_SIZE(RPM);
+        send_rpm();
         break;
 
     case MSG_CURRENT_WAYPOINT:
