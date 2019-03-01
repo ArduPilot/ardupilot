@@ -24,6 +24,9 @@ public:
 
     void update_sensor_status_flags(void) override;
 
+    bool simple_input_active() const override;
+    bool supersimple_input_active() const override;
+
 private:
 
     GCS_MAVLINK_Rover _chan[MAVLINK_COMM_NUM_BUFFERS];

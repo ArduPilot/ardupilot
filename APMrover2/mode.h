@@ -579,13 +579,13 @@ public:
     void update() override;
     void init_heading();
 
-private:
-
     // simple type enum used for SIMPLE_TYPE parameter
     enum simple_type {
         Simple_InitialHeading = 0,
         Simple_CardinalDirections = 1,
     };
+
+private:
 
     float _initial_heading_cd;  // vehicle heading (in centi-degrees) at moment vehicle was armed
     float _desired_heading_cd;  // latest desired heading (in centi-degrees) from pilot
