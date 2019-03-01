@@ -1012,6 +1012,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Test Rally Points",
              self.test_rally_points),
 
+            ("DataFlashOverMAVLink",
+             "Test DataFlash over MAVLink",
+             self.test_dataflash_over_mavlink),
+
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(
                  self.buildlogs_path("APMrover2-log.bin"),
