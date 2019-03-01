@@ -96,10 +96,6 @@ void Plane::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
-#if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.init();
-#endif
-
 #if OSD_ENABLED == ENABLED
     osd.init();
 #endif
@@ -302,10 +298,6 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     control_mode = mode;
     previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
-
-#if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.update_control_mode(control_mode);
-#endif
 
 #if CAMERA == ENABLED
     camera.set_is_auto_mode(control_mode == AUTO);
