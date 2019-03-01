@@ -399,6 +399,11 @@ public:
 
     // balance both pitch trim
     AP_Float bal_pitch_trim;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern const AP_Param::Info var_info[];
