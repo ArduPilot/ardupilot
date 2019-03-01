@@ -143,21 +143,6 @@ int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
 }
 
 /*
-  send RPM packet
- */
-void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
-{
-#if RPM_ENABLED == ENABLED
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        mavlink_msg_rpm_send(
-            chan,
-            rpm_sensor.get_rpm(0),
-            rpm_sensor.get_rpm(1));
-    }
-#endif
-}
-
-/*
   send PID tuning message
  */
 void GCS_MAVLINK_Copter::send_pid_tuning()
@@ -246,13 +231,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
 
     switch(id) {
-
-    case MSG_RPM:
-#if RPM_ENABLED == ENABLED
-        CHECK_PAYLOAD_SIZE(RPM);
-        copter.send_rpm(chan);
-#endif
-        break;
 
     case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
