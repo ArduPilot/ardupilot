@@ -101,21 +101,6 @@ int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
     return (int16_t)(sub.motors.get_throttle() * 100);
 }
 
-/*
-  send RPM packet
- */
-#if RPM_ENABLED == ENABLED
-void NOINLINE Sub::send_rpm(mavlink_channel_t chan)
-{
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        mavlink_msg_rpm_send(
-            chan,
-            rpm_sensor.get_rpm(0),
-            rpm_sensor.get_rpm(1));
-    }
-}
-#endif
-
 // Work around to get temperature sensor data out
 void GCS_MAVLINK_Sub::send_scaled_pressure3()
 {
@@ -251,13 +236,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     case MSG_NAMED_FLOAT:
         send_info();
-        break;
-
-    case MSG_RPM:
-#if RPM_ENABLED == ENABLED
-        CHECK_PAYLOAD_SIZE(RPM);
-        sub.send_rpm(chan);
-#endif
         break;
 
     case MSG_TERRAIN:
