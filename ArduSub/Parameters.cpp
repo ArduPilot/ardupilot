@@ -634,6 +634,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
 
+#ifdef ENABLE_SCRIPTING
+    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
+    AP_SUBGROUPINFO(scripting, "SCR_", 18, ParametersG2, AP_Scripting),
+#endif
+
     AP_GROUPEND
 };
 

@@ -190,6 +190,12 @@ void Sub::init_ardupilot()
 
     startup_INS_ground();
 
+#ifdef ENABLE_SCRIPTING
+    if (!g2.scripting.init()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
+    }
+#endif // ENABLE_SCRIPTING
+
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
