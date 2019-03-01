@@ -2734,6 +2734,22 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_arm_feature(self):
+        # ensure we can't switch to LOITER without position
+        self.progress("Ensure we can't enter LOITER without position")
+        self.context_push()
+        self.set_parameter("GPS_TYPE", 0)
+        self.reboot_sitl()
+        self.change_mode('STABILIZE')
+        self.arm_vehicle()
+        self.mavproxy.send("mode LOITER\n")
+        self.mavproxy.expect("requires position")
+        self.disarm_vehicle()
+        self.context_pop()
+        self.reboot_sitl()
+
+        super(AutoTestCopter, self).test_arm_feature()
+
     def initial_mode(self):
         return "STABILIZE"
 
