@@ -707,7 +707,6 @@ private:
 
     // GCS_Mavlink.cpp
     void gcs_send_heartbeat(void);
-    void send_rpm(mavlink_channel_t chan);
 
     // heli.cpp
     void heli_init();
