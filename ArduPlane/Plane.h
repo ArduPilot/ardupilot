@@ -792,7 +792,6 @@ private:
     void send_fence_status(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
-    void send_rpm(mavlink_channel_t chan);
 
     void send_aoa_ssa(mavlink_channel_t chan);
 
