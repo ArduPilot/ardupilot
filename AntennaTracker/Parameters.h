@@ -108,6 +108,8 @@ public:
         k_param_rc_channels,
         k_param_servo_channels,
 
+        k_param_scripting = 219,
+
         //
         // 220: Waypoint data
         //

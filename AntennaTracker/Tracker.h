@@ -69,6 +69,10 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Tracker.h"
 
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -154,6 +158,10 @@ private:
     struct Location current_loc;
 
     enum ControlMode control_mode  = INITIALISING;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif
 
     // Vehicle state
     struct {
