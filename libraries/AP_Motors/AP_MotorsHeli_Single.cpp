@@ -231,9 +231,10 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
     } else if (_rsc_mode == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
         _main_rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
         _main_rotor.set_governor_disengage(_rsc_gov.get_disengage()*0.01f);
-        _main_rotor.set_governor_droop_setting(_rsc_gov.get_droop_setting()*0.01f);
-        _main_rotor.set_governor_setpoint(_rsc_gov.get_setpoint());
-        _main_rotor.set_governor_tc(_rsc_gov.get_tc()*0.01f);
+        _main_rotor.set_governor_droop_response(_rsc_gov.get_droop_response()*0.01f);
+        _main_rotor.set_governor_reference(_rsc_gov.get_reference());
+        _main_rotor.set_governor_range(_rsc_gov.get_range());
+        _main_rotor.set_governor_thrcurve(_rsc_gov.get_thrcurve()*0.01f);
     }
 }
 
