@@ -82,12 +82,12 @@ const AP_Param::GroupInfo RSCGovFloatParam::var_info[] = {
     AP_GROUPINFO_FLAGS("ENABLE", 1, RSCGovFloatParam, enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: SETPNT
-    // @DisplayName: Governor RPM Setting
+    // @DisplayName: Governor RPM Reference Setting
     // @Description: Main rotor rpm setting that governor maintains when engaged
     // @Range: 800 3500
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("SETPNT", 2, RSCGovFloatParam, setpoint, AP_MOTORS_HELI_RSC_GOVERNOR_SET_DEFAULT),
+    AP_GROUPINFO("SETPNT", 2, RSCGovFloatParam, reference, AP_MOTORS_HELI_RSC_GOVERNOR_SETPNT_DEFAULT),
 
     // @Param: DISGAG
     // @DisplayName: Throttle Percentage for Governor Disengage
@@ -95,23 +95,31 @@ const AP_Param::GroupInfo RSCGovFloatParam::var_info[] = {
     // @Range: 0 50
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("DISGAG", 3, RSCGovFloatParam, disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE),
+    AP_GROUPINFO("DISGAG", 3, RSCGovFloatParam, disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT),
 
     // @Param: DROOP
-    // @DisplayName: Governor Droop Setting
+    // @DisplayName: Governor Droop Response Setting
     // @Description: Governor droop response under load, 0-100%. Higher value is quicker response but may cause surging
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("DROOP", 4, RSCGovFloatParam, droop_setting, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
+    AP_GROUPINFO("DROOP", 4, RSCGovFloatParam, droop_response, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
 
-    // @Param: TC
+    // @Param: THRCURVE
     // @DisplayName: Governor Throttle Curve Gain
     // @Description: Percentage of throttle curve gain in governor output
     // @Range: 50 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("TC", 5, RSCGovFloatParam, tc, AP_MOTORS_HELI_RSC_GOVERNOR_TC),
+    AP_GROUPINFO("THRCURVE", 5, RSCGovFloatParam, thrcurve, AP_MOTORS_HELI_RSC_GOVERNOR_THRCURVE_DEFAULT),
+    
+    // @Param: RANGE
+    // @DisplayName: Governor Operational Range
+    // @Description: RPM range +/- governor rpm reference setting where governor is operational. If speed sensor fails or rpm falls outside of this range, the governor will disengage and return to throttle curve. Recommended range is 100
+    // @Range: 50 200
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RANGE", 6, RSCGovFloatParam, range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
 
     AP_GROUPEND
 };
@@ -198,26 +206,30 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 // governor provides two modes of throttle control - governor engaged
                 // or throttle curve if governor is out of range or sensor failed
             	float desired_throttle = calculate_desired_throttle(_collective_in);
-            	// governor is engaged if within -100/+50 rpm of setpoint
-                if ((_rotor_rpm >= (_governor_setpoint - 100.0f)) && (_rotor_rpm <= (_governor_setpoint + 50.0f))) {
-            	    float governor_droop = ((_rotor_rpm - _governor_setpoint) * desired_throttle) * -0.01f;
-            	    // use 33% of governor output for soft-starting governor to rated speed
-            	    // this will be over-ridden during autorotation bailout via the throttle curve
-            	    if (_governor_engage && _rotor_rpm < (_governor_setpoint - 40.0f)) {
-            	        _governor_output = (governor_droop * _governor_droop_setting) * 0.33f;
-            	    } else {
-            	        // governor has reached normal flight status, switch governor on and use full governor control
+            	// governor is active if within user-set range from reference speed
+                if ((_rotor_rpm >= (_governor_reference - _governor_range)) && (_rotor_rpm <= (_governor_reference + _governor_range))) {
+            	    float governor_droop = constrain_float(_governor_reference - _rotor_rpm,0.0f,_governor_range);
+            	    // if rpm has not reached 40% of the operational range from reference speed, governor
+            	    // remains in pre-engage status, no reference speed compensation due to droop
+            	    // this provides a soft-start function that engages the governor less aggressively
+            	    if (_governor_engage && _rotor_rpm < (_governor_reference - (_governor_range * 0.4f))) {
+                        _governor_output = ((_rotor_rpm - _governor_reference) * desired_throttle) * _governor_droop_response * -0.01f;
+                    } else {
+            	        // normal flight status, governor fully engaged with reference speed compensation for droop
             	        _governor_engage = true;
-                        _governor_output = governor_droop * _governor_droop_setting;
+                        _governor_output = ((_rotor_rpm - (_governor_reference + governor_droop)) * desired_throttle) * _governor_droop_response * -0.01f;
                     }
                     // check for governor disengage for return to flight idle power
                     if (desired_throttle <= _governor_disengage) {
                         _governor_output = 0.0f;
                         _governor_engage = false;
                     }
-            	    _control_output = constrain_float(_idle_output + (_rotor_ramp_output * (((desired_throttle * _governor_tc) + _governor_output) - _idle_output)), _idle_output, 1.0f);
+                    // throttle output with governor on is constrained from minimum called for from throttle curve
+                    // to maximum WOT. This prevents outliers on rpm signal from closing the throttle in flight due
+                    // to rpm sensor failure or bad signal quality
+            	    _control_output = constrain_float(_idle_output + (_rotor_ramp_output * (((desired_throttle * _governor_thrcurve) + _governor_output) - _idle_output)), _idle_output + (_rotor_ramp_output * ((desired_throttle * _governor_thrcurve)) - _idle_output), 1.0f);
             	} else {
-            	    // hold governor output at zero, status is off and use the throttle curve
+            	    // hold governor output at zero, engage status is false and use the throttle curve
             	    // this is failover for in-flight failure of the speed sensor
             	    _governor_output = 0.0f;
             	    _governor_engage = false;
