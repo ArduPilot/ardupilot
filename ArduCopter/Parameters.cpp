@@ -929,6 +929,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AC_AutoTune/AC_AutoTune.cpp
     AP_SUBGROUPPTR(autotune_ptr, "AUTOTUNE_",  29, ParametersG2, Copter::AutoTune),
 #endif
+
+#ifdef ENABLE_SCRIPTING
+    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
+    AP_SUBGROUPINFO(scripting, "SCR_", 30, ParametersG2, AP_Scripting),
+#endif
     
     AP_GROUPEND
 };

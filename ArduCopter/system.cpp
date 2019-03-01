@@ -244,6 +244,12 @@ void Copter::init_ardupilot()
 
     startup_INS_ground();
 
+#ifdef ENABLE_SCRIPTING
+    if (!g2.scripting.init()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
+    }
+#endif // ENABLE_SCRIPTING
+
     // set landed flags
     set_land_complete(true);
     set_land_complete_maybe(true);
