@@ -198,7 +198,7 @@ void GCS_MAVLINK::send_meminfo(void)
 // report power supply status
 void GCS_MAVLINK::send_power_status(void)
 {
-    if (!vehicle_initialised()) {
+    if (!gcs().vehicle_initialised()) {
         // avoid unnecessary errors being reported to user
         return;
     }
@@ -3846,7 +3846,7 @@ void GCS_MAVLINK::send_sys_status()
 {
     // send extended status only once vehicle has been initialised
     // to avoid unnecessary errors being reported to user
-    if (!vehicle_initialised()) {
+    if (!gcs().vehicle_initialised()) {
         return;
     }
 
