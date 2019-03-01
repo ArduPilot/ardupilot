@@ -170,6 +170,10 @@
  #include <AP_RPM/AP_RPM.h>
 #endif
 
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
+#endif
+
 // Local modules
 #ifdef USER_PARAMS_ENABLED
 #include "UserParameters.h"
