@@ -1168,7 +1168,7 @@ bool UARTDriver::set_options(uint8_t options)
     uint32_t cr3 = sd->usart->CR3;
     bool was_enabled = (sd->usart->CR1 & USART_CR1_UE);
 
-#ifdef STM32F7
+#if defined(STM32F7) || defined(STM32H7)
     // F7 has built-in support for inversion in all uarts
     if (options & OPTION_RXINV) {
         cr2 |= USART_CR2_RXINV;
