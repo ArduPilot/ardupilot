@@ -1795,7 +1795,7 @@ class AutoTest(ABC):
         # Rover and Sub don't have auto disarm
         if self.is_copter() or self.is_plane():
             self.set_autodisarm_delay(0)
-        self.start_test("Test normal arm and disarm features")
+        self.start_subtest("Test normal arm and disarm features")
         self.wait_ready_to_arm()
         self.progress("default arm_vehicle() call")
         if not self.arm_vehicle():
@@ -1818,7 +1818,7 @@ class AutoTest(ABC):
             if not self.disarm_motors_with_rc_input():
                 raise NotAchievedException("Failed to disarm with RC input")
 
-            self.start_test("Test arm and disarm with switch")
+            self.start_subtest("Test arm and disarm with switch")
             arming_switch = 7
             self.set_parameter("RC%d_OPTION" % arming_switch, 41)
             self.set_rc(arming_switch, 1000)
@@ -1831,7 +1831,7 @@ class AutoTest(ABC):
             self.set_rc(arming_switch, 1000)
 
             if self.is_copter():
-                self.start_test("Test arming failure with throttle too high")
+                self.start_subtest("Test arming failure with throttle too high")
                 self.set_rc(3, 1800)
                 try:
                     if self.arm_vehicle():
@@ -1847,19 +1847,19 @@ class AutoTest(ABC):
                 self.set_rc(arming_switch, 1000)
 
             # Sub doesn't have 'stick commands'
-            self.start_test("Test arming failure with ARMING_RUDDER=0")
+            self.start_subtest("Test arming failure with ARMING_RUDDER=0")
             self.set_parameter("ARMING_RUDDER", 0)
             if self.arm_motors_with_rc_input():
                 raise NotAchievedException(
                     "Armed with rudder when ARMING_RUDDER=0")
-            self.start_test("Test disarming failure with ARMING_RUDDER=0")
+            self.start_subtest("Test disarming failure with ARMING_RUDDER=0")
             self.arm_vehicle()
             if self.disarm_motors_with_rc_input():
                 raise NotAchievedException(
                     "Disarmed with rudder when ARMING_RUDDER=0")
             self.disarm_vehicle()
             self.wait_heartbeat()
-            self.start_test("Test disarming failure with ARMING_RUDDER=1")
+            self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
             self.set_parameter("ARMING_RUDDER", 1)
             self.arm_vehicle()
             if self.disarm_motors_with_rc_input():
@@ -1870,7 +1870,7 @@ class AutoTest(ABC):
             self.set_parameter("ARMING_RUDDER", 2)
 
             if self.is_copter():
-                self.start_test("Test arming failure with interlock enabled")
+                self.start_subtest("Test arming failure with interlock enabled")
                 self.set_rc(interlock_channel, 2000)
                 if self.arm_motors_with_rc_input():
                     raise NotAchievedException(
@@ -1883,7 +1883,7 @@ class AutoTest(ABC):
                 self.set_rc(arming_switch, 1000)
                 self.set_rc(interlock_channel, 1000)
                 if self.is_heli():
-                    self.start_test("Test motor interlock enable can't be set while disarmed")
+                    self.start_subtest("Test motor interlock enable can't be set while disarmed")
                     self.set_rc(interlock_channel, 2000)
                     channel_field = "servo%u_raw" % interlock_channel
                     interlock_value = self.get_parameter("SERVO%u_MIN" % interlock_channel)
