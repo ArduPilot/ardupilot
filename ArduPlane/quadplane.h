@@ -138,7 +138,9 @@ public:
         int16_t  climb_rate;
         float    throttle_mix;
     };
-        
+
+    MAV_TYPE get_mav_type(void) const;
+
 private:
     AP_AHRS_NavEKF &ahrs;
     AP_Vehicle::MultiCopter aparm;
@@ -296,7 +298,6 @@ private:
 
     // HEARTBEAT mav_type override
     AP_Int8 mav_type;
-    MAV_TYPE get_mav_type(void) const;
     
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
