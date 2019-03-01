@@ -650,7 +650,6 @@ bool AP_RangeFinder_VL53L0X::init()
 
     // -- VL53L0X_perform_vhv_calibration() begin
 
-    write_register(SYSTEM_SEQUENCE_CONFIG, 0x01);
     if (!performSingleRefCalibration(0x40)) {
         printf("VL53L0X: Failed SingleRefCalibration1\n");
         return false;
@@ -660,7 +659,6 @@ bool AP_RangeFinder_VL53L0X::init()
 
     // -- VL53L0X_perform_phase_calibration() begin
 
-    write_register(SYSTEM_SEQUENCE_CONFIG, 0x02);
     if (!performSingleRefCalibration(0x00)) {
         printf("VL53L0X: Failed SingleRefCalibration2\n");
         return false;
@@ -683,14 +681,42 @@ bool AP_RangeFinder_VL53L0X::init()
 // based on VL53L0X_perform_single_ref_calibration()
 bool AP_RangeFinder_VL53L0X::performSingleRefCalibration(uint8_t vhv_init_byte)
 {
-    write_register(SYSRANGE_START, 0x01 | vhv_init_byte); // VL53L0X_REG_SYSRANGE_MODE_START_STOP
+    bool success = false;
 
-    uint8_t tries = 200;
-    while ((read_register(RESULT_INTERRUPT_STATUS) & 0x07) == 0) {
-        if (tries-- == 0) {
+    uint8_t calibration_attempts = 5;
+    for (int i = 0; i < calibration_attempts && !success; i++) {
+        if (i > 0) {
+            printf("VL53L0X: retrying SingleRefCalibration (attempt %d/%d)\n", i+1, calibration_attempts);
+        }
+
+        if (vhv_init_byte == 0x40) {
+            write_register(SYSTEM_SEQUENCE_CONFIG, 0x01);
+        } else if (vhv_init_byte == 0x00) {
+            write_register(SYSTEM_SEQUENCE_CONFIG, 0x02);
+        } else {
             return false;
         }
-        hal.scheduler->delay(1);
+
+        write_register(SYSRANGE_START, 0x01 | vhv_init_byte); // VL53L0X_REG_SYSRANGE_MODE_START_STOP
+
+        uint8_t tries = 200;
+        while (tries-- > 0 && !success) {
+            uint8_t result = read_register(RESULT_INTERRUPT_STATUS);
+            if ((result & 0x07) != 0) {
+                success = true;
+                break;
+            } else {
+                success = false;
+            }
+
+            if (tries > 0) { // No need to wait if it's the last try.
+                hal.scheduler->delay(1);
+            }
+        }
+    }
+
+    if (!success) {
+        return false;
     }
 
     write_register(SYSTEM_INTERRUPT_CLEAR, 0x01);
