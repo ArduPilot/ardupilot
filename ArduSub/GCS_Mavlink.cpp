@@ -232,7 +232,7 @@ uint8_t GCS_MAVLINK_Sub::sysid_my_gcs() const
     return sub.g.sysid_my_gcs;
 }
 
-bool GCS_MAVLINK_Sub::vehicle_initialised() const {
+bool GCS_Sub::vehicle_initialised() const {
     return sub.ap.initialised;
 }
 
