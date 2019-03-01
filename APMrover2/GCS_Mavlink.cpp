@@ -285,7 +285,7 @@ uint32_t GCS_MAVLINK_Rover::telem_delay() const
     return static_cast<uint32_t>(rover.g.telem_delay);
 }
 
-bool GCS_MAVLINK_Rover::vehicle_initialised() const
+bool GCS_Rover::vehicle_initialised() const
 {
     return rover.control_mode != &rover.mode_initializing;
 }

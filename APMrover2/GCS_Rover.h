@@ -20,6 +20,8 @@ public:
     uint32_t custom_mode() const override;
     MAV_TYPE frame_type() const override;
 
+    bool vehicle_initialised() const override;
+
     void update_sensor_status_flags(void) override;
 
 private:
