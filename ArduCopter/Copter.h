@@ -140,10 +140,6 @@
  # include <AP_Camera/AP_Camera.h>
 #endif
 
-#if DEVO_TELEM_ENABLED == ENABLED
- #include <AP_Devo_Telem/AP_Devo_Telem.h>
-#endif
-
 #if OSD_ENABLED == ENABLED
  #include <AP_OSD/AP_OSD.h>
 #endif
@@ -400,10 +396,6 @@ private:
     AP_BattMonitor battery{MASK_LOG_CURRENT,
                            FUNCTOR_BIND_MEMBER(&Copter::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
-
-#if DEVO_TELEM_ENABLED == ENABLED
-    AP_DEVO_Telem devo_telemetry;
-#endif
 
 #if OSD_ENABLED == ENABLED
     AP_OSD osd;
