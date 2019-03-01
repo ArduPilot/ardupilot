@@ -405,10 +405,6 @@ private:
                            FUNCTOR_BIND_MEMBER(&Plane::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry;
-#endif
 #if DEVO_TELEM_ENABLED == ENABLED
     // DEVO-M telemetry support
     AP_DEVO_Telem devo_telemetry;

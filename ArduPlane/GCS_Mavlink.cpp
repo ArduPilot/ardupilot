@@ -2,7 +2,7 @@
 
 #include "Plane.h"
 
-MAV_TYPE GCS_MAVLINK_Plane::frame_type() const
+MAV_TYPE GCS_Plane::frame_type() const
 {
     return plane.quadplane.get_mav_type();
 }
@@ -87,7 +87,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     return (MAV_MODE)_base_mode;
 }
 
-uint32_t GCS_MAVLINK_Plane::custom_mode() const
+uint32_t GCS_Plane::custom_mode() const
 {
     return plane.control_mode;
 }
