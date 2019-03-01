@@ -87,11 +87,6 @@ void Copter::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
-#if DEVO_TELEM_ENABLED == ENABLED
-    // setup devo
-    devo_telemetry.init();
-#endif
-
 #if OSD_ENABLED == ENABLED
     osd.init();
 #endif
