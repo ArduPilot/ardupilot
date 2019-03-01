@@ -96,6 +96,7 @@ void SITL_State::_sitl_setup(const char *home_str)
         sitl_model->set_gripper_servo(&_sitl->gripper_sim);
         sitl_model->set_gripper_epm(&_sitl->gripper_epm_sim);
         sitl_model->set_parachute(&_sitl->parachute_sim);
+        sitl_model->set_precland(&_sitl->precland_sim);
 
         if (_use_fg_view) {
             fg_socket.connect(_fg_address, _fg_view_port);
