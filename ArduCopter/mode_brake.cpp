@@ -9,22 +9,22 @@
 // brake_init - initialise brake controller
 bool Copter::ModeBrake::init(bool ignore_checks)
 {
-        // set target to current position
-        wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
+    // set target to current position
+    wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
 
-        // initialize vertical speed and acceleration
-        pos_control->set_max_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
-        pos_control->set_max_accel_z(BRAKE_MODE_DECEL_RATE);
+    // initialize vertical speed and acceleration
+    pos_control->set_max_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
+    pos_control->set_max_accel_z(BRAKE_MODE_DECEL_RATE);
 
-        // initialise position and desired velocity
-        if (!pos_control->is_active_z()) {
-            pos_control->set_alt_target_to_current_alt();
-            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-        }
+    // initialise position and desired velocity
+    if (!pos_control->is_active_z()) {
+        pos_control->set_alt_target_to_current_alt();
+        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+    }
 
-        _timeout_ms = 0;
+    _timeout_ms = 0;
 
-        return true;
+    return true;
 }
 
 // brake_run - runs the brake controller
