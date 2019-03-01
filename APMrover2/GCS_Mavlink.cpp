@@ -156,19 +156,6 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
 }
 
 /*
-  send RPM packet
- */
-void Rover::send_rpm(mavlink_channel_t chan)
-{
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        mavlink_msg_rpm_send(
-            chan,
-            rpm_sensor.get_rpm(0),
-            rpm_sensor.get_rpm(1));
-    }
-}
-
-/*
   send PID tuning message
  */
 void GCS_MAVLINK_Rover::send_pid_tuning()
@@ -321,11 +308,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         rover.send_servo_out(chan);
-        break;
-
-    case MSG_RPM:
-        CHECK_PAYLOAD_SIZE(RPM);
-        rover.send_rpm(chan);
         break;
 
     case MSG_WHEEL_DISTANCE:
