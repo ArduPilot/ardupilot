@@ -435,8 +435,6 @@ protected:
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
 
-    virtual bool vehicle_initialised() const { return true; }
-
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
     virtual int32_t global_position_int_relative_alt() const;
@@ -777,6 +775,7 @@ public:
     void update_passthru();
 
     void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+    virtual bool vehicle_initialised() const { return true; }
 
 protected:
 
