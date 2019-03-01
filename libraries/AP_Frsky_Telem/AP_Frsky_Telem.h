@@ -85,9 +85,8 @@ for FrSky SPort Passthrough
 #define BATT_TOTALMAH_OFFSET        17
 // for autopilot status data
 #define AP_CONTROL_MODE_LIMIT       0x1F
-#define AP_SSIMPLE_FLAGS            0x6
+#define AP_SIMPLE_OFFSET            3
 #define AP_SSIMPLE_OFFSET           4
-#define AP_INITIALIZED_FLAG         0x2000
 #define AP_FLYING_OFFSET            6
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
@@ -120,7 +119,7 @@ public:
     AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
 
     // init - perform required initialisation
-    void init(const uint32_t *ap_valuep = nullptr);
+    void init();
 
     // add statustext message to FrSky lib message queue
     void queue_message(MAV_SEVERITY severity, const char *text);
@@ -138,12 +137,6 @@ private:
     AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
     bool _initialised_uart;
     uint16_t _crc;
-
-    struct
-    {
-        uint32_t value;
-        const uint32_t *valuep;
-    } _ap;
 
     uint32_t check_sensor_status_timer;
     uint32_t check_ekf_status_timer;
