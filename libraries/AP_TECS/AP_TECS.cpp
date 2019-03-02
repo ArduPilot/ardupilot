@@ -238,6 +238,13 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("SYNAIRSPEED", 27, AP_TECS, _use_synthetic_airspeed, 0),
+
+    // @Param: OPTIONS
+    // @DisplayName: Extra TECS options
+    // @Description: This allows the enabling of special features in the speed/height controller
+    // @Bitmask: 0:GliderOnly
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 28, AP_TECS, _options, 0),
     
     AP_GROUPEND
 };
@@ -1069,7 +1076,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _detect_bad_descent();
 
     // when soaring is active we never trigger a bad descent
-    if (soaring_active) {
+    if (soaring_active || (_options & OPTION_GLIDER_ONLY)) {
         _flags.badDescent = false;        
     }
 
