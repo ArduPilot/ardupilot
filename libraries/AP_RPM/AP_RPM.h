@@ -92,7 +92,11 @@ public:
 
     bool enabled(uint8_t instance) const;
 
+    static AP_RPM *get_singleton() { return _singleton; }
+
 private:
+    static AP_RPM *_singleton;
+
     RPM_State state[RPM_MAX_INSTANCES];
     AP_RPM_Backend *drivers[RPM_MAX_INSTANCES];
     uint8_t num_instances:2;

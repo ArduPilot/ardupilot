@@ -483,7 +483,10 @@ def write_mcu_config(f):
     '''write MCU config defines'''
     f.write('// MCU type (ChibiOS define)\n')
     f.write('#define %s_MCUCONF\n' % get_config('MCU'))
-    f.write('#define %s\n\n' % get_config('MCU', 1))
+    mcu_subtype = get_config('MCU', 1)
+    if mcu_subtype.endswith('xx'):
+        f.write('#define %s_MCUCONF\n\n' % mcu_subtype[:-2])
+    f.write('#define %s\n\n' % mcu_subtype)
     f.write('// crystal frequency\n')
     f.write('#define STM32_HSECLK %sU\n\n' % get_config('OSCILLATOR_HZ'))
     f.write('// UART used for stdout (printf)\n')
@@ -546,31 +549,18 @@ def write_mcu_config(f):
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     f.write('#define CRT1_AREAS_NUMBER 1\n')
 
-    # get core-coupled-memory if available (not be DMA capable)
-    ccm_size = get_mcu_config('CCM_RAM_SIZE_KB')
-    if ccm_size is not None:
-        f.write('\n// core-coupled memory\n')
-        f.write('#define CCM_RAM_SIZE_KB %u\n' % ccm_size)
-        f.write('#define CCM_BASE_ADDRESS 0x%08x\n' % get_mcu_config('CCM_BASE_ADDRESS', True))
-
-    # get DTCM memory if available (DMA-capable with no cache flush/invalidate)
-    dtcm_size = get_mcu_config('DTCM_RAM_SIZE_KB')
-    if dtcm_size is not None:
-        f.write('\n// DTCM memory\n')
-        f.write('#define DTCM_RAM_SIZE_KB %u\n' % dtcm_size)
-        f.write('#define DTCM_BASE_ADDRESS 0x%08x\n' % get_mcu_config('DTCM_BASE_ADDRESS', True))
-        
     flash_reserve_start = get_config(
         'FLASH_RESERVE_START_KB', default=16, type=int)
     f.write('\n// location of loaded firmware\n')
     f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % (0x08000000 + flash_reserve_start*1024))
     f.write('\n')
 
-    ram_size_kb = get_mcu_config('RAM_SIZE_KB', True)
-    ram_base_address = get_mcu_config('RAM_BASE_ADDRESS', True)
-    f.write('// main memory size and address\n')
-    f.write('#define HAL_RAM_SIZE_KB %uU\n' % ram_size_kb)
-    f.write('#define HAL_RAM_BASE_ADDRESS 0x%08x\n' % ram_base_address)
+    ram_map = get_mcu_config('RAM_MAP', True)
+    f.write('// memory regions\n')
+    regions = []
+    for (address, size, flags) in ram_map:
+        regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size*1024, flags))
+    f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
 
     f.write('\n// CPU serial number (12 bytes)\n')
     f.write('#define UDID_START 0x%08x\n\n' % get_mcu_config('UDID_START', True))
@@ -643,9 +633,8 @@ def write_ldscript(fname):
     # space to reserve for storage at end of flash
     flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, type=int)
 
-    # ram size
-    ram_size = get_mcu_config('RAM_SIZE_KB', True)
-    ram_base = get_mcu_config('RAM_BASE_ADDRESS', True)
+    # ram layout
+    ram_map = get_mcu_config('RAM_MAP', True)
 
     flash_base = 0x08000000 + flash_reserve_start * 1024
     flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
@@ -660,7 +649,7 @@ MEMORY
 }
 
 INCLUDE common.ld
-''' % (flash_base, flash_length, ram_base, ram_size))
+''' % (flash_base, flash_length, ram_map[0][0], ram_map[0][1]))
 
 def copy_common_linkerscript(outdir, hwdef):
     dirpath = os.path.dirname(hwdef)
@@ -739,8 +728,8 @@ def write_SPI_config(f):
         n = int(dev[3:])
         devlist.append('HAL_SPI%u_CONFIG' % n)
         f.write(
-            '#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_TX_DMA_STREAM, STM32_SPI_SPI%u_RX_DMA_STREAM }\n'
-            % (n, n, n, n, n))
+            '#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_DMA_STREAMS }\n'
+            % (n, n, n, n))
     f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
     write_SPI_table(f)
 
@@ -837,7 +826,7 @@ def write_UART_config(f):
     if not need_uart_driver and not args.bootloader:
         f.write('''
 #ifndef HAL_USE_SERIAL
-#define HAL_USE_SERIAL FALSE
+#define HAL_USE_SERIAL HAL_USE_SERIAL_USB
 #endif
 ''')
 
@@ -857,7 +846,11 @@ def write_UART_config_bootloader(f):
             have_uart = True
     f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
     if not have_uart:
-        f.write('#define HAL_USE_SERIAL FALSE\n')
+        f.write('''
+#ifndef HAL_USE_SERIAL
+#define HAL_USE_SERIAL FALSE
+#endif
+''')
 
 def write_I2C_config(f):
     '''write I2C config defines'''
@@ -926,7 +919,11 @@ def write_PWM_config(f):
 
     if not pwm_out:
         print("No PWM output defined")
-        f.write('#define HAL_USE_PWM FALSE\n')
+        f.write('''
+#ifndef HAL_USE_PWM
+#define HAL_USE_PWM FALSE
+#endif
+''')
         
     if rc_in is not None:
         (n, chan, compl) = parse_timer(rc_in.label)
@@ -1037,11 +1034,11 @@ def write_PWM_config(f):
             advanced_timer = 'false'
         pwm_clock = 1000000
         period = 20000 * pwm_clock / 1000000
-        f.write('''#ifdef STM32_TIM_TIM%u_UP_DMA_STREAM
+        f.write('''#if defined(STM32_TIM_TIM%u_UP_DMA_STREAM) && defined(STM32_TIM_TIM%u_UP_DMA_CHAN)
 # define HAL_PWM%u_DMA_CONFIG true, STM32_TIM_TIM%u_UP_DMA_STREAM, STM32_TIM_TIM%u_UP_DMA_CHAN
 #else
 # define HAL_PWM%u_DMA_CONFIG false, 0, 0
-#endif\n''' % (n, n, n, n, n))
+#endif\n''' % (n, n, n, n, n, n))
         f.write('''#define HAL_PWM_GROUP%u { %s, \\
         {%u, %u, %u, %u}, \\
         /* Group Initial Config */ \\
@@ -1352,7 +1349,8 @@ def build_peripheral_list():
         if type.startswith('ADC'):
             peripherals.append(type)
         if type.startswith('SDIO') or type.startswith('SDMMC'):
-            peripherals.append(type)
+            if not mcu_series.startswith("STM32H7"):
+                peripherals.append(type)
         if type.startswith('TIM'):
             if p.has_extra('RCIN'):
                 label = p.label

@@ -30,13 +30,6 @@
 
 class AP_Logger_Backend;
 
-enum AP_Logger_Backend_Type {
-    DATAFLASH_BACKEND_NONE      = 0,
-    DATAFLASH_BACKEND_FILE      = (1<<0),
-    DATAFLASH_BACKEND_MAVLINK   = (1<<1),
-    DATAFLASH_BACKEND_BLOCK     = (1<<2),
-};
-
 // do not do anything here apart from add stuff; maintaining older
 // entries means log analysis is easier
 enum Log_Event : uint8_t {
@@ -318,6 +311,13 @@ private:
 
     void internal_error() const;
 
+    enum class Backend_Type : uint8_t {
+        NONE       = 0,
+        FILESYSTEM = (1<<0),
+        MAVLINK    = (1<<1),
+        BLOCK      = (1<<2),
+    };
+
     /*
      * support for dynamic Write; user-supplies name, format,
      * labels and values in a single function call.
@@ -437,6 +437,7 @@ private:
     uint32_t _log_data_page;
 
     GCS_MAVLINK *_log_sending_link;
+    HAL_Semaphore_Recursive _log_send_sem;
 
     bool should_handle_log_message();
     void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);

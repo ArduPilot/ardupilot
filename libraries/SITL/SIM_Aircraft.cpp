@@ -159,6 +159,11 @@ float Aircraft::ground_height_difference() const
     return 0.0f;
 }
 
+void Aircraft::set_precland(SIM_Precland *_precland) {
+    precland = _precland;
+    precland->set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(get_home_yaw()));
+}
+
 /*
    return current height above ground level (metres)
 */
@@ -180,7 +185,7 @@ bool Aircraft::on_ground() const
 void Aircraft::update_position(void)
 {
     location = home;
-    location_offset(location, position.x, position.y);
+    location.offset(position.x, position.y);
 
     location.alt  = static_cast<int32_t>(home.alt - position.z * 100.0f);
 
@@ -683,7 +688,7 @@ void Aircraft::smooth_sensors(void)
     smoothing.position += smoothing.velocity_ef * delta_time;
 
     smoothing.location = home;
-    location_offset(smoothing.location, smoothing.position.x, smoothing.position.y);
+    smoothing.location.offset(smoothing.position.x, smoothing.position.y);
     smoothing.location.alt  = static_cast<int32_t>(home.alt - smoothing.position.z * 100.0f);
 
     smoothing.last_update_us = now;
@@ -770,6 +775,10 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (parachute && parachute->is_enabled()) {
         parachute->update(input);
         // TODO: add drag to vehicle, presumably proportional to velocity
+    }
+
+    if (precland && precland->is_enabled()) {
+        precland->update(get_location(), get_position());
     }
 }
 

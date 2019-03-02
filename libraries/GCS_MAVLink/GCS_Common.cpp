@@ -883,7 +883,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 
     // MSG_NAMED_FLOAT messages can't really be "streamed"...
 
-    // this list is ordered by AP_MESSAGE ID - the value being returned:
     static const struct {
         uint32_t mavlink_id;
         ap_message msg_id;
@@ -891,6 +890,8 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_HEARTBEAT,             MSG_HEARTBEAT},
         { MAVLINK_MSG_ID_ATTITUDE,              MSG_ATTITUDE},
         { MAVLINK_MSG_ID_GLOBAL_POSITION_INT,   MSG_LOCATION},
+        { MAVLINK_MSG_ID_HOME_POSITION,         MSG_HOME},
+        { MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN,     MSG_ORIGIN},
         { MAVLINK_MSG_ID_SYS_STATUS,            MSG_SYS_STATUS},
         { MAVLINK_MSG_ID_POWER_STATUS,          MSG_POWER_STATUS},
         { MAVLINK_MSG_ID_MEMINFO,               MSG_MEMINFO},
@@ -1266,6 +1267,15 @@ void GCS_MAVLINK::update_send()
         try_send_message_stats.max_retry_deferred_body_type = 4;
     }
 #endif
+
+    // update the number of packets transmitted base on seqno, making
+    // the assumption that we don't send more than 256 messages
+    // between the last pass through here
+    mavlink_status_t *status = mavlink_get_channel_status(chan);
+    if (status != nullptr) {
+        send_packet_count += (status->current_tx_seq - last_tx_seq);
+        last_tx_seq = status->current_tx_seq;
+    }
 }
 
 void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
@@ -1510,6 +1520,14 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         }
     }
 
+    // consider logging mavlink stats to dataflash:
+    if (is_active() || is_streaming()) {
+        if (tnow - last_mavlink_stats_logged > 1000) {
+            log_mavlink_stats();
+            last_mavlink_stats_logged = tnow;
+        }
+    }
+
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
 
     const uint16_t now16_ms{AP_HAL::millis16()};
@@ -1593,6 +1611,27 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     hal.util->perf_end(_perf_update);    
 }
 
+/*
+  record stats about this link to dataflash
+*/
+void GCS_MAVLINK::log_mavlink_stats()
+{
+    mavlink_status_t *status = mavlink_get_channel_status(chan);
+    if (status == nullptr) {
+        return;
+    }
+
+    const struct log_MAV pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_MAV_MSG),
+    time_us                : AP_HAL::micros64(),
+    chan                   : (uint8_t)chan,
+    packet_tx_count        : send_packet_count,
+    packet_rx_success_count: status->packet_rx_success_count,
+    packet_rx_drop_count   : status->packet_rx_drop_count
+    };
+
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
 
 /*
   send the SYSTEM_TIME message
@@ -2188,11 +2227,8 @@ void GCS_MAVLINK::send_named_float(const char *name, float value) const
     mavlink_msg_named_value_float_send(chan, AP_HAL::millis(), float_name, value);
 }
 
-void GCS_MAVLINK::send_home() const
+void GCS_MAVLINK::send_home_position() const
 {
-    if (!HAVE_PAYLOAD_SPACE(chan, HOME_POSITION)) {
-        return;
-    }
     if (!AP::ahrs().home_is_set()) {
         return;
     }
@@ -2211,11 +2247,8 @@ void GCS_MAVLINK::send_home() const
         AP_HAL::micros64());
 }
 
-void GCS_MAVLINK::send_ekf_origin() const
+void GCS_MAVLINK::send_gps_global_origin() const
 {
-    if (!HAVE_PAYLOAD_SPACE(chan, GPS_GLOBAL_ORIGIN)) {
-        return;
-    }
     Location ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
         return;
@@ -2726,7 +2759,10 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
     ahrs.Log_Write_Home_And_Origin();
 
     // send ekf origin to GCS
-    send_ekf_origin();
+    if (!try_send_message(MSG_ORIGIN)) {
+        // try again later
+        send_message(MSG_ORIGIN);
+    }
 }
 
 void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t *msg)
@@ -3413,8 +3449,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_l
     if (!AP::ahrs().home_is_set()) {
         return MAV_RESULT_FAILED;
     }
-    send_home();
-    send_ekf_origin();
+    if (!try_send_message(MSG_HOME)) {
+        // try again later
+        send_message(MSG_HOME);
+    }
+    if (!try_send_message(MSG_ORIGIN)) {
+        // try again later
+        send_message(MSG_ORIGIN);
+    }
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -3633,26 +3675,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int
     if (!is_zero(packet.param1)) {
         return MAV_RESULT_FAILED;
     }
-    // check frame type is supported
-    if (packet.frame != MAV_FRAME_GLOBAL &&
-        packet.frame != MAV_FRAME_GLOBAL_INT &&
-        packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-        packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+    Location::ALT_FRAME frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame(packet.frame, frame)) {
+        // unknown coordinate frame
         return MAV_RESULT_UNSUPPORTED;
     }
-    Location new_home_loc {};
-    new_home_loc.lat = packet.x;
-    new_home_loc.lng = packet.y;
-    new_home_loc.alt = packet.z * 100;
-    // handle relative altitude
-    if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT ||
-        packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-        if (!AP::ahrs().home_is_set()) {
-            // cannot use relative altitude if home is not set
-            return MAV_RESULT_FAILED;
-        }
-        new_home_loc.alt += AP::ahrs().get_home().alt;
-    }
+    const Location new_home_loc{
+        packet.x,
+        packet.y,
+        int32_t(packet.z * 100),
+        frame,
+    };
     if (!set_home(new_home_loc, true)) {
         return MAV_RESULT_FAILED;
     }
@@ -3919,6 +3952,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_LOCATION:
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
         send_global_position_int();
+        break;
+
+    case MSG_HOME:
+        CHECK_PAYLOAD_SIZE(HOME_POSITION);
+        send_home_position();
+        break;
+
+    case MSG_ORIGIN:
+        CHECK_PAYLOAD_SIZE(GPS_GLOBAL_ORIGIN);
+        send_gps_global_origin();
         break;
 
     case MSG_CURRENT_WAYPOINT:

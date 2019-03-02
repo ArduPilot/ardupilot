@@ -8,7 +8,7 @@
 
 #define HAL_BOARD_SITL     3
 #define HAL_BOARD_SMACCM   4  // unused
-#define HAL_BOARD_PX4      5
+#define HAL_BOARD_PX4      5  // unused
 #define HAL_BOARD_LINUX    7
 #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
@@ -38,25 +38,6 @@
 #define HAL_BOARD_SUBTYPE_LINUX_EDGE       1020
 #define HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ   1021
 #define HAL_BOARD_SUBTYPE_LINUX_POCKET     1022
-
-/* HAL PX4 sub-types, starting at 2000 */
-#define HAL_BOARD_SUBTYPE_PX4_V1           2000
-#define HAL_BOARD_SUBTYPE_PX4_V2           2001
-#define HAL_BOARD_SUBTYPE_PX4_V4           2002
-#define HAL_BOARD_SUBTYPE_PX4_V3           2003
-#define HAL_BOARD_SUBTYPE_PX4_AEROFC_V1    2004
-#define HAL_BOARD_SUBTYPE_PX4_V4PRO        2005
-
-/* HAL VRBRAIN sub-types, starting at 4000 */
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V45      4000
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V51      4001
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V52      4002
-#define HAL_BOARD_SUBTYPE_VRUBRAIN_V51     4003
-#define HAL_BOARD_SUBTYPE_VRUBRAIN_V52     4004
-#define HAL_BOARD_SUBTYPE_VRCORE_V10       4005
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V54      4006
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V52E     4007
-
 
 /* HAL CHIBIOS sub-types, starting at 5000 */
 #define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
@@ -170,8 +151,6 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <AP_HAL/board/sitl.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    #include <AP_HAL/board/px4.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     #include <AP_HAL/board/linux.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_EMPTY

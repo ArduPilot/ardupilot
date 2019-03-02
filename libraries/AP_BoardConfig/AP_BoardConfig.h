@@ -5,10 +5,12 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_RTC/AP_RTC.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO) || defined(HAL_CHIBIOS_ARCH_BRAINV51) || defined(HAL_CHIBIOS_ARCH_BRAINV52) || defined(HAL_CHIBIOS_ARCH_UBRAINV51) || defined(HAL_CHIBIOS_ARCH_COREV10) || defined(HAL_CHIBIOS_ARCH_BRAINV54)
+#ifndef AP_FEATURE_BOARD_DETECT
+#if defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO) || defined(HAL_CHIBIOS_ARCH_BRAINV51) || defined(HAL_CHIBIOS_ARCH_BRAINV52) || defined(HAL_CHIBIOS_ARCH_UBRAINV51) || defined(HAL_CHIBIOS_ARCH_COREV10) || defined(HAL_CHIBIOS_ARCH_BRAINV54)
 #define AP_FEATURE_BOARD_DETECT 1
 #else
 #define AP_FEATURE_BOARD_DETECT 0
+#endif
 #endif
 
 #ifndef AP_FEATURE_RTSCTS
@@ -57,11 +59,6 @@ public:
     // that we're never going to boot properly:
     static bool in_sensor_config_error(void) { return _in_sensor_config_error; }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // public method to start a driver
-    static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
-#endif
-
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
     enum px4_board_type {
@@ -88,6 +85,7 @@ public:
         VRX_BOARD_CORE10   = 36,
         VRX_BOARD_BRAIN54  = 38,
         PX4_BOARD_OLDDRIVERS = 100,
+        PX4_BOARD_FMUV6    = 39,
     };
 
     // set default value for BRD_SAFETY_MASK
@@ -171,7 +169,7 @@ private:
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         AP_Int8 ser1_rtscts;
         AP_Int8 ser2_rtscts;
         AP_Int8 sbus_out_rate;
@@ -183,15 +181,6 @@ private:
 
 #if AP_FEATURE_BOARD_DETECT
     static enum px4_board_type px4_configured_board;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    void px4_setup_pwm(void);
-    void px4_setup_safety_mask(void);
-    void px4_tone_alarm(const char *tone_string);
-    void px4_setup_px4io(void);
-    void px4_setup_peripherals(void);
-#endif
-    
 
     void board_setup_drivers(void);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);

@@ -54,7 +54,7 @@ void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
     if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
         return malloc_dma(size);
     } else if (mem_type == AP_HAL::Util::MEM_FAST) {
-        return try_alloc_from_ccm_ram(size);
+        return malloc_fastmem(size);
     } else {
         return calloc(1, size);
     }
@@ -67,16 +67,6 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
     }
 }
 
-
-void* Util::try_alloc_from_ccm_ram(size_t size)
-{
-    void *ret = malloc_ccm(size);
-    if (ret == nullptr) {
-        //we failed to allocate from CCM so we are going to try common SRAM
-        ret = calloc(1, size);
-    }
-    return ret;
-}
 
 #ifdef ENABLE_HEAP
 
@@ -262,9 +252,9 @@ bool Util::flash_bootloader()
     const uint8_t max_attempts = 10;
     for (uint8_t i=0; i<max_attempts; i++) {
         void *context = hal.scheduler->disable_interrupts_save();
-        const int32_t written = stm32_flash_write(addr, fw, fw_size);
+        bool ok = stm32_flash_write(addr, fw, fw_size);
         hal.scheduler->restore_interrupts(context);
-        if (written == -1 || written < fw_size) {
+        if (!ok) {
             hal.console->printf("Flash failed! (attempt=%u/%u)\n",
                                 i+1,
                                 max_attempts);

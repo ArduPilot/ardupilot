@@ -72,8 +72,8 @@ uint16_t comm_get_txspace(mavlink_channel_t chan);
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
 #include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
 
-// return a MAVLink variable type given a AP_Param type
-uint8_t mav_var_type(enum ap_var_type t);
+// return a MAVLink parameter type given a AP_Param type
+MAV_PARAM_TYPE mav_param_type(enum ap_var_type t);
 
 // lock and unlock a channel, for multi-threaded mavlink send
 void comm_send_lock(mavlink_channel_t chan);

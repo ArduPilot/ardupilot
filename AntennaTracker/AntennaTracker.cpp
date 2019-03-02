@@ -87,7 +87,7 @@ void Tracker::one_second_loop()
     gcs().send_message(MSG_HEARTBEAT);
 
     // make it possible to change orientation at runtime
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
@@ -101,17 +101,20 @@ void Tracker::one_second_loop()
     one_second_counter++;
 
     if (one_second_counter >= 60) {
-        if (g.compass_enabled) {
-            compass.save_offsets();
-        }
+        compass_save();
         one_second_counter = 0;
     }
+
+    // init compass location for declination
+    init_compass_location();
 
     if (!ahrs.home_is_set()) {
         // set home to current location
         Location temp_loc;
         if (ahrs.get_location(temp_loc)) {
-            set_home(temp_loc);
+            if (!set_home(temp_loc)){
+                // fail silently
+            }
         }
     }
 

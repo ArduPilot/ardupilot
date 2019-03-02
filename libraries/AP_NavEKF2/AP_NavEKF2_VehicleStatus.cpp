@@ -47,7 +47,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     // This check can only be used when the vehicle is stationary
     const struct Location &gpsloc = gps.location(); // Current location
     const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
-    // calculate time lapsesd since last update and limit to prevent numerical errors
+    // calculate time lapsed since last update and limit to prevent numerical errors
     float deltaTime = constrain_float(float(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
     lastPreAlignGpsCheckTime_ms = imuDataDelayed.time_ms;
     // Sum distance moved

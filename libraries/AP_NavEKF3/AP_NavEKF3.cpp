@@ -184,7 +184,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     AP_GROUPINFO("GLITCH_RAD", 7, NavEKF3, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
     // 8 previously used for EKF3_GPS_DELAY parameter that has been deprecated.
-    // The EKF now takes its GPs delay form the GPS library with the default delays
+    // The EKF now takes its GPS delay form the GPS library with the default delays
     // specified by the GPS_DELAY and GPS_DELAY2 parameters.
 
     // Height measurement parameters
@@ -681,7 +681,7 @@ bool NavEKF3::InitialiseFilter(void)
 
     // Set up any cores that have been created
     // This specifies the IMU to be used and creates the data buffers
-    // If we are unble to set up a core, return false and try again next time the function is called
+    // If we are unable to set up a core, return false and try again next time the function is called
     bool core_setup_success = true;
     for (uint8_t core_index=0; core_index<num_cores; core_index++) {
         if (coreSetupRequired[core_index]) {
@@ -849,7 +849,7 @@ void NavEKF3::getVelNED(int8_t instance, Vector3f &vel) const
 float NavEKF3::getPosDownDerivative(int8_t instance) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
-    // return the value calculated from a complementary filer applied to the EKF height and vertical acceleration
+    // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     if (core) {
         return core[instance].getPosDownDerivative();
     }
@@ -903,7 +903,7 @@ void NavEKF3::resetGyroBias(void)
 
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
-// Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+// Adjusts the EKF origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
 bool NavEKF3::resetHeightDatum(void)
@@ -1015,7 +1015,7 @@ bool NavEKF3::getLLH(struct Location &loc) const
 }
 
 // Return the latitude and longitude and height used to set the NED origin for the specified instance
-// An out of range instance (eg -1) returns data for the the primary instance
+// An out of range instance (eg -1) returns data for the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
 bool NavEKF3::getOriginLLH(int8_t instance, struct Location &loc) const

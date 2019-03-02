@@ -8,6 +8,35 @@ void Tracker::update_ahrs()
     ahrs.update();
 }
 
+// initialise compass
+void Tracker::init_compass()
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    if (!compass.init()|| !compass.read()) {
+        hal.console->printf("Compass initialisation failed!\n");
+        g.compass_enabled = false;
+    } else {
+        ahrs.set_compass(&compass);
+    }
+}
+
+/*
+  initialise compass's location used for declination
+ */
+void Tracker::init_compass_location(void)
+{
+    // update initial location used for declination
+    if (!compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            compass_init_location = true;
+        }
+    }
+}
 
 /*
   read and update compass
@@ -28,6 +57,15 @@ void Tracker::update_compass(void)
 void Tracker::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
+    }
+}
+
+// Save compass offsets
+void Tracker::compass_save() {
+    if (g.compass_enabled &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !hal.util->get_soft_armed()) {
+        compass.save_offsets();
     }
 }
 
@@ -71,7 +109,9 @@ void Tracker::update_GPS(void)
                 // Now have an initial GPS position
                 // use it as the HOME position in future startups
                 current_loc = gps.location();
-                set_home(current_loc);
+                if (!set_home(current_loc)) {
+                    // silently ignored
+                }
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically

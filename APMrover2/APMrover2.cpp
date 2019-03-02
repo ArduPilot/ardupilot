@@ -272,7 +272,7 @@ void Rover::one_second_loop(void)
     gcs().send_message(MSG_HEARTBEAT);
 
     // allow orientation change at runtime to aid config
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     set_control_channels();
 
@@ -320,6 +320,12 @@ void Rover::update_GPS(void)
 
 void Rover::update_current_mode(void)
 {
+    // check for emergency stop
+    if (SRV_Channels::get_emergency_stop()) {
+        // relax controllers, motor stopping done at output level
+        g2.attitude_control.relax_I();
+    }
+
     control_mode->update();
 }
 

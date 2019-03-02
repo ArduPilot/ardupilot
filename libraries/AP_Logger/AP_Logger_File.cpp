@@ -90,7 +90,7 @@ void AP_Logger_File::Init()
     if (ret == -1) {
         ret = mkdir(_log_directory, 0777);
     }
-    if (ret == -1) {
+    if (ret == -1 && errno != EEXIST) {
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
     }
 

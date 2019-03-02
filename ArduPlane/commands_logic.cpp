@@ -582,7 +582,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     uint8_t cmd_acceptance_distance = LOWBYTE(cmd.p1); // radius in meters to accept reaching the wp
 
     if (cmd_passby > 0) {
-        float dist = get_distance(prev_WP_loc, flex_next_WP_loc);
+        float dist = prev_WP_loc.get_distance(flex_next_WP_loc);
 
         if (!is_zero(dist)) {
             float factor = (dist + cmd_passby) / dist;
@@ -624,7 +624,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if (auto_state.wp_distance <= acceptance_distance_m) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, flex_next_WP_loc));
+                          (unsigned)current_loc.get_distance(flex_next_WP_loc));
         return true;
 	}
 
@@ -632,7 +632,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if (location_passed_point(current_loc, prev_WP_loc, flex_next_WP_loc)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, flex_next_WP_loc));
+                          (unsigned)current_loc.get_distance(flex_next_WP_loc));
         return true;
     }
 
@@ -770,7 +770,7 @@ bool Plane::verify_continue_and_change_alt()
     }
     else {
         // Is the next_WP less than 200 m away?
-        if (get_distance(current_loc, next_WP_loc) < 200.0f) {
+        if (current_loc.get_distance(next_WP_loc) < 200.0f) {
             //push another 300 m down the line
             int32_t next_wp_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
             location_update(next_WP_loc, next_wp_bearing_cd * 0.01f, 300.0f);
@@ -976,8 +976,8 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 
                 // validate that the vehicle is at least the expected distance away from the loiter point
                 // require an angle total of at least 2 centidegrees, due to special casing of 1 centidegree
-                if (((fabsf(get_distance(cmd.content.location, current_loc) - radius) > 5.0f) &&
-                      (get_distance(cmd.content.location, current_loc) < radius)) ||
+                if (((fabsf(cmd.content.location.get_distance(current_loc) - radius) > 5.0f) &&
+                      (cmd.content.location.get_distance(current_loc) < radius)) ||
                     (loiter.sum_cd < 2)) {
                     nav_controller->update_loiter(cmd.content.location, radius, direction);
                     break;
@@ -1055,7 +1055,7 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 
-    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < abs(aparm.loiter_radius)) {
+    if (next_WP_loc.get_distance(next_nav_cmd.content.location) < abs(aparm.loiter_radius)) {
         /* Whenever next waypoint is within the loiter radius,
            maintaining loiter would prevent us from ever pointing toward the next waypoint.
            Hence break out of loiter immediately

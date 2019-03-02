@@ -48,7 +48,7 @@ protected:
     virtual float get_pilot_desired_climb_rate_cms(void) const = 0;
 
     // get pilot input for designed roll and pitch, and yaw rate
-    virtual void get_pilot_desired_rp_yrate_cd(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_rate_cds) = 0;
+    virtual void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) = 0;
 
     // init pos controller Z velocity and accel limits
     virtual void init_z_limits() = 0;
@@ -103,7 +103,7 @@ private:
     void updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
     void updating_angle_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
     void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
-    void get_poshold_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd);
+    void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
 
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
@@ -114,16 +114,16 @@ private:
     void announce_state_to_gcs();
     void do_gcs_announcements();
 
-    enum LEVEL_ISSUE {
-        LEVEL_ISSUE_NONE,
-        LEVEL_ISSUE_ANGLE_ROLL,
-        LEVEL_ISSUE_ANGLE_PITCH,
-        LEVEL_ISSUE_ANGLE_YAW,
-        LEVEL_ISSUE_RATE_ROLL,
-        LEVEL_ISSUE_RATE_PITCH,
-        LEVEL_ISSUE_RATE_YAW,
+    enum struct LevelIssue {
+        NONE,
+        ANGLE_ROLL,
+        ANGLE_PITCH,
+        ANGLE_YAW,
+        RATE_ROLL,
+        RATE_PITCH,
+        RATE_YAW,
     };
-    bool check_level(const enum LEVEL_ISSUE issue, const float current, const float maximum);
+    bool check_level(const enum LevelIssue issue, const float current, const float maximum);
     bool currently_level();
 
     // autotune modes (high level states)
@@ -192,7 +192,7 @@ private:
     int8_t   counter;                               // counter for tuning gains
     float    target_rate, start_rate;               // target and start rate
     float    target_angle, start_angle;             // target and start angles
-    int32_t  desired_yaw_cd;                        // yaw heading during tune
+    float    desired_yaw_cd;                        // yaw heading during tune
     float    rate_max, test_accel_max;              // maximum acceleration variables
     float    step_scaler;                           // scaler to reduce maximum target step
     float    abort_angle;                           // Angle that test is aborted
@@ -213,10 +213,10 @@ private:
     uint32_t announce_time;
     float lean_angle;
     float rotation_rate;
-    int32_t roll_cd, pitch_cd;
+    float roll_cd, pitch_cd;
 
     struct {
-        LEVEL_ISSUE issue{LEVEL_ISSUE_NONE};
+        LevelIssue issue{LevelIssue::NONE};
         float maximum;
         float current;
     } level_problem;

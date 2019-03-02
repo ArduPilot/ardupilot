@@ -80,7 +80,7 @@ void NavEKF3_core::controlMagYawReset()
     magYawResetRequest = magYawResetRequest || // an external request
             initialResetRequest || // an initial alignment performed by all vehicle types using magnetometer
             interimResetRequest || // an interim alignment required to recover from ground based magnetic anomaly
-            finalResetRequest; // the final reset when we have acheived enough height to be in stable magnetic field environment
+            finalResetRequest; // the final reset when we have achieved enough height to be in stable magnetic field environment
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
     if (magYawResetRequest || magStateResetRequest) {
@@ -111,7 +111,7 @@ void NavEKF3_core::controlMagYawReset()
             // reset the quaternion covariances using the rotation vector variances
             initialiseQuatCovariances(angleErrVarVec);
 
-            // calculate the change in the quaternion state and apply it to the ouput history buffer
+            // calculate the change in the quaternion state and apply it to the output history buffer
             prevQuat = stateStruct.quat/prevQuat;
             StoreQuatRotate(prevQuat);
 
@@ -200,7 +200,7 @@ void NavEKF3_core::realignYawGPS()
             magYawResetRequest = false;
 
             if (use_compass()) {
-                // request a mag field reset which may enable us to use the magnetoemter if the previous fault was due to bad initialisation
+                // request a mag field reset which may enable us to use the magnetometer if the previous fault was due to bad initialisation
                 magStateResetRequest = true;
                 // clear the all sensors failed status so that the magnetometers sensors get a second chance now that we are flying
                 allMagSensorsFailed = false;
@@ -219,7 +219,7 @@ void NavEKF3_core::SelectMagFusion()
     // start performance timer
     hal.util->perf_begin(_perf_FuseMagnetometer);
 
-    // clear the flag that lets other processes know that the expensive magnetometer fusion operation has been perfomred on that time step
+    // clear the flag that lets other processes know that the expensive magnetometer fusion operation has been performed on that time step
     // used for load levelling
     magFusePerformed = false;
 
@@ -584,7 +584,7 @@ void NavEKF3_core::FuseMagnetometer()
                 memset(&Kfusion[22], 0, 8);
             }
 
-            // set flags to indicate to other processes that fusion has been performede and is required on the next frame
+            // set flags to indicate to other processes that fusion has been performed and is required on the next frame
             // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
             magFusePerformed = true;
             magFuseRequired = true;
@@ -660,7 +660,7 @@ void NavEKF3_core::FuseMagnetometer()
                 memset(&Kfusion[22], 0, 8);
             }
 
-            // set flags to indicate to other processes that fusion has been performede and is required on the next frame
+            // set flags to indicate to other processes that fusion has been performed and is required on the next frame
             // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
             magFusePerformed = true;
         }
@@ -712,7 +712,7 @@ void NavEKF3_core::FuseMagnetometer()
                 }
             }
 
-            // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+            // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
             ForceSymmetry();
             ConstrainVariances();
 
@@ -745,7 +745,7 @@ void NavEKF3_core::FuseMagnetometer()
  * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computationally cheaper.
  * It is suitable for use when the external magnetic field environment is disturbed (eg close to metal structures, on ground).
  * It is not as robust to magnetometer failures.
- * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degrees latitude of the the magnetic poles)
+ * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degrees latitude of the magnetic poles)
 */
 void NavEKF3_core::fuseEulerYaw()
 {
@@ -946,7 +946,7 @@ void NavEKF3_core::fuseEulerYaw()
             }
         }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
         ForceSymmetry();
         ConstrainVariances();
 
@@ -1124,7 +1124,7 @@ void NavEKF3_core::FuseDeclination(float declErr)
             }
         }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
         ForceSymmetry();
         ConstrainVariances();
 

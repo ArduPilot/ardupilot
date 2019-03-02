@@ -152,7 +152,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // project the vehicle position
     Location last_loc = _target_location;
-    location_offset(last_loc, vel_ned.x * dt, vel_ned.y * dt);
+    last_loc.offset(vel_ned.x * dt, vel_ned.y * dt);
     last_loc.alt -= vel_ned.z * 100.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
 
     // return latest position estimate
@@ -219,7 +219,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
 }
 
 // get target's heading in degrees (0 = north, 90 = east)
-bool AP_Follow::get_target_heading(float &heading) const
+bool AP_Follow::get_target_heading_deg(float &heading) const
 {
     // exit immediately if not enabled
     if (!_enabled) {
@@ -343,7 +343,7 @@ void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
     }
 
     float target_heading_deg;
-    if ((_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) && get_target_heading(target_heading_deg)) {
+    if ((_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) && get_target_heading_deg(target_heading_deg)) {
         // rotate offsets from north facing to vehicle's perspective
         _offset = rotate_vector(-dist_vec_ned, -target_heading_deg);
     } else {
@@ -367,7 +367,7 @@ bool AP_Follow::get_offsets_ned(Vector3f &offset) const
 
     // offset type is relative, exit if we cannot get vehicle's heading
     float target_heading_deg;
-    if (!get_target_heading(target_heading_deg)) {
+    if (!get_target_heading_deg(target_heading_deg)) {
         return false;
     }
 

@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_RTL_ENABLED == ENABLED
+
 /*
  * Init and run calls for RTL flight mode
  *
@@ -10,15 +12,11 @@
 // rtl_init - initialise rtl controller
 bool Copter::ModeRTL::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
-        // initialise waypoint and spline controller
-        wp_nav->wp_and_spline_init();
-        build_path(!copter.failsafe.terrain);
-        climb_start();
-        return true;
-    }else{
-        return false;
-    }
+    // initialise waypoint and spline controller
+    wp_nav->wp_and_spline_init();
+    build_path(!copter.failsafe.terrain);
+    climb_start();
+    return true;
 }
 
 // re-start RTL with terrain following disabled
@@ -492,3 +490,5 @@ int32_t Copter::ModeRTL::wp_bearing() const
 {
     return wp_nav->get_wp_bearing_to_destination();
 }
+
+#endif

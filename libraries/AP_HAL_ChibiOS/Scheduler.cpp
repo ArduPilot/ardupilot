@@ -238,7 +238,9 @@ void Scheduler::reboot(bool hold_in_bootloader)
 
 #ifndef NO_DATAFLASH
     //stop logging
-    AP::logger().StopLogging();
+    if (AP_Logger::get_singleton()) {
+        AP::logger().StopLogging();
+    }
 
     // stop sdcard driver, if active
     sdcard_stop();
@@ -458,8 +460,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
             break;
         }
     }
-    thread_t *thread_ctx = chThdCreateFromHeap(NULL,
-                                               THD_WORKING_AREA_SIZE(stack_size),
+    thread_t *thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(stack_size),
                                                name,
                                                thread_priority,
                                                thread_create_trampoline,

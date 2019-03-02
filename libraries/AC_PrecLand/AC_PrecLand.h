@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <stdint.h>

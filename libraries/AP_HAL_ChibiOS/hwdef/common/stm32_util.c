@@ -76,7 +76,7 @@ void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t in
     }
 }
 
-#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
 void show_stack_usage(void)
 {
   thread_t *tp;
@@ -94,16 +94,6 @@ void show_stack_usage(void)
   } while (tp != NULL);
 }
 #endif
-
-/*
-  flush all memory. Used in chSysHalt()
- */
-void memory_flush_all(void)
-{
-#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
-    cacheBufferFlush(HAL_RAM_BASE_ADDRESS, HAL_RAM_SIZE_KB * 1024U);
-#endif
-}
 
 /*
   set the utc time
@@ -292,7 +282,7 @@ void peripheral_power_enable(void)
 #endif
 }
 
-#if defined(STM32F7) || defined(STM32F4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
 /*
   read mode of a pin. This allows a pin config to be read, changed and
   then written back

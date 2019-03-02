@@ -188,10 +188,14 @@ private:
 
     uint8_t one_second_counter = 0;
     bool target_set = false;
+    bool stationary = true; // are we using the start lat and log?
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
+
+     // true if the compass's initial location has been set
+    bool compass_init_location;
 
     // AntennaTracker.cpp
     void one_second_loop();
@@ -231,6 +235,9 @@ private:
 
     // sensors.cpp
     void update_ahrs();
+    void init_compass();
+    void compass_save();
+    void init_compass_location();
     void update_compass(void);
     void compass_cal_update();
     void accel_cal_update(void);
@@ -251,8 +258,8 @@ private:
     // system.cpp
     void init_tracker();
     bool get_home_eeprom(struct Location &loc);
-    void set_home_eeprom(struct Location temp);
-    void set_home(struct Location temp);
+    bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
+    bool set_home(const Location &temp) WARN_IF_UNUSED;
     void arm_servos();
     void disarm_servos();
     void prepare_servos();

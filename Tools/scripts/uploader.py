@@ -75,6 +75,7 @@ default_ports = [ '/dev/serial/by-id/usb-Ardu*',
                   '/dev/serial/by-id/usb-*_3DR_*',
                   '/dev/serial/by-id/usb-Hex_Technology_Limited*',
                   '/dev/serial/by-id/usb-Hex_ProfiCNC*',
+                  '/dev/serial/by-id/usb-Holybro*',
                   '/dev/tty.usbmodem*']
 
 if "cygwin" in _platform:
@@ -611,6 +612,71 @@ class uploader(object):
 
         return True
 
+def ports_to_try(args):
+    portlist = []
+    if args.port is None:
+        patterns = default_ports
+    else:
+        patterns = args.port.split(",")
+    # use glob to support wildcard ports. This allows the use of
+    # /dev/serial/by-id/usb-ArduPilot on Linux, which prevents the
+    # upload from causing modem hangups etc
+    if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
+        import glob
+        for pattern in patterns:
+            portlist += glob.glob(pattern)
+    else:
+        portlist = patterns
+
+    # filter ports based on platform:
+    if "cygwin" in _platform:
+        # Cygwin, don't open MAC OS and Win ports, we are more like
+        # Linux. Cygwin needs to be before Windows test
+        pass
+    elif "win" in _platform:
+        # Windows, don't open POSIX ports
+        portlist = [port for port in portlist if "/" not in port]
+    elif "darwin" in _platform:
+        # OS X, don't open Windows and Linux ports
+        portlist = [port for port in portlist if "COM" not in port and "ACM" not in port]
+
+    return portlist
+
+def modemmanager_check():
+    if os.path.exists("/usr/sbin/ModemManager"):
+        print("""
+==========================================================================================================
+WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device (like Pixhawk)
+==========================================================================================================
+""")
+
+def find_bootloader(up, port):
+    while (True):
+        up.open()
+
+        # port is open, try talking to it
+        try:
+            # identify the bootloader
+            up.identify()
+            print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
+            return True
+
+        except Exception as e:
+            pass
+
+        reboot_sent = up.send_reboot()
+
+        # wait for the reboot, without we might run into Serial I/O Error 5
+        time.sleep(0.25)
+
+        # always close the port
+        up.close()
+
+        # wait for the close, without we might run into Serial I/O Error 6
+        time.sleep(0.3)
+
+        if not reboot_sent:
+            return False
 
 def main():
 
@@ -627,90 +693,39 @@ def main():
     args = parser.parse_args()
 
     # warn people about ModemManager which interferes badly with Pixhawk
-    if os.path.exists("/usr/sbin/ModemManager"):
-        print("==========================================================================================================")
-        print("WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device (like Pixhawk)")
-        print("==========================================================================================================")
+    modemmanager_check()
 
     # Load the firmware file
     fw = firmware(args.firmware)
     print("Loaded firmware for %x,%x, size: %d bytes, waiting for the bootloader..." % (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size')))
     print("If the board does not respond within 1-2 seconds, unplug and re-plug the USB connector.")
 
+    baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
+
     # Spin waiting for a device to show up
     try:
         while True:
-            portlist = []
-            if args.port is None:
-                patterns = default_ports
-            else:
-                patterns = args.port.split(",")
-            # on unix-like platforms use glob to support wildcard ports. This allows
-            # the use of /dev/serial/by-id/usb-3D_Robotics on Linux, which prevents the upload from
-            # causing modem hangups etc
-            if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
-                import glob
-                for pattern in patterns:
-                    portlist += glob.glob(pattern)
-            else:
-                portlist = patterns
 
-            baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
-
-            for port in portlist:
+            for port in ports_to_try(args):
 
                 # print("Trying %s" % port)
 
                 # create an uploader attached to the port
                 try:
-                    if "linux" in _platform:
-                        # Linux, don't open Mac OS and Win ports
-                        up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
-                    elif "darwin" in _platform:
-                        # OS X, don't open Windows and Linux ports
-                        if "COM" not in port and "ACM" not in port:
-                            up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
-                    elif "cygwin" in _platform:
-                        # Cygwin, don't open MAC OS and Win ports, we are more like Linux. Cygwin needs to be before Windows test
-                        up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
-                    elif "win" in _platform:
-                        # Windows, don't open POSIX ports
-                        if "/" not in port:
-                            up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
-                except Exception:
+                    up = uploader(port,
+                                  args.baud_bootloader,
+                                  baud_flightstack,
+                                  args.baud_bootloader_flash)
+
+                except Exception as e:
+                    print("Exception creating uploader: %s" % str(e))
                     # open failed, rate-limit our attempts
                     time.sleep(0.05)
 
                     # and loop to the next port
                     continue
 
-                found_bootloader = False
-                while (True):
-                    up.open()
-
-                    # port is open, try talking to it
-                    try:
-                        # identify the bootloader
-                        up.identify()
-                        found_bootloader = True
-                        print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
-                        break
-
-                    except Exception:
-
-                        if not up.send_reboot():
-                            break
-
-                        # wait for the reboot, without we might run into Serial I/O Error 5
-                        time.sleep(0.25)
-
-                        # always close the port
-                        up.close()
-
-                        # wait for the close, without we might run into Serial I/O Error 6
-                        time.sleep(0.3)
-
-                if not found_bootloader:
+                if not find_bootloader(up, port):
                     # Go to the next port
                     continue
 

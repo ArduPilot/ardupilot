@@ -18,7 +18,7 @@ void ModeGuided::update()
     switch (_guided_mode) {
         case Guided_WP:
         {
-            _distance_to_destination = get_distance(rover.current_loc, _destination);
+            _distance_to_destination = rover.current_loc.get_distance(_destination);
             const bool near_wp = _distance_to_destination <= rover.g.waypoint_radius;
             // check if we've reached the destination
             if (!_reached_destination && (near_wp || location_passed_point(rover.current_loc, _origin, _destination))) {

@@ -31,11 +31,7 @@
 // drift_init - initialise drift controller
 bool Copter::ModeDrift::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
-        return true;
-    }else{
-        return false;
-    }
+    return true;
 }
 
 // drift_run - runs the drift controller

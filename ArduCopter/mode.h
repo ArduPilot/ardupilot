@@ -116,7 +116,7 @@ protected:
 
     // functions to control landing
     // in modes that support landing
-    int32_t get_alt_above_ground(void);
+    int32_t get_alt_above_ground_cm(void);
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
 
@@ -388,7 +388,7 @@ private:
     bool verify_land();
     bool verify_payload_place();
     bool verify_loiter_unlimited();
-    bool verify_loiter_time();
+    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_to_alt();
     bool verify_RTL();
     bool verify_wait_delay();
@@ -401,8 +401,6 @@ private:
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
-
-    void auto_spline_start(const Location& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location& next_destination);
 
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
@@ -452,7 +450,7 @@ protected:
     bool start(void) override;
     bool position_ok() override;
     float get_pilot_desired_climb_rate_cms(void) const override;
-    void get_pilot_desired_rp_yrate_cd(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_rate_cds) override;
+    void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
     void init_z_limits() override;
     void Log_Write_Event(enum at_event id) override;
     void log_pids() override;

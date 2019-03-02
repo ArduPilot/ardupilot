@@ -22,9 +22,9 @@ extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
 # ifdef HAL_LOGGING_DATAFLASH
-#  define HAL_LOGGING_BACKENDS_DEFAULT DATAFLASH_BACKEND_BLOCK
+#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::BLOCK
 # else
-#  define HAL_LOGGING_BACKENDS_DEFAULT DATAFLASH_BACKEND_FILE
+#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
 # endif
 #endif
 
@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
-    AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       HAL_LOGGING_BACKENDS_DEFAULT),
+    AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
 
     // @Param: _FILE_BUFSIZE
     // @DisplayName: Maximum AP_Logger File Backend buffer size (in kilobytes)
@@ -102,7 +102,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 
 #if defined(HAL_BOARD_LOG_DIRECTORY)
  #if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
-    if (_params.backend_types & DATAFLASH_BACKEND_FILE) {
+    if (_params.backend_types & uint8_t(Backend_Type::FILESYSTEM)) {
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
@@ -120,7 +120,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 #endif // HAL_BOARD_LOG_DIRECTORY
 
 #if DATAFLASH_MAVLINK_SUPPORT
-    if (_params.backend_types & DATAFLASH_BACKEND_MAVLINK) {
+    if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
         if (_next_backend == DATAFLASH_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
@@ -140,7 +140,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (_params.backend_types & DATAFLASH_BACKEND_BLOCK) {
+    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == DATAFLASH_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
@@ -159,7 +159,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 #endif
 
 #ifdef HAL_LOGGING_DATAFLASH
-    if (_params.backend_types & DATAFLASH_BACKEND_BLOCK) {
+    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == DATAFLASH_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
@@ -273,14 +273,14 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     bool passed = true;
 
 #if DEBUG_LOG_STRUCTURES
-    Debug("offset=%d ID=%d NAME=%s\n", offset, logstructure->msg_type, logstructure->name);
+    Debug("offset=%d ID=%d NAME=%s", offset, logstructure->msg_type, logstructure->name);
 #endif
 
     // fields must be null-terminated
 #define CHECK_ENTRY(fieldname,fieldname_s,fieldlen)                     \
     do {                                                                \
         if (strnlen(logstructure->fieldname, fieldlen) > fieldlen-1) {  \
-            Debug("Message " fieldname_s " not NULL-terminated or too long"); \
+            Debug("  Message " fieldname_s " not NULL-terminated or too long"); \
             passed = false;                                             \
         }                                                               \
     } while (false)
@@ -293,7 +293,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
 
     // ensure each message ID is only used once
     if (seen_ids[logstructure->msg_type]) {
-        Debug("ID %d used twice (LogStructure offset=%d)", logstructure->msg_type, offset);
+        Debug("  ID %d used twice (LogStructure offset=%d)", logstructure->msg_type, offset);
         passed = false;
     }
     seen_ids[logstructure->msg_type] = true;
@@ -302,7 +302,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     uint8_t fieldcount = strlen(logstructure->format);
     uint8_t labelcount = count_commas(logstructure->labels)+1;
     if (fieldcount != labelcount) {
-        Debug("fieldcount=%u does not match labelcount=%u",
+        Debug("  fieldcount=%u does not match labelcount=%u",
               fieldcount, labelcount);
         passed = false;
     }
@@ -310,20 +310,20 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     // check that the structure is of an appropriate length to take fields
     const int16_t msg_len = Write_calc_msg_len(logstructure->format);
     if (msg_len != logstructure->msg_len) {
-        Debug("Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
+        Debug("  Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
         passed = false;
     }
 
     // ensure we have units for each field:
     if (strlen(logstructure->units) != fieldcount) {
-        Debug("fieldcount=%u does not match unitcount=%u",
+        Debug("  fieldcount=%u does not match unitcount=%u",
               (unsigned)fieldcount, (unsigned)strlen(logstructure->units));
         passed = false;
     }
 
     // ensure we have multipliers for each field
     if (strlen(logstructure->multipliers) != fieldcount) {
-        Debug("fieldcount=%u does not match multipliercount=%u",
+        Debug("  fieldcount=%u does not match multipliercount=%u",
               (unsigned)fieldcount, (unsigned)strlen(logstructure->multipliers));
         passed = false;
     }
@@ -339,7 +339,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
             }
         }
         if (k == _num_units) {
-            Debug("invalid unit=%c", logunit);
+            Debug("  invalid unit=%c", logunit);
             passed = false;
         }
     }
@@ -355,10 +355,32 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
             }
         }
         if (k == _num_multipliers) {
-            Debug("invalid multiplier=%c", logmultiplier);
+            Debug("  invalid multiplier=%c", logmultiplier);
             passed = false;
         }
     }
+
+    // ensure any float has a multiplier of zero
+    if (passed) {
+        for (uint8_t j=0; j<strlen(logstructure->multipliers); j++) {
+            const char fmt = logstructure->format[j];
+            if (fmt != 'f') {
+                continue;
+            }
+            const char logmultiplier = logstructure->multipliers[j];
+            if (logmultiplier == '0' ||
+                logmultiplier == '?' ||
+                logmultiplier == '-') {
+                continue;
+            }
+            Debug("  %s[%u] float with non-zero multiplier=%c",
+                  logstructure->name,
+                  j,
+                  logmultiplier);
+            passed = false;
+        }
+    }
+
     return passed;
 }
 
