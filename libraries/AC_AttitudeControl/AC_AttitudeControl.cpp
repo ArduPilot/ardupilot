@@ -359,6 +359,58 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     attitude_controller_run_quat();
 }
 
+// Command euler pitch and yaw angles and roll rate
+void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll(float euler_yaw_rate_cds, float euler_pitch_cd, float body_roll_cd)
+{
+    // Convert from centidegrees on public interface to radians
+    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
+    float euler_pitch = radians(euler_pitch_cd*0.01f);
+    float body_roll = radians(body_roll_cd*0.01f);
+
+    // back out the body roll to get current euler_yaw
+    Quaternion bf_roll_Q;
+    bf_roll_Q.from_axis_angle(Vector3f(0, 0, -_last_body_roll));
+    Quaternion base_att_Q = _attitude_target_quat * bf_roll_Q;
+
+    // avoid Euler singularities
+    if (_last_euler_pitch > M_PI_4) {
+        base_att_Q.rotate(Vector3f(0,-M_PI_2,0));
+    } else if (_last_euler_pitch < -M_PI_4) {
+        base_att_Q.rotate(Vector3f(0,M_PI_2,0));
+    }
+
+    // current heading
+    float heading = base_att_Q.get_euler_yaw();
+
+    // new heading
+    heading = wrap_PI(heading + euler_yaw_rate * _dt);
+
+    // init attitude target to desired euler yaw and pitch with zero roll
+    _attitude_target_quat.from_euler(0, euler_pitch, heading);
+    _last_euler_pitch = euler_pitch;
+
+    // apply body-frame yaw (this is roll for a tailsitter in forward flight)
+    bf_roll_Q.from_axis_angle(Vector3f(0, 0, body_roll));
+    _last_body_roll = body_roll;
+    _attitude_target_quat = _attitude_target_quat * bf_roll_Q;
+
+    // Set rate feedforward requests to zero
+    _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
+    _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+
+    // Compute attitude error
+    Quaternion attitude_vehicle_quat;
+    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+
+    Quaternion error_quat;
+    error_quat = attitude_vehicle_quat.inverse() * _attitude_target_quat;
+    Vector3f att_error;
+    error_quat.to_axis_angle(att_error);
+
+    // Compute the angular velocity target from the attitude error
+    _rate_target_ang_vel = update_ang_vel_target_from_att_error(att_error);
+}
+
 // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
 void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
 {
