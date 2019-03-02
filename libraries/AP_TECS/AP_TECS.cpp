@@ -972,7 +972,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // if TECS_PITCH_{MAX,MIN} isn't set then use
     // LIM_PITCH_{MAX,MIN}. Don't allow TECS_PITCH_{MAX,MIN} to be
     // larger than LIM_PITCH_{MAX,MIN}
-    if (_pitch_max <= 0) {
+    if (_pitch_max == 0) {
         _PITCHmaxf = aparm.pitch_limit_max_cd * 0.01f;
     } else {
         _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max_cd * 0.01f);
