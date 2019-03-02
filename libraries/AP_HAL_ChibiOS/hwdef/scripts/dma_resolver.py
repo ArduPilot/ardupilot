@@ -142,6 +142,7 @@ def generate_DMAMUX_map_mask(peripheral_list, channel_mask, noshare_list, dma_ex
 
     if debug:
         print('dma_map1: ', dma_map)
+        print('available: 0x%04x' % available)
 
     # now shareable
     idx = 0
@@ -187,6 +188,7 @@ def generate_DMAMUX_map_mask(peripheral_list, channel_mask, noshare_list, dma_ex
     if debug:
         print('dma_map: ', dma_map)
         print('idsets: ', idsets)
+        print('available: 0x%04x' % available)
     return dma_map
 
 def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
@@ -203,6 +205,12 @@ def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
             dmamux1_peripherals.append(p)
     map1 = generate_DMAMUX_map_mask(dmamux1_peripherals, 0xFFFF, noshare_list, dma_exclude)
     map2 = generate_DMAMUX_map_mask(dmamux2_peripherals, 0xFF, noshare_list, dma_exclude)
+    # translate entries from map2 to "DMA controller 3", which is used for BDMA
+    for p in map2.keys():
+        streams = []
+        for (controller,stream) in map2[p]:
+            streams.append((3,stream))
+        map2[p] = streams
     both = map1
     both.update(map2)
     if debug:
@@ -317,9 +325,13 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             f.write("#define %-30s %s\n" % (chibios_dma_define_name(key)+'CHAN', dmamux_channel(key)))
             continue
         else:
-                f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
-                    (chibios_dma_define_name(key)+'STREAM', curr_dict[key][0],
-                    curr_dict[key][1], shared))
+            dma_controller = curr_dict[key][0]
+            if dma_controller == 3:
+                # for BDMA we use 3 in the resolver
+                dma_controller = 1
+            f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
+                    (chibios_dma_define_name(key)+'STREAM', dma_controller,
+                        curr_dict[key][1], shared))
         for streamchan in dma_map[key]:
             if stream == (streamchan[0], streamchan[1]):
                 if have_DMAMUX:
