@@ -17,7 +17,7 @@ void Sub::gcs_send_heartbeat()
  *  pattern below when adding any new messages
  */
 
-MAV_TYPE GCS_MAVLINK_Sub::frame_type() const
+MAV_TYPE GCS_Sub::frame_type() const
 {
     return MAV_TYPE_SUBMARINE;
 }
@@ -62,7 +62,7 @@ MAV_MODE GCS_MAVLINK_Sub::base_mode() const
     return (MAV_MODE)_base_mode;
 }
 
-uint32_t GCS_MAVLINK_Sub::custom_mode() const
+uint32_t GCS_Sub::custom_mode() const
 {
     return sub.control_mode;
 }
