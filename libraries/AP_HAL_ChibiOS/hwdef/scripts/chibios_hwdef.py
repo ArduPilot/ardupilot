@@ -1349,7 +1349,8 @@ def build_peripheral_list():
         if type.startswith('ADC'):
             peripherals.append(type)
         if type.startswith('SDIO') or type.startswith('SDMMC'):
-            peripherals.append(type)
+            if not mcu_series.startswith("STM32H7"):
+                peripherals.append(type)
         if type.startswith('TIM'):
             if p.has_extra('RCIN'):
                 label = p.label
