@@ -1580,7 +1580,9 @@ class AutoTest(ABC):
         while self.get_sim_time() < tstart + timeout:
             if the_function is not None:
                 the_function()
-            m = self.mav.recv_match(type='STATUSTEXT', blocking=True)
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=0.1)
+            if m is None:
+                continue
             if text.lower() in m.text.lower():
                 self.progress("Received expected text : %s" % m.text.lower())
                 return True
