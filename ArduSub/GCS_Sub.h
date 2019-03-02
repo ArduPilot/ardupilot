@@ -22,6 +22,9 @@ public:
 
     void update_sensor_status_flags() override;
 
+    uint32_t custom_mode() const override;
+    MAV_TYPE frame_type() const override;
+
 private:
 
     GCS_MAVLINK_Sub _chan[MAVLINK_COMM_NUM_BUFFERS];
