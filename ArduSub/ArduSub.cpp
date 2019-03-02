@@ -266,6 +266,7 @@ void Sub::one_hz_loop()
     ap.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_gps_check = position_ok();
+    AP_Notify::flags.flying = motors.armed();
 
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
