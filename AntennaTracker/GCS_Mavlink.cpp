@@ -12,7 +12,7 @@
  *  pattern below when adding any new messages
  */
 
-MAV_TYPE GCS_MAVLINK_Tracker::frame_type() const
+MAV_TYPE GCS_Tracker::frame_type() const
 {
     return MAV_TYPE_ANTENNA_TRACKER;
 }
@@ -60,7 +60,7 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
     return (MAV_MODE)_base_mode;
 }
 
-uint32_t GCS_MAVLINK_Tracker::custom_mode() const
+uint32_t GCS_Tracker::custom_mode() const
 {
     return tracker.control_mode;
 }
