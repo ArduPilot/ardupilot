@@ -39,6 +39,7 @@ public:
         k_param_pivot_turn_angle,
         k_param_rc_13_old,  // unused
         k_param_rc_14_old,  // unused
+        k_param_nav_controller,
 
         // IO pins
         k_param_rssi_pin = 20,  // unused, replaced by rssi_ library parameters
@@ -220,6 +221,7 @@ public:
     AP_Int32    log_bitmask;
     AP_Int8     reset_switch_chan;
     AP_Int8     initial_mode;
+    AP_Int8     nav_controller;
 
     // Telemetry control
     //
@@ -323,6 +325,9 @@ public:
 
     // steering and throttle controller
     AR_AttitudeControl attitude_control;
+
+    //LQR Navigation Controller
+    AP_LQR_Control LQR_controller;
 
     // turn radius of vehicle (only used in steering mode)
     AP_Float turn_radius;

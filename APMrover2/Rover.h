@@ -42,6 +42,7 @@
 #include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
 #include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
 #include <AP_L1_Control/AP_L1_Control.h>
+#include <AP_LQR_Control/AP_LQR_Control.h>
 #include <AP_Math/AP_Math.h>                        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Mission/AP_Mission.h>                  // Mission command library
 #include <AP_Mount/AP_Mount.h>                      // Camera/Antenna mount
@@ -387,6 +388,8 @@ private:
     void one_second_loop(void);
     void update_GPS(void);
     void update_current_mode(void);
+
+    void set_nav_controller(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);
