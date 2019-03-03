@@ -1,5 +1,5 @@
-Release 3.9.6beta1, 26th February 2019
---------------------------------------
+Release 3.9.6, 4th March 2019
+-----------------------------
 
 This is a minor release with some important fixes for VTOL landings
 and EKF handling of compass switching.
@@ -33,6 +33,9 @@ and EKF handling of compass switching.
  - added generated git hash to apj file
 
  - fixed apj generation to not change based on time of build
+
+ - fixed thread creation to use any heap, fixing a bug on
+   MatekF405-Wing with a compass
 
 Happy flying!
 
