@@ -410,6 +410,7 @@ private:
     enum tailsitter_input {
         TAILSITTER_INPUT_MULTICOPTER = 0,
         TAILSITTER_INPUT_PLANE       = 1,
+        TAILSITTER_INPUT_BF_ROLL     = 2,
     };
 
     enum tailsitter_mask {
