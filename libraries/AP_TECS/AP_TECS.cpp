@@ -975,6 +975,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     }
     _THRminf  = aparm.throttle_min * 0.01f;
 
+    // min of 1% throttle range to prevent a numerical error
+    _THRmaxf = MAX(_THRmaxf, _THRminf+0.01);
+
     // work out the maximum and minimum pitch
     // if TECS_PITCH_{MAX,MIN} isn't set then use
     // LIM_PITCH_{MAX,MIN}. Don't allow TECS_PITCH_{MAX,MIN} to be
