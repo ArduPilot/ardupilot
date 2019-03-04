@@ -103,7 +103,7 @@ public:
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
-    bool supports_mavlink_gps_rtk_message() { return true; }
+    bool supports_mavlink_gps_rtk_message() { return state.rtk_time_week_ms > 0; }
 
     bool is_configured(void) {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL

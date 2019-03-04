@@ -871,13 +871,13 @@ AP_GPS_UBLOX::_parse_gps(void)
 
         state.rtk_age_ms    = 0xFFFFFFFF;
 
-    	state.rtk_baseline_x_mm = _buffer.rtk.rel_pos_n_cm*10+_buffer.rtk.rel_pos_hp_n_mm/10.0;
-    	state.rtk_baseline_y_mm = _buffer.rtk.rel_pos_e_cm*10+_buffer.rtk.rel_pos_hp_e_mm/10.0;
-    	state.rtk_baseline_z_mm = _buffer.rtk.rel_pos_d_cm*10+_buffer.rtk.rel_pos_hp_d_mm/10.0;
+    	state.rtk_baseline_x_mm = _buffer.rtk.rel_pos_n_cm*10+_buffer.rtk.rel_pos_hp_n_mm/10;
+    	state.rtk_baseline_y_mm = _buffer.rtk.rel_pos_e_cm*10+_buffer.rtk.rel_pos_hp_e_mm/10;
+    	state.rtk_baseline_z_mm = _buffer.rtk.rel_pos_d_cm*10+_buffer.rtk.rel_pos_hp_d_mm/10;
 
-    	int32_t acc_n_mm = _buffer.rtk.acc_n_mm;
-    	int32_t acc_e_mm = _buffer.rtk.acc_e_mm;
-    	int32_t acc_d_mm = _buffer.rtk.acc_d_mm;
+    	const double acc_n_mm = _buffer.rtk.acc_n_mm;
+    	const double acc_e_mm = _buffer.rtk.acc_e_mm;
+    	const double acc_d_mm = _buffer.rtk.acc_d_mm;
 
     	// rms of error terms
     	double rtk_accuracy = acc_n_mm*acc_n_mm + acc_e_mm*acc_e_mm + acc_d_mm*acc_d_mm;
@@ -891,9 +891,9 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.rtk.rel_pos_n_cm,
               _buffer.rtk.rel_pos_e_cm,
               _buffer.rtk.rel_pos_d_cm,
-              acc_n_mm,
-              acc_e_mm,
-              acc_d_mm
+              _buffer.rtk.acc_n_mm,
+              _buffer.rtk.acc_e_mm,
+              _buffer.rtk.acc_d_mm
         );
 
 #if UBLOX_DEBUGGING
