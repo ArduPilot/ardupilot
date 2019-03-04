@@ -1758,24 +1758,27 @@ class AutoTest(ABC):
                          )
 
         home = self.poll_home_position()
-        self.progress("int-set home: %s" % str(home))
-        if (home.latitude != new_x or
-            home.longitude != new_y or
-            home.altitude != new_z):
+        self.progress("home: %s" % str(home))
+        got_home_latitude = home.latitude
+        got_home_longitude = home.longitude
+        got_home_altitude = home.altitude
+        if (got_home_latitude != new_x or
+            got_home_longitude != new_y or
+            abs(got_home_altitude - new_z) > 100): # float-conversion issues
             self.reboot_sitl()
             raise NotAchievedException(
-                "(%f, %f, %f) != (%f, %f, %f)" %
-                (home.latitude, home.longitude, home.altitude,
+                "Home mismatch got=(%f, %f, %f) set=(%f, %f, %f)" %
+                (got_home_latitude, got_home_longitude, got_home_altitude,
                 new_x, new_y, new_z))
 
-        # watch it for a little while to ensure it doesn't drift at all:
+        self.progress("monitoring home to ensure it doesn't drift at all")
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 10:
             home = self.poll_home_position()
-            self.progress("int-set home: %s" % str(home))
-            if (home.latitude != new_x or
-                home.longitude != new_y or
-                home.altitude != new_z):
+            self.progress("home: %s" % str(home))
+            if (home.latitude != got_home_latitude or
+                home.longitude != got_home_longitude or
+                home.altitude != got_home_altitude): # float-conversion issues
                 self.reboot_sitl()
                 raise NotAchievedException("home is drifting")
         self.reboot_sitl()
