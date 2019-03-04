@@ -130,6 +130,11 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         // update optional alternative attitude view
         _view->update(skip_ins_update);
     }
+
+#if !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+    // update NMEA output
+    update_nmea_out();
+#endif
 }
 
 void AP_AHRS_NavEKF::update_DCM(bool skip_ins_update)
