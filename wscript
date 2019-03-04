@@ -68,7 +68,6 @@ def options(opt):
     removed_names = boards.get_removed_boards()
     g.add_option('--board',
         action='store',
-        choices=boards_names + removed_names,
         default=None,
         help='Target board to build, choices are %s.' % ', '.join(boards_names))
 
