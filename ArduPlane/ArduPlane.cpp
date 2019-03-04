@@ -835,8 +835,18 @@ void Plane::update_alt()
             soaring_active = true;
         }
 #endif
-        
-        SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
+
+        /*
+          project forward the desired height
+         */
+        float groundspeed = sqrtf(sq(vel.x)+sq(vel.y));
+        float desired_climb_m = (next_WP_loc.alt - current_loc.alt) * 0.01;
+        float wp_time = auto_state.wp_distance / MAX(groundspeed,1);
+        float desired_climb_rate = desired_climb_m / wp_time;
+        float projection_time = 5;
+        float target_alt_cm = relative_target_altitude_cm() + desired_climb_rate*projection_time*100;
+
+        SpdHgt_Controller->update_pitch_throttle(target_alt_cm,
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  distance_beyond_land_wp,
