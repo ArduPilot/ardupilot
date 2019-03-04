@@ -224,7 +224,7 @@ def	run_coverage_tests(bld):
 
     for test in tests:
         print("LCOV/GCOV -> "+test+" started.... this will take quite some time...")
-        testcmd = '( ./Tools/autotest/autotest.py --debug --no-configure '+test+' ) '
+        testcmd = '( ./Tools/autotest/autotest.py --speedup=5 --timeout=14400 --debug --no-configure '+test+' ) '
         print("Coverage Tests Executing:"+testcmd+" > ./GCOV_"+test+".log")
         FLOG = open("./GCOV_"+test+".log", 'w')
         if subprocess.Popen(testcmd, shell=True , stdout=FLOG, stderr=FNULL).wait():
