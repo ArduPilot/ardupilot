@@ -396,6 +396,19 @@ void XPlane::send_data(const struct sitl_input &input)
         }
     }
 
+    /* setup for SilentArrow glider */
+    float rear_left   = (input.servos[4]-1500)/500.0;
+    float rear_right  = (input.servos[5]-1500)/500.0;
+    float front_left  = (input.servos[6]-1500)/500.0;
+    float front_right = (input.servos[7]-1500)/500.0;
+
+    // uses misc wings, setup for elevator control
+    send_dref("sim/flightmodel2/wing/elevator1_deg[12]", rear_right*45);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[13]", rear_left*45);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[14]", front_left*45);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[15]", front_right*45);
+
+    
     d.code = FlightCon;
     d.data[0] = elevator;
     d.data[1] = aileron;
