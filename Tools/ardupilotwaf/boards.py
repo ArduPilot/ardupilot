@@ -294,6 +294,15 @@ Please use a replacement build as follows:
  px4-v4pro  Use DrotekP3Pro build
 ''' % ctx.env.BOARD)
 
+        boards = _board_classes.keys()
+        if not ctx.env.BOARD in boards:
+            # try case-insensitive match
+            for b in boards:
+                if b.upper() == ctx.env.BOARD.upper():
+                    ctx.env.BOARD = b
+                    break
+        if not ctx.env.BOARD in boards:
+            ctx.fatal("Invalid board '%s': choices are %s" % (ctx.env.BOARD, ', '.join(boards)))
         _board = _board_classes[ctx.env.BOARD]()
     return _board
 
