@@ -202,10 +202,17 @@ void loop()
     const uint8_t sumd_bytes[] = {0xA8, 0x01, 0x08, 0x2F, 0x50, 0x31, 0xE8, 0x21, 0xA0,
                                   0x2F, 0x50, 0x22, 0x60, 0x22, 0x60, 0x2E, 0xE0, 0x2E,
                                   0xE0, 0x87, 0xC6};
+
+    const uint8_t sumd_bytes2[] = {0xA8, 0x01, 0x0C, 0x22, 0x60, 0x2F, 0x60, 0x2E, 0xE0, 0x2E, 0xE0, 0x3B,
+                                  0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B,
+                                  0x60, 0x17, 0x02};
+
     const uint16_t sumd_output[] = {1597, 1076, 1514, 1514, 1100, 1100, 1500, 1500};
+    const uint16_t sumd_output2[] = {1516, 1500, 1100, 1500, 1900, 1900, 1900, 1900, 1900, 1900, 1900, 1900};
 
     test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output), 1);
     test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output), 1);
+    test_protocol("SUMD", 115200, sumd_bytes2, sizeof(sumd_bytes2), sumd_output2, ARRAY_SIZE(sumd_output2), 1);
 
     // SBUS needs 3 repeats to pass the RCProtocol 3 frames test
     test_protocol("SBUS", 100000, sbus_bytes, sizeof(sbus_bytes), sbus_output, ARRAY_SIZE(sbus_output), 3);
