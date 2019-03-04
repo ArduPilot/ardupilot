@@ -73,9 +73,9 @@
   setup PLLs based on HSE clock
  */
 #if STM32_HSECLK == 8000000U
-// this gives 384MHz system clock
+// this gives 400MHz system clock
 #define STM32_PLL1_DIVM_VALUE               1
-#define STM32_PLL1_DIVN_VALUE               96
+#define STM32_PLL1_DIVN_VALUE               100
 #define STM32_PLL1_DIVP_VALUE               2
 #define STM32_PLL1_DIVQ_VALUE               16
 #define STM32_PLL1_DIVR_VALUE               2
@@ -92,9 +92,9 @@
 #define STM32_PLL3_DIVQ_VALUE               6
 #define STM32_PLL3_DIVR_VALUE               3
 #elif STM32_HSECLK == 16000000U
-// this gives 384MHz system clock
+// this gives 400MHz system clock
 #define STM32_PLL1_DIVM_VALUE               2
-#define STM32_PLL1_DIVN_VALUE               96
+#define STM32_PLL1_DIVN_VALUE               100
 #define STM32_PLL1_DIVP_VALUE               2
 #define STM32_PLL1_DIVQ_VALUE               16
 #define STM32_PLL1_DIVR_VALUE               2
@@ -111,9 +111,9 @@
 #define STM32_PLL3_DIVQ_VALUE               6
 #define STM32_PLL3_DIVR_VALUE               3
 #elif STM32_HSECLK == 24000000U
-// this gives 384MHz system clock
+// this gives 400MHz system clock
 #define STM32_PLL1_DIVM_VALUE               3
-#define STM32_PLL1_DIVN_VALUE               96
+#define STM32_PLL1_DIVN_VALUE               100
 #define STM32_PLL1_DIVP_VALUE               2
 #define STM32_PLL1_DIVQ_VALUE               16
 #define STM32_PLL1_DIVR_VALUE               2
