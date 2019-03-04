@@ -53,6 +53,21 @@ protected:
         float net_bouyancy = 2.0; // (N)
 
         float bouyancy_acceleration = GRAVITY_MSS + net_bouyancy/weight;
+
+        // Frame drag coefficient
+        const Vector3f linear_drag_coefficient = Vector3f(0.2, 0.25, 0.3);
+        const Vector3f angular_drag_coefficient = Vector3f(0.25, 0.3, 0.2);
+        // Calculate total volume from water buoyancy
+        // $ V = F_b / (rho * g) $
+        // V = volume (m^3), rho = water density (kg/m^3), g = gravity (m/s^2), F_b = force (N)
+        float volume = buoyancy_acceleration * weight / (GRAVITY_MSS * 1023.6f);
+        // Calculate equivalent sphere area for drag force
+        // $ A = pi * r^2 / 4 $
+        // $ V = 4 * pi * r^3 / 3 $
+        // $ r ^2 = (V * 3 / 4) ^ (2/3) $
+        // A = area (m^3), r = sphere radius (m)
+        float equivalent_sphere_area = M_PI_4 * pow(volume * 3 / 4, 2 / 3);
+
     } frame_property;
 
     bool on_ground() const override;
@@ -61,6 +76,8 @@ protected:
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
     // calculate buoyancy
     float calculate_buoyancy_acceleration();
+    // calculate drag from velocity and drag coefficient
+    void calculate_drag_force(const Vector3f &velocity, const Vector3f &drag_coefficient, Vector3f &force);
 
     Frame *frame;
 };
