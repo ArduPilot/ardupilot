@@ -50,9 +50,9 @@ protected:
         float width  = 0.338; // y direction (meters)
         float height = 0.254; // z direction (meters)
         float weight = 10.5;  // (kg)
-        float net_bouyancy = 2.0; // (N)
+        float net_buoyancy = 2.0; // (N)
 
-        float bouyancy_acceleration = GRAVITY_MSS + net_bouyancy/weight;
+        float buoyancy_acceleration = GRAVITY_MSS + net_buoyancy/weight;
 
         // Frame drag coefficient
         const Vector3f linear_drag_coefficient = Vector3f(0.2, 0.25, 0.3);

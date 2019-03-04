@@ -127,11 +127,11 @@ float Submarine::calculate_buoyancy_acceleration()
 
     // Completely below water level
     if (below_water_level > frame_property.height/2) {
-        return frame_property.bouyancy_acceleration;
+        return frame_property.buoyancy_acceleration;
     }
 
     // bouyant force is proportional to fraction of height in water
-    return frame_property.bouyancy_acceleration * below_water_level/frame_property.height;
+    return frame_property.buoyancy_acceleration * below_water_level/frame_property.height;
 };
 
 /*
