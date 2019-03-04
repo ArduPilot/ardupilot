@@ -75,63 +75,39 @@
 #if STM32_HSECLK == 8000000U
 // this gives 400MHz system clock
 #define STM32_PLL1_DIVM_VALUE               1
-#define STM32_PLL1_DIVN_VALUE               100
-#define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               16
-#define STM32_PLL1_DIVR_VALUE               2
-
 #define STM32_PLL2_DIVM_VALUE               1
-#define STM32_PLL2_DIVN_VALUE               24
-#define STM32_PLL2_DIVP_VALUE               2
-#define STM32_PLL2_DIVQ_VALUE               2
-#define STM32_PLL2_DIVR_VALUE               2
-
 #define STM32_PLL3_DIVM_VALUE               2
-#define STM32_PLL3_DIVN_VALUE               72
-#define STM32_PLL3_DIVP_VALUE               3
-#define STM32_PLL3_DIVQ_VALUE               6
-#define STM32_PLL3_DIVR_VALUE               3
 #elif STM32_HSECLK == 16000000U
 // this gives 400MHz system clock
 #define STM32_PLL1_DIVM_VALUE               2
-#define STM32_PLL1_DIVN_VALUE               100
-#define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               16
-#define STM32_PLL1_DIVR_VALUE               2
-
 #define STM32_PLL2_DIVM_VALUE               2
-#define STM32_PLL2_DIVN_VALUE               24
-#define STM32_PLL2_DIVP_VALUE               2
-#define STM32_PLL2_DIVQ_VALUE               2
-#define STM32_PLL2_DIVR_VALUE               2
-
 #define STM32_PLL3_DIVM_VALUE               4
-#define STM32_PLL3_DIVN_VALUE               72
-#define STM32_PLL3_DIVP_VALUE               3
-#define STM32_PLL3_DIVQ_VALUE               6
-#define STM32_PLL3_DIVR_VALUE               3
 #elif STM32_HSECLK == 24000000U
 // this gives 400MHz system clock
 #define STM32_PLL1_DIVM_VALUE               3
+#define STM32_PLL2_DIVM_VALUE               3
+#define STM32_PLL3_DIVM_VALUE               6
+#else
+#error "Unsupported HSE clock"
+#endif
+
+#if (STM32_HSECLK == 8000000U) || (STM32_HSECLK == 16000000U) || (STM32_HSECLK == 24000000U)
+// common clock tree for multiples of 8MHz crystals
 #define STM32_PLL1_DIVN_VALUE               100
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               16
+#define STM32_PLL1_DIVQ_VALUE               8
 #define STM32_PLL1_DIVR_VALUE               2
 
-#define STM32_PLL2_DIVM_VALUE               3
-#define STM32_PLL2_DIVN_VALUE               24
+#define STM32_PLL2_DIVN_VALUE               25
 #define STM32_PLL2_DIVP_VALUE               2
 #define STM32_PLL2_DIVQ_VALUE               2
 #define STM32_PLL2_DIVR_VALUE               2
 
-#define STM32_PLL3_DIVM_VALUE               6
 #define STM32_PLL3_DIVN_VALUE               72
 #define STM32_PLL3_DIVP_VALUE               3
 #define STM32_PLL3_DIVQ_VALUE               6
-#define STM32_PLL3_DIVR_VALUE               3
-#else
-#error "Unsupported HSE clock"
-#endif
+#define STM32_PLL3_DIVR_VALUE               9
+#endif // 8MHz clock multiples
 
 #define STM32_PLL1_ENABLED                  TRUE
 #define STM32_PLL1_P_ENABLED                TRUE
@@ -182,7 +158,7 @@
 #define STM32_QSPISEL                       STM32_QSPISEL_HCLK
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
 #define STM32_SWPSEL                        STM32_SWPSEL_PCLK1
-#define STM32_FDCANSEL                      STM32_FDCANSEL_HSE_CK
+#define STM32_FDCANSEL                      STM32_FDCANSEL_PLL1_Q_CK
 #define STM32_DFSDM1SEL                     STM32_DFSDM1SEL_PCLK2
 #define STM32_SPDIFSEL                      STM32_SPDIFSEL_PLL1_Q_CK
 #define STM32_SPI45SEL                      STM32_SPI45SEL_PLL2_Q_CK
@@ -199,10 +175,10 @@
 #define STM32_SPI6SEL                       STM32_SPI6SEL_PLL2_Q_CK
 #define STM32_SAI4BSEL                      STM32_SAI4BSEL_PLL1_Q_CK
 #define STM32_SAI4ASEL                      STM32_SAI4ASEL_PLL1_Q_CK
-#define STM32_ADCSEL                        STM32_ADCSEL_PLL2_P_CK
+#define STM32_ADCSEL                        STM32_ADCSEL_PLL3_R_CK
 #define STM32_LPTIM345SEL                   STM32_LPTIM345SEL_PCLK4
 #define STM32_LPTIM2SEL                     STM32_LPTIM2SEL_PCLK4
-#define STM32_I2C4SEL                       STM32_I2C4SEL_PLL3_R_CK
+#define STM32_I2C4SEL                       STM32_I2C4SEL_PCLK4
 #define STM32_LPUART1SEL                    STM32_LPUART1SEL_PCLK4
 #define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
 
@@ -235,8 +211,8 @@
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
 #define STM32_ADC_ADC12_IRQ_PRIORITY        5
 #define STM32_ADC_ADC3_IRQ_PRIORITY         5
-#define STM32_ADC_ADC12_CLOCK_MODE          ADC_CCR_CKMODE_AHB_DIV4
-#define STM32_ADC_ADC3_CLOCK_MODE           ADC_CCR_CKMODE_AHB_DIV4
+#define STM32_ADC_ADC12_CLOCK_MODE          ADC_CCR_CKMODE_ADCCK
+#define STM32_ADC_ADC3_CLOCK_MODE           ADC_CCR_CKMODE_ADCCK
 
 // we call it ADC1 in hwdef.dat, but driver uses ADC12 for DMA stream
 #define STM32_ADC_ADC12_DMA_STREAM STM32_ADC_ADC1_DMA_STREAM
