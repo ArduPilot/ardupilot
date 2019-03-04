@@ -30,6 +30,14 @@
 
 #include <stdio.h>
 
+
+// TODO: change these to params
+#define RC_OVERRIDE_RX_ENABLE_ON_MATCHING_SYSID     0
+#define RC_OVERRIDE_TX_ENABLE                       0
+#define RC_OVERRIDE_TX_TARGET_SYSID                 13
+#define RC_OVERRIDE_TX_TARGET_COMPID                1
+
+
 #if HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -1708,6 +1716,31 @@ void GCS_MAVLINK::send_radio_in()
         values[16],
         values[17],
         receiver_rssi);        
+
+    if (RC_OVERRIDE_TX_ENABLE && HAVE_PAYLOAD_SPACE(chan, RC_CHANNELS_OVERRIDE)) {
+        mavlink_msg_rc_channels_override_send(
+        chan,
+        RC_OVERRIDE_TX_TARGET_SYSID,
+        RC_OVERRIDE_TX_TARGET_COMPID,
+        values[0],
+        values[1],
+        values[2],
+        values[3],
+        values[4],
+        values[5],
+        values[6],
+        values[7],
+        values[8],
+        values[9],
+        values[10],
+        values[11],
+        values[12],
+        values[13],
+        values[14],
+        values[15],
+        values[16],
+        values[17]);
+    }
 }
 
 void GCS_MAVLINK::send_raw_imu()
@@ -2952,14 +2985,16 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t* msg)
 // control of switch position and RC PWM values.
 void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t *msg)
 {
-    if(msg->sysid != sysid_my_gcs()) {
-        return; // Only accept control from our gcs
-    }
 
     const uint32_t tnow = AP_HAL::millis();
 
     mavlink_rc_channels_override_t packet;
     mavlink_msg_rc_channels_override_decode(msg, &packet);
+
+    const bool is_targeted_at_us = RC_OVERRIDE_RX_ENABLE_ON_MATCHING_SYSID && (packet.target_system == mavlink_system.sysid);
+    if (msg->sysid != sysid_my_gcs() && !is_targeted_at_us) {
+        return; // Only accept control from our gcs or if it's directed at us
+    }
 
     RC_Channels::set_override(0, packet.chan1_raw, tnow);
     RC_Channels::set_override(1, packet.chan2_raw, tnow);
