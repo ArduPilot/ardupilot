@@ -1845,7 +1845,12 @@ bool QuadPlane::init_mode(void)
         return qautotune.init();
 #endif
     case QACRO:
-        init_qacro();
+        if (is_tailsitter()) {
+            init_qacro();
+        } else {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "QACRO mode refused");
+            return false;
+        }
         break;
     default:
         break;
