@@ -282,9 +282,10 @@ void QuadPlane::tailsitter_speed_scaling(void)
     }
     last_scale = scale;
 
-    const SRV_Channel::Aux_servo_function_t functions[4] = {
+    const SRV_Channel::Aux_servo_function_t functions[5] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
         SRV_Channel::Aux_servo_function_t::k_elevator,
+        SRV_Channel::Aux_servo_function_t::k_rudder,
         SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft,
         SRV_Channel::Aux_servo_function_t::k_tiltMotorRight};
     for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
