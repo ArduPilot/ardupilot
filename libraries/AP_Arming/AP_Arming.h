@@ -114,6 +114,8 @@ protected:
 
     bool mission_checks(bool report);
 
+    bool fence_checks(bool report);
+
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
