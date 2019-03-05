@@ -3521,6 +3521,32 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_long_t &packe
     return mount->handle_command_long(packet);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_long_t &packet)
+{
+    // if param1 is 1 use current location:
+    if (is_equal(packet.param1, 1.0f)) {
+        if (!set_home_to_current_location(true)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // ensure param1 is zero
+    if (!is_zero(packet.param1)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    Location new_home_loc;
+    new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+    new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+    new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+    if (!set_home(new_home_loc, true)) {
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
+
 MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
@@ -3537,6 +3563,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_DO_SEND_BANNER:
         result = handle_command_do_send_banner(packet);
+        break;
+
+    case MAV_CMD_DO_SET_HOME:
+        result = handle_command_do_set_home(packet);
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:
