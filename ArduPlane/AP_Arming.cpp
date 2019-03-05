@@ -63,6 +63,19 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+    if (plane.quadplane.enabled() && plane.quadplane.available()) {
+        // ensure controllers are OK with us arming:
+        char failure_msg[50];
+        if (!plane.quadplane.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
+            return false;
+        }
+        if (!plane.quadplane.attitude_control->pre_arm_checks("ATC", failure_msg, ARRAY_SIZE(failure_msg))) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
+            return false;
+        }
+    }
+
     if (plane.control_mode == AUTO && plane.mission.num_commands() <= 1) {
         check_failed(ARMING_CHECK_NONE, display_failure, "No mission loaded");
         ret = false;
