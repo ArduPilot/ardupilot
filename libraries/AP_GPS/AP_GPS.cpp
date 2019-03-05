@@ -1105,6 +1105,10 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
     // always enusre a lag is provided
     lag_sec = GPS_WORST_LAG_SEC;
 
+    if (instance >= GPS_MAX_INSTANCES) {
+        return false;
+    }
+
     // return lag of blended GPS
     if (instance == GPS_BLENDED_INSTANCE) {
         lag_sec = _blended_lag_sec;
@@ -1133,12 +1137,17 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
 const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
 {
-    if (instance == GPS_MAX_RECEIVERS) {
+    if (instance >= GPS_MAX_INSTANCES) {
+        // we have to return a reference so use instance 0
+        return _antenna_offset[0];
+    }
+
+    if (instance == GPS_BLENDED_INSTANCE) {
         // return an offset for the blended GPS solution
         return _blended_antenna_offset;
-    } else {
-        return _antenna_offset[instance];
     }
+
+    return _antenna_offset[instance];
 }
 
 /*
@@ -1526,9 +1535,20 @@ void AP_GPS::calc_blended_state(void)
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = (uint32_t)temp_time_2;
 }
 
-bool AP_GPS::is_healthy(uint8_t instance) const {
-    return drivers[instance] != nullptr &&
-           last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS &&
+bool AP_GPS::is_healthy(uint8_t instance) const
+{
+    if (instance >= GPS_MAX_INSTANCES) {
+        return false;
+    }
+
+    bool last_msg_valid = last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS;
+
+    if (instance == GPS_BLENDED_INSTANCE) {
+        return last_msg_valid && blend_health_check();
+    }
+
+    return last_msg_valid &&
+           drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
 }
 
