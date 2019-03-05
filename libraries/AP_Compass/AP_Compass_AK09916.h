@@ -26,6 +26,11 @@
 # define HAL_COMPASS_AK09916_I2C_ADDR 0x0C
 #endif
 
+
+#ifndef HAL_COMPASS_ICM20948_I2C_ADDR
+# define HAL_COMPASS_ICM20948_I2C_ADDR 0x69
+#endif
+
 class AuxiliaryBus;
 class AuxiliaryBusSlave;
 class AP_InertialSensor;
@@ -41,6 +46,7 @@ public:
 
     /* Probe for AK09916 on auxiliary bus of ICM20948, connected through I2C */
     static AP_Compass_Backend *probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
                                              bool force_external,
                                              enum Rotation rotation = ROTATION_NONE);
 

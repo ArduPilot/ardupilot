@@ -22,7 +22,8 @@
 #include <utility>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
-#include <AP_InertialSensor/AP_InertialSensor_Invensense.h>
+#include <AP_InertialSensor/AP_InertialSensor_Invensensev2.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define REG_COMPANY_ID      0x00
 #define REG_DEVICE_ID       0x01
@@ -42,6 +43,8 @@
 #define REG_ICM_WHOAMI      0x00
 #define REG_ICM_PWR_MGMT_1  0x06
 #define REG_ICM_INT_PIN_CFG 0x0f
+
+#define ICM_WHOAMI_VAL      0xEA
 
 #define AK09916_Device_ID   0x09
 #define AK09916_MILLIGAUSS_SCALE 10.0f
@@ -91,18 +94,76 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
 }
 
 AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
                                                      bool force_external,
                                                      enum Rotation rotation)
 {
-    if (!dev) {
+    if (!dev || !dev_icm) {
         return nullptr;
     }
-    AP_InertialSensor &ins = AP::ins();
+
+    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return nullptr;
+    }
 
     /* Allow ICM20x48 to shortcut auxiliary bus and host bus */
-    ins.detect_backends();
+    uint8_t rval;
+    uint16_t whoami;
+    uint8_t retries = 5;
+    if (!dev_icm->read_registers(REG_ICM_WHOAMI, &rval, 1) ||
+        rval != ICM_WHOAMI_VAL) {
+        // not an ICM_WHOAMI
+        goto fail;
+    }
+    do {
+        // reset then bring sensor out of sleep mode
+        if (!dev_icm->write_register(REG_ICM_PWR_MGMT_1, 0x80)) {
+            goto fail;
+        }
+        hal.scheduler->delay(10);
 
+        if (!dev_icm->write_register(REG_ICM_PWR_MGMT_1, 0x00)) {
+            goto fail;
+        }
+        hal.scheduler->delay(10);
+        
+        // see if ICM20948 is sleeping
+        if (!dev_icm->read_registers(REG_ICM_PWR_MGMT_1, &rval, 1)) {
+            goto fail;
+        }
+        if ((rval & 0x40) == 0) {
+            break;
+        }
+    } while (retries--);
+    
+    if (rval & 0x40) {
+        // it didn't come out of sleep
+        goto fail;
+    }
+
+    // initially force i2c bypass off
+    dev_icm->write_register(REG_ICM_INT_PIN_CFG, 0x00);
+    hal.scheduler->delay(1);
+
+    // now check if a AK09916 shows up on the bus. If it does then
+    // we have both a real AK09916 and a ICM20948 with an embedded
+    // AK09916. In that case we will fail the driver load and use
+    // the main AK09916 driver
+    if (dev->read_registers(REG_COMPANY_ID, (uint8_t *)&whoami, 2)) {
+        // a device is replying on the AK09916 I2C address, don't
+        // load the ICM20948
+        gcs().send_text(MAV_SEVERITY_INFO, "ICM20948: AK09916 bus conflict\n");
+        goto fail;
+    }
+
+    // now force bypass on
+    dev_icm->write_register(REG_ICM_INT_PIN_CFG, 0x02);
+    hal.scheduler->delay(1);
+    dev->get_semaphore()->give();
     return probe(std::move(dev), force_external, rotation);
+fail:
+    dev->get_semaphore()->give();
+    return nullptr;
 }
 
 AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(uint8_t inv2_instance,
@@ -130,32 +191,32 @@ bool AP_Compass_AK09916::init()
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
     if (!bus_sem || !_bus->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.console->printf("AK09916: Unable to get bus semaphore\n");
+        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Unable to get bus semaphore\n");
         return false;
     }
 
     if (!_bus->configure()) {
-        hal.console->printf("AK09916: Could not configure the bus\n");
+        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Could not configure the bus\n");
         goto fail;
     }
 
     if (!_reset()) {
-        hal.console->printf("AK09916: Reset Failed\n");
+        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Reset Failed\n");
         goto fail;
     }
 
     if (!_check_id()) {
-        hal.console->printf("AK09916: Wrong id\n");
+        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Wrong id\n");
         goto fail;
     }
 
     if (!_setup_mode()) {
-        hal.console->printf("AK09916: Could not setup mode\n");
+        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Could not setup mode\n");
         goto fail;
     }
 
     if (!_bus->start_measurements()) {
-        hal.console->printf("AK09916: Could not start measurements\n");
+        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Could not start measurements\n");
         goto fail;
     }
 
