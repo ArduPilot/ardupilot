@@ -505,32 +505,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
         }
         return MAV_RESULT_FAILED;
 
-    case MAV_CMD_DO_SET_HOME:
-        // param1 : use current (1=use current location, 0=use specified location)
-        // param5 : latitude
-        // param6 : longitude
-        // param7 : altitude (absolute)
-        if (is_equal(packet.param1,1.0f) || (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7))) {
-            if (sub.set_home_to_current_location(true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-        } else {
-            // ensure param1 is zero
-            if (!is_zero(packet.param1)) {
-                return MAV_RESULT_FAILED;
-            }
-            Location new_home_loc;
-            new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-            new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-            new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-            if (!sub.far_from_EKF_origin(new_home_loc)) {
-                if (sub.set_home(new_home_loc, true)) {
-                    return MAV_RESULT_ACCEPTED;
-                }
-            }
-        }
-        return MAV_RESULT_FAILED;
-
     case MAV_CMD_MISSION_START:
         if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
