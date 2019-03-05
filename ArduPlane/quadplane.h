@@ -23,6 +23,7 @@ public:
     friend class GCS_MAVLINK_Plane;
     friend class AP_AdvancedFailsafe_Plane;
     friend class QAutoTune;
+    friend class AP_Arming_Plane;
 
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
