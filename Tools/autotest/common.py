@@ -2274,6 +2274,33 @@ switch value'''
     def disabled_tests(self):
         return {}
 
+    def test_parameter_checks_poscontrol(self, param_prefix):
+        self.wait_ready_to_arm()
+        self.context_push()
+        self.set_parameter("%s_POSXY_P" % param_prefix, -1)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                     1,  # ARM
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=2,
+                     want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.context_pop()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                     1,  # ARM
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=2,
+                     want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        self.disarm_vehicle()
+
     def test_pid_tuning(self):
         self.progress("making sure we're not getting PID_TUNING messages")
         m = self.mav.recv_match(type='PID_TUNING', blocking=True, timeout=1)
