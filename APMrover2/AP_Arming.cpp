@@ -84,19 +84,6 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
             & proximity_check(report));
 }
 
-bool AP_Arming_Rover::fence_checks(bool report)
-{
-    // check fence is initialised
-    const char *fail_msg = nullptr;
-    if (!rover.g2.fence.pre_arm_check(fail_msg)) {
-        if (report && fail_msg != nullptr) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Fence : %s", fail_msg);
-        }
-        return false;
-    }
-    return true;
-}
-
 // check nothing is too close to vehicle
 bool AP_Arming_Rover::proximity_check(bool report)
 {
