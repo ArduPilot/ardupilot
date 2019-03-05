@@ -192,6 +192,9 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("FBWA") # we don't update PIDs in MANUAL
         super(AutoTestQuadPlane, self).test_pid_tuning()
 
+    def test_parameter_checks(self):
+        self.test_parameter_checks_poscontrol("Q_P")
+
     def default_mode(self):
         return "MANUAL"
 
@@ -211,6 +214,10 @@ class AutoTestQuadPlane(AutoTest):
             ("TestMotorMask", "Test output_motor_mask", self.test_motor_mask),
 
             ("QAutoTune", "Fly QAUTOTUNE mode", self.fly_qautotune),
+
+            ("ParameterChecks",
+             "Test Arming Parameter Checks",
+             self.test_parameter_checks),
 
             ("Mission", "Dalby Mission",
              lambda: self.fly_mission(m, f))
