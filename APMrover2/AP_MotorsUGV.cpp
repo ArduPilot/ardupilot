@@ -424,13 +424,11 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
     for (uint8_t i=0; i<_motors_num; i++)
     {
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
-        if (SRV_Channels::function_assigned(function)) {
-            return true;
-        } else {
+        if (!SRV_Channels::function_assigned(function)) {
             if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check %u", function);
-                return false;
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: servo function %u unassigned", function);
             }
+            return false;
         }
     }
     return true;
