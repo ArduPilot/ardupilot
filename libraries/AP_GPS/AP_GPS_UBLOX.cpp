@@ -875,12 +875,12 @@ AP_GPS_UBLOX::_parse_gps(void)
     	state.rtk_baseline_y_mm = _buffer.rtk.rel_pos_e_cm*10+_buffer.rtk.rel_pos_hp_e_mm/10;
     	state.rtk_baseline_z_mm = _buffer.rtk.rel_pos_d_cm*10+_buffer.rtk.rel_pos_hp_d_mm/10;
 
-    	const double acc_n_mm = _buffer.rtk.acc_n_mm;
-    	const double acc_e_mm = _buffer.rtk.acc_e_mm;
-    	const double acc_d_mm = _buffer.rtk.acc_d_mm;
+    	const float acc_n_mm = _buffer.rtk.acc_n_mm;
+    	const float acc_e_mm = _buffer.rtk.acc_e_mm;
+    	const float acc_d_mm = _buffer.rtk.acc_d_mm;
 
     	// rms of error terms
-    	double rtk_accuracy = acc_n_mm*acc_n_mm + acc_e_mm*acc_e_mm + acc_d_mm*acc_d_mm;
+    	float rtk_accuracy = acc_n_mm*acc_n_mm + acc_e_mm*acc_e_mm + acc_d_mm*acc_d_mm;
     	state.rtk_accuracy = (uint32_t) safe_sqrt(rtk_accuracy);
     	state.rtk_baseline_coords_type = 1; // NED
     	state.rtk_time_week_ms = _buffer.rtk.itow_ms;
