@@ -1838,8 +1838,12 @@ class AutoTest(ABC):
             if not self.arm_motors_with_rc_input():
                 raise NotAchievedException("Failed to arm with RC input")
             self.progress("disarm with rc input")
-            if not self.disarm_motors_with_rc_input():
-                raise NotAchievedException("Failed to disarm with RC input")
+            if self.is_balancebot():
+                self.progress("balancebot can't disarm with RC input")
+                self.disarm_vehicle()
+            else:
+                if not self.disarm_motors_with_rc_input():
+                    raise NotAchievedException("Failed to disarm with RC input")
 
             self.start_subtest("Test arm and disarm with switch")
             arming_switch = 7
@@ -2175,6 +2179,9 @@ class AutoTest(ABC):
         return False
 
     def is_rover(self):
+        return False
+
+    def is_balancebot(self):
         return False
 
     def is_heli(self):
