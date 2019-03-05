@@ -100,23 +100,6 @@ bool AP_Arming_Copter::compass_checks(bool display_failure)
     return ret;
 }
 
-bool AP_Arming_Copter::fence_checks(bool display_failure)
-{
-    #if AC_FENCE == ENABLED
-    // check fence is initialised
-    const char *fail_msg = nullptr;
-    if (!copter.fence.pre_arm_check(fail_msg)) {
-        if (fail_msg == nullptr) {
-            check_failed(ARMING_CHECK_NONE, display_failure, "Check fence");
-        } else {
-            check_failed(ARMING_CHECK_NONE, display_failure, "%s", fail_msg);
-        }
-        return false;
-    }
-    #endif
-    return true;
-}
-
 bool AP_Arming_Copter::ins_checks(bool display_failure)
 {
     bool ret = AP_Arming::ins_checks(display_failure);
