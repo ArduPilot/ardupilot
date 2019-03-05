@@ -611,32 +611,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_ACCEPTED;
 
-    case MAV_CMD_DO_SET_HOME:
-    {
-        // param1 : use current (1=use current location, 0=use specified location)
-        // param5 : latitude
-        // param6 : longitude
-        // param7 : altitude
-        if (is_equal(packet.param1, 1.0f)) {
-            if (rover.set_home_to_current_location(true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-        } else {
-            // ensure param1 is zero
-            if (!is_zero(packet.param1)) {
-                return MAV_RESULT_FAILED;
-            }
-            Location new_home_loc {};
-            new_home_loc.lat = static_cast<int32_t>(packet.param5 * 1.0e7f);
-            new_home_loc.lng = static_cast<int32_t>(packet.param6 * 1.0e7f);
-            new_home_loc.alt = static_cast<int32_t>(packet.param7 * 100.0f);
-            if (rover.set_home(new_home_loc, true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-        }
-        return MAV_RESULT_FAILED;
-    }
-
     case MAV_CMD_DO_SET_REVERSE:
         // param1 : Direction (0=Forward, 1=Reverse)
         rover.control_mode->set_reversed(is_equal(packet.param1,1.0f));
