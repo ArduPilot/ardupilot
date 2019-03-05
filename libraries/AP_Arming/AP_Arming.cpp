@@ -23,6 +23,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AC_Fence/AC_Fence.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -694,6 +695,29 @@ bool AP_Arming::can_checks(bool report)
     }
 #endif
     return true;
+}
+
+
+bool AP_Arming::fence_checks(bool display_failure)
+{
+    const AC_Fence *fence = AP::fence();
+    if (fence == nullptr) {
+        return true;
+    }
+
+    // check fence is ready
+    const char *fail_msg = nullptr;
+    if (fence->pre_arm_check(fail_msg)) {
+        return true;
+    }
+
+    if (fail_msg == nullptr) {
+        check_failed(ARMING_CHECK_NONE, display_failure, "Check fence");
+    } else {
+        check_failed(ARMING_CHECK_NONE, display_failure, "%s", fail_msg);
+    }
+
+    return false;
 }
 
 bool AP_Arming::pre_arm_checks(bool report)
