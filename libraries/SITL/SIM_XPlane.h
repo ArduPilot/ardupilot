@@ -69,6 +69,8 @@ private:
     // are we controlling a heli?
     bool heli_frame;
 
+    uint32_t last_send_time_us;
+
     uint64_t unselected_mask;
     
     // throttle joystick input is very weird. See comments in the main code

@@ -359,10 +359,13 @@ failed:
 */
 void XPlane::send_data(const struct sitl_input &input)
 {
-    float aileron  = (input.servos[0]-1500)/500.0f;
-    float elevator = (input.servos[1]-1500)/500.0f;
-    float throttle = (input.servos[2]-1000)/1000.0;
-    float rudder   = (input.servos[3]-1500)/500.0f;
+    uint32_t now = AP_HAL::micros();
+    float dt = constrain_float((now - last_send_time_us) * 1.0e-6, 0.001, 0.1);
+    last_send_time_us = now;
+    float aileron  = filtered_servo_angle(input, 0, dt);
+    float elevator = filtered_servo_angle(input, 1, dt);
+    float throttle = filtered_servo_range(input, 2, dt);
+    float rudder   = filtered_servo_angle(input, 3, dt);
     struct PACKED {
         uint8_t  marker[5] { 'D', 'A', 'T', 'A', '0' };
         uint32_t code;
@@ -397,10 +400,10 @@ void XPlane::send_data(const struct sitl_input &input)
     }
 
     /* setup for SilentArrow glider */
-    float rear_left   = (input.servos[4]-1500)/500.0;
-    float rear_right  = (input.servos[5]-1500)/500.0;
-    float front_left  = (input.servos[6]-1500)/500.0;
-    float front_right = (input.servos[7]-1500)/500.0;
+    float rear_left   = filtered_servo_angle(input, 4, dt);
+    float rear_right  = filtered_servo_angle(input, 5, dt);
+    float front_left  = filtered_servo_angle(input, 6, dt);
+    float front_right = filtered_servo_angle(input, 7, dt);
 
     // uses misc wings, setup for elevator control
     send_dref("sim/operation/override/override_control_surfaces", 1);
