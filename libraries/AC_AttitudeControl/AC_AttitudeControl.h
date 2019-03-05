@@ -6,7 +6,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
@@ -290,6 +289,11 @@ public:
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     virtual void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) {};
+
+    // provide feedback on whether arming would be a good idea right now:
+    bool pre_arm_checks(const char *param_prefix,
+                        char *failure_msg,
+                        const uint8_t failure_msg_len);
 
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
