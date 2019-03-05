@@ -2786,31 +2786,7 @@ class AutoTestCopter(AutoTest):
         super(AutoTestCopter, self).test_arm_feature()
 
     def test_parameter_checks(self):
-        self.wait_ready_to_arm()
-        self.context_push()
-        self.set_parameter("PSC_POSXY_P", -1)
-        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                     1,  # ARM
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     timeout=2,
-                     want_result=mavutil.mavlink.MAV_RESULT_FAILED)
-        self.context_pop()
-        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                     1,  # ARM
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     timeout=2,
-                     want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
-        self.disarm_vehicle()
+        self.test_parameter_checks_poscontrol("PSC")
 
     def initial_mode(self):
         return "STABILIZE"
