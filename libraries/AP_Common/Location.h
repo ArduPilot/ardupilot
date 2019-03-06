@@ -75,6 +75,12 @@ public:
     // extrapolate latitude/longitude given distances (in meters) north and east
     void offset(float ofs_north, float ofs_east);
 
+    // longitude_scale - returns the scaler to compensate for
+    // shrinking longitude as you move north or south from the equator
+    // Note: this does not include the scaling to convert
+    // longitude/latitude points to meters or centimeters
+    float longitude_scale() const;
+
     bool is_zero(void) const;
 
     void zero(void);
