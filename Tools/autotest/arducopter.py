@@ -2368,6 +2368,23 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_manual_throttle_mode_change(self):
+        self.set_parameter("FS_GCS_ENABLE", 0) # avoid GUIDED instant disarm
+        self.change_mode("STABILIZE")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode("ACRO")
+        self.change_mode("STABILIZE")
+        self.change_mode("GUIDED")
+        self.set_rc(3, 1700)
+        self.watch_altitude_maintained(-1, 0.2) # should not take off in guided
+        self.run_cmd_do_set_mode(
+            "ACRO",
+            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
+        self.set_rc(3, 1000)
+        self.run_cmd_do_set_mode("ACRO")
+        self.mav.motors_disarmed_wait()
+
     def test_mount_pitch(self, despitch, despitch_tolerance, timeout=5):
         tstart = self.get_sim_time()
         while True:
@@ -2959,6 +2976,10 @@ class AutoTestCopter(AutoTest):
             ("ParameterChecks",
              "Test Arming Parameter Checks",
              self.test_parameter_checks),
+
+            ("ManualThrottleModeChange",
+             "Check manual throttle mode changes denied on high throttle",
+             self.fly_manual_throttle_mode_change),
 
             ("LogDownLoad",
              "Log download",
