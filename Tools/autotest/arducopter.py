@@ -236,6 +236,28 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
+    def watch_altitude_maintained(self, min_alt, max_alt, timeout=10):
+        '''watch alt, relative alt must remain between min_alt and max_alt'''
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                return
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            if m.alt <= min_alt:
+                raise NotAchievedException("Altitude not maintained: want >%f got=%f" % (min_alt, m.alt))
+
+    def test_mode_ALT_HOLD(self):
+        self.takeoff(10, mode="ALT_HOLD")
+        self.watch_altitude_maintained(9, 11, timeout=5)
+        # feed in full elevator and aileron input and make sure we
+        # retain altitude:
+        self.set_rc(1, 1000)
+        self.set_rc(2, 1000)
+        self.watch_altitude_maintained(9, 11, timeout=5)
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+        self.do_RTL()
+
     def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
         """Change altitude."""
         m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -2868,6 +2890,10 @@ class AutoTestCopter(AutoTest):
             ("GPSGlitchAuto",
              "GPS Glitch Auto Test",
              self.fly_gps_glitch_auto_test),
+
+            ("ModeAltHold",
+             "Test AltHold Mode",
+             self.test_mode_ALT_HOLD),
 
             ("ModeLoiter",
              "Test Loiter Mode",
