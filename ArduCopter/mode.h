@@ -79,7 +79,9 @@ public:
 
 protected:
 
-    virtual bool init(bool ignore_checks) = 0;
+    virtual bool init(bool ignore_checks) {
+        return true;
+    }
     virtual void run() = 0;
 
     virtual bool is_autopilot() const { return false; }
@@ -210,7 +212,6 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
     bool is_autopilot() const override { return false; }
@@ -1040,7 +1041,6 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
     bool requires_GPS() const override { return false; }

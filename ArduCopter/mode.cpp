@@ -200,6 +200,22 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     }
 #endif
 
+#if FRAME_CONFIG != HELI_FRAME
+    // ensure vehicle doesn't leap off the ground if a user switches
+    // into a manual throttle mode from a non-manual-throttle mode
+    // (e.g. user arms in guided, raises throttle to 1300 (not enough to
+    // trigger auto takeoff), then switches into manual):
+    if (!ignore_checks &&
+        ap.land_complete &&
+        new_flightmode->has_manual_throttle() &&
+        !copter.flightmode->has_manual_throttle() &&
+        new_flightmode->get_pilot_desired_throttle() > copter.get_non_takeoff_throttle()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: throttle too high");
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        return false;
+    }
+#endif
+
     if (!ignore_checks &&
         new_flightmode->requires_GPS() &&
         !copter.position_ok()) {
