@@ -398,8 +398,11 @@ void SPIDevice::test_clock_freq(void)
         hal.scheduler->delay(1000);
         hal.console->printf("Waiting %u\n", AP_HAL::millis());
     }
-    hal.console->printf("SPI1_CLOCK=%u SPI2_CLOCK=%u SPI3_CLOCK=%u SPI4_CLOCK=%u\n",
-                        SPI1_CLOCK, SPI2_CLOCK, SPI3_CLOCK, SPI4_CLOCK);
+    hal.console->printf("CLOCKS=\n");
+    for (uint8_t i=0; i<ARRAY_SIZE(bus_clocks); i++) {
+        hal.console->printf("%u:%u ", i+1, bus_clocks[i]);
+    }
+    hal.console->printf("\n");
 
     // we will send 1024 bytes without any CS asserted and measure the
     // time it takes to do the transfer
