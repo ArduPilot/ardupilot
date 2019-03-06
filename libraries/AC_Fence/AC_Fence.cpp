@@ -236,6 +236,23 @@ bool AC_Fence::check_fence_alt_max()
 // check_fence_polygon - returns true if the polygon fence is freshly breached
 bool AC_Fence::check_fence_polygon()
 {
+    const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
+    const bool breached = polygon_fence_is_breached();
+    if (breached) {
+        if (!was_breached) {
+            record_breach(AC_FENCE_TYPE_POLYGON);
+            return true;
+        }
+        return false;
+    }
+    if (was_breached) {
+        clear_breach(AC_FENCE_TYPE_POLYGON);
+    }
+    return false;
+}
+
+bool AC_Fence::polygon_fence_is_breached()
+{
     if (!(_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
         // not enabled; no breach
         return false;
@@ -261,23 +278,7 @@ bool AC_Fence::check_fence_polygon()
     }
 
     position = position * 100.0f;  // m to cm
-    if (_poly_loader.boundary_breached(position, _boundary_num_points, _boundary)) {
-        // check if this is a new breach
-        if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
-            // not a new breach
-            return false;
-        }
-        // record that we have breached the polygon
-        record_breach(AC_FENCE_TYPE_POLYGON);
-        return true;
-    }
-
-    // inside boundary; clear breach if present
-    if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
-        clear_breach(AC_FENCE_TYPE_POLYGON);
-    }
-
-    return false;
+    return _poly_loader.boundary_breached(position, _boundary_num_points, _boundary);
 }
 
 bool AC_Fence::check_fence_circle()
@@ -558,7 +559,9 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
     Vector2l temp_latlon;
     for (uint16_t index=0; index<_total; index++) {
         // load boundary point as lat/lon point
-        _poly_loader.load_point_from_eeprom(index, temp_latlon);
+        if (!_poly_loader.load_point_from_eeprom(index, temp_latlon)) {
+            return false;
+        }
         // move into location structure and convert to offset from ekf origin
         temp_loc.lat = temp_latlon.x;
         temp_loc.lng = temp_latlon.y;
