@@ -563,11 +563,6 @@ float Copter::Mode::get_pilot_desired_climb_rate(float throttle_control)
     return copter.get_pilot_desired_climb_rate(throttle_control);
 }
 
-float Copter::Mode::get_pilot_desired_throttle(int16_t throttle_control, float thr_mid)
-{
-    return copter.get_pilot_desired_throttle(throttle_control, thr_mid);
-}
-
 float Copter::Mode::get_non_takeoff_throttle()
 {
     return copter.get_non_takeoff_throttle();
