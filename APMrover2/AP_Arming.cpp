@@ -49,9 +49,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
     // check for ekf failsafe
     if (rover.failsafe.ekf) {
-        if (display_failure) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: EKF failsafe");
-        }
+        check_failed(ARMING_CHECK_NONE, display_failure, "EKF failsafe");
         return false;
     }
 
@@ -72,9 +70,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 bool AP_Arming_Rover::pre_arm_checks(bool report)
 {
     if (SRV_Channels::get_emergency_stop()) {
-        if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motors Emergency Stopped");
-        }
+        check_failed(ARMING_CHECK_NONE, report, "Motors Emergency Stopped");
         return false;
     }
 
@@ -107,9 +103,7 @@ bool AP_Arming_Rover::proximity_check(bool report)
 
     // return false if proximity sensor unhealthy
     if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
-        if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
-        }
+        check_failed(ARMING_CHECK_NONE, report, "check proximity sensor");
         return false;
     }
 
