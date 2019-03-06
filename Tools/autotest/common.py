@@ -1157,30 +1157,40 @@ class AutoTest(ABC):
         self.progress("Available modes '%s'" % mode_map)
         raise ErrorException("Unknown mode '%s'" % mode)
 
-    def do_set_mode_via_command_long(self, mode, timeout=30):
-        """Set mode with a command long message."""
+    def run_cmd_do_set_mode(self,
+                            mode,
+                            timeout=30,
+                            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
         custom_mode = self.get_mode_from_mode_mapping(mode)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+                     base_mode,
+                     custom_mode,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     want_result=want_result,
+                     timeout=timeout
+        )
+
+    def do_set_mode_via_command_long(self, mode, timeout=30):
+        """Set mode with a command long message."""
         tstart = self.get_sim_time()
+        want_custom_mode = self.get_mode_from_mode_mapping(mode)
         while True:
             remaining = timeout - (self.get_sim_time_cached() - tstart)
             if remaining <= 0:
                 raise AutoTestTimeoutException("Failed to change mode")
-            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MODE,
-                         base_mode,
-                         custom_mode,
-                         0,
-                         0,
-                         0,
-                         0,
-                         0,
-                         )
+            self.run_cmd_do_set_mode(mode, timeout=10)
             m = self.mav.recv_match(type='HEARTBEAT',
                                     blocking=True,
                                     timeout=5)
             if m is None:
                 raise ErrorException("Heartbeat not received")
-            if m.custom_mode == custom_mode:
+            self.progress("Got mode=%u want=%u" % (m.custom_mode, want_custom_mode))
+            if m.custom_mode == want_custom_mode:
                 return
 
     def mavproxy_do_set_mode_via_command_long(self, mode, timeout=30):
