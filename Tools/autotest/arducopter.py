@@ -158,7 +158,6 @@ class AutoTestCopter(AutoTest):
         self.progress("TAKEOFF")
         self.change_mode(mode)
         if not self.armed():
-            self.progress("Waiting reading for arm")
             self.wait_ready_to_arm(require_absolute=require_absolute)
             self.zero_throttle()
             self.arm_vehicle()
@@ -1385,7 +1384,6 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_heartbeat()
         self.wait_mode('STABILIZE')
-        self.progress("Waiting reading for arm")
         self.wait_ready_to_arm()
 
         old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -1500,7 +1498,6 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.send('mode loiter\n')
         self.wait_heartbeat()
         self.wait_mode('LOITER')
-        self.progress("Waiting reading for arm")
         self.wait_ready_to_arm()
 
         self.context_push()
@@ -1905,7 +1902,6 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.send('mode loiter\n')  # stabilize mode
         self.wait_heartbeat()
         self.wait_mode('LOITER')
-        self.progress("Waiting reading for arm")
         self.wait_ready_to_arm()
 
         delay_item_seq = 3
@@ -1962,7 +1958,6 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.send('mode loiter\n')  # stabilize mode
         self.wait_heartbeat()
         self.wait_mode('LOITER')
-        self.progress("Waiting reading for arm")
         self.wait_ready_to_arm()
 
         delay_item_seq = 2
@@ -2276,7 +2271,6 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_heartbeat()
             self.wait_mode('STABILIZE')
-            self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
 
             self.arm_vehicle()
@@ -2714,7 +2708,6 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_heartbeat()
             self.wait_mode('STABILIZE')
-            self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
 
             # we should be doing precision loiter at this point
