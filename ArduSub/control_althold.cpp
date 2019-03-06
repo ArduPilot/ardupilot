@@ -95,11 +95,17 @@ void Sub::althold_run()
         }
     }
 
+    // Hold actual position until zero derivative is detected
+    static bool engageStopZ = true;
+    // Get last user velocity direction to check for zero derivative points
+    static bool lastVelocityZWasNegative = false;
     if (fabsf(channel_throttle->norm_input()-0.5f) > 0.05f) { // Throttle input above 5%
         // output pilot's throttle
         attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
         // reset z targets to current values
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+        engageStopZ = true;
+        lastVelocityZWasNegative = is_negative(inertial_nav.get_velocity_z());
     } else { // hold z
 
         if (ap.at_bottom) {
@@ -110,6 +116,16 @@ void Sub::althold_run()
             float target_climb_rate = get_surface_tracking_climb_rate(0, pos_control.get_alt_target(), G_Dt);
             pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         }
+
+        // Detects a zero derivative
+        // When detected, move the altitude set point to the actual position
+        // This will avoid any problem related to joystick delays
+        // or smaller input signals
+        if(engageStopZ && (lastVelocityZWasNegative ^ is_negative(inertial_nav.get_velocity_z()))) {
+            engageStopZ = false;
+            pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+        }
+
         pos_control.update_z_controller();
     }
 
