@@ -22,9 +22,6 @@ void Copter::ModeStabilize_Heli::run()
     float target_yaw_rate;
     float pilot_throttle_scaled;
 
-    
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
