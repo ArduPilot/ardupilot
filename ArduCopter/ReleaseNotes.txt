@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.7-rc1 28-Feb-2019
+Copter 3.6.7 06-Mar-2019 / 3.6.7-rc1 28-Feb-2019
 Changes from 3.6.6
 1) Bug fixes and minor enhancements
     a) Matek405-Wing compass fix (thread initialisation fix)
