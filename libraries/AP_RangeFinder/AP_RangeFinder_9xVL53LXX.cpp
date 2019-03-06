@@ -46,11 +46,14 @@ const std::map<int,int> AP_RangeFinder_9xVL53LXX::channel_mapping {
 };
 
 AP_HAL::OwnPtr<AP_HAL::I2CDevice> AP_RangeFinder_9xVL53LXX::get_device(uint8_t address) {
-	AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev = hal.i2c_mgr->get_device(1, address);
-	
-	if(!dev){
-		dev = hal.i2c_mgr->get_device(0, address);
-	}
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev = nullptr;
+
+    FOREACH_I2C(i) {
+        dev = hal.i2c_mgr->get_device(i, address);
+        if (dev) {
+            break;
+        }
+    }
 	
 	return dev;
 }
