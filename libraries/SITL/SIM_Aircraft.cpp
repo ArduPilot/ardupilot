@@ -697,7 +697,7 @@ void Aircraft::smooth_sensors(void)
 
 /*
   return a filtered servo input as a value from -1 to 1
-  servo is assumed to be 1000 to 2000, trim at 1500
+  input value is a float from -1 to 1
  */
 float Aircraft::filtered_idx(float v, uint8_t idx, float dt)
 {
@@ -710,11 +710,12 @@ float Aircraft::filtered_idx(float v, uint8_t idx, float dt)
     /*
       apply a rate limiter followed by a low-pass filter
      */
-    const float cutoff = 1.0f / (2 * M_PI * sitl->servo_speed);
+    v = constrain_float(v, -1, 1);
+    const float cutoff = 50.0 / sitl->servo_speed;
     float last_value = servo_filter[idx].get();
-    float max_change = sitl->servo_speed * dt;
+    float max_change = dt / sitl->servo_speed;
     v = constrain_float(v, last_value-max_change, last_value+max_change);
-    servo_filter[idx].set_cutoff_frequency(cutoff);
+    servo_filter[idx].set_cutoff_frequency(1.0/dt,cutoff);
     return servo_filter[idx].apply(v, dt);
 }
 
@@ -726,7 +727,7 @@ float Aircraft::filtered_idx(float v, uint8_t idx, float dt)
 float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx, float dt)
 {
     const float v = (constrain_float(input.servos[idx],1000,2000) - 1500)/500.0f;
-    return constrain_float(filtered_idx(v, idx), -1, 1);
+    return constrain_float(filtered_idx(v, idx, dt), -1, 1);
 }
 
 /*
@@ -736,7 +737,7 @@ float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx
 float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx, float dt)
 {
     const float v = (constrain_float(input.servos[idx],1000,2000) - 1000)/1000.0f;
-    return constrain_float(filtered_idx(v, idx), 0, 1);
+    return constrain_float(filtered_idx(v, idx, dt), 0, 1);
 }
 
 // extrapolate sensors by a given delta time in seconds
