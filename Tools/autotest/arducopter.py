@@ -597,13 +597,80 @@ class AutoTestCopter(AutoTest):
         self.progress("RTL after stab patch")
         self.do_RTL()
 
+    def debug_arming_issue(self):
+        while True:
+            self.send_mavlink_arm_command()
+            m = self.mav.recv_match(blocking=True, timeout=1)
+            if m is None:
+                continue
+            if m.get_type() in ["STATUSTEXT", "COMMAND_ACK"]:
+                print("Got: %s" % str(m))
+            if self.mav.motors_armed():
+                self.progress("Armed")
+                return
+
     # fly_fence_test - fly east until you hit the horizontal circular fence
     def fly_fence_test(self, timeout=180):
-        self.takeoff(10, mode="LOITER")
-
         # enable fence, disable avoidance
         self.set_parameter("FENCE_ENABLE", 1)
         self.set_parameter("AVOID_ENABLE", 0)
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+
+        # fence requires home to be set:
+        m = self.poll_home_position()
+        if m is None:
+            raise NotAchievedException("Did not receive HOME_POSITION")
+        self.progress("home: %s" % str(m))
+
+        self.start_subtest("ensure we can't arm if ouside fence")
+        fence = os.path.join(self.mission_directory(),
+                             "fence-in-middle-of-nowhere.txt")
+        self.mavproxy.send('fence load %s\n' % fence)
+        self.mavproxy.expect("Loaded 6 geo-fence")
+        self.delay_sim_time(5) # let fence check run so it loads-from-eeprom
+        seen_statustext = False
+        seen_command_ack = False
+
+        tstart = self.get_sim_time_cached()
+        while True:
+            self.send_mavlink_arm_command()
+            if seen_command_ack and seen_statustext:
+                break
+            if self.get_sim_time_cached() - tstart > 5:
+                raise NotAchievedException("Did not see failure-to-arm messages (statustext=%s command_ack=%s" % (seen_statustext, seen_command_ack))
+            m = self.mav.recv_match(blocking=True, timeout=1)
+            if m is None:
+                continue
+            if m.get_type() == "STATUSTEXT":
+                if "vehicle outside fence" in m.text:
+                    self.progress("Got: %s" % str(m))
+                    seen_statustext = True
+                elif "PreArm" in m.text:
+                    self.progress("Got: %s" % str(m))
+                    raise NotAchievedException("Unexpected prearm failure (%s)" % m.text)
+
+            if m.get_type() == "COMMAND_ACK":
+                print("Got: %s" % str(m))
+                if m.command == mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM:
+                    if m.result != 4:
+                        raise NotAchievedException("command-ack says we didn't fail to arm")
+                    self.progress("Got: %s" % str(m))
+                    seen_command_ack = True
+            if self.mav.motors_armed():
+                raise NotAchievedException("Armed when we shouldn't have")
+
+        self.progress("Failed to arm outside fence (good!)")
+        self.drain_mav()
+        self.mavproxy.send('fence clear\n')
+        self.delay_sim_time(2)
+        self.mavproxy.send('fence list\n')
+        self.mavproxy.expect("No geo-fence points")
+
+        self.start_subtest("Check breach-fence behaviour")
+        self.set_parameter("FENCE_TYPE", 2)
+        self.takeoff(10, mode="LOITER")
 
         # first east
         self.progress("turn east")
