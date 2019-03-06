@@ -954,7 +954,11 @@ void QuadPlane::control_qacro(void)
         float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
 
         // run attitude controller
-        attitude_control->input_rate_bf_roll_pitch_yaw_3(target_roll, target_pitch, target_yaw);
+        if (plane.g.acro_locking) {
+            attitude_control->input_rate_bf_roll_pitch_yaw_3(target_roll, target_pitch, target_yaw);
+        } else {
+            attitude_control->input_rate_bf_roll_pitch_yaw_2(target_roll, target_pitch, target_yaw);
+        }
 
         // output pilot's throttle without angle boost
         attitude_control->set_throttle_out(throttle_out, false, 10.0f);
