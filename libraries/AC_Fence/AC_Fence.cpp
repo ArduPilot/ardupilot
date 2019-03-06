@@ -498,7 +498,7 @@ void AC_Fence::handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
                     link.send_text(MAV_SEVERITY_WARNING, "Failed to save polygon point, too many points?");
                 } else {
                     // trigger reload of points
-                    _boundary_loaded = false;
+                    _boundary_num_points = 0;
                 }
             }
             break;
