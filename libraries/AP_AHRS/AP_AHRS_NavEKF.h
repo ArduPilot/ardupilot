@@ -189,7 +189,7 @@ public:
     const char *prearm_failure_reason(void) const override;
 
     // check all cores providing consistent attitudes for prearm checks
-    bool attitudes_consistent() const override;
+    bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const override;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred

@@ -1314,11 +1314,14 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
 }
 
 // check all cores providing consistent attitudes for prearm checks
-bool AP_AHRS_NavEKF::attitudes_consistent() const
+bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const
 {
     // get primary attitude source's attitude as quaternion
     Quaternion primary_quat;
     primary_quat.from_euler(roll, pitch, yaw);
+
+    // only check yaw if compasses are being used
+    bool check_yaw = _compass && _compass->use_for_yaw();
 
     // check primary vs ekf2
     for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
@@ -1326,10 +1329,14 @@ bool AP_AHRS_NavEKF::attitudes_consistent() const
         Vector3f angle_diff;
         EKF2.getQuaternion(i, ekf2_quat);
         primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
-        if (safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y)) > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
             return false;
         }
-        if (fabsf(angle_diff.z) > ATTITUDE_CHECK_THRESH_YAW_RAD) {
+        diff = fabsf(angle_diff.z);
+        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(diff));
             return false;
         }
     }
@@ -1340,10 +1347,14 @@ bool AP_AHRS_NavEKF::attitudes_consistent() const
         Vector3f angle_diff;
         EKF3.getQuaternion(i, ekf3_quat);
         primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
-        if (safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y)) > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
             return false;
         }
-        if (fabsf(angle_diff.z) > ATTITUDE_CHECK_THRESH_YAW_RAD) {
+        diff = fabsf(angle_diff.z);
+        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(diff));
             return false;
         }
     }
@@ -1353,10 +1364,14 @@ bool AP_AHRS_NavEKF::attitudes_consistent() const
     Vector3f angle_diff;
     dcm_quat.from_axis_angle(_dcm_attitude);
     primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
-    if (safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y)) > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+    float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+    if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
         return false;
     }
-    if (fabsf(angle_diff.z) > ATTITUDE_CHECK_THRESH_YAW_RAD) {
+    diff = fabsf(angle_diff.z);
+    if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
         return false;
     }
 
