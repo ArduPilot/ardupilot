@@ -2,9 +2,6 @@
 
 #include "GCS_Mavlink.h"
 
-// default sensors are present and healthy: gyro, accelerometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
-#define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS | MAV_SYS_STATUS_SENSOR_BATTERY)
-
 void Sub::gcs_send_heartbeat()
 {
     gcs().send_message(MSG_HEARTBEAT);
@@ -84,146 +81,17 @@ MAV_STATE GCS_MAVLINK_Sub::system_status() const
     return MAV_STATE_STANDBY;
 }
 
-void Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
-                                  uint32_t &control_sensors_enabled,
-                                  uint32_t &control_sensors_health)
+void GCS_MAVLINK_Sub::send_nav_controller_output() const
 {
-    // default sensors present
-    control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
-
-    // first what sensors/controllers we have
-    if (g.compass_enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG; // compass present
-    }
-    if (ap.depth_sensor_present) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    }
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
-#if OPTFLOW == ENABLED
-    if (optflow.enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-
-    // all present sensors enabled by default except altitude and position control and motors which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
-                              ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
-                              ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_SENSOR_BATTERY);
-
-    switch (control_mode) {
-    case ALT_HOLD:
-    case AUTO:
-    case GUIDED:
-    case CIRCLE:
-    case SURFACE:
-    case POSHOLD:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
-        break;
-    default:
-        break;
-    }
-
-    // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
-    }
-
-    if (battery.num_instances() > 0) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-
-    // default to all healthy except baro, compass, gps and receiver which we set individually
-    control_sensors_health = control_sensors_present & ~(MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE |
-                             MAV_SYS_STATUS_SENSOR_3D_MAG |
-                             MAV_SYS_STATUS_SENSOR_GPS |
-                             MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
-
-    if (sensor_health.depth) { // check the internal barometer only
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    }
-    if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
-    if (gps.is_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
-#if OPTFLOW == ENABLED
-    if (optflow.healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-
-    if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
-    }
-    if (!ins.get_accel_health_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_ACCEL;
-    }
-
-    if (ahrs.initialised() && !ahrs.healthy()) {
-        // AHRS subsystem is unhealthy
-        control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
-    }
-
-    if (!battery.healthy() || battery.has_failsafed()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    switch (terrain.status()) {
-    case AP_Terrain::TerrainStatusDisabled:
-        break;
-    case AP_Terrain::TerrainStatusUnhealthy:
-        // To-Do: restore unhealthy terrain status reporting once terrain is used in Sub
-        //control_sensors_present |= MAV_SYS_STATUS_TERRAIN;
-        //control_sensors_enabled |= MAV_SYS_STATUS_TERRAIN;
-        //break;
-    case AP_Terrain::TerrainStatusOK:
-        control_sensors_present |= MAV_SYS_STATUS_TERRAIN;
-        control_sensors_enabled |= MAV_SYS_STATUS_TERRAIN;
-        control_sensors_health  |= MAV_SYS_STATUS_TERRAIN;
-        break;
-    }
-#endif
-
-#if RANGEFINDER_ENABLED == ENABLED
-    if (rangefinder_state.enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (rangefinder.has_data_orient(ROTATION_PITCH_270)) {
-            control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        }
-    }
-#endif
-
-    if (!ap.initialised || ins.calibrating()) {
-        // while initialising the gyros and accels are not enabled
-        control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-    }
-}
-
-void GCS_MAVLINK_Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
-                                              uint32_t &control_sensors_enabled,
-                                              uint32_t &control_sensors_health)
-{
-    return sub.get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health);
-}
-
-void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
-{
-    const Vector3f &targets = attitude_control.get_att_target_euler_cd();
+    const Vector3f &targets = sub.attitude_control.get_att_target_euler_cd();
     mavlink_msg_nav_controller_output_send(
         chan,
         targets.x * 1.0e-2f,
         targets.y * 1.0e-2f,
         targets.z * 1.0e-2f,
-        wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
-        MIN(wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
-        pos_control.get_alt_error() * 1.0e-2f,
+        sub.wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
+        MIN(sub.wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
+        sub.pos_control.get_alt_error() * 1.0e-2f,
         0,
         0);
 }
@@ -298,8 +166,12 @@ bool GCS_MAVLINK_Sub::send_info()
 /*
   send PID tuning message
  */
-void Sub::send_pid_tuning(mavlink_channel_t chan)
+void GCS_MAVLINK_Sub::send_pid_tuning()
 {
+    const Parameters &g = sub.g;
+    AP_AHRS &ahrs = AP::ahrs();
+    AC_AttitudeControl_Sub &attitude_control = sub.attitude_control;
+
     const Vector3f &gyro = ahrs.get_gyro();
     if (g.gcs_pid_mask & 1) {
         const AP_Logger::PID_Info &pid_info = attitude_control.get_rate_roll_pid().get_pid_info();
@@ -341,7 +213,7 @@ void Sub::send_pid_tuning(mavlink_channel_t chan)
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const AP_Logger::PID_Info &pid_info = pos_control.get_accel_z_pid().get_pid_info();
+        const AP_Logger::PID_Info &pid_info = sub.pos_control.get_accel_z_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info.desired*0.01f,
                                     -(ahrs.get_accel_ef_blended().z + GRAVITY_MSS),
@@ -381,11 +253,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_info();
         break;
 
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        sub.send_nav_controller_output(chan);
-        break;
-
     case MSG_RPM:
 #if RPM_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RPM);
@@ -398,11 +265,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         sub.terrain.send_request(chan);
 #endif
-        break;
-
-    case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        sub.send_pid_tuning(chan);
         break;
 
     default:
@@ -513,8 +375,6 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
 static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
     MSG_LOCAL_POSITION
-};
-static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
 };
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
@@ -977,6 +837,21 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     }     // end switch
 } // end handle mavlink
 
+uint64_t GCS_MAVLINK_Sub::capabilities() const
+{
+    return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_MISSION_INT |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
+            MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION |
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+            (sub.terrain.enabled() ? MAV_PROTOCOL_CAPABILITY_TERRAIN : 0) |
+#endif
+            MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
+            GCS_MAVLINK::capabilities()
+        );
+}
 
 // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
 void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t *msg)

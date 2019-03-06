@@ -83,6 +83,33 @@ protected:
     }
 };
 
+
+class AP_UAVCAN_RestartRequestHandler : public uavcan::IRestartRequestHandler {
+public:
+    bool handleRestartRequest(uavcan::NodeID request_source) override {
+        // swiped from reboot handling in GCS_Common.cpp
+        if (hal.util->get_soft_armed()) {
+            // refuse reboot when armed
+            return false;
+        }
+        AP_Notify *notify = AP_Notify::get_singleton();
+        if (notify) {
+            AP_Notify::flags.firmware_update = 1;
+            notify->update();
+        }
+        // force safety on
+        hal.rcout->force_safety_on();
+        hal.rcout->force_safety_no_wait();
+
+        // flush pending parameter writes
+        AP_Param::flush();
+
+        hal.scheduler->delay(200);
+        hal.scheduler->reboot(false);
+        return true;
+    }
+};
+
 class AP_UAVCAN_FileStorageBackend : public uavcan::dynamic_node_id_server::IStorageBackend
 {
     /**
@@ -271,6 +298,14 @@ bool AP_UAVCAN_Servers::init(uavcan::Node<0> &node)
         }
     }
 
+    if (_restart_request_handler == nullptr) {
+        _restart_request_handler = new AP_UAVCAN_RestartRequestHandler();
+        if (_restart_request_handler == nullptr) {
+            goto failed;
+        }
+    }
+    node.setRestartRequestHandler(_restart_request_handler);
+
     //Start Dynamic Node Server
     ret = _server_instance->init(node.getHardwareVersion().unique_id);
     if (ret < 0) {
@@ -281,6 +316,7 @@ bool AP_UAVCAN_Servers::init(uavcan::Node<0> &node)
     return true;
 
 failed:
+    delete _restart_request_handler;
     delete _storage_backend;
     delete _tracer;
     delete _server_instance;

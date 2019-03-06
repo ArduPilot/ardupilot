@@ -199,7 +199,7 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
     _destination = destination;
 
     // initialise distance
-    _distance_to_destination = get_distance(_origin, _destination);
+    _distance_to_destination = _origin.get_distance(_destination);
     _reached_destination = false;
 
     // set final desired speed
@@ -231,7 +231,7 @@ bool Mode::set_desired_location_NED(const Vector3f& destination, float next_leg_
         return false;
     }
     // apply offset
-    location_offset(destination_ned, destination.x, destination.y);
+    destination_ned.offset(destination.x, destination.y);
     set_desired_location(destination_ned, next_leg_bearing_cd);
     return true;
 }
@@ -552,7 +552,7 @@ void Mode::calc_stopping_location(Location& stopping_loc)
     // calculate stopping position from current location in meters
     const Vector2f stopping_offset = velocity.normalized() * stopping_dist;
 
-    location_offset(stopping_loc, stopping_offset.x, stopping_offset.y);
+    stopping_loc.offset(stopping_offset.x, stopping_offset.y);
 }
 
 Mode *Rover::mode_from_mode_num(const enum Mode::Number num)

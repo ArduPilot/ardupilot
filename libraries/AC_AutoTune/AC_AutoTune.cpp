@@ -226,19 +226,19 @@ bool AC_AutoTune::start(void)
 const char *AC_AutoTune::level_issue_string() const
 {
     switch (level_problem.issue) {
-    case LEVEL_ISSUE_NONE:
+    case LevelIssue::NONE:
         return "None";
-    case LEVEL_ISSUE_ANGLE_ROLL:
+    case LevelIssue::ANGLE_ROLL:
         return "Angle(R)";
-    case LEVEL_ISSUE_ANGLE_PITCH:
+    case LevelIssue::ANGLE_PITCH:
         return "Angle(P)";
-    case LEVEL_ISSUE_ANGLE_YAW:
+    case LevelIssue::ANGLE_YAW:
         return "Angle(Y)";
-    case LEVEL_ISSUE_RATE_ROLL:
+    case LevelIssue::RATE_ROLL:
         return "Rate(R)";
-    case LEVEL_ISSUE_RATE_PITCH:
+    case LevelIssue::RATE_PITCH:
         return "Rate(P)";
-    case LEVEL_ISSUE_RATE_YAW:
+    case LevelIssue::RATE_YAW:
         return "Rate(Y)";
     }
     return "Bug";
@@ -344,8 +344,6 @@ void AC_AutoTune::do_gcs_announcements()
 // should be called at 100hz or more
 void AC_AutoTune::run()
 {
-    int32_t target_climb_rate_cms;
-
     // initialize vertical speeds and acceleration
     init_z_limits();
 
@@ -358,14 +356,14 @@ void AC_AutoTune::run()
         return;
     }
 
-    int32_t target_roll_cd, target_pitch_cd, target_yaw_rate_cds;
+    float target_roll_cd, target_pitch_cd, target_yaw_rate_cds;
     get_pilot_desired_rp_yrate_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
 
     // get pilot desired climb rate
-    target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
+    const float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
 
-    bool zero_rp_input = target_roll_cd == 0 && target_pitch_cd == 0;
-    if (!zero_rp_input || target_yaw_rate_cds != 0 || target_climb_rate_cms != 0) {
+    const bool zero_rp_input = is_zero(target_roll_cd) && is_zero(target_pitch_cd);
+    if (!zero_rp_input || !is_zero(target_yaw_rate_cds) || !is_zero(target_climb_rate_cms)) {
         if (!pilot_override) {
             pilot_override = true;
             // set gains to their original values
@@ -416,7 +414,7 @@ void AC_AutoTune::run()
 
 }
 
-bool AC_AutoTune::check_level(const LEVEL_ISSUE issue, const float current, const float maximum)
+bool AC_AutoTune::check_level(const LevelIssue issue, const float current, const float maximum)
 {
     if (current > maximum) {
         level_problem.current = current;
@@ -437,33 +435,33 @@ bool AC_AutoTune::currently_level()
         threshold_mul *= 2;
     }
 
-    if (!check_level(LEVEL_ISSUE_ANGLE_ROLL,
-                     fabsf(ahrs_view->roll_sensor - roll_cd),
+    if (!check_level(LevelIssue::ANGLE_ROLL,
+                     abs(ahrs_view->roll_sensor - roll_cd),
                      threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
 
-    if (!check_level(LEVEL_ISSUE_ANGLE_PITCH,
-                     fabsf(ahrs_view->pitch_sensor - pitch_cd),
+    if (!check_level(LevelIssue::ANGLE_PITCH,
+                     abs(ahrs_view->pitch_sensor - pitch_cd),
                      threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
-    if (!check_level(LEVEL_ISSUE_ANGLE_YAW,
+    if (!check_level(LevelIssue::ANGLE_YAW,
                      fabsf(wrap_180_cd(ahrs_view->yaw_sensor - desired_yaw_cd)),
                      threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
-    if (!check_level(LEVEL_ISSUE_RATE_ROLL,
+    if (!check_level(LevelIssue::RATE_ROLL,
                      (ToDeg(ahrs_view->get_gyro().x) * 100.0f),
                      threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD)) {
         return false;
     }
-    if (!check_level(LEVEL_ISSUE_RATE_PITCH,
+    if (!check_level(LevelIssue::RATE_PITCH,
                      (ToDeg(ahrs_view->get_gyro().y) * 100.0f),
                      threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD)) {
         return false;
     }
-    if (!check_level(LEVEL_ISSUE_RATE_YAW,
+    if (!check_level(LevelIssue::RATE_YAW,
                      (ToDeg(ahrs_view->get_gyro().z) * 100.0f),
                      threshold_mul*AUTOTUNE_LEVEL_RATE_Y_CD)) {
         return false;
@@ -1620,7 +1618,7 @@ bool AC_AutoTune::position_ok(void)
 }
 
 // get attitude for slow position hold in autotune mode
-void AC_AutoTune::get_poshold_attitude(int32_t &roll_cd_out, int32_t &pitch_cd_out, int32_t &yaw_cd_out)
+void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, float &yaw_cd_out)
 {
     roll_cd_out = pitch_cd_out = 0;
 

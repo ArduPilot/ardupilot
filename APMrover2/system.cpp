@@ -27,8 +27,6 @@ void Rover::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
-    init_capabilities();
-
     //
     // Check the EEPROM format version before loading any parameters from EEPROM.
     //
@@ -197,6 +195,12 @@ void Rover::startup_ground(void)
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
 #endif
+
+#ifdef ENABLE_SCRIPTING
+    if (!g2.scripting.init()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
+    }
+#endif // ENABLE_SCRIPTING
 
     // we don't want writes to the serial port to cause us to pause
     // so set serial ports non-blocking once we are ready to drive

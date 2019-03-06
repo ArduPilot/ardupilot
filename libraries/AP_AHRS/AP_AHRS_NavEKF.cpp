@@ -27,6 +27,9 @@
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
+#define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
+#define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
+
 extern const AP_HAL::HAL& hal;
 
 // constructor
@@ -1308,6 +1311,56 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
 
     }
     return nullptr;
+}
+
+// check all cores providing consistent attitudes for prearm checks
+bool AP_AHRS_NavEKF::attitudes_consistent() const
+{
+    // get primary attitude source's attitude as quaternion
+    Quaternion primary_quat;
+    primary_quat.from_euler(roll, pitch, yaw);
+
+    // check primary vs ekf2
+    for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
+        Quaternion ekf2_quat;
+        Vector3f angle_diff;
+        EKF2.getQuaternion(i, ekf2_quat);
+        primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
+        if (safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y)) > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            return false;
+        }
+        if (fabsf(angle_diff.z) > ATTITUDE_CHECK_THRESH_YAW_RAD) {
+            return false;
+        }
+    }
+
+    // check primary vs ekf3
+    for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
+        Quaternion ekf3_quat;
+        Vector3f angle_diff;
+        EKF3.getQuaternion(i, ekf3_quat);
+        primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
+        if (safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y)) > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            return false;
+        }
+        if (fabsf(angle_diff.z) > ATTITUDE_CHECK_THRESH_YAW_RAD) {
+            return false;
+        }
+    }
+
+    // check primary vs dcm
+    Quaternion dcm_quat;
+    Vector3f angle_diff;
+    dcm_quat.from_axis_angle(_dcm_attitude);
+    primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
+    if (safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y)) > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+        return false;
+    }
+    if (fabsf(angle_diff.z) > ATTITUDE_CHECK_THRESH_YAW_RAD) {
+        return false;
+    }
+
+    return true;
 }
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians

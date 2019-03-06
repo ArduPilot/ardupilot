@@ -69,6 +69,10 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Tracker.h"
 
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -139,11 +143,6 @@ private:
     GCS_Tracker _gcs; // avoid using this; use gcs()
     GCS_Tracker &gcs() { return _gcs; }
 
-    // variables for extended status MAVLink messages
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
-
     AP_BoardConfig BoardConfig;
 
 #if HAL_WITH_UAVCAN
@@ -159,6 +158,10 @@ private:
     struct Location current_loc;
 
     enum ControlMode control_mode  = INITIALISING;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif
 
     // Vehicle state
     struct {
@@ -193,17 +196,18 @@ private:
 
     uint8_t one_second_counter = 0;
     bool target_set = false;
+    bool stationary = true; // are we using the start lat and log?
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
+     // true if the compass's initial location has been set
+    bool compass_init_location;
+
     // AntennaTracker.cpp
     void one_second_loop();
     void ten_hz_logging_loop();
-
-    // capabilities.cpp
-    void init_capabilities(void);
 
     // control_auto.cpp
     void update_auto(void);
@@ -239,12 +243,14 @@ private:
 
     // sensors.cpp
     void update_ahrs();
+    void init_compass();
+    void compass_save();
+    void init_compass_location();
     void update_compass(void);
     void compass_cal_update();
     void accel_cal_update(void);
     void update_GPS(void);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
-    void update_sensor_status_flags();
 
     // servos.cpp
     void init_servos();
@@ -260,8 +266,8 @@ private:
     // system.cpp
     void init_tracker();
     bool get_home_eeprom(struct Location &loc);
-    void set_home_eeprom(struct Location temp);
-    void set_home(struct Location temp);
+    bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
+    bool set_home(const Location &temp) WARN_IF_UNUSED;
     void arm_servos();
     void disarm_servos();
     void prepare_servos();

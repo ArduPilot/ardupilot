@@ -2,7 +2,9 @@
 /// @brief   Handles rally point storage and retrieval.
 #include "AP_Rally.h"
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <StorageManager/StorageManager.h>
 
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
@@ -47,9 +49,7 @@ const AP_Param::GroupInfo AP_Rally::var_info[] = {
 };
 
 // constructor
-AP_Rally::AP_Rally(AP_AHRS &ahrs) 
-    : _ahrs(ahrs)
-    , _last_change_time_ms(0xFFFFFFFF)
+AP_Rally::AP_Rally()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
@@ -107,7 +107,7 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) co
     //Currently can't do true AGL on the APM.  Relative altitudes are
     //relative to HOME point's altitude.  Terrain on the board is inbound
     //for the PX4, though.  This line will need to be updated when that happens:
-    ret.alt = (rally_loc.alt*100UL) + _ahrs.get_home().alt;
+    ret.alt = (rally_loc.alt*100UL) + AP::ahrs().get_home().alt;
 
     ret.lat = rally_loc.lat;
     ret.lng = rally_loc.lng;
@@ -126,7 +126,7 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
             continue;
         }
         Location rally_loc = rally_location_to_location(next_rally);
-        float dis = get_distance(current_loc, rally_loc);
+        float dis = current_loc.get_distance(rally_loc);
 
         if (is_valid(rally_loc) && (dis < min_dis || min_dis < 0)) {
             min_dis = dis;
@@ -148,7 +148,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
 {
     RallyLocation ral_loc = {};
     Location return_loc = {};
-    const struct Location &home_loc = _ahrs.get_home();
+    const struct Location &home_loc = AP::ahrs().get_home();
     
     // no valid rally point, return home position
     return_loc = home_loc;
@@ -158,7 +158,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         Location loc = rally_location_to_location(ral_loc);
         // use the rally point if it's closer then home, or we aren't generally considering home as acceptable
-        if (!_rally_incl_home  || (get_distance(current_loc, loc) < get_distance(current_loc, return_loc))) {
+        if (!_rally_incl_home  || (current_loc.get_distance(loc) < current_loc.get_distance(return_loc))) {
             return_loc = rally_location_to_location(ral_loc);
         }
     }

@@ -47,11 +47,6 @@
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
-#include <AC_PID/AC_P.h>               // P library
-#include <AC_PID/AC_PID.h>             // PID library
-#include <AC_PID/AC_PI_2D.h>           // PI  library (2-axis)
-#include <AC_PID/AC_PID_2D.h>          // PID library (2-axis)
-#include <AC_PID/AC_HELI_PID.h>        // Heli specific Rate PID library
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
@@ -168,6 +163,10 @@
 #endif
 #if RPM_ENABLED == ENABLED
  #include <AP_RPM/AP_RPM.h>
+#endif
+
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
 #endif
 
 // Local modules
@@ -313,14 +312,13 @@ private:
             uint8_t system_time_set_unused  : 1; // 16      // true if the system time has been set from the GPS
             uint8_t gps_glitching           : 1; // 17      // true if GPS glitching is affecting navigation accuracy
             uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
-            uint8_t motor_emergency_stop    : 1; // 21      // motor estop switch, shuts off motors when enabled
-            uint8_t land_repo_active        : 1; // 22      // true if the pilot is overriding the landing position
-            uint8_t motor_interlock_switch  : 1; // 23      // true if pilot is requesting motor interlock enable
-            uint8_t in_arming_delay         : 1; // 24      // true while we are armed but waiting to spin motors
-            uint8_t initialised_params      : 1; // 25      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
-            uint8_t compass_init_location   : 1; // 26      // true when the compass's initial location has been set
-            uint8_t unused2                 : 1; // 27      // aux switch rc_override is allowed
-            uint8_t armed_with_switch       : 1; // 28      // we armed using a arming switch
+            uint8_t land_repo_active        : 1; // 21      // true if the pilot is overriding the landing position
+            uint8_t motor_interlock_switch  : 1; // 22      // true if pilot is requesting motor interlock enable
+            uint8_t in_arming_delay         : 1; // 23      // true while we are armed but waiting to spin motors
+            uint8_t initialised_params      : 1; // 24      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
+            uint8_t compass_init_location   : 1; // 25      // true when the compass's initial location has been set
+            uint8_t unused2                 : 1; // 26      // aux switch rc_override is allowed
+            uint8_t armed_with_switch       : 1; // 27      // we armed using a arming switch
         };
         uint32_t value;
     } ap_t;
@@ -417,11 +415,6 @@ private:
 #if OSD_ENABLED == ENABLED
     AP_OSD osd;
 #endif
-    
-    // Variables for extended status MAVLink messages
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
@@ -501,7 +494,7 @@ private:
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally_Copter rally{ahrs};
+    AP_Rally_Copter rally;
 #endif
 
     // RSSI
@@ -618,7 +611,6 @@ private:
     void set_failsafe_radio(bool b);
     void set_failsafe_gcs(bool b);
     void update_using_interlock();
-    void set_motor_emergency_stop(bool b);
 
     // ArduCopter.cpp
     void fast_loop();
@@ -657,9 +649,6 @@ private:
 
     // baro_ground_effect.cpp
     void update_ground_effect_detector(void);
-
-    // capabilities.cpp
-    void init_capabilities(void);
 
     // commands.cpp
     void update_home_from_EKF();
@@ -718,7 +707,6 @@ private:
 
     // GCS_Mavlink.cpp
     void gcs_send_heartbeat(void);
-    void send_nav_controller_output(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
 
     // heli.cpp
@@ -797,10 +785,6 @@ private:
     void convert_pid_parameters(void);
     void convert_lgr_parameters(void);
 
-    // position_vector.cpp
-    float pv_alt_above_origin(float alt_above_home_cm);
-    float pv_alt_above_home(float alt_above_origin_cm);
-
     // precision_landing.cpp
     void init_precland();
     void update_precland();
@@ -830,7 +814,6 @@ private:
     void accel_cal_update(void);
     void init_proximity();
     void update_proximity();
-    void update_sensor_status_flags(void);
     void init_visual_odom();
     void winch_init();
     void winch_update();

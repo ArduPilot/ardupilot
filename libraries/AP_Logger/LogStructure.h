@@ -110,7 +110,8 @@ const struct UnitStructure log_Units[] = {
     { 'P', "Pa" },            // Pascal
     { 'w', "Ohm" },           // Ohm
     { 'Y', "us" },            // pulse width modulation in microseconds
-    { 'z', "Hz" }             // Hertz
+    { 'z', "Hz" },            // Hertz
+    { '#', "instance" }       // (e.g.)Sensor instance number
 };
 
 // this multiplier information applies to the raw value present in the
@@ -322,6 +323,15 @@ struct PACKED log_RCOUT {
     uint16_t chan12;
     uint16_t chan13;
     uint16_t chan14;
+};
+
+struct PACKED log_MAV {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t chan;
+    uint16_t packet_tx_count;
+    uint16_t packet_rx_success_count;
+    uint16_t packet_rx_drop_count;
 };
 
 struct PACKED log_RSSI {
@@ -1460,6 +1470,8 @@ Format characters in the format string for binary log messages
       "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
+    { LOG_MAV_MSG, sizeof(log_MAV),   \
+      "MAV", "QBHHH",   "TimeUS,chan,txp,rxp,rxdp", "s#---", "F-000" },   \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
@@ -1636,6 +1648,7 @@ enum LogMessages : uint8_t {
     LOG_OPTFLOW_MSG,
     LOG_EVENT_MSG,
     LOG_WHEELENCODER_MSG,
+    LOG_MAV_MSG,
     _LOG_LAST_MSG_
 };
 

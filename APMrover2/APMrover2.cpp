@@ -272,7 +272,7 @@ void Rover::one_second_loop(void)
     gcs().send_message(MSG_HEARTBEAT);
 
     // allow orientation change at runtime to aid config
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     set_control_channels();
 
@@ -299,7 +299,7 @@ void Rover::one_second_loop(void)
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    update_sensor_status_flags();
+    gcs().update_sensor_status_flags();
 
     // need to set "likely flying" when armed to allow for compass
     // learning to run
@@ -320,6 +320,12 @@ void Rover::update_GPS(void)
 
 void Rover::update_current_mode(void)
 {
+    // check for emergency stop
+    if (SRV_Channels::get_emergency_stop()) {
+        // relax controllers, motor stopping done at output level
+        g2.attitude_control.relax_I();
+    }
+
     control_mode->update();
 }
 

@@ -22,7 +22,7 @@
 // auto_init - initialise auto controller
 bool Copter::ModeAuto::init(bool ignore_checks)
 {
-    if ((copter.position_ok() && mission.num_commands() > 1) || ignore_checks) {
+    if (mission.num_commands() > 1 || ignore_checks) {
         _mode = Auto_Loiter;
 
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
@@ -629,7 +629,7 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:
-        cmd_complete = verify_loiter_time();
+        cmd_complete = verify_loiter_time(cmd);
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
@@ -1096,8 +1096,33 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // if no delay as well as not final waypoint set the waypoint as "fast"
     AP_Mission::Mission_Command temp_cmd;
+    bool fast_waypoint = false;
     if (loiter_time_max == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
-        copter.wp_nav->set_fast_waypoint(true);
+
+        // whether vehicle should stop at the target position depends upon the next command
+        switch (temp_cmd.id) {
+            case MAV_CMD_NAV_WAYPOINT:
+            case MAV_CMD_NAV_LOITER_UNLIM:
+            case MAV_CMD_NAV_LOITER_TURNS:
+            case MAV_CMD_NAV_LOITER_TIME:
+            case MAV_CMD_NAV_LAND:
+            case MAV_CMD_NAV_SPLINE_WAYPOINT:
+                // if next command's lat, lon is specified then do not slowdown at this waypoint
+                if ((temp_cmd.content.location.lat != 0) || (temp_cmd.content.location.lng != 0)) {
+                    fast_waypoint = true;
+                }
+                break;
+            case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+                // do not stop for RTL
+                fast_waypoint = true;
+                break;
+            case MAV_CMD_NAV_TAKEOFF:
+            default:
+                // always stop for takeoff commands
+                // for unsupported commands it is safer to stop
+                break;
+        }
+        copter.wp_nav->set_fast_waypoint(fast_waypoint);
     }
 }
 
@@ -1656,7 +1681,7 @@ bool Copter::ModeAuto::verify_loiter_unlimited()
 }
 
 // verify_loiter_time - check if we have loitered long enough
-bool Copter::ModeAuto::verify_loiter_time()
+bool Copter::ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     // return immediately if we haven't reached our destination
     if (!copter.wp_nav->reached_wp_destination()) {
@@ -1669,7 +1694,12 @@ bool Copter::ModeAuto::verify_loiter_time()
     }
 
     // check if loiter timer has run out
-    return (((millis() - loiter_time) / 1000) >= loiter_time_max);
+    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        return true;
+    }
+
+    return false;
 }
 
 // verify_loiter_to_alt - check if we have reached both destination
@@ -1750,9 +1780,8 @@ bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 			}
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 // verify_circle - check if we have circled the point enough
@@ -1805,9 +1834,8 @@ bool Copter::ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 #if NAV_GUIDED == ENABLED

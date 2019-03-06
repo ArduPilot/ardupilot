@@ -26,26 +26,8 @@ libraries/AP_HAL_ChibiOS/hwdef, in the files called hwdef-bl.dat
 We also have copies of binaries for some of the older bootloaders in
 this directory. They are:
 
-px4fmu_bl.bin:
-   for F405 based fmuv1
-   boots at 0x08004000
-   board ID 5
-
-px4fmuv2_bl.bin:
-   for F427 based fmuv2 boards
-   boots at 0x08004000
-   board ID 9
-
-px4fmuv4_bl.bin:
-   for F427 based fmuv4 boards
-   boots at 0x08004000
-   board ID 11
-
 iomcu_bl.bin:
    for IOMCU on fmuv2
-
-px4fmuv4pro_bl.bin:
-   for F427 based p4pro board from drotek
 
 skyviper_v2450_bl.bin:
    for F427 based skyviper-v2450 boards (based on fmuv3)

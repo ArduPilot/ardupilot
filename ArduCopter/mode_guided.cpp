@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_GUIDED_ENABLED == ENABLED
+
 /*
  * Init and run calls for guided flight mode
  */
@@ -38,13 +40,9 @@ struct Guided_Limit {
 // guided_init - initialise guided controller
 bool Copter::ModeGuided::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
-        // start in position control mode
-        pos_control_start();
-        return true;
-    }else{
-        return false;
-    }
+    // start in position control mode
+    pos_control_start();
+    return true;
 }
 
 
@@ -666,7 +664,7 @@ void Copter::ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const 
     // limit the velocity to prevent fence violations
     copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP(), pos_control->get_max_accel_xy(), curr_vel_des, G_Dt);
     // get avoidance adjusted climb rate
-    curr_vel_des.z = get_avoidance_adjusted_climbrate(curr_vel_des.z);    
+    curr_vel_des.z = get_avoidance_adjusted_climbrate(curr_vel_des.z);
 #endif
 
     // update position controller with new target
@@ -785,3 +783,5 @@ float Copter::ModeGuided::crosstrack_error() const
         return 0;
     }
 }
+
+#endif

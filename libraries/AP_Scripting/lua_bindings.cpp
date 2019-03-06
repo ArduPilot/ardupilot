@@ -219,8 +219,7 @@ static int location_distance(lua_State *L) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    lua_pushnumber(L, get_distance(*check_location(L, -2),
-                                   *check_location(L, -1)));
+    lua_pushnumber(L, check_location(L, -2)->get_distance(*check_location(L, -1)));
 
     return 1;
 }
@@ -272,9 +271,8 @@ static int location_offset(lua_State *L) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    location_offset(*check_location(L, -3),
-                    luaL_checknumber(L, -2),
-                    luaL_checknumber(L, -1));
+    check_location(L, -3)->offset(luaL_checknumber(L, -2),
+                                  luaL_checknumber(L, -1));
 
     lua_pop(L, 2);
 

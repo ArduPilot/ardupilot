@@ -81,6 +81,11 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_WindVane/AP_WindVane.h>
+
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -302,10 +307,6 @@ private:
     AP_DEVO_Telem devo_telemetry;
 #endif
 
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
-
     // 3D Location vectors
     // Location structure defined in AP_Common
     // The home location used for RTL.  The location is set when we first get stable GPS lock
@@ -396,9 +397,6 @@ private:
     void balancebot_pitch_control(float &throttle);
     bool is_balancebot() const;
 
-    // capabilities.cpp
-    void init_capabilities(void);
-
     // commands_logic.cpp
     void update_mission(void);
 
@@ -437,9 +435,7 @@ private:
     void fence_check();
 
     // GCS_Mavlink.cpp
-    void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
-    void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
@@ -497,7 +493,6 @@ private:
     void read_rangefinders(void);
     void init_proximity();
     void read_airspeed();
-    void update_sensor_status_flags(void);
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);

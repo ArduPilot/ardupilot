@@ -1219,3 +1219,37 @@ Vector3f AC_PosControl::sqrt_controller(const Vector3f& error, float p, float se
         return Vector3f(error.x*p, error.y*p, error.z);
     }
 }
+
+bool AC_PosControl::pre_arm_checks(const char *param_prefix,
+                                   char *failure_msg,
+                                   const uint8_t failure_msg_len)
+{
+    // validate AC_P members:
+    const struct {
+        const char *pid_name;
+        AC_P &p;
+    } ps[] = {
+        { "POSXY", get_pos_xy_p() },
+        { "POSZ", get_pos_z_p() },
+        { "VELZ", get_vel_z_p() },
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(ps); i++) {
+        // all AC_P's must have a positive P value:
+        if (!is_positive(ps[i].p.kP())) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, ps[i].pid_name);
+            return false;
+        }
+    }
+
+    // the z-control PID doesn't use FF, so P and I must be positive
+    if (!is_positive(get_accel_z_pid().kP())) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ACCZ_P must be > 0", param_prefix);
+        return false;
+    }
+    if (!is_positive(get_accel_z_pid().kI())) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ACCZ_I must be > 0", param_prefix);
+        return false;
+    }
+
+    return true;
+}

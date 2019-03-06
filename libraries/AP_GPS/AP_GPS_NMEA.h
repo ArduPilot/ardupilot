@@ -53,7 +53,8 @@ class AP_GPS_NMEA : public AP_GPS_Backend
     friend class AP_GPS_NMEA_Test;
 
 public:
-	AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+
+    using AP_GPS_Backend::AP_GPS_Backend;
 
     /// Checks the serial receive buffer for characters,
     /// attempts to parse NMEA data and updates internal state

@@ -11,10 +11,10 @@ class DigitalSource_Sysfs : public AP_HAL::DigitalSource {
     friend class GPIO_Sysfs;
 public:
     ~DigitalSource_Sysfs();
-    uint8_t read();
-    void write(uint8_t value);
-    void mode(uint8_t output);
-    void toggle();
+    uint8_t read() override;
+    void write(uint8_t value) override;
+    void mode(uint8_t output) override;
+    void toggle() override;
 private:
     /* Only GPIO_Sysfs will be able to instantiate */
     DigitalSource_Sysfs(unsigned pin, int value_fd);
@@ -36,7 +36,7 @@ public:
         return static_cast<GPIO_Sysfs*>(gpio);
     }
 
-    void init();
+    void init() override;
 
     void pinMode(uint8_t vpin, uint8_t output) override;
     uint8_t read(uint8_t vpin) override;

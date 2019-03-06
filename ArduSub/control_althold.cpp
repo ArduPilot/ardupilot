@@ -95,7 +95,7 @@ void Sub::althold_run()
         }
     }
 
-    if (fabsf(channel_throttle->norm_input()-0.5) > 0.05) { // Throttle input above 5%
+    if (fabsf(channel_throttle->norm_input()-0.5f) > 0.05f) { // Throttle input above 5%
         // output pilot's throttle
         attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
         // reset z targets to current values

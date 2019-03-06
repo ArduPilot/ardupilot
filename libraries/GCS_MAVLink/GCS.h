@@ -95,6 +95,8 @@ enum ap_message : uint8_t {
     MSG_AOA_SSA,
     MSG_LANDING,
     MSG_ESC_TELEMETRY,
+    MSG_ORIGIN,
+    MSG_HOME,
     MSG_NAMED_FLOAT,
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
@@ -193,6 +195,8 @@ public:
     // found.  Rover overrides this!
     virtual void send_rangefinder() const;
     void send_proximity() const;
+    virtual void send_nav_controller_output() const = 0;
+    virtual void send_pid_tuning() = 0;
     void send_ahrs2();
     void send_ahrs3();
     void send_system_time();
@@ -218,8 +222,8 @@ public:
     void send_mount_status() const;
     void send_named_float(const char *name, float value) const;
     void send_gimbal_report() const;
-    void send_home() const;
-    void send_ekf_origin() const;
+    void send_home_position() const;
+    void send_gps_global_origin() const;
     virtual void send_position_target_global_int() { };
     void send_servo_output_raw();
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
@@ -280,6 +284,8 @@ public:
     // vehicle subclass cpp files should define this:
     static const struct stream_entries all_stream_entries[];
 
+    virtual uint64_t capabilities() const;
+
 protected:
 
     virtual bool in_hil_mode() const { return false; }
@@ -298,7 +304,6 @@ protected:
     virtual MAV_MODE base_mode() const = 0;
     virtual uint32_t custom_mode() const = 0;
     virtual MAV_STATE system_status() const = 0;
-    virtual void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health) = 0;
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
@@ -419,6 +424,7 @@ protected:
 
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);
+    virtual void send_global_position_int();
 
     // message sending functions:
     bool try_send_compass_message(enum ap_message id);
@@ -443,6 +449,8 @@ protected:
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
 private:
+
+    void log_mavlink_stats();
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
 
@@ -681,9 +689,10 @@ private:
     // no idea where we are:
     struct Location global_position_current_loc;
 
-    void send_global_position_int();
-
     void zero_rc_outputs();
+
+    uint8_t last_tx_seq;
+    uint16_t send_packet_count;
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     struct {
@@ -699,6 +708,7 @@ private:
     uint16_t max_slowdown_ms;
 #endif
 
+    uint32_t last_mavlink_stats_logged;
 };
 
 /// @class GCS
@@ -734,8 +744,6 @@ public:
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_named_float(const char *name, float value) const;
-    void send_home() const;
-    void send_ekf_origin() const;
 
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
@@ -771,6 +779,15 @@ public:
 
     // update uart pass-thru
     void update_passthru();
+
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+
+protected:
+
+    uint32_t control_sensors_present;
+    uint32_t control_sensors_enabled;
+    uint32_t control_sensors_health;
+    virtual void update_sensor_status_flags(void) = 0;
 
 private:
 

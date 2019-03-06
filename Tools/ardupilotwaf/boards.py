@@ -35,7 +35,7 @@ class Board:
         self.with_uavcan = False
 
     def configure(self, cfg):
-        cfg.env.TOOLCHAIN = self.toolchain
+        cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
         cfg.env.ROMFS_FILES = []
         cfg.load('toolchain')
         cfg.load('cxx_checks')
@@ -158,6 +158,7 @@ class Board:
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
             '-Werror=format-security',
+            '-Werror=enum-compare',
             '-Werror=array-bounds',
             '-Werror=uninitialized',
             '-Werror=init-self',
@@ -175,8 +176,10 @@ class Board:
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
 
+                '-Werror=inconsistent-missing-override',
+                '-Werror=overloaded-virtual',
+
                 '-Wno-gnu-designator',
-                '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
             ]
@@ -291,6 +294,15 @@ Please use a replacement build as follows:
  px4-v4pro  Use DrotekP3Pro build
 ''' % ctx.env.BOARD)
 
+        boards = _board_classes.keys()
+        if not ctx.env.BOARD in boards:
+            # try case-insensitive match
+            for b in boards:
+                if b.upper() == ctx.env.BOARD.upper():
+                    ctx.env.BOARD = b
+                    break
+        if not ctx.env.BOARD in boards:
+            ctx.fatal("Invalid board '%s': choices are %s" % (ctx.env.BOARD, ', '.join(boards)))
         _board = _board_classes[ctx.env.BOARD]()
     return _board
 
@@ -405,7 +417,6 @@ class chibios(Board):
             '-Werror=unused-but-set-variable',
             '-Wno-missing-field-initializers',
             '-Wno-trigraphs',
-            '-Os',
             '-fno-strict-aliasing',
             '-fomit-frame-pointer',
             '-falign-functions=16',
@@ -434,7 +445,6 @@ class chibios(Board):
         bldnode = cfg.bldnode.make_node(self.name)
         env.BUILDROOT = bldnode.make_node('').abspath()
         env.LINKFLAGS = cfg.env.CPU_FLAGS + [
-            '-Os',
             '-fomit-frame-pointer',
             '-falign-functions=16',
             '-ffunction-sections',

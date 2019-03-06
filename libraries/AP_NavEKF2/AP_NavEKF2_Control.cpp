@@ -83,7 +83,7 @@ void NavEKF2_core::setWindMagStateLearningMode()
         }
     }
 
-    // determine if the vehicle is manoevring
+    // determine if the vehicle is manoeuvring
     if (accNavMagHoriz > 0.5f) {
         manoeuvring = true;
     } else {
@@ -261,7 +261,7 @@ void NavEKF2_core::setAidingMode()
 
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (PV_AidingMode != PV_AidingModePrev) {
-        // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
+        // set various usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         switch (PV_AidingMode) {
         case AID_NONE:
             // We have ceased aiding

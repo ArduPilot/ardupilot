@@ -15,7 +15,7 @@ void Tracker::update_vehicle_pos_estimate()
         vehicle.location_estimate = vehicle.location;
         float north_offset = vehicle.vel.x * dt;
         float east_offset = vehicle.vel.y * dt;
-        location_offset(vehicle.location_estimate, north_offset, east_offset);
+        vehicle.location_estimate.offset(north_offset, east_offset);
     	vehicle.location_estimate.alt += vehicle.vel.z * 100.0f * dt;
         // set valid_location flag
         vehicle.location_valid = true;
@@ -31,10 +31,12 @@ void Tracker::update_vehicle_pos_estimate()
  */
 void Tracker::update_tracker_position()
 {
-    // update our position if we have at least a 2D fix
+    Location temp_loc;
+
     // REVISIT: what if we lose lock during a mission and the antenna is moving?
-    if (!ahrs.get_position(current_loc) && (gps.status() >= AP_GPS::GPS_OK_FIX_2D)) {
-        current_loc = gps.location();
+    if (ahrs.get_position(temp_loc)) {
+        stationary = false;
+        current_loc = temp_loc;
     }
 }
 
@@ -56,7 +58,7 @@ void Tracker::update_bearing_and_distance()
     }
 
     // calculate distance to vehicle
-    nav_status.distance = get_distance(current_loc, vehicle.location_estimate);
+    nav_status.distance = current_loc.get_distance(vehicle.location_estimate);
 
     // calculate altitude difference to vehicle using gps
     if (g.alt_source == ALT_SOURCE_GPS){
@@ -99,6 +101,10 @@ void Tracker::update_tracking(void)
 
     // do not perform updates if safety switch is disarmed (i.e. servos can't be moved)
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        return;
+    }
+    // do not move if we are not armed:
+    if (!hal.util->get_soft_armed()) {
         return;
     }
 

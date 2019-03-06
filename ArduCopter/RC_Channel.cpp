@@ -74,7 +74,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case MISSION_RESET:
     case ATTCON_FEEDFWD:
     case ATTCON_ACCEL_LIM:
-    case MOTOR_ESTOP:
     case MOTOR_INTERLOCK:
     case AVOID_ADSB:
     case PRECISION_LOITER:
@@ -352,11 +351,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                     break;
             }
 #endif
-            break;
-
-        case MOTOR_ESTOP:
-            // Turn on Emergency Stop logic when channel is high
-            copter.set_motor_emergency_stop(ch_flag == HIGH);
             break;
 
         case MOTOR_INTERLOCK:

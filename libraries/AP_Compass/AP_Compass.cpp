@@ -631,7 +631,7 @@ void Compass::_probe_external_i2c_compasses(void)
                                                                         GET_I2C_DEVICE(i, HAL_COMPASS_ICM20948_I2C_ADDR),
                                                                         all_external, ROTATION_PITCH_180_YAW_90));
     }
-    
+
     // lis3mdl on bus 0 with default address
     FOREACH_I2C_INTERNAL(i) {
         ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS3MDL_I2C_ADDR),
@@ -667,7 +667,8 @@ void Compass::_probe_external_i2c_compasses(void)
     }
     
     // IST8310 on external and internal bus
-    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5) {
+    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5 &&
+        AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV6) {
         enum Rotation default_rotation;
 
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_AEROFC) {
@@ -739,6 +740,7 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PIXRACER: 
     case AP_BoardConfig::PX4_BOARD_MINDPXV2: 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
     case AP_BoardConfig::PX4_BOARD_AEROFC:
         _probe_external_i2c_compasses();
@@ -789,9 +791,11 @@ void Compass::_detect_backends(void)
         // we run the AK8963 only on the 2nd MPU9250, which leaves the
         // first MPU9250 to run without disturbance at high rate
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(1, ROTATION_YAW_270));
+        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe_ICM20948(0, ROTATION_ROLL_180_YAW_270));
         break;
 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
         FOREACH_I2C_EXTERNAL(i) {
             ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8310_I2C_ADDR),
                                                                   true, ROTATION_ROLL_180_YAW_90));

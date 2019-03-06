@@ -92,6 +92,11 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
 AP_RPM::AP_RPM(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_RPM must be singleton");
+    }
+    _singleton = this;
 }
 
 /*
@@ -173,3 +178,7 @@ bool AP_RPM::enabled(uint8_t instance) const
     }
     return true;
 }
+
+// singleton instance
+AP_RPM *AP_RPM::_singleton;
+

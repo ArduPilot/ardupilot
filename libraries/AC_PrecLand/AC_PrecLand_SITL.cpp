@@ -1,41 +1,32 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PrecLand_SITL.h"
 
-extern const AP_HAL::HAL& hal;
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <stdio.h>
-
+#include "AP_AHRS/AP_AHRS.h"
 // init - perform initialisation of this backend
 void AC_PrecLand_SITL::init()
 {
+    _sitl = AP::sitl();
 }
 
 // update - give chance to driver to get updates from sensor
 void AC_PrecLand_SITL::update()
 {
-    const uint32_t now = AP_HAL::millis();
-    if (_los_meas_time_ms + 10 > now) { // 100Hz update
-        return;
+    _state.healthy = _sitl->precland_sim.healthy();
+
+    if (_state.healthy && _sitl->precland_sim.last_update_ms() != _los_meas_time_ms) {
+        const Vector3f position = _sitl->precland_sim.get_target_position();
+        const Matrix3f &body_to_ned = AP::ahrs().get_rotation_body_to_ned();
+        _los_meas_body =  body_to_ned.mul_transpose(-position);
+        _los_meas_body /= _los_meas_body.length();
+        _have_los_meas = true;
+        _los_meas_time_ms = _sitl->precland_sim.last_update_ms();
+    } else {
+        _have_los_meas = false;
     }
 
-    // get new sensor data; we always point home
-    Vector3f home;
-    if (! AP::ahrs().get_relative_position_NED_home(home)) {
-        _state.healthy = false;
-        return;
-    }
-    if (home.length() > 10.0f) { // we can see the target out to 10 metres
-        return;
-    }
-    _state.healthy = true;
-
-    const Matrix3f &body_to_ned = AP::ahrs().get_rotation_body_to_ned();
-
-    _los_meas_body =  body_to_ned.mul_transpose(-home);
-    _los_meas_body /= _los_meas_body.length();
-    _los_meas_time_ms = now;
+    _have_los_meas = _have_los_meas && AP_HAL::millis() - _los_meas_time_ms <= 1000;
 }
 
 bool AC_PrecLand_SITL::have_los_meas() {

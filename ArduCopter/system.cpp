@@ -28,8 +28,6 @@ void Copter::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
-    init_capabilities();
-
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
     //
@@ -245,6 +243,12 @@ void Copter::init_ardupilot()
     rc().init();
 
     startup_INS_ground();
+
+#ifdef ENABLE_SCRIPTING
+    if (!g2.scripting.init()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
+    }
+#endif // ENABLE_SCRIPTING
 
     // set landed flags
     set_land_complete(true);

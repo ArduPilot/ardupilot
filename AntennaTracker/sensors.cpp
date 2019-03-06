@@ -8,6 +8,35 @@ void Tracker::update_ahrs()
     ahrs.update();
 }
 
+// initialise compass
+void Tracker::init_compass()
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    if (!compass.init()|| !compass.read()) {
+        hal.console->printf("Compass initialisation failed!\n");
+        g.compass_enabled = false;
+    } else {
+        ahrs.set_compass(&compass);
+    }
+}
+
+/*
+  initialise compass's location used for declination
+ */
+void Tracker::init_compass_location(void)
+{
+    // update initial location used for declination
+    if (!compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            compass_init_location = true;
+        }
+    }
+}
 
 /*
   read and update compass
@@ -28,6 +57,15 @@ void Tracker::update_compass(void)
 void Tracker::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
+    }
+}
+
+// Save compass offsets
+void Tracker::compass_save() {
+    if (g.compass_enabled &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !hal.util->get_soft_armed()) {
+        compass.save_offsets();
     }
 }
 
@@ -71,7 +109,9 @@ void Tracker::update_GPS(void)
                 // Now have an initial GPS position
                 // use it as the HOME position in future startups
                 current_loc = gps.location();
-                set_home(current_loc);
+                if (!set_home(current_loc)) {
+                    // silently ignored
+                }
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically
@@ -88,70 +128,4 @@ void Tracker::handle_battery_failsafe(const char* type_str, const int8_t action)
     // NOP
     // useful failsafes in the future would include actually recalling the vehicle
     // that is tracked before the tracker loses power to continue tracking it
-}
-
-// update sensors and subsystems present, enabled and healthy flags for reporting to GCS
-void Tracker::update_sensor_status_flags()
-{
-    // default sensors present
-    control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
-
-    // first what sensors/controllers we have
-    if (g.compass_enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;  // compass present
-    }
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
-    if (logger.logging_present()) {  // primary logging only (usually File)
-        control_sensors_present |= MAV_SYS_STATUS_LOGGING;
-    }
-
-    // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control and motor output which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_LOGGING &
-                                                         ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
-                                                         ~MAV_SYS_STATUS_SENSOR_BATTERY);
-
-    if (logger.logging_enabled()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
-    }
-
-    // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
-    }
-
-    if (battery.num_instances() > 0) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-
-    // default to all healthy except compass and gps which we set individually
-    control_sensors_health = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_3D_MAG & ~MAV_SYS_STATUS_SENSOR_GPS);
-    if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
-    if (gps.is_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
-    if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
-    }
-    if (!ins.get_accel_health_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_ACCEL;
-    }
-    if (ahrs.initialised() && !ahrs.healthy()) {
-        // AHRS subsystem is unhealthy
-        control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
-    }
-    if (logger.logging_failed()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
-    }
-    if (!battery.healthy() || battery.has_failsafed()) {
-        control_sensors_enabled &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-    if (ins.calibrating()) {
-        // while initialising the gyros and accels are not enabled
-        control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-    }
 }

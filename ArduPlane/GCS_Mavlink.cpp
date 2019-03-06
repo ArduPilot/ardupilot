@@ -23,6 +23,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case MANUAL:
     case TRAINING:
     case ACRO:
+    case QACRO:
         _base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case STABILIZE:
@@ -153,19 +154,12 @@ void Plane::send_fence_status(mavlink_channel_t chan)
 #endif
 
 
-void GCS_MAVLINK_Plane::get_sensor_status_flags(uint32_t &present,
-                                                uint32_t &enabled,
-                                                uint32_t &health)
+void GCS_MAVLINK_Plane::send_nav_controller_output() const
 {
-    plane.update_sensor_status_flags();
-
-    present = plane.control_sensors_present;
-    enabled = plane.control_sensors_enabled;
-    health = plane.control_sensors_health;
-}
-
-void Plane::send_nav_controller_output(mavlink_channel_t chan)
-{
+    if (plane.control_mode == MANUAL) {
+        return;
+    }
+    const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.in_vtol_mode()) {
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
         bool wp_nav_valid = quadplane.using_wp_nav();
@@ -178,18 +172,19 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
             wp_nav_valid ? quadplane.wp_nav->get_wp_bearing_to_destination() : 0,
             wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0,
             (plane.control_mode != QSTABILIZE) ? quadplane.pos_control->get_alt_error() * 1.0e-2f : 0,
-            airspeed_error * 100,
+            plane.airspeed_error * 100,
             wp_nav_valid ? quadplane.wp_nav->crosstrack_error() : 0);
     } else {
+        const AP_Navigation *nav_controller = plane.nav_controller;
         mavlink_msg_nav_controller_output_send(
             chan,
-            nav_roll_cd * 0.01f,
-            nav_pitch_cd * 0.01f,
+            plane.nav_roll_cd * 0.01f,
+            plane.nav_pitch_cd * 0.01f,
             nav_controller->nav_bearing_cd() * 0.01f,
             nav_controller->target_bearing_cd() * 0.01f,
-            MIN(auto_state.wp_distance, UINT16_MAX),
-            altitude_error_cm * 0.01f,
-            airspeed_error * 100,
+            MIN(plane.auto_state.wp_distance, UINT16_MAX),
+            plane.altitude_error_cm * 0.01f,
+            plane.airspeed_error * 100,
             nav_controller->crosstrack_error());
     }
 }
@@ -329,7 +324,7 @@ void NOINLINE Plane::send_rpm(mavlink_channel_t chan)
 }
 
 // sends a single pid info over the provided channel
-void Plane::send_pid_info(const mavlink_channel_t chan, const AP_Logger::PID_Info *pid_info,
+void GCS_MAVLINK_Plane::send_pid_info(const AP_Logger::PID_Info *pid_info,
                           const uint8_t axis, const float achieved)
 {
     if (pid_info == nullptr) {
@@ -350,44 +345,52 @@ void Plane::send_pid_info(const mavlink_channel_t chan, const AP_Logger::PID_Inf
 /*
   send PID tuning message
  */
-void Plane::send_pid_tuning(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_pid_tuning()
 {
+    if (plane.control_mode == MANUAL) {
+        // no PIDs should be used in manual
+        return;
+    }
+
+    const Parameters &g = plane.g;
+    AP_AHRS &ahrs = AP::ahrs();
+
     const Vector3f &gyro = ahrs.get_gyro();
     const AP_Logger::PID_Info *pid_info;
     if (g.gcs_pid_mask & TUNING_BITS_ROLL) {
-        if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
+        if (plane.quadplane.in_vtol_mode()) {
+            pid_info = &plane.quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
         } else {
-            pid_info = &rollController.get_pid_info();
+            pid_info = &plane.rollController.get_pid_info();
         }
-        send_pid_info(chan, pid_info, PID_TUNING_ROLL, degrees(gyro.x));
+        send_pid_info(pid_info, PID_TUNING_ROLL, degrees(gyro.x));
     }
     if (g.gcs_pid_mask & TUNING_BITS_PITCH) {
-        if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
+        if (plane.quadplane.in_vtol_mode()) {
+            pid_info = &plane.quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
         } else {
-            pid_info = &pitchController.get_pid_info();
+            pid_info = &plane.pitchController.get_pid_info();
         }
-        send_pid_info(chan, pid_info, PID_TUNING_PITCH, degrees(gyro.y));
+        send_pid_info(pid_info, PID_TUNING_PITCH, degrees(gyro.y));
     }
     if (g.gcs_pid_mask & TUNING_BITS_YAW) {
-        if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.attitude_control->get_rate_yaw_pid().get_pid_info();
+        if (plane.quadplane.in_vtol_mode()) {
+            pid_info = &plane.quadplane.attitude_control->get_rate_yaw_pid().get_pid_info();
         } else {
-            pid_info = &yawController.get_pid_info();
+            pid_info = &plane.yawController.get_pid_info();
         }
-        send_pid_info(chan, pid_info, PID_TUNING_YAW, degrees(gyro.z));
+        send_pid_info(pid_info, PID_TUNING_YAW, degrees(gyro.z));
     }
     if (g.gcs_pid_mask & TUNING_BITS_STEER) {
-        send_pid_info(chan, &steerController.get_pid_info(), PID_TUNING_STEER, degrees(gyro.z));
+        send_pid_info(&plane.steerController.get_pid_info(), PID_TUNING_STEER, degrees(gyro.z));
     }
-    if ((g.gcs_pid_mask & TUNING_BITS_LAND) && (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND)) {
-        send_pid_info(chan, landing.get_pid_info(), PID_TUNING_LANDING, degrees(gyro.z));
+    if ((g.gcs_pid_mask & TUNING_BITS_LAND) && (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND)) {
+        send_pid_info(plane.landing.get_pid_info(), PID_TUNING_LANDING, degrees(gyro.z));
     }
-    if (g.gcs_pid_mask & TUNING_BITS_ACCZ && quadplane.in_vtol_mode()) {
+    if (g.gcs_pid_mask & TUNING_BITS_ACCZ && plane.quadplane.in_vtol_mode()) {
         const Vector3f &accel = ahrs.get_accel_ef();
-        pid_info = &quadplane.pos_control->get_accel_z_pid().get_pid_info();
-        send_pid_info(chan, pid_info, PID_TUNING_ACCZ, -accel.z);
+        pid_info = &plane.quadplane.pos_control->get_accel_z_pid().get_pid_info();
+        send_pid_info(pid_info, PID_TUNING_ACCZ, -accel.z);
     }
  }
 
@@ -420,13 +423,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     switch (id) {
 
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        if (plane.control_mode != MANUAL) {
-            CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-            plane.send_nav_controller_output(chan);
-        }
-        break;
-
     case MSG_SERVO_OUT:
 #if HIL_SUPPORT
         if (plane.g.hil_mode == 1) {
@@ -453,13 +449,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         plane.send_wind(chan);
-        break;
-
-    case MSG_PID_TUNING:
-        if (plane.control_mode != MANUAL) {
-            CHECK_PAYLOAD_SIZE(PID_TUNING);
-            plane.send_pid_tuning(chan);
-        }
         break;
 
     case MSG_RPM:
@@ -1427,14 +1416,6 @@ void Plane::mavlink_delay_cb()
     logger.EnableWrites(true);
 }
 
-/*
-  send airspeed calibration data
- */
-void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
-{
-    gcs().send_airspeed_calibration(vg);
-}
-
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg)
 {
     plane.auto_state.next_wp_crosstrack = false;
@@ -1479,4 +1460,19 @@ bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
         return true;
     }
     return false;
+}
+
+uint64_t GCS_MAVLINK_Plane::capabilities() const
+{
+    return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_COMMAND_INT |
+            MAV_PROTOCOL_CAPABILITY_MISSION_INT |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
+            MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
+#if AP_TERRAIN_AVAILABLE
+            (plane.terrain.enabled() ? MAV_PROTOCOL_CAPABILITY_TERRAIN : 0) |
+#endif
+            MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION |
+            GCS_MAVLINK::capabilities());
 }

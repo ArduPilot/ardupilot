@@ -57,6 +57,7 @@ class AutoTestRover(AutoTest):
         return SITL_START_LOCATION
 
     def init(self):
+        super(AutoTestRover, self).init(os.path.realpath(__file__))
         if self.frame is None:
             self.frame = 'rover'
 
@@ -906,13 +907,28 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_rally_points(self):
+        self.load_rally("rover-test-rally.txt")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.reach_heading_manual(10)
+        self.reach_distance_manual(50)
+
+        self.change_mode("RTL")
+        # location copied in from rover-test-rally.txt:
+        loc = mavutil.location(40.071553,
+	                           -105.229401,
+                               0,
+                               0)
+        self.wait_location(loc)
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
 
         ret.extend([
-            ("ArmFeatures", "Arm features", self.test_arm_feature),
-
             ("MAVProxy_SetModeUsingSwitch",
              "Set modes via mavproxy switch",
              self.test_setting_modes_via_mavproxy_switch),
@@ -991,6 +1007,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("SYSID_ENFORCE",
              "Test enforcement of SYSID_MYGCS",
              self.test_sysid_enforce),
+
+            ("Rally",
+             "Test Rally Points",
+             self.test_rally_points),
+
+            ("DataFlashOverMAVLink",
+             "Test DataFlash over MAVLink",
+             self.test_dataflash_over_mavlink),
 
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(

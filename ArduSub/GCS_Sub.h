@@ -20,6 +20,8 @@ public:
         return _chan[ofs];
     };
 
+    void update_sensor_status_flags() override;
+
 private:
 
     GCS_MAVLINK_Sub _chan[MAVLINK_COMM_NUM_BUFFERS];

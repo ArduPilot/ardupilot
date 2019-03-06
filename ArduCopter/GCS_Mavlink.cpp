@@ -118,20 +118,13 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
         0.0f); // yaw_rate
 }
 
-void GCS_MAVLINK_Copter::get_sensor_status_flags(uint32_t &present,
-                                                uint32_t &enabled,
-                                                uint32_t &health)
+void GCS_MAVLINK_Copter::send_nav_controller_output() const
 {
-    copter.update_sensor_status_flags();
-
-    present = copter.control_sensors_present;
-    enabled = copter.control_sensors_enabled;
-    health = copter.control_sensors_health;
-}
-
-void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
-{
-    const Vector3f &targets = attitude_control->get_att_target_euler_cd();
+    if (!copter.ap.initialised) {
+        return;
+    }
+    const Vector3f &targets = copter.attitude_control->get_att_target_euler_cd();
+    const Copter::Mode *flightmode = copter.flightmode;
     mavlink_msg_nav_controller_output_send(
         chan,
         targets.x * 1.0e-2f,
@@ -139,7 +132,7 @@ void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
         targets.z * 1.0e-2f,
         flightmode->wp_bearing() * 1.0e-2f,
         MIN(flightmode->wp_distance() * 1.0e-2f, UINT16_MAX),
-        pos_control->get_alt_error() * 1.0e-2f,
+        copter.pos_control->get_alt_error() * 1.0e-2f,
         0,
         flightmode->crosstrack_error() * 1.0e-2f);
 }
@@ -254,11 +247,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 
     switch(id) {
 
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        copter.send_nav_controller_output(chan);
-        break;
-
     case MSG_RPM:
 #if RPM_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RPM);
@@ -278,11 +266,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_AOA_SSA:
     case MSG_LANDING:
         // unused
-        break;
-
-    case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        send_pid_tuning();
         break;
 
     case MSG_ADSB_VEHICLE:
@@ -1048,7 +1031,12 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 pos_vector += copter.inertial_nav.get_position();
             } else {
                 // convert from alt-above-home to alt-above-ekf-origin
-                pos_vector.z = copter.pv_alt_above_origin(pos_vector.z);
+                if (!AP::ahrs().home_is_set()) {
+                    break;
+                }
+                const Location &origin = copter.inertial_nav.get_origin();
+                pos_vector.z += AP::ahrs().get_home().alt;
+                pos_vector.z -= origin.alt;
             }
         }
 
@@ -1362,4 +1350,21 @@ float GCS_MAVLINK_Copter::vfr_hud_alt() const
         return copter.current_loc.alt / 100.0f;
     }
     return GCS_MAVLINK::vfr_hud_alt();
+}
+
+uint64_t GCS_MAVLINK_Copter::capabilities() const
+{
+    return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_MISSION_INT |
+            MAV_PROTOCOL_CAPABILITY_COMMAND_INT |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
+            MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION |
+            MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+            (copter.terrain.enabled() ? MAV_PROTOCOL_CAPABILITY_TERRAIN : 0) |
+#endif
+            MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION |
+            GCS_MAVLINK::capabilities());
 }

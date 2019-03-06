@@ -76,7 +76,7 @@ void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t in
     }
 }
 
-#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
 void show_stack_usage(void)
 {
   thread_t *tp;
@@ -94,16 +94,6 @@ void show_stack_usage(void)
   } while (tp != NULL);
 }
 #endif
-
-/*
-  flush all memory. Used in chSysHalt()
- */
-void memory_flush_all(void)
-{
-#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
-    cacheBufferFlush(HAL_RAM_BASE_ADDRESS, HAL_RAM_SIZE_KB * 1024U);
-#endif
-}
 
 /*
   set the utc time
@@ -262,7 +252,7 @@ void set_fast_reboot(enum rtc_boot_magic v)
 */
 void peripheral_power_enable(void)
 {
-#if defined(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN) || defined(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN)
+#if defined(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN) || defined(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN) || defined(HAL_GPIO_PIN_nVDD_3V3_SD_CARD_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN)
     // we don't know what state the bootloader had the CTS pin in, so
     // wait here with it pulled up from the PAL table for enough time
     // for the radio to be definately powered down
@@ -277,10 +267,22 @@ void peripheral_power_enable(void)
 #ifdef HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN
     palWriteLine(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN, 0);
 #endif
+#ifdef HAL_GPIO_PIN_VDD_3V3_SENSORS_EN
+    // the TBS-Colibri-F7 needs PE3 low at power on
+    palWriteLine(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN, 1);
+#endif
+#ifdef HAL_GPIO_PIN_nVDD_3V3_SD_CARD_EN
+    // the TBS-Colibri-F7 needs PG7 low for SD card
+    palWriteLine(HAL_GPIO_PIN_nVDD_3V3_SD_CARD_EN, 0);
+#endif
+#ifdef HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN
+    // others need it active high
+    palWriteLine(HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN, 1);
+#endif
 #endif
 }
 
-#if defined(STM32F7) || defined(STM32F4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
 /*
   read mode of a pin. This allows a pin config to be read, changed and
   then written back

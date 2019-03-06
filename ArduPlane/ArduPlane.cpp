@@ -268,7 +268,7 @@ void Plane::one_second_loop()
 #endif
 
     // make it possible to change orientation at runtime
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     adsb.set_stall_speed_cm(aparm.airspeed_min);
     adsb.set_max_speed(aparm.airspeed_max);
@@ -305,7 +305,7 @@ void Plane::one_second_loop()
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    update_sensor_status_flags();
+    gcs().update_sensor_status_flags();
 }
 
 void Plane::compass_save()
@@ -347,7 +347,6 @@ void Plane::airspeed_ratio_update(void)
     }
     const Vector3f &vg = gps.velocity();
     airspeed.update_calibration(vg, aparm.airspeed_max);
-    gcs_send_airspeed_calibration(vg);
 }
 
 
@@ -679,7 +678,7 @@ void Plane::update_flight_mode(void)
 
         break;
     }
-        
+    case QACRO:
     case INITIALISING:
         // handled elsewhere
         break;
@@ -775,6 +774,7 @@ void Plane::update_navigation()
     case QLAND:
     case QRTL:
     case QAUTOTUNE:
+    case QACRO:
         // nothing to do
         break;
     }
@@ -826,7 +826,7 @@ void Plane::update_alt()
 
         float distance_beyond_land_wp = 0;
         if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-            distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
+            distance_beyond_land_wp = current_loc.get_distance(next_WP_loc);
         }
 
         bool soaring_active = false;

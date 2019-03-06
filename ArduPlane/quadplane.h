@@ -196,13 +196,17 @@ private:
     void control_stabilize(void);
 
     void check_attitude_relax(void);
+    void init_qacro(void);
+    void control_qacro(void);
     void init_hover(void);
     void control_hover(void);
 
     void init_loiter(void);
-    void init_land(void);
+    void init_qland(void);
     void control_loiter(void);
     void check_land_complete(void);
+    bool land_detector(uint32_t timeout_ms);
+    bool check_land_final(void);
 
     void init_qrtl(void);
     void control_qrtl(void);
@@ -223,7 +227,7 @@ private:
     void guided_start(void);
     void guided_update(void);
 
-    void check_throttle_suppression(void);
+    void update_throttle_suppression(void);
 
     void run_z_controller(void);
 
@@ -408,6 +412,7 @@ private:
     enum tailsitter_input {
         TAILSITTER_INPUT_MULTICOPTER = 0,
         TAILSITTER_INPUT_PLANE       = 1,
+        TAILSITTER_INPUT_BF_ROLL     = 2,
     };
 
     enum tailsitter_mask {
@@ -428,6 +433,7 @@ private:
         AP_Float vectored_hover_power;
         AP_Float throttle_scale_max;
         AP_Float max_roll_angle;
+        AP_Int16 motor_mask;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller

@@ -108,12 +108,15 @@ public:
         k_param_rc_channels,
         k_param_servo_channels,
 
+        k_param_scripting = 219,
+
         //
         // 220: Waypoint data
         //
         k_param_command_total = 220,
 
         // 254,255: reserved
+        k_param_gcs_pid_mask = 225,
     };
 
     AP_Int16 format_version;
@@ -149,6 +152,7 @@ public:
     AP_Int16 distance_min;          // target's must be at least this distance from tracker to be tracked
     AP_Int16 pitch_min;
     AP_Int16 pitch_max;
+    AP_Int16 gcs_pid_mask;
 
     // Waypoints
     //

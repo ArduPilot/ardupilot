@@ -109,9 +109,9 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     AP_GROUPINFO("BUZZ_ENABLE", 1, AP_Notify, _buzzer_enable, BUZZER_ENABLE_DEFAULT),
 
     // @Param: LED_OVERRIDE
-    // @DisplayName: Setup for MAVLink LED override
-    // @Description: This sets up the board RGB LED for override by MAVLink. Normal notify LED control is disabled
-    // @Values: 0:Disable,1:Enable
+    // @DisplayName: Specifies colour source for the RGBLed
+    // @Description: Specifies the source for the colours and brightness for the LED.  OutbackChallenge conforms to the MedicalExpress (https://uavchallenge.org/medical-express/) rules, essentially "Green" is disarmed (safe-to-approach), "Red" is armed (not safe-to-approach).
+    // @Values: 0:Standard,1:MAVLink,2:OutbackChallenge
     // @User: Advanced
     AP_GROUPINFO("LED_OVERRIDE", 2, AP_Notify, _rgb_led_override, 0),
 
@@ -146,6 +146,15 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Bitmask: 0:Build in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN, 6:NCP5623 External, 7:NCP5623 Internal
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
+
+#if !defined(HAL_BUZZER_PIN)
+    // @Param: BUZZ_ON_LVL
+    // @DisplayName: Buzzer-on pin logic level
+    // @Description: Specifies pin level that indicates buzzer should play
+    // @Values: 0:LowIsOn,1:HighIsOn
+    // @User: Advanced
+    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, 1),
+#endif
 
     AP_GROUPEND
 };
@@ -263,9 +272,7 @@ void AP_Notify::add_backends(void)
 
 // ChibiOS noise makers
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#ifdef HAL_BUZZER_PIN
     ADD_BACKEND(new Buzzer());
-#endif
 #ifdef HAL_PWM_ALARM
     ADD_BACKEND(new AP_ToneAlarm());
 #endif

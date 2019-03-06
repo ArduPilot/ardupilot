@@ -51,6 +51,7 @@ class AutoTestSub(AutoTest):
         return SITL_START_LOCATION
 
     def init(self):
+        super(AutoTestSub, self).init(os.path.realpath(__file__))
         if self.frame is None:
             self.frame = 'vectored'
 
@@ -221,8 +222,6 @@ class AutoTestSub(AutoTest):
         ret = super(AutoTestSub, self).tests()
 
         ret.extend([
-            ("ArmFeatures", "Arm features", self.test_arm_feature),
-
             ("DiveManual", "Dive manual", self.dive_manual),
 
             ("DiveMission",
@@ -239,7 +238,7 @@ class AutoTestSub(AutoTest):
 
             ("DownLoadLogs", "Download logs", lambda:
              self.log_download(
-                 self.buildlogs_path("APMrover2-log.bin"),
+                 self.buildlogs_path("ArduSub-log.bin"),
                  upload_logs=len(self.fail_list) > 0)),
         ])
 

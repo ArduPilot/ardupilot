@@ -75,23 +75,18 @@ MAV_STATE GCS_MAVLINK_Rover::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void GCS_MAVLINK_Rover::get_sensor_status_flags(uint32_t &present,
-                                                uint32_t &enabled,
-                                                uint32_t &health)
+void GCS_MAVLINK_Rover::send_nav_controller_output() const
 {
-    rover.update_sensor_status_flags();
+    if (!rover.control_mode->is_autopilot_mode()) {
+        return;
+    }
 
-    present = rover.control_sensors_present;
-    enabled = rover.control_sensors_enabled;
-    health = rover.control_sensors_health;
-}
+    const Mode *control_mode = rover.control_mode;
 
-void Rover::send_nav_controller_output(mavlink_channel_t chan)
-{
     mavlink_msg_nav_controller_output_send(
         chan,
         0,  // roll
-        degrees(g2.attitude_control.get_desired_pitch()),
+        degrees(rover.g2.attitude_control.get_desired_pitch()),
         control_mode->nav_bearing(),
         control_mode->wp_bearing(),
         MIN(control_mode->get_distance_to_destination(), UINT16_MAX),
@@ -176,9 +171,14 @@ void Rover::send_rpm(mavlink_channel_t chan)
 /*
   send PID tuning message
  */
-void Rover::send_pid_tuning(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_pid_tuning()
 {
+    Parameters &g = rover.g;
+    ParametersG2 &g2 = rover.g2;
+    const AP_AHRS &ahrs = AP::ahrs();
+
     const AP_Logger::PID_Info *pid_info;
+
     // steering PID
     if (g.gcs_pid_mask & 1) {
         pid_info = &g2.attitude_control.get_steering_rate_pid().get_pid_info();
@@ -318,11 +318,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     switch (id) {
 
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        rover.send_nav_controller_output(chan);
-        break;
-
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         rover.send_servo_out(chan);
@@ -341,11 +336,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         rover.g2.windvane.send_wind(chan);
-        break;
-
-    case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        rover.send_pid_tuning(chan);
         break;
 
     default:
@@ -820,19 +810,19 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                     const float ne_x = packet.x * rover.ahrs.cos_yaw() - packet.y * rover.ahrs.sin_yaw();
                     const float ne_y = packet.x * rover.ahrs.sin_yaw() + packet.y * rover.ahrs.cos_yaw();
                     // add offset to current location
-                    location_offset(target_loc, ne_x, ne_y);
+                    target_loc.offset(ne_x, ne_y);
                     }
                     break;
 
                 case MAV_FRAME_LOCAL_OFFSET_NED:
                     // add offset to current location
-                    location_offset(target_loc, packet.x, packet.y);
+                    target_loc.offset(packet.x, packet.y);
                     break;
 
                 default:
                     // MAV_FRAME_LOCAL_NED interpret as an offset from home
                     target_loc = rover.ahrs.get_home();
-                    location_offset(target_loc, packet.x, packet.y);
+                    target_loc.offset(packet.x, packet.y);
                     break;
                 }
             }
@@ -1068,6 +1058,19 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         break;
     }  // end switch
 }  // end handle mavlink
+
+uint64_t GCS_MAVLINK_Rover::capabilities() const
+{
+    return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_MISSION_INT |
+            MAV_PROTOCOL_CAPABILITY_COMMAND_INT |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
+            MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
+            MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION |
+            GCS_MAVLINK::capabilities());
+}
 
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the

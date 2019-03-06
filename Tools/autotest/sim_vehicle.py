@@ -22,7 +22,7 @@ import textwrap
 import time
 import shlex
 
-from MAVProxy.modules.lib import mp_util
+from pymavlink import mavextra
 from pysim import vehicleinfo
 
 # List of open terminal windows for macosx
@@ -407,10 +407,10 @@ def find_new_spawn(loc, file_path):
                     (instance, offset) = lines.split("=")
                     if ((int)(instance) == (int)(cmd_opts.instance)):
                         (x, y, z, head) = offset.split(",")
-                        g = mp_util.gps_offset((float)(lat), (float)(lon), (float)(x), (float)(y))
+                        g = mavextra.gps_offset((float)(lat), (float)(lon), (float)(x), (float)(y))
                         loc = str(g[0])+","+str(g[1])+","+str(alt+z)+","+str(head)
                         return loc
-        g = mp_util.gps_newpos((float)(lat), (float)(lon), 90, 20*(int)(cmd_opts.instance))
+        g = mavextra.gps_newpos((float)(lat), (float)(lon), 90, 20*(int)(cmd_opts.instance))
         loc = str(g[0])+","+str(g[1])+","+str(alt)+","+str(heading)
         return loc
 
@@ -732,9 +732,9 @@ def generate_frame_help():
 parser = CompatOptionParser(
     "sim_vehicle.py",
     epilog=""
-    "eeprom.bin in the starting directory contains the parameters for your"
+    "eeprom.bin in the starting directory contains the parameters for your "
     "simulated vehicle. Always start from the same directory. It is "
-    "recommended that you start in the main vehicle directory for the vehicle"
+    "recommended that you start in the main vehicle directory for the vehicle "
     "you are simulating, for example, start in the ArduPlane directory to "
     "simulate ArduPlane")
 

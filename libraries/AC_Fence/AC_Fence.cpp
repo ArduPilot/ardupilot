@@ -1,7 +1,7 @@
-#include <AP_HAL/AP_HAL.h>
 #include "AC_Fence.h"
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
+
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -379,7 +379,7 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
 
     // Circular fence check
     if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE)) {
-        if ((get_distance_cm(AP::ahrs().get_home(), loc) * 0.01f) > _circle_radius) {
+        if (AP::ahrs().get_home().get_distance(loc) > _circle_radius) {
             return false;
         }
     }

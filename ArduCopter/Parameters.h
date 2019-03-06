@@ -583,6 +583,11 @@ public:
     // we need a pointer to autotune for the G2 table
     void *autotune_ptr;
 #endif
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern const AP_Param::Info        var_info[];

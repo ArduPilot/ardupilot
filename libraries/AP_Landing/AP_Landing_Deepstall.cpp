@@ -187,7 +187,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
 {
     switch (stage) {
     case DEEPSTALL_STAGE_FLY_TO_LANDING:
-        if (get_distance(current_loc, landing_point) > fabsf(2 * landing.aparm.loiter_radius)) {
+        if (current_loc.get_distance(landing_point) > abs(2 * landing.aparm.loiter_radius)) {
             landing.nav_controller->update_waypoint(current_loc, landing_point);
             return false;
         }
@@ -239,7 +239,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         memcpy(&breakout_location, &current_loc, sizeof(Location));
         FALLTHROUGH;
     case DEEPSTALL_STAGE_FLY_TO_ARC:
-        if (get_distance(current_loc, arc_entry) > 2 * landing.aparm.loiter_radius) {
+        if (current_loc.get_distance(arc_entry) > 2 * landing.aparm.loiter_radius) {
             landing.nav_controller->update_waypoint(breakout_location, arc_entry);
             return false;
         }

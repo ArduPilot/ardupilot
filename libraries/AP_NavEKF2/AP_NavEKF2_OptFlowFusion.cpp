@@ -74,7 +74,7 @@ void NavEKF2_core::SelectFlowFusion()
 
 /*
 Estimation of terrain offset using a single state EKF
-The filter can fuse motion compensated optiocal flow rates and range finder measurements
+The filter can fuse motion compensated optical flow rates and range finder measurements
 */
 void NavEKF2_core::EstimateTerrainOffset()
 {
@@ -573,7 +573,7 @@ void NavEKF2_core::FuseOptFlow()
             float t61 = R_LOS+t28+t39+t44+t55-t70-t79-t86;
             float t62 = 1.0f/t61;
 
-            // calculate innovation variance for X axis observation and protect against a badly conditioned calculation
+            // calculate innovation variance for Y axis observation and protect against a badly conditioned calculation
             if (t61 > R_LOS) {
                 t62 = 1.0f/t61;
                 faultStatus.bad_yflow = false;
@@ -679,11 +679,11 @@ void NavEKF2_core::FuseOptFlow()
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
                 ForceSymmetry();
                 ConstrainVariances();
 
-                // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+                // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
                 stateStruct.angErr.zero();
 
                 // correct the state vector

@@ -51,8 +51,6 @@ private:
     void timer();
 
     uint8_t compass_instance;
-    Vector3f accum;
-    uint16_t accum_count;
     bool force_external;
     enum Rotation rotation;
     float _scaler = 1.0;

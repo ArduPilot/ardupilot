@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_POSHOLD_ENABLED == ENABLED
+
 /*
  * Init and run calls for PosHold flight mode
  *     PosHold tries to improve upon regular loiter by mixing the pilot input with the loiter controller
@@ -72,11 +74,6 @@ static struct {
 // poshold_init - initialise PosHold controller
 bool Copter::ModePosHold::init(bool ignore_checks)
 {
-    // fail to initialise PosHold mode if no GPS lock
-    if (!copter.position_ok() && !ignore_checks) {
-        return false;
-    }
-    
     // initialize vertical speeds and acceleration
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
@@ -667,3 +664,5 @@ void Copter::ModePosHold::poshold_pitch_controller_to_pilot_override()
     // store final loiter outputs for mixing with pilot input
     poshold.controller_final_pitch = poshold.pitch;
 }
+
+#endif

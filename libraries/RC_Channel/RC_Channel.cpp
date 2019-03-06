@@ -81,8 +81,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @DisplayName: RC input option
     // @Description: Function assigned to this RC channel
     // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66: Relay5, 67: Relay6
-    // @Values{Rover}: 0:Do Nothing, 4:RTL, 7:Save WP, 9:Camera Trigger, 16:Auto, 19:Gripper, 28:Relay On/Off, 30:Lost Rover Sound, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66: Relay5, 67: Relay6
-    // @Values{Plane}: 0:Do Nothing, 9:Camera Trigger, 28:Relay On/Off, 29:Landing Gear, 34:Relay2 On/Off, 30:Lost Plane Sound, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 43:InvertedFlight, 46:RC Override Enable, 58:Clear Waypoints, 62:Compass Learn, 64: Reverse Throttle, 65:GPS Disable, 66: Relay5, 67: Relay6
+    // @Values{Rover}: 0:Do Nothing, 4:RTL, 7:Save WP, 9:Camera Trigger, 16:Auto, 19:Gripper, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66: Relay5, 67: Relay6
+    // @Values{Plane}: 0:Do Nothing, 9:Camera Trigger, 28:Relay On/Off, 29:Landing Gear, 34:Relay2 On/Off, 30:Lost Plane Sound, 31:Motor Emergency Stop, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 43:InvertedFlight, 46:RC Override Enable, 58:Clear Waypoints, 62:Compass Learn, 64: Reverse Throttle, 65:GPS Disable, 66: Relay5, 67: Relay6
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE),
 
@@ -443,6 +443,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case COMPASS_LEARN:
     case LANDING_GEAR:
         break;
+    case MOTOR_ESTOP:
     case GRIPPER:
     case SPRAYER:
     case GPS_DISABLE:
@@ -686,7 +687,35 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
     case GPS_DISABLE:
         AP::gps().force_disable(ch_flag == HIGH);
         break;
-        
+
+    case MOTOR_ESTOP:
+        switch (ch_flag) {
+        case HIGH: {
+            SRV_Channels::set_emergency_stop(true);
+
+            // log E-stop
+            AP_Logger *df = AP_Logger::get_singleton();
+            if (df && df->logging_enabled()) {
+                df->Write_Event(DATA_MOTORS_EMERGENCY_STOPPED);
+            }
+            break;
+        }
+        case MIDDLE:
+            // nothing
+            break;
+        case LOW: {
+            SRV_Channels::set_emergency_stop(false);
+
+            // log E-stop cleared
+            AP_Logger *df = AP_Logger::get_singleton();
+            if (df && df->logging_enabled()) {
+                df->Write_Event(DATA_MOTORS_EMERGENCY_STOP_CLEARED);
+            }
+            break;
+        }
+    }
+   break;
+
     default:
         gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", ch_option);
         break;

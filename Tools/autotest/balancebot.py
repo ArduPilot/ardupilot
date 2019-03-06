@@ -58,6 +58,9 @@ class AutoTestBalanceBot(AutoTestRover):
         ret[3] = 1500
         return ret
 
+    def is_balancebot(self):
+        return True
+
     def tests(self):
         '''return list of all tests'''
 

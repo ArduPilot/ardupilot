@@ -193,6 +193,9 @@ public:
     // return true if function is for a multicopter motor
     static bool is_motor(SRV_Channel::Aux_servo_function_t function);
 
+    // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
+    static bool should_e_stop(SRV_Channel::Aux_servo_function_t function);
+
     // return the function of a channel
     SRV_Channel::Aux_servo_function_t get_function(void) const {
         return (SRV_Channel::Aux_servo_function_t)function.get();
@@ -456,7 +459,15 @@ public:
     static void set_digital_mask(uint16_t mask) {
         digital_mask |= mask;
     }
-    
+
+    // Set E - stop
+    static void set_emergency_stop(bool state) {
+        emergency_stop = state;
+    }
+
+    // get E - stop
+    static bool get_emergency_stop() { return emergency_stop;}
+
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -516,4 +527,6 @@ private:
     static bool passthrough_disabled(void) {
         return disabled_passthrough;
     }
+
+    static bool emergency_stop;
 };

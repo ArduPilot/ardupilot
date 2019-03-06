@@ -27,7 +27,7 @@ float QAutoTune::get_pilot_desired_climb_rate_cms(void) const
     return plane.quadplane.get_pilot_desired_climb_rate_cms();
 }
 
-void QAutoTune::get_pilot_desired_rp_yrate_cd(int32_t &des_roll_cd, int32_t &des_pitch_cd, int32_t &yaw_rate_cds)
+void QAutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitch_cd, float &yaw_rate_cds)
 {
     if (plane.channel_roll->get_control_in() == 0 && plane.channel_pitch->get_control_in() == 0) {
         des_roll_cd = 0;
