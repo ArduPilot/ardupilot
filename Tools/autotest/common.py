@@ -769,6 +769,22 @@ class AutoTest(ABC):
         """Return true if vehicle is armed and safetyoff"""
         return self.mav.motors_armed()
 
+    def send_mavlink_arm_command(self):
+        target_sysid = 1
+        target_compid = 1
+        self.mav.mav.command_long_send(
+            target_sysid,
+            target_compid,
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            1, # confirmation
+            1,  # ARM
+            0,
+            0,
+            0,
+            0,
+            0,
+            0)
+
     def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
