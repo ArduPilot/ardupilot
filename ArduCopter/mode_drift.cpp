@@ -42,7 +42,6 @@ void Copter::ModeDrift::run()
     static float roll_input = 0.0f;
     float target_roll, target_pitch;
     float target_yaw_rate;
-    float pilot_throttle_scaled;
 
     // if landed and throttle at zero, set throttle to zero and exit immediately
     if (!motors->armed() || !motors->get_interlock() || (ap.land_complete && ap.throttle_zero)) {
@@ -57,9 +56,6 @@ void Copter::ModeDrift::run()
 
     // convert pilot input to lean angles
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
-
-    // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // Grab inertial velocity
     const Vector3f& vel = inertial_nav.get_velocity();
@@ -101,7 +97,8 @@ void Copter::ModeDrift::run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // output pilot's throttle with angle boost
-    attitude_control->set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);
+    const float assisted_throttle = get_throttle_assist(vel.z, get_pilot_desired_throttle());
+    attitude_control->set_throttle_out(assisted_throttle, true, g.throttle_filt);
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity

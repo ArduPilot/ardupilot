@@ -70,17 +70,21 @@ void Copter::set_throttle_takeoff()
     pos_control->init_takeoff();
 }
 
+float Copter::Mode::throttle_hover() const
+{
+    return motors->get_throttle_hover();
+}
+
 // transform pilot's manual throttle input to make hover throttle mid stick
 // used only for manual throttle modes
 // thr_mid should be in the range 0 to 1
 // returns throttle output 0 to 1
-float Copter::get_pilot_desired_throttle(int16_t throttle_control, float thr_mid)
+float Copter::Mode::get_pilot_desired_throttle() const
 {
-    if (thr_mid <= 0.0f) {
-        thr_mid = motors->get_throttle_hover();
-    }
+    const float thr_mid = throttle_hover();
+    int16_t throttle_control = channel_throttle->get_control_in();
 
-    int16_t mid_stick = get_throttle_mid();
+    int16_t mid_stick = copter.get_throttle_mid();
     // protect against unlikely divide by zero
     if (mid_stick <= 0) {
         mid_stick = 500;

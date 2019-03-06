@@ -9,7 +9,7 @@ bool Copter::ModeStabilize::init(bool ignore_checks)
 {
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
     if (motors->armed() && ap.land_complete && !copter.flightmode->has_manual_throttle() &&
-            (get_pilot_desired_throttle(channel_throttle->get_control_in()) > get_non_takeoff_throttle())) {
+            (get_pilot_desired_throttle() > get_non_takeoff_throttle())) {
         return false;
     }
 
@@ -22,7 +22,6 @@ void Copter::ModeStabilize::run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;
-    float pilot_throttle_scaled;
 
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || ap.throttle_zero || !motors->get_interlock()) {
@@ -44,14 +43,13 @@ void Copter::ModeStabilize::run()
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
-    // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
-
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // body-frame rate controller is run directly from 100hz loop
 
     // output pilot's throttle
-    attitude_control->set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);
+    attitude_control->set_throttle_out(get_pilot_desired_throttle(),
+                                       true,
+                                       g.throttle_filt);
 }
