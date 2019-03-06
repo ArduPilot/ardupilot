@@ -195,19 +195,6 @@ void AP_InertialSensor_Invensensev2::start()
         break;
     }
 
-    /*
-      setup temperature sensitivity and offset. This varies
-      considerably between parts
-     */
-    switch (_inv2_type) {
-    case Invensensev2_ICM20948:
-    case Invensensev2_ICM20648:
-    case Invensensev2_ICM20649:
-        temp_zero = 21;
-        temp_sensitivity = 1.0f/333.87f;
-        break;
-    }
-
     _gyro_instance = _imu.register_gyro(1125, _dev->get_bus_id_devtype(gdev));
     _accel_instance = _imu.register_accel(1125, _dev->get_bus_id_devtype(adev));
 
