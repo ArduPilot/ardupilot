@@ -1716,9 +1716,9 @@ class AutoTestCopter(AutoTest):
             self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             new_pos = self.mav.location()
             delta = self.get_distance(old_pos, new_pos)
-            if delta > 1:
-                raise NotAchievedException()
             self.progress("Landed %u metres from original position" % delta)
+            if delta > 1:
+                raise NotAchievedException("Did not land close enough to original position")
 
         except Exception as e:
             self.progress("Exception caught")
@@ -2350,7 +2350,7 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time() - tstart > timeout:
-                raise NotAchievedException()
+                raise NotAchievedException("Mount pitch not achieved")
 
             m = self.mav.recv_match(type='MOUNT_STATUS',
                                     blocking=True,
@@ -2411,8 +2411,7 @@ class AutoTestCopter(AutoTest):
                                     blocking=True,
                                     timeout=5)
             if m.pointing_a != 0 or m.pointing_b != 0 or m.pointing_c != 0:
-                self.progress("Stabilising when not requested")
-                raise NotAchievedException()
+                raise NotAchievedException("Mount stabilising when not requested")
 
             self.mavproxy.send('mode guided\n')
             self.wait_mode('GUIDED')
@@ -2434,8 +2433,7 @@ class AutoTestCopter(AutoTest):
                                     blocking=True,
                                     timeout=5)
             if m.pointing_a != 0 or m.pointing_b != 0 or m.pointing_c != 0:
-                self.progress("Stabilising when not requested")
-                raise NotAchievedException()
+                raise NotAchievedException("Mount stabilising when not requested")
 
             self.progress("Enable pitch stabilization using MOUNT_CONFIGURE")
             self.do_pitch(despitch)
