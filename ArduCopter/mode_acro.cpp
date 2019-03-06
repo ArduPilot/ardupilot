@@ -8,17 +8,6 @@
  * Init and run calls for acro flight mode
  */
 
-bool Copter::ModeAcro::init(bool ignore_checks)
-{
-   // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-   if (motors->armed() && ap.land_complete && !copter.flightmode->has_manual_throttle() &&
-           (get_pilot_desired_throttle() > copter.get_non_takeoff_throttle())) {
-       return false;
-   }
-
-   return true;
-}
-
 void Copter::ModeAcro::run()
 {
     float target_roll, target_pitch, target_yaw;
