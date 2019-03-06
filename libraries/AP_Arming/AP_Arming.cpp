@@ -327,8 +327,9 @@ bool AP_Arming::ins_checks(bool report)
         }
 
         // check AHRS attitudes are consistent
-        if (!AP::ahrs().attitudes_consistent()) {
-            check_failed(ARMING_CHECK_INS, report, "Attitudes inconsistent");
+        char failure_msg[50] = {};
+        if (!AP::ahrs().attitudes_consistent(failure_msg, ARRAY_SIZE(failure_msg))) {
+            check_failed(ARMING_CHECK_INS, report, failure_msg);
             return false;
         }
     }
