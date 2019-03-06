@@ -707,7 +707,13 @@ float Aircraft::filtered_idx(float v, uint8_t idx, float dt)
     if (dt <= 0) {
         dt = frame_time_us * 1.0e-6f;
     }
+    /*
+      apply a rate limiter followed by a low-pass filter
+     */
     const float cutoff = 1.0f / (2 * M_PI * sitl->servo_speed);
+    float last_value = servo_filter[idx].get();
+    float max_change = sitl->servo_speed * dt;
+    v = constrain_float(v, last_value-max_change, last_value+max_change);
     servo_filter[idx].set_cutoff_frequency(cutoff);
     return servo_filter[idx].apply(v, dt);
 }
