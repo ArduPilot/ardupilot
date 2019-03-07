@@ -1045,14 +1045,15 @@ class AutoTest(ABC):
     def run_cmd_get_ack(self, command, want_result, timeout):
         tstart = self.get_sim_time_cached()
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
-                raise AutoTestTimeoutException("Did not get good COMMAND_ACK")
+            delta_time = self.get_sim_time_cached() - tstart
+            if delta_time > timeout:
+                raise AutoTestTimeoutException("Did not get good COMMAND_ACK within %fs" % timeout)
             m = self.mav.recv_match(type='COMMAND_ACK',
                                     blocking=True,
                                     timeout=1)
             if m is None:
                 continue
-            self.progress("ACK received: %s" % str(m))
+            self.progress("ACK received: %s (%fs)" % (str(m), delta_time))
             if m.command == command:
                 if m.result != want_result:
                     raise ValueError("Expected %s got %s" % (want_result,
@@ -1306,7 +1307,7 @@ class AutoTest(ABC):
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             if self.get_sim_time_cached() - last_print > 1:
-                self.progress("Wait groundspeed %.1f, target:%.1f" %
+                self.progress("Wait groundspeed %.3f, target:%.3f" %
                               (m.groundspeed, gs_min))
                 last_print = self.get_sim_time_cached()
             if m.groundspeed >= gs_min and m.groundspeed <= gs_max:
@@ -1519,13 +1520,15 @@ class AutoTest(ABC):
         raise WaitWaypointTimeout("Timed out waiting for waypoint %u of %u" %
                                   (wpnum_end, wpnum_end))
 
+    def mode_is(self, mode):
+        self.wait_heartbeat()
+        return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
+
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
-        self.get_mode_from_mode_mapping(mode)
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
-        self.wait_heartbeat()
-        while self.mav.flightmode != mode:
+        while not self.mode_is(mode):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                     self.mav.flightmode, mode, custom_num))
