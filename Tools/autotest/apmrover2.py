@@ -500,8 +500,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < timeout:
             # m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            if self.distance_to_home() > distance:
+            distance_home = self.distance_to_home(use_cached_home=True)
+            self.progress("distance_home=%f want=%f" % (distance_home, distance))
+            if distance_home > distance:
                 return
+            self.drain_mav()
         raise NotAchievedException("Failed to get %fm from home (now=%f)" %
                                    (distance, home_distance))
 

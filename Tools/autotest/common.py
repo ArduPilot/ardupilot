@@ -944,6 +944,7 @@ class AutoTest(ABC):
 
     def set_parameter(self, name, value, add_to_context=True, epsilon=0.00001):
         """Set parameters from vehicle."""
+        self.progress("Setting %s to %f" % (name, value))
         old_value = self.get_parameter(name, retry=2)
         for i in range(1, 10):
             self.mavproxy.send("param set %s %s\n" % (name, str(value)))
@@ -1461,19 +1462,24 @@ class AutoTest(ABC):
                       "%.4f,%.4f at altitude %.1f height_accuracy=%.1f" %
                       (loc.lat, loc.lng, target_altitude, height_accuracy))
         last_distance_message = 0
+        closest = 10000000
+        last = 0
         while self.get_sim_time() < tstart + timeout:
             pos = self.mav.location()
             delta = self.get_distance(loc, pos)
             if self.get_sim_time_cached() - last_distance_message >= 1:
                 self.progress("Distance %.2f meters alt %.1f" % (delta, pos.alt))
                 last_distance_message = self.get_sim_time_cached()
+            if closest > delta:
+                closest = delta
+            last = delta
             if delta <= accuracy:
                 height_delta = math.fabs(pos.alt - target_altitude)
                 if height_accuracy != -1 and height_delta > height_accuracy:
                     continue
                 self.progress("Reached location (%.2f meters)" % delta)
                 return True
-        raise WaitLocationTimeout("Failed to attain location")
+        raise WaitLocationTimeout("Failed to attain location (want=<%f) (closest=%f)" % (accuracy, closest, last))
 
     def wait_current_waypoint(self, wpnum, timeout=60):
         tstart = self.get_sim_time()
@@ -1849,7 +1855,6 @@ class AutoTest(ABC):
 
     def test_arm_feature(self):
         """Common feature to test."""
-        self.context_push()
         # TEST ARMING/DISARM
         self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
         interlock_channel = 8  # Plane got flighmode_ch on channel 8
@@ -1980,7 +1985,6 @@ class AutoTest(ABC):
                             raise NotAchievedException("Motor interlock was changed while disarmed")
                 self.set_rc(interlock_channel, 1000)
         self.progress("ALL PASS")
-        self.context_pop()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
 
     def get_message_rate(self, victim_message, timeout):
