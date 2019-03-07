@@ -1593,21 +1593,18 @@ class AutoTest(ABC):
             error_bits |= mavutil.mavlink.ESTIMATOR_GPS_GLITCH
 
         self.progress("Waiting for EKF value %u" % required_value)
-        last_err_print_time = 0
         last_print_time = 0
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
             current = m.flags
-            if self.get_sim_time_cached() - last_print_time > 1:
-                self.progress("Wait EKF.flags: required:%u current:%u" %
-                              (required_value, current))
-                last_print_time = self.get_sim_time_cached()
             errors = current & error_bits
-            if errors and self.get_sim_time_cached() - last_err_print_time > 1:
-                self.progress("Wait EKF.flags: errors=%u" % errors)
-                last_err_print_time = self.get_sim_time_cached()
-                continue
-            if (current & required_value == required_value):
+            everything_ok = (errors == 0 and
+                             current & required_value == required_value)
+            if everything_ok or self.get_sim_time_cached() - last_print_time > 1:
+                self.progress("Wait EKF.flags: required:%u current:%u errors=%u" %
+                              (required_value, current, errors))
+                last_print_time = self.get_sim_time_cached()
+            if everything_ok:
                 self.progress("EKF Flags OK")
                 return True
         raise AutoTestTimeoutException("Failed to get EKF.flags=%u" %
