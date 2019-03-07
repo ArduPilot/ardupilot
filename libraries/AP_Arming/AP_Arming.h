@@ -33,22 +33,22 @@ public:
         ARMING_CHECK_MISSION    = 0x4000,
     };
 
-    enum ArmingMethod {
+    enum class Method {
         RUDDER,
         MAVLINK,
         AUXSWITCH,
         MOTORTEST,
     };
 
-    enum ArmingRequired {
+    enum class Required {
         NO           = 0,
         YES_MIN_PWM  = 1,
         YES_ZERO_PWM = 2
     };
 
     // these functions should not be used by Copter which holds the armed state in the motors library
-    ArmingRequired arming_required();
-    virtual bool arm(ArmingMethod method, bool do_arming_checks=true);
+    Required arming_required();
+    virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
     bool disarm();
     bool is_armed();
 
@@ -61,18 +61,19 @@ public:
     // some arming checks have side-effects, or require some form of state
     // change to have occurred, and thus should not be done as pre-arm
     // checks.  Those go here:
-    bool arm_checks(ArmingMethod method);
+    bool arm_checks(AP_Arming::Method method);
 
     // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;
 
     // rudder arming support
-    enum ArmingRudder {
-        ARMING_RUDDER_DISABLED  = 0,
-        ARMING_RUDDER_ARMONLY   = 1,
-        ARMING_RUDDER_ARMDISARM = 2
+    enum class RudderArming {
+        IS_DISABLED  = 0, // DISABLED leaks in from vehicle defines.h
+        ARMONLY   = 1,
+        ARMDISARM = 2
     };
-    ArmingRudder get_rudder_arming_type() const { return (ArmingRudder)_rudder_arming.get(); }
+
+    RudderArming get_rudder_arming_type() const { return (RudderArming)_rudder_arming.get(); }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
