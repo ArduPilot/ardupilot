@@ -40,7 +40,7 @@ void Plane::set_control_channels(void)
         SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 100);
     }
 
-    if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
+    if (!arming.is_armed() && arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     }
 
@@ -86,7 +86,7 @@ void Plane::init_rc_out_main()
     
     // setup PX4 to output the min throttle when safety off if arming
     // is setup for min on disarm
-    if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
+    if (arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     }
 }
@@ -112,9 +112,9 @@ void Plane::init_rc_out_aux()
 */
 void Plane::rudder_arm_disarm_check()
 {
-    AP_Arming::ArmingRudder arming_rudder = arming.get_rudder_arming_type();
+    AP_Arming::RudderArming arming_rudder = arming.get_rudder_arming_type();
 
-    if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
+    if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
         //parameter disallows rudder arming/disabling
         return;
     }
@@ -146,14 +146,14 @@ void Plane::rudder_arm_disarm_check()
                 }
 			} else {
 				//time to arm!
-				arm_motors(AP_Arming::RUDDER);
+				arm_motors(AP_Arming::Method::RUDDER);
 				rudder_arm_timer = 0;
 			}
 		} else {
 			// not at full right rudder
 			rudder_arm_timer = 0;
 		}
-	} else if ((arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM) && !is_flying()) {
+	} else if ((arming_rudder == AP_Arming::RudderArming::ARMDISARM) && !is_flying()) {
 		// when armed and not flying, full left rudder starts disarming counter
 		if (channel_rudder->get_control_in() < -4000) {
 			uint32_t now = millis();

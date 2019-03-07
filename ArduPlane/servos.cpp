@@ -370,7 +370,7 @@ void Plane::set_servos_controlled(void)
                                     constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), min_throttle, max_throttle));
     
     if (!hal.util->get_soft_armed()) {
-        if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
+        if (arming.arming_required() == AP_Arming::Required::YES_ZERO_PWM) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
@@ -583,7 +583,7 @@ void Plane::servos_twin_engine_mix(void)
         throttle_right = constrain_float(throttle - 50 * rudder_dt, 0, 100);
     }
     if (!hal.util->get_soft_armed()) {
-        if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
+        if (arming.arming_required() == AP_Arming::Required::YES_ZERO_PWM) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
         } else {
@@ -687,18 +687,18 @@ void Plane::set_servos(void)
         //Some ESCs get noisy (beep error msgs) if PWM == 0.
         //This little segment aims to avoid this.
         switch (arming.arming_required()) { 
-        case AP_Arming::NO:
+        case AP_Arming::Required::NO:
             //keep existing behavior: do nothing to radio_out
             //(don't disarm throttle channel even if AP_Arming class is)
             break;
 
-        case AP_Arming::YES_ZERO_PWM:
+        case AP_Arming::Required::YES_ZERO_PWM:
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, 0);
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, 0);
             break;
 
-        case AP_Arming::YES_MIN_PWM:
+        case AP_Arming::Required::YES_MIN_PWM:
         default:
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
