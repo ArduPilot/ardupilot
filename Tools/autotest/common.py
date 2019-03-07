@@ -173,6 +173,7 @@ class AutoTest(ABC):
         self.run_tests_called = False
         self._show_test_timings = _show_test_timings
         self.test_timings = dict()
+        self.mavproxy_expect_active = False
 
     @staticmethod
     def progress(text):
@@ -232,6 +233,34 @@ class AutoTest(ABC):
 
     def vehicleinfo_key(self):
         return self.log_name
+
+    def mavproxy_expect_draining(self, pattern):
+        count = 0
+        ret = None
+        while True:
+            try:
+                ret = self.mavproxy.expect(pattern, timeout=0.1)
+            except pexpect.TIMEOUT:
+                pass
+            count += self.drain_mav()
+            if ret is not None:
+                break
+        self.progress("Drained %u messages while expecting" % count)
+        return ret
+
+    def mavproxy_expect(self, pattern, drain_mav=True):
+        if not drain_mav:
+            return self.mavproxy.expect(pattern)
+        self.mavproxy_expect_active = True;
+        ex = None
+        try:
+            ret = self.mavproxy_expect_draining(pattern)
+        except Exception as e:
+            ex = e
+        self.mavproxy_expect_draining = False
+        if ex is not None:
+            raise ex
+        return ret
 
     def repeatedly_apply_parameter_file(self, filepath):
         '''keep applying a parameter file until no parameters changed'''
@@ -374,8 +403,9 @@ class AutoTest(ABC):
     def idle_hook(self, mav):
         """Called when waiting for a mavlink message."""
         global expect_list
-        for p in expect_list:
-            util.pexpect_drain(p)
+        if not self.mavproxy_expect_active:
+            for p in expect_list:
+                util.pexpect_drain(p)
 
     def message_hook(self, mav, msg):
         """Called as each mavlink msg is received."""
@@ -389,7 +419,7 @@ class AutoTest(ABC):
                 continue
             util.pexpect_drain(p)
 
-    def drain_mav(self):
+    def drain_mav(self, quiet=False):
         count = 0
         tstart = time.time()
         while self.mav.recv_match(type='SYSTEM_TIME', blocking=False) is not None:
@@ -400,7 +430,9 @@ class AutoTest(ABC):
         else:
             rate = "%f/s" % (count/float(tdelta),)
 
-        self.progress("Drained %u messages from mav (%s)" % (count, rate))
+        if not quiet:
+            self.progress("Drained %u messages from mav (%s)" % (count, rate))
+        return count
 
     #################################################
     # SIM UTILITIES

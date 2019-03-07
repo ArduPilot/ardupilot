@@ -450,9 +450,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         mission_filepath = os.path.join("ArduRover-Missions", "rtl.txt")
         self.load_mission(mission_filepath)
         self.change_mode("AUTO")
-        self.mavproxy.expect('Executing RTL')
-
-        self.drain_mav();
+        self.mavproxy_expect('Executing RTL')
 
         m = self.mav.recv_match(type='NAV_CONTROLLER_OUTPUT',
                                 blocking=True,
