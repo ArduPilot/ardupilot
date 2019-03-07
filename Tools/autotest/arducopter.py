@@ -392,7 +392,7 @@ class AutoTestCopter(AutoTest):
         while self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
-            home_distance = self.distance_to_home()
+            home_distance = self.distance_to_home(use_cached_home=True)
             home = ""
             if alt <= 1 and home_distance < 10:
                 home = "HOME"
@@ -690,7 +690,7 @@ class AutoTestCopter(AutoTest):
         while self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
-            home_distance = self.distance_to_home()
+            home_distance = self.distance_to_home(use_cached_home=True)
             self.progress("Alt: %.02f  HomeDistance: %.02f" %
                           (alt, home_distance))
             # recenter pitch sticks once we're home so we don't fly off again
@@ -721,6 +721,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("AVOID_ENABLE", 1)
 
         # give we're testing RTL, doing one here probably doesn't make sense
+        home_distance = self.distance_to_home(use_cached_home=True)
         raise AutoTestTimeoutException(
             ("Fence test failed to reach home - "
              "timed out after %u seconds" % timeout))
@@ -963,14 +964,14 @@ class AutoTestCopter(AutoTest):
 
         # wait for arrival back home
         self.mav.recv_match(type='VFR_HUD', blocking=True)
-        while self.distance_to_home() > 5:
+        while self.distance_to_home(use_cached_home=True) > 5:
             if self.get_sim_time() > (tstart + timeout):
                 raise AutoTestTimeoutException(
                     ("GPS Glitch testing failed"
                      "- exceeded timeout %u seconds" % timeout))
 
             self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("Dist from home: %.02f" % self.distance_to_home())
+            self.progress("Dist from home: %.02f" % self.distance_to_home(use_cached_home=True))
 
         # turn off simulator display of gps and actual position
         if self.use_map:
