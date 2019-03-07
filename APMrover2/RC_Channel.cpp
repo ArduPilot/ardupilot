@@ -137,7 +137,7 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
     // arm or disarm the motors
     case ARMDISARM:
         if (ch_flag == HIGH) {
-            rover.arm_motors(AP_Arming::RUDDER);
+            rover.arm_motors(AP_Arming::Method::RUDDER);
         } else if (ch_flag == LOW) {
             rover.disarm_motors();
         }
