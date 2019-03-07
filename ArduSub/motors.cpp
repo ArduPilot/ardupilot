@@ -8,7 +8,7 @@ void Sub::enable_motor_output()
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Sub::init_arm_motors(AP_Arming::ArmingMethod method)
+bool Sub::init_arm_motors(AP_Arming::Method method)
 {
     static bool in_arm_motors = false;
 

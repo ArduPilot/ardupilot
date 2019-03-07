@@ -562,7 +562,7 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
     case MAV_CMD_COMPONENT_ARM_DISARM:
         if (is_equal(packet.param1,1.0f)) {
             // attempt to arm and return success or failure
-            if (sub.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK)) {
+            if (sub.init_arm_motors(AP_Arming::Method::MAVLINK)) {
                 return MAV_RESULT_ACCEPTED;
             }
         } else if (is_zero(packet.param1))  {
