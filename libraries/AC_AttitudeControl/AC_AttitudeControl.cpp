@@ -163,8 +163,7 @@ void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool r
 void AC_AttitudeControl::relax_attitude_controllers()
 {
     // Initialize the attitude variables to the current attitude
-    // TODO add _ahrs.get_quaternion()
-    _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(_attitude_target_quat);
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
     _attitude_ang_error.initialise();
 
@@ -400,7 +399,7 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll(float eu
 
     // Compute attitude error
     Quaternion attitude_vehicle_quat;
-    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
 
     Quaternion error_quat;
     error_quat = attitude_vehicle_quat.inverse() * _attitude_target_quat;
@@ -506,7 +505,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, 
     _attitude_target_ang_vel.z = input_shaping_ang_vel(_attitude_target_ang_vel.z, yaw_rate_rads, get_accel_yaw_max_radss(), _dt);
 
     // Update the unused targets attitude based on current attitude to condition mode change
-    _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(_attitude_target_quat);
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
     ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
@@ -535,9 +534,8 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
     _attitude_target_ang_vel.z = input_shaping_ang_vel(_attitude_target_ang_vel.z, yaw_rate_rads, get_accel_yaw_max_radss(), _dt);
 
     // Retrieve quaternion vehicle attitude
-    // TODO add _ahrs.get_quaternion()
     Quaternion attitude_vehicle_quat;
-    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
 
     // Update the unused targets attitude based on current attitude to condition mode change
     _attitude_target_quat = attitude_vehicle_quat*_attitude_ang_error;
@@ -588,9 +586,8 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_ste
 void AC_AttitudeControl::attitude_controller_run_quat()
 {
     // Retrieve quaternion vehicle attitude
-    // TODO add _ahrs.get_quaternion()
     Quaternion attitude_vehicle_quat;
-    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
 
     // Compute attitude error
     Vector3f attitude_error_vector;
@@ -797,9 +794,8 @@ void AC_AttitudeControl::shift_ef_yaw_target(float yaw_shift_cd)
 void AC_AttitudeControl::inertial_frame_reset()
 {
     // Retrieve quaternion vehicle attitude
-    // TODO add _ahrs.get_quaternion()
     Quaternion attitude_vehicle_quat;
-    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
 
     // Recalculate the target quaternion
     _attitude_target_quat = attitude_vehicle_quat * _attitude_ang_error;
