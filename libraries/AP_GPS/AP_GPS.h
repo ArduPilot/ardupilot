@@ -471,8 +471,8 @@ private:
         uint16_t delta_time_ms;
     };
     // Note allowance for an additional instance to contain blended data
-    GPS_timing timing[GPS_MAX_RECEIVERS+1];
-    GPS_State state[GPS_MAX_RECEIVERS+1];
+    GPS_timing timing[GPS_MAX_INSTANCES];
+    GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_RECEIVERS];
     AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
 
