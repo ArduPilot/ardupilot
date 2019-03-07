@@ -404,7 +404,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             // arm or disarm the vehicle
             switch (ch_flag) {
             case HIGH:
-                copter.init_arm_motors(AP_Arming::ArmingMethod::AUXSWITCH);
+                copter.init_arm_motors(AP_Arming::Method::AUXSWITCH);
                 // remember that we are using an arming switch, for use by set_throttle_zero_flag
                 copter.ap.armed_with_switch = true;
                 break;

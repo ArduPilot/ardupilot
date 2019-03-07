@@ -708,7 +708,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         if (is_equal(packet.param1,1.0f)) {
             // attempt to arm and return success or failure
             const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value);
-            if (copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK, do_arming_checks)) {
+            if (copter.init_arm_motors(AP_Arming::Method::MAVLINK, do_arming_checks)) {
                 return MAV_RESULT_ACCEPTED;
             }
         } else if (is_zero(packet.param1))  {
@@ -824,7 +824,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
         if (!copter.motors->armed()) {
             // if disarmed, arm motors
-            copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK);
+            copter.init_arm_motors(AP_Arming::Method::MAVLINK);
         } else if (copter.ap.land_complete) {
             // if armed and landed, takeoff
             if (copter.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {

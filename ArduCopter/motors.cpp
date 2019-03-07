@@ -14,8 +14,8 @@ void Copter::arm_motors_check()
     static int16_t arming_counter;
 
     // check if arming/disarm using rudder is allowed
-    AP_Arming::ArmingRudder arming_rudder = arming.get_rudder_arming_type();
-    if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
+    AP_Arming::RudderArming arming_rudder = arming.get_rudder_arming_type();
+    if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
         return;
     }
 
@@ -45,7 +45,7 @@ void Copter::arm_motors_check()
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors->armed()) {
             // reset arming counter if arming fail
-            if (!init_arm_motors(AP_Arming::ArmingMethod::RUDDER)) {
+            if (!init_arm_motors(AP_Arming::Method::RUDDER)) {
                 arming_counter = 0;
             }
         }
@@ -58,7 +58,7 @@ void Copter::arm_motors_check()
         }
 
     // full left and rudder disarming is enabled
-    } else if ((yaw_in < -4000) && (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM)) {
+    } else if ((yaw_in < -4000) && (arming_rudder == AP_Arming::RudderArming::ARMDISARM)) {
         if (!flightmode->has_manual_throttle() && !ap.land_complete) {
             arming_counter = 0;
             return;
@@ -133,7 +133,7 @@ void Copter::auto_disarm_check()
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Copter::init_arm_motors(const AP_Arming::ArmingMethod method, const bool do_arming_checks)
+bool Copter::init_arm_motors(const AP_Arming::Method method, const bool do_arming_checks)
 {
     static bool in_arm_motors = false;
 
