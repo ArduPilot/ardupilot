@@ -27,6 +27,8 @@
   The WITH_SEMAPHORE() macro can be used with either type of semaphore
  */
 
+#include <AP_HAL/Semaphores.h>
+
 namespace AP_HAL {
 class Semaphore;
 }
