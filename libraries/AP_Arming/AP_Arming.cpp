@@ -44,9 +44,9 @@
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-  #define ARMING_RUDDER_DEFAULT         ARMING_RUDDER_ARMONLY
+  #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMONLY
 #else
-  #define ARMING_RUDDER_DEFAULT         ARMING_RUDDER_ARMDISARM
+  #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -122,7 +122,7 @@ uint16_t AP_Arming::compass_magfield_expected() const
 
 bool AP_Arming::is_armed()
 {
-    return (ArmingRequired)require.get() == NO || armed;
+    return (Required)require.get() == Required::NO || armed;
 }
 
 uint16_t AP_Arming::get_enabled_checks()
@@ -723,7 +723,7 @@ bool AP_Arming::fence_checks(bool display_failure)
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    if (armed || require == NO) {
+    if (armed || require == (uint8_t)Required::NO) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
@@ -745,7 +745,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  can_checks(report);
 }
 
-bool AP_Arming::arm_checks(ArmingMethod method)
+bool AP_Arming::arm_checks(AP_Arming::Method method)
 {
     // ensure the GPS drivers are ready on any final changes
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -777,7 +777,7 @@ bool AP_Arming::arm_checks(ArmingMethod method)
 }
 
 //returns true if arming occurred successfully
-bool AP_Arming::arm(AP_Arming::ArmingMethod method, const bool do_arming_checks)
+bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // Copter should never use this function
@@ -839,9 +839,9 @@ bool AP_Arming::disarm()
 #endif
 }
 
-AP_Arming::ArmingRequired AP_Arming::arming_required() 
+AP_Arming::Required AP_Arming::arming_required() 
 {
-    return (AP_Arming::ArmingRequired)require.get();
+    return (AP_Arming::Required)require.get();
 }
 
 // Copter and sub share the same RC input limits
