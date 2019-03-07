@@ -1174,7 +1174,7 @@ bool AP_GPS::calc_blend_weights(void)
     memset(&_blend_weights, 0, sizeof(_blend_weights));
 
     // exit immediately if not enough receivers to do blending
-    if (num_instances < 2 || drivers[1] == nullptr || _type[1] == GPS_TYPE_NONE) {
+    if (state[0].status <= NO_FIX || state[1].status <= NO_FIX) {
         return false;
     }
 
