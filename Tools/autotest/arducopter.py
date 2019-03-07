@@ -1786,14 +1786,15 @@ class AutoTestCopter(AutoTest):
             self.set_rc(2, 1550)
             self.wait_distance(5)
             self.set_rc(2, 1500)
-            self.mavproxy.send('switch 2\n')  # land mode
+            self.change_mode("LAND")
             self.mav.motors_disarmed_wait()
             self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             new_pos = self.mav.location()
             delta = self.get_distance(old_pos, new_pos)
-            self.progress("Landed %u metres from original position" % delta)
-            if delta > 1:
-                raise NotAchievedException("Did not land close enough to original position")
+            self.progress("Landed %f metres from original position" % delta)
+            max_delta = 1
+            if delta > max_delta:
+                raise NotAchievedException("Did not land close enough to original position (%fm > %fm" % (delta, max_delta))
 
         except Exception as e:
             self.progress("Exception caught")
