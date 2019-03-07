@@ -1564,61 +1564,47 @@ class AutoTestCopter(AutoTest):
 
         self.load_mission("copter_nav_delay.txt")
 
-        self.mavproxy.send('mode loiter\n')
-        self.wait_heartbeat()
-        self.wait_mode('LOITER')
+        self.set_parameter("DISARM_DELAY", 0)
+
+        self.change_mode("LOITER")
         self.wait_ready_to_arm()
 
-        self.context_push()
-
-        ex = None
-        try:
-            self.arm_vehicle()
-            self.mavproxy.send('mode auto\n')
-            self.wait_mode('AUTO')
-            self.set_parameter("DISARM_DELAY", 0)
-            self.set_rc(3, 1600)
-            count_start = -1
-            count_stop = -1
-            tstart = self.get_sim_time()
-            last_mission_current_msg = 0
-            last_seq = None
-            while self.armed(): # we RTL at end of mission
-                now = self.get_sim_time_cached()
-                if now - tstart > 120:
-                    raise AutoTestTimeoutException("Did not disarm as expected")
-                m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
-                if ((now - last_mission_current_msg) > 1 or m.seq != last_seq):
-                    dist = None
-                    x = self.mav.messages.get("NAV_CONTROLLER_OUTPUT", None)
-                    if x is not None:
-                        dist = x.wp_dist
-                        self.progress("MISSION_CURRENT.seq=%u dist=%s" %
-                                      (m.seq, dist))
-                    last_mission_current_msg = self.get_sim_time_cached()
-                    last_seq = m.seq
-                if m.seq == 3:
-                    self.progress("At delay item")
-                    if count_start == -1:
-                        count_start = now
-                if m.seq > 3:
-                    if count_stop == -1:
-                        count_stop = now
-            calculated_delay = count_stop - count_start
-            want_delay = 59 # should reflect what's in the mission file
-            self.progress("Stopped for %u seconds (want >=%u seconds)" %
-                          (calculated_delay, want_delay))
-            if calculated_delay < want_delay:
-                raise NotAchievedException("Did not delay for long enough")
-
-        except Exception as e:
-            self.progress("Exception caught")
-            ex = e
-
-        self.zero_throttle()
-
-        if ex is not None:
-            raise ex
+        self.arm_vehicle()
+        self.change_mode("AUTO")
+        self.set_rc(3, 1600)
+        count_start = -1
+        count_stop = -1
+        tstart = self.get_sim_time()
+        last_mission_current_msg = 0
+        last_seq = None
+        while self.armed(): # we RTL at end of mission
+            now = self.get_sim_time_cached()
+            if now - tstart > 120:
+                raise AutoTestTimeoutException("Did not disarm as expected")
+            m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
+            at_delay_item = ""
+            if m.seq == 3:
+                at_delay_item = "(At delay item)"
+                if count_start == -1:
+                    count_start = now
+            if ((now - last_mission_current_msg) > 1 or m.seq != last_seq):
+                dist = None
+                x = self.mav.messages.get("NAV_CONTROLLER_OUTPUT", None)
+                if x is not None:
+                    dist = x.wp_dist
+                    self.progress("MISSION_CURRENT.seq=%u dist=%s %s" %
+                                  (m.seq, dist, at_delay_item))
+                last_mission_current_msg = self.get_sim_time_cached()
+                last_seq = m.seq
+            if m.seq > 3:
+                if count_stop == -1:
+                    count_stop = now
+        calculated_delay = count_stop - count_start
+        want_delay = 59 # should reflect what's in the mission file
+        self.progress("Stopped for %u seconds (want >=%u seconds)" %
+                      (calculated_delay, want_delay))
+        if calculated_delay < want_delay:
+            raise NotAchievedException("Did not delay for long enough")
 
     def test_rangefinder(self):
         ex = None
@@ -1966,11 +1952,8 @@ class AutoTestCopter(AutoTest):
 
         self.load_mission("copter_nav_delay.txt")
 
-        self.progress("Starting mission")
+        self.change_mode("LOITER")
 
-        self.mavproxy.send('mode loiter\n')  # stabilize mode
-        self.wait_heartbeat()
-        self.wait_mode('LOITER')
         self.wait_ready_to_arm()
 
         delay_item_seq = 3
@@ -1979,54 +1962,37 @@ class AutoTestCopter(AutoTest):
         reset_at_m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
         reset_at = reset_at_m.time_unix_usec/1000000
 
-        self.context_push()
-
-        ex = None
-        try:
-            self.arm_vehicle()
-            self.mavproxy.send('mode auto\n')  # stabilize mode
-            self.wait_mode('AUTO')
-            self.set_rc(3, 1600)
-            count_stop = -1
-            tstart = self.get_sim_time()
-            while self.armed(): # we RTL at end of mission
-                now = self.get_sim_time()
-                if now - tstart > 120:
-                    raise AutoTestTimeoutException("Did not disarm as expected")
-                m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
-                self.progress("MISSION_CURRENT.seq=%u" % (m.seq,))
-                if m.seq == delay_item_seq:
-                    self.progress("At delay item")
-                if m.seq > delay_item_seq:
-                    if count_stop == -1:
-                        count_stop_m = self.mav.recv_match(type='SYSTEM_TIME',
-                                                           blocking=True)
-                        count_stop = count_stop_m.time_unix_usec/1000000
-            calculated_delay = count_stop - reset_at
-            error = abs(calculated_delay - delay_for_seconds)
-            self.progress("Stopped for %u seconds (want >=%u seconds)" %
-                          (calculated_delay, delay_for_seconds))
-            if error > 2:
-                raise NotAchievedException("delay outside expectations")
-
-        except Exception as e:
-            self.progress("Exception caught")
-            ex = e
-
-        self.zero_throttle()
-
-        if ex is not None:
-            raise ex
+        self.arm_vehicle()
+        self.change_mode("AUTO")
+        self.set_rc(3, 1600)
+        count_stop = -1
+        tstart = self.get_sim_time()
+        while self.armed(): # we RTL at end of mission
+            now = self.get_sim_time()
+            if now - tstart > 120:
+                raise AutoTestTimeoutException("Did not disarm as expected")
+            m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
+            at_delay_item = ""
+            if m.seq == delay_item_seq:
+                at_delay_item = "(delay item)"
+            self.progress("MISSION_CURRENT.seq=%u %s" % (m.seq, at_delay_item))
+            if m.seq > delay_item_seq:
+                if count_stop == -1:
+                    count_stop_m = self.mav.recv_match(type='SYSTEM_TIME',
+                                                       blocking=True)
+                    count_stop = count_stop_m.time_unix_usec/1000000
+        calculated_delay = count_stop - reset_at
+        error = abs(calculated_delay - delay_for_seconds)
+        self.progress("Stopped for %u seconds (want >=%u seconds)" %
+                      (calculated_delay, delay_for_seconds))
+        if error > 2:
+            raise NotAchievedException("delay outside expectations")
 
     def fly_nav_takeoff_delay_abstime(self):
         """make sure taking off at a specific time works"""
         self.load_mission("copter_nav_delay_takeoff.txt")
 
-        self.progress("Starting mission")
-
-        self.mavproxy.send('mode loiter\n')  # stabilize mode
-        self.wait_heartbeat()
-        self.wait_mode('LOITER')
+        self.change_mode("LOITER")
         self.wait_ready_to_arm()
 
         delay_item_seq = 2
@@ -2034,47 +2000,34 @@ class AutoTestCopter(AutoTest):
         delay_for_seconds = 77
         reset_at = self.get_sim_time_cached()
 
-        self.context_push()
+        self.arm_vehicle()
+        self.change_mode("AUTO")
 
-        ex = None
-        try:
-            self.arm_vehicle()
-            self.mavproxy.send('mode auto\n')  # stabilize mode
-            self.wait_mode('AUTO')
-            self.set_rc(3, 1600)
+        self.set_rc(3, 1600)
 
-            # should not take off for about least 77 seconds
-            tstart = self.get_sim_time()
-            took_off = False
-            while self.armed():
-                now = self.get_sim_time_cached()
-                if now - tstart > 200:
-                    # timeout
-                    break
-                m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
-                now = self.get_sim_time_cached()
-                self.progress("%s" % str(m))
-                if m.seq > delay_item_seq:
-                    if not took_off:
-                        took_off = True
-                        delta_time = now - reset_at
-                        if abs(delta_time - delay_for_seconds) > 2:
-                            raise NotAchievedException((
-                                "Did not take off on time "
-                                "measured=%f want=%f" %
-                                (delta_time, delay_for_seconds)))
+        # should not take off for about least 77 seconds
+        tstart = self.get_sim_time()
+        took_off = False
+        while self.armed():
+            now = self.get_sim_time_cached()
+            if now - tstart > 200:
+                # timeout
+                break
+            m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
+            now = self.get_sim_time_cached()
+            self.progress("%s" % str(m))
+            if m.seq > delay_item_seq:
+                if not took_off:
+                    took_off = True
+                    delta_time = now - reset_at
+                    if abs(delta_time - delay_for_seconds) > 2:
+                        raise NotAchievedException((
+                            "Did not take off on time "
+                            "measured=%f want=%f" %
+                            (delta_time, delay_for_seconds)))
 
-            if not took_off:
-                raise NotAchievedException("Did not take off")
-
-        except Exception as e:
-            self.progress("Exception caught")
-            ex = e
-
-        self.zero_throttle()
-
-        if ex is not None:
-            raise ex
+        if not took_off:
+            raise NotAchievedException("Did not take off")
 
     def test_setting_modes_via_modeswitch(self):
         self.context_push()
