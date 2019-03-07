@@ -1750,8 +1750,10 @@ class AutoTest(ABC):
                 break
         return m
 
-    def distance_to_home(self):
-        m = self.poll_home_position()
+    def distance_to_home(self, use_cached_home=False):
+        m = self.mav.messages.get("HOME_POSITION", None)
+        if use_cached_home is False or m is None:
+            m = self.poll_home_position()
         loc = mavutil.location(m.latitude * 1.0e-7,
                                m.longitude * 1.0e-7,
                                m.altitude * 1.0e-3,
