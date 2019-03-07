@@ -207,7 +207,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     // trigger auto takeoff), then switches into manual):
     if (!ignore_checks &&
         ap.land_complete &&
-        new_flightmode->has_manual_throttle() &&
+        (new_flightmode->has_manual_throttle() || new_flightmode == &mode_drift) &&
         !copter.flightmode->has_manual_throttle() &&
         new_flightmode->get_pilot_desired_throttle() > copter.get_non_takeoff_throttle()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: throttle too high");
