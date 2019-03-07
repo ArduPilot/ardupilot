@@ -203,8 +203,7 @@ bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 }
 
 bool AP_RangeFinder_9xVL53LXX::is_mux(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev) {
-	//TODO: no idea how
-	return true;
+	return _dev->read_registers(0, nullptr, 1);
 }
 
 // 0 - unknown, 1 - VL53L0X, 2 - VL53L1X
