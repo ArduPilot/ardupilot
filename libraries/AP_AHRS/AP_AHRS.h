@@ -261,9 +261,14 @@ public:
     // since last call
     virtual float get_error_yaw(void) const = 0;
 
-    // return a DCM rotation matrix representing our current
-    // attitude
+    // return a DCM rotation matrix representing our current attitude
     virtual const Matrix3f &get_rotation_body_to_ned(void) const = 0;
+
+    // return a Quaternion representing our current attitude
+    void get_quat_body_to_ned(Quaternion &quat) const {
+        quat.from_rotation_matrix(get_rotation_body_to_ned());
+    }
+
     const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
     const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
 
