@@ -498,7 +498,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def wait_distance_home_gt(self, distance, timeout=60):
         home_distance = None
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < timeout:
+        while self.get_sim_time_cached() - tstart < timeout:
             # m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             if self.distance_to_home() > distance:
                 return

@@ -239,7 +239,7 @@ class AutoTestPlane(AutoTest):
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
         self.set_rc(4, 1500)
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             roll = math.degrees(m.roll)
             pitch = math.degrees(m.pitch)
@@ -674,7 +674,7 @@ class AutoTestPlane(AutoTest):
             raise PreconditionFailedException("Receiving CAMERA_FEEDBACK?!")
         self.set_rc(12, 2000)
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 10:
+        while self.get_sim_time_cached() - tstart < 10:
             x = self.mav.messages.get("CAMERA_FEEDBACK", None)
             if x is not None:
                 break

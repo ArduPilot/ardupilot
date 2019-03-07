@@ -588,7 +588,7 @@ class AutoTest(ABC):
         path = os.path.join(self.mission_directory(), filename)
         tstart = self.get_sim_time_cached()
         while True:
-            t2 = self.get_sim_time()
+            t2 = self.get_sim_time_cached()
             if t2 - tstart > 10:
                 raise AutoTestTimeoutException("Failed to do waypoint thing")
             self.mavproxy.send('wp load %s\n' % path)
@@ -798,7 +798,7 @@ class AutoTest(ABC):
                      0,
                      timeout=timeout)
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < timeout:
+        while self.get_sim_time_cached() - tstart < timeout:
             self.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("Motors ARMED")
@@ -818,7 +818,7 @@ class AutoTest(ABC):
                      0,
                      timeout=timeout)
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < timeout:
+        while self.get_sim_time_cached() - tstart < timeout:
             self.wait_heartbeat()
             if not self.mav.motors_armed():
                 self.progress("Motors DISARMED")
@@ -848,13 +848,12 @@ class AutoTest(ABC):
         tstart = self.get_sim_time()
         while True:
             self.wait_heartbeat()
+            tdelta = self.get_sim_time_cached() - tstart
             if self.mav.motors_armed():
-                arm_delay = self.get_sim_time() - tstart
                 self.progress("MOTORS ARMED OK WITH RADIO")
                 self.set_output_to_trim(self.get_rudder_channel())
-                self.progress("Arm in %ss" % arm_delay)  # TODO check arming time
+                self.progress("Arm in %ss" % tdelta)  # TODO check arming time
                 return True
-            tdelta = self.get_sim_time() - tstart
             print("Not armed after %f seconds" % (tdelta))
             if tdelta > timeout:
                 break
@@ -867,10 +866,10 @@ class AutoTest(ABC):
         self.progress("Disarm motors with radio")
         self.set_output_to_min(self.get_rudder_channel())
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             self.wait_heartbeat()
             if not self.mav.motors_armed():
-                disarm_delay = self.get_sim_time() - tstart
+                disarm_delay = self.get_sim_time_cached() - tstart
                 self.progress("MOTORS DISARMED OK WITH RADIO")
                 self.set_output_to_trim(self.get_rudder_channel())
                 self.progress("Disarm in %ss" % disarm_delay)  # TODO check disarming time
@@ -884,7 +883,7 @@ class AutoTest(ABC):
         self.progress("Arm motors with switch %d" % switch_chan)
         self.set_rc(switch_chan, 2000)
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < timeout:
+        while self.get_sim_time_cached() - tstart < timeout:
             self.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH SWITCH")
@@ -897,7 +896,7 @@ class AutoTest(ABC):
         self.progress("Disarm motors with switch %d" % switch_chan)
         self.set_rc(switch_chan, 1000)
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             self.wait_heartbeat()
             if not self.mav.motors_armed():
                 self.progress("MOTORS DISARMED OK WITH SWITCH")
@@ -912,10 +911,10 @@ class AutoTest(ABC):
         disarm_delay = self.get_disarm_delay()
         tstart = self.get_sim_time()
         timeout = disarm_delay * 2
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             self.wait_heartbeat()
             if not self.mav.motors_armed():
-                disarm_time = self.get_sim_time() - tstart
+                disarm_time = self.get_sim_time_cached() - tstart
                 self.progress("MOTORS AUTODISARMED")
                 self.progress("Autodisarm in %ss, expect less than %ss" % (disarm_time, disarm_delay))
                 return disarm_time <= disarm_delay
@@ -1128,7 +1127,7 @@ class AutoTest(ABC):
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                     self.mav.flightmode, mode, custom_num))
             if (timeout is not None and
-                    self.get_sim_time() > tstart + timeout):
+                    self.get_sim_time_cached() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
             self.mavproxy.send('mode %s\n' % mode)
             self.wait_heartbeat()
@@ -1138,7 +1137,7 @@ class AutoTest(ABC):
 
     def do_get_autopilot_capabilities(self):
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 10:
+        while self.get_sim_time_cached() - tstart < 10:
             # Cannot use run_cmd otherwise the respond is lost during the wait for ACK
             self.mav.mav.command_long_send(1,
                                            1,
@@ -1271,7 +1270,7 @@ class AutoTest(ABC):
                      0,  # p7
                      )
         while True:
-            if self.get_sim_time() - tstart > 200:
+            if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not achieve heading")
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             self.progress("heading=%d want=%f" % (m.heading, heading))
@@ -1336,7 +1335,7 @@ class AutoTest(ABC):
         """Wait for a given roll in degrees."""
         tstart = self.get_sim_time()
         self.progress("Waiting for roll of %d at %s" % (roll, time.ctime()))
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             p = math.degrees(m.pitch)
             r = math.degrees(m.roll)
@@ -1350,7 +1349,7 @@ class AutoTest(ABC):
         """Wait for a given pitch in degrees."""
         tstart = self.get_sim_time()
         self.progress("Waiting for pitch of %.02f at %s" % (pitch, time.ctime()))
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             p = math.degrees(m.pitch)
             r = math.degrees(m.roll)
@@ -1385,7 +1384,7 @@ class AutoTest(ABC):
         tstart = self.get_sim_time()
         start = self.mav.location()
         last_distance_message = 0
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             pos = self.mav.location()
             delta = self.get_distance(start, pos)
             if self.get_sim_time_cached() - last_distance_message >= 1:
@@ -1551,9 +1550,8 @@ class AutoTest(ABC):
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                     self.mav.flightmode, mode, custom_num))
             if (timeout is not None and
-                    self.get_sim_time() > tstart + timeout):
+                    self.get_sim_time_cached() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
-            self.wait_heartbeat()
         # self.progress("heartbeat mode %s Want: %s" % (
         # self.mav.flightmode, mode))
         self.progress("Got mode %s" % mode)
@@ -1616,7 +1614,7 @@ class AutoTest(ABC):
         """Wait a specific STATUS_TEXT."""
         self.progress("Waiting for text : %s" % text.lower())
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             if the_function is not None:
                 the_function()
             m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=0.1)
@@ -1767,7 +1765,7 @@ class AutoTest(ABC):
     def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time() - tstart > timeout:
+            if self.get_sim_time_cached() - tstart > timeout:
                 break
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             if m.groundspeed > want+tolerance:
@@ -1818,8 +1816,8 @@ class AutoTest(ABC):
 
         self.progress("monitoring home to ensure it doesn't drift at all")
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 10:
-            home = self.poll_home_position()
+        while self.get_sim_time_cached() - tstart < 10:
+            home = self.poll_home_position(quiet=True)
             self.progress("home: %s" % str(home))
             if (home.latitude != got_home_latitude or
                 home.longitude != got_home_longitude or

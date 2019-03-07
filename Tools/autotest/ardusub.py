@@ -180,7 +180,7 @@ class AutoTestSub(AutoTest):
 
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time() - tstart > 200:
+            if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not move far enough")
             # send a position-control command
             self.mav.mav.set_position_target_global_int_send(

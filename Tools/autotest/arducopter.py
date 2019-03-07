@@ -213,7 +213,7 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
         self.progress("Holding loiter at %u meters for %u seconds" %
                       (start_altitude, holdtime))
-        while self.get_sim_time() < tstart + holdtime:
+        while self.get_sim_time_cached() < tstart + holdtime:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             pos = self.mav.location()
             delta = self.get_distance(start, pos)
@@ -389,7 +389,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode("RTL")
         self.set_rc(3, 1500)
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
             home_distance = self.distance_to_home(use_cached_home=True)
@@ -498,7 +498,7 @@ class AutoTestCopter(AutoTest):
                                 homeloc.longitude/1e7,
                                 homeloc.altitude/1e3,
                                 0)
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
             pos = self.mav.location()
@@ -576,7 +576,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Cutting motor 1 to 60% efficiency")
         self.set_parameter("SIM_ENGINE_MUL", 0.60)
 
-        while self.get_sim_time() < tstart + holdtime:
+        while self.get_sim_time_cached() < tstart + holdtime:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             pos = self.mav.location()
             delta = self.get_distance(start, pos)
@@ -687,7 +687,7 @@ class AutoTestCopter(AutoTest):
 
         # start timer
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
             home_distance = self.distance_to_home(use_cached_home=True)
@@ -831,7 +831,7 @@ class AutoTestCopter(AutoTest):
 
         # record position for 30 seconds
         while tnow < tstart + timeout:
-            tnow = self.get_sim_time()
+            tnow = self.get_sim_time_cached()
             desired_glitch_num = int((tnow - tstart) * 2.2)
             if desired_glitch_num > glitch_current and glitch_current != -1:
                 glitch_current = desired_glitch_num
@@ -861,6 +861,8 @@ class AutoTestCopter(AutoTest):
                 if moved_distance > max_distance:
                     raise NotAchievedException(
                         "Moved over %u meters, Failed!" % max_distance)
+            else:
+                self.drain_mav()
 
         # disable gps glitch
         if glitch_current != -1:
@@ -965,7 +967,7 @@ class AutoTestCopter(AutoTest):
         # wait for arrival back home
         self.mav.recv_match(type='VFR_HUD', blocking=True)
         while self.distance_to_home(use_cached_home=True) > 5:
-            if self.get_sim_time() > (tstart + timeout):
+            if self.get_sim_time_cached() > (tstart + timeout):
                 raise AutoTestTimeoutException(
                     ("GPS Glitch testing failed"
                      "- exceeded timeout %u seconds" % timeout))
@@ -1006,7 +1008,7 @@ class AutoTestCopter(AutoTest):
         self.progress("# Flying west for 8 seconds")
         self.set_rc(2, 1300)
         tstart = self.get_sim_time()
-        while self.get_sim_time() < (tstart + 8):
+        while self.get_sim_time_cached() < (tstart + 8):
             self.mav.recv_match(type='VFR_HUD', blocking=True)
         self.set_rc(2, 1500)
 
@@ -1020,7 +1022,7 @@ class AutoTestCopter(AutoTest):
         self.progress("# Flying east for 8 seconds")
         self.set_rc(2, 1700)
         tstart = self.get_sim_time()
-        while self.get_sim_time() < (tstart + 8):
+        while self.get_sim_time_cached() < (tstart + 8):
             self.mav.recv_match(type='VFR_HUD', blocking=True)
         self.set_rc(2, 1500)
 
@@ -1057,7 +1059,7 @@ class AutoTestCopter(AutoTest):
                       % timeout)
         self.set_rc(1, 1300)
         tstart = self.get_sim_time()
-        while self.get_sim_time() < (tstart + timeout):
+        while self.get_sim_time_cached() < (tstart + timeout):
             self.mav.recv_match(type='VFR_HUD', blocking=True)
 
         # stop rolling and yawing
@@ -1101,7 +1103,7 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
         self.progress("Circle at %u meters for %u seconds" %
                       (start_altitude, holdtime))
-        while self.get_sim_time() < tstart + holdtime:
+        while self.get_sim_time_cached() < tstart + holdtime:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             self.progress("heading %d" % m.heading)
 
@@ -1372,15 +1374,17 @@ class AutoTestCopter(AutoTest):
             int_error_yaw = 0
             self.progress("Hovering for %u seconds" % hover_time)
             failed = False
-            while self.get_sim_time() < tstart + holdtime + hover_time:
-                ti = self.get_sim_time()
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > holdtime + hover_time:
+                    break
 
                 servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
                                             blocking=True)
                 hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
                 attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
 
-                if not failed and self.get_sim_time() - tstart > hover_time:
+                if not failed and now - tstart > hover_time:
                     self.progress("Killing motor %u (%u%%)" %
                                   (fail_servo+1, fail_mul))
                     self.set_parameter("SIM_ENGINE_FAIL", fail_servo)
@@ -1388,8 +1392,7 @@ class AutoTestCopter(AutoTest):
                     failed = True
 
                 if failed:
-                    self.progress("Hold Time: %f/%f" %
-                                  (self.get_sim_time()-tstart, holdtime))
+                    self.progress("Hold Time: %f/%f" % (now-tstart, holdtime))
 
                 servo_pwm = [servo.servo1_raw,
                              servo.servo2_raw,
@@ -1424,7 +1427,7 @@ class AutoTestCopter(AutoTest):
                 self.progress("Yaw=%f (delta=%f) (deg)" %
                               (attitude.yaw, yaw_delta))
 
-                dt = self.get_sim_time() - ti
+                dt = self.get_sim_time() - now
                 int_error_alt += abs(alt_delta/dt)
                 int_error_yaw_rate += abs(yawrate_delta/dt)
                 int_error_yaw += abs(yaw_delta/dt)
@@ -1483,7 +1486,7 @@ class AutoTestCopter(AutoTest):
                 if gpi.lat != 0:
                     break
 
-                if self.get_sim_time() - tstart > 10:
+                if self.get_sim_time_cached() - tstart > 10:
                     raise AutoTestTimeoutException("Did not get non-zero lat")
 
             self.takeoff()
@@ -1499,7 +1502,7 @@ class AutoTestCopter(AutoTest):
                 if vicon_pos.x > 40:
                     break
 
-                if self.get_sim_time() - tstart > 100:
+                if self.get_sim_time_cached() - tstart > 100:
                     raise AutoTestTimeoutException("Vicon showed no movement")
 
             # recenter controls:
@@ -1509,7 +1512,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(3, 1500)
             tstart = self.get_sim_time()
             while True:
-                if self.get_sim_time() - tstart > 200:
+                if self.get_sim_time_cached() - tstart > 200:
                     raise NotAchievedException("Did not disarm")
                 self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                     blocking=True)
@@ -1970,7 +1973,7 @@ class AutoTestCopter(AutoTest):
         count_stop = -1
         tstart = self.get_sim_time()
         while self.armed(): # we RTL at end of mission
-            now = self.get_sim_time()
+            now = self.get_sim_time_cached()
             if now - tstart > 120:
                 raise AutoTestTimeoutException("Did not disarm as expected")
             m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
@@ -2145,7 +2148,7 @@ class AutoTestCopter(AutoTest):
 
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time() - tstart > 200:
+            if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not move far enough")
             # send a position-control command
             self.mav.mav.set_position_target_global_int_send(
@@ -2180,7 +2183,7 @@ class AutoTestCopter(AutoTest):
 
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time() - tstart > timeout:
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not start to move")
             # send a position-control command
             self.mav.mav.set_position_target_local_ned_send(
@@ -2230,9 +2233,12 @@ class AutoTestCopter(AutoTest):
 #        print('r=%f p=%f y=%f' % (m.roll, m.pitch, m.yaw))
         return vector - x
 
-    def loiter_to_ne(self, x, y, z):
+    def loiter_to_ne(self, x, y, z, timeout=30):
         dest = rotmat.Vector3(x, y, z)
+        tstart = self.get_sim_time()
         while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not loiter to ne!")
             m_pos = self.mav.recv_match(type='LOCAL_POSITION_NED',
                                         blocking=True)
             pos = rotmat.Vector3(m_pos.x, m_pos.y, m_pos.z)
@@ -2259,7 +2265,7 @@ class AutoTestCopter(AutoTest):
             )
 
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 10:
+        while self.get_sim_time_cached() - tstart < 10:
             m_pos = self.mav.recv_match(type='LOCAL_POSITION_NED',
                                         blocking=True)
             pos = rotmat.Vector3(m_pos.x, m_pos.y, m_pos.z)
@@ -2406,7 +2412,7 @@ class AutoTestCopter(AutoTest):
     def test_mount_pitch(self, despitch, despitch_tolerance, timeout=5):
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time() - tstart > timeout:
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Mount pitch not achieved")
 
             m = self.mav.recv_match(type='MOUNT_STATUS',
