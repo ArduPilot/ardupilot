@@ -680,12 +680,25 @@ class AutoTestCopter(AutoTest):
         self.wait_heading(160)
         self.set_rc(4, 1500)
 
-        # fly forward (east) at least 20m
+        fence_radius = self.get_parameter("FENCE_RADIUS")
+
+        self.progress("flying forward (east) until we hit fence")
         pitching_forward = True
         self.set_rc(2, 1100)
-        self.wait_distance(20)
 
-        # start timer
+        self.progress("Waiting for fence breach")
+        tstart = self.get_sim_time()
+        while not self.mode_is("RTL"):
+            if self.get_sim_time_cached() - tstart > 30:
+                self.NotAchievedException("Did not breach fence")
+
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            alt = m.relative_alt / 1000.0 # mm -> m
+            home_distance = self.distance_to_home(use_cached_home=True)
+            self.progress("Alt: %.02f  HomeDistance: %.02f (fence radius=%f)" %
+                          (alt, home_distance, fence_radius))
+
+        self.progress("Waiting until we get home and disarm")
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -694,7 +707,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Alt: %.02f  HomeDistance: %.02f" %
                           (alt, home_distance))
             # recenter pitch sticks once we're home so we don't fly off again
-            if pitching_forward and home_distance < 10:
+            if pitching_forward and home_distance < 50:
                 pitching_forward = False
                 self.set_rc(2, 1475)
                 # disable fence
@@ -723,8 +736,8 @@ class AutoTestCopter(AutoTest):
         # give we're testing RTL, doing one here probably doesn't make sense
         home_distance = self.distance_to_home(use_cached_home=True)
         raise AutoTestTimeoutException(
-            ("Fence test failed to reach home - "
-             "timed out after %u seconds" % timeout))
+            "Fence test failed to reach home (%fm distance) - "
+            "timed out after %u seconds" % (home_distance, timeout,))
 
     # fly_alt_fence_test - fly up until you hit the fence
     def fly_alt_max_fence_test(self):
@@ -2920,7 +2933,7 @@ class AutoTestCopter(AutoTest):
 
             ("HorizontalFence",
              "Test horizontal fence",
-             lambda: self.fly_fence_test(180)),
+             self.fly_fence_test),
 
             ("MaxAltFence",
              "Test Max Alt Fence",
