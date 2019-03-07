@@ -2331,6 +2331,12 @@ class AutoTestCopter(AutoTest):
         self.run_cmd_do_set_mode(
             "ACRO",
             want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
+        self.run_cmd_do_set_mode(
+            "STABILIZE",
+            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
+        self.run_cmd_do_set_mode(
+            "DRIFT",
+            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
         self.set_rc(3, 1000)
         self.run_cmd_do_set_mode("ACRO")
         self.mav.motors_disarmed_wait()
