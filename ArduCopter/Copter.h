@@ -770,7 +770,7 @@ private:
     // motors.cpp
     void arm_motors_check();
     void auto_disarm_check();
-    bool init_arm_motors(AP_Arming::ArmingMethod method, bool do_arming_checks=true);
+    bool init_arm_motors(AP_Arming::Method method, bool do_arming_checks=true);
     void init_disarm_motors();
     void motors_output();
     void lost_vehicle_check();
