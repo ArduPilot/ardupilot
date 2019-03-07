@@ -59,7 +59,7 @@ public:
 
     // check if we should write log messages
     void check_log_write(void);
-    
+
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
@@ -70,7 +70,7 @@ public:
     // returns the index of the IMU of the primary core
     // return -1 if no primary core selected
     int8_t getPrimaryCoreIMUIndex(void) const;
-    
+
     // Write the last calculated NE position relative to the reference point (m) for the specified instance.
     // An out of range instance (eg -1) returns data for the primary instance
     // If a calculated solution is not available, use the best available data and return false
@@ -396,6 +396,7 @@ private:
     AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
     AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
     AP_Int8 _extnavDelay_ms;        // effective average delay of external nav system measurements relative to inertial measurements (msec)
+    AP_Int8  _extnav_use_alt_source;// In case of EXTNAV pose, use ALT_SOURCE parameter and not EXTNAV_Z for altitude
 
     // Tuning parameters
     const float gpsNEVelVarAccScale = 0.05f;       // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -435,7 +436,7 @@ private:
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
-    
+
     struct {
         uint32_t last_function_call;  // last time getLastYawYawResetAngle was called
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
