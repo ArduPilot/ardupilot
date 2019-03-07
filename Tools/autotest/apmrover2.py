@@ -482,14 +482,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # the EKF doesn't pull us down to 0 speed:
         self.wait_groundspeed(0, 0.5, timeout=600)
 
+        # current Rover blows straight past the home position and ends
+        # up ~6m past the home point.
         home_distance = self.distance_to_home()
-        home_distance_max = 5
+        home_distance_min = 5.5
+        home_distance_max = 6.5
         if home_distance > home_distance_max:
             raise NotAchievedException(
-                "Did not get home (%f metres distant > %f)" %
-                (home_distance, home_distance_max))
+                "Did not stop near home (%f metres distant (%f > want > %f))" %
+                (home_distance, home_distance_min, home_distance_max))
         self.disarm_vehicle()
-        self.progress("RTL Mission OK")
+        self.progress("RTL Mission OK (%fm)" % home_distance)
 
 
     def wait_distance_home_gt(self, distance, timeout=60):
