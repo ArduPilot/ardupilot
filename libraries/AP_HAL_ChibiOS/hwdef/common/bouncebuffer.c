@@ -36,12 +36,13 @@
 /*
   initialise a bouncebuffer
  */
-void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes)
+void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes, bool sdcard)
 {
     (*bouncebuffer) = calloc(1, sizeof(struct bouncebuffer_t));
     osalDbgAssert(((*bouncebuffer) != NULL), "bouncebuffer init");
+    (*bouncebuffer)->is_sdcard = sdcard;
     if (prealloc_bytes) {
-        (*bouncebuffer)->dma_buf = malloc_dma(prealloc_bytes);
+        (*bouncebuffer)->dma_buf = sdcard?malloc_sdcard_dma(prealloc_bytes):malloc_dma(prealloc_bytes);
         osalDbgAssert(((*bouncebuffer)->dma_buf != NULL), "bouncebuffer preallocate");
         (*bouncebuffer)->size = prealloc_bytes;
     }
@@ -64,7 +65,7 @@ void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
         if (bouncebuffer->size > 0) {
             free(bouncebuffer->dma_buf);
         }
-        bouncebuffer->dma_buf = malloc_dma(size);
+        bouncebuffer->dma_buf = bouncebuffer->is_sdcard?malloc_sdcard_dma(size):malloc_dma(size);
         osalDbgAssert((bouncebuffer->dma_buf != NULL), "bouncebuffer read allocate");
         bouncebuffer->size = size;
     }
@@ -105,7 +106,7 @@ void bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t
         if (bouncebuffer->size > 0) {
             free(bouncebuffer->dma_buf);
         }
-        bouncebuffer->dma_buf = malloc_dma(size);
+        bouncebuffer->dma_buf = bouncebuffer->is_sdcard?malloc_sdcard_dma(size):malloc_dma(size);
         osalDbgAssert((bouncebuffer->dma_buf != NULL), "bouncebuffer write allocate");
         bouncebuffer->size = size;
     }

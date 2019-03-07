@@ -33,6 +33,7 @@
 
 #define MEM_REGION_FLAG_DMA_OK 1
 #define MEM_REGION_FLAG_FAST   2
+#define MEM_REGION_FLAG_SDCARD 4
 
 static const struct memory_region {
     void *address;
@@ -91,11 +92,12 @@ static void *malloc_flags(size_t size, uint32_t flags)
     if (size == 0) {
         return NULL;
     }
-    const uint8_t alignment = (flags&MEM_REGION_FLAG_DMA_OK?DMA_ALIGNMENT:MIN_ALIGNMENT);
+    const uint8_t dma_flags = (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_SDCARD);
+    const uint8_t alignment = (flags&dma_flags?DMA_ALIGNMENT:MIN_ALIGNMENT);
     void *p = NULL;
     uint8_t i;
 
-    if (flags & MEM_REGION_FLAG_DMA_OK) {
+    if (flags & dma_flags) {
         // allocate multiple of DMA alignment
         size = (size + (DMA_ALIGNMENT-1)) & ~(DMA_ALIGNMENT-1);
     }
@@ -116,6 +118,10 @@ static void *malloc_flags(size_t size, uint32_t flags)
             !(memory_regions[i].flags & MEM_REGION_FLAG_DMA_OK)) {
             continue;
         }
+        if ((flags & MEM_REGION_FLAG_SDCARD) &&
+            !(memory_regions[i].flags & MEM_REGION_FLAG_SDCARD)) {
+            continue;
+        }
         if ((flags & MEM_REGION_FLAG_FAST) &&
             !(memory_regions[i].flags & MEM_REGION_FLAG_FAST)) {
             continue;
@@ -127,7 +133,7 @@ static void *malloc_flags(size_t size, uint32_t flags)
     }
 
     // if this is a not a DMA request then we can fall back to any heap
-    if (!(flags & MEM_REGION_FLAG_DMA_OK)) {
+    if (!(flags & dma_flags)) {
         for (i=1; i<NUM_MEMORY_REGIONS; i++) {
             p = chHeapAllocAligned(&heaps[i], size, alignment);
             if (p) {
@@ -171,6 +177,19 @@ void *malloc(size_t size)
 void *malloc_dma(size_t size)
 {
     return malloc_flags(size, MEM_REGION_FLAG_DMA_OK);
+}
+
+/*
+  allocate DMA-safe memory for microSD transfers. This is only
+  different on H7 where SDMMC IDMA can't use SRAM4
+ */
+void *malloc_sdcard_dma(size_t size)
+{
+#if defined(STM32H7)
+    return malloc_flags(size, MEM_REGION_FLAG_SDCARD);
+#else
+    return malloc_flags(size, MEM_REGION_FLAG_DMA_OK);
+#endif
 }
 
 /*
