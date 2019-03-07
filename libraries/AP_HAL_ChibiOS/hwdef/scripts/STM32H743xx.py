@@ -15,14 +15,15 @@ mcu = {
     'UDID_START' : 0x1FF1E800,
 
     # ram map, as list of (address, size-kb, flags)
-    # flags of 1 means DMA-capable
+    # flags of 1 means DMA-capable (DMA and BDMA)
     # flags of 2 means faster memory for CPU intensive work
+    # flags of 4 means memory can be used for SDMMC DMA
     'RAM_MAP' : [
-        (0x24000000, 512, 1), # AXI SRAM
-        (0x30000000, 288, 1), # SRAM1, SRAM2, SRAM3
-        (0x38000000,  64, 1), # SRAM4
+        (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
+        (0x30000000, 288, 0), # SRAM1, SRAM2, SRAM3
+        (0x38000000,  64, 1), # SRAM4. This supports both DMA and BDMA ops
+        (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA
     ]
 }
 
