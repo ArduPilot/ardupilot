@@ -3925,6 +3925,30 @@ void GCS_MAVLINK::send_mount_status() const
     mount->send_mount_status(chan);
 }
 
+void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc)
+{
+
+    uint16_t type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE | \
+                         POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE | \
+                         POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE;
+
+    uint8_t mav_frame = loc.relative_alt ? MAV_FRAME_GLOBAL_RELATIVE_ALT_INT : MAV_FRAME_GLOBAL_INT;
+
+    mavlink_msg_set_position_target_global_int_send(
+            chan,
+            AP_HAL::millis(),
+            target_system,
+            target_component,
+            mav_frame,
+            type_mask,
+            loc.lat,
+            loc.lng,
+            loc.alt,
+            0,0,0,  // vx, vy, vz
+            0,0,0,  // ax, ay, az
+            0,0);   // yaw, yaw_rate
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
