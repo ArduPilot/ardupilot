@@ -1323,9 +1323,6 @@ void Copter::ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 void Copter::ModeAuto::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 > 0) {
-        // initialise guided limits
-        copter.mode_guided.limit_init_time_and_pos();
-
         // start guided within auto
         nav_guided_start();
     }
