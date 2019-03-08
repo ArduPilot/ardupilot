@@ -116,6 +116,24 @@ float ModeGuided::get_distance_to_destination() const
     return _distance_to_destination;
 }
 
+// return true if vehicle has reached or even passed destination
+bool ModeGuided::reached_destination()
+{
+    switch (_guided_mode) {
+    case Guided_WP:
+        return _reached_destination;
+        break;
+    case Guided_HeadingAndSpeed:
+    case Guided_TurnRateAndSpeed:
+    case Guided_Loiter:
+        return true;
+        break;
+    }
+
+    // we should never reach here but just in case, return true is the safer option
+    return true;
+}
+
 // set desired location
 void ModeGuided::set_desired_location(const struct Location& destination,
                                       float next_leg_bearing_cd)

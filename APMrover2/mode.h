@@ -67,6 +67,9 @@ public:
     // return if in non-manual mode : Auto, Guided, RTL, SmartRTL
     virtual bool is_autopilot_mode() const { return false; }
 
+    // return if external control is allowed in this mode (Guided or Guided-within-Auto)
+    virtual bool in_guided_mode() const { return false; }
+
     // returns true if vehicle can be armed or disarmed from the transmitter in this mode
     virtual bool allows_arming_from_transmitter() { return !is_autopilot_mode(); }
 
@@ -254,6 +257,9 @@ public:
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
 
+    // return if external control is allowed in this mode (Guided or Guided-within-Auto)
+    bool in_guided_mode() const override { return _submode == Auto_Guided; }
+
     // return distance (in meters) to destination
     float get_distance_to_destination() const override;
 
@@ -282,7 +288,8 @@ protected:
         Auto_WP,                // drive to a given location
         Auto_HeadingAndSpeed,   // turn to a given heading
         Auto_RTL,               // perform RTL within auto mode
-        Auto_Loiter             // perform Loiter within auto mode
+        Auto_Loiter,            // perform Loiter within auto mode
+        Auto_Guided             // handover control to external navigation system from within auto mode
     } _submode;
 
 private:
@@ -301,11 +308,13 @@ private:
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void do_RTL(void);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
+    void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_RTL();
     bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_set_yaw_speed();
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
@@ -316,6 +325,8 @@ private:
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
 
     bool start_loiter();
+    void start_guided(const Location& target_loc);
+    void send_guided_position_target();
 
     enum Mis_Done_Behave {
         MIS_DONE_BEHAVE_HOLD      = 0,
@@ -327,6 +338,11 @@ private:
     uint16_t loiter_duration;       // How long we should loiter at the nav_waypoint (time in seconds)
     uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
     bool previously_reached_wp;     // set to true if we have EVER reached the waypoint
+
+    // Guided variables
+    Location guided_target;         // location target sent to external navigation
+    bool guided_target_valid;       // true if guided_target is valid
+    uint32_t guided_target_sent_ms; // system time that target was last sent to offboard navigation
 
     // Conditional command
     // A value used in condition commands (eg delay, change alt, etc.)
@@ -352,8 +368,14 @@ public:
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
 
+    // return if external control is allowed in this mode (Guided or Guided-within-Auto)
+    bool in_guided_mode() const override { return true; }
+
     // return distance (in meters) to destination
     float get_distance_to_destination() const override;
+
+    // return true if vehicle has reached destination
+    bool reached_destination() override;
 
     // set desired location, heading and speed
     void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN) override;
