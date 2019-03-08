@@ -37,6 +37,10 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_wp(cmd, true);
         break;
 
+    case MAV_CMD_NAV_GUIDED_ENABLE: // accept navigation commands from external nav computer
+        do_nav_guided_enable(cmd);
+        break;
+
     case MAV_CMD_NAV_SET_YAW_SPEED:
         do_nav_set_yaw_speed(cmd);
         break;
@@ -158,6 +162,9 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time(cmd);
 
+    case MAV_CMD_NAV_GUIDED_ENABLE:
+        return verify_nav_guided_enable(cmd);
+
     case MAV_CMD_CONDITION_DELAY:
         return verify_wait_delay();
 
@@ -217,6 +224,16 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     Location cmdloc = cmd.content.location;
     location_sanitize(rover.current_loc, cmdloc);
     set_desired_location(cmdloc, next_leg_bearing_cd);
+}
+
+void ModeAuto::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
+{
+    if (cmd.p1 > 0) {
+        // initialise guided limits
+        //rover.mode_guided.limit_init_time_and_pos();
+
+        start_guided(cmd.content.location);
+    }
 }
 
 // do_set_yaw_speed - turn to a specified heading and achieve and given speed
@@ -293,6 +310,12 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
         gcs().send_text(MAV_SEVERITY_WARNING, "Finished active loiter");
     }
     return result;
+}
+
+// check if guided has completed
+bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
+{
+    return false;
 }
 
 // verify_yaw - return true if we have reached the desired heading
