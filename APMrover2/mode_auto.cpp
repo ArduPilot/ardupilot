@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Rover.h"
 
+#define AUTO_GUIDED_SEND_TARGET_MS 1000
+
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
@@ -85,10 +87,18 @@ void ModeAuto::update()
         case Auto_RTL:
             rover.mode_rtl.update();
             break;
-        
+
         case Auto_Loiter:
             rover.mode_loiter.update();
             break;
+
+        case Auto_Guided:
+        {
+            // send location target to offboard navigation system
+            send_guided_position_target();
+            rover.mode_guided.update();
+            break;
+        }
     }
 }
 
@@ -113,12 +123,25 @@ void ModeAuto::set_desired_location(const struct Location& destination, float ne
 // return true if vehicle has reached or even passed destination
 bool ModeAuto::reached_destination()
 {
-    if (_submode == Auto_WP) {
+    switch (_submode) {
+    case Auto_WP:
         return _reached_destination;
-    }
-    if (_submode == Auto_RTL) {
+        break;
+    case Auto_HeadingAndSpeed:
+        // always return true because this is the safer option to allow missions to continue
+        return true;
+        break;
+    case Auto_RTL:
         return rover.mode_rtl.reached_destination();
+        break;
+    case Auto_Loiter:
+        return rover.mode_loiter.reached_destination();
+        break;
+    case Auto_Guided:
+        return rover.mode_guided.reached_destination();
+        break;
     }
+
     // we should never reach here but just in case, return true to allow missions to continue
     return true;
 }
@@ -149,6 +172,50 @@ void ModeAuto::start_RTL()
     if (rover.mode_rtl.enter()) {
         _submode = Auto_RTL;
     }
+}
+
+// hand over control to external navigation controller in AUTO mode
+void ModeAuto::start_guided(const Location& loc)
+{
+    if (rover.mode_guided.enter()) {
+        _submode = Auto_Guided;
+
+        // initialise guided start time and position as reference for limit checking
+        //rover.mode_guided.limit_init_time_and_pos();
+
+        // sanity check target location
+        Location loc_sanitised = loc;
+        if ((loc_sanitised.lat != 0) || (loc_sanitised.lng != 0)) {
+            location_sanitize(rover.current_loc, loc_sanitised);
+            guided_target = loc_sanitised;
+            guided_target_valid = true;
+        } else {
+            guided_target_valid = false;
+        }
+    }
+}
+
+// send latest position target to offboard navigation system
+void ModeAuto::send_guided_position_target()
+{
+    if (!guided_target_valid) {
+        return;
+    }
+
+    // send at maximum of 1hz
+    uint32_t now_ms = AP_HAL::millis();
+    if ((guided_target_sent_ms == 0) || (now_ms - guided_target_sent_ms > AUTO_GUIDED_SEND_TARGET_MS)) {
+        guided_target_sent_ms = now_ms;
+
+        // get system id and component id of offboard navigation system
+        uint8_t sysid = 0;
+        uint8_t compid = 0;
+        mavlink_channel_t chan;
+        if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_ONBOARD_CONTROLLER, sysid, compid, chan)) {
+            gcs().chan(chan-MAVLINK_COMM_0).send_set_position_target_global_int(sysid, compid, guided_target);
+        }
+    }
+
 }
 
 /*
