@@ -417,10 +417,6 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_land(cmd);
         break;
 
-    case MAV_CMD_NAV_PAYLOAD_PLACE:              // 94 place at Waypoint
-        do_payload_place(cmd);
-        break;
-
     case MAV_CMD_NAV_LOITER_UNLIM:              // 17 Loiter indefinitely
         do_loiter_unlimited(cmd);
         break;
@@ -451,8 +447,12 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-    case MAV_CMD_NAV_DELAY:                    // 94 Delay the next navigation command
+    case MAV_CMD_NAV_DELAY:                    // 93 Delay the next navigation command
         do_nav_delay(cmd);
+        break;
+
+    case MAV_CMD_NAV_PAYLOAD_PLACE:              // 94 place at Waypoint
+        do_payload_place(cmd);
         break;
 
     //
@@ -1326,7 +1326,7 @@ void Copter::ModeAuto::do_nav_guided_enable(const AP_Mission::Mission_Command& c
         // initialise guided limits
         copter.mode_guided.limit_init_time_and_pos();
 
-        // set spline navigation target
+        // start guided within auto
         nav_guided_start();
     }
 }
