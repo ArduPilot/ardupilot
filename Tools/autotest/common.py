@@ -1039,7 +1039,8 @@ class AutoTest(ABC):
                 want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
                 target_sysid=None,
                 target_compid=None,
-                timeout=10):
+                timeout=10,
+                quiet=False):
         """Send a MAVLink command long."""
         if target_sysid is None:
             target_sysid = self.sysid_thismav()
@@ -1056,9 +1057,9 @@ class AutoTest(ABC):
                                        p5,
                                        p6,
                                        p7)
-        self.run_cmd_get_ack(command, want_result, timeout)
+        self.run_cmd_get_ack(command, want_result, timeout, quiet=quiet)
 
-    def run_cmd_get_ack(self, command, want_result, timeout):
+    def run_cmd_get_ack(self, command, want_result, timeout, quiet=False):
         tstart = self.get_sim_time_cached()
         while True:
             delta_time = self.get_sim_time_cached() - tstart
@@ -1069,7 +1070,8 @@ class AutoTest(ABC):
                                     timeout=1)
             if m is None:
                 continue
-            self.progress("ACK received: %s (%fs)" % (str(m), delta_time))
+            if not quiet:
+                self.progress("ACK received: %s (%fs)" % (str(m), delta_time))
             if m.command == command:
                 if m.result != want_result:
                     raise ValueError("Expected %s got %s" % (want_result,
@@ -1722,13 +1724,14 @@ class AutoTest(ABC):
         self.check_test_syntax(test_file=os.path.realpath(file))
 
 
-    def poll_home_position(self):
+    def poll_home_position(self, quiet=False):
         old = self.mav.messages.get("HOME_POSITION", None)
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time() - tstart > 30:
                 raise NotAchievedException("Failed to poll home position")
-            self.progress("Sending MAV_CMD_GET_HOME_POSITION")
+            if not quiet:
+                self.progress("Sending MAV_CMD_GET_HOME_POSITION")
             try:
                 self.run_cmd(
                     mavutil.mavlink.MAV_CMD_GET_HOME_POSITION,
@@ -1738,7 +1741,8 @@ class AutoTest(ABC):
                     0,
                     0,
                     0,
-                    0)
+                    0,
+                    quiet=quiet)
             except ValueError as e:
                 continue
             m = self.mav.messages.get("HOME_POSITION", None)
@@ -1753,7 +1757,7 @@ class AutoTest(ABC):
     def distance_to_home(self, use_cached_home=False):
         m = self.mav.messages.get("HOME_POSITION", None)
         if use_cached_home is False or m is None:
-            m = self.poll_home_position()
+            m = self.poll_home_position(quiet=True)
         loc = mavutil.location(m.latitude * 1.0e-7,
                                m.longitude * 1.0e-7,
                                m.altitude * 1.0e-3,
