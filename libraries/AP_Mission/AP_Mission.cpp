@@ -1893,6 +1893,8 @@ const char *AP_Mission::Mission_Command::type() const {
         return "SetROI";
     case MAV_CMD_DO_SET_REVERSE:
         return "SetReverse";
+    case MAV_CMD_DO_GUIDED_LIMITS:
+        return "GuidedLimits";
     default:
         return "?";
     }
