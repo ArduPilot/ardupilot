@@ -85,7 +85,9 @@ class AutoTestTracker(AutoTest):
                                     breakpoints=self.breakpoints,
                                     )
         self.mavproxy = util.start_MAVProxy_SITL(
-            'AntennaTracker', options=self.mavproxy_options())
+            'AntennaTracker',
+            logfile=self.mavproxy_logfile,
+            options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
         self.logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)

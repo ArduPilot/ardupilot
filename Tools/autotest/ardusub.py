@@ -67,7 +67,9 @@ class AutoTestSub(AutoTest):
                                     breakpoints=self.breakpoints,
                                     wipe=True)
         self.mavproxy = util.start_MAVProxy_SITL(
-            'ArduSub', options=self.mavproxy_options())
+            'ArduSub',
+            logfile=self.mavproxy_logfile,
+            options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
         self.logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
