@@ -1140,6 +1140,24 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             copter.mode_guided.set_destination(pos_neu_cm, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         }
 
+        // Return newly assigned local target
+        mavlink_msg_position_target_local_ned_send(
+            chan,
+            AP_HAL::millis(),
+            packet.coordinate_frame,
+            packet.type_mask,
+            packet.x,
+            packet.y,
+            packet.z,
+            packet.vx,
+            packet.vy,
+            packet.vz,
+            packet.afx,
+            packet.afy,
+            packet.afz,
+            packet.yaw,
+            packet.yaw_rate);
+
         break;
     }
 #endif
