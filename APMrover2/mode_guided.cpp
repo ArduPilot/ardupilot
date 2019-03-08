@@ -201,3 +201,42 @@ bool ModeGuided::start_loiter()
     }
     return false;
 }
+
+// set guided timeout and movement limits
+void ModeGuided::limit_set(uint32_t timeout_ms, float horiz_max)
+{
+    limit.timeout_ms = timeout_ms;
+    limit.horiz_max = horiz_max;
+}
+
+// clear/turn off guided limits
+void ModeGuided::limit_clear()
+{
+    limit.timeout_ms = 0;
+    limit.horiz_max = 0.0f;
+}
+
+// initialise guided start time and location as reference for limit checking
+//  only called from AUTO mode's start_guided method
+void ModeGuided::limit_init_time_and_location()
+{
+    limit.start_time = AP_HAL::millis();
+    limit.start_loc = rover.current_loc;
+}
+
+// returns true if guided mode has breached a limit
+bool ModeGuided::limit_breached()
+{
+    // check if we have passed the timeout
+    if ((limit.timeout_ms > 0) && (millis() - limit.start_time >= limit.timeout_ms)) {
+        return true;
+    }
+
+    // check if we have gone beyond horizontal limit
+    if (limit.horiz_max > 0.0f) {
+        return (rover.current_loc.get_distance(limit.start_loc) > limit.horiz_max);
+    }
+
+    // if we got this far we must be within limits
+    return false;
+}

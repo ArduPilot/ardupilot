@@ -20,6 +20,9 @@ bool ModeAuto::_enter()
     // other initialisation
     auto_triggered = false;
 
+    // clear guided limits
+    rover.mode_guided.limit_clear();
+
     // restart mission processing
     mission.start_or_resume();
     return true;
@@ -181,7 +184,7 @@ void ModeAuto::start_guided(const Location& loc)
         _submode = Auto_Guided;
 
         // initialise guided start time and position as reference for limit checking
-        //rover.mode_guided.limit_init_time_and_pos();
+        rover.mode_guided.limit_init_time_and_location();
 
         // sanity check target location
         Location loc_sanitised = loc;
