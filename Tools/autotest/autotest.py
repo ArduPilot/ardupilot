@@ -306,7 +306,7 @@ def run_specific_test(step, *args, **kwargs):
         "fly.ArduPlane": arduplane.AutoTestPlane,
         "fly.QuadPlane": quadplane.AutoTestQuadPlane,
         "drive.APMrover2": apmrover2.AutoTestRover,
-        "drive.BalanceBot": balancebot.AutoTestBalanceBot,
+        "drive.balancebot": balancebot.AutoTestBalanceBot,
         "fly.CopterAVC": arducopter.AutoTestHeli,
         "dive.ArduSub": ardusub.AutoTestSub,
         "test.AntennaTracker": antennatracker.AutoTestTracker,
