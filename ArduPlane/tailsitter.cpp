@@ -56,72 +56,22 @@ void QuadPlane::tailsitter_output(void)
         return;
     }
 
-    // record plane gain outputs before overwriting with VTOL gains in case they are needed for interpolation
-    float fw_aileron;
-    float fw_elevator;
-    float fw_rudder;
+    // record plane outputs in case they are needed for interpolation
+    float fw_aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    float fw_elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+    float fw_rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
+
+     // thrust vectoring in fixed wing flight
     float fw_tilt_left = 0;
     float fw_tilt_right = 0;
-    //float fw_throttle_left;
-    //float fw_throttle_right;
-
-    if (tailsitter_active()) { // if in Qmode we need to match the Q rates with plane controller
-        // no fixed wing yaw controller so cannot stabilize VTOL roll
-        //const float roll_rate = attitude_control->get_rate_roll_pid().get_pid_info().desired * 100;
-        const float pitch_rate = attitude_control->get_rate_pitch_pid().get_pid_info().desired * 100;
-        const float yaw_rate = attitude_control->get_rate_yaw_pid().get_pid_info().desired * 100;
-        const float speed_scaler = plane.get_speed_scaler();
-
-        // due to reference frame change roll and yaw are swapped
-        fw_aileron = plane.rollController.get_rate_out(-yaw_rate,  speed_scaler);
-        fw_elevator = plane.pitchController.get_rate_out(pitch_rate, speed_scaler);
-        //fw_rudder = plane.yawController.get_rate_out(roll_rate, speed_scaler);
-
-        // use roll as rudder input and output direct as with plane
-        fw_rudder = plane.channel_roll->get_control_in();
-
-        /* Use VTOL throttle as no rudder stabilization in plane yet
-        const float throttle = motors->get_throttle() * 100;
-        const float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
-
-        // Calculate differential thrust in forward flight
-        if (rud_gain > 0){
-            float rudder = rud_gain * fw_rudder / float(SERVO_MAX);
-            if (throttle < 0 && plane.aparm.throttle_min < 0) {
-                // doing reverse thrust
-                fw_throttle_left  = constrain_float(throttle + 50 * rudder, -100, 0);
-                fw_throttle_right = constrain_float(throttle - 50 * rudder, -100, 0);
-            } else if (throttle <= 0) {
-                fw_throttle_left  = fw_throttle_right = 0;
-            } else {
-                // doing forward thrust
-                fw_throttle_left  = constrain_float(throttle + 50 * rudder, 0, 100);
-                fw_throttle_right = constrain_float(throttle - 50 * rudder, 0, 100);
-            }
-        } else {
-            fw_throttle_left = throttle;
-            fw_throttle_right = throttle;
-        }
-        */
-
-    } else {
-        fw_aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-        fw_elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-        fw_rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
-        //fw_throttle_left = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft);
-        //fw_throttle_right = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight);
-    }
 
     if (tailsitter.vectored_forward_gain > 0) {
-        // thrust vectoring in fixed wing flight
         fw_tilt_left  = (fw_elevator + fw_aileron) * tailsitter.vectored_forward_gain;
         fw_tilt_right = (fw_elevator - fw_aileron) * tailsitter.vectored_forward_gain;
     }
 
     if ((!tailsitter_active() || in_tailsitter_vtol_transition()) && !assisted_flight) {
-        // output tilts for forward flight
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, fw_tilt_left);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, fw_tilt_right);
+        float fw_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
 
         if (in_tailsitter_vtol_transition() && !throttle_wait && is_flying() && hal.util->get_soft_armed()) {
             /*
@@ -129,22 +79,22 @@ void QuadPlane::tailsitter_output(void)
               hover thrust, center the rudder and set the altitude controller
               integrator to the same throttle level
              */
-            throttle = motors->get_throttle_hover() * 100;
+            fw_throttle = motors->get_throttle_hover() * 100;
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-            pos_control->get_accel_z_pid().set_integrator(throttle*10);
+            pos_control->get_accel_z_pid().set_integrator(fw_throttle*10);
             
-            if (mask == 0) {
                 // override AP_MotorsTailsitter throttles during back transition
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);            
-            }
-        }
-        if (mask != 0) {
-            // set AP_MotorsMatrix throttles enabled for forward flight
-            motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
-            }
-        }
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, fw_throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, fw_throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, fw_throttle);
+    	}
+
+    	// set AP_MotorsMatrix throttles enabled for forward flight
+        motors->output_motor_mask(fw_throttle * 0.01f, tailsitter.motor_mask, plane.rudder_dt);
+
+        // output tilts for forward flight
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, fw_tilt_left);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, fw_tilt_right);
         return;
     }
 
@@ -163,20 +113,36 @@ void QuadPlane::tailsitter_output(void)
     plane.rollController.reset_I();
 
     // pull in copter control outputs
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, (motors->get_yaw())*-SERVO_MAX);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, (motors->get_pitch())*SERVO_MAX);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, (motors->get_roll())*SERVO_MAX);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, (motors->get_throttle()) * 100);
+    float aileron = motors->get_yaw()*-SERVO_MAX;
+    float elevator = motors->get_pitch()*SERVO_MAX;
+    float rudder = motors->get_roll()*SERVO_MAX;
+    float throttle = motors->get_throttle() * 100;
+    float tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);
+    float tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight);
 
+    // scale surfaces for throttle
     if (hal.util->get_soft_armed()) {
-        // scale surfaces for throttle
-        tailsitter_speed_scaling();
+        const float hover_throttle = motors->get_throttle_hover();
+        float scaling = tailsitter.throttle_scale_max;
+
+        if (!is_zero(throttle)) {
+            scaling = constrain_float(hover_throttle / (throttle * 0.01f), 0, tailsitter.throttle_scale_max);
+        }
+
+        rudder *= scaling;
+        aileron *= scaling;
+        elevator *= scaling;
+        tilt_left *= scaling;
+        tilt_right *= scaling;
+
+        rudder = constrain_float(rudder, -SERVO_MAX, SERVO_MAX);
+        aileron = constrain_float(aileron, -SERVO_MAX, SERVO_MAX);
+        elevator = constrain_float(elevator, -SERVO_MAX, SERVO_MAX);
+        tilt_left = constrain_float(tilt_left, -SERVO_MAX, SERVO_MAX);
+        tilt_right = constrain_float(tilt_right, -SERVO_MAX, SERVO_MAX);
     }
 
     if (tailsitter.vectored_hover_gain > 0) {
-        // thrust vectoring VTOL modes
-        tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);
-        tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight);
         /*
           apply extra elevator when at high pitch errors, using a
           power law. This allows the motors to point straight up for
@@ -185,10 +151,10 @@ void QuadPlane::tailsitter_output(void)
         int32_t pitch_error_cd = (plane.nav_pitch_cd - ahrs_view->pitch_sensor) * 0.5;
         float extra_pitch = constrain_float(pitch_error_cd, -SERVO_MAX, SERVO_MAX) / SERVO_MAX;
         float extra_sign = extra_pitch > 0?1:-1;
-        // only use extra elevator in VTOL modes
-        float extra_elevator = 0;
+        // only apply extra elevator in Q modes
+        float extra_elevator = 0.0f;
         if (!assisted_flight){
-            extra_elevator = extra_sign * powf(fabsf(extra_pitch), tailsitter.vectored_hover_power) * 4500;
+            extra_elevator = extra_sign * powf(fabsf(extra_pitch), tailsitter.vectored_hover_power) * SERVO_MAX;
         }
         tilt_left  = extra_elevator + tilt_left * tailsitter.vectored_hover_gain;
         tilt_right = extra_elevator + tilt_right * tailsitter.vectored_hover_gain;
@@ -197,47 +163,39 @@ void QuadPlane::tailsitter_output(void)
             motors->limit.roll_pitch = 1;
             motors->limit.yaw = 1;
         }
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
     }
 
-    // apply speed scaling to interplate between fixed wing and VTOL outputs based on airspeed
+    // apply speed scaling to interpolate between fixed wing and VTOL outputs based on airspeed
     float aspeed;
     bool have_airspeed = ahrs.airspeed_estimate(&aspeed);
+    const float scaling_range = tailsitter.scaling_speed_max - tailsitter.scaling_speed_min;
     // only bother if it will change the output
-    if (aspeed >= (tailsitter.scaling_speed - tailsitter.scaling_range * 0.5) && have_airspeed) {
-        // get VTOL mode outputs
-        const float VTOL_aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-        const float VTOL_elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-        const float VTOL_rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
-        const float VTOL_tilt_left  = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);
-        const float VTOL_tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight);
-        // No fixed wing yaw contoller so just use VTOL all the time
-        //const float VTOL_throttle_left = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft);
-        //const float VTOL_throttle_right = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight);
+    if (aspeed > tailsitter.scaling_speed_min && have_airspeed && !is_zero(scaling_range)) {
 
-        // caculate ratio of  gains
-        float VTOL_rato = 0.5f + (aspeed - tailsitter.scaling_speed) * -(1.0f/tailsitter.scaling_range);
-        VTOL_rato = constrain_float(VTOL_rato, 0.0f, 1.0f);
-        const float fw_ratio = 1.0f - VTOL_rato;
+        // match the Q rates with plane controller
+        if (!assisted_flight) {
+            // no fixed wing yaw controller so cannot stabilize VTOL roll
+            const float pitch_rate = attitude_control->get_rate_pitch_pid().get_pid_info().desired * 100;
+            const float yaw_rate = attitude_control->get_rate_yaw_pid().get_pid_info().desired * 100;
+            const float speed_scaler = plane.get_speed_scaler();
 
-        // caculate interpolated outputs
-        const float aileron_interp =  VTOL_aileron * VTOL_rato + fw_aileron * fw_ratio;
-        const float elevator_interp = VTOL_elevator * VTOL_rato + fw_elevator * fw_ratio;
-        const float rudder_interp = VTOL_rudder * VTOL_rato + fw_rudder * fw_ratio;
-        const float tilt_left_interp = VTOL_tilt_left * VTOL_rato + fw_tilt_left * fw_ratio;
-        const float tilt_right_interp = VTOL_tilt_right * VTOL_rato + fw_tilt_right * fw_ratio;
-        //const float throttle_left_interp = VTOL_throttle_left * VTOL_rato + fw_throttle_left * fw_ratio;
-        //const float throttle_right_interp = VTOL_throttle_right * VTOL_rato + fw_throttle_right * fw_ratio;
+            // due to reference frame change roll and yaw are swapped, use roll as rudder input and output direct as with plane
+            fw_aileron = plane.rollController.get_rate_out(-yaw_rate, speed_scaler);
+            fw_elevator = plane.pitchController.get_rate_out(pitch_rate, speed_scaler);
+            fw_rudder = plane.channel_roll->get_control_in();
+        }
 
-        // set outputs
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron_interp);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator_interp);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder_interp);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left_interp);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right_interp);
-        //SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left_interp);
-        //SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right_interp);
+        // calculate ratio of  gains
+        float fw_ratio = (aspeed - tailsitter.scaling_speed_min) / scaling_range;
+        fw_ratio = constrain_float(fw_ratio, 0.0f, 1.0f);
+        const float VTOL_rato = 1.0f - fw_ratio;
+
+        // calculate interpolated outputs
+        aileron = aileron * VTOL_rato + fw_aileron * fw_ratio;
+        elevator = elevator * VTOL_rato + fw_elevator * fw_ratio;
+        rudder = rudder * VTOL_rato + fw_rudder * fw_ratio;
+        tilt_left = tilt_left * VTOL_rato + fw_tilt_left * fw_ratio;
+        tilt_right = tilt_right * VTOL_rato + fw_tilt_right * fw_ratio;
     }
 
     if (tailsitter.input_mask_chan > 0 &&
@@ -245,18 +203,25 @@ void QuadPlane::tailsitter_output(void)
         RC_Channels::get_radio_in(tailsitter.input_mask_chan-1) > 1700) {
         // the user is learning to prop-hang
         if (tailsitter.input_mask & TAILSITTER_MASK_AILERON) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.channel_roll->get_control_in_zero_dz());
+            aileron = plane.channel_roll->get_control_in_zero_dz();
         }
         if (tailsitter.input_mask & TAILSITTER_MASK_ELEVATOR) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.channel_pitch->get_control_in_zero_dz());
+            elevator = plane.channel_pitch->get_control_in_zero_dz();
         }
         if (tailsitter.input_mask & TAILSITTER_MASK_THROTTLE) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
+            throttle = plane.get_throttle_input(true);
         }
         if (tailsitter.input_mask & TAILSITTER_MASK_RUDDER) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, plane.channel_rudder->get_control_in_zero_dz());
+            rudder = plane.channel_rudder->get_control_in_zero_dz();
         }
     }
+    // set outputs
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 }
 
 
@@ -418,7 +383,3 @@ void QuadPlane::tailsitter_speed_scaling(void)
         SRV_Channels::set_output_scaled(functions[i], v);
     }
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> 2672adb89f... plane: tail sitter add gain interpolation with airspeed

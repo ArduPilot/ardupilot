@@ -402,12 +402,27 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure, 0),
 
+    // @Param: TAILSIT_SPDMIN
+    // @DisplayName: Tailsitter minimum airspeed scaling
+    // @Description: bellow this airspeed tailsiter is controlled by copter gains, gains scaled linearly between TAILSIT_SPDMIN and TAILSIT_SPDMAX, this apply s in Q modes and during Q assist if enabled
+    // @Units: m/s
+    // @Range: 0 50
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_SPDMIN", 9, QuadPlane, tailsitter.scaling_speed_min, 10),
+
+    // @Param: TAILSIT_SPDMAX
+    // @DisplayName: Tailsitter maximum airspeed scaling
+    // @Description: above this airspeed tailsiter is controlled by plane gains, gains scaled linearly between TAILSIT_SPDMIN and TAILSIT_SPDMAX, this apply s in Q modes and during Q assist if enabled
+    // @Units: m/s
+    // @Range: 0 50
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_SPDMAX", 10, QuadPlane, tailsitter.scaling_speed_max, 20),
     // @Param: TAILSIT_MOTMX
     // @DisplayName: Tailsiter mask
     // @Description: Bitmask of motors to remain active in forward flight for a 'copter' tailsitter. Non-zero indicates airframe is a tailsitter which pitches forward 90 degrees in forward flight modes.
     // @User: Standard
     // @Bitmask: 0:Motor 1,1:Motor 2,2:Motor 3,3:Motor 4, 4:Motor 5,5:Motor 6,6:Motor 7,7:Motor 8
-    AP_GROUPINFO("TAILSIT_MOTMX", 9, QuadPlane, tailsitter.motor_mask, 0),
+    AP_GROUPINFO("TAILSIT_MOTMX", 11, QuadPlane, tailsitter.motor_mask, 0),
 
     AP_GROUPEND
 };
