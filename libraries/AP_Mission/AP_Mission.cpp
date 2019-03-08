@@ -568,6 +568,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
     case MAV_CMD_NAV_LOITER_TO_ALT:
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
+    case MAV_CMD_NAV_GUIDED_ENABLE:
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_GO_AROUND:
@@ -1860,6 +1861,8 @@ const char *AP_Mission::Mission_Command::type() const {
         return "LoitUnlim";
     case MAV_CMD_NAV_LOITER_TIME:
         return "LoitTime";
+    case MAV_CMD_NAV_GUIDED_ENABLE:
+        return "GuidedEnable";
     case MAV_CMD_NAV_SET_YAW_SPEED:
         return "SetYawSpd";
     case MAV_CMD_CONDITION_DELAY:
