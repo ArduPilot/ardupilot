@@ -323,6 +323,7 @@ private:
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
+    void do_guided_limits(const AP_Mission::Mission_Command& cmd);
 
     bool start_loiter();
     void start_guided(const Location& target_loc);
@@ -388,6 +389,12 @@ public:
     // vehicle start loiter
     bool start_loiter();
 
+    // guided limits
+    void limit_set(uint32_t timeout_ms, float horiz_max);
+    void limit_clear();
+    void limit_init_time_and_location();
+    bool limit_breached();
+
 protected:
 
     enum GuidedMode {
@@ -405,6 +412,14 @@ protected:
     bool have_attitude_target;  // true if we have a valid attitude target
     uint32_t _des_att_time_ms;  // system time last call to set_desired_attitude was made (used for timeout)
     float _desired_yaw_rate_cds;// target turn rate centi-degrees per second
+
+    // limits
+    struct Guided_Limit {
+        uint32_t timeout_ms;// timeout (in seconds) from the time that guided is invoked
+        float horiz_max;    // horizontal position limit in meters from where guided mode was initiated (0 = no limit)
+        uint32_t start_time;// system time in milliseconds that control was handed to the external computer
+        Location start_loc; // starting location for checking horiz_max limit
+    } limit;
 };
 
 

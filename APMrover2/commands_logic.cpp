@@ -96,6 +96,10 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         }
         break;
 
+    case MAV_CMD_DO_GUIDED_LIMITS:
+        do_guided_limits(cmd);
+        break;
+
     default:
         // return false for unhandled commands
         return false;
@@ -182,6 +186,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_REVERSE:
     case MAV_CMD_DO_FENCE_ENABLE:
+    case MAV_CMD_DO_GUIDED_LIMITS:
         return true;
 
     default:
@@ -226,12 +231,10 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     set_desired_location(cmdloc, next_leg_bearing_cd);
 }
 
+// start guided within auto to allow external navigation system to control vehicle
 void ModeAuto::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 > 0) {
-        // initialise guided limits
-        //rover.mode_guided.limit_init_time_and_pos();
-
         start_guided(cmd.content.location);
     }
 }
@@ -315,7 +318,21 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 // check if guided has completed
 bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
-    return false;
+    // if we failed to enter guided or this command disables guided
+    // return true so we move to next command
+    if (_submode != Auto_Guided || cmd.p1 == 0) {
+        return true;
+    }
+
+    // if a location target was set, return true once vehicle is close
+    if (guided_target_valid) {
+        if (rover.current_loc.get_distance(guided_target) <= rover.g.waypoint_radius) {
+            return true;
+        }
+    }
+
+    // guided command complete once a limit is breached
+    return rover.mode_guided.limit_breached();
 }
 
 // verify_yaw - return true if we have reached the desired heading
@@ -391,3 +408,12 @@ void ModeAuto::do_set_reverse(const AP_Mission::Mission_Command& cmd)
 {
     set_reversed(cmd.p1 == 1);
 }
+
+// set timeout and position limits for guided within auto
+void ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
+{
+    rover.mode_guided.limit_set(
+        cmd.p1 * 1000, // convert seconds to ms
+        cmd.content.guided_limits.horiz_max);
+}
+
