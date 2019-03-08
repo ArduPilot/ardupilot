@@ -83,7 +83,7 @@ void QuadPlane::tailsitter_output(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
             pos_control->get_accel_z_pid().set_integrator(fw_throttle*10);
             
-                // override AP_MotorsTailsitter throttles during back transition
+            // override AP_MotorsTailsitter throttles during back transition
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, fw_throttle);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, fw_throttle);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, fw_throttle);
@@ -215,6 +215,15 @@ void QuadPlane::tailsitter_output(void)
             rudder = plane.channel_rudder->get_control_in_zero_dz();
         }
     }
+    // TODO: need a way to handle the lack of a reliable airspeed measurement
+    if (false) {
+        float gscale = tailsitter_gain_scaling();
+        aileron *= gscale;
+        elevator *= gscale;
+        rudder *= gscale;
+        tilt_left *= gscale;
+        tilt_right *= gscale;
+    }
     // set outputs
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
@@ -295,7 +304,7 @@ bool QuadPlane::in_tailsitter_vtol_transition(void) const
 /*
   account for speed scaling of control surfaces in VTOL modes
 */
-void QuadPlane::tailsitter_speed_scaling(void)
+float QuadPlane::tailsitter_gain_scaling(void)
 {
     const float hover_throttle = motors->get_throttle_hover();
     const float throttle = motors->get_throttle();
@@ -371,15 +380,5 @@ void QuadPlane::tailsitter_speed_scaling(void)
     }
     last_scale = scale;
 
-    const SRV_Channel::Aux_servo_function_t functions[4] = {
-        SRV_Channel::Aux_servo_function_t::k_aileron,
-        SRV_Channel::Aux_servo_function_t::k_elevator,
-        SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft,
-        SRV_Channel::Aux_servo_function_t::k_tiltMotorRight};
-    for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
-        int32_t v = SRV_Channels::get_output_scaled(functions[i]);
-        v *= scale;
-        v = constrain_int32(v, -SERVO_MAX, SERVO_MAX);
-        SRV_Channels::set_output_scaled(functions[i], v);
-    }
+    return scale;
 }
