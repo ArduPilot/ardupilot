@@ -372,8 +372,8 @@ extern const AP_HAL::HAL &hal;
 #define ACT_DUR                                       0x3F
 
 AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                                                      int drdy_pin_num_a,
                                                      int drdy_pin_num_g,
                                                      enum Rotation rotation_a,
@@ -391,8 +391,8 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                                                             enum Rotation rotation_a,
                                                             enum Rotation rotation_g,
                                                             enum Rotation rotation_gH)
