@@ -387,6 +387,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "Brakes work (with=%0.2fm without=%0.2fm delta=%0.2fm)" %
             (distance_with_brakes, distance_without_brakes, delta))
 
+    def drive_rtl_mission_max_distance_from_home(self):
+        '''maximum distance allowed from home at end'''
+        return 6.5
+
     def drive_rtl_mission(self):
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -408,8 +412,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         wp_dist_min = 5
         if m.wp_dist < wp_dist_min:
             raise PreconditionFailedException(
-                "Did not start at least %u metres from destination" %
-                (wp_dist_min))
+                "Did not start at least %f metres from destination (is=%f)" %
+                (wp_dist_min, m.wp_dist))
 
         self.progress("NAV_CONTROLLER_OUTPUT.wp_dist looks good (%u >= %u)" %
                       (m.wp_dist, wp_dist_min,))
@@ -420,7 +424,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 raise NotAchievedException("Did not get home")
             self.progress("Distance home: %f (mode=%s)" %
                           (self.distance_to_home(), self.mav.flightmode))
-            if self.mode_is('HOLD'):
+            if self.mode_is('HOLD') or self.mode_is('LOITER'): # loiter for balancebot
                 break
 
         # the EKF doesn't pull us down to 0 speed:
@@ -430,7 +434,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # up ~6m past the home point.
         home_distance = self.distance_to_home()
         home_distance_min = 5.5
-        home_distance_max = 6.5
+        home_distance_max = self.drive_rtl_mission_max_distance_from_home()
         if home_distance > home_distance_max:
             raise NotAchievedException(
                 "Did not stop near home (%f metres distant (%f > want > %f))" %
