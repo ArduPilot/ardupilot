@@ -619,6 +619,10 @@ bool QuadPlane::setup(void)
         hal.console->printf("%s attitude_control\n", strUnableToAllocate);
         goto failed;
     }
+    // copter tailsitters need a larger thrust error angle threshold than multicopters
+    if (tailsitter.motor_mask != 0) {
+        attitude_control->set_thrust_error_thresh(radians(120.0f));
+    }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
     if (!pos_control) {
