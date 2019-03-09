@@ -102,7 +102,7 @@ bool AP_RangeFinder_TeraRangerI2C::init(void)
 
     dev->set_retries(1);
 
-    dev->register_periodic_callback(50000,
+    dev->register_periodic_callback(10000,
                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_TeraRangerI2C::timer, void));
 
     return true;
@@ -185,9 +185,12 @@ void AP_RangeFinder_TeraRangerI2C::update(void)
             accum.sum = 0;
             accum.count = 0;
             update_status();
-        } else {
-            set_status(RangeFinder::RangeFinder_NoData);
-        }
+
+    } else if (AP_HAL::millis() - last_reading_ms > 200) {
+
+        set_status(RangeFinder::RangeFinder_NoData);
+
+    }
         _sem->give();
     }
 }
