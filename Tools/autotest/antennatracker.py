@@ -12,39 +12,18 @@ import operator
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-HOME = mavutil.location(-27.274439, 151.290064, 343, 8.7)
+SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 
 class AutoTestTracker(AutoTest):
-    def __init__(self,
-                 binary,
-                 valgrind=False,
-                 gdb=False,
-                 speedup=10,
-                 frame=None,
-                 params=None,
-                 gdbserver=False,
-                 breakpoints=[],
-                 **kwargs):
-        super(AutoTestTracker, self).__init__(**kwargs)
-        self.binary = binary
-        self.valgrind = valgrind
-        self.gdb = gdb
-        self.frame = frame
-        self.params = params
-        self.gdbserver = gdbserver
-        self.breakpoints = breakpoints
 
-        self.home = "%f,%f,%u,%u" % (HOME.lat,
-                                     HOME.lng,
-                                     HOME.alt,
-                                     HOME.heading)
-        self.homeloc = None
-        self.speedup = speedup
+    def log_name(self):
+        return "AntennaTracker"
 
-        self.log_name = "AntennaTracker"
-        self.logfile = None
+    def test_filepath(self):
+         return os.path.realpath(__file__)
 
-        self.sitl = None
+    def sitl_start_location(self):
+        return SITL_START_LOCATION
 
     def start_stream_systemtime(self):
         '''AntennaTracker doesn't stream this by default but we need it for get_sim_time'''
@@ -68,43 +47,12 @@ class AutoTestTracker(AutoTest):
     def is_tracker(self):
         return True
 
-    def init(self):
-        if self.frame is None:
-            self.frame = "tracker"
+    def default_frame(self):
+        return "tracker"
 
-        self.mavproxy_logfile = self.open_mavproxy_logfile()
-
-        self.sitl = util.start_SITL(self.binary,
-                                    wipe=True,
-                                    model=self.frame,
-                                    home=self.home,
-                                    speedup=self.speedup,
-                                    valgrind=self.valgrind,
-                                    gdb=self.gdb,
-                                    gdbserver=self.gdbserver,
-                                    breakpoints=self.breakpoints,
-                                    )
-        self.mavproxy = util.start_MAVProxy_SITL(
-            'AntennaTracker',
-            logfile=self.mavproxy_logfile,
-            options=self.mavproxy_options())
-        self.mavproxy.expect('Telemetry log: (\S+)\r\n')
-        self.logfile = self.mavproxy.match.group(1)
-        self.progress("LOGFILE %s" % self.logfile)
-        self.try_symlink_tlog()
-
-        self.mavproxy.expect('Received [0-9]+ parameters')
-
-        util.expect_setup_callback(self.mavproxy, self.expect_callback)
-
-        self.expect_list_clear()
-        self.expect_list_extend([self.sitl, self.mavproxy])
-
-        self.progress("Started simulator")
-
-        self.get_mavlink_connection_going()
-
-        self.progress("Ready to start testing!")
+    def apply_defaultfile_parameters(self):
+        # tracker doesn't have a default parameters file
+        pass
 
     def sysid_thismav(self):
         return 2

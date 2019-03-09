@@ -154,9 +154,27 @@ class AutoTest(ABC):
     It implements the common function for all vehicle types.
     """
     def __init__(self,
+                 binary,
+                 valgrind=False,
+                 gdb=False,
+                 speedup=8,
+                 frame=None,
+                 params=None,
+                 gdbserver=False,
+                 breakpoints=[],
                  viewerip=None,
                  use_map=False,
                  _show_test_timings=False):
+
+        self.binary = binary
+        self.valgrind = valgrind
+        self.gdb = gdb
+        self.frame = frame
+        self.params = params
+        self.gdbserver = gdbserver
+        self.breakpoints = breakpoints
+        self.speedup = speedup
+
         self.mavproxy = None
         self.mav = None
         self.viewerip = viewerip
@@ -231,7 +249,7 @@ class AutoTest(ABC):
         return ret
 
     def vehicleinfo_key(self):
-        return self.log_name
+        return self.log_name()
 
     def repeatedly_apply_parameter_file(self, filepath):
         '''keep applying a parameter file until no parameters changed'''
@@ -249,6 +267,7 @@ class AutoTest(ABC):
 
     def apply_defaultfile_parameters(self):
         """Apply parameter file."""
+        self.progress("Applying default parameters file")
         # setup test parameters
         vinfo = vehicleinfo.VehicleInfo()
         if self.params is None:
@@ -337,7 +356,7 @@ class AutoTest(ABC):
             os.chmod(valgrind_log, 0o644)
             shutil.copy(valgrind_log,
                         self.buildlogs_path("%s-valgrind.log" %
-                                            self.log_name))
+                                            self.log_name()))
 
     def start_test(self, description):
         self.progress("#")
@@ -345,7 +364,7 @@ class AutoTest(ABC):
         self.progress("#")
 
     def try_symlink_tlog(self):
-        self.buildlog = self.buildlogs_path(self.log_name + "-test.tlog")
+        self.buildlog = self.buildlogs_path(self.log_name() + "-test.tlog")
         self.progress("buildlog=%s" % self.buildlog)
         if os.path.exists(self.buildlog):
             os.unlink(self.buildlog)
@@ -1677,7 +1696,7 @@ class AutoTest(ABC):
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
         test_output_filename = self.buildlogs_path("%s-%s.txt" %
-                                                   (self.log_name, name))
+                                                   (self.log_name(), name))
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile)
 
         prettyname = "%s (%s)" % (name, desc)
@@ -1735,9 +1754,58 @@ class AutoTest(ABC):
             exit(1)
         self.progress("PASSED: Check for syntax mistake in autotest lambda")
 
-    def init(self, file):
+    def uses_vicon(self):
+        return False
+
+    def defaults_filepath(self):
+        return None
+
+    def init(self):
         """Initilialize autotest feature."""
-        self.check_test_syntax(test_file=os.path.realpath(file))
+        self.check_test_syntax(test_file=self.test_filepath())
+
+        self.mavproxy_logfile = self.open_mavproxy_logfile()
+
+        if self.frame is None:
+            self.frame = self.default_frame()
+
+        self.progress("Starting simulator")
+        self.sitl = util.start_SITL(self.binary,
+                                    breakpoints=self.breakpoints,
+                                    defaults_file=self.defaults_filepath(),
+                                    gdb=self.gdb,
+                                    gdbserver=self.gdbserver,
+                                    home=self.sitl_home(),
+                                    model=self.frame,
+                                    speedup=self.speedup,
+                                    valgrind=self.valgrind,
+                                    vicon=self.uses_vicon(),
+                                    wipe=True,
+                                    )
+        self.progress("Starting MAVProxy")
+        self.mavproxy = util.start_MAVProxy_SITL(
+            self.vehicleinfo_key(),
+            logfile=self.mavproxy_logfile,
+            options=self.mavproxy_options())
+        self.mavproxy.expect('Telemetry log: (\S+)\r\n')
+        self.logfile = self.mavproxy.match.group(1)
+        self.progress("LOGFILE %s" % self.logfile)
+        self.try_symlink_tlog()
+
+        self.progress("Waiting for Parameters")
+        self.mavproxy.expect('Received [0-9]+ parameters')
+
+        self.progress("Starting MAVLink connection")
+        self.get_mavlink_connection_going()
+
+        self.apply_defaultfile_parameters()
+
+        util.expect_setup_callback(self.mavproxy, self.expect_callback)
+
+        self.expect_list_clear()
+        self.expect_list_extend([self.sitl, self.mavproxy])
+
+        self.progress("Ready to start testing!")
 
 
     def poll_home_position(self, quiet=False):
