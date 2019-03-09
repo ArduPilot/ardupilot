@@ -63,10 +63,56 @@ void AP_MotorsMatrixTS::output_to_motors()
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, _roll_in * SERVO_OUTPUT_RANGE);
 }
 
+// output_armed - sends commands to the motors
+// includes new scaling stability patch
 void AP_MotorsMatrixTS::output_armed_stabilizing()
 {
-    // calculates thrust values _thrust_rpyt_out
-    AP_MotorsMatrix::output_armed_stabilizing();
+    float   roll_thrust;                // roll thrust input value, +/- 1.0
+    float   pitch_thrust;               // pitch thrust input value, +/- 1.0
+    float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
+    float   thrust_max = 0.0f;          // highest motor value
+    float   thr_adj = 0.0f;             // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+
+    // apply voltage and air pressure compensation
+    const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
+    roll_thrust = _roll_in * compensation_gain;
+    pitch_thrust = _pitch_in * compensation_gain;
+    throttle_thrust = get_throttle() * compensation_gain;
+
+    // sanity check throttle is above zero and below current limited throttle
+    if (throttle_thrust <= 0.0f) {
+        throttle_thrust = 0.0f;
+        limit.throttle_lower = true;
+    }
+    if (throttle_thrust >= _throttle_thrust_max) {
+        throttle_thrust = _throttle_thrust_max;
+        limit.throttle_upper = true;
+    }
+
+    thrust_max = 0.0f;
+    for (int i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            // calculate the thrust outputs for roll and pitch
+            _thrust_rpyt_out[i] = throttle_thrust + roll_thrust * _roll_factor[i] + pitch_thrust * _pitch_factor[i];
+            if (thrust_max < _thrust_rpyt_out[i]) {
+                thrust_max = _thrust_rpyt_out[i];
+            }
+        }
+    }
+
+    // if max thrust is more than one reduce average throttle
+    if (thrust_max > 1.0f) {
+        thr_adj = 1.0f - thrust_max;
+        limit.throttle_upper = true;
+        limit.roll_pitch = true;
+        for (int i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if (motor_enabled[i]) {
+                // calculate the thrust outputs for roll and pitch
+                _thrust_rpyt_out[i] += thr_adj;
+            }
+        }
+    }
+
 }
 
 void AP_MotorsMatrixTS::setup_motors(motor_frame_class frame_class, motor_frame_type frame_type)
