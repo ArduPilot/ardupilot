@@ -12,37 +12,15 @@ from pysim import util
 from common import AutoTest
 from common import NotAchievedException
 
-# get location of scripts
-testdir = os.path.dirname(os.path.realpath(__file__))
-
 SITL_START_LOCATION = mavutil.location(33.810313, -118.393867, 0, 185)
 
-
 class AutoTestSub(AutoTest):
-    def __init__(self,
-                 binary,
-                 valgrind=False,
-                 gdb=False,
-                 speedup=10,
-                 frame=None,
-                 params=None,
-                 gdbserver=False,
-                 breakpoints=[],
-                 **kwargs):
-        super(AutoTestSub, self).__init__(**kwargs)
-        self.binary = binary
-        self.valgrind = valgrind
-        self.gdb = gdb
-        self.frame = frame
-        self.params = params
-        self.gdbserver = gdbserver
-        self.breakpoints = breakpoints
 
-        self.speedup = speedup
+    def log_name(self):
+        return "ArduSub"
 
-        self.sitl = None
-
-        self.log_name = "ArduSub"
+    def test_filepath(self):
+         return os.path.realpath(__file__)
 
     def default_mode(self):
         return 'MANUAL'
@@ -50,49 +28,14 @@ class AutoTestSub(AutoTest):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
+    def default_frame(self):
+        return 'vectored'
+
     def init(self):
-        super(AutoTestSub, self).init(os.path.realpath(__file__))
-        if self.frame is None:
-            self.frame = 'vectored'
-
-        self.mavproxy_logfile = self.open_mavproxy_logfile()
-
-        self.sitl = util.start_SITL(self.binary,
-                                    model=self.frame,
-                                    home=self.sitl_home(),
-                                    speedup=self.speedup,
-                                    valgrind=self.valgrind,
-                                    gdb=self.gdb,
-                                    gdbserver=self.gdbserver,
-                                    breakpoints=self.breakpoints,
-                                    wipe=True)
-        self.mavproxy = util.start_MAVProxy_SITL(
-            'ArduSub',
-            logfile=self.mavproxy_logfile,
-            options=self.mavproxy_options())
-        self.mavproxy.expect('Telemetry log: (\S+)\r\n')
-        self.logfile = self.mavproxy.match.group(1)
-        self.progress("LOGFILE %s" % self.logfile)
-        self.try_symlink_tlog()
-
-        self.progress("WAITING FOR PARAMETERS")
-        self.mavproxy.expect('Received [0-9]+ parameters')
-
-        util.expect_setup_callback(self.mavproxy, self.expect_callback)
-
-        self.expect_list_clear()
-        self.expect_list_extend([self.sitl, self.mavproxy])
-
-        self.progress("Started simulator")
-
-        self.get_mavlink_connection_going()
-
-        self.apply_defaultfile_parameters()
+        super(AutoTestSub, self).init()
 
         # FIXME:
         self.set_parameter("FS_GCS_ENABLE", 0)
-
-        self.progress("Ready to start testing!")
 
     def is_sub(self):
         return True
