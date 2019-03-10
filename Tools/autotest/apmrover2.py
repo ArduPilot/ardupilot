@@ -932,7 +932,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 	                           -105.229401,
                                0,
                                0)
-        self.wait_location(loc)
+        self.wait_location(loc, accuracy=self.get_parameter("WP_RADIUS"))
         self.disarm_vehicle()
 
     def tests(self):
