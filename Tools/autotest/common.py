@@ -696,13 +696,16 @@ class AutoTest(ABC):
                 need_set[chan] = default_value
         self.set_rc_from_map(need_set)
 
+    def send_set_rc(self, chan, pwm):
+        self.mavproxy.send('rc %u %u\n' % (chan, pwm))
+
     def set_rc(self, chan, pwm, timeout=2000):
         """Setup a simulated RC control to a PWM value"""
         self.drain_mav()
         tstart = self.get_sim_time()
         wclock = time.time()
         while self.get_sim_time_cached() < tstart + timeout:
-            self.mavproxy.send('rc %u %u\n' % (chan, pwm))
+            self.send_set_rc(chan, pwm)
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
             chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
             wclock_delta = time.time() - wclock
@@ -2143,13 +2146,13 @@ class AutoTest(ABC):
         self.progress("Test gripper with RC9_OPTION")
         self.progress("Releasing load")
         # non strict string matching because of catching text issue....
-        self.wait_text("Gripper load releas", the_function=lambda: self.set_rc(9, 1000))
+        self.wait_text("Gripper load releas", the_function=lambda: self.send_set_rc(9, 1000))
         self.progress("Grabbing load")
-        self.wait_text("Gripper load grabb", the_function=lambda: self.set_rc(9, 2000))
+        self.wait_text("Gripper load grabb", the_function=lambda: self.send_set_rc(9, 2000))
         self.progress("Releasing load")
-        self.wait_text("Gripper load releas", the_function=lambda: self.set_rc(9, 1000))
+        self.wait_text("Gripper load releas", the_function=lambda: self.send_set_rc(9, 1000))
         self.progress("Grabbing load")
-        self.wait_text("Gripper load grabb", the_function=lambda: self.set_rc(9, 2000))
+        self.wait_text("Gripper load grabb", the_function=lambda: self.send_set_rc(9, 2000))
         self.progress("Test gripper with Mavlink cmd")
         self.progress("Releasing load")
         self.wait_text("Gripper load releas",
