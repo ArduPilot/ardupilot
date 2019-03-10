@@ -60,6 +60,12 @@ void Tracker::calc_angle_error(float pitch, float yaw, bool direction_reversed)
     convert_ef_to_bf(ef_pitch_angle_error, ef_yaw_angle_error, bf_pitch_err, bf_yaw_err);
     nav_status.angle_error_pitch = bf_pitch_err;
     nav_status.angle_error_yaw = bf_yaw_err;
+
+    // set actual and desired for logging, note we are using angles not rates
+    g.pidPitch2Srv.set_desired_rate(pitch * 0.01);
+    g.pidPitch2Srv.set_actual_rate(ahrs_pitch * 0.01);
+    g.pidYaw2Srv.set_desired_rate(yaw * 0.01);
+    g.pidYaw2Srv.set_actual_rate(ahrs_yaw_cd * 0.01);
 }
 
 void Tracker::convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw)
