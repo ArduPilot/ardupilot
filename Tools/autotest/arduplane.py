@@ -316,13 +316,11 @@ class AutoTestPlane(AutoTest):
         self.set_rc(3, 1700)
         return self.wait_level_flight()
 
-    def set_attitude_target(self):
+    def set_attitude_target(self, tolerance=10):
         """Test setting of attitude target in guided mode."""
-        # mode guided:
-        self.mavproxy.send('mode GUIDED\n')
-        self.wait_mode('GUIDED')
+        self.change_mode("GUIDED")
+#        self.set_parameter("STALL_PREVENTION", 0)
 
-        target_roll_degrees = 70
         state_roll_over = "roll-over"
         state_stabilize_roll = "stabilize-roll"
         state_hold = "hold"
@@ -334,41 +332,43 @@ class AutoTestPlane(AutoTest):
         try:
             state = state_roll_over
             while state != state_done:
-                if self.get_sim_time() - tstart > 20:
-                    raise AutoTestTimeoutException("Manuevers not completed")
 
                 m = self.mav.recv_match(type='ATTITUDE',
                                         blocking=True,
                                         timeout=0.1)
+                now = self.get_sim_time_cached()
+                if now - tstart > 20:
+                    raise AutoTestTimeoutException("Manuevers not completed")
                 if m is None:
                     continue
 
                 r = math.degrees(m.roll)
                 if state == state_roll_over:
-                    target_roll_degrees = 70
-                    if abs(r - target_roll_degrees) < 10:
+                    target_roll_degrees = 60
+                    if abs(r - target_roll_degrees) < tolerance:
                         state = state_stabilize_roll
-                        stabilize_start = self.get_sim_time()
+                        stabilize_start = now
                 elif state == state_stabilize_roll:
                     # just give it a little time to sort it self out
-                    if self.get_sim_time() - stabilize_start > 2:
+                    if now - stabilize_start > 2:
                         state = state_hold
-                        hold_start = self.get_sim_time()
+                        hold_start = now
                 elif state == state_hold:
-                    target_roll_degrees = 70
-                    if self.get_sim_time() - hold_start > 10:
+                    target_roll_degrees = 60
+                    if now - hold_start > tolerance:
                         state = state_roll_back
-                    if abs(r - target_roll_degrees) > 10:
+                    if abs(r - target_roll_degrees) > tolerance:
                         raise NotAchievedException("Failed to hold attitude")
                 elif state == state_roll_back:
                     target_roll_degrees = 0
-                    if abs(r - target_roll_degrees) < 10:
+                    if abs(r - target_roll_degrees) < tolerance:
                         state = state_done
                 else:
                     raise ValueError("Unknown state %s" % str(state))
 
-                self.progress("%s Roll: %f desired=%f" %
-                              (state, r, target_roll_degrees))
+                m_nav = self.mav.messages['NAV_CONTROLLER_OUTPUT']
+                self.progress("%s Roll: %f desired=%f set=%f" %
+                              (state, r, m_nav.nav_roll, target_roll_degrees))
 
                 time_boot_millis = 0 # FIXME
                 target_system = 1 # FIXME
