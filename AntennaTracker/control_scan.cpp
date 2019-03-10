@@ -35,4 +35,9 @@ void Tracker::update_scan(void)
     }
 
     update_auto();
+
+    // if found a valid target switch to AUTO
+    if (control_mode != AUTO && tracker.target_set) {
+        set_mode(AUTO, MODE_REASON_INITIALISED);
+    }
 }
