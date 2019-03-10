@@ -184,7 +184,13 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     }
 #else
     bus.bouncebuffer_setup(send, len, recv, len);
-    spiExchange(spi_devices[device_desc.bus].driver, len, send, recv);
+    if (send == nullptr) {
+        spiReceive(spi_devices[device_desc.bus].driver, len, recv);
+    } else if (recv == nullptr) {
+        spiSend(spi_devices[device_desc.bus].driver, len, send);
+    } else {
+        spiExchange(spi_devices[device_desc.bus].driver, len, send, recv);
+    }
     bus.bouncebuffer_finish(send, recv, len);
 #endif
 
