@@ -778,6 +778,11 @@ class AutoTestPlane(AutoTest):
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
             raise NotAchievedException("Receiver not enabled")
