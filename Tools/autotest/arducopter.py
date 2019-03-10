@@ -2794,7 +2794,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_arm_feature(self):
+    def loiter_requires_position(self):
         # ensure we can't switch to LOITER without position
         self.progress("Ensure we can't enter LOITER without position")
         self.context_push()
@@ -2807,6 +2807,9 @@ class AutoTestCopter(AutoTest):
         self.disarm_vehicle()
         self.context_pop()
         self.reboot_sitl()
+
+    def test_arm_feature(self):
+        self.loiter_requires_position()
 
         super(AutoTestCopter, self).test_arm_feature()
 
@@ -3037,6 +3040,9 @@ class AutoTestHeli(AutoTestCopter):
         ret[8] = 1000
         ret[3] = 1000 # collective
         return ret
+
+    def loiter_requires_position(self):
+        self.progress("Skipping loiter-requires-position for heli; rotor runup issues")
 
     def tests(self):
         '''return list of all tests'''
