@@ -256,8 +256,10 @@ bool GCS_MAVLINK::send_battery_status() const
     const AP_BattMonitor &battery = AP::battery();
 
     for(uint8_t i = 0; i < battery.num_instances(); i++) {
-        CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
-        send_battery_status(battery, i);
+        if (battery.get_type(i) != AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_NONE) {
+            CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
+            send_battery_status(battery, i);
+        }
     }
     return true;
 }
