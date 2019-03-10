@@ -130,12 +130,9 @@ void Tracker::update_pitch_onoff_servo(float pitch)
 */
 void Tracker::update_pitch_cr_servo(float pitch)
 {
-    int32_t pitch_min_cd = g.pitch_min*100;
-    int32_t pitch_max_cd = g.pitch_max*100;
-    if ((pitch>pitch_min_cd) && (pitch<pitch_max_cd)) {
-        g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, g.pidPitch2Srv.get_pid());
-    }
+    g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
+    const float pitch_out = constrain_float(g.pidPitch2Srv.get_pid(), -(-g.pitch_min+g.pitch_max) * 100/2, (-g.pitch_min+g.pitch_max) * 100/2);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, pitch_out);
 }
 
 /**
@@ -253,5 +250,6 @@ void Tracker::update_yaw_onoff_servo(float yaw)
 void Tracker::update_yaw_cr_servo(float yaw)
 {
     g.pidYaw2Srv.set_input_filter_all(nav_status.angle_error_yaw);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, -g.pidYaw2Srv.get_pid());
+    const float yaw_out = constrain_float(-g.pidYaw2Srv.get_pid(), -g.yaw_range * 100/2, g.yaw_range * 100/2);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, yaw_out);
 }
