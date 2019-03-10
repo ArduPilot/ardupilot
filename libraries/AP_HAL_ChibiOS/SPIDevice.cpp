@@ -323,6 +323,13 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
 #if defined(STM32H7)
         bus.spicfg.cfg1 = freq_flag;
         bus.spicfg.cfg2 = device_desc.mode;
+        if (bus.spicfg.dummytx == nullptr) {
+            bus.spicfg.dummytx = (uint32_t *)malloc_dma(4);
+            memset(bus.spicfg.dummytx, 0xFF, 4);
+        }
+        if (bus.spicfg.dummyrx == nullptr) {
+            bus.spicfg.dummyrx = (uint32_t *)malloc_dma(4);
+        }
 #else
         bus.spicfg.cr1 = (uint16_t)(freq_flag | device_desc.mode);
         bus.spicfg.cr2 = 0;
