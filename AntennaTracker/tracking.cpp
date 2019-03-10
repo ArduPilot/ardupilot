@@ -110,7 +110,11 @@ void Tracker::update_tracking(void)
 
     switch (control_mode) {
     case AUTO:
-        update_auto();
+        if (vehicle.location_valid) {
+            update_auto();
+        } else if (tracker.target_set) {
+            update_scan();
+        }
         break;
 
     case MANUAL:
