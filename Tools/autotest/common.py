@@ -303,12 +303,14 @@ class AutoTest(ABC):
         if streamrate <= 0:
             return
 
+        self.drain_mav()
         m = self.mav.recv_match(type='SYSTEM_TIME',
                                 blocking=True,
                                 timeout=10)
         print("Received (%s)" % str(m))
         if m is None:
             raise NotAchievedException("Did not get SYSTEM_TIME")
+        self.drain_mav()
 
     def initialise_after_reboot_sitl(self):
 
