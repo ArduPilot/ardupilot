@@ -282,8 +282,7 @@ class AutoTest(ABC):
                 pass
 
         # empty mav to avoid getting old timestamps:
-        while self.mav.recv_match(blocking=False):
-            pass
+        self.drain_mav()
 
         self.initialise_after_reboot_sitl()
 
@@ -395,7 +394,7 @@ class AutoTest(ABC):
     def drain_mav(self):
         count = 0
         tstart = time.time()
-        while self.mav.recv_match(type='SYSTEM_TIME', blocking=False) is not None:
+        while self.mav.recv_match(blocking=False) is not None:
             count += 1
         tdelta = time.time() - tstart
         if tdelta == 0:
