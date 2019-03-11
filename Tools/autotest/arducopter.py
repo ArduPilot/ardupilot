@@ -535,10 +535,6 @@ class AutoTestCopter(AutoTest):
         # wait for LAND mode. If unsuccessful an exception will be raised
         self.wait_mode('LAND', timeout=timeout)
 
-        # disable battery failsafe
-        self.set_parameter('BATT_FS_LOW_ACT', 0)
-        self.set_parameter('SIM_BATT_VOLTAGE', 13)
-
         self.progress("Successfully entered LAND after battery failsafe")
         self.reboot_sitl()
 
@@ -719,19 +715,8 @@ class AutoTestCopter(AutoTest):
                 self.progress("Waiting for disarm")
                 self.mav.motors_disarmed_wait()
                 self.progress("Reached home OK")
-                self.change_mode("STABILIZE")
                 self.zero_throttle()
-                # remove if we ever clear battery failsafe flag on disarm:
-                self.mavproxy.send('arm uncheck all\n')
-                self.arm_vehicle()
-                # remove if we ever clear battery failsafe flag on disarm:
-                self.mavproxy.send('arm check all\n')
-                self.progress("Reached home OK")
                 return
-
-        # disable fence, enable avoidance
-        self.set_parameter("FENCE_ENABLE", 0)
-        self.set_parameter("AVOID_ENABLE", 1)
 
         # give we're testing RTL, doing one here probably doesn't make sense
         home_distance = self.distance_to_home(use_cached_home=True)
@@ -774,14 +759,6 @@ class AutoTestCopter(AutoTest):
         self.mav.motors_disarmed_wait()
 
         self.zero_throttle()
-
-        self.mavproxy.send('switch 6\n')  # stabilize mode
-        self.wait_mode('STABILIZE')
-        # remove if we ever clear battery failsafe flag on disarm
-        self.mavproxy.send('arm uncheck all\n')
-        self.arm_vehicle()
-        # remove if we ever clear battery failsafe flag on disarm:
-        self.mavproxy.send('arm check all\n')
 
     def fly_gps_glitch_loiter_test(self, timeout=30, max_distance=20):
         """fly_gps_glitch_loiter_test. Fly south east in loiter and test
@@ -887,7 +864,8 @@ class AutoTestCopter(AutoTest):
         self.progress("GPS glitch test passed!"
                       "  stayed within %u meters for %u seconds" %
                       (max_distance, timeout))
-        self.do_RTL()
+        # re-arming is problematic because the GPS is glitching!
+        self.reboot_sitl()
 
     # fly_gps_glitch_auto_test - fly mission and test reaction to gps glitch
     def fly_gps_glitch_auto_test(self, timeout=120):
@@ -993,6 +971,8 @@ class AutoTestCopter(AutoTest):
             self.show_gps_and_sim_positions(False)
 
         self.progress("GPS Glitch test Auto completed: passed!")
+        # re-arming is problematic because the GPS is glitching!
+        self.reboot_sitl()
 
     #   fly_simple - assumes the simple bearing is initialised to be
     #   directly north flies a box with 100m west, 15 seconds north,
@@ -1038,9 +1018,6 @@ class AutoTestCopter(AutoTest):
         while self.get_sim_time_cached() < (tstart + 8):
             self.mav.recv_match(type='VFR_HUD', blocking=True)
         self.set_rc(2, 1500)
-
-        # restore to default
-        self.set_parameter("SIMPLE", 0)
 
         # hover in place
         self.hover()
@@ -1499,7 +1476,7 @@ class AutoTestCopter(AutoTest):
                 if gpi.lat != 0:
                     break
 
-                if self.get_sim_time_cached() - tstart > 10:
+                if self.get_sim_time_cached() - tstart > 20:
                     raise AutoTestTimeoutException("Did not get non-zero lat")
 
             self.takeoff()
@@ -2258,7 +2235,7 @@ class AutoTestCopter(AutoTest):
             delta_ef = pos - dest
             dist = math.sqrt(delta_ef.x * delta_ef.x + delta_ef.y * delta_ef.y)
             self.progress("dist=%f" % (dist,))
-            if dist < 0.1:
+            if dist < 1:
                 break
             delta_bf = self.earth_to_body(delta_ef)
             angle_x = math.atan2(delta_bf.x, delta_bf.z)
@@ -2422,7 +2399,7 @@ class AutoTestCopter(AutoTest):
         self.run_cmd_do_set_mode("ACRO")
         self.mav.motors_disarmed_wait()
 
-    def test_mount_pitch(self, despitch, despitch_tolerance, timeout=5):
+    def test_mount_pitch(self, despitch, despitch_tolerance, timeout=10):
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
@@ -2512,7 +2489,6 @@ class AutoTestCopter(AutoTest):
                 raise NotAchievedException("Mount stabilising when not requested")
 
             self.progress("Enable pitch stabilization using MOUNT_CONFIGURE")
-            self.do_pitch(despitch)
             self.mav.mav.mount_configure_send(
                 1, # target system
                 1, # target component
@@ -2521,6 +2497,7 @@ class AutoTestCopter(AutoTest):
                 1, # stab-pitch
                 0)
 
+            self.do_pitch(despitch)
             self.test_mount_pitch(-despitch, 1)
 
             self.progress("Disable pitch using MAV_CMD_DO_MOUNT_CONFIGURE")
