@@ -41,11 +41,6 @@ extern const AP_HAL::HAL& hal;
 static const float GYRO_SCALE = (0.0174532f / 16.4f);
 
 /*
- *  DS-000189-ICM-20948-v1.3.pdf, page 12, section 3.2 lists LSB sensitivity of
- *  accel as 2048 LSB/DPS at scale factor of +/- 16g (FS_SEL==3)
- */
-static const float ACCEL_SCALE = (GRAVITY_MSS / 2048.f);
-/*
   EXT_SYNC allows for frame synchronisation with an external device
   such as a camera. When enabled the LSB of AccelZ holds the FSYNC bit
  */
@@ -180,14 +175,17 @@ void AP_InertialSensor_Invensensev2::start()
     case Invensensev2_ICM20948:
         gdev = DEVTYPE_INS_ICM20948;
         adev = DEVTYPE_INS_ICM20948;
+        _accel_scale = (GRAVITY_MSS / 2048.f);
         break;
     case Invensensev2_ICM20648:
         gdev = DEVTYPE_INS_ICM20648;
         adev = DEVTYPE_INS_ICM20648;
+        _accel_scale = (GRAVITY_MSS / 2048.f);
         break;
     case Invensensev2_ICM20649:
         gdev = DEVTYPE_INS_ICM20649;
         adev = DEVTYPE_INS_ICM20649;
+        _accel_scale = (GRAVITY_MSS / 1024.f);
         break;
     default:
         gdev = DEVTYPE_INS_ICM20948;
@@ -234,7 +232,7 @@ void AP_InertialSensor_Invensensev2::start()
     set_accel_orientation(_accel_instance, _rotation);
 
     // setup scale factors for fifo data after downsampling
-    _fifo_accel_scale = ACCEL_SCALE / (MAX(_fifo_downsample_rate,2)/2);
+    _fifo_accel_scale = _accel_scale / (MAX(_fifo_downsample_rate,2)/2);
     _fifo_gyro_scale = GYRO_SCALE / _fifo_downsample_rate;
     
     // allocate fifo buffer
@@ -319,7 +317,7 @@ bool AP_InertialSensor_Invensensev2::_accumulate(uint8_t *samples, uint8_t n_sam
         accel = Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
                          -int16_val(data, 2));
-        accel *= ACCEL_SCALE;
+        accel *= _accel_scale;
 
         int16_t t2 = int16_val(data, 6);
         if (!_check_raw_temp(t2)) {
@@ -356,10 +354,10 @@ bool AP_InertialSensor_Invensensev2::_accumulate(uint8_t *samples, uint8_t n_sam
 bool AP_InertialSensor_Invensensev2::_accumulate_sensor_rate_sampling(uint8_t *samples, uint8_t n_samples)
 {
     int32_t tsum = 0;
-    const int32_t clip_limit = AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS / ACCEL_SCALE;
+    int32_t unscaled_clip_limit = _clip_limit / _accel_scale;
     bool clipped = false;
     bool ret = true;
-    
+
     for (uint8_t i = 0; i < n_samples; i++) {
         const uint8_t *data = samples + INV2_SAMPLE_SIZE * i;
 
@@ -377,13 +375,13 @@ bool AP_InertialSensor_Invensensev2::_accumulate_sensor_rate_sampling(uint8_t *s
             Vector3f a(int16_val(data, 1),
                     int16_val(data, 0),
                     -int16_val(data, 2));
-            if (fabsf(a.x) > clip_limit ||
-                fabsf(a.y) > clip_limit ||
-                fabsf(a.z) > clip_limit) {
+            if (fabsf(a.x) > unscaled_clip_limit ||
+                fabsf(a.y) > unscaled_clip_limit ||
+                fabsf(a.z) > unscaled_clip_limit) {
                 clipped = true;
             }
             _accum.accel += _accum.accel_filter.apply(a);
-            Vector3f a2 = a * ACCEL_SCALE;
+            Vector3f a2 = a * _accel_scale;
             _notify_new_accel_sensor_rate_sample(_accel_instance, a2);
         }
 
@@ -704,6 +702,9 @@ bool AP_InertialSensor_Invensensev2::_hardware_init(void)
         return false;
     }
 
+    if (_inv2_type == Invensensev2_ICM20649) {
+        _clip_limit = 29.5f * GRAVITY_MSS;
+    }
     _dev->get_semaphore()->give();
     
     return true;
