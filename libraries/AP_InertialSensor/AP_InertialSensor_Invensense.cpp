@@ -201,10 +201,13 @@ void AP_InertialSensor_Invensense::start()
         gdev = DEVTYPE_GYR_MPU9250;
         adev = DEVTYPE_ACC_MPU9250;
         break;
+    case Invensense_ICM20602:
+        gdev = DEVTYPE_INS_ICM20602;
+        adev = DEVTYPE_INS_ICM20602;
+        break;
     case Invensense_MPU6000:
     case Invensense_MPU6500:
     case Invensense_ICM20608:
-    case Invensense_ICM20602:
     default:
         gdev = DEVTYPE_GYR_MPU6000;
         adev = DEVTYPE_ACC_MPU6000;
