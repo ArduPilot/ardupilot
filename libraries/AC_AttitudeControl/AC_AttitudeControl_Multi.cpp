@@ -260,6 +260,16 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     _motors.set_pitch(rate_target_to_motor_pitch(gyro_latest.y, _rate_target_ang_vel.y));
     _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _rate_target_ang_vel.z));
 
+    static int cnt=0;
+    if (cnt++ > 100) {
+        cnt = 0;
+        Vector3f rate_error = _rate_target_ang_vel - gyro_latest;
+        AP_HAL::get_HAL().console->printf("_rate_target_ang_vel: %5.3f %5.3f %5.3f, rate_error: : %5.3f %5.3f %5.3f, rpy_out: : %5.3f %5.3f %5.3f\n",
+                            _rate_target_ang_vel.x, _rate_target_ang_vel.y, _rate_target_ang_vel.z,
+                            rate_error.x, rate_error.y, rate_error.z,
+                            _motors.get_roll(), _motors.get_pitch(), _motors.get_yaw());
+    }
+
     control_monitor_update();
 }
 
