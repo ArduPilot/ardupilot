@@ -549,7 +549,9 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
         return false;
     }
     struct Location ekf_origin {};
-    AP::ahrs().get_origin(ekf_origin);
+    if (!AP::ahrs().get_origin(ekf_origin)) {
+        return false;
+    }
 
     // sanity check total
     _total = constrain_int16(_total, 0, _poly_loader.max_points());
