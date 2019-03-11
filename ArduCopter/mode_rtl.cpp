@@ -357,7 +357,7 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
     _state_complete = ap.land_complete;
 
     // disarm when the landing detector says we've landed
-    if (disarm_on_land && ap.land_complete) {
+    if (disarm_on_land && ap.land_complete && motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
         copter.init_disarm_motors();
     }
 
