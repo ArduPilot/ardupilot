@@ -371,11 +371,14 @@ class AutoTest(ABC):
         global expect_list
         expect_list.extend(list_to_add)
 
-    def idle_hook(self, mav):
-        """Called when waiting for a mavlink message."""
+    def drain_all_pexpects(self):
         global expect_list
         for p in expect_list:
             util.pexpect_drain(p)
+
+    def idle_hook(self, mav):
+        """Called when waiting for a mavlink message."""
+        self.drain_all_pexpects()
 
     def message_hook(self, mav, msg):
         """Called as each mavlink msg is received."""
@@ -1650,8 +1653,10 @@ class AutoTest(ABC):
         self.mav.idle_hooks.append(self.idle_hook)
 
     def check_sitl_reset(self):
+        self.wait_heartbeat()
         if self.armed():
             self.forced_post_test_sitl_reboots += 1
+            self.progress("Force-resetting SITL")
             self.reboot_sitl() # that'll learn it
 
     def show_test_timings_key_sorter(self, t):
@@ -1684,6 +1689,9 @@ class AutoTest(ABC):
         try:
             self.check_rc_defaults()
             self.change_mode(self.default_mode())
+            self.drain_mav()
+            self.drain_all_pexpects()
+
             test_function()
         except Exception as e:
             self.test_timings[desc] = time.time() - start_time
@@ -1735,7 +1743,7 @@ class AutoTest(ABC):
         old = self.mav.messages.get("HOME_POSITION", None)
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time() - tstart > 30:
+            if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Failed to poll home position")
             if not quiet:
                 self.progress("Sending MAV_CMD_GET_HOME_POSITION")
