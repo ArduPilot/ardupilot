@@ -30,7 +30,7 @@ const AP_ROMFS::embedded_file AP_ROMFS::files[] = {};
 */
 const uint8_t *AP_ROMFS::find_file(const char *name, uint32_t &size)
 {
-    for (uint16_t i=0; i<ARRAY_SIZE(files); i++) {
+    for (uint16_t i=0; i<std::extent<decltype(files)>::value; i++) {
         if (strcmp(name, files[i].filename) == 0) {
             size = files[i].size;
             return files[i].contents;
