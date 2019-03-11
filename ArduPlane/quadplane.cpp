@@ -1815,7 +1815,7 @@ void QuadPlane::control_run(void)
     switch (plane.control_mode) {
     case QACRO:
         control_qacro();
-        break;
+        return; // skip the control surface calls below
     case QSTABILIZE:
         control_stabilize();
         break;
