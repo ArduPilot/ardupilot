@@ -1693,6 +1693,7 @@ class AutoTest(ABC):
             self.drain_all_pexpects()
 
             test_function()
+            self.check_sitl_reset()
         except Exception as e:
             self.test_timings[desc] = time.time() - start_time
             self.progress("Exception caught: %s" % traceback.format_exc(e))
