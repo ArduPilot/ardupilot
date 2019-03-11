@@ -2318,47 +2318,29 @@ class AutoTestCopter(AutoTest):
     def fly_guided_change_submode(self):
         """"Ensure we can move around in guided after a takeoff command."""
 
-        self.context_push()
+        '''start by disabling GCS failsafe, otherwise we immediately disarm
+        due to (apparently) not receiving traffic from the GCS for
+        too long.  This is probably a function of --speedup'''
+        self.set_parameter("FS_GCS_ENABLE", 0)
+        self.set_parameter("DISARM_DELAY", 0) # until traffic problems are fixed
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
-        ex = None
-        try:
-            '''start by disabling GCS failsafe, otherwise we immediately disarm
-            due to (apparently) not receiving traffic from the GCS for
-            too long.  This is probably a function of --speedup'''
-            self.set_parameter("FS_GCS_ENABLE", 0)
-            self.mavproxy.send('mode guided\n')  # stabilize mode
-            self.wait_mode('GUIDED')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
+        self.user_takeoff(alt_min=10)
 
-            self.user_takeoff(alt_min=10)
+        """yaw through absolute angles using MAV_CMD_CONDITION_YAW"""
+        self.guided_achieve_heading(45)
+        self.guided_achieve_heading(135)
 
-            """yaw through absolute angles using MAV_CMD_CONDITION_YAW"""
-            self.guided_achieve_heading(45)
-            self.guided_achieve_heading(135)
+        """move the vehicle using set_position_target_global_int"""
+        self.fly_guided_move_relative(5, 5, 10)
 
-            """move the vehicle using set_position_target_global_int"""
-            self.fly_guided_move_relative(5, 5, 10)
+        """move the vehicle using MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED"""
+        self.fly_guided_stop()
+        self.fly_guided_move_local(5, 5, 10)
 
-            """move the vehicle using MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED"""
-            self.fly_guided_stop()
-            self.fly_guided_move_local(5, 5, 10)
-
-            self.progress("Landing")
-            self.mavproxy.send('switch 2\n')  # land mode
-            self.wait_mode('LAND')
-            self.mav.motors_disarmed_wait()
-
-        except Exception as e:
-            self.progress("Exception caught")
-            ex = e
-
-        self.context_pop()
-        self.zero_throttle()
-        self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
+        self.do_RTL()
 
     def test_gripper_mission(self):
         self.context_push()
