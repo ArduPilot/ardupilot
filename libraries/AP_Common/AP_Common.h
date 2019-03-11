@@ -79,9 +79,21 @@
 #define LOWBYTE(i) ((uint8_t)(i))
 #define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
 
-#define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
-
 #define UINT16_VALUE(hbyte, lbyte) (static_cast<uint16_t>((hbyte<<8)|lbyte))
+
+// #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
+// taken from https://en.cppreference.com/w/cpp/iterator/size
+template <class T, size_t N>
+constexpr size_t ARRAY_SIZE(const T (&array)[N]) noexcept
+{
+    return N;
+}
+
+template <class C>
+constexpr auto ARRAY_SIZE(const C& c) -> decltype(c.size())
+{
+    return c.size();
+}
 
 /*
  * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
