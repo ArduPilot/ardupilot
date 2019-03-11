@@ -1815,7 +1815,9 @@ void QuadPlane::control_run(void)
     switch (plane.control_mode) {
     case QACRO:
         control_qacro();
-        break;
+        // QACRO uses only the multicopter controller
+        // so skip the Plane attitude control calls below
+        return;
     case QSTABILIZE:
         control_stabilize();
         break;
