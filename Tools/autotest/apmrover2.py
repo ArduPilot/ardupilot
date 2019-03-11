@@ -456,7 +456,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         m = self.mav.recv_match(type='NAV_CONTROLLER_OUTPUT',
                                 blocking=True,
-                                timeout=0.1)
+                                timeout=1)
         if m is None:
             raise MsgRcvTimeoutException(
                 "Did not receive NAV_CONTROLLER_OUTPUT message")
