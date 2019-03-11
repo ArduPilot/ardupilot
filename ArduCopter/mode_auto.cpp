@@ -810,7 +810,7 @@ void Copter::ModeAuto::spline_run()
 void Copter::ModeAuto::land_run()
 {
     // disarm when the landing detector says we've landed
-    if (ap.land_complete) {
+    if (ap.land_complete && motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
         copter.init_disarm_motors();
     }
 
