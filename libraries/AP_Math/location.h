@@ -7,6 +7,7 @@
 
 #include "vector2.h"
 #include "vector3.h"
+#include <AP_Common/Location.h>
 
 // scaling factor from 1e-7 degrees to meters at equator
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH

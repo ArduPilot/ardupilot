@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include "AP_Math.h"
 #include "location.h"
-#include "AP_Common/Location.h"
 
 // return horizontal distance between two positions in cm
 float get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
