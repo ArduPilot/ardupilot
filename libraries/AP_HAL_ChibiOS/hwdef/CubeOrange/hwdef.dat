@@ -37,7 +37,7 @@ UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7
 # If the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU.
 
-# UART for IOMCU (disabled for now)
+# UART for IOMCU
 IOMCU_UART USART6
 
 # UART4 serial GPS
