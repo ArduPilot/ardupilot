@@ -715,6 +715,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("chan3=%f want=%f" % (m.chan3_raw, normal_rc_throttle))
             if m.chan3_raw == normal_rc_throttle:
                 break
+        self.disarm_vehicle()
 
     def test_rc_overrides(self):
         self.context_push()
