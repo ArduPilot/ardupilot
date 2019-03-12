@@ -76,8 +76,10 @@ public:
     void calibrate(bool save=true);
 
     // update the barometer calibration to the current pressure. Can
-    // be used for incremental preflight update of baro
-    void update_calibration(void);
+    // be used for incremental preflight update of baro. The optional
+    // alt_above_home can be used to allow for arming while above the
+    // ground
+    void update_calibration(float alt_above_home=0);
 
     // get current altitude in meters relative to altitude at the time
     // of the last calibrate() call
@@ -87,6 +89,11 @@ public:
     // get altitude difference in meters relative given a base
     // pressure in Pascal
     float get_altitude_difference(float base_pressure, float pressure) const;
+
+    // return expected base_pressure difference given current pressure and
+    // altitude difference above base height. This is the inverse function
+    // of get_altitude_difference()
+    float get_base_pressure(float pressure, float alt_m) const;
 
     // get scale factor required to convert equivalent to true airspeed
     float get_EAS2TAS(void);

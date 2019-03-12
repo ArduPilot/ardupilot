@@ -262,7 +262,7 @@ void AP_Baro::calibrate(bool save)
    this updates the baro ground calibration to the current values. It
    can be used before arming to keep the baro well calibrated
 */
-void AP_Baro::update_calibration()
+void AP_Baro::update_calibration(float alt_above_home)
 {
     const uint32_t now = AP_HAL::millis();
     const bool do_notify = now - _last_notify_ms > 10000;
@@ -272,6 +272,7 @@ void AP_Baro::update_calibration()
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (healthy(i)) {
             float corrected_pressure = get_pressure(i) + sensors[i].p_correction;
+            corrected_pressure = get_base_pressure(corrected_pressure, alt_above_home);
             sensors[i].ground_pressure.set(corrected_pressure);
         }
 
@@ -301,6 +302,20 @@ float AP_Baro::get_altitude_difference(float base_pressure, float pressure) cons
     ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
 
     return ret;
+}
+
+// return expected base_pressure difference given current pressure and
+// altitude difference above base height. This is the inverse function
+// of get_altitude_difference()
+float AP_Baro::get_base_pressure(float pressure, float alt_m) const
+{
+    if (is_zero(alt_m)) {
+        return pressure;
+    }
+    float temp    = get_ground_temperature() + C_TO_KELVIN;
+    float scaling = expf(logf(1.0 - (alt_m / (153.8462 * temp))) / 0.190259);
+    float base_pressure = pressure / scaling;
+    return base_pressure;
 }
 
 
