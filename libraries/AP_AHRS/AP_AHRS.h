@@ -537,9 +537,6 @@ public:
         return false;
     }
 
-    // time that the AHRS has been up
-    virtual uint32_t uptime_ms(void) const = 0;
-
     // get the selected ekf type, for allocation decisions
     int8_t get_ekf_type(void) const {
         return _ekf_type;
