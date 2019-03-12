@@ -1483,7 +1483,7 @@ class AutoTest(ABC):
                     continue
                 self.progress("Reached location (%.2f meters)" % delta)
                 return True
-        raise WaitLocationTimeout("Failed to attain location (want=<%f) (closest=%f)" % (accuracy, closest, last))
+        raise WaitLocationTimeout("Failed to attain location (want=<%f) (closest=%f) (last=%f)" % (accuracy, closest, last))
 
     def wait_current_waypoint(self, wpnum, timeout=60):
         tstart = self.get_sim_time()
