@@ -1588,11 +1588,33 @@ class AutoTest(ABC):
         # self.mav.flightmode, mode))
         self.progress("Got mode %s" % mode)
 
+    def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
+        self.progress("Waiting for GPS health")
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise AutoTestTimeoutException("GPS status bits did not become good")
+            m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
+            if m is None:
+                continue
+            if (not (m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
+                self.progress("GPS not present")
+                return
+            if (not (m.onboard_control_sensors_enabled & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
+                self.progress("GPS not enabled")
+                continue
+            if (not (m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
+                self.progress("GPS not healthy")
+                continue
+            self.progress("GPS healthy")
+            return
+
     def wait_ready_to_arm(self, timeout=None, require_absolute=True):
         # wait for EKF checks to pass
         self.progress("Waiting for ready to arm")
-        return self.wait_ekf_happy(timeout=timeout,
-                                   require_absolute=require_absolute)
+        self.wait_ekf_happy(timeout=timeout, require_absolute=require_absolute)
+        if require_absolute:
+            self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
 
     def wait_heartbeat(self, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout'''
