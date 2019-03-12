@@ -923,10 +923,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_rally_points(self):
+        self.reboot_sitl() # to ensure starting point is as expected
+
         self.load_rally("rover-test-rally.txt")
+        accuracy = self.get_parameter("WP_RADIUS")
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
+
         self.reach_heading_manual(10)
         self.reach_distance_manual(50)
 
@@ -936,7 +940,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 	                           -105.229401,
                                0,
                                0)
-        self.wait_location(loc, accuracy=self.get_parameter("WP_RADIUS"))
+        self.wait_location(loc, accuracy=accuracy)
         self.disarm_vehicle()
 
     def tests(self):
