@@ -2707,18 +2707,22 @@ class AutoTestCopter(AutoTest):
         self.change_mode('THROW')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.set_parameter("SIM_SHOVE_TIME", 500)
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError as e:
+            # the shove resets this to zero
+            pass
+
         tstart = self.get_sim_time()
         self.wait_mode('RTL')
-        max_good_tdelta = 5
+        max_good_tdelta = 15
         tdelta = self.get_sim_time() - tstart
         self.progress("Vehicle in RTL")
         self.mav.motors_disarmed_wait()
         self.progress("Vehicle disarmed")
         if tdelta > max_good_tdelta:
-            self.progress("Took too long to enter RTL: %u > %u" %
-                          (tdelta, max_good_tdelta))
-            raise NotAchievedException()
+            raise NotAchievedException("Took too long to enter RTL: %fs > %fs" %
+                                       (tdelta, max_good_tdelta))
         self.progress("Vehicle returned")
 
     def fly_precision_companion(self):
