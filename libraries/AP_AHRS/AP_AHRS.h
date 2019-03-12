@@ -281,11 +281,11 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    virtual bool airspeed_estimate(float *airspeed_ret) const;
+    virtual bool airspeed_estimate(float *airspeed_ret) const WARN_IF_UNUSED;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_estimate_true(float *airspeed_ret) const {
+    bool airspeed_estimate_true(float *airspeed_ret) const WARN_IF_UNUSED {
         if (!airspeed_estimate(airspeed_ret)) {
             return false;
         }
@@ -318,52 +318,52 @@ public:
     // return a ground velocity in meters/second, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
-    virtual bool get_velocity_NED(Vector3f &vec) const {
+    virtual bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED {
         return false;
     }
 
     // returns the expected NED magnetic field
-    virtual bool get_expected_mag_field_NED(Vector3f &ret) const {
+    virtual bool get_expected_mag_field_NED(Vector3f &ret) const WARN_IF_UNUSED {
         return false;
     }
 
     // returns the estimated magnetic field offsets in body frame
-    virtual bool get_mag_field_correction(Vector3f &ret) const {
+    virtual bool get_mag_field_correction(Vector3f &ret) const WARN_IF_UNUSED {
         return false;
     }
 
     // return a position relative to home in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
-    virtual bool get_relative_position_NED_home(Vector3f &vec) const {
+    virtual bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED {
         return false;
     }
 
     // return a position relative to origin in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
-    virtual bool get_relative_position_NED_origin(Vector3f &vec) const {
+    virtual bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
         return false;
     }
     // return a position relative to home in meters, North/East
     // order. Return true if estimate is valid
-    virtual bool get_relative_position_NE_home(Vector2f &vecNE) const {
+    virtual bool get_relative_position_NE_home(Vector2f &vecNE) const WARN_IF_UNUSED {
         return false;
     }
 
     // return a position relative to origin in meters, North/East
     // order. Return true if estimate is valid
-    virtual bool get_relative_position_NE_origin(Vector2f &vecNE) const {
+    virtual bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
         return false;
     }
 
     // return a Down position relative to home in meters
     // if EKF is unavailable will return the baro altitude
-    virtual void get_relative_position_D_home(float &posD) const = 0;
+    virtual void get_relative_position_D_home(float &posD) const WARN_IF_UNUSED = 0;
 
     // return a Down position relative to origin in meters
     // Return true if estimate is valid
-    virtual bool get_relative_position_D_origin(float &posD) const {
+    virtual bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED {
         return false;
     }
 
@@ -428,17 +428,17 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // return secondary attitude solution if available, as eulers in radians
-    virtual bool get_secondary_attitude(Vector3f &eulers) const {
+    virtual bool get_secondary_attitude(Vector3f &eulers) const WARN_IF_UNUSED {
         return false;
     }
 
     // return secondary attitude solution if available, as quaternion
-    virtual bool get_secondary_quaternion(Quaternion &quat) const {
+    virtual bool get_secondary_quaternion(Quaternion &quat) const WARN_IF_UNUSED {
         return false;
     }
 
     // return secondary position solution if available
-    virtual bool get_secondary_position(struct Location &loc) const {
+    virtual bool get_secondary_position(struct Location &loc) const WARN_IF_UNUSED {
         return false;
     }
 
@@ -504,19 +504,19 @@ public:
 
     // return the amount of NE position change in metres due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) const {
+    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) const WARN_IF_UNUSED {
         return 0;
     };
 
     // return the amount of NE velocity change in metres/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastVelNorthEastReset(Vector2f &vel) const {
+    virtual uint32_t getLastVelNorthEastReset(Vector2f &vel) const WARN_IF_UNUSED {
         return 0;
     };
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosDownReset(float &posDelta) const {
+    virtual uint32_t getLastPosDownReset(float &posDelta) const WARN_IF_UNUSED {
         return 0;
     };
 
@@ -525,7 +525,7 @@ public:
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    virtual bool resetHeightDatum(void) {
+    virtual bool resetHeightDatum(void) WARN_IF_UNUSED {
         return false;
     }
 
@@ -575,7 +575,7 @@ public:
     // get_hgt_ctrl_limit - get maximum height to be observed by the
     // control loops in meters and a validity flag.  It will return
     // false when no limiting is required
-    virtual bool get_hgt_ctrl_limit(float &limit) const { return false; };
+    virtual bool get_hgt_ctrl_limit(float &limit) const WARN_IF_UNUSED { return false; };
 
     // Write position and quaternion data from an external navigation system
     virtual void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) { }
