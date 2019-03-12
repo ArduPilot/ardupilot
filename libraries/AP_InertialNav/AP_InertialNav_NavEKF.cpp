@@ -56,7 +56,7 @@ struct Location AP_InertialNav_NavEKF::get_origin() const
     struct Location ret;
      if (!_ahrs_ekf.get_origin(ret)) {
          // initialise location to all zeros if EKF origin not yet set
-         memset(&ret, 0, sizeof(ret));
+         ret.zero();
      }
     return ret;
 }
