@@ -80,7 +80,7 @@ public:
       wrappers around ahrs functions which pass-thru directly. See
       AP_AHRS.h for description of each function
      */
-    bool get_position(struct Location &loc) const {
+    bool get_position(struct Location &loc) const WARN_IF_UNUSED {
         return ahrs.get_position(loc);
     }
 
@@ -88,11 +88,11 @@ public:
         return ahrs.wind_estimate();
     }
 
-    bool airspeed_estimate(float *airspeed_ret) const {
+    bool airspeed_estimate(float *airspeed_ret) const WARN_IF_UNUSED {
         return ahrs.airspeed_estimate(airspeed_ret);
     }
 
-    bool airspeed_estimate_true(float *airspeed_ret) const {
+    bool airspeed_estimate_true(float *airspeed_ret) const WARN_IF_UNUSED {
         return ahrs.airspeed_estimate_true(airspeed_ret);
     }
 
@@ -104,27 +104,27 @@ public:
         return ahrs.groundspeed_vector();
     }
 
-    bool get_velocity_NED(Vector3f &vec) const {
+    bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED {
         return ahrs.get_velocity_NED(vec);
     }
 
-    bool get_expected_mag_field_NED(Vector3f &ret) const {
+    bool get_expected_mag_field_NED(Vector3f &ret) const WARN_IF_UNUSED {
         return ahrs.get_expected_mag_field_NED(ret);
     }
 
-    bool get_relative_position_NED_home(Vector3f &vec) const {
+    bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NED_home(vec);
     }
 
-    bool get_relative_position_NED_origin(Vector3f &vec) const {
+    bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NED_origin(vec);
     }
 
-    bool get_relative_position_NE_home(Vector2f &vecNE) const {
+    bool get_relative_position_NE_home(Vector2f &vecNE) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NE_home(vecNE);
     }
 
-    bool get_relative_position_NE_origin(Vector2f &vecNE) const {
+    bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NE_origin(vecNE);
     }
 
@@ -132,7 +132,7 @@ public:
         ahrs.get_relative_position_D_home(posD);
     }
 
-    bool get_relative_position_D_origin(float &posD) const {
+    bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_D_origin(posD);
     }
 
@@ -144,11 +144,11 @@ public:
         return ahrs.get_accel_ef_blended();
     }
 
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const {
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) const WARN_IF_UNUSED {
         return ahrs.getLastPosNorthEastReset(pos);
     }
 
-    uint32_t getLastPosDownReset(float &posDelta) const {
+    uint32_t getLastPosDownReset(float &posDelta) const WARN_IF_UNUSED {
         return ahrs.getLastPosDownReset(posDelta);
     }
 
