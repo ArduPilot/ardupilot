@@ -759,7 +759,9 @@ uint32_t AP_Frsky_Telem::calc_velandyaw(void)
     Vector3f velNED {};
 
     // if we can't get velocity then we use zero for vertical velocity
-    _ahrs.get_velocity_NED(velNED);
+    if (!_ahrs.get_velocity_NED(velNED)) {
+      velNED.zero();
+    }
     // vertical velocity in dm/s
     velandyaw = prep_number(roundf(-velNED.z * 10), 2, 1);
     // horizontal velocity in dm/s (use airspeed if available and enabled - even if not used - otherwise use groundspeed)
