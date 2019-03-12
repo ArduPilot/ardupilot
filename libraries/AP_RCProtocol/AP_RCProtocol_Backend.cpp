@@ -18,6 +18,7 @@
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend),
@@ -54,7 +55,12 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
     _num_channels = num_values;
     rc_frame_count++;
-    if (!in_failsafe || RC_Channels::ignore_rc_failsafe()) {
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+    if (RC_Channels::ignore_rc_failsafe()) {
+        in_failsafe = false;
+    }
+#endif
+    if (!in_failsafe) {
         rc_input_count++;
     }
 }
