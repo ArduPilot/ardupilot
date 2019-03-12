@@ -22,15 +22,12 @@
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 #include "AP_RangeFinder_VL53L0X.h"
 #include "AP_RangeFinder_VL53L1X.h"
-#include <map>
 
 class AP_RangeFinder_9xVL53LXX {
 public:
 	static bool set_addr(uint8_t new_addr, uint8_t temp_addr, uint8_t orientation);
 
 private:
-	static const std::map<int,int> channel_mapping;
-
 	static AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t address);
 	static bool is_mux(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev);
 	static int identify_sensor(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev);

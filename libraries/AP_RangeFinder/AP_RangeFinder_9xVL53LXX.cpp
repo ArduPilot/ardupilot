@@ -15,6 +15,7 @@
 
 #include "AP_RangeFinder_9xVL53LXX.h"
 #include <unistd.h>
+#include <stdio.h>
 
 #define MUX_ADDR 0x20
 #define SENSOR_DEFAULT_ADDR 0x29
@@ -30,20 +31,6 @@
 #define WRITE_CHECK_ATTEMPTS 5
 
 extern const AP_HAL::HAL &hal;
-
-//<orientation, channel>. -1 no channel
-const std::map<int,int> AP_RangeFinder_9xVL53LXX::channel_mapping {
-	{0, 0},   // Forward
-	{1, 1},   // Forward-Right
-	{2, 2},   // Right
-	{3, 3},   // Back-Right
-	{4, 4},   // Back
-	{5, 5},   // Back-Left
-	{6, 6},   // Left
-	{7, 7},   // Forward-Left
-	{24, -1}, // Up
-	{25, -1}  // Down
-};
 
 AP_HAL::OwnPtr<AP_HAL::I2CDevice> AP_RangeFinder_9xVL53LXX::get_device(uint8_t address) {
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev = nullptr;
@@ -68,7 +55,7 @@ bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	
 	uint8_t pin_state = 0;
 	uint8_t pin_config = 0;
-	int pin = channel_mapping.find(orientation)->second;
+	int pin = orientation <= 7 ? orientation : -1;// orientation 0-7 mapped directly to pins 0-7.
 	bool new_default = false;
 	uint8_t default_sensor_type = 0;
 	uint8_t new_sensor_type = 0;
