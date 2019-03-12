@@ -2460,7 +2460,11 @@ float GCS_MAVLINK::vfr_hud_airspeed() const
 
 float GCS_MAVLINK::vfr_hud_climbrate() const
 {
-    return -vfr_hud_velned.z;
+    Vector3f velned;
+    if (!AP::ahrs().get_velocity_NED(velned)) {
+      velned.zero();
+    }
+    return -velned.z;
 }
 
 float GCS_MAVLINK::vfr_hud_alt() const
@@ -2474,7 +2478,6 @@ void GCS_MAVLINK::send_vfr_hud()
 
     // return values ignored; we send stale data
     ahrs.get_position(global_position_current_loc);
-    ahrs.get_velocity_NED(vfr_hud_velned);
 
     mavlink_msg_vfr_hud_send(
         chan,
@@ -3913,7 +3916,9 @@ void GCS_MAVLINK::send_global_position_int()
     ahrs.get_position(global_position_current_loc); // return value ignored; we send stale data
 
     Vector3f vel;
-    ahrs.get_velocity_NED(vel);
+    if (!ahrs.get_velocity_NED(vel)) {
+        vel.zero();
+    }
 
     mavlink_msg_global_position_int_send(
         chan,
