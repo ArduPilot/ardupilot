@@ -25,7 +25,7 @@
 
 class AP_RangeFinder_9xVL53LXX {
 public:
-	static bool set_addr(uint8_t new_addr, uint8_t temp_addr, uint8_t orientation);
+	static bool set_addr(int new_addr, int temp_addr, int pin, int orientation);
 
 private:
 	static AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t address);

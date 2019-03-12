@@ -45,7 +45,7 @@ AP_HAL::OwnPtr<AP_HAL::I2CDevice> AP_RangeFinder_9xVL53LXX::get_device(uint8_t a
 	return dev;
 }
 
-bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uint8_t orientation) {
+bool AP_RangeFinder_9xVL53LXX::set_addr(int new_addr, int temp_addr, int pin, int orientation) {
 	AP_HAL::OwnPtr<AP_HAL::I2CDevice> new_dev = get_device(new_addr);
 	AP_HAL::OwnPtr<AP_HAL::I2CDevice> temp_dev = get_device(temp_addr);
 	AP_HAL::OwnPtr<AP_HAL::I2CDevice> mux_dev = get_device(MUX_ADDR);
@@ -54,12 +54,21 @@ bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	int delay_ms = 2; //T_boot = 1.2ms according to datasheet.
 	
 	uint8_t pin_state = 0;
-	uint8_t pin_config = 0;
-	int pin = orientation <= 7 ? (orientation+7)%8 : -1;// orientation set with assumption that the board will be faced down.
-	bool new_default = false;
-	uint8_t default_sensor_type = 0;
-	uint8_t new_sensor_type = 0;
-	uint8_t temp_sensor_type = 0;
+    uint8_t pin_config = 0;
+    bool new_default = false;
+    uint8_t default_sensor_type = 0;
+    uint8_t new_sensor_type = 0;
+    uint8_t temp_sensor_type = 0;
+
+	// If the pin parameter is configured incorrectly, use orientation as reference.
+	if (pin < 0 || pin > 7) {
+	    if ((orientation >= 0 && orientation <= 7) || orientation == 24 || orientation == 25) {
+	        pin = orientation <= 7 ? (orientation+7)%8 : -1;// orientation set with assumption that the board will be faced down.
+	    } else {
+	        printf("9xVL53LXX: pin and orientation configured incorrectly.\n");
+	        return false;
+	    }
+	}
 
 	//check for IO expander/multiplexer
 	if(!mux_dev || !temp_dev || !def_dev || !is_mux(mux_dev)) {
