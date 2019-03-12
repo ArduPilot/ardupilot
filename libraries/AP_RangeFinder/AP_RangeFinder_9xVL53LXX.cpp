@@ -55,7 +55,7 @@ bool AP_RangeFinder_9xVL53LXX::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	
 	uint8_t pin_state = 0;
 	uint8_t pin_config = 0;
-	int pin = orientation <= 7 ? orientation : -1;// orientation 0-7 mapped directly to pins 0-7.
+	int pin = orientation <= 7 ? (orientation+7)%8 : -1;// orientation set with assumption that the board will be faced down.
 	bool new_default = false;
 	uint8_t default_sensor_type = 0;
 	uint8_t new_sensor_type = 0;
