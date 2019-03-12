@@ -1872,6 +1872,20 @@ class AutoTest(ABC):
         if orig_home is None:
             raise AutoTestTimeoutException()
         self.progress("Original home: %s" % str(orig_home))
+        # original home should be close to SITL home...
+        start_loc = self.sitl_start_location()
+        self.progress("SITL start loc: %s" % str(start_loc))
+        if abs(orig_home.latitude * 1.0e-7 - start_loc.lat) > 0.0000001:
+            raise ValueError("homes differ in lat")
+        if abs(orig_home.longitude * 1.0e-7 - start_loc.lng) > 0.0000001:
+            raise ValueError("homes differ in lon")
+        if self.is_rover():
+            self.progress("### Rover skipping altitude check unti position fixes in")
+        else:
+            home_alt_m = orig_home.altitude * 1.0e-3
+            if abs(home_alt_m - start_loc.alt) > 2: # metres
+                raise ValueError("homes differ in alt got=%fm want=%fm" %
+                                 (home_alt_m, start_loc.alt))
         new_x = orig_home.latitude + 1000
         new_y = orig_home.longitude + 2000
         new_z = orig_home.altitude + 300000 # 300 metres
