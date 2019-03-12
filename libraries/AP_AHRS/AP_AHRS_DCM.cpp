@@ -1075,14 +1075,3 @@ bool AP_AHRS_DCM::healthy(void) const
     // consider ourselves healthy if there have been no failures for 5 seconds
     return (_last_failure_ms == 0 || AP_HAL::millis() - _last_failure_ms > 5000);
 }
-
-/*
-  return amount of time that AHRS has been up
- */
-uint32_t AP_AHRS_DCM::uptime_ms(void) const
-{
-    if (_last_startup_ms == 0) {
-        return 0;
-    }
-    return AP_HAL::millis() - _last_startup_ms;
-}
