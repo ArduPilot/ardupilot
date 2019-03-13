@@ -500,7 +500,7 @@ assert_storage_size<PackedContent, 12> assert_storage_size_PackedContent;
 bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const
 {
     WITH_SEMAPHORE(_rsem);
-    
+
     // exit immediately if index is beyond last command but we always let cmd #0 (i.e. home) be read
     if (index >= (unsigned)_cmd_total && index != 0) {
         return false;
@@ -545,7 +545,8 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
             // all other options in Content are assumed to be packed:
             static_assert(sizeof(cmd.content) >= 12,
                           "content is big enough to take bytes");
-            memcpy(&cmd.content, packed_content.bytes, 12);
+            // (void *) cast to specify gcc that we know that we are copy byte into a non trivial type and leaving 4 bytes untouched
+            memcpy((void *)&cmd.content, packed_content.bytes, 12);
         }
 
         // set command's index to it's position in eeprom
