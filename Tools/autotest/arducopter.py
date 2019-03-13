@@ -2180,8 +2180,9 @@ class AutoTestCopter(AutoTest):
             pos = rotmat.Vector3(m_pos.x, m_pos.y, m_pos.z)
             delta_ef = pos - dest
             dist = math.sqrt(delta_ef.x * delta_ef.x + delta_ef.y * delta_ef.y)
-            self.progress("dist=%f" % (dist,))
-            if dist < 1:
+            dist_max = 2
+            self.progress("dist=%f want <%f" % (dist, dist_max))
+            if dist < dist_max:
                 break
             delta_bf = self.earth_to_body(delta_ef)
             angle_x = math.atan2(delta_bf.x, delta_bf.z)
