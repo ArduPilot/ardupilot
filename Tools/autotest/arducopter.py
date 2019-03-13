@@ -1408,7 +1408,7 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
             # without a GPS or some sort of external prompting, AP
             # doesn't send system_time messages.  So prompt it:
-            self.mav.mav.system_time_send(time.time() * 1000000, 0)
+            self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
             self.mav.mav.set_gps_global_origin_send(1,
                                                     old_pos.lat,
                                                     old_pos.lon,
@@ -2485,8 +2485,8 @@ class AutoTestCopter(AutoTest):
             self.mav.mav.mount_control_send(
                 1, # target system
                 1, # target component
-                t_lat * 1e7, # lat
-                t_lon * 1e7, # lon
+                int(t_lat * 1e7), # lat
+                int(t_lon * 1e7), # lon
                 t_alt * 100, # alt
                 0  # save position
             )
