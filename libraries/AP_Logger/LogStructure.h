@@ -294,6 +294,17 @@ struct PACKED log_Gimbal3 {
     int16_t az_torque_cmd;
 };
 
+struct PACKED log_IOMCU {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint32_t total_fail_count;
+    uint32_t current_fail_count;
+    uint32_t event_fail_count;
+    uint32_t uart_fail_count;
+    uint32_t uart_write_count;
+    uint8_t most_recent_failed_event;
+};
+
 struct PACKED log_RCIN {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1259,6 +1270,8 @@ Format characters in the format string for binary log messages
       "IMU",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "QZ",     "TimeUS,Message", "s-", "F-"}, \
+    { LOG_IOMCU_MSG, sizeof(log_IOMCU), \
+      "IOMC",  "QIIIIIB",     "TimeUS,TotFail,CurrFail,EvtFail,UARTFail,UARTWrite,FailedEvt", "s------", "F------" }, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
@@ -1561,6 +1574,7 @@ enum LogMessages : uint8_t {
     LOG_GPSB_MSG,
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
+    LOG_IOMCU_MSG,
     LOG_RCIN_MSG,
     LOG_RCOUT_MSG,
     LOG_RSSI_MSG,
