@@ -99,6 +99,9 @@ public:
     // shutdown IO protocol (for reboot)
     void shutdown();
 
+    // log stats
+    void log(void);
+
     // setup for FMU failsafe mixing
     bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
@@ -203,7 +206,14 @@ private:
     bool initialised;
     bool is_chibios_backend;
 
-    uint32_t protocol_fail_count;
+    struct statistics {
+        uint32_t protocol_fail_count; // current communication failures since last success
+        uint32_t total_fail_count;    // total communication failures
+        uint32_t failed_event_count;  // failed events
+        uint32_t uart_fail_count;     // counter of failed write attempts
+        uint32_t uart_write_count;    // counter of attempts to write to the UART
+        uint8_t failed_event; // most recent failed event
+    } stats;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
@@ -226,7 +236,7 @@ private:
     bool reboot();
 
     bool check_crc(void);
-    
+
     enum {
         PROTO_NOP               = 0x00,
         PROTO_OK                = 0x10,

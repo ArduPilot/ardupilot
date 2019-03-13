@@ -17,6 +17,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -78,6 +79,8 @@ void AP_IOMCU::init(void)
  */
 void AP_IOMCU::event_failed(uint8_t event)
 {
+    stats.failed_event = event;
+    stats.failed_event_count++;
     // wait 0.5ms then retry
     hal.scheduler->delay_microseconds(500);
     trigger_event(event);
@@ -380,8 +383,11 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
       a large number of registers wastes a lot of serial bandwidth
      */
     pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt_size);
+    stats.uart_write_count++;
     if (uart.write((uint8_t *)&pkt, pkt_size) != pkt_size) {
-        protocol_fail_count++;
+        stats.protocol_fail_count++;
+        stats.total_fail_count++;
+        stats.uart_fail_count++;
         return false;
     }
 
@@ -405,22 +411,25 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
         debug("bad crc %02x should be %02x n=%u %u/%u/%u\n",
               got_crc, expected_crc,
               n, page, offset, count);
-        protocol_fail_count++;
+        stats.protocol_fail_count++;
+        stats.total_fail_count++;
         return false;
     }
 
     if (pkt.code != CODE_SUCCESS) {
         debug("bad code %02x read %u/%u/%u\n", pkt.code, page, offset, count);
-        protocol_fail_count++;
+        stats.protocol_fail_count++;
+        stats.total_fail_count++;
         return false;
     }
     if (pkt.count < count) {
         debug("bad count %u read %u/%u/%u n=%u\n", pkt.count, page, offset, count, n);
-        protocol_fail_count++;
+        stats.protocol_fail_count++;
+        stats.total_fail_count++;
         return false;
     }
     memcpy(regs, pkt.regs, count*2);
-    protocol_fail_count = 0;
+    stats.protocol_fail_count = 0;
     return true;
 }
 
@@ -450,15 +459,19 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     pkt.crc = 0;
     memcpy(pkt.regs, regs, 2*count);
     pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
+    stats.uart_write_count++;
     if (uart.write((uint8_t *)&pkt, pkt.get_size()) != pkt.get_size()) {
-        protocol_fail_count++;
+        stats.protocol_fail_count++;
+        stats.total_fail_count++;
+        stats.uart_fail_count++;
         return false;
     }
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(4, 10)) {
         //debug("no reply for %u/%u/%u\n", page, offset, count);
-        protocol_fail_count++;
+        stats.protocol_fail_count++;
+        stats.total_fail_count++;
         return false;
     }
     
@@ -474,7 +487,8 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
         debug("bad code %02x write %u/%u/%u %02x/%02x n=%u\n",
               pkt.code, page, offset, count,
               pkt.page, pkt.offset, n);
-        protocol_fail_count++;
+        stats.protocol_fail_count++;
+        stats.total_fail_count++;
         return false;
     }
     uint8_t got_crc = pkt.crc;
@@ -482,10 +496,11 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     uint8_t expected_crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
     if (got_crc != expected_crc) {
         debug("bad crc %02x should be %02x\n", got_crc, expected_crc);
-        protocol_fail_count++;
+        stats.protocol_fail_count++;
+        stats.total_fail_count++;
         return false;
     }
-    protocol_fail_count = 0;
+    stats.protocol_fail_count = 0;
     return true;
 }
 
@@ -786,7 +801,7 @@ void AP_IOMCU::set_safety_mask(uint16_t chmask)
  */
 bool AP_IOMCU::healthy(void)
 {
-    return crc_is_ok && protocol_fail_count == 0;
+    return crc_is_ok && stats.protocol_fail_count == 0;
 }
 
 /*
@@ -871,6 +886,21 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
         trigger_event(IOEVENT_MIXING);
     }
     return true;
+}
+
+void AP_IOMCU::log(void)
+{
+    struct log_IOMCU pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_IOMCU_MSG),
+        time_us                  : AP_HAL::micros64(),
+        total_fail_count         : stats.total_fail_count,
+        current_fail_count       : stats.protocol_fail_count,
+        event_fail_count         : stats.failed_event_count,
+        uart_fail_count          : stats.uart_fail_count,
+        uart_write_count         : stats.uart_write_count,
+        most_recent_failed_event : stats.failed_event
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*
