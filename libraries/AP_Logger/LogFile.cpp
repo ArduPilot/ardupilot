@@ -1402,9 +1402,9 @@ void AP_Logger::Write_Current_instance(const uint64_t time_us,
             cell_pkt.cell_voltages[i] = cells.cells[i] + 1;
         }
         WriteBlock(&cell_pkt, sizeof(cell_pkt));
-
         // check battery structure can hold all cells
-        static_assert(ARRAY_SIZE(cells.cells) == (sizeof(cell_pkt.cell_voltages) / sizeof(cell_pkt.cell_voltages[0])),
+        // ARRAY_SIZE cannot be use as cells or cell_voltages cannot be used in const expression, solved in C++17
+        static_assert(std::extent<decltype(cells.cells)>::value == std::extent<decltype(cell_pkt.cell_voltages)>::value,
                       "Battery cell number doesn't match in library and log structure");
     }
 }
