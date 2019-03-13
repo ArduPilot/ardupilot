@@ -430,6 +430,12 @@ void Plane::stabilize()
             steerController.reset_I();            
         }
     }
+
+    if (control_mode == MANUAL) {
+        rollController.reset_I();
+        pitchController.reset_I();
+        yawController.reset_I();
+    }
 }
 
 
