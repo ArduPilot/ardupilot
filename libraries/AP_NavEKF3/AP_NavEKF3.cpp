@@ -906,12 +906,12 @@ void NavEKF3::resetGyroBias(void)
 // Adjusts the EKF origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
-bool NavEKF3::resetHeightDatum(void)
+bool NavEKF3::resetHeightDatum(float alt_m)
 {
     bool status = true;
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            if (!core[i].resetHeightDatum()) {
+            if (!core[i].resetHeightDatum(alt_m)) {
                 status = false;
             }
         }
