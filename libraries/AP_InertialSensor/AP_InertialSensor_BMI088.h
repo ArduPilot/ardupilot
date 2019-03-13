@@ -59,6 +59,16 @@ private:
     void read_fifo_accel();
     void read_fifo_gyro();
 
+    /*
+      read from accelerometer registers, special SPI handling needed
+     */
+    bool read_accel_registers(uint8_t reg, uint8_t *data, uint8_t len);
+
+    /*
+      write to an accelerometer register with retries
+     */
+    bool write_accel_register(uint8_t reg, uint8_t v);
+
     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
 
