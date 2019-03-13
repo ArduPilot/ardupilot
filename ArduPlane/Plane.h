@@ -792,13 +792,9 @@ private:
     void send_fence_status(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
-    void send_pid_info(const mavlink_channel_t chan, const AP_Logger::PID_Info *pid_info, const uint8_t axis, const float achieved);
-    void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
 
     void send_aoa_ssa(mavlink_channel_t chan);
-
-    void gcs_send_airspeed_calibration(const Vector3f &vg);
 
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
@@ -929,7 +925,7 @@ private:
     int8_t throttle_percentage(void);
     void change_arm_state(void);
     bool disarm_motors(void);
-    bool arm_motors(AP_Arming::ArmingMethod method, bool do_arming_checks=true);
+    bool arm_motors(AP_Arming::Method method, bool do_arming_checks=true);
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
     void takeoff_calc_pitch(void);

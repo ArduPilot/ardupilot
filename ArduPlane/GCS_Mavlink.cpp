@@ -23,6 +23,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case MANUAL:
     case TRAINING:
     case ACRO:
+    case QACRO:
         _base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case STABILIZE:
@@ -323,7 +324,7 @@ void NOINLINE Plane::send_rpm(mavlink_channel_t chan)
 }
 
 // sends a single pid info over the provided channel
-void Plane::send_pid_info(const mavlink_channel_t chan, const AP_Logger::PID_Info *pid_info,
+void GCS_MAVLINK_Plane::send_pid_info(const AP_Logger::PID_Info *pid_info,
                           const uint8_t axis, const float achieved)
 {
     if (pid_info == nullptr) {
@@ -344,44 +345,52 @@ void Plane::send_pid_info(const mavlink_channel_t chan, const AP_Logger::PID_Inf
 /*
   send PID tuning message
  */
-void Plane::send_pid_tuning(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_pid_tuning()
 {
+    if (plane.control_mode == MANUAL) {
+        // no PIDs should be used in manual
+        return;
+    }
+
+    const Parameters &g = plane.g;
+    AP_AHRS &ahrs = AP::ahrs();
+
     const Vector3f &gyro = ahrs.get_gyro();
     const AP_Logger::PID_Info *pid_info;
     if (g.gcs_pid_mask & TUNING_BITS_ROLL) {
-        if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
+        if (plane.quadplane.in_vtol_mode()) {
+            pid_info = &plane.quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
         } else {
-            pid_info = &rollController.get_pid_info();
+            pid_info = &plane.rollController.get_pid_info();
         }
-        send_pid_info(chan, pid_info, PID_TUNING_ROLL, degrees(gyro.x));
+        send_pid_info(pid_info, PID_TUNING_ROLL, degrees(gyro.x));
     }
     if (g.gcs_pid_mask & TUNING_BITS_PITCH) {
-        if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
+        if (plane.quadplane.in_vtol_mode()) {
+            pid_info = &plane.quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
         } else {
-            pid_info = &pitchController.get_pid_info();
+            pid_info = &plane.pitchController.get_pid_info();
         }
-        send_pid_info(chan, pid_info, PID_TUNING_PITCH, degrees(gyro.y));
+        send_pid_info(pid_info, PID_TUNING_PITCH, degrees(gyro.y));
     }
     if (g.gcs_pid_mask & TUNING_BITS_YAW) {
-        if (quadplane.in_vtol_mode()) {
-            pid_info = &quadplane.attitude_control->get_rate_yaw_pid().get_pid_info();
+        if (plane.quadplane.in_vtol_mode()) {
+            pid_info = &plane.quadplane.attitude_control->get_rate_yaw_pid().get_pid_info();
         } else {
-            pid_info = &yawController.get_pid_info();
+            pid_info = &plane.yawController.get_pid_info();
         }
-        send_pid_info(chan, pid_info, PID_TUNING_YAW, degrees(gyro.z));
+        send_pid_info(pid_info, PID_TUNING_YAW, degrees(gyro.z));
     }
     if (g.gcs_pid_mask & TUNING_BITS_STEER) {
-        send_pid_info(chan, &steerController.get_pid_info(), PID_TUNING_STEER, degrees(gyro.z));
+        send_pid_info(&plane.steerController.get_pid_info(), PID_TUNING_STEER, degrees(gyro.z));
     }
-    if ((g.gcs_pid_mask & TUNING_BITS_LAND) && (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND)) {
-        send_pid_info(chan, landing.get_pid_info(), PID_TUNING_LANDING, degrees(gyro.z));
+    if ((g.gcs_pid_mask & TUNING_BITS_LAND) && (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND)) {
+        send_pid_info(plane.landing.get_pid_info(), PID_TUNING_LANDING, degrees(gyro.z));
     }
-    if (g.gcs_pid_mask & TUNING_BITS_ACCZ && quadplane.in_vtol_mode()) {
+    if (g.gcs_pid_mask & TUNING_BITS_ACCZ && plane.quadplane.in_vtol_mode()) {
         const Vector3f &accel = ahrs.get_accel_ef();
-        pid_info = &quadplane.pos_control->get_accel_z_pid().get_pid_info();
-        send_pid_info(chan, pid_info, PID_TUNING_ACCZ, -accel.z);
+        pid_info = &plane.quadplane.pos_control->get_accel_z_pid().get_pid_info();
+        send_pid_info(pid_info, PID_TUNING_ACCZ, -accel.z);
     }
  }
 
@@ -440,13 +449,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         plane.send_wind(chan);
-        break;
-
-    case MSG_PID_TUNING:
-        if (plane.control_mode != MANUAL) {
-            CHECK_PAYLOAD_SIZE(PID_TUNING);
-            plane.send_pid_tuning(chan);
-        }
         break;
 
     case MSG_RPM:
@@ -869,7 +871,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         if (is_equal(packet.param1,1.0f)) {
             // run pre_arm_checks and arm_checks and display failures
             const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value);
-            if (plane.arm_motors(AP_Arming::MAVLINK, do_arming_checks)) {
+            if (plane.arm_motors(AP_Arming::Method::MAVLINK, do_arming_checks)) {
                 return MAV_RESULT_ACCEPTED;
             }
             return MAV_RESULT_FAILED;
@@ -1412,14 +1414,6 @@ void Plane::mavlink_delay_cb()
     }
 
     logger.EnableWrites(true);
-}
-
-/*
-  send airspeed calibration data
- */
-void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
-{
-    gcs().send_airspeed_calibration(vg);
 }
 
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg)

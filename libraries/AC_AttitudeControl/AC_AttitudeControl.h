@@ -6,7 +6,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
@@ -134,6 +133,9 @@ public:
 
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
+
+    // Command euler yaw rate and pitch angle with roll angle specified in body frame 
+    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
 
     // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
     void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
@@ -291,6 +293,11 @@ public:
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     virtual void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) {};
 
+    // provide feedback on whether arming would be a good idea right now:
+    bool pre_arm_checks(const char *param_prefix,
+                        char *failure_msg,
+                        const uint8_t failure_msg_len);
+
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
     
@@ -426,7 +433,12 @@ protected:
 
     // true in inverted flight mode
     bool _inverted_flight;
-    
+
+    // state for input_euler_rate_yaw_euler_angle_pitch_bf_roll()
+    // (would be expensive to compute from _attitude_target_quat)
+    float _last_body_roll;
+    float _last_euler_pitch;
+
 public:
     // log a CTRL message
     void control_monitor_log(void);

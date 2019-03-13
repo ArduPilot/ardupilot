@@ -77,7 +77,14 @@ class ManifestGenerator():
         '''accumulate additional information about firmwares from a directory'''
         platform_frame_regex = re.compile("(?P<board>PX4|navio|pxf)(-(?P<frame>.+))?")
         variant_firmware_regex = re.compile("[^-]+-(?P<variant>v\d+)[.px4]")
-        for platformdir in os.listdir(dir):
+        if not os.path.isdir(dir):
+            return
+        try:
+            dlist = os.listdir(dir)
+        except Exception:
+            print("Error listing '%s'" % dir)
+            return
+        for platformdir in dlist:
             some_dir = os.path.join(dir, platformdir)
             try:
                 git_sha = self.git_sha_from_git_version(os.path.join(some_dir, "git-version.txt"))
@@ -219,7 +226,7 @@ class ManifestGenerator():
                     # this is a dated directory e.g. binaries/Copter/2016-02
                     year_month_path = os.path.join(basedir, vehicletype, firstlevel)
                     for fulldate in os.listdir(year_month_path):
-                        if fulldate == "files.html":
+                        if fulldate in ["files.html", ".makehtml"]:
                             # generated file which should be ignored
                             continue
                         self.add_firmware_data_from_dir(os.path.join(year_month_path, fulldate), xfirmwares, vehicletype)

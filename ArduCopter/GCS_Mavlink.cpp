@@ -268,11 +268,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         // unused
         break;
 
-    case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        send_pid_tuning();
-        break;
-
     case MSG_ADSB_VEHICLE:
 #if ADSB_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
@@ -713,7 +708,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         if (is_equal(packet.param1,1.0f)) {
             // attempt to arm and return success or failure
             const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value);
-            if (copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK, do_arming_checks)) {
+            if (copter.init_arm_motors(AP_Arming::Method::MAVLINK, do_arming_checks)) {
                 return MAV_RESULT_ACCEPTED;
             }
         } else if (is_zero(packet.param1))  {
@@ -829,7 +824,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
         if (!copter.motors->armed()) {
             // if disarmed, arm motors
-            copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK);
+            copter.init_arm_motors(AP_Arming::Method::MAVLINK);
         } else if (copter.ap.land_complete) {
             // if armed and landed, takeoff
             if (copter.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
@@ -1372,4 +1367,18 @@ uint64_t GCS_MAVLINK_Copter::capabilities() const
 #endif
             MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION |
             GCS_MAVLINK::capabilities());
+}
+
+MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
+{
+    if (copter.ap.land_complete) {
+        return MAV_LANDED_STATE_ON_GROUND;
+    }
+    if (copter.flightmode->is_landing()) {
+        return MAV_LANDED_STATE_LANDING;
+    }
+    if (copter.flightmode->is_taking_off()) {
+        return MAV_LANDED_STATE_TAKEOFF;
+    }
+    return MAV_LANDED_STATE_IN_AIR;
 }

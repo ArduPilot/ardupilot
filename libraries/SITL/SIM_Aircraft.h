@@ -255,6 +255,9 @@ protected:
     Battery *battery;
     AP_Float out_servo_voltage;
     AP_Float out_servo_current;
+  
+    void add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel);
+
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;

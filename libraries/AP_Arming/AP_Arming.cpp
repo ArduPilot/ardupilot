@@ -23,6 +23,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AC_Fence/AC_Fence.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -43,9 +44,9 @@
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-  #define ARMING_RUDDER_DEFAULT         ARMING_RUDDER_ARMONLY
+  #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMONLY
 #else
-  #define ARMING_RUDDER_DEFAULT         ARMING_RUDDER_ARMDISARM
+  #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -121,7 +122,7 @@ uint16_t AP_Arming::compass_magfield_expected() const
 
 bool AP_Arming::is_armed()
 {
-    return (ArmingRequired)require.get() == NO || armed;
+    return (Required)require.get() == Required::NO || armed;
 }
 
 uint16_t AP_Arming::get_enabled_checks()
@@ -327,8 +328,9 @@ bool AP_Arming::ins_checks(bool report)
         }
 
         // check AHRS attitudes are consistent
-        if (!AP::ahrs().attitudes_consistent()) {
-            check_failed(ARMING_CHECK_INS, report, "Attitudes inconsistent");
+        char failure_msg[50] = {};
+        if (!AP::ahrs().attitudes_consistent(failure_msg, ARRAY_SIZE(failure_msg))) {
+            check_failed(ARMING_CHECK_INS, report, "%s", failure_msg);
             return false;
         }
     }
@@ -462,7 +464,7 @@ bool AP_Arming::battery_checks(bool report)
 
         char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
         if (!AP::battery().arming_checks(sizeof(buffer), buffer)) {
-            check_failed(ARMING_CHECK_BATTERY, report, buffer);
+            check_failed(ARMING_CHECK_BATTERY, report, "%s", buffer);
             return false;
         }
      }
@@ -695,10 +697,33 @@ bool AP_Arming::can_checks(bool report)
     return true;
 }
 
+
+bool AP_Arming::fence_checks(bool display_failure)
+{
+    const AC_Fence *fence = AP::fence();
+    if (fence == nullptr) {
+        return true;
+    }
+
+    // check fence is ready
+    const char *fail_msg = nullptr;
+    if (fence->pre_arm_check(fail_msg)) {
+        return true;
+    }
+
+    if (fail_msg == nullptr) {
+        check_failed(ARMING_CHECK_NONE, display_failure, "Check fence");
+    } else {
+        check_failed(ARMING_CHECK_NONE, display_failure, "%s", fail_msg);
+    }
+
+    return false;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    if (armed || require == NO) {
+    if (armed || require == (uint8_t)Required::NO) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
@@ -720,7 +745,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  can_checks(report);
 }
 
-bool AP_Arming::arm_checks(ArmingMethod method)
+bool AP_Arming::arm_checks(AP_Arming::Method method)
 {
     // ensure the GPS drivers are ready on any final changes
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -752,7 +777,7 @@ bool AP_Arming::arm_checks(ArmingMethod method)
 }
 
 //returns true if arming occurred successfully
-bool AP_Arming::arm(AP_Arming::ArmingMethod method, const bool do_arming_checks)
+bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // Copter should never use this function
@@ -814,9 +839,9 @@ bool AP_Arming::disarm()
 #endif
 }
 
-AP_Arming::ArmingRequired AP_Arming::arming_required() 
+AP_Arming::Required AP_Arming::arming_required() 
 {
-    return (AP_Arming::ArmingRequired)require.get();
+    return (AP_Arming::Required)require.get();
 }
 
 // Copter and sub share the same RC input limits

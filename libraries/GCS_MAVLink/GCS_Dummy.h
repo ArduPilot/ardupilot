@@ -37,6 +37,7 @@ protected:
     bool set_home(const Location& loc, bool lock) override { return false; }
 
     void send_nav_controller_output() const override {};
+    void send_pid_tuning() override {};
 };
 
 /*

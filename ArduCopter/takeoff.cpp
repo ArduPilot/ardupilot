@@ -173,3 +173,17 @@ void Copter::Mode::auto_takeoff_attitude_run(float target_yaw_rate)
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
 }
+
+bool Copter::Mode::is_taking_off() const
+{
+    if (!has_user_takeoff(false)) {
+        return false;
+    }
+    if (ap.land_complete) {
+        return false;
+    }
+    if (takeoff.running()) {
+        return true;
+    }
+    return false;
+}

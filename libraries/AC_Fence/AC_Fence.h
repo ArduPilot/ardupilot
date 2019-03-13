@@ -144,6 +144,9 @@ private:
     /// load polygon points stored in eeprom into boundary array and perform validation.  returns true if load successfully completed
     bool load_polygon_from_eeprom(bool force_reload = false);
 
+    // returns true if we have breached the fence:
+    bool polygon_fence_is_breached();
+
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
     AP_Int8         _enabled_fences;        // bit mask holding which fences are enabled

@@ -196,6 +196,12 @@ void Rover::startup_ground(void)
         );
 #endif
 
+#ifdef ENABLE_SCRIPTING
+    if (!g2.scripting.init()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
+    }
+#endif // ENABLE_SCRIPTING
+
     // we don't want writes to the serial port to cause us to pause
     // so set serial ports non-blocking once we are ready to drive
     serial_manager.set_blocking_writes_all(false);
@@ -329,7 +335,7 @@ void Rover::change_arm_state(void)
 /*
   arm motors
  */
-bool Rover::arm_motors(AP_Arming::ArmingMethod method)
+bool Rover::arm_motors(AP_Arming::Method method)
 {
     if (!arming.arm(method)) {
         AP_Notify::events.arming_failed = true;

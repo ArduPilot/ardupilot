@@ -1,17 +1,6 @@
 #include "GCS_Plane.h"
 #include "Plane.h"
 
-void GCS_Plane::send_airspeed_calibration(const Vector3f &vg)
-{
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        if (_chan[i].initialised) {
-            if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, AIRSPEED_AUTOCAL)) {
-                plane.airspeed.log_mavlink_send((mavlink_channel_t)i, vg);
-            }
-        }
-    }
-}
-
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but
@@ -77,6 +66,7 @@ void GCS_Plane::update_sensor_status_flags(void)
         break;
 
     case ACRO:
+    case QACRO:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         break;
 

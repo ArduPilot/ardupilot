@@ -42,6 +42,9 @@ protected:
     void send_nav_controller_output() const override;
     uint64_t capabilities() const override;
 
+    virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_MC; };
+    virtual MAV_LANDED_STATE landed_state() const;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
@@ -64,6 +67,6 @@ private:
     int16_t vfr_hud_throttle() const override;
     float vfr_hud_alt() const override;
 
-    void send_pid_tuning();
+    void send_pid_tuning() override;
 
 };

@@ -100,6 +100,10 @@ public:
         DEVTYPE_INS_BMI055   = 0x29,
         DEVTYPE_SITL         = 0x2A,
         DEVTYPE_INS_BMI088   = 0x2B,
+        DEVTYPE_INS_ICM20948 = 0x2C,
+        DEVTYPE_INS_ICM20648 = 0x2D,
+        DEVTYPE_INS_ICM20649 = 0x2E,
+        DEVTYPE_INS_ICM20602 = 0x2F,
     };
 
 protected:

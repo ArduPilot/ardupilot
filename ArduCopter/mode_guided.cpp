@@ -139,6 +139,11 @@ void Copter::ModeGuided::posvel_control_start()
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
+bool Copter::ModeGuided::is_taking_off() const
+{
+    return guided_mode == Guided_TakeOff;
+}
+
 // initialise guided mode's angle controller
 void Copter::ModeGuided::angle_control_start()
 {

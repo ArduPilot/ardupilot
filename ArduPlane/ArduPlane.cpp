@@ -281,7 +281,7 @@ void Plane::one_second_loop()
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
-    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::Required::NO;
 
 #if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
@@ -347,7 +347,6 @@ void Plane::airspeed_ratio_update(void)
     }
     const Vector3f &vg = gps.velocity();
     airspeed.update_calibration(vg, aparm.airspeed_max);
-    gcs_send_airspeed_calibration(vg);
 }
 
 
@@ -679,7 +678,7 @@ void Plane::update_flight_mode(void)
 
         break;
     }
-        
+    case QACRO:
     case INITIALISING:
         // handled elsewhere
         break;
@@ -775,6 +774,7 @@ void Plane::update_navigation()
     case QLAND:
     case QRTL:
     case QAUTOTUNE:
+    case QACRO:
         // nothing to do
         break;
     }
@@ -905,7 +905,7 @@ void Plane::disarm_if_autoland_complete()
 {
     if (landing.get_disarm_delay() > 0 &&
         !is_flying() &&
-        arming.arming_required() != AP_Arming::NO &&
+        arming.arming_required() != AP_Arming::Required::NO &&
         arming.is_armed()) {
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {

@@ -184,7 +184,13 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     }
 #else
     bus.bouncebuffer_setup(send, len, recv, len);
-    spiExchange(spi_devices[device_desc.bus].driver, len, send, recv);
+    if (send == nullptr) {
+        spiReceive(spi_devices[device_desc.bus].driver, len, recv);
+    } else if (recv == nullptr) {
+        spiSend(spi_devices[device_desc.bus].driver, len, send);
+    } else {
+        spiExchange(spi_devices[device_desc.bus].driver, len, send, recv);
+    }
     bus.bouncebuffer_finish(send, recv, len);
 #endif
 
@@ -317,6 +323,13 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
 #if defined(STM32H7)
         bus.spicfg.cfg1 = freq_flag;
         bus.spicfg.cfg2 = device_desc.mode;
+        if (bus.spicfg.dummytx == nullptr) {
+            bus.spicfg.dummytx = (uint32_t *)malloc_dma(4);
+            memset(bus.spicfg.dummytx, 0xFF, 4);
+        }
+        if (bus.spicfg.dummyrx == nullptr) {
+            bus.spicfg.dummyrx = (uint32_t *)malloc_dma(4);
+        }
 #else
         bus.spicfg.cr1 = (uint16_t)(freq_flag | device_desc.mode);
         bus.spicfg.cr2 = 0;
@@ -398,8 +411,11 @@ void SPIDevice::test_clock_freq(void)
         hal.scheduler->delay(1000);
         hal.console->printf("Waiting %u\n", AP_HAL::millis());
     }
-    hal.console->printf("SPI1_CLOCK=%u SPI2_CLOCK=%u SPI3_CLOCK=%u SPI4_CLOCK=%u\n",
-                        SPI1_CLOCK, SPI2_CLOCK, SPI3_CLOCK, SPI4_CLOCK);
+    hal.console->printf("CLOCKS=\n");
+    for (uint8_t i=0; i<ARRAY_SIZE(bus_clocks); i++) {
+        hal.console->printf("%u:%u ", i+1, bus_clocks[i]);
+    }
+    hal.console->printf("\n");
 
     // we will send 1024 bytes without any CS asserted and measure the
     // time it takes to do the transfer

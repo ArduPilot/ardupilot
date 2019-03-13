@@ -89,6 +89,45 @@ void GCS_MAVLINK_Tracker::send_nav_controller_output() const
         0);
 }
 
+/*
+  send PID tuning message
+ */
+void GCS_MAVLINK_Tracker::send_pid_tuning()
+{
+    const Parameters &g = tracker.g;
+
+    // Pitch PID
+    if (g.gcs_pid_mask & 1) {
+        const AP_Logger::PID_Info *pid_info;
+        pid_info = &g.pidPitch2Srv.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
+                                    pid_info->desired,
+                                    pid_info->actual,
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+
+    // Yaw PID
+    if (g.gcs_pid_mask & 2) {
+        const AP_Logger::PID_Info *pid_info;
+        pid_info = &g.pidYaw2Srv.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW,
+                                    pid_info->desired,
+                                    pid_info->actual,
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+}
 
 bool GCS_MAVLINK_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
@@ -219,6 +258,7 @@ static const ap_message STREAM_RC_CHANNELS_msgs[] = {
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
+    MSG_PID_TUNING,
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,

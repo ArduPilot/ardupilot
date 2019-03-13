@@ -47,11 +47,6 @@
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
-#include <AC_PID/AC_P.h>               // P library
-#include <AC_PID/AC_PID.h>             // PID library
-#include <AC_PID/AC_PI_2D.h>           // PI  library (2-axis)
-#include <AC_PID/AC_PID_2D.h>          // PID library (2-axis)
-#include <AC_PID/AC_HELI_PID.h>        // Heli specific Rate PID library
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
@@ -168,6 +163,10 @@
 #endif
 #if RPM_ENABLED == ENABLED
  #include <AP_RPM/AP_RPM.h>
+#endif
+
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
 #endif
 
 // Local modules
@@ -771,7 +770,7 @@ private:
     // motors.cpp
     void arm_motors_check();
     void auto_disarm_check();
-    bool init_arm_motors(AP_Arming::ArmingMethod method, bool do_arming_checks=true);
+    bool init_arm_motors(AP_Arming::Method method, bool do_arming_checks=true);
     void init_disarm_motors();
     void motors_output();
     void lost_vehicle_check();

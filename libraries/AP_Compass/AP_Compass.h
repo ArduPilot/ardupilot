@@ -70,7 +70,7 @@ public:
     /// @returns    True if the compass was initialized OK, false if it was not
     ///             found or is not functioning.
     ///
-    bool init();
+    void init();
 
     /// Read the compass and update the mag_ variables.
     ///

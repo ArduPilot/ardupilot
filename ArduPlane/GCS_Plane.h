@@ -20,8 +20,6 @@ public:
         return _chan[ofs];
     };
 
-    void send_airspeed_calibration(const Vector3f &vg);
-
 protected:
 
     void update_sensor_status_flags(void) override;

@@ -134,9 +134,6 @@ public:
     // update airspeed ratio calibration
     void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
-	// log data to MAVLink
-	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
-
     // return health status of sensor
     bool healthy(uint8_t i) const {
         return state[i].healthy && (fabsf(param[i].offset) > 0 || state[i].use_zero_offset) && enabled(i);
@@ -243,9 +240,11 @@ private:
     float get_pressure(uint8_t i);
     void update_calibration(uint8_t i, float raw_pressure);
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
+    void send_airspeed_calibration(const Vector3f &vg);
 
     void check_sensor_failures();
     void check_sensor_ahrs_wind_max_failures(uint8_t i);
 
     AP_Airspeed_Backend *sensor[AIRSPEED_MAX_SENSORS];
+
 };

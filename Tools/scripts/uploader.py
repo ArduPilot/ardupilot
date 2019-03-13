@@ -64,8 +64,11 @@ import base64
 import time
 import array
 import os
+import platform
 
 from sys import platform as _platform
+
+is_WSL = bool("Microsoft" in platform.uname()[2])
 
 # default list of port names to look for autopilots
 default_ports = [ '/dev/serial/by-id/usb-Ardu*',
@@ -78,7 +81,7 @@ default_ports = [ '/dev/serial/by-id/usb-Ardu*',
                   '/dev/serial/by-id/usb-Holybro*',
                   '/dev/tty.usbmodem*']
 
-if "cygwin" in _platform:
+if "cygwin" in _platform or is_WSL:
     default_ports += [ '/dev/ttyS*' ]
     
 # Detect python version
@@ -86,6 +89,10 @@ if sys.version_info[0] < 3:
     runningPython3 = False
 else:
     runningPython3 = True
+
+# dictionary of bootloader {boardID: (firmware boardID, boardname), ...}
+# designating firmware builds compatible with multiple boardIDs
+compatible_IDs = {33: (9, 'AUAVX2.1')}
 
 class firmware(object):
     '''Loads a firmware file'''
@@ -201,10 +208,17 @@ class uploader(object):
     NSH_INIT        = bytearray(b'\x0d\x0d\x0d')
     NSH_REBOOT_BL   = b"reboot -b\n"
     NSH_REBOOT      = b"reboot\n"
-    MAVLINK_REBOOT_ID1 = bytearray(b'\xfe\x21\x72\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x01\x00\x00\x53\x6b')
-    MAVLINK_REBOOT_ID0 = bytearray(b'\xfe\x21\x45\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x00\x00\x00\xcc\x37')
 
-    def __init__(self, portname, baudrate_bootloader, baudrate_flightstack, baudrate_bootloader_flash=None):
+    def __init__(self, portname, baudrate_bootloader, baudrate_flightstack, baudrate_bootloader_flash=None, target_system=None, target_component=None, source_system=None, source_component=None):
+        self.MAVLINK_REBOOT_ID1 = bytearray(b'\xfe\x21\x72\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x01\x00\x00\x53\x6b')
+        self.MAVLINK_REBOOT_ID0 = bytearray(b'\xfe\x21\x45\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x00\x00\x00\xcc\x37')
+        if target_component is None:
+            target_component = 1
+        if source_system is None:
+            source_system = 255
+        if source_component is None:
+            source_component = 1
+
         # open the port, keep the default timeout short so we can poll quickly
         self.port = serial.Serial(portname, baudrate_bootloader, timeout=1.0)
         self.otp = b''
@@ -216,6 +230,26 @@ class uploader(object):
             self.baudrate_bootloader_flash = self.baudrate_bootloader
         self.baudrate_flightstack = baudrate_flightstack
         self.baudrate_flightstack_idx = -1
+        # generate mavlink reboot message:
+        if target_system is not None:
+            from pymavlink import mavutil
+            m = mavutil.mavlink.MAVLink_command_long_message(
+                target_system,
+                target_component,
+                mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                1, # confirmation
+                3, # remain in bootloader
+                0,
+                0,
+                0,
+                0,
+                0,
+                0)
+            mav = mavutil.mavlink.MAVLink(self,
+                                          srcSystem=source_system,
+                                          srcComponent=source_component)
+            self.MAVLINK_REBOOT_ID1 = m.pack(mav)
+            self.MAVLINK_REBOOT_ID0 = None
 
     def close(self):
         if self.port is not None:
@@ -504,13 +538,25 @@ class uploader(object):
     def upload(self, fw, force=False, boot_delay=None):
         # Make sure we are doing the right thing
         if self.board_type != fw.property('board_id'):
-            msg = "Firmware not suitable for this board (board_type=%u board_id=%u)" % (
-                self.board_type, fw.property('board_id'))
-            print("WARNING: %s" % msg)
-            if force:
-                print("FORCED WRITE, FLASHING ANYWAY!")
-            else:
-                raise IOError(msg)
+            # ID mismatch: check compatibility
+            incomp = True
+            if self.board_type in compatible_IDs:
+                comp_fw_id = compatible_IDs[self.board_type][0]
+                board_name = compatible_IDs[self.board_type][1]
+                if comp_fw_id == fw.property('board_id'):
+                    msg = "Target %s (board_id: %d) is compatible with firmware for board_id=%u)" % (
+                         board_name, self.board_type, fw.property('board_id'))
+                    print("INFO: %s" % msg)
+                    incomp = False
+            if incomp:                        
+                msg = "Firmware not suitable for this board (board_type=%u board_id=%u)" % (
+                    self.board_type, fw.property('board_id'))
+                print("WARNING: %s" % msg)
+                
+                if force:
+                    print("FORCED WRITE, FLASHING ANYWAY!")
+                else:
+                    raise IOError(msg)
         if self.fw_maxsize < fw.property('image_size'):
             raise RuntimeError("Firmware image is too large for this board")
 
@@ -594,8 +640,10 @@ class uploader(object):
         try:
             # try MAVLINK command first
             self.port.flush()
-            self.__send(uploader.MAVLINK_REBOOT_ID1)
-            self.__send(uploader.MAVLINK_REBOOT_ID0)
+            if self.MAVLINK_REBOOT_ID1 is not None:
+                self.__send(self.MAVLINK_REBOOT_ID1)
+            if self.MAVLINK_REBOOT_ID0 is not None:
+                self.__send(self.MAVLINK_REBOOT_ID0)
             # then try reboot via NSH
             self.__send(uploader.NSH_INIT)
             self.__send(uploader.NSH_REBOOT_BL)
@@ -689,6 +737,10 @@ def main():
     parser.add_argument('--baud-flightstack', action="store", default="57600", help="Comma-separated list of baud rate of the serial port (default is 57600) when communicating with flight stack (Mavlink or NSH), only required for true serial ports.")
     parser.add_argument('--force', action='store_true', default=False, help='Override board type check and continue loading')
     parser.add_argument('--boot-delay', type=int, default=None, help='minimum boot delay to store in flash')
+    parser.add_argument('--target-system', type=int, action="store", help="System ID to update")
+    parser.add_argument('--target-component', type=int, action="store", help="Component ID to update")
+    parser.add_argument('--source-system', type=int, action="store", help="Source system to send reboot mavlink packets from", default=255)
+    parser.add_argument('--source-component', type=int, action="store", help="Source component to send reboot mavlink packets from", default=0)
     parser.add_argument('firmware', action="store", help="Firmware file to be uploaded")
     args = parser.parse_args()
 
@@ -715,12 +767,17 @@ def main():
                     up = uploader(port,
                                   args.baud_bootloader,
                                   baud_flightstack,
-                                  args.baud_bootloader_flash)
+                                  args.baud_bootloader_flash,
+                                  args.target_system,
+                                  args.target_component,
+                                  args.source_system,
+                                  args.source_component)
 
                 except Exception as e:
-                    print("Exception creating uploader: %s" % str(e))
-                    # open failed, rate-limit our attempts
-                    time.sleep(0.05)
+                    if not is_WSL:
+                        # open failed, WSL must cycle through all ttyS* ports quickly but rate limit everything else
+                        print("Exception creating uploader: %s" % str(e))
+                        time.sleep(0.05)
 
                     # and loop to the next port
                     continue

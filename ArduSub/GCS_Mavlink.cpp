@@ -166,8 +166,12 @@ bool GCS_MAVLINK_Sub::send_info()
 /*
   send PID tuning message
  */
-void Sub::send_pid_tuning(mavlink_channel_t chan)
+void GCS_MAVLINK_Sub::send_pid_tuning()
 {
+    const Parameters &g = sub.g;
+    AP_AHRS &ahrs = AP::ahrs();
+    AC_AttitudeControl_Sub &attitude_control = sub.attitude_control;
+
     const Vector3f &gyro = ahrs.get_gyro();
     if (g.gcs_pid_mask & 1) {
         const AP_Logger::PID_Info &pid_info = attitude_control.get_rate_roll_pid().get_pid_info();
@@ -209,7 +213,7 @@ void Sub::send_pid_tuning(mavlink_channel_t chan)
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const AP_Logger::PID_Info &pid_info = pos_control.get_accel_z_pid().get_pid_info();
+        const AP_Logger::PID_Info &pid_info = sub.pos_control.get_accel_z_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info.desired*0.01f,
                                     -(ahrs.get_accel_ef_blended().z + GRAVITY_MSS),
@@ -261,11 +265,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         sub.terrain.send_request(chan);
 #endif
-        break;
-
-    case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        sub.send_pid_tuning(chan);
         break;
 
     default:
@@ -563,7 +562,7 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
     case MAV_CMD_COMPONENT_ARM_DISARM:
         if (is_equal(packet.param1,1.0f)) {
             // attempt to arm and return success or failure
-            if (sub.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK)) {
+            if (sub.init_arm_motors(AP_Arming::Method::MAVLINK)) {
                 return MAV_RESULT_ACCEPTED;
             }
         } else if (is_zero(packet.param1))  {
