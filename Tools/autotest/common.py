@@ -29,6 +29,11 @@ if sys.version_info[0] >= 3 and sys.version_info[1] >= 4:
 else:
     ABC = abc.ABCMeta('ABC', (), {})
 
+try:
+    from itertools import izip as zip
+except ImportError:
+    # probably python2
+    pass
 
 class ErrorException(Exception):
     """Base class for other exceptions"""
@@ -528,7 +533,7 @@ class AutoTest(ABC):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
         f1 = open(file1)
         f2 = open(file2)
-        for l1, l2 in itertools.izip(f1, f2):
+        for l1, l2 in zip(f1, f2):
             l1 = l1.rstrip("\r\n")
             l2 = l2.rstrip("\r\n")
             if l1 == l2:
@@ -543,7 +548,7 @@ class AutoTest(ABC):
             fields2 = re.split("\s+", l2)
             # line = int(fields1[0])
             t = int(fields1[3]) # mission item type
-            for (count, (i1, i2)) in enumerate(itertools.izip(fields1, fields2)):
+            for (count, (i1, i2)) in enumerate(zip(fields1, fields2)):
                 if count == 2: # frame
                     if t in [mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
                              mavutil.mavlink.MAV_CMD_CONDITION_YAW,
@@ -1715,7 +1720,12 @@ class AutoTest(ABC):
             test_function()
         except Exception as e:
             self.test_timings[desc] = time.time() - start_time
-            self.progress("Exception caught: %s" % traceback.format_exc(e))
+            try:
+                stacktrace = traceback.format_exc(e)
+            except Exception:
+                # seems to be broken under Python3:
+                stacktrace = "stacktrace unavailable"
+            self.progress("Exception caught: %s" % stacktrace)
             self.context_pop()
             self.progress('FAILED: "%s": %s (see %s)' %
                           (prettyname, repr(e), test_output_filename))
