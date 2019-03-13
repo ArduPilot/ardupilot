@@ -675,6 +675,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_rc_override_cancel(self):
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         self.change_mode('MANUAL')
         self.wait_ready_to_arm()
         self.zero_throttle()
@@ -745,6 +746,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_rc_overrides(self):
         self.context_push()
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         ex = None
         try:
             self.set_parameter("RC12_OPTION", 46)
@@ -996,6 +998,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_manual_control(self):
         self.context_push()
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         ex = None
         try:
             self.set_parameter("RC12_OPTION", 46) # enable/disable rc overrides
@@ -1140,13 +1143,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_sysid_enforce(self):
         '''Run the same arming code with correct then incorrect SYSID'''
+
+        if self.mav.source_system != self.mav.mav.srcSystem:
+            raise PreconditionFailedException("Expected mav.source_system and mav.srcSystem to match")
+
         self.context_push()
+        old_srcSystem = self.mav.mav.srcSystem
         ex = None
         try:
-            # if set_parameter is ever changed to not use MAVProxy
-            # this test is going to break horribly.  Sorry.
-            self.set_parameter("SYSID_MYGCS", 255) # assume MAVProxy does this!
-            self.set_parameter("SYSID_ENFORCE", 1) # assume MAVProxy does this!
+            self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+            self.set_parameter("SYSID_ENFORCE", 1, add_to_context=False)
 
             self.change_mode('MANUAL')
 
@@ -1155,23 +1161,25 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.arm_vehicle(timeout=5)
             self.disarm_vehicle()
 
-            # temporarily set a different system ID than MAVProxy:
-            self.progress("Attempting to arm vehicle myself")
-            old_srcSystem = self.mav.mav.srcSystem
+            self.do_timesync_roundtrip()
+
+            # should not be able to arm from a system id which is not MY_SYSID
+            self.progress("Attempting to arm vehicle from bad system-id")
+            success = None
             try:
-                self.mav.mav.srcSystem = 243
+                # temporarily set a different system ID than normal:
+                self.mav.mav.srcSystem = 72
                 self.arm_vehicle(timeout=5)
                 self.disarm_vehicle()
                 success = False
-            except AutoTestTimeoutException as e:
+            except AutoTestTimeoutException:
                 success = True
             self.mav.mav.srcSystem = old_srcSystem
             if not success:
-                raise NotAchievedException(
-                    "Managed to arm with SYSID_ENFORCE set")
+                raise NotAchievedException("Managed to arm with SYSID_ENFORCE set")
 
+            # should be able to arm from the vehicle's own components:
             self.progress("Attempting to arm vehicle from vehicle component")
-            old_srcSystem = self.mav.mav.srcSystem
             comp_arm_exception = None
             try:
                 self.mav.mav.srcSystem = 1
@@ -1187,6 +1195,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("Exception caught: %s" % (
                 self.get_exception_stacktrace(e)))
             ex = e
+        self.mav.mav.srcSystem = old_srcSystem
+        self.set_parameter("SYSID_ENFORCE", 0, add_to_context=False)
         self.context_pop()
         if ex is not None:
             raise ex
@@ -2944,9 +2954,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                                 target_component,
                                                 1)
             m = self.mav.recv_match(type="RALLY_POINT", blocking=True, timeout=1)
-            if m.target_system != 255:
+            if m.target_system != self.mav.source_system:
                 raise NotAchievedException("Bad target_system on received rally point (want=%u got=%u)" % (255, m.target_system))
-            if m.target_component != 250: # autotest's component ID
+            if m.target_component != self.mav.source_component: # autotest's component ID
                 raise NotAchievedException("Bad target_component on received rally point")
             if m.lat != item1_lat:
                 raise NotAchievedException("Bad latitude on received rally point")

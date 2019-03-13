@@ -326,11 +326,16 @@ class AutoTestSub(AutoTest):
 
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
-        self.mavproxy.send("reboot\n")
-        self.mavproxy.expect("Init ArduSub")
-        # empty mav to avoid getting old timestamps:
-        while self.mav.recv_match(blocking=False):
-            pass
+        self.context_push()
+        self.context_collect("STATUSTEXT")
+        self.send_reboot_command()
+        # "Init ArduSub" comes out as raw text, not a statustext
+        for i in range(2):
+            try:
+                self.wait_statustext("ArduPilot Ready", check_context=True, wallclock_timeout=True)
+            except ConnectionResetError as e:
+                pass
+        self.context_pop()
         self.initialise_after_reboot_sitl()
 
     def apply_defaultfile_parameters(self):
