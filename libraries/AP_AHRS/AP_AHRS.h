@@ -520,12 +520,12 @@ public:
         return 0;
     };
 
-    // Resets the baro so that it reads zero at the current height
+    // Resets the baro so that it reads alt_m at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    virtual bool resetHeightDatum(void) {
+    virtual bool resetHeightDatum(float alt_m=0) {
         return false;
     }
 

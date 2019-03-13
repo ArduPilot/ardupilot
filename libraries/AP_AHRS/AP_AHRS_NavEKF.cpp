@@ -1451,7 +1451,7 @@ uint32_t AP_AHRS_NavEKF::getLastPosDownReset(float &posDelta) const
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
-bool AP_AHRS_NavEKF::resetHeightDatum(void)
+bool AP_AHRS_NavEKF::resetHeightDatum(float alt_m)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
@@ -1460,13 +1460,13 @@ bool AP_AHRS_NavEKF::resetHeightDatum(void)
 
     case 2:
     default: {
-        EKF3.resetHeightDatum();
-        return EKF2.resetHeightDatum();
+        EKF3.resetHeightDatum(alt_m);
+        return EKF2.resetHeightDatum(alt_m);
     }
 
     case 3: {
-        EKF2.resetHeightDatum();
-        return EKF3.resetHeightDatum();
+        EKF2.resetHeightDatum(alt_m);
+        return EKF3.resetHeightDatum(alt_m);
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
