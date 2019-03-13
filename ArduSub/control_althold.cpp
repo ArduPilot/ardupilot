@@ -86,13 +86,13 @@ void Sub::althold_run()
         // output pilot's throttle
         attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
         // reset z targets to current values
-        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+        pos_control.relax_alt_hold_controllers();
         engageStopZ = true;
         lastVelocityZWasNegative = inertial_nav.get_velocity_z() < 0;
     } else { // hold z
 
         if (ap.at_bottom) {
-            pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
+            pos_control.relax_alt_hold_controllers(); // clear velocity and position targets
             pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
         } else if (rangefinder_alt_ok()) {
             // if rangefinder is ok, use surface tracking
@@ -106,7 +106,7 @@ void Sub::althold_run()
         // or smaller input signals
         if(engageStopZ && (lastVelocityZWasNegative ^ (inertial_nav.get_velocity_z() < 0) )) {
             engageStopZ = false;
-            pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+            pos_control.relax_alt_hold_controllers();
         }
 
         pos_control.update_z_controller();
