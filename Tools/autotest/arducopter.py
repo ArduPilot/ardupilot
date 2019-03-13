@@ -200,10 +200,6 @@ class AutoTestCopter(AutoTest):
         self.hover()
         self.progress("Copter staging 50 meters east of home at 50 meters altitude In mode Alt Hold")
 
-    # Start and stop the GCS heartbeat for GCS failsafe testing
-    def set_heartbeat_rate(self, rate):
-        self.mavproxy.send('set heartbeat %u\n' % rate)
-
     # loiter - fly south west, then loiter within 5m position and altitude
     def loiter(self, holdtime=10, maxaltchange=5, maxdistchange=5):
         """Hold loiter position."""
@@ -711,6 +707,7 @@ class AutoTestCopter(AutoTest):
     def test_gcs_failsafe(self, side=60, timeout=360):
         # Test double-SmartRTL; ensure we do SmarRTL twice rather than
         # landing (tests fix for actual bug)
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         self.context_push()
         self.start_subtest("GCS failsafe SmartRTL twice")
         self.setGCSfailsafe(3)
@@ -4855,6 +4852,8 @@ class AutoTestCopter(AutoTest):
 
     def test_manual_control(self):
         '''test manual_control mavlink message'''
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+
         self.change_mode('STABILIZE')
         self.takeoff(10)
 
@@ -4968,7 +4967,7 @@ class AutoTestCopter(AutoTest):
 
     def fly_follow_mode(self):
         self.set_parameter("FOLL_ENABLE", 1)
-        self.set_parameter("FOLL_SYSID", 255)
+        self.set_parameter("FOLL_SYSID", self.mav.source_system)
         foll_ofs_x = 30 # metres
         self.set_parameter("FOLL_OFS_X", -foll_ofs_x)
         self.set_parameter("FOLL_OFS_TYPE", 1) # relative to other vehicle heading
@@ -4991,8 +4990,11 @@ class AutoTestCopter(AutoTest):
         self.progress("expected_loc: %s" % str(expected_loc))
 
         last_sent = 0
+        tstart = self.get_sim_time()
         while True:
             now = self.get_sim_time_cached()
+            if now - tstart > 60:
+                raise NotAchievedException("Did not FOLLOW")
             if now - last_sent > 0.5:
                 gpi = self.global_position_int_for_location(new_loc,
                                                             now,

@@ -352,6 +352,9 @@ def start_SITL(binary,
         cmd.extend(['--unhide-groups'])
     cmd.extend(customisations)
 
+    # somewhere for MAVProxy to connect to:
+    cmd.append('--uartC=tcp:2')
+
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         global windowID
         # on MacOS record the window IDs so we can close them later
@@ -428,7 +431,7 @@ def MAVProxy_version():
         raise ValueError("Unable to determine MAVProxy version from (%s)" % output)
     return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
 
-def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
+def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5762',
                         options=[], logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
     local_mp_modules_dir = os.path.abspath(
