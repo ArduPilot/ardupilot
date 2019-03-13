@@ -105,7 +105,9 @@ bool Copter::ekf_over_threshold()
     if (mag_variance.length() >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
-    if (vel_variance >= g.fs_ekf_thresh) {
+    if (vel_variance >= (2.0f * g.fs_ekf_thresh)) {
+        over_thresh_count+=2;
+    } else if (vel_variance >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
     if (position_variance >= g.fs_ekf_thresh) {
