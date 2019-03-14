@@ -38,5 +38,10 @@ def run_program(cmd_list):
 for board in get_board_list():
     if not fnmatch.fnmatch(board, board_pattern):
         continue
-    print("Building for %s" % board)
+    print("Configuring for %s" % board)
     run_program(["./waf", "configure", "--board", board])
+    # check for bootloader def
+    hwdef_bl = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % board)
+    if os.path.exists(hwdef_bl):
+        print("Configuring bootloader for %s" % board)
+        run_program(["./waf", "configure", "--board", board, "--bootloader"])
