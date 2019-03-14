@@ -52,14 +52,14 @@ void NavEKF3_core::SelectFlowFusion()
     }
 
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
-    if (((flowDataToFuse && (frontend->_flowUseMask & (1<<1))) || rangeDataToFuse) && tiltOK) {
+    if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
         // Estimate the terrain offset (runs a one state EKF)
         EstimateTerrainOffset();
     }
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
-        if (frontend->_flowUseMask & (1<<0)) {
+        if (frontend->_flowUse == FLOW_USE_NAV) {
             // Set the flow noise used by the fusion processes
             R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
             // Fuse the optical flow X and Y axis data into the main filter sequentially
@@ -89,7 +89,7 @@ void NavEKF3_core::EstimateTerrainOffset()
     // don't fuse flow data if LOS rate is misaligned, without GPS, or insufficient velocity, as it is poorly observable
     // don't fuse flow data if it exceeds validity limits
     // don't update terrain offset if grpund is being used as the zero height datum in the main filter
-    bool cantFuseFlowData = (!(frontend->_flowUseMask & (1<<1))
+    bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
     || gpsNotAvailable 
     || PV_AidingMode == AID_RELATIVE 
     || velHorizSq < 25.0f 
