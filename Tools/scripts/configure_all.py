@@ -10,11 +10,12 @@ import subprocess
 import sys
 import fnmatch
 
-board_pattern = '*'
+import argparse
 
-# allow argument for pattern of boards to build
-if len(sys.argv)>1:
-    board_pattern = sys.argv[1]
+parser = argparse.ArgumentParser(description='configure all ChibiOS boards')
+parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')
+parser.add_argument('--pattern', default='*')
+args = parser.parse_args()
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
@@ -36,12 +37,16 @@ def run_program(cmd_list):
         sys.exit(1)
 
 for board in get_board_list():
-    if not fnmatch.fnmatch(board, board_pattern):
+    if not fnmatch.fnmatch(board, args.pattern):
         continue
     print("Configuring for %s" % board)
     run_program(["./waf", "configure", "--board", board])
+    if args.build:
+        run_program(["./waf", "copter"])
     # check for bootloader def
     hwdef_bl = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % board)
     if os.path.exists(hwdef_bl):
         print("Configuring bootloader for %s" % board)
         run_program(["./waf", "configure", "--board", board, "--bootloader"])
+        if args.build:
+            run_program(["./waf", "bootloader"])
