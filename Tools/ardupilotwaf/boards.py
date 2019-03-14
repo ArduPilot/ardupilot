@@ -743,3 +743,13 @@ class rst_zynq(linux):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ',
         )
 
+class SITL_static(sitl):
+    def configure_env(self, cfg, env):
+        super(SITL_static, self).configure_env(cfg, env)
+        cfg.env.STATIC_LINKING = True
+
+class SITL_x86_64_linux_gnu(SITL_static):
+    toolchain = 'x86_64-linux-gnu'
+
+class SITL_arm_linux_gnueabihf(SITL_static):
+    toolchain = 'arm-linux-gnueabihf'
