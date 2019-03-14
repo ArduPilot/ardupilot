@@ -16,6 +16,7 @@
  */
 #include "GPIO.h"
 
+#include <AP_Common/AP_Common.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 using namespace ChibiOS;
