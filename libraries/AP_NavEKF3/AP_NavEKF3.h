@@ -416,7 +416,12 @@ private:
     AP_Float _visOdmVelErrMax;      // Observation 1-STD velocity error assumed for visual odometry sensor at lowest reported quality (m/s)
     AP_Float _visOdmVelErrMin;      // Observation 1-STD velocity error assumed for visual odometry sensor at highest reported quality (m/s)
     AP_Float _wencOdmVelErr;        // Observation 1-STD velocity error assumed for wheel odometry sensor (m/s)
-    AP_Int8  _flowUseMask;          // Bitmask controlling if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
+    AP_Int8  _flowUse;              // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
+
+// Possible values for _flowUse
+#define FLOW_USE_NONE    0
+#define FLOW_USE_NAV     1
+#define FLOW_USE_TERRAIN 2
 
     // Tuning parameters
     const float gpsNEVelVarAccScale = 0.05f;       // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
