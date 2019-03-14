@@ -32,9 +32,6 @@ static struct gpio_entry {
     uint8_t mode;
 } _gpio_tab[] = HAL_GPIO_PINS;
 
-#define NUM_PINS ARRAY_SIZE(_gpio_tab)
-#define PIN_ENABLED(pin) ((pin)<NUM_PINS && _gpio_tab[pin].enabled)
-
 /*
   map a user pin number to a GPIO table entry
  */
