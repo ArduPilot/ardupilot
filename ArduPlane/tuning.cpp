@@ -15,6 +15,17 @@ const AP_Param::GroupInfo AP_Tuning_Plane::var_info[] = {
     // the rest of the parameters are from AP_Tuning
     AP_NESTEDGROUPINFO(AP_Tuning, 0),
 
+    AP_GROUPINFO("PITCH_CHAN", 2, AP_Tuning_Plane, tune_pitch_chan, 0),
+    AP_GROUPINFO("ROLL_CHAN", 3, AP_Tuning_Plane, tune_roll_chan, 0),
+
+    AP_GROUPINFO("PITCH_MID", 4, AP_Tuning_Plane, tune_pitch_mid, 1.0),
+    AP_GROUPINFO("PITCH_RNG", 5, AP_Tuning_Plane, tune_pitch_range, 3),
+
+    AP_GROUPINFO("ROLL_MID", 6, AP_Tuning_Plane, tune_roll_mid, 1.0),
+    AP_GROUPINFO("ROLL_RNG", 7, AP_Tuning_Plane, tune_roll_range, 3),
+
+    AP_GROUPINFO("PI_RATIO", 8, AP_Tuning_Plane, tune_pi_ratio, 4),
+
     AP_GROUPEND
 };
 
@@ -344,5 +355,50 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
     default:
         // no special handler
         return 0;
+    }
+}
+
+void AP_Tuning_Plane::tune_pr_chan(uint8_t chan, AP_Float &kP, AP_Float &kI, float cmid, float crange)
+{
+    RC_Channel *c = rc().channel(chan-1);
+    if (c == nullptr) {
+        return;
+    }
+    float v = c->norm_input();
+    float p;
+    if (v > 0) {
+        p = linear_interpolate(cmid, cmid*crange, v, 0, 1);
+    } else {
+        p = linear_interpolate(cmid/crange, cmid, v, -1, 0);
+    }
+    float i = p / tune_pi_ratio;
+    if (fabsf(p - kP.get()) > 0.02 ||
+        fabsf(i - kI.get()) > 0.01) {
+        kP.set_and_save(p);
+        kI.set_and_save(i);
+    }
+}
+
+/*
+  tune roll and pitch on two knobs
+ */
+void AP_Tuning_Plane::tune_pr_update(void)
+{
+    if (plane.rc_failsafe_active()) {
+        return;
+    }
+    if (tune_pitch_chan > 0) {
+        tune_pr_chan((uint8_t)tune_pitch_chan.get(),
+                     plane.pitchController.kP(),
+                     plane.pitchController.kI(),
+                     tune_pitch_mid,
+                     tune_pitch_range);
+    }
+    if (tune_roll_chan > 0) {
+        tune_pr_chan((uint8_t)tune_roll_chan.get(),
+                     plane.rollController.kP(),
+                     plane.rollController.kI(),
+                     tune_roll_mid,
+                     tune_roll_range);
     }
 }

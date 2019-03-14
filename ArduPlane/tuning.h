@@ -14,10 +14,14 @@ private:
     
 public:
     // constructor
-    AP_Tuning_Plane(void) : AP_Tuning(tuning_sets, tuning_names) {}
+    AP_Tuning_Plane(void) : AP_Tuning(tuning_sets, tuning_names) {
+        AP_Param::setup_object_defaults(this, var_info);
+    }
 
     static const struct AP_Param::GroupInfo  var_info[];
-    
+
+    void tune_pr_update();
+
 private:
 
     // individual tuning parameters
@@ -98,4 +102,14 @@ private:
 
     // mask of what params have been set
     uint64_t have_set;
+
+    AP_Int8 tune_pitch_chan;
+    AP_Int8 tune_roll_chan;
+    AP_Float tune_pitch_mid;
+    AP_Float tune_pitch_range;
+    AP_Float tune_roll_mid;
+    AP_Float tune_roll_range;
+    AP_Float tune_pi_ratio;
+
+    void tune_pr_chan(uint8_t chan, AP_Float &kP, AP_Float &kI, float cmid, float crange);
 };

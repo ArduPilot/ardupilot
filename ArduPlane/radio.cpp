@@ -219,6 +219,8 @@ void Plane::read_radio()
 
     // check for transmitter tuning changes
     tuning.check_input(control_mode);
+
+    tuning.tune_pr_update();
 }
 
 int16_t Plane::rudder_input(void)
