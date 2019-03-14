@@ -15,13 +15,9 @@ void Copter::read_inertia()
         return;
     }
 
-    Location::AltFrame frame;
+    current_loc.set_alt_cm(inertial_nav.get_altitude(),
+                           Location::AltFrame::ABOVE_ORIGIN);
     if (ahrs.home_is_set()) {
-        frame = Location::AltFrame::ABOVE_HOME;
-    } else {
-        // without home use alt above the EKF origin
-        frame = Location::AltFrame::ABOVE_ORIGIN;
+        current_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
     }
-    current_loc.set_alt_cm(inertial_nav.get_altitude(), frame);
-    current_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
 }
