@@ -3,6 +3,7 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 
 #include "GPIO_Disco.h"
+#include <AP_Common/AP_Common.h>
 
 const unsigned Linux::GPIO_Sysfs::pin_table[] = {
     [DISCO_GPIO_MPU6050_DRDY] = 91,

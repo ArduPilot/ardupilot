@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/Semaphore.h>
+#include <AP_Common/AP_Common.h>
 
 extern const AP_HAL::HAL &hal;
 

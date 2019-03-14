@@ -29,6 +29,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/OwnPtr.h>
+#include <AP_Common/AP_Common.h>
 
 #include "GPIO.h"
 #include "PollerThread.h"

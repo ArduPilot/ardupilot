@@ -19,6 +19,7 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
 
 #include "GPIO_Aero.h"
+#include <AP_Common/AP_Common.h>
 
 const unsigned Linux::GPIO_Sysfs::pin_table[] = {
     [AERO_GPIO_BMI160_INT1] = 411,

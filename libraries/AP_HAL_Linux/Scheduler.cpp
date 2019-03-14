@@ -12,6 +12,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Common/AP_Common.h>
 
 #include "RCInput.h"
 #include "SPIUARTDriver.h"

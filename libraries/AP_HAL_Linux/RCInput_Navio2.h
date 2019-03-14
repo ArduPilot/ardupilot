@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RCInput.h"
-
+#include <AP_Common/AP_Common.h>
 
 namespace Linux {
 
