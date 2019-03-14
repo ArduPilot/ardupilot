@@ -11,10 +11,6 @@
 // initialise zigzag controller
 bool Copter::ModeZigZag::init(bool ignore_checks)
 {
-    if (!copter.position_ok() && !ignore_checks) {
-        return false;
-    }
-
     // initialize's loiter position and velocity on xy-axes from current pos and velocity
     loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
@@ -43,7 +39,7 @@ void Copter::ModeZigZag::run()
 
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
-        zero_throttle_and_relax_ac();
+        zero_throttle_and_relax_ac(copter.is_tradheli() && motors->get_interlock());
         return;
     }
 

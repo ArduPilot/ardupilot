@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -85,7 +83,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
         }
     }
 
-    // determine if the vehicle is manoevring
+    // determine if the vehicle is manoeuvring
     if (accNavMagHoriz > 0.5f) {
         manoeuvring = true;
     } else {
@@ -303,7 +301,7 @@ void NavEKF3_core::setAidingMode()
 
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (PV_AidingMode != PV_AidingModePrev) {
-        // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
+        // set various usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         switch (PV_AidingMode) {
         case AID_NONE:
             // We have ceased aiding
@@ -429,7 +427,7 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
     bool wencDataGood = (imuSampleTime_ms - wheelOdmMeasTime_ms < 200);
 
     // We require stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use odometry measurements
-    // becasue they are in a body frame of reference
+    // because they are in a body frame of reference
     return (visoDataGood || wencDataGood)
             && tiltAlignComplete
             && delAngBiasLearned;
@@ -562,4 +560,3 @@ void  NavEKF3_core::updateFilterStatus(void)
     filterStatus.flags.gps_quality_good = gpsGoodToAlign;
 }
 
-#endif // HAL_CPU_CLASS

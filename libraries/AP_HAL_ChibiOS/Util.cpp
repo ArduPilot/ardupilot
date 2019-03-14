@@ -23,6 +23,7 @@
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
+#include "sdcard.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -33,7 +34,6 @@ extern AP_IOMCU iomcu;
 extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
-
 #if CH_CFG_USE_HEAP == TRUE
 
 /**
@@ -54,7 +54,7 @@ void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
     if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
         return malloc_dma(size);
     } else if (mem_type == AP_HAL::Util::MEM_FAST) {
-        return try_alloc_from_ccm_ram(size);
+        return malloc_fastmem(size);
     } else {
         return calloc(1, size);
     }
@@ -68,15 +68,45 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 }
 
 
-void* Util::try_alloc_from_ccm_ram(size_t size)
+#ifdef ENABLE_HEAP
+
+void *Util::allocate_heap_memory(size_t size)
 {
-    void *ret = malloc_ccm(size);
-    if (ret == nullptr) {
-        //we failed to allocate from CCM so we are going to try common SRAM
-        ret = calloc(1, size);
+    void *buf = malloc(size);
+    if (buf == nullptr) {
+        return nullptr;
     }
-    return ret;
+
+    memory_heap_t *heap = (memory_heap_t *)malloc(sizeof(memory_heap_t));
+    if (heap != nullptr) {
+        chHeapObjectInit(heap, buf, size);
+    }
+
+    return heap;
 }
+
+void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
+{
+    if (heap == nullptr) {
+        return nullptr;
+    }
+    if (new_size == 0) {
+        if (ptr != nullptr) {
+            chHeapFree(ptr);
+        }
+        return nullptr;
+    }
+    if (ptr == nullptr) {
+        return chHeapAlloc((memory_heap_t *)heap, new_size);
+    }
+    void *new_mem = chHeapAlloc((memory_heap_t *)heap, new_size);
+    if (new_mem != nullptr) {
+        memcpy(new_mem, ptr, chHeapGetSize(ptr) > new_size ? new_size : chHeapGetSize(ptr));
+        chHeapFree(ptr);
+    }
+    return new_mem;
+}
+#endif // ENABLE_HEAP
 
 #endif // CH_CFG_USE_HEAP
 
@@ -94,8 +124,8 @@ Util::safety_state Util::safety_switch_state(void)
 
 void Util::set_imu_temp(float current)
 {
-#if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
-    if (!heater.target || *heater.target == -1 || !AP_BoardConfig::io_enabled()) {
+#if HAL_HAVE_IMU_HEATER
+    if (!heater.target || *heater.target == -1) {
         return;
     }
 
@@ -106,6 +136,11 @@ void Util::set_imu_temp(float current)
     // update once a second
     uint32_t now = AP_HAL::millis();
     if (now - heater.last_update_ms < 1000) {
+#if defined(HAL_HEATER_GPIO_PIN)
+        // output as duty cycle to local pin
+        hal.gpio->write(HAL_HEATER_GPIO_PIN, heater.duty_counter < heater.output);
+        heater.duty_counter = (heater.duty_counter+1) % 100;
+#endif
         return;
     }
     heater.last_update_ms = now;
@@ -127,17 +162,22 @@ void Util::set_imu_temp(float current)
     heater.integrator += kI * err;
     heater.integrator = constrain_float(heater.integrator, 0, 70);
 
-    float output = constrain_float(kP * err + heater.integrator, 0, 100);
+    heater.output = constrain_float(kP * err + heater.integrator, 0, 100);
     
-    // hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", heater.integrator, output, current, err);
+    //hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", heater.integrator, heater.output, current, err);
 
-    iomcu.set_heater_duty_cycle(output);
-#endif // HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        // tell IOMCU to setup heater
+        iomcu.set_heater_duty_cycle(heater.output);
+    }
+#endif
+#endif // HAL_HAVE_IMU_HEATER
 }
 
 void Util::set_imu_target_temp(int8_t *target)
 {
-#if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
+#if HAL_HAVE_IMU_HEATER
     heater.target = target;
 #endif
 }
@@ -212,9 +252,9 @@ bool Util::flash_bootloader()
     const uint8_t max_attempts = 10;
     for (uint8_t i=0; i<max_attempts; i++) {
         void *context = hal.scheduler->disable_interrupts_save();
-        const int32_t written = stm32_flash_write(addr, fw, fw_size);
+        bool ok = stm32_flash_write(addr, fw, fw_size);
         hal.scheduler->restore_interrupts(context);
-        if (written == -1 || written < fw_size) {
+        if (!ok) {
             hal.console->printf("Flash failed! (attempt=%u/%u)\n",
                                 i+1,
                                 max_attempts);
@@ -253,3 +293,20 @@ bool Util::get_system_id(char buf[40])
     buf[39] = 0;
     return true;
 }
+
+bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
+{
+    len = MIN(12, len);
+    memcpy(buf, (const void *)UDID_START, len);
+    return true;
+}
+
+#ifdef USE_POSIX
+/*
+  initialise filesystem
+ */
+bool Util::fs_init(void)
+{
+    return sdcard_init();
+}
+#endif

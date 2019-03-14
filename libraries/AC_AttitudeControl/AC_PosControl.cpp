@@ -1,7 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PosControl.h"
 #include <AP_Math/AP_Math.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -286,6 +286,9 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
             _pos_target.z += climb_rate_cms*dt;
             _vel_desired.z = climb_rate_cms;    // recorded for reporting purposes
         }
+    } else {
+        // recorded for reporting purposes
+        _vel_desired.z = 0.0f;
     }
 
     // do not let target get too far from current altitude
@@ -457,19 +460,19 @@ void AC_PosControl::init_takeoff()
 // is_active_z - returns true if the z-axis position controller has been run very recently
 bool AC_PosControl::is_active_z() const
 {
-    return ((AP_HAL::millis() - _last_update_z_ms) <= POSCONTROL_ACTIVE_TIMEOUT_MS);
+    return ((AP_HAL::micros64() - _last_update_z_us) <= POSCONTROL_ACTIVE_TIMEOUT_US);
 }
 
 /// update_z_controller - fly to altitude in cm above home
 void AC_PosControl::update_z_controller()
 {
     // check time since last cast
-    uint32_t now = AP_HAL::millis();
-    if (now - _last_update_z_ms > POSCONTROL_ACTIVE_TIMEOUT_MS) {
+    const uint64_t now_us = AP_HAL::micros64();
+    if (now_us - _last_update_z_us > POSCONTROL_ACTIVE_TIMEOUT_US) {
         _flags.reset_rate_to_accel_z = true;
         _flags.reset_accel_to_throttle = true;
     }
-    _last_update_z_ms = now;
+    _last_update_z_us = now_us;
 
     // check for ekf altitude reset
     check_for_ekf_z_reset();
@@ -753,7 +756,7 @@ int32_t AC_PosControl::get_bearing_to_target() const
 // is_active_xy - returns true if the xy position controller has been run very recently
 bool AC_PosControl::is_active_xy() const
 {
-    return ((AP_HAL::millis() - _last_update_xy_ms) <= POSCONTROL_ACTIVE_TIMEOUT_MS);
+    return ((AP_HAL::micros64() - _last_update_xy_us) <= POSCONTROL_ACTIVE_TIMEOUT_US);
 }
 
 /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
@@ -794,11 +797,11 @@ void AC_PosControl::init_xy_controller()
 void AC_PosControl::update_xy_controller()
 {
     // compute dt
-    uint32_t now = AP_HAL::millis();
-    float dt = (now - _last_update_xy_ms)*0.001f;
+    const uint64_t now_us = AP_HAL::micros64();
+    float dt = (now_us - _last_update_xy_us) * 1.0e-6f;
 
     // sanity check dt
-    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_MS*1.0e-3f) {
+    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_US * 1.0e-6f) {
         dt = 0.0f;
     }
 
@@ -815,13 +818,13 @@ void AC_PosControl::update_xy_controller()
     run_xy_controller(dt);
 
     // update xy update time
-    _last_update_xy_ms = now;
+    _last_update_xy_us = now_us;
 }
 
 float AC_PosControl::time_since_last_xy_update() const
 {
-    uint32_t now = AP_HAL::millis();
-    return (now - _last_update_xy_ms)*0.001f;
+    const uint64_t now_us = AP_HAL::micros64();
+    return (now_us - _last_update_xy_us) * 1.0e-6f;
 }
 
 // write log to dataflash
@@ -835,7 +838,7 @@ void AC_PosControl::write_log()
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-    DataFlash_Class::instance()->Log_Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
+    AP::logger().Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
                                            "smmmmnnnnoooo", "FBBBBBBBBBBBB", "Qffffffffffff",
                                            AP_HAL::micros64(),
                                            (double)pos_target.x,
@@ -891,8 +894,8 @@ void AC_PosControl::init_vel_controller_xyz()
 void AC_PosControl::update_vel_controller_xy()
 {
     // capture time since last iteration
-    uint32_t now = AP_HAL::millis();
-    float dt = (now - _last_update_xy_ms)*0.001f;
+    const uint64_t now_us = AP_HAL::micros64();
+    float dt = (now_us - _last_update_xy_us) * 1.0e-6f;
 
     // sanity check dt
     if (dt >= 0.2f) {
@@ -913,7 +916,7 @@ void AC_PosControl::update_vel_controller_xy()
     run_xy_controller(dt);
 
     // update xy update time
-    _last_update_xy_ms = now;
+    _last_update_xy_us = now_us;
 }
 
 
@@ -1215,4 +1218,38 @@ Vector3f AC_PosControl::sqrt_controller(const Vector3f& error, float p, float se
     } else {
         return Vector3f(error.x*p, error.y*p, error.z);
     }
+}
+
+bool AC_PosControl::pre_arm_checks(const char *param_prefix,
+                                   char *failure_msg,
+                                   const uint8_t failure_msg_len)
+{
+    // validate AC_P members:
+    const struct {
+        const char *pid_name;
+        AC_P &p;
+    } ps[] = {
+        { "POSXY", get_pos_xy_p() },
+        { "POSZ", get_pos_z_p() },
+        { "VELZ", get_vel_z_p() },
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(ps); i++) {
+        // all AC_P's must have a positive P value:
+        if (!is_positive(ps[i].p.kP())) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, ps[i].pid_name);
+            return false;
+        }
+    }
+
+    // the z-control PID doesn't use FF, so P and I must be positive
+    if (!is_positive(get_accel_z_pid().kP())) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ACCZ_P must be > 0", param_prefix);
+        return false;
+    }
+    if (!is_positive(get_accel_z_pid().kI())) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ACCZ_I must be > 0", param_prefix);
+        return false;
+    }
+
+    return true;
 }

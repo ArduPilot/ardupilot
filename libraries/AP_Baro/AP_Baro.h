@@ -31,8 +31,8 @@ public:
     AP_Baro &operator=(const AP_Baro&) = delete;
 
     // get singleton
-    static AP_Baro *get_instance(void) {
-        return _instance;
+    static AP_Baro *get_singleton(void) {
+        return _singleton;
     }
 
     // barometer types
@@ -183,7 +183,7 @@ public:
 
 private:
     // singleton
-    static AP_Baro *_instance;
+    static AP_Baro *_singleton;
     
     // how many drivers do we have?
     uint8_t _num_drivers;

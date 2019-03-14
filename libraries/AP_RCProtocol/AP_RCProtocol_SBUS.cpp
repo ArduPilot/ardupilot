@@ -174,9 +174,9 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
         chancount = 18;
 
         /* channel 17 (index 16) */
-        values[16] = (frame[SBUS_FLAGS_BYTE] & (1 << 0)) * 1000 + 998;
+        values[16] = (frame[SBUS_FLAGS_BYTE] & (1 << 0))?1998:998;
         /* channel 18 (index 17) */
-        values[17] = (frame[SBUS_FLAGS_BYTE] & (1 << 1)) * 1000 + 998;
+        values[17] = (frame[SBUS_FLAGS_BYTE] & (1 << 1))?1998:998;
     }
 
     /* note the number of channels decoded */
@@ -226,11 +226,23 @@ void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
 // support byte input
 void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 {
-    if (timestamp_us - byte_input.last_byte_us > 2000U ||
-        byte_input.ofs == sizeof(byte_input.buf)) {
+    const bool have_frame_gap = (timestamp_us - byte_input.last_byte_us >= 2000U);
+    byte_input.last_byte_us = timestamp_us;
+
+    if (have_frame_gap) {
+        // if we have a frame gap then this must be the start of a new
+        // frame
         byte_input.ofs = 0;
     }
-    byte_input.last_byte_us = timestamp_us;
+    if (b != 0x0F && byte_input.ofs == 0) {
+        // definately not SBUS, missing header byte
+        return;
+    }
+    if (byte_input.ofs == 0 && !have_frame_gap) {
+        // must have a frame gap before the start of a new SBUS frame
+        return;
+    }
+
     byte_input.buf[byte_input.ofs++] = b;
 
     if (byte_input.ofs == sizeof(byte_input.buf)) {

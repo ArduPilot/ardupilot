@@ -92,7 +92,7 @@ void Sub::guided_posvel_control_start()
     pos_control.init_xy_controller();
 
     // set speed and acceleration from wpnav's speed and acceleration
-    pos_control.set_max_speed_xy(wp_nav.get_speed_xy());
+    pos_control.set_max_speed_xy(wp_nav.get_default_speed_xy());
     pos_control.set_max_accel_xy(wp_nav.get_wp_acceleration());
 
     const Vector3f& curr_pos = inertial_nav.get_position();
@@ -103,7 +103,7 @@ void Sub::guided_posvel_control_start()
     pos_control.set_desired_velocity_xy(curr_vel.x, curr_vel.y);
 
     // set vertical speed and acceleration
-    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
     pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // pilot always controls yaw
@@ -117,7 +117,7 @@ void Sub::guided_angle_control_start()
     guided_mode = Guided_Angle;
 
     // set vertical speed and acceleration
-    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
     pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // initialise position and desired velocity
@@ -147,7 +147,7 @@ bool Sub::guided_set_destination(const Vector3f& destination)
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    Location_Class dest_loc(destination);
+    const Location dest_loc(destination);
     if (!fence.check_destination_within_fence(dest_loc)) {
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -166,7 +166,7 @@ bool Sub::guided_set_destination(const Vector3f& destination)
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
 // or if the fence is enabled and guided waypoint is outside the fence
-bool Sub::guided_set_destination(const Location_Class& dest_loc)
+bool Sub::guided_set_destination(const Location& dest_loc)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -219,7 +219,7 @@ bool Sub::guided_set_destination_posvel(const Vector3f& destination, const Vecto
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    Location_Class dest_loc(destination);
+    const Location dest_loc(destination);
     if (!fence.check_destination_within_fence(dest_loc)) {
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -291,7 +291,7 @@ void Sub::guided_pos_control_run()
 {
     // if motors not enabled set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -342,7 +342,7 @@ void Sub::guided_vel_control_run()
     if (!motors.armed()) {
         // initialise velocity controller
         pos_control.init_vel_controller_xyz();
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -397,7 +397,7 @@ void Sub::guided_posvel_control_run()
         // set target position and velocity to current position and velocity
         pos_control.set_pos_target(inertial_nav.get_position());
         pos_control.set_desired_velocity(Vector3f(0,0,0));
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -467,7 +467,7 @@ void Sub::guided_angle_control_run()
 {
     // if motors not enabled set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0.0f,true,g.throttle_filt);
 
@@ -490,7 +490,7 @@ void Sub::guided_angle_control_run()
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
 
     // constrain climb rate
-    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav.get_speed_down()), wp_nav.get_speed_up());
+    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav.get_default_speed_down()), wp_nav.get_default_speed_up());
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();

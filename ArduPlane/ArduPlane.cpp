@@ -39,8 +39,8 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_flight_mode,    400,    100),
     SCHED_TASK(stabilize,             400,    100),
     SCHED_TASK(set_servos,            400,    100),
+    SCHED_TASK(update_throttle_hover, 100,     90),
     SCHED_TASK(read_control_switch,     7,    100),
-    SCHED_TASK(gcs_retry_deferred,     50,    500),
     SCHED_TASK(update_GPS_50Hz,        50,    300),
     SCHED_TASK(update_GPS_10Hz,        10,    400),
     SCHED_TASK(navigate,               10,    150),
@@ -49,9 +49,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_alt,             10,    200),
     SCHED_TASK(adjust_altitude_target, 10,    200),
     SCHED_TASK(afs_fs_check,           10,    100),
-    SCHED_TASK(gcs_update,             50,    500),
-    SCHED_TASK(gcs_data_stream_send,   50,    500),
-    SCHED_TASK(update_events,          50,    150),
+    SCHED_TASK_CLASS(GCS,            (GCS*)&plane._gcs,       update_receive,   300,  500),
+    SCHED_TASK_CLASS(GCS,            (GCS*)&plane._gcs,       update_send,      300,  500),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents, &plane.ServoRelayEvents, update_events,          50,  150),
     SCHED_TASK_CLASS(AP_BattMonitor, &plane.battery, read, 10, 300),
     SCHED_TASK_CLASS(AP_Baro, &plane.barometer, accumulate, 50, 150),
     SCHED_TASK(update_notify,          50,    300),
@@ -86,11 +86,11 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif // AP_TERRAIN_AVAILABLE
     SCHED_TASK(update_is_flying_5Hz,    5,    100),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK_CLASS(DataFlash_Class, &plane.DataFlash, periodic_tasks, 50, 400),
+    SCHED_TASK_CLASS(AP_Logger, &plane.logger, periodic_tasks, 50, 400),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor, &plane.ins, periodic, 50, 50),
     SCHED_TASK(avoidance_adsb_update,  10,    100),
-    SCHED_TASK(read_aux_all,           10,    200),
+    SCHED_TASK_CLASS(RC_Channels,       (RC_Channels*)&plane.g2.rc_channels, read_aux_all,           10,    200),
     SCHED_TASK_CLASS(AP_Button, &plane.g2.button, update, 5, 100),
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats, &plane.g2.stats, update, 1, 100),
@@ -106,7 +106,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif
 };
 
-constexpr int8_t Plane::_failsafe_priorities[5];
+constexpr int8_t Plane::_failsafe_priorities[6];
 
 void Plane::setup() 
 {
@@ -131,12 +131,7 @@ void Plane::update_soft_armed()
 {
     hal.util->set_soft_armed(arming.is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-    DataFlash.set_vehicle_armed(hal.util->get_soft_armed());
-}
-
-void Plane::read_aux_all()
-{
-    plane.g2.rc_channels.read_aux_all();
+    logger.set_vehicle_armed(hal.util->get_soft_armed());
 }
 
 // update AHRS system
@@ -147,14 +142,14 @@ void Plane::ahrs_update()
 #if HIL_SUPPORT
     if (g.hil_mode == 1) {
         // update hil before AHRS update
-        gcs_update();
+        gcs().update_receive();
     }
 #endif
 
     ahrs.update();
 
     if (should_log(MASK_LOG_IMU)) {
-        DataFlash.Log_Write_IMU();
+        logger.Write_IMU();
     }
 
     // calculate a scaled roll limit based on current pitch
@@ -172,6 +167,9 @@ void Plane::ahrs_update()
     steer_state.locked_course_err += ahrs.get_yaw_rate_earth() * G_Dt;
     steer_state.locked_course_err = wrap_PI(steer_state.locked_course_err);
 
+    // check if we have had a yaw reset from the EKF
+    quadplane.check_yaw_reset();
+
     // update inertial_nav for quadplane
     quadplane.inertial_nav.update(G_Dt);
 }
@@ -187,6 +185,11 @@ void Plane::update_speed_height(void)
 	    // takeoff detection
         SpdHgt_Controller->update_50hz();
     }
+
+    if (quadplane.in_vtol_mode() ||
+        quadplane.in_assisted_flight()) {
+        quadplane.update_throttle_thr_mix();
+    }
 }
 
 
@@ -198,7 +201,7 @@ void Plane::update_compass(void)
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            DataFlash.Log_Write_Compass();
+            logger.Write_Compass();
         }
     }
 }
@@ -213,10 +216,10 @@ void Plane::update_logging1(void)
     }
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
-        DataFlash.Log_Write_IMU();
+        logger.Write_IMU();
 
     if (should_log(MASK_LOG_ATTITUDE_MED))
-        DataFlash.Log_Write_AOA_SSA(ahrs);
+        logger.Write_AOA_SSA(ahrs);
 }
 
 /*
@@ -234,7 +237,7 @@ void Plane::update_logging2(void)
         Log_Write_RC();
 
     if (should_log(MASK_LOG_IMU))
-        DataFlash.Log_Write_Vibration();
+        logger.Write_Vibration();
 }
 
 
@@ -260,19 +263,12 @@ void Plane::one_second_loop()
     // make it possible to change control channel ordering at runtime
     set_control_channels();
 
-#if HAVE_PX4_MIXER
-    if (!hal.util->get_soft_armed() && (last_mixer_crc == -1)) {
-        // if disarmed try to configure the mixer
-        setup_failsafe_mixing();
-    }
-#endif // CONFIG_HAL_BOARD
-
 #if HAL_WITH_IO_MCU
     iomcu.setup_mixing(&rcmap, g.override_channel.get(), g.mixing_gain, g2.manual_rc_mask);
 #endif
 
     // make it possible to change orientation at runtime
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     adsb.set_stall_speed_cm(aparm.airspeed_min);
     adsb.set_max_speed(aparm.airspeed_max);
@@ -285,11 +281,11 @@ void Plane::one_second_loop()
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
-    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::Required::NO;
 
 #if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
-        terrain.log_terrain_data(DataFlash);
+        terrain.log_terrain_data();
     }
 #endif
 
@@ -309,7 +305,7 @@ void Plane::one_second_loop()
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    update_sensor_status_flags();
+    gcs().update_sensor_status_flags();
 }
 
 void Plane::compass_save()
@@ -351,7 +347,6 @@ void Plane::airspeed_ratio_update(void)
     }
     const Vector3f &vg = gps.velocity();
     airspeed.update_calibration(vg, aparm.airspeed_max);
-    gcs_send_airspeed_calibration(vg);
 }
 
 
@@ -387,7 +382,9 @@ void Plane::update_GPS_10Hz(void)
                 ground_start_count = 5;
 
             } else {
-                set_home_persistently(gps.location());
+                if (!set_home_persistently(gps.location())) {
+                    // silently ignore failure...
+                }
 
                 next_WP_loc = prev_WP_loc = home;
 
@@ -565,7 +562,6 @@ void Plane::update_flight_mode(void)
     case FLY_BY_WIRE_A: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
-        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
         update_load_factor();
         float pitch_input = channel_pitch->norm_input();
         if (pitch_input > 0) {
@@ -600,7 +596,6 @@ void Plane::update_flight_mode(void)
     case FLY_BY_WIRE_B:
         // Thanks to Yury MonZon for the altitude limit code!
         nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
-        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
         update_load_factor();
         update_fbwb_speed_height();
         break;
@@ -618,7 +613,6 @@ void Plane::update_flight_mode(void)
         
         if (!cruise_state.locked_heading) {
             nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
-            nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
             update_load_factor();
         } else {
             calc_nav_roll();
@@ -653,15 +647,20 @@ void Plane::update_flight_mode(void)
     case QHOVER:
     case QLOITER:
     case QLAND:
-    case QRTL: {
+    case QRTL:
+    case QAUTOTUNE: {
         // set nav_roll and nav_pitch using sticks
         int16_t roll_limit = MIN(roll_limit_cd, quadplane.aparm.angle_max);
-        nav_roll_cd  = (channel_roll->get_control_in() / 4500.0) * roll_limit;
-        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
         float pitch_input = channel_pitch->norm_input();
+
         // Scale from normalized input [-1,1] to centidegrees
         if (quadplane.tailsitter_active()) {
-            // For tailsitters, the pitch range is symmetrical: [-Q_ANGLE_MAX,Q_ANGLE_MAX]
+            // separate limit for tailsitter roll, if set
+            if (quadplane.tailsitter.max_roll_angle > 0) {
+                roll_limit = quadplane.tailsitter.max_roll_angle * 100.0f;
+            }
+
+            // angle max for tailsitter pitch
             nav_pitch_cd = pitch_input * quadplane.aparm.angle_max;
         } else {
             // pitch is further constrained by LIM_PITCH_MIN/MAX which may impose
@@ -673,9 +672,13 @@ void Plane::update_flight_mode(void)
             }
             nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
         }
+
+        nav_roll_cd  = (channel_roll->get_control_in() / 4500.0) * roll_limit;
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
+
         break;
     }
-        
+    case QACRO:
     case INITIALISING:
         // handled elsewhere
         break;
@@ -770,6 +773,8 @@ void Plane::update_navigation()
     case QLOITER:
     case QLAND:
     case QRTL:
+    case QAUTOTUNE:
+    case QACRO:
         // nothing to do
         break;
     }
@@ -821,7 +826,7 @@ void Plane::update_alt()
 
         float distance_beyond_land_wp = 0;
         if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-            distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
+            distance_beyond_land_wp = current_loc.get_distance(next_WP_loc);
         }
 
         bool soaring_active = false;
@@ -900,7 +905,7 @@ void Plane::disarm_if_autoland_complete()
 {
     if (landing.get_disarm_delay() > 0 &&
         !is_flying() &&
-        arming.arming_required() != AP_Arming::NO &&
+        arming.arming_required() != AP_Arming::Required::NO &&
         arming.is_armed()) {
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {

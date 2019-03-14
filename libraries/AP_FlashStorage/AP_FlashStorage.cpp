@@ -111,7 +111,12 @@ bool AP_FlashStorage::init(void)
     // if the first sector is full then write out all data so we can erase it
     if (states[first_sector] == SECTOR_STATE_FULL) {
         current_sector = first_sector ^ 1;
-        if (!write_all()) {
+        // we start by writing all except the sector header
+        if (!write_all(sizeof(sector_header))) {
+            return erase_all();
+        }
+        // now write the header
+        if (!write(0, sizeof(sector_header))) {
             return erase_all();
         }
     }
@@ -309,11 +314,11 @@ bool AP_FlashStorage::erase_all(void)
 /*
   write all of mem_buffer to current sector
  */
-bool AP_FlashStorage::write_all(void)
+bool AP_FlashStorage::write_all(uint16_t start_ofs)
 {
     debug("write_all to sector %u at %u with reserved_space=%u\n",
            current_sector, write_offset, reserved_space);
-    for (uint16_t ofs=0; ofs<storage_size; ofs += max_write) {
+    for (uint16_t ofs=start_ofs; ofs<storage_size; ofs += max_write) {
         if (!all_zero(ofs, max_write)) {
             if (!write(ofs, max_write)) {
                 return false;

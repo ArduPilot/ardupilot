@@ -16,7 +16,7 @@ void Tracker::update_auto(void)
     }
 
     float yaw = wrap_180_cd((nav_status.bearing+g.yaw_trim)*100); // target yaw in centidegrees
-    float pitch = constrain_float(nav_status.pitch+g.pitch_trim, -90, 90) * 100; // target pitch in centidegrees
+    float pitch = constrain_float(nav_status.pitch+g.pitch_trim, g.pitch_min, g.pitch_max) * 100; // target pitch in centidegrees
 
     bool direction_reversed = get_ef_yaw_direction();
 

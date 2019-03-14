@@ -28,24 +28,17 @@ void Copter::ModeStabilize_Heli::run()
     // that the servos move in a realistic fashion while disarmed for operational checks.
     // Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero so the swash servos move
     
-    if(!motors->armed()) {
-        copter.heli_flags.init_targets_on_arming = true;
-        attitude_control->set_yaw_target_to_current_heading();
+    if (motors->init_targets_on_arming()) {
         attitude_control->reset_rate_controller_I_terms();
-    }
-    
-    if(motors->armed() && copter.heli_flags.init_targets_on_arming) {
         attitude_control->set_yaw_target_to_current_heading();
-        attitude_control->reset_rate_controller_I_terms();
-        if (motors->get_interlock()) {
-            copter.heli_flags.init_targets_on_arming=false;
-        }
     }
 
     // clear landing flag above zero throttle
     if (motors->armed() && motors->get_interlock() && motors->rotor_runup_complete() && !ap.throttle_zero) {
         set_land_complete(false);
     }
+
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();

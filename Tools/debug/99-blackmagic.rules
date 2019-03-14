@@ -1,0 +1,2 @@
+SUBSYSTEM=="tty", ATTRS{interface}=="Black Magic GDB Server", SYMLINK+="ttyBmpGdb"
+SUBSYSTEM=="tty", ATTRS{interface}=="Black Magic UART Port",  SYMLINK+="ttyBmpTarg"

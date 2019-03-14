@@ -8,11 +8,11 @@
 
 #define HAL_BOARD_SITL     3
 #define HAL_BOARD_SMACCM   4  // unused
-#define HAL_BOARD_PX4      5
+#define HAL_BOARD_PX4      5  // unused
 #define HAL_BOARD_LINUX    7
 #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
-#define HAL_BOARD_F4LIGHT  11
+#define HAL_BOARD_F4LIGHT  11 // reserved
 #define HAL_BOARD_EMPTY    99
 
 /* Default board subtype is -1 */
@@ -39,25 +39,6 @@
 #define HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ   1021
 #define HAL_BOARD_SUBTYPE_LINUX_POCKET     1022
 
-/* HAL PX4 sub-types, starting at 2000 */
-#define HAL_BOARD_SUBTYPE_PX4_V1           2000
-#define HAL_BOARD_SUBTYPE_PX4_V2           2001
-#define HAL_BOARD_SUBTYPE_PX4_V4           2002
-#define HAL_BOARD_SUBTYPE_PX4_V3           2003
-#define HAL_BOARD_SUBTYPE_PX4_AEROFC_V1    2004
-#define HAL_BOARD_SUBTYPE_PX4_V4PRO        2005
-
-/* HAL VRBRAIN sub-types, starting at 4000 */
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V45      4000
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V51      4001
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V52      4002
-#define HAL_BOARD_SUBTYPE_VRUBRAIN_V51     4003
-#define HAL_BOARD_SUBTYPE_VRUBRAIN_V52     4004
-#define HAL_BOARD_SUBTYPE_VRCORE_V10       4005
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V54      4006
-#define HAL_BOARD_SUBTYPE_VRBRAIN_V52E     4007
-
-
 /* HAL CHIBIOS sub-types, starting at 5000 */
 #define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
@@ -75,6 +56,11 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5         5013
 #define HAL_BOARD_SUBTYPE_CHIBIOS_MATEKF405WING 5014
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4PRO      5015
+#define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51   5016
+#define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52   5017
+#define HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51  5018
+#define HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10    5019
+#define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54   5020
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -96,6 +82,9 @@
 #define HAL_INS_RST         21
 #define HAL_INS_LSM9DS1     22
 #define HAL_INS_ICM20789_SPI 23
+#define HAL_INS_INV2_I2C    24
+#define HAL_INS_INV2_SPI    25
+
 
 /* Barometer driver types */
 #define HAL_BARO_NONE        0
@@ -165,8 +154,6 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <AP_HAL/board/sitl.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    #include <AP_HAL/board/px4.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     #include <AP_HAL/board/linux.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
@@ -175,8 +162,6 @@
     #include <AP_HAL/board/vrbrain.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 	#include <AP_HAL/board/chibios.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-    #include <AP_HAL/board/f4light.h>
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif

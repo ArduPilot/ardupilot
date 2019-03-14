@@ -350,15 +350,15 @@ public:
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p,
-        k_param_autotune_axis_bitmask,
-        k_param_autotune_aggressiveness,
+        k_param_autotune_axis_bitmask, // remove
+        k_param_autotune_aggressiveness, // remove
         k_param_pi_vel_xy,              // remove
         k_param_fs_ekf_action,
         k_param_rtl_climb_min,
         k_param_rpm_sensor,
-        k_param_autotune_min_d, // 251
+        k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
-        k_param_DataFlash = 253, // 253 - Logging Group
+        k_param_logger = 253, // 253 - Logging Group
 
         // 254,255: reserved
 
@@ -457,13 +457,6 @@ public:
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
-
-    // Autotune
-#if AUTOTUNE_ENABLED == ENABLED
-    AP_Int8                 autotune_axis_bitmask;
-    AP_Float                autotune_aggressiveness;
-    AP_Float                autotune_min_d;
-#endif
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -585,6 +578,15 @@ public:
     // User custom parameters
     UserParameters user_parameters;
 #endif
+
+#if AUTOTUNE_ENABLED == ENABLED
+    // we need a pointer to autotune for the G2 table
+    void *autotune_ptr;
+#endif
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
 
 };
 

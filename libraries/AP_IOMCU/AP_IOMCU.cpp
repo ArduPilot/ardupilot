@@ -27,6 +27,7 @@ enum ioevents {
     IOEVENT_FORCE_SAFETY_OFF,
     IOEVENT_FORCE_SAFETY_ON,
     IOEVENT_SET_ONESHOT_ON,
+    IOEVENT_SET_BRUSHED_ON,
     IOEVENT_SET_RATES,
     IOEVENT_ENABLE_SBUS,
     IOEVENT_SET_HEATER_TARGET,
@@ -58,7 +59,7 @@ void AP_IOMCU::init(void)
     // check IO firmware CRC
     hal.scheduler->delay(2000);
     
-    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
     if (!boardconfig || boardconfig->io_enabled() == 1) {
         check_crc();
     } else {
@@ -183,6 +184,13 @@ void AP_IOMCU::thread_main(void)
             }
         }
 
+        if (mask & EVENT_MASK(IOEVENT_SET_BRUSHED_ON)) {
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_BRUSHED)) {
+                event_failed(IOEVENT_SET_BRUSHED_ON);
+                continue;
+            }
+        }
+        
         if (mask & EVENT_MASK(IOEVENT_SET_SAFETY_MASK)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_IGNORE_SAFETY, pwm_out.safety_mask)) {
                 event_failed(IOEVENT_SET_SAFETY_MASK);
@@ -296,7 +304,7 @@ void AP_IOMCU::read_status()
         last_safety_options = 0xFFFF;
 
         // also check if the safety should be definately off.
-        AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+        AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
         if (!boardconfig) {
             return;
         }
@@ -639,10 +647,16 @@ void AP_IOMCU::set_oneshot_mode(void)
     trigger_event(IOEVENT_SET_ONESHOT_ON);
 }
 
+// setup for brushed mode
+void AP_IOMCU::set_brushed_mode(void)
+{
+    trigger_event(IOEVENT_SET_BRUSHED_ON);
+}
+
 // handling of BRD_SAFETYOPTION parameter
 void AP_IOMCU::update_safety_options(void)
 {
-    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
     if (!boardconfig) {
         return;
     }
@@ -814,15 +828,15 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
 
     // update mixing structure, checking for changes
     for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
-        const SRV_Channel *ch = SRV_Channels::srv_channel(i);
-        if (!ch) {
+        const SRV_Channel *c = SRV_Channels::srv_channel(i);
+        if (!c) {
             continue;
         }
-        MIX_UPDATE(mixing.servo_trim[i], ch->get_trim());
-        MIX_UPDATE(mixing.servo_min[i], ch->get_output_min());
-        MIX_UPDATE(mixing.servo_max[i], ch->get_output_max());
-        MIX_UPDATE(mixing.servo_function[i], ch->get_function());
-        MIX_UPDATE(mixing.servo_reversed[i], ch->get_reversed());
+        MIX_UPDATE(mixing.servo_trim[i], c->get_trim());
+        MIX_UPDATE(mixing.servo_min[i], c->get_output_min());
+        MIX_UPDATE(mixing.servo_max[i], c->get_output_max());
+        MIX_UPDATE(mixing.servo_function[i], c->get_function());
+        MIX_UPDATE(mixing.servo_reversed[i], c->get_reversed());
     }
     // update RCMap
     MIX_UPDATE(mixing.rc_channel[0], rcmap->roll());
@@ -830,17 +844,17 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
     MIX_UPDATE(mixing.rc_channel[2], rcmap->throttle());
     MIX_UPDATE(mixing.rc_channel[3], rcmap->yaw());
     for (uint8_t i=0; i<4; i++) {
-        const RC_Channel *ch = RC_Channels::rc_channel(mixing.rc_channel[i]-1);
-        if (!ch) {
+        const RC_Channel *c = RC_Channels::rc_channel(mixing.rc_channel[i]-1);
+        if (!c) {
             continue;
         }
-        MIX_UPDATE(mixing.rc_min[i], ch->get_radio_min());
-        MIX_UPDATE(mixing.rc_max[i], ch->get_radio_max());
-        MIX_UPDATE(mixing.rc_trim[i], ch->get_radio_trim());
-        MIX_UPDATE(mixing.rc_reversed[i], ch->get_reverse());
+        MIX_UPDATE(mixing.rc_min[i], c->get_radio_min());
+        MIX_UPDATE(mixing.rc_max[i], c->get_radio_max());
+        MIX_UPDATE(mixing.rc_trim[i], c->get_radio_trim());
+        MIX_UPDATE(mixing.rc_reversed[i], c->get_reverse());
 
         // cope with reversible throttle
-        if (i == 2 && ch->get_type() == RC_Channel::RC_CHANNEL_TYPE_ANGLE) {
+        if (i == 2 && c->get_type() == RC_Channel::RC_CHANNEL_TYPE_ANGLE) {
             MIX_UPDATE(mixing.throttle_is_angle, 1);
         } else {
             MIX_UPDATE(mixing.throttle_is_angle, 0);

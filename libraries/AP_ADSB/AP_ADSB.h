@@ -70,7 +70,7 @@ public:
     UAVIONIX_ADSB_RF_HEALTH get_transceiver_status(void) { return out_state.status; }
 
     // extract a location out of a vehicle item
-    Location_Class get_location(const adsb_vehicle_t &vehicle) const;
+    Location get_location(const adsb_vehicle_t &vehicle) const;
 
     bool enabled() const {
         return _enabled;
@@ -99,7 +99,7 @@ private:
     void set_vehicle(const uint16_t index, const adsb_vehicle_t &vehicle);
 
     // Generates pseudorandom ICAO from gps time, lat, and lon
-    uint32_t genICAO(const Location_Class &loc);
+    uint32_t genICAO(const Location &loc);
 
     // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
     void set_callsign(const char* str, const bool append_icao);
@@ -122,7 +122,7 @@ private:
 
     AP_Int8     _enabled;
 
-    Location_Class  _my_loc;
+    Location  _my_loc;
 
 
     // ADSB-IN state. Maintains list of external vehicles
@@ -133,6 +133,7 @@ private:
         adsb_vehicle_t *vehicle_list = nullptr;
         uint16_t    vehicle_count;
         AP_Int32    list_radius;
+        AP_Int16    list_altitude;
 
         // streamrate stuff
         uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];

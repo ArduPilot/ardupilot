@@ -88,7 +88,8 @@ private:
         uint8_t res : 5;
         uint8_t protocol_minor : 8;
         uint8_t protocol_major : 8;
-        uint8_t res2 : 7;
+        uint8_t res2 : 6;
+        bool ext_antenna_short : 1;
         bool ext_antenna : 1;
     }; // 4 bytes
 
@@ -98,7 +99,7 @@ private:
         uint32_t tow;    //< GPS Time of Week rounded to the nearest ms (unit: ms)
         int32_t ns;      //< Nanosecond remainder of rounded tow (unit: ns)
         struct PACKED flags {
-            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX
+            uint8_t time_src:3;  //< Fix mode (0: invalid, 1: GNSS Solution, 2: Propagated
             uint8_t res:5;       //< Reserved
         } flags;
     }; // 11 bytes
@@ -112,7 +113,7 @@ private:
         uint16_t hdop;   //< Horizontal Dilution of Precision (unit: 0.01)
         uint16_t vdop;   //< Vertical Dilution of Precision (unit: 0.01)
         struct PACKED flags {
-            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX
+            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX, 5: Undefined, 6: SBAS Position
             uint8_t res:4;       //< Reserved
             bool raim_repair:1;  //< Solution from RAIM?
         } flags;
@@ -128,9 +129,9 @@ private:
         uint16_t v_accuracy;  //< Vertical position accuracy estimate (unit: mm)
         uint8_t n_sats;       //< Number of satellites used in solution
         struct PACKED flags {
-            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX
-            uint8_t res:4;       //< Reserved
-            bool raim_repair:1;  //< Solution from RAIM?
+            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX, 5: Dead Reckoning, 6: SBAS Position
+            uint8_t ins_mode:2;  //< Inertial navigation mode (0: none, 1: INS used)
+            uint8_t res:3;       //< Reserved
         } flags;
     }; // 34 bytes
 
@@ -144,8 +145,9 @@ private:
         uint16_t v_accuracy;   //< Vertical velocity accuracy estimate (unit: mm/s)
         uint8_t n_sats;        //< Number of satellites used in solution
         struct PACKED flags {
-            uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX
-            uint8_t res:5;       //< Reserved
+            uint8_t vel_mode:3;  //< Velocity mode (0: Invalid, 1: Measured Doppler derived, 2: Computed Doppler derived, 3: Dead reckoning)
+            uint8_t ins_mode:2;  //< Inertial navigation mode (0: none, 1: INS used)
+            uint8_t res:3;       //< Reserved
         } flags;
     }; // 22 bytes
 
@@ -159,6 +161,7 @@ private:
             uint8_t quality:1;     //< Time quality values (0: Unknown - don't have nav solution, 1: Good (< 1 microsecond))
             uint8_t res:6;         //< Reserved
         } flags;
+        uint8_t pin;           //< Pin number (0-9)
     }; // 12 bytes
 
     void _sbp_process();
@@ -188,7 +191,7 @@ private:
     uint32_t crc_error_counter;
 
     // ************************************************************************
-    // Logging to DataFlash
+    // Logging to AP_Logger
     // ************************************************************************
 
     void logging_log_full_update();

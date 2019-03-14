@@ -142,15 +142,6 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Path: AP_Landing_Deepstall.cpp
     AP_SUBGROUPINFO(deepstall, "DS_", 15, AP_Landing, AP_Landing_Deepstall),
     
-    // @Param: TD_ALT
-    // @DisplayName: Touch down altitude
-    // @Description: Altitude to trigger touchdown condition if weight on wheels sensor is not available. Disabled when 0. Recommend using an RTK GPS or rangefinder for accurate altitude
-    // @Units: m
-    // @Range: 0 5
-    // @Increment: 0.01
-    // @User: Advanced
-    AP_GROUPINFO("TD_ALT", 16, AP_Landing, touchdown_altitude, 0.0f),
-    
     AP_GROUPEND
 };
 
@@ -372,7 +363,7 @@ bool AP_Landing::override_servos(void) {
 
 // returns a PID_Info object if there is one available for the selected landing
 // type, otherwise returns a nullptr, indicating no data to be logged/sent
-const DataFlash_Class::PID_Info* AP_Landing::get_pid_info(void) const
+const AP_Logger::PID_Info* AP_Landing::get_pid_info(void) const
 {
     switch (type) {
     case TYPE_DEEPSTALL:

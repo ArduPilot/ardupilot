@@ -23,9 +23,6 @@ Copter::Mode::Mode(void) :
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
-#if FRAME_CONFIG == HELI_FRAME
-    heli_flags(copter.heli_flags),
-#endif
     ap(copter.ap)
 { };
 
@@ -97,9 +94,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_FLIP_ENABLED == ENABLED
         case FLIP:
             ret = &mode_flip;
             break;
+#endif
 
 #if AUTOTUNE_ENABLED == ENABLED
         case AUTOTUNE:
@@ -201,6 +200,14 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     }
 #endif
 
+    if (!ignore_checks &&
+        new_flightmode->requires_GPS() &&
+        !copter.position_ok()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        return false;
+    }
+
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
@@ -214,7 +221,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     flightmode = new_flightmode;
     control_mode = mode;
     control_mode_reason = reason;
-    DataFlash.Log_Write_Mode(control_mode, reason);
+    logger.Write_Mode(control_mode, reason);
 
 #if ADSB_ENABLED == ENABLED
     adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
@@ -267,8 +274,8 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     // stop mission when we leave auto mode
 #if MODE_AUTO_ENABLED == ENABLED
     if (old_flightmode == &mode_auto) {
-        if (mission.state() == AP_Mission::MISSION_RUNNING) {
-            mission.stop();
+        if (mode_auto.mission.state() == AP_Mission::MISSION_RUNNING) {
+            mode_auto.mission.stop();
         }
 #if MOUNT == ENABLED
         camera_mount.set_mode_to_default();
@@ -374,14 +381,18 @@ bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
     return true;
 }
 
-void Copter::Mode::zero_throttle_and_relax_ac()
+void Copter::Mode::zero_throttle_and_relax_ac(bool spool_up)
 {
+    if (spool_up) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    } else {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+    }
 #if FRAME_CONFIG == HELI_FRAME
     // Helicopters always stabilize roll/pitch/yaw
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 #else
-    motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     // multicopters do not stabilize roll/pitch/yaw when disarmed
     attitude_control->set_throttle_out_unstabilized(0.0f, true, copter.g.throttle_filt);
 #endif
@@ -390,14 +401,14 @@ void Copter::Mode::zero_throttle_and_relax_ac()
 /*
   get a height above ground estimate for landing
  */
-int32_t Copter::Mode::get_alt_above_ground(void)
+int32_t Copter::Mode::get_alt_above_ground_cm(void)
 {
     int32_t alt_above_ground;
     if (copter.rangefinder_alt_ok()) {
         alt_above_ground = copter.rangefinder_state.alt_cm_filt.get();
     } else {
         bool navigating = pos_control->is_active_xy();
-        if (!navigating || !copter.current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
+        if (!navigating || !copter.current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
             alt_above_ground = copter.current_loc.alt;
         }
     }
@@ -416,7 +427,6 @@ void Copter::Mode::land_run_vertical_control(bool pause_descent)
     // compute desired velocity
     const float precland_acceptable_error = 15.0f;
     const float precland_min_descent_speed = 10.0f;
-    const int32_t alt_above_ground = get_alt_above_ground();
 
     float cmb_rate = 0;
     if (!pause_descent) {
@@ -431,13 +441,13 @@ void Copter::Mode::land_run_vertical_control(bool pause_descent)
         max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
 
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-        cmb_rate = AC_AttitudeControl::sqrt_controller(MAX(g2.land_alt_low,100)-alt_above_ground, pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), G_Dt);
+        cmb_rate = AC_AttitudeControl::sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
         if (doing_precision_landing && copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
-            float max_descent_speed = abs(g.land_speed)/2.0f;
+            float max_descent_speed = abs(g.land_speed)*0.5f;
             float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
         }
@@ -523,8 +533,7 @@ void Copter::Mode::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        const int alt_above_ground = get_alt_above_ground();
-        float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, alt_above_ground,
+        float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
         float total_angle_cd = norm(nav_roll, nav_pitch);
         if (total_angle_cd > attitude_limit_cd) {
@@ -590,9 +599,9 @@ GCS_Copter &Copter::Mode::gcs()
     return copter.gcs();
 }
 
-void Copter::Mode::Log_Write_Event(uint8_t id)
+void Copter::Mode::Log_Write_Event(Log_Event id)
 {
-    return copter.Log_Write_Event(id);
+    return copter.logger.Write_Event(id);
 }
 
 void Copter::Mode::set_throttle_takeoff()

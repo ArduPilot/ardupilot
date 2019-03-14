@@ -27,7 +27,7 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include "pthread.h"
 
 extern const AP_HAL::HAL& hal;
@@ -281,8 +281,9 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         controller_started = true;
     }
 
-    float scaled_servos[8];
-    for (uint8_t i=0; i<8; i++) {
+    // maximum number of servos to send is 12 with new FlightAxis
+    float scaled_servos[12];
+    for (uint8_t i=0; i<ARRAY_SIZE(scaled_servos); i++) {
         scaled_servos[i] = (input.servos[i] - 1000) / 1000.0f;
     }
 
@@ -312,8 +313,12 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
 <soap:Body>
 <ExchangeData>
 <pControlInputs>
-<m-selectedChannels>255</m-selectedChannels>
+<m-selectedChannels>4095</m-selectedChannels>
 <m-channelValues-0to1>
+<item>%.4f</item>
+<item>%.4f</item>
+<item>%.4f</item>
+<item>%.4f</item>
 <item>%.4f</item>
 <item>%.4f</item>
 <item>%.4f</item>
@@ -334,7 +339,11 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
                                scaled_servos[4],
                                scaled_servos[5],
                                scaled_servos[6],
-                               scaled_servos[7]);
+                               scaled_servos[7],
+                               scaled_servos[8],
+                               scaled_servos[9],
+                               scaled_servos[10],
+                               scaled_servos[11]);
 
     if (reply) {
         WITH_SEMAPHORE(mutex);

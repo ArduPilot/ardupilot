@@ -1,6 +1,6 @@
 #include "SoloGimbal_Parameters.h"
 #include <AP_HAL/AP_HAL.h>
-
+#include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -18,6 +18,7 @@ void SoloGimbal_Parameters::reset()
 {
     memset(_params,0,sizeof(_params));
     _last_request_ms = 0;
+    _last_set_ms = 0;
     _flashing_step = GMB_PARAM_NOT_FLASHING;
 }
 
@@ -103,7 +104,9 @@ void SoloGimbal_Parameters::get_param(gmb_param_t param, float& value, float def
 }
 
 void SoloGimbal_Parameters::set_param(gmb_param_t param, float value) {
-    if ((_params[param].state == GMB_PARAMSTATE_CONSISTENT && param != GMB_PARAM_GMB_FLASH && is_equal(_params[param].value,value)) || _params[param].state == GMB_PARAMSTATE_NONEXISTANT) {
+    if ((_params[param].state == GMB_PARAMSTATE_CONSISTENT && param != GMB_PARAM_GMB_FLASH &&
+       is_equal(_params[param].value,value)) || _params[param].state == GMB_PARAMSTATE_NONEXISTANT ||
+       !HAVE_PAYLOAD_SPACE(_chan, PARAM_SET)) {
         return;
     }
 
@@ -117,7 +120,7 @@ void SoloGimbal_Parameters::set_param(gmb_param_t param, float value) {
 
     mavlink_msg_param_set_send(_chan, 0, MAV_COMP_ID_GIMBAL, tmp_name, _params[param].value, MAV_PARAM_TYPE_REAL32);
 
-    _last_request_ms = AP_HAL::millis();
+    _last_set_ms = AP_HAL::millis();
 }
 
 void SoloGimbal_Parameters::update()
@@ -125,23 +128,28 @@ void SoloGimbal_Parameters::update()
     uint32_t tnow_ms = AP_HAL::millis();
 
     // retry initial param retrieval
-    if(!received_all()){
-        if (tnow_ms-_last_request_ms > _retry_period) {
-            _last_request_ms = tnow_ms;
-            mavlink_msg_param_request_list_send(_chan, 0, MAV_COMP_ID_GIMBAL);
-
-            for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
-                if (!_params[i].seen) {
-                    _params[i].fetch_attempts++;
-                }
+    if(!received_all() && ((tnow_ms - _last_request_ms) > _retry_period) &&
+      (HAVE_PAYLOAD_SPACE(_chan, PARAM_REQUEST_LIST))) {
+        _last_request_ms = tnow_ms;
+        mavlink_msg_param_request_list_send(_chan, 0, MAV_COMP_ID_GIMBAL);
+            
+        for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
+            if (!_params[i].seen) {
+                _params[i].fetch_attempts++;
             }
         }
     }
 
     // retry param_set
     for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
-        if (_params[i].state == GMB_PARAMSTATE_ATTEMPTING_TO_SET && tnow_ms - _last_request_ms > _retry_period) {
+        if (!HAVE_PAYLOAD_SPACE(_chan, PARAM_SET)) {
+            break;
+        }
+        
+        if ((_params[i].state == GMB_PARAMSTATE_ATTEMPTING_TO_SET) && (tnow_ms - _last_set_ms > _retry_period)) {
             mavlink_msg_param_set_send(_chan, 0, MAV_COMP_ID_GIMBAL, get_param_name((gmb_param_t)i), _params[i].value, MAV_PARAM_TYPE_REAL32);
+            _last_set_ms = AP_HAL::millis();
+            
             if (!_params[i].seen) {
                 _params[i].fetch_attempts++;
             }
@@ -177,9 +185,9 @@ void SoloGimbal_Parameters::handle_param_value(const mavlink_message_t *msg)
     mavlink_param_value_t packet;
     mavlink_msg_param_value_decode(msg, &packet);
 
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (dataflash != nullptr) {
-        dataflash->Log_Write_Parameter(packet.param_id, packet.param_value);
+        dataflash->Write_Parameter(packet.param_id, packet.param_value);
     }
 
     for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {

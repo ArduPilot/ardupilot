@@ -20,7 +20,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_Navigation/AP_Navigation.h>
-#include <GCS_MAVLink/GCS.h>
 #include "AP_Landing_Deepstall.h"
 
 /// @class  AP_Landing
@@ -101,7 +100,7 @@ public:
     void set_initial_slope(void) { initial_slope = slope; }
     bool is_expecting_impact(void) const;
     void Log(void) const;
-    const DataFlash_Class::PID_Info * get_pid_info(void) const;
+    const AP_Logger::PID_Info * get_pid_info(void) const;
 
     // landing altitude offset (meters)
     float alt_offset;
@@ -118,7 +117,7 @@ private:
     // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
     float initial_slope;
 
-    // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / get_distance(prev_WP_loc, next_WP_loc)
+    // calculated approach slope during auto-landing: ((prev_WP_loc.alt - next_WP_loc.alt)*0.01f - flare_sec * sink_rate) / prev_WP_loc.get_distance(next_WP_loc)
     float slope;
 
     AP_Mission &mission;
@@ -134,9 +133,6 @@ private:
     adjusted_relative_altitude_cm_fn_t adjusted_relative_altitude_cm_fn;
     disarm_if_autoland_complete_fn_t disarm_if_autoland_complete_fn;
     update_flight_stage_fn_t update_flight_stage_fn;
-    
-    // saved bearing for yaw correction after touchdown
-    float runway_bearing;
 
     // support for deepstall landings
     AP_Landing_Deepstall deepstall;
@@ -155,7 +151,6 @@ private:
     AP_Int8 flap_percent;
     AP_Int8 throttle_slewrate;
     AP_Int8 type;
-    AP_Float touchdown_altitude;
 
     // Land Type STANDARD GLIDE SLOPE
 
@@ -169,9 +164,8 @@ private:
     struct {
         // once landed, post some landing statistics to the GCS
         bool post_stats:1;
-        bool force_flare:1;
+
         bool has_aborted_due_to_slope_recalc:1;
-        bool touched_down:1;
     } type_slope_flags;
 
     void type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);

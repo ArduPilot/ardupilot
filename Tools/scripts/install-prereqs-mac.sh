@@ -26,7 +26,7 @@ else
     echo "pip installed"
 fi
 
-sudo pip2 install pyserial future empy mavproxy
+pip2 install --user pyserial future empy mavproxy
 
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
@@ -34,7 +34,7 @@ ARDUPILOT_TOOLS="Tools/autotest"
 
 exportline="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
 grep -Fxq "$exportline" ~/.profile 2>/dev/null || {
-    read -p "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [Y/n]?" -n 1 -r
+    read -p "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]?" -n 1 -r
     if [[ $REPLY =~ ^[Yy]$ ]] ; then
         echo $exportline >> ~/.profile
         eval $exportline

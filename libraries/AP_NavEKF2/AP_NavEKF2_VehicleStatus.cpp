@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -14,7 +12,7 @@ extern const AP_HAL::HAL& hal;
 
 
 /* Monitor GPS data to see if quality is good enough to initialise the EKF
-   Monitor magnetometer innovations to to see if the heading is good enough to use GPS
+   Monitor magnetometer innovations to see if the heading is good enough to use GPS
    Return true if all criteria pass for 10 seconds
 
    We also record the failure reason so that prearm_failure_reason()
@@ -49,7 +47,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     // This check can only be used when the vehicle is stationary
     const struct Location &gpsloc = gps.location(); // Current location
     const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
-    // calculate time lapsesd since last update and limit to prevent numerical errors
+    // calculate time lapsed since last update and limit to prevent numerical errors
     float deltaTime = constrain_float(float(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
     lastPreAlignGpsCheckTime_ms = imuDataDelayed.time_ms;
     // Sum distance moved
@@ -57,7 +55,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     gpsloc_prev = gpsloc;
     // Decay distance moved exponentially to zero
     gpsDriftNE *= (1.0f - deltaTime/posFiltTimeConst);
-    // Clamp the fiter state to prevent excessive persistence of large transients
+    // Clamp the filter state to prevent excessive persistence of large transients
     gpsDriftNE = MIN(gpsDriftNE,10.0f);
     // Fail if more than 3 metres drift after filtering whilst on-ground
     // This corresponds to a maximum acceptable average drift rate of 0.3 m/s or single glitch event of 3m
@@ -470,5 +468,3 @@ void NavEKF2_core::detectOptFlowTakeoff(void)
     }
 }
 
-
-#endif // HAL_CPU_CLASS

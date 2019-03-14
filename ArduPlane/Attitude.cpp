@@ -30,15 +30,15 @@ float Plane::get_speed_scaler(void)
                 speed_scaler = MIN(speed_scaler, new_scaler);
             }
         }
-    } else {
-        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0) {
-            speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 2.0f);                 // First order taylor expansion of square root
-            // Should maybe be to the 2/7 power, but we aren't going to implement that...
-        }else{
-            speed_scaler = 1.67f;
-        }
+    } else if (hal.util->get_soft_armed()) {
+        // scale assumed surface movement using throttle output
+        float throttle_out = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 1);
+        speed_scaler = sqrtf(THROTTLE_CRUISE / throttle_out);
         // This case is constrained tighter as we don't have real speed info
         speed_scaler = constrain_float(speed_scaler, 0.6f, 1.67f);
+    } else {
+        // no speed estimate and not armed, use a unit scaling
+        speed_scaler = 1;
     }
     return speed_scaler;
 }
@@ -155,7 +155,9 @@ void Plane::stabilize_stick_mixing_direct()
         control_mode == QLOITER ||
         control_mode == QLAND ||
         control_mode == QRTL ||
-        control_mode == TRAINING) {
+        control_mode == QACRO ||
+        control_mode == TRAINING ||
+        control_mode == QAUTOTUNE) {
         return;
     }
     int16_t aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -184,7 +186,9 @@ void Plane::stabilize_stick_mixing_fbw()
         control_mode == QLOITER ||
         control_mode == QLAND ||
         control_mode == QRTL ||
+        control_mode == QACRO ||
         control_mode == TRAINING ||
+        control_mode == QAUTOTUNE ||
         (control_mode == AUTO && g.auto_fbw_steer == 42)) {
         return;
     }
@@ -393,7 +397,9 @@ void Plane::stabilize()
                 control_mode == QHOVER ||
                 control_mode == QLOITER ||
                 control_mode == QLAND ||
-                control_mode == QRTL) &&
+                control_mode == QRTL ||
+                control_mode == QACRO ||
+                control_mode == QAUTOTUNE) &&
                !quadplane.in_tailsitter_vtol_transition()) {
         quadplane.control_run();
     } else {
@@ -615,11 +621,10 @@ void Plane::update_load_factor(void)
 
     if (quadplane.in_transition() &&
         (quadplane.options & QuadPlane::OPTION_LEVEL_TRANSITION)) {
-        /*
-          the user has asked for transitions to be kept level to
-          within LEVEL_ROLL_LIMIT
-         */
+        // the user wants transitions to be kept level to within LEVEL_ROLL_LIMIT
         roll_limit_cd = MIN(roll_limit_cd, g.level_roll_limit*100);
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+        return;
     }
     
     if (!aparm.stall_prevention) {
@@ -641,7 +646,7 @@ void Plane::update_load_factor(void)
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees
         nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
-        roll_limit_cd = constrain_int32(roll_limit_cd, -2500, 2500);
+        roll_limit_cd = MIN(roll_limit_cd, 2500);
     } else if (max_load_factor < aerodynamic_load_factor) {
         // the demanded nav_roll would take us past the aerodymamic
         // load limit. Limit our roll to a bank angle that will keep
@@ -654,6 +659,6 @@ void Plane::update_load_factor(void)
             roll_limit = 2500;
         }
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
-        roll_limit_cd = constrain_int32(roll_limit_cd, -roll_limit, roll_limit);
+        roll_limit_cd = MIN(roll_limit_cd, roll_limit);
     }    
 }

@@ -11,6 +11,9 @@ STM32_ST_USE_TIMER 5
 # order of UARTs (and USB). Telem2 is UART4 on the mini, USART3 is not available
 UART_ORDER OTG1 USART1 USART2 UART4 USART6 UART7
 
+# enable TX on USART6 (disabled for fmuv5 with iomcu)
+PG14 USART6_TX USART6 NODMA
+
 # disable the IOMCU UART
 undef IOMCU_UART
 undef UART8_TX
@@ -31,3 +34,13 @@ PB11 TIM2_CH4 TIM2 PWM(11) GPIO(60)
 
 # RCInput on the PPM pin, for all protocols
 PI5 TIM8_CH1 TIM8 RCININT PULLUP LOW
+
+# setup for supplied power brick
+undef HAL_BATT_VOLT_SCALE
+define HAL_BATT_VOLT_SCALE 18.182
+undef HAL_BATT_CURR_SCALE
+define HAL_BATT_CURR_SCALE 36.364
+
+# setup safety switch
+PE12 LED_SAFETY OUTPUT
+PE10 SAFETY_IN INPUT PULLDOWN

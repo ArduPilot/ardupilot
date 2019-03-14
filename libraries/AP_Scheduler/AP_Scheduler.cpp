@@ -23,7 +23,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include <stdio.h>
@@ -63,13 +63,13 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
     _fastloop_fn(fastloop_fn)
 {
-    if (_s_instance) {
+    if (_singleton) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Too many schedulers");
 #endif
         return;
     }
-    _s_instance = this;
+    _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -85,10 +85,10 @@ AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
 /*
  * Get the AP_Scheduler singleton
  */
-AP_Scheduler *AP_Scheduler::_s_instance = nullptr;
-AP_Scheduler *AP_Scheduler::get_instance()
+AP_Scheduler *AP_Scheduler::_singleton;
+AP_Scheduler *AP_Scheduler::get_singleton()
 {
-    return _s_instance;
+    return _singleton;
 }
 
 // initialise the scheduler
@@ -279,7 +279,7 @@ void AP_Scheduler::update_logging()
         perf_info.update_logging();
     }
     if (_log_performance_bit != (uint32_t)-1 &&
-        DataFlash_Class::instance()->should_log(_log_performance_bit)) {
+        AP::logger().should_log(_log_performance_bit)) {
         Log_Write_Performance();
     }
     perf_info.set_loop_rate(get_loop_rate_hz());
@@ -298,14 +298,14 @@ void AP_Scheduler::Log_Write_Performance()
         mem_avail        : hal.util->available_memory(),
         load             : (uint16_t)(load_average() * 1000)
     };
-    DataFlash_Class::instance()->WriteCriticalBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 namespace AP {
 
 AP_Scheduler &scheduler()
 {
-    return *AP_Scheduler::get_instance();
+    return *AP_Scheduler::get_singleton();
 }
 
 };

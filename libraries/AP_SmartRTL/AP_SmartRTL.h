@@ -1,16 +1,12 @@
 #pragma once
 
-#include <AP_Buffer/AP_Buffer.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS.h>
 
 // definitions and macros
 #define SMARTRTL_ACCURACY_DEFAULT        2.0f   // default _ACCURACY parameter value.  Points will be no closer than this distance (in meters) together.
-#define SMARTRTL_POINTS_DEFAULT          150    // default _POINTS parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
+#define SMARTRTL_POINTS_DEFAULT          300    // default _POINTS parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
 #define SMARTRTL_POINTS_MAX              500    // the absolute maximum number of points this library can support.
 #define SMARTRTL_TIMEOUT                 15000  // the time in milliseconds with no points saved to the path (for whatever reason), before SmartRTL is disabled for the flight
 #define SMARTRTL_CLEANUP_POINT_TRIGGER   50     // simplification will trigger when this many points are added to the path

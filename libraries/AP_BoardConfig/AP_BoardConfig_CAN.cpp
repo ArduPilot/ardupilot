@@ -18,24 +18,23 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include "AP_BoardConfig.h"
 #include "AP_BoardConfig_CAN.h"
 
 #if HAL_WITH_UAVCAN
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-#include <AP_HAL_PX4/CAN.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/CAN.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CAN.h>
+#include <AP_HAL_ChibiOS/CANSerialRouter.h>
 #endif
 
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_UAVCAN/AP_UAVCAN_SLCAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -78,6 +77,9 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
     AP_SUBGROUPINFO(_drivers[2], "D3_", 6, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Driver),
 #endif
 
+#if !HAL_MINIMIZE_FEATURES
+    AP_SUBGROUPINFO(_slcan, "SLCAN_", 7, AP_BoardConfig_CAN, AP_BoardConfig_CAN::SLCAN_Interface),
+#endif
     AP_GROUPEND
 };
 
@@ -98,17 +100,17 @@ void AP_BoardConfig_CAN::init()
 {
     // Create all drivers that we need
     bool initret = true;
+ #if !HAL_MINIMIZE_FEATURES
+    reset_slcan_serial();
+#endif
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
         // Check the driver number assigned to this physical interface
         uint8_t drv_num = _interfaces[i]._driver_number_cache = _interfaces[i]._driver_number;
-
         if (drv_num != 0 && drv_num <= MAX_NUMBER_OF_CAN_DRIVERS) {
             if (hal.can_mgr[drv_num - 1] == nullptr) {
                 // CAN Manager is the driver
                 // So if this driver was not created before for other physical interface - do it
-                #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-                    const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new PX4::PX4CANManager;
-                #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+                #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new Linux::CANManager;
                 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new ChibiOS::CANManager;
@@ -118,6 +120,12 @@ void AP_BoardConfig_CAN::init()
             // For this now existing driver (manager), start the physical interface
             if (hal.can_mgr[drv_num - 1] != nullptr) {
                 initret = initret && hal.can_mgr[drv_num - 1]->begin(_interfaces[i]._bitrate, i);
+                #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !HAL_MINIMIZE_FEATURES
+                    if (_slcan._can_port == (i+1) && hal.can_mgr[drv_num - 1] != nullptr ) {
+                        ChibiOS_CAN::CanDriver* drv = (ChibiOS_CAN::CanDriver*)hal.can_mgr[drv_num - 1]->get_driver();
+                        slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
+                    }
+                #endif
             } else {
                 printf("Failed to initialize can interface %d\n\r", i + 1);
             }
@@ -137,17 +145,43 @@ void AP_BoardConfig_CAN::init()
             printf("can_mgr %d initialized well\n\r", i + 1);
 
             if (prot_type == Protocol_Type_UAVCAN) {
-                _drivers[i]._driver = new AP_UAVCAN;
+                _drivers[i]._driver = _drivers[i]._uavcan =  new AP_UAVCAN;
 
                 if (_drivers[i]._driver == nullptr) {
                     AP_HAL::panic("Failed to allocate uavcan %d\n\r", i + 1);
                     continue;
                 }
 
-                AP_Param::load_object_from_eeprom(_drivers[i]._driver, AP_UAVCAN::var_info);
+                AP_Param::load_object_from_eeprom(_drivers[i]._uavcan, AP_UAVCAN::var_info);
+            } else if (prot_type == Protocol_Type_KDECAN) {
+// To be replaced with macro saying if KDECAN library is included
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+                _drivers[i]._driver = _drivers[i]._kdecan =  new AP_KDECAN;
 
-                _drivers[i]._driver->init(i);
+                 if (_drivers[i]._driver == nullptr) {
+                    AP_HAL::panic("Failed to allocate KDECAN %d\n\r", i + 1);
+                    continue;
+                }
+
+                AP_Param::load_object_from_eeprom(_drivers[i]._kdecan, AP_KDECAN::var_info);
+#endif
+            } else if (prot_type == Protocol_Type_ToshibaCAN) {
+                _drivers[i]._driver = _drivers[i]._tcan = new AP_ToshibaCAN;
+
+                if (_drivers[i]._driver == nullptr) {
+                    AP_BoardConfig::sensor_config_error("ToshibaCAN init failed");
+                    continue;
+                }
+            } else {
+                continue;
             }
+#if !HAL_MINIMIZE_FEATURES
+            if (_slcan._can_port == 0) {
+                _drivers[i]._driver->init(i, true);
+            } else {
+                _drivers[i]._driver->init(i, false);
+            }
+#endif
         }
     }
 }

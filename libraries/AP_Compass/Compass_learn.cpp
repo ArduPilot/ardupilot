@@ -3,7 +3,7 @@
 
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Declination/AP_Declination.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include "Compass_learn.h"
 #include <GCS_MAVLink/GCS.h>
@@ -104,7 +104,7 @@ void CompassLearn::update(void)
     }
 
     if (sample_available) {
-        DataFlash_Class::instance()->Log_Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
+        AP::logger().Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
                                                AP_HAL::micros64(),
                                                (double)best_offsets.x,
                                                (double)best_offsets.y,

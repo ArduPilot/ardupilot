@@ -32,14 +32,7 @@ const AP_FWVersion AP_FWVersion::fwver{
     .fw_string = THISFIRMWARE " (" GIT_VERSION ")",
     .fw_hash_str = GIT_VERSION,
 #endif
-#ifdef PX4_GIT_VERSION
-    .middleware_name = "PX4",
-    .middleware_hash_str = PX4_GIT_VERSION,
-#endif
-#ifdef NUTTX_GIT_VERSION
-    .os_name = "NuttX",
-    .os_hash_str = NUTTX_GIT_VERSION,
-#elif defined(CHIBIOS_GIT_VERSION)
+#ifdef CHIBIOS_GIT_VERSION
     .middleware_name = nullptr,
     .middleware_hash_str = nullptr,
     .os_name = "ChibiOS",

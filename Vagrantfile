@@ -6,7 +6,6 @@
 # xterm # X11 forwarding should work
 # sim_vehicle.py --debug --gdb
 # sim_vehicle.py --valgrind
-# time (cd /vagrant && ./waf configure --board=px4-v2 && ./waf build --target=bin/ardusub) # ~17 minutes
 # time (cd /vagrant && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~9 minutes
 # time (cd /vagrant && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
 # time (cd /vagrant && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)
@@ -17,6 +16,7 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.ssh.forward_x11 = true
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -42,7 +42,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # removing this line causes "A box must be specified." error
   # and this is the default box that will be booted if no name is specified
-  config.vm.box = "ubuntu/artful32"
+  config.vm.box = "ubuntu/bionic64"
 
   # LTS, EOL April, 2019:
   config.vm.define "trusty32", autostart: false do |trusty32|
@@ -88,7 +88,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # 17.10, EOL July 2018
-  config.vm.define "artful32", primary: true do |artful32|
+  # Only kept around for those few dev's who have already got this image and continue to use it; not available for download
+  config.vm.define "artful32", autostart: false do |artful32|
     config.vm.box = "ubuntu/artful32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
@@ -108,7 +109,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # 18.04 LTS , bleeding edge.
-  config.vm.define "bionic64", autostart: false do |bionic64|
+  config.vm.define "bionic64", primary: true do |bionic64|
     config.vm.box = "ubuntu/bionic64"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|

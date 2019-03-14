@@ -9,6 +9,8 @@ const AP_FWVersion AP_FWVersion::fwver
     fw_string: "Dummy GCS"
 };
 
+const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
+
 /*
  *  GCS backend used for many examples and tools
  */
@@ -22,9 +24,6 @@ class GCS_MAVLINK_Dummy : public GCS_MAVLINK
 
 protected:
 
-    AP_Mission *get_mission() override { return nullptr; }
-    AP_Rally *get_rally() const override { return nullptr; };
-
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };
 
@@ -34,6 +33,11 @@ protected:
     uint32_t custom_mode() const override { return 3; } // magic number
     MAV_STATE system_status() const override { return MAV_STATE_CALIBRATING; }
 
+    bool set_home_to_current_location(bool lock) override { return false; }
+    bool set_home(const Location& loc, bool lock) override { return false; }
+
+    void send_nav_controller_output() const override {};
+    void send_pid_tuning() override {};
 };
 
 /*
@@ -50,4 +54,6 @@ class GCS_Dummy : public GCS
     const GCS_MAVLINK_Dummy &chan(const uint8_t ofs) const override { return dummy_backend; };
 
     void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) { hal.console->printf("TOGCS: %s\n", text); }
+
+    void update_sensor_status_flags(void) override {};
 };

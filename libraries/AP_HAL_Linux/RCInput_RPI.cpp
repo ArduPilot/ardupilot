@@ -33,7 +33,7 @@
 
 //Parametres
 #define RCIN_RPI_BUFFER_LENGTH   4
-#define RCIN_RPI_SAMPLE_FREQ     500
+#define RCIN_RPI_SAMPLE_FREQ     125
 #define RCIN_RPI_DMA_CHANNEL     0
 #define RCIN_RPI_MAX_SIZE_LINE   50
 #define RCIN_RPI_MAX_COUNTER     (RCIN_RPI_BUFFER_LENGTH * PAGE_SIZE * 2) // 1 circle_buffer
@@ -335,7 +335,7 @@ void RCInput_RPI::init_ctrl_data()
         cbp += sizeof(dma_cb_t);
 
         // Delay (for setting sampling frequency)
-        /* DMA is waiting data request signal (DREQ) from PCM. PCM is set for 5 MhZ freqency, so,
+        /* DMA is waiting data request signal (DREQ) from PCM. PCM is set for 1.25 MhZ freqency, so,
            each sample of GPIO is limited by writing to PCA queue.
         */
         cbp_curr = (dma_cb_t *)con_blocks->get_page(con_blocks->_virt_pages, cbp);

@@ -74,8 +74,8 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     GOBJECT(compass, "COMPASS_", Compass),
 
     // @Group: LOG
-    // @Path: ../libraries/DataFlash/DataFlash.cpp
-    GOBJECT(dataflash, "LOG", DataFlash_Class),
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(dataflash, "LOG", AP_Logger),
     
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
@@ -326,7 +326,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     }
 }
 
-class IMUCounter : public DataFlashFileReader {
+class IMUCounter : public AP_LoggerFileReader {
 public:
     IMUCounter() {}
     bool handle_log_format_msg(const struct log_Format &f);
@@ -614,13 +614,13 @@ void Replay::set_signal_handlers(void)
 void Replay::write_ekf_logs(void)
 {
     if (!LogReader::in_list("EKF", nottypes)) {
-        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs);
+        _vehicle.dataflash.Write_EKF(_vehicle.ahrs);
     }
     if (!LogReader::in_list("AHRS2", nottypes)) {
-        _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
+        _vehicle.dataflash.Write_AHRS2(_vehicle.ahrs);
     }
     if (!LogReader::in_list("POS", nottypes)) {
-        _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
+        _vehicle.dataflash.Write_POS(_vehicle.ahrs);
     }
 }
 
@@ -639,7 +639,9 @@ void Replay::read_sensors(const char *type)
                      loc.lng * 1.0e-7f,
                      loc.alt * 0.01f,
                      AP_HAL::millis()*0.001f);
-            _vehicle.ahrs.set_home(loc);
+            if (!_vehicle.ahrs.set_home(loc)) {
+                ::printf("Failed to set home to that location!");
+            }
             _vehicle.compass.set_initial_location(loc.lat, loc.lng);
             done_home_init = true;
         }
@@ -728,7 +730,7 @@ void Replay::log_check_generate(void)
     _vehicle.EKF2.getVelNED(-1,velocity);
     _vehicle.EKF2.getLLH(loc);
 
-    _vehicle.dataflash.Log_Write(
+    _vehicle.dataflash.Write(
         "CHEK",
         "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD",
         "sdddDUmnnn",
@@ -766,7 +768,7 @@ void Replay::log_check_solution(void)
     float pitch_error = degrees(fabsf(euler.y - check_state.euler.y));
     float yaw_error = wrap_180_cd(100*degrees(fabsf(euler.z - check_state.euler.z)))*0.01f;
     float vel_error = (velocity - check_state.velocity).length();
-    float pos_error = get_distance(check_state.pos, loc);
+    float pos_error = check_state.pos.get_distance(loc);
 
     check_result.max_roll_error  = MAX(check_result.max_roll_error,  roll_error);
     check_result.max_pitch_error = MAX(check_result.max_pitch_error, pitch_error);

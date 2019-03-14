@@ -296,6 +296,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// flip - fly vehicle in flip in pitch and roll direction mode
+#ifndef MODE_FLIP_ENABLED
+# define MODE_FLIP_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Follow - follow another vehicle or GCS
 #ifndef MODE_FOLLOW_ENABLED
 # define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
@@ -698,6 +704,18 @@
   #error Helicopter frame requires acro mode support which is disabled
 #endif
 
+#if MODE_SMARTRTL_ENABLED && !MODE_RTL_ENABLED
+  #error SmartRTL requires ModeRTL which is disabled
+#endif
+
+#if ADSB_ENABLED && !MODE_GUIDED_ENABLED
+  #error ADSB requires ModeGuided which is disabled
+#endif
+
+#if MODE_FOLLOW_ENABLED && !MODE_GUIDED_ENABLED
+  #error Follow requires ModeGuided which is disabled
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
@@ -737,4 +755,8 @@
 
 #ifndef OSD_ENABLED
  #define OSD_ENABLED DISABLED
+#endif
+
+#ifndef HAL_FRAME_TYPE_DEFAULT
+#define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif

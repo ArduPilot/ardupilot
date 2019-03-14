@@ -74,7 +74,7 @@ void Sub::rpm_update(void)
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RCIN)) {
-            DataFlash.Log_Write_RPM(rpm_sensor);
+            logger.Write_RPM(rpm_sensor);
         }
     }
 }
@@ -83,7 +83,8 @@ void Sub::rpm_update(void)
 // initialise compass
 void Sub::init_compass()
 {
-    if (!compass.init() || !compass.read()) {
+    compass.init();
+    if (!compass.read()) {
         // make sure we don't pass a broken compass to DCM
         hal.console->println("COMPASS INIT ERROR");
         Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);

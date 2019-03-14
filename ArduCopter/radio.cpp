@@ -32,7 +32,7 @@ void Copter::init_rc_in()
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
 
-    //set auxiliary servo ranges
+    // set auxiliary servo ranges
     rc().channel(CH_5)->set_range(1000);
     rc().channel(CH_6)->set_range(1000);
     rc().channel(CH_7)->set_range(1000);
@@ -99,7 +99,7 @@ void Copter::read_radio()
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
         if (!ap.rc_receiver_present) {
-            // RC receiver must be attached if we've just go input and
+            // RC receiver must be attached if we've just got input and
             // there are no overrides
             ap.rc_receiver_present = !RC_Channels::has_active_overrides();
         }
@@ -191,7 +191,7 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     // if not using throttle interlock and non-zero throttle and not E-stopped,
     // or using motor interlock and it's enabled, then motors are running, 
     // and we are flying. Immediately set as non-zero
-    if ((!ap.using_interlock && (throttle_control > 0) && !ap.motor_emergency_stop) ||
+    if ((!ap.using_interlock && (throttle_control > 0) && !SRV_Channels::get_emergency_stop()) ||
         (ap.using_interlock && motors->get_interlock()) ||
         ap.armed_with_switch) {
         last_nonzero_throttle_ms = tnow_ms;

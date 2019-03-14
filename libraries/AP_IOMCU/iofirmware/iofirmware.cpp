@@ -28,7 +28,10 @@
 
 extern const AP_HAL::HAL &hal;
 
-//#pragma GCC optimize("Og")
+// we build this file with optimisation to lower the interrupt
+// latency. This helps reduce the chance of losing an RC input byte
+// due to missing a UART interrupt
+#pragma GCC optimize("O3")
 
 static AP_IOMCU_FW iomcu;
 
@@ -335,10 +338,11 @@ void AP_IOMCU_FW::process_io_packet()
         calc_crc = crc_crc8((const uint8_t *)&rx_io_packet, pkt_size);
     }
     if (rx_crc != calc_crc || rx_io_packet.count > PKT_MAX_REGS) {
-        memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
         tx_io_packet.count = 0;
         tx_io_packet.code = CODE_CORRUPT;
         tx_io_packet.crc = 0;
+        tx_io_packet.page = 0;
+        tx_io_packet.offset = 0;
         tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
         stats.num_bad_crc++;
         return;
@@ -347,10 +351,11 @@ void AP_IOMCU_FW::process_io_packet()
     case CODE_READ: {
         stats.num_code_read++;
         if (!handle_code_read()) {
-            memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
             tx_io_packet.count = 0;
             tx_io_packet.code = CODE_ERROR;
             tx_io_packet.crc = 0;
+            tx_io_packet.page = 0;
+            tx_io_packet.offset = 0;
             tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
         }
     }
@@ -358,10 +363,11 @@ void AP_IOMCU_FW::process_io_packet()
     case CODE_WRITE: {
         stats.num_write_pkt++;
         if (!handle_code_write()) {
-            memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
             tx_io_packet.count = 0;
             tx_io_packet.code = CODE_ERROR;
             tx_io_packet.crc = 0;
+            tx_io_packet.page = 0;
+            tx_io_packet.offset = 0;
             tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
         }
     }
@@ -371,8 +377,6 @@ void AP_IOMCU_FW::process_io_packet()
     }
     break;
     }
-    rx_io_last = rx_io_packet;
-    memset((void *)&rx_io_packet, 0x42, sizeof(rx_io_packet));
 }
 
 /*
@@ -596,10 +600,11 @@ bool AP_IOMCU_FW::handle_code_write()
     default:
         break;
     }
-    memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
     tx_io_packet.count = 0;
     tx_io_packet.code = CODE_SUCCESS;
     tx_io_packet.crc = 0;
+    tx_io_packet.page = 0;
+    tx_io_packet.offset = 0;
     tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
     return true;
 }

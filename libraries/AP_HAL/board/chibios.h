@@ -96,3 +96,7 @@
 #define HAL_I2C_INTERNAL_MASK 1
 #endif
 
+// put all storage of files under /APM directory
+#ifndef HAL_BOARD_STORAGE_DIRECTORY
+#define HAL_BOARD_STORAGE_DIRECTORY "/APM"
+#endif

@@ -17,6 +17,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 
@@ -191,7 +192,7 @@ public:
         float release_rate;     // release rate in meters/second
     };
 
-    union PACKED Content {
+    union Content {
         // jump structure
         Jump_Command jump;
 
@@ -256,11 +257,7 @@ public:
         Winch_Command winch;
 
         // location
-        Location location;      // Waypoint location
-
-        // raw bytes, for reading/writing to eeprom. Note that only 10 bytes are available
-        // if a 16 bit command ID is used
-        uint8_t bytes[12];
+        Location location{};      // Waypoint location
     };
 
     // command structure
@@ -384,7 +381,7 @@ public:
     /// replace_cmd - replaces the command at position 'index' in the command list with the provided cmd
     ///     replacing the current active command will have no effect until the command is restarted
     ///     returns true if successfully replaced, false on failure
-    bool replace_cmd(uint16_t index, Mission_Command& cmd);
+    bool replace_cmd(uint16_t index, const Mission_Command& cmd);
 
     /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
     static bool is_nav_cmd(const Mission_Command& cmd);
@@ -436,7 +433,7 @@ public:
     /// write_cmd_to_storage - write a command to storage
     ///     cmd.index is used to calculate the storage location
     ///     true is returned if successful
-    bool write_cmd_to_storage(uint16_t index, Mission_Command& cmd);
+    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
 
     /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
     ///     home is taken directly from ahrs
@@ -469,11 +466,17 @@ public:
     // available.
     bool jump_to_landing_sequence(void);
 
+    // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
+    bool jump_to_abort_landing_sequence(void);
+
     // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
     // storage while working with multiple waypoints
     HAL_Semaphore_Recursive &get_semaphore(void) {
         return _rsem;
     }
+
+    // returns true if the mission contains the requested items
+    bool contains_item(MAV_CMD command) const;
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -482,6 +485,8 @@ private:
     static AP_Mission *_singleton;
 
     static StorageAccess _storage;
+
+    static bool stored_in_location(uint16_t id);
 
     struct Mission_Flags {
         mission_state state;
@@ -578,6 +583,7 @@ private:
     bool start_command_do_gripper(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd);
     bool start_command_camera(const AP_Mission::Mission_Command& cmd);
+    bool start_command_parachute(const AP_Mission::Mission_Command& cmd);
 };
 
 namespace AP {

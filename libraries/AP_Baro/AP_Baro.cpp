@@ -165,14 +165,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 };
 
 // singleton instance
-AP_Baro *AP_Baro::_instance;
+AP_Baro *AP_Baro::_singleton;
 
 /*
   AP_Baro constructor
  */
 AP_Baro::AP_Baro()
 {
-    _instance = this;
+    _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -530,6 +530,7 @@ void AP_Baro::init(void)
         break;
 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
         break;
@@ -589,21 +590,6 @@ void AP_Baro::init(void)
                                       std::move(hal.spi->get_device(HAL_BARO_LPS22H_NAME))));
 #endif
 
-#if defined(BOARD_I2C_BUS_EXT) && CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_MS5611_I2C_ADDR))));
-
-    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP280_I2C_ADDR))));
-  #ifdef HAL_BARO_BMP280_I2C_ADDR_ALT
-    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP280_I2C_ADDR_ALT))));
-  #endif
-
-    ADD_BACKEND(AP_Baro_BMP085::probe(*this,
-                                      std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP085_I2C_ADDR))));
-#endif
-
     // can optionally have baro on I2C too
     if (_ext_bus >= 0) {
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -615,18 +601,6 @@ void AP_Baro::init(void)
 #else
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
-
- #if CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT // we don't know which baro user will solder
-
-        ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP280_I2C_ADDR))));
-  #ifdef HAL_BARO_BMP280_I2C_ADDR_ALT
-        ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP280_I2C_ADDR_ALT))));
-  #endif
-        ADD_BACKEND(AP_Baro_BMP085::probe(*this,
-                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP085_I2C_ADDR))));
- #endif
 #endif
     }
 
@@ -634,7 +608,7 @@ void AP_Baro::init(void)
     _probe_i2c_barometers();
 #endif
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_F4LIGHT && !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
+#if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::sensor_config_error("Baro: unable to initialise driver");
@@ -734,7 +708,7 @@ void AP_Baro::_probe_i2c_barometers(void)
 
 bool AP_Baro::should_df_log() const
 {
-    DataFlash_Class *instance = DataFlash_Class::instance();
+    AP_Logger *instance = AP_Logger::get_singleton();
     if (instance == nullptr) {
         return false;
     }
@@ -816,7 +790,7 @@ void AP_Baro::update(void)
 
     // logging
     if (should_df_log() && !AP::ahrs().have_ekf_logging()) {
-        DataFlash_Class::instance()->Log_Write_Baro();
+        AP::logger().Write_Baro();
     }
 }
 
@@ -868,7 +842,7 @@ namespace AP {
 
 AP_Baro &baro()
 {
-    return *AP_Baro::get_instance();
+    return *AP_Baro::get_singleton();
 }
 
 };

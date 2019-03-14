@@ -54,6 +54,15 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VM_I_COUNT", 2, AP_Scripting, _script_vm_exec_count, 10000),
 
+    // @Param: HEAP_SIZE
+    // @DisplayName: Scripting Heap Size
+    // @Description: Amount of memory available for scripting
+    // @Range: 1024 1048576
+    // @Increment: 1024
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("HEAP_SIZE", 3, AP_Scripting, _script_heap_size, 32*1024),
+
     AP_GROUPEND
 };
 
@@ -83,7 +92,7 @@ bool AP_Scripting::init(void) {
 }
 
 void AP_Scripting::thread(void) {
-    lua_scripts *lua = new lua_scripts(_script_vm_exec_count);
+    lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size);
     if (lua == nullptr) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to allocate scripting memory");
         return;

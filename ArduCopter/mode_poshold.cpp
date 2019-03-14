@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_POSHOLD_ENABLED == ENABLED
+
 /*
  * Init and run calls for PosHold flight mode
  *     PosHold tries to improve upon regular loiter by mixing the pilot input with the loiter controller
@@ -72,11 +74,6 @@ static struct {
 // poshold_init - initialise PosHold controller
 bool Copter::ModePosHold::init(bool ignore_checks)
 {
-    // fail to initialise PosHold mode if no GPS lock
-    if (!copter.position_ok() && !ignore_checks) {
-        return false;
-    }
-    
     // initialize vertical speeds and acceleration
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
@@ -139,7 +136,7 @@ void Copter::ModePosHold::run()
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         loiter_nav->init_target();
-        zero_throttle_and_relax_ac();
+        zero_throttle_and_relax_ac(copter.is_tradheli() && motors->get_interlock());
         pos_control->relax_alt_hold_controllers(0.0f);
         return;
     }
@@ -184,12 +181,17 @@ void Copter::ModePosHold::run()
 
     // if landed initialise loiter targets, set throttle to zero and exit
     if (ap.land_complete) {
+#if FRAME_CONFIG == HELI_FRAME
+        // helicopters do not spool down when landed.  Only when commanded to go to ground idle by pilot.
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+#else
         // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
+#endif
         loiter_nav->init_target();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
@@ -600,7 +602,7 @@ void Copter::ModePosHold::poshold_update_wind_comp_estimate()
     }
 
     // check horizontal velocity is low
-    if (inertial_nav.get_velocity_xy() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX) {
+    if (inertial_nav.get_speed_xy() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX) {
         return;
     }
 
@@ -662,3 +664,5 @@ void Copter::ModePosHold::poshold_pitch_controller_to_pilot_override()
     // store final loiter outputs for mixing with pilot input
     poshold.controller_final_pitch = poshold.pitch;
 }
+
+#endif

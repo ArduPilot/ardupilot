@@ -1,11 +1,10 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
 
@@ -219,7 +218,7 @@ void NavEKF2_core::InitialiseVariables()
     lastInnovPassTime_ms = 0;
     lastInnovFailTime_ms = 0;
     gpsAccuracyGood = false;
-    memset(&gpsloc_prev, 0, sizeof(gpsloc_prev));
+    gpsloc_prev = {};
     gpsDriftNE = 0.0f;
     gpsVertVelFilt = 0.0f;
     gpsHorizVelFilt = 0.0f;
@@ -566,6 +565,28 @@ void NavEKF2_core::UpdateFilter(bool predict)
 #if EK2_DISABLE_INTERRUPTS
     irqrestore(istate);
 #endif
+
+    /*
+      this is a check to cope with a vehicle sitting idle on the
+      ground and getting over-confident of the state. The symptoms
+      would be "gyros still settling" when the user tries to arm. In
+      that state the EKF can't recover, so we do a hard reset and let
+      it try again.
+     */
+    if (filterStatus.value != 0) {
+        last_filter_ok_ms = AP_HAL::millis();
+    }
+    if (filterStatus.value == 0 &&
+        last_filter_ok_ms != 0 &&
+        AP_HAL::millis() - last_filter_ok_ms > 5000 &&
+        !hal.util->get_soft_armed()) {
+        // we've been unhealthy for 5 seconds after being healthy, reset the filter
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u forced reset",(unsigned)imu_index);
+        last_filter_ok_ms = 0;
+        statesInitialised = false;
+        InitialiseFilterBootstrap();
+    }
+    
 }
 
 void NavEKF2_core::correctDeltaAngle(Vector3f &delAng, float delAngDT)
@@ -585,7 +606,7 @@ void NavEKF2_core::correctDeltaVelocity(Vector3f &delVel, float delVelDT)
  * Update the quaternion, velocity and position states using delayed IMU measurements
  * because the EKF is running on a delayed time horizon. Note that the quaternion is
  * not used by the EKF equations, which instead estimate the error in the attitude of
- * the vehicle when each observtion is fused. This attitude error is then used to correct
+ * the vehicle when each observation is fused. This attitude error is then used to correct
  * the quaternion.
 */
 void NavEKF2_core::UpdateStrapdownEquationsNED()
@@ -1356,7 +1377,7 @@ void NavEKF2_core::StoreQuatReset()
 }
 
 // Rotate the stored output quaternion history through a quaternion rotation
-void NavEKF2_core::StoreQuatRotate(Quaternion deltaQuat)
+void NavEKF2_core::StoreQuatRotate(const Quaternion &deltaQuat)
 {
     outputDataNew.quat = outputDataNew.quat*deltaQuat;
     // write current measurement to entire table
@@ -1500,7 +1521,7 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         lastYawReset_ms = imuSampleTime_ms;
         // calculate an initial quaternion using the new yaw value
         initQuat.from_euler(roll, pitch, yaw);
-        // zero the attitude covariances becasue the corelations will now be invalid
+        // zero the attitude covariances because the corelations will now be invalid
         zeroAttCovOnly();
 
         // calculate initial Tbn matrix and rotate Mag measurements into NED
@@ -1554,4 +1575,3 @@ void NavEKF2_core::zeroAttCovOnly()
     }
 }
 
-#endif // HAL_CPU_CLASS

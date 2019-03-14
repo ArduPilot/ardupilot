@@ -29,7 +29,6 @@
 #define LOG_ARM_DISARM_MSG      0x08
 #define LOG_STEERING_MSG        0x0D
 #define LOG_GUIDEDTARGET_MSG    0x0E
-#define LOG_WHEELENCODER_MSG    0x0F
 #define LOG_ERROR_MSG           0x13
 
 #define TYPE_AIRSTART_MSG       0x00
@@ -74,8 +73,16 @@
 #define ERROR_SUBSYSTEM_FAILSAFE_FENCE  9
 #define ERROR_SUBSYSTEM_FLIGHT_MODE     10
 #define ERROR_SUBSYSTEM_CRASH_CHECK     12
+#define ERROR_SUBSYSTEM_EKFCHECK        16
+#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH 1
+// EKF check definitions
+#define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
+#define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
+// subsystem specific error codes -- ekf failsafe
+#define ERROR_CODE_FAILSAFE_RESOLVED        0
+#define ERROR_CODE_FAILSAFE_OCCURRED        1
 
 // radio failsafe enum (FS_THR_ENABLE parameter)
 enum fs_thr_enable {
@@ -97,7 +104,12 @@ enum fs_crash_action {
   FS_CRASH_HOLD_AND_DISARM = 2
 };
 
-#define DISTANCE_HOME_MAX 0.5f  // Distance max to home location before changing it when disarm
+enum fs_ekf_action {
+    FS_EKF_DISABLE = 0,
+    FS_EFK_HOLD = 1
+};
+
+#define DISTANCE_HOME_MINCHANGE 0.5f  // minimum distance to adjust home location
 
 enum mode_reason_t {
     MODE_REASON_INITIALISED = 0,
@@ -108,6 +120,7 @@ enum mode_reason_t {
     MODE_REASON_CRASH_FAILSAFE,
     MODE_REASON_MISSION_COMMAND,
     MODE_REASON_FENCE_BREACH,
+    MODE_REASON_EKF_FAILSAFE,
 };
 
 enum pilot_steer_type_t {

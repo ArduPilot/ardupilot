@@ -43,7 +43,6 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
-#include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>       // APM relay
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed/AP_Airspeed.h>
@@ -59,7 +58,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_Scheduler/PerfInfo.h>                  // loop perf monitoring
 
@@ -151,6 +150,7 @@ public:
     friend class ParametersG2;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
+    friend class QAutoTune;
     friend class AP_Tuning_Plane;
     friend class AP_AdvancedFailsafe_Plane;
     friend class AP_Avoidance_Plane;
@@ -196,7 +196,7 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
-    DataFlash_Class DataFlash;
+    AP_Logger logger;
 
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
@@ -232,8 +232,8 @@ private:
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
 
     // Attitude to servo controllers
-    AP_RollController rollController{ahrs, aparm, DataFlash};
-    AP_PitchController pitchController{ahrs, aparm, DataFlash};
+    AP_RollController rollController{ahrs, aparm};
+    AP_PitchController pitchController{ahrs, aparm};
     AP_YawController yawController{ahrs, aparm};
     AP_SteerController steerController{ahrs};
 
@@ -291,7 +291,7 @@ private:
 #endif
 
     // Rally Ponints
-    AP_Rally rally{ahrs};
+    AP_Rally rally;
 
     // RSSI
     AP_RSSI rssi;
@@ -316,9 +316,6 @@ private:
 
     // This is used to enable the inverted flight feature
     bool inverted_flight;
-
-    // This is used to enable the PX4IO override for testing
-    bool px4io_override_enabled;
 
     // Failsafe
     struct {
@@ -357,6 +354,7 @@ private:
 
     enum Landing_ApproachStage {
         LOITER_TO_ALT,
+        ENSURE_RADIUS,
         WAIT_FOR_BREAKOUT,
         APPROACH_LINE,
         VTOL_LANDING,
@@ -409,18 +407,13 @@ private:
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
+    AP_Frsky_Telem frsky_telemetry;
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
     // DEVO-M telemetry support
-    AP_DEVO_Telem devo_telemetry {ahrs};
+    AP_DEVO_Telem devo_telemetry;
 #endif
 
-    // Variables for extended status MAVLink messages
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
- 
     // Airspeed Sensors
     AP_Airspeed airspeed;
 
@@ -639,7 +632,7 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
-    AP_Terrain terrain{mission, rally};
+    AP_Terrain terrain{mission};
 #endif
 
     AP_Landing landing{mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
@@ -790,30 +783,18 @@ private:
     AP_Tuning_Plane tuning;
 
     static const struct LogStructure log_structure[];
-    
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    // the crc of the last created PX4Mixer
-    int32_t last_mixer_crc = -1;
-#endif // CONFIG_HAL_BOARD
-    
+
+    // rudder mixing gain for differential thrust (0 - 1)
+    float rudder_dt;
+
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_fence_status(mavlink_channel_t chan);
-    void update_sensor_status_flags(void);
-    void send_extended_status1(mavlink_channel_t chan);
-    void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
-    void send_pid_info(const mavlink_channel_t chan, const DataFlash_Class::PID_Info *pid_info, const uint8_t axis, const float achieved);
-    void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
 
     void send_aoa_ssa(mavlink_channel_t chan);
-
-    void gcs_data_stream_send(void);
-    void gcs_update(void);
-    void gcs_send_airspeed_calibration(const Vector3f &vg);
-    void gcs_retry_deferred(void);
 
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
@@ -859,15 +840,13 @@ private:
     void set_guided_WP(void);
     void update_home();
     // set home location and store it persistently:
-    void set_home_persistently(const Location &loc);
-    // set home location:
-    void set_home(const Location &loc);
+    bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
     void do_RTL(int32_t alt);
     bool verify_takeoff();
-    bool verify_loiter_unlim();
+    bool verify_loiter_unlim(const AP_Mission::Mission_Command &cmd);
     bool verify_loiter_time();
-    bool verify_loiter_turns();
-    bool verify_loiter_to_alt();
+    bool verify_loiter_turns(const AP_Mission::Mission_Command &cmd);
+    bool verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd);
     bool verify_RTL();
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();
@@ -891,7 +870,6 @@ private:
     void failsafe_short_off_event(mode_reason_t reason);
     void failsafe_long_off_event(mode_reason_t reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
-    void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);
     void set_fence_point_with_index(const Vector2l &point, unsigned i);
@@ -921,13 +899,6 @@ private:
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
     bool reached_loiter_target(void);
-    bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);
-    uint16_t create_mixer(char *buf, uint16_t buf_size, const char *filename);
-    bool mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan);
-    bool mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan1, uint8_t in_chan2, bool left_channel);
-    bool mix_passthrough(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan);
-    bool mix_trim_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan);
-    bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out_main();
@@ -954,7 +925,7 @@ private:
     int8_t throttle_percentage(void);
     void change_arm_state(void);
     bool disarm_motors(void);
-    bool arm_motors(AP_Arming::ArmingMethod method, bool do_arming_checks=true);
+    bool arm_motors(AP_Arming::Method method, bool do_arming_checks=true);
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
     void takeoff_calc_pitch(void);
@@ -1017,8 +988,9 @@ private:
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
-    void throttle_slew_limit(void);
+    void throttle_slew_limit(SRV_Channel::Aux_servo_function_t func);
     bool suppress_throttle(void);
+    void update_throttle_hover();
     void channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
                                 SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out);
     void flaperon_update(int8_t flap_percent);
@@ -1047,7 +1019,6 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void notify_flight_mode(enum FlightMode mode);
     void log_init();
-    void init_capabilities(void);
     void parachute_check();
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
@@ -1063,8 +1034,6 @@ private:
     void update_soaring();
 #endif
 
-    void read_aux_all();
-
     bool reversed_throttle;
     bool have_reverse_throttle_rc_option;
     bool allow_reverse_thrust(void) const;
@@ -1079,12 +1048,14 @@ private:
         Failsafe_Action_None      = 0,
         Failsafe_Action_RTL       = 1,
         Failsafe_Action_Land      = 2,
-        Failsafe_Action_Terminate = 3
+        Failsafe_Action_Terminate = 3,
+        Failsafe_Action_QLand     = 4,
     };
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
+                                                      Failsafe_Action_QLand,
                                                       Failsafe_Action_Land,
                                                       Failsafe_Action_RTL,
                                                       Failsafe_Action_None,

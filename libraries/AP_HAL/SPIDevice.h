@@ -61,6 +61,9 @@ public:
     /* See Device::adjust_periodic_callback() */
     virtual bool adjust_periodic_callback(
         PeriodicHandle h, uint32_t period_usec) override { return false; }
+
+    // setup a bus clock slowdown factor (optional interface)
+    virtual void set_slowdown(uint8_t slowdown) {}
 };
 
 class SPIDeviceManager {

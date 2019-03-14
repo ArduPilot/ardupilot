@@ -24,6 +24,7 @@
 #include <AP_Param/AP_Param.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
+#include "AP_UAVCAN_Servers.h"
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192
@@ -67,7 +68,7 @@ public:
     // Return uavcan from @driver_index or nullptr if it's not ready or doesn't exist
     static AP_UAVCAN *get_uavcan(uint8_t driver_index);
 
-    void init(uint8_t driver_index) override;
+    void init(uint8_t driver_index, bool enable_filters) override;
 
     uavcan::Node<0>* get_node() { return _node; }
     uint8_t get_driver_index() { return _driver_index; }
@@ -152,13 +153,14 @@ private:
     AP_Int32 _esc_bm;
     AP_Int16 _servo_rate_hz;
 
-
     uavcan::Node<0> *_node;
     uavcan::HeapBasedPoolAllocator<UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
     uint8_t _driver_index;
     char _thread_name[9];
     bool _initialized;
-
+#ifdef HAS_UAVCAN_SERVERS
+    AP_UAVCAN_Servers _servers;
+#endif
 
     ///// SRV output /////
     struct {

@@ -39,12 +39,15 @@ public:
     virtual bool tx_pending() = 0;
 
     // lock a port for exclusive use. Use a key of 0 to unlock
-    virtual bool lock_port(uint32_t key) { return false; }
+    virtual bool lock_port(uint32_t write_key, uint32_t read_key) { return false; }
 
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     virtual size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) { return 0; }
 
+    // read from a locked port. If port is locked and key is not correct then 0 is returned
+    virtual int16_t read_locked(uint32_t key) { return -1; }
+    
     // control optional features
     virtual bool set_options(uint8_t options) { return options==0; }
 

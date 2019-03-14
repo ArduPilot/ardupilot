@@ -17,7 +17,7 @@
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -187,7 +187,7 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 }
 
 // set_trim
-void AP_AHRS::set_trim(Vector3f new_trim)
+void AP_AHRS::set_trim(const Vector3f &new_trim)
 {
     Vector3f trim;
     trim.x = constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
@@ -214,9 +214,9 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
 }
 
 // Set the board mounting orientation, may be called while disarmed
-void AP_AHRS::set_orientation()
+void AP_AHRS::update_orientation()
 {
-    enum Rotation orientation = (enum Rotation)_board_orientation.get();
+    const enum Rotation orientation = (enum Rotation)_board_orientation.get();
     if (orientation != ROTATION_CUSTOM) {
         AP::ins().set_board_orientation(orientation);
         if (_compass != nullptr) {
@@ -289,7 +289,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
         Vector2f ret(cosf(yaw), sinf(yaw));
         ret *= airspeed;
         // adjust for estimated wind
-        Vector3f wind = wind_estimate();
+        const Vector3f wind = wind_estimate();
         ret.x += wind.x;
         ret.y += wind.y;
         return ret;
@@ -475,7 +475,7 @@ Vector2f AP_AHRS::rotate_body_to_earth2D(const Vector2f &bf) const
 // log ahrs home and EKF origin to dataflash
 void AP_AHRS::Log_Write_Home_And_Origin()
 {
-    DataFlash_Class *df = DataFlash_Class::instance();
+    AP_Logger *df = AP_Logger::get_singleton();
     if (df == nullptr) {
         return;
     }
@@ -483,13 +483,13 @@ void AP_AHRS::Log_Write_Home_And_Origin()
     // log ekf origin if set
     Location ekf_orig;
     if (get_origin(ekf_orig)) {
-        df->Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+        df->Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }
 #endif
 
     // log ahrs home if set
     if (home_is_set()) {
-        df->Log_Write_Origin(LogOriginType::ahrs_home, _home);
+        df->Write_Origin(LogOriginType::ahrs_home, _home);
     }
 }
 

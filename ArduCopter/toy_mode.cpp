@@ -42,56 +42,56 @@ const AP_Param::GroupInfo ToyMode::var_info[] = {
 
     // @Param: _ACTION1
     // @DisplayName: Tmode action 1
-    // @Description: This is the action taken for the left action button
+    // @Description: This is the action taken when the left action button is pressed
     // @Values: 0:None,1:TakePhoto,2:ToggleVideo,3:ModeAcro,4:ModeAltHold,5:ModeAuto,6:ModeLoiter,7:ModeRTL,8:ModeCircle,9:ModeLand,10:ModeDrift,11:ModeSport,12:ModeAutoTune,13:ModePosHold,14:ModeBrake,15:ModeThrow,16:Flip,17:ModeStabilize,18:Disarm,19:ToggleMode,20:Arm-Land-RTL,21:ToggleSimpleMode,22:ToggleSuperSimpleMode,23:MotorLoadTest,24:ModeFlowHold
     // @User: Standard
     AP_GROUPINFO("_ACTION1", 4, ToyMode, actions[0], ACTION_TOGGLE_VIDEO),
 
     // @Param: _ACTION2
     // @DisplayName: Tmode action 2
-    // @Description: This is the action taken for the right action button
+    // @Description: This is the action taken when the right action button is pressed
     // @Values: 0:None,1:TakePhoto,2:ToggleVideo,3:ModeAcro,4:ModeAltHold,5:ModeAuto,6:ModeLoiter,7:ModeRTL,8:ModeCircle,9:ModeLand,10:ModeDrift,11:ModeSport,12:ModeAutoTune,13:ModePosHold,14:ModeBrake,15:ModeThrow,16:Flip,17:ModeStabilize,18:Disarm,19:ToggleMode,20:Arm-Land-RTL,21:ToggleSimpleMode,22:ToggleSuperSimpleMode,23:MotorLoadTest,24:ModeFlowHold
     // @User: Standard
     AP_GROUPINFO("_ACTION2", 5, ToyMode, actions[1], ACTION_TAKE_PHOTO),
 
     // @Param: _ACTION3
     // @DisplayName: Tmode action 3
-    // @Description: This is the action taken for the power button
+    // @Description: This is the action taken when the power button is pressed
     // @Values: 0:None,1:TakePhoto,2:ToggleVideo,3:ModeAcro,4:ModeAltHold,5:ModeAuto,6:ModeLoiter,7:ModeRTL,8:ModeCircle,9:ModeLand,10:ModeDrift,11:ModeSport,12:ModeAutoTune,13:ModePosHold,14:ModeBrake,15:ModeThrow,16:Flip,17:ModeStabilize,18:Disarm,19:ToggleMode,20:Arm-Land-RTL,21:ToggleSimpleMode,22:ToggleSuperSimpleMode,23:MotorLoadTest,24:ModeFlowHold
     // @User: Standard
     AP_GROUPINFO("_ACTION3", 6, ToyMode, actions[2], ACTION_DISARM),
 
     // @Param: _ACTION4
     // @DisplayName: Tmode action 4
-    // @Description: This is the action taken for the left action button while the mode button is pressed
+    // @Description: This is the action taken when the left action button is pressed while the left (Mode) button is held down
     // @Values: 0:None,1:TakePhoto,2:ToggleVideo,3:ModeAcro,4:ModeAltHold,5:ModeAuto,6:ModeLoiter,7:ModeRTL,8:ModeCircle,9:ModeLand,10:ModeDrift,11:ModeSport,12:ModeAutoTune,13:ModePosHold,14:ModeBrake,15:ModeThrow,16:Flip,17:ModeStabilize,18:Disarm,19:ToggleMode,20:Arm-Land-RTL,21:ToggleSimpleMode,22:ToggleSuperSimpleMode,23:MotorLoadTest,24:ModeFlowHold
     // @User: Standard
     AP_GROUPINFO("_ACTION4", 7, ToyMode, actions[3], ACTION_NONE),
 
     // @Param: _ACTION5
     // @DisplayName: Tmode action 5
-    // @Description: This is the action taken for the right action button while the mode button is pressed
+    // @Description: This is the action taken when the right action is pressed while the left (Mode) button is held down
     // @Values: 0:None,1:TakePhoto,2:ToggleVideo,3:ModeAcro,4:ModeAltHold,5:ModeAuto,6:ModeLoiter,7:ModeRTL,8:ModeCircle,9:ModeLand,10:ModeDrift,11:ModeSport,12:ModeAutoTune,13:ModePosHold,14:ModeBrake,15:ModeThrow,16:Flip,17:ModeStabilize,18:Disarm,19:ToggleMode,20:Arm-Land-RTL,21:ToggleSimpleMode,22:ToggleSuperSimpleMode,23:MotorLoadTest,24:ModeFlowHold
     // @User: Standard
     AP_GROUPINFO("_ACTION5", 8, ToyMode, actions[4], ACTION_NONE),
 
     // @Param: _ACTION6
     // @DisplayName: Tmode action 6
-    // @Description: This is the action taken for the power button while the mode button is pressed
+    // @Description: This is the action taken when the power button is pressed while the left (Mode) button is held down
     // @Values: 0:None,1:TakePhoto,2:ToggleVideo,3:ModeAcro,4:ModeAltHold,5:ModeAuto,6:ModeLoiter,7:ModeRTL,8:ModeCircle,9:ModeLand,10:ModeDrift,11:ModeSport,12:ModeAutoTune,13:ModePosHold,14:ModeBrake,15:ModeThrow,16:Flip,17:ModeStabilize,18:Disarm,19:ToggleMode,20:Arm-Land-RTL,21:ToggleSimpleMode,22:ToggleSuperSimpleMode,23:MotorLoadTest,24:ModeFlowHold
     // @User: Standard
     AP_GROUPINFO("_ACTION6", 9, ToyMode, actions[5], ACTION_NONE),
 
     // @Param: _LEFT
     // @DisplayName: Tmode left action
-    // @Description: This is the action taken for the left button (mode button) being pressed
+    // @Description: This is the action taken when the left (Mode) button is pressed
     // @Values: 0:None,1:TakePhoto,2:ToggleVideo,3:ModeAcro,4:ModeAltHold,5:ModeAuto,6:ModeLoiter,7:ModeRTL,8:ModeCircle,9:ModeLand,10:ModeDrift,11:ModeSport,12:ModeAutoTune,13:ModePosHold,14:ModeBrake,15:ModeThrow,16:Flip,17:ModeStabilize,18:Disarm,19:ToggleMode,20:Arm-Land-RTL,21:ToggleSimpleMode,22:ToggleSuperSimpleMode,23:MotorLoadTest,24:ModeFlowHold
     // @User: Standard
     AP_GROUPINFO("_LEFT", 10, ToyMode, actions[6], ACTION_TOGGLE_MODE),
 
     // @Param: _LEFT_LONG
     // @DisplayName: Tmode left long action
-    // @Description: This is the action taken for a long press of the left button (home button)
+    // @Description: This is the action taken when the left (Mode) button is long-pressed
     // @Values: 0:None,1:TakePhoto,2:ToggleVideo,3:ModeAcro,4:ModeAltHold,5:ModeAuto,6:ModeLoiter,7:ModeRTL,8:ModeCircle,9:ModeLand,10:ModeDrift,11:ModeSport,12:ModeAutoTune,13:ModePosHold,14:ModeBrake,15:ModeThrow,16:Flip,17:ModeStabilize,18:Disarm,19:ToggleMode,20:Arm-Land-RTL,21:ToggleSimpleMode,22:ToggleSuperSimpleMode,23:MotorLoadTest,24:ModeFlowHold
     // @User: Standard
     AP_GROUPINFO("_LEFT_LONG", 11, ToyMode, actions[7], ACTION_NONE),
@@ -105,7 +105,7 @@ const AP_Param::GroupInfo ToyMode::var_info[] = {
 
     // @Param: _RIGHT
     // @DisplayName: Tmode right action
-    // @Description: This is the action taken for the right button (RTL) being pressed
+    // @Description: This is the action taken when the right (Return) button is pressed
     // @Values: 0:None,1:TakePhoto,2:ToggleVideo,3:ModeAcro,4:ModeAltHold,5:ModeAuto,6:ModeLoiter,7:ModeRTL,8:ModeCircle,9:ModeLand,10:ModeDrift,11:ModeSport,12:ModeAutoTune,13:ModePosHold,14:ModeBrake,15:ModeThrow,16:Flip,17:ModeStabilize,18:Disarm,19:ToggleMode,20:Arm-Land-RTL,21:ToggleSimpleMode,22:ToggleSuperSimpleMode,23:MotorLoadTest
     // @User: Standard
     AP_GROUPINFO("_RIGHT", 13, ToyMode, actions[8], ACTION_ARM_LAND_RTL),
@@ -424,7 +424,7 @@ void ToyMode::update()
         if (throttle_high_counter >= TOY_LAND_ARM_COUNT) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: throttle arm");
             arm_check_compass();
-            if (!copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK) && (flags & FLAG_UPGRADE_LOITER) && copter.control_mode == LOITER) {
+            if (!copter.init_arm_motors(AP_Arming::Method::MAVLINK) && (flags & FLAG_UPGRADE_LOITER) && copter.control_mode == LOITER) {
                 /*
                   support auto-switching to ALT_HOLD, then upgrade to LOITER once GPS available
                  */
@@ -433,7 +433,7 @@ void ToyMode::update()
 #if AC_FENCE == ENABLED
                     copter.fence.enable(false);
 #endif
-                    if (!copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK)) {
+                    if (!copter.init_arm_motors(AP_Arming::Method::MAVLINK)) {
                         // go back to LOITER
                         gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: ALT_HOLD arm failed");
                         set_and_remember_mode(LOITER, MODE_REASON_TMODE);
@@ -625,7 +625,7 @@ void ToyMode::update()
 #if AC_FENCE == ENABLED
             copter.fence.enable(false);
 #endif
-            if (copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK)) {
+            if (copter.init_arm_motors(AP_Arming::Method::MAVLINK)) {
                 load_test.running = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Tmode: load_test on");
             } else {
@@ -803,7 +803,7 @@ void ToyMode::action_arm(void)
         // we want GPS and checks are passing, arm and enable fence
         copter.fence.enable(true);
 #endif
-        copter.init_arm_motors(AP_Arming::ArmingMethod::RUDDER);
+        copter.init_arm_motors(AP_Arming::Method::RUDDER);
         if (!copter.motors->armed()) {
             AP_Notify::events.arming_failed = true;
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: GPS arming failed");
@@ -819,7 +819,7 @@ void ToyMode::action_arm(void)
         // non-GPS mode
         copter.fence.enable(false);
 #endif
-        copter.init_arm_motors(AP_Arming::ArmingMethod::RUDDER);
+        copter.init_arm_motors(AP_Arming::Method::RUDDER);
         if (!copter.motors->armed()) {
             AP_Notify::events.arming_failed = true;
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: non-GPS arming failed");
@@ -957,7 +957,7 @@ void ToyMode::handle_message(mavlink_message_t *msg)
         AP_Notify::flags.video_recording = 1;
     } else if (strncmp(m.name, "WIFICHAN", 10) == 0) {
 #if HAL_RCINPUT_WITH_AP_RADIO
-        AP_Radio *radio = AP_Radio::instance();
+        AP_Radio *radio = AP_Radio::get_singleton();
         if (radio) {
             radio->set_wifi_channel(m.value);
         }
@@ -991,7 +991,7 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
     uint16_t pwm[4];
     hal.rcout->read(pwm, 4);
     if (motor_log_counter++ % 10 == 0) {
-        DataFlash_Class::instance()->Log_Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
+        AP::logger().Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
                                                AP_HAL::micros64(),
                                                (double)filtered_voltage,
                                                (double)thrust_mul,

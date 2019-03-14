@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -264,7 +262,7 @@ void NavEKF3_core::InitialiseVariables()
     lastInnovPassTime_ms = 0;
     lastInnovFailTime_ms = 0;
     gpsAccuracyGood = false;
-    memset(&gpsloc_prev, 0, sizeof(gpsloc_prev));
+    gpsloc_prev = {};
     gpsDriftNE = 0.0f;
     gpsVertVelFilt = 0.0f;
     gpsHorizVelFilt = 0.0f;
@@ -618,7 +616,7 @@ void NavEKF3_core::correctDeltaVelocity(Vector3f &delVel, float delVelDT)
  * Update the quaternion, velocity and position states using delayed IMU measurements
  * because the EKF is running on a delayed time horizon. Note that the quaternion is
  * not used by the EKF equations, which instead estimate the error in the attitude of
- * the vehicle when each observtion is fused. This attitude error is then used to correct
+ * the vehicle when each observation is fused. This attitude error is then used to correct
  * the quaternion.
 */
 void NavEKF3_core::UpdateStrapdownEquationsNED()
@@ -691,7 +689,7 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
  * The inspiration for using a complementary filter to correct for time delays in the EKF
  * is based on the work by A Khosravian.
  *
- * “Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements”
+ * "Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements"
  * A Khosravian, J Trumpf, R Mahony, T Hamel, Australian National University
 */
 void NavEKF3_core::calcOutputStates()
@@ -1376,7 +1374,7 @@ void NavEKF3_core::StoreOutputReset()
         storedOutput[i] = outputDataNew;
     }
     outputDataDelayed = outputDataNew;
-    // reset the states for the complementary filter used to provide a vertical position dervative output
+    // reset the states for the complementary filter used to provide a vertical position derivative output
     posDown = stateStruct.position.z;
     posDownDerivative = stateStruct.velocity.z;
 }
@@ -1393,7 +1391,7 @@ void NavEKF3_core::StoreQuatReset()
 }
 
 // Rotate the stored output quaternion history through a quaternion rotation
-void NavEKF3_core::StoreQuatRotate(Quaternion deltaQuat)
+void NavEKF3_core::StoreQuatRotate(const Quaternion &deltaQuat)
 {
     outputDataNew.quat = outputDataNew.quat*deltaQuat;
     // write current measurement to entire table
@@ -1499,7 +1497,7 @@ void NavEKF3_core::ConstrainStates()
     for (uint8_t i=4; i<=6; i++) statesArray[i] = constrain_float(statesArray[i],-5.0e2f,5.0e2f);
     // position limit 1000 km - TODO apply circular limit
     for (uint8_t i=7; i<=8; i++) statesArray[i] = constrain_float(statesArray[i],-1.0e6f,1.0e6f);
-    // height limit covers home alt on everest through to home alt at SL and ballon drop
+    // height limit covers home alt on everest through to home alt at SL and balloon drop
     stateStruct.position.z = constrain_float(stateStruct.position.z,-4.0e4f,1.0e4f);
     // gyro bias limit (this needs to be set based on manufacturers specs)
     for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_float(statesArray[i],-GYRO_BIAS_LIMIT*dtEkfAvg,GYRO_BIAS_LIMIT*dtEkfAvg);
@@ -1526,7 +1524,7 @@ void NavEKF3_core::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
     omega.z  = -earthRate*sinf(lat_rad);
 }
 
-// initialise the earth magnetic field states using declination, suppled roll/pitch
+// initialise the earth magnetic field states using declination, supplied roll/pitch
 // and magnetometer measurements and return initial attitude quaternion
 Quaternion NavEKF3_core::calcQuatAndFieldStates(float roll, float pitch)
 {
@@ -1598,7 +1596,7 @@ Quaternion NavEKF3_core::calcQuatAndFieldStates(float roll, float pitch)
         magStateResetRequest = false;
 
     } else {
-        // this function should not be called if there is no compass data but if is is, return the
+        // this function should not be called if there is no compass data but if it is, return the
         // current attitude
         initQuat = stateStruct.quat;
     }
@@ -1665,7 +1663,7 @@ Vector3f NavEKF3_core::calcRotVecVariances()
 }
 
 // initialise the quaternion covariances using rotation vector variances
-void NavEKF3_core::initialiseQuatCovariances(Vector3f &rotVarVec)
+void NavEKF3_core::initialiseQuatCovariances(const Vector3f &rotVarVec)
 {
     // calculate an equivalent rotation vector from the quaternion
     float q0 = stateStruct.quat[0];
@@ -1779,4 +1777,3 @@ void NavEKF3_core::initialiseQuatCovariances(Vector3f &rotVarVec)
     }
 }
 
-#endif // HAL_CPU_CLASS

@@ -1,10 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
 #include "AP_NavEKF2_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <new>
 
 /*
@@ -368,7 +367,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: ABIAS_P_NSE
     // @DisplayName: Accelerometer bias stability (m/s^3)
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
-    // @Range: 0.00001 0.001
+    // @Range: 0.00001 0.005
     // @User: Advanced
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
@@ -544,6 +543,16 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 49, NavEKF2, _originHgtMode, 0),
 
+    // @Param: EXTNAV_DELAY
+    // @DisplayName: external navigation system measurement delay (msec)
+    // @Description: This is the number of msec that the external navigation system measurements lag behind the inertial measurements.
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: Advanced
+    // @Units: ms
+    // @RebootRequired: True
+    AP_GROUPINFO("EXTNAV_DELAY", 50, NavEKF2, _extnavDelay_ms, 10),
+
     AP_GROUPEND
 };
 
@@ -563,24 +572,24 @@ void NavEKF2::check_log_write(void)
         return;
     }
     if (logging.log_compass) {
-        DataFlash_Class::instance()->Log_Write_Compass(imuSampleTime_us);
+        AP::logger().Write_Compass(imuSampleTime_us);
         logging.log_compass = false;
     }
     if (logging.log_gps) {
-        DataFlash_Class::instance()->Log_Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
+        AP::logger().Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
         logging.log_gps = false;
     }
     if (logging.log_baro) {
-        DataFlash_Class::instance()->Log_Write_Baro(imuSampleTime_us);
+        AP::logger().Write_Baro(imuSampleTime_us);
         logging.log_baro = false;
     }
     if (logging.log_imu) {
-        DataFlash_Class::instance()->Log_Write_IMUDT(imuSampleTime_us, _logging_mask.get());
+        AP::logger().Write_IMUDT(imuSampleTime_us, _logging_mask.get());
         logging.log_imu = false;
     }
 
     // this is an example of an ad-hoc log in EKF
-    // DataFlash_Class::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
+    // AP::logger().Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
 }
 
 
@@ -601,7 +610,7 @@ bool NavEKF2::InitialiseFilter(void)
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
     // see if we will be doing logging
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::get_singleton();
     if (dataflash != nullptr) {
         logging.enabled = dataflash->log_replay();
     }
@@ -804,7 +813,7 @@ void NavEKF2::getVelNED(int8_t instance, Vector3f &vel) const
 float NavEKF2::getPosDownDerivative(int8_t instance) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
-    // return the value calculated from a complementary filer applied to the EKF height and vertical acceleration
+    // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     if (core) {
         return core[instance].getPosDownDerivative();
     }
@@ -981,7 +990,7 @@ bool NavEKF2::getLLH(struct Location &loc) const
 }
 
 // Return the latitude and longitude and height used to set the NED origin for the specified instance
-// An out of range instance (eg -1) returns data for the the primary instance
+// An out of range instance (eg -1) returns data for the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
 bool NavEKF2::getOriginLLH(int8_t instance, struct Location &loc) const
@@ -1467,7 +1476,7 @@ void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing) co
  * Write position and quaternion data from an external navigation system
  *
  * pos        : XYZ position (m) in a RH navigation frame with the Z axis pointing down and XY axes horizontal. Frame must be aligned with NED if the magnetomer is being used for yaw.
- * quat       : quaternion describing the the rotation from navigation frame to body frame
+ * quat       : quaternion describing the rotation from navigation frame to body frame
  * posErr     : 1-sigma spherical position error (m)
  * angErr     : 1-sigma spherical angle error (rad)
  * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
@@ -1483,4 +1492,3 @@ void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, c
     }
 }
 
-#endif //HAL_CPU_CLASS

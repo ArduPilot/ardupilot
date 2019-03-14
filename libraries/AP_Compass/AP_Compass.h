@@ -70,7 +70,7 @@ public:
     /// @returns    True if the compass was initialized OK, false if it was not
     ///             found or is not functioning.
     ///
-    bool init();
+    void init();
 
     /// Read the compass and update the mag_ variables.
     ///
@@ -379,6 +379,7 @@ private:
         DRIVER_SITL     =13,
         DRIVER_MAG3110  =14,
         DRIVER_IST8308  = 15,
+		DRIVER_RM3100   =16,
     };
 
     bool _driver_enabled(enum DriverType driver_type);

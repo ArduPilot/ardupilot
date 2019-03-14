@@ -86,7 +86,7 @@ void Plane::navigate()
 
     // waypoint distance from plane
     // ----------------------------
-    auto_state.wp_distance = get_distance(current_loc, next_WP_loc);
+    auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
     auto_state.wp_proportion = location_path_proportion(current_loc, 
                                                         prev_WP_loc, next_WP_loc);
     SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
@@ -109,7 +109,9 @@ void Plane::calc_airspeed_errors()
 
     // FBW_B/cruise airspeed target
     if (!failsafe.rc_failsafe && (control_mode == FLY_BY_WIRE_B || control_mode == CRUISE)) {
-        if (g2.flight_options & FlightOptions::CRUISE_TRIM_THROTTLE) {
+        if (g2.flight_options & FlightOptions::CRUISE_TRIM_AIRSPEED) {
+            target_airspeed_cm = aparm.airspeed_cruise_cm;
+        } else if (g2.flight_options & FlightOptions::CRUISE_TRIM_THROTTLE) {
             float control_min = 0.0f;
             float control_mid = 0.0f;
             const float control_max = channel_throttle->get_range();
@@ -139,7 +141,17 @@ void Plane::calc_airspeed_errors()
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-
+    } else if ((control_mode == AUTO) &&
+               (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
+							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
+							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
+        float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+        if (is_positive(land_airspeed)) {
+            target_airspeed_cm = SpdHgt_Controller->get_land_airspeed() * 100;
+        } else {
+            // fallover to normal airspeed
+            target_airspeed_cm = aparm.airspeed_cruise_cm;
+        }
     } else {
         // Normal airspeed target
         target_airspeed_cm = aparm.airspeed_cruise_cm;
@@ -173,19 +185,19 @@ void Plane::calc_airspeed_errors()
 
 void Plane::calc_gndspeed_undershoot()
 {
- 	// Use the component of ground speed in the forward direction
-	// This prevents flyaway if wind takes plane backwards
+    // Use the component of ground speed in the forward direction
+    // This prevents flyaway if wind takes plane backwards
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-	    Vector2f gndVel = ahrs.groundspeed_vector();
-		const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
-		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
+	      Vector2f gndVel = ahrs.groundspeed_vector();
+        const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
+        Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
         if (!yawVect.is_zero()) {
             yawVect.normalize();
             float gndSpdFwd = yawVect * gndVel;
             groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
         }
     } else {
-    	groundspeed_undershoot = 0;
+        groundspeed_undershoot = 0;
     }
 }
 
@@ -194,7 +206,7 @@ void Plane::update_loiter(uint16_t radius)
     if (radius <= 1) {
         // if radius is <=1 then use the general loiter radius. if it's small, use default
         radius = (abs(aparm.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(aparm.loiter_radius);
-        if (next_WP_loc.flags.loiter_ccw == 1) {
+        if (next_WP_loc.loiter_ccw == 1) {
             loiter.direction = -1;
         } else {
             loiter.direction = (aparm.loiter_radius < 0) ? -1 : 1;
@@ -213,7 +225,7 @@ void Plane::update_loiter(uint16_t radius)
     } else if ((loiter.start_time_ms == 0 &&
                 (control_mode == AUTO || control_mode == GUIDED) &&
                 auto_state.crosstrack &&
-                get_distance(current_loc, next_WP_loc) > radius*3) ||
+                current_loc.get_distance(next_WP_loc) > radius*3) ||
                (control_mode == RTL && quadplane.available() && quadplane.rtl_mode == 1)) {
         /*
           if never reached loiter point and using crosstrack and somewhat far away from loiter point
@@ -273,7 +285,7 @@ void Plane::update_cruise()
         // always look 1km ahead
         location_update(next_WP_loc,
                         cruise_state.locked_heading_cd*0.01f, 
-                        get_distance(prev_WP_loc, current_loc) + 1000);
+                        prev_WP_loc.get_distance(current_loc) + 1000);
         nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
     }
 }

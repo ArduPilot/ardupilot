@@ -17,6 +17,8 @@ public:
     GCS_MAVLINK_Tracker &chan(const uint8_t ofs) override { return _chan[ofs]; };
     const GCS_MAVLINK_Tracker &chan(const uint8_t ofs) const override { return _chan[ofs]; };
 
+    void update_sensor_status_flags() override;
+
 private:
 
     void request_datastream_position(uint8_t sysid, uint8_t compid);

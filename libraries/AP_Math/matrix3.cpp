@@ -25,12 +25,12 @@
 template <typename T>
 void Matrix3<T>::from_euler(float roll, float pitch, float yaw)
 {
-    float cp = cosf(pitch);
-    float sp = sinf(pitch);
-    float sr = sinf(roll);
-    float cr = cosf(roll);
-    float sy = sinf(yaw);
-    float cy = cosf(yaw);
+    const float cp = cosf(pitch);
+    const float sp = sinf(pitch);
+    const float sr = sinf(roll);
+    const float cr = cosf(roll);
+    const float sy = sinf(yaw);
+    const float cy = cosf(yaw);
 
     a.x = cp * cy;
     a.y = (sr * sp * cy) - (cr * sy);
@@ -91,12 +91,12 @@ Vector3<T> Matrix3<T>::to_euler312() const
 template <typename T>
 void Matrix3<T>::from_euler312(float roll, float pitch, float yaw)
 {
-    float c3 = cosf(pitch);
-    float s3 = sinf(pitch);
-    float s2 = sinf(roll);
-    float c2 = cosf(roll);
-    float s1 = sinf(yaw);
-    float c1 = cosf(yaw);
+    const float c3 = cosf(pitch);
+    const float s3 = sinf(pitch);
+    const float s2 = sinf(roll);
+    const float c2 = cosf(roll);
+    const float s1 = sinf(yaw);
+    const float c1 = cosf(yaw);
 
     a.x = c1 * c3 - s1 * s2 * s3;
     b.y = c1 * c2;
@@ -114,18 +114,11 @@ void Matrix3<T>::from_euler312(float roll, float pitch, float yaw)
 template <typename T>
 void Matrix3<T>::rotate(const Vector3<T> &g)
 {
-    Matrix3<T> temp_matrix;
-    temp_matrix.a.x = a.y * g.z - a.z * g.y;
-    temp_matrix.a.y = a.z * g.x - a.x * g.z;
-    temp_matrix.a.z = a.x * g.y - a.y * g.x;
-    temp_matrix.b.x = b.y * g.z - b.z * g.y;
-    temp_matrix.b.y = b.z * g.x - b.x * g.z;
-    temp_matrix.b.z = b.x * g.y - b.y * g.x;
-    temp_matrix.c.x = c.y * g.z - c.z * g.y;
-    temp_matrix.c.y = c.z * g.x - c.x * g.z;
-    temp_matrix.c.z = c.x * g.y - c.y * g.x;
-
-    (*this) += temp_matrix;
+    (*this) += Matrix3<T>{
+        a.y * g.z - a.z * g.y, a.z * g.x - a.x * g.z, a.x * g.y - a.y * g.x,
+        b.y * g.z - b.z * g.y, b.z * g.x - b.x * g.z, b.x * g.y - b.y * g.x,
+        c.y * g.z - c.z * g.y, c.z * g.x - c.x * g.z, c.x * g.y - c.y * g.x
+    };
 }
 
 /*
@@ -134,10 +127,10 @@ void Matrix3<T>::rotate(const Vector3<T> &g)
 template <typename T>
 void Matrix3<T>::normalize(void)
 {
-    float error = a * b;
-    Vector3<T> t0 = a - (b * (0.5f * error));
-    Vector3<T> t1 = b - (a * (0.5f * error));
-    Vector3<T> t2 = t0 % t1;
+    const float error = a * b;
+    const Vector3<T> t0 = a - (b * (0.5f * error));
+    const Vector3<T> t1 = b - (a * (0.5f * error));
+    const Vector3<T> t2 = t0 % t1;
     a = t0 * (1.0f / t0.length());
     b = t1 * (1.0f / t1.length());
     c = t2 * (1.0f / t2.length());
@@ -204,7 +197,7 @@ T Matrix3<T>::det() const
 template <typename T>
 bool Matrix3<T>::inverse(Matrix3<T>& inv) const
 {
-    T d = det();
+    const T d = det();
 
     if (is_zero(d)) {
         return false;
@@ -247,14 +240,14 @@ void Matrix3<T>::zero(void)
 template <typename T>
 void Matrix3<T>::from_axis_angle(const Vector3<T> &v, float theta)
 {
-    float C = cosf(theta);
-    float S = sinf(theta);
-    float t = 1.0f - C;
-    Vector3f normv = v.normalized();
-    float x = normv.x;
-    float y = normv.y;
-    float z = normv.z;
-    
+    const float C = cosf(theta);
+    const float S = sinf(theta);
+    const float t = 1.0f - C;
+    const Vector3f normv = v.normalized();
+    const float x = normv.x;
+    const float y = normv.y;
+    const float z = normv.z;
+
     a.x = t*x*x + C;
     a.y = t*x*y - z*S;
     a.z = t*x*z + y*S;

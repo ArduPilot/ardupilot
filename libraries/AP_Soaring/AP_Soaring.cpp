@@ -141,7 +141,7 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
 void SoaringController::get_target(Location &wp)
 {
     wp = _prev_update_location;
-    location_offset(wp, _ekf.X[2], _ekf.X[3]);
+    wp.offset(_ekf.X[2], _ekf.X[3]);
 }
 
 bool SoaringController::suppress_throttle()
@@ -279,7 +279,7 @@ void SoaringController::update_thermalling()
 #endif
 
         // write log - save the data.
-        DataFlash_Class::instance()->Log_Write("SOAR", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w", "QfffffffLLfff", 
+        AP::logger().Write("SOAR", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w", "QfffffffLLfff", 
                                                AP_HAL::micros64(),
                                                (double)_vario.reading,
                                                (double)dx,

@@ -16,20 +16,18 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 class AP_DEVO_Telem {
 public:
     //constructor
-    AP_DEVO_Telem(const AP_AHRS &ahrs);
+    AP_DEVO_Telem();
 
     /* Do not allow copies */
     AP_DEVO_Telem(const AP_DEVO_Telem &other) = delete;
     AP_DEVO_Telem &operator=(const AP_DEVO_Telem&) = delete;
 
-    // init - perform require initialisation including detecting which protocol to use
-    void init(const AP_SerialManager& serial_manager);
+    void init();
 
     // update flight control mode. The control mode is vehicle type specific
     void update_control_mode(uint8_t mode)
@@ -52,7 +50,7 @@ private:
 
     uint32_t gpsDdToDmsFormat(float ddm);
 
-    // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
+    // tick - main call to send updates to transmitter
     void tick(void);
 
     // send_frames - sends updates down telemetry link
@@ -62,7 +60,6 @@ private:
 
     uint8_t _control_mode;
 
-    const AP_AHRS &_ahrs;                   // reference to attitude estimate
     AP_HAL::UARTDriver *_port;              // UART used to send data to receiver
     uint32_t _last_frame_ms;
 

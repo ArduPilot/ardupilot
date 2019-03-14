@@ -18,7 +18,7 @@ void ModeGuided::update()
     switch (_guided_mode) {
         case Guided_WP:
         {
-            _distance_to_destination = get_distance(rover.current_loc, _destination);
+            _distance_to_destination = rover.current_loc.get_distance(_destination);
             const bool near_wp = _distance_to_destination <= rover.g.waypoint_radius;
             // check if we've reached the destination
             if (!_reached_destination && (near_wp || location_passed_point(rover.current_loc, _origin, _destination))) {
@@ -26,12 +26,19 @@ void ModeGuided::update()
                 rover.gcs().send_mission_item_reached_message(0);
             }
             // determine if we should keep navigating
-            if (!_reached_destination || (rover.is_boat() && !near_wp)) {
+            if (!_reached_destination) {
                 // drive towards destination
                 calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, true);
             } else {
-                stop_vehicle();
+                // we have reached the destination so stay here
+                if (rover.is_boat()) {
+                    if (!start_loiter()) {
+                        stop_vehicle();
+                    }
+                } else {
+                    stop_vehicle();
+                }
             }
             break;
         }
@@ -46,9 +53,16 @@ void ModeGuided::update()
             if (have_attitude_target) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, true);
+                calc_throttle(_desired_speed, true, true);
             } else {
-                stop_vehicle();
+                // we have reached the destination so stay here
+                if (rover.is_boat()) {
+                    if (!start_loiter()) {
+                        stop_vehicle();
+                    }
+                } else {
+                    stop_vehicle();
+                }
             }
             break;
         }
@@ -69,8 +83,21 @@ void ModeGuided::update()
                 g2.motors.set_steering(steering_out * 4500.0f);
                 calc_throttle(_desired_speed, true, true);
             } else {
-                stop_vehicle();
+                // we have reached the destination so stay here
+                if (rover.is_boat()) {
+                    if (!start_loiter()) {
+                        stop_vehicle();
+                    }
+                } else {
+                    stop_vehicle();
+                }
             }
+            break;
+        }
+
+        case Guided_Loiter:
+        {
+            rover.mode_loiter.update();
             break;
         }
 
@@ -146,4 +173,13 @@ void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float targ
 
     // log new target
     rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(_desired_yaw_rate_cds, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
+}
+
+bool ModeGuided::start_loiter()
+{
+    if (rover.mode_loiter.enter()) {
+        _guided_mode = Guided_Loiter;
+        return true;
+    }
+    return false;
 }

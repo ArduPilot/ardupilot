@@ -33,7 +33,7 @@ public:
         delete[] bits;
     }
 
-    Bitmask &operator=(const Bitmask&other) = delete;
+    Bitmask &operator=(const Bitmask&other);
     Bitmask(const Bitmask &other) = delete;
 
     // set given bitnumber
@@ -100,6 +100,25 @@ public:
             }
         }
         return sum;
+    }
+
+    // return first bit set, or -1 if none set
+    int16_t first_set() const {
+        for (uint16_t i=0; i<numwords; i++) {
+            if (bits[i] == 0) {
+                continue;
+            }
+            int fs;
+            if (sizeof(bits[i]) <= sizeof(int)) {
+                fs = __builtin_ffs(bits[i]);
+            } else if (sizeof(bits[i]) <= sizeof(long)) {
+                fs = __builtin_ffsl(bits[i]);
+            } else {
+                fs = __builtin_ffsll(bits[i]);
+            }
+            return i*32 + fs - 1;
+        }
+        return -1;
     }
 
     // return number of bits available

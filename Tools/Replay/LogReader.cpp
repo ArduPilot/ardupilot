@@ -7,7 +7,7 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include "LogReader.h"
 #include <stdio.h>
@@ -38,11 +38,11 @@ LogReader::LogReader(AP_AHRS &_ahrs,
                      Compass &_compass,
                      AP_GPS &_gps,
                      AP_Airspeed &_airspeed,
-                     DataFlash_Class &_dataflash,
+                     AP_Logger &_dataflash,
                      struct LogStructure *log_structure,
                      uint8_t log_structure_count,
                      const char **&_nottypes):
-    DataFlashFileReader(),
+    AP_LoggerFileReader(),
     vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
@@ -214,7 +214,7 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
         if (already_mapped) {
             continue;
         }
-        if (DataFlash_Class::instance()->msg_type_in_use(n)) {
+        if (AP::logger().msg_type_in_use(n)) {
             continue;
         }
         mapped_msgid[intype] = n;
@@ -277,7 +277,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
             s.labels = f.labels;
         }
 
-        // emit the FMT to DataFlash:
+        // emit the FMT to AP_Logger:
         struct log_Format pkt {};
         pkt.head1 = HEAD_BYTE1;
         pkt.head2 = HEAD_BYTE2;

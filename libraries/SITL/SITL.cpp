@@ -22,13 +22,13 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-SITL *SITL::_s_instance = nullptr;
+SITL *SITL::_singleton = nullptr;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] = {
@@ -135,6 +135,23 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // weight on wheels pin
     AP_GROUPINFO("WOW_PIN",     25, SITL,  wow_pin, -1),
 
+    // vibration frequencies on each axis
+    AP_GROUPINFO("VIB_FREQ",   26, SITL,  vibe_freq, 0),
+
+    // @Path: ./SIM_Parachute.cpp
+    AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SITL, Parachute),
+
+    // vibration frequencies on each axis
+    AP_GROUPINFO("BAUDLIMIT_EN",   28, SITL,  telem_baudlimit_enable, 0),
+
+    // @Group: PLD_
+    // @Path: ./SIM_Precland.cpp
+    AP_SUBGROUPINFO(precland_sim, "PLD_", 29, SITL, SIM_Precland),
+
+    AP_GROUPINFO("SHOVE_X",     30, SITL,  shove.x, 0),
+    AP_GROUPINFO("SHOVE_Y",     31, SITL,  shove.y, 0),
+    AP_GROUPINFO("SHOVE_Z",     32, SITL,  shove.z, 0),
+    AP_GROUPINFO("SHOVE_TIME",  33, SITL,  shove.t, 0),
     AP_GROUPEND
 };
     
@@ -164,8 +181,8 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               state.longitude*1.0e7);
 }
 
-/* report SITL state to DataFlash */
-void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
+/* report SITL state to AP_Logger */
+void SITL::Log_Write_SIMSTATE()
 {
     float yaw;
 
@@ -189,7 +206,7 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
         q3      : state.quaternion.q3,
         q4      : state.quaternion.q4,
     };
-    DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*
@@ -245,7 +262,7 @@ namespace AP {
 
 SITL::SITL *sitl()
 {
-    return SITL::SITL::get_instance();
+    return SITL::SITL::get_singleton();
 }
 
 };

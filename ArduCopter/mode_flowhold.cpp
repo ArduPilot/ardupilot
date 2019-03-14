@@ -211,7 +211,7 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
     bf_angles.y = constrain_float(bf_angles.y, -copter.aparm.angle_max, copter.aparm.angle_max);
 
     if (log_counter++ % 20 == 0) {
-        DataFlash_Class::instance()->Log_Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffff",
+        AP::logger().Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffff",
                                                AP_HAL::micros64(),
                                                (double)sensor_flow.x, (double)sensor_flow.y,
                                                (double)bf_angles.x, (double)bf_angles.y,
@@ -334,13 +334,17 @@ void Copter::ModeFlowHold::run()
         break;
 
     case FlowHold_Landed:
+#if FRAME_CONFIG == HELI_FRAME
+        // helicopters do not spool down when landed.  Only when commanded to go to ground idle by pilot.
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+#else
         // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f) {
-            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
-
+#endif
         copter.attitude_control->reset_rate_controller_I_terms();
         copter.attitude_control->set_yaw_target_to_current_heading();
         copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate);
@@ -507,7 +511,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
     // new height estimate for logging
     height_estimate = ins_height + height_offset;
 
-    DataFlash_Class::instance()->Log_Write("FXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
+    AP::logger().Write("FXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
                                            AP_HAL::micros64(),
                                            (double)delta_flowrate.x,
                                            (double)delta_flowrate.y,

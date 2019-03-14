@@ -26,7 +26,7 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -306,9 +306,9 @@ bool XPlane::receive_data(void)
     accel_earth.z += GRAVITY_MSS;
     
     // the position may slowly deviate due to float accuracy and longitude scaling
-    if (get_distance(loc, location) > 4 || abs(loc.alt - location.alt)*0.01f > 2.0f) {
+    if (loc.get_distance(location) > 4 || abs(loc.alt - location.alt)*0.01f > 2.0f) {
         printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
-               get_distance(loc, location), loc.alt*0.01f, location.alt*0.01f);
+               loc.get_distance(location), loc.alt*0.01f, location.alt*0.01f);
         // reset home location
         position_zero(-pos.x, -pos.y, -pos.z);
         home.lat = loc.lat;

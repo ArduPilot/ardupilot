@@ -22,6 +22,12 @@ parser.add_option("--no-emit",
                   action='store_false',
                   default=True,
                   help="don't emit parameter documention, just validate")
+parser.add_option("--format",
+                  dest='output_format',
+                  action='store',
+                  default='all',
+                  choices=['all', 'html', 'rst', 'wiki', 'xml', 'edn', 'md'],
+                  help="what output format to use")
 (opts, args) = parser.parse_args()
 
 
@@ -318,22 +324,38 @@ for library in libraries:
 def do_emit(emit):
     emit.set_annotate_with_vehicle(len(vehicles) > 1)
     for vehicle in vehicles:
-        emit.emit(vehicle, f)
+        emit.emit(vehicle)
 
     emit.start_libraries()
 
     for library in libraries:
         if library.params:
-            emit.emit(library, f)
+            emit.emit(library)
 
     emit.close()
 
 
 if opts.emit_params:
-    do_emit(XmlEmit())
-    do_emit(WikiEmit())
-    do_emit(HtmlEmit())
-    do_emit(RSTEmit())
-    do_emit(MDEmit())
+    if opts.output_format == 'all' or opts.output_format == 'xml':
+        do_emit(XmlEmit())
+    if opts.output_format == 'all' or opts.output_format == 'wiki':
+        do_emit(WikiEmit())
+    if opts.output_format == 'all' or opts.output_format == 'html':
+        do_emit(HtmlEmit())
+    if opts.output_format == 'all' or opts.output_format == 'rst':
+        do_emit(RSTEmit())
+    if opts.output_format == 'all' or opts.output_format == 'md':
+        do_emit(MDEmit())
+    if opts.output_format == 'all' or opts.output_format == 'edn':
+        try:
+            from ednemit import EDNEmit
+            do_emit(EDNEmit())
+        except ImportError:
+            # if the user wanted edn only then don't hide any errors
+            if opts.output_format == 'edn':
+                raise
+
+            if opts.verbose:
+                print("Unable to emit EDN, install edn_format and pytz if edn is desired")
 
 sys.exit(error_count)

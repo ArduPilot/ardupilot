@@ -25,7 +25,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Baro',
     'AP_BattMonitor',
     'AP_BoardConfig',
-    'AP_Buffer',
     'AP_Common',
     'AP_Compass',
     'AP_Declination',
@@ -46,7 +45,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_SerialManager',
     'AP_Terrain',
     'AP_Vehicle',
-    'DataFlash',
+    'AP_Logger',
     'Filter',
     'GCS_MAVLink',
     'RC_Channel',
@@ -66,6 +65,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Volz_Protocol',
     'AP_SBusOut',
     'AP_IOMCU',
+    'AP_Parachute',
     'AP_RAMTRON',
     'AP_RCProtocol',
     'AP_Radio',
@@ -77,8 +77,11 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Gripper',
     'AP_RTC',
     'AC_Sprayer',
+    'AC_Fence',
     'AC_Avoidance',
     'AP_LandingGear',
+    'AP_RobotisServo',
+    'AP_ToshibaCAN',
 ]
 
 def get_legacy_defines(sketch_name):
@@ -198,6 +201,7 @@ def ap_common_vehicle_libraries(bld):
     if bld.env.DEST_BINFMT == 'pe':
         libraries += [
             'AC_Fence',
+            'AC_AttitudeControl',
         ]
 
     return libraries
@@ -249,6 +253,9 @@ def ap_program(bld,
         program_dir=program_dir,
         **kw
     )
+    if 'use' in kw and bld.env.STATIC_LINKING:
+        # ensure we link against vehicle library
+        tg.env.STLIB += [kw['use']]
 
     for group in program_groups:
         _grouped_programs.setdefault(group, []).append(tg)

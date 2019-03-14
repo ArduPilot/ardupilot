@@ -52,15 +52,16 @@ env:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
+    - AUTOTEST_UPLOAD=true  # Upload logs of failed tests to ArduPilot server; requires authentication
 
 matrix:
   fast_finish: true
   include:
     - if: type != cron
       compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v2 revo-bootloader iofirmware"
+      env: CI_BUILD_TARGET="revo-bootloader iofirmware stm32f7 stm32h7"
     - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v4 revo-mini"
+      env: CI_BUILD_TARGET="revo-mini"
     - if: type != cron
       compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-copter"
@@ -70,3 +71,12 @@ matrix:
     - if: type != cron
       compiler: "clang"
       env: CI_BUILD_TARGET="sitltest-rover sitltest-sub""
+    - language: python
+      python: 3.7
+      addons:  # speedup: This test does not need addons
+      compiler:
+      dist: xenial  # required for Python >= 3.7 (travis-ci/travis-ci#9069)
+      before_install: pip install flake8
+      script:
+        - EXCLUDE=./.*,./modules/gtest,./modules/ChibiOS/test,./modules/uavcan/libuavcan
+        - flake8 . --count --exclude=$EXCLUDE --select=E901,E999,F821,F822,F823 --show-source --statistics

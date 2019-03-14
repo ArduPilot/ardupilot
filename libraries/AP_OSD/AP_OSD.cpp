@@ -242,7 +242,7 @@ void AP_OSD::stats()
     Location loc;
     if (ahrs.get_position(loc) && ahrs.home_is_set()) {
         const Location &home_loc = ahrs.get_home();
-        float distance = get_distance(home_loc, loc);
+        float distance = home_loc.get_distance(loc);
         max_dist_m = fmaxf(max_dist_m, distance);
     }
     
@@ -252,7 +252,7 @@ void AP_OSD::stats()
     alt = -alt;
     max_alt_m = fmaxf(max_alt_m, alt);
     // maximum current
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     float amps = battery.current_amps();
     max_current_a = fmaxf(max_current_a, amps);
 }

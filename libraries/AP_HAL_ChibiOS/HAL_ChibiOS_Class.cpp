@@ -170,9 +170,6 @@ static void main_loop()
     ChibiOS::SPIDevice::test_clock_freq();
 #endif 
 
-    //Setup SD Card and Initialise FATFS bindings
-    sdcard_init();
-
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
     hal.analogin->init();
@@ -201,7 +198,7 @@ static void main_loop()
         g_callbacks->loop();
 
         /*
-          give up 250 microseconds of time if the INS loop hasn't
+          give up 50 microseconds of time if the INS loop hasn't
           called delay_microseconds_boost(), to ensure low priority
           drivers get a chance to run. Calling
           delay_microseconds_boost() means we have already given up
@@ -210,7 +207,7 @@ static void main_loop()
          */
 #ifndef HAL_DISABLE_LOOP_DELAY
         if (!schedulerInstance.check_called_boost()) {
-            hal.scheduler->delay_microseconds(250);
+            hal.scheduler->delay_microseconds(50);
         }
 #endif
     }

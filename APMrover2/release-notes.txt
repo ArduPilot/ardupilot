@@ -1,5 +1,29 @@
 Rover Release Notes:
-========================
+--------------------------------
+Rover 3.5.0 06-Feb-2019
+Changes from 3.5.0-rc3
+1) Bug fixes and minor enhancements
+    a) Avoid potential divide-by-zero when waypoints are almost in a straight line
+    b) LOIT_TYPE parameter description fix
+--------------------------------
+Rover 3.5.0-rc3 30-Jan-2019
+Changes from 3.5.0-rc2
+1) Fix build issue affecting fmuv2
+--------------------------------
+Rover 3.5.0-rc2 24-Jan-2019
+Changes from 3.5.0-rc1
+1) ChibiOS fixes and enhancements to many boards including Pixhawk4
+2) EKF failsafe added and checked before entering autonomous modes
+3) Object avoidance enabled in autonomous modes (Auto, Guided, RTL)
+4) Cruise speed/throttle learning always runs for 2 seconds (saves user from having to lower switch) 
+5) Boats hold position after reaching target in Auto and Guided (also see MIS_DONE_BEHAVE)
+6) MAVLink message interval support (allows precise control of mavlink message update rates) 
+7) Bug fixes and minor enhancements:
+    a) DShot ESC support
+    b) Auxiliary switch 7 parameter copy from CH7_OPTION to RC7_OPTION
+    c) Wheel encoder offset fix
+    d) SmartRTL default num points increased to 300 
+--------------------------------
 Rover 3.5.0-rc1 12-Nov-2018
 Changes from 3.4.2:
 1) ChibiOS provides improved performance and support for many new boards including:

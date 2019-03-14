@@ -36,20 +36,14 @@ void Rover::init_rc_in()
     channel_lateral->set_default_dead_zone(30);
 }
 
-void Rover::init_rc_out()
-{
-    // set auxiliary ranges
-    update_aux();
-}
-
 /*
   check for driver input on rudder/steering stick for arming/disarming
 */
 void Rover::rudder_arm_disarm_check()
 {
     // check if arming/disarm using rudder is allowed
-    AP_Arming::ArmingRudder arming_rudder = arming.get_rudder_arming_type();
-    if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
+    const AP_Arming::RudderArming arming_rudder = arming.get_rudder_arming_type();
+    if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
         return;
     }
 
@@ -78,14 +72,14 @@ void Rover::rudder_arm_disarm_check()
                 }
             } else {
                 // time to arm!
-                arm_motors(AP_Arming::RUDDER);
+                arm_motors(AP_Arming::Method::RUDDER);
                 rudder_arm_timer = 0;
             }
         } else {
             // not at full right rudder
             rudder_arm_timer = 0;
         }
-    } else if ((arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM) && !g2.motors.active()) {
+    } else if ((arming_rudder == AP_Arming::RudderArming::ARMDISARM) && !g2.motors.active()) {
         // when armed and motor not active (not moving), full left rudder starts disarming counter
         if (channel_steer->get_control_in() < -4000) {
             const uint32_t now = millis();

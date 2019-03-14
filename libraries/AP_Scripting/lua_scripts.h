@@ -16,13 +16,14 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#include <setjmp.h>
 
 #include "lua_bindings.h"
 
 class lua_scripts
 {
 public:
-    lua_scripts(const AP_Int32 &vm_steps);
+    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size);
 
     /* Do not allow copies */
     lua_scripts(const lua_scripts &other) = delete;
@@ -58,6 +59,15 @@ private:
     // it must be static to be passed to the C API
     static void hook(lua_State *L, lua_Debug *ar);
 
+    // lua panic handler, will jump back to the start of run
+    static int atpanic(lua_State *L);
+    static jmp_buf panic_jmp;
+
+    lua_State *lua_state;
+
     const AP_Int32 & _vm_steps;
 
+    static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
+
+    static void *_heap;
 };

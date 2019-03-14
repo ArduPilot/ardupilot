@@ -199,6 +199,7 @@ void Scheduler::_run_io_procs()
     hal.uartE->_timer_tick();
     hal.uartF->_timer_tick();
     hal.uartG->_timer_tick();
+    hal.storage->_timer_tick();
 
     check_thread_stacks();
 }
@@ -256,8 +257,8 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     stack_size += 2300;
     
     pthread_t thread {};
-    uint32_t alloc_stack = MAX(PTHREAD_STACK_MIN,stack_size);
-    
+    const uint32_t alloc_stack = MAX(size_t(PTHREAD_STACK_MIN),stack_size);
+
     struct thread_attr *a = new struct thread_attr;
     if (!a) {
         return false;

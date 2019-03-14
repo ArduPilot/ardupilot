@@ -75,20 +75,21 @@ public:
     ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
     void wp_and_spline_init();
 
-    /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
+    /// set current target horizontal speed during wp navigation
     void set_speed_xy(float speed_cms);
 
-    /// set_speed_z - allows main code to pass target vertical velocity for wp navigation
-    void set_speed_z(float speed_down_cms, float speed_up_cms);
+    /// set current target climb or descent rate during wp navigation
+    void set_speed_up(float speed_up_cms);
+    void set_speed_down(float speed_down_cms);
 
-    /// get_speed_xy - allows main code to retrieve target horizontal velocity for wp navigation
-    float get_speed_xy() const { return _wp_speed_cms; }
+    /// get default target horizontal velocity during wp navigation
+    float get_default_speed_xy() const { return _wp_speed_cms; }
 
-    /// get_speed_up - returns target climb speed in cm/s during missions
-    float get_speed_up() const { return _wp_speed_up_cms; }
+    /// get default target climb speed in cm/s during missions
+    float get_default_speed_up() const { return _wp_speed_up_cms; }
 
-    /// get_speed_down - returns target descent speed in cm/s during missions.  Note: always positive
-    float get_speed_down() const { return _wp_speed_down_cms; }
+    /// get default target descent rate in cm/s during missions.  Note: always positive
+    float get_default_speed_down() const { return _wp_speed_down_cms; }
 
     /// get_speed_z - returns target descent speed in cm/s during missions.  Note: always positive
     float get_accel_z() const { return _wp_accel_z_cmss; }
@@ -104,12 +105,12 @@ public:
 
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
-    bool set_wp_destination(const Location_Class& destination);
+    bool set_wp_destination(const Location& destination);
 
     // returns wp location using location class.
     // returns false if unable to convert from target vector to global
     // coordinates
-    bool get_wp_destination(Location_Class& destination);
+    bool get_wp_destination(Location& destination);
 
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
@@ -184,7 +185,7 @@ public:
     ///     stopped_at_start should be set to true if vehicle is stopped at the origin
     ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
     ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
-    bool set_spline_destination(const Location_Class& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location_Class next_destination);
+    bool set_spline_destination(const Location& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location next_destination);
 
     /// set_spline_destination waypoint using position vector (distance from ekf origin in cm)
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
@@ -267,7 +268,7 @@ protected:
 
     // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
-    bool get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt);
+    bool get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt);
 
     // set heading used for spline and waypoint navigation
     void set_yaw_cd(float heading_cd);
@@ -281,9 +282,9 @@ protected:
     AC_Avoid                *_avoid = nullptr;
 
     // parameters
-    AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
-    AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
-    AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
+    AP_Float    _wp_speed_cms;          // default maximum horizontal speed in cm/s during missions
+    AP_Float    _wp_speed_up_cms;       // default maximum climb rate in cm/s
+    AP_Float    _wp_speed_down_cms;     // default maximum descent rate in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     AP_Float    _wp_accel_cmss;          // horizontal acceleration in cm/s/s during missions
     AP_Float    _wp_accel_z_cmss;        // vertical acceleration in cm/s/s during missions

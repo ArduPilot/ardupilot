@@ -5,14 +5,12 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_RTC/AP_RTC.h>
 
-#if defined(HAL_NEEDS_PARAM_HELPER)
-#include <AP_Param_Helper/AP_Param_Helper.h>
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
+#ifndef AP_FEATURE_BOARD_DETECT
+#if defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO) || defined(HAL_CHIBIOS_ARCH_BRAINV51) || defined(HAL_CHIBIOS_ARCH_BRAINV52) || defined(HAL_CHIBIOS_ARCH_UBRAINV51) || defined(HAL_CHIBIOS_ARCH_COREV10) || defined(HAL_CHIBIOS_ARCH_BRAINV54)
 #define AP_FEATURE_BOARD_DETECT 1
 #else
 #define AP_FEATURE_BOARD_DETECT 0
+#endif
 #endif
 
 #ifndef AP_FEATURE_RTSCTS
@@ -36,7 +34,7 @@ extern "C" typedef int (*main_fn_t)(int argc, char **);
 class AP_BoardConfig {
 public:
     AP_BoardConfig() {
-        instance = this;
+        _singleton = this;
         AP_Param::setup_object_defaults(this, var_info);
     };
 
@@ -45,8 +43,8 @@ public:
     AP_BoardConfig &operator=(const AP_BoardConfig&) = delete;
 
     // singleton support
-    static AP_BoardConfig *get_instance(void) {
-        return instance;
+    static AP_BoardConfig *get_singleton(void) {
+        return _singleton;
     }
     
     void init(void);
@@ -60,11 +58,6 @@ public:
     // permit other libraries (in particular, GCS_MAVLink) to detect
     // that we're never going to boot properly:
     static bool in_sensor_config_error(void) { return _in_sensor_config_error; }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // public method to start a driver
-    static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
-#endif
 
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
@@ -92,6 +85,7 @@ public:
         VRX_BOARD_CORE10   = 36,
         VRX_BOARD_BRAIN54  = 38,
         PX4_BOARD_OLDDRIVERS = 100,
+        PX4_BOARD_FMUV6    = 39,
     };
 
     // set default value for BRD_SAFETY_MASK
@@ -110,7 +104,7 @@ public:
     // crc check of IO firmware on startup
     static uint8_t io_enabled(void) {
 #if AP_FEATURE_BOARD_DETECT
-        return instance?uint8_t(instance->state.io_enable.get()):0;
+        return _singleton?uint8_t(_singleton->state.io_enable.get()):0;
 #else
         return 0;
 #endif
@@ -118,14 +112,15 @@ public:
 
     // get number of PWM outputs enabled on FMU
     static uint8_t get_pwm_count(void) {
-        return instance?instance->pwm_count.get():8;
+        return _singleton?_singleton->pwm_count.get():8;
     }
 
 #if HAL_HAVE_SAFETY_SWITCH
     enum board_safety_button_option {
-        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF=1,
-        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=2,
-        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED=4,
+        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF= (1 << 0),
+        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=  (1 << 1),
+        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED=      (1 << 2),
+        BOARD_SAFETY_OPTION_SAFETY_ON_DISARM=         (1 << 3),
     };
 
     // return safety button options. Bits are in enum board_safety_button_option
@@ -146,19 +141,25 @@ public:
 #if HAL_HAVE_BOARD_VOLTAGE
     // get minimum board voltage
     static float get_minimum_board_voltage(void) {
-        return instance?instance->_vbus_min.get():0;
+        return _singleton?_singleton->_vbus_min.get():0;
     }
 #endif
 
 #if HAL_HAVE_SERVO_VOLTAGE
     // get minimum servo voltage
     static float get_minimum_servo_voltage(void) {
-        return instance?instance->_vservo_min.get():0;
+        return _singleton?_singleton->_vservo_min.get():0;
+    }
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    static uint8_t get_sdcard_slowdown(void) {
+        return _singleton?_singleton->_sdcard_slowdown.get():0;
     }
 #endif
     
 private:
-    static AP_BoardConfig *instance;
+    static AP_BoardConfig *_singleton;
     
     AP_Int16 vehicleSerialNumber;
     AP_Int8 pwm_count;
@@ -168,7 +169,7 @@ private:
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         AP_Int8 ser1_rtscts;
         AP_Int8 ser2_rtscts;
         AP_Int8 sbus_out_rate;
@@ -180,15 +181,6 @@ private:
 
 #if AP_FEATURE_BOARD_DETECT
     static enum px4_board_type px4_configured_board;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    void px4_setup_pwm(void);
-    void px4_setup_safety_mask(void);
-    void px4_tone_alarm(const char *tone_string);
-    void px4_setup_px4io(void);
-    void px4_setup_peripherals(void);
-#endif
-    
 
     void board_setup_drivers(void);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
@@ -213,11 +205,6 @@ private:
     AP_Radio _radio;
 #endif
     
-#if defined(HAL_NEEDS_PARAM_HELPER)
-    // HAL specific parameters
-    AP_Param_Helper param_helper{false};
-#endif
-
     // real-time-clock; private because access is via the singleton
     AP_RTC rtc;
 
@@ -227,5 +214,9 @@ private:
 
 #if HAL_HAVE_SERVO_VOLTAGE
     AP_Float _vservo_min;
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    AP_Int8 _sdcard_slowdown;
 #endif
 };

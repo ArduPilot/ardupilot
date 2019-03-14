@@ -4,6 +4,7 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Mission/AP_Mission.h>
 
 #include "defines.h"
 
@@ -35,6 +36,10 @@ public:
 
     // Constructor
     Mode();
+
+    // do not allow copying
+    Mode(const Mode &other) = delete;
+    Mode &operator=(const Mode&) = delete;
 
     // enter this mode, returns false if we failed to enter
     bool enter();
@@ -78,6 +83,11 @@ public:
     // true if mode requires position and/or velocity estimate
     virtual bool requires_position() const { return true; }
     virtual bool requires_velocity() const { return true; }
+
+    // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    virtual float wp_bearing() const;
+    virtual float nav_bearing() const;
+    virtual float crosstrack_error() const;
 
     //
     // navigation methods
@@ -190,7 +200,6 @@ protected:
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
     class RC_Channel *&channel_lateral;
-    class AP_Mission &mission;
     class AR_AttitudeControl &attitude_control;
 
 
@@ -235,9 +244,6 @@ class ModeAuto : public Mode
 {
 public:
 
-    // constructor
-    ModeAuto(ModeRTL& mode_rtl);
-
     uint32_t mode_number() const override { return AUTO; }
     const char *name4() const override { return "AUTO"; }
 
@@ -262,6 +268,11 @@ public:
     // start RTL (within auto)
     void start_RTL();
 
+    AP_Mission mission{
+        FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command&),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command_callback, bool, const AP_Mission::Mission_Command&),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
+
 protected:
 
     bool _enter() override;
@@ -270,20 +281,61 @@ protected:
     enum AutoSubMode {
         Auto_WP,                // drive to a given location
         Auto_HeadingAndSpeed,   // turn to a given heading
-        Auto_RTL                // perform RTL within auto mode
+        Auto_RTL,               // perform RTL within auto mode
+        Auto_Loiter             // perform Loiter within auto mode
     } _submode;
 
 private:
 
     bool check_trigger(void);
 
-    // references
-    ModeRTL& _mode_rtl;
-
     // this is set to true when auto has been triggered to start
     bool auto_triggered;
 
     bool _reached_heading;      // true when vehicle has reached desired heading in TurnToHeading sub mode
+
+    bool start_command(const AP_Mission::Mission_Command& cmd);
+    void exit_mission();
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
+
+    bool verify_command(const AP_Mission::Mission_Command& cmd);
+    void do_RTL(void);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
+    void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_RTL();
+    bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_set_yaw_speed();
+    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
+    void do_within_distance(const AP_Mission::Mission_Command& cmd);
+    bool verify_wait_delay();
+    bool verify_within_distance();
+    void do_change_speed(const AP_Mission::Mission_Command& cmd);
+    void do_set_home(const AP_Mission::Mission_Command& cmd);
+    void do_set_reverse(const AP_Mission::Mission_Command& cmd);
+
+    bool start_loiter();
+
+    enum Mis_Done_Behave {
+        MIS_DONE_BEHAVE_HOLD      = 0,
+        MIS_DONE_BEHAVE_LOITER    = 1,
+        MIS_DONE_BEHAVE_ACRO      = 2
+    };
+
+    // Loiter control
+    uint16_t loiter_duration;       // How long we should loiter at the nav_waypoint (time in seconds)
+    uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
+    bool previously_reached_wp;     // set to true if we have EVER reached the waypoint
+
+    // Conditional command
+    // A value used in condition commands (eg delay, change alt, etc.)
+    // For example in a change altitude command, it is the altitude to change to.
+    int32_t condition_value;
+    // A starting value used to check the status of a conditional command.
+    // For example in a delay command the condition_start records that start time for the delay
+    int32_t condition_start;
+
 };
 
 
@@ -311,12 +363,16 @@ public:
     void set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed);
     void set_desired_turn_rate_and_speed(float turn_rate_cds, float target_speed);
 
+    // vehicle start loiter
+    bool start_loiter();
+
 protected:
 
     enum GuidedMode {
         Guided_WP,
         Guided_HeadingAndSpeed,
-        Guided_TurnRateAndSpeed
+        Guided_TurnRateAndSpeed,
+        Guided_Loiter
     };
 
     bool _enter() override;
@@ -357,6 +413,14 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    // attributes of the mode
+    bool is_autopilot_mode() const override { return true; }
+
+    // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    float wp_bearing() const override { return _desired_yaw_cd; }
+    float nav_bearing() const override { return _desired_yaw_cd; }
+    float crosstrack_error() const override { return 0.0f; }
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
@@ -487,6 +551,17 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    // attributes of the mode
+    bool is_autopilot_mode() const override { return true; }
+
+    // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    float wp_bearing() const override;
+    float nav_bearing() const override { return wp_bearing(); }
+    float crosstrack_error() const override { return 0.0f; }
+
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override;
 
 protected:
 

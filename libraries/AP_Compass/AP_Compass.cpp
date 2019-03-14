@@ -23,6 +23,7 @@
 #endif
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MAG3110.h"
+#include "AP_Compass_RM3100.h"
 #include "AP_Compass.h"
 #include "Compass_learn.h"
 
@@ -35,7 +36,7 @@ extern AP_HAL::HAL& hal;
 #endif
 
 #ifndef AP_COMPASS_OFFSETS_MAX_DEFAULT
-#define AP_COMPASS_OFFSETS_MAX_DEFAULT 1250
+#define AP_COMPASS_OFFSETS_MAX_DEFAULT 1800
 #endif
 
 #ifndef HAL_COMPASS_FILTER_DEFAULT
@@ -85,8 +86,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
-    // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle.
-    // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning
+    // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle. If InFlight learning is enabled then the compass with automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.
+    // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning,3:InFlight-Learning
     // @User: Advanced
     AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 
@@ -260,18 +261,21 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DEV_ID
     // @DisplayName: Compass device id
     // @Description: Compass device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID",  15, Compass, _state[0].dev_id, 0),
 
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID2", 16, Compass, _state[1].dev_id, 0),
 
     // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID3", 17, Compass, _state[2].dev_id, 0),
 
@@ -494,8 +498,7 @@ Compass::Compass(void)
 
 // Default init method
 //
-bool
-Compass::init()
+void Compass::init()
 {
     if (_compass_count == 0) {
         // detect available backends. Only called once
@@ -514,7 +517,6 @@ Compass::init()
     for (uint8_t i=_compass_count; i<COMPASS_MAX_INSTANCES; i++) {
         _state[i].dev_id.set(0);
     }
-    return true;
 }
 
 //  Register a new compass instance
@@ -627,7 +629,7 @@ void Compass::_probe_external_i2c_compasses(void)
                                                                         GET_I2C_DEVICE(i, HAL_COMPASS_ICM20948_I2C_ADDR),
                                                                         all_external, ROTATION_PITCH_180_YAW_90));
     }
-    
+
     // lis3mdl on bus 0 with default address
     FOREACH_I2C_INTERNAL(i) {
         ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS3MDL_I2C_ADDR),
@@ -663,7 +665,8 @@ void Compass::_probe_external_i2c_compasses(void)
     }
     
     // IST8310 on external and internal bus
-    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5) {
+    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5 &&
+        AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV6) {
         enum Rotation default_rotation;
 
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_AEROFC) {
@@ -735,6 +738,7 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PIXRACER: 
     case AP_BoardConfig::PX4_BOARD_MINDPXV2: 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
     case AP_BoardConfig::PX4_BOARD_AEROFC:
         _probe_external_i2c_compasses();
@@ -785,9 +789,11 @@ void Compass::_detect_backends(void)
         // we run the AK8963 only on the 2nd MPU9250, which leaves the
         // first MPU9250 to run without disturbance at high rate
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(1, ROTATION_YAW_270));
+        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe_ICM20948(0, ROTATION_ROLL_180_YAW_270));
         break;
 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
         FOREACH_I2C_EXTERNAL(i) {
             ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8310_I2C_ADDR),
                                                                   true, ROTATION_ROLL_180_YAW_90));
@@ -880,9 +886,6 @@ void Compass::_detect_backends(void)
 #endif
     ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR),
                                                           false, HAL_COMPASS_HMC5843_ROTATION));
- #if defined(HAL_COMPASS_HMC5843_I2C_EXT_BUS) && CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(HAL_COMPASS_HMC5843_I2C_EXT_BUS, HAL_COMPASS_HMC5843_I2C_ADDR),true));
- #endif
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843_MPU6000
     ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe_mpu6000());
 #elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C
@@ -918,34 +921,6 @@ void Compass::_detect_backends(void)
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
 
-
-#if defined(BOARD_I2C_BUS_EXT) && CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-// autodetect external i2c bus
-    ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(BOARD_I2C_BUS_EXT, HAL_COMPASS_QMC5883L_I2C_ADDR),
-                                                           true, ROTATION_NONE));
-
-    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(BOARD_I2C_BUS_EXT, HAL_COMPASS_HMC5843_I2C_ADDR)));
-
-
-    // lis3mdl
-    ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(GET_I2C_DEVICE(BOARD_I2C_BUS_EXT, HAL_COMPASS_LIS3MDL_I2C_ADDR),
-                                                          true, ROTATION_NONE));
-        
-    // AK09916
-    ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(GET_I2C_DEVICE(BOARD_I2C_BUS_EXT, HAL_COMPASS_AK09916_I2C_ADDR),
-                                                          true, ROTATION_NONE));
-
-    ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(BOARD_I2C_BUS_EXT, HAL_COMPASS_IST8310_I2C_ADDR),
-                                                          ROTATION_NONE));
-
- #ifdef HAL_COMPASS_BMM150_I2C_ADDR
-    ADD_BACKEND(DRIVER_BMM150, AP_Compass_BMM150::probe(GET_I2C_DEVICE(BOARD_I2C_BUS_EXT, HAL_COMPASS_BMM150_I2C_ADDR)));
- #endif
-
-    ADD_BACKEND(DRIVER_MAG3110, AP_Compass_MAG3110::probe(GET_I2C_DEVICE(BOARD_I2C_BUS_EXT, HAL_MAG3110_I2C_ADDR), ROTATION_NONE));
-
-    ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(BOARD_I2C_BUS_EXT, HAL_COMPASS_QMC5883L_I2C_ADDR), ROTATION_NONE));
-#endif
 
 /* for chibios external board coniguration */
 #ifdef HAL_EXT_COMPASS_HMC5843_I2C_BUS

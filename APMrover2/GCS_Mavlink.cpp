@@ -62,7 +62,7 @@ uint32_t GCS_MAVLINK_Rover::custom_mode() const
 
 MAV_STATE GCS_MAVLINK_Rover::system_status() const
 {
-    if (rover.failsafe.triggered != 0) {
+    if ((rover.failsafe.triggered != 0) || rover.failsafe.ekf) {
         return MAV_STATE_CRITICAL;
     }
     if (rover.control_mode == &rover.mode_initializing) {
@@ -75,44 +75,24 @@ MAV_STATE GCS_MAVLINK_Rover::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void Rover::send_extended_status1(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_nav_controller_output() const
 {
-    int16_t battery_current = -1;
-    int8_t battery_remaining = -1;
-
-    if (battery.has_current() && battery.healthy()) {
-        battery_remaining = battery.capacity_remaining_pct();
-        battery_current = battery.current_amps() * 100;
+    if (!rover.control_mode->is_autopilot_mode()) {
+        return;
     }
 
-    update_sensor_status_flags();
+    const Mode *control_mode = rover.control_mode;
 
-    mavlink_msg_sys_status_send(
-        chan,
-        control_sensors_present,
-        control_sensors_enabled,
-        control_sensors_health,
-        static_cast<uint16_t>(scheduler.load_average() * 1000),
-        battery.voltage() * 1000,  // mV
-        battery_current,        // in 10mA units
-        battery_remaining,      // in %
-        0,  // comm drops %,
-        0,  // comm drops in pkts,
-        0, 0, 0, 0);
-}
-
-void Rover::send_nav_controller_output(mavlink_channel_t chan)
-{
     mavlink_msg_nav_controller_output_send(
         chan,
-        g2.attitude_control.get_desired_lat_accel(),
-        ahrs.groundspeed() * ins.get_gyro().z,  // use nav_pitch to hold actual Y accel
-        nav_controller->nav_bearing_cd() * 0.01f,
-        nav_controller->target_bearing_cd() * 0.01f,
+        0,  // roll
+        degrees(rover.g2.attitude_control.get_desired_pitch()),
+        control_mode->nav_bearing(),
+        control_mode->wp_bearing(),
         MIN(control_mode->get_distance_to_destination(), UINT16_MAX),
         0,
         control_mode->speed_error(),
-        nav_controller->crosstrack_error());
+        control_mode->crosstrack_error());
 }
 
 void Rover::send_servo_out(mavlink_channel_t chan)
@@ -145,15 +125,15 @@ int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
     return rover.g2.motors.get_throttle();
 }
 
-void Rover::send_rangefinder(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_rangefinder() const
 {
     float distance_cm;
     float voltage;
     bool got_one = false;
 
     // report smaller distance of all rangefinders
-    for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
-        AP_RangeFinder_Backend *s = rangefinder.get_backend(i);
+    for (uint8_t i=0; i<rover.rangefinder.num_sensors(); i++) {
+        AP_RangeFinder_Backend *s = rover.rangefinder.get_backend(i);
         if (s == nullptr) {
             continue;
         }
@@ -176,11 +156,29 @@ void Rover::send_rangefinder(mavlink_channel_t chan)
 }
 
 /*
+  send RPM packet
+ */
+void Rover::send_rpm(mavlink_channel_t chan)
+{
+    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
+        mavlink_msg_rpm_send(
+            chan,
+            rpm_sensor.get_rpm(0),
+            rpm_sensor.get_rpm(1));
+    }
+}
+
+/*
   send PID tuning message
  */
-void Rover::send_pid_tuning(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_pid_tuning()
 {
-    const DataFlash_Class::PID_Info *pid_info;
+    Parameters &g = rover.g;
+    ParametersG2 &g2 = rover.g2;
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    const AP_Logger::PID_Info *pid_info;
+
     // steering PID
     if (g.gcs_pid_mask & 1) {
         pid_info = &g2.attitude_control.get_steering_rate_pid().get_pid_info();
@@ -274,16 +272,15 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-void Rover::send_fence_status(mavlink_channel_t chan)
+void Rover::send_wheel_encoder_distance(mavlink_channel_t chan)
 {
-    fence_send_mavlink_status(chan);
-}
-
-void Rover::send_wheel_encoder(mavlink_channel_t chan)
-{
-    // send wheel encoder data using rpm message
-    if (g2.wheel_encoder.enabled(0) || g2.wheel_encoder.enabled(1)) {
-        mavlink_msg_rpm_send(chan, wheel_encoder_rpm[0], wheel_encoder_rpm[1]);
+    // send wheel encoder data using wheel_distance message
+    if (g2.wheel_encoder.num_sensors() > 0) {
+        double distances[MAVLINK_MSG_WHEEL_DISTANCE_FIELD_DISTANCE_LEN] {};
+        for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
+            distances[i] = wheel_encoder_last_distance_m[i];
+        }
+        mavlink_msg_wheel_distance_send(chan, 1000UL * wheel_encoder_last_ekf_update_ms, g2.wheel_encoder.num_sensors(), distances);
     }
 }
 
@@ -291,23 +288,29 @@ uint8_t GCS_MAVLINK_Rover::sysid_my_gcs() const
 {
     return rover.g.sysid_my_gcs;
 }
+bool GCS_MAVLINK_Rover::sysid_enforce() const
+{
+    return rover.g2.sysid_enforce;
+}
 
 uint32_t GCS_MAVLINK_Rover::telem_delay() const
 {
     return static_cast<uint32_t>(rover.g.telem_delay);
 }
 
+bool GCS_MAVLINK_Rover::vehicle_initialised() const
+{
+    return rover.control_mode != &rover.mode_initializing;
+}
+
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 {
-    if (telemetry_delayed()) {
-        return false;
-    }
-
     // if we don't have at least 0.2ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
     if (!hal.scheduler->in_delay_callback() &&
+        !AP_BoardConfig::in_sensor_config_error() &&
         rover.scheduler.time_available_usec() < 200) {
         gcs().set_out_of_time(true);
         return false;
@@ -315,54 +318,24 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     switch (id) {
 
-    case MSG_EXTENDED_STATUS1:
-        // send extended status only once vehicle has been initialised
-        // to avoid unnecessary errors being reported to user
-        if (initialised) {
-            CHECK_PAYLOAD_SIZE(SYS_STATUS);
-            rover.send_extended_status1(chan);
-            CHECK_PAYLOAD_SIZE(POWER_STATUS);
-            send_power_status();
-        }
-        break;
-
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        if (rover.control_mode->is_autopilot_mode()) {
-            CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-            rover.send_nav_controller_output(chan);
-        }
-        break;
-
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         rover.send_servo_out(chan);
         break;
 
-    case MSG_RANGEFINDER:
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        rover.send_rangefinder(chan);
-        send_distance_sensor();
-        send_proximity();
-        break;
-
     case MSG_RPM:
         CHECK_PAYLOAD_SIZE(RPM);
-        rover.send_wheel_encoder(chan);
+        rover.send_rpm(chan);
         break;
 
-    case MSG_FENCE_STATUS:
-        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
-        rover.send_fence_status(chan);
+    case MSG_WHEEL_DISTANCE:
+        CHECK_PAYLOAD_SIZE(WHEEL_DISTANCE);
+        rover.send_wheel_encoder_distance(chan);
         break;
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         rover.g2.windvane.send_wind(chan);
-        break;
-
-    case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        rover.send_pid_tuning(chan);
         break;
 
     default:
@@ -466,13 +439,18 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 };
 
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
-    MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
-    MSG_RAW_IMU2,  // BARO
-    MSG_RAW_IMU3  // SENSOR_OFFSETS
+    MSG_RAW_IMU,
+    MSG_SCALED_IMU2,
+    MSG_SCALED_IMU3,
+    MSG_SCALED_PRESSURE,
+    MSG_SCALED_PRESSURE2,
+    MSG_SCALED_PRESSURE3,
+    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
-    MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
-    MSG_EXTENDED_STATUS2, // MEMINFO
+    MSG_SYS_STATUS,
+    MSG_POWER_STATUS,
+    MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
@@ -494,7 +472,9 @@ static const ap_message STREAM_RC_CHANNELS_msgs[] = {
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
-    MSG_SIMSTATE, // SIMSTATE, AHRS2
+    MSG_SIMSTATE,
+    MSG_AHRS2,
+    MSG_AHRS3,
     MSG_PID_TUNING,
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
@@ -505,6 +485,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_HWSTATUS,
     MSG_WIND,
     MSG_RANGEFINDER,
+    MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
     MSG_BATTERY2,
     MSG_BATTERY_STATUS,
@@ -514,7 +495,11 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
     MSG_RPM,
+    MSG_WHEEL_DISTANCE,
     MSG_ESC_TELEMETRY,
+};
+static const ap_message STREAM_PARAMS_msgs[] = {
+    MSG_NEXT_PARAM
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
@@ -526,6 +511,7 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_EXTRA1),
     MAV_STREAM_ENTRY(STREAM_EXTRA2),
     MAV_STREAM_ENTRY(STREAM_EXTRA3),
+    MAV_STREAM_ENTRY(STREAM_PARAMS),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
@@ -573,6 +559,13 @@ MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlin
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
 }
 
+bool GCS_MAVLINK_Rover::set_home_to_current_location(bool lock) {
+    return rover.set_home_to_current_location(lock);
+}
+bool GCS_MAVLINK_Rover::set_home(const Location& loc, bool lock) {
+    return rover.set_home(loc, lock);
+}
+
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
     switch (packet.command) {
@@ -584,48 +577,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
-
-    case MAV_CMD_DO_SET_HOME: {
-        // assume failure
-        if (is_equal(packet.param1, 1.0f)) {
-            // if param1 is 1, use current location
-            if (rover.set_home_to_current_location(true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-            return MAV_RESULT_FAILED;
-        }
-        // ensure param1 is zero
-        if (!is_zero(packet.param1)) {
-            return MAV_RESULT_FAILED;
-        }
-        // check frame type is supported
-        if (packet.frame != MAV_FRAME_GLOBAL &&
-            packet.frame != MAV_FRAME_GLOBAL_INT &&
-            packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-            packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-            return MAV_RESULT_FAILED;
-        }
-        // sanity check location
-        if (!check_latlng(packet.x, packet.y)) {
-            return MAV_RESULT_FAILED;
-        }
-        Location new_home_loc {};
-        new_home_loc.lat = packet.x;
-        new_home_loc.lng = packet.y;
-        new_home_loc.alt = packet.z * 100;
-        // handle relative altitude
-        if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-            if (!rover.ahrs.home_is_set()) {
-                // cannot use relative altitude if home is not set
-                return MAV_RESULT_FAILED;
-            }
-            new_home_loc.alt += rover.ahrs.get_home().alt;
-        }
-        if (!rover.set_home(new_home_loc, true)) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
-    }
 
     case MAV_CMD_DO_SET_REVERSE:
         // param1 : Direction (0=Forward, 1=Reverse)
@@ -656,7 +607,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
     case MAV_CMD_COMPONENT_ARM_DISARM:
         if (is_equal(packet.param1, 1.0f)) {
             // run pre_arm_checks and arm_checks and display failures
-            if (rover.arm_motors(AP_Arming::MAVLINK)) {
+            if (rover.arm_motors(AP_Arming::Method::MAVLINK)) {
                 return MAV_RESULT_ACCEPTED;
             } else {
                 return MAV_RESULT_FAILED;
@@ -669,19 +620,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
             }
         }
         return MAV_RESULT_UNSUPPORTED;
-
-    case MAV_CMD_DO_FENCE_ENABLE:
-        switch ((uint16_t)packet.param1) {
-        case 0:
-            rover.g2.fence.enable(false);
-            return MAV_RESULT_ACCEPTED;
-        case 1:
-            rover.g2.fence.enable(true);
-            return MAV_RESULT_ACCEPTED;
-        default:
-            break;
-        }
-        return MAV_RESULT_FAILED;
 
     case MAV_CMD_DO_CHANGE_SPEED:
         // param1 : unused
@@ -756,38 +694,19 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
 }
 
 
+// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
+void GCS_MAVLINK_Rover::handle_rc_channels_override(const mavlink_message_t *msg)
+{
+    rover.failsafe.last_heartbeat_ms = AP_HAL::millis();
+    GCS_MAVLINK::handle_rc_channels_override(msg);
+}
+
 
 void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
-    case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
-    {
-        // allow override of RC channel values for HIL
-        // or for complete GCS control of switch position
-        // and RC PWM values.
-        if (msg->sysid != rover.g.sysid_my_gcs) {  // Only accept control from our gcs
-            break;
-        }
-
-        uint32_t tnow = AP_HAL::millis();
-
-        mavlink_rc_channels_override_t packet;
-        mavlink_msg_rc_channels_override_decode(msg, &packet);
-
-        RC_Channels::set_override(0, packet.chan1_raw, tnow);
-        RC_Channels::set_override(1, packet.chan2_raw, tnow);
-        RC_Channels::set_override(2, packet.chan3_raw, tnow);
-        RC_Channels::set_override(3, packet.chan4_raw, tnow);
-        RC_Channels::set_override(4, packet.chan5_raw, tnow);
-        RC_Channels::set_override(5, packet.chan6_raw, tnow);
-        RC_Channels::set_override(6, packet.chan7_raw, tnow);
-        RC_Channels::set_override(7, packet.chan8_raw, tnow);
-
-        // an RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-        rover.failsafe.last_heartbeat_ms = tnow;
-        break;
-    }
+    
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
     {
@@ -891,19 +810,19 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                     const float ne_x = packet.x * rover.ahrs.cos_yaw() - packet.y * rover.ahrs.sin_yaw();
                     const float ne_y = packet.x * rover.ahrs.sin_yaw() + packet.y * rover.ahrs.cos_yaw();
                     // add offset to current location
-                    location_offset(target_loc, ne_x, ne_y);
+                    target_loc.offset(ne_x, ne_y);
                     }
                     break;
 
                 case MAV_FRAME_LOCAL_OFFSET_NED:
                     // add offset to current location
-                    location_offset(target_loc, packet.x, packet.y);
+                    target_loc.offset(packet.x, packet.y);
                     break;
 
                 default:
                     // MAV_FRAME_LOCAL_NED interpret as an offset from home
                     target_loc = rover.ahrs.get_home();
-                    location_offset(target_loc, packet.x, packet.y);
+                    target_loc.offset(packet.x, packet.y);
                     break;
                 }
             }
@@ -961,13 +880,13 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 // consume velocity and turn rate
                 rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, speed_dir * target_speed);
             } else if (pos_ignore && !vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
-                // consume velocity
+                // consume velocity and heading
                 rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
             } else if (pos_ignore && vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
                 // consume just target heading (probably only skid steering vehicles can do this)
                 rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, 0.0f);
             } else if (pos_ignore && vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
-                // consume just turn rate(probably only skid steering vehicles can do this)
+                // consume just turn rate (probably only skid steering vehicles can do this)
                 rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
             }
             break;
@@ -1122,15 +1041,9 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
         {
-            handle_radio_status(msg, rover.DataFlash, rover.should_log(MASK_LOG_PM));
+            handle_radio_status(msg, rover.logger, rover.should_log(MASK_LOG_PM));
             break;
         }
-
-    // send or receive fence points with GCS
-    case MAVLINK_MSG_ID_FENCE_POINT:  // MAV ID: 160
-    case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
-        rover.g2.fence.handle_msg(*this, msg);
-        break;
 
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
         rover.rangefinder.handle_msg(msg);
@@ -1146,6 +1059,19 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
     }  // end switch
 }  // end handle mavlink
 
+uint64_t GCS_MAVLINK_Rover::capabilities() const
+{
+    return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_MISSION_INT |
+            MAV_PROTOCOL_CAPABILITY_COMMAND_INT |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
+            MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
+            MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION |
+            GCS_MAVLINK::capabilities());
+}
+
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the
  *  callback in long running library initialisation routines to allow
@@ -1160,18 +1086,18 @@ void Rover::mavlink_delay_cb()
     }
 
     // don't allow potentially expensive logging calls:
-    DataFlash.EnableWrites(false);
+    logger.EnableWrites(false);
 
     const uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_EXTENDED_STATUS1);
+        gcs().send_message(MSG_SYS_STATUS);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
-        gcs_data_stream_send();
+        gcs().update_receive();
+        gcs().update_send();
         notify.update();
     }
     if (tnow - last_5s > 5000) {
@@ -1179,74 +1105,13 @@ void Rover::mavlink_delay_cb()
         gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
 
-    DataFlash.EnableWrites(true);
-}
-
-/*
- *  send data streams in the given rate range on both links
- */
-void Rover::gcs_data_stream_send(void)
-{
-    gcs().data_stream_send();
-}
-
-/*
- *  look for incoming commands on the GCS links
- */
-void Rover::gcs_update(void)
-{
-    gcs().update();
-}
-
-/**
-   retry any deferred messages
- */
-void Rover::gcs_retry_deferred(void)
-{
-    gcs().retry_deferred();
-}
-
-/*
-  return true if we will accept this packet. Used to implement SYSID_ENFORCE
- */
-bool GCS_MAVLINK_Rover::accept_packet(const mavlink_status_t &status, mavlink_message_t &msg)
-{
-    if (!rover.g2.sysid_enforce) {
-      return true;
-    }
-    if (msg.msgid == MAVLINK_MSG_ID_RADIO || msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
-        return true;
-    }
-    return (msg.sysid == rover.g.sysid_my_gcs);
+    logger.EnableWrites(true);
 }
 
 AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const
 {
 #if ADVANCED_FAILSAFE == ENABLED
     return &rover.g2.afs;
-#else
-    return nullptr;
-#endif
-}
-
-AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
-{
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    return &rover.g2.visual_odom;
-#else
-    return nullptr;
-#endif
-}
-
-AP_Mission *GCS_MAVLINK_Rover::get_mission()
-{
-    return &rover.mission;
-}
-
-AP_Rally *GCS_MAVLINK_Rover::get_rally() const
-{
-#if AP_RALLY == ENABLED
-    return &rover.g2.rally;
 #else
     return nullptr;
 #endif

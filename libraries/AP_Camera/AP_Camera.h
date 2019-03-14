@@ -4,15 +4,10 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_Relay/AP_Relay.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <drivers/drv_hrt.h>
-#endif
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
@@ -106,11 +101,8 @@ private:
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
     void            feedback_pin_timer();
+    void            feedback_pin_isr(uint8_t, bool, uint32_t);
     void            setup_feedback_callback(void);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    static void     capture_callback(void *context, uint32_t chan_index,
-                                     hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow);
-#endif
 
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     AP_Int16        _min_interval;      // Minimum time between shots required by camera
@@ -118,15 +110,16 @@ private:
     uint32_t        _last_photo_time;   // last time a photo was taken
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
-    uint16_t        _feedback_events;   // number of feedback events since boot
 
     // pin number for accurate camera feedback messages
     AP_Int8         _feedback_pin;
     AP_Int8         _feedback_polarity;
 
-    // this is set to 1 when camera trigger pin has fired
-    static volatile bool   _camera_triggered;
-    bool            _timer_installed:1;
+    uint32_t        _camera_trigger_count;
+    uint32_t        _camera_trigger_logged;
+    uint32_t        _feedback_timestamp_us;
+    bool            _timer_installed;
+    bool            _isr_installed;
     uint8_t         _last_pin_state;
 
     void log_picture();
@@ -141,9 +134,6 @@ private:
     // de-activate the trigger after some delay, but without using a delay() function
     // should be called at 50hz from main program
     void trigger_pic_cleanup();
-
-    // check if feedback pin has fired
-    bool check_feedback_pin(void);
 
     // return true if we are using a feedback pin
     bool using_feedback_pin(void) const

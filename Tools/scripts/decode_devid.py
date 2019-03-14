@@ -56,6 +56,7 @@ compass_types = {
     0x0E : "DEVTYPE_MAG3110",
     0x0F : "DEVTYPE_SITL",
     0x10 : "DEVTYPE_IST8308",
+    0x11 : "DEVTYPE_RM3100",
 }
 
 imu_types = {

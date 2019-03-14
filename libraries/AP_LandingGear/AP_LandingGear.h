@@ -32,7 +32,7 @@ public:
     AP_LandingGear &operator=(const AP_LandingGear&) = delete;
     
     // get singleton instance
-    static AP_LandingGear *instance(void) {
+    static AP_LandingGear *get_singleton(void) {
         return _singleton;
     }
 
@@ -100,9 +100,6 @@ private:
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
     bool        _have_changed;          // have we changed the servo state?
 
-    bool        _deploy_lock;           // used to force landing gear to remain deployed until another regular Deploy command is received to reduce accidental retraction
-    bool        _deploy_pin_state;
-    bool        _weight_on_wheels_pin_state;
     int16_t     _last_height_above_ground;
     
     // debounce

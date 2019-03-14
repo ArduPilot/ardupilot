@@ -27,11 +27,6 @@ class RC_Channels_Copter : public RC_Channels
 {
 public:
 
-    // this must be implemented for the AP_Scheduler functor to work:
-    void read_aux_all() override {
-        RC_Channels::read_aux_all();
-    }
-
     bool has_valid_input() const override;
 
     RC_Channel_Copter obj_channels[NUM_RC_CHANNELS];

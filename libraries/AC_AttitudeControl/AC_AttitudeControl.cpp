@@ -1,6 +1,7 @@
 #include "AC_AttitudeControl.h"
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
+
+extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
  // default gains for Plane
@@ -358,6 +359,58 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     attitude_controller_run_quat();
 }
 
+// Command euler pitch and yaw angles and roll rate
+void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll(float euler_yaw_rate_cds, float euler_pitch_cd, float body_roll_cd)
+{
+    // Convert from centidegrees on public interface to radians
+    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
+    float euler_pitch = radians(euler_pitch_cd*0.01f);
+    float body_roll = radians(body_roll_cd*0.01f);
+
+    // back out the body roll to get current euler_yaw
+    Quaternion bf_roll_Q;
+    bf_roll_Q.from_axis_angle(Vector3f(0, 0, -_last_body_roll));
+    Quaternion base_att_Q = _attitude_target_quat * bf_roll_Q;
+
+    // avoid Euler singularities
+    if (_last_euler_pitch > M_PI_4) {
+        base_att_Q.rotate(Vector3f(0,-M_PI_2,0));
+    } else if (_last_euler_pitch < -M_PI_4) {
+        base_att_Q.rotate(Vector3f(0,M_PI_2,0));
+    }
+
+    // current heading
+    float heading = base_att_Q.get_euler_yaw();
+
+    // new heading
+    heading = wrap_PI(heading + euler_yaw_rate * _dt);
+
+    // init attitude target to desired euler yaw and pitch with zero roll
+    _attitude_target_quat.from_euler(0, euler_pitch, heading);
+    _last_euler_pitch = euler_pitch;
+
+    // apply body-frame yaw (this is roll for a tailsitter in forward flight)
+    bf_roll_Q.from_axis_angle(Vector3f(0, 0, body_roll));
+    _last_body_roll = body_roll;
+    _attitude_target_quat = _attitude_target_quat * bf_roll_Q;
+
+    // Set rate feedforward requests to zero
+    _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
+    _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+
+    // Compute attitude error
+    Quaternion attitude_vehicle_quat;
+    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+
+    Quaternion error_quat;
+    error_quat = attitude_vehicle_quat.inverse() * _attitude_target_quat;
+    Vector3f att_error;
+    error_quat.to_axis_angle(att_error);
+
+    // Compute the angular velocity target from the attitude error
+    _rate_target_ang_vel = update_ang_vel_target_from_att_error(att_error);
+}
+
 // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
 void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
 {
@@ -670,7 +723,7 @@ float AC_AttitudeControl::input_shaping_ang_vel(float target_ang_vel, float desi
 
 // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
 // This function can be used to predict the delay associated with angle requests.
-void AC_AttitudeControl::input_shaping_rate_predictor(Vector2f error_angle, Vector2f& target_ang_vel, float dt) const
+void AC_AttitudeControl::input_shaping_rate_predictor(const Vector2f &error_angle, Vector2f& target_ang_vel, float dt) const
 {
     if (_rate_bf_ff_enabled) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
@@ -712,7 +765,7 @@ void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_m
 }
 
 // translates body frame acceleration limits to the euler axis
-Vector3f AC_AttitudeControl::euler_accel_limit(Vector3f euler_rad, Vector3f euler_accel)
+Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const Vector3f &euler_accel)
 {
     float sin_phi = constrain_float(fabsf(sinf(euler_rad.x)), 0.1f, 1.0f);
     float cos_phi = constrain_float(fabsf(cosf(euler_rad.x)), 0.1f, 1.0f);
@@ -789,7 +842,7 @@ bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const 
 }
 
 // Update rate_target_ang_vel using attitude_error_rot_vec_rad
-Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(Vector3f attitude_error_rot_vec_rad)
+Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad)
 {
     Vector3f rate_target_ang_vel;
     // Compute the roll angular velocity demand from the roll angle error
@@ -983,7 +1036,9 @@ float AC_AttitudeControl::max_rate_step_bf_roll()
 {
     float alpha = get_rate_roll_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return 2.0f*_motors.get_throttle_hover()*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_roll_pid().kD())/_dt + get_rate_roll_pid().kP());
+    // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
+    float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
+    return 2.0f*throttle_hover*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_roll_pid().kD())/_dt + get_rate_roll_pid().kP());
 }
 
 // Return pitch rate step size in centidegrees/s that results in maximum output after 4 time steps
@@ -991,7 +1046,9 @@ float AC_AttitudeControl::max_rate_step_bf_pitch()
 {
     float alpha = get_rate_pitch_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return 2.0f*_motors.get_throttle_hover()*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_pitch_pid().kD())/_dt + get_rate_pitch_pid().kP());
+    // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
+    float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
+    return 2.0f*throttle_hover*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_pitch_pid().kD())/_dt + get_rate_pitch_pid().kP());
 }
 
 // Return yaw rate step size in centidegrees/s that results in maximum output after 4 time steps
@@ -999,5 +1056,72 @@ float AC_AttitudeControl::max_rate_step_bf_yaw()
 {
     float alpha = get_rate_yaw_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return 2.0f*_motors.get_throttle_hover()*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_yaw_pid().kD())/_dt + get_rate_yaw_pid().kP());
+    // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
+    float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
+    return 2.0f*throttle_hover*AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_yaw_pid().kD())/_dt + get_rate_yaw_pid().kP());
+}
+
+bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
+                                        char *failure_msg,
+                                        const uint8_t failure_msg_len)
+{
+    // validate AC_P members:
+    const struct {
+        const char *pid_name;
+        AC_P &p;
+    } ps[] = {
+        { "ANG_PIT", get_angle_pitch_p() },
+        { "ANG_RLL", get_angle_roll_p() },
+        { "ANG_YAW", get_angle_yaw_p() }
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(ps); i++) {
+        // all AC_P's must have a positive P value:
+        if (!is_positive(ps[i].p.kP())) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, ps[i].pid_name);
+            return false;
+        }
+    }
+
+    // validate AC_PID members:
+    const struct {
+        const char *pid_name;
+        AC_PID &pid;
+    } pids[] = {
+        { "RAT_RLL", get_rate_roll_pid() },
+        { "RAT_PIT", get_rate_pitch_pid() },
+        { "RAT_YAW", get_rate_yaw_pid() },
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(pids); i++) {
+        // if the PID has a positive FF then we just ensure kP and
+        // kI aren't negative
+        AC_PID &pid = pids[i].pid;
+        const char *pid_name = pids[i].pid_name;
+        if (is_positive(pid.ff())) {
+            // kP and kI must be non-negative:
+            if (is_negative(pid.kP())) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be >= 0", param_prefix, pid_name);
+                return false;
+            }
+            if (is_negative(pid.kI())) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_I must be >= 0", param_prefix, pid_name);
+                return false;
+            }
+        } else {
+            // kP and kI must be positive:
+            if (!is_positive(pid.kP())) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, pid_name);
+                return false;
+            }
+            if (!is_positive(pid.kI())) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_I must be > 0", param_prefix, pid_name);
+                return false;
+            }
+        }
+        // never allow a negative D term (but zero is allowed)
+        if (is_negative(pid.kD())) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_D must be >= 0", param_prefix, pid_name);
+            return false;
+        }
+    }
+    return true;
 }

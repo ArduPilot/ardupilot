@@ -10,6 +10,7 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include "qautotune.h"
 
 /*
   QuadPlane specific functionality
@@ -21,7 +22,9 @@ public:
     friend class AP_Tuning_Plane;
     friend class GCS_MAVLINK_Plane;
     friend class AP_AdvancedFailsafe_Plane;
-    
+    friend class QAutoTune;
+    friend class AP_Arming_Plane;
+
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
     // var_info for holding Parameter information
@@ -37,6 +40,8 @@ public:
     void setup_target_position(void);
     void takeoff_controller(void);
     void waypoint_controller(void);
+
+    void update_throttle_thr_mix(void);
     
     // update transition handling
     void update(void);
@@ -72,6 +77,7 @@ public:
     bool verify_vtol_land(void);
     bool in_vtol_auto(void) const;
     bool in_vtol_mode(void) const;
+    void update_throttle_hover();
 
     // vtol help for is_flying()
     bool is_flying(void);
@@ -114,20 +120,22 @@ public:
 
     // return true if the wp_nav controller is being updated
     bool using_wp_nav(void) const;
+
+    // return true if the user has set ENABLE
+    bool enabled(void) const { return enable != 0; }
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
         uint64_t time_us;
+        float    throttle_in;
         float    angle_boost;
         float    throttle_out;
+        float    throttle_hover;
         float    desired_alt;
         float    inav_alt;
-        int16_t  desired_climb_rate;
+        int32_t  baro_alt;
+        int16_t  target_climb_rate;
         int16_t  climb_rate;
-        float    dvx;
-        float    dvy;
-        float    dax;
-        float    day;
         float    throttle_mix;
     };
         
@@ -189,13 +197,17 @@ private:
     void control_stabilize(void);
 
     void check_attitude_relax(void);
+    void init_qacro(void);
+    void control_qacro(void);
     void init_hover(void);
     void control_hover(void);
 
     void init_loiter(void);
-    void init_land(void);
+    void init_qland(void);
     void control_loiter(void);
     void check_land_complete(void);
+    bool land_detector(uint32_t timeout_ms);
+    bool check_land_final(void);
 
     void init_qrtl(void);
     void control_qrtl(void);
@@ -216,12 +228,11 @@ private:
     void guided_start(void);
     void guided_update(void);
 
-    void check_throttle_suppression(void);
+    void update_throttle_suppression(void);
 
     void run_z_controller(void);
 
     void setup_defaults(void);
-    void setup_defaults_table(const struct defaults_struct *defaults, uint8_t count);
 
     // calculate a stopping distance for fixed-wing to vtol transitions
     float stopping_distance(void);
@@ -231,8 +242,15 @@ private:
     // transition deceleration, m/s/s
     AP_Float transition_decel;
 
+    // transition failure milliseconds
+    AP_Int16 transition_failure;
+
     // Quadplane trim, degrees
     AP_Float ahrs_trim_pitch;
+    float _last_ahrs_trim_pitch;
+
+    // fw landing approach radius
+    AP_Float fw_land_approach_radius;
 
     AP_Int16 rc_speed;
 
@@ -301,6 +319,7 @@ private:
     
     // timer start for transition
     uint32_t transition_start_ms;
+    uint32_t transition_low_airspeed_ms;
 
     Location last_auto_target;
 
@@ -394,6 +413,7 @@ private:
     enum tailsitter_input {
         TAILSITTER_INPUT_MULTICOPTER = 0,
         TAILSITTER_INPUT_PLANE       = 1,
+        TAILSITTER_INPUT_BF_ROLL     = 2,
     };
 
     enum tailsitter_mask {
@@ -413,6 +433,8 @@ private:
         AP_Float vectored_hover_gain;
         AP_Float vectored_hover_power;
         AP_Float throttle_scale_max;
+        AP_Float max_roll_angle;
+        AP_Int16 motor_mask;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller
@@ -471,7 +493,12 @@ private:
       return true if current mission item is a vtol landing
      */
     bool is_vtol_land(uint16_t id) const;
-    
+
+#if QAUTOTUNE_ENABLED
+    // qautotune mode
+    QAutoTune qautotune;
+#endif
+
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,

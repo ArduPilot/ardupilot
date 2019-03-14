@@ -22,7 +22,7 @@
 /*****************************************
 * Throttle slew limit
 *****************************************/
-void Plane::throttle_slew_limit(void)
+void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
     if (control_mode==AUTO) {
@@ -34,7 +34,7 @@ void Plane::throttle_slew_limit(void)
     }
     // if slew limit rate is set to zero then do not slew limit
     if (slewrate) {                   
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, slewrate, G_Dt);
+        SRV_Channels::limit_slew_rate(func, slewrate, G_Dt);
     }
 }
 
@@ -370,7 +370,7 @@ void Plane::set_servos_controlled(void)
                                     constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), min_throttle, max_throttle));
     
     if (!hal.util->get_soft_armed()) {
-        if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
+        if (arming.arming_required() == AP_Arming::Required::YES_ZERO_PWM) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
@@ -386,16 +386,21 @@ void Plane::set_servos_controlled(void)
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         }
-    } else if (g.throttle_passthru_stabilize && 
-               (control_mode == STABILIZE || 
-                control_mode == TRAINING ||
-                control_mode == ACRO ||
-                control_mode == FLY_BY_WIRE_A ||
-                control_mode == AUTOTUNE) &&
-               !failsafe.throttle_counter) {
-        // manual pass through of throttle while in FBWA or
-        // STABILIZE mode with THR_PASS_STAB set
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
+    } else if (control_mode == STABILIZE ||
+               control_mode == TRAINING ||
+               control_mode == ACRO ||
+               control_mode == FLY_BY_WIRE_A ||
+               control_mode == AUTOTUNE) {
+        // a manual throttle mode
+        if (failsafe.throttle_counter) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        } else if (g.throttle_passthru_stabilize) {
+            // manual pass through of throttle while in FBWA or
+            // STABILIZE mode with THR_PASS_STAB set
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
+        } else {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
+        }
     } else if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
                guided_throttle_passthru) {
         // manual pass through of throttle while in GUIDED
@@ -557,28 +562,28 @@ void Plane::servos_twin_engine_mix(void)
 {
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
-    float rudder = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
+    rudder_dt = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
 
     if (afs.should_crash_vehicle()) {
         // when in AFS failsafe force rudder input for differential thrust to zero
-        rudder = 0;
+        rudder_dt = 0;
     }
 
     float throttle_left, throttle_right;
 
     if (throttle < 0 && have_reverse_thrust() && allow_reverse_thrust()) {
         // doing reverse thrust
-        throttle_left  = constrain_float(throttle + 50 * rudder, -100, 0);
-        throttle_right = constrain_float(throttle - 50 * rudder, -100, 0);
+        throttle_left  = constrain_float(throttle + 50 * rudder_dt, -100, 0);
+        throttle_right = constrain_float(throttle - 50 * rudder_dt, -100, 0);
     } else if (throttle <= 0) {
         throttle_left  = throttle_right = 0;
     } else {
         // doing forward thrust
-        throttle_left  = constrain_float(throttle + 50 * rudder, 0, 100);
-        throttle_right = constrain_float(throttle - 50 * rudder, 0, 100);
+        throttle_left  = constrain_float(throttle + 50 * rudder_dt, 0, 100);
+        throttle_right = constrain_float(throttle - 50 * rudder_dt, 0, 100);
     }
     if (!hal.util->get_soft_armed()) {
-        if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
+        if (arming.arming_required() == AP_Arming::Required::YES_ZERO_PWM) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
         } else {
@@ -588,6 +593,8 @@ void Plane::servos_twin_engine_mix(void)
     } else {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
+        throttle_slew_limit(SRV_Channel::k_throttleLeft);
+        throttle_slew_limit(SRV_Channel::k_throttleRight);
     }
 }
 
@@ -673,25 +680,25 @@ void Plane::set_servos(void)
         quadplane.in_vtol_mode()) {
         /* only do throttle slew limiting in modes where throttle
          *  control is automatic */
-        throttle_slew_limit();
+        throttle_slew_limit(SRV_Channel::k_throttle);
     }
 
     if (!arming.is_armed()) {
         //Some ESCs get noisy (beep error msgs) if PWM == 0.
         //This little segment aims to avoid this.
         switch (arming.arming_required()) { 
-        case AP_Arming::NO:
+        case AP_Arming::Required::NO:
             //keep existing behavior: do nothing to radio_out
             //(don't disarm throttle channel even if AP_Arming class is)
             break;
 
-        case AP_Arming::YES_ZERO_PWM:
+        case AP_Arming::Required::YES_ZERO_PWM:
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, 0);
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, 0);
             break;
 
-        case AP_Arming::YES_MIN_PWM:
+        case AP_Arming::Required::YES_MIN_PWM:
         default:
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
@@ -777,6 +784,11 @@ void Plane::servos_output(void)
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();
     }
+}
+
+void Plane::update_throttle_hover() {
+    // update hover throttle at 100Hz
+    quadplane.update_throttle_hover();
 }
 
 /*

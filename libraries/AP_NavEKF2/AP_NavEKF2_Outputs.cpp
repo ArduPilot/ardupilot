@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -213,7 +211,7 @@ void NavEKF2_core::getVelNED(Vector3f &vel) const
     vel = outputDataNew.velocity + velOffsetNED;
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) of the body frame origin in m/s
+// Return the rate of change of vertical position in the down direction (dPosD/dt) of the body frame origin in m/s
 float NavEKF2_core::getPosDownDerivative(void) const
 {
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
@@ -322,15 +320,15 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
     if(getPosD(posD) && getOriginLLH(origin)) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
         loc.alt =  origin.alt - posD*100;
-        loc.flags.relative_alt = 0;
-        loc.flags.terrain_alt = 0;
+        loc.relative_alt = 0;
+        loc.terrain_alt = 0;
 
         // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
         if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
             loc.lat = EKF_origin.lat;
             loc.lng = EKF_origin.lng;
             // correct for IMU offset (EKF calculations are at the IMU position)
-            location_offset(loc, (outputDataNew.position.x + posOffsetNED.x), (outputDataNew.position.y + posOffsetNED.y));
+            loc.offset((outputDataNew.position.x + posOffsetNED.x), (outputDataNew.position.y + posOffsetNED.y));
             return true;
         } else {
             // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
@@ -344,7 +342,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
             } else {
                 // if no GPS fix, provide last known position before entering the mode
                 // correct for IMU offset (EKF calculations are at the IMU position)
-                location_offset(loc, (lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
+                loc.offset((lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
                 return false;
             }
         }
@@ -354,8 +352,8 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
         if ((gps.status() >= AP_GPS::GPS_OK_FIX_3D)) {
             const struct Location &gpsloc = gps.location();
             loc = gpsloc;
-            loc.flags.relative_alt = 0;
-            loc.flags.terrain_alt = 0;
+            loc.relative_alt = 0;
+            loc.terrain_alt = 0;
         }
         return false;
     }
@@ -617,4 +615,3 @@ void NavEKF2_core::getOutputTrackingError(Vector3f &error) const
     error = outputTrackError;
 }
 
-#endif // HAL_CPU_CLASS

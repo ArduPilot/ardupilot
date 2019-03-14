@@ -17,6 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -29,7 +30,7 @@
    than 1 then redundant sensors may be available
  */
 #define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
-#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPs instances including the 'virtual' GPS created by blending receiver data
+#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPS instances including the 'virtual' GPS created by blending receiver data
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #define GPS_RTK_INJECT_TO_ALL 127
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
@@ -70,7 +71,7 @@ public:
     AP_GPS(const AP_GPS &other) = delete;
     AP_GPS &operator=(const AP_GPS&) = delete;
 
-    static AP_GPS &gps() {
+    static AP_GPS &get_singleton() {
         return *_singleton;
     }
 
@@ -148,6 +149,7 @@ public:
         bool have_horizontal_accuracy;    ///< does GPS give horizontal position accuracy? Set to true only once available.
         bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
+        uint32_t uart_timestamp_ms;         ///< optional timestamp from set_uart_timestamp()
 
         // all the following fields must only all be filled by RTK capable backend drivers
         uint32_t rtk_time_week_ms;         ///< GPS Time of Week of last baseline in milliseconds
@@ -188,6 +190,9 @@ public:
 
     /// Query GPS status
     GPS_Status status(uint8_t instance) const {
+        if (_force_disable_gps && state[instance].status > NO_FIX) {
+            return NO_FIX;
+        }
         return state[instance].status;
     }
     GPS_Status status(void) const {
@@ -404,7 +409,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    void Write_DataFlash_Log_Startup_messages();
+    void Write_AP_Logger_Log_Startup_messages();
 
     // indicate which bit in LOG_BITMASK indicates gps logging enabled
     void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
@@ -416,6 +421,11 @@ public:
 
     // returns true if all GPS instances have passed all final arming checks/state changes
     bool prepare_for_arming(void);
+
+    // used to disable GPS for GPS failure testing in flight
+    void force_disable(bool disable) {
+        _force_disable_gps = disable;
+    }
 
 protected:
 
@@ -461,8 +471,8 @@ private:
         uint16_t delta_time_ms;
     };
     // Note allowance for an additional instance to contain blended data
-    GPS_timing timing[GPS_MAX_RECEIVERS+1];
-    GPS_State state[GPS_MAX_RECEIVERS+1];
+    GPS_timing timing[GPS_MAX_INSTANCES];
+    GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_RECEIVERS];
     AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
 
@@ -555,6 +565,9 @@ private:
         GPS_AUTO_CONFIG_DISABLE = 0,
         GPS_AUTO_CONFIG_ENABLE  = 1
     };
+
+    // used for flight testing with GPS loss
+    bool _force_disable_gps;
 };
 
 namespace AP {

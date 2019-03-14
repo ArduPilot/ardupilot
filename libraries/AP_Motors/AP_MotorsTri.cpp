@@ -80,25 +80,31 @@ void AP_MotorsTri::output_to_motors()
     switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
-            rc_write(AP_MOTORS_MOT_1, get_pwm_output_min());
-            rc_write(AP_MOTORS_MOT_2, get_pwm_output_min());
-            rc_write(AP_MOTORS_MOT_4, get_pwm_output_min());
+            rc_write(AP_MOTORS_MOT_1, output_to_pwm(0));
+            rc_write(AP_MOTORS_MOT_2, output_to_pwm(0));
+            rc_write(AP_MOTORS_MOT_4, output_to_pwm(0));
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             break;
-        case SPIN_WHEN_ARMED:
+        case GROUND_IDLE:
             // sends output to motors when armed but not flying
-            rc_write(AP_MOTORS_MOT_1, calc_spin_up_to_pwm());
-            rc_write(AP_MOTORS_MOT_2, calc_spin_up_to_pwm());
-            rc_write(AP_MOTORS_MOT_4, calc_spin_up_to_pwm());
+            set_actuator_with_slew(_actuator[1], actuator_spin_up_to_ground_idle());
+            set_actuator_with_slew(_actuator[2], actuator_spin_up_to_ground_idle());
+            set_actuator_with_slew(_actuator[4], actuator_spin_up_to_ground_idle());
+            rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[1]));
+            rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[2]));
+            rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[4]));
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
             // set motor output based on thrust requests
-            rc_write(AP_MOTORS_MOT_1, calc_thrust_to_pwm(_thrust_right));
-            rc_write(AP_MOTORS_MOT_2, calc_thrust_to_pwm(_thrust_left));
-            rc_write(AP_MOTORS_MOT_4, calc_thrust_to_pwm(_thrust_rear));
+            set_actuator_with_slew(_actuator[1], thrust_to_actuator(_thrust_right));
+            set_actuator_with_slew(_actuator[2], thrust_to_actuator(_thrust_left));
+            set_actuator_with_slew(_actuator[4], thrust_to_actuator(_thrust_rear));
+            rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[1]));
+            rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[2]));
+            rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[4]));
             rc_write(AP_MOTORS_CH_TRI_YAW, calc_yaw_radio_output(_pivot_angle, radians(_yaw_servo_angle_max_deg)));
             break;
     }
@@ -323,11 +329,29 @@ void AP_MotorsTri::thrust_compensation(void)
 /*
   override tricopter tail servo output in output_motor_mask
  */
-void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask)
+void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
 {
     // normal multicopter output
-    AP_MotorsMulticopter::output_motor_mask(thrust, mask);
+    AP_MotorsMulticopter::output_motor_mask(thrust, mask, rudder_dt);
 
     // and override yaw servo
     rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
+}
+
+float AP_MotorsTri::get_roll_factor(uint8_t i)
+{
+    float ret = 0.0f;
+
+    switch (i) {
+        // right motor
+        case AP_MOTORS_MOT_1:
+            ret = -1.0f;
+            break;
+        // left motor
+        case AP_MOTORS_MOT_2:
+            ret = 1.0f;
+            break;
+    }
+
+    return ret;
 }

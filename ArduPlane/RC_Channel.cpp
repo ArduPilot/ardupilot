@@ -62,7 +62,7 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
         // arm or disarm the vehicle
         switch (ch_flag) {
         case HIGH:
-            plane.arm_motors(AP_Arming::ArmingMethod::AUXSWITCH, true);
+            plane.arm_motors(AP_Arming::Method::AUXSWITCH, true);
             break;
         case MIDDLE:
             // nothing

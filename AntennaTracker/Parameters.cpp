@@ -64,15 +64,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(pitch_slew_time,        "PITCH_SLEW_TIME",  2),
 
-    // @Param: SCAN_SPEED
-    // @DisplayName: Speed at which to rotate in scan mode
-    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
-    // @Units: deg/s
-    // @Increment: 1
-    // @Range: 0 100
-    // @User: Standard
-    GSCALAR(scan_speed,             "SCAN_SPEED",      5),
-
     // @Param: MIN_REVERSE_TIME
     // @DisplayName: Minimum time to apply a yaw reversal
     // @Description: When the tracker detects it has reached the limit of servo movement in yaw it will reverse and try moving to the other extreme of yaw. This parameter controls the minimum time it should reverse for. It is used to cope with trackers that have a significant lag in movement to ensure they do move all the way around.
@@ -370,6 +361,11 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
 	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
+#ifdef ENABLE_SCRIPTING
+    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
+    GOBJECT(scripting, "SCR_", AP_Scripting),
+#endif
+
     // @Param: CMD_TOTAL
     // @DisplayName: Number of loaded mission items
     // @Description: Set to 1 if HOME location has been loaded by the ground station. Do not change this manually.
@@ -380,6 +376,32 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery,                "BATT", AP_BattMonitor),
+
+    // @Param: GCS_PID_MASK
+    // @DisplayName: GCS PID tuning mask
+    // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
+    // @User: Advanced
+    // @Values: 0:None,1:Pitch,2:Yaw
+    // @Bitmask: 0:Pitch,1:Yaw
+    GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
+
+    // @Param: SCAN_SPEED_YAW
+    // @DisplayName: Speed at which to rotate the yaw axis in scan mode
+    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
+    // @Units: deg/s
+    // @Increment: 1
+    // @Range: 0 100
+    // @User: Standard
+    GSCALAR(scan_speed_yaw,         "SCAN_SPEED_YAW",   2),
+
+    // @Param: SCAN_SPEED_PIT
+    // @DisplayName: Speed at which to rotate pitch axis in scan mode
+    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
+    // @Units: deg/s
+    // @Increment: 1
+    // @Range: 0 100
+    // @User: Standard
+    GSCALAR(scan_speed_pitch,       "SCAN_SPEED_PIT",   5),
 
     AP_VAREND
 };
@@ -392,6 +414,7 @@ void Tracker::load_parameters(void)
 
         // erase all parameters
         hal.console->printf("Firmware change: erasing EEPROM...\n");
+        StorageManager::erase();
         AP_Param::erase_all();
 
         // save the current format version

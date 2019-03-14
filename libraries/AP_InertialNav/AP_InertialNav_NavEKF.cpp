@@ -36,13 +36,6 @@ void AP_InertialNav_NavEKF::update(float dt)
         _velocity_cm = velNED * 100; // convert to cm/s
         _velocity_cm.z = -_velocity_cm.z; // convert from NED to NEU
     }
-
-    // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    if (_ahrs_ekf.get_vert_pos_rate(_pos_z_rate)) {
-        _pos_z_rate *= 100; // convert to cm/s
-        _pos_z_rate = - _pos_z_rate; // InertialNav is NEU
-    }
 }
 
 /**
@@ -118,21 +111,13 @@ const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
 }
 
 /**
- * get_velocity_xy - returns the current horizontal velocity in cm/s
+ * get_speed_xy - returns the current horizontal speed in cm/s
  *
- * @returns the current horizontal velocity in cm/s
+ * @returns the current horizontal speed in cm/s
  */
-float AP_InertialNav_NavEKF::get_velocity_xy() const
+float AP_InertialNav_NavEKF::get_speed_xy() const
 {
     return norm(_velocity_cm.x, _velocity_cm.y);
-}
-
-/**
- * get_pos_z_derivative - returns the derivative of the z position in cm/s
-*/
-float AP_InertialNav_NavEKF::get_pos_z_derivative() const
-{
-    return _pos_z_rate;
 }
 
 /**

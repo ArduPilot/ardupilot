@@ -982,9 +982,9 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     loc.lat = _last_lat;
     loc.lng = _last_lng;
     loc.alt = AP::baro().get_altitude() * 100 + _home.alt;
-    loc.flags.relative_alt = 0;
-    loc.flags.terrain_alt = 0;
-    location_offset(loc, _position_offset_north, _position_offset_east);
+    loc.relative_alt = 0;
+    loc.terrain_alt = 0;
+    loc.offset(_position_offset_north, _position_offset_east);
     const AP_GPS &_gps = AP::gps();
     if (_flags.fly_forward && _have_position) {
         float gps_delay_sec = 0;
@@ -1031,18 +1031,34 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
     return ret;
 }
 
-void AP_AHRS_DCM::set_home(const Location &loc)
+bool AP_AHRS_DCM::set_home(const Location &loc)
 {
-    _home = loc;
-    _home.options = 0;
+    // check location is valid
+    if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
+        return false;
+    }
+    if (!check_latlng(loc)) {
+        return false;
+    }
+    // home must always be global frame at the moment as .alt is
+    // accessed directly by the vehicles and they may not be rigorous
+    // in checking the frame type.
+    Location tmp = loc;
+    if (!tmp.change_alt_frame(Location::ALT_FRAME_ABSOLUTE)) {
+        return false;
+    }
+
+    _home = tmp;
     _home_is_set = true;
 
     // log ahrs home and ekf origin dataflash
     Log_Write_Home_And_Origin();
 
     // send new home and ekf origin to GCS
-    gcs().send_home();
-    gcs().send_ekf_origin();
+    gcs().send_message(MSG_HOME);
+    gcs().send_message(MSG_ORIGIN);
+
+    return true;
 }
 
 //  a relative ground position to home in meters, Down

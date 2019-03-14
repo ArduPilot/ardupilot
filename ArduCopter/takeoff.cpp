@@ -51,7 +51,7 @@ bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 void Copter::Mode::_TakeOff::start(float alt_cm)
 {
     // calculate climb rate
-    const float speed = MIN(copter.wp_nav->get_speed_up(), MAX(copter.g.pilot_speed_up*2.0f/3.0f, copter.g.pilot_speed_up-50.0f));
+    const float speed = MIN(copter.wp_nav->get_default_speed_up(), MAX(copter.g.pilot_speed_up*2.0f/3.0f, copter.g.pilot_speed_up-50.0f));
 
     // sanity check speed and target
     if (running() || speed <= 0.0f || alt_cm <= 0.0f) {
@@ -172,4 +172,18 @@ void Copter::Mode::auto_takeoff_attitude_run(float target_yaw_rate)
     
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
+}
+
+bool Copter::Mode::is_taking_off() const
+{
+    if (!has_user_takeoff(false)) {
+        return false;
+    }
+    if (ap.land_complete) {
+        return false;
+    }
+    if (takeoff.running()) {
+        return true;
+    }
+    return false;
 }

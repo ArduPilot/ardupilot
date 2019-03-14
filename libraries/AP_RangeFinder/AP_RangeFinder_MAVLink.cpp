@@ -25,8 +25,8 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_state)
+AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend(_state, _params)
 {
     state.last_reading_ms = AP_HAL::millis();
     distance_cm = 0;

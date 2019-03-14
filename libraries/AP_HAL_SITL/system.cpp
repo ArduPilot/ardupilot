@@ -44,6 +44,14 @@ uint32_t millis()
     return millis64() & 0xFFFFFFFF;
 }
 
+/*
+  we define a millis16() here to avoid an issue with sitl builds in cygwin
+ */
+uint16_t millis16()
+{
+    return millis64() & 0xFFFF;
+}
+    
 uint64_t micros64()
 {
     const HALSITL::Scheduler* scheduler = HALSITL::Scheduler::from(hal.scheduler);

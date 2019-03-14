@@ -11,6 +11,7 @@
 /Tools/autotest/jsb_sim/rascal_test.xml
 /Tools/autotest/jsbsim_fgout_0.xml
 /Tools/autotest/jsbsim_start_0.xml
+/Tools/autotest/rover-ch7_mission.txt
 /tmp/*
 *.bin
 *.d
@@ -48,6 +49,7 @@
 .tags
 .tags_sorted_by_file
 .vagrant
+Tools/vagrant/*.log
 APMrover2/test.APMrover2/
 APMrover2/way.txt
 ArduCopter/Debug/
@@ -98,3 +100,16 @@ config.mk
 *.apj
 .gdbinit
 /.vscode
+Parameters.html
+Parameters.md
+Parameters.rst
+Parameters.wiki
+apm.pdef.xml
+parameters.edn
+# JetBrains IDE files
+.idea/*
+# CMake
+cmake-build-*/
+/reports/
+/GCOV_*.log
+

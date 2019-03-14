@@ -24,11 +24,7 @@
  */
 
 #include "AP_Radio_backend.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <nuttx/arch.h>
-#include <systemlib/systemlib.h>
-#include <drivers/drv_hrt.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "hal.h"
 #endif
 #include "telem_structure.h"
@@ -81,7 +77,7 @@ public:
     
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
-    static AP_Radio_cypress *radio_instance;
+    static AP_Radio_cypress *radio_singleton;
 
     void radio_init(void);
     
@@ -114,10 +110,7 @@ private:
     static const config cyrf_bind_config[];
     static const config cyrf_transfer_config[];
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    sem_t irq_sem;
-    struct hrt_call wait_call;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     virtual_timer_t timeout_vt;
     static thread_t *_irq_handler_ctx;
 #endif
@@ -136,10 +129,7 @@ private:
     
     // trampoline functions to take us from static IRQ function to class functions
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    static int irq_radio_trampoline(int irq, void *context);
-    static int irq_timeout_trampoline(int irq, void *context);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     static void irq_handler_thd(void* arg);
     static void trigger_irq_radio_event(void);
     static void trigger_timeout_event(void *arg);

@@ -9,22 +9,18 @@
 // circle_init - initialise circle controller flight mode
 bool Copter::ModeCircle::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
-        pilot_yaw_override = false;
+    pilot_yaw_override = false;
 
-        // initialize speeds and accelerations
-        pos_control->set_max_speed_xy(wp_nav->get_speed_xy());
-        pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
-        pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-        pos_control->set_max_accel_z(g.pilot_accel_z);
+    // initialize speeds and accelerations
+    pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
+    pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control->set_max_accel_z(g.pilot_accel_z);
 
-        // initialise circle controller including setting the circle center based on vehicle speed
-        copter.circle_nav->init();
+    // initialise circle controller including setting the circle center based on vehicle speed
+    copter.circle_nav->init();
 
-        return true;
-    }else{
-        return false;
-    }
+    return true;
 }
 
 // circle_run - runs the circle flight mode
@@ -35,7 +31,7 @@ void Copter::ModeCircle::run()
     float target_climb_rate = 0;
 
     // initialize speeds and accelerations
-    pos_control->set_max_speed_xy(wp_nav->get_speed_xy());
+    pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
     pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);

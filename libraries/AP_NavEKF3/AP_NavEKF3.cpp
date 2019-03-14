@@ -1,10 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
 #include "AP_NavEKF3_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <new>
 
 /*
@@ -185,7 +184,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     AP_GROUPINFO("GLITCH_RAD", 7, NavEKF3, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
     // 8 previously used for EKF3_GPS_DELAY parameter that has been deprecated.
-    // The EKF now takes its GPs delay form the GPS library with the default delays
+    // The EKF now takes its GPS delay form the GPS library with the default delays
     // specified by the GPS_DELAY and GPS_DELAY2 parameters.
 
     // Height measurement parameters
@@ -363,7 +362,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: ABIAS_P_NSE
     // @DisplayName: Accelerometer bias stability (m/s^3)
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
-    // @Range: 0.00001 0.001
+    // @Range: 0.00001 0.005
     // @User: Advanced
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF3, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
@@ -595,24 +594,24 @@ void NavEKF3::check_log_write(void)
         return;
     }
     if (logging.log_compass) {
-        DataFlash_Class::instance()->Log_Write_Compass(imuSampleTime_us);
+        AP::logger().Write_Compass(imuSampleTime_us);
         logging.log_compass = false;
     }
     if (logging.log_gps) {
-        DataFlash_Class::instance()->Log_Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
+        AP::logger().Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
         logging.log_gps = false;
     }
     if (logging.log_baro) {
-        DataFlash_Class::instance()->Log_Write_Baro(imuSampleTime_us);
+        AP::logger().Write_Baro(imuSampleTime_us);
         logging.log_baro = false;
     }
     if (logging.log_imu) {
-        DataFlash_Class::instance()->Log_Write_IMUDT(imuSampleTime_us, _logging_mask.get());
+        AP::logger().Write_IMUDT(imuSampleTime_us, _logging_mask.get());
         logging.log_imu = false;
     }
 
     // this is an example of an ad-hoc log in EKF
-    // DataFlash_Class::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
+    // AP::logger().Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
 }
 
 
@@ -635,7 +634,7 @@ bool NavEKF3::InitialiseFilter(void)
     if (core == nullptr) {
 
         // see if we will be doing logging
-        DataFlash_Class *dataflash = DataFlash_Class::instance();
+        AP_Logger *dataflash = AP_Logger::get_singleton();
         if (dataflash != nullptr) {
             logging.enabled = dataflash->log_replay();
         }
@@ -682,7 +681,7 @@ bool NavEKF3::InitialiseFilter(void)
 
     // Set up any cores that have been created
     // This specifies the IMU to be used and creates the data buffers
-    // If we are unble to set up a core, return false and try again next time the function is called
+    // If we are unable to set up a core, return false and try again next time the function is called
     bool core_setup_success = true;
     for (uint8_t core_index=0; core_index<num_cores; core_index++) {
         if (coreSetupRequired[core_index]) {
@@ -850,7 +849,7 @@ void NavEKF3::getVelNED(int8_t instance, Vector3f &vel) const
 float NavEKF3::getPosDownDerivative(int8_t instance) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
-    // return the value calculated from a complementary filer applied to the EKF height and vertical acceleration
+    // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     if (core) {
         return core[instance].getPosDownDerivative();
     }
@@ -904,7 +903,7 @@ void NavEKF3::resetGyroBias(void)
 
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
-// Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+// Adjusts the EKF origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
 bool NavEKF3::resetHeightDatum(void)
@@ -1016,7 +1015,7 @@ bool NavEKF3::getLLH(struct Location &loc) const
 }
 
 // Return the latitude and longitude and height used to set the NED origin for the specified instance
-// An out of range instance (eg -1) returns data for the the primary instance
+// An out of range instance (eg -1) returns data for the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
 bool NavEKF3::getOriginLLH(int8_t instance, struct Location &loc) const
@@ -1559,4 +1558,3 @@ void NavEKF3::getTimingStatistics(int8_t instance, struct ekf_timing &timing) co
     }
 }
 
-#endif //HAL_CPU_CLASS

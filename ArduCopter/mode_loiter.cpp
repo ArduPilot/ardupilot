@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_LOITER_ENABLED == ENABLED
+
 /*
  * Init and run calls for loiter flight mode
  */
@@ -7,33 +9,29 @@
 // loiter_init - initialise loiter controller
 bool Copter::ModeLoiter::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
-        if (!copter.failsafe.radio) {
-            float target_roll, target_pitch;
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
+    if (!copter.failsafe.radio) {
+        float target_roll, target_pitch;
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
 
-            // convert pilot input to lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
 
-            // process pilot's roll and pitch input
-            loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
-        } else {
-            // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
-            loiter_nav->clear_pilot_desired_acceleration();
-        }
-        loiter_nav->init_target();
-
-        // initialise position and desired velocity
-        if (!pos_control->is_active_z()) {
-            pos_control->set_alt_target_to_current_alt();
-            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-        }
-
-        return true;
+        // process pilot's roll and pitch input
+        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
     } else {
-        return false;
+        // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
+        loiter_nav->clear_pilot_desired_acceleration();
     }
+    loiter_nav->init_target();
+
+    // initialise position and desired velocity
+    if (!pos_control->is_active_z()) {
+        pos_control->set_alt_target_to_current_alt();
+        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+    }
+
+    return true;
 }
 
 #if PRECISION_LANDING == ENABLED
@@ -180,12 +178,17 @@ void Copter::ModeLoiter::run()
         break;
 
     case Loiter_Landed:
+#if FRAME_CONFIG == HELI_FRAME
+        // helicopters do not spool down when landed.  Only when commanded to go to ground idle by pilot.
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+#else
         // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
+#endif
         loiter_nav->init_target();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
@@ -233,3 +236,5 @@ int32_t Copter::ModeLoiter::wp_bearing() const
 {
     return loiter_nav->get_bearing_to_target();
 }
+
+#endif

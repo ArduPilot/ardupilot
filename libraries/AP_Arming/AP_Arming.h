@@ -1,10 +1,8 @@
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <RC_Channel/RC_Channel.h>
 
 class AP_Arming {
@@ -32,24 +30,25 @@ public:
         ARMING_CHECK_SWITCH     = 0x0800,
         ARMING_CHECK_GPS_CONFIG = 0x1000,
         ARMING_CHECK_SYSTEM     = 0x2000,
+        ARMING_CHECK_MISSION    = 0x4000,
     };
 
-    enum ArmingMethod {
+    enum class Method {
         RUDDER,
         MAVLINK,
         AUXSWITCH,
         MOTORTEST,
     };
 
-    enum ArmingRequired {
+    enum class Required {
         NO           = 0,
         YES_MIN_PWM  = 1,
         YES_ZERO_PWM = 2
     };
 
     // these functions should not be used by Copter which holds the armed state in the motors library
-    ArmingRequired arming_required();
-    virtual bool arm(ArmingMethod method, bool do_arming_checks=true);
+    Required arming_required();
+    virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
     bool disarm();
     bool is_armed();
 
@@ -62,18 +61,19 @@ public:
     // some arming checks have side-effects, or require some form of state
     // change to have occurred, and thus should not be done as pre-arm
     // checks.  Those go here:
-    bool arm_checks(ArmingMethod method);
+    bool arm_checks(AP_Arming::Method method);
 
     // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;
 
     // rudder arming support
-    enum ArmingRudder {
-        ARMING_RUDDER_DISABLED  = 0,
-        ARMING_RUDDER_ARMONLY   = 1,
-        ARMING_RUDDER_ARMDISARM = 2
+    enum class RudderArming {
+        IS_DISABLED  = 0, // DISABLED leaks in from vehicle defines.h
+        ARMONLY   = 1,
+        ARMDISARM = 2
     };
-    ArmingRudder get_rudder_arming_type() const { return (ArmingRudder)_rudder_arming.get(); }
+
+    RudderArming get_rudder_arming_type() const { return (RudderArming)_rudder_arming.get(); }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -84,10 +84,10 @@ protected:
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
+    AP_Int32                 _required_mission_items;
 
     // internal members
-    bool                    armed:1;
-    bool                    logging_available:1;
+    bool                    armed;
     uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
     uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
 
@@ -113,10 +113,16 @@ protected:
 
     bool manual_transmitter_checks(bool report);
 
+    bool mission_checks(bool report);
+
+    bool fence_checks(bool report);
+
     virtual bool system_checks(bool report);
+
+    bool can_checks(bool report);
     
     bool servo_checks(bool report) const;
-    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4], const bool check_min_max = true) const;
+    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4]) const;
 
     // returns true if a particular check is enabled
     bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
@@ -130,4 +136,13 @@ private:
     bool ins_accels_consistent(const AP_InertialSensor &ins);
     bool ins_gyros_consistent(const AP_InertialSensor &ins);
 
+    enum MIS_ITEM_CHECK {
+        MIS_ITEM_CHECK_LAND          = (1 << 0),
+        MIS_ITEM_CHECK_VTOL_LAND     = (1 << 1),
+        MIS_ITEM_CHECK_DO_LAND_START = (1 << 2),
+        MIS_ITEM_CHECK_TAKEOFF       = (1 << 3),
+        MIS_ITEM_CHECK_VTOL_TAKEOFF  = (1 << 4),
+        MIS_ITEM_CHECK_RALLY         = (1 << 5),
+        MIS_ITEM_CHECK_MAX
+    };
 };

@@ -10,7 +10,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
         // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
-        DataFlash.Log_Write_Mission_Cmd(mission, cmd);
+        logger.Write_Mission_Cmd(mission, cmd);
     }
 
     // special handling for nav vs non-nav commands
@@ -159,12 +159,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         autotune_enable(cmd.p1);
         break;
 
-#if PARACHUTE == ENABLED
-    case MAV_CMD_DO_PARACHUTE:
-        do_parachute(cmd);
-        break;
-#endif
-
 #if MOUNT == ENABLED
     // Sets the region of interest (ROI) for a sensor set or the
     // vehicle itself. This can then be used by the vehicles control
@@ -246,16 +240,16 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         }
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        return verify_loiter_unlim();
+        return verify_loiter_unlim(cmd);
 
     case MAV_CMD_NAV_LOITER_TURNS:
-        return verify_loiter_turns();
+        return verify_loiter_turns(cmd);
 
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time();
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
-        return verify_loiter_to_alt();
+        return verify_loiter_to_alt(cmd);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
@@ -286,12 +280,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
 
-#if PARACHUTE == ENABLED
-    case MAV_CMD_DO_PARACHUTE:
-        // assume parachute was released successfully
-        return true;
-#endif
-        
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
@@ -337,7 +325,7 @@ void Plane::do_RTL(int32_t rtl_altitude)
     setup_glide_slope();
     setup_turn_angle();
 
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Mode(control_mode, control_mode_reason);
 }
 
 /*
@@ -418,16 +406,26 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
 {
-    do_loiter_to_alt(cmd);
+    //set target alt
+    Location loc = cmd.content.location;
+    location_sanitize(current_loc, loc);
+    set_next_WP(loc);
+
+    // only set the direction if the quadplane landing radius override is not 0
+    // if it's 0 update_loiter will manage the direction for us when we hand it
+    // 0 later in the controller
+    if (is_negative(quadplane.fw_land_approach_radius)) {
+        loiter.direction = -1;
+    } else if (is_positive(quadplane.fw_land_approach_radius)) {
+        loiter.direction = 1;
+    }
 
     vtol_approach_s.approach_stage = LOITER_TO_ALT;
-
-    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
 }
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.content.location.flags.loiter_ccw) {
+    if (cmd.content.location.loiter_ccw) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -498,7 +496,7 @@ void Plane::do_altitude_wait(const AP_Mission::Mission_Command& cmd)
     auto_state.idle_mode = true;
 }
 
-void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd) 
+void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     //set target alt  
     Location loc = cmd.content.location;
@@ -584,7 +582,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     uint8_t cmd_acceptance_distance = LOWBYTE(cmd.p1); // radius in meters to accept reaching the wp
 
     if (cmd_passby > 0) {
-        float dist = get_distance(prev_WP_loc, flex_next_WP_loc);
+        float dist = prev_WP_loc.get_distance(flex_next_WP_loc);
 
         if (!is_zero(dist)) {
             float factor = (dist + cmd_passby) / dist;
@@ -626,7 +624,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if (auto_state.wp_distance <= acceptance_distance_m) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, flex_next_WP_loc));
+                          (unsigned)current_loc.get_distance(flex_next_WP_loc));
         return true;
 	}
 
@@ -634,22 +632,22 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if (location_passed_point(current_loc, prev_WP_loc, flex_next_WP_loc)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
-                          (unsigned)get_distance(current_loc, flex_next_WP_loc));
+                          (unsigned)current_loc.get_distance(flex_next_WP_loc));
         return true;
     }
 
     return false;
 }
 
-bool Plane::verify_loiter_unlim()
+bool Plane::verify_loiter_unlim(const AP_Mission::Mission_Command &cmd)
 {
-    if (mission.get_current_nav_cmd().p1 <= 1 && abs(g.rtl_radius) > 1) {
+    if (cmd.p1 <= 1 && abs(g.rtl_radius) > 1) {
         // if mission radius is 0,1, and rtl_radius is valid, use rtl_radius.
         loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         update_loiter(abs(g.rtl_radius));
     } else {
         // else use mission radius
-        update_loiter(mission.get_current_nav_cmd().p1);
+        update_loiter(cmd.p1);
     }
     return false;
 }
@@ -684,10 +682,10 @@ bool Plane::verify_loiter_time()
     return result;
 }
 
-bool Plane::verify_loiter_turns()
+bool Plane::verify_loiter_turns(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
-    uint16_t radius = HIGHBYTE(mission.get_current_nav_cmd().p1);
+    uint16_t radius = HIGHBYTE(cmd.p1);
     update_loiter(radius);
 
     // LOITER_TURNS makes no sense as VTOL
@@ -716,10 +714,11 @@ bool Plane::verify_loiter_turns()
   reached both the desired altitude and desired heading. The desired
   altitude only needs to be reached once.
  */
-bool Plane::verify_loiter_to_alt() 
+bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
-    update_loiter(mission.get_current_nav_cmd().p1);
+
+    update_loiter(cmd.p1);
 
     // condition_value == 0 means alt has never been reached
     if (condition_value == 0) {
@@ -771,7 +770,7 @@ bool Plane::verify_continue_and_change_alt()
     }
     else {
         // Is the next_WP less than 200 m away?
-        if (get_distance(current_loc, next_WP_loc) < 200.0f) {
+        if (current_loc.get_distance(next_WP_loc) < 200.0f) {
             //push another 300 m down the line
             int32_t next_wp_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
             location_update(next_WP_loc, next_wp_bearing_cd * 0.01f, 300.0f);
@@ -902,33 +901,15 @@ void Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        set_home_persistently(gps.location());
+        if (!set_home_persistently(gps.location())) {
+            // silently ignore error
+        }
     } else {
-        plane.set_home(cmd.content.location);
-        gcs().send_ekf_origin();
+        if (!AP::ahrs().set_home(cmd.content.location)) {
+            // silently ignore failure
+        }
     }
 }
-
-#if PARACHUTE == ENABLED
-// do_parachute - configure or release parachute
-void Plane::do_parachute(const AP_Mission::Mission_Command& cmd)
-{
-    switch (cmd.p1) {
-        case PARACHUTE_DISABLE:
-            parachute.enabled(false);
-            break;
-        case PARACHUTE_ENABLE:
-            parachute.enabled(true);
-            break;
-        case PARACHUTE_RELEASE:
-            parachute_release();
-            break;
-        default:
-            // do nothing
-            break;
-    }
-}
-#endif
 
 // start_command_callback - callback function called from ap-mission when it begins a new mission command
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
@@ -971,21 +952,50 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 {
     switch (vtol_approach_s.approach_stage) {
         case LOITER_TO_ALT:
-            if (verify_loiter_to_alt()) {
-                Vector3f wind = ahrs.wind_estimate();
-                vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
-                gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
-                // select target approach direction
-                // select detransition distance (add in extra distance if the approach does not fit in the required space)
-                // validate turn
-                vtol_approach_s.approach_stage = WAIT_FOR_BREAKOUT;
+            {
+                update_loiter(fabsf(quadplane.fw_land_approach_radius));
+
+                if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_acheive_target_alt)) {
+                    Vector3f wind = ahrs.wind_estimate();
+                    vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
+                    gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
+                    vtol_approach_s.approach_stage = ENSURE_RADIUS;
+                }
+                break;
             }
-            break;
+        case ENSURE_RADIUS:
+            {
+                float radius;
+                if (is_zero(quadplane.fw_land_approach_radius)) {
+                    radius = aparm.loiter_radius;
+                } else {
+                    radius = quadplane.fw_land_approach_radius;
+                }
+                const int8_t direction = is_negative(radius) ? -1 : 1;
+                radius = fabsf(radius);
+
+                // validate that the vehicle is at least the expected distance away from the loiter point
+                // require an angle total of at least 2 centidegrees, due to special casing of 1 centidegree
+                if (((fabsf(cmd.content.location.get_distance(current_loc) - radius) > 5.0f) &&
+                      (cmd.content.location.get_distance(current_loc) < radius)) ||
+                    (loiter.sum_cd < 2)) {
+                    nav_controller->update_loiter(cmd.content.location, radius, direction);
+                    break;
+                }
+                vtol_approach_s.approach_stage = WAIT_FOR_BREAKOUT;
+                FALLTHROUGH;
+            }
         case WAIT_FOR_BREAKOUT:
             {
-                const float breakout_direction_rad = radians(wrap_180(vtol_approach_s.approach_direction_deg + 270));
+                float radius = quadplane.fw_land_approach_radius;
+                if (is_zero(radius)) {
+                    radius = aparm.loiter_radius;
+                }
+                const int8_t direction = is_negative(radius) ? -1 : 1;
 
-                nav_controller->update_loiter(cmd.content.location, aparm.loiter_radius, cmd.content.location.flags.loiter_ccw ? -1 : 1);
+                nav_controller->update_loiter(cmd.content.location, radius, direction);
+
+                const float breakout_direction_rad = radians(wrap_180(vtol_approach_s.approach_direction_deg + (direction > 0 ? 270 : 90)));
 
                 // breakout when within 5 degrees of the opposite direction
                 if (fabsf(ahrs.yaw - breakout_direction_rad) < radians(5.0f)) {
@@ -1045,7 +1055,7 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 
-    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < abs(aparm.loiter_radius)) {
+    if (next_WP_loc.get_distance(next_nav_cmd.content.location) < abs(aparm.loiter_radius)) {
         /* Whenever next waypoint is within the loiter radius,
            maintaining loiter would prevent us from ever pointing toward the next waypoint.
            Hence break out of loiter immediately
@@ -1082,7 +1092,7 @@ bool Plane::verify_loiter_heading(bool init)
         // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
 
         // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
-        if (next_WP_loc.flags.loiter_xtrack) {
+        if (next_WP_loc.loiter_xtrack) {
             next_WP_loc = current_loc;
         }
         return true;

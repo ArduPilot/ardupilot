@@ -361,10 +361,10 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X, V, etc)
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
-    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B
+    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B, 11:Y6F, 12:BetaFlightX, 13:DJIX, 14:ClockwiseX
     // @User: Standard
     // @RebootRequired: True
-    GSCALAR(frame_type, "FRAME_TYPE", AP_Motors::MOTOR_FRAME_TYPE_X),
+    GSCALAR(frame_type, "FRAME_TYPE", HAL_FRAME_TYPE_DEFAULT),
 
     // @Group: ARMING_
     // @Path: ../libraries/AP_Arming/AP_Arming.cpp
@@ -448,7 +448,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: ACRO_YAW_P
     // @DisplayName: Acro Yaw P gain
-    // @Description: Converts pilot yaw input into a desired rate of rotation in ACRO, Stabilize and SPORT modes.  Higher values mean faster rate of rotation.
+    // @Description: Converts pilot yaw input into a desired rate of rotation.  Higher values mean faster rate of rotation.
     // @Range: 1 10
     // @User: Standard
     GSCALAR(acro_yaw_p,                 "ACRO_YAW_P",           ACRO_YAW_P),
@@ -577,8 +577,8 @@ const AP_Param::Info Copter::var_info[] = {
 #endif
 
     // @Group: LOG
-    // @Path: ../libraries/DataFlash/DataFlash.cpp
-    GOBJECT(DataFlash,           "LOG",  DataFlash_Class),
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(logger,           "LOG",  AP_Logger),
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
@@ -660,7 +660,7 @@ const AP_Param::Info Copter::var_info[] = {
 #if MODE_AUTO_ENABLED == ENABLED
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
-    GOBJECT(mission, "MIS_",       AP_Mission),
+    GOBJECTN(mode_auto.mission, mission, "MIS_", AP_Mission),
 #endif
 
     // @Group: RSSI_
@@ -705,30 +705,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: AVD_
     // @Path: ../libraries/AP_Avoidance/AP_Avoidance.cpp
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Copter),
-#endif
-
-#if AUTOTUNE_ENABLED == ENABLED
-    // @Param: AUTOTUNE_AXES
-    // @DisplayName: Autotune axis bitmask
-    // @Description: 1-byte bitmap of axes to autotune
-    // @Values: 7:All,1:Roll Only,2:Pitch Only,4:Yaw Only,3:Roll and Pitch,5:Roll and Yaw,6:Pitch and Yaw
-    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
-    // @User: Standard
-    GSCALAR(autotune_axis_bitmask, "AUTOTUNE_AXES", 7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
-
-    // @Param: AUTOTUNE_AGGR
-    // @DisplayName: Autotune aggressiveness
-    // @Description: Autotune aggressiveness. Defines the bounce back used to detect size of the D term.
-    // @Range: 0.05 0.10
-    // @User: Standard
-    GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.1f),
-
-    // @Param: AUTOTUNE_MIN_D
-    // @DisplayName: AutoTune minimum D
-    // @Description: Defines the minimum D gain
-    // @Range: 0.001 0.006
-    // @User: Standard
-    GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.001f),
 #endif
 
     // @Group: NTF_
@@ -869,7 +845,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 10:BiCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_CLASS", 15, ParametersG2, frame_class, 0),
@@ -948,6 +924,17 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(user_parameters, "USR", 28, ParametersG2, UserParameters),
 #endif
 
+#if AUTOTUNE_ENABLED == ENABLED
+    // @Group: AUTOTUNE_
+    // @Path: ../libraries/AC_AutoTune/AC_AutoTune.cpp
+    AP_SUBGROUPPTR(autotune_ptr, "AUTOTUNE_",  29, ParametersG2, Copter::AutoTune),
+#endif
+
+#ifdef ENABLE_SCRIPTING
+    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
+    AP_SUBGROUPINFO(scripting, "SCR_", 30, ParametersG2, AP_Scripting),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -1002,7 +989,7 @@ ParametersG2::ParametersG2(void)
     , proximity(copter.serial_manager)
 #endif
 #if ADVANCED_FAILSAFE == ENABLED
-    ,afs(copter.mission, copter.gps)
+    ,afs(copter.mode_auto.mission, copter.gps)
 #endif
 #if MODE_SMARTRTL_ENABLED == ENABLED
     ,smart_rtl()
@@ -1015,6 +1002,9 @@ ParametersG2::ParametersG2(void)
 #endif
 #ifdef USER_PARAMS_ENABLED
     ,user_parameters()
+#endif
+#if AUTOTUNE_ENABLED == ENABLED
+    ,autotune_ptr(&copter.autotune)
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -1068,6 +1058,7 @@ void Copter::load_parameters(void)
 
         // erase all parameters
         hal.console->printf("Firmware change: erasing EEPROM...\n");
+        StorageManager::erase();
         AP_Param::erase_all();
 
         // save the current format version
@@ -1087,7 +1078,7 @@ void Copter::load_parameters(void)
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
-    
+
 }
 
 // handle conversion of PID gains from Copter-3.3 to Copter-3.4
@@ -1194,6 +1185,25 @@ void Copter::convert_pid_parameters(void)
         AP_Param::convert_old_parameter(&loiter_conversion_info[i], 1.0f);
     }
 
+    // TradHeli default parameters
+#if FRAME_CONFIG == HELI_FRAME
+    static const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
+        { "LOIT_ACC_MAX", 500.0f },
+        { "LOIT_BRK_ACCEL", 125.0f },
+        { "LOIT_BRK_DELAY", 1.0f },
+        { "LOIT_BRK_JERK", 250.0f },
+        { "LOIT_SPEED", 3000.0f },
+        { "PHLD_BRAKE_ANGLE", 800.0f },
+        { "PHLD_BRAKE_RATE", 4.0f },
+        { "PSC_ACCZ_P", 0.28f },
+        { "PSC_VELXY_D", 0.0f },
+        { "PSC_VELXY_I", 0.5f },
+        { "PSC_VELXY_P", 1.0f },
+        { "RC8_OPTION", 32 },
+    };
+    AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
+#endif
+
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
                                       Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
                                       Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
@@ -1237,7 +1247,7 @@ void Copter::convert_lgr_parameters(void)
     snprintf(pname, sizeof(pname), "SERVO%u_TRIM", chan);
     servo_trim = (AP_Int16 *)AP_Param::find(pname, &ptype);
 
-    snprintf(pname, sizeof(pname), "SERVO%u_REVERSED", chan);
+    snprintf(pname, sizeof(pname), "SERVO%u_REVERSED", chan & 0x3F); // Only use the 6 LSBs, avoids a cpp warning
     servo_reversed = (AP_Int16 *)AP_Param::find(pname, &ptype);
 
     if (!servo_min || !servo_max || !servo_trim || !servo_reversed) {
