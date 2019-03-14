@@ -372,8 +372,8 @@ void AP_Tuning_Plane::tune_pr_chan(uint8_t chan, AP_Float &kP, AP_Float &kI, flo
         p = linear_interpolate(cmid/crange, cmid, v, -1, 0);
     }
     float i = p / tune_pi_ratio;
-    if (fabsf(p - kP.get()) > 0.02 ||
-        fabsf(i - kI.get()) > 0.01) {
+    if (fabsf(p - kP.get()) > 0.05 ||
+        fabsf(i - kI.get()) > 0.03) {
         kP.set_and_save(p);
         kI.set_and_save(i);
     }
