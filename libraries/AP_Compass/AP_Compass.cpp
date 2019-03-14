@@ -498,8 +498,7 @@ Compass::Compass(void)
 
 // Default init method
 //
-bool
-Compass::init()
+void Compass::init()
 {
     if (_compass_count == 0) {
         // detect available backends. Only called once
@@ -518,7 +517,6 @@ Compass::init()
     for (uint8_t i=_compass_count; i<COMPASS_MAX_INSTANCES; i++) {
         _state[i].dev_id.set(0);
     }
-    return true;
 }
 
 //  Register a new compass instance

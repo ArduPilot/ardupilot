@@ -13,85 +13,35 @@ import operator
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-HOME = mavutil.location(-27.274439, 151.290064, 343, 8.7)
+SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 MISSION = 'ArduPlane-Missions/Dalby-OBC2016.txt'
 FENCE = 'ArduPlane-Missions/Dalby-OBC2016-fence.txt'
 WIND = "0,180,0.2"  # speed,direction,variance
 
 
 class AutoTestQuadPlane(AutoTest):
-    def __init__(self,
-                 binary,
-                 valgrind=False,
-                 gdb=False,
-                 speedup=10,
-                 frame=None,
-                 params=None,
-                 gdbserver=False,
-                 breakpoints=[],
-                 **kwargs):
-        super(AutoTestQuadPlane, self).__init__(**kwargs)
-        self.binary = binary
-        self.valgrind = valgrind
-        self.gdb = gdb
-        self.frame = frame
-        self.params = params
-        self.gdbserver = gdbserver
-        self.breakpoints = breakpoints
 
-        self.home = "%f,%f,%u,%u" % (HOME.lat,
-                                     HOME.lng,
-                                     HOME.alt,
-                                     HOME.heading)
-        self.homeloc = None
-        self.speedup = speedup
+    def default_frame(self):
+        return "quadplane"
 
-        self.log_name = "QuadPlane"
-        self.logfile = None
+    def test_filepath(self):
+        return os.path.realpath(__file__)
 
-        self.sitl = None
+    def sitl_start_location(self):
+        return SITL_START_LOCATION
 
-    def init(self):
-        super(AutoTestQuadPlane, self).init(os.path.realpath(__file__))
-        if self.frame is None:
-            self.frame = 'quadplane'
+    def log_name(self):
+        return "QuadPlane"
 
-        self.mavproxy_logfile = self.open_mavproxy_logfile()
+    def apply_defaultfile_parameters(self):
+        # plane passes in a defaults_file in place of applying
+        # parameters afterwards.
+        pass
 
+    def defaults_filepath(self):
         vinfo = vehicleinfo.VehicleInfo()
         defaults_file = vinfo.options["ArduPlane"]["frames"][self.frame]["default_params_filename"]
-        defaults_filepath = os.path.join(testdir, defaults_file)
-
-        self.sitl = util.start_SITL(self.binary,
-                                    wipe=True,
-                                    model=self.frame,
-                                    home=self.home,
-                                    speedup=self.speedup,
-                                    defaults_file=defaults_filepath,
-                                    valgrind=self.valgrind,
-                                    gdb=self.gdb,
-                                    gdbserver=self.gdbserver,
-                                    breakpoints=self.breakpoints,
-                                    )
-        self.mavproxy = util.start_MAVProxy_SITL(
-            'QuadPlane', options=self.mavproxy_options())
-        self.mavproxy.expect('Telemetry log: (\S+)\r\n')
-        self.logfile = self.mavproxy.match.group(1)
-        self.progress("LOGFILE %s" % self.logfile)
-        self.try_symlink_tlog()
-
-        self.mavproxy.expect('Received [0-9]+ parameters')
-
-        util.expect_setup_callback(self.mavproxy, self.expect_callback)
-
-        self.expect_list_clear()
-        self.expect_list_extend([self.sitl, self.mavproxy])
-
-        self.progress("Started simulator")
-
-        self.get_mavlink_connection_going()
-
-        self.progress("Ready to start testing!")
+        return os.path.join(testdir, defaults_file)
 
     def is_plane(self):
         return True
@@ -190,6 +140,9 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("FBWA") # we don't update PIDs in MANUAL
         super(AutoTestQuadPlane, self).test_pid_tuning()
 
+    def test_parameter_checks(self):
+        self.test_parameter_checks_poscontrol("Q_P")
+
     def default_mode(self):
         return "MANUAL"
 
@@ -209,6 +162,10 @@ class AutoTestQuadPlane(AutoTest):
             ("TestMotorMask", "Test output_motor_mask", self.test_motor_mask),
 
             ("QAutoTune", "Fly QAUTOTUNE mode", self.fly_qautotune),
+
+            ("ParameterChecks",
+             "Test Arming Parameter Checks",
+             self.test_parameter_checks),
 
             ("Mission", "Dalby Mission",
              lambda: self.fly_mission(m, f))

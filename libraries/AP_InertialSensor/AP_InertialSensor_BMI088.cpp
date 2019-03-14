@@ -110,6 +110,43 @@ void AP_InertialSensor_BMI088::start()
 }
 
 /*
+  read from accelerometer registers, special SPI handling needed
+*/
+bool AP_InertialSensor_BMI088::read_accel_registers(uint8_t reg, uint8_t *data, uint8_t len)
+{
+    // when on I2C we just read normally
+    if (dev_accel->bus_type() != AP_HAL::Device::BUS_TYPE_SPI) {
+        return dev_accel->read_registers(reg, data, len);
+    }
+    // for SPI we need to discard the first returned byte. See
+    // datasheet for explanation
+    uint8_t b[len+2];
+    b[0] = reg | 0x80;
+    memset(&b[1], 0, len+1);
+    if (!dev_accel->transfer(b, len+2, b, len+2)) {
+        return false;
+    }
+    memcpy(data, &b[2], len);
+    return true;
+}
+
+/*
+  write to accel registers with retries. The SPI sensor may take
+  several tries to correctly write a register
+*/
+bool AP_InertialSensor_BMI088::write_accel_register(uint8_t reg, uint8_t v)
+{
+    for (uint8_t i=0; i<8; i++) {
+        dev_accel->write_register(reg, v);
+        uint8_t v2 = 0;
+        if (read_accel_registers(reg, &v2, 1) && v2 == v) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
   probe and initialise accelerometer
  */
 bool AP_InertialSensor_BMI088::accel_init()
@@ -119,37 +156,35 @@ bool AP_InertialSensor_BMI088::accel_init()
     uint8_t v;
 
     // dummy ready on accel ChipID to init accel (see section 3 of datasheet)
-    dev_accel->read_registers(REGA_CHIPID, &v, 1);
+    read_accel_registers(REGA_CHIPID, &v, 1);
 
-    if (!dev_accel->read_registers(REGA_CHIPID, &v, 1) || v != 0x1E) {
+    if (!read_accel_registers(REGA_CHIPID, &v, 1) || v != 0x1E) {
         return false;
     }
 
-    dev_accel->setup_checked_registers(6, 20);
-    
     // setup normal mode for DLPF, with 1600Hz ODR
-    if (!dev_accel->write_register(REGA_CONF, 0xAC, true)) {
+    if (!write_accel_register(REGA_CONF, 0xAC)) {
         return false;
     }
-
+        
     // setup 24g range
-    if (!dev_accel->write_register(REGA_RANGE, 0x03, true)) {
+    if (!write_accel_register(REGA_RANGE, 0x03)) {
         return false;
     }
-
+        
     // disable low-power mode
-    if (!dev_accel->write_register(REGA_PWR_CONF, 0, true)) {
+    if (!write_accel_register(REGA_PWR_CONF, 0)) {
         return false;
     }
-    if (!dev_accel->write_register(REGA_PWR_CTRL, 0x04, true)) {
+    if (!write_accel_register(REGA_PWR_CTRL, 0x04)) {
         return false;
     }
-
+        
     // setup FIFO for streaming X,Y,Z
-    if (!dev_accel->write_register(REGA_FIFO_CONFIG0, 0x00, true)) {
+    if (!write_accel_register(REGA_FIFO_CONFIG0, 0x00)) {
         return false;
     }
-    if (!dev_accel->write_register(REGA_FIFO_CONFIG1, 0x50, true)) {
+    if (!write_accel_register(REGA_FIFO_CONFIG1, 0x50)) {
         return false;
     }
 
@@ -221,7 +256,7 @@ bool AP_InertialSensor_BMI088::init()
 void AP_InertialSensor_BMI088::read_fifo_accel(void)
 {
     uint8_t len[2];
-    if (!dev_accel->read_registers(REGA_FIFO_LEN0, len, 2)) {
+    if (!read_accel_registers(REGA_FIFO_LEN0, len, 2)) {
         _inc_accel_error_count(accel_instance);
         return;
     }
@@ -240,7 +275,7 @@ void AP_InertialSensor_BMI088::read_fifo_accel(void)
     }
     
     uint8_t data[fifo_length];
-    if (!dev_accel->read_registers(REGA_FIFO_DATA, data, fifo_length)) {
+    if (!read_accel_registers(REGA_FIFO_DATA, data, fifo_length)) {
         _inc_accel_error_count(accel_instance);
         return;
     }
@@ -293,7 +328,7 @@ void AP_InertialSensor_BMI088::read_fifo_accel(void)
     if (temperature_counter++ == 100) {
         temperature_counter = 0;
         uint8_t tbuf[2];
-        if (!dev_accel->read_registers(REGA_TEMP_LSB, tbuf, 2)) {
+        if (!read_accel_registers(REGA_TEMP_LSB, tbuf, 2)) {
             _inc_accel_error_count(accel_instance);
         } else {
             uint16_t temp_uint11 = (tbuf[0]<<3) | (tbuf[1]>>5);
@@ -301,10 +336,6 @@ void AP_InertialSensor_BMI088::read_fifo_accel(void)
             float temp_degc = temp_int11 * 0.125 + 23;
             _publish_temperature(accel_instance, temp_degc);
         }
-    }
-    
-    if (!dev_accel->check_next_register()) {
-        _inc_accel_error_count(accel_instance);
     }
 }
 

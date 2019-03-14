@@ -325,6 +325,13 @@ def configure(cfg):
     if cfg.options.board is None:
         cfg.options.board = 'sitl'
 
+    boards_names = boards.get_boards_names()
+    if not cfg.options.board in boards_names:
+        for b in boards_names:
+            if b.upper() == cfg.options.board.upper():
+                cfg.options.board = b
+                break
+        
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.AUTOCONFIG = cfg.options.autoconfig

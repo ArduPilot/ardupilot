@@ -64,15 +64,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(pitch_slew_time,        "PITCH_SLEW_TIME",  2),
 
-    // @Param: SCAN_SPEED
-    // @DisplayName: Speed at which to rotate in scan mode
-    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
-    // @Units: deg/s
-    // @Increment: 1
-    // @Range: 0 100
-    // @User: Standard
-    GSCALAR(scan_speed,             "SCAN_SPEED",      5),
-
     // @Param: MIN_REVERSE_TIME
     // @DisplayName: Minimum time to apply a yaw reversal
     // @Description: When the tracker detects it has reached the limit of servo movement in yaw it will reverse and try moving to the other extreme of yaw. This parameter controls the minimum time it should reverse for. It is used to cope with trackers that have a significant lag in movement to ensure they do move all the way around.
@@ -393,6 +384,24 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Values: 0:None,1:Pitch,2:Yaw
     // @Bitmask: 0:Pitch,1:Yaw
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
+
+    // @Param: SCAN_SPEED_YAW
+    // @DisplayName: Speed at which to rotate the yaw axis in scan mode
+    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
+    // @Units: deg/s
+    // @Increment: 1
+    // @Range: 0 100
+    // @User: Standard
+    GSCALAR(scan_speed_yaw,         "SCAN_SPEED_YAW",   2),
+
+    // @Param: SCAN_SPEED_PIT
+    // @DisplayName: Speed at which to rotate pitch axis in scan mode
+    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
+    // @Units: deg/s
+    // @Increment: 1
+    // @Range: 0 100
+    // @User: Standard
+    GSCALAR(scan_speed_pitch,       "SCAN_SPEED_PIT",   5),
 
     AP_VAREND
 };

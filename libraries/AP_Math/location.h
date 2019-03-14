@@ -17,9 +17,6 @@
 /*
  * LOCATION
  */
-// longitude_scale - returns the scaler to compensate for shrinking longitude as you move north or south from the equator
-// Note: this does not include the scaling to convert longitude/latitude points to meters or centimeters
-float        longitude_scale(const struct Location &loc);
 
 // return horizontal distance in centimeters between two positions
 float        get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);

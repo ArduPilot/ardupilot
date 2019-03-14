@@ -188,7 +188,7 @@ bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
         return false;
     }
     vec_ne.x = (lat-ekf_origin.lat) * LATLON_TO_CM;
-    vec_ne.y = (lng-ekf_origin.lng) * LATLON_TO_CM * longitude_scale(ekf_origin);
+    vec_ne.y = (lng-ekf_origin.lng) * LATLON_TO_CM * ekf_origin.longitude_scale();
     return true;
 }
 
@@ -216,7 +216,7 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 float Location::get_distance(const struct Location &loc2) const
 {
     float dlat = (float)(loc2.lat - lat);
-    float dlng = ((float)(loc2.lng - lng)) * longitude_scale(loc2);
+    float dlng = ((float)(loc2.lng - lng)) * loc2.longitude_scale();
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
@@ -226,10 +226,16 @@ void Location::offset(float ofs_north, float ofs_east)
     // use is_equal() because is_zero() is a local class conflict and is_zero() in AP_Math does not belong to a class
     if (!is_equal(ofs_north, 0.0f) || !is_equal(ofs_east, 0.0f)) {
         int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
-        int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(*this);
+        int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale();
         lat += dlat;
         lng += dlng;
     }
+}
+
+float Location::longitude_scale() const
+{
+    float scale = cosf(lat * (1.0e-7f * DEG_TO_RAD));
+    return constrain_float(scale, 0.01f, 1.0f);
 }
 
 // make sure we know what size the Location object is:

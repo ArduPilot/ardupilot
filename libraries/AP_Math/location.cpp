@@ -25,12 +25,6 @@
 #include "location.h"
 #include "AP_Common/Location.h"
 
-float longitude_scale(const struct Location &loc)
-{
-    float scale = cosf(loc.lat * (1.0e-7f * DEG_TO_RAD));
-    return constrain_float(scale, 0.01f, 1.0f);
-}
-
 // return horizontal distance between two positions in cm
 float get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
 {
@@ -41,7 +35,7 @@ float get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destina
 int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
 {
     int32_t off_x = loc2.lng - loc1.lng;
-    int32_t off_y = (loc2.lat - loc1.lat) / longitude_scale(loc2);
+    const int32_t off_y = (loc2.lat - loc1.lat) / loc2.longitude_scale();
     int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
     if (bearing < 0) bearing += 36000;
     return bearing;
@@ -111,7 +105,7 @@ void location_update(struct Location &loc, float bearing, float distance)
 Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
 {
     return Vector2f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
-                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * longitude_scale(loc1));
+                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * loc1.longitude_scale());
 }
 
 /*
@@ -121,7 +115,7 @@ Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
 Vector3f location_3d_diff_NED(const struct Location &loc1, const struct Location &loc2)
 {
     return Vector3f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
-                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * longitude_scale(loc1),
+                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * loc1.longitude_scale(),
                     (loc1.alt - loc2.alt) * 0.01f);
 }
 

@@ -512,7 +512,7 @@ private:
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
     void change_arm_state(void);
-    bool arm_motors(AP_Arming::ArmingMethod method);
+    bool arm_motors(AP_Arming::Method method);
     bool disarm_motors(void);
     bool is_boat() const;
 

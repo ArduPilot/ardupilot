@@ -117,7 +117,8 @@ void Plane::init_ardupilot()
     airspeed.init();
 
     if (g.compass_enabled==true) {
-        bool compass_ok = compass.init() && compass.read();
+        compass.init();
+        bool compass_ok = compass.read();
 #if HIL_SUPPORT
     if (g.hil_mode != 0) {
         compass_ok = true;
@@ -757,7 +758,7 @@ void Plane::change_arm_state(void)
 /*
   arm motors
  */
-bool Plane::arm_motors(const AP_Arming::ArmingMethod method, const bool do_arming_checks)
+bool Plane::arm_motors(const AP_Arming::Method method, const bool do_arming_checks)
 {
     if (!arming.arm(method, do_arming_checks)) {
         return false;

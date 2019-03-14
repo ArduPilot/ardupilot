@@ -39,6 +39,8 @@ extern const AP_HAL::HAL& hal;
 #define HAL_STORAGE_BACKUP_FILE "/APM/" SKETCHNAME ".bak"
 #endif
 
+#define STORAGE_FLASH_RETRIES 5
+
 void Storage::_storage_open(void)
 {
     if (_initialised) {
@@ -250,8 +252,13 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 {
 #ifdef STORAGE_FLASH_PAGE
     size_t base_address = stm32_flash_getpageaddr(_flash_page+sector);
-    bool ret = stm32_flash_write(base_address+offset, data, length);
-    if (!ret && _flash_erase_ok()) {
+    for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
+        if (stm32_flash_write(base_address+offset, data, length)) {
+            return true;
+        }
+        hal.scheduler->delay(1);
+    }
+    if (_flash_erase_ok()) {
         // we are getting flash write errors while disarmed. Try
         // re-writing all of flash
         uint32_t now = AP_HAL::millis();
@@ -262,7 +269,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
                                 (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
         }
     }
-    return ret;
+    return false;
 #else
     return false;
 #endif
@@ -284,7 +291,13 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
  */
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
-    return stm32_flash_erasepage(_flash_page+sector);
+    for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
+        if (stm32_flash_erasepage(_flash_page+sector)) {
+            return true;
+        }
+        hal.scheduler->delay(1);
+    }
+    return false;
 }
 
 /*

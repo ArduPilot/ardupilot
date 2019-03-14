@@ -93,6 +93,22 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "stm32f7" ]; then
+        echo "Building mRoX21-777/"
+        $waf configure --board mRoX21-777
+        $waf clean
+        $waf plane
+        continue
+    fi
+
+    if [ "$t" == "stm32h7" ]; then
+        echo "Building Pixhawk4Pro"
+        $waf configure --board Pixhawk4Pro
+        $waf clean
+        $waf copter
+        continue
+    fi
+
     if [ "$t" == "iofirmware" ]; then
         echo "Building iofirmware"
         $waf configure --board iomcu

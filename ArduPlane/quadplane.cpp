@@ -1053,6 +1053,10 @@ bool QuadPlane::is_flying_vtol(void) const
     if (!available()) {
         return false;
     }
+    if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+        // assume that with no motor outputs we're not flying in VTOL mode
+        return false;
+    }
     if (motors->get_throttle() > 0.01f) {
         // if we are demanding more than 1% throttle then don't consider aircraft landed
         return true;
@@ -1175,7 +1179,7 @@ void QuadPlane::control_loiter()
 float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
     if (plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode &&
-        plane.arming.get_rudder_arming_type() != AP_Arming::ARMING_RUDDER_DISABLED) {
+        plane.arming.get_rudder_arming_type() != AP_Arming::RudderArming::IS_DISABLED) {
         // the user may be trying to disarm
         return 0;
     }

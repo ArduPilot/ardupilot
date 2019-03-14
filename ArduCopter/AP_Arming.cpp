@@ -16,7 +16,7 @@ void AP_Arming_Copter::update(void)
 }
 
 // performs pre-arm checks and arming checks
-bool AP_Arming_Copter::all_checks_passing(ArmingMethod method)
+bool AP_Arming_Copter::all_checks_passing(AP_Arming::Method method)
 {
     set_pre_arm_check(pre_arm_checks(true));
 
@@ -98,23 +98,6 @@ bool AP_Arming_Copter::compass_checks(bool display_failure)
     }
 
     return ret;
-}
-
-bool AP_Arming_Copter::fence_checks(bool display_failure)
-{
-    #if AC_FENCE == ENABLED
-    // check fence is initialised
-    const char *fail_msg = nullptr;
-    if (!copter.fence.pre_arm_check(fail_msg)) {
-        if (fail_msg == nullptr) {
-            check_failed(ARMING_CHECK_NONE, display_failure, "Check fence");
-        } else {
-            check_failed(ARMING_CHECK_NONE, display_failure, "%s", fail_msg);
-        }
-        return false;
-    }
-    #endif
-    return true;
 }
 
 bool AP_Arming_Copter::ins_checks(bool display_failure)
@@ -206,16 +189,12 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         // Inverted flight feature disabled for Heli Single and Dual frames
         if (copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
             rc().find_channel_for_option(RC_Channel::aux_func_t::INVERTED) != nullptr) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Inverted flight option not supported");
-            }
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Inverted flight option not supported");
             return false;
         }
         // Ensure an Aux Channel is configured for motor interlock
         if (rc().find_channel_for_option(RC_Channel::aux_func_t::MOTOR_INTERLOCK) == nullptr) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motor Interlock not configured");
-            }
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Motor Interlock not configured");
             return false;
         }
 
@@ -376,7 +355,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (copter.gps.get_hdop() > copter.g.gps_hdop_good) {
-        check_failed(ARMING_CHECK_GPS, display_failure, "PreArm: High GPS HDOP");
+        check_failed(ARMING_CHECK_GPS, display_failure, "High GPS HDOP");
         return false;
     }
 
@@ -464,7 +443,7 @@ bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm
 //  has side-effect that logging is started
-bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::ArmingMethod method)
+bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method)
 {
     const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
 
@@ -497,7 +476,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::ArmingMethod 
     control_mode_t control_mode = copter.control_mode;
 
     // always check if the current mode allows arming
-    if (!copter.flightmode->allows_arming(method == AP_Arming::ArmingMethod::MAVLINK)) {
+    if (!copter.flightmode->allows_arming(method == AP_Arming::Method::MAVLINK)) {
         check_failed(ARMING_CHECK_NONE, display_failure, "Mode not armable");
         return false;
     }
@@ -561,7 +540,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::ArmingMethod 
         }
 
         // check throttle is not too high - skips checks if arming from GCS in Guided
-        if (!(method == AP_Arming::ArmingMethod::MAVLINK && (control_mode == GUIDED || control_mode == GUIDED_NOGPS))) {
+        if (!(method == AP_Arming::Method::MAVLINK && (control_mode == GUIDED || control_mode == GUIDED_NOGPS))) {
             // above top of deadband is too always high
             if (copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in()) > 0.0f) {
                 check_failed(ARMING_CHECK_RC, display_failure, "%s too high", rc_item);
