@@ -701,6 +701,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(scripting, "SCR_", 41, ParametersG2, AP_Scripting),
 #endif
 
+    // @Param: FS_THR_TIMEOUT
+    // @DisplayName: Failsafe for RC throttle timeout
+    // @Description: Failsafe for RC throttle timeout. If there is no RC throttle input, either from an RC receiver or MAVLink override command, in this amount of time then a RC throttle failsafe occurs. Set to 0 to disable.
+    // @Units: s
+    // @Range: 0 2
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("FS_THR_TIMEOUT", 42, ParametersG2, fs_thr_timeout, 0.5f),
+
     AP_GROUPEND
 };
 

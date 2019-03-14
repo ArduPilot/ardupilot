@@ -397,6 +397,8 @@ public:
     // balance both pitch trim
     AP_Float bal_pitch_trim;
 
+    AP_Float fs_thr_timeout;
+
 #ifdef ENABLE_SCRIPTING
     AP_Scripting scripting;
 #endif // ENABLE_SCRIPTING
