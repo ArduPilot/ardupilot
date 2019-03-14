@@ -42,8 +42,8 @@ protected:
     void send_nav_controller_output() const override;
     uint64_t capabilities() const override;
 
-    virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_MC; };
-    virtual MAV_LANDED_STATE landed_state() const;
+    virtual MAV_VTOL_STATE vtol_state() const override { return MAV_VTOL_STATE_MC; };
+    virtual MAV_LANDED_STATE landed_state() const override;
 
 private:
 
