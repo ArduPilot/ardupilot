@@ -39,14 +39,14 @@ GCS_MAVLINK::queued_param_send()
         return;
     }
 
-    uint32_t tnow = AP_HAL::millis();
-    uint32_t tstart = AP_HAL::micros();
+    const uint32_t tnow = AP_HAL::millis();
+    const uint32_t tstart = AP_HAL::micros();
 
     // use at most 30% of bandwidth on parameters. The constant 26 is
     // 1/(1000 * 1/8 * 0.001 * 0.3)
     const uint32_t link_bw = _port->bw_in_kilobytes_per_second();
 
-    uint16_t bytes_allowed = link_bw * (tnow - _queued_parameter_send_time_ms) * 26;
+    uint32_t bytes_allowed = link_bw * (tnow - _queued_parameter_send_time_ms) * 26;
     const uint16_t size_for_one_param_value_msg = MAVLINK_MSG_ID_PARAM_VALUE_LEN + packet_overhead();
     if (bytes_allowed < size_for_one_param_value_msg) {
         bytes_allowed = size_for_one_param_value_msg;
@@ -54,7 +54,7 @@ GCS_MAVLINK::queued_param_send()
     if (bytes_allowed > comm_get_txspace(chan)) {
         bytes_allowed = comm_get_txspace(chan);
     }
-    uint8_t count = bytes_allowed / size_for_one_param_value_msg;
+    uint32_t count = bytes_allowed / size_for_one_param_value_msg;
 
     // when we don't have flow control we really need to keep the
     // param download very slow, or it tends to stall
