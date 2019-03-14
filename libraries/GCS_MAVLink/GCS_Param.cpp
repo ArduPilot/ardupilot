@@ -235,12 +235,12 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
       fails to get a parameter due to lack of space
      */
     uint32_t saved_reserve_param_space_start_ms = reserve_param_space_start_ms;
-    reserve_param_space_start_ms = 0;
+    reserve_param_space_start_ms = 0; // bypass packet_overhead_chan reservation checking
     if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
         reserve_param_space_start_ms = AP_HAL::millis();
-        return;
+    } else {
+        reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
     }
-    reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
 
     struct pending_param_request req;
     req.chan = chan;
