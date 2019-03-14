@@ -31,7 +31,5 @@ function get_sandbox_env ()
           -- ArduPilot specific
           gcs = { send_text = gcs.send_text},
           servo = { set_output_pwm = servo.set_output_pwm},
-          location = { new = loc.new},
-          ahrs = ahrs
         }
 end
