@@ -741,7 +741,7 @@ void Copter::ModeAuto::wp_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
-        make_safe_shut_down();
+        make_safe_spool_down();
         wp_nav->wp_and_spline_init();
         return;
     }
@@ -771,7 +771,7 @@ void Copter::ModeAuto::spline_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
-        make_safe_shut_down();
+        make_safe_spool_down();
         wp_nav->wp_and_spline_init();
         return;
     }
@@ -809,14 +809,10 @@ void Copter::ModeAuto::spline_run()
 //      called by auto_run at 100hz or more
 void Copter::ModeAuto::land_run()
 {
-    // disarm when the landing detector says we've landed
-    if (ap.land_complete && motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-        copter.init_disarm_motors();
-    }
 
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
-        make_safe_shut_down();
+        make_safe_spool_down();
         loiter_nav->init_target();
         return;
     }
@@ -871,7 +867,7 @@ void Copter::ModeAuto::loiter_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
-        make_safe_shut_down();
+        make_safe_spool_down();
         wp_nav->wp_and_spline_init();
         return;
     }
@@ -1731,7 +1727,9 @@ bool Copter::ModeAuto::verify_loiter_to_alt()
 // returns true with RTL has completed successfully
 bool Copter::ModeAuto::verify_RTL()
 {
-    return (copter.mode_rtl.state_complete() && (copter.mode_rtl.state() == RTL_FinalDescent || copter.mode_rtl.state() == RTL_Land));
+    return (copter.mode_rtl.state_complete() && 
+    (copter.mode_rtl.state() == RTL_FinalDescent || copter.mode_rtl.state() == RTL_Land) &&
+    (motors->get_spool_mode() == AP_Motors::GROUND_IDLE));
 }
 
 /********************************************************************************/
