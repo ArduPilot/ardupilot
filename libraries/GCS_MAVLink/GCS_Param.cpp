@@ -39,6 +39,9 @@ GCS_MAVLINK::queued_param_send()
         return;
     }
 
+    // send parameter async replies
+    uint8_t async_replies_sent_count = send_parameter_async_replies();
+
     const uint32_t tnow = AP_HAL::millis();
     const uint32_t tstart = AP_HAL::micros();
 
@@ -61,13 +64,10 @@ GCS_MAVLINK::queued_param_send()
     if (!have_flow_control() && count > 5) {
         count = 5;
     }
-
-    // send parameter async replies
-    while (count && send_parameter_reply()) {
-        // do nothing
-        _queued_parameter_send_time_ms = tnow;
-        count--;
+    if (async_replies_sent_count >= count) {
+        return;
     }
+    count -= async_replies_sent_count;
 
     if (_queued_parameter == nullptr) {
         return;
@@ -376,26 +376,48 @@ void GCS_MAVLINK::param_io_timer(void)
 }
 
 /*
-  send a reply to a PARAM_REQUEST_READ
+  send replies to PARAM_REQUEST_READ
  */
-bool GCS_MAVLINK::send_parameter_reply(void)
+uint8_t GCS_MAVLINK::send_parameter_async_replies()
 {
-    struct pending_param_reply reply;
-    
-    if (!param_replies.pop(reply)) {
-        // nothing to do
-        return false;
-    }
-    
-    mavlink_msg_param_value_send(
-        reply.chan,
-        reply.param_name,
-        reply.value,
-        mav_param_type(reply.p_type),
-        reply.count,
-        reply.param_index);
+    uint8_t async_replies_sent_count = 0;
 
-    return true;
+    while (async_replies_sent_count < 5) {
+        if (param_replies.empty()) {
+            // nothing to do
+            return async_replies_sent_count;
+        }
+
+        /*
+          we reserve some space for sending parameters if the client ever
+          fails to get a parameter due to lack of space
+        */
+        uint32_t saved_reserve_param_space_start_ms = reserve_param_space_start_ms;
+        reserve_param_space_start_ms = 0; // bypass packet_overhead_chan reservation checking
+        if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+            reserve_param_space_start_ms = AP_HAL::millis();
+            return async_replies_sent_count;
+        }
+        reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
+
+        struct pending_param_reply reply;
+        if (!param_replies.pop(reply)) {
+            // internal error
+            return async_replies_sent_count;
+        }
+
+        mavlink_msg_param_value_send(
+            reply.chan,
+            reply.param_name,
+            reply.value,
+            mav_param_type(reply.p_type),
+            reply.count,
+            reply.param_index);
+
+        _queued_parameter_send_time_ms = AP_HAL::millis();
+        async_replies_sent_count++;
+    }
+    return async_replies_sent_count;
 }
 
 void GCS_MAVLINK::handle_common_param_message(mavlink_message_t *msg)
