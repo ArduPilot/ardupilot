@@ -60,7 +60,7 @@ protected:
         float alpha_stall = 0.4712;
         float c_drag_q = 0;
         float c_drag_deltae = 0.0;
-        float c_drag_p = 0.1;
+        float c_drag_p = 0.0025;
         float c_y_0 = 0;
         float c_y_b = -0.98;
         float c_y_p = 0;
