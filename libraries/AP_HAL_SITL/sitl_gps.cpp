@@ -14,6 +14,7 @@
 #include "HAL_SITL_Class.h"
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
 #include <SITL/SITL.h>
 #include "Scheduler.h"
 #include "UARTDriver.h"

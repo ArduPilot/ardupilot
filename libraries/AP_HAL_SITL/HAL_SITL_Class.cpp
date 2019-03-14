@@ -20,6 +20,7 @@
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include <AP_Common/AP_Common.h>
 
 using namespace HALSITL;
 

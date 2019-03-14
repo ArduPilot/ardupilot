@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
 
 #include <errno.h>
 #include <sys/ioctl.h>

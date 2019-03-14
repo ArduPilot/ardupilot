@@ -1,5 +1,6 @@
 #include "Util.h"
 #include <sys/time.h>
+#include <AP_Common/AP_Common.h>
 
 #ifdef WITH_SITL_TONEALARM
 HALSITL::ToneAlarm_SF HALSITL::Util::_toneAlarm;
