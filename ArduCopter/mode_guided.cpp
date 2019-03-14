@@ -379,7 +379,7 @@ void Copter::Mode::auto_takeoff_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed) {
-        make_safe_shut_down();
+        make_safe_spool_down();
         wp_nav->shift_wp_origin_to_current_pos();
         return;
     }
@@ -427,7 +427,7 @@ void Copter::ModeGuided::pos_control_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
-        make_safe_shut_down();
+        make_safe_spool_down();
         return;
     }
 
@@ -469,7 +469,7 @@ void Copter::ModeGuided::vel_control_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
-        make_safe_shut_down();
+        make_safe_spool_down();
         return;
     }
 
@@ -522,7 +522,7 @@ void Copter::ModeGuided::posvel_control_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
-        make_safe_shut_down();
+        make_safe_spool_down();
         return;
     }
 
@@ -606,7 +606,7 @@ void Copter::ModeGuided::angle_control_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || (ap.land_complete && (guided_angle_state.climb_rate_cms <= 0.0f))) {
-        make_safe_shut_down();
+        make_safe_spool_down();
         return;
     }
 
