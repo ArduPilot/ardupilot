@@ -26,6 +26,8 @@
 #include <stdio.h>
 #endif
 
+#include "lua_generated_bindings.h"
+
 #ifndef SCRIPTING_DIRECTORY
   #if HAL_OS_FATFS_IO
     #define SCRIPTING_DIRECTORY "/APM/scripts"
@@ -99,6 +101,7 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
         hal.console->printf("Lua: Scripting: Could not create sandbox: %s", lua_tostring(L, -1));
         return nullptr;
     }
+    load_generated_sandbox(L);
     lua_setupvalue(L, -2, 1);
 
     new_script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);   // cache the reference
