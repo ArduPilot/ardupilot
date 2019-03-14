@@ -633,9 +633,8 @@ private:
 
     // IO timer callback for parameters
     void param_io_timer(void);
-    
-    // send an async parameter reply
-    bool send_parameter_reply(void);
+
+    uint8_t send_parameter_async_replies();
 
     void send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
