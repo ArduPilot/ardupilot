@@ -644,7 +644,7 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
-        return false;
+        return AP_AHRS_DCM::get_velocity_NED(vec);
 
     case EKF_TYPE2:
     default:

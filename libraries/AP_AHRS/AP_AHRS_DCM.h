@@ -105,6 +105,8 @@ public:
     // time that the AHRS has been up
     uint32_t uptime_ms() const override;
 
+    bool get_velocity_NED(Vector3f &vec) const override;
+
 private:
     float _ki;
     float _ki_yaw;
