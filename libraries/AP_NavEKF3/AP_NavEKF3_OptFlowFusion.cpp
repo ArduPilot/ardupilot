@@ -88,7 +88,7 @@ void NavEKF3_core::EstimateTerrainOffset()
 
     // don't fuse flow data if LOS rate is misaligned, without GPS, or insufficient velocity, as it is poorly observable
     // don't fuse flow data if it exceeds validity limits
-    // don't update terrain offset if grpund is being used as the zero height datum in the main filter
+    // don't update terrain offset if ground is being used as the zero height datum in the main filter
     bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
     || gpsNotAvailable 
     || PV_AidingMode == AID_RELATIVE 
