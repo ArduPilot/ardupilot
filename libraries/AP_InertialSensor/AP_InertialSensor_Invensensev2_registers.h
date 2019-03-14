@@ -138,6 +138,7 @@
 #       define BITS_GYRO_FS_500DPS                  0x02
 #       define BITS_GYRO_FS_1000DPS                 0x04
 #       define BITS_GYRO_FS_2000DPS                 0x06
+#       define BITS_GYRO_FS_2000DPS_20649           0x04
 #       define BITS_GYRO_FS_MASK                    0x06 // only bits 1 and 2 are used for gyro full scale so use this to mask off other bits
 #define INV2REG_GYRO_CONFIG_2          INV2REG(REG_BANK2,0x02U)
 #define INV2REG_XG_OFFS_USRH           INV2REG(REG_BANK2,0x03U)
@@ -166,6 +167,7 @@
 #       define BITS_ACCEL_FS_4G                      0x02
 #       define BITS_ACCEL_FS_8G                      0x04
 #       define BITS_ACCEL_FS_16G                     0x06
+#       define BITS_ACCEL_FS_30G_20649               0x06
 #       define BITS_ACCEL_FS_MASK                    0x06 // only bits 1 and 2 are used for gyro full scale so use this to mask off other bits
 #define INV2REG_FSYNC_CONFIG           INV2REG(REG_BANK2,0x52U)
 #       define FSYNC_CONFIG_EXT_SYNC_TEMP          0x01

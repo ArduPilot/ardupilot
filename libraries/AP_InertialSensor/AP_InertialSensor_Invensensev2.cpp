@@ -172,24 +172,24 @@ void AP_InertialSensor_Invensensev2::start()
     // grab the used instances
     enum DevTypes gdev, adev;
     switch (_inv2_type) {
-    case Invensensev2_ICM20948:
-        gdev = DEVTYPE_INS_ICM20948;
-        adev = DEVTYPE_INS_ICM20948;
-        _accel_scale = (GRAVITY_MSS / 2048.f);
-        break;
     case Invensensev2_ICM20648:
         gdev = DEVTYPE_INS_ICM20648;
         adev = DEVTYPE_INS_ICM20648;
-        _accel_scale = (GRAVITY_MSS / 2048.f);
+        // using 16g full range, 2048 LSB/g
+        _accel_scale = (GRAVITY_MSS / 2048);
         break;
     case Invensensev2_ICM20649:
+        // 20649 is setup for 30g full scale, 1024 LSB/g
         gdev = DEVTYPE_INS_ICM20649;
         adev = DEVTYPE_INS_ICM20649;
-        _accel_scale = (GRAVITY_MSS / 1024.f);
+        _accel_scale = (GRAVITY_MSS / 1024);
         break;
+    case Invensensev2_ICM20948:
     default:
         gdev = DEVTYPE_INS_ICM20948;
         adev = DEVTYPE_INS_ICM20948;
+        // using 16g full range, 2048 LSB/g
+        _accel_scale = (GRAVITY_MSS / 2048);
         break;
     }
 
@@ -563,8 +563,8 @@ void AP_InertialSensor_Invensensev2::_select_bank(uint8_t bank)
  */
 void AP_InertialSensor_Invensensev2::_set_filter_and_scaling(void)
 {
-    uint8_t gyro_config = BITS_GYRO_FS_2000DPS;
-    uint8_t accel_config = BITS_ACCEL_FS_16G;
+    uint8_t gyro_config = (_inv2_type == Invensensev2_ICM20649)?BITS_GYRO_FS_2000DPS_20649 : BITS_GYRO_FS_2000DPS;
+    uint8_t accel_config = (_inv2_type == Invensensev2_ICM20649)?BITS_ACCEL_FS_30G_20649:BITS_ACCEL_FS_16G;
 
     // assume 1.125kHz sampling to start
     _fifo_downsample_rate = 1;
