@@ -35,7 +35,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
-#define FLOW_USE_MASK_DEFAULT   1
+#define FLOW_USE_DEFAULT        1
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -61,7 +61,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
-#define FLOW_USE_MASK_DEFAULT   1
+#define FLOW_USE_DEFAULT        1
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -87,7 +87,7 @@
 #define FLOW_M_NSE_DEFAULT      0.15f
 #define FLOW_I_GATE_DEFAULT     500
 #define CHECK_SCALER_DEFAULT    150
-#define FLOW_USE_MASK_DEFAULT   2
+#define FLOW_USE_DEFAULT        2
 
 #else
 // build type not specified, use copter defaults
@@ -113,7 +113,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
-#define FLOW_USE_MASK_DEFAULT   1
+#define FLOW_USE_DEFAULT        1
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -557,15 +557,13 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("EXTNAV_DELAY", 50, NavEKF2, _extnavDelay_ms, 10),
 
-    // @Param: FLOW_MASK
+    // @Param: FLOW_USE
     // @DisplayName: Optical flow use bitmask
-    // @Description: Bitmask controlling if the optical flow data is fused into the 24-state navigation estimator OR the 1-state terrain height estimator.
+    // @Description: Controls if the optical flow data is fused into the 24-state navigation estimator OR the 1-state terrain height estimator.
     // @User: Advanced
     // @Values: 0:None,1:Navigation,2:Terrain
-    // @Bitmask: 0:Navigation,1:Terrain
-    // @Range: 0 2
     // @RebootRequired: True
-    AP_GROUPINFO("FLOW_MASK", 51, NavEKF2, _flowUseMask, FLOW_USE_MASK_DEFAULT),
+    AP_GROUPINFO("FLOW_USE", 51, NavEKF2, _flowUse, FLOW_USE_DEFAULT),
 
     AP_GROUPEND
 };
