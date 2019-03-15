@@ -117,7 +117,7 @@ float ModeGuided::get_distance_to_destination() const
 }
 
 // return true if vehicle has reached or even passed destination
-bool ModeGuided::reached_destination()
+bool ModeGuided::reached_destination() const
 {
     switch (_guided_mode) {
     case Guided_WP:
