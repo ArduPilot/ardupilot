@@ -1574,8 +1574,9 @@ class AutoTest(ABC):
         raise WaitWaypointTimeout("Timed out waiting for waypoint %u of %u" %
                                   (wpnum_end, wpnum_end))
 
-    def mode_is(self, mode):
-        self.wait_heartbeat()
+    def mode_is(self, mode, cached=False):
+        if not cached:
+            self.wait_heartbeat()
         return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
 
     def wait_mode(self, mode, timeout=60):

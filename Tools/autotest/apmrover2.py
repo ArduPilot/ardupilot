@@ -891,6 +891,63 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_location(loc, accuracy=accuracy)
         self.disarm_vehicle()
 
+    def test_offboard(self, timeout=90):
+        self.load_mission("rover-guided-mission.txt")
+        self.wait_ready_to_arm(require_absolute=True)
+        self.arm_vehicle()
+        self.change_mode("AUTO")
+
+        offboard_expected_duration = 10 # see mission file
+
+        if self.mav.messages.get("SET_POSITION_TARGET_GLOBAL_INT", None):
+            raise PreconditionFailedException("Already have SET_POSITION_TARGET_GLOBAL_INT")
+
+        tstart = self.get_sim_time_cached()
+        last_heartbeat_sent = 0
+        got_sptgi = False
+        magic_waypoint_tstart = 0
+        magic_waypoint_tstop = 0
+        while True:
+            if self.mode_is("HOLD", cached=True):
+                break
+
+            now = self.get_sim_time_cached()
+            if now - last_heartbeat_sent > 1:
+                last_heartbeat_sent = now
+                self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                                            mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                                            0,
+                                            0,
+                                            0)
+
+            if now - tstart > timeout:
+                raise AutoTestTimeoutException("Didn't complete")
+            magic_waypoint = 3
+#            mc = self.mav.messages.get("MISSION_CURRENT", None)
+            mc = self.mav.recv_match(type="MISSION_CURRENT", blocking=False)
+            if mc is not None:
+                print("%s" % str(mc))
+                if mc.seq == magic_waypoint:
+                    print("At magic waypoint")
+                    if magic_waypoint_tstart == 0:
+                        magic_waypoint_tstart = self.get_sim_time_cached()
+                    sptgi = self.mav.messages.get("SET_POSITION_TARGET_GLOBAL_INT", None)
+                    if sptgi is not None:
+                        got_sptgi = True
+                elif mc.seq > magic_waypoint:
+                    if magic_waypoint_tstop == 0:
+                        magic_waypoint_tstop = self.get_sim_time_cached()
+
+        self.disarm_vehicle()
+        offboard_duration = magic_waypoint_tstop - magic_waypoint_tstart
+        if abs(offboard_duration - offboard_expected_duration) > 1:
+            raise NotAchievedException("Did not stay in offboard control for correct time (want=%f got=%f)" %
+                                       (offboard_expected_duration, offboard_duration))
+
+        if not got_sptgi:
+            raise NotAchievedException("Did not get sptgi message")
+        print("spgti: %s" % str(sptgi))
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -978,6 +1035,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("Rally",
              "Test Rally Points",
              self.test_rally_points),
+
+            ("Offboard",
+             "Test Offboard Control",
+             self.test_offboard),
 
             ("DataFlashOverMAVLink",
              "Test DataFlash over MAVLink",
