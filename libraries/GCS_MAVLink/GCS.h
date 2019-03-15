@@ -293,7 +293,7 @@ protected:
     virtual bool in_hil_mode() const { return false; }
 
     bool mavlink_coordinate_frame_to_location_alt_frame(uint8_t coordinate_frame,
-                                                        Location::ALT_FRAME &frame);
+                                                        Location::AltFrame &frame);
 
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
