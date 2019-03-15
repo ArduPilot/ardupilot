@@ -28,7 +28,7 @@ void Location::zero(void)
     memset(this, 0, sizeof(*this));
 }
 
-Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_FRAME frame)
+Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame)
 {
     zero();
     lat = latitude;
@@ -39,7 +39,7 @@ Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_F
 Location::Location(const Vector3f &ekf_offset_neu)
 {
     // store alt and alt frame
-    set_alt_cm(ekf_offset_neu.z, ALT_FRAME_ABOVE_ORIGIN);
+    set_alt_cm(ekf_offset_neu.z, AltFrame::ABOVE_ORIGIN);
 
     // calculate lat, lon
     Location ekf_origin;
@@ -50,23 +50,23 @@ Location::Location(const Vector3f &ekf_offset_neu)
     }
 }
 
-void Location::set_alt_cm(int32_t alt_cm, ALT_FRAME frame)
+void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
 {
     alt = alt_cm;
     relative_alt = false;
     terrain_alt = false;
     origin_alt = false;
     switch (frame) {
-        case ALT_FRAME_ABSOLUTE:
+        case AltFrame::ABSOLUTE:
             // do nothing
             break;
-        case ALT_FRAME_ABOVE_HOME:
+        case AltFrame::ABOVE_HOME:
             relative_alt = true;
             break;
-        case ALT_FRAME_ABOVE_ORIGIN:
+        case AltFrame::ABOVE_ORIGIN:
             origin_alt = true;
             break;
-        case ALT_FRAME_ABOVE_TERRAIN:
+        case AltFrame::ABOVE_TERRAIN:
             // we mark it as a relative altitude, as it doesn't have
             // home alt added
             relative_alt = true;
@@ -76,7 +76,7 @@ void Location::set_alt_cm(int32_t alt_cm, ALT_FRAME frame)
 }
 
 // converts altitude to new frame
-bool Location::change_alt_frame(ALT_FRAME desired_frame)
+bool Location::change_alt_frame(AltFrame desired_frame)
 {
     int32_t new_alt_cm;
     if (!get_alt_cm(desired_frame, new_alt_cm)) {
@@ -87,24 +87,24 @@ bool Location::change_alt_frame(ALT_FRAME desired_frame)
 }
 
 // get altitude frame
-Location::ALT_FRAME Location::get_alt_frame() const
+Location::AltFrame Location::get_alt_frame() const
 {
     if (terrain_alt) {
-        return ALT_FRAME_ABOVE_TERRAIN;
+        return AltFrame::ABOVE_TERRAIN;
     }
     if (origin_alt) {
-        return ALT_FRAME_ABOVE_ORIGIN;
+        return AltFrame::ABOVE_ORIGIN;
     }
     if (relative_alt) {
-        return ALT_FRAME_ABOVE_HOME;
+        return AltFrame::ABOVE_HOME;
     }
-    return ALT_FRAME_ABSOLUTE;
+    return AltFrame::ABSOLUTE;
 }
 
 /// get altitude in desired frame
-bool Location::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
+bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 {
-    Location::ALT_FRAME frame = get_alt_frame();
+    Location::AltFrame frame = get_alt_frame();
 
     // shortcut if desired and underlying frame are the same
     if (desired_frame == frame) {
@@ -114,7 +114,7 @@ bool Location::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
 
     // check for terrain altitude
     float alt_terr_cm = 0;
-    if (frame == ALT_FRAME_ABOVE_TERRAIN || desired_frame == ALT_FRAME_ABOVE_TERRAIN) {
+    if (frame == AltFrame::ABOVE_TERRAIN || desired_frame == AltFrame::ABOVE_TERRAIN) {
 #if AP_TERRAIN_AVAILABLE
         if (_terrain == nullptr || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
             return false;
@@ -129,16 +129,16 @@ bool Location::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
     // convert alt to absolute
     int32_t alt_abs = 0;
     switch (frame) {
-        case ALT_FRAME_ABSOLUTE:
+        case AltFrame::ABSOLUTE:
             alt_abs = alt;
             break;
-        case ALT_FRAME_ABOVE_HOME:
+        case AltFrame::ABOVE_HOME:
             if (!AP::ahrs().home_is_set()) {
                 return false;
             }
             alt_abs = alt + AP::ahrs().get_home().alt;
             break;
-        case ALT_FRAME_ABOVE_ORIGIN:
+        case AltFrame::ABOVE_ORIGIN:
             {
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
@@ -148,23 +148,23 @@ bool Location::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
                 alt_abs = alt + ekf_origin.alt;
             }
             break;
-        case ALT_FRAME_ABOVE_TERRAIN:
+        case AltFrame::ABOVE_TERRAIN:
             alt_abs = alt + alt_terr_cm;
             break;
     }
 
     // convert absolute to desired frame
     switch (desired_frame) {
-        case ALT_FRAME_ABSOLUTE:
+        case AltFrame::ABSOLUTE:
             ret_alt_cm = alt_abs;
             return true;
-        case ALT_FRAME_ABOVE_HOME:
+        case AltFrame::ABOVE_HOME:
             if (!AP::ahrs().home_is_set()) {
                 return false;
             }
             ret_alt_cm = alt_abs - AP::ahrs().get_home().alt;
             return true;
-        case ALT_FRAME_ABOVE_ORIGIN:
+        case AltFrame::ABOVE_ORIGIN:
             {
                 // fail if we cannot get ekf origin
                 Location ekf_origin;
@@ -174,7 +174,7 @@ bool Location::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
                 ret_alt_cm = alt_abs - ekf_origin.alt;
                 return true;
             }
-        case ALT_FRAME_ABOVE_TERRAIN:
+        case AltFrame::ABOVE_TERRAIN:
             ret_alt_cm = alt_abs - alt_terr_cm;
             return true;
     }
@@ -204,7 +204,7 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 
     // convert altitude
     int32_t alt_above_origin_cm = 0;
-    if (!get_alt_cm(ALT_FRAME_ABOVE_ORIGIN, alt_above_origin_cm)) {
+    if (!get_alt_cm(AltFrame::ABOVE_ORIGIN, alt_above_origin_cm)) {
         return false;
     }
     vec_neu.z = alt_above_origin_cm;
