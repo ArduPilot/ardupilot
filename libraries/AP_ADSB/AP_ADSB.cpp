@@ -323,7 +323,7 @@ Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
         vehicle.info.lat,
         vehicle.info.lon,
         vehicle.info.altitude * 0.1f,
-        Location::ALT_FRAME_ABSOLUTE);
+        Location::AltFrame::ABSOLUTE);
 
     return loc;
 }
