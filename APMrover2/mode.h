@@ -340,10 +340,12 @@ private:
     uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
     bool previously_reached_wp;     // set to true if we have EVER reached the waypoint
 
-    // Guided variables
-    Location guided_target;         // location target sent to external navigation
-    bool guided_target_valid;       // true if guided_target is valid
-    uint32_t guided_target_sent_ms; // system time that target was last sent to offboard navigation
+    // Guided-within-Auto variables
+    struct {
+        Location loc;           // location target sent to external navigation
+        bool valid;             // true if loc is valid
+        uint32_t last_sent_ms;  // system time that target was last sent to offboard navigation
+    } guided_target;
 
     // Conditional command
     // A value used in condition commands (eg delay, change alt, etc.)
@@ -393,7 +395,7 @@ public:
     void limit_set(uint32_t timeout_ms, float horiz_max);
     void limit_clear();
     void limit_init_time_and_location();
-    bool limit_breached();
+    bool limit_breached() const;
 
 protected:
 
@@ -414,8 +416,8 @@ protected:
     float _desired_yaw_rate_cds;// target turn rate centi-degrees per second
 
     // limits
-    struct Guided_Limit {
-        uint32_t timeout_ms;// timeout (in seconds) from the time that guided is invoked
+    struct {
+        uint32_t timeout_ms;// timeout from the time that guided is invoked
         float horiz_max;    // horizontal position limit in meters from where guided mode was initiated (0 = no limit)
         uint32_t start_time;// system time in milliseconds that control was handed to the external computer
         Location start_loc; // starting location for checking horiz_max limit
