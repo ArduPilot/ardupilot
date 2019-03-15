@@ -2062,7 +2062,7 @@ class AutoTestCopter(AutoTest):
                 m.climb < climb_tolerance):
                 break
 
-    def fly_guided_move_relative(self, lat, lon, alt):
+    def fly_guided_move_global_relative_alt(self, lat, lon, alt):
         startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                        blocking=True)
 
@@ -2372,7 +2372,7 @@ class AutoTestCopter(AutoTest):
         self.guided_achieve_heading(135)
 
         """move the vehicle using set_position_target_global_int"""
-        self.fly_guided_move_relative(5, 5, 10)
+        self.fly_guided_move_global_relative_alt(5, 5, 10)
 
         """move the vehicle using MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED"""
         self.fly_guided_stop()
@@ -2713,7 +2713,7 @@ class AutoTestCopter(AutoTest):
                 self.wait_seconds(5)
                 start = self.mav.location()
                 self.progress("Moving to guided/position controller")
-                self.fly_guided_move_relative(0, 0, 0)
+                self.fly_guided_move_global_relative_alt(1, 0, 0)
                 self.guided_achieve_heading(0)
                 (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
                                                          start.lng,
