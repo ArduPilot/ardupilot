@@ -457,7 +457,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 int32_t(1.0e7f*packet.x), // in as DD converted to * t7
                 int32_t(1.0e7f*packet.y), // in as DD converted to * t7
                 int32_t(packet.z*1.0e2f), // in as m converted to cm
-                Location::ALT_FRAME_ABSOLUTE
+                Location::AltFrame::ABSOLUTE
             };
             break;
         }
@@ -469,7 +469,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 int32_t(1.0e7f*ToDeg(packet.x/(RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat),
                 int32_t(1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng),
                 int32_t(-packet.z*1.0e2f),
-                Location::ALT_FRAME_ABOVE_HOME
+                Location::AltFrame::ABOVE_HOME
             };
             break;
         }
@@ -482,7 +482,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 int32_t(1.0e7f*ToDeg(packet.x/(RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat),
                 int32_t(1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng),
                 int32_t(packet.z*1.0e2f),
-                Location::ALT_FRAME_ABOVE_HOME
+                Location::AltFrame::ABOVE_HOME
             };
             break;
         }
@@ -494,7 +494,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 int32_t(1.0e7f * packet.x), // in as DD converted to * t7
                 int32_t(1.0e7f * packet.y), // in as DD converted to * t7
                 int32_t(packet.z * 1.0e2f),
-                Location::ALT_FRAME_ABOVE_HOME
+                Location::AltFrame::ABOVE_HOME
             };
             break;
         }
