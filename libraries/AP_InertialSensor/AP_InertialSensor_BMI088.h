@@ -69,6 +69,11 @@ private:
      */
     bool write_accel_register(uint8_t reg, uint8_t v);
 
+    /*
+      configure accel registers
+     */
+    bool setup_accel_config(void);
+
     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
 
@@ -76,4 +81,7 @@ private:
     uint8_t gyro_instance;
     enum Rotation rotation;
     uint8_t temperature_counter;
+
+    bool done_accel_config;
+    uint32_t accel_config_count;
 };
