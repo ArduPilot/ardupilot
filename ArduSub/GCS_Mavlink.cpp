@@ -758,7 +758,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
                 break;
             }
-            Location::ALT_FRAME frame;
+            Location::AltFrame frame;
             if (!mavlink_coordinate_frame_to_location_alt_frame(packet.coordinate_frame, frame)) {
                 // unknown coordinate frame
                 break;
