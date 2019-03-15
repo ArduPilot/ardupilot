@@ -325,8 +325,8 @@ bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
     }
 
     // if a location target was set, return true once vehicle is close
-    if (guided_target_valid) {
-        if (rover.current_loc.get_distance(guided_target) <= rover.g.waypoint_radius) {
+    if (guided_target.valid) {
+        if (rover.current_loc.get_distance(guided_target.loc) <= rover.g.waypoint_radius) {
             return true;
         }
     }

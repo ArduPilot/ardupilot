@@ -225,7 +225,7 @@ void ModeGuided::limit_init_time_and_location()
 }
 
 // returns true if guided mode has breached a limit
-bool ModeGuided::limit_breached()
+bool ModeGuided::limit_breached() const
 {
     // check if we have passed the timeout
     if ((limit.timeout_ms > 0) && (millis() - limit.start_time >= limit.timeout_ms)) {
@@ -233,7 +233,7 @@ bool ModeGuided::limit_breached()
     }
 
     // check if we have gone beyond horizontal limit
-    if (limit.horiz_max > 0.0f) {
+    if (is_positive(limit.horiz_max)) {
         return (rover.current_loc.get_distance(limit.start_loc) > limit.horiz_max);
     }
 
