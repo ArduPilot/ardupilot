@@ -146,7 +146,7 @@ bool Tracker::get_home_eeprom(struct Location &loc)
         int32_t(wp_storage.read_uint32(5)),
         int32_t(wp_storage.read_uint32(9)),
         int32_t(wp_storage.read_uint32(1)),
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
 
     return true;
