@@ -3678,7 +3678,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int
     if (!is_zero(packet.param1)) {
         return MAV_RESULT_FAILED;
     }
-    Location::ALT_FRAME frame;
+    Location::AltFrame frame;
     if (!mavlink_coordinate_frame_to_location_alt_frame(packet.frame, frame)) {
         // unknown coordinate frame
         return MAV_RESULT_UNSUPPORTED;
@@ -4478,20 +4478,20 @@ void GCS::passthru_timer(void)
     }
 }
 
-bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const uint8_t coordinate_frame, Location::ALT_FRAME &frame)
+bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const uint8_t coordinate_frame, Location::AltFrame &frame)
 {
     switch (coordinate_frame) {
     case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
     case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
-        frame = Location::ALT_FRAME_ABOVE_HOME;
+        frame = Location::AltFrame::ABOVE_HOME;
         return true;
     case MAV_FRAME_GLOBAL_TERRAIN_ALT:
     case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-        frame = Location::ALT_FRAME_ABOVE_TERRAIN;
+        frame = Location::AltFrame::ABOVE_TERRAIN;
         return true;
     case MAV_FRAME_GLOBAL:
     case MAV_FRAME_GLOBAL_INT:
-        frame = Location::ALT_FRAME_ABSOLUTE;
+        frame = Location::AltFrame::ABSOLUTE;
         return true;
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
