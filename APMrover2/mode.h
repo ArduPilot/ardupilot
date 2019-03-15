@@ -419,7 +419,7 @@ protected:
     struct {
         uint32_t timeout_ms;// timeout from the time that guided is invoked
         float horiz_max;    // horizontal position limit in meters from where guided mode was initiated (0 = no limit)
-        uint32_t start_time;// system time in milliseconds that control was handed to the external computer
+        uint32_t start_time_ms; // system time in milliseconds that control was handed to the external computer
         Location start_loc; // starting location for checking horiz_max limit
     } limit;
 };
