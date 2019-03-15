@@ -67,7 +67,7 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
                 pitch_or_lat,
                 roll_or_lon,
                 yaw_or_alt,
-                Location::ALT_FRAME_ABOVE_HOME
+                Location::AltFrame::ABOVE_HOME
             };
             set_roi_target(target_location);
             break;
