@@ -738,17 +738,25 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
     check_attitude_relax();
 
     if (in_vtol_mode() || is_tailsitter()) {
-        if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL) {
-            // Angle mode attitude control for pitch and body-frame roll, rate control for yaw.
-            // this version interprets the first argument as yaw rate and the third as roll angle
-            // because it is intended to be used with Q_TAILSIT_INPUT=1 where the roll and yaw sticks
-            // act in the tailsitter's body frame (i.e. roll is MC/earth frame yaw and
-            // yaw is MC/earth frame roll)
-            attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(plane.nav_roll_cd,
-                                                                             plane.nav_pitch_cd,
-                                                                             yaw_rate_cds);
+        if (is_tailsitter()) {
+            // Use tailsitter-specific attitude controllers
+            if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL) {
+                // Angle mode attitude control for pitch and body-frame roll, rate control for yaw.
+                // this version interprets the first argument as yaw rate and the third as roll angle
+                // because it is intended to be used with Q_TAILSIT_INPUT=1 where the roll and yaw sticks
+                // act in the tailsitter's body frame (i.e. roll is MC/earth frame yaw and
+                // yaw is MC/earth frame roll)
+                attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(plane.nav_roll_cd,
+                                                                                 plane.nav_pitch_cd,
+                                                                                 yaw_rate_cds);
+            } else {
+                // use euler angle attitude control for copter tailsitters
+                attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_ts(plane.nav_roll_cd,
+                                                                                 plane.nav_pitch_cd,
+                                                                                 yaw_rate_cds);
+            }
         } else {
-            // use euler angle attitude control
+            // use the multicopter euler angle attitude controller
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                           plane.nav_pitch_cd,
                                                                           yaw_rate_cds);
