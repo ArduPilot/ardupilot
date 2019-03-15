@@ -220,7 +220,7 @@ void ModeGuided::limit_clear()
 //  only called from AUTO mode's start_guided method
 void ModeGuided::limit_init_time_and_location()
 {
-    limit.start_time = AP_HAL::millis();
+    limit.start_time_ms = AP_HAL::millis();
     limit.start_loc = rover.current_loc;
 }
 
@@ -228,7 +228,7 @@ void ModeGuided::limit_init_time_and_location()
 bool ModeGuided::limit_breached() const
 {
     // check if we have passed the timeout
-    if ((limit.timeout_ms > 0) && (millis() - limit.start_time >= limit.timeout_ms)) {
+    if ((limit.timeout_ms > 0) && (millis() - limit.start_time_ms >= limit.timeout_ms)) {
         return true;
     }
 
