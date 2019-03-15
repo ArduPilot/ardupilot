@@ -124,7 +124,7 @@ void ModeAuto::set_desired_location(const struct Location& destination, float ne
 }
 
 // return true if vehicle has reached or even passed destination
-bool ModeAuto::reached_destination()
+bool ModeAuto::reached_destination() const
 {
     switch (_submode) {
     case Auto_WP:
