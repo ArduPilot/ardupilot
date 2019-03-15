@@ -149,7 +149,7 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
 
     // get altitude target
     int32_t alt_target;
-    if (!dest.get_alt_cm(Location::ALT_FRAME_ABOVE_HOME, alt_target)) {
+    if (!dest.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_target)) {
         // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
         copter.Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
         // fall back to altitude above current altitude
@@ -158,11 +158,11 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
 
     // sanity check target
     if (alt_target < copter.current_loc.alt) {
-        dest.set_alt_cm(copter.current_loc.alt, Location::ALT_FRAME_ABOVE_HOME);
+        dest.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
     }
     // Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
     if (alt_target < 100) {
-        dest.set_alt_cm(100, Location::ALT_FRAME_ABOVE_HOME);
+        dest.set_alt_cm(100, Location::AltFrame::ABOVE_HOME);
     }
 
     // set waypoint controller target
@@ -1052,14 +1052,14 @@ Location Copter::ModeAuto::terrain_adjusted_location(const AP_Mission::Mission_C
 
     // decide if we will use terrain following
     int32_t curr_terr_alt_cm, target_terr_alt_cm;
-    if (copter.current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
-        target_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
+    if (copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curr_terr_alt_cm) &&
+        target_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, target_terr_alt_cm)) {
         curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
         // if using terrain, set target altitude to current altitude above terrain
-        target_loc.set_alt_cm(curr_terr_alt_cm, Location::ALT_FRAME_ABOVE_TERRAIN);
+        target_loc.set_alt_cm(curr_terr_alt_cm, Location::AltFrame::ABOVE_TERRAIN);
     } else {
         // set target altitude to current altitude above home
-        target_loc.set_alt_cm(copter.current_loc.alt, Location::ALT_FRAME_ABOVE_HOME);
+        target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
     }
     return target_loc;
 }
@@ -1241,7 +1241,7 @@ void Copter::ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
         target_loc.lng = copter.current_loc.lng;
     }
 
-    if (!target_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_HOME, loiter_to_alt.alt)) {
+    if (!target_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, loiter_to_alt.alt)) {
         loiter_to_alt.reached_destination_xy = true;
         loiter_to_alt.reached_alt = true;
         gcs().send_text(MAV_SEVERITY_INFO, "bad do_loiter_to_alt");

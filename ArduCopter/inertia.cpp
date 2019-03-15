@@ -15,15 +15,15 @@ void Copter::read_inertia()
         return;
     }
 
-    Location::ALT_FRAME frame;
+    Location::AltFrame frame;
     if (ahrs.home_is_set()) {
-        frame = Location::ALT_FRAME_ABOVE_HOME;
+        frame = Location::AltFrame::ABOVE_HOME;
     } else {
         // without home use alt above the EKF origin
-        frame = Location::ALT_FRAME_ABOVE_ORIGIN;
+        frame = Location::AltFrame::ABOVE_ORIGIN;
     }
     current_loc.set_alt_cm(inertial_nav.get_altitude(), frame);
-    current_loc.change_alt_frame(Location::ALT_FRAME_ABOVE_HOME);
+    current_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
 
     // set flags and get velocity
     climb_rate = inertial_nav.get_velocity_z();
