@@ -3,15 +3,18 @@
 #include <AP_HAL/RCOutput.h>
 #include "HAL_ESP32_Namespace.h"
 #include "driver/mcpwm.h"
+#define HAL_PARAM_DEFAULTS_PATH nullptr
 #include <AP_HAL/Util.h>
 
-class ESP32::RCOutput : public AP_HAL::RCOutput {
+namespace ESP32 {
+
+class RCOutput : public AP_HAL::RCOutput {
 public:
     void init() override;
 
     void set_freq(uint32_t chmask, uint16_t freq_hz) override;
     uint16_t get_freq(uint8_t chan) override;
-    
+
     void     enable_ch(uint8_t chan) override;
     void     disable_ch(uint8_t chan) override;
 
@@ -19,14 +22,14 @@ public:
 //    void set_reversible_mask(uint16_t chanmask) override;
     void cork() override;
     void push() override;
-    
+
     uint16_t read(uint8_t chan) override;
-//    void     read(uint16_t* period_us, uint8_t len) override;
-    
+    void     read(uint16_t* period_us, uint8_t len) override;
+
     uint16_t read_last_sent(uint8_t chan) override;
     void     read_last_sent(uint16_t* period_us, uint8_t len) override;
 
-    
+
 //    void set_safety_pwm(uint32_t chmask, uint16_t period_us) override;
 //    void set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
     bool force_safety_on(void) override;
@@ -81,4 +84,8 @@ private:
     uint16_t last_sent[max_channels];
     uint16_t safe_pwm[max_channels];
 
+	uint8_t chan_offset;
+
 };
+
+}
