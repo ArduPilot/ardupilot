@@ -107,7 +107,7 @@ public:
     bool set_desired_location_NED(const Vector3f& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN);
 
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
-    virtual bool reached_destination() { return true; }
+    virtual bool reached_destination() const { return true; }
 
     // set desired heading and speed - supported in Auto and Guided modes
     virtual void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed);
@@ -265,7 +265,7 @@ public:
 
     // set desired location, heading and speed
     void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN) override;
-    bool reached_destination() override;
+    bool reached_destination() const override;
 
     // heading and speed control
     void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
@@ -378,7 +378,7 @@ public:
     float get_distance_to_destination() const override;
 
     // return true if vehicle has reached destination
-    bool reached_destination() override;
+    bool reached_destination() const override;
 
     // set desired location, heading and speed
     void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN) override;
@@ -507,7 +507,7 @@ public:
     bool is_autopilot_mode() const override { return true; }
 
     float get_distance_to_destination() const override { return _distance_to_destination; }
-    bool reached_destination() override { return _reached_destination; }
+    bool reached_destination() const override { return _reached_destination; }
 
 protected:
 
@@ -528,7 +528,7 @@ public:
     bool is_autopilot_mode() const override { return true; }
 
     float get_distance_to_destination() const override { return _distance_to_destination; }
-    bool reached_destination() override { return smart_rtl_state == SmartRTL_StopAtHome; }
+    bool reached_destination() const override { return smart_rtl_state == SmartRTL_StopAtHome; }
 
     // save current position for use by the smart_rtl flight mode
     void save_position();
