@@ -1044,7 +1044,7 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     // accessed directly by the vehicles and they may not be rigorous
     // in checking the frame type.
     Location tmp = loc;
-    if (!tmp.change_alt_frame(Location::ALT_FRAME_ABSOLUTE)) {
+    if (!tmp.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
         return false;
     }
 
