@@ -48,7 +48,11 @@ for board in get_board_list():
     print("Configuring for %s" % board)
     run_program(["./waf", "configure", "--board", board], "configure: " + board)
     if args.build:
-        run_program(["./waf", "copter"], "build: " + board)
+        if board == "iomcu":
+            target = "iofirmware"
+        else:
+            target = "copter"
+        run_program(["./waf", target], "build: " + board)
     # check for bootloader def
     hwdef_bl = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % board)
     if os.path.exists(hwdef_bl):
