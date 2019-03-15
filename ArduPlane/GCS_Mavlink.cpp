@@ -1142,7 +1142,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         last_hil_state = packet;
 
         // set gps hil sensor
-        const Location loc{packet.lat, packet.lon, packet.alt/10, Location::ALT_FRAME_ABSOLUTE};
+        const Location loc{packet.lat, packet.lon, packet.alt/10, Location::AltFrame::ABSOLUTE};
         Vector3f vel(packet.vx, packet.vy, packet.vz);
         vel *= 0.01f;
 
