@@ -187,10 +187,9 @@ void ModeAuto::start_guided(const Location& loc)
         rover.mode_guided.limit_init_time_and_location();
 
         // sanity check target location
-        Location loc_sanitised = loc;
-        if ((loc_sanitised.lat != 0) || (loc_sanitised.lng != 0)) {
-            location_sanitize(rover.current_loc, loc_sanitised);
-            guided_target.loc = loc_sanitised;
+        if ((loc.lat != 0) || (loc.lng != 0)) {
+            guided_target.loc = loc;
+            location_sanitize(rover.current_loc, guided_target.loc);
             guided_target.valid = true;
         } else {
             guided_target.valid = false;
@@ -206,13 +205,13 @@ void ModeAuto::send_guided_position_target()
     }
 
     // send at maximum of 1hz
-    uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
     if ((guided_target.last_sent_ms == 0) || (now_ms - guided_target.last_sent_ms > AUTO_GUIDED_SEND_TARGET_MS)) {
         guided_target.last_sent_ms = now_ms;
 
         // get system id and component id of offboard navigation system
-        uint8_t sysid = 0;
-        uint8_t compid = 0;
+        uint8_t sysid;
+        uint8_t compid;
         mavlink_channel_t chan;
         if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_ONBOARD_CONTROLLER, sysid, compid, chan)) {
             gcs().chan(chan-MAVLINK_COMM_0).send_set_position_target_global_int(sysid, compid, guided_target.loc);
