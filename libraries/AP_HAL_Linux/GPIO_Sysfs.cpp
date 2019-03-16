@@ -80,10 +80,24 @@ void DigitalSource_Sysfs::toggle()
 
 void GPIO_Sysfs::init()
 {
+#ifdef HAL_GPIO_SCRIPT
+    if (!_script.thread_created) {
+        _script.thread_created = true;
+        if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GPIO_Sysfs::_gpio_script_thread, void),
+                                          "GPIO_Script", 4096, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
+            AP_HAL::panic("Unable to create GPIO_Script thread");
+        }
+    }
+#endif
 }
 
 void GPIO_Sysfs::pinMode(uint8_t vpin, uint8_t output)
 {
+#ifdef HAL_GPIO_SCRIPT
+    if (vpin >= n_pins && output) {
+        return;
+    }
+#endif
     assert_vpin(vpin, n_pins);
 
     _export_pin(vpin);
@@ -146,6 +160,12 @@ error:
 
 void GPIO_Sysfs::write(uint8_t vpin, uint8_t value)
 {
+#ifdef HAL_GPIO_SCRIPT
+    if (vpin >= n_pins) {
+        _gpio_script_write(vpin, value);
+        return;
+    }
+#endif
     assert_vpin(vpin, n_pins);
 
     const unsigned pin = pin_table[vpin];
@@ -195,6 +215,11 @@ bool GPIO_Sysfs::usb_connected(void)
 
 bool GPIO_Sysfs::_export_pin(uint8_t vpin)
 {
+#ifdef HAL_GPIO_SCRIPT
+    if (vpin >= n_pins) {
+        return false;
+    }
+#endif
     assert_vpin(vpin, n_pins, false);
 
     const unsigned int pin = pin_table[vpin];
@@ -231,3 +256,39 @@ fail_snprintf:
     hal.console->printf("GPIO_Sysfs: Unable to export pin %u.\n", pin);
     return false;
 }
+
+#ifdef HAL_GPIO_SCRIPT
+/*
+  support using an external script triggered by a write to a GPIO
+  value. This is called whenever a GPIO request is made that is for an
+  unknown pin value. The script is called by a separate thread, and
+  only one script can be run at a time. This prevents the scripts
+  using too many resources
+ */
+void GPIO_Sysfs::_gpio_script_write(uint8_t vpin, uint8_t value)
+{
+    pin_value_t pv;
+    pv.pin = vpin;
+    pv.value = value;
+    _script.pending.push(pv);
+
+}
+
+/*
+  thread for running GPIO scripts
+ */
+void GPIO_Sysfs::_gpio_script_thread(void)
+{
+    while (true) {
+        // don't run more than 20/sec
+        hal.scheduler->delay(50);
+        pin_value_t pv;
+        if (_script.pending.pop(pv)) {
+            char cmd[100];
+            snprintf(cmd, sizeof(cmd)-1, "/bin/sh %s %u %u", HAL_GPIO_SCRIPT, pv.pin, pv.value);
+            hal.console->printf("Running: %s\n", cmd);
+            system(cmd);
+        }
+    }
+}
+#endif // HAL_GPIO_SCRIPT
