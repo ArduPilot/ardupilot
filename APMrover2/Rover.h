@@ -491,6 +491,7 @@ private:
     void read_rangefinders(void);
     void init_proximity();
     void read_airspeed();
+    void rpm_update(void);
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);
@@ -498,7 +499,6 @@ private:
     void set_servos(void);
 
     // system.cpp
-    void rpm_update(void);
     void init_ardupilot();
     void startup_ground(void);
     void update_ahrs_flyforward();
