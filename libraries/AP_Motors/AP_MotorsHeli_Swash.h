@@ -24,36 +24,28 @@ enum CollectiveDirection {
 
 class AP_MotorsHeli_Swash {
 public:
-    friend class AP_MotorsHeli_Single;
-    friend class AP_MotorsHeli_Dual;
 
     AP_MotorsHeli_Swash() 
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
 
+    // configure - configure the swashplate settings for any updated parameters
+    void configure();
+
     // CCPM Mixers - calculate mixing scale factors by swashplate type
     void calculate_roll_pitch_collective_factors();
 
-    // set_swash_type - sets swashplate type
-    void set_swash_type(SwashPlateType swash_type) { _swash_type = swash_type; }
-
-    // set_collective_direction - sets swashplate collective direction
-    void set_collective_direction(CollectiveDirection collective_direction) { _collective_direction = collective_direction; }
+    // get_swash_type - gets swashplate type
+    SwashPlateType get_swash_type() const { return _swash_type; }
 
     // get_servo_out - calculates servo output
     float get_servo_out(int8_t servo_num, float pitch, float roll, float collective) const;
 
-    // set_linear_servo_out - sets swashplate servo output to be linear
-    void set_linear_servo_out(int8_t linear_servo) { _make_servo_linear = linear_servo; }
-
     // linearize mechanical output of swashplate servo
     float get_linear_servo_output(float input) const;
 
-    // allow parameters to be enabled
-    void set_enable(int8_t setenable) {enable = setenable; }
-
-    // get_phase_angle - returns the rotor phase angle which is used to remove coupling between pitch and roll axes
+    // get_phase_angle - returns the rotor phase angle
     int16_t get_phase_angle() const { return _phase_angle; }
 
     // var_info
@@ -69,7 +61,10 @@ private:
     int8_t               _make_servo_linear;          // Sets servo output to be linearized
 
     // parameters
-    AP_Int8 enable;
+    AP_Int8  _swashplate_type;                   // Swash Type Setting
+    AP_Int8  _swash_coll_dir;                    // Collective control direction, normal or reversed
+    AP_Int8  _linear_swash_servo;                // linearize swashplate output
+    AP_Int8  enable;
     AP_Int16 _servo1_pos;                        // servo1 azimuth position on swashplate with front of heli being 0 deg
     AP_Int16 _servo2_pos;                        // servo2 azimuth position on swashplate with front of heli being 0 deg
     AP_Int16 _servo3_pos;                        // servo3 azimuth position on swashplate with front of heli being 0 deg

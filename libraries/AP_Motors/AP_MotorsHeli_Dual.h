@@ -125,10 +125,6 @@ protected:
     AP_Int16        _collective2_min;               // Lowest possible servo position for the rear swashplate
     AP_Int16        _collective2_max;               // Highest possible servo position for the rear swashplate
     AP_Int16        _collective2_mid;               // Swash servo position corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
-    AP_Int8         _swashplate1_type;              // Swash Type Setting
-    AP_Int8         _swashplate2_type;              // Swash Type Setting
-    AP_Int8         _swash1_coll_dir;               // Collective control direction, normal or reversed
-    AP_Int8         _swash2_coll_dir;               // Collective control direction, normal or reversed
     AP_Int8         _dual_mode;                     // which dual mode the heli is
     AP_Float        _dcp_scaler;                    // scaling factor applied to the differential-collective-pitch
     AP_Float        _dcp_yaw_effect;                // feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
