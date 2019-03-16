@@ -76,6 +76,15 @@ void AP_Mount_Servo::update()
             break;
         }
 
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (calc_angle_to_sysid_target(_angle_ef_target_rad,
+                                           _flags.tilt_control,
+                                           _flags.pan_control,
+                                           false)) {
+                stabilize();
+            }
+            break;
+
         default:
             //do nothing
             break;
