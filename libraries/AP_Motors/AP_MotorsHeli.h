@@ -213,7 +213,6 @@ protected:
     AP_Int16        _rsc_thrcrv[5];             // throttle value sent to throttle servo at 0, 25, 50, 75 and 100 percent collective
     AP_Int16        _rsc_slewrate;              // throttle slew rate (percentage per second)
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
-    AP_Int8         _linear_swash_servo;         // linearize swashplate output
 
     // internal variables
     float           _collective_mid_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
