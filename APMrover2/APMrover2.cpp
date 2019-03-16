@@ -329,4 +329,14 @@ void Rover::update_current_mode(void)
     control_mode->update();
 }
 
+// update mission including starting or stopping commands. called by scheduler at 10Hz
+void Rover::update_mission(void)
+{
+    if (control_mode == &mode_auto) {
+        if (ahrs.home_is_set() && mode_auto.mission.num_commands() > 1) {
+            mode_auto.mission.update();
+        }
+    }
+}
+
 AP_HAL_MAIN_CALLBACKS(&rover);
