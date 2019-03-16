@@ -413,10 +413,9 @@ void XPlane::send_data(const struct sitl_input &input)
     send_dref("sim/flightmodel2/wing/elevator1_deg[15]", front_right*45);
 
     // get wing sweep from SERVO9
-    float sweep = (input.servos[8]-1000)/1000.0;
-    send_dref("sim/cockpit2/controls/wingsweep_ratio", sweep);
+    //float sweep = (input.servos[8]-1000)/1000.0;
+    send_dref("sim/cockpit2/controls/wingsweep_ratio", 0);
 
-    
     d.code = FlightCon;
     d.data[0] = elevator;
     d.data[1] = aileron;
