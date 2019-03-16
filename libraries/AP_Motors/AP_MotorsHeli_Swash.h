@@ -52,9 +52,8 @@ public:
 
     // allow parameters to be enabled
     void set_enable(int8_t setenable) {enable = setenable; }
-    int8_t get_enable() { return enable; }
 
-    // 
+    // get_phase_angle - returns the rotor phase angle which is used to remove coupling between pitch and roll axes
     int16_t get_phase_angle() const { return _phase_angle; }
 
     // var_info
