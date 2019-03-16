@@ -206,20 +206,6 @@ void Rover::gcs_failsafe_check(void)
 }
 
 /*
-  check for new compass data - 10Hz
- */
-void Rover::update_compass(void)
-{
-    if (g.compass_enabled && compass.read()) {
-        ahrs.set_compass(&compass);
-        // update offsets
-        if (should_log(MASK_LOG_COMPASS)) {
-            logger.Write_Compass();
-        }
-    }
-}
-
-/*
   log some key data - 10Hz
  */
 void Rover::update_logging1(void)

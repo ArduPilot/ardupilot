@@ -34,6 +34,34 @@ void Rover::init_compass_location(void)
     }
 }
 
+// check for new compass data - 10Hz
+void Rover::update_compass(void)
+{
+    if (g.compass_enabled && compass.read()) {
+        ahrs.set_compass(&compass);
+        // update offsets
+        if (should_log(MASK_LOG_COMPASS)) {
+            logger.Write_Compass();
+        }
+    }
+}
+
+// Calibrate compass
+void Rover::compass_cal_update() {
+    if (!hal.util->get_soft_armed()) {
+        compass.compass_cal_update();
+    }
+}
+
+// Save compass offsets
+void Rover::compass_save() {
+    if (g.compass_enabled &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !arming.is_armed()) {
+        compass.save_offsets();
+    }
+}
+
 // init beacons used for non-gps position estimates
 void Rover::init_beacon()
 {
@@ -108,22 +136,6 @@ void Rover::update_wheel_encoder()
 
     // record system time update for next iteration
     wheel_encoder_last_ekf_update_ms = now;
-}
-
-// Calibrate compass
-void Rover::compass_cal_update() {
-    if (!hal.util->get_soft_armed()) {
-        compass.compass_cal_update();
-    }
-}
-
-// Save compass offsets
-void Rover::compass_save() {
-    if (g.compass_enabled &&
-        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
-        !arming.is_armed()) {
-        compass.save_offsets();
-    }
 }
 
 // Accel calibration

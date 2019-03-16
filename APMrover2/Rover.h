@@ -386,7 +386,6 @@ private:
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
-    void update_compass(void);
     void update_logging1(void);
     void update_logging2(void);
     void one_second_loop(void);
@@ -481,11 +480,12 @@ private:
     // sensors.cpp
     void init_compass(void);
     void init_compass_location(void);
+    void update_compass(void);
+    void compass_cal_update(void);
+    void compass_save(void);
     void init_beacon();
     void init_visual_odom();
     void update_wheel_encoder();
-    void compass_cal_update(void);
-    void compass_save(void);
     void accel_cal_update(void);
     void read_rangefinders(void);
     void init_proximity();
