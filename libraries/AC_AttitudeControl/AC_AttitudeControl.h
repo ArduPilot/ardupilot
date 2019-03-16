@@ -434,11 +434,6 @@ protected:
     // true in inverted flight mode
     bool _inverted_flight;
 
-    // state for input_euler_rate_yaw_euler_angle_pitch_bf_roll()
-    // (would be expensive to compute from _attitude_target_quat)
-    float _last_body_roll;
-    float _last_euler_pitch;
-
 public:
     // log a CTRL message
     void control_monitor_log(void);
