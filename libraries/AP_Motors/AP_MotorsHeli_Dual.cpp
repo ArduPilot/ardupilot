@@ -271,13 +271,9 @@ void AP_MotorsHeli_Dual::calculate_scalars()
 
     // configure swashplate 1 and update scalars
     if (_swashplate1_type == SWASHPLATE_TYPE_H3) {
-        if (_swashplate1.get_enable() == 0) {
-            _swashplate1.set_enable(1);
-        }
+        _swashplate1.set_enable(1);
     } else {
-        if (_swashplate1.get_enable() == 1) {
-            _swashplate1.set_enable(0);
-        }
+        _swashplate1.set_enable(0);
     }
     _swashplate1.set_swash_type(static_cast<SwashPlateType>(_swashplate1_type.get()));
     _swashplate1.set_collective_direction(static_cast<CollectiveDirection>(_swash1_coll_dir.get()));
@@ -285,13 +281,9 @@ void AP_MotorsHeli_Dual::calculate_scalars()
 
     // configure swashplate 2 and update scalars
     if (_swashplate2_type == SWASHPLATE_TYPE_H3) {
-        if (_swashplate2.get_enable() == 0) {
-            _swashplate2.set_enable(1);
-        }
+        _swashplate2.set_enable(1);
     } else {
-        if (_swashplate2.get_enable() == 1) {
-            _swashplate2.set_enable(0);
-        }
+        _swashplate2.set_enable(0);
     }
     _swashplate2.set_swash_type(static_cast<SwashPlateType>(_swashplate2_type.get()));
     _swashplate2.set_collective_direction(static_cast<CollectiveDirection>(_swash2_coll_dir.get()));

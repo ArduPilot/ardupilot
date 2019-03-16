@@ -251,13 +251,9 @@ void AP_MotorsHeli_Single::calculate_scalars()
 
     // configure swashplate and update scalars
     if (_swashplate_type == SWASHPLATE_TYPE_H3) {
-        if (_swashplate.get_enable() == 0) {
-            _swashplate.set_enable(1);
-        }
+        _swashplate.set_enable(1);
     } else {
-        if (_swashplate.get_enable() == 1) {
-            _swashplate.set_enable(0);
-        }
+        _swashplate.set_enable(0);
     }
     _swashplate.set_swash_type(static_cast<SwashPlateType>(_swashplate_type.get()));
     _swashplate.set_collective_direction(static_cast<CollectiveDirection>(_swash_coll_dir.get()));

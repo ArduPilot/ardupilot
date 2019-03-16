@@ -180,14 +180,11 @@ float AP_MotorsHeli_Swash::get_servo_out(int8_t ch_num, float pitch, float roll,
 // set_linear_servo_out - sets swashplate servo output to be linear
 float AP_MotorsHeli_Swash::get_linear_servo_output(float input) const
 {
-    float ret;
 
     input = constrain_float(input, -1.0f, 1.0f);
 
-    //servo output is normalized to 0.866 for a linear throw
-    ret = asin(0.766044f * input) * 1.145916;
-
-    return ret;
+    //servo output is calculated by normalizing input to 50 deg arm rotation as full input for a linear throw
+    return safe_asin(0.766044f * input) * 1.145916;
 
 }
 
