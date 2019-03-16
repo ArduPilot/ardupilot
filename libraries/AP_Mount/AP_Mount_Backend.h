@@ -57,6 +57,9 @@ public:
     // set_roi_target - sets target location that mount should attempt to point towards
     void set_roi_target(const struct Location &target_loc);
 
+    // set_sys_target - sets system that mount should attempt to point towards
+    void set_target_sysid(uint8_t sysid);
+
     // control - control the mount
     virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
     
@@ -92,14 +95,23 @@ protected:
                                 Vector3f& angles_to_target_rad,
                                 bool calc_tilt,
                                 bool calc_pan,
-                                bool relative_pan = true) WARN_IF_UNUSED;
+                                bool relative_pan = true) const WARN_IF_UNUSED;
+
     // calc_angle_to_roi_target - calculates the earth-frame roll, tilt
     // and pan angles (and radians) to point at the ROI-target (as set
     // by various mavlink messages)
     bool calc_angle_to_roi_target(Vector3f& angles_to_target_rad,
                                   bool calc_tilt,
                                   bool calc_pan,
-                                  bool relative_pan = true) WARN_IF_UNUSED;
+                                  bool relative_pan = true) const WARN_IF_UNUSED;
+
+    // calc_angle_to_sysid_target - calculates the earth-frame roll, tilt
+    // and pan angles (and radians) to point at the sysid-target (as set
+    // by various mavlink messages)
+    bool calc_angle_to_sysid_target(Vector3f& angles_to_target_rad,
+                                    bool calc_tilt,
+                                    bool calc_pan,
+                                    bool relative_pan = true) const WARN_IF_UNUSED;
 
     // get the mount mode from frontend
     MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }
