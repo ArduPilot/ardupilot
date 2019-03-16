@@ -111,6 +111,10 @@ public:
     void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
     void set_roi_target(uint8_t instance, const struct Location &target_loc);
 
+    // point at system ID sysid
+    void set_target_sysid(uint8_t instance, const uint8_t sysid);
+    void set_target_sysid(const uint8_t sysid) { set_target_sysid(_primary, sysid); }
+
     // mavlink message handling:
     MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
     void handle_param_value(const mavlink_message_t &msg);
@@ -168,6 +172,11 @@ protected:
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location
         uint32_t _roi_target_set_ms;
+
+        uint8_t _target_sysid;           // sysid to track
+        Location _target_sysid_location; // sysid target location
+        bool _target_sysid_location_set;
+
     } state[AP_MOUNT_MAX_INSTANCES];
 
 private:
@@ -178,7 +187,7 @@ private:
 
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
-
+    void handle_global_position_int(const mavlink_message_t &msg);
 };
 
 namespace AP {

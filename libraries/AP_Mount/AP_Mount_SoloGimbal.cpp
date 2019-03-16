@@ -74,6 +74,11 @@ void AP_Mount_SoloGimbal::update()
             }
             break;
 
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true)) {
+            }
+            break;
+
         default:
             // we do not know this mode so do nothing
             break;
