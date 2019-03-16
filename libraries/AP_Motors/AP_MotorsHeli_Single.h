@@ -132,9 +132,7 @@ protected:
     float _servo5_out = 0.0f;                   // output value sent to motor
 
     // parameters
-    AP_Int8         _swash_coll_dir;            // Collective control direction, normal or reversed
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
-    AP_Int8         _swashplate_type;           // Swash Type Setting
     AP_Int16        _ext_gyro_gain_std;         // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
     AP_Int16        _ext_gyro_gain_acro;        // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro in ACRO
     AP_Float        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
