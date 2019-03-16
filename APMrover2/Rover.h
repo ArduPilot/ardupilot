@@ -392,13 +392,11 @@ private:
     void one_second_loop(void);
     void update_GPS(void);
     void update_current_mode(void);
+    void update_mission(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);
     bool is_balancebot() const;
-
-    // commands_logic.cpp
-    void update_mission(void);
 
     // commands.cpp
     bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
