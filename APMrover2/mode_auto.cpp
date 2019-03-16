@@ -105,6 +105,16 @@ void ModeAuto::update()
     }
 }
 
+void ModeAuto::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled)
+{
+    // If not autostarting set the throttle to minimum
+    if (!check_trigger()) {
+        stop_vehicle();
+        return;
+    }
+    Mode::calc_throttle(target_speed, nudge_allowed, avoidance_enabled);
+}
+
 // return distance (in meters) to destination
 float ModeAuto::get_distance_to_destination() const
 {
@@ -177,52 +187,7 @@ void ModeAuto::start_RTL()
     }
 }
 
-// hand over control to external navigation controller in AUTO mode
-void ModeAuto::start_guided(const Location& loc)
-{
-    if (rover.mode_guided.enter()) {
-        _submode = Auto_Guided;
-
-        // initialise guided start time and position as reference for limit checking
-        rover.mode_guided.limit_init_time_and_location();
-
-        // sanity check target location
-        if ((loc.lat != 0) || (loc.lng != 0)) {
-            guided_target.loc = loc;
-            location_sanitize(rover.current_loc, guided_target.loc);
-            guided_target.valid = true;
-        } else {
-            guided_target.valid = false;
-        }
-    }
-}
-
-// send latest position target to offboard navigation system
-void ModeAuto::send_guided_position_target()
-{
-    if (!guided_target.valid) {
-        return;
-    }
-
-    // send at maximum of 1hz
-    const uint32_t now_ms = AP_HAL::millis();
-    if ((guided_target.last_sent_ms == 0) || (now_ms - guided_target.last_sent_ms > AUTO_GUIDED_SEND_TARGET_MS)) {
-        guided_target.last_sent_ms = now_ms;
-
-        // get system id and component id of offboard navigation system
-        uint8_t sysid;
-        uint8_t compid;
-        mavlink_channel_t chan;
-        if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_ONBOARD_CONTROLLER, sysid, compid, chan)) {
-            gcs().chan(chan-MAVLINK_COMM_0).send_set_position_target_global_int(sysid, compid, guided_target.loc);
-        }
-    }
-
-}
-
-/*
-    check for triggering of start of auto mode
-*/
+// check for triggering of start of auto mode
 bool ModeAuto::check_trigger(void)
 {
     // check for user pressing the auto trigger to off
@@ -265,16 +230,6 @@ bool ModeAuto::check_trigger(void)
     return false;
 }
 
-void ModeAuto::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled)
-{
-    // If not autostarting set the throttle to minimum
-    if (!check_trigger()) {
-        stop_vehicle();
-        return;
-    }
-    Mode::calc_throttle(target_speed, nudge_allowed, avoidance_enabled);
-}
-
 bool ModeAuto::start_loiter()
 {
     if (rover.mode_loiter.enter()) {
@@ -282,4 +237,47 @@ bool ModeAuto::start_loiter()
         return true;
     }
     return false;
+}
+
+// hand over control to external navigation controller in AUTO mode
+void ModeAuto::start_guided(const Location& loc)
+{
+    if (rover.mode_guided.enter()) {
+        _submode = Auto_Guided;
+
+        // initialise guided start time and position as reference for limit checking
+        rover.mode_guided.limit_init_time_and_location();
+
+        // sanity check target location
+        if ((loc.lat != 0) || (loc.lng != 0)) {
+            guided_target.loc = loc;
+            location_sanitize(rover.current_loc, guided_target.loc);
+            guided_target.valid = true;
+        } else {
+            guided_target.valid = false;
+        }
+    }
+}
+
+// send latest position target to offboard navigation system
+void ModeAuto::send_guided_position_target()
+{
+    if (!guided_target.valid) {
+        return;
+    }
+
+    // send at maximum of 1hz
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((guided_target.last_sent_ms == 0) || (now_ms - guided_target.last_sent_ms > AUTO_GUIDED_SEND_TARGET_MS)) {
+        guided_target.last_sent_ms = now_ms;
+
+        // get system id and component id of offboard navigation system
+        uint8_t sysid;
+        uint8_t compid;
+        mavlink_channel_t chan;
+        if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_ONBOARD_CONTROLLER, sysid, compid, chan)) {
+            gcs().chan(chan-MAVLINK_COMM_0).send_set_position_target_global_int(sysid, compid, guided_target.loc);
+        }
+    }
+
 }
