@@ -295,11 +295,9 @@ protected:
 private:
 
     bool check_trigger(void);
-
-    // this is set to true when auto has been triggered to start
-    bool auto_triggered;
-
-    bool _reached_heading;      // true when vehicle has reached desired heading in TurnToHeading sub mode
+    bool start_loiter();
+    void start_guided(const Location& target_loc);
+    void send_guided_position_target();
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     void exit_mission();
@@ -325,15 +323,14 @@ private:
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
 
-    bool start_loiter();
-    void start_guided(const Location& target_loc);
-    void send_guided_position_target();
-
     enum Mis_Done_Behave {
         MIS_DONE_BEHAVE_HOLD      = 0,
         MIS_DONE_BEHAVE_LOITER    = 1,
         MIS_DONE_BEHAVE_ACRO      = 2
     };
+
+    bool auto_triggered;        // true when auto has been triggered to start
+    bool _reached_heading;      // true when vehicle has reached desired heading in TurnToHeading sub mode
 
     // Loiter control
     uint16_t loiter_duration;       // How long we should loiter at the nav_waypoint (time in seconds)
