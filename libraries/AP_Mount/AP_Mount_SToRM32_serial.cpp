@@ -80,6 +80,14 @@ void AP_Mount_SToRM32_serial::update()
             }
             break;
 
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (calc_angle_to_sysid_target(_angle_ef_target_rad,
+                                           true,
+                                           true)) {
+                resend_now = true;
+            }
+            break;
+
         default:
             // we do not know this mode so do nothing
             break;
