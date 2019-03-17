@@ -3079,10 +3079,12 @@ class AutoTestCopter(AutoTest):
         self.run_cmd_do_set_mode("ACRO")
         self.mav.motors_disarmed_wait()
 
-    def test_mount_pitch(self, despitch, despitch_tolerance, timeout=10):
+    def test_mount_pitch(self, despitch, despitch_tolerance, timeout=10, hold=0):
         tstart = self.get_sim_time()
+        success_start = 0
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
                 raise NotAchievedException("Mount pitch not achieved")
 
             m = self.mav.recv_match(type='MOUNT_STATUS',
@@ -3094,10 +3096,16 @@ class AutoTestCopter(AutoTest):
             if abs(despitch - mount_pitch) > despitch_tolerance:
                 self.progress("Mount pitch incorrect: %f != %f" %
                               (mount_pitch, despitch))
+                success_start = 0
                 continue
             self.progress("Mount pitch correct: %f degrees == %f" %
                           (mount_pitch, despitch))
-            return
+            if success_start == 0:
+                success_start = now
+                continue
+            if now - success_start > hold:
+                self.progress("Mount pitch achieved")
+                return
 
     def do_pitch(self, pitch):
         '''pitch aircraft in guided/angle mode'''
@@ -3115,6 +3123,9 @@ class AutoTestCopter(AutoTest):
     def test_mount(self):
         ex = None
         self.context_push()
+        old_srcSystem = self.mav.mav.srcSystem
+        self.mav.mav.srcSystem = 250
+        self.set_parameter("DISARM_DELAY", 0)
         try:
             '''start by disabling GCS failsafe, otherwise we immediately disarm
             due to (apparently) not receiving traffic from the GCS for
@@ -3308,9 +3319,11 @@ class AutoTestCopter(AutoTest):
 
                 self.context_pop()
 
-            except Exception:
+            except Exception as e:
+                self.progress("Exception caught: %s" % (
+                    self.get_exception_stacktrace(e)))
                 self.context_pop()
-                raise
+                raise e
 
             self.progress("Testing mount ROI behaviour")
             self.drain_mav_unparsed()
@@ -3382,7 +3395,75 @@ class AutoTestCopter(AutoTest):
                              roi_alt,
                              frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
             )
-            self.test_mount_pitch(-70, 1)
+            self.test_mount_pitch(-70, 1, hold=2)
+
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOUNT_CONFIGURE,
+                         mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         )
+            self.test_mount_pitch(0, 0.1)
+
+
+            self.progress("Testing mount roi-sysid behaviour")
+            self.test_mount_pitch(0, 0.1)
+            start = self.mav.location()
+            self.progress("start=%s" % str(start))
+            (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
+                                                     start.lng,
+                                                     10,
+                                                     20)
+            roi_alt = 0
+            self.progress("Using MAV_CMD_DO_SET_ROI_SYSID")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI_SYSID,
+                         250,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         )
+            self.mav.mav.global_position_int_send(
+                0, # time boot ms
+                roi_lat * 1e7,
+                roi_lon * 1e7,
+                0 *1000, # mm alt amsl
+                0 *1000, # relalt mm UP!
+                0, # vx
+                0, # vy
+                0, # vz
+                0 # heading
+            );
+            self.test_mount_pitch(-89, 5, hold=2)
+
+            self.mav.mav.global_position_int_send(
+                0, # time boot ms
+                roi_lat * 1e7,
+                roi_lon * 1e7,
+                670 *1000, # mm alt amsl
+                100 *1000, # mm UP!
+                0, # vx
+                0, # vy
+                0, # vz
+                0 # heading
+            );
+            self.test_mount_pitch(68, 5, hold=2)
+
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOUNT_CONFIGURE,
+                         mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         )
+            self.test_mount_pitch(0, 0.1)
 
             self.progress("checking ArduCopter yaw-aircraft-for-roi")
             try:
@@ -3424,6 +3505,7 @@ class AutoTestCopter(AutoTest):
             ex = e
         self.context_pop()
 
+        self.mav.mav.srcSystem = old_srcSystem
         self.disarm_vehicle(force=True)
         self.reboot_sitl() # to handle MNT_TYPE changing
 
