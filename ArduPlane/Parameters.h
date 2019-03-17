@@ -574,6 +574,8 @@ public:
     AP_Int8 airbrake_in_channel;
 
     AP_Int8 airbrake_slewrate;
+
+    AP_Int8 flap_trim;
 };
 
 extern const AP_Param::Info var_info[];

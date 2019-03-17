@@ -1259,6 +1259,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("AIRBRK_SLEWRATE", 24, ParametersG2, airbrake_slewrate, 0),
 
+    // @Param: FLAP_TRIM
+    // @DisplayName: Trim flap
+    // @Description: Auto flap to apply when above FLAP1_SPEED and FLAP2_SPEED
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("FLAP_TRIM", 25, ParametersG2, flap_trim, 0),
+
     AP_GROUPEND
 };
 

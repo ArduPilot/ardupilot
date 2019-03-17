@@ -140,6 +140,27 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAX_RADIUS", 17, SoaringController, max_radius, -1),
 
+    // @Param: THML_ARSPD
+    // @DisplayName: Specific setting for airspeed when thermalling.
+    // @Description: If non-zero this airspeed will be used when thermalling.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("THML_ARSPD", 18, SoaringController, soar_thermal_airspeed, 0),
+
+    // @Param: THML_ARSPD
+    // @DisplayName: Specific setting for airspeed when cruising.
+    // @Description: If non-zero this airspeed will be used when cruising.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("CRSE_ARSPD", 19, SoaringController, soar_cruise_airspeed, 0),
+
+    // @Param: THML_FLAP
+    // @DisplayName: Flap percent to be used during thermalling flight.
+    // @Description: This sets the flap when in LOITER with soaring active. Overrides the usual auto flap behaviour.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("THML_FLAP", 20, SoaringController, soar_thermal_flap, 0),
+
     AP_GROUPEND
 };
 
@@ -465,4 +486,14 @@ bool SoaringController::check_drift(Vector2f prev_wp, Vector2f next_wp)
 
         return (powf(parallel,2)+powf(perpendicular,2)) > powf(max_drift,2);;
     }
+}
+
+float SoaringController::get_target_airspeed_thermalling()
+{
+    return soar_thermal_airspeed;
+}
+
+float SoaringController::get_target_airspeed_cruising()
+{
+    return soar_cruise_airspeed;
 }

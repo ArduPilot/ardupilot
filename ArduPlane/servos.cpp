@@ -578,7 +578,7 @@ void Plane::set_servos_flaps(void)
 {
     // Auto flap deployment
     int8_t auto_flap_percent = 0;
-    int8_t manual_flap_percent = 0;
+    int8_t manual_flap_percent = -100;
 
     // work out any manual flap input
     RC_Channel *flapin = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FLAP);
@@ -587,17 +587,28 @@ void Plane::set_servos_flaps(void)
     }
 
     if (auto_throttle_mode) {
-        int16_t flapSpeedSource = 0;
+        float flapSpeedSource = 0.0f;
         if (ahrs.airspeed_sensor_enabled()) {
             flapSpeedSource = target_airspeed_cm * 0.01f;
         } else {
             flapSpeedSource = aparm.throttle_cruise;
         }
+
+        // Compute effective speed using aerodynamic_load_factor calculated by stall prevention.
+        flapSpeedSource /= aerodynamic_load_factor;
+        
         if (g.flap_2_speed != 0 && flapSpeedSource <= g.flap_2_speed) {
             auto_flap_percent = g.flap_2_percent;
         } else if ( g.flap_1_speed != 0 && flapSpeedSource <= g.flap_1_speed) {
             auto_flap_percent = g.flap_1_percent;
-        } //else flaps stay at default zero deflection
+        } else {
+            // flaps to trim value
+            auto_flap_percent = g2.flap_trim;
+        }
+
+        if (control_mode == &mode_loiter && g2.soaring_controller.update_active_state()) {
+            auto_flap_percent = g2.soaring_controller.get_flap_thermalling();
+        }
 
         /*
           special flap levels for takeoff and landing. This works
@@ -628,7 +639,7 @@ void Plane::set_servos_flaps(void)
     }
 
     // manual flap input overrides auto flap input
-    if (abs(manual_flap_percent) > auto_flap_percent) {
+    if (manual_flap_percent > auto_flap_percent) {
         auto_flap_percent = manual_flap_percent;
     }
 

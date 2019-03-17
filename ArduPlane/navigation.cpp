@@ -151,6 +151,24 @@ void Plane::calc_airspeed_errors()
             // fallover to normal airspeed
             target_airspeed_cm = aparm.airspeed_cruise_cm;
         }
+    } else if (g2.soaring_controller.update_active_state()) {
+        if (control_mode == &mode_loiter) {
+            float arspd = g2.soaring_controller.get_target_airspeed_thermalling();
+
+            if (arspd>0) {
+                target_airspeed_cm = arspd*100;
+            } else {
+                target_airspeed_cm = aparm.airspeed_cruise_cm;
+            }
+        } else if (control_mode == &mode_auto) {
+            float arspd = g2.soaring_controller.get_target_airspeed_cruising();
+
+            if (arspd>0) {
+                target_airspeed_cm = arspd*100;
+            } else {
+                target_airspeed_cm = aparm.airspeed_cruise_cm;
+            }
+        }
     } else {
         // Normal airspeed target
         target_airspeed_cm = aparm.airspeed_cruise_cm;
