@@ -1311,7 +1311,9 @@ void Copter::convert_tradheli_parameters(void)
             { Parameters::k_param_motors, 1, AP_PARAM_INT16, "H_SW_H3_SV1_POS" },
             { Parameters::k_param_motors, 2, AP_PARAM_INT16, "H_SW_H3_SV2_POS" },
             { Parameters::k_param_motors, 3, AP_PARAM_INT16, "H_SW_H3_SV3_POS" },
+            { Parameters::k_param_motors, 5, AP_PARAM_INT8, "H_SW_TYPE" },
             { Parameters::k_param_motors, 7, AP_PARAM_INT16, "H_SW_H3_PHANG" },
+            { Parameters::k_param_motors, 19, AP_PARAM_INT8, "H_SW_COL_DIR" },
         };
 
         // convert single heli paramters without scaling
@@ -1330,6 +1332,8 @@ void Copter::convert_tradheli_parameters(void)
             { Parameters::k_param_motors, 6, AP_PARAM_INT16, "H_SW2_H3_SV3_POS" },
             { Parameters::k_param_motors, 7, AP_PARAM_INT16, "H_SW1_H3_PHANG" },
             { Parameters::k_param_motors, 8, AP_PARAM_INT16, "H_SW2_H3_PHANG" },
+            { Parameters::k_param_motors, 19, AP_PARAM_INT8, "H_SW1_COL_DIR" },
+            { Parameters::k_param_motors, 19, AP_PARAM_INT8, "H_SW2_COL_DIR" },
         };
 
         // convert dual heli parameters without scaling
