@@ -120,6 +120,7 @@
     // the disco has challenges with its magnetic setup
     #define AP_COMPASS_OFFSETS_MAX_DEFAULT 2200
     #define HAL_BATT_MONITOR_DEFAULT AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP
+    #define HAL_GPIO_SCRIPT "/data/ftp/internal_000/ardupilot/gpio.sh"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
     #define HAL_GPIO_A_LED_PIN 0
     #define HAL_GPIO_B_LED_PIN 1
