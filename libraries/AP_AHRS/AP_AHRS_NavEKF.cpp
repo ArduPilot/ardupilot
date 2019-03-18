@@ -309,6 +309,7 @@ void AP_AHRS_NavEKF::update_SITL(void)
     const AP_InertialSensor &_ins = AP::ins();
 
     if (active_EKF_type() == EKF_TYPE_SITL) {
+
         fdm.quaternion.rotation_matrix(_dcm_matrix);
         _dcm_matrix = _dcm_matrix * get_rotation_vehicle_body_to_autopilot_body();
         _dcm_matrix.to_euler(&roll, &pitch, &yaw);
@@ -1317,7 +1318,6 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     // get primary attitude source's attitude as quaternion
     Quaternion primary_quat;
     primary_quat.from_euler(roll, pitch, yaw);
-
     // only check yaw if compasses are being used
     bool check_yaw = _compass && _compass->use_for_yaw();
 
@@ -1360,7 +1360,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     // check primary vs dcm
     Quaternion dcm_quat;
     Vector3f angle_diff;
-    dcm_quat.from_axis_angle(_dcm_attitude);
+    dcm_quat.from_euler(_dcm_attitude.x, _dcm_attitude.y, _dcm_attitude.z);
     primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
     float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
     if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
