@@ -2589,7 +2589,8 @@ int8_t QuadPlane::forward_throttle_pct(void)
         vel_forward.gain <= 0 ||
         plane.control_mode == QSTABILIZE ||
         plane.control_mode == QHOVER ||
-        plane.control_mode == QAUTOTUNE) {
+        plane.control_mode == QAUTOTUNE ||
+        motors->get_desired_spool_state() < AP_Motors::DESIRED_GROUND_IDLE) {
         return 0;
     }
 
@@ -2640,8 +2641,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
     vel_forward.integrator = constrain_float(vel_forward.integrator, fwd_throttle_min, plane.aparm.throttle_max);
 
     if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
-        (poscontrol.state == QPOS_POSITION1 || poscontrol.state == QPOS_POSITION2) &&
-        motors->get_desired_spool_state() >= AP_Motors::DESIRED_GROUND_IDLE) {
+        (poscontrol.state == QPOS_POSITION1 || poscontrol.state == QPOS_POSITION2)) {
         // when we are doing horizontal positioning in a VTOL land
         // we always allow the fwd motor to run. Otherwise a bad
         // lidar could cause the aircraft not to be able to
