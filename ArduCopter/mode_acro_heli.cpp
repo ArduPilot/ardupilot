@@ -72,9 +72,9 @@ void Copter::ModeAcro_Heli::run()
         get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
         if (g.acro_trainer == ACRO_TRAINER_DISABLED) {
             if (ap.land_complete) {
-                virtual_flybar(target_roll, target_pitch, target_yaw, 3.0f, 3.0f)
+                virtual_flybar(target_roll, target_pitch, target_yaw, 3.0f, 3.0f);
             } else {
-                virtual_flybar(target_roll, target_pitch, target_yaw, g.acro_balance_pitch, g.acro_balance_roll)
+                virtual_flybar(target_roll, target_pitch, target_yaw, g.acro_balance_pitch, g.acro_balance_roll);
             }
         }
         if (motors->supports_yaw_passthrough()) {
