@@ -364,7 +364,7 @@ public:
 
     // return a Down position relative to home in meters
     // if EKF is unavailable will return the baro altitude
-    virtual void get_relative_position_D_home(float &posD) const WARN_IF_UNUSED = 0;
+    virtual void get_relative_position_D_home(float &posD) const = 0;
 
     // return a Down position relative to origin in meters
     // Return true if estimate is valid
