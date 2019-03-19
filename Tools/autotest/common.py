@@ -1990,6 +1990,52 @@ class AutoTest(ABC):
                 home.altitude != got_home_altitude): # float-conversion issues
                 self.reboot_sitl()
                 raise NotAchievedException("home is drifting")
+
+        self.progress("Waiting for EKF to start")
+        self.wait_ready_to_arm()
+        self.progress("now use lat=0, lon=0 to reset home to current location")
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                         0, # p1,
+                         0, # p2,
+                         0, # p3,
+                         0, # p4,
+                         0, # lat
+                         0, # lon
+                         new_z/1000.0, # mm => m
+                         )
+        home = self.poll_home_position()
+        self.progress("home: %s" % str(home))
+        if self.distance_to_home() > 1:
+            raise NotAchievedException("Setting home to current location did not work")
+
+        self.progress("Setting home elsewhere again")
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                         0, # p1,
+                         0, # p2,
+                         0, # p3,
+                         0, # p4,
+                         new_x,
+                         new_y,
+                         new_z/1000.0, # mm => m
+                         )
+        if self.distance_to_home() < 10:
+            raise NotAchievedException("Setting home to location did not work")
+
+        self.progress("use param1=1 to reset home to current location")
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                         1, # p1,
+                         0, # p2,
+                         0, # p3,
+                         0, # p4,
+                         37.0, # lat
+                         21.0, # lon
+                         new_z/1000.0, # mm => m
+                         )
+        home = self.poll_home_position()
+        self.progress("home: %s" % str(home))
+        if self.distance_to_home() > 1:
+            raise NotAchievedException("Setting home to current location did not work")
+
         self.reboot_sitl()
 
     def test_dataflash_over_mavlink(self):
