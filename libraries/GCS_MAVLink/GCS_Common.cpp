@@ -3960,7 +3960,7 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
 
     // convert altitude to relative to home
     int32_t rel_alt;
-    if (!loc.get_alt_cm(Location::ALT_FRAME_ABOVE_HOME, rel_alt)) {
+    if (!loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, rel_alt)) {
         return;
     }
 
