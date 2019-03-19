@@ -476,6 +476,7 @@ public:
     bool is_autopilot() const override { return false; }
     void save_tuning_gains();
     void stop();
+    void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
 
 protected:
 
