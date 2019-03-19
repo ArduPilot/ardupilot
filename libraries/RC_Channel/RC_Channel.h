@@ -26,6 +26,7 @@ public:
     enum InputIgnore {
         RC_IGNORE_RECEIVER  = (1 << 0), // RC receiver modules
         RC_IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
+        RC_IGNORE_FAILSAFE  = (1 << 2), // ignore RC failsafe bits
     };
 
     enum ChannelType {
@@ -340,6 +341,11 @@ public:
         }
     }
 
+    // should we ignore RC failsafe bits from receivers?
+    static bool ignore_rc_failsafe(void) {
+        return options && ((*options) & RC_Channel::RC_IGNORE_FAILSAFE) != 0;
+    }
+    
 private:
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables

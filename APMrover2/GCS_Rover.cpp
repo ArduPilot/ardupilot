@@ -4,6 +4,22 @@
 
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
+bool GCS_Rover::simple_input_active() const
+{
+    if (rover.control_mode != &rover.mode_simple) {
+        return false;
+    }
+    return (rover.g2.simple_type == ModeSimple::Simple_InitialHeading);
+}
+
+bool GCS_Rover::supersimple_input_active() const
+{
+    if (rover.control_mode != &rover.mode_simple) {
+        return false;
+    }
+    return (rover.g2.simple_type == ModeSimple::Simple_CardinalDirections);
+}
+
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but
@@ -117,8 +133,4 @@ void GCS_Rover::update_sensor_status_flags(void)
         control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // give mask of error flags to Frsky_Telemetry
-    rover.frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
-#endif
 }

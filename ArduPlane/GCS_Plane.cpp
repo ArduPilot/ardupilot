@@ -218,9 +218,4 @@ void GCS_Plane::update_sensor_status_flags(void)
     if (!plane.battery.healthy() || plane.battery.has_failsafed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
     }
-
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // give mask of error flags to Frsky_Telemetry
-    plane.frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
-#endif
 }

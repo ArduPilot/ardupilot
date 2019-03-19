@@ -2,6 +2,21 @@
 
 #include "Copter.h"
 
+const char* GCS_Copter::frame_string() const
+{
+    return copter.get_frame_string();
+}
+
+bool GCS_Copter::simple_input_active() const
+{
+    return copter.ap.simple_mode == 1;
+}
+
+bool GCS_Copter::supersimple_input_active() const
+{
+    return copter.ap.simple_mode == 2;
+}
+
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but
@@ -219,10 +234,5 @@ void GCS_Copter::update_sensor_status_flags(void)
     if (copter.fence.sys_status_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
     }
-#endif
-
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // give mask of error flags to Frsky_Telemetry
-    copter.frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
 #endif
 }

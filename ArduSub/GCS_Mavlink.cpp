@@ -17,7 +17,7 @@ void Sub::gcs_send_heartbeat()
  *  pattern below when adding any new messages
  */
 
-MAV_TYPE GCS_MAVLINK_Sub::frame_type() const
+MAV_TYPE GCS_Sub::frame_type() const
 {
     return MAV_TYPE_SUBMARINE;
 }
@@ -62,7 +62,7 @@ MAV_MODE GCS_MAVLINK_Sub::base_mode() const
     return (MAV_MODE)_base_mode;
 }
 
-uint32_t GCS_MAVLINK_Sub::custom_mode() const
+uint32_t GCS_Sub::custom_mode() const
 {
     return sub.control_mode;
 }
@@ -100,21 +100,6 @@ int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
 {
     return (int16_t)(sub.motors.get_throttle() * 100);
 }
-
-/*
-  send RPM packet
- */
-#if RPM_ENABLED == ENABLED
-void NOINLINE Sub::send_rpm(mavlink_channel_t chan)
-{
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        mavlink_msg_rpm_send(
-            chan,
-            rpm_sensor.get_rpm(0),
-            rpm_sensor.get_rpm(1));
-    }
-}
-#endif
 
 // Work around to get temperature sensor data out
 void GCS_MAVLINK_Sub::send_scaled_pressure3()
@@ -232,7 +217,7 @@ uint8_t GCS_MAVLINK_Sub::sysid_my_gcs() const
     return sub.g.sysid_my_gcs;
 }
 
-bool GCS_MAVLINK_Sub::vehicle_initialised() const {
+bool GCS_Sub::vehicle_initialised() const {
     return sub.ap.initialised;
 }
 
@@ -251,13 +236,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     case MSG_NAMED_FLOAT:
         send_info();
-        break;
-
-    case MSG_RPM:
-#if RPM_ENABLED == ENABLED
-        CHECK_PAYLOAD_SIZE(RPM);
-        sub.send_rpm(chan);
-#endif
         break;
 
     case MSG_TERRAIN:
@@ -527,32 +505,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
         }
         return MAV_RESULT_FAILED;
 
-    case MAV_CMD_DO_SET_HOME:
-        // param1 : use current (1=use current location, 0=use specified location)
-        // param5 : latitude
-        // param6 : longitude
-        // param7 : altitude (absolute)
-        if (is_equal(packet.param1,1.0f) || (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7))) {
-            if (sub.set_home_to_current_location(true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-        } else {
-            // ensure param1 is zero
-            if (!is_zero(packet.param1)) {
-                return MAV_RESULT_FAILED;
-            }
-            Location new_home_loc;
-            new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-            new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-            new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-            if (!sub.far_from_EKF_origin(new_home_loc)) {
-                if (sub.set_home(new_home_loc, true)) {
-                    return MAV_RESULT_ACCEPTED;
-                }
-            }
-        }
-        return MAV_RESULT_FAILED;
-
     case MAV_CMD_MISSION_START:
         if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
@@ -758,7 +710,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
                 break;
             }
-            Location::ALT_FRAME frame;
+            Location::AltFrame frame;
             if (!mavlink_coordinate_frame_to_location_alt_frame(packet.coordinate_frame, frame)) {
                 // unknown coordinate frame
                 break;

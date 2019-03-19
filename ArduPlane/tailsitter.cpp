@@ -77,30 +77,30 @@ void QuadPlane::tailsitter_output(void)
         float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
         if (hal.util->get_soft_armed()) {
             if (in_tailsitter_vtol_transition() && !throttle_wait && is_flying()) {
-            /*
-              during transitions to vtol mode set the throttle to
-              hover thrust, center the rudder and set the altitude controller
-              integrator to the same throttle level
-             */
-            throttle = motors->get_throttle_hover() * 100;
-            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-            pos_control->get_accel_z_pid().set_integrator(throttle*10);
-            
-            if (mask == 0) {
-                // override AP_MotorsTailsitter throttles during back transition
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);            
+                /*
+                  during transitions to vtol mode set the throttle to
+                  hover thrust, center the rudder and set the altitude controller
+                  integrator to the same throttle level
+                 */
+                throttle = motors->get_throttle_hover() * 100;
+                SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
+                pos_control->get_accel_z_pid().set_integrator(throttle*10);
+
+                if (mask == 0) {
+                    // override AP_MotorsTailsitter throttles during back transition
+                    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+                    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
+                    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
+                }
             }
-        }
-        if (mask != 0) {
-            // set AP_MotorsMatrix throttles enabled for forward flight
-            motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
+            if (mask != 0) {
+                // set AP_MotorsMatrix throttles enabled for forward flight
+                motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
             }
         }
         return;
     }
-    
+
     // handle VTOL modes
     // the MultiCopter rate controller has already been run in an earlier call 
     // to motors_output() from quadplane.update()

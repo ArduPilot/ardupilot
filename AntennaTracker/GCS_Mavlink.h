@@ -44,9 +44,7 @@ private:
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
     void send_global_position_int() override;
 
-    MAV_TYPE frame_type() const override;
     MAV_MODE base_mode() const override;
-    uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
 
 };

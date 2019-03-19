@@ -28,8 +28,6 @@ protected:
 
     bool persist_streamrates() const override { return true; }
 
-    bool vehicle_initialised() const override;
-
     bool set_home_to_current_location(bool lock) override;
     bool set_home(const Location& loc, bool lock) override;
     uint64_t capabilities() const override;
@@ -47,9 +45,7 @@ private:
 
     void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;
 
-    MAV_TYPE frame_type() const override;
     MAV_MODE base_mode() const override;
-    uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
 
     int16_t vfr_hud_throttle() const override;

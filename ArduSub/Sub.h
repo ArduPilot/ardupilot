@@ -480,7 +480,6 @@ private:
     void gcs_send_heartbeat(void);
     void send_heartbeat(mavlink_channel_t chan);
 #if RPM_ENABLED == ENABLED
-    void send_rpm(mavlink_channel_t chan);
     void rpm_update();
 #endif
     void Log_Write_Control_Tuning();

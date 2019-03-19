@@ -393,7 +393,7 @@ void Copter::ModeRTL::build_path(bool terrain_following_allowed)
     pos_control->get_stopping_point_xy(stopping_point);
     pos_control->get_stopping_point_z(stopping_point);
     rtl_path.origin_point = Location(stopping_point);
-    rtl_path.origin_point.change_alt_frame(Location::ALT_FRAME_ABOVE_HOME);
+    rtl_path.origin_point.change_alt_frame(Location::AltFrame::ABOVE_HOME);
 
     // compute return target
     compute_return_target(terrain_following_allowed);
@@ -402,7 +402,7 @@ void Copter::ModeRTL::build_path(bool terrain_following_allowed)
     rtl_path.climb_target = Location(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
 
     // descent target is below return target at rtl_alt_final
-    rtl_path.descent_target = Location(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final, Location::ALT_FRAME_ABOVE_HOME);
+    rtl_path.descent_target = Location(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final, Location::AltFrame::ABOVE_HOME);
 
     // set land flag
     rtl_path.land = g.rtl_alt_final <= 0;
@@ -428,19 +428,19 @@ void Copter::ModeRTL::compute_return_target(bool terrain_following_allowed)
     if (rtl_path.terrain_used) {
         // attempt to retrieve terrain alt for current location, stopping point and origin
         int32_t origin_terr_alt, return_target_terr_alt;
-        if (!rtl_path.origin_point.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, origin_terr_alt) ||
-            !rtl_path.return_target.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, return_target_terr_alt) ||
-            !copter.current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, curr_alt)) {
+        if (!rtl_path.origin_point.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, origin_terr_alt) ||
+            !rtl_path.return_target.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, return_target_terr_alt) ||
+            !copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curr_alt)) {
             rtl_path.terrain_used = false;
             copter.Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
         }
     }
 
     // convert return-target alt (which is an absolute alt) to alt-above-home or alt-above-terrain
-    if (!rtl_path.terrain_used || !rtl_path.return_target.change_alt_frame(Location::ALT_FRAME_ABOVE_TERRAIN)) {
-        if (!rtl_path.return_target.change_alt_frame(Location::ALT_FRAME_ABOVE_HOME)) {
+    if (!rtl_path.terrain_used || !rtl_path.return_target.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN)) {
+        if (!rtl_path.return_target.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
             // this should never happen but just in case
-            rtl_path.return_target.set_alt_cm(0, Location::ALT_FRAME_ABOVE_HOME);
+            rtl_path.return_target.set_alt_cm(0, Location::AltFrame::ABOVE_HOME);
         }
         rtl_path.terrain_used = false;
     }
@@ -462,7 +462,7 @@ void Copter::ModeRTL::compute_return_target(bool terrain_following_allowed)
     }
 
     // set returned target alt to new target_alt
-    rtl_path.return_target.set_alt_cm(target_alt, rtl_path.terrain_used ? Location::ALT_FRAME_ABOVE_TERRAIN : Location::ALT_FRAME_ABOVE_HOME);
+    rtl_path.return_target.set_alt_cm(target_alt, rtl_path.terrain_used ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_HOME);
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
@@ -472,7 +472,7 @@ void Copter::ModeRTL::compute_return_target(bool terrain_following_allowed)
     //       to apply the fence alt limit independently on the origin_point and return_target
     if ((copter.fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
         // get return target as alt-above-home so it can be compared to fence's alt
-        if (rtl_path.return_target.get_alt_cm(Location::ALT_FRAME_ABOVE_HOME, target_alt)) {
+        if (rtl_path.return_target.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt)) {
             float fence_alt = copter.fence.get_safe_alt_max()*100.0f;
             if (target_alt > fence_alt) {
                 // reduce target alt to the fence alt

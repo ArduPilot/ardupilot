@@ -215,6 +215,8 @@ private:
     float rotation_rate;
     float roll_cd, pitch_cd;
 
+    uint32_t last_pilot_override_warning;
+
     struct {
         LevelIssue issue{LevelIssue::NONE};
         float maximum;

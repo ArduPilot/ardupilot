@@ -32,7 +32,6 @@ Rover::Rover(void) :
     modes(&g.mode1),
     nav_controller(&L1_controller),
     control_mode(&mode_initializing),
-    home(ahrs.get_home()),
     G_Dt(0.02f)
 {
 }

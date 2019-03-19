@@ -101,7 +101,24 @@ void Tracker::init_tracker()
     gcs().send_text(MAV_SEVERITY_INFO,"Ready to track");
     hal.scheduler->delay(1000); // Why????
 
-    set_mode(AUTO, MODE_REASON_STARTUP); // tracking
+    switch (g.initial_mode) {
+    case MANUAL:
+        set_mode(MANUAL, MODE_REASON_STARTUP);
+        break;
+
+    case SCAN:
+        set_mode(SCAN, MODE_REASON_STARTUP);
+        break;
+
+    case STOP:
+        set_mode(STOP, MODE_REASON_STARTUP);
+        break;
+
+    case AUTO:
+    default:
+        set_mode(AUTO, MODE_REASON_STARTUP);
+        break;
+    }
 
     if (g.startup_delay > 0) {
         // arm servos with trim value to allow them to start up (required
@@ -129,7 +146,7 @@ bool Tracker::get_home_eeprom(struct Location &loc)
         int32_t(wp_storage.read_uint32(5)),
         int32_t(wp_storage.read_uint32(9)),
         int32_t(wp_storage.read_uint32(1)),
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
 
     return true;

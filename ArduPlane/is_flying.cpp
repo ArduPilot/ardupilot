@@ -155,12 +155,10 @@ void Plane::update_is_flying_5Hz(void)
     }
     previous_is_flying = new_is_flying;
     adsb.set_is_flying(new_is_flying);
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.set_is_flying(new_is_flying);
-#endif
 #if STATS_ENABLED == ENABLED
     g2.stats.set_flying(new_is_flying);
 #endif
+    AP_Notify::flags.flying = new_is_flying;
 
     crash_detection_update();
 

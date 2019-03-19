@@ -132,3 +132,6 @@ void GCS_Sub::update_sensor_status_flags()
     }
 }
 
+// avoid building/linking Devo:
+AP_DEVO_Telem::AP_DEVO_Telem() {}
+void AP_DEVO_Telem::init() {};

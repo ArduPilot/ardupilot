@@ -137,7 +137,7 @@ void Copter::ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pi
             rate_bf_request.y += rate_bf_level.y;
             rate_bf_request.z += rate_bf_level.z;
         }else{
-            float acro_level_mix = constrain_float(float(1-MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in)))/4500.0, 0, 1)*ahrs.cos_pitch();
+            float acro_level_mix = constrain_float(1-float(MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0), 0, 1)*ahrs.cos_pitch();
 
             // Scale leveling rates by stick input
             rate_bf_level = rate_bf_level*acro_level_mix;

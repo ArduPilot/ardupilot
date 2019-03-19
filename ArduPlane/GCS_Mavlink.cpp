@@ -2,7 +2,7 @@
 
 #include "Plane.h"
 
-MAV_TYPE GCS_MAVLINK_Plane::frame_type() const
+MAV_TYPE GCS_Plane::frame_type() const
 {
     return plane.quadplane.get_mav_type();
 }
@@ -87,7 +87,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     return (MAV_MODE)_base_mode;
 }
 
-uint32_t GCS_MAVLINK_Plane::custom_mode() const
+uint32_t GCS_Plane::custom_mode() const
 {
     return plane.control_mode;
 }
@@ -310,19 +310,6 @@ void Plane::send_wind(mavlink_channel_t chan)
         wind.z);
 }
 
-/*
-  send RPM packet
- */
-void NOINLINE Plane::send_rpm(mavlink_channel_t chan)
-{
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        mavlink_msg_rpm_send(
-            chan,
-            rpm_sensor.get_rpm(0),
-            rpm_sensor.get_rpm(1));
-    }
-}
-
 // sends a single pid info over the provided channel
 void GCS_MAVLINK_Plane::send_pid_info(const AP_Logger::PID_Info *pid_info,
                           const uint8_t axis, const float achieved)
@@ -449,11 +436,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         plane.send_wind(chan);
-        break;
-
-    case MSG_RPM:
-        CHECK_PAYLOAD_SIZE(RPM);
-        plane.send_rpm(chan);
         break;
 
     case MSG_ADSB_VEHICLE:
@@ -1142,7 +1124,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         last_hil_state = packet;
 
         // set gps hil sensor
-        const Location loc{packet.lat, packet.lon, packet.alt/10, Location::ALT_FRAME_ABSOLUTE};
+        const Location loc{packet.lat, packet.lon, packet.alt/10, Location::AltFrame::ABSOLUTE};
         Vector3f vel(packet.vx, packet.vy, packet.vz);
         vel *= 0.01f;
 

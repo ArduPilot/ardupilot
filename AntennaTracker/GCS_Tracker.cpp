@@ -109,3 +109,7 @@ void GCS_Tracker::update_sensor_status_flags()
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
 }
+
+// avoid building/linking Devo:
+AP_DEVO_Telem::AP_DEVO_Telem() {}
+void AP_DEVO_Telem::init() {};

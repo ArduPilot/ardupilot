@@ -1044,7 +1044,7 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     // accessed directly by the vehicles and they may not be rigorous
     // in checking the frame type.
     Location tmp = loc;
-    if (!tmp.change_alt_frame(Location::ALT_FRAME_ABSOLUTE)) {
+    if (!tmp.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
         return false;
     }
 
@@ -1077,12 +1077,15 @@ bool AP_AHRS_DCM::healthy(void) const
 }
 
 /*
-  return amount of time that AHRS has been up
+  return NED velocity if we have GPS lock
  */
-uint32_t AP_AHRS_DCM::uptime_ms(void) const
+bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
 {
-    if (_last_startup_ms == 0) {
-        return 0;
+    const AP_GPS &_gps = AP::gps();
+    if (_gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+        return false;
     }
-    return AP_HAL::millis() - _last_startup_ms;
+    vec = _gps.velocity();
+    return true;
 }
+

@@ -551,6 +551,7 @@ public:
 #endif // ENABLE_SCRIPTING
 
     AP_Int8 takeoff_throttle_accel_count;
+    AP_Int8 takeoff_timeout;
 
 #if LANDING_GEAR_ENABLED == ENABLED
     AP_LandingGear landing_gear;

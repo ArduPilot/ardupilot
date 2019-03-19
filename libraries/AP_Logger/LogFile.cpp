@@ -473,10 +473,9 @@ void AP_Logger::Write_AHRS2(AP_AHRS &ahrs)
     Vector3f euler;
     struct Location loc;
     Quaternion quat;
-    if (!ahrs.get_secondary_attitude(euler) || !ahrs.get_secondary_position(loc)) {
+    if (!ahrs.get_secondary_attitude(euler) || !ahrs.get_secondary_position(loc) || !ahrs.get_secondary_quaternion(quat)) {
         return;
     }
-    ahrs.get_secondary_quaternion(quat);
     struct log_AHRS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
         time_us : AP_HAL::micros64(),

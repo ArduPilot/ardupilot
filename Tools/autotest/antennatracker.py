@@ -59,6 +59,9 @@ class AutoTestTracker(AutoTest):
 
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
+        self.wait_heartbeat()
+        if self.armed():
+            self.disarm_vehicle()
         self.mavproxy.send("reboot\n")
         self.mavproxy.expect("Initialising APM")
         # empty mav to avoid getting old timestamps:

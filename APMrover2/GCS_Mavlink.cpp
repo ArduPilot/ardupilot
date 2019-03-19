@@ -4,7 +4,7 @@
 
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
-MAV_TYPE GCS_MAVLINK_Rover::frame_type() const
+MAV_TYPE GCS_Rover::frame_type() const
 {
     if (rover.is_boat()) {
         return MAV_TYPE_SURFACE_BOAT;
@@ -55,7 +55,7 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
 return (MAV_MODE)_base_mode;
 }
 
-uint32_t GCS_MAVLINK_Rover::custom_mode() const
+uint32_t GCS_Rover::custom_mode() const
 {
     return rover.control_mode->mode_number();
 }
@@ -153,19 +153,6 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
         chan,
         distance_cm * 0.01f,
         voltage);
-}
-
-/*
-  send RPM packet
- */
-void Rover::send_rpm(mavlink_channel_t chan)
-{
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        mavlink_msg_rpm_send(
-            chan,
-            rpm_sensor.get_rpm(0),
-            rpm_sensor.get_rpm(1));
-    }
 }
 
 /*
@@ -298,7 +285,7 @@ uint32_t GCS_MAVLINK_Rover::telem_delay() const
     return static_cast<uint32_t>(rover.g.telem_delay);
 }
 
-bool GCS_MAVLINK_Rover::vehicle_initialised() const
+bool GCS_Rover::vehicle_initialised() const
 {
     return rover.control_mode != &rover.mode_initializing;
 }
@@ -321,11 +308,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         rover.send_servo_out(chan);
-        break;
-
-    case MSG_RPM:
-        CHECK_PAYLOAD_SIZE(RPM);
-        rover.send_rpm(chan);
         break;
 
     case MSG_WHEEL_DISTANCE:
@@ -525,7 +507,7 @@ bool GCS_MAVLINK_Rover::in_hil_mode() const
 
 bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
-    if (rover.control_mode != &rover.mode_guided) {
+    if (!rover.control_mode->in_guided_mode()) {
         // only accept position updates when in GUIDED mode
         return false;
     }
@@ -629,32 +611,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_ACCEPTED;
 
-    case MAV_CMD_DO_SET_HOME:
-    {
-        // param1 : use current (1=use current location, 0=use specified location)
-        // param5 : latitude
-        // param6 : longitude
-        // param7 : altitude
-        if (is_equal(packet.param1, 1.0f)) {
-            if (rover.set_home_to_current_location(true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-        } else {
-            // ensure param1 is zero
-            if (!is_zero(packet.param1)) {
-                return MAV_RESULT_FAILED;
-            }
-            Location new_home_loc {};
-            new_home_loc.lat = static_cast<int32_t>(packet.param5 * 1.0e7f);
-            new_home_loc.lng = static_cast<int32_t>(packet.param6 * 1.0e7f);
-            new_home_loc.alt = static_cast<int32_t>(packet.param7 * 100.0f);
-            if (rover.set_home(new_home_loc, true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-        }
-        return MAV_RESULT_FAILED;
-    }
-
     case MAV_CMD_DO_SET_REVERSE:
         // param1 : Direction (0=Forward, 1=Reverse)
         rover.control_mode->set_reversed(is_equal(packet.param1,1.0f));
@@ -666,7 +622,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         // param2 : Speed - normalized to 0 .. 1
 
         // exit if vehicle is not in Guided mode
-        if (rover.control_mode != &rover.mode_guided) {
+        if (!rover.control_mode->in_guided_mode()) {
             return MAV_RESULT_FAILED;
         }
 
@@ -750,7 +706,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             mavlink_msg_set_attitude_target_decode(msg, &packet);
 
             // exit if vehicle is not in Guided mode
-            if (rover.control_mode != &rover.mode_guided) {
+            if (!rover.control_mode->in_guided_mode()) {
                 break;
             }
 
@@ -782,7 +738,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
 
             // exit if vehicle is not in Guided mode
-            if (rover.control_mode != &rover.mode_guided) {
+            if (!rover.control_mode->in_guided_mode()) {
                 break;
             }
 
@@ -899,7 +855,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             mavlink_msg_set_position_target_global_int_decode(msg, &packet);
 
             // exit if vehicle is not in Guided mode
-            if (rover.control_mode != &rover.mode_guided) {
+            if (!rover.control_mode->in_guided_mode()) {
                 break;
             }
             // check for supported coordinate frames

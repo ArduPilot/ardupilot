@@ -53,7 +53,7 @@ bool Copter::ModeGuided::do_user_takeoff_start(float final_alt_above_home)
 
     // initialise wpnav destination
     Location target_loc = copter.current_loc;
-    target_loc.set_alt_cm(final_alt_above_home, Location::ALT_FRAME_ABOVE_HOME);
+    target_loc.set_alt_cm(final_alt_above_home, Location::AltFrame::ABOVE_HOME);
 
     if (!wp_nav->set_wp_destination(target_loc)) {
         // failure to set destination can only be because of missing terrain data

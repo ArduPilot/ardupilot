@@ -78,6 +78,7 @@ public:
         uint8_t gps_num_sats;     // number of sats
         uint8_t flight_mode;      // flight mode
         bool armed;               // 0 = disarmed, 1 = armed
+        bool flying;              // 0 = not flying, 1 = flying/driving/diving/tracking
         bool pre_arm_check;       // true if passing pre arm checks
         bool pre_arm_gps_check;   // true if passing pre arm gps checks
         bool save_trim;           // true if gathering trim data

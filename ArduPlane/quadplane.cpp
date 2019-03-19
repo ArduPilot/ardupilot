@@ -954,7 +954,11 @@ void QuadPlane::control_qacro(void)
         float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
 
         // run attitude controller
-        attitude_control->input_rate_bf_roll_pitch_yaw_3(target_roll, target_pitch, target_yaw);
+        if (plane.g.acro_locking) {
+            attitude_control->input_rate_bf_roll_pitch_yaw_3(target_roll, target_pitch, target_yaw);
+        } else {
+            attitude_control->input_rate_bf_roll_pitch_yaw_2(target_roll, target_pitch, target_yaw);
+        }
 
         // output pilot's throttle without angle boost
         attitude_control->set_throttle_out(throttle_out, false, 10.0f);
@@ -1815,7 +1819,9 @@ void QuadPlane::control_run(void)
     switch (plane.control_mode) {
     case QACRO:
         control_qacro();
-        break;
+        // QACRO uses only the multicopter controller
+        // so skip the Plane attitude control calls below
+        return;
     case QSTABILIZE:
         control_stabilize();
         break;
@@ -2521,7 +2527,15 @@ bool QuadPlane::verify_vtol_land(void)
         plane.auto_state.wp_distance < 2) {
         poscontrol.state = QPOS_LAND_DESCEND;
         gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
-        plane.set_next_WP(plane.next_WP_loc);
+        if (plane.control_mode == AUTO) {
+            // set height to mission height, so we can use the mission
+            // WP height for triggering land final if no rangefinder
+            // available
+            plane.set_next_WP(plane.mission.get_current_nav_cmd().content.location);
+        } else {
+            plane.set_next_WP(plane.next_WP_loc);
+            plane.next_WP_loc.alt = ahrs.get_home().alt;
+        }
     }
 
     // at land_final_alt begin final landing
@@ -2589,7 +2603,8 @@ int8_t QuadPlane::forward_throttle_pct(void)
         vel_forward.gain <= 0 ||
         plane.control_mode == QSTABILIZE ||
         plane.control_mode == QHOVER ||
-        plane.control_mode == QAUTOTUNE) {
+        plane.control_mode == QAUTOTUNE ||
+        motors->get_desired_spool_state() < AP_Motors::DESIRED_GROUND_IDLE) {
         return 0;
     }
 
@@ -2638,12 +2653,22 @@ int8_t QuadPlane::forward_throttle_pct(void)
     // inhibit reverse throttle and allow petrol engines with min > 0
     int8_t fwd_throttle_min = plane.have_reverse_thrust() ? 0 : plane.aparm.throttle_min;
     vel_forward.integrator = constrain_float(vel_forward.integrator, fwd_throttle_min, plane.aparm.throttle_max);
-    
-    // If we are below alt_cutoff then scale down the effect until it turns off at alt_cutoff and decay the integrator
-    float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
-    float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-    vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
-                                   height_above_ground, alt_cutoff, alt_cutoff+2);
+
+    if (in_vtol_land_approach()) {
+        // when we are doing horizontal positioning in a VTOL land
+        // we always allow the fwd motor to run. Otherwise a bad
+        // lidar could cause the aircraft not to be able to
+        // approach the landing point when landing below the takeoff point
+        vel_forward.last_pct = vel_forward.integrator;
+    } else {
+        // If we are below alt_cutoff then scale down the effect until
+        // it turns off at alt_cutoff and decay the integrator
+        float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
+        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+
+        vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
+                                                  height_above_ground, alt_cutoff, alt_cutoff+2);
+    }
     if (vel_forward.last_pct == 0) {
         // if the percent is 0 then decay the integrator
         vel_forward.integrator *= 0.95f;
@@ -2920,4 +2945,28 @@ void QuadPlane::update_throttle_thr_mix(void)
             attitude_control->set_throttle_mix_min();
         }
     }
+}
+
+/*
+  see if we are in the approach phase of a VTOL landing
+ */
+bool QuadPlane::in_vtol_land_approach(void) const
+{
+    if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
+        (poscontrol.state == QPOS_POSITION1 || poscontrol.state == QPOS_POSITION2)) {
+        return true;
+    }
+    return false;
+}
+
+/*
+  see if we are in the descent phase of a VTOL landing
+ */
+bool QuadPlane::in_vtol_land_descent(void) const
+{
+    if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
+        (poscontrol.state == QPOS_LAND_DESCEND || poscontrol.state == QPOS_LAND_FINAL)) {
+        return true;
+    }
+    return false;
 }
