@@ -415,10 +415,12 @@ private:
     uint32_t last_ctrl_log_ms;
 
     // types of tilt mechanisms
-    enum {TILT_TYPE_CONTINUOUS=0,
-          TILT_TYPE_BINARY=1,
-          TILT_TYPE_VECTORED_YAW=2};
-    
+    enum {TILT_TYPE_CONTINUOUS    =0,
+          TILT_TYPE_BINARY        =1,
+          TILT_TYPE_VECTORED_YAW  =2,
+          TILT_TYPE_BICOPTER      =3
+    };
+
     // tiltrotor control variables
     struct {
         AP_Int16 tilt_mask;
@@ -479,6 +481,7 @@ private:
     void tiltrotor_continuous_update(void);
     void tiltrotor_binary_update(void);
     void tiltrotor_vectored_yaw(void);
+    void tiltrotor_bicopter(void);
     void tilt_compensate_up(float *thrust, uint8_t num_motors);
     void tilt_compensate_down(float *thrust, uint8_t num_motors);
     void tilt_compensate(float *thrust, uint8_t num_motors);

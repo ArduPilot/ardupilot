@@ -812,12 +812,13 @@ void Plane::servos_output(void)
     // support twin-engine aircraft
     servos_twin_engine_mix();
 
-    // cope with tailsitters
+    // cope with tailsitters and bicopters
     quadplane.tailsitter_output();
-    
+    quadplane.tiltrotor_bicopter();
+
     // the mixers need pwm to be calculated now
     SRV_Channels::calc_pwm();
-    
+
     // run vtail and elevon mixers
     servo_output_mixers();
 
@@ -825,11 +826,11 @@ void Plane::servos_output(void)
     if (g2.manual_rc_mask.get() != 0 && control_mode == &mode_manual) {
         SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
     }
-    
+
     SRV_Channels::calc_pwm();
 
     SRV_Channels::output_ch_all();
-    
+
     SRV_Channels::push();
 
     if (g2.servo_channels.auto_trim_enabled()) {
