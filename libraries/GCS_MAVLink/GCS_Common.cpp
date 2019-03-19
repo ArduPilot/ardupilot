@@ -3523,8 +3523,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_long_t &packe
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_long_t &packet)
 {
-    // if param1 is 1 use current location:
-    if (is_equal(packet.param1, 1.0f)) {
+    if (is_equal(packet.param1, 1.0f) || (is_zero(packet.param5) && is_zero(packet.param6))) {
+        // param1 is 1 (or both lat and lon are zero); use current location
         if (!set_home_to_current_location(true)) {
             return MAV_RESULT_FAILED;
         }
@@ -3707,8 +3707,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
 
 MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int_t &packet)
 {
-    if (is_equal(packet.param1, 1.0f)) {
-        // if param1 is 1, use current location
+    if (is_equal(packet.param1, 1.0f) || (packet.x == 0 && packet.y == 0)) {
+        // param1 is 1 (or both lat and lon are zero); use current location
         if (!set_home_to_current_location(true)) {
             return MAV_RESULT_FAILED;
         }
