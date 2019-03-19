@@ -85,6 +85,13 @@ bool AP_RangeFinder_VL53L1X::check_id(void)
     return true;
 }
 
+void AP_RangeFinder_VL53L1X::set_addr(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &base_dev, uint8_t addr)
+{
+    uint16_t reg = I2C_SLAVE__DEVICE_ADDRESS;
+    uint8_t b[3] = { uint8_t(reg >> 8), uint8_t(reg & 0xFF), addr };
+    base_dev->transfer(b, 3, nullptr, 0);
+}
+
 /*
   initialise sensor
  */
