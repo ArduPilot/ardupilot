@@ -482,6 +482,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode('LAND', timeout=timeout)
 
         self.progress("Successfully entered LAND after battery failsafe")
+        self.mav.motors_disarmed_wait()
         self.reboot_sitl()
 
     # fly_stability_patch - fly south, then hold loiter within 5m
@@ -810,6 +811,7 @@ class AutoTestCopter(AutoTest):
         self.progress("GPS glitch test passed!"
                       "  stayed within %u meters for %u seconds" %
                       (max_distance, timeout))
+        self.do_RTL()
         # re-arming is problematic because the GPS is glitching!
         self.reboot_sitl()
 
@@ -917,6 +919,7 @@ class AutoTestCopter(AutoTest):
             self.show_gps_and_sim_positions(False)
 
         self.progress("GPS Glitch test Auto completed: passed!")
+        self.mav.motors_disarmed_wait()
         # re-arming is problematic because the GPS is glitching!
         self.reboot_sitl()
 
@@ -1164,6 +1167,7 @@ class AutoTestCopter(AutoTest):
 
         self.set_rc(2, 1500)
         self.context_pop()
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
         if ex is not None:
@@ -2640,6 +2644,7 @@ class AutoTestCopter(AutoTest):
             ex = e
         self.context_pop()
 
+        self.disarm_vehicle(force=True)
         self.reboot_sitl() # to handle MNT_TYPE changing
 
         if ex is not None:
@@ -2734,6 +2739,7 @@ class AutoTestCopter(AutoTest):
 
         self.context_pop()
         self.zero_throttle()
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
         self.progress("All done")
 

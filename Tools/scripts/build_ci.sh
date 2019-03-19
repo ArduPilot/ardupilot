@@ -117,6 +117,12 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "configure-all" ]; then
+        echo "Checking configure of all boards"
+        ./Tools/scripts/configure_all.py
+        continue
+    fi
+
     if [[ -n ${waf_supported_boards[$t]} && -z ${CI_CRON_JOB+1} ]]; then
         echo "Starting waf build for board ${t}..."
         $waf configure --board "$t" \

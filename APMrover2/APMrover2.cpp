@@ -206,20 +206,6 @@ void Rover::gcs_failsafe_check(void)
 }
 
 /*
-  check for new compass data - 10Hz
- */
-void Rover::update_compass(void)
-{
-    if (g.compass_enabled && compass.read()) {
-        ahrs.set_compass(&compass);
-        // update offsets
-        if (should_log(MASK_LOG_COMPASS)) {
-            logger.Write_Compass();
-        }
-    }
-}
-
-/*
   log some key data - 10Hz
  */
 void Rover::update_logging1(void)
@@ -283,6 +269,7 @@ void Rover::one_second_loop(void)
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::Required::NO;
+    AP_Notify::flags.flying = hal.util->get_soft_armed();
 
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
@@ -327,6 +314,16 @@ void Rover::update_current_mode(void)
     }
 
     control_mode->update();
+}
+
+// update mission including starting or stopping commands. called by scheduler at 10Hz
+void Rover::update_mission(void)
+{
+    if (control_mode == &mode_auto) {
+        if (ahrs.home_is_set() && mode_auto.mission.num_commands() > 1) {
+            mode_auto.mission.update();
+        }
+    }
 }
 
 AP_HAL_MAIN_CALLBACKS(&rover);

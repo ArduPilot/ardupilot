@@ -37,8 +37,6 @@
 #include <AP_Camera/AP_Camera.h>                    // Camera triggering
 #include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
 #include <AP_Declination/AP_Declination.h>          // Compass declination library
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
-#include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
 #include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
 #include <AP_L1_Control/AP_L1_Control.h>
@@ -299,19 +297,6 @@ private:
                            FUNCTOR_BIND_MEMBER(&Rover::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry;
-#endif
-#if DEVO_TELEM_ENABLED == ENABLED
-    AP_DEVO_Telem devo_telemetry;
-#endif
-
-    // 3D Location vectors
-    // Location structure defined in AP_Common
-    // The home location used for RTL.  The location is set when we first get stable GPS lock
-    const struct Location &home;
-
     // true if the compass's initial location has been set
     bool compass_init_location;
 
@@ -386,19 +371,16 @@ private:
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
-    void update_compass(void);
     void update_logging1(void);
     void update_logging2(void);
     void one_second_loop(void);
     void update_GPS(void);
     void update_current_mode(void);
+    void update_mission(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);
     bool is_balancebot() const;
-
-    // commands_logic.cpp
-    void update_mission(void);
 
     // commands.cpp
     bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
@@ -436,7 +418,6 @@ private:
 
     // GCS_Mavlink.cpp
     void send_servo_out(mavlink_channel_t chan);
-    void send_rpm(mavlink_channel_t chan);
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
     // Log.cpp
@@ -484,15 +465,17 @@ private:
     // sensors.cpp
     void init_compass(void);
     void init_compass_location(void);
+    void update_compass(void);
+    void compass_cal_update(void);
+    void compass_save(void);
     void init_beacon();
     void init_visual_odom();
     void update_wheel_encoder();
-    void compass_cal_update(void);
-    void compass_save(void);
     void accel_cal_update(void);
     void read_rangefinders(void);
     void init_proximity();
     void read_airspeed();
+    void rpm_update(void);
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);
@@ -500,7 +483,6 @@ private:
     void set_servos(void);
 
     // system.cpp
-    void rpm_update(void);
     void init_ardupilot();
     void startup_ground(void);
     void update_ahrs_flyforward();

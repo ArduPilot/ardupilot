@@ -182,3 +182,11 @@ bool AP_RPM::enabled(uint8_t instance) const
 // singleton instance
 AP_RPM *AP_RPM::_singleton;
 
+namespace AP {
+
+AP_RPM *rpm()
+{
+    return AP_RPM::get_singleton();
+}
+
+}

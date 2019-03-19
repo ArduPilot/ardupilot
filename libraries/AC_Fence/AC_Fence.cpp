@@ -371,7 +371,7 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
     // Altitude fence check
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {
         int32_t alt_above_home_cm;
-        if (loc.get_alt_cm(Location::ALT_FRAME_ABOVE_HOME, alt_above_home_cm)) {
+        if (loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
             if ((alt_above_home_cm * 0.01f) > _alt_max) {
                 return false;
             }

@@ -1210,6 +1210,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_CROW_W2", 18, ParametersG2, crow_flap_weight2, 0),
+
+    // @Param: TKOFF_TIMEOUT
+    // @DisplayName: Takeoff timeout
+    // @Description: This is the timeout for an automatic takeoff. If this is non-zero and the aircraft does not reach a ground speed of at least 4 m/s within this number of seconds then the takeoff is aborted and the vehicle disarmed. If the value is zero then no timeout applies.
+    // @Range: 0 120
+    // @Increment: 1
+    // @Units: s
+    // @User: User
+    AP_GROUPINFO("TKOFF_TIMEOUT", 19, ParametersG2, takeoff_timeout, 0),
     
     AP_GROUPEND
 };

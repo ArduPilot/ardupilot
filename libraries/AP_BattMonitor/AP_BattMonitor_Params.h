@@ -23,6 +23,7 @@ public:
         BattMonitor_TYPE_UAVCAN_BatteryInfo         = 8,
         BattMonitor_TYPE_BLHeliESC                  = 9,
         BattMonitor_TYPE_Sum                        = 10,
+        BattMonitor_TYPE_FuelFlow                   = 11,
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)

@@ -29,6 +29,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -76,7 +77,7 @@ uint32_t AP_DEVO_Telem::gpsDdToDmsFormat(float ddm)
 
 #define DEVO_SPEED_FACTOR 0.0194384f
 
-void AP_DEVO_Telem::send_frames(uint8_t control_mode)
+void AP_DEVO_Telem::send_frames()
 {
     // return immediately if not initialised
     if (_port == nullptr) {
@@ -109,7 +110,7 @@ void AP_DEVO_Telem::send_frames(uint8_t control_mode)
 
 
     devoPacket.volt = roundf(AP::battery().voltage() * 10.0f);
-    devoPacket.temp = control_mode; // Send mode as temperature
+    devoPacket.temp = gcs().custom_mode(); // Send mode as temperature
 
     devoPacket.checksum8 = 0; // Init Checksum with zero Byte
 
@@ -127,6 +128,6 @@ void AP_DEVO_Telem::tick(void)
 
     if (now - _last_frame_ms > 1000) {
         _last_frame_ms = now;
-        send_frames(_control_mode);
+        send_frames();
     }
 }

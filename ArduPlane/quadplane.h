@@ -138,7 +138,9 @@ public:
         int16_t  climb_rate;
         float    throttle_mix;
     };
-        
+
+    MAV_TYPE get_mav_type(void) const;
+
 private:
     AP_AHRS_NavEKF &ahrs;
     AP_Vehicle::MultiCopter aparm;
@@ -296,7 +298,6 @@ private:
 
     // HEARTBEAT mav_type override
     AP_Int8 mav_type;
-    MAV_TYPE get_mav_type(void) const;
     
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
@@ -499,6 +500,16 @@ private:
     QAutoTune qautotune;
 #endif
 
+    /*
+      are we in the approach phase of a VTOL landing?
+     */
+    bool in_vtol_land_approach(void) const;
+
+    /*
+      are we in the descent phase of a VTOL landing?
+     */
+    bool in_vtol_land_descent(void) const;
+    
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,

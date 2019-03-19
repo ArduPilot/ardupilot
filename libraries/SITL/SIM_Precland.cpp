@@ -129,7 +129,7 @@ void SIM_Precland::update(const Location &loc, const Vector3f &position)
     const Location origin_center(static_cast<int32_t>(_origin_lat * 1.0e7f),
             static_cast<int32_t>(_origin_lon * 1.0e7f),
             static_cast<int32_t>(_origin_height),
-            Location::ALT_FRAME_ABOVE_HOME);
+            Location::AltFrame::ABOVE_HOME);
     Vector2f center;
     origin_center.get_vector_xy_from_origin_NE(center);
     center = center * 0.01f;  // cm to m

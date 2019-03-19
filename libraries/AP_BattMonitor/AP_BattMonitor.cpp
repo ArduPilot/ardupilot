@@ -4,6 +4,7 @@
 #include "AP_BattMonitor_Bebop.h"
 #include "AP_BattMonitor_BLHeliESC.h"
 #include "AP_BattMonitor_Sum.h"
+#include "AP_BattMonitor_FuelFlow.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -137,6 +138,9 @@ AP_BattMonitor::init()
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_Sum:
                 drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
+                break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_FuelFlow:
+                drivers[instance] = new AP_BattMonitor_FuelFlow(*this, state[instance], _params[instance]);
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:

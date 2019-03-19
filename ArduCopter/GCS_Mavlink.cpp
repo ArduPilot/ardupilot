@@ -18,7 +18,7 @@ void Copter::gcs_send_heartbeat(void)
  *  pattern below when adding any new messages
  */
 
-MAV_TYPE GCS_MAVLINK_Copter::frame_type() const
+MAV_TYPE GCS_Copter::frame_type() const
 {
     return copter.get_frame_mav_type();
 }
@@ -73,11 +73,10 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
     return (MAV_MODE)_base_mode;
 }
 
-uint32_t GCS_MAVLINK_Copter::custom_mode() const
+uint32_t GCS_Copter::custom_mode() const
 {
     return copter.control_mode;
 }
-
 
 MAV_STATE GCS_MAVLINK_Copter::system_status() const
 {
@@ -140,21 +139,6 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
 int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
 {
     return (int16_t)(copter.motors->get_throttle() * 100);
-}
-
-/*
-  send RPM packet
- */
-void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
-{
-#if RPM_ENABLED == ENABLED
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        mavlink_msg_rpm_send(
-            chan,
-            rpm_sensor.get_rpm(0),
-            rpm_sensor.get_rpm(1));
-    }
-#endif
 }
 
 /*
@@ -224,7 +208,7 @@ uint32_t GCS_MAVLINK_Copter::telem_delay() const
     return (uint32_t)(copter.g.telem_delay);
 }
 
-bool GCS_MAVLINK_Copter::vehicle_initialised() const {
+bool GCS_Copter::vehicle_initialised() const {
     return copter.ap.initialised;
 }
 
@@ -246,13 +230,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
 
     switch(id) {
-
-    case MSG_RPM:
-#if RPM_ENABLED == ENABLED
-        CHECK_PAYLOAD_SIZE(RPM);
-        copter.send_rpm(chan);
-#endif
-        break;
 
     case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
@@ -668,30 +645,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         }
         return MAV_RESULT_FAILED;
 
-    case MAV_CMD_DO_SET_HOME:
-        // param1 : use current (1=use current location, 0=use specified location)
-        // param5 : latitude
-        // param6 : longitude
-        // param7 : altitude (absolute)
-        if (is_equal(packet.param1,1.0f)) {
-            if (copter.set_home_to_current_location(true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-        } else {
-            // ensure param1 is zero
-            if (!is_zero(packet.param1)) {
-                return MAV_RESULT_FAILED;
-            }
-            Location new_home_loc;
-            new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-            new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-            new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-            if (copter.set_home(new_home_loc, true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-        }
-        return MAV_RESULT_FAILED;
-
 #if MODE_AUTO_ENABLED == ENABLED
     case MAV_CMD_MISSION_START:
         if (copter.motors->armed() && copter.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
@@ -1104,7 +1057,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
                 break;
             }
-            Location::ALT_FRAME frame;
+            Location::AltFrame frame;
             if (!mavlink_coordinate_frame_to_location_alt_frame(packet.coordinate_frame, frame)) {
                 // unknown coordinate frame
                 break;

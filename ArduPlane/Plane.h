@@ -81,7 +81,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
-#include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
@@ -405,15 +404,6 @@ private:
                            FUNCTOR_BIND_MEMBER(&Plane::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry;
-#endif
-#if DEVO_TELEM_ENABLED == ENABLED
-    // DEVO-M telemetry support
-    AP_DEVO_Telem devo_telemetry;
-#endif
-
     // Airspeed Sensors
     AP_Airspeed airspeed;
 
@@ -439,6 +429,7 @@ private:
         bool launchTimerStarted;
         uint8_t accel_event_counter;
         uint32_t accel_event_ms;
+        uint32_t start_time_ms;
     } takeoff_state;
     
     // ground steering controller state
@@ -792,7 +783,6 @@ private:
     void send_fence_status(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
-    void send_rpm(mavlink_channel_t chan);
 
     void send_aoa_ssa(mavlink_channel_t chan);
 

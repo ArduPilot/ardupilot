@@ -188,6 +188,16 @@ class generic_pin(object):
         if mcu_series == "STM32F100" and self.label is not None:
             self.f1_pin_setup()
 
+        # check that labels and pin types are consistent
+        for prefix in ['USART', 'UART', 'TIM']:
+            if label is None or type is None:
+                continue
+            if type.startswith(prefix):
+                a1 = label.split('_')
+                a2 = type.split('_')
+                if a1[0] != a2[0]:
+                    error("Peripheral prefix mismatch for %s %s %s" % (self.portpin, label, type))
+
     def f1_pin_setup(self):
         for l in af_labels:
             if self.label.startswith(l):

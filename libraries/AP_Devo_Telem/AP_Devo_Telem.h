@@ -29,13 +29,6 @@ public:
 
     void init();
 
-    // update flight control mode. The control mode is vehicle type specific
-    void update_control_mode(uint8_t mode)
-    {
-        _control_mode = mode;
-    }
-
-
 private:
     typedef struct PACKED {
         uint8_t header;                                ///< 0xAA for a valid packet
@@ -54,11 +47,9 @@ private:
     void tick(void);
 
     // send_frames - sends updates down telemetry link
-    void send_frames(uint8_t control_mode);
+    void send_frames();
 
     DevoMPacket devoPacket;
-
-    uint8_t _control_mode;
 
     AP_HAL::UARTDriver *_port;              // UART used to send data to receiver
     uint32_t _last_frame_ms;

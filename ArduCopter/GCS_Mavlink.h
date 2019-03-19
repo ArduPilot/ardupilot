@@ -42,8 +42,8 @@ protected:
     void send_nav_controller_output() const override;
     uint64_t capabilities() const override;
 
-    virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_MC; };
-    virtual MAV_LANDED_STATE landed_state() const;
+    virtual MAV_VTOL_STATE vtol_state() const override { return MAV_VTOL_STATE_MC; };
+    virtual MAV_LANDED_STATE landed_state() const override;
 
 private:
 
@@ -54,14 +54,10 @@ private:
     void handle_rc_channels_override(const mavlink_message_t *msg) override;
     bool try_send_message(enum ap_message id) override;
 
-    bool vehicle_initialised() const override;
-
     void packetReceived(const mavlink_status_t &status,
                         mavlink_message_t &msg) override;
 
-    MAV_TYPE frame_type() const override;
     MAV_MODE base_mode() const override;
-    uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
 
     int16_t vfr_hud_throttle() const override;

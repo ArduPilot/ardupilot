@@ -202,7 +202,7 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
-     // true if the compass's initial location has been set
+    // true if the compass's initial location has been set
     bool compass_init_location;
 
     // AntennaTracker.cpp
@@ -273,6 +273,9 @@ private:
     void prepare_servos();
     void set_mode(enum ControlMode mode, mode_reason_t reason);
     bool should_log(uint32_t mask);
+    bool start_command_callback(const AP_Mission::Mission_Command& cmd) { return false; }
+    void exit_mission_callback() { return; }
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd) { return false; }
 
     // tracking.cpp
     void update_vehicle_pos_estimate();
@@ -284,6 +287,11 @@ private:
     void tracking_manual_control(const mavlink_manual_control_t &msg);
     void update_armed_disarmed();
 
+    // Mission library
+    AP_Mission mission{
+            FUNCTOR_BIND_MEMBER(&Tracker::start_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Tracker::verify_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Tracker::exit_mission_callback, void)};
 public:
     void mavlink_delay_cb();
 };

@@ -116,6 +116,24 @@ float ModeGuided::get_distance_to_destination() const
     return _distance_to_destination;
 }
 
+// return true if vehicle has reached or even passed destination
+bool ModeGuided::reached_destination() const
+{
+    switch (_guided_mode) {
+    case Guided_WP:
+        return _reached_destination;
+        break;
+    case Guided_HeadingAndSpeed:
+    case Guided_TurnRateAndSpeed:
+    case Guided_Loiter:
+        return true;
+        break;
+    }
+
+    // we should never reach here but just in case, return true is the safer option
+    return true;
+}
+
 // set desired location
 void ModeGuided::set_desired_location(const struct Location& destination,
                                       float next_leg_bearing_cd)
@@ -181,5 +199,44 @@ bool ModeGuided::start_loiter()
         _guided_mode = Guided_Loiter;
         return true;
     }
+    return false;
+}
+
+// set guided timeout and movement limits
+void ModeGuided::limit_set(uint32_t timeout_ms, float horiz_max)
+{
+    limit.timeout_ms = timeout_ms;
+    limit.horiz_max = horiz_max;
+}
+
+// clear/turn off guided limits
+void ModeGuided::limit_clear()
+{
+    limit.timeout_ms = 0;
+    limit.horiz_max = 0.0f;
+}
+
+// initialise guided start time and location as reference for limit checking
+//  only called from AUTO mode's start_guided method
+void ModeGuided::limit_init_time_and_location()
+{
+    limit.start_time_ms = AP_HAL::millis();
+    limit.start_loc = rover.current_loc;
+}
+
+// returns true if guided mode has breached a limit
+bool ModeGuided::limit_breached() const
+{
+    // check if we have passed the timeout
+    if ((limit.timeout_ms > 0) && (millis() - limit.start_time_ms >= limit.timeout_ms)) {
+        return true;
+    }
+
+    // check if we have gone beyond horizontal limit
+    if (is_positive(limit.horiz_max)) {
+        return (rover.current_loc.get_distance(limit.start_loc) > limit.horiz_max);
+    }
+
+    // if we got this far we must be within limits
     return false;
 }

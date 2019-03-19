@@ -20,9 +20,9 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    // only tested/supported alt frame so far is ALT_FRAME_ABOVE_HOME, where Home alt is always water's surface ie zero depth
-    if (target_loc.get_alt_frame() != Location::ALT_FRAME_ABOVE_HOME) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT_FRAME %d", (int8_t)target_loc.get_alt_frame());
+    // only tested/supported alt frame so far is AltFrame::ABOVE_HOME, where Home alt is always water's surface ie zero depth
+    if (target_loc.get_alt_frame() != Location::AltFrame::ABOVE_HOME) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV AltFrame %d", (int8_t)target_loc.get_alt_frame());
         return false;
     }
 
@@ -275,20 +275,20 @@ void Sub::do_surface(const AP_Mission::Mission_Command& cmd)
 
         // decide if we will use terrain following
         int32_t curr_terr_alt_cm, target_terr_alt_cm;
-        if (current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
-                target_location.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
+        if (current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curr_terr_alt_cm) &&
+                target_location.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, target_terr_alt_cm)) {
             // if using terrain, set target altitude to current altitude above terrain
-            target_location.set_alt_cm(curr_terr_alt_cm, Location::ALT_FRAME_ABOVE_TERRAIN);
+            target_location.set_alt_cm(curr_terr_alt_cm, Location::AltFrame::ABOVE_TERRAIN);
         } else {
             // set target altitude to current altitude above home
-            target_location.set_alt_cm(current_loc.alt, Location::ALT_FRAME_ABOVE_HOME);
+            target_location.set_alt_cm(current_loc.alt, Location::AltFrame::ABOVE_HOME);
         }
     } else {
         // set surface state to ascend
         auto_surface_state = AUTO_SURFACE_STATE_ASCEND;
 
         // Set waypoint destination to current location at zero depth
-        target_location = Location(current_loc.lat, current_loc.lng, 0, Location::ALT_FRAME_ABOVE_HOME);
+        target_location = Location(current_loc.lat, current_loc.lng, 0, Location::AltFrame::ABOVE_HOME);
     }
 
     // Go to wp location
@@ -536,7 +536,7 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
             if (wp_nav.reached_wp_destination()) {
                 // Set target to current xy and zero depth
                 // TODO get xy target from current wp destination, because current location may be acceptance-radius away from original destination
-                Location target_location(cmd.content.location.lat, cmd.content.location.lng, 0, Location::ALT_FRAME_ABOVE_HOME);
+                Location target_location(cmd.content.location.lat, cmd.content.location.lng, 0, Location::AltFrame::ABOVE_HOME);
 
                 auto_wp_start(target_location);
 

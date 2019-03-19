@@ -28,9 +28,7 @@ protected:
     bool set_mode(uint8_t mode) override { return false; };
 
     // dummy information:
-    MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
-    uint32_t custom_mode() const override { return 3; } // magic number
     MAV_STATE system_status() const override { return MAV_STATE_CALIBRATING; }
 
     bool set_home_to_current_location(bool lock) override { return false; }
@@ -56,4 +54,7 @@ class GCS_Dummy : public GCS
     void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) { hal.console->printf("TOGCS: %s\n", text); }
 
     void update_sensor_status_flags(void) override {};
+
+    MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
+    uint32_t custom_mode() const override { return 3; } // magic number
 };

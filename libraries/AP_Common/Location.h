@@ -32,35 +32,35 @@ public:
     int32_t lng;
 
     /// enumeration of possible altitude types
-    enum ALT_FRAME {
-        ALT_FRAME_ABSOLUTE = 0,
-        ALT_FRAME_ABOVE_HOME = 1,
-        ALT_FRAME_ABOVE_ORIGIN = 2,
-        ALT_FRAME_ABOVE_TERRAIN = 3
+    enum class AltFrame {
+        ABSOLUTE = 0,
+        ABOVE_HOME = 1,
+        ABOVE_ORIGIN = 2,
+        ABOVE_TERRAIN = 3
     };
 
     /// constructors
     Location();
-    Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_FRAME frame);
+    Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame);
     Location(const Vector3f &ekf_offset_neu);
 
     static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
 
     // set altitude
-    void set_alt_cm(int32_t alt_cm, ALT_FRAME frame);
+    void set_alt_cm(int32_t alt_cm, AltFrame frame);
 
     // get altitude (in cm) in the desired frame
     // returns false on failure to get altitude in the desired frame which
     // can only happen if the original frame or desired frame is above-terrain
-    bool get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const;
+    bool get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const;
 
     // get altitude frame
-    ALT_FRAME get_alt_frame() const;
+    AltFrame get_alt_frame() const;
 
     // converts altitude to new frame
     // returns false on failure to convert which can only happen if
     // the original frame or desired frame is above-terrain
-    bool change_alt_frame(ALT_FRAME desired_frame);
+    bool change_alt_frame(AltFrame desired_frame);
 
     // get position as a vector from origin (x,y only or x,y,z)
     // return false on failure to get the vector which can only

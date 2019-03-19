@@ -234,13 +234,6 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     fence.manual_recovery_start();
 #endif
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.update_control_mode(control_mode);
-#endif
-#if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.update_control_mode(control_mode);
-#endif
-
 #if CAMERA == ENABLED
     camera.set_is_auto_mode(control_mode == AUTO);
 #endif
@@ -408,7 +401,7 @@ int32_t Copter::Mode::get_alt_above_ground_cm(void)
         alt_above_ground = copter.rangefinder_state.alt_cm_filt.get();
     } else {
         bool navigating = pos_control->is_active_xy();
-        if (!navigating || !copter.current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
+        if (!navigating || !copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground)) {
             alt_above_ground = copter.current_loc.alt;
         }
     }

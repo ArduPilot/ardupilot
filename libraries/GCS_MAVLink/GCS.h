@@ -23,6 +23,7 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_RTC/JitterCorrection.h>
 #include <AP_Common/Bitmask.h>
+#include <AP_Devo_Telem/AP_Devo_Telem.h>
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
@@ -232,6 +233,8 @@ public:
     void send_accelcal_vehicle_position(uint32_t position);
     void send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag));
     void send_sys_status();
+    void send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc);
+    void send_rpm() const;
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
@@ -293,7 +296,7 @@ protected:
     virtual bool in_hil_mode() const { return false; }
 
     bool mavlink_coordinate_frame_to_location_alt_frame(uint8_t coordinate_frame,
-                                                        Location::ALT_FRAME &frame);
+                                                        Location::AltFrame &frame);
 
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
@@ -302,9 +305,7 @@ protected:
     virtual bool set_mode(uint8_t mode) = 0;
     void set_ekf_origin(const Location& loc);
 
-    virtual MAV_TYPE frame_type() const = 0;
     virtual MAV_MODE base_mode() const = 0;
-    virtual uint32_t custom_mode() const = 0;
     virtual MAV_STATE system_status() const = 0;
 
     virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_UNDEFINED; }
@@ -335,6 +336,8 @@ protected:
 
     virtual bool set_home_to_current_location(bool lock) = 0;
     virtual bool set_home(const Location& loc, bool lock) = 0;
+
+    MAV_RESULT handle_command_do_set_home(const mavlink_command_long_t &packet);
 
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
@@ -437,18 +440,14 @@ protected:
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
 
-    virtual bool vehicle_initialised() const { return true; }
-
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
     virtual int32_t global_position_int_relative_alt() const;
 
-    // these methods are called after vfr_hud_velned is updated
     virtual float vfr_hud_climbrate() const;
     virtual float vfr_hud_airspeed() const;
     virtual int16_t vfr_hud_throttle() const { return 0; }
     virtual float vfr_hud_alt() const;
-    Vector3f vfr_hud_velned;
 
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_disarm_value = 21196.0f;
@@ -602,9 +601,6 @@ private:
     // mavlink routing object
     static MAVLink_routing routing;
 
-    // pointer to static frsky_telem for queueing of text messages
-    static AP_Frsky_Telem *frsky_telemetry_p;
- 
     static const AP_SerialManager *serialmanager_p;
 
     struct pending_param_request {
@@ -631,9 +627,8 @@ private:
 
     // IO timer callback for parameters
     void param_io_timer(void);
-    
-    // send an async parameter reply
-    bool send_parameter_reply(void);
+
+    uint8_t send_parameter_async_replies();
 
     void send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
@@ -739,6 +734,10 @@ public:
         return _singleton;
     }
 
+    virtual uint32_t custom_mode() const = 0;
+    virtual MAV_TYPE frame_type() const = 0;
+    virtual const char* frame_string() const { return nullptr; }
+
     void send_text(MAV_SEVERITY severity, const char *fmt, ...);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     virtual void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text);
@@ -765,17 +764,12 @@ public:
         _out_of_time = val;
     }
 
-    /*
-      set a frsky_telem pointer for queueing
-     */
-    void register_frsky_telemetry_callback(AP_Frsky_Telem *frsky_telemetry) {
-        frsky_telemetry_p = frsky_telemetry;
-    }
+    // frsky backend
+    AP_Frsky_Telem frsky;
 
-    // static frsky_telem pointer to support queueing text messages
-    AP_Frsky_Telem *frsky_telemetry_p;
+    // Devo backend
+    AP_DEVO_Telem devo_telemetry;
 
-    
     // install an alternative protocol handler
     bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
 
@@ -786,6 +780,10 @@ public:
     void update_passthru();
 
     void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+    virtual bool vehicle_initialised() const { return true; }
+
+    virtual bool simple_input_active() const { return false; }
+    virtual bool supersimple_input_active() const { return false; }
 
 protected:
 
