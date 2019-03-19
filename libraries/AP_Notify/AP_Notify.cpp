@@ -346,6 +346,15 @@ void AP_Notify::handle_play_tune(mavlink_message_t *msg)
     }
 }
 
+void AP_Notify::play_tune(const char *tune)
+{
+    for (uint8_t i = 0; i < _num_devices; i++) {
+        if (_devices[i] != nullptr) {
+            _devices[i]->play_tune(tune);
+        }
+    }
+}
+
 // set flight mode string
 void AP_Notify::set_flight_mode_str(const char *str)
 {
@@ -359,3 +368,12 @@ void AP_Notify::send_text(const char *str)
     _send_text[sizeof(_send_text)-1] = 0;
     _send_text_updated_millis = AP_HAL::millis();
 }
+
+namespace AP {
+
+AP_Notify &notify()
+{
+    return *AP_Notify::get_singleton();
+}
+
+};
