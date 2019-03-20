@@ -59,6 +59,8 @@ public:
         MOTOR_FRAME_TYPE_DJI_X = 13, // X frame, DJI ordering
         MOTOR_FRAME_TYPE_CW_X = 14, // X frame, clockwise ordering
         MOTOR_FRAME_TYPE_I = 15, // (sideways H) octo only
+        MOTOR_FRAME_TYPE_FTC_PLUS = 16, // plus with PPNNPN configuration for hexa 
+        MOTOR_FRAME_TYPE_FTC_X = 17, // X with PPNNPN configuration for hexa
     };
 
     // Constructor
