@@ -48,5 +48,7 @@ private:
     AP_HAL::Semaphore &_mtx;
 };
 
-#define WITH_SEMAPHORE(sem) WithSemaphore _getsem ## __UNIQ__(sem)
-
+// From: https://stackoverflow.com/questions/19666142/why-is-a-level-of-indirection-needed-for-this-concatenation-macro
+#define WITH_SEMAPHORE( sem ) JOIN( sem, __COUNTER__ )
+#define JOIN( symbol1, symbol2 ) _DO_JOIN( symbol1, symbol2 )
+#define _DO_JOIN( symbol1, symbol2 ) WithSemaphore _getsem ## symbol2(symbol1)
