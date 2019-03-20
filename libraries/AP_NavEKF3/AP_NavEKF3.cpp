@@ -1071,7 +1071,9 @@ void NavEKF3::getQuaternion(int8_t instance, Quaternion &quat) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getQuaternion(quat);
+        Matrix3f mat;
+        core[instance].getRotationBodyToNED(mat);
+        quat.from_rotation_matrix(mat);
     }
 }
 
