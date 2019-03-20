@@ -346,6 +346,11 @@ class sitl(Board):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
+        if cfg.options.enable_sfml_audio:
+            if not cfg.check_SFML_Audio(env):
+                cfg.fatal("Failed to find SFML Audio libraries")
+            env.CXXFLAGS += ['-DWITH_SITL_TONEALARM']
+
         if cfg.options.sitl_flash_storage:
             env.CXXFLAGS += ['-DSTORAGE_USE_FLASH=1']
 
