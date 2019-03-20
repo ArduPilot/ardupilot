@@ -173,4 +173,25 @@ void Copter::ModeAutoTune::stop()
     copter.autotune.stop();
 }
 
+void Copter::ModeAutoTune::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
+{
+    AP::logger().Write(
+        "ATUN",
+        "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt",
+        "s--ddd---o",
+        "F--BBB---0",
+        "QBBfffffff",
+        AP_HAL::micros64(),
+        axis,
+        tune_step,
+        meas_target*0.01f,
+        meas_min*0.01f,
+        meas_max*0.01f,
+        new_gain_rp,
+        new_gain_rd,
+        new_gain_sp,
+        new_ddt);
+}
+
+
 #endif  // AUTOTUNE_ENABLED == ENABLED
