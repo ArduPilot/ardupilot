@@ -179,6 +179,9 @@ public:
     void getRotationBodyToNED(Matrix3f &mat) const;
 
     // return the quaternions defining the rotation from NED to XYZ (body) axes
+    void getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const;
+
+    // return the quaternions defining the rotation from NED to XYZ (autopilot) axes
     void getQuaternion(int8_t instance, Quaternion &quat) const;
 
     // return the innovations for the specified instance
