@@ -294,6 +294,9 @@ def do_build_waf(opts, frame_options):
     if opts.OSD:
         cmd_configure.append("--enable-sfml")
 
+    if opts.tonealarm:
+        cmd_configure.append("--enable-sfml-audio")
+
     if opts.flash_storage:
         cmd_configure.append("--sitl-flash-storage")
         
@@ -897,6 +900,11 @@ group_sim.add_option("", "--osd",
                      dest='OSD',
                      default=False,
                      help="Enable SITL OSD")
+group_sim.add_option("", "--tonealarm",
+                     action='store_true',
+                     dest='tonealarm',
+                     default=False,
+                     help="Enable SITL ToneAlarm")
 group_sim.add_option("", "--add-param-file",
                      type='string',
                      default=None,
