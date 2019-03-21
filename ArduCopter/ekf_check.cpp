@@ -204,3 +204,72 @@ void Copter::check_ekf_reset()
     }
 #endif
 }
+
+// check for high vibrations affecting altitude control
+void Copter::check_vibration()
+{
+    uint32_t now = AP_HAL::millis();
+
+    // assume checks will succeed
+    bool checks_succeeded = true;
+
+    // check if vertical velocity and position innovations are positive (NKF3.IVD & NKF3.IPD are both positive)
+    Vector3f vel_innovation;
+    Vector3f pos_innovation;
+    Vector3f mag_innovation;
+    float tas_innovation;
+    float yaw_innovation;
+    if (!ahrs.get_innovations(vel_innovation, pos_innovation, mag_innovation, tas_innovation, yaw_innovation)) {
+        checks_succeeded = false;
+    }
+    const bool innov_velD_posD_positive = is_positive(vel_innovation.z) && is_positive(pos_innovation.z);
+
+    // check if EKF's NKF4.SH and NK4.SV > 1.0
+    float position_variance, vel_variance, height_variance, tas_variance;
+    Vector3f mag_variance;
+    Vector2f offset;
+    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance, offset)) {
+        checks_succeeded = false;
+    }
+    const bool var_vel_hgt_high = (vel_variance >= 1.0f);
+
+    // if no failure
+    if ((g2.fs_vibe_enabled == 0) || !checks_succeeded || !motors->armed() || !innov_velD_posD_positive || !var_vel_hgt_high) {
+        if (vibration_check.high_vibes) {
+            // start clear time
+            if (vibration_check.clear_ms == 0) {
+                vibration_check.clear_ms = now;
+                return;
+            }
+            // turn off vibration compensation after 15 seconds
+            if (now - vibration_check.clear_ms > 15000) {
+                // restore ekf gains, reset timers and update user
+                vibration_check.high_vibes = false;
+                pos_control->set_vibe_comp(false);
+                vibration_check.clear_ms = 0;
+                AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_RESOLVED);
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation OFF");
+            }
+        }
+        vibration_check.start_ms = 0;
+        return;
+    }
+
+    // start timer
+    if (vibration_check.start_ms == 0) {
+        vibration_check.start_ms = now;
+        vibration_check.clear_ms = 0;
+        return;
+    }
+
+    // check if failure has persisted for at least 1 second
+    if (now - vibration_check.start_ms > 1000) {
+        if (!vibration_check.high_vibes) {
+            // switch ekf to use resistant gains
+            vibration_check.high_vibes = true;
+            pos_control->set_vibe_comp(true);
+            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_OCCURRED);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation ON");
+        }
+    }
+}
