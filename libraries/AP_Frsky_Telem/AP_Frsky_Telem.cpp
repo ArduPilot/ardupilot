@@ -118,8 +118,8 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 if (gcs().vehicle_initialised()) {  // send ap status only once vehicle has been initialised
                     send_uint32(DIY_FIRST_ID+1, calc_ap_status());
                     _passthrough.ap_status_timer = AP_HAL::millis();
+                    return;
                 }
-                return;
             }
             if ((now - _passthrough.batt_timer) >= 1000) {
                 send_uint32(DIY_FIRST_ID+3, calc_batt(0));
