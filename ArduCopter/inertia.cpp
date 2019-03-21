@@ -3,8 +3,8 @@
 // read_inertia - read inertia in from accelerometers
 void Copter::read_inertia()
 {
-    // inertial altitude estimates
-    inertial_nav.update();
+    // inertial altitude estimates. Use barometer climb rate during high vibrations
+    inertial_nav.update(vibration_check.high_vibes);
 
     // pull position from ahrs
     Location loc;
