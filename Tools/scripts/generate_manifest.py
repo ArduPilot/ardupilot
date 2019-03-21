@@ -224,6 +224,8 @@ class ManifestGenerator():
                 # skip any non-directories (e.g. "files.html"):
                 if year_month_regex.match(firstlevel):
                     # this is a dated directory e.g. binaries/Copter/2016-02
+                    # we do not include dated directories in the manifest ATM:
+                    continue
                     year_month_path = os.path.join(basedir, vehicletype, firstlevel)
                     for fulldate in os.listdir(year_month_path):
                         if fulldate in ["files.html", ".makehtml"]:
