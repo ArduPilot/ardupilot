@@ -1664,7 +1664,6 @@ class AutoTest(ABC):
         if (int(self.get_parameter('AHRS_EKF_TYPE')) == 10):
             return True
 
-        tstart = self.get_sim_time()
         # all of these must be set for arming to happen:
         required_value = (mavutil.mavlink.EKF_ATTITUDE |
                           mavutil.mavlink.ESTIMATOR_VELOCITY_HORIZ |
@@ -1679,9 +1678,12 @@ class AutoTest(ABC):
                                mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
                                mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_ABS)
             error_bits |= mavutil.mavlink.ESTIMATOR_GPS_GLITCH
+        self.wait_ekf_flags(required_value, error_bits, timeout=timeout)
 
+    def wait_ekf_flags(self, required_value, error_bits, timeout=30):
         self.progress("Waiting for EKF value %u" % required_value)
         last_print_time = 0
+        tstart = self.get_sim_time()
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
             current = m.flags

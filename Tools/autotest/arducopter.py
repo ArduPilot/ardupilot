@@ -2753,6 +2753,13 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("GPS_TYPE", 0)
         self.reboot_sitl()
         self.change_mode('STABILIZE')
+        self.wait_ekf_flags((mavutil.mavlink.ESTIMATOR_ATTITUDE |
+                             mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
+                             mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
+                             mavutil.mavlink.ESTIMATOR_CONST_POS_MODE |
+                             mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL),
+                            0,
+                            timeout=120)
         self.arm_vehicle()
         self.mavproxy.send("mode LOITER\n")
         self.mavproxy.expect("requires position")
