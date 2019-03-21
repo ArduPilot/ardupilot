@@ -73,6 +73,8 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 
 #define C_TO_KELVIN 273.15f
 
+#define M_PER_SEC_TO_KNOTS 1.94384449f
+
 // Gas Constant is from Aerodynamics for Engineering Students, Third Edition, E.L.Houghton and N.B.Carruthers
 #define ISA_GAS_CONSTANT 287.26f
 #define ISA_LAPSE_RATE 0.0065f
