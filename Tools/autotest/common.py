@@ -2027,8 +2027,8 @@ class AutoTest(ABC):
                          0, # p2,
                          0, # p3,
                          0, # p4,
-                         37.0, # lat
-                         21.0, # lon
+                         37, # lat
+                         21, # lon
                          new_z/1000.0, # mm => m
                          )
         home = self.poll_home_position()
