@@ -674,7 +674,7 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
                      d->have_lock?_sitl->gps_numsats:3,
                      2.0,
                      d->altitude);
-    float speed_knots = norm(d->speedN, d->speedE)*1.94384449f;
+    float speed_knots = norm(d->speedN, d->speedE) * M_PER_SEC_TO_KNOTS;
     float heading = ToDeg(atan2f(d->speedE, d->speedN));
     if (heading < 0) {
         heading += 360.0f;
