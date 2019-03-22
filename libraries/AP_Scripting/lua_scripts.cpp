@@ -41,8 +41,9 @@ extern const AP_HAL::HAL& hal;
 bool lua_scripts::overtime;
 jmp_buf lua_scripts::panic_jmp;
 
-lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size)
-    : _vm_steps(vm_steps) {
+lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_level)
+    : _vm_steps(vm_steps),
+      _debug_level(debug_level) {
     _heap = hal.util->allocate_heap_memory(heap_size);
 }
 
@@ -375,7 +376,9 @@ void lua_scripts::run(void) {
                 hal.scheduler->delay(scripts->next_run_ms - now_ms);
             }
 
-            gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
+            if (_debug_level > 1) {
+                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
+            }
 
             const uint32_t startMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
             const uint32_t loadEnd = AP_HAL::micros();
@@ -384,7 +387,9 @@ void lua_scripts::run(void) {
 
             const uint32_t runEnd = AP_HAL::micros();
             const uint32_t endMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
-            gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %d Mem: %d", runEnd - loadEnd, endMem - startMem);
+            if (_debug_level > 1) {
+                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %d Mem: %d", runEnd - loadEnd, endMem - startMem);
+            }
 
         } else {
             gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
