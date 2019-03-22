@@ -296,6 +296,8 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new AP_ToneAlarm());
   #endif
 
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    ADD_BACKEND(new AP_ToneAlarm());
 #endif // Noise makers
 
 }

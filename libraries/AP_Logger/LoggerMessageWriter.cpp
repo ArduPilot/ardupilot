@@ -49,7 +49,7 @@ void LoggerMessageWriter_DFLogStart::process()
             next_format_to_send++;
         }
         _fmt_done = true;
-        stage = ls_blockwriter_stage_parms;
+        stage = ls_blockwriter_stage_units;
         FALLTHROUGH;
 
     case ls_blockwriter_stage_units:

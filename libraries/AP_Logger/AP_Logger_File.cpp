@@ -16,6 +16,7 @@
 #include "AP_Logger_File.h"
 
 #include <AP_Common/AP_Common.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #if HAL_OS_POSIX_IO
 #include <unistd.h>
@@ -255,7 +256,7 @@ uint16_t AP_Logger_File::find_oldest_log()
     // doing a *lot* of asprintf()s and stat()s
     DIR *d = opendir(_log_directory);
     if (d == nullptr) {
-        internal_error();
+        // SD card may have died?  On linux someone may have rm-rf-d
         return 0;
     }
 
@@ -316,7 +317,6 @@ void AP_Logger_File::Prep_MinSpace()
     do {
         float avail = avail_space_percent();
         if (is_equal(avail, -1.0f)) {
-            internal_error();
             break;
         }
         if (avail >= min_avail_space_percent) {
@@ -324,12 +324,12 @@ void AP_Logger_File::Prep_MinSpace()
         }
         if (count++ > MAX_LOG_FILES+10) {
             // *way* too many deletions going on here.  Possible internal error.
-            internal_error();
+            AP::internalerror().error(AP_InternalError::error_t::logger_too_many_deletions);
             break;
         }
         char *filename_to_remove = _log_file_name(log_to_remove);
         if (filename_to_remove == nullptr) {
-            internal_error();
+            AP::internalerror().error(AP_InternalError::error_t::logger_bad_getfilename);
             break;
         }
         if (file_exists(filename_to_remove)) {
@@ -343,7 +343,6 @@ void AP_Logger_File::Prep_MinSpace()
                     // sequence of files...  however, there may be still
                     // files out there, so keep going.
                 } else {
-                    internal_error();
                     break;
                 }
             } else {
@@ -810,7 +809,7 @@ void AP_Logger_File::stop_logging(void)
     if (have_sem) {
         write_fd_semaphore.give();
     } else {
-        _internal_errors++;
+        AP::internalerror().error(AP_InternalError::error_t::logger_stopping_without_sem);
     }
 }
 
@@ -944,7 +943,7 @@ void AP_Logger_File::flush(void)
         }
         write_fd_semaphore.give();
     } else {
-        _internal_errors++;
+        AP::internalerror().error(AP_InternalError::error_t::logger_flushing_without_sem);
     }
 }
 #else
@@ -1098,7 +1097,6 @@ void AP_Logger_File::Write_AP_Logger_Stats_File(const struct df_stats &_stats)
         LOG_PACKET_HEADER_INIT(LOG_DF_FILE_STATS),
         time_us         : AP_HAL::micros64(),
         dropped         : _dropped,
-        internal_errors : _internal_errors,
         blocks          : _stats.blocks,
         bytes           : _stats.bytes,
         buf_space_min   : _stats.buf_space_min,

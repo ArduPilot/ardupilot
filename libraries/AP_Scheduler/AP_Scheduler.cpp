@@ -25,6 +25,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #include <stdio.h>
 
@@ -296,7 +297,8 @@ void AP_Scheduler::Log_Write_Performance()
         num_loops        : perf_info.get_num_loops(),
         max_time         : perf_info.get_max_time(),
         mem_avail        : hal.util->available_memory(),
-        load             : (uint16_t)(load_average() * 1000)
+        load             : (uint16_t)(load_average() * 1000),
+        internal_errors  : AP::internalerror().errors()
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
