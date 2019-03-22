@@ -45,6 +45,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_SerialManager',
     'AP_Terrain',
     'AP_Vehicle',
+    'AP_InternalError',
     'AP_Logger',
     'Filter',
     'GCS_MAVLink',

@@ -85,9 +85,9 @@ for FrSky SPort Passthrough
 #define BATT_TOTALMAH_OFFSET        17
 // for autopilot status data
 #define AP_CONTROL_MODE_LIMIT       0x1F
-#define AP_SIMPLE_OFFSET            3
-#define AP_SSIMPLE_OFFSET           4
-#define AP_FLYING_OFFSET            6
+#define AP_SIMPLE_OFFSET            5
+#define AP_SSIMPLE_OFFSET           6
+#define AP_FLYING_OFFSET            7
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
 #define AP_EKF_FS_OFFSET            10

@@ -1,6 +1,10 @@
 #include "Util.h"
 #include <sys/time.h>
 
+#ifdef WITH_SITL_TONEALARM
+HALSITL::ToneAlarm_SF HALSITL::Util::_toneAlarm;
+#endif
+
 uint64_t HALSITL::Util::get_hw_rtc() const
 {
 #ifndef CLOCK_REALTIME

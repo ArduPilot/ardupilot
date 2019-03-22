@@ -309,8 +309,6 @@ private:
     AP_Logger_Backend *backends[DATAFLASH_MAX_BACKENDS];
     const AP_Int32 &_log_bitmask;
 
-    void internal_error() const;
-
     enum class Backend_Type : uint8_t {
         NONE       = 0,
         FILESYSTEM = (1<<0),

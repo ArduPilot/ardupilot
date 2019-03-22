@@ -15,8 +15,6 @@ public:
 
     vehicle_startup_message_Writer vehicle_message_writer();
 
-    void internal_error();
-
     virtual bool CardInserted(void) const = 0;
 
     // erase handling
@@ -149,7 +147,6 @@ protected:
     LoggerMessageWriter_DFLogStart *_startup_messagewriter;
     bool _writing_startup_messages;
 
-    uint8_t _internal_errors;
     uint32_t _dropped;
 
     // must be called when a new log is being started:

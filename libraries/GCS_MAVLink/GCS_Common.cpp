@@ -16,6 +16,7 @@
  */
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
@@ -731,6 +732,12 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, AP_Logger &datafla
     if (log_radio) {
         dataflash.Write_Radio(packet);
     }
+}
+
+uint16_t GCS::sys_status_errors1()
+{
+    const uint32_t errors = AP::internalerror().errors();
+    return errors & 0xffff;
 }
 
 /*
@@ -3909,7 +3916,10 @@ void GCS_MAVLINK::send_sys_status()
         battery_remaining,      // in %
         0,  // comm drops %,
         0,  // comm drops in pkts,
-        0, 0, 0, 0);
+        gcs().sys_status_errors1(),
+        0,  // errors2
+        0,  // errors3
+        0); // errors4
 }
 
 void GCS_MAVLINK::send_extended_sys_state() const
