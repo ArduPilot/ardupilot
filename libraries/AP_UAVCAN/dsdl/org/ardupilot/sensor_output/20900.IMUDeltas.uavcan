@@ -1,0 +1,9 @@
+uavcan.Timestamp timestamp
+
+uint8 sensor_index
+
+float32 delta_angle_dt
+float32[3] delta_angle
+
+float32 delta_velocity_dt
+float32[3] delta_velocity
