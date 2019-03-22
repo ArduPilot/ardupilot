@@ -56,9 +56,6 @@ bool Mode::enter()
     plane.auto_state.vtol_mode = false;
     plane.auto_state.vtol_loiter = false;
 
-    // reset steering integrator on mode change
-    plane.steerController.reset_I();
-
     bool enter_result = _enter();
 
     if (enter_result) {
@@ -69,6 +66,12 @@ bool Mode::enter()
         plane.throttle_suppressed = plane.auto_throttle_mode;
 
         plane.adsb.set_is_auto_mode(plane.auto_navigation_mode);
+
+        // reset steering integrator on mode change
+        plane.steerController.reset_I();
+
+        // update RC failsafe, as mode change may have necessitated changing the failsafe throttle
+        plane.control_failsafe();
     }
 
     return enter_result;

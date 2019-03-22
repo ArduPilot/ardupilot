@@ -260,24 +260,10 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
     previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
 
-#if CAMERA == ENABLED
-    camera.set_is_auto_mode(control_mode == &mode_auto);
-#endif
-
     if (previous_mode == &mode_autotune && control_mode != &mode_autotune) {
         // restore last gains
         autotune_restore();
     }
-
-    // zero initial pitch and highest airspeed on mode change
-    auto_state.highest_airspeed = 0;
-    auto_state.initial_pitch_cd = ahrs.pitch_sensor;
-
-    // disable taildrag takeoff on mode change
-    auto_state.fbwa_tdrag_takeoff_mode = false;
-
-    // start with previous WP at current location
-    prev_WP_loc = current_loc;
 
     // attempt to enter new mode
     if (!new_mode.enter()) {
@@ -300,12 +286,6 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
     // log and notify mode change
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
     notify_mode(*control_mode);
-
-    // reset steering integrator on mode change
-    steerController.reset_I();    
-
-    // update RC failsafe, as mode change may have necessitated changing the failsafe throttle
-    control_failsafe();
 
     return true;
 }
