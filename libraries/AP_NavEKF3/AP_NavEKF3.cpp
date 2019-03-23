@@ -804,6 +804,19 @@ bool NavEKF3::healthy(void) const
     return core[primary].healthy();
 }
 
+bool NavEKF3::all_cores_healthy(void) const
+{
+    if (!core) {
+        return false;
+    }
+    for (uint8_t i = 0; i < num_cores; i++) {
+        if (!core[i].healthy()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // returns the index of the primary core
 // return -1 if no primary core selected
 int8_t NavEKF3::getPrimaryCoreIndex(void) const
@@ -1447,7 +1460,13 @@ const char *NavEKF3::prearm_failure_reason(void) const
     if (!core) {
         return nullptr;
     }
-    return core[primary].prearm_failure_reason();
+    for (uint8_t i = 0; i < num_cores; i++) {
+        const char * failure = core[primary].prearm_failure_reason();
+        if (failure != nullptr) {
+            return failure;
+        }
+    }
+    return nullptr;
 }
 
 // Returns the amount of vertical position change due to the last reset or core switch in metres
