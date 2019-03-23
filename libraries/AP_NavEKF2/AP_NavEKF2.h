@@ -62,6 +62,8 @@ public:
     
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
+    // Ensure that all started cores are considered healthy
+    bool all_cores_healthy(void) const;
 
     // returns the index of the primary core
     // return -1 if no primary core selected
