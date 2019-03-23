@@ -69,11 +69,6 @@ bool        locations_are_same(const struct Location &loc1, const struct Locatio
  */
 bool        location_sanitize(const struct Location &defaultLoc, struct Location &loc);
 
-/*
-  print a int32_t lat/long in decimal degrees
- */
-void        print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
-
 // Converts from WGS84 geodetic coordinates (lat, lon, height)
 // into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
 // (X, Y, Z)
