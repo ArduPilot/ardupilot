@@ -64,11 +64,6 @@ Vector3f    location_3d_diff_NED(const struct Location &loc1, const struct Locat
  */
 bool        locations_are_same(const struct Location &loc1, const struct Location &loc2);
 
-/*
- * convert invalid waypoint with useful data. return true if location changed
- */
-bool        location_sanitize(const struct Location &defaultLoc, struct Location &loc);
-
 // Converts from WGS84 geodetic coordinates (lat, lon, height)
 // into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
 // (X, Y, Z)

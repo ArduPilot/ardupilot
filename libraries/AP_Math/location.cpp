@@ -126,36 +126,6 @@ bool locations_are_same(const struct Location &loc1, const struct Location &loc2
     return (loc1.lat == loc2.lat) && (loc1.lng == loc2.lng);
 }
 
-/*
- * convert invalid waypoint with useful data. return true if location changed
- */
-bool location_sanitize(const struct Location &defaultLoc, struct Location &loc)
-{
-    bool has_changed = false;
-    // convert lat/lng=0 to mean current point
-    if (loc.lat == 0 && loc.lng == 0) {
-        loc.lat = defaultLoc.lat;
-        loc.lng = defaultLoc.lng;
-        has_changed = true;
-    }
-
-    // convert relative alt=0 to mean current alt
-    if (loc.alt == 0 && loc.relative_alt) {
-        loc.relative_alt = false;
-        loc.alt = defaultLoc.alt;
-        has_changed = true;
-    }
-
-    // limit lat/lng to appropriate ranges
-    if (!check_latlng(loc)) {
-        loc.lat = defaultLoc.lat;
-        loc.lng = defaultLoc.lng;
-        has_changed = true;
-    }
-
-    return has_changed;
-}
-
 // return true when lat and lng are within range
 bool check_lat(float lat)
 {
