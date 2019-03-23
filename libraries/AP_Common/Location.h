@@ -85,6 +85,11 @@ public:
 
     void zero(void);
 
+    /*
+     * convert invalid waypoint with useful data. return true if location changed
+     */
+    bool sanitize(const struct Location &defaultLoc);
+
 private:
     static AP_Terrain *_terrain;
 };
