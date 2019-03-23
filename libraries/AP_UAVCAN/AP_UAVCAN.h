@@ -52,9 +52,10 @@
 */
 #define UC_REGISTRY_BINDER(ClassName_, DataType_) \
 	class ClassName_ : public AP_UAVCAN::RegistryBinder<DataType_> { \
+        typedef void (*CN_Registry)(AP_UAVCAN*, uint8_t, const ClassName_&); \
 	    public: \
 	        ClassName_() : RegistryBinder() {} \
-	        ClassName_(AP_UAVCAN* uc,  void (*ffunc)(AP_UAVCAN*, uint8_t, const ClassName_&)) : \
+	        ClassName_(AP_UAVCAN* uc,  CN_Registry ffunc) : \
 				RegistryBinder(uc, (Registry)ffunc) {} \
 	}
 
@@ -84,7 +85,7 @@ public:
     template <typename DataType_>
     class RegistryBinder {
     protected:
-        typedef void* (*Registry)(AP_UAVCAN* _ap_uavcan, uint8_t _node_id, const RegistryBinder& _cb);
+        typedef void (*Registry)(AP_UAVCAN* _ap_uavcan, uint8_t _node_id, const RegistryBinder& _cb);
         AP_UAVCAN* _uc;
         Registry _ffunc;
 
