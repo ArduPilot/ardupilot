@@ -175,6 +175,8 @@ public:
     // is the AHRS subsystem healthy?
     bool healthy() const override;
 
+    bool prearm_healthy() const override;
+
     // true if the AHRS has completed initialisation
     bool initialised() const override;
 
