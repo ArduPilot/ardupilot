@@ -1114,6 +1114,33 @@ bool AP_AHRS_NavEKF::healthy(void) const
     return AP_AHRS_DCM::healthy();
 }
 
+bool AP_AHRS_NavEKF::prearm_healthy(void) const
+{
+    bool prearm_health = false;
+    switch (ekf_type()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+#endif
+    case EKF_TYPE_NONE:
+        prearm_health = true;
+        break;
+
+    case EKF_TYPE2:
+    default:
+        if (_ekf2_started && EKF2.all_cores_healthy()) {
+            prearm_health = true;
+        }
+        break;
+
+    case EKF_TYPE3:
+        if (_ekf3_started && EKF3.all_cores_healthy()) {
+            prearm_health = true;
+        }
+        break;
+    }
+   return prearm_health && healthy();
+}
+
 void AP_AHRS_NavEKF::set_ekf_use(bool setting)
 {
     _ekf_type.set(setting?1:0);
