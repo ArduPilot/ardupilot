@@ -238,5 +238,35 @@ float Location::longitude_scale() const
     return constrain_float(scale, 0.01f, 1.0f);
 }
 
+/*
+ * convert invalid waypoint with useful data. return true if location changed
+ */
+bool Location::sanitize(const Location &defaultLoc)
+{
+    bool has_changed = false;
+    // convert lat/lng=0 to mean current point
+    if (lat == 0 && lng == 0) {
+        lat = defaultLoc.lat;
+        lng = defaultLoc.lng;
+        has_changed = true;
+    }
+
+    // convert relative alt=0 to mean current alt
+    if (alt == 0 && relative_alt) {
+        relative_alt = false;
+        alt = defaultLoc.alt;
+        has_changed = true;
+    }
+
+    // limit lat/lng to appropriate ranges
+    if (!check_latlng(lat, lng)) {
+        lat = defaultLoc.lat;
+        lng = defaultLoc.lng;
+        has_changed = true;
+    }
+
+    return has_changed;
+}
+
 // make sure we know what size the Location object is:
 assert_storage_size<Location, 16> _assert_storage_size_Location;
