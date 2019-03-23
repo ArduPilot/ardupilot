@@ -1,4 +1,8 @@
+#pragma once
+
+#include <stdint.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 
 
