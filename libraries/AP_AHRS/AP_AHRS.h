@@ -497,6 +497,8 @@ public:
     // is the AHRS subsystem healthy?
     virtual bool healthy(void) const = 0;
 
+    virtual bool prearm_healthy(void) const { return healthy(); }
+
     // true if the AHRS has completed initialisation
     virtual bool initialised(void) const {
         return true;
