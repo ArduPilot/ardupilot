@@ -2677,6 +2677,25 @@ class AutoTestCopter(AutoTest):
                                        (tdelta, max_good_tdelta))
         self.progress("Vehicle returned")
 
+    def fly_brake_mode(self):
+        # test brake mode
+        self.progress("Testing brake mode")
+        self.takeoff(10, mode="LOITER")
+
+        self.progress("Ensuring RC inputs have no effect in brake mode")
+        self.change_mode("STABILIZE")
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1200)
+        self.wait_groundspeed(5, 1000)
+
+        self.change_mode("BRAKE")
+        self.wait_groundspeed(0, 1)
+
+        self.set_rc(2, 1500)
+
+        self.do_RTL()
+        self.progress("Ran brake  mode")
+
     def fly_precision_companion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
 
@@ -2838,6 +2857,8 @@ class AutoTestCopter(AutoTest):
             ("AutoTune", "Fly AUTOTUNE mode", self.fly_autotune),
 
             ("ThrowMode", "Fly Throw Mode", self.fly_throw_mode),
+
+            ("BrakeMode", "Fly Brake Mode", self.fly_brake_mode),
 
             ("RecordThenPlayMission",
              "Use switches to toggle in mission, then fly it",
