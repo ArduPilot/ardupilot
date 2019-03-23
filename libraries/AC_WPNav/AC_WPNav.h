@@ -278,8 +278,8 @@ protected:
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
-    AP_Terrain              *_terrain = nullptr;
-    AC_Avoid                *_avoid = nullptr;
+    AP_Terrain              *_terrain;
+    AC_Avoid                *_avoid;
 
     // parameters
     AP_Float    _wp_speed_cms;          // default maximum horizontal speed in cm/s during missions
@@ -291,7 +291,6 @@ protected:
 
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call
-    uint8_t     _wp_step;               // used to decide which portion of wpnav controller to run during this iteration
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
@@ -315,10 +314,9 @@ protected:
     float       _yaw;                   // heading according to yaw
 
     // terrain following variables
-    bool        _terrain_alt = false;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
-    bool        _ekf_origin_terrain_alt_set = false;
+    bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool        _rangefinder_available;
     AP_Int8     _rangefinder_use;
-    bool        _rangefinder_healthy = false;
-    float       _rangefinder_alt_cm = 0.0f;
+    bool        _rangefinder_healthy;
+    float       _rangefinder_alt_cm;
 };
