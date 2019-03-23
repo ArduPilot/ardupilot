@@ -1,5 +1,3 @@
-#include <AP_Common/AP_Common.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_RangeFinder_Params.h"
 #include "AP_RangeFinder.h"
 
