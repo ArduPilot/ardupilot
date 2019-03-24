@@ -124,13 +124,12 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
 
     // check battery voltage
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
-        if (copter.battery.has_failsafed()) {
-            check_failed(ARMING_CHECK_VOLTAGE, display_failure, "Battery failsafe");
-            return false;
-        }
-
         // call parent battery checks
         if (!AP_Arming::battery_checks(display_failure)) {
+            return false;
+        }
+        if (copter.battery.has_failsafed()) {
+            check_failed(ARMING_CHECK_VOLTAGE, display_failure, "Battery failsafe");
             return false;
         }
     }
