@@ -3,22 +3,6 @@
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 
-// initialise compass
-void Rover::init_compass()
-{
-    if (!g.compass_enabled) {
-        return;
-    }
-
-    compass.init();
-    if (!compass.read()) {
-        hal.console->printf("Compass initialisation failed!\n");
-        g.compass_enabled = false;
-    } else {
-        ahrs.set_compass(&compass);
-    }
-}
-
 /*
   initialise compass's location used for declination
  */
@@ -37,7 +21,7 @@ void Rover::init_compass_location(void)
 // check for new compass data - 10Hz
 void Rover::update_compass(void)
 {
-    if (g.compass_enabled && compass.read()) {
+    if (AP::compass().enabled() && compass.read()) {
         ahrs.set_compass(&compass);
         // update offsets
         if (should_log(MASK_LOG_COMPASS)) {
@@ -55,7 +39,7 @@ void Rover::compass_cal_update() {
 
 // Save compass offsets
 void Rover::compass_save() {
-    if (g.compass_enabled &&
+    if (AP::compass().enabled() &&
         compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
         !arming.is_armed()) {
         compass.save_offsets();
