@@ -31,7 +31,6 @@ private:
     bool new_pressure;
     float _pressure;
     float _temperature;
-    uint64_t _last_timestamp;
 
     HAL_Semaphore _sem_baro;
 
