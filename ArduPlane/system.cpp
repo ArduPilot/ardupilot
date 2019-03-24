@@ -107,22 +107,8 @@ void Plane::init_ardupilot()
     // initialise airspeed sensor
     airspeed.init();
 
-    if (g.compass_enabled==true) {
-        compass.init();
-        bool compass_ok = compass.read();
-#if HIL_SUPPORT
-    if (g.hil_mode != 0) {
-        compass_ok = true;
-    }
-#endif
-        if (!compass_ok) {
-            hal.console->printf("Compass initialisation failed!\n");
-            g.compass_enabled = false;
-        } else {
-            ahrs.set_compass(&compass);
-        }
-    }
-    
+    AP::compass().init();
+
 #if OPTFLOW == ENABLED
     // make optflow available to libraries
     if (optflow.enabled()) {
