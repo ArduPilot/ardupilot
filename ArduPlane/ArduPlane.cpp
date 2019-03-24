@@ -198,7 +198,7 @@ void Plane::update_speed_height(void)
  */
 void Plane::update_compass(void)
 {
-    if (g.compass_enabled && compass.read()) {
+    if (AP::compass().enabled() && compass.read()) {
         ahrs.set_compass(&compass);
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
             logger.Write_Compass();
@@ -310,7 +310,7 @@ void Plane::one_second_loop()
 
 void Plane::compass_save()
 {
-    if (g.compass_enabled &&
+    if (AP::compass().enabled() &&
         compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
         !hal.util->get_soft_armed()) {
         /*
@@ -388,7 +388,7 @@ void Plane::update_GPS_10Hz(void)
 
                 next_WP_loc = prev_WP_loc = home;
 
-                if (g.compass_enabled) {
+                if (AP::compass().enabled()) {
                     // Set compass declination automatically
                     const Location &loc = gps.location();
                     compass.set_initial_location(loc.lat, loc.lng);
