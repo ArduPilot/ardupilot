@@ -41,7 +41,7 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     GCS_MAVLINK_Copter &gcs_chan = gcs().chan(chan-MAVLINK_COMM_0);
 
     // check compass is enabled
-    if (!g.compass_enabled) {
+    if (!AP::compass().enabled()) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Compass disabled");
         ap.compass_mot = false;
         return MAV_RESULT_TEMPORARILY_REJECTED;
