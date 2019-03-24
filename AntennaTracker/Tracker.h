@@ -243,7 +243,6 @@ private:
 
     // sensors.cpp
     void update_ahrs();
-    void init_compass();
     void compass_save();
     void init_compass_location();
     void update_compass(void);
