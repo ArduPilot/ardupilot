@@ -416,6 +416,33 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Increment: .1
     // @User: Advanced
     AP_GROUPINFO("THROTTLE_EXPO", 10, QuadPlane, throttle_expo, 0.2),
+
+    // @Param: ACRO_RLL_RATE
+    // @DisplayName: QACRO mode roll rate
+    // @Description: The maximum roll rate at full stick deflection in QACRO mode
+    // @Units: deg/s
+    // @Range: 10 500
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ACRO_RLL_RATE", 11, QuadPlane, acro_roll_rate, 360),
+
+    // @Param: ACRO_PIT_RATE
+    // @DisplayName: QACRO mode pitch rate
+    // @Description: The maximum pitch rate at full stick deflection in QACRO mode
+    // @Units: deg/s
+    // @Range: 10 500
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ACRO_PIT_RATE", 12, QuadPlane, acro_pitch_rate, 180),
+
+    // @Param: ACRO_YAW_RATE
+    // @DisplayName: QACRO mode yaw rate
+    // @Description: The maximum yaw rate at full stick deflection in QACRO mode
+    // @Units: deg/s
+    // @Range: 10 500
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ACRO_YAW_RATE", 13, QuadPlane, acro_yaw_rate, 90),
     AP_GROUPEND
 };
 
@@ -913,8 +940,11 @@ void QuadPlane::hold_hover(float target_climb_rate)
 
 float QuadPlane::get_pilot_throttle()
 {
-    // get normalized throttle [0,1]
-    float throttle_in = (float)plane.channel_throttle->get_control_in() / plane.channel_throttle->get_range();
+    // get scaled throttle input
+    float throttle_in = plane.channel_throttle->get_control_in();
+
+    // normalize to [0,1]
+    throttle_in /= plane.channel_throttle->get_range();
 
     // get hover throttle level [0,1]
     float thr_mid = motors->get_throttle_hover();
@@ -940,17 +970,16 @@ void QuadPlane::control_qacro(void)
 
         // convert the input to the desired body frame rate
         float target_roll = 0;
-        float target_pitch = plane.channel_pitch->norm_input() * plane.g.acro_pitch_rate * 100.0f;
+        float target_pitch = plane.channel_pitch->norm_input() * acro_pitch_rate * 100.0f;
         float target_yaw = 0;
         if (is_tailsitter()) {
             // Note that the 90 degree Y rotation for copter mode swaps body-frame roll and yaw
             // acro_roll_rate param applies to yaw in copter frame
-            // no parameter for acro yaw rate; just use the normal one since the default is 100 deg/sec
-            target_roll =  plane.channel_rudder->norm_input() * yaw_rate_max * 100.0f;
-            target_yaw  = -plane.channel_roll->norm_input() * plane.g.acro_roll_rate * 100.0f;
+            target_roll =  plane.channel_rudder->norm_input() * acro_roll_rate * 100.0f;
+            target_yaw  = -plane.channel_roll->norm_input() * acro_yaw_rate * 100.0f;
         } else {
-            target_roll = plane.channel_roll->norm_input() * plane.g.acro_roll_rate * 100.0f;
-            target_yaw  = plane.channel_rudder->norm_input() * yaw_rate_max * 100.0;
+            target_roll = plane.channel_roll->norm_input() * acro_roll_rate * 100.0f;
+            target_yaw  = plane.channel_rudder->norm_input() * acro_yaw_rate * 100.0;
         }
 
         float throttle_out = get_pilot_throttle();
