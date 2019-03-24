@@ -76,6 +76,8 @@ public:
     ///
     bool read();
 
+    bool enabled() const { return _enabled; }
+
     /// Calculate the tilt-compensated heading_ variables.
     ///
     /// @param dcm_matrix			The current orientation rotation matrix
@@ -387,6 +389,9 @@ private:
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
+
+    // whether to enable the compass drivers at all
+    AP_Int8     _enabled;
 
     // number of registered compasses.
     uint8_t     _compass_count;
