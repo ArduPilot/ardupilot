@@ -104,9 +104,7 @@ void Sub::init_ardupilot()
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);
 
-    if (g.compass_enabled) {
-        init_compass();
-    }
+    AP::compass().init();
 
 #if OPTFLOW == ENABLED
     // make optflow available to AHRS
