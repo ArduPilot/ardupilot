@@ -461,7 +461,6 @@ private:
     float sailboat_calc_heading(float desired_heading_cd);
 
     // sensors.cpp
-    void init_compass(void);
     void init_compass_location(void);
     void update_compass(void);
     void compass_cal_update(void);

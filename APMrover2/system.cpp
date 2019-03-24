@@ -89,7 +89,7 @@ void Rover::init_ardupilot()
 #endif
 
     // initialise compass
-    init_compass();
+    AP::compass().init();
 
     // initialise rangefinder
     rangefinder.init();

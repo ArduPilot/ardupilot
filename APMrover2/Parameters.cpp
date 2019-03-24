@@ -68,13 +68,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Bitmask: 0:Steering,1:Throttle,2:Pitch,3:Left Wheel,4:Right Wheel,5:Sailboat Heel
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
-    // @Param: MAG_ENABLE
-    // @DisplayName: Enable Compass
-    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
-    // @User: Standard
-    // @Values: 0:Disabled,1:Enabled
-    GSCALAR(compass_enabled,        "MAG_ENABLE",       MAGNETOMETER),
-
     // @Param: AUTO_TRIGGER_PIN
     // @DisplayName: Auto mode trigger pin
     // @Description: pin number to use to enable the throttle in auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will enable the motor to run. If the switch is released while in AUTO then the motor will stop again. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.

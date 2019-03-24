@@ -23,7 +23,7 @@ bool GCS_Rover::supersimple_input_active() const
 void GCS_Rover::update_vehicle_sensor_status_flags(void)
 {
     // first what sensors/controllers we have
-    if (rover.g.compass_enabled) {
+    if (AP::compass().enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
@@ -65,7 +65,7 @@ void GCS_Rover::update_vehicle_sensor_status_flags(void)
     AP_AHRS &ahrs = AP::ahrs();
     const Compass &compass = AP::compass();
 
-    if (rover.g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
+    if (AP::compass().enabled() && AP::compass().healthy(0) && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
     if (gps.is_healthy()) {
