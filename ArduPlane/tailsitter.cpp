@@ -271,9 +271,9 @@ void QuadPlane::tailsitter_speed_scaling(void)
 
             // ramp down from 1 to max_atten at tilt angles over trans_angle
             // (angles here are represented by their cosines)
-            constexpr float c_trans_angle = cosf(.125f * M_PI);
-            constexpr float alpha = (1 - max_atten) / (c_trans_angle - cosf(radians(90)));
-            constexpr float beta = 1 - alpha * c_trans_angle;
+            const float c_trans_angle = cosf(.125f * M_PI);
+            const float alpha = (1 - max_atten) / (c_trans_angle - cosf(radians(90)));
+            const float beta = 1 - alpha * c_trans_angle;
             const float c_tilt = ahrs_view->get_rotation_body_to_ned().c.z;
             if (c_tilt < c_trans_angle) {
                 spd_scaler = constrain_float(beta + alpha * c_tilt, max_atten, 1.0f);
