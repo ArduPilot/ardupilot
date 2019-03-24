@@ -427,7 +427,7 @@ const AP_Param::Info Copter::var_info[] = {
 #if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // @Param: ACRO_BAL_ROLL
     // @DisplayName: Acro Balance Roll
-    // @Description: rate at which roll angle returns to level in acro and sport mode.  A higher value causes the vehicle to return to level faster.
+    // @Description: rate at which roll angle returns to level in acro and sport mode.  A higher value causes the vehicle to return to level faster. For helicopter sets the decay rate of the virtual flybar in the roll axis. A higher value causes faster decay of desired to actual attitude.
     // @Range: 0 3
     // @Increment: 0.1
     // @User: Advanced
@@ -435,7 +435,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: ACRO_BAL_PITCH
     // @DisplayName: Acro Balance Pitch
-    // @Description: rate at which pitch angle returns to level in acro and sport mode.  A higher value causes the vehicle to return to level faster.
+    // @Description: rate at which pitch angle returns to level in acro and sport mode.  A higher value causes the vehicle to return to level faster. For helicopter sets the decay rate of the virtual flybar in the pitch axis. A higher value causes faster decay of desired to actual attitude.
     // @Range: 0 3
     // @Increment: 0.1
     // @User: Advanced
