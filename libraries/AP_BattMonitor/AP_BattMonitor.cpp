@@ -494,6 +494,17 @@ void AP_BattMonitor::checkPoweringOff(void)
     }
 }
 
+void AP_BattMonitor::clear_failsafe_flags() {
+    if (_has_triggered_failsafe) {
+        _has_triggered_failsafe = false;
+        AP_Notify::flags.failsafe_battery = false;
+        _highest_failsafe_priority = INT8_MAX;
+        for (uint8_t i = 0; i < _num_instances; i++) {
+            state[i].failsafe = AP_BattMonitor::BatteryFailsafe_None;
+        }
+    }
+}
+
 namespace AP {
 
 AP_BattMonitor &battery()

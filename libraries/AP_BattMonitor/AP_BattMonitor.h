@@ -174,6 +174,8 @@ public:
     // sends powering off mavlink broadcasts and sets notify flag
     void checkPoweringOff(void);
 
+    void clear_failsafe_flags();
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:

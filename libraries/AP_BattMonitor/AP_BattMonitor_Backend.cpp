@@ -168,7 +168,9 @@ bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
     result = result && update_check(buflen, buffer, critical_capacity, "critical capacity failsafe");
     result = result && update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
     result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
-
+    if (is_positive(_params._arming_minimum_voltage) && result) {
+        _mon.clear_failsafe_flags();
+    }
     return result;
 }
 
