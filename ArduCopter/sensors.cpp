@@ -85,23 +85,6 @@ void Copter::rpm_update(void)
 #endif
 }
 
-// initialise compass
-void Copter::init_compass()
-{
-    if (!g.compass_enabled) {
-        return;
-    }
-
-    compass.init();
-    if (!compass.read()) {
-        // make sure we don't pass a broken compass to DCM
-        hal.console->printf("COMPASS INIT ERROR\n");
-        AP::logger().Write_Error(LogErrorSubsystem::COMPASS, LogErrorCode::FAILED_TO_INITIALISE);
-        return;
-    }
-    ahrs.set_compass(&compass);
-}
-
 /*
   initialise compass's location used for declination
  */
