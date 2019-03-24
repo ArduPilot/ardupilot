@@ -20,7 +20,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
         MAV_SYS_STATUS_SENSOR_YAW_POSITION;
 
     // first what sensors/controllers we have
-    if (sub.g.compass_enabled) {
+    if (AP::compass().enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
@@ -67,7 +67,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
     }
     AP_AHRS &ahrs = AP::ahrs();
     const Compass &compass = AP::compass();
-    if (sub.g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
+    if (AP::compass().enabled() && compass.healthy() && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
     if (gps.is_healthy()) {

@@ -80,19 +80,6 @@ void Sub::rpm_update(void)
 }
 #endif
 
-// initialise compass
-void Sub::init_compass()
-{
-    compass.init();
-    if (!compass.read()) {
-        // make sure we don't pass a broken compass to DCM
-        hal.console->println("COMPASS INIT ERROR");
-        AP::logger().Write_Error(LogErrorSubsystem::COMPASS,LogErrorCode::FAILED_TO_INITIALISE);
-        return;
-    }
-    ahrs.set_compass(&compass);
-}
-
 /*
   initialise compass's location used for declination
  */
