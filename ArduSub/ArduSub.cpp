@@ -171,10 +171,6 @@ void Sub::update_batt_compass()
         // update compass with throttle value - used for compassmot
         compass.set_throttle(motors.get_throttle());
         compass.read();
-        // log compass information
-        if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            logger.Write_Compass();
-        }
     }
 }
 
