@@ -455,7 +455,6 @@ private:
     static const struct LogStructure log_structure[];
 
     void init_compass_location();
-    void compass_cal_update(void);
     void fast_loop();
     void fifty_hz_loop();
     void update_batt_compass(void);
