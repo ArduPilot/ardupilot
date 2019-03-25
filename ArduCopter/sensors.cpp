@@ -107,11 +107,13 @@ void Copter::init_optflow()
 
 void Copter::compass_cal_update()
 {
-    static uint32_t compass_cal_stick_gesture_begin = 0;
+    compass.cal_update();
 
-    if (!hal.util->get_soft_armed()) {
-        compass.compass_cal_update();
+    if (hal.util->get_soft_armed()) {
+        return;
     }
+
+    static uint32_t compass_cal_stick_gesture_begin = 0;
 
     if (compass.is_calibrating()) {
         if (channel_yaw->get_control_in() < -4000 && channel_throttle->get_control_in() > 900) {
