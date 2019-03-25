@@ -104,13 +104,6 @@ void Sub::init_optflow()
 }
 #endif      // OPTFLOW == ENABLED
 
-void Sub::compass_cal_update()
-{
-    if (!hal.util->get_soft_armed()) {
-        compass.compass_cal_update();
-    }
-}
-
 void Sub::accel_cal_update()
 {
     if (hal.util->get_soft_armed()) {
