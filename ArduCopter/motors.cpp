@@ -223,7 +223,7 @@ bool Copter::init_arm_motors(const AP_Arming::Method method, const bool do_armin
     // log flight mode in case it was changed while vehicle was disarmed
     logger.Write_Mode(control_mode, control_mode_reason);
 
-    // reenable failsafe
+    // re-enable failsafe
     failsafe_enable();
 
     // perf monitor ignores delay due to arming
