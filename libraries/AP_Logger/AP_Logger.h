@@ -124,6 +124,9 @@ enum class LogErrorSubsystem : uint8_t {
     FAILSAFE_TERRAIN = 23,
     EKF_PRIMARY = 24,
     THRUST_LOSS_CHECK = 25,
+    FAILSAFE_SENSORS = 26,
+    FAILSAFE_LEAK = 27,
+    PILOT_INPUT = 28,
 };
 
 // bizarrely this enumeration has lots of duplicate values, offering
@@ -161,6 +164,7 @@ enum class LogErrorCode : uint8_t {
     EKFCHECK_VARIANCE_CLEARED = 0,
 // Baro specific error codes
     BARO_GLITCH = 2,
+    BAD_DEPTH = 0, // sub-only
 // GPS specific error coces
     GPS_GLITCH = 2,
 };
