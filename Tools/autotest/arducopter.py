@@ -1316,9 +1316,9 @@ class AutoTestCopter(AutoTest):
     def fly_motor_fail(self, fail_servo=0, fail_mul=0.0, holdtime=30):
         """Test flight with reduced motor efficiency"""
 
-        # we only expect an octocopter to survive ATM:
+        # we only expect a subset of frames to survive ATM:
         servo_counts = {
-            # 2: 6, # hexa
+            2: 6, # hexa
             3: 8,  # octa
             # 5: 6, # Y6
         }
