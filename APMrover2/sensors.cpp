@@ -30,13 +30,6 @@ void Rover::update_compass(void)
     }
 }
 
-// Calibrate compass
-void Rover::compass_cal_update() {
-    if (!hal.util->get_soft_armed()) {
-        compass.compass_cal_update();
-    }
-}
-
 // Save compass offsets
 void Rover::compass_save() {
     if (AP::compass().enabled() &&

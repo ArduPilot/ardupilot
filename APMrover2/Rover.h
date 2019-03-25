@@ -463,7 +463,6 @@ private:
     // sensors.cpp
     void init_compass_location(void);
     void update_compass(void);
-    void compass_cal_update(void);
     void compass_save(void);
     void init_beacon();
     void init_visual_odom();
