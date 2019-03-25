@@ -143,6 +143,9 @@ public:
     bool compass_cal_requires_reboot() const { return _cal_complete_requires_reboot; }
     bool is_calibrating() const;
 
+    // indicate which bit in LOG_BITMASK indicates we should log compass readings
+    void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
+
     /*
       handle an incoming MAG_CAL command
     */
@@ -403,6 +406,9 @@ private:
 
     // first-time-around flag used by offset nulling
     bool        _null_init_done;
+
+    // stores which bit is used to indicate we should log compass readings
+    uint32_t _log_bit = -1;
 
     // used by offset correction
     static const uint8_t _mag_history_size = 20;
