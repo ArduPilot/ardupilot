@@ -63,7 +63,6 @@ void GCS_Rover::update_vehicle_sensor_status_flags(void)
     }
 
     AP_AHRS &ahrs = AP::ahrs();
-    const Compass &compass = AP::compass();
 
     if (AP::compass().enabled() && AP::compass().healthy(0) && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
