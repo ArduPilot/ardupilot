@@ -966,7 +966,6 @@ private:
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
-    void compass_cal_update();
     void update_optical_flow(void);
     void one_second_loop(void);
     void airspeed_ratio_update(void);
