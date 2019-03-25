@@ -1226,7 +1226,9 @@ class AutoTest(ABC):
         """Validate and return the mode number from a string or int."""
         mode_map = self.mav.mode_mapping()
         if mode_map is None:
-            raise ErrorException("No mode map")
+            mav_type = self.mav.messages['HEARTBEAT'].type
+            mav_autopilot = self.mav.messages['HEARTBEAT'].autopilot
+            raise ErrorException("No mode map for (mav_type=%s mav_autopilot=%s)" % (mav_type, mav_autopilot))
         if isinstance(mode, str):
             if mode in mode_map:
                 return mode_map.get(mode)
