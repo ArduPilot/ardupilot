@@ -46,7 +46,8 @@ void Rover::crash_check()
 
     if (crashed) {
         // log an error in the dataflash
-        Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
+        AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK,
+                                 LogErrorCode::CRASH_CHECK_CRASH);
 
         if (is_balancebot()) {
             // send message to gcs
