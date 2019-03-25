@@ -1377,6 +1377,9 @@ class AutoTestCopter(AutoTest):
                 self.progress("  Yaw: %f deg" % int_error_yaw)
                 self.progress("----")
 
+                if int_error_yaw_rate > 0.1:
+                    raise NotAchievedException("Vehicle is spinning")
+
                 if alt_delta < -20:
                     raise NotAchievedException("Vehicle is descending")
 
