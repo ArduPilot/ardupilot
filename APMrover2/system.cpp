@@ -113,7 +113,7 @@ void Rover::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    set_control_channels();  // setup radio channels and ouputs ranges
+    set_control_channels();  // setup radio channels and outputs ranges
     init_rc_in();            // sets up rc channels deadzone
     g2.motors.init();        // init motors including setting servo out channels ranges
     SRV_Channels::enable_aux_servos();
@@ -271,7 +271,7 @@ void Rover::startup_INS_ground(void)
     hal.scheduler->delay(100);
 
     ahrs.init();
-    // say to EKF that rover only move by goind forward
+    // say to EKF that rover only move by going forward
     ahrs.set_fly_forward(true);
     ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 
@@ -287,7 +287,7 @@ void Rover::notify_mode(const Mode *mode)
 }
 
 /*
-  check a digitial pin for high,low (1/0)
+  check a digital pin for high,low (1/0)
  */
 uint8_t Rover::check_digital_pin(uint8_t pin)
 {
