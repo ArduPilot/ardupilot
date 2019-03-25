@@ -123,7 +123,7 @@ public:
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
     // compass calibrator interface
-    void compass_cal_update();
+    void cal_update();
 
     // per-motor calibration access
     void per_motor_calibration_start(void) {
