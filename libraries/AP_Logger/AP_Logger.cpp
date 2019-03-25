@@ -871,7 +871,10 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
     } else {
         memset((char*)ls_multipliers, '?', MIN(sizeof(ls_format), strlen(f->fmt)));
     }
-    validate_structure(&ls, (int16_t)-1);
+    if (!validate_structure(&ls, (int16_t)-1)) {
+        Debug("Log structure invalid");
+        abort();
+    }
 #endif
 
     return f;
