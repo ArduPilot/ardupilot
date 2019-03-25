@@ -107,7 +107,7 @@ AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents) :
 
 void AP_MotorsUGV::init()
 {
-    // setup servo ouput
+    // setup servo output
     setup_servo_output();
 
     // setup pwm type
