@@ -90,7 +90,8 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
 
     // log to dataflash
     if (failsafe_state_change) {
-        copter.Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_ADSB, actual_action);
+        AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_ADSB,
+                                 LogErrorCode(actual_action));
     }
 
     // return with action taken
@@ -102,7 +103,8 @@ void AP_Avoidance_Copter::handle_recovery(uint8_t recovery_action)
     // check we are coming out of failsafe
     if (copter.failsafe.adsb) {
         copter.failsafe.adsb = false;
-        copter.Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_ADSB, ERROR_CODE_ERROR_RESOLVED);
+        AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_ADSB,
+                                 LogErrorCode::ERROR_RESOLVED);
 
         // restore flight mode if requested and user has not changed mode since
         if (copter.control_mode_reason == MODE_REASON_AVOIDANCE) {
