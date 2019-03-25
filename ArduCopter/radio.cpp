@@ -136,7 +136,7 @@ void Copter::read_radio()
     }
 
     // Nobody ever talks to us.  Log an error and enter failsafe.
-    Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
+    AP::logger().Write_Error(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
     set_failsafe_radio(true);
 }
 

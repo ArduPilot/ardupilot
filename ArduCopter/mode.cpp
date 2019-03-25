@@ -184,7 +184,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     Copter::Mode *new_flightmode = mode_from_mode_num(mode);
     if (new_flightmode == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
@@ -195,7 +195,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     // rotor runup is not complete
     if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()){
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 #endif
@@ -220,13 +220,13 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         new_flightmode->requires_GPS() &&
         !copter.position_ok()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
