@@ -147,6 +147,10 @@ void AC_Loiter::soften_for_landing()
 
     // set target position to current position
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
+
+    // also prevent I term build up in xy velocity controller. Note
+    // that this flag is reset on each loop, in run_xy_controller()
+    _pos_control.set_limit_accel_xy();
 }
 
 /// set pilot desired acceleration in centi-degrees
