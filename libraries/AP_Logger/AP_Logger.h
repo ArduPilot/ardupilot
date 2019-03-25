@@ -98,6 +98,73 @@ enum Log_Event : uint8_t {
     DATA_NOT_BOTTOMED = 166,
 };
 
+enum class LogErrorSubsystem : uint8_t {
+    MAIN = 1,
+    RADIO = 2,
+    COMPASS = 3,
+    OPTFLOW = 4,   // not used
+    FAILSAFE_RADIO = 5,
+    FAILSAFE_BATT = 6,
+    FAILSAFE_GPS = 7,   // not used
+    FAILSAFE_GCS = 8,
+    FAILSAFE_FENCE = 9,
+    FLIGHT_MODE = 10,
+    GPS = 11,
+    CRASH_CHECK = 12,
+    FLIP = 13,
+    AUTOTUNE = 14,  // not used
+    PARACHUTES = 15,
+    EKFCHECK = 16,
+    FAILSAFE_EKFINAV = 17,
+    BARO = 18,
+    CPU = 19,
+    FAILSAFE_ADSB = 20,
+    TERRAIN = 21,
+    NAVIGATION = 22,
+    FAILSAFE_TERRAIN = 23,
+    EKF_PRIMARY = 24,
+    THRUST_LOSS_CHECK = 25,
+};
+
+// bizarrely this enumeration has lots of duplicate values, offering
+// very little in the way of typesafety
+enum class LogErrorCode : uint8_t {
+// general error codes
+    ERROR_RESOLVED  = 0,
+    FAILED_TO_INITIALISE = 1,
+    UNHEALTHY = 4,
+// subsystem specific error codes -- radio
+    RADIO_LATE_FRAME = 2,
+// subsystem specific error codes -- failsafe_thr, batt, gps
+    FAILSAFE_RESOLVED = 0,
+    FAILSAFE_OCCURRED = 1,
+// subsystem specific error codes -- main
+    MAIN_INS_DELAY = 1,
+// subsystem specific error codes -- crash checker
+    CRASH_CHECK_CRASH = 1,
+    CRASH_CHECK_LOSS_OF_CONTROL = 2,
+// subsystem specific error codes -- flip
+    FLIP_ABANDONED = 2,
+// subsystem specific error codes -- terrain
+    MISSING_TERRAIN_DATA = 2,
+// subsystem specific error codes -- navigation
+    FAILED_TO_SET_DESTINATION = 2,
+    RESTARTED_RTL = 3,
+    FAILED_CIRCLE_INIT = 4,
+    DEST_OUTSIDE_FENCE = 5,
+
+// parachute failed to deploy because of low altitude or landed
+    PARACHUTE_TOO_LOW = 2,
+    PARACHUTE_LANDED = 3,
+// EKF check definitions
+    EKFCHECK_BAD_VARIANCE = 2,
+    EKFCHECK_VARIANCE_CLEARED = 0,
+// Baro specific error codes
+    BARO_GLITCH = 2,
+// GPS specific error coces
+    GPS_GLITCH = 2,
+};
+
 // fwd declarations to avoid include errors
 class AC_AttitudeControl;
 class AC_PosControl;
@@ -150,6 +217,8 @@ public:
 
     void Write_Parameter(const char *name, float value);
     void Write_Event(Log_Event id);
+    void Write_Error(LogErrorSubsystem sub_system,
+                     LogErrorCode error_code);
     void Write_GPS(uint8_t instance, uint64_t time_us=0);
     void Write_RFND(const RangeFinder &rangefinder);
     void Write_IMU();
