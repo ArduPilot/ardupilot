@@ -2767,6 +2767,94 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def test_battery_failsafe_reset(self):
+        """Test that we can reset the battery failsafe with BATT_ARM_VOLT."""
+        self.set_parameter("FS_GCS_ENABLE", 0)
+        self.set_parameter("DISARM_DELAY", 0)
+
+        def try_fly_and_failsafe(failsafe_action):
+            self.start_subtest("Fly and trigger battery failsafe")
+            self.progress("Set Battery failsafe action to " + ("LAND" if failsafe_action == 1 else "RTL"))
+            self.set_parameter("BATT_FS_LOW_ACT", failsafe_action)
+            self.do_set_mode_via_command_long('GUIDED')
+            self.mav.wait_heartbeat()
+            self.wait_ready_to_arm()
+            # Takeoff
+            self.progress("Arm and GUIDED takeoff")
+            self.arm_vehicle()
+            self.user_takeoff(10)
+            self.progress("Lower the battery voltage")
+            self.set_parameter("SIM_BATT_VOLTAGE", 10)
+            self.progress("Wait for failsafe and disarm")
+            self.wait_mode("LAND" if failsafe_action == 1 else "RTL")
+            self.mav.motors_disarmed_wait()
+
+        def try_arm_with_failsafe_flag_on():
+            self.start_subtest("Try to arm with battery failsafe ON for 10s")
+            self.do_set_mode_via_command_long('GUIDED')
+            self.wait_ready_to_arm()
+            tstart = self.get_sim_time()
+            while self.get_sim_time() < tstart + 10:
+                self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                             1,  # ARM
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             want_result=mavutil.mavlink.MAV_RESULT_FAILED
+                             )
+                self.mav.wait_heartbeat()
+                if self.mav.motors_armed():
+                    raise NotAchievedException("Motors Arm where it shouldn't")
+            self.mav.motors_disarmed_wait()
+            self.progress("Doesn't ARM, all good")
+
+        def try_reset_battery_failsafe():
+            self.start_subtest("Reset battery failsafe")
+            # put back some volts
+            self.set_parameter("SIM_BATT_VOLTAGE", 13)
+
+            tstart = self.get_sim_time()
+            clear_failsafe = False
+            while self.get_sim_time() < tstart + 30:
+                m = self.mav.recv_match(type='SYS_STATUS',
+                                        blocking=True,
+                                        timeout=10)
+                flags = m.onboard_control_sensors_health
+                if flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_BATTERY:
+                    clear_failsafe = True
+            if not clear_failsafe:
+                raise NotAchievedException("Battery failsafe wasn't clear")
+            self.progress("Battery failsafe cleared")
+
+        self.start_subtest("Test normal battery failsafe")
+        self.set_parameter("BATT_ARM_VOLT", 0)
+        try_fly_and_failsafe(failsafe_action=2)  # RTL
+        try_arm_with_failsafe_flag_on()
+        try:
+            try_reset_battery_failsafe()  # THIS SHOULD FAIL
+        except NotAchievedException:
+            pass
+        self.start_subtest("Test Reset feature")
+        self.set_parameter("BATT_ARM_VOLT", 12)
+        for i in range(1, 5):
+            failsafe_type = ((i & 1) + 1)
+            try_fly_and_failsafe(failsafe_action=failsafe_type)
+            try_arm_with_failsafe_flag_on()
+            try_reset_battery_failsafe()
+
+        self.start_subtest("Test normal battery failsafe")
+        self.set_parameter("BATT_ARM_VOLT", 0)
+        try_fly_and_failsafe(failsafe_action=2)  # RTL
+        try_arm_with_failsafe_flag_on()
+        try:
+            try_reset_battery_failsafe()  # THIS SHOULD FAIL
+        except NotAchievedException:
+            pass
+        self.mav.motors_disarmed_wait()
+
     def test_arm_feature(self):
         self.loiter_requires_position()
 
@@ -2943,6 +3031,10 @@ class AutoTestCopter(AutoTest):
             ("ManualThrottleModeChange",
              "Check manual throttle mode changes denied on high throttle",
              self.fly_manual_throttle_mode_change),
+
+            ("BatteryFailsafeReset",
+             "Test Battery Failsafe Reset",
+             self.test_battery_failsafe_reset),
 
             ("LogDownLoad",
              "Log download",
