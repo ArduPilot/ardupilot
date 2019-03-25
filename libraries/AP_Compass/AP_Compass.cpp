@@ -981,7 +981,11 @@ Compass::read(void)
     if (_learn == LEARN_INFLIGHT && learn != nullptr) {
         learn->update();
     }
-    return healthy();
+    bool ret = healthy();
+    if (ret && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit) && !AP::ahrs().have_ekf_logging()) {
+        AP::logger().Write_Compass();
+    }
+    return ret;
 }
 
 uint8_t
