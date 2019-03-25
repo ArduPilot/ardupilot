@@ -1096,6 +1096,19 @@ void AP_Logger::Write_Event(Log_Event id)
     WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
+// Write an error packet
+void AP_Logger::Write_Error(LogErrorSubsystem sub_system,
+                            LogErrorCode error_code)
+{
+  struct log_Error pkt = {
+      LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
+      time_us       : AP_HAL::micros64(),
+      sub_system    : uint8_t(sub_system),
+      error_code    : uint8_t(error_code),
+  };
+  WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
 namespace AP {
 
 AP_Logger &logger()
