@@ -29,7 +29,6 @@ private:
     static AP_Compass_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id);
 
     uint8_t  _instance;
-    bool _initialized;
 
     AP_UAVCAN* _ap_uavcan;
     uint8_t _node_id;
