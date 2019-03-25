@@ -151,7 +151,7 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
     int32_t alt_target;
     if (!dest.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_target)) {
         // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
-        copter.Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
+        AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
         // fall back to altitude above current altitude
         alt_target = copter.current_loc.alt + dest.alt;
     }
@@ -254,7 +254,7 @@ void Copter::ModeAuto::circle_movetoedge_start(const Location &circle_center, fl
     if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
         // default to current position and log error
         circle_center_neu = inertial_nav.get_position();
-        copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_CIRCLE_INIT);
+        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
     }
     copter.circle_nav->set_center(circle_center_neu);
 

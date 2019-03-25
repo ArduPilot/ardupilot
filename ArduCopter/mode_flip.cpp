@@ -205,7 +205,7 @@ void Copter::ModeFlip::run()
             copter.set_mode(STABILIZE, MODE_REASON_UNKNOWN);
         }
         // log abandoning flip
-        copter.Log_Write_Error(ERROR_SUBSYSTEM_FLIP,ERROR_CODE_FLIP_ABANDONED);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIP, LogErrorCode::FLIP_ABANDONED);
         break;
     }
 
