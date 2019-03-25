@@ -261,7 +261,7 @@ private:
     SITL::SITL sitl;
 #endif
 
-    // Arming/Disarming mangement class
+    // Arming/Disarming management class
     AP_Arming_Copter arming;
 
     // Optical flow sensor
