@@ -1298,7 +1298,7 @@ bool GCS_MAVLINK_Copter::set_mode(const uint8_t mode)
 float GCS_MAVLINK_Copter::vfr_hud_alt() const
 {
     if (copter.g2.dev_options.get() & DevOptionVFR_HUDRelativeAlt) {
-        // compatability option for older mavlink-aware devices that
+        // compatibility option for older mavlink-aware devices that
         // assume Copter returns a relative altitude in VFR_HUD.alt
         return copter.current_loc.alt / 100.0f;
     }

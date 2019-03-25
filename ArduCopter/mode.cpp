@@ -479,7 +479,7 @@ void Copter::Mode::land_run_horizontal_control()
             // convert pilot input to lean angles
             get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
 
-            // record if pilot has overriden roll or pitch
+            // record if pilot has overridden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
                 if (!ap.land_repo_active) {
                     copter.Log_Write_Event(DATA_LAND_REPO_ACTIVE);
