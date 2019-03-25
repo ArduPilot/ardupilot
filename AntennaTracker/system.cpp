@@ -60,6 +60,7 @@ void Tracker::init_tracker()
 #endif // ENABLE_SCRIPTING
 
     // initialise compass
+    AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
     // GPS Initialization
