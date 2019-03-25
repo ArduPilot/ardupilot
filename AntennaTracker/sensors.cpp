@@ -36,15 +36,6 @@ void Tracker::update_compass(void)
     }
 }
 
-/*
- calibrate compass
-*/
-void Tracker::compass_cal_update() {
-    if (!hal.util->get_soft_armed()) {
-        compass.compass_cal_update();
-    }
-}
-
 // Save compass offsets
 void Tracker::compass_save() {
     if (AP::compass().enabled() &&
