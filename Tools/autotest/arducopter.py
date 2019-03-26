@@ -1235,50 +1235,6 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Auto mission completed: passed!")
 
-    # fly_avc_test - fly AVC mission
-    def fly_avc_test(self):
-        # Arm
-        self.mavproxy.send('switch 6\n')  # stabilize mode
-        self.wait_mode('STABILIZE')
-        self.wait_ready_to_arm()
-
-        self.arm_vehicle()
-        self.progress("Raising rotor speed")
-        self.set_rc(8, 2000)
-
-        # upload mission from file
-        self.progress("# Load copter_AVC2013_mission")
-        # load the waypoint count
-        num_wp = self.load_mission("copter_AVC2013_mission.txt")
-        if not num_wp:
-            raise NotAchievedException("load copter_AVC2013_mission failed")
-
-        self.progress("Fly AVC mission from 1 to %u" % num_wp)
-        self.mavproxy.send('wp set 1\n')
-
-        # wait for motor runup
-        self.wait_seconds(20)
-
-        # switch into AUTO mode and raise throttle
-        self.mavproxy.send('switch 4\n')  # auto mode
-        self.wait_mode('AUTO')
-        self.set_rc(3, 1500)
-
-        # fly the mission
-        self.wait_waypoint(0, num_wp-1, timeout=500)
-
-        # set throttle to minimum
-        self.zero_throttle()
-
-        # wait for disarm
-        self.mav.motors_disarmed_wait()
-        self.progress("MOTORS DISARMED OK")
-
-        self.progress("Lowering rotor speed")
-        self.set_rc(8, 1000)
-
-        self.progress("AVC mission completed: passed!")
-
     def fly_motor_fail(self, fail_servo=0, fail_mul=0.0, holdtime=30):
         """Test flight with reduced motor efficiency"""
 
@@ -3048,6 +3004,50 @@ class AutoTestHeli(AutoTestCopter):
 
     def loiter_requires_position(self):
         self.progress("Skipping loiter-requires-position for heli; rotor runup issues")
+
+    # fly_avc_test - fly AVC mission
+    def fly_avc_test(self):
+        # Arm
+        self.mavproxy.send('switch 6\n')  # stabilize mode
+        self.wait_mode('STABILIZE')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.progress("Raising rotor speed")
+        self.set_rc(8, 2000)
+
+        # upload mission from file
+        self.progress("# Load copter_AVC2013_mission")
+        # load the waypoint count
+        num_wp = self.load_mission("copter_AVC2013_mission.txt")
+        if not num_wp:
+            raise NotAchievedException("load copter_AVC2013_mission failed")
+
+        self.progress("Fly AVC mission from 1 to %u" % num_wp)
+        self.mavproxy.send('wp set 1\n')
+
+        # wait for motor runup
+        self.wait_seconds(20)
+
+        # switch into AUTO mode and raise throttle
+        self.mavproxy.send('switch 4\n')  # auto mode
+        self.wait_mode('AUTO')
+        self.set_rc(3, 1500)
+
+        # fly the mission
+        self.wait_waypoint(0, num_wp-1, timeout=500)
+
+        # set throttle to minimum
+        self.zero_throttle()
+
+        # wait for disarm
+        self.mav.motors_disarmed_wait()
+        self.progress("MOTORS DISARMED OK")
+
+        self.progress("Lowering rotor speed")
+        self.set_rc(8, 1000)
+
+        self.progress("AVC mission completed: passed!")
 
     def tests(self):
         '''return list of all tests'''
