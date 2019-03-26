@@ -1164,7 +1164,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:       // MAV ID: 109
     {
-        handle_radio_status(msg, copter.logger, copter.should_log(MASK_LOG_PM));
+        handle_radio_status(msg, copter.should_log(MASK_LOG_PM));
         break;
     }
 
