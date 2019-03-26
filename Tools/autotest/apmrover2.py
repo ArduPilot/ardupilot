@@ -44,7 +44,7 @@ class AutoTestRover(AutoTest):
     def is_rover(self):
         return True
 
-    def get_rudder_channel(self):
+    def get_stick_arming_channel(self):
         return int(self.get_parameter("RCMAP_ROLL"))
 
     ##########################################################
