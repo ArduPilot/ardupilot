@@ -46,7 +46,7 @@ class AutoTestQuadPlane(AutoTest):
     def is_plane(self):
         return True
 
-    def get_rudder_channel(self):
+    def get_stick_arming_channel(self):
         return int(self.get_parameter("RCMAP_YAW"))
 
     def get_disarm_delay(self):
