@@ -321,6 +321,10 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 void AP_Camera::send_feedback(mavlink_channel_t chan) const
 {
     const AP_AHRS &ahrs = AP::ahrs();
+    Location current_loc;
+    if (!ahrs.get_position(current_loc)) {
+        // completely ignore this failure!  AHRS will provide its best guess.
+    }
 
     float altitude, altitude_rel;
     if (current_loc.relative_alt) {
@@ -358,6 +362,13 @@ void AP_Camera::update()
         _last_location.lng = 0;
         return;
     }
+
+    const AP_AHRS &ahrs = AP::ahrs();
+    Location current_loc;
+    if (!ahrs.get_position(current_loc)) {
+        // completely ignore this failure!  AHRS will provide its best guess.
+    }
+
     if (_last_location.lat == 0 && _last_location.lng == 0) {
         _last_location = current_loc;
         return;
