@@ -393,8 +393,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Mount::AP_Mount(const struct Location &current_loc) :
-    _current_loc(current_loc)
+AP_Mount::AP_Mount()
 {
     if (_singleton != nullptr) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
