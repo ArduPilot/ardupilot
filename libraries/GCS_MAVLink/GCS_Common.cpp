@@ -2701,8 +2701,8 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
     }
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
-	
-    frsky.queue_message(MAV_SEVERITY_INFO, text);
+
+	send_text(MAV_SEVERITY_INFO, text);
     
 	df->Write_Message(text);
 }

@@ -183,9 +183,6 @@ public:
 
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
-	
-    // frsky backend
-    AP_Frsky_Telem frsky;
 
     // common send functions
     void send_heartbeat(void) const;
