@@ -1687,7 +1687,9 @@ class AutoTest(ABC):
         last_print_time = 0
         tstart = self.get_sim_time()
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
+            m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True, timeout=timeout)
+            if m is None:
+                continue
             current = m.flags
             errors = current & error_bits
             everything_ok = (errors == 0 and
