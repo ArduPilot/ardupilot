@@ -70,48 +70,6 @@ void Copter::set_throttle_takeoff()
     pos_control->init_takeoff();
 }
 
-float Copter::Mode::throttle_hover() const
-{
-    return motors->get_throttle_hover();
-}
-
-// transform pilot's manual throttle input to make hover throttle mid stick
-// used only for manual throttle modes
-// thr_mid should be in the range 0 to 1
-// returns throttle output 0 to 1
-float Copter::Mode::get_pilot_desired_throttle() const
-{
-    const float thr_mid = throttle_hover();
-    int16_t throttle_control = channel_throttle->get_control_in();
-
-    int16_t mid_stick = copter.get_throttle_mid();
-    // protect against unlikely divide by zero
-    if (mid_stick <= 0) {
-        mid_stick = 500;
-    }
-
-    // ensure reasonable throttle values
-    throttle_control = constrain_int16(throttle_control,0,1000);
-
-    // calculate normalised throttle input
-    float throttle_in;
-    if (throttle_control < mid_stick) {
-        // below the deadband
-        throttle_in = ((float)throttle_control)*0.5f/(float)mid_stick;
-    }else if(throttle_control > mid_stick) {
-        // above the deadband
-        throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
-    }else{
-        // must be in the deadband
-        throttle_in = 0.5f;
-    }
-
-    float expo = constrain_float(-(thr_mid-0.5)/0.375, -0.5f, 1.0f);
-    // calculate the output throttle using the given expo function
-    float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
-    return throttle_out;
-}
-
 // get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
 float Copter::get_pilot_desired_climb_rate(float throttle_control)
