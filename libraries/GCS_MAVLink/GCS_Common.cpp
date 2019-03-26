@@ -17,6 +17,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
@@ -694,7 +695,7 @@ void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_end(arg_list);
 }
 
-void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, AP_Logger &dataflash, bool log_radio)
+void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, bool log_radio)
 {
     mavlink_radio_t packet;
     mavlink_msg_radio_decode(msg, &packet);
@@ -730,7 +731,7 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, AP_Logger &datafla
 
     //log rssi, noise, etc if logging Performance monitoring data
     if (log_radio) {
-        dataflash.Write_Radio(packet);
+        AP::logger().Write_Radio(packet);
     }
 }
 

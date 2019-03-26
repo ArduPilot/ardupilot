@@ -6,7 +6,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
-#include <AP_Logger/AP_Logger.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <stdint.h>
@@ -360,7 +359,7 @@ protected:
     virtual void handle_mount_message(const mavlink_message_t *msg);
     void handle_fence_message(mavlink_message_t *msg);
     void handle_param_value(mavlink_message_t *msg);
-    void handle_radio_status(mavlink_message_t *msg, AP_Logger &dataflash, bool log_radio);
+    void handle_radio_status(mavlink_message_t *msg, bool log_radio);
     void handle_serial_control(const mavlink_message_t *msg);
     void handle_vision_position_delta(mavlink_message_t *msg);
 
