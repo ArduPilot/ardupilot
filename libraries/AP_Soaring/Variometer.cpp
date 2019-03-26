@@ -16,37 +16,50 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
     _ahrs.get_relative_position_D_home(alt);
     alt = -alt;
 
-    if (fabsf(alt - _last_alt) > 0.0001f) { // if no change in altitude then there will be no update of ekf buffer
-        // Both filtered total energy rates and unfiltered are computed for the thermal switching logic and the EKF
-        float aspd = 0;
-        float roll = _ahrs.roll;
-        if (!_ahrs.airspeed_estimate(&aspd)) {
-            aspd = _aparm.airspeed_cruise_cm / 100.0f;
-        }
-        _aspd_filt = ASPD_FILT * aspd + (1 - ASPD_FILT) * _aspd_filt;
-        float total_E = alt + 0.5f *_aspd_filt * _aspd_filt / GRAVITY_MSS;                                                  // Work out total energy
-        float sinkrate = correct_netto_rate(0.0f, (roll + _last_roll) / 2, _aspd_filt, polar_K, polar_Cd0, polar_B);                                     // Compute still-air sinkrate
-        reading = (total_E - _last_total_E) / ((AP_HAL::micros64() - _prev_update_time) * 1e-6) + sinkrate;    // Unfiltered netto rate
-        filtered_reading = TE_FILT * reading + (1 - TE_FILT) * filtered_reading;                       // Apply low pass timeconst filter for noise
-        displayed_reading = TE_FILT_DISPLAYED * reading + (1 - TE_FILT_DISPLAYED) * displayed_reading;
+    // Logic borrowed from AP_TECS.cpp
+    // Update and average speed rate of change
+    // Get DCM
+    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
+    // Calculate speed rate of change
+    float temp = rotMat.c.x * GRAVITY_MSS + AP::ins().get_accel().x;
+    // take 5 point moving average
+    float dsp = _vdot_filter.apply(temp);
 
-
-        _last_alt = alt;                                       // Store variables
-        _last_roll = roll;
-        _last_aspd = aspd;
-        _last_total_E = total_E;
-        _prev_update_time = AP_HAL::micros64();
-        new_data = true;
-
-        AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt", "Qffffff",
-                                               AP_HAL::micros64(),
-                                               (double)aspd,
-                                               (double)_aspd_filt,
-                                               (double)alt,
-                                               (double)roll,
-                                               (double)reading,
-                                               (double)filtered_reading);
+    float dh = 0;
+    Vector3f velned;
+    if (_ahrs.get_velocity_NED(velned)) {
+        // if possible use the EKF vertical velocity
+        dh = -velned.z;
     }
+
+    float aspd = 0;
+    if (!_ahrs.airspeed_estimate(&aspd)) {
+            aspd = _aparm.airspeed_cruise_cm / 100.0f;
+    }
+    _aspd_filt = _sp_filter.apply(aspd);
+
+    float roll = _ahrs.roll;
+
+    // Compute still-air sinkrate
+    float sinkrate = correct_netto_rate(0.0f,  roll, _aspd_filt, polar_K, polar_Cd0, polar_B);
+
+    reading = dh + dsp*_aspd_filt/GRAVITY_MSS + sinkrate;
+    
+
+    filtered_reading = TE_FILT * reading + (1 - TE_FILT) * filtered_reading;                       // Apply low pass timeconst filter for noise
+    displayed_reading = TE_FILT_DISPLAYED * reading + (1 - TE_FILT_DISPLAYED) * displayed_reading;
+
+    _prev_update_time = AP_HAL::micros64();
+    new_data = true;
+
+    AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt", "Qffffff",
+                       AP_HAL::micros64(),
+                       (double)0.0,
+                       (double)_aspd_filt,
+                       (double)alt,
+                       (double)roll,
+                       (double)reading,
+                       (double)filtered_reading);
 }
 
 

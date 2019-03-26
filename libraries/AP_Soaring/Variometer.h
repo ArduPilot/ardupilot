@@ -29,6 +29,11 @@ class Variometer {
     float _last_roll;
     float _last_total_E;
 
+    // declares a 5point average filter using floats
+    AverageFilterFloat_Size5 _vdot_filter;
+
+    AverageFilterFloat_Size5 _sp_filter;
+
 public:
     Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms);
     float alt;
