@@ -813,7 +813,7 @@ class AutoTest(ABC):
         out_trim = int(self.get_parameter("RC%u_TRIM" % chan))
         self.set_rc(chan, out_trim)
 
-    def get_rudder_channel(self):
+    def get_stick_arming_channel(self):
         """Return the Rudder channel number as set in parameter."""
         raise ErrorException("Rudder parameter is not supported by vehicle %s frame %s", (self.vehicleinfo_key(), self.frame))
 
@@ -903,38 +903,38 @@ class AutoTest(ABC):
     def arm_motors_with_rc_input(self, timeout=20):
         """Arm motors with radio."""
         self.progress("Arm motors with radio")
-        self.set_output_to_max(self.get_rudder_channel())
+        self.set_output_to_max(self.get_stick_arming_channel())
         tstart = self.get_sim_time()
         while True:
             self.wait_heartbeat()
             tdelta = self.get_sim_time_cached() - tstart
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH RADIO")
-                self.set_output_to_trim(self.get_rudder_channel())
+                self.set_output_to_trim(self.get_stick_arming_channel())
                 self.progress("Arm in %ss" % tdelta)  # TODO check arming time
                 return True
             print("Not armed after %f seconds" % (tdelta))
             if tdelta > timeout:
                 break
         self.progress("Failed to ARM with radio")
-        self.set_output_to_trim(self.get_rudder_channel())
+        self.set_output_to_trim(self.get_stick_arming_channel())
         return False
 
     def disarm_motors_with_rc_input(self, timeout=20):
         """Disarm motors with radio."""
         self.progress("Disarm motors with radio")
-        self.set_output_to_min(self.get_rudder_channel())
+        self.set_output_to_min(self.get_stick_arming_channel())
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < tstart + timeout:
             self.wait_heartbeat()
             if not self.mav.motors_armed():
                 disarm_delay = self.get_sim_time_cached() - tstart
                 self.progress("MOTORS DISARMED OK WITH RADIO")
-                self.set_output_to_trim(self.get_rudder_channel())
+                self.set_output_to_trim(self.get_stick_arming_channel())
                 self.progress("Disarm in %ss" % disarm_delay)  # TODO check disarming time
                 return True
         self.progress("Failed to DISARM with radio")
-        self.set_output_to_trim(self.get_rudder_channel())
+        self.set_output_to_trim(self.get_stick_arming_channel())
         return False
 
     def arm_motors_with_switch(self, switch_chan, timeout=20):
