@@ -26,7 +26,6 @@ Rover::Rover(void) :
     param_loader(var_info),
     channel_steer(nullptr),
     channel_throttle(nullptr),
-    channel_aux(nullptr),
     channel_lateral(nullptr),
     logger{g.log_bitmask},
     modes(&g.mode1),
