@@ -268,6 +268,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS3,
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
+    MSG_EKF_STATUS_REPORT,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
