@@ -251,9 +251,9 @@ void Storage::_flash_write(uint16_t line)
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
-    size_t base_address = stm32_flash_getpageaddr(_flash_page+sector);
+    size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
-        if (stm32_flash_write(base_address+offset, data, length)) {
+        if (hal.flash->write(base_address+offset, data, length)) {
             return true;
         }
         hal.scheduler->delay(1);
@@ -280,7 +280,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
  */
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
-    size_t base_address = stm32_flash_getpageaddr(_flash_page+sector);
+    size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     const uint8_t *b = ((const uint8_t *)base_address)+offset;
     memcpy(data, b, length);
     return true;
@@ -292,7 +292,7 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
-        if (stm32_flash_erasepage(_flash_page+sector)) {
+        if (hal.flash->erasepage(_flash_page+sector)) {
             return true;
         }
         hal.scheduler->delay(1);

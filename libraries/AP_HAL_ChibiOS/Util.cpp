@@ -235,7 +235,7 @@ bool Util::flash_bootloader()
         return false;
     }
 
-    const uint32_t addr = stm32_flash_getpageaddr(0);
+    const uint32_t addr = hal.flash->getpageaddr(0);
     if (!memcmp(fw, (const void*)addr, fw_size)) {
         hal.console->printf("Bootloader up-to-date\n");
         free(fw);
@@ -243,7 +243,7 @@ bool Util::flash_bootloader()
     }
 
     hal.console->printf("Erasing\n");
-    if (!stm32_flash_erasepage(0)) {
+    if (!hal.flash->erasepage(0)) {
         hal.console->printf("Erase failed\n");
         free(fw);
         return false;
@@ -252,7 +252,7 @@ bool Util::flash_bootloader()
     const uint8_t max_attempts = 10;
     for (uint8_t i=0; i<max_attempts; i++) {
         void *context = hal.scheduler->disable_interrupts_save();
-        bool ok = stm32_flash_write(addr, fw, fw_size);
+        bool ok = hal.flash->write(addr, fw, fw_size);
         hal.scheduler->restore_interrupts(context);
         if (!ok) {
             hal.console->printf("Flash failed! (attempt=%u/%u)\n",
