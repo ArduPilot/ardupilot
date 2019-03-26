@@ -51,7 +51,7 @@ class AP_Mount
     friend class AP_Mount_SToRM32_serial;
 
 public:
-    AP_Mount(const struct Location &current_loc);
+    AP_Mount();
 
     /* Do not allow copies */
     AP_Mount(const AP_Mount &other) = delete;
@@ -128,9 +128,6 @@ public:
 protected:
 
     static AP_Mount *_singleton;
-
-    // private members
-    const struct Location   &_current_loc;  // reference to the vehicle's current location
 
     // frontend parameters
     AP_Int8             _joystick_speed;    // joystick gain

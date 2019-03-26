@@ -134,9 +134,13 @@ float AP_Mount_Backend::angle_input_rad(const RC_Channel* rc, int16_t angle_min,
 // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
 void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan)
 {
-    float GPS_vector_x = (target.lng-_frontend._current_loc.lng)*cosf(ToRad((_frontend._current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
-    float GPS_vector_y = (target.lat-_frontend._current_loc.lat)*0.01113195f;
-    float GPS_vector_z = (target.alt-_frontend._current_loc.alt);                 // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
+    Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        // completely ignore this error; ahrs will give us its best guess
+    }
+    const float GPS_vector_x = (target.lng-current_loc.lng)*cosf(ToRad((current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
+    const float GPS_vector_y = (target.lat-current_loc.lat)*0.01113195f;
+    const float GPS_vector_z = (target.alt-current_loc.alt);                 // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
     float target_distance = 100.0f*norm(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
 
     // initialise all angles to zero
