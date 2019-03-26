@@ -165,7 +165,6 @@ private:
     // primary control channels
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
-    RC_Channel *channel_aux;
     RC_Channel *channel_lateral;
 
     AP_Logger logger;
