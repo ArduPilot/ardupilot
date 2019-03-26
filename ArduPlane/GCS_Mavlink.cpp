@@ -1168,7 +1168,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
     {
-        handle_radio_status(msg, plane.logger, plane.should_log(MASK_LOG_PM));
+        handle_radio_status(msg, plane.should_log(MASK_LOG_PM));
         break;
     }
 
