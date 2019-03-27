@@ -284,9 +284,6 @@ void Sub::one_hz_loop()
     // log terrain data
     terrain_logging();
 
-    // init compass location for declination
-    init_compass_location();
-
     // need to set "likely flying" when armed to allow for compass
     // learning to run
     ahrs.set_likely_flying(hal.util->get_soft_armed());

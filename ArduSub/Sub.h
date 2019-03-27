@@ -454,7 +454,6 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
-    void init_compass_location();
     void fast_loop();
     void fifty_hz_loop();
     void update_batt_compass(void);
