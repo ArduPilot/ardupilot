@@ -959,6 +959,9 @@ void Compass::_detect_backends(void)
 bool
 Compass::read(void)
 {
+    if (!_initial_location_set) {
+        try_set_initial_location();
+    }
     for (uint8_t i=0; i< _backend_count; i++) {
         // call read on each of the backend. This call updates field[i]
         _backends[i]->read();
@@ -1060,18 +1063,28 @@ Compass::save_motor_compensation()
     }
 }
 
-void
-Compass::set_initial_location(int32_t latitude, int32_t longitude)
+void Compass::try_set_initial_location()
 {
+    if (!_auto_declination) {
+        return;
+    }
+    if (!_enabled) {
+        return;
+    }
+
+    Location loc;
+    if (!AP::ahrs().get_position(loc)) {
+        return;
+    }
+    _initial_location_set = true;
+
     // if automatic declination is configured, then compute
     // the declination based on the initial GPS fix
-    if (_auto_declination) {
-        // Set the declination based on the lat/lng from GPS
-        _declination.set(radians(
-                AP_Declination::get_declination(
-                    (float)latitude / 10000000,
-                    (float)longitude / 10000000)));
-    }
+    // Set the declination based on the lat/lng from GPS
+    _declination.set(radians(
+                         AP_Declination::get_declination(
+                             (float)loc.lat / 10000000,
+                             (float)loc.lng / 10000000)));
 }
 
 /// return true if the compass should be used for yaw calculations
