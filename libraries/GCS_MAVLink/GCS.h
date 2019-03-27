@@ -407,7 +407,7 @@ protected:
     MAV_RESULT handle_command_flash_bootloader(const mavlink_command_long_t &packet);
 
     // generally this should not be overridden; Plane overrides it to ensure
-    // failsafe isn't triggered during calibation
+    // failsafe isn't triggered during calibration
     virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet);
 
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet);
