@@ -408,7 +408,7 @@ void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
 {
     //set target alt
     Location loc = cmd.content.location;
-    location_sanitize(current_loc, loc);
+    loc.sanitize(current_loc);
     set_next_WP(loc);
 
     // only set the direction if the quadplane landing radius override is not 0
@@ -435,7 +435,7 @@ void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
 void Plane::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
     Location cmdloc = cmd.content.location;
-    location_sanitize(current_loc, cmdloc);
+    cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
 }
@@ -443,7 +443,7 @@ void Plane::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
 {
     Location cmdloc = cmd.content.location;
-    location_sanitize(current_loc, cmdloc);
+    cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
 
@@ -454,7 +454,7 @@ void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
 void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     Location cmdloc = cmd.content.location;
-    location_sanitize(current_loc, cmdloc);
+    cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
 
@@ -500,7 +500,7 @@ void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     //set target alt  
     Location loc = cmd.content.location;
-    location_sanitize(current_loc, loc);
+    loc.sanitize(current_loc);
     set_next_WP(loc);
     loiter_set_direction_wp(cmd);
 

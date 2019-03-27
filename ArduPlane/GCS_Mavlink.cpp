@@ -776,7 +776,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
             requested_position.loiter_ccw = 1;
         }
 
-        if (location_sanitize(plane.current_loc, requested_position)) {
+        if (requested_position.sanitize(plane.current_loc)) {
             // if the location wasn't already sane don't load it
             return MAV_RESULT_FAILED; // failed as the location is not valid
         }
