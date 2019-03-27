@@ -11,7 +11,7 @@ public:
               Compass &_compass,
               AP_GPS &_gps,
               AP_Airspeed &_airspeed,
-              AP_Logger &_dataflash,
+              AP_Logger &_logger,
               struct LogStructure *log_structure,
               uint8_t log_structure_count,
               const char **&nottypes);
@@ -47,7 +47,7 @@ private:
     Compass &compass;
     AP_GPS &gps;
     AP_Airspeed &airspeed;
-    AP_Logger &dataflash;
+    AP_Logger &logger;
     struct LogStructure *_log_structure;
     uint8_t _log_structure_count;
 
