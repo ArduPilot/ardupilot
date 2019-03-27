@@ -453,25 +453,14 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method
         return false;
     }
 
-    const Compass &_compass = AP::compass();
 #ifndef ALLOW_ARM_NO_COMPASS
+    const Compass &_compass = AP::compass();
     // check compass health
     if (!_compass.healthy()) {
         check_failed(ARMING_CHECK_NONE, display_failure, "Compass not healthy");
         return false;
     }
 #endif
-
-    if (_compass.is_calibrating()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Compass calibration running");
-        return false;
-    }
-
-    //check if compass has calibrated and requires reboot
-    if (_compass.compass_cal_requires_reboot()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Compass calibrated requires reboot");
-        return false;
-    }
 
     control_mode_t control_mode = copter.control_mode;
 
