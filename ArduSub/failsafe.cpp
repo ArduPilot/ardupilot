@@ -73,7 +73,10 @@ void Sub::failsafe_sensors_check()
 
     // We need a depth sensor to do any sort of auto z control
     if (sensor_health.depth) {
-        failsafe.sensor_health = false;
+        if (failsafe.sensor_health) {
+            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::ERROR_RESOLVED);
+            failsafe.sensor_health = false;
+        }
         return;
     }
 
