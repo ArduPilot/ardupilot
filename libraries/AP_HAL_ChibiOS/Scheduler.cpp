@@ -236,7 +236,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     }
 #endif
 
-#ifndef NO_DATAFLASH
+#ifndef NO_LOGGING
     //stop logging
     if (AP_Logger::get_singleton()) {
         AP::logger().StopLogging();
