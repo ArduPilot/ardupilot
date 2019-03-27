@@ -21,6 +21,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class OpticalFlow_backend;
 class AP_AHRS_NavEKF;
@@ -52,6 +53,9 @@ public:
 
     // read latest values from sensor and fill in x,y and totals.
     void update(void);
+
+    // handle optical flow mavlink messages
+    void handle_msg(const mavlink_message_t *msg);
 
     // quality - returns the surface quality as a measure from 0 ~ 255
     uint8_t quality() const { return _state.surface_quality; }
