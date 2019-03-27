@@ -79,7 +79,9 @@ public:
 
 protected:
 
-    virtual bool init(bool ignore_checks) = 0;
+    virtual bool init(bool ignore_checks) {
+        return true;
+    }
     virtual void run() = 0;
 
     virtual bool is_autopilot() const { return false; }
@@ -120,6 +122,9 @@ protected:
     int32_t get_alt_above_ground_cm(void);
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
+
+    // return expected input throttle setting to hover:
+    virtual float throttle_hover() const;
 
     // convenience references to avoid code churn in conversion:
     Parameters &g;
@@ -185,7 +190,7 @@ protected:
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_climb_rate(float throttle_control);
-    float get_pilot_desired_throttle(int16_t throttle_control, float thr_mid = 0.0f);
+    float get_pilot_desired_throttle() const;
     float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
@@ -207,7 +212,6 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
     bool is_autopilot() const override { return false; }
@@ -221,6 +225,13 @@ protected:
     const char *name4() const override { return "ACRO"; }
 
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
+
+    float throttle_hover() const override {
+        if (g2.acro_thr_mid > 0) {
+            return g2.acro_thr_mid;
+        }
+        return Copter::Mode::throttle_hover();
+    }
 
 private:
 
@@ -1030,7 +1041,6 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
     bool requires_GPS() const override { return false; }

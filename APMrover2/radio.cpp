@@ -15,7 +15,7 @@ void Rover::set_control_channels(void)
     channel_throttle->set_angle(100);
     channel_lateral->set_angle(100);
 
-    // Allow to reconfigure ouput when not armed
+    // Allow to reconfigure output when not armed
     if (!arming.is_armed()) {
         g2.motors.setup_servo_output();
         // For a rover safety is TRIM throttle

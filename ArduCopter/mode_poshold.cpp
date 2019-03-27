@@ -499,7 +499,7 @@ void Copter::ModePosHold::run()
                         if (!is_zero(target_pitch)) {
                             // init transition to pilot override
                             poshold_pitch_controller_to_pilot_override();
-                            // if roll not overriden switch roll-mode to brake (but be ready to go back to loiter any time)
+                            // if roll not overridden switch roll-mode to brake (but be ready to go back to loiter any time)
                             if (is_zero(target_roll)) {
                                 poshold.roll_mode = POSHOLD_BRAKE_READY_TO_LOITER;
                                 poshold.brake_roll = 0;

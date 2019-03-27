@@ -184,7 +184,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     Copter::Mode *new_flightmode = mode_from_mode_num(mode);
     if (new_flightmode == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
@@ -195,7 +195,23 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     // rotor runup is not complete
     if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()){
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        return false;
+    }
+#endif
+
+#if FRAME_CONFIG != HELI_FRAME
+    // ensure vehicle doesn't leap off the ground if a user switches
+    // into a manual throttle mode from a non-manual-throttle mode
+    // (e.g. user arms in guided, raises throttle to 1300 (not enough to
+    // trigger auto takeoff), then switches into manual):
+    if (!ignore_checks &&
+        ap.land_complete &&
+        (new_flightmode->has_manual_throttle() || new_flightmode == &mode_drift) &&
+        !copter.flightmode->has_manual_throttle() &&
+        new_flightmode->get_pilot_desired_throttle() > copter.get_non_takeoff_throttle()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: throttle too high");
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 #endif
@@ -204,13 +220,13 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         new_flightmode->requires_GPS() &&
         !copter.position_ok()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
@@ -479,7 +495,7 @@ void Copter::Mode::land_run_horizontal_control()
             // convert pilot input to lean angles
             get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
 
-            // record if pilot has overriden roll or pitch
+            // record if pilot has overridden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
                 if (!ap.land_repo_active) {
                     copter.Log_Write_Event(DATA_LAND_REPO_ACTIVE);
@@ -544,6 +560,43 @@ void Copter::Mode::land_run_horizontal_control()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
 }
 
+float Copter::Mode::throttle_hover() const
+{
+    return motors->get_throttle_hover();
+}
+
+// transform pilot's manual throttle input to make hover throttle mid stick
+// used only for manual throttle modes
+// thr_mid should be in the range 0 to 1
+// returns throttle output 0 to 1
+float Copter::Mode::get_pilot_desired_throttle() const
+{
+    const float thr_mid = throttle_hover();
+    int16_t throttle_control = channel_throttle->get_control_in();
+
+    int16_t mid_stick = copter.get_throttle_mid();
+    // protect against unlikely divide by zero
+    if (mid_stick <= 0) {
+        mid_stick = 500;
+    }
+
+    // ensure reasonable throttle values
+    throttle_control = constrain_int16(throttle_control,0,1000);
+
+    // calculate normalised throttle input
+    float throttle_in;
+    if (throttle_control < mid_stick) {
+        throttle_in = ((float)throttle_control)*0.5f/(float)mid_stick;
+    } else {
+        throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
+    }
+
+    float expo = constrain_float(-(thr_mid-0.5)/0.375, -0.5f, 1.0f);
+    // calculate the output throttle using the given expo function
+    float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
+    return throttle_out;
+}
+
 // pass-through functions to reduce code churn on conversion;
 // these are candidates for moving into the Mode base
 // class.
@@ -561,11 +614,6 @@ float Copter::Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
 float Copter::Mode::get_pilot_desired_climb_rate(float throttle_control)
 {
     return copter.get_pilot_desired_climb_rate(throttle_control);
-}
-
-float Copter::Mode::get_pilot_desired_throttle(int16_t throttle_control, float thr_mid)
-{
-    return copter.get_pilot_desired_throttle(throttle_control, thr_mid);
 }
 
 float Copter::Mode::get_non_takeoff_throttle()

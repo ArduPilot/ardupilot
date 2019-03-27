@@ -1316,7 +1316,7 @@ void Copter::convert_tradheli_parameters(void)
             { Parameters::k_param_motors, 19, AP_PARAM_INT8, "H_SW_COL_DIR" },
         };
 
-        // convert single heli paramters without scaling
+        // convert single heli parameters without scaling
         uint8_t table_size = ARRAY_SIZE(singleheli_conversion_info);
         for (uint8_t i=0; i<table_size; i++) {
             AP_Param::convert_old_parameter(&singleheli_conversion_info[i], 1.0f);

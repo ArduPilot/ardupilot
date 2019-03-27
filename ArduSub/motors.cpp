@@ -150,6 +150,7 @@ bool Sub::init_motor_test()
     // after failure.
     if (tnow < last_do_motor_test_fail_ms + 10000 && last_do_motor_test_fail_ms > 0) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cool down required");
+        return false;
     }
 
     // check if safety switch has been pushed

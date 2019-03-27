@@ -1164,7 +1164,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:       // MAV ID: 109
     {
-        handle_radio_status(msg, copter.logger, copter.should_log(MASK_LOG_PM));
+        handle_radio_status(msg, copter.should_log(MASK_LOG_PM));
         break;
     }
 
@@ -1298,7 +1298,7 @@ bool GCS_MAVLINK_Copter::set_mode(const uint8_t mode)
 float GCS_MAVLINK_Copter::vfr_hud_alt() const
 {
     if (copter.g2.dev_options.get() & DevOptionVFR_HUDRelativeAlt) {
-        // compatability option for older mavlink-aware devices that
+        // compatibility option for older mavlink-aware devices that
         // assume Copter returns a relative altitude in VFR_HUD.alt
         return copter.current_loc.alt / 100.0f;
     }

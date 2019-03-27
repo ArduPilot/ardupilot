@@ -838,21 +838,24 @@ void AC_PosControl::write_log()
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-    AP::logger().Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
-                                           "smmmmnnnnoooo", "FBBBBBBBBBBBB", "Qffffffffffff",
-                                           AP_HAL::micros64(),
-                                           (double)pos_target.x,
-                                           (double)pos_target.y,
-                                           (double)position.x,
-                                           (double)position.y,
-                                           (double)vel_target.x,
-                                           (double)vel_target.y,
-                                           (double)velocity.x,
-                                           (double)velocity.y,
-                                           (double)accel_target.x,
-                                           (double)accel_target.y,
-                                           (double)accel_x,
-                                           (double)accel_y);
+    AP::logger().Write("PSC",
+                       "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
+                       "smmmmnnnnoooo",
+                       "F000000000000",
+                       "Qffffffffffff",
+                       AP_HAL::micros64(),
+                       double(pos_target.x * 0.01f),
+                       double(pos_target.y * 0.01f),
+                       double(position.x * 0.01f),
+                       double(position.y * 0.01f),
+                       double(vel_target.x * 0.01f),
+                       double(vel_target.y * 0.01f),
+                       double(velocity.x * 0.01f),
+                       double(velocity.y * 0.01f),
+                       double(accel_target.x * 0.01f),
+                       double(accel_target.y * 0.01f),
+                       double(accel_x * 0.01f),
+                       double(accel_y * 0.01f));
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller

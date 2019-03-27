@@ -88,3 +88,17 @@ void AC_PosControl_Sub::set_alt_target_from_climb_rate_ff(float climb_rate_cms, 
         _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
     }
 }
+
+/// relax_alt_hold_controllers - set all desired and targets to measured
+void AC_PosControl_Sub::relax_alt_hold_controllers()
+{
+    _pos_target.z = _inav.get_altitude();
+    _vel_desired.z = 0.0f;
+    _flags.use_desvel_ff_z = false;
+    _vel_target.z = _inav.get_velocity_z();
+    _vel_last.z = _inav.get_velocity_z();
+    _accel_desired.z = 0.0f;
+    _accel_last_z_cms = 0.0f;
+    _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
+    _flags.reset_accel_to_throttle = true;
+}

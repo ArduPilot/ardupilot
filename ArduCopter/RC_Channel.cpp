@@ -2,7 +2,7 @@
 
 #include "RC_Channel.h"
 
-// defining these two macros and including the RC_Channels_VarInfo header defines the parmaeter information common to all vehicle types
+// defining these two macros and including the RC_Channels_VarInfo header defines the parameter information common to all vehicle types
 #define RC_CHANNELS_SUBCLASS RC_Channels_Copter
 #define RC_CHANNEL_SUBCLASS RC_Channel_Copter
 
@@ -136,7 +136,7 @@ void RC_Channel_Copter::do_aux_function_change_mode(const control_mode_t mode,
     }
 }
 
-// do_aux_function - implement the function invoked by auxillary switches
+// do_aux_function - implement the function invoked by auxiliary switches
 void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {

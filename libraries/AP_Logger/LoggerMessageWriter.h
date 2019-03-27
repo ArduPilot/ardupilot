@@ -29,13 +29,13 @@ public:
     void process() override;
 
 private:
-    enum write_sysinfo_blockwriter_stage {
-        ws_blockwriter_stage_init,
+    enum write_sysinfo_blockwriter_stage : uint8_t {
+        ws_blockwriter_stage_formats = 0,
         ws_blockwriter_stage_firmware_string,
         ws_blockwriter_stage_git_versions,
         ws_blockwriter_stage_system_id
     };
-    write_sysinfo_blockwriter_stage stage = ws_blockwriter_stage_init;
+    write_sysinfo_blockwriter_stage stage;
 };
 
 class LoggerMessageWriter_WriteEntireMission : public LoggerMessageWriter {
@@ -46,14 +46,13 @@ public:
 
 private:
     enum entire_mission_blockwriter_stage {
-        em_blockwriter_stage_init,
-        em_blockwriter_stage_write_new_mission_message,
+        em_blockwriter_stage_write_new_mission_message = 0,
         em_blockwriter_stage_write_mission_items,
         em_blockwriter_stage_done
     };
 
-    uint16_t _mission_number_to_send = 0;
-    entire_mission_blockwriter_stage stage = em_blockwriter_stage_init;
+    uint16_t _mission_number_to_send;
+    entire_mission_blockwriter_stage stage;
 };
 
 class LoggerMessageWriter_WriteAllRallyPoints : public LoggerMessageWriter {
@@ -64,14 +63,13 @@ public:
 
 private:
     enum all_rally_points_blockwriter_stage {
-        ar_blockwriter_stage_init,
-        ar_blockwriter_stage_write_new_rally_message,
+        ar_blockwriter_stage_write_new_rally_message = 0,
         ar_blockwriter_stage_write_all_rally_points,
         ar_blockwriter_stage_done
     };
 
-    uint16_t _rally_number_to_send = 0;
-    all_rally_points_blockwriter_stage stage = ar_blockwriter_stage_init;
+    uint16_t _rally_number_to_send;
+    all_rally_points_blockwriter_stage stage;
 };
 
 class LoggerMessageWriter_DFLogStart : public LoggerMessageWriter {
@@ -97,8 +95,7 @@ public:
 private:
 
     enum log_start_blockwriter_stage {
-        ls_blockwriter_stage_init,
-        ls_blockwriter_stage_formats,
+        ls_blockwriter_stage_formats = 0,
         ls_blockwriter_stage_units,
         ls_blockwriter_stage_multipliers,
         ls_blockwriter_stage_format_units,
@@ -110,9 +107,9 @@ private:
         ls_blockwriter_stage_done,
     };
 
-    bool _fmt_done = false;
+    bool _fmt_done;
 
-    log_start_blockwriter_stage stage = ls_blockwriter_stage_init;
+    log_start_blockwriter_stage stage;
 
     uint16_t next_format_to_send;
 

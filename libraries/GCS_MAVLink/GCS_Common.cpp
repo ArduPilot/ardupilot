@@ -17,6 +17,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
@@ -694,7 +695,7 @@ void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_end(arg_list);
 }
 
-void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, AP_Logger &dataflash, bool log_radio)
+void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, bool log_radio)
 {
     mavlink_radio_t packet;
     mavlink_msg_radio_decode(msg, &packet);
@@ -730,7 +731,7 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, AP_Logger &datafla
 
     //log rssi, noise, etc if logging Performance monitoring data
     if (log_radio) {
-        dataflash.Write_Radio(packet);
+        AP::logger().Write_Radio(packet);
     }
 }
 
@@ -2316,6 +2317,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_comman
     return MAV_RESULT_FAILED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_long_t &packet)
+{
+    const uint32_t mavlink_id = (uint32_t)packet.param1;
+    const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
+    if (id == MSG_LAST) {
+        return MAV_RESULT_FAILED;
+    }
+    send_message(id);
+    return MAV_RESULT_ACCEPTED;
+}
+
 bool GCS_MAVLINK::get_ap_message_interval(ap_message id, uint16_t &interval_ms) const
 {
     // check if it's a specially-handled message:
@@ -3655,6 +3667,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_GET_MESSAGE_INTERVAL:
         result = handle_command_get_message_interval(packet);
+        break;
+
+    case MAV_CMD_REQUEST_MESSAGE:
+        result = handle_command_request_message(packet);
         break;
 
     case MAV_CMD_DO_SET_SERVO:

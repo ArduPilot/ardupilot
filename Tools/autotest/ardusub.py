@@ -14,6 +14,14 @@ from common import NotAchievedException
 
 SITL_START_LOCATION = mavutil.location(33.810313, -118.393867, 0, 185)
 
+class Joystick():
+    Pitch = 1
+    Roll = 2
+    Throttle = 3
+    Yaw = 4
+    Forward = 5
+    Lateral = 6
+
 class AutoTestSub(AutoTest):
 
     def log_name(self):
@@ -44,23 +52,23 @@ class AutoTestSub(AutoTest):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        self.set_rc(3, 1600)
-        self.set_rc(5, 1600)
-        self.set_rc(6, 1550)
+        self.set_rc(Joystick.Throttle, 1600)
+        self.set_rc(Joystick.Forward, 1600)
+        self.set_rc(Joystick.Lateral, 1550)
 
         self.wait_distance(50, accuracy=7, timeout=200)
-        self.set_rc(4, 1550)
+        self.set_rc(Joystick.Yaw, 1550)
 
         self.wait_heading(0)
-        self.set_rc(4, 1500)
+        self.set_rc(Joystick.Yaw, 1500)
 
         self.wait_distance(50, accuracy=7, timeout=100)
-        self.set_rc(4, 1550)
+        self.set_rc(Joystick.Yaw, 1550)
 
         self.wait_heading(0)
-        self.set_rc(4, 1500)
-        self.set_rc(5, 1500)
-        self.set_rc(6, 1100)
+        self.set_rc(Joystick.Yaw, 1500)
+        self.set_rc(Joystick.Forward, 1500)
+        self.set_rc(Joystick.Lateral, 1100)
 
         self.wait_distance(75, accuracy=7, timeout=100)
         self.set_rc_default()
