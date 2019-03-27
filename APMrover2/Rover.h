@@ -165,7 +165,6 @@ private:
     // primary control channels
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
-    RC_Channel *channel_aux;
     RC_Channel *channel_lateral;
 
     AP_Logger logger;
@@ -424,7 +423,6 @@ private:
     void Log_Write_Arm_Disarm();
     void Log_Write_Attitude();
     void Log_Write_Depth();
-    void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Nav_Tuning();
     void Log_Write_Sail();

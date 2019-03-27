@@ -21,6 +21,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_SerialManager.h"
 
 extern const AP_HAL::HAL& hal;

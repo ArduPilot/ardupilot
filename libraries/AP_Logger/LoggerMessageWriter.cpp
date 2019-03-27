@@ -25,7 +25,7 @@ void LoggerMessageWriter_DFLogStart::reset()
     _writeentiremission.reset();
     _writeallrallypoints.reset();
 
-    stage = ls_blockwriter_stage_init;
+    stage = ls_blockwriter_stage_formats;
     next_format_to_send = 0;
     _next_unit_to_send = 0;
     _next_multiplier_to_send = 0;
@@ -36,10 +36,6 @@ void LoggerMessageWriter_DFLogStart::reset()
 void LoggerMessageWriter_DFLogStart::process()
 {
     switch(stage) {
-    case ls_blockwriter_stage_init:
-        stage = ls_blockwriter_stage_formats;
-        FALLTHROUGH;
-
     case ls_blockwriter_stage_formats:
         // write log formats so the log is self-describing
         while (next_format_to_send < _dataflash_backend->num_types()) {
@@ -140,7 +136,7 @@ void LoggerMessageWriter_DFLogStart::process()
 void LoggerMessageWriter_WriteSysInfo::reset()
 {
     LoggerMessageWriter::reset();
-    stage = ws_blockwriter_stage_init;
+    stage = ws_blockwriter_stage_formats;
 }
 
 void LoggerMessageWriter_WriteSysInfo::process() {
@@ -148,7 +144,7 @@ void LoggerMessageWriter_WriteSysInfo::process() {
 
     switch(stage) {
 
-    case ws_blockwriter_stage_init:
+    case ws_blockwriter_stage_formats:
         stage = ws_blockwriter_stage_firmware_string;
         FALLTHROUGH;
 
@@ -200,14 +196,6 @@ void LoggerMessageWriter_WriteAllRallyPoints::process()
 
     switch(stage) {
 
-    case ar_blockwriter_stage_init:
-        if (_rally == nullptr) {
-            stage = ar_blockwriter_stage_done;
-            break;
-        }
-        stage = ar_blockwriter_stage_write_new_rally_message;
-        FALLTHROUGH;
-
     case ar_blockwriter_stage_write_new_rally_message:
         if (! _dataflash_backend->Write_Message("New rally")) {
             return; // call me again
@@ -241,7 +229,7 @@ void LoggerMessageWriter_WriteAllRallyPoints::process()
 void LoggerMessageWriter_WriteAllRallyPoints::reset()
 {
     LoggerMessageWriter::reset();
-    stage = ar_blockwriter_stage_init;
+    stage = ar_blockwriter_stage_write_new_rally_message;
     _rally_number_to_send = 0;
 }
 
@@ -253,15 +241,6 @@ void LoggerMessageWriter_WriteEntireMission::process() {
     }
 
     switch(stage) {
-
-    case em_blockwriter_stage_init:
-        if (_mission == nullptr) {
-            stage = em_blockwriter_stage_done;
-            break;
-        } else {
-            stage = em_blockwriter_stage_write_new_mission_message;
-        }
-        FALLTHROUGH;
 
     case em_blockwriter_stage_write_new_mission_message:
         if (! _dataflash_backend->Write_Message("New mission")) {
@@ -296,6 +275,6 @@ void LoggerMessageWriter_WriteEntireMission::process() {
 void LoggerMessageWriter_WriteEntireMission::reset()
 {
     LoggerMessageWriter::reset();
-    stage = em_blockwriter_stage_init;
+    stage = em_blockwriter_stage_write_new_mission_message;
     _mission_number_to_send = 0;
 }

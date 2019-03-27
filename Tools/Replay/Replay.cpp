@@ -969,7 +969,6 @@ void AP_Camera::configure(float, float, float, float, float, float, float) {}
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
 
 // avoid building/linking Devo:
-AP_DEVO_Telem::AP_DEVO_Telem() {}
 void AP_DEVO_Telem::init() {};
 
 AP_HAL_MAIN_CALLBACKS(&replay);

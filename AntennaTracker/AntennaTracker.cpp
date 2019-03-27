@@ -146,7 +146,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Tracker::Tracker(void)
     : logger(g.log_bitmask)
 {
-    memset(&vehicle, 0, sizeof(vehicle));
 }
 
 Tracker tracker;

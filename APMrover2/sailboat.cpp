@@ -6,7 +6,7 @@
 To Do List
  - Improve tacking in light winds and bearing away in strong wings
  - consider drag vs lift sailing differences, ie upwind sail is like wing, dead down wind sail is like parachute
- - max speed paramiter and contoller, for maping you may not want to go too fast
+ - max speed paramiter and controller, for mapping you may not want to go too fast
  - mavlink sailing messages
  - motor sailing, some boats may also have motor, we need to decide at what point we would be better of just motoring in low wind, or for a tight loiter, or to hit waypoint exactly, or if stuck head to wind, or to reverse...
  - smart decision making, ie tack on windshifts, what to do if stuck head to wind

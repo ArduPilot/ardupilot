@@ -83,25 +83,6 @@ void Rover::Log_Write_Depth()
                         (double)(rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f));
 }
 
-struct PACKED log_Error {
-  LOG_PACKET_HEADER;
-  uint64_t time_us;
-  uint8_t sub_system;
-  uint8_t error_code;
-};
-
-// Write an error packet
-void Rover::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
-{
-  struct log_Error pkt = {
-      LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
-      time_us       : AP_HAL::micros64(),
-      sub_system    : sub_system,
-      error_code    : error_code,
-  };
-  logger.WriteBlock(&pkt, sizeof(pkt));
-}
-
 // guided mode logging
 struct PACKED log_GuidedTarget {
     LOG_PACKET_HEADER;
@@ -335,8 +316,6 @@ const LogStructure Rover::log_structure[] = {
       "STER", "Qhfffff",   "TimeUS,SteerIn,SteerOut,DesLatAcc,LatAcc,DesTurnRate,TurnRate", "s--ookk", "F--0000" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
-    { LOG_ERROR_MSG, sizeof(log_Error),
-      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" },
 };
 
 void Rover::log_init(void)
@@ -350,7 +329,6 @@ void Rover::log_init(void)
 void Rover::Log_Write_Arm_Disarm() {}
 void Rover::Log_Write_Attitude() {}
 void Rover::Log_Write_Depth() {}
-void Rover::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Rover::Log_Write_Nav_Tuning() {}
 void Rover::Log_Write_Sail() {}

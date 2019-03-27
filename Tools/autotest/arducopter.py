@@ -73,7 +73,7 @@ class AutoTestCopter(AutoTest):
     def is_copter(self):
         return True
 
-    def get_rudder_channel(self):
+    def get_stick_arming_channel(self):
         return int(self.get_parameter("RCMAP_YAW"))
 
     def get_disarm_delay(self):
@@ -1377,6 +1377,9 @@ class AutoTestCopter(AutoTest):
                 self.progress("  Yaw: %f deg" % int_error_yaw)
                 self.progress("----")
 
+                if int_error_yaw_rate > 0.1:
+                    raise NotAchievedException("Vehicle is spinning")
+
                 if alt_delta < -20:
                     raise NotAchievedException("Vehicle is descending")
 
@@ -2328,6 +2331,12 @@ class AutoTestCopter(AutoTest):
         self.run_cmd_do_set_mode(
             "ACRO",
             want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
+        self.run_cmd_do_set_mode(
+            "STABILIZE",
+            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
+        self.run_cmd_do_set_mode(
+            "DRIFT",
+            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED) # should fix this result code!
         self.set_rc(3, 1000)
         self.run_cmd_do_set_mode("ACRO")
         self.mav.motors_disarmed_wait()
@@ -2677,6 +2686,25 @@ class AutoTestCopter(AutoTest):
                                        (tdelta, max_good_tdelta))
         self.progress("Vehicle returned")
 
+    def fly_brake_mode(self):
+        # test brake mode
+        self.progress("Testing brake mode")
+        self.takeoff(10, mode="LOITER")
+
+        self.progress("Ensuring RC inputs have no effect in brake mode")
+        self.change_mode("STABILIZE")
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1200)
+        self.wait_groundspeed(5, 1000)
+
+        self.change_mode("BRAKE")
+        self.wait_groundspeed(0, 1)
+
+        self.set_rc(2, 1500)
+
+        self.do_RTL()
+        self.progress("Ran brake  mode")
+
     def fly_precision_companion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
 
@@ -2790,6 +2818,41 @@ class AutoTestCopter(AutoTest):
         ret[5] = 1800 # mode switch
         return ret
 
+    def test_manual_control(self):
+        '''test manual_control mavlink message'''
+        self.change_mode('STABILIZE')
+        self.takeoff(10)
+
+        tstart = self.get_sim_time_cached()
+        want_pitch_degrees = -20
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise AutoTestTimeoutException("Did not reach pitch")
+            self.progress("Sending pitch-forward")
+            self.mav.mav.manual_control_send(
+                1, # target system
+                500, # x (pitch)
+                32767, # y (roll)
+                32767, # z (thrust)
+                32767, # r (yaw)
+                0) # button mask
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
+            print("m=%s" % str(m))
+            if m is None:
+                continue
+            p = math.degrees(m.pitch)
+            self.progress("pitch=%f want<=%f" % (p, want_pitch_degrees))
+            if p <= want_pitch_degrees:
+                break
+        self.mav.mav.manual_control_send(
+            1, # target system
+            32767, # x (pitch)
+            32767, # y (roll)
+            32767, # z (thrust)
+            32767, # r (yaw)
+            0) # button mask
+        self.do_RTL()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
@@ -2838,6 +2901,8 @@ class AutoTestCopter(AutoTest):
             ("AutoTune", "Fly AUTOTUNE mode", self.fly_autotune),
 
             ("ThrowMode", "Fly Throw Mode", self.fly_throw_mode),
+
+            ("BrakeMode", "Fly Brake Mode", self.fly_brake_mode),
 
             ("RecordThenPlayMission",
              "Use switches to toggle in mission, then fly it",
@@ -2943,6 +3008,10 @@ class AutoTestCopter(AutoTest):
             ("ManualThrottleModeChange",
              "Check manual throttle mode changes denied on high throttle",
              self.fly_manual_throttle_mode_change),
+
+            ("MANUAL_CONTROL",
+             "Test mavlink MANUAL_CONTROL",
+             self.test_manual_control),
 
             ("LogDownLoad",
              "Log download",

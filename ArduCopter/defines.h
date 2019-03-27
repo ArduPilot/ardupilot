@@ -240,7 +240,6 @@ enum LoggingParameters {
      TYPE_AIRSTART_MSG,
      TYPE_GROUNDSTART_MSG,
      LOG_CONTROL_TUNING_MSG,
-     LOG_ERROR_MSG,
      LOG_DATA_INT16_MSG,
      LOG_DATA_UINT16_MSG,
      LOG_DATA_INT32_MSG,
@@ -273,67 +272,6 @@ enum LoggingParameters {
 #define MASK_LOG_IMU_FAST               (1UL<<18)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ANY                    0xFFFF
-
-// Error message sub systems and error codes
-#define ERROR_SUBSYSTEM_MAIN                1
-#define ERROR_SUBSYSTEM_RADIO               2
-#define ERROR_SUBSYSTEM_COMPASS             3
-#define ERROR_SUBSYSTEM_OPTFLOW             4   // not used
-#define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
-#define ERROR_SUBSYSTEM_FAILSAFE_BATT       6
-#define ERROR_SUBSYSTEM_FAILSAFE_GPS        7   // not used
-#define ERROR_SUBSYSTEM_FAILSAFE_GCS        8
-#define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
-#define ERROR_SUBSYSTEM_FLIGHT_MODE         10
-#define ERROR_SUBSYSTEM_GPS                 11
-#define ERROR_SUBSYSTEM_CRASH_CHECK         12
-#define ERROR_SUBSYSTEM_FLIP                13
-#define ERROR_SUBSYSTEM_AUTOTUNE            14  // not used
-#define ERROR_SUBSYSTEM_PARACHUTE           15
-#define ERROR_SUBSYSTEM_EKFCHECK            16
-#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
-#define ERROR_SUBSYSTEM_BARO                18
-#define ERROR_SUBSYSTEM_CPU                 19
-#define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20
-#define ERROR_SUBSYSTEM_TERRAIN             21
-#define ERROR_SUBSYSTEM_NAVIGATION          22
-#define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
-#define ERROR_SUBSYSTEM_EKF_PRIMARY         24
-#define ERROR_SUBSYSTEM_THRUST_LOSS_CHECK   25
-// general error codes
-#define ERROR_CODE_ERROR_RESOLVED           0
-#define ERROR_CODE_FAILED_TO_INITIALISE     1
-#define ERROR_CODE_UNHEALTHY                4
-// subsystem specific error codes -- radio
-#define ERROR_CODE_RADIO_LATE_FRAME         2
-// subsystem specific error codes -- failsafe_thr, batt, gps
-#define ERROR_CODE_FAILSAFE_RESOLVED        0
-#define ERROR_CODE_FAILSAFE_OCCURRED        1
-// subsystem specific error codes -- main
-#define ERROR_CODE_MAIN_INS_DELAY           1
-// subsystem specific error codes -- crash checker
-#define ERROR_CODE_CRASH_CHECK_CRASH        1
-#define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
-// subsystem specific error codes -- flip
-#define ERROR_CODE_FLIP_ABANDONED           2
-// subsystem specific error codes -- terrain
-#define ERROR_CODE_MISSING_TERRAIN_DATA     2
-// subsystem specific error codes -- navigation
-#define ERROR_CODE_FAILED_TO_SET_DESTINATION    2
-#define ERROR_CODE_RESTARTED_RTL            3
-#define ERROR_CODE_FAILED_CIRCLE_INIT       4
-#define ERROR_CODE_DEST_OUTSIDE_FENCE       5
-
-// parachute failed to deploy because of low altitude or landed
-#define ERROR_CODE_PARACHUTE_TOO_LOW        2
-#define ERROR_CODE_PARACHUTE_LANDED         3
-// EKF check definitions
-#define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
-#define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
-// Baro specific error codes
-#define ERROR_CODE_BARO_GLITCH              2
-// GPS specific error coces
-#define ERROR_CODE_GPS_GLITCH               2
 
 // Radio failsafe definitions (FS_THR parameter)
 #define FS_THR_DISABLED                            0

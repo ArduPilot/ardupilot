@@ -813,7 +813,7 @@ class AutoTest(ABC):
         out_trim = int(self.get_parameter("RC%u_TRIM" % chan))
         self.set_rc(chan, out_trim)
 
-    def get_rudder_channel(self):
+    def get_stick_arming_channel(self):
         """Return the Rudder channel number as set in parameter."""
         raise ErrorException("Rudder parameter is not supported by vehicle %s frame %s", (self.vehicleinfo_key(), self.frame))
 
@@ -903,38 +903,38 @@ class AutoTest(ABC):
     def arm_motors_with_rc_input(self, timeout=20):
         """Arm motors with radio."""
         self.progress("Arm motors with radio")
-        self.set_output_to_max(self.get_rudder_channel())
+        self.set_output_to_max(self.get_stick_arming_channel())
         tstart = self.get_sim_time()
         while True:
             self.wait_heartbeat()
             tdelta = self.get_sim_time_cached() - tstart
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH RADIO")
-                self.set_output_to_trim(self.get_rudder_channel())
+                self.set_output_to_trim(self.get_stick_arming_channel())
                 self.progress("Arm in %ss" % tdelta)  # TODO check arming time
                 return True
             print("Not armed after %f seconds" % (tdelta))
             if tdelta > timeout:
                 break
         self.progress("Failed to ARM with radio")
-        self.set_output_to_trim(self.get_rudder_channel())
+        self.set_output_to_trim(self.get_stick_arming_channel())
         return False
 
     def disarm_motors_with_rc_input(self, timeout=20):
         """Disarm motors with radio."""
         self.progress("Disarm motors with radio")
-        self.set_output_to_min(self.get_rudder_channel())
+        self.set_output_to_min(self.get_stick_arming_channel())
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() < tstart + timeout:
             self.wait_heartbeat()
             if not self.mav.motors_armed():
                 disarm_delay = self.get_sim_time_cached() - tstart
                 self.progress("MOTORS DISARMED OK WITH RADIO")
-                self.set_output_to_trim(self.get_rudder_channel())
+                self.set_output_to_trim(self.get_stick_arming_channel())
                 self.progress("Disarm in %ss" % disarm_delay)  # TODO check disarming time
                 return True
         self.progress("Failed to DISARM with radio")
-        self.set_output_to_trim(self.get_rudder_channel())
+        self.set_output_to_trim(self.get_stick_arming_channel())
         return False
 
     def arm_motors_with_switch(self, switch_chan, timeout=20):
@@ -1226,7 +1226,9 @@ class AutoTest(ABC):
         """Validate and return the mode number from a string or int."""
         mode_map = self.mav.mode_mapping()
         if mode_map is None:
-            raise ErrorException("No mode map")
+            mav_type = self.mav.messages['HEARTBEAT'].type
+            mav_autopilot = self.mav.messages['HEARTBEAT'].autopilot
+            raise ErrorException("No mode map for (mav_type=%s mav_autopilot=%s)" % (mav_type, mav_autopilot))
         if isinstance(mode, str):
             if mode in mode_map:
                 return mode_map.get(mode)
@@ -1685,7 +1687,9 @@ class AutoTest(ABC):
         last_print_time = 0
         tstart = self.get_sim_time()
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
-            m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
+            m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True, timeout=timeout)
+            if m is None:
+                continue
             current = m.flags
             errors = current & error_bits
             everything_ok = (errors == 0 and
@@ -2306,6 +2310,9 @@ class AutoTest(ABC):
             if abs(rate - want_rate) > 2:
                 raise NotAchievedException("Did not get expected rate")
 
+            self.progress("Resetting CAMERA_FEEDBACK rate to zero")
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
+
             non_existant_id = 145
             self.mavproxy.send("long GET_MESSAGE_INTERVAL %u\n" %
                                (non_existant_id))
@@ -2324,6 +2331,26 @@ class AutoTest(ABC):
             sr = self.sitl_streamrate()
             self.mavproxy.send("set streamrate %u\n" % sr)
             raise e
+
+    def test_request_message(self, timeout=60):
+        rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
+        if rate != 0:
+            raise PreconditionFailedException("Receving camera feedback")
+        # temporarily use a constant in place of
+        # mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE until we have a
+        # pymavlink release:
+        self.run_cmd(512,
+                     180,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=timeout)
+        m = self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True, timeout=1)
+        if m is None:
+            raise NotAchievedException("Requested CAMERA_FEEDBACK did not arrive")
 
     def clear_mission(self):
         self.mavproxy.send("wp clear\n")

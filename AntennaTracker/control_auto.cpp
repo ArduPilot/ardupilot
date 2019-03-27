@@ -10,11 +10,6 @@
  */
 void Tracker::update_auto(void)
 {
-    // exit immediately if we do not have a valid vehicle position
-    if (!vehicle.location_valid) {
-        return;
-    }
-
     float yaw = wrap_180_cd((nav_status.bearing+g.yaw_trim)*100); // target yaw in centidegrees
     float pitch = constrain_float(nav_status.pitch+g.pitch_trim, g.pitch_min, g.pitch_max) * 100; // target pitch in centidegrees
 
@@ -26,8 +21,8 @@ void Tracker::update_auto(void)
     float bf_yaw;
     convert_ef_to_bf(pitch, yaw, bf_pitch, bf_yaw);
 
-    // only move servos if target is at least distance_min away
-    if ((g.distance_min <= 0) || (nav_status.distance >= g.distance_min)) {
+    // only move servos if target is at least distance_min away if we  have a target
+    if ((g.distance_min <= 0) || (nav_status.distance >= g.distance_min) || !vehicle.location_valid) {
         update_pitch_servo(bf_pitch);
         update_yaw_servo(bf_yaw);
     }

@@ -21,6 +21,8 @@
 #include "hal.h"
 #include "iofirmware.h"
 #include "rc.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 
 extern const AP_HAL::HAL& hal;

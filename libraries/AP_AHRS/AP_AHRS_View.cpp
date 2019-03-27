@@ -42,6 +42,8 @@ AP_AHRS_View::AP_AHRS_View(AP_AHRS &_ahrs, enum Rotation _rotation, float pitch_
     _pitch_trim_deg = pitch_trim_deg;
     // Add pitch trim
     rot_view.from_euler(0, radians(wrap_360(y_angle + pitch_trim_deg)), 0);
+    rot_view_T = rot_view;
+    rot_view_T.transpose();
 
     // setup initial state
     update();
@@ -51,6 +53,8 @@ AP_AHRS_View::AP_AHRS_View(AP_AHRS &_ahrs, enum Rotation _rotation, float pitch_
 void AP_AHRS_View::set_pitch_trim(float trim_deg) {
     _pitch_trim_deg = trim_deg; 
     rot_view.from_euler(0, radians(wrap_360(y_angle + _pitch_trim_deg)), 0);
+    rot_view_T = rot_view;
+    rot_view_T.transpose();
 };
 
 // update state
@@ -59,12 +63,9 @@ void AP_AHRS_View::update(bool skip_ins_update)
     rot_body_to_ned = ahrs.get_rotation_body_to_ned();
     gyro = ahrs.get_gyro();
 
-    if (!is_zero(y_angle)) {
-        Matrix3f &r = rot_body_to_ned;
-        r.transpose();
-        r = rot_view * r;
-        r.transpose();
-        gyro.rotate(rotation);
+    if (!is_zero(y_angle + _pitch_trim_deg)) {
+        rot_body_to_ned = rot_body_to_ned * rot_view_T;
+        gyro = rot_view * gyro;
     }
 
     rot_body_to_ned.to_euler(&roll, &pitch, &yaw);

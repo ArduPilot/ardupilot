@@ -22,7 +22,7 @@ public:
 
     bool vehicle_initialised() const override;
 
-    void update_sensor_status_flags(void) override;
+    void update_vehicle_sensor_status_flags(void) override;
 
     bool simple_input_active() const override;
     bool supersimple_input_active() const override;
