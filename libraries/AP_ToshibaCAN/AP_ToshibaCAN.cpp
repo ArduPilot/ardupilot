@@ -420,15 +420,15 @@ void AP_ToshibaCAN::update()
     }
 
     // log ESCs telemetry info
-    AP_Logger *df = AP_Logger::get_singleton();
-    if (df && df->logging_enabled()) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger && logger->logging_enabled()) {
         WITH_SEMAPHORE(_telem_sem);
 
         // log if any new data received.  Logging only supports up to 8 ESCs
         uint64_t time_us = AP_HAL::micros64();
         for (uint8_t i = 0; i < MIN(TOSHIBACAN_MAX_NUM_ESCS, 8); i++) {
             if (_telemetry[i].new_data) {
-                df->Write_ESC(i, time_us,
+                logger->Write_ESC(i, time_us,
                               _telemetry[i].rpm * 100U,
                               _telemetry[i].millivolts * 0.1f,
                               0,
