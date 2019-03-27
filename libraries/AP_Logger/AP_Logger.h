@@ -164,7 +164,7 @@ enum class LogErrorCode : uint8_t {
     EKFCHECK_VARIANCE_CLEARED = 0,
 // Baro specific error codes
     BARO_GLITCH = 2,
-    BAD_DEPTH = 0, // sub-only
+    BAD_DEPTH = 3, // sub-only
 // GPS specific error coces
     GPS_GLITCH = 2,
 };
