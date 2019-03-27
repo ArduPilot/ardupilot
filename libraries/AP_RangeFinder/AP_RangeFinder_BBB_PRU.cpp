@@ -39,8 +39,8 @@ volatile struct range *rangerpru;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_BBB_PRU::AP_RangeFinder_BBB_PRU(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state)
+AP_RangeFinder_BBB_PRU::AP_RangeFinder_BBB_PRU(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend(_state, _params)
 {
 }
 
@@ -48,14 +48,14 @@ AP_RangeFinder_BBB_PRU::AP_RangeFinder_BBB_PRU(RangeFinder &_ranger, uint8_t ins
    Stop PRU, load firmware (check if firmware is present), start PRU.
    If we get a result the sensor seems to be there.
 */
-bool AP_RangeFinder_BBB_PRU::detect(RangeFinder &_ranger, uint8_t instance)
+bool AP_RangeFinder_BBB_PRU::detect()
 {
     bool result = true;
     uint32_t mem_fd;
     uint32_t *ctrl;
     void *ram;
 
-    mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+    mem_fd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
     ctrl = (uint32_t*)mmap(0, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_CTRL_BASE);
     ram = mmap(0, PRU0_IRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_IRAM_BASE);
 
@@ -63,9 +63,9 @@ bool AP_RangeFinder_BBB_PRU::detect(RangeFinder &_ranger, uint8_t instance)
     *ctrl = 0;
     hal.scheduler->delay(1);
 
-    // Load firmware
+    // Load firmware (.text)
     FILE *file = fopen("/lib/firmware/rangefinderprutext.bin", "rb");
-    if(file == NULL)
+    if(file == nullptr)
     {
         result = false;
     }
@@ -78,6 +78,24 @@ bool AP_RangeFinder_BBB_PRU::detect(RangeFinder &_ranger, uint8_t instance)
     fclose(file);
 
     munmap(ram, PRU0_IRAM_SIZE);
+
+    ram = mmap(0, PRU0_DRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_DRAM_BASE);
+
+    // Load firmware (.data)
+    file = fopen("/lib/firmware/rangefinderprudata.bin", "rb");
+    if(file == nullptr)
+    {
+        result = false;
+    }
+
+    if(fread(ram, PRU0_DRAM_SIZE, 1, file) != 1)
+    {
+        result = false;
+    }
+
+    fclose(file);
+
+    munmap(ram, PRU0_DRAM_SIZE);
 
     // Map PRU RAM
     ram = mmap(0, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_DRAM_BASE);
@@ -98,5 +116,6 @@ void AP_RangeFinder_BBB_PRU::update(void)
 {
     state.status = (RangeFinder::RangeFinder_Status)rangerpru->status;
     state.distance_cm = rangerpru->distance;
+    state.last_reading_ms = AP_HAL::millis();
 }
 #endif // CONFIG_HAL_BOARD_SUBTYPE

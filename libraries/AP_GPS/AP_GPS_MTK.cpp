@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,12 +25,10 @@
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
-const prog_char AP_GPS_MTK::_initialisation_blob[] PROGMEM = MTK_OUTPUT_5HZ SBAS_ON WAAS_ON MTK_NAVTHRES_OFF;
+const char AP_GPS_MTK::_initialisation_blob[] = MTK_OUTPUT_5HZ SBAS_ON WAAS_ON MTK_NAVTHRES_OFF;
 
 AP_GPS_MTK::AP_GPS_MTK(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _step(0),
-    _payload_counter(0)
+    AP_GPS_Backend(_gps, _state, _port)
 {
     gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
 }
@@ -115,7 +112,7 @@ restart:
         // Receive message data
         //
         case 4:
-            _buffer.bytes[_payload_counter++] = data;
+            _buffer[_payload_counter++] = data;
             _ck_b += (_ck_a += data);
             if (_payload_counter == sizeof(_buffer))
                 _step++;
@@ -147,7 +144,7 @@ restart:
             state.location.lng  = swap_int32(_buffer.msg.longitude) * 10;
             state.location.alt  = swap_int32(_buffer.msg.altitude);
             state.ground_speed      = swap_int32(_buffer.msg.ground_speed) * 0.01f;
-            state.ground_course_cd  = wrap_360_cd(swap_int32(_buffer.msg.ground_course) / 10000);
+            state.ground_course     = wrap_360(swap_int32(_buffer.msg.ground_course) * 1.0e-6f);
             state.num_sats          = _buffer.msg.satellites;
 
             if (state.status >= AP_GPS::GPS_OK_FIX_2D) {
@@ -177,6 +174,7 @@ AP_GPS_MTK::_detect(struct MTK_detect_state &state, uint8_t data)
                 break;
             }
             state.step = 0;
+            FALLTHROUGH;
         case 0:
 			state.ck_b = state.ck_a = state.payload_counter = 0;
             if(PREAMBLE1 == data)

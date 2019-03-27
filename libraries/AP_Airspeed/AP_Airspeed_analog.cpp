@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,43 +16,36 @@
  *   analog airspeed driver
  */
 
-
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include "AP_Airspeed.h"
 
-extern const AP_HAL::HAL& hal;
+#include "AP_Airspeed.h"
+#include "AP_Airspeed_analog.h"
+
+extern const AP_HAL::HAL &hal;
 
 // scaling for 3DR analog airspeed sensor
 #define VOLTS_TO_PASCAL 819
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-extern AP_ADC_ADS7844 apm1_adc;
-#endif
+AP_Airspeed_Analog::AP_Airspeed_Analog(AP_Airspeed &_frontend, uint8_t _instance) :
+    AP_Airspeed_Backend(_frontend, _instance)
+{
+    _source = hal.analogin->channel(get_pin());
+}
 
 bool AP_Airspeed_Analog::init()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    if (_pin == 64) {
-        _source = new AP_ADC_AnalogSource( &apm1_adc, 7, 1.0f);
-        return true;
-    }
-#endif
-    _source = hal.analogin->channel(_pin);
-    return true;
+    return _source != nullptr;
 }
 
 // read the airspeed sensor
 bool AP_Airspeed_Analog::get_differential_pressure(float &pressure)
 {
-    if (_source == NULL) {
+    if (_source == nullptr) {
         return false;
     }
-    _source->set_pin(_pin);
-    pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL;
+    // allow pin to change
+    _source->set_pin(get_pin());
+    pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL / get_psi_range();
     return true;
 }
-

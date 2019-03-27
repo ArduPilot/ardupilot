@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,9 +19,7 @@
 ///         This is implemented separately to the base Filter class to get around
 ///         restrictions caused by the use of templates which makes different sizes essentially
 ///         completely different classes
-
-#ifndef __FILTER_WITH_BUFFER_H__
-#define __FILTER_WITH_BUFFER_H__
+#pragma once
 
 #include "FilterClass.h"
 
@@ -34,10 +31,10 @@ public:
     FilterWithBuffer();
 
     // apply - Add a new raw value to the filter, retrieve the filtered result
-    virtual T apply(T sample);
+    virtual T apply(T sample) override;
 
     // reset - clear the filter
-    virtual void reset();
+    virtual void reset() override;
 
     // get filter size
     uint8_t get_filter_size() const {
@@ -116,8 +113,3 @@ T FilterWithBuffer<T,FILTER_SIZE>::        apply(T sample)
     // base class doesn't know what filtering to do so we just return the raw sample
     return sample;
 }
-
-#endif
-
-
-

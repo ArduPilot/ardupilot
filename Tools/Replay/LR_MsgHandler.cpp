@@ -1,9 +1,11 @@
 #include "LR_MsgHandler.h"
+#include "LogReader.h"
+#include "Replay.h"
 
 extern const AP_HAL::HAL& hal;
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f,
-                             DataFlash_Class &_dataflash,
+                             AP_Logger &_dataflash,
                              uint64_t &_last_timestamp_usec) :
     dataflash(_dataflash), last_timestamp_usec(_last_timestamp_usec),
     MsgHandler(_f) {
@@ -58,7 +60,7 @@ void LR_MsgHandler_ARM::process_message(uint8_t *msg)
     hal.util->set_soft_armed(ArmState);
     printf("Armed state: %u at %lu\n", 
            (unsigned)ArmState,
-           (unsigned long)hal.scheduler->millis());
+           (unsigned long)AP_HAL::millis());
 }
 
 
@@ -71,7 +73,7 @@ void LR_MsgHandler_ARSP::process_message(uint8_t *msg)
 		    require_field_float(msg, "Temp"));
 }
 
-void LR_MsgHandler_FRAM::process_message(uint8_t *msg)
+void LR_MsgHandler_NKF1::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
 }
@@ -86,7 +88,7 @@ void LR_MsgHandler_ATT::process_message(uint8_t *msg)
 void LR_MsgHandler_CHEK::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
-    check_state.time_us = hal.scheduler->micros64();
+    check_state.time_us = AP_HAL::micros64();
     attitude_from_msg(msg, check_state.euler, "Roll", "Pitch", "Yaw");
     check_state.euler *= radians(1);
     location_from_msg(msg, check_state.pos, "Lat", "Lng", "Alt");
@@ -99,9 +101,16 @@ void LR_MsgHandler_CHEK::process_message(uint8_t *msg)
 void LR_MsgHandler_BARO::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
-    baro.setHIL(0,
+    uint32_t last_update_ms;
+    if (!field_value(msg, "SMS", last_update_ms)) {
+        last_update_ms = 0;
+    }
+    AP::baro().setHIL(0,
 		require_field_float(msg, "Press"),
-		require_field_int16_t(msg, "Temp") * 0.01f);
+		require_field_int16_t(msg, "Temp") * 0.01f,
+		require_field_float(msg, "Alt"),
+		require_field_float(msg, "CRt"),
+                last_update_ms);
 }
 
 
@@ -114,26 +123,21 @@ void LR_MsgHandler_Event::process_message(uint8_t *msg)
     if (id == DATA_ARMED) {
         hal.util->set_soft_armed(true);
         printf("Armed at %lu\n", 
-               (unsigned long)hal.scheduler->millis());
+               (unsigned long)AP_HAL::millis());
     } else if (id == DATA_DISARMED) {
         hal.util->set_soft_armed(false);
         printf("Disarmed at %lu\n", 
-               (unsigned long)hal.scheduler->millis());
+               (unsigned long)AP_HAL::millis());
     }
 }
 
 
 void LR_MsgHandler_GPS2::process_message(uint8_t *msg)
 {
-    // only LOG_GPS_MSG gives us relative altitude.  We still log
-    // the relative altitude when we get a LOG_GPS2_MESSAGE - but
-    // the value we use (probably) comes from the most recent
-    // LOG_GPS_MESSAGE message!
-    update_from_msg_gps(1, msg, false);
+    update_from_msg_gps(1, msg);
 }
 
-
-void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, bool responsible_for_relalt)
+void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg)
 {
     uint64_t time_us;
     if (! field_value(msg, "TimeUS", time_us)) {
@@ -159,25 +163,23 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
         ! field_value(msg, "numSV", nsats)) {
         field_not_found(msg, "NSats");
     }
+    uint16_t GWk;
+    uint32_t GMS;
+    if (! field_value(msg, "GWk", GWk)) {
+        field_not_found(msg, "GWk");
+    }
+    if (! field_value(msg, "GMS", GMS)) {
+        field_not_found(msg, "GMS");
+    }
     gps.setHIL(gps_offset,
                (AP_GPS::GPS_Status)status,
-               uint32_t(time_us/1000),
+               AP_GPS::time_epoch_convert(GWk, GMS),
                loc,
                vel,
                nsats,
-               hdop,
-               require_field_float(msg, "VZ") != 0);
+               hdop);
     if (status == AP_GPS::GPS_OK_FIX_3D && ground_alt_cm == 0) {
         ground_alt_cm = require_field_int32_t(msg, "Alt");
-    }
-
-    if (responsible_for_relalt) {
-        // this could possibly check for the presence of "RelAlt" label?
-        int32_t tmp;
-        if (! field_value(msg, "RAlt", tmp)) {
-            tmp = require_field_int32_t(msg, "RelAlt");
-        }
-        rel_altitude = 0.01f * tmp;
     }
 }
 
@@ -185,8 +187,44 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
 
 void LR_MsgHandler_GPS::process_message(uint8_t *msg)
 {
-    update_from_msg_gps(0, msg, true);
+    update_from_msg_gps(0, msg);
 }
+
+
+void LR_MsgHandler_GPA_Base::update_from_msg_gpa(uint8_t gps_offset, uint8_t *msg)
+{
+    uint64_t time_us;
+    require_field(msg, "TimeUS", time_us);
+    wait_timestamp_usec(time_us);
+
+    uint16_t vdop, hacc, vacc, sacc;
+    require_field(msg, "VDop", vdop);
+    require_field(msg, "HAcc", hacc);
+    require_field(msg, "VAcc", vacc);
+    require_field(msg, "SAcc", sacc);
+    uint8_t have_vertical_velocity;
+    if (! field_value(msg, "VV", have_vertical_velocity)) {
+        have_vertical_velocity = !is_zero(gps.velocity(gps_offset).z);
+    }
+    uint32_t sample_ms;
+    if (! field_value(msg, "SMS", sample_ms)) {
+        sample_ms = 0;
+    }
+
+    gps.setHIL_Accuracy(gps_offset, vdop*0.01f, hacc*0.01f, vacc*0.01f, sacc*0.01f, have_vertical_velocity, sample_ms);
+}
+
+void LR_MsgHandler_GPA::process_message(uint8_t *msg)
+{
+    update_from_msg_gpa(0, msg);
+}
+
+
+void LR_MsgHandler_GPA2::process_message(uint8_t *msg)
+{
+    update_from_msg_gpa(1, msg);
+}
+
 
 
 void LR_MsgHandler_IMU2::process_message(uint8_t *msg)
@@ -242,7 +280,11 @@ void LR_MsgHandler_IMT_Base::update_from_msg_imt(uint8_t imu_offset, uint8_t *ms
     if (gyro_mask & this_imu_mask) {
         Vector3f d_angle;
         require_field(msg, "DelA", d_angle);
-        ins.set_delta_angle(imu_offset, d_angle);
+        float d_angle_dt;
+        if (!field_value(msg, "DelaT", d_angle_dt)) {
+            d_angle_dt = 0;
+        }
+        ins.set_delta_angle(imu_offset, d_angle, d_angle_dt);
     }
     if (accel_mask & this_imu_mask) {
         float dvt = 0;
@@ -282,8 +324,12 @@ void LR_MsgHandler_MAG_Base::update_from_msg_compass(uint8_t compass_offset, uin
     require_field(msg, "Mag", mag);
     Vector3f mag_offset;
     require_field(msg, "Ofs", mag_offset);
+    uint32_t last_update_usec;
+    if (!field_value(msg, "S", last_update_usec)) {
+        last_update_usec = AP_HAL::micros();
+    }
 
-    compass.setHIL(compass_offset, mag - mag_offset);
+    compass.setHIL(compass_offset, mag - mag_offset, last_update_usec);
     // compass_offset is which compass we are setting info for;
     // mag_offset is a vector indicating the compass' calibration...
     compass.set_offsets(compass_offset, mag_offset);
@@ -333,43 +379,20 @@ void LR_MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 }
 
 
-bool LR_MsgHandler::set_parameter(const char *name, float value)
+bool LR_MsgHandler_PARM::set_parameter(const char *name, const float value)
 {
-    const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_USE", 
+    const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_TYPE", "EK2_ENABLE", "EK3_ENABLE"
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
-                                   "COMPASS_ORIENT3"};
+                                   "COMPASS_ORIENT3", "LOG_FILE_BUFSIZE",
+                                   "LOG_DISARMED"};
     for (uint8_t i=0; i < ARRAY_SIZE(ignore_parms); i++) {
         if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);
             return true;
         }
     }
-    enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find(name, &var_type);
-    if (vp == NULL) {
-        return false;
-    }
-    float old_value = 0;
-    if (var_type == AP_PARAM_FLOAT) {
-        old_value = ((AP_Float *)vp)->cast_to_float();
-        ((AP_Float *)vp)->set(value);
-    } else if (var_type == AP_PARAM_INT32) {
-        old_value = ((AP_Int32 *)vp)->cast_to_float();
-        ((AP_Int32 *)vp)->set(value);
-    } else if (var_type == AP_PARAM_INT16) {
-        old_value = ((AP_Int16 *)vp)->cast_to_float();
-        ((AP_Int16 *)vp)->set(value);
-    } else if (var_type == AP_PARAM_INT8) {
-        old_value = ((AP_Int8 *)vp)->cast_to_float();
-        ((AP_Int8 *)vp)->set(value);
-    } else {
-        // we don't support mavlink set on this parameter
-        return false;
-    }
-    if (fabsf(old_value - value) > 1.0e-12) {
-        ::printf("Changed %s to %.8f from %.8f\n", name, value, old_value);
-    }
-    return true;
+
+    return _set_parameter_callback(name, value);
 }
 
 void LR_MsgHandler_PARM::process_message(uint8_t *msg)
@@ -383,17 +406,30 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
     } else {
         // older logs can have a lot of FMT and PARM messages up the
         // front which don't have timestamps.  Since in Replay we run
-        // DataFlash's IO only when stop_clock is called, we can
-        // overflow DataFlash's ringbuffer.  This should force us to
+        // AP_Logger's IO only when stop_clock is called, we can
+        // overflow AP_Logger's ringbuffer.  This should force us to
         // do IO:
         hal.scheduler->stop_clock(last_timestamp_usec);
     }
 
     require_field(msg, "Name", parameter_name, parameter_name_len);
 
-    set_parameter(parameter_name, require_field_float(msg, "Value"));
+    float value = require_field_float(msg, "Value");
+    if (globals.no_params || replay.check_user_param(parameter_name)) {
+        printf("Not changing %s to %f\n", parameter_name, value);
+    } else {
+        set_parameter(parameter_name, value);
+    }
 }
 
+void LR_MsgHandler_PM::process_message(uint8_t *msg)
+{
+    uint32_t new_logdrop;
+    if (field_value(msg, "LogDrop", new_logdrop) &&
+        new_logdrop != 0) {
+        printf("PM.LogDrop: %u dropped at timestamp %lu\n", new_logdrop, last_timestamp_usec);
+    }
+}
 
 void LR_MsgHandler_SIM::process_message(uint8_t *msg)
 {

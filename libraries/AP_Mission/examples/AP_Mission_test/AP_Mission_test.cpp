@@ -3,42 +3,16 @@
  *  DIYDrones.com
  */
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <AP_Curve/AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
-#include <AP_Param/AP_Param.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <SITL/SITL.h>
-#include <AP_Rally/AP_Rally.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <DataFlash/DataFlash.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_GPS/AP_GPS.h>             // ArduPilot GPS library
-#include <AP_ADC/AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include <AP_Baro/AP_Baro.h>            // ArduPilot Mega Barometer Library
-#include <Filter/Filter.h>
-#include <AP_Compass/AP_Compass.h>         // ArduPilot Mega Magnetometer Library
-#include <AP_Declination/AP_Declination.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Compass/AP_Compass.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Buffer/AP_Buffer.h>          // ArduPilot general purpose FIFO buffer
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_AHRS/AP_AHRS_DCM.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 class MissionTest {
 public:
@@ -50,7 +24,7 @@ private:
     AP_Baro baro;
     AP_GPS  gps;
     Compass compass;
-    AP_AHRS_DCM ahrs{ins, baro, gps};
+    AP_AHRS_DCM ahrs{};
 
     // global constants that control how many verify calls must be made for a command before it completes
     uint8_t verify_nav_cmd_iterations_to_complete = 3;
@@ -76,7 +50,7 @@ private:
     void run_replace_cmd_test();
     void run_max_cmd_test();
 
-    AP_Mission mission{ahrs,
+    AP_Mission mission{
             FUNCTOR_BIND_MEMBER(&MissionTest::start_cmd, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&MissionTest::verify_cmd, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&MissionTest::mission_complete, void)};
@@ -91,10 +65,10 @@ bool MissionTest::start_cmd(const AP_Mission::Mission_Command& cmd)
     // reset tracking of number of iterations of this command (we simulate all nav commands taking 3 iterations to complete, all do command 1 iteration)
     if (AP_Mission::is_nav_cmd(cmd)) {
         num_nav_cmd_runs = 0;
-        hal.console->printf_P(PSTR("started cmd #%d id:%d Nav\n"),(int)cmd.index,(int)cmd.id);
+        hal.console->printf("started cmd #%d id:%d Nav\n",(int)cmd.index,(int)cmd.id);
     }else{
         num_do_cmd_runs = 0;
-        hal.console->printf_P(PSTR("started cmd #%d id:%d Do\n"),(int)cmd.index,(int)cmd.id);
+        hal.console->printf("started cmd #%d id:%d Do\n",(int)cmd.index,(int)cmd.id);
     }
 
     return true;
@@ -107,19 +81,19 @@ bool MissionTest::verify_cmd(const AP_Mission::Mission_Command& cmd)
     if (AP_Mission::is_nav_cmd(cmd)) {
         num_nav_cmd_runs++;
         if (num_nav_cmd_runs < verify_nav_cmd_iterations_to_complete) {
-            hal.console->printf_P(PSTR("verified cmd #%d id:%d Nav iteration:%d\n"),(int)cmd.index,(int)cmd.id,(int)num_nav_cmd_runs);
+            hal.console->printf("verified cmd #%d id:%d Nav iteration:%d\n",(int)cmd.index,(int)cmd.id,(int)num_nav_cmd_runs);
             return false;
         }else{
-            hal.console->printf_P(PSTR("verified cmd #%d id:%d Nav complete!\n"),(int)cmd.index,(int)cmd.id);
+            hal.console->printf("verified cmd #%d id:%d Nav complete!\n",(int)cmd.index,(int)cmd.id);
             return true;
         }
     }else{
         num_do_cmd_runs++;
         if (num_do_cmd_runs < verify_do_cmd_iterations_to_complete) {
-            hal.console->printf_P(PSTR("verified cmd #%d id:%d Do iteration:%d\n"),(int)cmd.index,(int)cmd.id,(int)num_do_cmd_runs);
+            hal.console->printf("verified cmd #%d id:%d Do iteration:%d\n",(int)cmd.index,(int)cmd.id,(int)num_do_cmd_runs);
             return false;
         }else{
-            hal.console->printf_P(PSTR("verified cmd #%d id:%d Do complete!\n"),(int)cmd.index,(int)cmd.id);
+            hal.console->printf("verified cmd #%d id:%d Do complete!\n",(int)cmd.index,(int)cmd.id);
             return true;
         }
     }
@@ -128,7 +102,7 @@ bool MissionTest::verify_cmd(const AP_Mission::Mission_Command& cmd)
 // mission_complete - function that is called once the mission completes
 void MissionTest::mission_complete(void)
 {
-    hal.console->print_P(PSTR("\nMission Complete!\n"));
+    hal.console->printf("\nMission Complete!\n");
 }
 
 // run_mission_test - tests the stop and resume feature
@@ -181,7 +155,7 @@ void MissionTest::run_mission_test()
     print_mission();
 
     // start mission
-    hal.console->print_P(PSTR("\nRunning missions\n"));
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update mission forever
@@ -200,45 +174,53 @@ void MissionTest::init_mission()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
-    cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : first waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : second waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.p1 = 0;
-    cmd.content.location.lat = 1234567890;
-    cmd.content.location.lng = -1234567890;
-    cmd.content.location.alt = 22;
+    cmd.content.location = Location{
+        1234567890,
+        -1234567890,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : do-jump to first waypoint 3 times
@@ -246,17 +228,20 @@ void MissionTest::init_mission()
     cmd.content.jump.target = 2;
     cmd.content.jump.num_times = 1;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
     cmd.p1 = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    cmd.content.location.alt = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -271,41 +256,47 @@ void MissionTest::init_mission_no_nav_commands()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : "do" command
     cmd.id = MAV_CMD_DO_CHANGE_SPEED;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : "do" command
     cmd.id = MAV_CMD_DO_SET_SERVO;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : do-jump to first command 3 times
@@ -313,7 +304,7 @@ void MissionTest::init_mission_no_nav_commands()
     cmd.content.jump.target = 1;
     cmd.content.jump.num_times = 1;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -328,13 +319,15 @@ void MissionTest::init_mission_endless_loop()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : do-jump command to itself
@@ -342,29 +335,33 @@ void MissionTest::init_mission_endless_loop()
     cmd.content.jump.target = 1;
     cmd.content.jump.num_times = 2;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -380,35 +377,41 @@ void MissionTest::init_mission_jump_to_nonnav()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : do-roi command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : do-jump command to #2
@@ -416,18 +419,20 @@ void MissionTest::init_mission_jump_to_nonnav()
     cmd.content.jump.target = 2;
     cmd.content.jump.num_times = 2;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 22;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -444,68 +449,80 @@ void MissionTest::init_mission_starts_with_do_commands()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : First "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : Second "do" command
     cmd.id = MAV_CMD_DO_CHANGE_SPEED;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : Third "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 22;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 33;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        33,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -521,68 +538,77 @@ void MissionTest::init_mission_ends_with_do_commands()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
-    }
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
 
     // Command #2 : "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 22;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 33;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        33,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : "do" command after last nav command (but not at end of mission)
     cmd.id = MAV_CMD_DO_CHANGE_SPEED;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : "do" command at end of mission
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 22;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -597,68 +623,80 @@ void MissionTest::init_mission_ends_with_jump_command()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : "do" command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 22;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 33;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        33,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : "do" command after last nav command (but not at end of mission)
     cmd.id = MAV_CMD_DO_CHANGE_SPEED;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : "do" command at end of mission
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 22;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #6 : do-jump command to #2 two times
@@ -666,7 +704,7 @@ void MissionTest::init_mission_ends_with_jump_command()
     cmd.content.jump.target = 3;
     cmd.content.jump.num_times = 2;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -677,11 +715,11 @@ void MissionTest::print_mission()
 
     // check for empty mission
     if (mission.num_commands() == 0) {
-        hal.console->printf_P(PSTR("No Mission!\n"));
+        hal.console->printf("No Mission!\n");
         return;
     }
 
-    hal.console->printf_P(PSTR("Mission: %d commands\n"),(int)mission.num_commands());
+    hal.console->printf("Mission: %d commands\n",(int)mission.num_commands());
 
     // print each command
     for(uint16_t i=0; i<mission.num_commands(); i++) {
@@ -689,23 +727,23 @@ void MissionTest::print_mission()
         mission.read_cmd_from_storage(i,cmd);
 
         // print command position in list and mavlink id
-        hal.console->printf_P(PSTR("Cmd#%d mav-id:%d "), (int)cmd.index, (int)cmd.id);
+        hal.console->printf("Cmd#%d mav-id:%d ", (int)cmd.index, (int)cmd.id);
 
         // print whether nav or do command
         if (AP_Mission::is_nav_cmd(cmd)) {
-            hal.console->printf_P(PSTR("Nav "));
+            hal.console->printf("Nav ");
         }else{
-            hal.console->printf_P(PSTR("Do "));
+            hal.console->printf("Do ");
         }
 
         // print command contents
         if (cmd.id == MAV_CMD_DO_JUMP) {
-            hal.console->printf_P(PSTR("jump-to:%d num_times:%d\n"), (int)cmd.content.jump.target, (int)cmd.content.jump.num_times);
+            hal.console->printf("jump-to:%d num_times:%d\n", (int)cmd.content.jump.target, (int)cmd.content.jump.num_times);
         }else{
-            hal.console->printf_P(PSTR("p1:%d lat:%ld lng:%ld alt:%ld\n"),(int)cmd.p1, (long)cmd.content.location.lat, (long)cmd.content.location.lng, (long)cmd.content.location.alt);
+            hal.console->printf("p1:%d lat:%ld lng:%ld alt:%ld\n",(int)cmd.p1, (long)cmd.content.location.lat, (long)cmd.content.location.lng, (long)cmd.content.location.alt);
         }
     }
-    hal.console->printf_P(PSTR("--------\n"));
+    hal.console->printf("--------\n");
 }
 
 // run_resume_test - tests the stop and resume feature
@@ -718,73 +756,87 @@ void MissionTest::run_resume_test()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : first waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : second waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.p1 = 0;
-    cmd.content.location.lat = 1234567890;
-    cmd.content.location.lng = -1234567890;
-    cmd.content.location.alt = 22;
+    cmd.content.location = Location{
+        1234567890,
+        -1234567890,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
     cmd.p1 = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    cmd.content.location.alt = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // print current mission
     print_mission();
 
     // start mission
-    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update the mission for X iterations
@@ -796,17 +848,17 @@ void MissionTest::run_resume_test()
     }
 
     // simulate user pausing the mission
-    hal.console->printf_P(PSTR("Stopping mission\n"));
+    hal.console->printf("Stopping mission\n");
     mission.stop();
 
     // update the mission for 5 seconds (nothing should happen)
-    uint32_t start_time = hal.scheduler->millis();
-    while(hal.scheduler->millis() - start_time < 5000) {
+    uint32_t start_time = AP_HAL::millis();
+    while(AP_HAL::millis() - start_time < 5000) {
         mission.update();
     }
 
     // simulate user resuming mission
-    hal.console->printf_P(PSTR("Resume mission\n"));
+    hal.console->printf("Resume mission\n");
     mission.resume();
 
     // update the mission forever
@@ -824,84 +876,100 @@ void MissionTest::run_set_current_cmd_test()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : first waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : second waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.p1 = 0;
-    cmd.content.location.lat = 1234567890;
-    cmd.content.location.lng = -1234567890;
-    cmd.content.location.alt = 22;
+    cmd.content.location = Location{
+        1234567890,
+        -1234567890,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #6 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
     cmd.p1 = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    cmd.content.location.alt = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // print current mission
     print_mission();
 
     // start mission
-    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update the mission for X iterations to let it go to about command 3 or 4
@@ -910,7 +978,7 @@ void MissionTest::run_set_current_cmd_test()
     }
 
     // simulate user setting current command to 2
-    hal.console->printf_P(PSTR("Setting current command to 2\n"));
+    hal.console->printf("Setting current command to 2\n");
     mission.set_current_cmd(2);
 
     // update the mission forever
@@ -929,84 +997,100 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 22;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : first waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : second waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.p1 = 0;
-    cmd.content.location.lat = 1234567890;
-    cmd.content.location.lng = -1234567890;
-    cmd.content.location.alt = 22;
+    cmd.content.location = Location{
+        1234567890,
+        -1234567890,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #6 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
     cmd.p1 = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    cmd.content.location.alt = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // print current mission
     print_mission();
 
     // start mission
-    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update the mission for X iterations
@@ -1015,21 +1099,21 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     }
 
     // simulate user pausing the mission
-    hal.console->printf_P(PSTR("Stopping mission\n"));
+    hal.console->printf("Stopping mission\n");
     mission.stop();
 
     // simulate user setting current command to 2
-    hal.console->printf_P(PSTR("Setting current command to 2\n"));
+    hal.console->printf("Setting current command to 2\n");
     mission.set_current_cmd(2);
 
     // update the mission for 2 seconds (nothing should happen)
-    uint32_t start_time = hal.scheduler->millis();
-    while(hal.scheduler->millis() - start_time < 2000) {
+    uint32_t start_time = AP_HAL::millis();
+    while(AP_HAL::millis() - start_time < 2000) {
         mission.update();
     }
 
     // simulate user resuming mission
-    hal.console->printf_P(PSTR("Resume mission\n"));
+    hal.console->printf("Resume mission\n");
     mission.resume();
 
     // wait for the mission to complete
@@ -1038,17 +1122,17 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     }
 
     // pause for two seconds
-    start_time = hal.scheduler->millis();
-    while(hal.scheduler->millis() - start_time < 2000) {
+    start_time = AP_HAL::millis();
+    while(AP_HAL::millis() - start_time < 2000) {
         mission.update();
     }
 
     // simulate user setting current command to 2 now that the mission has completed
-    hal.console->printf_P(PSTR("Setting current command to 5\n"));
+    hal.console->printf("Setting current command to 5\n");
     mission.set_current_cmd(5);
 
     // simulate user resuming mission
-    hal.console->printf_P(PSTR("Resume mission\n"));
+    hal.console->printf("Resume mission\n");
     mission.resume();
 
     // keep running the mission forever
@@ -1066,73 +1150,87 @@ void MissionTest::run_replace_cmd_test()
 
     // Command #0 : home
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 0;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
     cmd.id = MAV_CMD_NAV_TAKEOFF;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 10;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        10,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : first waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : second waypoint
     cmd.id = MAV_CMD_NAV_WAYPOINT;
     cmd.p1 = 0;
-    cmd.content.location.lat = 1234567890;
-    cmd.content.location.lng = -1234567890;
-    cmd.content.location.alt = 22;
+    cmd.content.location = Location{
+        1234567890,
+        -1234567890,
+        22,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #6 : RTL
     cmd.id = MAV_CMD_NAV_RETURN_TO_LAUNCH;
     cmd.p1 = 0;
-    cmd.content.location.lat = 0;
-    cmd.content.location.lng = 0;
-    cmd.content.location.alt = 0;
+    cmd.content.location = Location{
+        0,
+        0,
+        0,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.add_cmd(cmd)) {
-        hal.console->print_P(PSTR("failed to add command\n"));
+        hal.console->printf("failed to add command\n");
     }
 
     // print current mission
     print_mission();
 
     // start mission
-    hal.console->printf_P(PSTR("\nRunning missions\n"));
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update the mission for X iterations to let it go to about command 3 or 4
@@ -1143,15 +1241,17 @@ void MissionTest::run_replace_cmd_test()
     // replace command #4 with a do-command
     // Command #4 : do command
     cmd.id = MAV_CMD_DO_SET_ROI;
-    cmd.content.location.options = 0;
     cmd.p1 = 0;
-    cmd.content.location.alt = 11;
-    cmd.content.location.lat = 12345678;
-    cmd.content.location.lng = 23456789;
+    cmd.content.location = Location{
+        12345678,
+        23456789,
+        11,
+        Location::AltFrame::ABSOLUTE
+    };
     if (!mission.replace_cmd(4, cmd)) {
-        hal.console->printf_P(PSTR("failed to replace command 4\n"));
+        hal.console->printf("failed to replace command 4\n");
     }else{
-        hal.console->printf_P(PSTR("replaced command #4 -------------\n"));
+        hal.console->printf("replaced command #4 -------------\n");
         // print current mission
         print_mission();
     }
@@ -1176,13 +1276,15 @@ void MissionTest::run_max_cmd_test()
     while (!failed_to_add) {
         // Command #0 : home
         cmd.id = MAV_CMD_NAV_WAYPOINT;
-        cmd.content.location.options = 0;
         cmd.p1 = 0;
-        cmd.content.location.alt = num_commands;
-        cmd.content.location.lat = 12345678;
-        cmd.content.location.lng = 23456789;
+        cmd.content.location = Location{
+            12345678,
+            23456789,
+            num_commands,
+            Location::AltFrame::ABSOLUTE
+        };
         if (!mission.add_cmd(cmd)) {
-            hal.console->printf_P(PSTR("failed to add command #%u, library says max is %u\n"),(unsigned int)num_commands, (unsigned int)mission.num_commands_max());
+            hal.console->printf("failed to add command #%u, library says max is %u\n",(unsigned int)num_commands, (unsigned int)mission.num_commands_max());
             failed_to_add = true;
         }else{
             num_commands++;
@@ -1192,14 +1294,14 @@ void MissionTest::run_max_cmd_test()
     // test retrieving commands
     for (i=0; i<num_commands; i++) {
         if (!mission.read_cmd_from_storage(i,cmd)) {
-            hal.console->printf_P(PSTR("failed to retrieve command #%u\n"),(unsigned int)i);
+            hal.console->printf("failed to retrieve command #%u\n",(unsigned int)i);
             failed_to_read = true;
             break;
         }else{
             if (cmd.content.location.alt == i) {
-                hal.console->printf_P(PSTR("successfully read command #%u\n"),(unsigned int)i);
+                hal.console->printf("successfully read command #%u\n",(unsigned int)i);
             }else{
-                hal.console->printf_P(PSTR("cmd %u's alt does not match, expected %u but read %u\n"),
+                hal.console->printf("cmd %u's alt does not match, expected %u but read %u\n",
                                       (unsigned int)i,(unsigned int)i,(unsigned int)cmd.content.location.alt);
             }
         }
@@ -1207,26 +1309,26 @@ void MissionTest::run_max_cmd_test()
 
     // final success/fail message
     if (num_commands != mission.num_commands()) {
-        hal.console->printf_P(PSTR("\nTest failed!  Only wrote %u instead of %u commands"),(unsigned int)i,(unsigned int)mission.num_commands_max());
+        hal.console->printf("\nTest failed!  Only wrote %u instead of %u commands",(unsigned int)i,(unsigned int)mission.num_commands_max());
         success = false;
     }
     if (failed_to_read) {
-        hal.console->printf_P(PSTR("\nTest failed!  Only read %u instead of %u commands"),(unsigned int)i,(unsigned int)mission.num_commands_max());
+        hal.console->printf("\nTest failed!  Only read %u instead of %u commands",(unsigned int)i,(unsigned int)mission.num_commands_max());
         success = false;
     }
     if (success) {
-        hal.console->printf_P(PSTR("\nTest Passed!  wrote and read back %u commands\n\n"),(unsigned int)mission.num_commands_max());
+        hal.console->printf("\nTest Passed!  wrote and read back %u commands\n\n",(unsigned int)mission.num_commands_max());
     }
 }
 
 // setup
 void MissionTest::setup(void)
 {
-    hal.console->println("AP_Mission library test\n");
+    hal.console->printf("AP_Mission library test\n\n");
 
     // display basic info about command sizes
-    hal.console->printf_P(PSTR("Max Num Commands: %d\n"),(int)mission.num_commands_max());
-    hal.console->printf_P(PSTR("Command size: %d bytes\n"),(int)AP_MISSION_EEPROM_COMMAND_SIZE);
+    hal.console->printf("Max Num Commands: %d\n",(int)mission.num_commands_max());
+    hal.console->printf("Command size: %d bytes\n",(int)AP_MISSION_EEPROM_COMMAND_SIZE);
 }
 
 // loop

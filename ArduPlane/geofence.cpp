@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *  geo-fencing support
  *  Andrew Tridgell, December 2011
@@ -8,9 +7,9 @@
 
 #if GEOFENCE_ENABLED == ENABLED
 
-#define MIN_GEOFENCE_POINTS 5 // 3 to define a minimal polygon (triangle)
-                              // + 1 for return point and +1 for last
-                              // pt (same as first)
+#define MIN_GEOFENCE_POINTS 5 // index [0] for return point, must be inside polygon
+                              // index [1 to n-1] to define a polygon, minimum 3 for a triangle
+                              // index [n] (must be same as index 1 to close the polygon)
 
 /*
  *  The state of geo-fencing. This structure is dynamically allocated
@@ -49,7 +48,7 @@ static const StorageAccess fence_storage(StorageManager::StorageFence);
  */
 uint8_t Plane::max_fencepoints(void)
 {
-    return min(255, fence_storage.size() / sizeof(Vector2l));
+    return MIN(255U, fence_storage.size() / sizeof(Vector2l));
 }
 
 /*
@@ -65,13 +64,13 @@ Vector2l Plane::get_fence_point_with_index(unsigned i)
 
     // read fence point
     ret.x = fence_storage.read_uint32(i * sizeof(Vector2l));
-    ret.y = fence_storage.read_uint32(i * sizeof(Vector2l) + 4);
+    ret.y = fence_storage.read_uint32(i * sizeof(Vector2l) + sizeof(int32_t));
 
     return ret;
 }
 
 // save a fence point
-void Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
+void Plane::set_fence_point_with_index(const Vector2l &point, unsigned i)
 {
     if (i >= (unsigned)g.fence_total.get() || i >= max_fencepoints()) {
         // not allowed
@@ -79,9 +78,9 @@ void Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
     }
 
     fence_storage.write_uint32(i * sizeof(Vector2l), point.x);
-    fence_storage.write_uint32(i * sizeof(Vector2l)+4, point.y);
+    fence_storage.write_uint32(i * sizeof(Vector2l) + sizeof(int32_t), point.y);
 
-    if (geofence_state != NULL) {
+    if (geofence_state != nullptr) {
         geofence_state->boundary_uptodate = false;
     }
 }
@@ -93,23 +92,26 @@ void Plane::geofence_load(void)
 {
     uint8_t i;
 
-    if (geofence_state == NULL) {
+    if (geofence_state == nullptr) {
         uint16_t boundary_size = sizeof(Vector2l) * max_fencepoints();
         if (hal.util->available_memory() < 100 + boundary_size + sizeof(struct GeofenceState)) {
             // too risky to enable as we could run out of stack
-            goto failed;
+            geofence_disable_and_send_error_msg("low on memory");
+            return;
         }
         geofence_state = (struct GeofenceState *)calloc(1, sizeof(struct GeofenceState));
-        if (geofence_state == NULL) {
+        if (geofence_state == nullptr) {
             // not much we can do here except disable it
-            goto failed;
+            geofence_disable_and_send_error_msg("failed to init state memory");
+            return;
         }
 
         geofence_state->boundary = (Vector2l *)calloc(1, boundary_size);
-        if (geofence_state->boundary == NULL) {
+        if (geofence_state->boundary == nullptr) {
             free(geofence_state);
-            geofence_state = NULL;
-            goto failed;
+            geofence_state = nullptr;
+            geofence_disable_and_send_error_msg("failed to init boundary memory");
+            return;
         }
         
         geofence_state->old_switch_position = 254;
@@ -126,24 +128,28 @@ void Plane::geofence_load(void)
     geofence_state->num_points = i;
 
     if (!Polygon_complete(&geofence_state->boundary[1], geofence_state->num_points-1)) {
-        // first point and last point must be the same
-        goto failed;
+        geofence_disable_and_send_error_msg("pt[1] and pt[total-1] must match");
+        return;
     }
     if (Polygon_outside(geofence_state->boundary[0], &geofence_state->boundary[1], geofence_state->num_points-1)) {
-        // return point needs to be inside the fence
-        goto failed;
+        geofence_disable_and_send_error_msg("pt[0] must be inside fence");
+        return;
     }
 
     geofence_state->boundary_uptodate = true;
     geofence_state->fence_triggered = false;
 
-    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("geo-fence loaded"));
-    gcs_send_message(MSG_FENCE_STATUS);
-    return;
+    gcs().send_text(MAV_SEVERITY_INFO,"Geofence loaded");
+    gcs().send_message(MSG_FENCE_STATUS);
+}
 
-failed:
+/*
+ *  Disable geofence and send an error message string
+ */
+void Plane::geofence_disable_and_send_error_msg(const char *errorMsg)
+{
     g.fence_action.set(FENCE_ACTION_NONE);
-    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("geo-fence setup error"));
+    gcs().send_text(MAV_SEVERITY_WARNING,"Geofence error, %s", errorMsg);
 }
 
 /*
@@ -169,15 +175,15 @@ void Plane::geofence_update_pwm_enabled_state()
     if (g.fence_channel == 0) {
         is_pwm_enabled = false;
     } else {
-        is_pwm_enabled = (hal.rcin->read(g.fence_channel-1) > FENCE_ENABLE_PWM);
+        is_pwm_enabled = (RC_Channels::get_radio_in(g.fence_channel-1) > FENCE_ENABLE_PWM);
     }
-    if (is_pwm_enabled && geofence_state == NULL) {
+    if (is_pwm_enabled && geofence_state == nullptr) {
         // we need to load the fence
         geofence_load();
         return;
     }
 
-    if (geofence_state == NULL) {
+    if (geofence_state == nullptr) {
         // not loaded
         return;
     }
@@ -193,10 +199,10 @@ void Plane::geofence_update_pwm_enabled_state()
 //return true on success, false on failure
 bool Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r) 
 {
-    if (geofence_state == NULL && enable) {
+    if (geofence_state == nullptr && enable) {
         geofence_load();
     }
-    if (geofence_state == NULL) {
+    if (geofence_state == nullptr) {
         return false;
     }
 
@@ -217,7 +223,7 @@ bool Plane::geofence_enabled(void)
 {
     geofence_update_pwm_enabled_state();
 
-    if (geofence_state == NULL) {
+    if (geofence_state == nullptr) {
         return false;
     }
 
@@ -238,7 +244,7 @@ bool Plane::geofence_enabled(void)
  * Return false on failure to set floor state.
  */
 bool Plane::geofence_set_floor_enabled(bool floor_enable) {
-    if (geofence_state == NULL) {
+    if (geofence_state == nullptr) {
         return false;
     }
     
@@ -283,22 +289,22 @@ void Plane::geofence_check(bool altitude_check_only)
     if (!geofence_enabled()) {
         // switch back to the chosen control mode if still in
         // GUIDED to the return point
-        if (geofence_state != NULL &&
-            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) &&
-            control_mode == GUIDED &&
+        if (geofence_state != nullptr &&
+            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS || g.fence_action == FENCE_ACTION_RTL) &&
+            (control_mode == GUIDED || control_mode == AVOID_ADSB) &&
             geofence_present() &&
             geofence_state->boundary_uptodate &&
             geofence_state->old_switch_position == oldSwitchPosition &&
             guided_WP_loc.lat == geofence_state->guided_lat &&
             guided_WP_loc.lng == geofence_state->guided_lng) {
             geofence_state->old_switch_position = 254;
-            set_mode(get_previous_mode());
+            set_mode(get_previous_mode(), MODE_REASON_GCS_COMMAND);
         }
         return;
     }
 
     /* allocate the geo-fence state if need be */
-    if (geofence_state == NULL || !geofence_state->boundary_uptodate) {
+    if (geofence_state == nullptr || !geofence_state->boundary_uptodate) {
         geofence_load();
         if (!geofence_enabled()) {
             // may have been disabled by load
@@ -311,7 +317,7 @@ void Plane::geofence_check(bool altitude_check_only)
     struct Location loc;
 
     // Never trigger a fence breach in the final stage of landing
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (landing.is_expecting_impact()) {
         return;
     }
 
@@ -335,12 +341,12 @@ void Plane::geofence_check(bool altitude_check_only)
         if (geofence_state->fence_triggered && !altitude_check_only) {
             // we have moved back inside the fence
             geofence_state->fence_triggered = false;
-            gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("geo-fence OK"));
+            gcs().send_text(MAV_SEVERITY_INFO,"Geofence OK");
  #if FENCE_TRIGGERED_PIN > 0
             hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
             hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
  #endif
-            gcs_send_message(MSG_FENCE_STATUS);
+            gcs().send_message(MSG_FENCE_STATUS);
         }
         // we're inside, all is good with the world
         return;
@@ -348,7 +354,7 @@ void Plane::geofence_check(bool altitude_check_only)
 
     // we are outside the fence
     if (geofence_state->fence_triggered &&
-        (control_mode == GUIDED || g.fence_action == FENCE_ACTION_REPORT)) {
+        (control_mode == GUIDED || control_mode == AVOID_ADSB || control_mode == RTL || g.fence_action == FENCE_ACTION_REPORT)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
@@ -365,8 +371,8 @@ void Plane::geofence_check(bool altitude_check_only)
     hal.gpio->write(FENCE_TRIGGERED_PIN, 1);
  #endif
 
-    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("geo-fence triggered"));
-    gcs_send_message(MSG_FENCE_STATUS);
+    gcs().send_text(MAV_SEVERITY_NOTICE,"Geofence triggered");
+    gcs().send_message(MSG_FENCE_STATUS);
 
     // see what action the user wants
     switch (g.fence_action) {
@@ -375,16 +381,22 @@ void Plane::geofence_check(bool altitude_check_only)
 
     case FENCE_ACTION_GUIDED:
     case FENCE_ACTION_GUIDED_THR_PASS:
+    case FENCE_ACTION_RTL:
         // make sure we don't auto trim the surfaces on this mode change
         int8_t saved_auto_trim = g.auto_trim;
         g.auto_trim.set(0);
-        set_mode(GUIDED);
+        if (g.fence_action == FENCE_ACTION_RTL) {
+            set_mode(RTL, MODE_REASON_FENCE_BREACH);
+        } else {
+            set_mode(GUIDED, MODE_REASON_FENCE_BREACH);
+        }
         g.auto_trim.set(saved_auto_trim);
 
-        if (g.fence_ret_rally != 0) { //return to a rally point
+        if (g.fence_ret_rally != 0 || g.fence_action == FENCE_ACTION_RTL) { //return to a rally point
             guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
 
         } else { //return to fence return point, not a rally point
+            guided_WP_loc = {};
             if (g.fence_retalt > 0) {
                 //fly to the return point using fence_retalt
                 guided_WP_loc.alt = home.alt + 100.0f*g.fence_retalt;
@@ -396,7 +408,6 @@ void Plane::geofence_check(bool altitude_check_only)
                 // min and max
                 guided_WP_loc.alt = home.alt + 100.0f*(g.fence_minalt + g.fence_maxalt)/2;
             }
-            guided_WP_loc.options = 0;
             guided_WP_loc.lat = geofence_state->boundary[0].x;
             guided_WP_loc.lng = geofence_state->boundary[0].y;
         }
@@ -404,9 +415,10 @@ void Plane::geofence_check(bool altitude_check_only)
         geofence_state->guided_lng = guided_WP_loc.lng;
         geofence_state->old_switch_position = oldSwitchPosition;
 
-        setup_terrain_target_alt(guided_WP_loc);
-
-        set_guided_WP();
+        if (g.fence_action != FENCE_ACTION_RTL) { //not needed for RTL mode
+            setup_terrain_target_alt(guided_WP_loc);
+            set_guided_WP();
+        }
 
         if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
             guided_throttle_passthru = true;
@@ -424,9 +436,9 @@ void Plane::geofence_check(bool altitude_check_only)
  */
 bool Plane::geofence_stickmixing(void) {
     if (geofence_enabled() &&
-        geofence_state != NULL &&
+        geofence_state != nullptr &&
         geofence_state->fence_triggered &&
-        control_mode == GUIDED) {
+        (control_mode == GUIDED || control_mode == AVOID_ADSB)) {
         // don't mix in user input
         return false;
     }
@@ -439,7 +451,7 @@ bool Plane::geofence_stickmixing(void) {
  */
 void Plane::geofence_send_status(mavlink_channel_t chan)
 {
-    if (geofence_enabled() && geofence_state != NULL) {
+    if (geofence_enabled() && geofence_state != nullptr) {
         mavlink_msg_fence_status_send(chan,
                                       (int8_t)geofence_state->fence_triggered,
                                       geofence_state->breach_count,
@@ -480,7 +492,8 @@ bool Plane::geofence_set_floor_enabled(bool floor_enable) {
     return false;
 }
 
-bool geofence_breached(void) {
+bool Plane::geofence_breached(void)
+{
     return false;
 }
 

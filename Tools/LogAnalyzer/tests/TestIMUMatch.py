@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 from math import sqrt
@@ -98,9 +100,8 @@ class TestIMUMatch(Test):
 
             diff_filtered = sqrt(xdiff_filtered**2+ydiff_filtered**2+zdiff_filtered**2)
             max_diff_filtered = max(max_diff_filtered,diff_filtered)
-            #print max_diff_filtered
+            #print(max_diff_filtered)
             last_t = t
-
 
         if max_diff_filtered > fail_threshold:
             self.result.statusMessage = "Check vibration or accelerometer calibration. (Mismatch: %.2f, WARN: %.2f, FAIL: %.2f)" % (max_diff_filtered,warn_threshold,fail_threshold)

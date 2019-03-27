@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 void Plane::read_control_switch()
@@ -11,8 +9,8 @@ void Plane::read_control_switch()
     // If we get this value we do not want to change modes.
     if(switchPosition == 255) return;
 
-    if (failsafe.ch3_failsafe || failsafe.ch3_counter > 0) {
-        // when we are in ch3_failsafe mode then RC input is not
+    if (failsafe.rc_failsafe || failsafe.throttle_counter > 0) {
+        // when we are in rc_failsafe mode then RC input is not
         // working, and we need to ignore the mode switch channel
         return;
     }
@@ -30,7 +28,7 @@ void Plane::read_control_switch()
     // as a spring loaded trainer switch).
     if (oldSwitchPosition != switchPosition ||
         (g.reset_switch_chan != 0 &&
-         hal.rcin->read(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
+         RC_Channels::get_radio_in(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
 
         if (switch_debouncer == false) {
             // this ensures that mode switches only happen if the
@@ -41,69 +39,38 @@ void Plane::read_control_switch()
             return;
         }
 
-        set_mode((enum FlightMode)(flight_modes[switchPosition].get()));
+        set_mode((enum FlightMode)(flight_modes[switchPosition].get()), MODE_REASON_TX_COMMAND);
 
         oldSwitchPosition = switchPosition;
     }
 
     if (g.reset_mission_chan != 0 &&
-        hal.rcin->read(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
+        RC_Channels::get_radio_in(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
         mission.start();
         prev_WP_loc = current_loc;
     }
 
     switch_debouncer = false;
 
-    if (g.inverted_flight_ch != 0) {
-        // if the user has configured an inverted flight channel, then
-        // fly upside down when that channel goes above INVERTED_FLIGHT_PWM
-        inverted_flight = (control_mode != MANUAL && hal.rcin->read(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
-    }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    if (g.override_channel > 0) {
-        // if the user has configured an override channel then check it
-        bool override = (hal.rcin->read(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
-        if (override && !px4io_override_enabled) {
-            // we only update the mixer if we are not armed. This is
-            // important as otherwise we will need to temporarily
-            // disarm to change the mixer
-            if (hal.util->get_soft_armed() || setup_failsafe_mixing()) {
-                px4io_override_enabled = true;
-                // disable output channels to force PX4IO override
-                gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("PX4IO Override enabled"));
-            } else {
-                // we'll try again next loop. The PX4IO code sometimes
-                // rejects a mixer, probably due to it being busy in
-                // some way?
-                gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("PX4IO Override enable failed"));
-            }
-        } else if (!override && px4io_override_enabled) {
-            px4io_override_enabled = false;
-            RC_Channel_aux::enable_aux_servos();
-            gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("PX4IO Override disabled"));
-        }
-        if (px4io_override_enabled && 
-            hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED) {
-            // we force safety off, so that if this override is used
-            // with a in-flight reboot it gives a way for the pilot to
-            // re-arm and take manual control
-            hal.rcout->force_safety_off();
+#if PARACHUTE == ENABLED
+    if (g.parachute_channel > 0) {
+        if (RC_Channels::get_radio_in(g.parachute_channel-1) >= 1700) {
+            parachute_manual_release();
         }
     }
-#endif // CONFIG_HAL_BOARD
+#endif
 }
 
 uint8_t Plane::readSwitch(void)
 {
-    uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
+    uint16_t pulsewidth = RC_Channels::get_radio_in(g.flight_mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
-    if (pulsewidth > 1230 && pulsewidth <= 1360) return 1;
-    if (pulsewidth > 1360 && pulsewidth <= 1490) return 2;
-    if (pulsewidth > 1490 && pulsewidth <= 1620) return 3;
-    if (pulsewidth > 1620 && pulsewidth <= 1749) return 4;              // Software Manual
-    if (pulsewidth >= 1750) return 5;                                                           // Hardware Manual
-    return 0;
+    if (pulsewidth <= 1230) return 0;
+    if (pulsewidth <= 1360) return 1;
+    if (pulsewidth <= 1490) return 2;
+    if (pulsewidth <= 1620) return 3;
+    if (pulsewidth <= 1749) return 4;              // Software Manual
+    return 5;                                                           // Hardware Manual
 }
 
 void Plane::reset_control_switch()
@@ -147,8 +114,11 @@ void Plane::autotune_enable(bool enable)
  */
 bool Plane::fly_inverted(void)
 {
-    if (g.inverted_flight_ch != 0 && inverted_flight) {
-        // controlled with INVERTED_FLIGHT_CH
+    if (control_mode == MANUAL) {
+        return false;
+    }
+    if (inverted_flight) {
+        // controlled with aux switch
         return true;
     }
     if (control_mode == AUTO && auto_state.inverted_flight) {

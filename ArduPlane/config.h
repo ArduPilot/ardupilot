@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -19,6 +18,7 @@
 //
 // - Try to keep this file organised in the same order as APM_Config.h.example
 //
+#pragma once
 
 #include "defines.h"
 
@@ -26,15 +26,7 @@
 /// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
 /// change in your local copy of APM_Config.h.
 ///
-#ifdef USE_CMAKE_APM_CONFIG
- #include "APM_Config_cmake.h" // <== Prefer cmake config if it exists
-#else
- #include "APM_Config.h" // <== THIS INCLUDE, DO NOT EDIT IT. EVER.
-#endif
-///
-/// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
-/// change in your local copy of APM_Config.h.
-///
+#include "APM_Config.h"
 
 // Just so that it's completely clear...
 #define ENABLED                 1
@@ -63,11 +55,7 @@
 //
 
 #ifndef FRSKY_TELEM_ENABLED
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
- # define FRSKY_TELEM_ENABLED ENABLED
-#else
- # define FRSKY_TELEM_ENABLED DISABLED
-#endif
+#define FRSKY_TELEM_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -82,48 +70,12 @@
 #endif
 #endif
 
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
-# define RANGEFINDER_ENABLED ENABLED
-#else
-# define RANGEFINDER_ENABLED DISABLED
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Radio channel limits
-//
-// Note that these are not called out in APM_Config.h.reference.
-//
-#ifndef CH5_MIN
- # define CH5_MIN        1000
-#endif
-#ifndef CH5_MAX
- # define CH5_MAX        2000
-#endif
-#ifndef CH6_MIN
- # define CH6_MIN        1000
-#endif
-#ifndef CH6_MAX
- # define CH6_MAX        2000
-#endif
-#ifndef CH7_MIN
- # define CH7_MIN        1000
-#endif
-#ifndef CH7_MAX
- # define CH7_MAX        2000
-#endif
-#ifndef CH8_MIN
- # define CH8_MIN        1000
-#endif
-#ifndef CH8_MAX
- # define CH8_MAX        2000
-#endif
 
 
 #ifndef FLAP_1_PERCENT
@@ -172,36 +124,10 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// THROTTLE_FAILSAFE
-// THROTTLE_FS_VALUE
-// SHORT_FAILSAFE_ACTION
-// LONG_FAILSAFE_ACTION
-#ifndef THROTTLE_FAILSAFE
- # define THROTTLE_FAILSAFE              ENABLED
-#endif
-#ifndef THROTTLE_FS_VALUE
- # define THROTTLE_FS_VALUE              950
-#endif
-#ifndef SHORT_FAILSAFE_ACTION
- # define SHORT_FAILSAFE_ACTION          0
-#endif
-#ifndef LONG_FAILSAFE_ACTION
- # define LONG_FAILSAFE_ACTION           0
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // AUTO_TRIM
 //
 #ifndef AUTO_TRIM
  # define AUTO_TRIM                              DISABLED
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// THROTTLE_OUT
-//
-#ifndef THROTTE_OUT
- # define THROTTLE_OUT                   ENABLED
 #endif
 
 
@@ -235,6 +161,10 @@
  # define ELEVON_CH2_REVERSE     DISABLED
 #endif
 
+#ifndef DSPOILR_RUD_RATE_DEFAULT
+ #define DSPOILR_RUD_RATE_DEFAULT 100
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
 //
@@ -248,11 +178,7 @@
 //
 // uses 7726 bytes of memory on 2560 chips (all options are enabled)
 #ifndef MOUNT
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
- # define MOUNT          ENABLED
-#else
- # define MOUNT          DISABLED
-#endif
+#define MOUNT          ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -260,14 +186,6 @@
 // FLIGHT AND NAVIGATION CONTROL
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// Altitude measurement and control.
-//
-#ifndef ALTITUDE_MIX
- # define ALTITUDE_MIX                   1
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_CRUISE
@@ -313,7 +231,7 @@
  # define THROTTLE_CRUISE                45
 #endif
 #ifndef THROTTLE_MAX
- # define THROTTLE_MAX                   75
+ # define THROTTLE_MAX                   100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -351,25 +269,7 @@
  # define LOGGING_ENABLED                ENABLED
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define DEFAULT_LOG_BITMASK     \
-    MASK_LOG_ATTITUDE_MED | \
-    MASK_LOG_GPS | \
-    MASK_LOG_PM | \
-    MASK_LOG_NTUN | \
-    MASK_LOG_CTUN | \
-    MASK_LOG_MODE | \
-    MASK_LOG_CMD | \
-    MASK_LOG_COMPASS | \
-    MASK_LOG_CURRENT | \
-    MASK_LOG_TECS | \
-    MASK_LOG_CAMERA | \
-    MASK_LOG_RC
-#else
-// other systems have plenty of space for full logs
 #define DEFAULT_LOG_BITMASK   0xffff
-#endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -392,30 +292,12 @@
  # define USE_CURRENT_ALT FALSE
 #endif
 
-#ifndef INVERTED_FLIGHT_PWM
- # define INVERTED_FLIGHT_PWM 1750
-#endif
-
-#ifndef PX4IO_OVERRIDE_PWM
- # define PX4IO_OVERRIDE_PWM 1750
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
 
 #ifndef SCALING_SPEED
  # define SCALING_SPEED          15.0
-#endif
-
-// use this to completely disable the CLI. We now default the CLI to
-// off on smaller boards.
-#ifndef CLI_ENABLED
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
- # define CLI_ENABLED ENABLED
-#else
- # define CLI_ENABLED DISABLE
-#endif
 #endif
 
 // use this to disable geo-fencing
@@ -442,31 +324,54 @@
  # define RESET_SWITCH_CHAN_PWM 1750
 #endif
 
-// OBC Failsafe enable
-#ifndef OBC_FAILSAFE
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
- # define OBC_FAILSAFE ENABLED
+#ifndef HIL_SUPPORT
+#if HAL_MINIMIZE_FEATURES
+# define HIL_SUPPORT DISABLED
 #else
- # define OBC_FAILSAFE DISABLED
+# define HIL_SUPPORT ENABLED
 #endif
 #endif
 
-#if OBC_FAILSAFE == ENABLED && HAL_CPU_CLASS < HAL_CPU_CLASS_75
-#define CLI_ENABLED DISABLED
+//////////////////////////////////////////////////////////////////////////////
+// Parachute release
+#ifndef PARACHUTE
+#define PARACHUTE ENABLED
 #endif
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
-#define HIL_SUPPORT DISABLED
-#else
-#define HIL_SUPPORT ENABLED
+//////////////////////////////////////////////////////////////////////////////
+// Payload Gripper
+#ifndef GRIPPER_ENABLED
+ #if HAL_MINIMIZE_FEATURES
+  # define GRIPPER_ENABLED DISABLED
+ #else 
+  # define GRIPPER_ENABLED ENABLED
+ #endif
 #endif
 
-/*
-  build a firmware version string.
-  GIT_VERSION comes from Makefile builds
-*/
-#ifndef GIT_VERSION
-#define FIRMWARE_STRING THISFIRMWARE
+#ifndef STATS_ENABLED
+ # define STATS_ENABLED ENABLED
+#endif
+
+#ifndef DEVO_TELEM_ENABLED
+#if HAL_MINIMIZE_FEATURES
+ #define DEVO_TELEM_ENABLED DISABLED
 #else
-#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
+ #define DEVO_TELEM_ENABLED ENABLED
+#endif
+#endif
+
+#ifndef OSD_ENABLED
+ #define OSD_ENABLED DISABLED
+#endif
+
+#ifndef SOARING_ENABLED
+#if HAL_MINIMIZE_FEATURES
+ #define SOARING_ENABLED DISABLED
+#else
+ #define SOARING_ENABLED ENABLED
+#endif
+#endif
+
+#ifndef LANDING_GEAR_ENABLED
+ #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
 #endif

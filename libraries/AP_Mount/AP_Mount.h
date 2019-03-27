@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /************************************************************
 * AP_mount -- library to control a 2 or 3 axis mount.		*
 *															*
@@ -19,8 +17,7 @@
 * Comments: All angles in degrees * 100, distances in meters*
 *			unless otherwise stated.						*
 ************************************************************/
-#ifndef __AP_MOUNT_H__
-#define __AP_MOUNT_H__
+#pragma once
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
@@ -29,6 +26,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Logger/AP_Logger.h>
 
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1
@@ -36,7 +34,7 @@
 // declare backend classes
 class AP_Mount_Backend;
 class AP_Mount_Servo;
-class AP_Mount_MAVLink;
+class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
@@ -51,38 +49,41 @@ class AP_Mount
     // declare backends as friends
     friend class AP_Mount_Backend;
     friend class AP_Mount_Servo;
-    friend class AP_Mount_MAVLink;
+    friend class AP_Mount_SoloGimbal;
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
 
 public:
+    AP_Mount(const struct Location &current_loc);
+
+    /* Do not allow copies */
+    AP_Mount(const AP_Mount &other) = delete;
+    AP_Mount &operator=(const AP_Mount&) = delete;
+
+    // get singleton instance
+    static AP_Mount *get_singleton() {
+        return _singleton;
+    }
 
     // Enums
     enum MountType {
         Mount_Type_None = 0,            /// no mount
         Mount_Type_Servo = 1,           /// servo controlled mount
-        Mount_Type_MAVLink = 2,         /// MAVLink controlled mount
+        Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
         Mount_Type_Alexmos = 3,         /// Alexmos mount
         Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
         Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
     };
-
-    struct gimbal_params {
-        AP_Vector3f     delta_angles_offsets;
-        AP_Vector3f     delta_velocity_offsets;
-        AP_Vector3f     joint_angles_offsets;
-        AP_Float        K_gimbalRate;
-    };
-
-    // Constructor
-    AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc);
 
     // init - detect and initialise all mounts
     void init(const AP_SerialManager& serial_manager);
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();
+
+    // used for gimbals that need to read INS data at full rate
+    void update_fast();
 
     // get_mount_type - returns the type of mount
     AP_Mount::MountType get_mount_type() const { return get_mount_type(_primary); }
@@ -102,7 +103,7 @@ public:
     void set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode);
 
     // set_mode_to_default - restores the mode to it's default mode held in the MNT_DEFLT_MODE parameter
-    //      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
+    //      this operation requires 60us on a Pixhawk/PX4
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 
@@ -114,34 +115,25 @@ public:
     void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
     void set_roi_target(uint8_t instance, const struct Location &target_loc);
 
-    // control - control the mount
-    void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode) { control(_primary, pitch_or_lat, roll_or_lon, yaw_or_alt, mount_mode); }
-    void control(uint8_t instance, int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode);
-
-    // configure_msg - process MOUNT_CONFIGURE messages received from GCS
-    void configure_msg(mavlink_message_t* msg) { configure_msg(_primary, msg); }
-    void configure_msg(uint8_t instance, mavlink_message_t* msg);
-
-    // control_msg - process MOUNT_CONTROL messages received from GCS
-    void control_msg(mavlink_message_t* msg) { control_msg(_primary, msg); }
-    void control_msg(uint8_t instance, mavlink_message_t* msg);
-
-    // handle a GIMBAL_REPORT message
-    void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg);
+    // mavlink message handling:
+    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
+    void handle_param_value(const mavlink_message_t *msg);
+    void handle_message(mavlink_channel_t chan, const mavlink_message_t *msg);
 
     // send a GIMBAL_REPORT message to GCS
     void send_gimbal_report(mavlink_channel_t chan);
 
-    // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-    void status_msg(mavlink_channel_t chan);
+    // send a MOUNT_STATUS message to GCS:
+    void send_mount_status(mavlink_channel_t chan);
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
 
+    static AP_Mount *_singleton;
+
     // private members
-    const AP_AHRS_TYPE     &_ahrs;
     const struct Location   &_current_loc;  // reference to the vehicle's current location
 
     // frontend parameters
@@ -182,10 +174,19 @@ protected:
 
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location
-
-        struct gimbal_params _gimbalParams;
-        
     } state[AP_MOUNT_MAX_INSTANCES];
+
+private:
+
+    void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg);
+    void handle_mount_configure(const mavlink_message_t *msg);
+    void handle_mount_control(const mavlink_message_t *msg);
+
+    MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
+
 };
 
-#endif // __AP_MOUNT_H__
+namespace AP {
+    AP_Mount *mount();
+};

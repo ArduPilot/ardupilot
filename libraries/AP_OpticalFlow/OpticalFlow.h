@@ -1,5 +1,3 @@
-#ifndef __OpticalFlow_H__
-#define __OpticalFlow_H__
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -14,6 +12,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
 /*
  *       OpticalFlow.h - OpticalFlow Base Class for Ardupilot
@@ -24,23 +23,32 @@
 #include <AP_Math/AP_Math.h>
 
 class OpticalFlow_backend;
+class AP_AHRS_NavEKF;
 
 class OpticalFlow
 {
     friend class OpticalFlow_backend;
 
 public:
-    // constructor
-    OpticalFlow(void);
+    OpticalFlow();
+
+    /* Do not allow copies */
+    OpticalFlow(const OpticalFlow &other) = delete;
+    OpticalFlow &operator=(const OpticalFlow&) = delete;
+
+    // get singleton instance
+    static OpticalFlow *get_singleton() {
+        return _singleton;
+    }
 
     // init - initialise sensor
-    void init(void);
+    void init(uint32_t log_bit);
 
     // enabled - returns true if optical flow is enabled
     bool enabled() const { return _enabled; }
 
     // healthy - return true if the sensor is healthy
-    bool healthy() const { return backend != NULL && _flags.healthy; }
+    bool healthy() const { return backend != nullptr && _flags.healthy; }
 
     // read latest values from sensor and fill in x,y and totals.
     void update(void);
@@ -60,9 +68,6 @@ public:
     // last_update() - returns system time of last sensor update
     uint32_t last_update() const { return _last_update_ms; }
 
-    // parameter var info table
-    static const struct AP_Param::GroupInfo var_info[];
-
     struct OpticalFlow_state {
         uint8_t device_id;          // device id
         uint8_t  surface_quality;   // image quality (below TBD you can't trust the dx,dy values returned)
@@ -70,10 +75,18 @@ public:
         Vector2f bodyRate;          // body inertial angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
     };
 
-    // support for HIL/SITL
-    void setHIL(const struct OpticalFlow_state &state);
+    // return a 3D vector defining the position offset of the sensors focal point in metres relative to the body frame origin
+    const Vector3f &get_pos_offset(void) const {
+        return _pos_offset;
+    }
+
+    // parameter var info table
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
+
+    static OpticalFlow *_singleton;
+
     OpticalFlow_backend *backend;
 
     struct AP_OpticalFlow_Flags {
@@ -85,17 +98,24 @@ private:
     AP_Int16 _flowScalerX;          // X axis flow scale factor correction - parts per thousand
     AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
     AP_Int16 _yawAngle_cd;          // yaw angle of sensor X axis with respect to vehicle X axis - centi degrees
+    AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
+    AP_Int8  _address;              // address on the bus (allows selecting between 8 possible I2C addresses for px4flow)
 
+    // method called by backend to update frontend state:
+    void update_state(const OpticalFlow_state &state);
 
     // state filled in by backend
     struct OpticalFlow_state _state;
 
     uint32_t _last_update_ms;        // millis() time of last update
+
+    void Log_Write_Optflow();
+    uint32_t _log_bit = -1;     // bitmask bit which indicates if we should log.  -1 means we always log
+
 };
 
-#include "OpticalFlow_backend.h"
-#include "AP_OpticalFlow_HIL.h"
-#include "AP_OpticalFlow_PX4.h"
-#include "AP_OpticalFlow_Linux.h"
+namespace AP {
+    OpticalFlow *opticalflow();
+}
 
-#endif
+#include "OpticalFlow_backend.h"

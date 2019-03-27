@@ -1,23 +1,17 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AC_PRECLAND_H__
-#define __AC_PRECLAND_H__
+#pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
-#include <AC_PID/AC_PI_2D.h>
-#include <AP_InertialNav/AP_InertialNav.h>
-
-// definitions
-#define AC_PRECLAND_SPEED_XY_DEFAULT            100.0f  // maximum horizontal speed
-#define PRECLAND_P                              2.0f    // velocity controller P gain default
-#define PRECLAND_I                              1.0f    // velocity controller I gain default
-#define PRECLAND_IMAX                         500.0f    // velocity controller IMAX default
-#define PRECLAND_UPDATE_TIME                    0.02f   // precland runs at 50hz
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <stdint.h>
+#include "PosVelEKF.h"
+#include <AP_HAL/utility/RingBuffer.h>
 
 // declare backend classes
 class AC_PrecLand_Backend;
 class AC_PrecLand_Companion;
 class AC_PrecLand_IRLock;
+class AC_PrecLand_SITL_Gazebo;
+class AC_PrecLand_SITL;
 
 class AC_PrecLand
 {
@@ -25,8 +19,15 @@ class AC_PrecLand
     friend class AC_PrecLand_Backend;
     friend class AC_PrecLand_Companion;
     friend class AC_PrecLand_IRLock;
+    friend class AC_PrecLand_SITL_Gazebo;
+    friend class AC_PrecLand_SITL;
 
 public:
+    AC_PrecLand();
+
+    /* Do not allow copies */
+    AC_PrecLand(const AC_PrecLand &other) = delete;
+    AC_PrecLand &operator=(const AC_PrecLand&) = delete;
 
     // precision landing behaviours (held in PRECLAND_ENABLED parameter)
     enum PrecLandBehaviour {
@@ -39,67 +40,116 @@ public:
     enum PrecLandType {
         PRECLAND_TYPE_NONE = 0,
         PRECLAND_TYPE_COMPANION,
-        PRECLAND_TYPE_IRLOCK
+        PRECLAND_TYPE_IRLOCK,
+        PRECLAND_TYPE_SITL_GAZEBO,
+        PRECLAND_TYPE_SITL,
     };
 
-    // Constructor
-    AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav, AC_PI_2D& pi_precland_xy, float dt);
+    // perform any required initialisation of landing controllers
+    // update_rate_hz should be the rate at which the update method will be called in hz
+    void init(uint16_t update_rate_hz);
 
-    // init - perform any required initialisation of landing controllers
-    void init();
+    // returns true if precision landing is healthy
+    bool healthy() const { return _backend_state.healthy; }
 
-    // healthy - returns true if precision landing is healthy
-    bool healthy() { return _backend_state.healthy; }
+    // returns true if precision landing is enabled (used only for logging)
+    bool enabled() const { return _enabled.get(); }
 
-    // update - give chance to driver to get updates from sensor
-    void update(float alt_above_terrain_cm);
+    // returns time of last update
+    uint32_t last_update_ms() const { return _last_update_ms; }
 
-    // get_target_shift - returns 3D vector of earth-frame position adjustments to target
-    Vector3f get_target_shift(const Vector3f& orig_target);
+    // returns time of last time target was seen
+    uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
 
-    // handle_msg - Process a LANDING_TARGET mavlink message
+    // returns estimator type
+    uint8_t estimator_type() const { return _estimator_type; }
+
+    // returns ekf outlier count
+    uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
+
+    // give chance to driver to get updates from sensor, should be called at 400hz
+    void update(float rangefinder_alt_cm, bool rangefinder_alt_valid);
+
+    // returns target position relative to the EKF origin
+    bool get_target_position_cm(Vector2f& ret);
+
+    // returns target relative position as 3D vector
+    void get_target_position_measurement_cm(Vector3f& ret);
+
+    // returns target position relative to vehicle
+    bool get_target_position_relative_cm(Vector2f& ret);
+
+    // returns target velocity relative to vehicle
+    bool get_target_velocity_relative_cms(Vector2f& ret);
+
+    // returns true when the landing target has been detected
+    bool target_acquired();
+
+    // process a LANDING_TARGET mavlink message
     void handle_msg(mavlink_message_t* msg);
-
-    // accessors for logging
-    bool enabled() const { return _enabled; }
-    const Vector2f& last_bf_angle_to_target() const { return _bf_angle_to_target; }
-    const Vector2f& last_ef_angle_to_target() const { return _ef_angle_to_target; }
-    const Vector3f& last_target_pos_offset() const { return _target_pos_offset; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    enum estimator_type_t {
+        ESTIMATOR_TYPE_RAW_SENSOR = 0,
+        ESTIMATOR_TYPE_KALMAN_FILTER = 1
+    };
 
-    // calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
-    //  body-frame angles stored in _bf_angle_to_target
-    //  earth-frame angles stored in _ef_angle_to_target
-    //  position estimate is stored in _target_pos
-    void calc_angles_and_pos(float alt_above_terrain_cm);
-
-    // get_behaviour - returns enabled parameter as an behaviour
+    // returns enabled parameter as an behaviour
     enum PrecLandBehaviour get_behaviour() const { return (enum PrecLandBehaviour)(_enabled.get()); }
 
-    // references to inertial nav and ahrs libraries
-    const AP_AHRS&              _ahrs;
-    const AP_InertialNav&       _inav;
-    AC_PI_2D&                   _pi_precland_xy;    // horizontal velocity PI controller
+    // run target position estimator
+    void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
+
+    // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
+    bool construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid);
+
+    // get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
+    bool retrieve_los_meas(Vector3f& target_vec_unit_body);
+
+    // calculate target's position and velocity relative to the vehicle (used as input to position controller)
+    // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
+    void run_output_prediction();
 
     // parameters
     AP_Int8                     _enabled;           // enabled/disabled and behaviour
-    AP_Int8                     _type;              // precision landing controller type
-    AP_Float                    _speed_xy;          // maximum horizontal speed in cm/s
+    AP_Int8                     _type;              // precision landing sensor type
+    AP_Int8                     _bus;               // which sensor bus
+    AP_Int8                     _estimator_type;    // precision landing estimator type
+    AP_Float                    _lag;               // sensor lag in seconds
+    AP_Float                    _yaw_align;         // Yaw angle from body x-axis to sensor x-axis.
+    AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
+    AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
+    AP_Float                    _accel_noise;       // accelerometer process noise
+    AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
 
-    // internal variables
-    float                       _dt;                // time difference (in seconds) between calls from the main program
+    uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
+    bool                        _target_acquired;   // true if target has been seen recently
+    uint32_t                    _last_backend_los_meas_ms;  // system time target was last seen
 
-    // output from sensor (stored for logging)
-    Vector2f                    _bf_angle_to_target;// last body-frame angle to target
-    Vector2f                    _ef_angle_to_target;// last earth-frame angle to target
+    PosVelEKF                   _ekf_x, _ekf_y;     // Kalman Filter for x and y axis
+    uint32_t                    _outlier_reject_count;  // mini-EKF's outlier counter (3 consecutive outliers lead to EKF accepting updates)
+    
+    Vector3f                    _target_pos_rel_meas_NED; // target's relative position as 3D vector
 
-    // output from controller
-    bool                        _have_estimate;     // true if we have a recent estimated position offset
-    Vector3f                    _target_pos_offset; // estimate target position offset from vehicle in earth-frame
+    Vector2f                    _target_pos_rel_est_NE; // target's position relative to the IMU, not compensated for lag
+    Vector2f                    _target_vel_rel_est_NE; // target's velocity relative to the IMU, not compensated for lag
+
+    Vector2f                    _target_pos_rel_out_NE; // target's position relative to the camera, fed into position controller
+    Vector2f                    _target_vel_rel_out_NE; // target's velocity relative to the CG, fed into position controller
+
+    // structure and buffer to hold a history of vehicle velocity
+    struct inertial_data_frame_s {
+        Matrix3f Tbn;                               // dcm rotation matrix to rotate body frame to north
+        Vector3f correctedVehicleDeltaVelocityNED;
+        Vector3f inertialNavVelocity;
+        bool inertialNavVelocityValid;
+        float dt;
+        uint64_t time_usec;
+    };
+    ObjectArray<inertial_data_frame_s> *_inertial_history;
 
     // backend state
     struct precland_state {
@@ -107,4 +157,3 @@ private:
     } _backend_state;
     AC_PrecLand_Backend         *_backend;  // pointers to backend precision landing driver
 };
-#endif	// __AC_PRECLAND_H__

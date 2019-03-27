@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 //Function that will read the radio data, limit servos and trigger a failsafe
@@ -13,27 +11,45 @@ void Plane::set_control_channels(void)
     if (g.rudder_only) {
         // in rudder only mode the roll and rudder channels are the
         // same.
-        channel_roll     = RC_Channel::rc_channel(rcmap.yaw()-1);
+        channel_roll = RC_Channels::rc_channel(rcmap.yaw()-1);
     } else {
-        channel_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
+        channel_roll = RC_Channels::rc_channel(rcmap.roll()-1);
     }
-    channel_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
-    channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
-    channel_rudder   = RC_Channel::rc_channel(rcmap.yaw()-1);
+    channel_pitch    = RC_Channels::rc_channel(rcmap.pitch()-1);
+    channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
+    channel_rudder   = RC_Channels::rc_channel(rcmap.yaw()-1);
 
     // set rc channel ranges
     channel_roll->set_angle(SERVO_MAX);
     channel_pitch->set_angle(SERVO_MAX);
     channel_rudder->set_angle(SERVO_MAX);
-    channel_throttle->set_range(0, 100);
-
-    if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), throttle_min());
+    if (!have_reverse_thrust()) {
+        // normal operation
+        channel_throttle->set_range(100);
+    } else {
+        // reverse thrust
+        if (have_reverse_throttle_rc_option) {
+            // when we have a reverse throttle RC option setup we use throttle
+            // as a range, and rely on the RC switch to get reverse thrust
+            channel_throttle->set_range(100);
+        } else {
+            channel_throttle->set_angle(100);
+        }
+        SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
+        SRV_Channels::set_angle(SRV_Channel::k_throttleLeft, 100);
+        SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 100);
     }
 
-    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
-    // take a proportion of speed
-    hal.rcout->set_esc_scaling(channel_throttle->radio_min, channel_throttle->radio_max);
+    if (!arming.is_armed() && arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+    }
+
+    if (!quadplane.enable) {
+        // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+        // take a proportion of speed. For quadplanes we use AP_Motors
+        // scaling
+        g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
+    }
 }
 
 /*
@@ -46,42 +62,49 @@ void Plane::init_rc_in()
     channel_pitch->set_default_dead_zone(30);
     channel_rudder->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
-
-    update_aux();
 }
 
 /*
-  initialise RC output channels
+  initialise RC output for main channels. This is done early to allow
+  for BRD_SAFETYENABLE=0 and early servo control
  */
-void Plane::init_rc_out()
+void Plane::init_rc_out_main()
 {
-    channel_roll->enable_out();
-    channel_pitch->enable_out();
-
     /*
       change throttle trim to minimum throttle. This prevents a
       configuration error where the user sets CH3_TRIM incorrectly and
       the motor may start on power up
      */
-    channel_throttle->radio_trim = throttle_min();
-    
-    if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
-        channel_throttle->enable_out();
+    if (!have_reverse_thrust()) {
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle);
     }
-    channel_rudder->enable_out();
-    RC_Channel_aux::enable_aux_servos();
 
-    // Initialization of servo outputs
-    RC_Channel::output_trim_all();
-
-    // setup PWM values to send if the FMU firmware dies
-    RC_Channel::setup_failsafe_trim_all();  
-
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_aileron, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_elevator, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_rudder, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    
     // setup PX4 to output the min throttle when safety off if arming
     // is setup for min on disarm
-    if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), throttle_min());
+    if (arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     }
+}
+
+/*
+  initialise RC output channels for aux channels
+ */
+void Plane::init_rc_out_aux()
+{
+    SRV_Channels::enable_aux_servos();
+
+    SRV_Channels::cork();
+    
+    servos_output();
+    
+    // setup PWM values to send if the FMU firmware dies
+    // allows any VTOL motors to shut off
+    SRV_Channels::setup_failsafe_trim_all_non_motors();
 }
 
 /*
@@ -89,28 +112,30 @@ void Plane::init_rc_out()
 */
 void Plane::rudder_arm_disarm_check()
 {
-    AP_Arming::ArmingRudder arming_rudder = arming.rudder_arming();
+    AP_Arming::RudderArming arming_rudder = arming.get_rudder_arming_type();
 
-    if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
+    if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
         //parameter disallows rudder arming/disabling
         return;
     }
 
     // if throttle is not down, then pilot cannot rudder arm/disarm
-    if (channel_throttle->control_in > 0) {
+    if (get_throttle_input() != 0){
         rudder_arm_timer = 0;
         return;
     }
 
-    // if not in a manual throttle mode then disallow rudder arming/disarming
-    if (auto_throttle_mode ) {
+    // if not in a manual throttle mode and not in CRUISE or FBWB
+    // modes then disallow rudder arming/disarming
+    if (auto_throttle_mode &&
+        (control_mode != CRUISE && control_mode != FLY_BY_WIRE_B)) {
         rudder_arm_timer = 0;
         return;      
     }
 
 	if (!arming.is_armed()) {
 		// when not armed, full right rudder starts arming counter
-		if (channel_rudder->control_in > 4000) {
+		if (channel_rudder->get_control_in() > 4000) {
 			uint32_t now = millis();
 
 			if (rudder_arm_timer == 0 ||
@@ -121,16 +146,16 @@ void Plane::rudder_arm_disarm_check()
                 }
 			} else {
 				//time to arm!
-				arm_motors(AP_Arming::RUDDER);
+				arm_motors(AP_Arming::Method::RUDDER);
 				rudder_arm_timer = 0;
 			}
 		} else {
 			// not at full right rudder
 			rudder_arm_timer = 0;
 		}
-	} else if (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM && !is_flying()) {
+	} else if ((arming_rudder == AP_Arming::RudderArming::ARMDISARM) && !is_flying()) {
 		// when armed and not flying, full left rudder starts disarming counter
-		if (channel_rudder->control_in < -4000) {
+		if (channel_rudder->get_control_in() < -4000) {
 			uint32_t now = millis();
 
 			if (rudder_arm_timer == 0 ||
@@ -152,47 +177,33 @@ void Plane::rudder_arm_disarm_check()
 
 void Plane::read_radio()
 {
-    if (!hal.rcin->new_input()) {
-        control_failsafe(channel_throttle->radio_in);
+    if (!rc().read_input()) {
+        control_failsafe();
         return;
+    }
+
+    if(!failsafe.rc_failsafe)
+    {
+        failsafe.AFS_last_valid_rc_ms = millis();
     }
 
     failsafe.last_valid_rc_ms = millis();
 
-    elevon.ch1_temp = channel_roll->read();
-    elevon.ch2_temp = channel_pitch->read();
-    uint16_t pwm_roll, pwm_pitch;
-
-    if (g.mix_mode == 0) {
-        pwm_roll = elevon.ch1_temp;
-        pwm_pitch = elevon.ch2_temp;
-    }else{
-        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
-        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
-    }
-
-    RC_Channel::set_pwm_all();
-    
     if (control_mode == TRAINING) {
         // in training mode we don't want to use a deadzone, as we
         // want manual pass through when not exceeding attitude limits
-        channel_roll->set_pwm_no_deadzone(pwm_roll);
-        channel_pitch->set_pwm_no_deadzone(pwm_pitch);
-        channel_throttle->set_pwm_no_deadzone(channel_throttle->read());
-        channel_rudder->set_pwm_no_deadzone(channel_rudder->read());
-    } else {
-        channel_roll->set_pwm(pwm_roll);
-        channel_pitch->set_pwm(pwm_pitch);
+        channel_roll->recompute_pwm_no_deadzone();
+        channel_pitch->recompute_pwm_no_deadzone();
+        channel_throttle->recompute_pwm_no_deadzone();
+        channel_rudder->recompute_pwm_no_deadzone();
     }
 
-    control_failsafe(channel_throttle->radio_in);
+    control_failsafe();
 
-    channel_throttle->servo_out = channel_throttle->control_in;
-
-    if (g.throttle_nudge && channel_throttle->servo_out > 50) {
-        float nudge = (channel_throttle->servo_out - 50) * 0.02f;
+    if (g.throttle_nudge && channel_throttle->get_control_in() > 50 && geofence_stickmixing()) {
+        float nudge = (channel_throttle->get_control_in() - 50) * 0.02f;
         if (ahrs.airspeed_sensor_enabled()) {
-            airspeed_nudge_cm = (aparm.airspeed_max * 100 - g.airspeed_cruise_cm) * nudge;
+            airspeed_nudge_cm = (aparm.airspeed_max * 100 - aparm.airspeed_cruise_cm) * nudge;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
         }
@@ -203,31 +214,67 @@ void Plane::read_radio()
 
     rudder_arm_disarm_check();
 
+    // potentially swap inputs for tailsitters
+    quadplane.tailsitter_check_input();
+
+    // check for transmitter tuning changes
+    tuning.check_input(control_mode);
+}
+
+int16_t Plane::rudder_input(void)
+{
     if (g.rudder_only != 0) {
         // in rudder only mode we discard rudder input and get target
         // attitude from the roll channel.
-        rudder_input = 0;
-    } else {
-        rudder_input = channel_rudder->control_in;
+        return 0;
     }
+
+    if ((g2.flight_options & FlightOptions::DIRECT_RUDDER_ONLY) &&
+        !(control_mode == MANUAL || control_mode == STABILIZE || control_mode == ACRO)) {
+        // the user does not want any input except in these modes
+        return 0;
+    }
+
+    if (stick_mixing_enabled()) {
+        return channel_rudder->get_control_in();
+    }
+
+    return 0;
+    
 }
 
-void Plane::control_failsafe(uint16_t pwm)
+void Plane::control_failsafe()
 {
     if (millis() - failsafe.last_valid_rc_ms > 1000 || rc_failsafe_active()) {
         // we do not have valid RC input. Set all primary channel
         // control inputs to the trim value and throttle to min
-        channel_roll->radio_in     = channel_roll->radio_trim;
-        channel_pitch->radio_in    = channel_pitch->radio_trim;
-        channel_rudder->radio_in   = channel_rudder->radio_trim;
+        channel_roll->set_radio_in(channel_roll->get_radio_trim());
+        channel_pitch->set_radio_in(channel_pitch->get_radio_trim());
+        channel_rudder->set_radio_in(channel_rudder->get_radio_trim());
 
         // note that we don't set channel_throttle->radio_in to radio_trim,
         // as that would cause throttle failsafe to not activate
+        channel_roll->set_control_in(0);
+        channel_pitch->set_control_in(0);
+        channel_rudder->set_control_in(0);
 
-        channel_roll->control_in     = 0;
-        channel_pitch->control_in    = 0;
-        channel_rudder->control_in   = 0;
-        channel_throttle->control_in = 0;
+        switch (control_mode) {
+            case QSTABILIZE:
+            case QHOVER:
+            case QLOITER:
+            case QLAND: // throttle is ignored, but reset anyways
+            case QRTL:  // throttle is ignored, but reset anyways
+            case QAUTOTUNE:
+                if (quadplane.available() && quadplane.motors->get_desired_spool_state() > AP_Motors::DESIRED_GROUND_IDLE) {
+                    // set half throttle to avoid descending at maximum rate, still has a slight descent due to throttle deadzone
+                    channel_throttle->set_control_in(channel_throttle->get_range() / 2);
+                    break;
+                }
+                FALLTHROUGH;
+            default:
+                channel_throttle->set_control_in(0);
+                break;
+        }
     }
 
     if(g.throttle_fs_enabled == 0)
@@ -237,101 +284,94 @@ void Plane::control_failsafe(uint16_t pwm)
         if (rc_failsafe_active()) {
             // we detect a failsafe from radio
             // throttle has dropped below the mark
-            failsafe.ch3_counter++;
-            if (failsafe.ch3_counter == 10) {
-                gcs_send_text_fmt(PSTR("MSG FS ON %u"), (unsigned)pwm);
-                failsafe.ch3_failsafe = true;
+            failsafe.throttle_counter++;
+            if (failsafe.throttle_counter == 10) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe on");
+                failsafe.rc_failsafe = true;
                 AP_Notify::flags.failsafe_radio = true;
             }
-            if (failsafe.ch3_counter > 10) {
-                failsafe.ch3_counter = 10;
+            if (failsafe.throttle_counter > 10) {
+                failsafe.throttle_counter = 10;
             }
 
-        }else if(failsafe.ch3_counter > 0) {
+        }else if(failsafe.throttle_counter > 0) {
             // we are no longer in failsafe condition
             // but we need to recover quickly
-            failsafe.ch3_counter--;
-            if (failsafe.ch3_counter > 3) {
-                failsafe.ch3_counter = 3;
+            failsafe.throttle_counter--;
+            if (failsafe.throttle_counter > 3) {
+                failsafe.throttle_counter = 3;
             }
-            if (failsafe.ch3_counter == 1) {
-                gcs_send_text_fmt(PSTR("MSG FS OFF %u"), (unsigned)pwm);
-            } else if(failsafe.ch3_counter == 0) {
-                failsafe.ch3_failsafe = false;
+            if (failsafe.throttle_counter == 1) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe off");
+            } else if(failsafe.throttle_counter == 0) {
+                failsafe.rc_failsafe = false;
                 AP_Notify::flags.failsafe_radio = false;
             }
         }
     }
 }
 
-void Plane::trim_control_surfaces()
+bool Plane::trim_radio()
 {
-    read_radio();
-    int16_t trim_roll_range = (channel_roll->radio_max - channel_roll->radio_min)/5;
-    int16_t trim_pitch_range = (channel_pitch->radio_max - channel_pitch->radio_min)/5;
-    if (channel_roll->radio_in < channel_roll->radio_min+trim_roll_range ||
-        channel_roll->radio_in > channel_roll->radio_max-trim_roll_range ||
-        channel_pitch->radio_in < channel_pitch->radio_min+trim_pitch_range ||
-        channel_pitch->radio_in > channel_pitch->radio_max-trim_pitch_range) {
+    if (failsafe.rc_failsafe) {
+        // can't trim if we don't have valid input
+        return false;
+    }
+
+    int16_t trim_roll_range = (channel_roll->get_radio_max() - channel_roll->get_radio_min())/5;
+    int16_t trim_pitch_range = (channel_pitch->get_radio_max() - channel_pitch->get_radio_min())/5;
+    if (channel_roll->get_radio_in() < channel_roll->get_radio_min()+trim_roll_range ||
+        channel_roll->get_radio_in() > channel_roll->get_radio_max()-trim_roll_range ||
+        channel_pitch->get_radio_in() < channel_pitch->get_radio_min()+trim_pitch_range ||
+        channel_pitch->get_radio_in() > channel_pitch->get_radio_max()-trim_pitch_range) {
         // don't trim for extreme values - if we attempt to trim so
         // there is less than 20 percent range left then assume the
         // sticks are not properly centered. This also prevents
         // problems with starting APM with the TX off
-        return;
+        return false;
     }
 
-    // Store control surface trim values
-    // ---------------------------------
-    if(g.mix_mode == 0) {
-        if (channel_roll->radio_in != 0) {
-            channel_roll->radio_trim = channel_roll->radio_in;
-        }
-        if (channel_pitch->radio_in != 0) {
-            channel_pitch->radio_trim = channel_pitch->radio_in;
-        }
+    // trim main surfaces
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_aileron);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevator);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_rudder);
 
-        // the secondary aileron/elevator is trimmed only if it has a
-        // corresponding transmitter input channel, which k_aileron
-        // doesn't have
-        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_aileron_with_input);
-        RC_Channel_aux::set_radio_trim(RC_Channel_aux::k_elevator_with_input);
-    } else{
-        if (elevon.ch1_temp != 0) {
-            elevon.trim1 = elevon.ch1_temp;
-        }
-        if (elevon.ch2_temp != 0) {
-            elevon.trim2 = elevon.ch2_temp;
-        }
-        //Recompute values here using new values for elevon1_trim and elevon2_trim
-        //We cannot use radio_in[CH_ROLL] and radio_in[CH_PITCH] values from read_radio() because the elevon trim values have changed
-        uint16_t center                         = 1500;
-        channel_roll->radio_trim       = center;
-        channel_pitch->radio_trim      = center;
-    }
-    if (channel_rudder->radio_in != 0) {
-        channel_rudder->radio_trim = channel_rudder->radio_in;
+    // trim elevons
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevon_left);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevon_right);
+
+    // trim vtail
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_vtail_left);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_vtail_right);
+    
+    if (SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) == 0) {
+        // trim differential spoilers if no rudder input
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerLeft1);
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerLeft2);
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight1);
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight2);
     }
 
-    // save to eeprom
-    channel_roll->save_eeprom();
-    channel_pitch->save_eeprom();
-    channel_rudder->save_eeprom();
-}
-
-void Plane::trim_radio()
-{
-    for (uint8_t y = 0; y < 30; y++) {
-        read_radio();
+    if (SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto) == 0 &&
+        SRV_Channels::get_output_scaled(SRV_Channel::k_flap) == 0) {
+        // trim flaperons if no flap input
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_left);
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_right);
     }
 
-    trim_control_surfaces();
+    // now save input trims, as these have been moved to the outputs
+    channel_roll->set_and_save_trim();
+    channel_pitch->set_and_save_trim();
+    channel_rudder->set_and_save_trim();
+
+    return true;
 }
 
 /*
   return true if throttle level is below throttle failsafe threshold
   or RC input is invalid
  */
-bool Plane::rc_failsafe_active(void)
+bool Plane::rc_failsafe_active(void) const
 {
     if (!g.throttle_fs_enabled) {
         return false;
@@ -341,7 +381,7 @@ bool Plane::rc_failsafe_active(void)
         return true;
     }
     if (channel_throttle->get_reverse()) {
-        return channel_throttle->radio_in >= g.throttle_fs_value;
+        return channel_throttle->get_radio_in() >= g.throttle_fs_value;
     }
-    return channel_throttle->radio_in <= g.throttle_fs_value;
+    return channel_throttle->get_radio_in() <= g.throttle_fs_value;
 }

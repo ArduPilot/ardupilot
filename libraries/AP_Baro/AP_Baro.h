@@ -1,7 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_BARO_H__
-#define __AP_BARO_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
@@ -9,29 +6,40 @@
 #include <Filter/DerivativeFilter.h>
 
 // maximum number of sensor instances
-#if HAL_CPU_CLASS == HAL_CPU_CLASS_16
-#define BARO_MAX_INSTANCES 1
-#else
 #define BARO_MAX_INSTANCES 3
-#endif
 
 // maximum number of drivers. Note that a single driver can provide
 // multiple sensor instances
-#if HAL_CPU_CLASS == HAL_CPU_CLASS_16
-#define BARO_MAX_DRIVERS 1
-#else
-#define BARO_MAX_DRIVERS 2
-#endif
+#define BARO_MAX_DRIVERS 3
+
+// timeouts for health reporting
+#define BARO_TIMEOUT_MS                 500     // timeout in ms since last successful read
+#define BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
 
 class AP_Baro_Backend;
 
 class AP_Baro
 {
     friend class AP_Baro_Backend;
+    friend class AP_Baro_SITL; // for access to sensors[]
 
 public:
-    // constructor
     AP_Baro();
+
+    /* Do not allow copies */
+    AP_Baro(const AP_Baro &other) = delete;
+    AP_Baro &operator=(const AP_Baro&) = delete;
+
+    // get singleton
+    static AP_Baro *get_singleton(void) {
+        return _singleton;
+    }
+
+    // barometer types
+    typedef enum {
+        BARO_TYPE_AIR,
+        BARO_TYPE_WATER
+    } baro_type_t;
 
     // initialise the barometer object, loading backend drivers
     void init(void);
@@ -55,13 +63,17 @@ public:
     float get_temperature(void) const { return get_temperature(_primary); }
     float get_temperature(uint8_t instance) const { return sensors[instance].temperature; }
 
+    // get pressure correction in Pascal. Divide by 100 for millibars or hectopascals
+    float get_pressure_correction(void) const { return get_pressure_correction(_primary); }
+    float get_pressure_correction(uint8_t instance) const { return sensors[instance].p_correction; }
+    
     // accumulate a reading on sensors. Some backends without their
     // own thread or a timer may need this.
     void accumulate(void);
 
     // calibrate the barometer. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
-    void calibrate(void);
+    void calibrate(bool save=true);
 
     // update the barometer calibration to the current pressure. Can
     // be used for incremental preflight update of baro
@@ -88,8 +100,7 @@ public:
 
     // ground temperature in degrees C
     // the ground values are only valid after calibration
-    float get_ground_temperature(void) const { return get_ground_temperature(_primary); }
-    float get_ground_temperature(uint8_t i)  const { return sensors[i].ground_temperature.get(); }
+    float get_ground_temperature(void) const;
 
     // ground pressure in Pascal
     // the ground values are only valid after calibration
@@ -103,19 +114,41 @@ public:
 
     // get last time sample was taken (in ms)
     uint32_t get_last_update(void) const { return get_last_update(_primary); }
-    uint32_t get_last_update(uint8_t instance) const { return sensors[_primary].last_update_ms; }
+    uint32_t get_last_update(uint8_t instance) const { return sensors[instance].last_update_ms; }
 
     // settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-    float get_calibration_temperature(void) const { return get_calibration_temperature(_primary); }
-    float get_calibration_temperature(uint8_t instance) const;
+    float get_external_temperature(void) const { return get_external_temperature(_primary); };
+    float get_external_temperature(const uint8_t instance) const;
 
     // HIL (and SITL) interface, setting altitude
     void setHIL(float altitude_msl);
 
-    // HIL (and SITL) interface, setting pressure and temperature
-    void setHIL(uint8_t instance, float pressure, float temperature);
+    // HIL (and SITL) interface, setting pressure, temperature, altitude and climb_rate
+    // used by Replay
+    void setHIL(uint8_t instance, float pressure, float temperature, float altitude, float climb_rate, uint32_t last_update_ms);
+
+    // Set the primary baro
+    void set_primary_baro(uint8_t primary) { _primary_baro.set_and_save(primary); };
+
+    // Set the type (Air or Water) of a particular instance
+    void set_type(uint8_t instance, baro_type_t type) { sensors[instance].type = type; };
+
+    // Get the type (Air or Water) of a particular instance
+    baro_type_t get_type(uint8_t instance) { return sensors[instance].type; };
+
+    // HIL variables
+    struct {
+        float pressure;
+        float temperature;
+        float altitude;
+        float climb_rate;
+        uint32_t last_update_ms;
+        bool updated:1;
+        bool have_alt:1;
+        bool have_last_update:1;
+    } _hil;
 
     // register a new sensor, claiming a sensor slot. If we are out of
     // slots it will panic
@@ -127,7 +160,31 @@ public:
     // enable HIL mode
     void set_hil_mode(void) { _hil_mode = true; }
 
+    // set baro drift amount
+    void set_baro_drift_altitude(float alt) { _alt_offset = alt; }
+
+    // get baro drift amount
+    float get_baro_drift_offset(void) { return _alt_offset_active; }
+
+    // simple atmospheric model
+    static void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
+
+    // simple underwater atmospheric model
+    static void SimpleUnderWaterAtmosphere(float alt, float &rho, float &delta, float &theta);
+
+    // set a pressure correction from AP_TempCalibration
+    void set_pressure_correction(uint8_t instance, float p_correction);
+
+    uint8_t get_filter_range() const { return _filter_range; }
+
+    // indicate which bit in LOG_BITMASK indicates baro logging enabled
+    void set_log_baro_bit(uint32_t bit) { _log_baro_bit = bit; }
+    bool should_df_log() const;
+
 private:
+    // singleton
+    static AP_Baro *_singleton;
+    
     // how many drivers do we have?
     uint8_t _num_drivers;
     AP_Baro_Backend *drivers[BARO_MAX_DRIVERS];
@@ -138,34 +195,59 @@ private:
     // what is the primary sensor at the moment?
     uint8_t _primary;
 
+    uint32_t _log_baro_bit = -1;
+
+    // bitmask values for GND_PROBE_EXT
+    enum {
+        PROBE_BMP085=(1<<0),
+        PROBE_BMP280=(1<<1),
+        PROBE_MS5611=(1<<2),
+        PROBE_MS5607=(1<<3),
+        PROBE_MS5637=(1<<4),
+        PROBE_FBM320=(1<<5),
+        PROBE_DPS280=(1<<6),
+        PROBE_LPS25H=(1<<7),
+        PROBE_KELLER=(1<<8),
+        PROBE_MS5837=(1<<9),
+    };
+    
     struct sensor {
+        baro_type_t type;                   // 0 for air pressure (default), 1 for water pressure
         uint32_t last_update_ms;        // last update time in ms
+        uint32_t last_change_ms;        // last update time in ms that included a change in reading from previous readings
         bool healthy:1;                 // true if sensor is healthy
         bool alt_ok:1;                  // true if calculated altitude is ok
         bool calibrated:1;              // true if calculated calibrated successfully
         float pressure;                 // pressure in Pascal
         float temperature;              // temperature in degrees C
         float altitude;                 // calculated altitude
-        AP_Float ground_temperature;
         AP_Float ground_pressure;
+        float p_correction;
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
+    float                               _alt_offset_active;
     AP_Int8                             _primary_baro; // primary chosen by user
+    AP_Int8                             _ext_bus; // bus number for external barometer
     float                               _last_altitude_EAS2TAS;
     float                               _EAS2TAS;
     float                               _external_temperature;
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
+    AP_Float                            _specific_gravity; // the specific gravity of fluid for an ROV 1.00 for freshwater, 1.024 for salt water
+    AP_Float                            _user_ground_temperature; // user override of the ground temperature used for EAS2TAS
     bool                                _hil_mode:1;
+    float                               _guessed_ground_temperature; // currently ground temperature estimate using our best abailable source
 
-    void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
+    // when did we last notify the GCS of new pressure reference?
+    uint32_t                            _last_notify_ms;
+
+    bool _add_backend(AP_Baro_Backend *backend);
+    void _probe_i2c_barometers(void);
+    AP_Int8                            _filter_range;  // valid value range from mean value
+    AP_Int32                           _baro_probe_ext;
 };
 
-#include "AP_Baro_Backend.h"
-#include "AP_Baro_MS5611.h"
-#include "AP_Baro_BMP085.h"
-#include "AP_Baro_HIL.h"
-#include "AP_Baro_PX4.h"
-
-#endif // __AP_BARO_H__
+namespace AP {
+    AP_Baro &baro();
+};

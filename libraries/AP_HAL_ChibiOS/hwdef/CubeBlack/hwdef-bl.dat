@@ -1,0 +1,12 @@
+# hw definition file for processing by chibios_hwdef.py
+# for The CUBE Black and the Cube Purple hardware
+# this is based on fmuv3, but with vendor specific USB IDs
+
+include ../fmuv3/hwdef-bl.dat
+
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+USB_PRODUCT 0x1001
+USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+USB_STRING_PRODUCT "CubeBlack-BL"
+USB_STRING_SERIAL  "%SERIAL%"

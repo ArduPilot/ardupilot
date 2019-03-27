@@ -1,14 +1,9 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
   A wrapper around the AP_InertialNav class which uses the NavEKF
   filter if available, and falls back to the AP_InertialNav filter
   when EKF is not available
  */
-
-
-#ifndef __AP_INERTIALNAV_NAVEKF_H__
-#define __AP_INERTIALNAV_NAVEKF_H__
+#pragma once
 
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
@@ -25,19 +20,19 @@ public:
     /**
        update internal state
     */
-    void        update(float dt);
+    void        update(float dt) override;
 
     /**
      * get_filter_status - returns filter status as a series of flags
      */
-    nav_filter_status get_filter_status() const;
+    nav_filter_status get_filter_status() const override;
 
     /**
      * get_origin - returns the inertial navigation origin in lat/lon/alt
      *
      * @return origin Location
      */
-    struct Location get_origin() const;
+    struct Location get_origin() const override;
 
     /**
      * get_position - returns the current position relative to the home location in cm.
@@ -46,24 +41,24 @@ public:
      *
      * @return
      */
-    const Vector3f&    get_position() const;
+    const Vector3f&    get_position() const override;
 
     /**
      * get_llh - updates the provided location with the latest calculated location including absolute altitude
      *  returns true on success (i.e. the EKF knows it's latest position), false on failure
      */
-    bool get_location(struct Location &loc) const;
+    bool get_location(struct Location &loc) const override;
 
     /**
      * get_latitude - returns the latitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      */
-    int32_t     get_latitude() const;
+    int32_t     get_latitude() const override;
 
     /**
      * get_longitude - returns the longitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
      * @return
      */
-    int32_t     get_longitude() const;
+    int32_t     get_longitude() const override;
 
     /**
      * get_velocity - returns the current velocity in cm/s
@@ -73,34 +68,20 @@ public:
      * 				.y : longitude velocity in cm/s
      * 				.z : vertical  velocity in cm/s
      */
-    const Vector3f&    get_velocity() const;
+    const Vector3f&    get_velocity() const override;
 
     /**
-     * get_velocity_xy - returns the current horizontal velocity in cm/s
+     * get_speed_xy - returns the current horizontal speed in cm/s
      *
-     * @returns the current horizontal velocity in cm/s
+     * @returns the current horizontal speed in cm/s
      */
-    float        get_velocity_xy() const;
+    float        get_speed_xy() const override;
 
     /**
      * get_altitude - get latest altitude estimate in cm
      * @return
      */
-    float       get_altitude() const;
-
-    /**
-     * getHgtAboveGnd - get latest altitude estimate above ground level in centimetres and validity flag
-     * @return
-     */
-    bool       get_hagl(float &hagl) const;
-
-    /**
-     * get_hgt_ctrl_limit - get maximum height to be observed by the control loops in cm and a validity flag
-     * this is used to limit height during optical flow navigation
-     * it will return invalid when no limiting is required
-     * @return
-     */
-    bool       get_hgt_ctrl_limit(float& limit) const;
+    float       get_altitude() const override;
 
     /**
      * get_velocity_z - returns the current climbrate.
@@ -109,7 +90,7 @@ public:
      *
      * @return climbrate in cm/s
      */
-    float       get_velocity_z() const;
+    float       get_velocity_z() const override;
 
 private:
     Vector3f _relpos_cm;   // NEU
@@ -118,5 +99,3 @@ private:
     bool _haveabspos;
     AP_AHRS_NavEKF &_ahrs_ekf;
 };
-
-#endif // __AP_INERTIALNAV_NAVEKF_H__

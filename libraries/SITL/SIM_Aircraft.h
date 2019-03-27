@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,33 +16,27 @@
   parent class for aircraft simulators
 */
 
-#ifndef _SIM_AIRCRAFT_H
-#define _SIM_AIRCRAFT_H
+#pragma once
+
+#include <AP_Math/AP_Math.h>
 
 #include "SITL.h"
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
+#include "SITL_Input.h"
+#include <AP_Terrain/AP_Terrain.h>
+#include "SIM_Sprayer.h"
+#include "SIM_Gripper_Servo.h"
+#include "SIM_Gripper_EPM.h"
+#include "SIM_Parachute.h"
+#include "SIM_Precland.h"
+
+namespace SITL {
 
 /*
   parent class for all simulator types
  */
-class Aircraft
-{
+class Aircraft {
 public:
     Aircraft(const char *home_str, const char *frame_str);
-
-    /*
-      structure passed in giving servo positions as PWM values in
-      microseconds
-     */
-    struct sitl_input {
-        uint16_t servos[16];
-        struct {
-            float speed;      // m/s
-            float direction;  // degrees 0..360
-            float turbulence;
-        } wind;
-    };
 
     /*
       set simulation speedup
@@ -64,27 +57,110 @@ public:
         autotest_dir = _autotest_dir;
     }
 
+    /*  Create and set in/out socket for extenal simulator */
+    virtual void set_interface_ports(const char* address, const int port_in, const int port_out) {};
+
     /*
       step the FDM by one time step
      */
     virtual void update(const struct sitl_input &input) = 0;
 
     /* fill a sitl_fdm structure from the simulator state */
-    void fill_fdm(struct sitl_fdm &fdm) const;
+    void fill_fdm(struct sitl_fdm &fdm);
+
+    /* smooth sensors to provide kinematic consistancy */
+    void smooth_sensors(void);
+
+    /* return normal distribution random numbers */
+    static double rand_normal(double mean, double stddev);
+
+    /* parse a home location string */
+    static bool parse_home(const char *home_str, Location &loc, float &yaw_degrees);
+
+    // get frame rate of model in Hz
+    float get_rate_hz(void) const { return rate_hz; }
+
+    const Vector3f &get_gyro(void) const {
+        return gyro;
+    }
+
+    const Vector3f &get_velocity_ef(void) const {
+        return velocity_ef;
+    }
+
+    const Vector3f &get_velocity_air_ef(void) const {
+        return velocity_air_ef;
+    }
+
+    const Matrix3f &get_dcm(void) const {
+        return dcm;
+    }
+
+    const Vector3f &get_mag_field_bf(void) const {
+        return mag_bf;
+    }
+
+    float gross_mass() const { return mass + external_payload_mass; }
+
+    const Location &get_location() const { return location; }
+
+    const Vector3f &get_position() const { return position; }
+
+    void get_attitude(Quaternion &attitude) const {
+        attitude.from_rotation_matrix(dcm);
+    }
+
+    const Location &get_home() const { return home; }
+    float get_home_yaw() const { return home_yaw; }
+
+    void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
+    void set_parachute(Parachute *_parachute) { parachute = _parachute; }
+    void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
+    void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
+    void set_precland(SIM_Precland *_precland);
 
 protected:
+    SITL *sitl;
     Location home;
     Location location;
 
     float ground_level;
+    float home_yaw;
     float frame_height;
-    Matrix3f dcm;  // rotation matrix, APM conventions, from body to earth
-    Vector3f gyro; // rad/s
-    Vector3f velocity_ef; // m/s, earth frame
-    Vector3f position; // meters, NED from origin
-    float mass; // kg
-    Vector3f accel_body; // m/s/s NED, body frame
-    float airspeed; // m/s, apparent airspeed
+    Matrix3f dcm;                        // rotation matrix, APM conventions, from body to earth
+    Vector3f gyro;                       // rad/s
+    Vector3f gyro_prev;                  // rad/s
+    Vector3f ang_accel;                  // rad/s/s
+    Vector3f velocity_ef;                // m/s, earth frame
+    Vector3f wind_ef;                    // m/s, earth frame
+    Vector3f velocity_air_ef;            // velocity relative to airmass, earth frame
+    Vector3f velocity_air_bf;            // velocity relative to airmass, body frame
+    Vector3f position;                   // meters, NED from origin
+    float mass;                          // kg
+    float external_payload_mass = 0.0f;  // kg
+    Vector3f accel_body;                 // m/s/s NED, body frame
+    float airspeed;                      // m/s, apparent airspeed
+    float airspeed_pitot;                // m/s, apparent airspeed, as seen by fwd pitot tube
+    float battery_voltage = -1.0f;
+    float battery_current = 0.0f;
+    float rpm1 = 0;
+    float rpm2 = 0;
+    uint8_t rcin_chan_count = 0;
+    float rcin[8];
+    float range = -1.0f;                 // rangefinder detection in m
+
+    struct {
+        // data from simulated laser scanner, if available
+        struct vector3f_array points;
+        struct float_array ranges;
+    } scanner;
+    
+    // Wind Turbulence simulated Data
+    float turbulence_azimuth = 0.0f;
+    float turbulence_horizontal_speed = 0.0f;  // m/s
+    float turbulence_vertical_speed = 0.0f;    // m/s
+
+    Vector3f mag_bf;  // local earth magnetic field vector in Gauss, earth frame
 
     uint64_t time_now_us;
 
@@ -99,17 +175,40 @@ protected:
     uint8_t instance;
     const char *autotest_dir;
     const char *frame;
+    bool use_time_sync = true;
+    float last_speedup = -1.0f;
 
-    bool on_ground(const Vector3f &pos) const;
+    // allow for AHRS_ORIENTATION
+    AP_Int8 *ahrs_orientation;
+
+    enum {
+        GROUND_BEHAVIOR_NONE = 0,
+        GROUND_BEHAVIOR_NO_MOVEMENT,
+        GROUND_BEHAVIOR_FWD_ONLY,
+        GROUND_BEHAVIOR_TAILSITTER,
+    } ground_behavior;
+
+    bool use_smoothing;
+
+    AP_Terrain *terrain;
+    float ground_height_difference() const;
+
+    const float FEET_TO_METERS = 0.3048f;
+    const float KNOTS_TO_METERS_PER_SECOND = 0.51444f;
+
+    virtual bool on_ground() const;
+
+    // returns height above ground level in metres
+    float hagl() const;  // metres
 
     /* update location from position */
     void update_position(void);
 
-    /* rotate to the given yaw */
-    void set_yaw_degrees(float yaw_degrees);
+    /* update body frame magnetic field */
+    void update_mag_field_bf(void);
 
     /* advance time by deltat in seconds */
-    void time_advance(float deltat);
+    void time_advance();
 
     /* setup the frame step time */
     void setup_frame_time(float rate, float speedup);
@@ -127,14 +226,49 @@ protected:
     /* return wall clock time in microseconds since 1970 */
     uint64_t get_wall_time_us(void) const;
 
-    /* return normal distribution random numbers */
-    double rand_normal(double mean, double stddev);
+    // update attitude and relative position
+    void update_dynamics(const Vector3f &rot_accel);
+
+    // update wind vector
+    void update_wind(const struct sitl_input &input);
+
+    // return filtered servo input as -1 to 1 range
+    float filtered_idx(float v, uint8_t idx);
+    float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
+    float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
+
+    // extrapolate sensors by a given delta time in seconds
+    void extrapolate_sensors(float delta_time);
+
+    // update external payload/sensor dynamic
+    void update_external_payload(const struct sitl_input &input);
+
+    void add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel);
 
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;
+    uint32_t last_ground_contact_ms;
     const uint32_t min_sleep_time;
+
+    struct {
+        bool enabled;
+        Vector3f accel_body;
+        Vector3f gyro;
+        Matrix3f rotation_b2e;
+        Vector3f position;
+        Vector3f velocity_ef;
+        uint64_t last_update_us;
+        Location location;
+    } smoothing;
+
+    LowPassFilterFloat servo_filter[4];
+
+    Sprayer *sprayer;
+    Gripper_Servo *gripper;
+    Gripper_EPM *gripper_epm;
+    Parachute *parachute;
+    SIM_Precland *precland;
 };
 
-#endif // _SIM_AIRCRAFT_H
-
+} // namespace SITL

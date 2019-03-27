@@ -3,20 +3,16 @@
  *       Code by Randy Mackay and Jason Short. DIYDrones.com
  */
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <Filter/Filter.h>                     // Filter library
 #include <Filter/ModeFilter.h>         // ModeFilter class (inherits from Filter class)
 #include <Filter/AverageFilter.h>      // AverageFilter class (inherits from Filter class)
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+void setup();
+void loop();
+void readTemp();
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 int16_t rangevalue[] = {31000, 31000, 50, 55, 60, 55, 10, 0, 31000};
 
@@ -46,7 +42,7 @@ void readTemp()
     uint16_t _temp_sensor;
 
     next_num++;
-    buf[0] = next_num;     //next_num;
+    buf[0] = next_num;  //next_num;
     buf[1] = 0xFF;
 
     _temp_sensor = buf[0];
@@ -61,10 +57,10 @@ void readTemp()
     hal.console->printf("RT: %lu\n", (unsigned long)raw_temp);
 }
 
-//Main loop where the action takes place
+// Main loop where the action takes place
 void loop()
 {
-    for (uint8_t j=0; j<0xFF; j++ ) {
+    for (uint8_t j = 0; j < 0xFF; j++) {
         readTemp();
         hal.scheduler->delay(100);
     }

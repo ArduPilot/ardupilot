@@ -7,8 +7,11 @@
 
 # TODO: implement more unit+regression tests
 
+from __future__ import print_function
+
 import DataflashLog
 import traceback
+from VehicleType import VehicleType
 
 try:
 
@@ -16,7 +19,8 @@ try:
 	logdata = DataflashLog.DataflashLog()
 	logdata.read("examples/robert_lefebvre_octo_PM.log", ignoreBadlines=False)
 	assert(logdata.filename        == "examples/robert_lefebvre_octo_PM.log")
-	assert(logdata.vehicleType     == "ArduCopter")
+	assert(logdata.vehicleType     == VehicleType.Copter)
+	assert(logdata.vehicleTypeString     == "ArduCopter")
 	assert(logdata.firmwareVersion == "V3.0.1")
 	assert(logdata.firmwareHash    == "5c6503e2")
 	assert(logdata.freeRAM         == 1331)
@@ -38,7 +42,7 @@ try:
 	assert(logdata.channels['CTUN']['CRate'].listData[3]   == (317, 35))
 	assert(logdata.channels['CTUN']['CRate'].listData[51]  == (421, 31))
 	assert(logdata.channels['CTUN']['CRate'].listData[115] == (563, -8))
-	assert(int(logdata.filesizeKB) == 302)
+	assert(int(logdata.filesizeKB) == 307)
 	assert(logdata.durationSecs    == 155)
 	assert(logdata.lineCount       == 4750)
 
@@ -52,10 +56,10 @@ try:
 	assert(lit['ATT']['RollIn']   == 11.19)
 	assert(lit['CURR']['CurrTot'] == 25.827288)
 	assert(lit['D32']['Value']    == 11122)
-	lit.next()
+	next(lit)
 	assert(lit.iterators == {'CURR': (9, 514), 'ERR': (1, 553), 'NTUN': (0, 2206), 'CTUN': (88, 502), 'GPS': (0, 552), 'CMD': (0, 607), 'D32': (0, 305), 'ATT': (83, 501), 'EV': (4, 606), 'DU32': (9, 513), 'PM': (1, 719)})
 	lit.jump(4750)
-	lit.next()
+	next(lit)
 	assert(lit.currentLine == 4751)
 	assert(lit['ATT']['Roll'] == 2.99)
 
@@ -67,16 +71,8 @@ try:
 	# ...
 
 
-	print "All unit/regression tests GOOD\n"
+	print("All unit/regression tests GOOD\n")
 
 except Exception as e:
-	print "Error found: " + traceback.format_exc()
-	print "UNIT TEST FAILED\n"
-
-
-
-
-
-
-
-
+	print("Error found: " + traceback.format_exc())
+	print("UNIT TEST FAILED\n")

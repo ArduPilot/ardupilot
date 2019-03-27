@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,20 +21,22 @@
 //
 // Note - see AP_GPS_MTK16.h for firmware 1.6 and later.
 //
-#ifndef __AP_GPS_MTK_H__
-#define __AP_GPS_MTK_H__
+#pragma once
 
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 #include "AP_GPS_MTK_Common.h"
 
 class AP_GPS_MTK : public AP_GPS_Backend {
 public:
     AP_GPS_MTK(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    bool read(void);
+    bool read(void) override;
 
     static bool _detect(struct MTK_detect_state &state, uint8_t data);
     static void send_init_blob(uint8_t instance, AP_GPS &gps);
+
+    const char *name() const override { return "MTK"; }
 
 private:
     struct PACKED diyd_mtk_msg {
@@ -71,14 +72,12 @@ private:
 
     // Receive buffer
     union PACKED {
+        DEFINE_BYTE_ARRAY_METHODS
         diyd_mtk_msg msg;
-        uint8_t bytes[];
     } _buffer;
 
     // Buffer parse & GPS state update
     void        _parse_gps();
 
-    static const prog_char _initialisation_blob[];
+    static const char _initialisation_blob[];
 };
-
-#endif  // __AP_GPS_MTK_H__

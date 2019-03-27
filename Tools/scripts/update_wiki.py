@@ -7,6 +7,7 @@ May 2013
 See http://codex.wordpress.org/XML-RPC_WordPress_API/Posts
 '''
 
+from __future__ import print_function
 import xmlrpclib, sys
 
 from optparse import OptionParser
@@ -87,5 +88,5 @@ r = server.wp.editPost(opts.blog_id, opts.username, opts.password, post_id, { 'p
 if r == True:
     print("Upload OK")
     sys.exit(0)
-print 'result: ', r
+print('result: ', r)
 sys.exit(1)

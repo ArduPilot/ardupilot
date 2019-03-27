@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,12 +17,13 @@
 //  SiRF Binary GPS driver for ArduPilot and ArduPilotMega.
 //	Code by Michael Smith.
 //
-#ifndef __AP_GPS_SIRF_H__
-#define __AP_GPS_SIRF_H__
+#pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+
 #include "AP_GPS.h"
+#include "GPS_Backend.h"
 
 #define SIRF_SET_BINARY "$PSRF100,0,38400,8,1,0*3C\r\n"
 
@@ -31,9 +31,11 @@ class AP_GPS_SIRF : public AP_GPS_Backend {
 public:
 	AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    bool read();
+    bool read() override;
 
 	static bool _detect(struct SIRF_detect_state &state, uint8_t data);
+
+    const char *name() const override { return "SIRF"; }
 
 private:
     struct PACKED sirf_geonav {
@@ -96,8 +98,8 @@ private:
 
     // Message buffer
     union {
+        DEFINE_BYTE_ARRAY_METHODS
         sirf_geonav nav;
-        uint8_t bytes[];
     } _buffer;
 
     bool        _parse_gps(void);
@@ -105,5 +107,3 @@ private:
 
     static const uint8_t _initialisation_blob[];
 };
-
-#endif // AP_GPS_SIRF_h

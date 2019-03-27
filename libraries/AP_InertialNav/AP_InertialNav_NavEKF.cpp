@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialNav.h"
 
@@ -16,17 +14,28 @@
 */
 void AP_InertialNav_NavEKF::update(float dt)
 {
-    _ahrs_ekf.get_NavEKF().getPosNED(_relpos_cm);
-    _relpos_cm *= 100; // convert to cm
+    // get the NE position relative to the local earth frame origin
+    Vector2f posNE;
+    if (_ahrs_ekf.get_relative_position_NE_origin(posNE)) {
+        _relpos_cm.x = posNE.x * 100; // convert from m to cm
+        _relpos_cm.y = posNE.y * 100; // convert from m to cm
+    }
 
+    // get the D position relative to the local earth frame origin
+    float posD;
+    if (_ahrs_ekf.get_relative_position_D_origin(posD)) {
+        _relpos_cm.z = - posD * 100; // convert from m in NED to cm in NEU
+    }
+
+    // get the absolute WGS-84 position
     _haveabspos = _ahrs_ekf.get_position(_abspos);
 
-    _ahrs_ekf.get_NavEKF().getVelNED(_velocity_cm);
-    _velocity_cm *= 100; // convert to cm/s
-
-    // InertialNav is NEU
-    _relpos_cm.z = - _relpos_cm.z;
-    _velocity_cm.z = -_velocity_cm.z;
+    // get the velocity relative to the local earth frame
+    Vector3f velNED;
+    if (_ahrs_ekf.get_velocity_NED(velNED)) {
+        _velocity_cm = velNED * 100; // convert to cm/s
+        _velocity_cm.z = -_velocity_cm.z; // convert from NED to NEU
+    }
 }
 
 /**
@@ -34,9 +43,9 @@ void AP_InertialNav_NavEKF::update(float dt)
  */
 nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
 {
-    nav_filter_status ret;
-    _ahrs_ekf.get_NavEKF().getFilterStatus(ret);
-    return ret;
+    nav_filter_status status;
+    _ahrs_ekf.get_filter_status(status);
+    return status;
 }
 
 /**
@@ -45,10 +54,10 @@ nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
 struct Location AP_InertialNav_NavEKF::get_origin() const
 {
     struct Location ret;
-    if (!_ahrs_ekf.get_NavEKF().getOriginLLH(ret)) {
-        // initialise location to all zeros if origin not yet set
-        memset(&ret, 0, sizeof(ret));
-    }
+     if (!_ahrs_ekf.get_origin(ret)) {
+         // initialise location to all zeros if EKF origin not yet set
+         memset(&ret, 0, sizeof(ret));
+     }
     return ret;
 }
 
@@ -63,12 +72,12 @@ const Vector3f &AP_InertialNav_NavEKF::get_position(void) const
 }
 
 /**
- * get_location - updates the provided location with the latest calculated locatoin
+ * get_location - updates the provided location with the latest calculated location
  *  returns true on success (i.e. the EKF knows it's latest position), false on failure
  */
 bool AP_InertialNav_NavEKF::get_location(struct Location &loc) const
 {
-    return _ahrs_ekf.get_NavEKF().getLLH(loc);
+    return _ahrs_ekf.get_location(loc);
 }
 
 /**
@@ -102,13 +111,13 @@ const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
 }
 
 /**
- * get_velocity_xy - returns the current horizontal velocity in cm/s
+ * get_speed_xy - returns the current horizontal speed in cm/s
  *
- * @returns the current horizontal velocity in cm/s
+ * @returns the current horizontal speed in cm/s
  */
-float AP_InertialNav_NavEKF::get_velocity_xy() const
+float AP_InertialNav_NavEKF::get_speed_xy() const
 {
-    return pythagorous2(_velocity_cm.x, _velocity_cm.y);
+    return norm(_velocity_cm.x, _velocity_cm.y);
 }
 
 /**
@@ -118,37 +127,6 @@ float AP_InertialNav_NavEKF::get_velocity_xy() const
 float AP_InertialNav_NavEKF::get_altitude() const
 {
     return _relpos_cm.z;
-}
-
-/**
- * getHgtAboveGnd - get latest height above ground level estimate in cm and a validity flag
- *
- * @return
- */
-bool AP_InertialNav_NavEKF::get_hagl(float &height) const
-{
-    // true when estimate is valid
-    bool valid = _ahrs_ekf.get_NavEKF().getHAGL(height);
-    // convert height from m to cm
-    height *= 100.0f;
-    return valid;
-}
-
-/**
- * get_hgt_ctrl_limit - get maximum height to be observed by the control loops in cm and a validity flag
- * this is used to limit height during optical flow navigation
- * it will return invalid when no limiting is required
- * @return
- */
-bool AP_InertialNav_NavEKF::get_hgt_ctrl_limit(float& limit) const
-{
-    // true when estimate is valid
-    if (_ahrs_ekf.get_NavEKF().getHeightControlLimit(limit)) {
-        // convert height from m to cm
-        limit *= 100.0f;
-        return true;
-    }
-    return false;
 }
 
 /**

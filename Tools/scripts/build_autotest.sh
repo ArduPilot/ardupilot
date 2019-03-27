@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_7-2014q2/bin:$PATH
+export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/APM/px4/gcc-arm-none-eabi-4_9-2015q3/bin:$PATH
 export PYTHONUNBUFFERED=1
 export PYTHONPATH=$HOME/APM
 
@@ -13,22 +13,11 @@ newtags=$(cd APM && git fetch --tags | wc -l)
 oldhash=$(cd APM && git rev-parse origin/master)
 newhash=$(cd APM && git rev-parse HEAD)
 
-newtagspx4=$(cd PX4Firmware && git fetch --tags | wc -l)
-oldhashpx4=$(cd PX4Firmware && git rev-parse origin/master)
-newhashpx4=$(cd PX4Firmware && git rev-parse HEAD)
-
-newtagsnuttx=$(cd PX4NuttX && git fetch --tags | wc -l)
-oldhashnuttx=$(cd PX4NuttX && git rev-parse origin/master)
-newhashnuttx=$(cd PX4NuttX && git rev-parse HEAD)
-
-newtagsuavcan=$(cd uavcan && git fetch --tags | wc -l)
-oldhashuavcan=$(cd uavcan && git rev-parse origin/master)
-newhashuavcan=$(cd uavcan && git rev-parse HEAD)
-
-if [ "$oldhash" = "$newhash" -a "$newtags" = "0" -a "$oldhashpx4" = "$newhashpx4" -a "$newtagspx4" = "0" -a "$oldhashnuttx" = "$newhashnuttx" -a "$newtagsnuttx" = "0" -a "$oldhashuavcan" = "$newhashuavcan" -a "$newtagsuavcan" = "0" ]; then
-    echo "no change $oldhash $newhash `date`" >> build.log
+if [ "$oldhash" = "$newhash" -a "$newtags" = "0" ]; then
+    echo "$(date) no change $oldhash $newhash" >> build.log
     exit 0
 fi
+echo "$(date) Build triggered $oldhash $newhash $newtags" >> build.log
 }
 
 ############################
@@ -40,7 +29,7 @@ lock_file() {
 
         if test -f "$lck" && kill -0 $pid 2> /dev/null; then
 	    LOCKAGE=$(($(date +%s) - $(stat -c '%Y' "build.lck")))
-	    test $LOCKAGE -gt 7200 && {
+	    test $LOCKAGE -gt 60000 && {
                 echo "old lock file $lck is valid for $pid with age $LOCKAGE seconds"
 	    }
             return 1
@@ -71,7 +60,7 @@ report() {
     cat <<EOF | mail -s 'build failed' drones-discuss@googlegroups.com
 A build of $d failed at `date`
 
-You can view the build logs at http://autotest.diydrones.com/
+You can view the build logs at http://autotest.ardupilot.org/
 
 A log of the commits since the last attempted build is below
 
@@ -87,9 +76,11 @@ report_pull_failure() {
 
 oldhash=$(cd APM && git rev-parse HEAD)
 
+echo "Updating APM"
 pushd APM
 git checkout -f master
 git fetch origin
+git submodule update --recursive --force
 git reset --hard origin/master
 git pull || report_pull_failure
 git clean -f -f -x -d -d
@@ -99,43 +90,8 @@ popd
 
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
-pushd PX4Firmware
-git fetch origin
-git reset --hard origin/master
-for v in ArduPlane ArduCopter APMrover2; do
-    git tag -d $v-beta || true
-    git tag -d $v-stable || true
-done
-git fetch origin --tags
-git show
-popd
-
-pushd PX4NuttX
-git fetch origin
-git reset --hard origin/master
-for v in ArduPlane ArduCopter APMrover2; do
-    git tag -d $v-beta || true
-    git tag -d $v-stable || true
-done
-git fetch origin --tags
-git show
-popd
-
-pushd uavcan
-git fetch origin
-git reset --hard origin/master
-for v in ArduPlane ArduCopter APMrover2; do
-    git tag -d $v-beta || true
-    git tag -d $v-stable || true
-done
-git fetch origin --tags
-git show
-popd
-
 echo "Updating pymavlink"
-pushd mavlink/pymavlink
-git fetch origin
-git reset --hard origin/master
+pushd APM/modules/mavlink/pymavlink
 git show
 python setup.py build install --user
 popd
@@ -180,6 +136,10 @@ killall -9 JSBSim || /bin/true
 # raise core limit
 ulimit -c 10000000
 
-timelimit 12000 APM/Tools/autotest/autotest.py --timeout=11500 > buildlogs/autotest-output.txt 2>&1
+timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
 
 ) >> build.log 2>&1
+
+# autotest done, let's mark GTD flags
+touch /tmp/.autotest.done
+

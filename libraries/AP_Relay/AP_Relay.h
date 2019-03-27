@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
  * AP_Relay.h
  *
@@ -9,19 +7,21 @@
 
 /// @file	AP_Relay.h
 /// @brief	APM relay control class
-
-#ifndef __AP_RELAY_H__
-#define __AP_RELAY_H__
+#pragma once
 
 #include <AP_Param/AP_Param.h>
 
-#define AP_RELAY_NUM_RELAYS 4
+#define AP_RELAY_NUM_RELAYS 6
 
 /// @class	AP_Relay
-/// @brief	Class to manage the APM relay
+/// @brief	Class to manage the ArduPilot relay
 class AP_Relay {
 public:
     AP_Relay();
+
+    /* Do not allow copies */
+    AP_Relay(const AP_Relay &other) = delete;
+    AP_Relay &operator=(const AP_Relay&) = delete;
 
     // setup the relay pin
     void        init();
@@ -44,5 +44,3 @@ private:
     AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
     AP_Int8 _default;
 };
-
-#endif /* AP_RELAY_H_ */

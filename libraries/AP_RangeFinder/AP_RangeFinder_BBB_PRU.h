@@ -1,5 +1,4 @@
-#ifndef __AP_RANGEFINDER_PRU_H__
-#define __AP_RANGEFINDER_PRU_H__
+#pragma once
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
@@ -11,6 +10,7 @@
 #define PRU0_IRAM_SIZE 0x2000
 
 #define PRU0_DRAM_BASE 0x4a300000
+#define PRU0_DRAM_SIZE 0x2000
 
 struct range {
         uint32_t distance;
@@ -21,15 +21,20 @@ class AP_RangeFinder_BBB_PRU : public AP_RangeFinder_Backend
 {
 public:
     // constructor
-    AP_RangeFinder_BBB_PRU(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_BBB_PRU(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
     // static detection function
-    static bool detect(RangeFinder &ranger, uint8_t instance);
+    static bool detect();
 
     // update state
-    void update(void);
+    void update(void) override;
+
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_ULTRASOUND;
+    }
 
 private:
 
 };
-#endif  // __AP_RANGEFINDER_PRU_H__

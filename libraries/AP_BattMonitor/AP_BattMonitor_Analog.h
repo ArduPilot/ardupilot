@@ -1,41 +1,17 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_BATTMONITOR_ANALOG_H
-#define AP_BATTMONITOR_ANALOG_H
+#pragma once
 
-#include <AP_ADC/AP_ADC.h>                 // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
 
 // default pins and dividers
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- # define AP_BATT_VOLT_PIN                  0       // Battery voltage on A0
- # define AP_BATT_CURR_PIN                  1       // Battery current on A1
- # define AP_BATT_VOLTDIVIDER_DEFAULT       3.56f   // on-board APM1 voltage divider with a 3.9kOhm resistor
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  0
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define AP_BATT_VOLT_PIN                  13      // APM2.5/2.6 with 3dr power module
- # define AP_BATT_CURR_PIN                  12
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-// Flymaple board pin 20 is connected to the external battery supply
-// via a 24k/5.1k voltage divider. The schematic claims the divider is 25k/5k,
-// but the actual installed resistors are not so.
-// So the divider ratio is 5.70588 = (24000+5100)/5100
- # define AP_BATT_VOLT_PIN                  20
- # define AP_BATT_CURR_PIN                  19
- # define AP_BATT_VOLTDIVIDER_DEFAULT       5.70588f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
- // px4
- # define AP_BATT_VOLT_PIN                  100
- # define AP_BATT_CURR_PIN                  101
- # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
- // pixhawk
- # define AP_BATT_VOLT_PIN                  2
+#if defined(HAL_BATT_VOLT_PIN)
+ // pins defined in board config (hwdef.dat on ChibiOS)
+ # define AP_BATT_VOLT_PIN                  HAL_BATT_VOLT_PIN
+ # define AP_BATT_CURR_PIN                  HAL_BATT_CURR_PIN
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       HAL_BATT_VOLT_SCALE
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  HAL_BATT_CURR_SCALE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+ # define AP_BATT_VOLT_PIN                  4
  # define AP_BATT_CURR_PIN                  3
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
@@ -45,28 +21,47 @@
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
 
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
- # define AP_BATT_VOLT_PIN                  10
- # define AP_BATT_CURR_PIN                  11
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&  (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF)
+ # define AP_BATT_VOLT_PIN                  5
+ # define AP_BATT_CURR_PIN                  6
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
- # define AP_BATT_VOLT_PIN                  10
- # define AP_BATT_CURR_PIN                  -1
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
- # define AP_BATT_VOLT_PIN                  10
+
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+ # define AP_BATT_VOLT_PIN                  0
  # define AP_BATT_CURR_PIN                  1
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#endif
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && defined(CONFIG_ARCH_BOARD_VRHERO_V10)
- # define AP_BATT_VOLT_PIN                  100
- # define AP_BATT_CURR_PIN                  101
- # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1f
+
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+ # define AP_BATT_VOLT_PIN                  0
+ # define AP_BATT_CURR_PIN                  1
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
+ # define AP_BATT_VOLT_PIN                  1
+ # define AP_BATT_CURR_PIN                  0
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2)
+ # define AP_BATT_VOLT_PIN                  2
+ # define AP_BATT_CURR_PIN                  3
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       11.3f
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
+
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE)
+ # define AP_BATT_VOLT_PIN                  3
+ # define AP_BATT_CURR_PIN                  2
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       18.62
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  62.98f
+
+ # define AP_BATT2_VOLT_PIN                  5
+ # define AP_BATT2_CURR_PIN                  4
+ # define AP_BATT2_VOLTDIVIDER_DEFAULT       18.62
+ # define AP_BATT2_CURR_AMP_PERVOLT_DEFAULT  62.98f
+
 #else
  # define AP_BATT_VOLT_PIN                  -1
  # define AP_BATT_CURR_PIN                  -1
@@ -85,14 +80,21 @@ class AP_BattMonitor_Analog : public AP_BattMonitor_Backend
 public:
 
     /// Constructor
-    AP_BattMonitor_Analog(AP_BattMonitor &mon, uint8_t instance, AP_BattMonitor::BattMonitor_State &mon_state);
+    AP_BattMonitor_Analog(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params);
 
     /// Read the battery voltage and current.  Should be called at 10hz
-    void read();
+    void read() override;
+
+    /// returns true if battery monitor provides consumed energy info
+    bool has_consumed_energy() const override { return has_current(); }
+
+    /// returns true if battery monitor provides current info
+    bool has_current() const override;
+
+    void init(void) override {}
 
 protected:
 
     AP_HAL::AnalogSource *_volt_pin_analog_source;
     AP_HAL::AnalogSource *_curr_pin_analog_source;
 };
-#endif  // AP_BATTMONITOR_ANALOG_H

@@ -1,0 +1,12 @@
+# FMUv2 build, same as fmuv3, but 1M flash to avoid hardware issue
+# with 2nd half of flash on early STM32F427 chips
+
+include ../fmuv3/hwdef.dat
+
+FLASH_SIZE_KB 1024
+
+# this reduces features to keep the firmware small. This is not
+# actually needed as of February 2018 as the full build does fit in
+# 1M, but it prepares us for when large features such as scripting are
+# added to the build
+define HAL_MINIMIZE_FEATURES 1

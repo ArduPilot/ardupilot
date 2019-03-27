@@ -1,4 +1,766 @@
-APM:Copter Release Notes:
+ArduPilot Copter Release Notes:
+------------------------------------------------------------------
+Copter 3.6.7 06-Mar-2019 / 3.6.7-rc1 28-Feb-2019
+Changes from 3.6.6
+1) Bug fixes and minor enhancements
+    a) Matek405-Wing compass fix (thread initialisation fix)
+    b) Landing flips reduced by reducing I-term build-up
+    c) Land mission command slows down less aggressively
+    d) Lightware LW20 lidar more reliably switches to serial mode 
+------------------------------------------------------------------
+Copter 3.6.6 15-Feb-2019 / Copter 3.6.6-rc2 09-Feb-2019
+Changes from 3.6.6-rc1
+1) Bug fixes
+    a) EKF compass switching fix for vehicles with 3 compasses
+    b) CAN fixed on Pixhawk4 and PH4-mini
+    c) Mini-pix uart telem1 and telem2 reversed
+    d) Divide-by-zero protection if _FILT_HZ params set to zero
+    e) Guided_NoGPS skips GPS pre-arm check
+------------------------------------------------------------------
+Copter 3.6.6-rc1 02-Feb-2019
+Changes from 3.6.5
+1) AP_RSSI fixes and minor enhancements
+    a) RSSI pwm input driver for ChibiOS
+    b) add V5 Nano to RSSI_ANA_PIN parameter description
+2) Bug fixes and minor enhancements
+    a) TradHeli roll trim ramp time fix
+    b) First Spline waypoint no longer skipped
+    c) RC override (from GCS Joystick) disable fix (command to disable overrides could be interpreted as real input)
+------------------------------------------------------------------
+Copter 3.6.5 24-Jan-2019 / 3.6.5-rc3 21-Jan-2019
+Changes from 3.6.5-rc2
+1) Bug fixes:
+    a) Pixhawk4 SBUS input and Serial6 pin mapping conflict resolved
+------------------------------------------------------------------
+Copter 3.6.5-rc2 15-Jan-2019
+Changes from 3.6.5-rc1
+1) Bug fixes and minor enhancements
+    a) RC DSM sync bug fix (channel 8 could temporarily become zero, ChibiOS only)
+    b) Pixhawk board LED fix (ChibiOS only)
+------------------------------------------------------------------
+Copter 3.6.5-rc1 11-Jan-2019
+Changes from 3.6.4
+1) Bug fixes and minor enhancements
+    a) SD Card reliability improvement (BRD_SD_SLOWDOWN param) and allow re-inserting card after boot
+    b) Mode and Auxiliary switch range check to protect during FrSky SBUS failsafe recovery
+    c) Follow mode reports target distance and heading to ground station
+    d) Pixhawk4-mini safety switch and LED fix
+    e) Bebop2 build fix
+2) RC protocol decoding for SRXL, SUMD and ST24 extended to all boards including pixracer and ChibiOS-only boards
+3) DrotekP3 Pro support
+4) Cube Purple support
+------------------------------------------------------------------
+Copter 3.6.4 27-Dec-2018 / 3.6.4-rc1 20-Dec-2018
+Changes from 3.6.3
+1) Bug fixes and minor enhancements
+    a) Detect and clear stuck I2C bus when using ChibiOS
+    b) Pixhawk4 fix for battery monitor voltage scaling
+    c) TradHeli Dual (aka Chinook) fix for scaling of second swashplate movement
+    d) Omnibus F7 IMU orientation fix
+    e) Gimbal fix to avoid extreme movement if pilot's transmitter is off at startup 
+    f) Follow mode fix to obey FOLL_SYSID parameter (controls which vehicle to follow)
+2) Cheerson CX-OF optical flow sensor support
+------------------------------------------------------------------
+Copter 3.6.3 04-Dec-2018 / 3.6.3-rc1 01-Dec-2018
+Changes from 3.6.2
+1) Bug fixes and minor enhancements
+    a) Pixhawk4 RC input fix
+    b) TradHeli parameter default fixes for Loiter and PosHold
+    c) Onboard OSD fix for MatekSys 405
+    d) Solo power off button delay time increased
+------------------------------------------------------------------
+Copter 3.6.2 24-Nov-2018 / 3.6.2-rc4 22-Nov-2018
+Changes from 3.6.2-rc3
+1) Bug fixes and minor changes:
+    a) Benewake TFmini short range scaling fix
+    b) Fix alt drop after quick switch from RTL to stabilize to RTL
+    c) Winch removed from build by default
+------------------------------------------------------------------
+Copter 3.6.2-rc3 19-Nov-2018
+Changes from 3.6.2-rc2
+1) Bug fixes:
+    a) Benewake TFmini and TF02 driver reliability fix
+    b) Spektrum RC parsing fix when more than 7 channels
+2) remove bootloader from px4-v2 builds (reduces firmware size)
+------------------------------------------------------------------
+Copter 3.6.2-rc1/rc2 15-Nov-2018
+Changes from 3.6.1
+1) Bug fixes:
+    a) Benewake TFmini and TF02 driver checksum fix (was missing many sensor readings)
+    b) Range finders report healthy to GCS when out-of-range
+    c) RPM sensor reliability fix by initialising analog input pin
+------------------------------------------------------------------
+Copter 3.6.1 10-Nov-2018 / 3.6.1-rc1 06-Nov-2018
+Changes from 3.6.0
+1) Garmin LidarLite V3HP support 
+2) VFR HUD messages send relative altitude if DEV_OPTIONS = 2.  Useful for older OSDs and GCSs
+3) Bug fixes:
+    a) Battery failsafe voltage parameter conversion fix
+    b) Safety switch startup fix (was occasionally not initialised properly)
+    c) Benewake TFmini and TF02 driver discards distances over 327m (avoids reporting 655m when can't read distance)
+    d) Dataflash erase only availabled when disarmed (avoids crash if user attempted to erase logs while flying)
+4) ChibiOS fixes and enhancements:
+    a) Pixracer LEDs colours fixed
+    b) Terrain support fixed on Pixracer, MindPx-v2, Radiolink mini-pix
+    c) RC input processing fix to avoid memory corruption in some rare cases
+    d) FuriousFPV F-35 Lightning board support
+    e) SpeedyBee F4 board support
+    f) Bootloaders for OmnibusF4v6, mRoX2.1-777, Radiolink mini-pix 
+    g) Revo-mini support for external barometer
+    h) Pins numbers made consistent across boards (setup of some features now more consistent across boards)
+    i) enable safety switch on Pixhawk family f7 boards
+------------------------------------------------------------------
+Copter 3.6.0 26-Oct-2018
+Changes from 3.6.0-rc12
+1) Bug Fixes:
+    a) Object avoidance fix when using 360 Lidar (mini fence was not including first distance)
+    b) Flowhold mode descending fix
+2) ChibiOS related fixes:
+    a) Kakutef7 support pin mapping fixes
+    b) PixRacer LED fix
+    c) I2C Lidar driver fix to avoid freeze at startup if sensor not connected
+------------------------------------------------------------------
+Copter 3.6.0-rc12 05-Oct-2018
+Changes from 3.6.0-rc11
+1) Bug Fixes:
+    a) DSHot ESC driver race condition fix (could result in board freezing up)
+    b) EKF fix to rounding off home altitude (could result in slightly inaccurate home altitude)
+    c) Pixracer safety switch fix (BRD_SAFETYOPTION parameter was handled incorrectly)
+------------------------------------------------------------------
+Copter 3.6.0-rc11 01-Oct-2018
+Changes from 3.6.0-rc10
+1) Bug Fixes:
+    a) PosHold fix to initialise desired accelerations
+    b) Automatic compass orientation fix to account for equivalent rotations
+    c) ChibiOS fix to RSSI voltage reading
+------------------------------------------------------------------
+Copter 3.6.0-rc10 15-Sep-2018
+Changes from 3.6.0-rc9
+1) Arming/disarming from transmitter can be disabled with ARMING_RUDDER parameter
+2) ChibiOS fixes:
+    a) UART baud rate rounding fix (allow 921600 baud to work)
+    b) ADC fix to allow more simultaneous channels
+3) Bug Fixes:
+    a) Lean angle limit (to maintain altitude) always allows at least 10deg of lean
+    b) Attitude Control and PID initialisation fix to reduce twitches when switching modes
+------------------------------------------------------------------
+Copter 3.6.0-rc9 08-Sep-2018
+Changes from 3.6.0-rc8
+1) Landing gear can be operated using AIRFRAME_CONFIGURATION mavlink messages
+2) Support playing tunes received via MAVLink (i.e. from GCS)
+3) Bug Fixes:
+    a) Twitch reduced when entering Loiter at high speed
+    b) Safety switch state fix when Pixhawk/Cube I/O board reset in flight
+    c) External display fix to allow plugging into either I2C port
+------------------------------------------------------------------
+Copter 3.6.0-rc8 28-Aug-2018
+Changes from 3.6.0-rc7
+1) TeraRanger Tower EVO lidar support added
+2) PCA9685 and NCA5623 LED support added (replacements for Toshiba LED that is becoming end-of-life)
+3) Missions can start with DO_ commands (first NAV command must still be takeoff)
+4) ChibiOS fixes:
+    a) DShot and BLHeli stability improvements
+    b) added OmnibusNanoV6 bootloader
+5) Bug fixes:
+    a) AP_Stat only saves values to eeprom if they change (reduces CPU impact)
+    b) boost throttle respects safety switch
+    c) TradHeli reduce chance of tip-over when landed in Loiter
+------------------------------------------------------------------
+Copter 3.6.0-rc7 01-Aug-2018
+Changes from 3.6.0-rc6
+1) Compass rotation detection during calibration (see COMPASS_AUTO_ROT param)
+2) Tone alarm system consistent on all boards and support for playing tones from GCS
+3) OnBoard OSD improvements including showing dir to home (ChibiOS only)
+4) External compass support and microSD improvements for many ChibiOS-only boards including Kakute F4, Mateksys F405-Wing, Airbot F4, Crazyflie2, MindPXv2, Mini-PIX, Omnibus F7
+5) Bug fixes:
+    a) Battery monitor parameter fix to support BLHeli ESCs
+    b) Ch12 auxiliary function fixed
+    c) compassmot fix
+    d) Pixracer external compass fix
+    e) Pre-arm failure regarding RCx_TRIM removed for non critical channels
+    f) SBUS failsafe fix when receiver configured to "hold"
+    g) UART flow control fixes (ChibiOS only)
+    h) VL53L0X lidar fix
+6) Minor enhancements:
+    a) Compass device IDs (i.e. COMPASS_DEVID) set to zero if no compass detected
+    b) Fence action "Always Land" option added
+    c) Motor test maximum time extended to 10min
+    d) Receiver RSSI pwm input on AUX5,6
+    e) USB Serial port protocol default set to Mavlink2
+7) TradHeli fixes:
+    a) "Channel already assigned" message fixed
+    b) External gyro output method PWM based
+    c) Swash servo output properly accounts for servo trim
+------------------------------------------------------------------
+Copter 3.6.0-rc6 16-Jul-2018
+Changes from 3.6.0-rc5
+1) ChibiOS small enhancement and fixes:
+    a) KakuteF4 UART order fix
+    b) mRobotics bootloader and autobuild of binaries for AUAV2.1 and Pixracer
+    c) Mateksys F405-Wing uart reorder to better match labels on board
+2) Improve telemetry/GPS detection by only clearing UART when baud rate changes
+------------------------------------------------------------------
+Copter 3.6.0-rc5 07-Jul-2018
+Changes from 3.6.0-rc4
+1) Support new boards CubeBlack and HolyBro Pixhawk4-mini
+2) ChibiOS small enhancement and fixes:
+    a) make board serial number match NuttX
+    b) relay fix for Pixhawk boards by defaulting BRD_PWM_COUNT to 4 (same as NuttX)
+    c) MatekF405-Wing default compass orientation fix
+    d) Pixhawk4 default compass orientation fix
+    e) Omnibus F4 Pro I2C fix
+3) Bug fixes:
+    a) Telemetry baud rate fix
+    b) RC failsafe fix to RTL in all modes except Auto when FS_THR_ENABLE is continue-with-mission
+    c) waypoint navigation related safety check that PSC_POS_XY_P is non-zero 
+    d) aerofc-v1 update bootloader utility fix
+------------------------------------------------------------------
+Copter 3.6.0-rc4 05-Jul-2018
+Changes from 3.6.0-rc3
+1) add support for Cube Black and Cube Orange
+2) Built-in OSD improvements including home direction fix, altitude fix
+3) Bug fixes:
+    a) ESC Telemetry current scaling fix
+    b) LED pre-arm GPS colour fix if glitch occurs
+------------------------------------------------------------------
+Copter 3.6.0-rc3 02-Jul-2018
+Changes from 3.6.0-rc2
+1) ChibiOS:
+    a) airbotf4, matekF405, matekF405-wing, omnibusf4pro, mini-pix, omnibusf7v2, revo-mini, sparky2 binaries built on firmware.ardupilot.org
+    b) STM32F7 support including the CUAV v5 Autopilot and the PixHawk 4 (aka fmuv5)
+    c) fixed dataflash logfile dates
+    d) bootloader included in firmware for easier uploading
+    e) additional UART added to fmuv4 and fmuv5 (STM32 F7 boards)
+    f) ChibiOS version written to dataflash log files
+2) TradHeli
+    a) fix collective jump on rotor shutdown in AltHold and Loiter
+    b) fix interlock pre-arm check
+3) Follow uses relative altitudes (FOLL_ALT_TYPE param allows specifying relative or absolute alts)
+4) Auxiliary switch de-bounced to avoid false positives
+5) Bug fixes and minor enhancements:
+    a) ESC calibration fix
+    b) ESC_TELEMETRY messages sent to ground station
+------------------------------------------------------------------
+Copter 3.6.0-rc2 01-Jun-2018
+Changes from 3.6.0-rc1
+1) ChibiOS support for Holybro Kakute F4
+2) Range finders:
+    a) Benewake TFmini and TF02 support
+    b) WASP200 laser range finder support
+3) D-Shot and ESC telemetry support
+4) Vision-position-estimate support for use with ROS
+5) Bug fixes and minor enhancements:
+    a) TradHeli swash plate servo trim fixes
+    b) SmartRTL gives pilot yaw control
+    c) marvelmind reliability improvements
+    d) CoaxCopter and SingleCopter output fixes
+    e) Maxbotics I2C sonar health fix
+6) Safety fixes/improvements:
+    a) GPS/EKF failsafe disabled in Acro/Stabilize modes
+    b) interlock switch arming check fixed
+    c) Auxiliary switch de-bouncing
+    d) pre-arm check for GPS/AHRS difference changed to 2D (to avoid false positives)
+    e) startup crash fixed when VL53L0X lidar configured but not connected
+------------------------------------------------------------------
+Copter 3.6.0-rc1 19-Apr-2018
+Changes from 3.5.5
+1) ChibiOS support including F4BY, OpenPilot Revo Mini, TauLabs Sparky2 boards
+2) Flight mode changes:
+    a) New Loiter with faster roll and pitch response, braking
+    b) SmartRTL (returns home using outgoing path)
+    c) Follow mode (allows following without relying on ground station commands)
+    d) FlowHold (position hold with optical flow without lidar)
+3) Battery failsafe allows two stages of actions and monitoring of multiple batteries
+4) New sensors/drivers:
+    a) Marvelmind for Non-GPS navigation
+    b) RPLidarA2/A3 for object avoidance
+    c) Winch for lowering packages without landing
+    d) Septentrio GPS driver robustness improved
+5) New frames:
+    a) dodeca-hexa copter (12 motors on 6 arms)
+    b) Variable pitch quadcopter support (aka HeliQuad)
+    c) multicopters with vertical boosting motor (see MOT_BOOST_SCALE parameter)
+6) Miscellaneous changes and enhancements:
+    a) Auxiliary switch to enable/disable RC overrides from ground station joystick
+    b) Barometer temperature calibration learning (see TCAL_ENABLED parameter)
+    c) Camera triggering by distance only in Auto mode if CAM_AUTO_ONLY set to 1
+    d) Compass noise rejection using COMPASS_FLTR_RNG parameter
+    e) Compass interference compensation for up to 4 motors (see COMPASS_PMOT parameters)
+    f) Command Line Interface (aka CLI) removed to reduce firmware size
+    g) Flight mode channel can be changed using FLTMODE_CH parameter
+    h) IMU notch filter to ignore specific frequencies (use INS_NOTCH_ENABLE parameter)
+    i) LAND_ALT_LOW parameter allows setting altitude at which vehicle slows to LAND_SPEED in Land and RTL modes
+    j) Mission cleared automatically on each reboot if MIS_OPTIONS parameter set to 1
+    k) Object avoidance configurable to "stick" to barriers (previously would always slide past)
+    l) PILOT_SPEED_UP, PILOT_SPEED_DN allow different max climb and descent rates in AltHold, Loiter, PosHold
+    m) Safety switch configurable (i.e. only allow arming but not disarming via switch)
+    n) Servo output rate configurable (see SERVO_RATE parameter)
+    o) Vehicle rotation rate limits (see ATC_RATE_P/R/Y_MAX parameters)
+    p) SI units in parameters, mavlink messages and dataflash logs
+7) TradHeli improvements:
+    a) H3-135/140 swashplate support
+    b) Reversed collective option for leading/trailing edge control
+    c) AltHold angle limiter fix
+    d) Five point spline-smoothed throttle curve 
+8) parameter and log message name changes:
+    a) ACCEL_Z_ renamed to PSC_ACCZ_
+    b) ACC_ parameters renamed to PSC_ACC
+    c) POS_ parameters renamed to PSC_POS
+    d) VEL_ parameters renamed to PSC_VEL
+    e) FS_BATT_ renamed to BATT_FS_
+    f) BATT_AMP_PERVOLT renamed to BATT_AMP_PERVLT
+    g) PILOT_VELZ_MAX to PILOT_SPEED_UP (and PILOT_SPEED_DN)
+    h) RC_FEEL_RP replaced with ATC_INPUT_TC (functionality is same, scaling is different)
+    i) WPNAV_LOIT_ params renamed to LOIT_    
+    j) NTUN dataflash message renamed to PSC
+------------------------------------------------------------------
+Copter 3.5.7 17-Jul-2018 / 3.5.7-rc1 12-Jul-2018
+Changes from 3.5.6
+1) Bug fix to ESC calibration safety switch issue 
+------------------------------------------------------------------
+Copter 3.5.6 11-Jul-2018 / 3.5.6-rc1 07-Jul-2018
+Changes from 3.5.5
+1) Safety switch fix to refuse presses once armed (BRD_SAFETYOPTION controls behaviour) 
+------------------------------------------------------------------
+Copter 3.5.5 31-Jan-2018 / 3.5.5-rc1 24-Jan-2018
+Changes from 3.5.4
+1) ICM20948 compass orientation fix
+2) LIS3MDL compass support on Pixracer
+3) support for easy embedding of defaults in firmware binary
+4) do-mount-control control command sets copter yaw when using 2-axis gimbal
+5) TradHeli fix for direct drive variable pitch tail rotors
+------------------------------------------------------------------
+Copter 3.5.4 23-Nov-2017 / 3.5.4-rc2 17-Nov-2017
+Changes from 3.5.3
+1) Compass improvements / bug fixes:
+    a) probe for LIS3MDL on I2C address 0x1e
+    b) bug fix pixracer compass detection
+------------------------------------------------------------------
+Copter 3.5.4-rc1 08-Nov-2017
+Changes from 3.5.3
+1) Compass improvements:
+    a) support added for QMC5883L, LIS3MDL, IST8310
+    b) COMPASS_TYPEMASK parameter allows enabling/disabling individual compass drivers
+2) LightWare and MaxBotix range finders supported on both I2C buses
+3) Serial port 5 can be used for telemetry or sensors (previously was only for NuttX console)
+4) px4pro flight controller supported
+5) TradHeli fixes:
+    a) motor runup check applies to all flight modes (previously only loiter, poshold, althold)
+    b) swashplate behaviour changes when on ground in acro, stabilize and althold
+    c) servo test function fixed
+    d) direct drive fixed pitch tail fix
+    e) Z-axis Accel P gain default lowered to 0.3
+6) EKF origin set using SET_GPS_GLOBAL_ORIGIN mavlink message instead of SET_HOME_POSITION
+7) Intel Aero supports 921600 baud rate between main flight controller and companion computer
+8) Bug fix to I2C race condition on Pixhawk that could occasionally cause I2C device to not be detected
+------------------------------------------------------------------
+Copter 3.5.3 21-Sep-2017 / Copter 3.5.3-rc1 12-Sep-2017
+Changes from 3.5.2
+1) Guided mode support yaw and yaw-rate fields from set-position-target message
+2) Optical Flow startup retries 10 times 
+3) Bug fixes:
+    a) Septentrio RTK GPS driver robustness improvements for long messages
+    b) dataflash not-logging checks if not initialised
+    c) fix reporting of relative-position-NE-to-home (most users will not notice this difference) 
+------------------------------------------------------------------
+Copter 3.5.2 14-Aug-2017 / Copter 3.5.2-rc1 05-Aug-2017
+Changes from 3.5.1
+1) GPS glitch arming check and notification (flashing blue-yellow LED, message on HUD)
+2) Arming check for minimum voltage (see ARMING_VOLT_MIN parameter)
+3) Landing Gear startup behaviour now configurable (see LGR_STARTUP parameter)
+4) Solo LED fix when using "boat" mode
+5) Intel Aero RTF gets one more I2C bus
+6) Bug fixes:
+    a) resolve barometer floating point exception when ground pressure set to be negative
+    b) resolve freeze if SERVOx_FUNCTION is set above 80   
+------------------------------------------------------------------
+Copter 3.5.1 31-July-2017 / 3.5.1-rc1 24-July-2017
+Changes from 3.5.0
+1) fix to RC input corruption when using Spektrum DSMx with Pixracer 
+------------------------------------------------------------------
+Copter 3.5.0 17-July-2017 / 3.5.0-rc11 12-July-2017
+Changes from 3.5-rc10
+1) GPS fixes:
+    a) Re-enable auto detection of NMEA GPS (revert change from -rc9)
+    b) Fix SBF race condition on start (this should resolve SBF GPS detection issues for some users)
+2) SF40c driver fix to ignore zero distances
+------------------------------------------------------------------
+Copter 3.5.0-rc10 08-July-2017
+Changes from 3.5-rc9
+1) Intel Aero build and default parameter updates
+2) EKF final yaw reset lowered from 5m to 2.5m to speed up bad compass detection after takeoff
+------------------------------------------------------------------
+Copter 3.5.0-rc9 03-July-2017
+Changes from 3.5-rc8
+1) AutoTune improvement when using position hold (twitches in body-frame instead of earth-frame)
+2) GPS fixes:
+    a) RTK GPS fix when large RTK correction messages are sent
+    b) auto-detection for NMEA disabled (NMEA users must explicitly set GPS_TYPE to 5)
+3) EKF bug fixes:
+    a) fix bug preventing use of optical flow for terrain height estimation
+    b) fix bug affecting accuracy of optical flow estimated height during climb/descent
+    c) fix range beacon fusion bugs
+4) return accel filter (INS_ACCEL_FILT) to 20hz (some users were seeing oscillations at 10hz)
+------------------------------------------------------------------
+Copter 3.5.0-rc8 15-Jun-2017
+Changes from 3.5-rc7
+1) Solo on Master:
+    a) add/fix tones and LED support
+    b) resolve dataflash health reporting issue
+2) Allow flight controller to boot even if critical sensors fail (previously stopped at startup and displayed message people could rarely see)
+3) Minor enhancements:
+    a) Landing Gear retracts/deploys only when pilot first moves switch (previously would always deploy on startup)
+    b) BeagleBoneBlue supports external compass, OLED display 
+4) Bug fixes:
+    a) increase pilot stick dead zones for roll, pitch and yaw (still slightly more narrow than AC3.4)
+    b) increase default roll, pitch and yaw rate IMAX values to 0.5, reduce default yaw rate filter to 2.5hz
+    c) reduce accel filter from 20hz to 10hz (smoothes throttle in AltHold)
+    d) fix EKF declination fusion
+    e) object avoidance fix to ignore old distance measurements and out-of-range distances from range finder
+    f) fix poxyz west-east processing (it was backwards)
+------------------------------------------------------------------
+Copter 3.5-rc7 25-May-2017
+Changes from 3.5-rc6
+1) Bug fixes and minor enhancements:
+    a) fix OneShot ESC calibration and compass-mot calibration
+    b) fix Navio2 and ErleBrain crashes caused by insufficient memory allocated to scheduler
+    c) AutoTune with position hold only resets target position when roll and/or pitch sticks moved
+    d) fix Acro, Sport trainer mode to stop attitude targets going beyond angle limits
+    e) sanity check WPNAV_RADIUS is non-zero
+    f) MarvelMind driver fixes (still a work-in-progress)
+    g) Sanity check command when resuming mission in Auto
+------------------------------------------------------------------
+Copter 3.5-rc6 15-May-2017
+Changes from 3.5-rc5
+1) Bug fixes and minor enhancements:
+    a) ESC calibration fix when not using safety switch (was waiting for safety switch to be pushed)
+    b) Parameter loading improvements (responds sooner after startup, counts parameters in separate thread)
+    c) Pilot radio passthrough fix for tradheli, single copter, coax copter
+------------------------------------------------------------------
+Copter 3.5-rc5 03-May-2017
+Changes from 3.5-rc4
+1) Intel Aero RTF support
+2) Smart battery fetches serial number, temperature and individual cell voltages
+3) Vehicle heads towards target point instead of next waypoint during straight line waypoint mission commands in AUTO
+4) Visual Odometry supported using VISION_POSITION_DELTA mavlink message
+5) Do-Set-Home sets EKF origin allowing user to specify vehicle starting position without GPS
+6) Object avoidance parameter (AVOID_MARGIN) allows configuring distance to maintain from objects
+7) Motor output can be duplicated to multiple channels
+8) IRLock can be connected to any I2C bus
+9) Piksi "Multi" GPS support
+10) Performance Improvements:
+    a) inter-EKF scheduling cooperation (improves load balancing when using multiple EKFs)
+    b) parameter requests from GCS processed asynchronously (resolves bad flight behaviour when fetching params in-flight) 
+    c) display performance improvements
+1) Bug fixes including:
+    a) LSM303D (Pixhawk's backup IMU) timing fixes
+    b) auxiliary PWM outputs update even when RC input stops
+    c) dataflash log over mavlink fixes
+    d) EKF recovery from severe errors
+    e) reduce twitch when transitioning from spline to straight line waypoints in AUTO
+    f) enable motors after initialisation completes (resolves some BLHeli ESC initialisation and calibration issues)
+------------------------------------------------------------------
+Copter 3.5-rc4 08-Apr-2017
+Changes from 3.5-rc3
+1) Bug fixes including:
+    a) Baro based altitude estimate fixes including limiting ground temperature to reasonable value
+    b) Fix 0.6ms lag reduction
+    c) Fix Invensense IMU driver temperature reading
+    d) Fix semaphore take during interrupts that may have caused very occasional main loop rate issues
+    e) Return Home if GCS asks for first (i.e. zero-ith) mission command (required for Solo)
+------------------------------------------------------------------
+Copter 3.5-rc3 24-Mar-2017
+Changes from 3.5-rc2
+1) OLED Display fixes:
+    a) can be connected to either I2C bus
+    b) last character on line correctly cleared
+2) bug fix to detect SBUS failsafe on Pixracer
+3) bug fix to Gimbal servo reversing
+4) ensure WPNAV_LOIT_SPEED is non-zero to avoid divide-by-zero
+5) Fence pre-arm check failure messages clarified 
+------------------------------------------------------------------
+Copter 3.5-rc2 13-Mar-2017
+Changes from 3.5-rc1
+1) Improved dual GPS support including blending (set GPS_TYPE2=1, GPS_AUTO_SWITCH=2)
+2) AutoTune with position hold (enter AutoTune from Loiter or PosHold modes to enable light position hold)
+3) New boards/drivers:
+    a) PixhawkMini support
+    b) AUAV2.1 board support (for AUAV2.1 set BRD_TYPE to 20 to distinguish from PixhawkMini)
+    c) Garmin LidarLiteV3 support
+    d) Maxell Smart Battery support
+    e) Invensense ICM-20602 IMU and ST L3GD20H gyro drivers added
+4) IMU to Motor lag reduced by 0.6ms
+5) Object Avoidance:
+    a) support TeraRanger Tower sensor
+    b) support using normal (1-dimensional lidar/sonar)
+6) Minor changes/enhancements:
+    a) add MOT_SPOOL_TIME parameter to allow users to control spool-up time of motors
+    b) remove Solo gimbal from -v2 because of 1MB Flash limit on many Pixhawk1s
+    c) altitude check for Guided mode takeoff (must be at least 1m)
+    d) auxiliary switch to arm/disarm vehicle (set CH7_OPT to 41)
+    e) change battery alarm tone to reduce impact on IMU
+    f) add battery monitor health reporting
+    g) support DO-FENCE-ENABLE mission command to enable/disable fence during missions
+7) Bug Fixes:
+    a) OLED Display clears messages after 10seconds
+    b) Servo Gimbal output range fix (could attempt to push servos beyond their limits)
+    c) fix do-set-servo
+    d) fix dataflash log time (was always appearing as 1970)
+------------------------------------------------------------------
+Copter 3.5-rc1 28-Jan-2017
+Changes from 3.4.4
+1) Multicopter firmware consolidated into single binary, users must set FRAME_CLASS parameter (1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri)
+2) PixRacer specific items:
+    a) board LEDs supported
+    b) ESC calibration start problem resolved (was sometimes not detecting high throttle from pilot)
+3) Relaxed compass calibration and compass consistency checks
+4) Sensor and Optional Hardware Improvements:
+    a) IMU sampling rate for MPU9250, ICM20608 IMUs to 8kHz for improved vibration resistance (Pixracer, Pixhawk2)
+    b) Onboard Display (http://ardupilot.org/copter/docs/common-display-onboard.html)
+    c) Here+ RTK GPS (UBlox M8P RTK) support
+    d) LightWare I2C drivers usable on Copter (thanks to in-tree drivers below)
+    e) MaxBotix sonar with serial interface now supported
+    f) Bebop optical flow (but sonar not yet operational making this feature currently impossible to use)
+5) Precision Loiter using IRLock sensor (set CH7_OPT to 39)
+6) Delivery improvements:
+   a) Servo gripper (http://ardupilot.org/copter/docs/common-gripper-servo.html)
+   b) Package_Place mission command (drops package without vehicle landing) 
+7) Pozyx support for Non-GPS flight (http://ardupilot.org/copter/docs/common-pozyx.html)
+8) EKF improvements:
+    a) improved blending of optical flow and GPS
+    b) EKF3 added in ride-along.  Enable by setting EK3_ENABLE=1
+    c) improvements when using range finder as primary height reference
+9) Object Avoidance improvements (http://ardupilot.org/dev/docs/code-overview-object-avoidance.html):
+    a) uses mini-fence
+    b) accepts MAVLink distance-sensor messages 
+    c) simple avoidance in AltHold mode 
+10) Other improvements:
+    a) pre-arm check that logging is working
+    b) better reporting of battery failsafe to ground stations
+    c) reduced minimum waypoint speed to 20cm/s
+    d) Flight time recorder (http://ardupilot.org/copter/docs/common-flight-time-recorder.html)
+    e) UBlox GPS baud rate fix (was occasionally selecting wrong rate) 
+11) Technical improvements (users may not see a functional change):
+    a) in-tree drivers lead to improved sharing of drivers with Linux boards
+    b) copter arming checks consolidated with other vehicles
+------------------------------------------------------------------
+Copter 3.4.6 15-Mar-2017
+Changes from 3.4.5
+1) ensure WPNAV_LOIT_SPEED is non-zero to avoid divide-by-zero
+------------------------------------------------------------------
+Copter 3.4.5 11-Feb-2017
+Changes from 3.4.4
+1) Bug fix to Guided mode that could lead to crash after take-off completes if MOT_THST_HOVER too high 
+------------------------------------------------------------------
+Copter 3.4.4 06-Jan-2017 / Copter 3.4.4-rc1 21-Dec-2016
+Changes from 3.4.3
+1) Bug Fixes / Minor Enhancements:
+    a) prevent unwanted EKF core switching at startup
+    b) helicopter prevented from taking off in position hold mode before rotors at full speed
+    c) battery resistance calculations fixed
+    d) avoid unnecessary parameter change notifications to ground station
+    e) default power module definitions for Navio boards
+    f) on-board compass calibration capability bit added (tells ground stations that onboard calibration is supported)
+------------------------------------------------------------------
+Copter 3.4.3 08-Dec-2016 / Copter 3.4.3-rc1 01-Dec-2016
+Changes from 3.4.2
+1) Bug Fixes:
+    a) reduce unnecessary EKF core switching and fix position reset
+    b) attitude control does not limit rate if ATC_ACCEL_MAX is zero
+    c) ignore arm command from GCS if already armed
+    d) set land-complete to false during auto takeoff 
+    e) onboard compass calibration memory init fix that could lead to failure to complete
+2) Minor Improvements:
+    a) LeddarOne driver robustness improvements
+    b) allow MOT_THR_MIX_MAX to be as high as 2.0
+    c) uavcan bus settle time increased to 2sec
+    d) helicopters do not hold position during auto takeoff until rotor is at full speed
+------------------------------------------------------------------
+Copter 3.4.2 16-Nov-2016 / Copter 3.4.2-rc1/rc2 07-Nov-2016
+Changes from 3.4.1
+1) Minor Improvements:
+    a) ACRO_Y_EXPO applies to all flight modes (but is defaulted to zero)
+    b) Autotune timeout increased (helps with large copters)
+    c) AltHold filter applied to P (was previously only for D)
+    d) arming check for compass health (was previously only a pre-arm check)
+2) Bug Fixes:
+    a) compass calibration (onboard) fix to return completion status
+    b) LeddarOne driver busy-wait fix 
+    c) SBF GPS altitude and accuracy reporting fix 
+    d) MAV GPS uses existing configured baud rate instead of auto detecting 
+------------------------------------------------------------------
+Copter 3.4.1 01-Nov-2016
+Changes from 3.4.0
+1) Pixracer PPM RC input fix
+------------------------------------------------------------------
+Copter 3.4.0 31-Oct-2016
+Changes from 3.4.0-rc7
+1) Disabled LeddarOne driver (will be fixed in AC3.4.1 within a couple of weeks)
+------------------------------------------------------------------
+Copter 3.4.0-rc7 25-Oct-2016
+Changes from 3.4.0-rc6
+1) Bug fixes, minor improvements:
+    a) more DSM binding fixes for pixracer
+    b) allow non-motor channels to move before safety switch is pressed
+    c) fix Bebop motor order
+    d) fix MAVLink system id for first few messages
+    e) fix throw mode throttle while rotating to level
+------------------------------------------------------------------
+Copter 3.4.0-rc6 15-Oct-2016
+Changes from 3.4.0-rc5
+1) Object Avoidance with SF40c 360 lidar
+2) ACRO_Y_EXPO parameter allows exponential yaw in ACRO mode (slow yaw at mid stick but fast response at full stick)
+3) ACRO_THR_MID parameter allows custom mid throttle for ACRO mode
+4) Precision Landing reliability and accuracy improvements using mini EKF and adding IRLock lens distortion correction 
+5) Bug fixes, minor improvements:
+    a) fix DSM binding on Pixracer
+    b) resolved position jump caused by EKF core change (also added logging and reporting to GCS)
+    c) EKF failsafe while in LAND triggers non-GPS LAND
+    d) small throttle jump removed when switching between AltHold, Loiter
+6) Safety:
+    a) EKF falls back to optical flow if GPS fails
+    b) pre-arm check that GPS configuration has completed
+------------------------------------------------------------------
+Copter 3.4.0-rc5 14-Sep-2016
+Changes from 3.4.0-rc4
+1) Sprayer enabled by default
+2) Bug fixes, minor improvements:
+    a) EKF fix for yaw angle reset fix when switching between cores (AC3.4 runs multiple EKFs simultaneously)
+    b) EKF fixes when fusing range finder into height estimate
+    c) pixracer clone board IMU hardware issue work around
+    d) dataflash time-going-backwards fix
+    e) fix rate PID conversion (AC3.3->AC3.4) for single, coax and tricopters
+------------------------------------------------------------------
+Copter 3.4.0-rc4 06-Sep-2016
+Changes from 3.4.0-rc3
+1) Intel Aero flight controller support (not Intel Aero RTF, that was done in a later release)
+2) Bug fixes, minor improvements:
+    a) resolve unlikely endless-climb in AltHold, Loiter by ensuring Z-axis accelerometer IMAX can always overpower hover throttle
+    b) fix auto build issue that could lead to parameter corruption
+    c) fix EKF2 gyro estimation error when switching between IMUs
+    d) sanity check MOT_THST_MIX_MIN, MAX parameters
+    e) increase likelihood that parachute will release by reducing counter instead of resetting counter if vehicle becomes temporarily upright
+------------------------------------------------------------------
+Copter 3.4.0-rc3 31-Aug-2016
+Changes from 3.4.0-rc2
+1) Landing detector improvements:
+    a) checks that descent rate is less than 1m/s (avoids disarms when vehicle is obviously still descending)
+    b) tradheli fix for landing detector
+2) WP_NAVALT_MIN parameter limits maximum lean angle when vehicle is below the specified alt while taking off or landing.  Only applies in LAND mode, final stage of RTL and during take-off in AUTO mode
+3) GND_EFFECT_COMP parameter allows turning on EKF compensation for ground effect during take-off and landing
+4) Advanced Failsafe for use in OutBack challenge (see http://ardupilot.org/plane/docs/advanced-failsafe-configuration.html)
+5) AutoTune minor improvement to reduce step size on vehicles with very low hover throttle (i.e. high power-to-weight ratio)
+6) Bug fixes, minor improvement:
+    a) OneShot ESC calibration fix
+    b) LAND_SPEED_HIGH allows specifying vertical descent speed separate from WPNAV_SPEED_DN during the initial descent in LAND mode (and final stage of RTL)
+    c) improved USB driver reliability for windows users (NuttX change)
+    d) report dataflash logging health to ground station
+    e) Guided mode accepts yaw rate from SET_ATTITUDE_TARGET message 
+------------------------------------------------------------------
+Copter 3.4.0-rc2 08-Aug-2016
+Changes from 3.4.0-rc1
+1) ADSB based avoidance of manned aircraft
+2) Polygon fence (works seamlessly with circular and altitude fences)
+3) Throttle related changes:
+    a) motors speed feedback to pilot while landed - motors only spin up to minimum throttle as throttle stick is brought to mid (previously spun up to 25%)
+    b) MOT_HOVER_LEARN allows MOT_THST_HOVER to be learned in flight
+    c) THR_MIN becomes MOT_SPIN_MIN
+    d) THR_MID becomes MOT_THST_HOVER
+4) Precision landing:
+    a) control improved by reducing lag from sensor and correcting math errors
+    b) descent rate slows to allow time to correct horizontal position error
+5) Guided mode:
+    a) velocity controller accelerates/decelerates smoothly to target
+    b) Guided_NoGPS flight mode added to allow companion computer control in non-GPS environments
+    c) stop at fence if using velocity controller, reject points outside fence if using position controller
+6) Throw Mode:
+    a) THROW_NEXTMODE parameter allows copter to switch to Auto, Guided, RTL, Land or Brake after throw is complete  
+    b) Throw mode fixes so motors reliably start
+7) Attitude controller:
+    a) use Quaternions instead of Euler angles
+    b) ATC_ANG_LIM_TC allows controlling rate at which lean angles are limited to preserve altitude in AltHold, Loiter
+8) EKF can use range finder as primary height source if EKF2_RNG_USE_HGT parameter is set to 70
+9) Bug fixes
+    a) AutoTune fix so that gains don't fall too low
+    b) Rally points with altitudes no longer cause vehicle to climb above fence during RTL
+    c) various EKF fixes including bug in initialisation of declination co-variances
+    d) SingleCopter, CoaxCopter flag gains 
+10) Small enhancements:
+    a) Rally points outside fence are ignored
+    b) AP_Button support added to allow ground station to see if user has pushed a button on the flight controller
+    c) support for PLAY_TUNE and LED_CONTROL mavlink messages to cause vehicle to play tune or change colour of LED
+    d) support for GPS_INPUT mavlink message to allow supplying vehicle position data from other sources
+    e) NAV_DELAY mission command to delay start of mission (or individual command) until a specified absolute time
+    e) TKOFF_NAV_ALT param allows take-off with no horizontal position hold until vehicle reaches specified altitude (intended mostly for helicopters)
+    f) SCHED_LOOP_RATE param allows slowing main loop rate from default of 400 (intended for developers only) 
+11) Safety (in addition to Fence improvements above):
+    a) Motors begin spinning 2 seconds after arming (previously motors spun immediately)
+------------------------------------------------------------------
+Copter 3.4.0-rc1 28-May-2016
+Changes from 3.3.3
+1) EKF2 allows "boat mode" (attitude initialisation without gyro calibration)
+2) Throw mode
+3) Terrain following:
+    a) support terrain altitudes during missions using GCS's map data or rangefinder (i.e. Lidar)
+    b) LightWare range finder driver fixes (I2C works)
+    c) Bebop sonar support
+4) Precision Landing using IRLock sensor
+5) Attitude controller re-organisation (all parameter changes automatically moved and scales adjusted)
+    a) RATE_ parameters become ATC_RAT_ (i.e. RATE_RLL_P becomes ATC_RAT_RLL_P) 
+    b) Rate Roll, Pitch, Yaw P, D are reduced by 10% for X, V, H frames, increased by 27% for all other frames
+    c) STB_ parameters becomes ATC_ANG_ (i.e. STB_RLL_P becomes ATC_ANG_RLL_P)
+6) Motors library improvements:
+    a) support OneShot ESCs (set MOT_PWM_TYPE to 0 for Normal, 1 for OneShot or 2 for OneShot125)
+    b) TriCopter compensates for tail servo angle
+    c) SingleCopter, CoaxCopter adjust control surfaces based on throttle output
+    d) MOT_PWM_MIN, MAX allow specifying output ranges to ESCs which are difference from throttle input channel (i.e. RC3)
+    e) TradHeli servo objects moved into heli class (HSV_ parameters become H_SV_)
+7) uAvionix Ping sensor support (ADS-B vehicles appear on GCS, avoidance will come in future release) 
+8) Safety:
+    a) warning if GPS update rate is slow (under 5hz, does not stop arming) 
+------------------------------------------------------------------
+Copter 3.3.3 24-Feb-2016 / 3.3.3-rc2 27-Jan-2016
+Changes from 3.3.3-rc1
+1) bug fix to Guided mode's velocity controller to run at 400hz
+2) bug fix to MAVLink routing to allow camera messages to reach MAVLink enabled cameras and gimbals (including SToRM32)
+------------------------------------------------------------------
+Copter 3.3.3-rc1 4-Jan-2016
+Changes from 3.3.2
+1) Restrict mode changes in helicopter when rotor is not at speed
+2) add ATC_ANGLE_BOOST param to allow disabling angle boost for all flight modes
+3) add LightWare range finder support
+------------------------------------------------------------------
+Copter 3.3.2 01-Dec-2015 / 3.3.2-rc2 18-Nov-2015
+Changes from 3.3.2-rc1
+1) Bug fix for desired climb rate initialisation that could lead to drop when entering AltHold, Loiter, PosHold
+2) Fix to hard landings when WPNAV_SPEED_DN set high in RTL, Auto (resolved by using non-feedforward alt hold)
+3) Reduce Bad AHRS by filtering innovations
+4) Allow arming without GPS if using Optical Flow
+5) Smoother throttle output in Guided mode's velocity control (z-axis now 400hz) 
+------------------------------------------------------------------
+Copter 3.3.2-rc1 4-Nov-2015
+Changes from 3.3.1
+1) Helicopter Improvements:
+    a) Fix Arming race condition
+    b) Fix servos to move after arming in Stabilize and Acro
+    c) Implement Pirouette Compensation
+    d) Add Rate I-Leak-Min functionality
+    e) Add new Stab Collective and Acro Expo Col functions
+    f) Add circular swashplate limits (Cyclic Ring)
+    g) Add new H_SV_Man functions
+    h) Add Hover Roll Trim function
+    i) Add Engine Run Enable Aux Channel function
+    j) Add servo boot test function
+    h) Add Disarm Delay parameter
+------------------------------------------------------------------
+Copter 3.3.1 26-Oct-2015 / 3.3.1-rc1 20-Oct-2015
+Changes from 3.3
+1) Bug fix to prevent potential crash if Follow-Me is used after an aborted takeoff
+2) compiler upgraded to 4.9.3 (runs slightly faster than 4.7.2 which was used previously)
+------------------------------------------------------------------
+Copter 3.3 29-Sep-2015 / 3.3-rc12 22-Sep-2015
+Changes from 3.3-rc11
+1) EKF recovers from pre-arm "Compass variance" failure if compasses are consistent
 ------------------------------------------------------------------
 Copter 3.3-rc11 10-Sep-2015
 Changes from 3.3-rc10
@@ -135,7 +897,7 @@ Changes from 3.3-rc3
     b) H_COLYAW param can be float 
 8) Small Improvements / Bug Fixes:
     a) reduced spline overshoot after very long track followed by very short track
-    b) log entire mission to dataflash whenver it's uploaded
+    b) log entire mission to dataflash whenever it's uploaded
     c) altitude reported if vehicle takes off before GPS lock
     d) high speed logging of IMU
     e) STOP flight mode renamed to BRAKE and aux switch option added
@@ -289,7 +1051,7 @@ Changes from 3.2-rc7
 3) sensor health flags sent to GCS only after initialisation to remove false alerts 
 4) suppress bad terrain data alerts
 5) Bug Fix:
-    a)PX4 dataflash RAM useage reduced to 8k so it works again  
+    a)PX4 dataflash RAM usage reduced to 8k so it works again  
 ------------------------------------------------------------------
 ArduCopter 3.2-rc7 04-Sep-2014
 Changes from 3.2-rc6
@@ -651,7 +1413,7 @@ Improvements over 3.0.0-rc3
 6) RTL returns to initial yaw heading before descending
 7) safe features:
     i) check for gps lock when entering failsafe
-    ii) pre-arm check for mag field lenght
+    ii) pre-arm check for mag field length
     iii) pre-arm check for board voltage between 4.5v ~ 5.8V
     iv) beep twice during arming
     v) GPS failsafe enabled by default (will LAND if loses GPS in Loiter, AUTO, Guided modes)
@@ -751,7 +1513,7 @@ Improvements over 2.9-rc3:
 ArduCopter 2.9-rc3 11-Jan-2013
 Improvements over 2.9-rc2:
 1) alt hold with sonar improvements - now on by default (Leonard/Randy)
-2) performance and memory useage improvements (Tridge/Randy)
+2) performance and memory usage improvements (Tridge/Randy)
 3) increase APM1 baro pressure read from 5hz to 8.3hz to improve alt hold (Randy)
 4) bug fix: altitude error reported to GCS (Randy)
 5) limit inertial nav's max accel offset correction to 100cm/s/s to speed up recovery after hard impacts (Randy)_

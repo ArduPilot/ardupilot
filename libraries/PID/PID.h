@@ -1,15 +1,12 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	PID.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
-
-#ifndef __PID_H__
-#define __PID_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Logger/AP_Logger.h>
 #include <stdlib.h>
-#include <math.h>               // for fabs()
+#include <cmath>
 
 /// @class	PID
 /// @brief	Object managing one PID control
@@ -42,8 +39,9 @@ public:
     ///
     float        get_pid(float error, float scaler = 1.0);
 
-	// get_pid() constrained to +/- 4500
-    int16_t     get_pid_4500(float error, float scaler = 1.0);
+    /// Reset the whole PID state
+    //
+    void        reset();
 
     /// Reset the PID integrator
     ///
@@ -100,6 +98,8 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
+    const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
+
 private:
     AP_Float        _kp;
     AP_Float        _ki;
@@ -113,12 +113,12 @@ private:
 
     float           _get_pid(float error, uint16_t dt, float scaler);
 
+    AP_Logger::PID_Info _pid_info {};
+
     /// Low pass filter cut frequency for derivative calculation.
     ///
-    /// 20 Hz becasue anything over that is probably noise, see
+    /// 20 Hz because anything over that is probably noise, see
     /// http://en.wikipedia.org/wiki/Low-pass_filter.
     ///
     static const uint8_t        _fCut = 20;
 };
-
-#endif

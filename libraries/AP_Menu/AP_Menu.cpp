@@ -1,18 +1,13 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple commandline menu system.
-//
+#include "AP_Menu.h"
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_HAL/AP_HAL.h>
-
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "AP_Menu.h"
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -23,7 +18,7 @@ AP_HAL::BetterStream *Menu::_port;
 
 
 // constructor
-Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entries, preprompt ppfunc) :
+Menu::Menu(const char *prompt, const Menu::command *commands, uint8_t entries, preprompt ppfunc) :
     _prompt(prompt),
     _commands(commands),
     _entries(entries),
@@ -31,10 +26,10 @@ Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entri
     _commandline_max(MENU_COMMANDLINE_MAX),
     _args_max(MENU_ARGS_MAX)
 {
-    // the buffers are initially NULL, then they are allocated on
+    // the buffers are initially nullptr, then they are allocated on
     // first use
-    _inbuf = NULL;
-    _argv = NULL;
+    _inbuf = nullptr;
+    _argv = nullptr;
 }
 
 /**
@@ -84,7 +79,7 @@ Menu::_check_for_input(void)
 void
 Menu::_display_prompt(void)
 {
-    _port->printf_P(PSTR("%S] "), FPSTR(_prompt));    
+    _port->printf("%s] ", _prompt);
 }
 
 // run the menu
@@ -94,26 +89,26 @@ Menu::_run_command(bool prompt_on_enter)
     int8_t ret;
     uint8_t i;
     uint8_t argc;
-    char *s = NULL;
+    char *s = nullptr;
 
     _input_len = 0;
 
     // split the input line into tokens
     argc = 0;
-    s = NULL;
+    s = nullptr;
     _argv[argc++].str = strtok_r(_inbuf, " ", &s);
 
     // XXX should an empty line by itself back out of the current menu?
     while (argc <= _args_max) {
-        _argv[argc].str = strtok_r(NULL, " ", &s);
-        if (_argv[argc].str == NULL || '\0' == _argv[argc].str[0])
+        _argv[argc].str = strtok_r(nullptr, " ", &s);
+        if (_argv[argc].str == nullptr || '\0' == _argv[argc].str[0])
             break;
         _argv[argc].i = atol(_argv[argc].str);
         _argv[argc].f = atof(_argv[argc].str);      // calls strtod, > 700B !
         argc++;
     }
     
-    if (_argv[0].str == NULL) {
+    if (_argv[0].str == nullptr) {
         // we got a blank line, re-display the prompt
         if (prompt_on_enter) {
             _display_prompt();
@@ -135,7 +130,7 @@ Menu::_run_command(bool prompt_on_enter)
     bool cmd_found = false;
     // look for a command matching the first word (note that it may be empty)
     for (i = 0; i < _entries; i++) {
-        if (!strcasecmp_P(_argv[0].str, _commands[i].command)) {
+        if (!strcasecmp(_argv[0].str, _commands[i].command)) {
             ret = _call(i, argc);
             cmd_found=true;
             if (-2 == ret)
@@ -146,10 +141,10 @@ Menu::_run_command(bool prompt_on_enter)
     
     // implicit commands
     if (i == _entries) {
-        if (!strcmp(_argv[0].str, "?") || (!strcasecmp_P(_argv[0].str, PSTR("help")))) {
+        if (!strcmp(_argv[0].str, "?") || (!strcasecmp(_argv[0].str, "help"))) {
             _help();
             cmd_found=true;
-        } else if (!strcasecmp_P(_argv[0].str, PSTR("exit"))) {
+        } else if (!strcasecmp(_argv[0].str, "exit")) {
             // exit the menu
             return true;
         }
@@ -157,7 +152,7 @@ Menu::_run_command(bool prompt_on_enter)
 
     if (cmd_found==false)
     {
-        _port->println_P(PSTR("Invalid command, type 'help'"));
+        _port->printf("Invalid command, type 'help'\n");
     }
 
     return false;
@@ -168,7 +163,7 @@ Menu::_run_command(bool prompt_on_enter)
 void
 Menu::run(void)
 {
-	if (_port == NULL) {
+	if (_port == nullptr) {
 		// default to main serial port
 		_port = hal.console;
 	}
@@ -208,7 +203,7 @@ Menu::run(void)
 bool
 Menu::check_input(void)
 {
-	if (_port == NULL) {
+	if (_port == nullptr) {
 		// default to main serial port
 		_port = hal.console;
 	}
@@ -228,10 +223,10 @@ Menu::_help(void)
 {
     int i;
 
-    _port->println_P(PSTR("Commands:"));
+    _port->printf("Commands:\n");
     for (i = 0; i < _entries; i++) {
 		hal.scheduler->delay(10);
-        _port->printf_P(PSTR("  %S\n"), FPSTR(_commands[i].command));
+        _port->printf("  %s\n", _commands[i].command);
 	}
 }
 
@@ -239,10 +234,7 @@ Menu::_help(void)
 int8_t
 Menu::_call(uint8_t n, uint8_t argc)
 {
-    func fn;
-
-    pgm_read_block(&_commands[n].func, &fn, sizeof(fn));
-    return(fn(argc, &_argv[0]));
+    return _commands[n].func(argc, &_argv[0]);
 }
 
 /**
@@ -251,13 +243,13 @@ Menu::_call(uint8_t n, uint8_t argc)
 void
 Menu::set_limits(uint8_t commandline_max, uint8_t args_max)
 {
-    if (_inbuf != NULL) {
+    if (_inbuf != nullptr) {
         delete[] _inbuf;
-        _inbuf = NULL;
+        _inbuf = nullptr;
     }
-    if (_argv != NULL) {
+    if (_argv != nullptr) {
         delete[] _argv;
-        _argv = NULL;
+        _argv = nullptr;
     }
     // remember limits, the buffers will be allocated by allocate_buffers()
     _commandline_max = commandline_max;
@@ -267,12 +259,12 @@ Menu::set_limits(uint8_t commandline_max, uint8_t args_max)
 void
 Menu::_allocate_buffers(void)
 {
-    /* only allocate if the buffers are NULL */
-    if (_inbuf == NULL) {
+    /* only allocate if the buffers are nullptr */
+    if (_inbuf == nullptr) {
         _inbuf = new char[_commandline_max];
         memset(_inbuf, 0, _commandline_max);
     }
-    if (_argv == NULL) {
+    if (_argv == nullptr) {
         _argv = new arg[_args_max+1];
         memset(_argv, 0, (_args_max+1) * sizeof(_argv[0]));
     }

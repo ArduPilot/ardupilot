@@ -1,37 +1,24 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	AP_MotorsHeli.h
 /// @brief	Motor control class for Traditional Heli
-
-#ifndef __AP_MOTORS_HELI_H__
-#define __AP_MOTORS_HELI_H__
+#pragma once
 
 #include <inttypes.h>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>      // RC Channel Library
+#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_Motors_Class.h"
 #include "AP_MotorsHeli_RSC.h"
 
-// maximum number of swashplate servos
-#define AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS    3
-
 // servo output rates
 #define AP_MOTORS_HELI_SPEED_DEFAULT            125     // default servo update rate for helicopters
-#define AP_MOTORS_HELI_SPEED_DIGITAL_SERVOS     125     // update rate for digital servos
-#define AP_MOTORS_HELI_SPEED_ANALOG_SERVOS      125     // update rate for analog servos
 
 // default swash min and max angles and positions
-#define AP_MOTORS_HELI_SWASH_ROLL_MAX           2500
-#define AP_MOTORS_HELI_SWASH_PITCH_MAX          2500
+#define AP_MOTORS_HELI_SWASH_CYCLIC_MAX         2500
 #define AP_MOTORS_HELI_COLLECTIVE_MIN           1250
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
-
-// swash min and max position while in stabilize mode (as a number from 0 ~ 100)
-#define AP_MOTORS_HELI_MANUAL_COLLECTIVE_MIN    0
-#define AP_MOTORS_HELI_MANUAL_COLLECTIVE_MAX    100
 
 // swash min while landed or landing (as a number from 0 ~ 1000
 #define AP_MOTORS_HELI_LAND_COLLECTIVE_MIN      0
@@ -44,16 +31,18 @@
 
 // RSC output defaults
 #define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0
-#define AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT    200
-#define AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT   700
+#define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     250
+#define AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT    320
+#define AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT    380
+#define AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT    500
+#define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   1000
 
 // default main rotor ramp up time in seconds
-#define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to full power (most people use exterrnal govenors so we can ramp up quickly)
+#define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to setpoint
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
 
 // flybar types
 #define AP_MOTORS_HELI_NOFLYBAR                 0
-#define AP_MOTORS_HELI_FLYBAR                   1
 
 class AP_HeliControls;
 
@@ -67,69 +56,55 @@ public:
         AP_Motors(loop_rate, speed_hz)
     {
         AP_Param::setup_object_defaults(this, var_info);
-
-        // initialise flags
-        _heliflags.landing_collective = 0;
-        _heliflags.rotor_runup_complete = 0;
     };
 
     // init
-    void Init();
+    void init(motor_frame_class frame_class, motor_frame_type frame_type) override;
+
+    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // set update rate to motors - a value in hertz
-    // you must have setup_motors before calling this
-    virtual void set_update_rate( uint16_t speed_hz ) = 0;
-
-    // enable - starts allowing signals to be sent to motors
-    virtual void enable() = 0;
+    virtual void set_update_rate( uint16_t speed_hz ) override = 0;
 
     // output_min - sets servos to neutral point with motors stopped
-    void output_min();
+    void output_min() override;
 
-    // output_test - spin a motor at the pwm value specified
+    // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
-
-    // slow_start - ignored by helicopters
-    void                slow_start(bool true_false) {};
+    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override = 0;
 
     //
     // heli specific methods
     //
 
-    // allow_arming - returns true if main rotor is spinning and it is ok to arm
-    virtual bool allow_arming() const = 0;
-
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    bool parameter_check() const;
+    virtual bool parameter_check(bool display_msg) const;
 
     // has_flybar - returns true if we have a mechical flybar
     virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }
 
-    // get_collective_mid - returns collective mid position as a number from 0 ~ 1000
-    int16_t get_collective_mid() const { return  _collective_mid; }
-
-    // get_collective_out - returns collective position from last output as a number from 0 ~ 1000
-    int16_t get_collective_out() const { return _collective_out; }
-
     // set_collective_for_landing - limits collective from going too low if we know we are landed
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
+
+    // set_inverted_flight - enables/disables inverted flight
+    void set_inverted_flight(bool inverted) { _heliflags.inverted_flight = inverted; }
 
     // get_rsc_mode - gets the rotor speed control method (AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH or AP_MOTORS_HELI_RSC_MODE_SETPOINT)
     uint8_t get_rsc_mode() const { return _rsc_mode; }
 
-    // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1000)
-    int16_t get_rsc_setpoint() const { return _rsc_setpoint; }
+    // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
+    float get_rsc_setpoint() const { return _rsc_setpoint * 0.001f; }
 
-    // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
-    virtual void set_desired_rotor_speed(int16_t desired_speed) = 0;
+    // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
+    virtual void set_desired_rotor_speed(float desired_speed) = 0;
 
-    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1000
-    virtual int16_t get_desired_rotor_speed() const = 0;
+    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
+    virtual float get_desired_rotor_speed() const = 0;
 
     // get_main_rotor_speed - gets estimated or measured main rotor speed
-    virtual int16_t get_main_rotor_speed() const = 0;
+    virtual float get_main_rotor_speed() const = 0;
 
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const { return _heliflags.rotor_runup_complete; }
@@ -137,100 +112,111 @@ public:
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
     virtual bool rotor_speed_above_critical() const = 0;
 
-    // calculate_scalars - must be implemented by child classes
-    virtual void calculate_scalars() = 0;
-
-    // var_info for holding Parameter information
-    static const struct AP_Param::GroupInfo var_info[];
-
-    // set_delta_phase_angle for setting variable phase angle compensation and force recalculation of collective factors
-    // ignored unless overloaded by child classes
-    virtual void set_delta_phase_angle(int16_t angle){};
-
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    virtual uint16_t get_motor_mask() = 0;
+    virtual uint16_t get_motor_mask() override = 0;
 
-    // set_radio_passthrough used to pass radio inputs directly to outputs
-    void set_radio_passthrough(int16_t radio_roll_input, int16_t radio_pitch_input, int16_t radio_throttle_input, int16_t radio_yaw_input);
+    virtual void set_acro_tail(bool set) {}
 
-    // reset_radio_passthrough used to reset all radio inputs to center
-    void reset_radio_passthrough();
+    // ext_gyro_gain - set external gyro gain in range 0 ~ 1
+    virtual void ext_gyro_gain(float gain) {}
 
     // output - sends commands to the motors
-    void    output();
+    void output() override;
 
     // supports_yaw_passthrough
     virtual bool supports_yaw_passthrough() const { return false; }
 
+    float get_throttle_hover() const override { return 0.5f; }
+
+    // support passing init_targets_on_arming flag to greater code
+    bool init_targets_on_arming() const { return _heliflags.init_targets_on_arming; }
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
+    // manual servo modes (used for setup)
+    enum ServoControlModes {
+        SERVO_CONTROL_MODE_AUTOMATED = 0,
+        SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH,
+        SERVO_CONTROL_MODE_MANUAL_MAX,
+        SERVO_CONTROL_MODE_MANUAL_CENTER,
+        SERVO_CONTROL_MODE_MANUAL_MIN,
+        SERVO_CONTROL_MODE_MANUAL_OSCILLATE,
+    };
+
     // output - sends commands to the motors
-    void        output_armed_stabilizing();
-    void        output_armed_not_stabilizing();
-    void        output_armed_zero_throttle();
-    void        output_disarmed();
+    void output_armed_stabilizing() override;
+    void output_armed_zero_throttle();
+    void output_disarmed();
 
     // update_motor_controls - sends commands to motor controllers
     virtual void update_motor_control(RotorControlState state) = 0;
+
+    // run spool logic
+    void                output_logic();
+
+    // output_to_motors - sends commands to the motors
+    virtual void        output_to_motors() = 0;
 
     // reset_flight_controls - resets all controls and scalars to flight status
     void reset_flight_controls();
 
     // update the throttle input filter
-    void                update_throttle_filter();
+    void update_throttle_filter() override;
 
     // move_actuators - moves swash plate and tail rotor
-    virtual void move_actuators(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out) = 0;
+    virtual void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) = 0;
 
     // reset_swash_servo - free up swash servo for maximum movement
-    static void reset_swash_servo(RC_Channel& servo);
+    void reset_swash_servo(SRV_Channel::Aux_servo_function_t function);
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
-    virtual void init_outputs() = 0;
+    virtual bool init_outputs() = 0;
 
-    // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
-    virtual void calculate_roll_pitch_collective_factors() = 0;
+    // calculate_armed_scalars - must be implemented by child classes
+    virtual void calculate_armed_scalars() = 0;
 
+    // calculate_scalars - must be implemented by child classes
+    virtual void calculate_scalars() = 0;
+
+    // servo_test - move servos through full range of movement
+    // to be overloaded by child classes, different vehicle types would have different movement patterns
+    virtual void servo_test() = 0;
+
+    // write to a swash servo. output value is pwm
+    void rc_write_swash(uint8_t chan, float swash_in);
+    
     // flags bitmask
     struct heliflags_type {
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
         uint8_t rotor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
+        uint8_t inverted_flight         : 1;    // true for inverted flight
+        uint8_t init_targets_on_arming  : 1;    // 0 if targets were initialized, 1 if targets were not initialized after arming
     } _heliflags;
 
     // parameters
-    AP_Int16        _roll_max;                  // Maximum roll angle of the swash plate in centi-degrees
-    AP_Int16        _pitch_max;                 // Maximum pitch angle of the swash plate in centi-degrees
+    AP_Int16        _cyclic_max;                // Maximum cyclic angle of the swash plate in centi-degrees
     AP_Int16        _collective_min;            // Lowest possible servo position for the swashplate
     AP_Int16        _collective_max;            // Highest possible servo position for the swashplate
-    AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
-    AP_Int8         _servo_manual;              // Pass radio inputs directly to servos during set-up through mission planner
+    AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
+    AP_Int8         _servo_mode;              // Pass radio inputs directly to servos during set-up through mission planner
     AP_Int16        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabledv
     AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
-    AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach full speed
+    AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach setpoint
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _rsc_critical;              // Rotor speed below which flight is not possible
     AP_Int16        _rsc_idle_output;           // Rotor control output while at idle
-    AP_Int16        _rsc_power_low;             // throttle value sent to throttle servo at zero collective pitch
-    AP_Int16        _rsc_power_high;            // throttle value sent to throttle servo at maximum collective pitch
+    AP_Int16        _rsc_thrcrv[5];             // throttle value sent to throttle servo at 0, 25, 50, 75 and 100 percent collective
+    AP_Int16        _rsc_slewrate;              // throttle slew rate (percentage per second)
+    AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
 
     // internal variables
-    float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
-    float           _pitchFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
-    float           _collectiveFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
-    float           _roll_scaler = 1;                // scaler to convert roll input from radio (i.e. -4500 ~ 4500) to max roll range
-    float           _pitch_scaler = 1;               // scaler to convert pitch input from radio (i.e. -4500 ~ 4500) to max pitch range
-    float           _collective_scalar = 1;          // collective scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
-    float           _main_rotor_power = 0;           // estimated main rotor power load, range 0-1.0f, used for RSC feedforward
-    int16_t         _collective_out = 0;             // actual collective pitch value.  Required by the main code for calculating cruise throttle
-    int16_t         _collective_mid_pwm = 0;         // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
-    int16_t         _delta_phase_angle = 0;          // phase angle dynamic compensation
-    int16_t         _roll_radio_passthrough = 0;     // roll control PWM direct from radio, used for manual control
-    int16_t         _pitch_radio_passthrough = 0;    // pitch control PWM direct from radio, used for manual control
-    int16_t         _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
-    int16_t         _yaw_radio_passthrough = 0;      // yaw control PWM direct from radio, used for manual control
-    int16_t         _collective_range = 0;           // maximum absolute collective pitch range (500 - 1000)
-};
+    float           _collective_mid_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
+    uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 
-#endif  // AP_MOTORSHELI
+    motor_frame_type _frame_type;
+};

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,41 +16,45 @@
   simulator connection for ardupilot version of Gazebo
 */
 
-#ifndef _SIM_GAZEBO_H
-#define _SIM_GAZEBO_H
+#pragma once
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
+namespace SITL {
+
 /*
   Gazebo simulator
  */
-class Gazebo : public Aircraft
-{
+class Gazebo : public Aircraft {
 public:
     Gazebo(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct sitl_input &input) override;
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
         return new Gazebo(home_str, frame_str);
     }
 
+    /*  Create and set in/out socket for Gazebo simulator */
+    void set_interface_ports(const char* address, const int port_in, const int port_out) override;
+
 private:
     /*
       packet sent to Gazebo
      */
     struct servo_packet {
-      float motor_speed[4];
+      // size matches sitl_input upstream
+      float motor_speed[16];
     };
-    
+
     /*
       reply packet sent from Gazebo to ArduPilot
      */
     struct fdm_packet {
-      double timestamp;
+      double timestamp;  // in seconds
       double imu_angular_velocity_rpy[3];
       double imu_linear_acceleration_xyz[3];
       double imu_orientation_quat[4];
@@ -59,14 +62,16 @@ private:
       double position_xyz[3];
     };
 
-    void send_servos_heli(const struct sitl_input &input);
-    void send_servos_fixed_wing(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
     void send_servos(const struct sitl_input &input);
+    void drain_sockets();
 
     double last_timestamp;
-    SocketAPM sock;
+
+    SocketAPM socket_sitl;
+    const char *_gazebo_address = "127.0.0.1";
+    int _gazebo_port = 9002;
+    static const uint64_t GAZEBO_TIMEOUT_US = 5000000;
 };
 
-
-#endif // _SIM_GAZEBO_H
+}  // namespace SITL

@@ -1,20 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Tracker.h"
-
-void Tracker::init_barometer(void)
-{
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Calibrating barometer"));    
-    barometer.calibrate();
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("barometer calibration complete"));
-}
-
-// read the barometer and return the updated altitude in meters
-void Tracker::update_barometer(void)
-{
-    barometer.update();
-}
-
 
 /*
   update INS and attitude
@@ -24,6 +8,36 @@ void Tracker::update_ahrs()
     ahrs.update();
 }
 
+// initialise compass
+void Tracker::init_compass()
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    compass.init();
+    if (!compass.read()) {
+        hal.console->printf("Compass initialisation failed!\n");
+        g.compass_enabled = false;
+    } else {
+        ahrs.set_compass(&compass);
+    }
+}
+
+/*
+  initialise compass's location used for declination
+ */
+void Tracker::init_compass_location(void)
+{
+    // update initial location used for declination
+    if (!compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            compass_init_location = true;
+        }
+    }
+}
 
 /*
   read and update compass
@@ -32,28 +46,10 @@ void Tracker::update_compass(void)
 {
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
-        compass.learn_offsets();
-    } else {
-        ahrs.set_compass(NULL);
+        if (should_log(MASK_LOG_COMPASS)) {
+            logger.Write_Compass();
+        }
     }
-}
-
-/*
-  if the compass is enabled then try to accumulate a reading
- */
-void Tracker::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }    
-}
-
-/*
-  try to accumulate a baro reading
- */
-void Tracker::barometer_accumulate(void)
-{
-    barometer.accumulate();
 }
 
 /*
@@ -62,6 +58,29 @@ void Tracker::barometer_accumulate(void)
 void Tracker::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
+    }
+}
+
+// Save compass offsets
+void Tracker::compass_save() {
+    if (g.compass_enabled &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !hal.util->get_soft_armed()) {
+        compass.save_offsets();
+    }
+}
+
+/*
+    Accel calibration
+*/
+void Tracker::accel_cal_update() {
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
+    ins.acal_update();
+    float trim_roll, trim_pitch;
+    if (ins.get_new_trim(trim_roll, trim_pitch)) {
+        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }
 
@@ -78,23 +97,22 @@ void Tracker::update_GPS(void)
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         last_gps_msg_ms = gps.last_message_time_ms();
         
-        if(ground_start_count > 1) {
+        if (ground_start_count > 1) {
             ground_start_count--;
         } else if (ground_start_count == 1) {
             // We countdown N number of good GPS fixes
             // so that the altitude is more accurate
             // -------------------------------------
-            if (current_loc.lat == 0) {
+            if (current_loc.lat == 0 && current_loc.lng == 0) {
                 ground_start_count = 5;
 
             } else {
                 // Now have an initial GPS position
                 // use it as the HOME position in future startups
                 current_loc = gps.location();
-                set_home(current_loc);
-
-                // set system clock for log timestamps
-                hal.util->set_system_clock(gps.time_epoch_usec());
+                if (!set_home(current_loc)) {
+                    // silently ignored
+                }
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically
@@ -106,3 +124,9 @@ void Tracker::update_GPS(void)
     }
 }
 
+void Tracker::handle_battery_failsafe(const char* type_str, const int8_t action)
+{
+    // NOP
+    // useful failsafes in the future would include actually recalling the vehicle
+    // that is tracked before the tracker loses power to continue tracking it
+}

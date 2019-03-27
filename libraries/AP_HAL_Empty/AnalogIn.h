@@ -1,29 +1,26 @@
-
-#ifndef __AP_HAL_EMPTY_ANALOGIN_H__
-#define __AP_HAL_EMPTY_ANALOGIN_H__
+#pragma once
 
 #include "AP_HAL_Empty.h"
 
-class Empty::EmptyAnalogSource : public AP_HAL::AnalogSource {
+class Empty::AnalogSource : public AP_HAL::AnalogSource {
 public:
-    EmptyAnalogSource(float v);
-    float read_average();
-    float read_latest();
-    void set_pin(uint8_t p);
-    void set_stop_pin(uint8_t p);
-    void set_settle_time(uint16_t settle_time_ms);
-    float voltage_average();
-    float voltage_latest();
-    float voltage_average_ratiometric() { return voltage_average(); }
+    AnalogSource(float v);
+    float read_average() override;
+    float read_latest() override;
+    void set_pin(uint8_t p) override;
+    void set_stop_pin(uint8_t p) override;
+    void set_settle_time(uint16_t settle_time_ms) override;
+    float voltage_average() override;
+    float voltage_latest() override;
+    float voltage_average_ratiometric() override { return voltage_average(); }
 private:
     float _v;
 };
 
-class Empty::EmptyAnalogIn : public AP_HAL::AnalogIn {
+class Empty::AnalogIn : public AP_HAL::AnalogIn {
 public:
-    EmptyAnalogIn();
-    void init(void* implspecific);
-    AP_HAL::AnalogSource* channel(int16_t n);
-    float board_voltage(void);
+    AnalogIn();
+    void init() override;
+    AP_HAL::AnalogSource* channel(int16_t n) override;
+    float board_voltage(void) override;
 };
-#endif // __AP_HAL_EMPTY_ANALOGIN_H__

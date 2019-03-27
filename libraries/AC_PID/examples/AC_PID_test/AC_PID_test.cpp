@@ -3,42 +3,45 @@
  *       2012 Code by Jason Short, Randy Mackay. DIYDrones.com
  */
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <StorageManager/StorageManager.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_HELI_PID.h>
-#include <AP_Scheduler/AP_Scheduler.h>
-#include <DataFlash/DataFlash.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <Filter/Filter.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_Mission/AP_Mission.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <RC_Channel/RC_Channel.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+// we need a boardconfig created so that the io processor is available
+#if HAL_WITH_IO_MCU
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_IOMCU/AP_IOMCU.h>
+AP_BoardConfig BoardConfig;
+#endif
+
+void setup();
+void loop();
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+class RC_Channel_PIDTest : public RC_Channel
+{
+};
+
+class RC_Channels_PIDTest : public RC_Channels
+{
+public:
+    RC_Channel *channel(uint8_t chan) {
+        return &obj_channels[chan];
+    }
+
+    RC_Channel_PIDTest obj_channels[NUM_RC_CHANNELS];
+private:
+    int8_t flight_mode_channel_number() const override { return -1; };
+};
+
+#define RC_CHANNELS_SUBCLASS RC_Channels_PIDTest
+#define RC_CHANNEL_SUBCLASS RC_Channel_PIDTest
+
+#include <RC_Channel/RC_Channels_VarInfo.h>
+
+RC_Channels_PIDTest _rc;
 
 // default PID values
 #define TEST_P 1.0f
@@ -52,7 +55,13 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 // setup function
 void setup()
 {
-    hal.console->println("ArduPilot Mega AC_PID library test");
+    hal.console->printf("ArduPilot AC_PID library test\n");
+
+#if HAL_WITH_IO_MCU
+    BoardConfig.init();
+#endif
+
+    rc().init();
 
     hal.scheduler->delay(1000);
 }
@@ -63,31 +72,35 @@ void loop()
     // setup (unfortunately must be done here as we cannot create a global AC_PID object)
     AC_PID pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100, TEST_FILTER, TEST_DT);
     AC_HELI_PID heli_pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100, TEST_FILTER, TEST_DT, TEST_INITIAL_FF);
-    uint16_t radio_in;
-    uint16_t radio_trim;
-    int16_t error;
-    float control_P, control_I, control_D;
-    float dt = 1000/50;
 
     // display PID gains
-    hal.console->printf("P %f  I %f  D %f  imax %f\n", (float)pid.kP(), (float)pid.kI(), (float)pid.kD(), (float)pid.imax());
+    hal.console->printf("P %f  I %f  D %f  imax %f\n", (double)pid.kP(), (double)pid.kI(), (double)pid.kD(), (double)pid.imax());
+
+    RC_Channel *c = rc().channel(0);
+    if (c == nullptr) {
+        while (true) {
+            hal.console->printf("No channel 0?");
+            hal.scheduler->delay(1000);
+        }
+    }
 
     // capture radio trim
-    radio_trim = hal.rcin->read(0);
+    const uint16_t radio_trim = c->get_radio_in();
 
-    while( true ) {
-        radio_in = hal.rcin->read(0);
-        error = radio_in - radio_trim;
+    while (true) {
+        rc().read_input(); // poll the radio for new values
+        const uint16_t radio_in = c->get_radio_in();
+        const int16_t error = radio_in - radio_trim;
         pid.set_input_filter_all(error);
-        control_P = pid.get_p();
-        control_I = pid.get_i();
-        control_D = pid.get_d();
+        const float control_P = pid.get_p();
+        const float control_I = pid.get_i();
+        const float control_D = pid.get_d();
 
         // display pid results
         hal.console->printf("radio: %d\t err: %d\t pid:%4.2f (p:%4.2f i:%4.2f d:%4.2f)\n",
                 (int)radio_in, (int)error,
-                (float)(control_P+control_I+control_D),
-                (float)control_P, (float)control_I, (float)control_D);
+                (double)(control_P+control_I+control_D),
+                (double)control_P, (double)control_I, (double)control_D);
         hal.scheduler->delay(50);
     }
 }

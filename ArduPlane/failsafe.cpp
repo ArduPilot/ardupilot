@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Plane.h"
 
 /*
@@ -18,14 +16,15 @@
  */
 void Plane::failsafe_check(void)
 {
-    static uint16_t last_mainLoop_count;
+    static uint16_t last_ticks;
     static uint32_t last_timestamp;
     static bool in_failsafe;
     uint32_t tnow = micros();
 
-    if (mainLoop_count != last_mainLoop_count) {
+    const uint16_t ticks = scheduler.ticks();
+    if (ticks != last_ticks) {
         // the main loop is running, all is OK
-        last_mainLoop_count = mainLoop_count;
+        last_ticks = ticks;
         last_timestamp = tnow;
         in_failsafe = false;
         return;
@@ -42,70 +41,54 @@ void Plane::failsafe_check(void)
     if (in_failsafe && tnow - last_timestamp > 20000) {
         last_timestamp = tnow;
 
-#if OBC_FAILSAFE == ENABLED
         if (in_calibration) {
             // tell the failsafe system that we are calibrating
             // sensors, so don't trigger failsafe
-            obc.heartbeat();
+            afs.heartbeat();
         }
-#endif
 
-        if (hal.rcin->num_channels() < 5) {
+        if (RC_Channels::get_valid_channel_count() < 5) {
             // we don't have any RC input to pass through
             return;
         }
 
         // pass RC inputs to outputs every 20ms
-        hal.rcin->clear_overrides();
-        channel_roll->radio_out     = channel_roll->read();
-        channel_pitch->radio_out    = channel_pitch->read();
-        if (hal.util->get_soft_armed()) {
-            channel_throttle->radio_out = channel_throttle->read();
+        RC_Channels::clear_overrides();
+
+        int16_t roll = channel_roll->get_control_in_zero_dz();
+        int16_t pitch = channel_pitch->get_control_in_zero_dz();
+        int16_t throttle = get_throttle_input(true);
+        int16_t rudder = channel_rudder->get_control_in_zero_dz();
+
+        if (!hal.util->get_soft_armed()) {
+            throttle = 0;
         }
-        channel_rudder->radio_out   = channel_rudder->read();
-
-        int16_t roll = channel_roll->pwm_to_angle_dz(0);
-        int16_t pitch = channel_pitch->pwm_to_angle_dz(0);
-        int16_t rudder = channel_rudder->pwm_to_angle_dz(0);
-
+        
         // setup secondary output channels that don't have
         // corresponding input channels
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_aileron, roll);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_elevator, pitch);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_rudder, rudder);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_steering, rudder);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 
-        if (g.vtail_output != MIXING_DISABLED) {
-            channel_output_mixer(g.vtail_output, channel_pitch->radio_out, channel_rudder->radio_out);
-        } else if (g.elevon_output != MIXING_DISABLED) {
-            channel_output_mixer(g.elevon_output, channel_pitch->radio_out, channel_roll->radio_out);
-        }
-
-#if OBC_FAILSAFE == ENABLED
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
-        obc.check_crash_plane();
-#endif
-
-        if (!demoing_servos) {
-            channel_roll->output();
-            channel_pitch->output();
-        }
-        channel_throttle->output();
-        if (g.rudder_only == 0) {
-            channel_rudder->output();
+        if (afs.should_crash_vehicle()) {
+            afs.terminate_vehicle();
+            return;
         }
 
         // setup secondary output channels that do have
         // corresponding input channels
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input, true);
-        RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input, true);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap, 0);
-        RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap_auto, 0);
+        SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 0);
 
         // setup flaperons
         flaperon_update(0);
+
+        servos_output();
     }
 }

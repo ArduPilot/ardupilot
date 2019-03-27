@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,36 +18,19 @@
 
 #include "Rover.h"
 
+#define FORCE_VERSION_H_INCLUDE
+#include "version.h"
+#undef FORCE_VERSION_H_INCLUDE
+
 Rover::Rover(void) :
     param_loader(var_info),
-    ins_sample_rate(AP_InertialSensor::RATE_50HZ),
-    channel_steer(NULL),
-    channel_throttle(NULL),
-    channel_learn(NULL),
-    in_log_download(false),
+    channel_steer(nullptr),
+    channel_throttle(nullptr),
+    channel_lateral(nullptr),
+    logger{g.log_bitmask},
     modes(&g.mode1),
-    L1_controller(ahrs),
     nav_controller(&L1_controller),
-    steerController(ahrs),
-    mission(ahrs,
-            FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
-            FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
-            FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)),
-    num_gcs(MAVLINK_COMM_NUM_BUFFERS),
-    ServoRelayEvents(relay),
-#if CAMERA == ENABLED
-    camera(&relay),
-#endif
-#if MOUNT == ENABLED
-    camera_mount(ahrs, current_loc),
-#endif
-    control_mode(INITIALISING),
-    ground_start_count(20),
-    throttle(500),
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry(ahrs, battery),
-#endif
-    home(ahrs.get_home()),
-    G_Dt(0.02)
+    control_mode(&mode_initializing),
+    G_Dt(0.02f)
 {
 }

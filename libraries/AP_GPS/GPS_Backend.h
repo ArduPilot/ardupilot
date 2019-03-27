@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,16 +16,16 @@
 /*
   GPS driver backend class
  */
-#ifndef __AP_GPS_BACKEND_H__
-#define __AP_GPS_BACKEND_H__
+#pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_RTC/JitterCorrection.h>
 #include "AP_GPS.h"
 
 class AP_GPS_Backend
 {
 public:
-	AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     // we declare a virtual destructor so that GPS drivers can
     // override with a custom destructor if need be.
@@ -37,21 +36,34 @@ public:
     // valid packet from the GPS.
     virtual bool read() = 0;
 
-    virtual void inject_data(uint8_t *data, uint8_t len) { return; }
-
-#if GPS_RTK_AVAILABLE
     // Highest status supported by this GPS. 
     // Allows external system to identify type of receiver connected.
     virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }
 
+    virtual bool is_configured(void) { return true; }
+
+    virtual void inject_data(const uint8_t *data, uint16_t len);
+
     //MAVLink methods
-    virtual void send_mavlink_gps_rtk(mavlink_channel_t chan) { return ; }
+    virtual bool supports_mavlink_gps_rtk_message() { return false; }
+    virtual void send_mavlink_gps_rtk(mavlink_channel_t chan);
 
-#if GPS_MAX_INSTANCES > 1
-    virtual void send_mavlink_gps2_rtk(mavlink_channel_t chan) { return ; }
-#endif
+    virtual void broadcast_configuration_failure_reason(void) const { return ; }
 
-#endif
+    virtual void handle_msg(const mavlink_message_t *msg) { return ; }
+
+    // driver specific lag, returns true if the driver is confident in the provided lag
+    virtual bool get_lag(float &lag) const { lag = 0.2f; return true; }
+
+    // driver specific health, returns true if the driver is healthy
+    virtual bool is_healthy(void) const { return true; }
+
+    virtual const char *name() const = 0;
+
+    void broadcast_gps_type() const;
+    virtual void Write_AP_Logger_Log_Startup_messages() const;
+
+    virtual bool prepare_for_arming(void) { return true; }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
@@ -72,6 +84,27 @@ protected:
        assumes MTK19 millisecond form of bcd_time
     */
     void make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
-};
 
-#endif // __AP_GPS_BACKEND_H__
+    void _detection_message(char *buffer, uint8_t buflen) const;
+
+    bool should_df_log() const;
+
+    /*
+      set a timestamp based on arrival time on uart at current byte,
+      assuming the message started nbytes ago
+     */
+    void set_uart_timestamp(uint16_t nbytes);
+
+    void check_new_itow(uint32_t itow, uint32_t msg_length);
+    
+private:
+    // itow from previous message
+    uint32_t _last_itow;
+    uint64_t _pseudo_itow;
+    uint32_t _last_ms;
+    uint32_t _rate_ms;
+    uint32_t _last_rate_ms;
+    uint16_t _rate_counter;
+
+    JitterCorrection jitter_correction;
+};

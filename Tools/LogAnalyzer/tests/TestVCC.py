@@ -21,8 +21,15 @@ class TestVCC(Test):
             return
 
         # just a naive min/max test for now
-        vccMin  = logdata.channels["CURR"]["Vcc"].min()
-        vccMax  = logdata.channels["CURR"]["Vcc"].max()
+        try:
+            vccMin  = logdata.channels["CURR"]["Vcc"].min()
+            vccMax  = logdata.channels["CURR"]["Vcc"].max()
+        except KeyError as e:
+            vccMin  = logdata.channels["POWR"]["Vcc"].min()
+            vccMax  = logdata.channels["POWR"]["Vcc"].max()
+            vccMin *= 1000
+            vccMax *= 1000
+
         vccDiff = vccMax - vccMin;
         vccMinThreshold = 4.6 * 1000;
         vccMaxDiff      = 0.3 * 1000;
@@ -31,5 +38,5 @@ class TestVCC(Test):
             self.result.statusMessage = "VCC min/max diff %sv, should be <%sv" % (vccDiff/1000.0, vccMaxDiff/1000.0)
         elif vccMin < vccMinThreshold:
             self.result.status = TestResult.StatusType.FAIL
-            self.result.statusMessage = "VCC below minimum of %sv (%sv)" % (`vccMinThreshold/1000.0`,`vccMin/1000.0`)
+            self.result.statusMessage = "VCC below minimum of %sv (%sv)" % (repr(vccMinThreshold/1000.0),repr(vccMin/1000.0))
         

@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,11 +27,13 @@
 
 #include <assert.h>
 #include <stdio.h>
+#if HAL_OS_POSIX_IO
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#endif
+#include <sys/types.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -41,7 +42,7 @@ extern const AP_HAL::HAL& hal;
  */
 void AP_Terrain::check_disk_read(void)
 {
-    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (uint16_t i=0; i<cache_size; i++) {
         if (cache[i].state == GRID_CACHE_DISKWAIT) {
             disk_block.block = cache[i].grid;
             disk_io_state = DiskIoWaitRead;
@@ -55,7 +56,7 @@ void AP_Terrain::check_disk_read(void)
  */
 void AP_Terrain::check_disk_write(void)
 {
-    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (uint16_t i=0; i<cache_size; i++) {
         if (cache[i].state == GRID_CACHE_DIRTY) {
             disk_block.block = cache[i].grid;
             disk_io_state = DiskIoWaitWrite;
@@ -69,7 +70,7 @@ void AP_Terrain::check_disk_write(void)
  */
 void AP_Terrain::schedule_disk_io(void)
 {
-    if (enable == 0) {
+    if (enable == 0 || !allocate()) {
         return;
     }
 
@@ -97,7 +98,7 @@ void AP_Terrain::schedule_disk_io(void)
                 cache[cache_idx].grid = disk_block.block;
             }
             cache[cache_idx].state = GRID_CACHE_VALID;
-            cache[cache_idx].last_access_ms = hal.scheduler->millis();
+            cache[cache_idx].last_access_ms = AP_HAL::millis();
         }
         disk_io_state = DiskIoIdle;
         break;
@@ -150,18 +151,18 @@ void AP_Terrain::open_file(void)
         // already open on right file
         return;
     }
-    if (file_path == NULL) {
+    if (file_path == nullptr) {
         const char* terrain_dir = hal.util->get_custom_terrain_directory();
-        if (terrain_dir == NULL) {
+        if (terrain_dir == nullptr) {
             terrain_dir = HAL_BOARD_TERRAIN_DIRECTORY;
         }
         if (asprintf(&file_path, "%s/NxxExxx.DAT", terrain_dir) <= 0) {
             io_failure = true;
-            file_path = NULL;
+            file_path = nullptr;
             return;
         }
     }
-    if (file_path == NULL) {
+    if (file_path == nullptr) {
         io_failure = true;
         return;
     }
@@ -172,22 +173,36 @@ void AP_Terrain::open_file(void)
     }
     snprintf(p, 13, "/%c%02u%c%03u.DAT",
              block.lat_degrees<0?'S':'N',
-             abs(block.lat_degrees),
+             (unsigned)MIN(abs((int32_t)block.lat_degrees), 99),
              block.lon_degrees<0?'W':'E',
-             abs(block.lon_degrees));
+             (unsigned)MIN(abs((int32_t)block.lon_degrees), 999));
 
     // create directory if need be
     if (!directory_created) {
         *p = 0;
-        mkdir(file_path, 0755);
-        directory_created = true;
+        directory_created = !mkdir(file_path, 0755);
         *p = '/';
+
+        if (!directory_created) {
+            if (errno == EEXIST) {
+                // directory already existed
+                directory_created = true;
+            } else {
+                // if we didn't succeed at making the directory, then IO failed
+                io_failure = true;
+                return;
+            }
+        }
     }
 
     if (fd != -1) {
         ::close(fd);
     }
-    fd = ::open(file_path, O_RDWR|O_CREAT, 0644);
+#if HAL_OS_POSIX_IO
+    fd = ::open(file_path, O_RDWR|O_CREAT|O_CLOEXEC, 0644);
+#else
+    fd = ::open(file_path, O_RDWR|O_CREAT|O_CLOEXEC);
+#endif
     if (fd == -1) {
 #if TERRAIN_DEBUG
         hal.console->printf("Open %s failed - %s\n",
@@ -215,7 +230,7 @@ void AP_Terrain::seek_offset(void)
     loc2.lng = (block.lon_degrees+1)*10*1000*1000L;
 
     // shift another two blocks east to ensure room is available
-    location_offset(loc2, 0, 2*grid_spacing*TERRAIN_GRID_BLOCK_SIZE_Y);
+    loc2.offset(0, 2*grid_spacing*TERRAIN_GRID_BLOCK_SIZE_Y);
     Vector2f offset = location_diff(loc1, loc2);
     uint16_t east_blocks = offset.y / (grid_spacing*TERRAIN_GRID_BLOCK_SIZE_Y);
 

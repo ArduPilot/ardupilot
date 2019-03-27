@@ -1,37 +1,29 @@
-
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
-
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <StorageManager/StorageManager.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+void setup();
+void loop();
 
-AP_HAL::AnalogSource* ch;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-void setup (void) {
-    hal.console->printf_P(PSTR("Starting AP_HAL::AnalogIn test\r\n"));
-    ch = hal.analogin->channel(0);
+AP_HAL::AnalogSource* chan;
+
+void setup(void) {
+    hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
+    chan = hal.analogin->channel(0);
 }
 
 static int8_t pin;
 
-void loop (void) 
+void loop(void)
 {
-    float v  = ch->voltage_average(); 
+    float v  = chan->voltage_average();
     if (pin == 0) {
-	    hal.console->println();
+        hal.console->printf("\n");
     }
-    hal.console->printf_P(PSTR("[%u %.3f] "),
-			  (unsigned)pin, v);
+    hal.console->printf("[%u %.3f] ",
+              (unsigned)pin, (double)v);
     pin = (pin+1) % 16;
-    ch->set_pin(pin);
+    chan->set_pin(pin);
     hal.scheduler->delay(100);
 }
 

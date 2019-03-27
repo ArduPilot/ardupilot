@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 //
@@ -10,7 +8,7 @@
 //
 
 static bool failsafe_enabled = false;
-static uint16_t failsafe_last_mainLoop_count;
+static uint16_t failsafe_last_ticks;
 static uint32_t failsafe_last_timestamp;
 static bool in_failsafe;
 
@@ -36,15 +34,16 @@ void Copter::failsafe_disable()
 //
 void Copter::failsafe_check()
 {
-    uint32_t tnow = hal.scheduler->micros();
+    uint32_t tnow = AP_HAL::micros();
 
-    if (mainLoop_count != failsafe_last_mainLoop_count) {
+    const uint16_t ticks = scheduler.ticks();
+    if (ticks != failsafe_last_ticks) {
         // the main loop is running, all is OK
-        failsafe_last_mainLoop_count = mainLoop_count;
+        failsafe_last_ticks = ticks;
         failsafe_last_timestamp = tnow;
         if (in_failsafe) {
             in_failsafe = false;
-            Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_RESOLVED);
+            AP::logger().Write_Error(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_RESOLVED);
         }
         return;
     }
@@ -52,22 +51,39 @@ void Copter::failsafe_check()
     if (!in_failsafe && failsafe_enabled && tnow - failsafe_last_timestamp > 2000000) {
         // motors are running but we have gone 2 second since the
         // main loop ran. That means we're in trouble and should
-        // disarm the motors.
+        // disarm the motors->
         in_failsafe = true;
         // reduce motors to minimum (we do not immediately disarm because we want to log the failure)
-        if (motors.armed()) {
-            motors.output_min();
+        if (motors->armed()) {
+            motors->output_min();
         }
         // log an error
-        Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_OCCURRED);
+        AP::logger().Write_Error(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_OCCURRED);
     }
 
     if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
         // disarm motors every second
         failsafe_last_timestamp = tnow;
-        if(motors.armed()) {
-            motors.armed(false);
-            motors.output();
+        if(motors->armed()) {
+            motors->armed(false);
+            motors->output();
         }
     }
 }
+
+
+#if ADVANCED_FAILSAFE == ENABLED
+/*
+  check for AFS failsafe check
+*/
+void Copter::afs_fs_check(void)
+{
+    // perform AFS failsafe checks
+#if AC_FENCE
+    const bool fence_breached = fence.get_breaches() != 0;
+#else
+    const bool fence_breached = false;
+#endif
+    g2.afs.check(failsafe.last_heartbeat_ms, fence_breached, last_radio_update_ms);
+}
+#endif

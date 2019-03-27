@@ -1,12 +1,10 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 // HIL_MODE SELECTION
 //
 // Mavlink supports
 // 1. HIL_MODE_SENSORS: full sensor simulation
 #define HIL_MODE            HIL_MODE_SENSORS
 
-// HIL_PORT SELCTION
+// HIL_PORT SELECTION
 //
 // PORT 1
 // If you would like to run telemetry communications for a groundstation

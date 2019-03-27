@@ -92,22 +92,32 @@ bool SocketAPM::bind(const char *address, uint16_t port)
 /*
   set SO_REUSEADDR
  */
-void SocketAPM::reuseaddress(void)
+bool SocketAPM::reuseaddress(void)
 {
     int one = 1;
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) != -1);
 }
 
 /*
   set blocking state
  */
-void SocketAPM::set_blocking(bool blocking)
+bool SocketAPM::set_blocking(bool blocking)
 {
+    int fcntl_ret;
     if (blocking) {
-        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+        fcntl_ret = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
     } else {
-        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+        fcntl_ret = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
     }
+    return fcntl_ret != -1;
+}
+
+/*
+  set cloexec state
+ */
+bool SocketAPM::set_cloexec()
+{
+    return (fcntl(fd, F_SETFD, FD_CLOEXEC) != -1);
 }
 
 /*
@@ -169,7 +179,7 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
     tv.tv_sec = timeout_ms / 1000;
     tv.tv_usec = (timeout_ms % 1000) * 1000UL;
 
-    if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
+    if (select(fd+1, &fds, nullptr, nullptr, &tv) != 1) {
         return false;
     }
     return true;
@@ -190,7 +200,7 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
     tv.tv_sec = timeout_ms / 1000;
     tv.tv_usec = (timeout_ms % 1000) * 1000UL;
 
-    if (select(fd+1, NULL, &fds, NULL, &tv) != 1) {
+    if (select(fd+1, nullptr, &fds, nullptr, &tv) != 1) {
         return false;
     }
     return true;
@@ -211,12 +221,12 @@ bool SocketAPM::listen(uint16_t backlog)
 SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
 {
     if (!pollin(timeout_ms)) {
-        return NULL;
+        return nullptr;
     }
 
-    int newfd = ::accept(fd, NULL, NULL);
+    int newfd = ::accept(fd, nullptr, nullptr);
     if (newfd == -1) {
-        return NULL;
+        return nullptr;
     }
     // turn off nagle for lower latency
     int one = 1;

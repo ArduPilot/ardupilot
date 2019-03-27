@@ -1,12 +1,10 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	AC_PI_2D.cpp
 /// @brief	Generic PID algorithm
 
 #include <AP_Math/AP_Math.h>
 #include "AC_PI_2D.h"
 
-const AP_Param::GroupInfo AC_PI_2D::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_PI_2D::var_info[] = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
@@ -25,7 +23,7 @@ const AP_Param::GroupInfo AC_PI_2D::var_info[] PROGMEM = {
     // @Param: FILT_HZ
     // @DisplayName: PID Input filter frequency in Hz
     // @Description: Input filter frequency in Hz
-    // @Unit: Hz
+    // @Units: Hz
     AP_GROUPINFO("FILT_HZ", 3, AC_PI_2D, _filt_hz, AC_PI_2D_FILT_HZ_DEFAULT),
 
     AP_GROUPEND
@@ -61,7 +59,7 @@ void AC_PI_2D::filt_hz(float hz)
     _filt_hz.set(fabsf(hz));
 
     // sanity check _filt_hz
-    _filt_hz = max(_filt_hz, AC_PI_2D_FILT_HZ_MIN);
+    _filt_hz = MAX(_filt_hz, AC_PI_2D_FILT_HZ_MIN);
 
     // calculate the input filter alpha
     calc_filt_alpha();
@@ -95,10 +93,10 @@ Vector2f AC_PI_2D::get_p() const
 
 Vector2f AC_PI_2D::get_i()
 {
-    if(!is_zero(_ki) && !is_zero(_dt)) {
+    if (!is_zero(_ki) && !is_zero(_dt)) {
         _integrator += (_input * _ki) * _dt;
-        float integrator_length = _integrator.length();
-        if ((integrator_length > _imax) && (integrator_length > 0)) {
+        const float integrator_length = _integrator.length();
+        if ((integrator_length > _imax) && (is_positive(integrator_length))) {
             _integrator *= (_imax / integrator_length);
         }
         return _integrator;
@@ -110,10 +108,10 @@ Vector2f AC_PI_2D::get_i()
 Vector2f AC_PI_2D::get_i_shrink()
 {
     if (!is_zero(_ki) && !is_zero(_dt)) {
-        float integrator_length_orig = min(_integrator.length(),_imax);
+        const float integrator_length_orig = MIN(_integrator.length(),_imax);
         _integrator += (_input * _ki) * _dt;
-        float integrator_length_new = _integrator.length();
-        if ((integrator_length_new > integrator_length_orig) && (integrator_length_new > 0)) {
+        const float integrator_length_new = _integrator.length();
+        if ((integrator_length_new > integrator_length_orig) && is_positive(integrator_length_new)) {
             _integrator *= (integrator_length_orig / integrator_length_new);
         }
         return _integrator;
@@ -173,6 +171,6 @@ void AC_PI_2D::calc_filt_alpha()
     }
   
     // calculate alpha
-    float rc = 1/(M_2PI_F*_filt_hz);
+    const float rc = 1/(M_2PI*_filt_hz);
     _filt_alpha = _dt / (_dt + rc);
 }

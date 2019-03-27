@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,9 +17,7 @@
   Mount driver backend class. Each supported mount type
   needs to have an object derived from this class.
  */
-
-#ifndef __AP_MOUNT_BACKEND_H__
-#define __AP_MOUNT_BACKEND_H__
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include "AP_Mount.h"
@@ -44,6 +41,9 @@ public:
     // update mount position - should be called periodically
     virtual void update() = 0;
 
+    // used for gimbals that need to read INS data at full rate
+    virtual void update_fast() {}
+
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
@@ -59,20 +59,23 @@ public:
     // control - control the mount
     virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
     
-    // configure_msg - process MOUNT_CONFIGURE messages received from GCS
-    virtual void configure_msg(mavlink_message_t* msg);
+    // process MOUNT_CONFIGURE messages received from GCS:
+    void handle_mount_configure(const mavlink_mount_configure_t &msg);
 
-    // control_msg - process MOUNT_CONTROL messages received from GCS
-    virtual void control_msg(mavlink_message_t* msg);
+    // process MOUNT_CONTROL messages received from GCS:
+    void handle_mount_control(const mavlink_mount_control_t &packet);
 
-    // status_msg - called to allow mounts to send their status to GCS via MAVLink
-    virtual void status_msg(mavlink_channel_t chan) {};
+    // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
+    virtual void send_mount_status(mavlink_channel_t chan) = 0;
 
     // handle a GIMBAL_REPORT message
-    virtual void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg) {}
+    virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg) {}
+
+    // handle a PARAM_VALUE message
+    virtual void handle_param_value(const mavlink_message_t *msg) {}
 
     // send a GIMBAL_REPORT message to the GCS
-    virtual void send_gimbal_report(mavlink_channel_t chan) {}
+    virtual void send_gimbal_report(const mavlink_channel_t chan) {}
 
 protected:
 
@@ -80,19 +83,21 @@ protected:
     void update_targets_from_rc();
 
     // angle_input, angle_input_rad - convert RC input into an earth-frame target angle
-    int32_t angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
-    float angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    int32_t angle_input(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    float angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan);
+    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
 
     // get the mount mode from frontend
     MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }
 
     AP_Mount    &_frontend; // reference to the front end which holds parameters
-    AP_Mount::mount_state &_state;    // refernce to the parameters and state for this backend
+    AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
-};
 
-#endif // __AP_MOUNT_BACKEND_H__
+private:
+
+    void rate_input_rad(float &out, const RC_Channel *ch, float min, float max) const;
+};

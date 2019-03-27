@@ -1,35 +1,43 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "RCOutput_ZYNQ.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
+
 #include <dirent.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/ioctl.h>
+#include <fcntl.h>
 #include <linux/spi/spidev.h>
-#include <sys/mman.h>
 #include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 using namespace Linux;
 
-#define PWM_CHAN_COUNT 8	// FIXME
+#define PWM_CHAN_COUNT 8
+#define RCOUT_ZYNQ_PWM_BASE	 0x43c00000
+#define PWM_CMD_CONFIG	         0	/* full configuration in one go */
+#define PWM_CMD_ENABLE	         1	/* enable a pwm */
+#define PWM_CMD_DISABLE	         2	/* disable a pwm */
+#define PWM_CMD_MODIFY	         3	/* modify a pwm */
+#define PWM_CMD_SET	         4	/* set a pwm output explicitly */
+#define PWM_CMD_CLR	         5	/* clr a pwm output explicitly */
+#define PWM_CMD_TEST	         6	/* various crap */
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+
 static void catch_sigbus(int sig)
 {
-    hal.scheduler->panic("RCOutput.cpp:SIGBUS error gernerated\n");
+    AP_HAL::panic("RCOutput.cpp:SIGBUS error generated\n");
 }
-void LinuxRCOutput_ZYNQ::init(void* machtnicht)
+void RCOutput_ZYNQ::init()
 {
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);
-    mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+    mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
     sharedMem_cmd = (struct pwm_cmd *) mmap(0, 0x1000, PROT_READ|PROT_WRITE, 
                                             MAP_SHARED, mem_fd, RCOUT_ZYNQ_PWM_BASE);
     close(mem_fd);
@@ -39,7 +47,7 @@ void LinuxRCOutput_ZYNQ::init(void* machtnicht)
     set_freq(0xFFFFFFFF, 50);
 }
 
-void LinuxRCOutput_ZYNQ::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
+void RCOutput_ZYNQ::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
 {
     uint8_t i;
     unsigned long tick=TICK_PER_S/(unsigned long)freq_hz;
@@ -51,43 +59,49 @@ void LinuxRCOutput_ZYNQ::set_freq(uint32_t chmask, uint16_t freq_hz)            
     }
 }
 
-uint16_t LinuxRCOutput_ZYNQ::get_freq(uint8_t ch)
+uint16_t RCOutput_ZYNQ::get_freq(uint8_t ch)
 {
-    return TICK_PER_S/sharedMem_cmd->periodhi[ch].period;;
+    if (ch >= PWM_CHAN_COUNT) {
+        return 0;
+    }
+
+    return TICK_PER_S/sharedMem_cmd->periodhi[ch].period;
 }
 
-void LinuxRCOutput_ZYNQ::enable_ch(uint8_t ch)
+void RCOutput_ZYNQ::enable_ch(uint8_t ch)
 {
     // sharedMem_cmd->enmask |= 1U<<chan_pru_map[ch];
 }
 
-void LinuxRCOutput_ZYNQ::disable_ch(uint8_t ch)
+void RCOutput_ZYNQ::disable_ch(uint8_t ch)
 {
     // sharedMem_cmd->enmask &= !(1U<<chan_pru_map[ch]);
 }
 
-void LinuxRCOutput_ZYNQ::write(uint8_t ch, uint16_t period_us)
+void RCOutput_ZYNQ::write(uint8_t ch, uint16_t period_us)
 {
-    sharedMem_cmd->periodhi[ch].hi = TICK_PER_US*period_us;
-}
-
-void LinuxRCOutput_ZYNQ::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    uint8_t i;
-    if(len>PWM_CHAN_COUNT){
-        len = PWM_CHAN_COUNT;
+    if (ch >= PWM_CHAN_COUNT) {
+        return;
     }
-    for(i=0;i<len;i++){
-        write(ch+i,period_us[i]);
+
+    if (corked) {
+        pending[ch] = period_us;
+        pending_mask |= (1U << ch);
+    } else {
+        sharedMem_cmd->periodhi[ch].hi = TICK_PER_US*period_us;
     }
 }
 
-uint16_t LinuxRCOutput_ZYNQ::read(uint8_t ch)
+uint16_t RCOutput_ZYNQ::read(uint8_t ch)
 {
-    return (sharedMem_cmd->periodhi[ch].hi/TICK_PER_US);
+    if (ch >= PWM_CHAN_COUNT) {
+        return 0;
+    }
+
+    return sharedMem_cmd->periodhi[ch].hi/TICK_PER_US;
 }
 
-void LinuxRCOutput_ZYNQ::read(uint16_t* period_us, uint8_t len)
+void RCOutput_ZYNQ::read(uint16_t* period_us, uint8_t len)
 {
     uint8_t i;
     if(len>PWM_CHAN_COUNT){
@@ -98,4 +112,21 @@ void LinuxRCOutput_ZYNQ::read(uint16_t* period_us, uint8_t len)
     }
 }
 
-#endif
+void RCOutput_ZYNQ::cork(void)
+{
+    corked = true;
+}
+
+void RCOutput_ZYNQ::push(void)
+{
+    if (!corked) {
+        return;
+    }
+    corked = false;
+    for (uint8_t i=0; i<MAX_ZYNQ_PWMS; i++) {
+        if (pending_mask & (1U << i)) {
+            write(i, pending[i]);
+        }
+    }
+    pending_mask = 0;
+}

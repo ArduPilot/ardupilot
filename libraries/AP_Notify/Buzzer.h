@@ -15,20 +15,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __BUZZER_H__
-#define __BUZZER_H__
+#pragma once
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-# define BUZZER_PIN     63      // pin 63 on APM1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define BUZZER_PIN    59      // pin 59 on APM2
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
- # define BUZZER_PIN    32
-#else
- # define BUZZER_PIN    0       // pin undefined on other boards
-#endif
-
-#define BUZZER_ARMING_BUZZ_MS   3000    // arming buzz length in milliseconds (i.e. 3 seconds)
+#include <AP_HAL/AP_HAL.h>
 
 #include "NotifyDevice.h"
 
@@ -36,36 +25,29 @@ class Buzzer: public NotifyDevice
 {
 public:
     /// Constructor
-    Buzzer() :
-        _counter(0),
-        _pattern(NONE),
-        _pattern_counter(0),
-        _arming_buzz_start_ms(0)
-    {}
+    Buzzer() {}
 
     /// init - initialise the buzzer
-    bool init(void);
+    bool init(void) override;
 
     /// update - updates buzzer according to timed_updated.  Should be called at 50Hz
-    void update();
+    void update() override;
+
+private:
 
     /// on - turns the buzzer on or off
     void on(bool on_off);
 
-    enum BuzzerPattern {
-        NONE = 0,
-        SINGLE_BUZZ = 1,
-        DOUBLE_BUZZ = 2,
-        GPS_GLITCH = 3, // not used
-        ARMING_BUZZ = 4,
-        BARO_GLITCH = 5,
-        EKF_BAD = 6
-    };
+    // Patterns - how many beeps will be played; read from
+    // left-to-right, each bit represents 100ms
+    static const uint32_t    SINGLE_BUZZ = 0b10000000000000000000000000000000UL;
+    static const uint32_t    DOUBLE_BUZZ = 0b10100000000000000000000000000000UL;
+    static const uint32_t    ARMING_BUZZ = 0b11111111111111111111111111111100UL; // 3s
+    static const uint32_t      BARO_BUZZ = 0b10101010100000000000000000000000UL;
+    static const uint32_t        EKF_BAD = 0b11101101010000000000000000000000UL;
 
     /// play_pattern - plays the defined buzzer pattern
-    void play_pattern(BuzzerPattern pattern_id);
-
-private:
+    void play_pattern(const uint32_t pattern);
 
     /// buzzer_flag_type - bitmask of current state and ap_notify states we track
     struct buzzer_flag_type {
@@ -73,13 +55,17 @@ private:
         uint8_t arming              : 1;    // 1 if we are beginning the arming process
         uint8_t armed               : 1;    // 0 = disarmed, 1 = armed
         uint8_t failsafe_battery    : 1;    // 1 if battery failsafe has triggered
-        uint8_t ekf_bad            : 1;    // 1 if ekf position has gone bad
+        uint8_t ekf_bad             : 1;    // 1 if ekf position has gone bad
     } _flags;
 
-    uint8_t         _counter;           // reduces 50hz update down to 10hz for internal processing
-    BuzzerPattern   _pattern;           // current pattern
-    uint8_t         _pattern_counter;   // used to time on/off of current patter
-    uint32_t        _arming_buzz_start_ms;  // arming_buzz start time in milliseconds
-};
+    uint32_t _pattern;           // current pattern
+    uint8_t _pin;
+    uint32_t _pattern_start_time;
 
-#endif // __BUZZER_H__
+    // enforce minumum 100ms interval between patterns:
+    const uint16_t _pattern_start_interval_time_ms = 32*100 + 100;
+
+    void update_playing_pattern();
+    void update_pattern_to_play();
+
+};

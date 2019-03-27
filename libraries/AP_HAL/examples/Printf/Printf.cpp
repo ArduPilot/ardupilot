@@ -1,40 +1,13 @@
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_ADC/AP_ADC.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Notify/AP_Notify.h>
-#include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Mission/AP_Mission.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <SITL/SITL.h>
-#include <Filter/Filter.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_HAL/AP_HAL.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+void setup();
+void loop();
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup(void) {
-    hal.console->println_P(PSTR("Starting Printf test"));
+    hal.console->printf("Starting Printf test\n");
 }
 
 static const struct {
@@ -74,36 +47,72 @@ static const struct {
     { "%.1f", 10.6f, "10.6" },
 };
 
-static void test_printf(void)
+static void test_printf_floats(void)
 {
+    hal.console->printf("Starting Printf floats test\n");
+
     uint8_t i;
     char buf[30];
     uint8_t failures = 0;
     hal.console->printf("Running printf tests\n");
     for (i=0; i < ARRAY_SIZE(float_tests); i++) {
-        int ret = hal.util->snprintf(buf, sizeof(buf), float_tests[i].fmt, float_tests[i].v);
+        int ret = hal.util->snprintf(buf, sizeof(buf), float_tests[i].fmt, (double)float_tests[i].v);
         if (strcmp(buf, float_tests[i].result) != 0) {
-            hal.console->printf("Failed float_tests[%u] '%s' -> '%s' should be '%s'\n", 
-                                (unsigned)i, 
+            hal.console->printf("Failed float_tests[%u] '%s' -> '%s' should be '%s'\n",
+                                (unsigned)i,
                                 float_tests[i].fmt,
                                 buf,
                                 float_tests[i].result);
             failures++;
         }
-        if (ret != strlen(float_tests[i].result)) {
-            hal.console->printf("Failed float_tests[%u] ret=%d/%d '%s' should be '%s'\n", 
-                                (unsigned)i, 
+        if (ret != (int)strlen(float_tests[i].result)) {
+            hal.console->printf("Failed float_tests[%u] ret=%d/%d '%s' should be '%s'\n",
+                                (unsigned)i,
                                 ret, (int)strlen(float_tests[i].result),
                                 float_tests[i].fmt,
                                 float_tests[i].result);
-            failures++;            
+            failures++;
         }
     }
     hal.console->printf("%u failures\n", (unsigned)failures);
 }
 
-void loop(void) 
-{	
+static void test_printf_null_termination(void)
+{
+    hal.console->printf("Starting Printf null-termination tests\n");
+
+    {
+        char buf[10];
+        int ret = hal.util->snprintf(buf,sizeof(buf), "%s", "ABCDEABCDE");
+        const int want = 9;
+        if (ret != want) {
+            hal.console->printf("snprintf returned %d expected %d\n", ret, want);
+        }
+        if (!strncmp(buf, "ABCDEABCD", sizeof(buf))) {
+            hal.console->printf("Bad snprintf string (%s)\n", buf);
+        }
+    }
+    {
+        char buf[10];
+        int ret = hal.util->snprintf(buf,sizeof(buf), "ABCDEABCDE");
+        const int want = 9;
+        if (ret != want) {
+            hal.console->printf("snprintf returned %d expected %d\n", ret, want);
+        }
+        if (!strncmp(buf, "ABCDEABCD", sizeof(buf))) {
+            hal.console->printf("Bad snprintf string (%s)\n", buf);
+        }
+    }
+}
+
+static void test_printf(void)
+{
+    test_printf_floats();
+    test_printf_null_termination();
+}
+
+void loop(void)
+{
     test_printf();
     hal.scheduler->delay(1000);
 }

@@ -1,17 +1,1436 @@
-Release 3.4.0beta2, 7th September 2015
---------------------------------------
+Release 3.9.2beta3, 20th September 2018
+---------------------------------------
 
-I have started the beta release cycle for the 3.4.0 release of
-plane. This will be the last release that supports the APM1/APM2 boards.
+The is the third beta release of the plane 3.9.2 stable release. It
+contains a small number of fixes:
 
-This is the also the first release that enables the EKF for attitude
-and position estimation by default. This has been a long time coming,
-and significantly improves the flight performance. You can still
-disable the EKF if you want to using the AHRS_EKF_USE parameter.
+ - fixed clearing of loiter pilot acceleration targets for quadplanes
 
-There has also been a lot of internal code restructuring in this
-release, with the move from .pde files to .cpp files and changes to
-the handling of include files.
+ - fixed handling of duplicate rotations for COMPASS_AUTO_ROT
+
+I expect this will be the last beta release before 3.9.2
+
+Happy flying!
+
+Release 3.9.2beta2, 15th September 2018
+---------------------------------------
+
+The is the second beta release of the plane 3.9.2 stable release. It
+contains a number of important bug fixes.
+
+ - implement failsafe PWM in IOMCU, for AFS failsafe when FMU dies
+
+ - handle reversed channels correctly in AFS failsafe
+
+ - fixed twin motor plane handling in AFS failsafe
+
+ - fixed a bug in Q_ASSIST_SPEED support for tiltrotors that could
+   lead to zero throttle when assistance triggers.
+
+ - lower default PTCH2SRV_D to 0.04 after reports of oscillation on
+   small flying wings
+
+ - added speed scaler reduction in Q modes when at low airspeed
+
+ - fixed synthetic airspeed estimation to be along +ve X axis
+
+ - fixed relaxing of VTOL attitude controller on transition (thanks to
+   Leonard Hall)
+
+ - default COMPASS_AUTO_ROT to 2 on all boards
+
+ - fixed UART speed rounding bug that caused failure at high board
+   rates
+
+ - fixed a short glitch in position control on quadplane transition
+   (many thanks to Leonard for lots of help with this)
+
+ - fixed RSSI voltage from IOMCU
+
+Thanks to everyone who has contributed, and please report all test
+results with this beta.
+
+Happy flying!
+
+Release 3.9.2beta1, 12th September 2018
+---------------------------------------
+
+The is the first beta release of the plane 3.9.2 stable release. It
+contains a number of important bug fixes.
+
+ - fixed a quadplane bug that could cause large attitude instability
+   during takeoff if the aircraft does not have enough power to climb
+   to its target height. Thanks to Leonard for the fix.
+
+ - fixed a bug that prevented dead-reckoning working on GPS loss.
+
+ - fixed an ADC bug that prevented some boards from using all of their
+   analog input. Thanks to vierfuffzig for reporting!
+
+ - fixed a bug in advanced failsafe support that left RC input to
+   throttle active after termination. Thanks to Michael Thomas for
+   finding this bug.
+
+ - fixed use of OLED displays on the first I2C bus on systems with two
+   I2C buses
+
+Thanks to everyone who has contributed, and please report all test
+results with this beta.
+
+Happy flying!
+
+
+Release 3.9.1, 31st August 2018
+-------------------------------
+
+The ArduPilot dev team are delighted to announce a new stable plane
+release. This is a minor release, but does include some important
+fixes.
+
+The only change over the 3.9.1beta3 release is an increase in the USB
+buffer size to give faster log download over USB.
+
+Other important changes from the 3.9.1beta releases include:
+
+ - updated to default values for some tuning parameters
+
+ - fixed a critical safety issue found by Oliver Volkmann, and fixed
+   by Michael du Breuil. The problem could lead to quadplane motors
+   starting on reboot
+
+ - fixed a bug where RC failsafe could lead rudder input stuck at the
+   last rudder input value in some modes. Thanks to Michael du Breuil
+   for the fix
+
+ - improved DShot and BLHeli-passthrough support, fixing errors
+   reported by BLHeli32 ESCs and making using BLHeliSuite32 much more
+   reliable
+
+ - new tonealarm system, bringing the tones produced under ChibiOS and
+   Linux HALs in line with tones produced under the HAL_PX4 HAL.
+
+ - added a new LED driver for the NCP5623 LED
+
+ - fixed delay caused by parameter writes in AP_Stats
+
+ - fixed default RSSI input pin on some boards
+
+ - fixed the incorrect display of "no io thread heartbeat" message
+
+ - fixed microSD support on some boards due to running out of DMA
+   capable memory
+
+Many thanks to everyone who has been testing the beta releases.
+
+Happy flying!
+
+
+Release 3.9.1beta3, 23rd August 2018
+------------------------------------
+
+This is the third beta for the 3.9.1 release, which is a minor
+update over 3.9.0. This release includes the following changes:
+
+ - fixed a critical safety issue found by Oliver Volkmann, and fixed
+   by Michael du Breuil. The problem could lead to quadplane motors
+   starting on reboot
+
+ - fixed a bug where RC failsafe could lead rudder input stuck at the
+   last rudder input value in some modes. Thanks to Michael du Breuil
+   for the fix
+
+ - raised OSD thread stack size to 1024 (needed for new OSD items)
+
+Thanks to everyone who is testing the 3.9.1beta series!
+
+Release 3.9.1beta2, 17th August 2018
+------------------------------------
+
+This is a the second beta for the 3.9.1 release, which is a minor
+update over 3.9.0. This release includes the following changes:
+
+ - increased default buffer sizes in dataflash for some boards
+
+ - fixed a bug with small dataflash buffers
+
+ - updated OSD with new items: hdop, temperature, waypoint, xtrack,
+   flight distance, flighttime, efficiency (thanks to Hwurzburg,
+   vierfuffzig and sh83).
+
+ - reduced memory usage in serial buffers
+
+ - adjusted some default parameters to give a better first flight
+   experience for more users.
+
+The default parameter changes are:
+
+ - RLL2SRV_P from 0.6 to 1.0
+ - RLL2SRV_I from 0.1 to 0.3
+ - RLL2SRV_D from 0.02 to 0.08
+ - PTCH2SRV_P from 0.6 to 1.0
+ - PTCH2SRV_I from 0.1 to 0.3
+ - PTCH2SRV_D from 0.02 to 0.08
+ - TECS_PITCH_MAX from 0 to 15
+ - NAVL1_PERIOD from 20 to 17
+
+The PID parameter changes won't affect anyone who has done some
+tuning, but will make the first flight experience for a new user be a
+lot better for nearly all aircraft. Paul and I decided on the values
+based on experience with users flight logs, plus the experience users
+have had with AUTOTUNE mode.
+
+Please report testing results!
+
+Happy flying
+
+Release 3.9.1beta1, 15th August 2018
+------------------------------------
+
+This is a the first beta for the 3.9.1 release, which is a minor
+update over 3.9.0. This release includes the following changes:
+
+ - improved DShot and BLHeli-passthrough support, fixing errors
+   reported by BLHeli32 ESCs and making using BLHeliSuite32 much more
+   reliable
+
+ - new tonealarm system, bringing the tones produced under ChibiOS and
+   Linux HALs in line with tones produced under the HAL_PX4 HAL.
+
+ - added a new LED driver for the NCP5623 LED
+
+ - fixed delay caused by parameter writes in AP_Stats
+
+ - fixed default RSSI input pin on some boards
+
+ - fixed the incorrect display of "no io thread heartbeat" message
+
+ - fixed microSD support on some boards due to running out of DMA
+   capable memory
+
+Given the changes are quite small, I hope to make this a fairly short
+beta cycle. Please test it and report both success and failure.
+
+Happy flying!
+
+Release 3.9.0, 6th August 2018
+------------------------------
+
+The ArduPilot development team is delighted to announce a new stable
+release of plane, version 3.9.0.
+
+For those of you who have been testing the 3.9.0beta releases then you
+won't see any surprises here. That are no changes since
+3.9.0beta6. Also, many thanks for testing the betas!
+
+For those of you coming from the last stable 3.8.5 release there are a
+lot of changes. For a start, this is the first release to support both
+the ChibiOS RTOS on STM32 boards and the NuttX RTOS. Previously stable
+releases only used the NuttX RTOS. The ArduPilot project is moving to
+ChibiOS for future releases, and we expect to drop support for the
+NuttX builds for the next major stable release (which will probably be
+called 3.10.0).
+
+When you install the 3.9.0 release on board such as a Pixhawk1, Cube
+or Pixracer you have a choice of which build to use. Choosing ChibiOS
+will give you better performance and some very nice new
+features. Choosing the NuttX (also known as "PX4" builds) will get you
+the same base that we have been using for years.
+
+There are a few features that are in the NuttX build but not yet in
+the ChibiOS build, in particular the ChibiOS build does not yet
+support PWM based rangefinders. That will be fixed in a future
+release.
+
+This release has a lot of new features. Some of the most important
+ones are:
+
+ - DShot support for controlling ESCs
+ - BLHeli pass-thru support for ESC configuration
+ - automatic compass orientation on calibrating compasses
+ - improved VTOL flight code, with improved transition support and loiter
+ - support for Devo telemetry output
+ - new battery monitoring system, with more flexible failsafes
+ - built-in OSD support for boards with a MAX7456 OSD device
+
+In addition, this release supports a lot of new flight boards,
+including:
+
+ - AirbotF4
+ - F4BY
+ - KakuteF4
+ - KakuteF7
+ - MatekF405
+ - MatekF405-Wing
+ - mindpx-v2
+ - mini-pix
+ - Omnibusf4pro
+ - Omnibusf7V2
+ - Pixhawk4 and Pixhawk4-mini
+ - CUAVv5
+ - revo and revo-mini
+ - sparky2
+
+We also now have custom ChibiOS based builds for some existing boards,
+including:
+
+ - CubeBlack
+ - mRoX21
+ - Pixhawk1
+ - Pixracer
+
+This means you now have a lot more choice in selecting a flight board
+to use with ArduPilot.
+
+This release was made possible thanks to contributions from dozens of
+volunteer developers in the dev team. In total there are over 5
+thousand changes since the 3.8.5 release. Special thanks to:
+
+ - Siddharth Purohit
+ - Tom Pittenger
+ - Randy Mackay
+ - Michael du Breuil
+ - Peter Barker
+ - Mark Whitehorn
+ - Paul Riseborough
+ - Francisco Ferreira
+ - Jonathan Challinger
+ - Leonard Hall
+ - Alexander Malishev
+ - Nathan E
+ - Marco Robustini
+ - Luis Vale Gonçalves
+ - night-ghost
+ - Patrick José Pereira
+ - Lucas De Marchi
+ - Eugene Shamaev
+ - Philip Rowse
+ - Amilcar Lucas
+ - Kelly Foster
+ - Fnoop
+ - Pierre Kancir
+ - Stephen Dade
+ - Jaime Machuca
+ - vierfuffzig
+ - Henry Wwurzburg
+ - Malcolm Churn
+ - Holger Steinhaus
+
+We hope you enjoy flying this release as much as we enjoyed making
+it. Happy flying!
+
+Release 3.9.0beta6, 30th July 2018
+----------------------------------
+
+This is the sixth in a series of beta releases for plane 3.9.0. I aims
+to be the final beta.
+
+Changes in this release are:
+
+ - added Q_TAILSIT_THSCMX parameter for tailsitters (thanks to IamPete)
+ - added KakuteF7 bootloader
+ - fixed arming error with trim on unusued RC channels
+ - fixed microSD support on KakureF7 and OmnibusF7V2 (thanks sh83)
+ - fixed VL53L0X rangefinder driver
+ - added Pixhawk1 ChibiOS build
+ - fixed update rate for servos in tailsitters
+ - set COMPASS_AUTO_ROT to 2 for most boards
+ - improved OmnibusF7V2 support
+ - support all external compasses on mini-pix
+ - clear COMPASS_DEV_ID for unused compasses
+
+Happy flying!
+
+Release 3.9.0beta5, 19th July 2018
+----------------------------------
+
+This is the fifth in a series of beta releases for plane 3.9.0. It
+fixes two important bugs over 3.9.0beta4
+
+ - fixed RC failsafe on IOMCU when a SBUS receiver is set to "hold" mode
+ - allowed for RC override failsafe to support holding override value
+   on timeout
+
+Thanks to Jon and Michael for the failsafe fixes!
+
+It also includes two smaller changes:
+
+ - updated F4BY board id, and added F4BY to autobuild list
+ - fixed UARTD for px4-v1 build
+
+Release 3.9.0beta4, 18th July 2018
+----------------------------------
+
+This is the fourth in a series of beta releases for plane 3.9.0. It is
+a major release, with a lot of changes.
+
+ - fixed compass detection on pixracer
+ - greatly improved OSD support
+ - fixed ARMING_REQUIRE=2 support (thanks Marco!)
+ - added automatic compass orientation support
+ - added probe for all external compasses on new ChibiOS boards
+ - fixed arming with compass disabled
+ - fixed flow control on F7 based boards
+ - fixed prealloc of DMA bouncebuffers
+ - added board specific builds for mRoX21 and Pixracer
+ - fixed mRoX21 IMU detection
+ 
+Many thanks to all who contributed to this release, and our beta testers!
+
+Release 3.9.0beta3, 11th July 2018
+----------------------------------
+
+This is the third in a series of beta releases for plane 3.9.0. It is
+a minor update to beta2
+
+Changes are:
+
+- fixed nul termination of system ID on ChibiOS
+- added PH4-mini support
+- fixed compass orientation on fmuv5
+- matched BRD_PWM_COUNT between px4-v3 and fmuv3
+- fixed MatekF405-Wing compass orientation
+- backup storage to microSD if possible
+
+
+Release 3.9.0beta2, 6th July 2018
+---------------------------------
+
+This is the second in a series of beta releases for plane 3.9.0. It is
+a major release, with a lot of changes.
+
+ - Builtin OSD support on boards with MAX7456 OSD device
+ - fixed throttle display on twin-engine planes
+ - improved timing in mavlink remote sensors
+ - added many more board types to autobuild
+ - fixed airspeed reporting for unhealthy sensors
+ - fixed log timestamps on ChibiOS
+ - added force arm option
+ - added fmuv5 support
+ - added CubeBlack build
+ - added ESC telemetry virtual battery
+ - added SERIAL6 on fmuv4 and fmuv5
+ - added MatekF405-Wing support
+ - added AP_Bootloader
+ - support bootloader update over MAVLink
+ - enable sdcard on several F4 boards
+ - fixed serial number logging on ChibiOS boards
+ - fixed revo-mini compass orientation
+
+Many thanks to all who contributed to this release, and our beta testers!
+
+Release 3.9.0beta1, 21st May 2018
+---------------------------------
+
+This is the first in a series of beta releases for plane 3.9.0. It is
+a major release, with a lot of changes.
+
+The main changes are for supporting two new HALs (hardware abstraction
+layers). One is the port to ChibiOS and the second is the F4Light HAL.
+
+These ports bring a host of new flight board options, and a lot of new
+features. Some highlights include:
+
+ - support for many inexpensive STM32F4 based flight boards
+
+ - support for DShot output for BLHeli ESCs, including ESC telemetry
+   feedback
+
+ - new battery monitoring system with more flexible failsafe options
+
+ - support for Devo telemetry output
+
+ - a new position hold library for multicopters which improves
+   quadplane VTOL support
+
+This release is fully compatible with previous releases, and users
+should not notice a significant difference in flight. The focus of the
+beta testing will be on ensuring that the new flight board support is
+stable.
+
+Happy flying!
+
+Release 3.8.5, 25th April 2018
+------------------------------
+
+This release includes small bug fixes and one safety fix. The changes
+are:
+
+ - fixed an issue where the external safety button can activate in
+   flight on some boards, causing them to crash. A new parameter
+   BRD_SAFETYOPTION is added which controls the behaviour of the
+   safety button. The default is to de-activate the safety button when
+   armed.
+
+ - fixed default orientation of ICM-20948 compass for Here GPS
+
+ - added support for dual airspeed sensors
+
+ - added support for the SDP33 airspeed sensor. This is still
+   considered experimental. There are reports of it underestimating
+   the aircrafts speed at higher altitudes.
+
+ - add support for the MS5525 airspeed sensor on multiple I2C
+   addresses. Two new values of the ARSDP_TYPE are introduced (4 and
+   5) for specific I2C addresses. This allows you to deconflict the
+   MS5525 from a MS5611 barometer on the same bus.
+
+Release 3.8.4, 9th January 2018
+-------------------------------
+
+This is a minor release with just two small changes.
+
+The first change is to fix a timing bug in the MS5525 airspeed sensor
+driver. That bug was causing unreliable airspeed sensing. Thanks to
+David Ingraham for providing logs that helped find the issue.
+
+The second change is to fix transitions in AUTO mode in
+tailsitter. The transition for tailsitters was causing instability on
+transition from vertical takeoff to forward flight.
+
+
+Release 3.8.3, 13th November 2017
+---------------------------------
+
+This is a minor release with a number of important bug fixes and some
+small feature additions.
+
+The most important general fixes are for an I2C device detection bug
+and fixing the implementation of MANUAL_RCMASK.
+
+There are quite a number of small fixes in lots of areas, plus big
+improvements to the handling of tailsitter transitions.
+
+Another significant change is to the handling of transitions from RTL
+to QRTL when Q_RTL_MODE=1. We now transition to QRTL at a distance
+which is the maximum of RTL_RADIUS and a distance calculated based on
+a new Q_TRANS_DECEL "transition deceleration" parameter. That allows
+you to tune the amount of deceleration you want in the transition
+according to how much drag your quadplane has. This also means it
+automatically accounts for wind speed and approach speed in
+calculating the transition point.
+
+We have also added a new Q_OPTIONS parameter which is a bitmask of
+option flags to control quadplane behaviour. We have three options so
+far. The first is to allow for keeping the wings within
+LEVEL_ROLL_LIMIT degrees during transitions, for users that prefer
+transitions to be kept level. The 2nd and 3rd options are to treat
+NAV_TAKEOFF as NAV_VTOL_TAKEOFF and NAV_LAND as NAV_VTOL_LAND in
+quadplane missions, so that you can use GCS software that doesn't know
+about the VTOL takeoff and land commands.
+
+ - allow vertical takeoffs in GUIDED mode with Q_GUIDED_MODE=0
+
+ - fixed a bug in implementation of MANUAL_RCMASK
+
+ - eliminate airspeed positive bias after offset zero
+
+ - prevent quadplane controller windup on the ground
+
+ - added Q_MAV_TYPE for setup of VTOL vehicle type for QGC
+
+ - improved performance of FlightAxis SITL
+
+ - support LOITER_TO_ALT in quadplanes
+
+ - fixed a bug in TECS related to descending quadplane transitions
+
+ - added Q_OPTIONS for controlling roll during transitions and
+   allowing for fixed wing takeoff and landing
+
+ - fixed a race condition in IMU logging
+
+ - fixed a race in i2c device probing
+
+ - log critical messages while disarmed
+
+ - added IST8310 compass on FMUv3 I2C
+
+ - probe for QMC5883 by default
+
+ - avoid double detection of AK09916 compass
+
+ - smooth out tailsitter transitions in both directions
+
+ - fixed use of RTL_RADIUS for QRTL threshold and added Q_TRANS_DECEL
+
+ - fixed course unlocking with rudder in CRUISE mode
+
+We hope you have as much fun flying this release as we had producing
+it. Happy flying!
+
+Release 3.8.2, 11th September 2017
+----------------------------------
+
+This is a minor release, with a few small fixes and one important
+crash bug fix.
+
+The crash bug is in the Septentrio (SBF) GPS driver. Anyone flying
+with an SBF GPS should update to this release. The driver had a bug
+that could cause a in-flight crash under some circumstances.
+
+Other changes in this release are:
+
+ - support takeoff in GUIDED mode for quadplanes
+
+ - support changing target altitude while hovering in GUIDED mode for
+   quadplanes
+
+ - improved descent rate control in QRTL and QLAND modes. This fixes
+   an issue with higher than configured descent rates, and smoothes
+   out the change in descent rate for the change to the final landing
+   stage
+
+ - smooth out the transition to QLOITER or QLAND when transitioning
+   from fixed wing mode. This prevents the sudden nose up when
+   changing to QLOITER or QLAND mode while flying at high speed.
+
+ - added MANUAL_CONTROL support, allowing for joystick control from QGroundControl
+
+Happy flying!
+
+Release 3.8.1, 3rd September 2017
+---------------------------------
+
+This is a bugfix release for 3.8.0, with just a few small changes, and
+only one new feature.
+
+The bug fixes are:
+
+ - removed TRIM_RC_AT_START option, as this was causing significant
+   issues
+
+ - fixed bug in TRIM_AUTO support with differential spoilers
+
+ - fixed bug with RCn_TRIM == RCn_MIN in MANUAL mode
+
+ - fixed combination of TKOFF_THR_MINACC and TKOFF_THR_DELAY
+
+ - fixed a bug in sending STATUSTEXT messages on all MAVLink channels
+
+The new feature is that you can set the protocol for the debug UART on
+FMUv2 or FMUv3 board (such as a Pixhawk or Cube) to allow allow UART5
+to be used for arbitrary protocols. To use this fetaure just set
+SERIAL5_PROTOCOL to the desired serial protocol. This should be useful
+to users who have multiple serial devices (such as rangefinders) they
+want to connect and have run out of UARTs.
+
+Happy flying!
+
+
+Release 3.8.0, 5th August 2017
+------------------------------
+
+The ArduPilot development team is very proud to announce the release
+of APM:Plane 3.8.0. This is a major release, with a lot of new
+features and improvements. The release has been a long time coming,
+and the dev team would like to thank everyone who has contributed,
+in terms of code and documentation as well as the many testers of beta
+versions of the code.
+
+To help with migration from the 3.7.1 release to 3.8.0 there is a
+migration guide here:
+
+  http://ardupilot.org/plane/docs/plane-3-7-to-3-8-migration.html
+
+All users should read the migration guide carefully. While the
+firmware will try to auto-migrate most settings, please do very
+careful ground tests before your first flight with 3.8.
+
+In total there have been over 4 thousand changes in the ArduPilot git
+tree since the 3.7.1 release, with over four hundred of those specific
+to fixed wing aircraft. Listing all of them in these release notes is
+not practical, but the following list will give some of the larger
+changes:
+
+ - addition of EKF3 support (disabled by default)
+ - new SERVO parameter system for servo output configuration
+ - support for MS5525 airspeed sensor
+ - support for a wide range of tiltrotor quadplanes
+ - support for tailsitter aircraft (including vectored tailsitters)
+ - support for twin-motor aircraft, with differential thrust
+ - new system for elevon, vtail, flaperon and differential spoiler setup
+ - support for deep stall landings
+ - support for dual-gps blending
+ - support for masking compass types for driver loading
+ - completely new DMA based and high sample rate IMU drivers
+ - support for px4pro board from Drotek
+ - several new compass drivers, new IMU drivers and new GPS drivers
+ - new MANUAL_RCMASK system for fine-grained MANUAL flight setup
+ - support for log rotation on disarm
+ - numerous quadplane improvements
+ - fixed loiter behaviour with Q_GUIDED_MODE=1
+ - allow rudder arming in CRUISE and FBWB modes
+ - fixed bug in transmitter tuning support
+ - fixed bug in attitude integrator zero on mode change
+ - added SYSID_ENFORCE parameter
+ - fixed support for vtail rudder-only planes
+ - greatly improved automatic landing accuracy
+ - support for high update rates on all servos with SERVO_RATE parameter
+ - greatly improved UAVCAN support, with parameters now in CAN_ parameter space
+ - support for prop-hang on 3D aircraft
+ - improved quadplane PID logging
+ - smoother takeoffs for quadplanes
+ - logging of side-slip and angle-of-attack estimates
+ - added AETR, pre-mixer logging
+ - automatic thermalling support
+
+Release 3.8.0beta5, 1st May 2017
+--------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.8.0beta of APM:Plane. This is a major release. All users
+should carefully check their setup when upgrading.
+
+Major changes include:
+
+ - new SRV_Channel system for setting up of output servos separately
+   from input RC channels
+ - new elevon and vtail support system
+ - new EKF3 state estimator (not enabled by default yet)
+ - support for tailsitter aircraft
+ - greatly improved support for tilt-rotor quadplanes
+ - greatly improved quadplane transition code
+ - support for deepstall landing
+ - large improvements in airspeed noise handling
+ - much improved RTK GPS support
+ - support automatic servo trimming
+ - greatly improved automatic landing accuracy
+ - significant improvements in altitude handling
+ - significant improvement in sensor drivers, with higher sample rates
+   and improved vibration resistance
+
+On top of that there have been hundreds of smaller improvements and
+bug fixes.
+
+From the users point of view the most significant change in setup is
+moving of RCn_FUNCTION parameters into new SERVOn_FUNCTION parameters,
+and the creation of separate output MIN/MAX/TRIM values for all servo
+outputs. This allows for much more flxible output setup that is
+independent of RC input setup.
+
+Release 3.7.1, 21st October 2016
+--------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.7.1 of APM:Plane. This is a minor bug fix release. A major
+release of 3.8.0 is also being prepared now and will be in beta soon.
+
+Changes in this release:
+
+ - fixed arming check error on FMUv4 (pixracer)
+ - fixed pilot throttle based motor test for quadplane
+ - fixed use of multicopter mix_max in quadplane
+ - fixed AFS termination bugs for quadplanes
+ - added automatic ICE engine cut in QLAND
+ - fixed loiter mode with Q_GUIDED_MODE=1
+ - fixed navigation at lattitude of exactly zero
+ - fixed quadplane transition without airspeed sensor
+ - fixed rudder arming in CRUISE and FBWB modes
+ - fixed throttle slew rate in MANUAL mode for quadplanes
+ - fixed multiple bugs in transmitter tuning for quadplane rates
+ - fixed mavlink system ID in early startup on USB
+ - slow down update of home position
+ - update Disco battery lookup table
+ - improved compass calibration code for larger offsets
+
+Many thanks to everyone who contributed to this release!
+
+Release 3.7.0, 9th September 2016
+---------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.7.0 of APM:Plane. This is a major update so please read the
+notes carefully.
+
+The biggest changes in this release are:
+
+ - more reliable recovery from inverted flight
+ - automatic IC engine support
+ - Q_ASSIST_ANGLE for stall recovery on quadplanes
+ - Pixhawk2 IMU heater support
+ - PH2SLIM support
+ - AP_Module support
+ - Parrot Disco support
+ - major VRBrain support merge
+ - much faster boot time on Pixhawk
+
+I'll give a bit of detail on each of these changes before giving the
+more detailed list of changes.
+
+More reliable recovery from inverted flight
+
+Marc Merlin discovered that on some types of gliders that ArduPilot
+would not reliably recover from inverted flight. The problem turned
+out to be the use of the elevator at high bank angles preventing the
+ailerons from fully recovering attitude. The fix in this release
+prevent excessive elevator use when the aircraft is beyond
+LIM_ROLL_CD. This should help a lot for people using ArduPilot as a
+recovery system for manual FPV flight.
+
+Automatic IC engine support
+
+ArduPilot has supported internal combustion engines for a long time,
+but until now the pilot has had to control the ignition and starter
+manually using transmitter pass throughs. A new "ICE" module in
+ArduPilot now allows for fully automatic internal combustion engine
+support.
+
+Coupled with an RPM sensor you can setup your aircraft to
+automatically control the ignition and starter motor, allowing for one
+touch start of the motor on the ground and automatic restart of the
+motor in flight if needed.
+
+The IC engine support is also integrated into the quadplane code,
+allowing for automatic engine start at a specified altitude above the
+ground. This is useful for tractor engine quadplanes where the
+propeller could strike the ground on takeoff. The engine can also be
+automatically stopped in the final stage of a quadplane landing.
+
+Q_ASSIST_ANGLE for stall recovery
+
+Another new quadplane feature is automatic recovery from fixed wing
+stall. Previously the VTOL motors would only provide assistance in
+fixed wing modes when the aircraft airspeed dropped below
+Q_ASSIST_SPEED. Some stalls can occur with higher airspeed however,
+and this can result in the aircraft losing attitude control without
+triggering a Q_ASSIST_SPEED recovery. A new parameter Q_ASSIST_ANGLE
+allows for automatic assistance when attitude control is lost,
+triggering when the attitude goes outside the defined roll and pitch
+limits and is more than Q_ASSIST_ANGLE degrees from the desired
+attitude. Many thanks to Iskess for the suggestion and good discussion
+around this feature.
+
+Pixhawk2 heated IMU support
+
+This release adds support for the IMU heater in the upcoming Pixhawk2,
+allowing for more stable IMU temperatures. The Pixhawk2 is
+automatically detected and the heater enabled at boot, with the target
+IMU temperature controllable via BRD_IMU_TARGTEMP.
+
+Using an IMU heater should improve IMU stability in environments with
+significant temperature changes.
+
+PH2SLIM Support
+
+This release adds support for the PH2SLIM variant of the Pixhawk2,
+which is a Pixhawk2 cube without the isolated sensor top board. This
+makes for a very compact autopilot for small aircraft. To enable
+PH2SLIM support set the BRD_TYPE parameter to 6 using a GCS connected
+on USB.
+
+AP_Module Support
+
+This is the first release of ArduPilot with loadable module support
+for Linux based boards. The AP_Module system allows for externally
+compiled modules to access sensor data from ArduPilot controlled
+sensors. The initial AP_Module support is aimed at vendors integrating
+high-rate digital image stabilisation using IMU data, but it is
+expected this will be expanded to other use cases in future releases.
+
+Parrot Disco Support
+
+This release adds support for the Parrot C.H.U.C.K autopilot in the
+new Disco airframe. The Disco is a very lightweight flying wing with
+a nicely integrated Linux based autopilot. The Disco flies very nicely
+with ArduPilot, bringing the full set of mission capabilities of
+ArduPilot to this airframe.
+
+Major VRBrain Support Update
+
+This release includes a major merge of support for the VRBrain family
+of autopilots. Many thanks to the great work by Luke Mike in putting
+together this merge!
+
+Much Faster Boot Time
+
+Boot times on Pixhawk are now much faster due to a restructuring of
+the driver startup code, with slow starting drivers not started unless
+they are enabled with the appropriate parameters. The restructuring
+also allows for support of a wide variety of board types, including
+the PH2SLIM above.
+
+This release includes many other updates right across the flight
+stack, including several new features. Some of the changes include:
+
+ - improved quadplane auto-landing
+ - limit roll and pitch by Q_ANGLE_MAX in Q modes
+ - improved ADSB avoidance and MAVLink streaming
+ - smoother throttle control on fixed-wing to VTOL transition
+ - removed "demo servos" movement on boot
+ - fixed a problem with spurious throttle output during boot (thanks
+   to Marco for finding this)
+ - support MAVLink SET_ATTITUDE_TARGET message
+ - log all rally points on startup
+ - fixed use of stick mixing for rudder with STICK_MIXING=0
+ - fixed incorrect tuning warnings when vtol not active
+ - support MAVLink based external GPS device
+ - support LED_CONTROL MAVLink message
+ - prevent baro update while disarmed for large height change
+ - support PLAY_TUNE MAVLink message
+ - added AP_Button support for remote button input reporting
+ - support Ping2020 ADSB transceiver
+ - fixed disarm by rudder in quadplanes
+ - support 16 channel SERVO_OUTPUT_RAW in MAVLink2
+ - added automatic internal combustion engine support
+ - support DO_ENGINE_CONTROL MAVLink message
+ - added ground throttle suppression for quadplanes
+ - added MAVLink reporting of logging subsystem health
+ - prevent motor startup on reboot in quadplanes
+ - added quadplane support for Advanced Failsafe
+ - added support for a 2nd throttle channel
+ - fixed bug in crash detection during auto-land flare
+ - lowered is_flying groundspeed threshold to 1.5m/s
+ - added support for new FrSky telemetry protocol variant
+ - added support for fence auto-enable on takeoff in quadplanes
+ - added Q_ASSIST_ANGLE for using quadplane to catch stalls in fixed wing flight
+ - added BRD_SAFETY_MASK to allow for channel movement for selected channels with safety on
+ - numerous improvements to multicopter stability control for quadplanes
+ - support X-Plane10 as SITL backend
+ - lots of HAL_Linux improvements to bus and thread handling
+ - fixed problem with elevator use at high roll angles that could
+   prevent attitude recovery from inverted flight
+ - improved yaw handling in EKF2 near ground
+ - added IMU heater support on Pixhawk2
+ - allow for faster accel bias learning in EKF2
+ - fixed in-flight yaw reset bug in EKF2
+ - added AP_Module support for loadable modules
+ - support Disco airframe from Parrot
+ - use full throttle in initial takeoff in TECS
+ - added NTF_LED_OVERRIDE support
+ - added terrain based simulation in SITL
+ - merged support for wide range of VRBrain boards
+ - added support for PH2SLIM and PHMINI boards with BRD_TYPE
+ - greatly reduced boot time on Pixhawk and similar boards
+ - fixed magic check for signing key in MAVLink2
+ - fixed averaging of gyros for EKF2 gyro bias estimate
+ 
+
+Release 3.6.0, 6th June 2016
+----------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.6.0 of APM:Plane. This is a major update so please read the
+notes carefully.
+
+The biggest changes in this release are:
+
+ - major update to PX4Firmware code
+ - major update to QuadPlane code
+ - addition of MAVLink2 support
+
+The updated PX4Firmware tree greatly improves support for the new
+Pixracer boards as well as improving scheduling performance and UAVCAN
+support.
+
+The QuadPlane changes are very extensive in this release. A lot of new
+features have been added, including:
+
+ - improved automatic weathervaning
+ - greatly improved support for mixed fixed wing and VTOL missions
+ - automatic RTL with VTOL land
+ - VTOL GUIDED mode support
+ - greatly improved transition code
+ - new tuning system for VTOL motors
+ - extensive upgrade to logging system for much better flight analysis
+ 
+The new QuadPlane features are documented at:
+
+  http://ardupilot.org/plane/docs/quadplane-support.html
+
+There is also a prototype implementation supporting tiltrotors and
+tiltwings, but so far it has only been flown in simulations and it
+should be considered very experimental.
+
+Detailed changes include:
+
+ - added motortest for all quad motors in sequence
+ - merge upstream PX4Firmware changes
+ - new AC_AttitudeControl library from copter for quadplane
+ - modified default gains for quadplanes
+ - new velocity controller for initial quadplane landing
+ - smooth out final descent for VTOL landing
+ - changed default loop rate for quadplanes to 300Hz
+ - support up to 16 output channels (two via SBUS output only)
+ - fixed bug with landing flare for high values of LAND_FLARE_SEC
+ - improved crash detection logic
+ - added in-flight transmitter tuning
+ - fix handling of SET_HOME_POSITION
+ - added Q_VFWD_GAIN for forward motor in VTOL modes
+ - added Q_WVANE_GAIN for active weathervaning
+ - log the number of lost log messages
+ - Move position update to 50hz loop rather then the 10hz
+ - Suppress throttle when parachute release initiated, not after release.
+ - support Y6 frame class in quadplane
+ - log L1 xtrack error integrator and remove extra yaw logging
+ - limit roll before calculating load factor
+ - simplify landing flare logic
+ - smooth-out the end of takeoff pitch by reducing takeoff pitch min via TKOFF_PLIM_SEC
+ - added support for DO_VTOL_TRANSITION as a mission item
+ - fixed is_flying() for VTOL flight
+ - added Q_ENABLE=2 for starting AUTO in VTOL
+ - reload airspeed after VTOL landing
+ - lower default VTOL ANGLE_MAX to 30 degrees
+ - Change mode to RTL on end of mission rather then staying in auto
+ - implemented QRTL for quadplane RTL
+ - added Q_RTL_MODE parameter for QRTL after RTL approach
+ - reduced the rate of EKF and attitude logging to 25Hz
+ - added CHUTE_DELAY_MS parameter
+ - allow remapping of any input channel to any output channel
+ - numerous waf build improvements
+ - support fast timer capture for camera trigger feedback
+ - numerous improvements for Pixracer support
+ - added more general tiltrotor support to SITL
+ - only save learned compass offsets when disarmed
+ - support MISSION_ITEM_INT for more accurate waypoint positions
+ - change parachute deployment altitude to above ground not home
+ - added AP_Tuning system for QuadPlane tuning
+ - added initial support for tiltrotors and tiltwings
+ - added LOG_REPLAY and LOG_DISARMED parameters
+ - added Q_GUIDED_MODE parameter
+ - major update to QuadPlane documentation
+ - added MAVLink2 support
+ - fixed origin vs home altitude discrepancy
+ - improved Lidar based landing glide slope
+ - fixed throttle failsafe with THR_PASS_STAB=1
+ - prevent EKF blocking during baro and airspeed cal
+ - allow for ground testing of parachutes with CHUTE_MINALT=0
+ - fixed elevator stick mixing for above 50% input
+ - added QuadPlane ESC calibration
+ 
+
+
+Release 3.6.0beta1, 30th April 2016
+-----------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.6.0beta1 of APM:Plane. This is the first beta version of a
+major release.
+
+The biggest changes in this release is the major update of the
+PX4Firmware tree which greatly improves support for the Pixracer
+board, and a lot of QuadPlane improvements and new features.
+
+Detailed changes include:
+
+ - added motortest for all quad motors in sequence
+ - merge upstream PX4Firmware changes
+ - new AC_AttitudeControl library from copter for quadplane
+ - modified default gains for quadplanes
+ - new velocity controller for initial quadplane landing
+ - smooth out final descent for VTOL landing
+ - changed default loop rate for quadplanes to 300Hz
+ - support up to 16 output channels (two via SBUS output only)
+ - fixed bug with landing flare for high values of LAND_FLARE_SEC
+ - improved crash detection logic
+ - added in-flight transmitter tuning
+ - fix handling of SET_HOME_POSITION
+ - added Q_VFWD_GAIN for forward motor in VTOL modes
+ - added Q_WVANE_GAIN for active weathervaning
+ - log the number of lost log messages
+ - Move position update to 50hz loop rather then the 10hz
+ - Suppress throttle when parachute release initiated, not after release.
+ - support Y6 frame class in quadplane
+ - log L1 xtrack error integrator and remove extra yaw logging
+ - limit roll before calculating load factor
+ - simplify landing flare logic
+ - smooth-out the end of takeoff pitch by reducing takeoff pitch min via TKOFF_PLIM_SEC
+ - added support for DO_VTOL_TRANSITION as a mission item
+ - fixed is_flying() for VTOL flight
+ - added Q_ENABLE=2 for starting AUTO in VTOL
+ - reload airspeed after VTOL landing
+ - lower default VTOL ANGLE_MAX to 30 degrees
+ - Change mode to RTL on end of mission rather then staying in auto
+ - implemented QRTL for quadplane RTL
+ - added Q_RTL_MODE parameter for QRTL after RTL approach
+ - reduced the rate of EKF and attitude logging to 25Hz
+ - added CHUTE_DELAY_MS parameter
+ - allow remapping of any input channel to any output channel
+ - numerous waf build improvements
+ - support fast timer capture for camera trigger feedback
+ - numerous improvements for Pixracer support
+ - added more general tiltrotor support to SITL
+
+
+Release 3.5.3, 30th April 2016
+------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.5.3 of APM:Plane. This is a minor release with only small
+bugfix changes.
+
+The main motivation for the release is a problem with flying without a
+compass enabled. If you fly 3.5.2 with MAG_ENABLE=0 or no compass
+attached then there is a risk that the EKF2 attitude estimator may
+become unstable before takeoff. This can cause the aircraft to crash.
+
+The other changes in this release are:
+
+ - fixed loiter radius for counter-clockwise loiter
+ - fixed the loiter radius when doing a RTL at the end of a mission
+ - provide reasons to the GCS when a uBlox GPS fails to properly configure
+ - support a wider variety of NMEA GPS receivers
+ - use EKF1 by default if no compass is enabled
+
+Happy flying!
+
+Release 3.5.2, 26th March 2016
+------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.5.2 of APM:Plane. This is a minor release with small
+changes.
+
+The main reason for this release over 3.5.1 is a fix for a bug where
+the px4io co-processor on a Pixhawk can run out of memory while
+booting. This causes the board to be unresponsive on boot. It only
+happens if you have a more complex servo setup and is caused by too
+much memory used by the IO failsafe mixer.
+
+The second motivation for this release is to fix an issue where during
+a geofence altitude failsafe that happens at low speed an aircraft may
+dive much further than it should to gain speed. This only happened if
+the thrust line of the aircraft combined with low pitch integrator
+gain led to the aircraft not compensating sufficiently with elevator
+at full throttle in a TECS underspeed state. To fix this two changes
+have been made:
+
+ - a minimum level of integrator in the pitch controller has been
+   added. This level has a sufficiently small time constant to avoid
+   the problem with the TECS controller in an underspeed state.
+
+ - the underspeed state in TECS has been modified so that underspeed
+   can end before the full target altitude has been reached, as long
+   as the airspeed has risen sufficiently past the minimum airspeed
+   for a sufficient period of time (by 15% above minimum airspeed for
+   3 seconds).
+
+The default P gains for both roll and pitch have also been raised from
+0.4 to 0.6. This is to help for users that fly with the default
+parameters. A value of 0.6 is safe for all aircraft that I have
+analysed logs for.
+
+The default gains and filter frequencies of the QuadPlane code have
+also been adjusted to better reflect the types of aircraft users have
+been building.
+
+Other changes include:
+
+ - improved QuadPlane logging for better analysis and tuning (adding
+   RATE and QTUN messages)
+ - fixed a bug introduced in 3.5.1 in rangefinder landing
+ - added TECS logging of speed_weight and flags
+ - improvements to the lsm303d driver for Linux
+ - improvements to the waf build system
+
+
+Release 3.5.1, 21st March 2016
+------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.5.1 of APM:Plane. This is a minor release with primarily
+small changes.
+
+The changes in this release are:
+
+ - update uavcan to new protocol
+ - always exit loiter in AUTO towards next waypoint
+ - support more multicopter types in quadplane
+ - added support for reverse thrust landings
+ - added LAND_THR_SLEW parameter
+ - added LAND_THEN_NEUTRL parameter
+ - fixed reporting of armed state with safety switch
+ - added optional arming check for minimum voltage
+ - support motor test for quadplanes
+ - added QLAND flight mode (quadplane land mode)
+ - added TECS_LAND_SRC (land sink rate change)
+ - use throttle slew in quadplane transition
+ - added PID tuning for quadplane
+ - improved text message queueing to ground stations
+ - added LAND_THR_SLEW parameter
+ - re-organisation of HAL_Linux bus API
+ - improved NMEA parsing in GPS driver
+ - changed TECS_LAND_SPDWGT default to -1
+ - improved autoconfig of uBlox GPS driver
+ - support a wider range of Lightware serial Lidars
+ - improved non-GPS performance of EKF2
+ - allow for indoor flight of quadplanes
+ - improved compass fusion in EKF2
+ - improved support for Pixracer board
+ - improved NavIO2 support
+ - added BATT_WATT_MAX parameter
+
+The reverse thrust landing is particularly exciting as that adds a
+whole new range of possibilities for landing in restricted areas. Many
+thanks to Tom for the great work on getting this done.
+
+The uavcan change to the new protocol has been a long time coming, and
+I'd like to thank Holger for both his great work on this and his
+patience given how long it has taken to be in a release. This adds
+support for automatic canbus node assignment which makes setup much
+easier, and also supports the latest versions of the Zubax canbus GPS.
+
+My apologies if your favourite feature didn't make it into this
+release! There are a lot more changes pending but we needed to call a
+halt for the release eventually. This release has had a lot of flight
+testing and I'm confident it will be a great release.
+
+Happy flying!
+
+
+Release 3.5.0, 30th January 2016
+--------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.5.0 of APM:Plane. This is a major release with a lot of
+changes so please read the notes carefully!
+
+The biggest changes in this release are:
+
+ - switch to new EKF2 kalman filter for attitude and position estimation
+ - added support for parachutes
+ - added support for QuadPlanes
+ - support for 4 new flight boards, the QualComm Flight, the BHAT,
+   the PXFmini and the Pixracer
+ - support for arming on moving platforms
+ - support for better camera trigger logging
+
+New Kalman Filter
+
+The 3.4 release series was the first where APM:Plane used a Kalman
+Filter by default for attitude and position estimation. It works very
+well, but Paul Riseborough has been working hard recently on a new
+EKF variant which fixes many issues seen with the old estimator. The
+key improvements are:
+
+  - support for separate filters on each IMU for multi-IMU boards
+    (such as the Pixhawk), giving a high degree of redundency
+  - much better handling of gyro drift estimation, especially on
+    startup
+  - much faster recovery from attitude estimation errors
+
+After extensive testing of the new EKF code we decided to make it the
+default for this release. You can still use the old EKF if you want to
+by setting AHRS_EKF_TYPE to 1, although it is recommended that the new
+EKF be used for all aircraft.
+
+Parachute Support
+
+This is the first release with support for parachute landings on
+plane. The configuration and use of a parachute is the same as the
+existing copter parachute support. See
+http://copter.ardupilot.org/wiki/parachute/
+
+Note that parachute support is considered experimental in planes.
+
+QuadPlane Support
+
+This release includes support for hybrid plane/multi-rotors called
+QuadPlanes. More details are available in this blog post:
+http://diydrones.com/profiles/blogs/quadplane-support-in-apm-plane-3-5-0
+
+Support for 4 new Flight Boards
+
+The porting of ArduPilot to more flight boards continues, with support
+for 3 new flight boards in this release. They are:
+
+ - the BHAT board
+ - the PXFmini
+ - the QualComm Flight
+ - the Pixracer
+
+More information about the list of supported boards is available here:
+http://dev.ardupilot.org/wiki/supported-autopilot-controller-boards/
+
+Startup on a moving platform
+
+One of the benefits of the new EKF2 estimator is that it allows for
+rapid estimation of gyro offset without doing a gyro calibration on
+startup. This makes it possible to startup and arm on a moving
+platform by setting the INS_GYR_CAL parameter to zero (to disable gyro
+calibration on boot). This should be a big help when flying off boats.
+
+Improved Camera Trigger Logging
+
+This release adds new CAM_FEEDBACK_PIN and CAM_FEEDBACK_POL
+parameters. These add support for separate CAM and TRIG log messages,
+where TRIG is logged when the camera is triggered and the CAM message
+is logged when an external pin indicates the camera has actually
+fired. This pin is typically based on the flash hotshoe of a camera
+and provides a way to log the exact time of camera triggering more
+accurately. Many thanks to Dario Andres and Jaime Machuca for their
+work on this feature.
+
+That is just a taste of all of the improvements in this release. In
+total the release includes over 1500 patches. Some of the other more
+significant changes include:
+
+- RPM logging
+- new waf build system
+- new async accel calibrator
+- SITL support for quadplanes
+- improved land approach logic
+- better rangefinder power control
+- ADSB adapter support
+- dataflash over mavlink support
+- settable main loop rate
+- hideable parameters
+- improved crash detection logic
+- added optional smooth speed weighting for landing
+- improved logging for dual-GPS setups
+- improvements to multiple RTK GPS drivers
+- numerous HAL_Linux improvements
+- improved logging of CAM messages
+- added support for IMU heaters in HAL_Linux
+- support for RCInput over UDP in HAL_Linux
+- improved EKF startup checks for GPS accuracy
+- added raw IMU logging for all platforms
+- added BRD_CAN_ENABLE parameter
+- support FlightGear visualisation in SITL
+- configurable RGB LED brightness
+- added RTL_RADIUS parameter
+- improvements to the OVERRIDE_CHAN handling, fixing a race condition
+- added OVERRIDE_SAFETY parameter
+
+Many thanks to everyone who contributed to this release! The
+development team is growing at a fast pace, with 57 people
+contributing changes over this release cycle.
+
+I'd like to make special mention of Tom Pittenger and Michael du
+Breuil who have been doing extensive testing of the plane development
+code, and also contributing a great deal of their own
+improvements. Thanks!
+
+
+Release 3.4.0, 24th September 2015
+----------------------------------
+
+The ArduPilot development team is proud to announce the release of
+version 3.4.0 of APM:Plane. This is a major release with a lot of
+changes so please read the notes carefully!
+
+First release with EKF by default
+
+This is the also the first release that enables the EKF (Extended
+Kalman Filter) for attitude and position estimation by default. This
+has been in development for a long time, and significantly improves
+flight performance. You can still disable the EKF if you want to using
+the AHRS_EKF_USE parameter, but it is strongly recommended that you
+use the EKF. Note that if an issue is discovered with the EKF in
+flight it will automatically be disabled and the older DCM system will
+be used instead. That should be very rare.
+
+In order to use the EKF we need to be a bit more careful about the
+setup of the aircraft. That is why in the last release we enabled
+arming and pre-arm checks by default. Please don't disable the arming
+checks, they are there for very good reasons.
+
+Last release with APM1/APM2 support
+
+This will be the last major release that supports the old APM1/APM2
+AVR based boards. We have finally run out of flash space and
+memory. In the last few releases we spent quite a bit of time trying
+to squeeze more and more into the small flash space of the APM1/APM2,
+but it had to end someday if ArduPilot is to continue to develop. I am
+open to the idea of someone else volunteering to keep doing
+development of APM1/APM2 so if you have the skills and inclination do
+please get in touch. Otherwise I will only do small point release
+changes for major bugs.
+
+Even to get this release onto the APM1/APM2 we had to make sacrifices
+in terms of functionality. The APM1/APM2 release is missing quite a
+few features that are on the Pixhawk and other boards. For example:
+
+  - no rangefinder support for landing
+  - no terrain following
+  - no EKF support
+  - no camera control
+  - no CLI support
+  - no advanced failsafe support
+  - no HIL support (sorry!)
+  - support for far fewer GPS types
+
+that is just the most obvious major features that are missing on
+APM1/APM2. There are also numerous other smaller things where we need
+to take shortcuts on the APM1/APM2. Some of these features were
+available on older APM1/APM2 releases but needed to be removed to
+allow us to squeeze the new release onto the board. So if you are
+happy with a previous release on your APM2 and want a feature that is
+in that older release and not in this one then perhaps you shouldn't
+upgrade.
+
+PID Tuning
+
+While most people are happy with autotune to tune the PIDs for their
+planes, it is nice also to be able to do fine tuning by hand. This
+release includes new dataflash and mavlink messages to help with that
+tuning. You can now see the individual contributions of the P, I and D
+components of each PID in the logs, allowing you to get a much better
+picture of the performance.
+
+A simple application of this new tuning is you can easily see if your
+trim is off. If the Pitch I term is constantly contributing a
+signifcant positive factor then you know that ArduPilot is having to
+constantly apply up elevator, which means your plane is nose
+heavy. The same goes for roll, and can also be used to help tune your
+ground steering.
+
+Vibration Logging
+
+This release includes a lot more options for diagnosing vibration
+issues. You will notice new VIBRATION messages in MAVLink and VIBE
+messages in the dataflash logs. Those give you a good idea of your
+(unfiltered) vibration levels. For really detailed analysis you can
+setup your LOG_BITMASK to include raw logging, which gives you every
+accel and gyro sample on your Pixhawk. You can then do a FFT on the
+result and plot the distribution of vibration level with
+frequency. That is great for finding the cause of vibration
+issues. Note that you need a very fast microSD card for that to work!
+
+Rudder Disarm
+
+This is the first release that allows you to disarm using the rudder
+if you want to. It isn't enabled by default (due to the slight risk of
+accidentially disarming while doing aerobatics). You can enable it
+with the ARMING_RUDDER parameter by setting it to 2. It will only
+allow you to disarm if the autopilot thinks you are not flying at the
+time (thanks to the "is_flying" heuristics from Tom Pittenger).
+
+More Sensors
+
+This release includes support for a bunch more sensors. It now supports
+3 different interfaces for the LightWare range of Lidars (serial, I2C
+and analog), and also supports the very nice Septentrio RTK
+dual-frequency GPS (the first dual-frequency GPS we have support
+for). It also supports the new "blue label" Lidar from Pulsed Light
+(both on I2C and PWM).
+
+For the uBlox GPS, we now have a lot more configurability of the
+driver, with the ability to set the GNSS mode for different
+constellations. Also in the uBlox driver we support logging of the raw
+carrier phase and pseudo range data, which allows for post-flight RTK
+analysis with raw-capable receivers for really accurate photo
+missions.
+
+Better Linux support
+
+This release includes a lot of improvements to the Linux based
+autopilot boards, including the NavIO+, the PXF and ERLE boards and
+the BBBMini and the new RasPilot board. If you like the idea of flying
+with Linux then please try it out!
+
+On-board compass calibrator
+
+We also have a new on-board compass calibrator, which also adds calibration
+for soft iron effects, allowing for much more accurate compass
+calibration. Support for starting the compass calibration in the
+various ground stations is still under development, but it looks like
+this will be a big improvement to compass calibration.
+
+Lots of other changes!
+
+The above list is just a taste of the changes that have gone into this
+release. Thousands of small changes have gone into this release with
+dozens of people contributing. Many thanks to everyone who helped!
 
 Other key changes include:
 
@@ -69,10 +1488,14 @@ Other key changes include:
   - added support for Septentrio GPS receiver
   - support DO_MOUNT_CONTROl via command-long interface
   - added CAM_RELAY_ON parameter
+  - moved SKIP_GYRO_CAL functionality to INS_GYR_CAL
+  - added detection of bad lidar settings for landing
 
-Please test out the beta and report back on how it goes! There has
-been a lot of testing of this release already by core developers so
-I'm not expecting a long beta release cycle.
+Note that the documentation hasn't yet caught up with all the changes
+in this release. We are still working on that, but meanwhile if you
+see a feature that interests you and it isn't documented yet then
+please ask.
+
 
 
 Release 3.3.0, 20th May 2015
@@ -304,7 +1727,7 @@ The changes in this release are:
 
 The most important bug fix is the one for short term loss of RC
 control. This is a very long standing bug which didn't have a
-noticible impact for most people, but could cause loss of RC control
+noticeable impact for most people, but could cause loss of RC control
 for around 1 or 2 seconds for some people in certain circumstances.
 
 The bug was in the the AP_HAL RCInput API. Each HAL backend has a flag

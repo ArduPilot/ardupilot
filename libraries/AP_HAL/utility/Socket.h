@@ -15,9 +15,7 @@
 /*
   simple socket handling class for systems with BSD socket API
  */
-
-#ifndef HAL_SOCKET_H
-#define HAL_SOCKET_H
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #if HAL_OS_SOCKETS
@@ -39,8 +37,9 @@ public:
 
     bool connect(const char *address, uint16_t port);
     bool bind(const char *address, uint16_t port);
-    void reuseaddress();
-    void set_blocking(bool blocking);
+    bool reuseaddress();
+    bool set_blocking(bool blocking);
+    bool set_cloexec();
     void set_broadcast(void);
 
     ssize_t send(const void *pkt, size_t size);
@@ -73,4 +72,3 @@ private:
 };
 
 #endif // HAL_OS_SOCKETS
-#endif // HAL_SOCKET_H

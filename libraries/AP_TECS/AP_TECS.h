@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_TECS.h
 /// @brief   Combined Total Energy Speed & Height Control. This is a instance of an
 /// AP_SpdHgtControl class
@@ -18,110 +16,129 @@
  *  - Relative ease of tuning through use of intuitive time constant, trim rate and damping parameters and the use
  *    of easy to measure aircraft performance data
  */
-
-#ifndef AP_TECS_H
-#define AP_TECS_H
+#pragma once
 
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AP_Landing/AP_Landing.h>
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
-        _ahrs(ahrs),
-        aparm(parms)
+    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing)
+        : _ahrs(ahrs)
+        , aparm(parms)
+        , _landing(landing)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
 
+    /* Do not allow copies */
+    AP_TECS(const AP_TECS &other) = delete;
+    AP_TECS &operator=(const AP_TECS&) = delete;
+
     // Update of the estimated height and height rate internal state
     // Update of the inertial speed rate internal state
     // Should be called at 50Hz or greater
-    void update_50hz(float hgt_afe);
+    void update_50hz(void) override;
 
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
                                int32_t EAS_dem_cm,
-                               enum FlightStage flight_stage,
+                               enum AP_Vehicle::FixedWing::FlightStage flight_stage,
+                               float distance_beyond_land_wp,
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
-                               float load_factor);
+                               float load_factor,
+                               bool soaring_active) override;
 
     // demanded throttle in percentage
-    // should return 0 to 100
-    int32_t get_throttle_demand(void) {
+    // should return -100 to 100, usually positive unless reverse thrust is enabled via _THRminf < 0
+    int32_t get_throttle_demand(void) override {
         return int32_t(_throttle_dem * 100.0f);
     }
 
     // demanded pitch angle in centi-degrees
     // should return between -9000 to +9000
-    int32_t get_pitch_demand(void) {
+    int32_t get_pitch_demand(void) override {
         return int32_t(_pitch_dem * 5729.5781f);
     }
 
     // Rate of change of velocity along X body axis in m/s^2
-    float get_VXdot(void) {
+    float get_VXdot(void) override {
         return _vel_dot;
     }
 
-    // log data on internal state of the controller. Called at 10Hz
-    void log_data(DataFlash_Class &dataflash, uint8_t msgid);
-
     // return current target airspeed
-    float get_target_airspeed(void) const {
+    float get_target_airspeed(void) const override {
         return _TAS_dem / _ahrs.get_EAS2TAS();
     }
 
     // return maximum climb rate
-    float get_max_climbrate(void) const {
+    float get_max_climbrate(void) const override {
         return _maxClimbRate;
     }
 
+    // added to let SoaringContoller reset pitch integrator to zero
+    void reset_pitch_I(void) override {
+        _integSEB_state = 0.0f;
+    }
+    
     // return landing sink rate
-    float get_land_sinkrate(void) const {
+    float get_land_sinkrate(void) const override {
         return _land_sink;
     }
 
+    // return landing airspeed
+    float get_land_airspeed(void) const override {
+        return _landAirspeed;
+    }
+
+    // return height rate demand, in m/s
+    float get_height_rate_demand(void) const {
+        return _hgt_rate_dem;
+    }
+
+    // set path_proportion
+    void set_path_proportion(float path_proportion) override {
+        _path_proportion = constrain_float(path_proportion, 0.0f, 1.0f);
+    }
+
+    // set pitch max limit in degrees
+    void set_pitch_max_limit(int8_t pitch_limit) {
+        _pitch_max_limit = pitch_limit;
+    }
+
+    // force use of synthetic airspeed for one loop
+    void use_synthetic_airspeed(void) {
+        _use_synthetic_airspeed_once = true;
+    }
+    
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-    struct PACKED log_TECS_Tuning {
-        LOG_PACKET_HEADER;
-        uint64_t time_us;
-        float hgt;
-        float dhgt;
-        float hgt_dem;
-        float dhgt_dem;
-        float spd_dem;
-        float spd;
-        float dspd;
-        float ithr;
-        float iptch;
-        float thr;
-        float ptch;
-        float dspd_dem;
-    } log_tuning;
-
 private:
     // Last time update_50Hz was called
-    uint32_t _update_50hz_last_usec;
+    uint64_t _update_50hz_last_usec;
 
     // Last time update_speed was called
-    uint32_t _update_speed_last_usec;
+    uint64_t _update_speed_last_usec;
 
     // Last time update_pitch_throttle was called
-    uint32_t _update_pitch_throttle_last_usec;
+    uint64_t _update_pitch_throttle_last_usec;
 
     // reference to the AHRS object
     AP_AHRS &_ahrs;
 
     const AP_Vehicle::FixedWing &aparm;
 
+    // reference to const AP_Landing to access it's params
+    const AP_Landing &_landing;
+    
     // TECS tuning parameters
     AP_Float _hgtCompFiltOmega;
     AP_Float _spdCompFiltOmega;
@@ -131,9 +148,13 @@ private:
     AP_Float _timeConst;
     AP_Float _landTimeConst;
     AP_Float _ptchDamp;
+    AP_Float _land_pitch_damp;
     AP_Float _landDamp;
     AP_Float _thrDamp;
+    AP_Float _land_throttle_damp;
     AP_Float _integGain;
+    AP_Float _integGain_takeoff;
+    AP_Float _integGain_land;
     AP_Float _vertAccLim;
     AP_Float _rollComp;
     AP_Float _spdWeight;
@@ -141,14 +162,19 @@ private:
     AP_Float _landThrottle;
     AP_Float _landAirspeed;
     AP_Float _land_sink;
+    AP_Float _land_sink_rate_change;
     AP_Int8  _pitch_max;
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
+    AP_Float _maxSinkRate_approach;
 
+    // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
+    int8_t _pitch_max_limit = 90;
+    
     // current height estimate (above field elevation)
     float _height;
 
-    // throttle demand in the range from 0.0 to 1.0
+    // throttle demand in the range from -1.0 to 1.0, usually positive unless reverse thrust is enabled via _THRminf < 0
     float _throttle_dem;
 
     // pitch angle demand in radians
@@ -169,16 +195,16 @@ private:
     } _height_filter;
 
     // Integrator state 4 - airspeed filter first derivative
-    float _integ4_state;
+    float _integDTAS_state;
 
     // Integrator state 5 - true airspeed
-    float _integ5_state;
+    float _TAS_state;
 
     // Integrator state 6 - throttle integrator
-    float _integ6_state;
+    float _integTHR_state;
 
     // Integrator state 6 - pitch integrator
-    float _integ7_state;
+    float _integSEB_state;
 
     // throttle demand rate limiter state
     float _last_throttle_dem;
@@ -223,14 +249,29 @@ private:
     // Total energy rate filter state
     float _STEdotErrLast;
 
-    // Underspeed condition
-    bool _underspeed;
+    struct flags {
+        // Underspeed condition
+        bool underspeed:1;
 
-    // Bad descent condition caused by unachievable airspeed demand
-    bool _badDescent;
+        // Bad descent condition caused by unachievable airspeed demand
+        bool badDescent:1;
 
-    // climbout mode
-    enum FlightStage _flight_stage;
+        // true when plane is in auto mode and executing a land mission item
+        bool is_doing_auto_land:1;
+
+        // true when we have reached target speed in takeoff
+        bool reached_speed_takeoff:1;
+    };
+    union {
+        struct flags _flags;
+        uint8_t _flags_byte;
+    };
+
+    // time when underspeed started
+    uint32_t _underspeed_start_ms;
+
+    // auto mode flightstage
+    enum AP_Vehicle::FixedWing::FlightStage _flight_stage;
 
     // pitch demand before limiting
     float _pitch_dem_unc;
@@ -266,6 +307,27 @@ private:
     // counter for demanded sink rate on land final
     uint8_t _flare_counter;
 
+    // slew height demand lag filter value when transition to land
+    float hgt_dem_lag_filter_slew;
+
+    // percent traveled along the previous and next waypoints
+    float _path_proportion;
+
+    float _distance_beyond_land_wp;
+
+    // internal variables to be logged
+    struct {
+        float SKE_weighting;
+        float SPE_error;
+        float SKE_error;
+        float SEB_delta;
+    } logging;
+
+    AP_Int8 _use_synthetic_airspeed;
+    
+    // use synthetic airspeed for next loop
+    bool _use_synthetic_airspeed_once;
+    
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float load_factor);
 
@@ -282,10 +344,13 @@ private:
     void _update_energies(void);
 
     // Update Demanded Throttle
-    void _update_throttle(void);
+    void _update_throttle_with_airspeed(void);
 
     // Update Demanded Throttle Non-Airspeed
-    void _update_throttle_option(int16_t throttle_nudge);
+    void _update_throttle_without_airspeed(int16_t throttle_nudge);
+
+    // get integral gain which is flight_stage dependent
+    float _get_i_gain(void);
 
     // Detect Bad Descent
     void _detect_bad_descent(void);
@@ -305,8 +370,3 @@ private:
     // current time constant
     float timeConstant(void) const;
 };
-
-#define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
-							   "TECS", "Qffffffffffff", "TimeUS,h,dh,h_dem,dh_dem,sp_dem,sp,dsp,ith,iph,th,ph,dsp_dem" }
-
-#endif //AP_TECS_H

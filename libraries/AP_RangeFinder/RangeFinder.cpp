@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,373 +17,272 @@
 #include "AP_RangeFinder_analog.h"
 #include "AP_RangeFinder_PulsedLightLRF.h"
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
-#include "AP_RangeFinder_PX4.h"
-#include "AP_RangeFinder_PX4_PWM.h"
+#include "AP_RangeFinder_MaxsonarSerialLV.h"
 #include "AP_RangeFinder_BBB_PRU.h"
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
+#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
+     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) &&      \
+    defined(HAVE_LIBIIO)
+#include "AP_RangeFinder_Bebop.h"
+#endif
+#include "AP_RangeFinder_MAVLink.h"
+#include "AP_RangeFinder_LeddarOne.h"
+#include "AP_RangeFinder_uLanding.h"
+#include "AP_RangeFinder_TeraRangerI2C.h"
+#include "AP_RangeFinder_VL53L0X.h"
+#include "AP_RangeFinder_VL53L1X.h"
+#include "AP_RangeFinder_NMEA.h"
+#include "AP_RangeFinder_Wasp.h"
+#include "AP_RangeFinder_Benewake.h"
+#include "AP_RangeFinder_PWM.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+extern const AP_HAL::HAL &hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
-    // @Param: _TYPE
-    // @DisplayName: Rangefinder type
-    // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
-    AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
+const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
-    // @Param: _PIN
-    // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
-    AP_GROUPINFO("_PIN",     1, RangeFinder, _pin[0], -1),
+	// @Group: 1_
+	// @Path: AP_RangeFinder_Params.cpp
+	AP_SUBGROUPINFO_FLAGS(params[0], "1_", 25, RangeFinder, AP_RangeFinder_Params, AP_PARAM_FLAG_IGNORE_ENABLE),
 
-    // @Param: _SCALING
-    // @DisplayName: Rangefinder scaling
-    // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
-    // @Increment: 0.001
-    AP_GROUPINFO("_SCALING", 2, RangeFinder, _scaling[0], 3.0f),
-
-    // @Param: _OFFSET
-    // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM and I2C Lidars
-    // @Units: Volts
-    // @Increment: 0.001
-    AP_GROUPINFO("_OFFSET",  3, RangeFinder, _offset[0], 0.0f),
-
-    // @Param: _FUNCTION
-    // @DisplayName: Rangefinder function
-    // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
-    // @Values: 0:Linear,1:Inverted,2:Hyperbolic
-    AP_GROUPINFO("_FUNCTION", 4, RangeFinder, _function[0], 0),
-
-    // @Param: _MIN_CM
-    // @DisplayName: Rangefinder minimum distance
-    // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
-    // @Increment: 1
-    AP_GROUPINFO("_MIN_CM",  5, RangeFinder, _min_distance_cm[0], 20),
-
-    // @Param: _MAX_CM
-    // @DisplayName: Rangefinder maximum distance
-    // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
-    // @Increment: 1
-    AP_GROUPINFO("_MAX_CM",  6, RangeFinder, _max_distance_cm[0], 700),
-
-    // @Param: _STOP_PIN
-    // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
-    // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
-    AP_GROUPINFO("_STOP_PIN", 7, RangeFinder, _stop_pin[0], -1),
-
-    // @Param: _SETTLE
-    // @DisplayName: Rangefinder settle time
-    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
-    // @Increment: 1
-    AP_GROUPINFO("_SETTLE", 8, RangeFinder, _settle_time_ms[0], 0),
-
-    // @Param: _RMETRIC
-    // @DisplayName: Ratiometric
-    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
-    // @Values: 0:No,1:Yes
-    AP_GROUPINFO("_RMETRIC", 9, RangeFinder, _ratiometric[0], 1),
-
-    // @Param: _PWRRNG
-    // @DisplayName: Powersave range
-    // @Description: This parameter sets the estimated terrain distance in meters above which the sensor will be put into a power saving mode (if available). A value of zero means power saving is not enabled
-    // @Units: meters
-    // @Range: 0 32767
-    AP_GROUPINFO("_PWRRNG", 10, RangeFinder, _powersave_range, 0),
-
-    // @Param: _GNDCLEAR
-    // @DisplayName: Distance (in cm) from the range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
-
-    // 10..12 left for future expansion
+    // @Group: 1_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[0], "1_",  57, RangeFinder, backend_var_info[0]),
 
 #if RANGEFINDER_MAX_INSTANCES > 1
-    // @Param: 2_TYPE
-    // @DisplayName: Second Rangefinder type
-    // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
-    AP_GROUPINFO("2_TYPE",    12, RangeFinder, _type[1], 0),
+    // @Group: 2_
+    // @Path: AP_RangeFinder_Params.cpp
+    AP_SUBGROUPINFO(params[1], "2_", 27, RangeFinder, AP_RangeFinder_Params),
 
-    // @Param: 2_PIN
-    // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
-    AP_GROUPINFO("2_PIN",     13, RangeFinder, _pin[1], -1),
-
-    // @Param: 2_SCALING
-    // @DisplayName: Rangefinder scaling
-    // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
-    // @Increment: 0.001
-    AP_GROUPINFO("2_SCALING", 14, RangeFinder, _scaling[1], 3.0f),
-
-    // @Param: 2_OFFSET
-    // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance
-    // @Units: Volts
-    // @Increment: 0.001
-    AP_GROUPINFO("2_OFFSET",  15, RangeFinder, _offset[1], 0.0f),
-
-    // @Param: 2_FUNCTION
-    // @DisplayName: Rangefinder function
-    // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
-    // @Values: 0:Linear,1:Inverted,2:Hyperbolic
-    AP_GROUPINFO("2_FUNCTION",  16, RangeFinder, _function[1], 0),
-
-    // @Param: 2_MIN_CM
-    // @DisplayName: Rangefinder minimum distance
-    // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
-    // @Increment: 1
-    AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, _min_distance_cm[1], 20),
-
-    // @Param: 2_MAX_CM
-    // @DisplayName: Rangefinder maximum distance
-    // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
-    // @Increment: 1
-    AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, _max_distance_cm[1], 700),
-
-    // @Param: 2_STOP_PIN
-    // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
-    // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
-    AP_GROUPINFO("2_STOP_PIN", 19, RangeFinder, _stop_pin[1], -1),
-
-    // @Param: 2_SETTLE
-    // @DisplayName: Sonar settle time
-    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
-    // @Increment: 1
-    AP_GROUPINFO("2_SETTLE", 20, RangeFinder, _settle_time_ms[1], 0),
-
-    // @Param: 2_RMETRIC
-    // @DisplayName: Ratiometric
-    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
-    // @Values: 0:No,1:Yes
-    AP_GROUPINFO("2_RMETRIC", 21, RangeFinder, _ratiometric[1], 1),
-
-    // @Param: 2_GNDCLEAR
-    // @DisplayName: Distance (in cm) from the second range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("2_GNDCLEAR", 22, RangeFinder, _ground_clearance_cm[1], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
-#endif
-
-    // @Param: _ADDR
-    // @DisplayName: Bus address of sensor
-    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
-
-#if RANGEFINDER_MAX_INSTANCES > 1
-    // @Param: 2_ADDR
-    // @DisplayName: Bus address of 2nd rangefinder
-    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("2_ADDR", 24, RangeFinder, _address[1], 0),
+    // @Group: 2_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[1], "2_",  58, RangeFinder, backend_var_info[1]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
-    // @Param: 2_TYPE
-    // @DisplayName: Second Rangefinder type
-    // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
-    AP_GROUPINFO("3_TYPE",    25, RangeFinder, _type[2], 0),
+    // @Group: 3_
+    // @Path: AP_RangeFinder_Params.cpp
+    AP_SUBGROUPINFO(params[2], "3_", 29, RangeFinder, AP_RangeFinder_Params),
 
-    // @Param: 2_PIN
-    // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
-    AP_GROUPINFO("3_PIN",     26, RangeFinder, _pin[2], -1),
-
-    // @Param: 2_SCALING
-    // @DisplayName: Rangefinder scaling
-    // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
-    // @Increment: 0.001
-    AP_GROUPINFO("3_SCALING", 27, RangeFinder, _scaling[2], 3.0f),
-
-    // @Param: 2_OFFSET
-    // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance
-    // @Units: Volts
-    // @Increment: 0.001
-    AP_GROUPINFO("3_OFFSET",  28, RangeFinder, _offset[2], 0.0f),
-
-    // @Param: 2_FUNCTION
-    // @DisplayName: Rangefinder function
-    // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
-    // @Values: 0:Linear,1:Inverted,2:Hyperbolic
-    AP_GROUPINFO("3_FUNCTION",  29, RangeFinder, _function[2], 0),
-
-    // @Param: 2_MIN_CM
-    // @DisplayName: Rangefinder minimum distance
-    // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
-    // @Increment: 1
-    AP_GROUPINFO("3_MIN_CM",  30, RangeFinder, _min_distance_cm[2], 20),
-
-    // @Param: 2_MAX_CM
-    // @DisplayName: Rangefinder maximum distance
-    // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
-    // @Increment: 1
-    AP_GROUPINFO("3_MAX_CM",  31, RangeFinder, _max_distance_cm[2], 700),
-
-    // @Param: 2_STOP_PIN
-    // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
-    // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
-    AP_GROUPINFO("3_STOP_PIN", 32, RangeFinder, _stop_pin[2], -1),
-
-    // @Param: 2_SETTLE
-    // @DisplayName: Sonar settle time
-    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
-    // @Increment: 1
-    AP_GROUPINFO("3_SETTLE", 33, RangeFinder, _settle_time_ms[2], 0),
-
-    // @Param: 2_RMETRIC
-    // @DisplayName: Ratiometric
-    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
-    // @Values: 0:No,1:Yes
-    AP_GROUPINFO("3_RMETRIC", 34, RangeFinder, _ratiometric[2], 1),
-
-    // @Param: 2_GNDCLEAR
-    // @DisplayName: Distance (in cm) from the second range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("3_GNDCLEAR", 35, RangeFinder, _ground_clearance_cm[2], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+    // @Group: 3_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[2], "3_",  59, RangeFinder, backend_var_info[2]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
-    // @Param: 3_ADDR
-    // @DisplayName: Bus address of 2nd rangefinder
-    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
-    
-    // @Param: 2_TYPE
-    // @DisplayName: Second Rangefinder type
-    // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
-    AP_GROUPINFO("4_TYPE",    37, RangeFinder, _type[3], 0),
+    // @Group: 4_
+    // @Path: AP_RangeFinder_Params.cpp
+    AP_SUBGROUPINFO(params[3], "4_", 31, RangeFinder, AP_RangeFinder_Params),
 
-    // @Param: 2_PIN
-    // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
-    AP_GROUPINFO("4_PIN",     38, RangeFinder, _pin[3], -1),
+    // @Group: 4_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[0], "4_",  60, RangeFinder, backend_var_info[3]),
+#endif
 
-    // @Param: 2_SCALING
-    // @DisplayName: Rangefinder scaling
-    // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
-    // @Increment: 0.001
-    AP_GROUPINFO("4_SCALING", 39, RangeFinder, _scaling[3], 3.0f),
+#if RANGEFINDER_MAX_INSTANCES > 4
+    // @Group: 5_
+    // @Path: AP_RangeFinder_Params.cpp
+    AP_SUBGROUPINFO(params[4], "5_", 33, RangeFinder, AP_RangeFinder_Params),
 
-    // @Param: 2_OFFSET
-    // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance
-    // @Units: Volts
-    // @Increment: 0.001
-    AP_GROUPINFO("4_OFFSET",  40, RangeFinder, _offset[3], 0.0f),
+    // @Group: 5_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[4], "5_",  34, RangeFinder, backend_var_info[4]),
+#endif
 
-    // @Param: 2_FUNCTION
-    // @DisplayName: Rangefinder function
-    // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
-    // @Values: 0:Linear,1:Inverted,2:Hyperbolic
-    AP_GROUPINFO("4_FUNCTION",  41, RangeFinder, _function[3], 0),
+#if RANGEFINDER_MAX_INSTANCES > 5
+    // @Group: 6_
+    // @Path: AP_RangeFinder_Params.cpp
+    AP_SUBGROUPINFO(params[5], "6_", 35, RangeFinder, AP_RangeFinder_Params),
 
-    // @Param: 2_MIN_CM
-    // @DisplayName: Rangefinder minimum distance
-    // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
-    // @Increment: 1
-    AP_GROUPINFO("4_MIN_CM",  42, RangeFinder, _min_distance_cm[3], 20),
+    // @Group: 6_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[5], "6_",  36, RangeFinder, backend_var_info[5]),
+#endif
 
-    // @Param: 2_MAX_CM
-    // @DisplayName: Rangefinder maximum distance
-    // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
-    // @Increment: 1
-    AP_GROUPINFO("4_MAX_CM",  43, RangeFinder, _max_distance_cm[3], 700),
+#if RANGEFINDER_MAX_INSTANCES > 6
+    // @Group: 7_
+    // @Path: AP_RangeFinder_Params.cpp
+    AP_SUBGROUPINFO(params[6], "7_", 37, RangeFinder, AP_RangeFinder_Params),
 
-    // @Param: 2_STOP_PIN
-    // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
-    // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
-    AP_GROUPINFO("4_STOP_PIN", 44, RangeFinder, _stop_pin[3], -1),
+    // @Group: 7_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[6], "7_",  38, RangeFinder, backend_var_info[6]),
+#endif
 
-    // @Param: 2_SETTLE
-    // @DisplayName: Sonar settle time
-    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
-    // @Increment: 1
-    AP_GROUPINFO("4_SETTLE", 45, RangeFinder, _settle_time_ms[3], 0),
+#if RANGEFINDER_MAX_INSTANCES > 7
+    // @Group: 8_
+    // @Path: AP_RangeFinder_Params.cpp
+    AP_SUBGROUPINFO(params[7], "8_", 39, RangeFinder, AP_RangeFinder_Params),
 
-    // @Param: 2_RMETRIC
-    // @DisplayName: Ratiometric
-    // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
-    // @Values: 0:No,1:Yes
-    AP_GROUPINFO("4_RMETRIC", 46, RangeFinder, _ratiometric[3], 1),
+    // @Group: 8_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[7], "8_",  40, RangeFinder, backend_var_info[7]),
+#endif
 
-    // @Param: 2_GNDCLEAR
-    // @DisplayName: Distance (in cm) from the second range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("4_GNDCLEAR", 47, RangeFinder, _ground_clearance_cm[3], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+#if RANGEFINDER_MAX_INSTANCES > 8
+    // @Group: 9_
+    // @Path: AP_RangeFinder_Params.cpp
+    AP_SUBGROUPINFO(params[8], "9_", 41, RangeFinder, AP_RangeFinder_Params),
 
-    // @Param: 4_ADDR
-    // @DisplayName: Bus address of 2nd rangefinder
-    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("4_ADDR", 48, RangeFinder, _address[3], 0),
+    // @Group: 9_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[8], "9_",  42, RangeFinder, backend_var_info[8]),
+#endif
+
+#if RANGEFINDER_MAX_INSTANCES > 9
+    // @Group: A_
+    // @Path: AP_RangeFinder_Params.cpp
+    AP_SUBGROUPINFO(params[9], "A_", 43, RangeFinder, AP_RangeFinder_Params),
+
+    // @Group: A_
+    // @Path: AP_RangeFinder_Wasp.cpp
+    AP_SUBGROUPVARPTR(drivers[9], "A_",  44, RangeFinder, backend_var_info[9]),
 #endif
     
     AP_GROUPEND
 };
 
-RangeFinder::RangeFinder(AP_SerialManager &_serial_manager) :
-    primary_instance(0),
-    num_instances(0),
-    estimated_terrain_height(0),
+const AP_Param::GroupInfo *RangeFinder::backend_var_info[RANGEFINDER_MAX_INSTANCES];
+
+RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default) :
     serial_manager(_serial_manager)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    // init state and drivers
-    memset(state,0,sizeof(state));
-    memset(drivers,0,sizeof(drivers));
+    // set orientation defaults
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        params[i].orientation.set_default(orientation_default);
+    }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Rangefinder must be singleton");
+    }
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    _singleton = this;
+}
+
+void RangeFinder::convert_params(void) {
+    if (params[0].type.configured_in_storage()) {
+        // _params[0]._type will always be configured in storage after conversion is done the first time
+        return;
+    }
+
+    struct ConversionTable {
+        uint8_t old_element;
+        uint8_t new_index;
+        uint8_t instance;
+    };
+
+    const struct ConversionTable conversionTable[] = {
+            {0, 0, 0}, //0, TYPE 1
+            {1, 1, 0}, //1, PIN 1
+            {2, 2, 0}, //2, SCALING 1
+            {3, 3, 0}, //3, OFFSET 1
+            {4, 4, 0}, //4, FUNCTION 1
+            {5, 5, 0}, //5, MIN_CM 1
+            {6, 6, 0}, //6, MAX_CM 1
+            {7, 7, 0}, //7, STOP_PIN 1
+            {8, 8, 0}, //8, SETTLE 1
+            {9, 9, 0}, //9, RMETRIC 1
+            {10, 10, 0}, //10, PWRRNG 1 (previously existed only once for all sensors)
+            {11, 11, 0}, //11, GNDCLEAR 1
+            {23, 12, 0}, //23, ADDR 1
+            {49, 13, 0}, //49, POS 1
+            {53, 14, 0}, //53, ORIENT 1
+
+            //{57, 1, 0}, //57, backend 1
+
+            {12, 0, 1}, //12, TYPE 2
+            {13, 1, 1}, //13, PIN 2
+            {14, 2, 1}, //14, SCALING 2
+            {15, 3, 1}, //15, OFFSET 2
+            {16, 4, 1}, //16, FUNCTION 2
+            {17, 5, 1}, //17, MIN_CM 2
+            {18, 6, 1}, //18, MAX_CM 2
+            {19, 7, 1}, //19, STOP_PIN 2
+            {20, 8, 1}, //20, SETTLE 2
+            {21, 9, 1}, //21, RMETRIC 2
+            //{, 10, 1}, //PWRRNG 2 (previously existed only once for all sensors)
+            {22, 11, 1}, //22, GNDCLEAR 2
+            {24, 12, 1}, //24, ADDR 2
+            {50, 13, 1}, //50, POS 2
+            {54, 14, 1}, //54, ORIENT 2
+
+            //{58, 3, 1}, //58, backend 2
+
+            {25, 0, 2}, //25, TYPE 3
+            {26, 1, 2}, //26, PIN 3
+            {27, 2, 2}, //27, SCALING 3
+            {28, 3, 2}, //28, OFFSET 3
+            {29, 4, 2}, //29, FUNCTION 3
+            {30, 5, 2}, //30, MIN_CM 3
+            {31, 6, 2}, //31, MAX_CM 3
+            {32, 7, 2}, //32, STOP_PIN 3
+            {33, 8, 2}, //33, SETTLE 3
+            {34, 9, 2}, //34, RMETRIC 3
+            //{, 10, 2}, //PWRRNG 3 (previously existed only once for all sensors)
+            {35, 11, 2}, //35, GNDCLEAR 3
+            {36, 12, 2}, //36, ADDR 3
+            {51, 13, 2}, //51, POS 3
+            {55, 14, 2}, //55, ORIENT 3
+
+            //{59, 5, 2}, //59, backend 3
+
+            {37, 0, 3}, //37, TYPE 4
+            {38, 1, 3}, //38, PIN 4
+            {39, 2, 3}, //39, SCALING 4
+            {40, 3, 3}, //40, OFFSET 4
+            {41, 4, 3}, //41, FUNCTION 4
+            {42, 5, 3}, //42, MIN_CM 4
+            {43, 6, 3}, //43, MAX_CM 4
+            {44, 7, 3}, //44, STOP_PIN 4
+            {45, 8, 3}, //45, SETTLE 4
+            {46, 9, 3}, //46, RMETRIC 4
+            //{, 10, 3}, //PWRRNG 4 (previously existed only once for all sensors)
+            {47, 11, 3}, //47, GNDCLEAR 4
+            {48, 12, 3}, //48, ADDR 4
+            {52, 13, 3}, //52, POS 4
+            {56, 14, 3}, //56, ORIENT 4
+
+            //{60, 7, 3}, //60, backend 4
+    };
+
+    char param_name[17] = {0};
+    AP_Param::ConversionInfo info;
+    info.new_name = param_name;
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    info.old_key = 71;
+#elif APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    info.old_key = 53;
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    info.old_key = 35;
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+    info.old_key = 197;
+#else
+    params[0].type.save(true);
+    return; // no conversion is supported on this platform
+#endif
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(conversionTable); i++) {
+        uint8_t param_instance = conversionTable[i].instance + 1;
+        uint8_t destination_index = conversionTable[i].new_index;
+
+        info.old_group_element = conversionTable[i].old_element;
+        info.type = (ap_var_type)AP_RangeFinder_Params::var_info[destination_index].type;
+
+        hal.util->snprintf(param_name, sizeof(param_name), "RNGFND%X_%s", param_instance, AP_RangeFinder_Params::var_info[destination_index].name);
+        param_name[sizeof(param_name)-1] = '\0';
+
+        AP_Param::convert_old_parameter(&info, 1.0f, 0);
+    }
+
+    // force _params[0]._type into storage to flag that conversion has been done
+    params[0].type.save(true);
 }
 
 /*
@@ -398,9 +296,14 @@ void RangeFinder::init(void)
         // init called a 2nd time?
         return;
     }
-    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
-        detect_instance(i);
-        if (drivers[i] != NULL) {
+
+    convert_params();
+
+    for (uint8_t i=0, serial_instance = 0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        // serial_instance will be increased inside detect_instance
+        // if a serial driver is loaded for this instance
+        detect_instance(i, serial_instance);
+        if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
             num_instances = i+1;
@@ -423,126 +326,299 @@ void RangeFinder::init(void)
 void RangeFinder::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (drivers[i] != NULL) {
-            if (_type[i] == RangeFinder_TYPE_NONE) {
+        if (drivers[i] != nullptr) {
+            if (params[i].type == RangeFinder_TYPE_NONE) {
                 // allow user to disable a rangefinder at runtime
                 state[i].status = RangeFinder_NotConnected;
                 state[i].range_valid_count = 0;
                 continue;
             }
             drivers[i]->update();
-            update_pre_arm_check(i);
-        }
-    }
-
-    // work out primary instance - first sensor returning good data
-    for (int8_t i=num_instances-1; i>=0; i--) {
-        if (drivers[i] != NULL && (state[i].status == RangeFinder_Good)) {
-            primary_instance = i;
+            drivers[i]->update_pre_arm_check();
         }
     }
 }
-    
+
+bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
+{
+    if (!backend) {
+        return false;
+    }
+    if (num_instances == RANGEFINDER_MAX_INSTANCES) {
+        AP_HAL::panic("Too many RANGERS backends");
+    }
+
+    drivers[num_instances++] = backend;
+    return true;
+}
+
 /*
   detect if an instance of a rangefinder is connected. 
  */
-void RangeFinder::detect_instance(uint8_t instance)
+void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
-    uint8_t type = _type[instance];
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    if (type == RangeFinder_TYPE_PLI2C || 
-        type == RangeFinder_TYPE_MBI2C) {
-        // I2C sensor types are handled by the PX4Firmware code
-        type = RangeFinder_TYPE_PX4;
-    }
+    enum RangeFinder_Type _type = (enum RangeFinder_Type)params[instance].type.get();
+    switch (_type) {
+    case RangeFinder_TYPE_PLI2C:
+    case RangeFinder_TYPE_PLI2CV3:
+    case RangeFinder_TYPE_PLI2CV3HP:
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_PulsedLightLRF::detect(i, state[instance], params[instance], _type))) {
+                break;
+            }
+        }
+        break;
+    case RangeFinder_TYPE_MBI2C:
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance], params[instance],
+                                                                  hal.i2c_mgr->get_device(i, AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR)))) {
+                break;
+            }
+        }
+        break;
+    case RangeFinder_TYPE_LWI2C:
+        if (params[instance].address) {
+#ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
+            _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
+                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address)));
+#else
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
+                                                                     hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
+            }
 #endif
-    if (type == RangeFinder_TYPE_PLI2C) {
-        if (AP_RangeFinder_PulsedLightLRF::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PulsedLightLRF(*this, instance, state[instance]);
-            return;
         }
-    } 
-    if (type == RangeFinder_TYPE_MBI2C) {
-        if (AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MaxsonarI2CXL(*this, instance, state[instance]);
-            return;
+        break;
+    case RangeFinder_TYPE_TRI2C:
+        if (params[instance].address) {
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
+                                                                      hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
+            }
         }
-    }
-    if (type == RangeFinder_TYPE_LWI2C) {
-        if (AP_RangeFinder_LightWareI2C::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareI2C(*this, instance, state[instance]);
-            return;
+        break;
+    case RangeFinder_TYPE_VL53L0X:
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
+                                                                 hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
+                if (_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance], params[instance],
+                                                                hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                    break;
+                }
+            }
+        break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    case RangeFinder_TYPE_PX4_PWM:
+        // to ease moving from PX4 to ChibiOS we'll lie a little about
+        // the backend driver...
+        if (AP_RangeFinder_PWM::detect()) {
+            drivers[instance] = new AP_RangeFinder_PWM(state[instance], params[instance], estimated_terrain_height);
         }
-    } 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    if (type == RangeFinder_TYPE_PX4) {
-        if (AP_RangeFinder_PX4::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PX4(*this, instance, state[instance]);
-            return;
-        }
-    }
-    if (type == RangeFinder_TYPE_PX4_PWM) {
-        if (AP_RangeFinder_PX4_PWM::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PX4_PWM(*this, instance, state[instance]);
-            return;
-        }
-    }
+        break;
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-    if (type == RangeFinder_TYPE_BBB_PRU) {
-        if (AP_RangeFinder_BBB_PRU::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_BBB_PRU(*this, instance, state[instance]);
-            return;
+    case RangeFinder_TYPE_BBB_PRU:
+        if (AP_RangeFinder_BBB_PRU::detect()) {
+            drivers[instance] = new AP_RangeFinder_BBB_PRU(state[instance], params[instance]);
         }
-    }
+        break;
 #endif
-    if (type == RangeFinder_TYPE_LWSER) {
-        if (AP_RangeFinder_LightWareSerial::detect(*this, instance, serial_manager)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager);
-            return;
+    case RangeFinder_TYPE_LWSER:
+        if (AP_RangeFinder_LightWareSerial::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_LightWareSerial(state[instance], params[instance], serial_manager, serial_instance++);
         }
-    } 
-    if (type == RangeFinder_TYPE_ANALOG) {
-        // note that analog must be the last to be checked, as it will
-        // always come back as present if the pin is valid
-        if (AP_RangeFinder_analog::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_analog(*this, instance, state[instance]);
-            return;
+        break;
+    case RangeFinder_TYPE_LEDDARONE:
+        if (AP_RangeFinder_LeddarOne::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_LeddarOne(state[instance], params[instance], serial_manager, serial_instance++);
+        }
+        break;
+    case RangeFinder_TYPE_ULANDING:
+        if (AP_RangeFinder_uLanding::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_uLanding(state[instance], params[instance], serial_manager, serial_instance++);
+        }
+        break;
+#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
+     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
+    case RangeFinder_TYPE_BEBOP:
+        if (AP_RangeFinder_Bebop::detect()) {
+            drivers[instance] = new AP_RangeFinder_Bebop(state[instance]);
+        }
+        break;
+#endif
+    case RangeFinder_TYPE_MAVLink:
+        if (AP_RangeFinder_MAVLink::detect()) {
+            drivers[instance] = new AP_RangeFinder_MAVLink(state[instance], params[instance]);
+        }
+        break;
+    case RangeFinder_TYPE_MBSER:
+        if (AP_RangeFinder_MaxsonarSerialLV::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(state[instance], params[instance], serial_manager, serial_instance++);
+        }
+        break;
+    case RangeFinder_TYPE_ANALOG:
+        // note that analog will always come back as present if the pin is valid
+        if (AP_RangeFinder_analog::detect(params[instance])) {
+            drivers[instance] = new AP_RangeFinder_analog(state[instance], params[instance]);
+        }
+        break;
+    case RangeFinder_TYPE_NMEA:
+        if (AP_RangeFinder_NMEA::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_NMEA(state[instance], params[instance], serial_manager, serial_instance++);
+        }
+        break;
+    case RangeFinder_TYPE_WASP:
+        if (AP_RangeFinder_Wasp::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_Wasp(state[instance], params[instance], serial_manager, serial_instance++);
+        }
+        break;
+    case RangeFinder_TYPE_BenewakeTF02:
+        if (AP_RangeFinder_Benewake::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_Benewake(state[instance], params[instance], serial_manager, serial_instance++, AP_RangeFinder_Benewake::BENEWAKE_TF02);
+        }
+        break;
+    case RangeFinder_TYPE_BenewakeTFmini:
+        if (AP_RangeFinder_Benewake::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_Benewake(state[instance], params[instance], serial_manager, serial_instance++, AP_RangeFinder_Benewake::BENEWAKE_TFmini);
+        }
+        break;
+    case RangeFinder_TYPE_PWM:
+        if (AP_RangeFinder_PWM::detect()) {
+            drivers[instance] = new AP_RangeFinder_PWM(state[instance], params[instance], estimated_terrain_height);
+        }
+        break;
+    default:
+        break;
+    }
+
+    // if the backend has some local parameters then make those available in the tree
+    if (drivers[instance] && state[instance].var_info) {
+        backend_var_info[instance] = state[instance].var_info;
+        AP_Param::load_object_from_eeprom(drivers[instance], backend_var_info[instance]);
+    }
+}
+
+AP_RangeFinder_Backend *RangeFinder::get_backend(uint8_t id) const {
+    if (id >= num_instances) {
+        return nullptr;
+    }
+    if (drivers[id] != nullptr) {
+        if (drivers[id]->type() == RangeFinder_TYPE_NONE) {
+            // pretend it isn't here; disabled at runtime?
+            return nullptr;
+        }
+    }
+    return drivers[id];
+};
+
+RangeFinder::RangeFinder_Status RangeFinder::status_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return RangeFinder_NotConnected;
+    }
+    return backend->status();
+}
+
+void RangeFinder::handle_msg(mavlink_message_t *msg)
+{
+    uint8_t i;
+    for (i=0; i<num_instances; i++) {
+        if ((drivers[i] != nullptr) && (params[i].type != RangeFinder_TYPE_NONE)) {
+          drivers[i]->handle_msg(msg);
         }
     }
 }
 
-// query status
-RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
+// return true if we have a range finder with the specified orientation
+bool RangeFinder::has_orientation(enum Rotation orientation) const
 {
-    // sanity check instance
-    if (instance >= RANGEFINDER_MAX_INSTANCES) {
-        return RangeFinder_NotConnected;
-    }
-
-    if (drivers[instance] == NULL || _type[instance] == RangeFinder_TYPE_NONE) {
-        return RangeFinder_NotConnected;
-    }
-
-    return state[instance].status;
+    return (find_instance(orientation) != nullptr);
 }
 
-// true if sensor is returning data
-bool RangeFinder::has_data(uint8_t instance) const
+// find first range finder instance with the specified orientation
+AP_RangeFinder_Backend *RangeFinder::find_instance(enum Rotation orientation) const
 {
-    // sanity check instance
-    if (instance >= RANGEFINDER_MAX_INSTANCES) {
-        return RangeFinder_NotConnected;
+    for (uint8_t i=0; i<num_instances; i++) {
+        AP_RangeFinder_Backend *backend = get_backend(i);
+        if (backend == nullptr) {
+            continue;
+        }
+        if (backend->orientation() != orientation) {
+            continue;
+        }
+        return backend;
     }
-    return ((state[instance].status != RangeFinder_NotConnected) && (state[instance].status != RangeFinder_NoData));
+    return nullptr;
+}
+
+uint16_t RangeFinder::distance_cm_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->distance_cm();
+}
+
+uint16_t RangeFinder::voltage_mv_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->voltage_mv();
+}
+
+int16_t RangeFinder::max_distance_cm_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->max_distance_cm();
+}
+
+int16_t RangeFinder::min_distance_cm_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->min_distance_cm();
+}
+
+int16_t RangeFinder::ground_clearance_cm_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->ground_clearance_cm();
+}
+
+bool RangeFinder::has_data_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->has_data();
+}
+
+uint8_t RangeFinder::range_valid_count_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->range_valid_count();
 }
 
 /*
@@ -554,35 +630,38 @@ bool RangeFinder::pre_arm_check() const
 {
     for (uint8_t i=0; i<num_instances; i++) {
         // if driver is valid but pre_arm_check is false, return false
-        if ((drivers[i] != NULL) && (_type[i] != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
+        if ((drivers[i] != nullptr) && (params[i].type != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
             return false;
         }
     }
     return true;
 }
 
-/*
-  set pre-arm checks to passed if the range finder has been exercised through a reasonable range of movement
-      max distance sensed is at least 50cm > min distance sensed
-      max distance < 200cm
-      min distance sensed is within 10cm of ground clearance or sensor's minimum distance
- */
-void RangeFinder::update_pre_arm_check(uint8_t instance)
+const Vector3f &RangeFinder::get_pos_offset_orient(enum Rotation orientation) const
 {
-    // return immediately if already passed or no sensor data
-    if (state[instance].pre_arm_check || state[instance].status == RangeFinder_NotConnected || state[instance].status == RangeFinder_NoData) {
-        return;
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return pos_offset_zero;
     }
-
-    // update min, max captured distances
-    state[instance].pre_arm_distance_min = min(state[instance].distance_cm, state[instance].pre_arm_distance_min);
-    state[instance].pre_arm_distance_max = max(state[instance].distance_cm, state[instance].pre_arm_distance_max);
-
-    // Check that the range finder has been exercised through a realistic range of movement
-    if (((state[instance].pre_arm_distance_max - state[instance].pre_arm_distance_min) > RANGEFINDER_PREARM_REQUIRED_CHANGE_CM) &&
-         (state[instance].pre_arm_distance_max < RANGEFINDER_PREARM_ALT_MAX_CM) &&
-         ((int16_t)state[instance].pre_arm_distance_min < (max(_ground_clearance_cm[instance],min_distance_cm(instance)) + 10)) &&
-         ((int16_t)state[instance].pre_arm_distance_min > (min(_ground_clearance_cm[instance],min_distance_cm(instance)) - 10))) {
-        state[instance].pre_arm_check = true;
-    }
+    return backend->get_pos_offset();
 }
+
+uint32_t RangeFinder::last_reading_ms(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->last_reading_ms();
+}
+
+MAV_DISTANCE_SENSOR RangeFinder::get_mav_distance_sensor_type_orient(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return MAV_DISTANCE_SENSOR_UNKNOWN;
+    }
+    return backend->get_mav_distance_sensor_type();
+}
+
+RangeFinder *RangeFinder::_singleton;

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,19 +12,17 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <utility>
 
-#include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 #include "AP_Compass_LSM303D.h"
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/GPIO.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-#define LSM303D_DRDY_M_PIN RPI_GPIO_27
-#endif
 #endif
 
 #ifndef LSM303D_DRDY_M_PIN
@@ -147,72 +144,51 @@ extern const AP_HAL::HAL& hal;
 
 #define REG7_CONT_MODE_M        ((0<<1) | (0<<0))
 
-
 #define INT_CTRL_M              0x12
 #define INT_SRC_M               0x13
 
-/* default values for this device */
-#define LSM303D_ACCEL_DEFAULT_RANGE_G           8
-#define LSM303D_ACCEL_DEFAULT_RATE          800
-#define LSM303D_ACCEL_DEFAULT_ONCHIP_FILTER_FREQ    50
-#define LSM303D_ACCEL_DEFAULT_DRIVER_FILTER_FREQ    30
-
-#define LSM303D_MAG_DEFAULT_RANGE_GA            2
+#define LSM303D_MAG_DEFAULT_RANGE_GA          2
 #define LSM303D_MAG_DEFAULT_RATE            100
 
-#define LSM303D_DEBUG 0
-#if LSM303D_DEBUG
-#include <stdio.h>
-#define error(...) fprintf(stderr, __VA_ARGS__)
-#define debug(...) hal.console->printf(__VA_ARGS__)
-#define ASSERT(x) assert(x)
-#else
-#define error(...)
-#define debug(...)
-#define ASSERT(x)
-#endif
-
-// constructor
-AP_Compass_LSM303D::AP_Compass_LSM303D(Compass &compass):
-    AP_Compass_Backend(compass)
-{}
-
-// detect the sensor
-AP_Compass_Backend *AP_Compass_LSM303D::detect_spi(Compass &compass)
+AP_Compass_LSM303D::AP_Compass_LSM303D(AP_HAL::OwnPtr<AP_HAL::Device> dev)
+    : _dev(std::move(dev))
 {
-    AP_Compass_LSM303D *sensor = new AP_Compass_LSM303D(compass);
-    if (sensor == NULL) {
-        return NULL;
+}
+
+AP_Compass_Backend *AP_Compass_LSM303D::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                              enum Rotation rotation)
+{
+    if (!dev) {
+        return nullptr;
     }
-    if (!sensor->init()) {
+    AP_Compass_LSM303D *sensor = new AP_Compass_LSM303D(std::move(dev));
+    if (!sensor || !sensor->init(rotation)) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
+
     return sensor;
 }
 
 uint8_t AP_Compass_LSM303D::_register_read(uint8_t reg)
 {
-    uint8_t addr = reg | 0x80; // Set most significant bit
+    uint8_t val = 0;
 
-    uint8_t tx[2];
-    uint8_t rx[2];
+    reg |= DIR_READ;
+    _dev->read_registers(reg, &val, 1);
 
-    tx[0] = addr;
-    tx[1] = 0;
-    _spi->transaction(tx, rx, 2);
+    return val;
+}
 
-    return rx[1];
+bool AP_Compass_LSM303D::_block_read(uint8_t reg, uint8_t *buf, uint32_t size)
+{
+    reg |= DIR_READ | ADDR_INCREMENT;
+    return _dev->read_registers(reg, buf, size);
 }
 
 void AP_Compass_LSM303D::_register_write(uint8_t reg, uint8_t val)
 {
-    uint8_t tx[2];
-    uint8_t rx[2];
-
-    tx[0] = reg;
-    tx[1] = val;
-    _spi->transaction(tx, rx, 2);
+    _dev->write_register(reg, val);
 }
 
 void AP_Compass_LSM303D::_register_modify(uint8_t reg, uint8_t clearbits, uint8_t setbits)
@@ -231,17 +207,22 @@ void AP_Compass_LSM303D::_register_modify(uint8_t reg, uint8_t clearbits, uint8_
  */
 bool AP_Compass_LSM303D::_data_ready()
 {
-    return (_drdy_pin_m->read()) != 0;
+    return _drdy_pin_m == nullptr || (_drdy_pin_m->read() != 0);
 }
 
 
 // Read Sensor data
-bool AP_Compass_LSM303D::_read_raw()
+bool AP_Compass_LSM303D::_read_sample()
 {
+    struct PACKED {
+        uint8_t status;
+        int16_t x;
+        int16_t y;
+        int16_t z;
+    } rx;
+
     if (_register_read(ADDR_CTRL_REG7) != _reg7_expected) {
-        hal.console->println_P(
-                               PSTR("LSM303D _read_data_transaction_accel: _reg7_expected unexpected"));
-        // reset();
+        hal.console->printf("LSM303D _read_data_transaction_accel: _reg7_expected unexpected\n");
         return false;
     }
 
@@ -249,224 +230,132 @@ bool AP_Compass_LSM303D::_read_raw()
         return false;
     }
 
-    struct PACKED {
-        uint8_t     cmd;
-        uint8_t     status;
-        int16_t     x;
-        int16_t     y;
-        int16_t     z;
-    } raw_mag_report_tx;
-
-    struct PACKED {
-        uint8_t     cmd;
-        uint8_t     status;
-        int16_t     x;
-        int16_t     y;
-        int16_t     z;
-    } raw_mag_report_rx;
-
-    /* fetch data from the sensor */
-    memset(&raw_mag_report_tx, 0, sizeof(raw_mag_report_tx));
-    memset(&raw_mag_report_rx, 0, sizeof(raw_mag_report_rx));
-    raw_mag_report_tx.cmd = ADDR_STATUS_M | DIR_READ | ADDR_INCREMENT;
-    _spi->transaction((uint8_t *)&raw_mag_report_tx, (uint8_t *)&raw_mag_report_rx, sizeof(raw_mag_report_tx));
-
-    _mag_x = raw_mag_report_rx.x;
-    _mag_y = raw_mag_report_rx.y;
-    _mag_z = raw_mag_report_rx.z;
-
-    if (is_zero(_mag_x) && is_zero(_mag_y) && is_zero(_mag_z)) {
+    if (!_block_read(ADDR_STATUS_M, (uint8_t *) &rx, sizeof(rx))) {
         return false;
     }
+
+    /* check for overrun */
+    if ((rx.status & 0x70) != 0) {
+        return false;
+    }
+
+    if (rx.x == 0 && rx.y == 0 && rx.z == 0) {
+        return false;
+    }
+
+    _mag_x = rx.x;
+    _mag_y = rx.y;
+    _mag_z = rx.z;
 
     return true;
 }
 
-// Public Methods //////////////////////////////////////////////////////////////
-bool
-AP_Compass_LSM303D::init()
+bool AP_Compass_LSM303D::init(enum Rotation rotation)
 {
-    // TODO: support users without data ready pin
-    if (LSM303D_DRDY_M_PIN < 0)
+    if (LSM303D_DRDY_M_PIN >= 0) {
+        _drdy_pin_m = hal.gpio->channel(LSM303D_DRDY_M_PIN);
+        _drdy_pin_m->mode(HAL_GPIO_INPUT);
+    }
+
+    bool success = _hardware_init();
+
+    if (!success) {
         return false;
+    }
 
-    hal.scheduler->suspend_timer_procs();
+    _initialised = true;
 
-    _spi = hal.spi->device(AP_HAL::SPIDevice_LSM303D);
-    _spi_sem = _spi->get_semaphore();
+    /* register the compass instance in the frontend */
+    _compass_instance = register_compass();
 
-    _drdy_pin_m = hal.gpio->channel(LSM303D_DRDY_M_PIN);
-    _drdy_pin_m->mode(HAL_GPIO_INPUT);
+    set_rotation(_compass_instance, rotation);
+
+    _dev->set_device_type(DEVTYPE_LSM303D);
+    set_dev_id(_compass_instance, _dev->get_bus_id());
+
+    // read at 91Hz. We don't run at 100Hz as fetching data too fast can cause some very
+    // odd periodic changes in the output data
+    _dev->register_periodic_callback(11000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
+
+    return true;
+}
+
+bool AP_Compass_LSM303D::_hardware_init()
+{
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("LSM303D: Unable to get semaphore");
+    }
+
+    // initially run the bus at low speed
+    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
     // Test WHOAMI
     uint8_t whoami = _register_read(ADDR_WHO_AM_I);
     if (whoami != WHO_I_AM) {
         hal.console->printf("LSM303D: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
-        hal.scheduler->panic(PSTR("LSM303D: bad WHOAMI"));
+        goto fail_whoami;
     }
 
-    uint8_t tries = 0;
-    do {
-        // TODO: don't try to init 25 times
-        bool success = _hardware_init();
-        if (success) {
-            hal.scheduler->delay(5+2);
-            if (!_spi_sem->take(100)) {
-                hal.scheduler->panic(PSTR("LSM303D: Unable to get semaphore"));
-            }
-            if (_data_ready()) {
-                _spi_sem->give();
-                break;
-            } else {
-                hal.console->println_P(
-                                       PSTR("LSM303D startup failed: no data ready"));
-            }
-            _spi_sem->give();
+    uint8_t tries;
+    for (tries = 0; tries < 5; tries++) {
+        // ensure the chip doesn't interpret any other bus traffic as I2C
+        _disable_i2c();
+
+        /* enable mag */
+        _reg7_expected = REG7_CONT_MODE_M;
+        _register_write(ADDR_CTRL_REG7, _reg7_expected);
+        _register_write(ADDR_CTRL_REG5, REG5_RES_HIGH_M);
+
+        // DRDY on MAG on INT2
+        _register_write(ADDR_CTRL_REG4, 0x04);
+
+        _mag_set_range(LSM303D_MAG_DEFAULT_RANGE_GA);
+        _mag_set_samplerate(LSM303D_MAG_DEFAULT_RATE);
+
+        hal.scheduler->delay(10);
+        if (_data_ready()) {
+            break;
         }
-        if (tries++ > 5) {
-            hal.scheduler->panic(PSTR("PANIC: failed to boot LSM303D 5 times"));
-        }
-    } while (1);
-
-    _scaling[0] = 1.0;
-    _scaling[1] = 1.0;
-    _scaling[2] = 1.0;
-
-    /* register the compass instance in the frontend */
-    _compass_instance = register_compass();
-    set_dev_id(_compass_instance, get_dev_id());
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    set_external(_compass_instance, false);
-#endif
-
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
-
-    set_milligauss_ratio(_compass_instance, 1.0f);
-
-    _spi_sem->give();
-    hal.scheduler->resume_timer_procs();
-    _initialised = true;
-
-    return _initialised;
-}
-
-uint32_t AP_Compass_LSM303D::get_dev_id()
-{
-    return AP_COMPASS_TYPE_LSM303D;
-}
-
-bool AP_Compass_LSM303D::_hardware_init(void)
-{
-    if (!_spi_sem->take(100)) {
-        hal.scheduler->panic(PSTR("LSM303D: Unable to get semaphore"));
+    }
+    if (tries == 5) {
+        hal.console->printf("Failed to boot LSM303D 5 times\n");
+        goto fail_tries;
     }
 
-    // initially run the bus at low speed
-    _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-
-    // ensure the chip doesn't interpret any other bus traffic as I2C
-    _disable_i2c();
-
-    /* enable mag */
-    _reg7_expected = REG7_CONT_MODE_M;
-    _register_write(ADDR_CTRL_REG7, _reg7_expected);
-    _register_write(ADDR_CTRL_REG5, REG5_RES_HIGH_M);
-    _register_write(ADDR_CTRL_REG4, 0x04); // DRDY on MAG on INT2
-
-    _mag_set_range(LSM303D_MAG_DEFAULT_RANGE_GA);
-    _mag_set_samplerate(LSM303D_MAG_DEFAULT_RATE);
-
-    // TODO: Software filtering
-
-    // now that we have initialised, we set the SPI bus speed to high
-    _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
-    _spi_sem->give();
+    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    _dev->get_semaphore()->give();
 
     return true;
+
+fail_tries:
+fail_whoami:
+    _dev->get_semaphore()->give();
+    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+    return false;
 }
 
 void AP_Compass_LSM303D::_update()
 {
-    if (hal.scheduler->micros() - _last_update_timestamp < 10000) {
+    if (!_read_sample()) {
         return;
     }
 
-    if (!_spi_sem->take_nonblocking()) {
-        return;
-    }
+    Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * _mag_range_scale;
 
-    _collect_samples();
-
-    _last_update_timestamp = hal.scheduler->micros();
-    _spi_sem->give();
-}
-
-void AP_Compass_LSM303D::_collect_samples()
-{
-    if (!_initialised) {
-        return;
-    }
-
-    if (!_read_raw()) {
-        error("_read_raw() failed\n");
-    } else {
-        Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * _mag_range_scale;
-        uint32_t time_us = hal.scheduler->micros();
-
-        // rotate raw_field from sensor frame to body frame
-        rotate_field(raw_field, _compass_instance);
-
-        // publish raw_field (uncorrected point sample) for _scaling use
-        publish_raw_field(raw_field, time_us, _compass_instance);
-
-        // correct raw_field for known errors
-        correct_field(raw_field, _compass_instance);
-
-        // publish raw_field (corrected point sample) for EKF use
-        publish_unfiltered_field(raw_field, time_us, _compass_instance);
-
-        _mag_x_accum += raw_field.x;
-        _mag_y_accum += raw_field.y;
-        _mag_z_accum += raw_field.z;
-        _accum_count++;
-        if (_accum_count == 10) {
-            _mag_x_accum /= 2;
-            _mag_y_accum /= 2;
-            _mag_z_accum /= 2;
-            _accum_count = 5;
-        }
-    }
+    accumulate_sample(raw_field, _compass_instance, 10);
 }
 
 // Read Sensor data
 void AP_Compass_LSM303D::read()
 {
     if (!_initialised) {
-        // someone has tried to enable a compass for the first time
-        // mid-flight .... we can't do that yet (especially as we won't
-        // have the right orientation!)
         return;
     }
 
-    if (_accum_count == 0) {
-        /* We're not ready to publish*/
-        return;
-    }
-
-    hal.scheduler->suspend_timer_procs();
-    Vector3f field(_mag_x_accum * _scaling[0],
-                   _mag_y_accum * _scaling[1],
-                   _mag_z_accum * _scaling[2]);
-    field /= _accum_count;
-
-    _accum_count = 0;
-    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-    hal.scheduler->resume_timer_procs();
-
-    publish_filtered_field(field, _compass_instance);
+    drain_accumulated_samples(_compass_instance);
 }
 
-void AP_Compass_LSM303D::_disable_i2c(void)
+void AP_Compass_LSM303D::_disable_i2c()
 {
     // TODO: use the register names
     uint8_t a = _register_read(0x02);
@@ -479,68 +368,65 @@ void AP_Compass_LSM303D::_disable_i2c(void)
     _register_write(0x02, (0xE7 & a));
 }
 
-uint8_t AP_Compass_LSM303D::_mag_set_range(uint8_t max_ga)
+bool AP_Compass_LSM303D::_mag_set_range(uint8_t max_ga)
 {
     uint8_t setbits = 0;
     uint8_t clearbits = REG6_FULL_SCALE_BITS_M;
     float new_scale_ga_digit = 0.0f;
 
-    if (max_ga == 0)
+    if (max_ga == 0) {
         max_ga = 12;
+    }
 
     if (max_ga <= 2) {
         _mag_range_ga = 2;
         setbits |= REG6_FULL_SCALE_2GA_M;
         new_scale_ga_digit = 0.080f;
-
     } else if (max_ga <= 4) {
         _mag_range_ga = 4;
         setbits |= REG6_FULL_SCALE_4GA_M;
         new_scale_ga_digit = 0.160f;
-
     } else if (max_ga <= 8) {
         _mag_range_ga = 8;
         setbits |= REG6_FULL_SCALE_8GA_M;
         new_scale_ga_digit = 0.320f;
-
     } else if (max_ga <= 12) {
         _mag_range_ga = 12;
         setbits |= REG6_FULL_SCALE_12GA_M;
         new_scale_ga_digit = 0.479f;
-
     } else {
-        return -1;
+        return false;
     }
 
     _mag_range_scale = new_scale_ga_digit;
     _register_modify(ADDR_CTRL_REG6, clearbits, setbits);
-    return 0;
+
+    return true;
 }
 
-uint8_t AP_Compass_LSM303D::_mag_set_samplerate(uint16_t frequency)
+bool AP_Compass_LSM303D::_mag_set_samplerate(uint16_t frequency)
 {
     uint8_t setbits = 0;
     uint8_t clearbits = REG5_RATE_BITS_M;
 
-    if (frequency == 0)
+    if (frequency == 0) {
         frequency = 100;
+    }
 
     if (frequency <= 25) {
         setbits |= REG5_RATE_25HZ_M;
         _mag_samplerate = 25;
-
     } else if (frequency <= 50) {
         setbits |= REG5_RATE_50HZ_M;
         _mag_samplerate = 50;
-
     } else if (frequency <= 100) {
         setbits |= REG5_RATE_100HZ_M;
         _mag_samplerate = 100;
-
     } else {
-        return -1;
+        return false;
     }
 
     _register_modify(ADDR_CTRL_REG5, clearbits, setbits);
-    return 0;
+
+    return true;
 }

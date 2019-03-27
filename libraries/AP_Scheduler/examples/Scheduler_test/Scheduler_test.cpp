@@ -1,46 +1,17 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple test for the AP_Scheduler interface
 //
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Param/AP_Param.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Baro/AP_Baro.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Mission/AP_Mission.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <Filter/Filter.h>
-#include <SITL/SITL.h>
-#include <AP_Buffer/AP_Buffer.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <DataFlash/DataFlash.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Scheduler/AP_Scheduler.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Logger/AP_Logger.h>
 
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+AP_Int32 log_bitmask;
+AP_Logger AP_Logger{log_bitmask};
 
 class SchedTest {
 public:
@@ -50,7 +21,7 @@ public:
 private:
 
     AP_InertialSensor ins;
-    AP_Scheduler scheduler;
+    AP_Scheduler scheduler{nullptr};
 
     uint32_t ins_counter;
     static const AP_Scheduler::Task scheduler_tasks[];
@@ -60,47 +31,38 @@ private:
     void five_second_call(void);
 };
 
+static AP_BoardConfig board_config;
 static SchedTest schedtest;
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros) {\
-    .function = FUNCTOR_BIND(&schedtest, &SchedTest::func, void),\
-    AP_SCHEDULER_NAME_INITIALIZER(func)\
-    .interval_ticks = _interval_ticks,\
-    .max_time_micros = _max_time_micros,\
-}
+#define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(SchedTest, &schedtest, func, _interval_ticks, _max_time_micros)
 
 /*
   scheduler table - all regular tasks are listed here, along with how
   often they should be called (in 20ms units) and the maximum time
   they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task SchedTest::scheduler_tasks[] PROGMEM = {
-    SCHED_TASK(ins_update,              1,   1000),
-    SCHED_TASK(one_hz_print,           50,   1000),
-    SCHED_TASK(five_second_call,      250,   1800),
+const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
+    SCHED_TASK(ins_update,             50,   1000),
+    SCHED_TASK(one_hz_print,            1,   1000),
+    SCHED_TASK(five_second_call,      0.2,   1800),
 };
 
 
 void SchedTest::setup(void)
 {
-    // we 
-    ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_50HZ);
+
+    board_config.init();
+
+    ins.init(scheduler.get_loop_rate_hz());
 
     // initialise the scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), (uint32_t)-1);
 }
 
 void SchedTest::loop(void)
 {
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    // run all tasks that fit in 20ms
-    scheduler.run(20000);
+    // run all tasks
+    scheduler.loop();
 }
 
 /*
@@ -117,7 +79,7 @@ void SchedTest::ins_update(void)
  */
 void SchedTest::one_hz_print(void)
 {
-    hal.console->printf("one_hz: t=%lu\n", (unsigned long)hal.scheduler->millis());
+    hal.console->printf("one_hz: t=%lu\n", (unsigned long)AP_HAL::millis());
 }
 
 /*
@@ -125,7 +87,7 @@ void SchedTest::one_hz_print(void)
  */
 void SchedTest::five_second_call(void)
 {
-    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", (unsigned long)hal.scheduler->millis(), ins_counter);
+    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", (unsigned long)AP_HAL::millis(), (unsigned)ins_counter);
 }
 
 /*

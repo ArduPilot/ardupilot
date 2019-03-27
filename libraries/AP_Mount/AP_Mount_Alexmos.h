@@ -1,11 +1,7 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
   Alexmos Serial controlled mount backend class
 */
-
-#ifndef __AP_MOUNT_ALEXMOS_H__
-#define __AP_MOUNT_ALEXMOS_H__
+#pragma once
 
 #include "AP_Mount.h"
 #include <AP_HAL/AP_HAL.h>
@@ -71,38 +67,23 @@ class AP_Mount_Alexmos : public AP_Mount_Backend
 public:
     //constructor
     AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
-        AP_Mount_Backend(frontend, state, instance),
-        _port(NULL),
-        _initialised(false),
-        _board_version(0),
-        _current_firmware_version(0.0f),
-        _firmware_beta_version(0),
-        _gimbal_3axis(false),
-        _gimbal_bat_monitoring(false),
-        _current_angle(0,0,0),
-        _param_read_once(false),
-        _checksum(0),
-        _step(0),
-        _command_id(0),
-        _payload_length(0),
-        _payload_counter(0),
-        _last_command_confirmed(false)
+        AP_Mount_Backend(frontend, state, instance)
     {}
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager);
+    virtual void init(const AP_SerialManager& serial_manager) override;
 
     // update mount position - should be called periodically
-    virtual void update();
+    virtual void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    virtual bool has_pan_control() const;
+    virtual bool has_pan_control() const override;
 
     // set_mode - sets mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) ;
+    virtual void set_mode(enum MAV_MOUNT_MODE mode) override;
 
-    // status_msg - called to allow mounts to send their status to GCS via MAVLink
-    virtual void status_msg(mavlink_channel_t chan) ;
+    // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
+    virtual void send_mount_status(mavlink_channel_t chan) override;
 
 private:
 
@@ -286,11 +267,11 @@ private:
 
     };
     union PACKED alexmos_parameters {
+        DEFINE_BYTE_ARRAY_METHODS
         alexmos_version version;
         alexmos_angles angles;
         alexmos_params params;
         alexmos_angles_speed angle_speed;
-        uint8_t bytes[];
     } _buffer,_current_parameters;
 
     AP_HAL::UARTDriver *_port;
@@ -319,5 +300,3 @@ private:
     // confirmed that last command was ok
     bool _last_command_confirmed : 1;
 };
-
-#endif

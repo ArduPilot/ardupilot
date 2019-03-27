@@ -1,66 +1,72 @@
 #!/bin/bash
+echo "---------- $0 start ----------"
+
+# this script is run by the root user in the virtual machine
 
 set -e
+set -x
 
+who=$(whoami)
 echo "Initial setup of SITL-vagrant instance."
-
-BASE_PKGS="gawk make git arduino-core curl"
-SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-empy python-pyparsing ccache"
-AVR_PKGS="gcc-avr binutils-avr avr-libc"
-PYTHON_PKGS="pymavlink MAVProxy droneapi"
-PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
-          autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
-          zip genromfs"
-UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.6-base:i386 libstdc++5:i386 libstdc++6:i386"
-
-# GNU Tools for ARM Embedded Processors
-# (see https://launchpad.net/gcc-arm-embedded/)
-ARM_ROOT="gcc-arm-none-eabi-4_7-2014q2"
-ARM_TARBALL="$ARM_ROOT-20140408-linux.tar.bz2"
-ARM_TARBALL_URL="http://firmware.diydrones.com/Tools/PX4-tools/$ARM_TARBALL"
-
-# Ardupilot Tools
-ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
-
-sudo usermod -a -G dialout $USER
-
-sudo apt-get -y remove modemmanager
-sudo apt-get -y update
-sudo apt-get -y install dos2unix g++-4.7 ccache python-lxml screen
-sudo apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $AVR_PKGS
-sudo pip -q install $PYTHON_PKGS
-sudo pip install catkin_pkg
-
-
-# ARM toolchain
-if [ ! -d /opt/$ARM_ROOT ]; then
-    (
-        cd /opt;
-        sudo wget -nv $ARM_TARBALL_URL;
-        sudo tar xjf ${ARM_TARBALL};
-        sudo rm ${ARM_TARBALL};
-    )
+if [ $who != 'root' ]; then
+    echo "SORRY, MUST RUN THIS SCRIPT AS ROOT, GIVING UP"
+    exit 1
 fi
 
-exportline="export PATH=/opt/$ARM_ROOT/bin:\$PATH"
-if grep -Fxq "$exportline" /home/vagrant/.profile; then echo nothing to do ; else echo $exportline >> /home/vagrant/.profile; fi
+VAGRANT_USER=ubuntu
+if [ -e /home/vagrant ]; then
+    # prefer vagrant user
+    VAGRANT_USER=vagrant
+fi
+echo USING VAGRANT_USER:$VAGRANT_USER
 
-echo "source /vagrant/Tools/vagrant/shellinit.sh" >>/home/vagrant/.profile
-# This allows the PX4NuttX build to proceed when the underlying fs is on windows
-# It is only marginally less efficient on Linux
-echo "export PX4_WINTOOL=y" >>/home/vagrant/.profile
-ln -fs /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
+cd /home/$VAGRANT_USER
+
+
+# artful rootfs is 2GB without resize:
+sudo resize2fs /dev/sda1
+
+usermod -a -G dialout $VAGRANT_USER
+
+echo "calling pre-reqs script..."
+sudo -H -u $VAGRANT_USER /vagrant/Tools/scripts/install-prereqs-ubuntu.sh -y
+echo "...pre-reqs script done... initvagrant.sh continues."
+
+# run-in-terminal-window uses xterm:
+apt-get install -y xterm
+
+# valgrind support:
+apt-get install -y valgrind
+
+# gdb support:
+apt-get install -y gdb
+
+# gcov support:
+apt-get install -y gcovr lcov
+
+# install pexpect for autotest.py
+pip install pexpect
+
+
+sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
 # build JSB sim
-pushd /tmp
-rm -rf jsbsim
-git clone git://github.com/tridge/jsbsim.git
-sudo apt-get install -y libtool automake autoconf libexpat1-dev
-cd jsbsim
-./autogen.sh
-make -j2
-sudo make install
-popd
+apt-get install -y libtool automake autoconf libexpat1-dev
+#  libtool-bin
+sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
+
+# adjust environment for every login shell:
+DOT_PROFILE=/home/$VAGRANT_USER/.profile
+echo "source /vagrant/Tools/vagrant/shellinit.sh" |
+    sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
+
+# link a half-way decent .mavinit.scr into place:
+sudo --login -u $VAGRANT_USER ln -s /vagrant/Tools/vagrant/mavinit.scr /home/$VAGRANT_USER/.mavinit.scr
+
+#Plant a marker for sim_vehicle that we're inside a vagrant box
+touch /ardupilot.vagrant
 
 # Now you can run
 # vagrant ssh -c "screen -d -R"
+echo "---------- $0 end ----------"
+

@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,18 +55,13 @@
  *
  * The fitting algorithm used is Levenberg-Marquardt. See also:
  * http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
- *
- * The sample acceptance distance is determined as follows:
- * for any regular polyhedron with Triangular faces
- * angle subtended by two closest point = arccos(cos(A)/(1-cos(A)))
- *                                      : where A = (4pi/F + pi)/3
- *                                      : and F is the number of faces
- *          for polyhedron in consideration F = 2V-4 (where V is vertices or points in our case)
- * above equation was proved after solving for spherical triangular excess and related equations
  */
 
 #include "CompassCalibrator.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_GeodesicGrid.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -77,7 +71,7 @@ extern const AP_HAL::HAL& hal;
 
 CompassCalibrator::CompassCalibrator():
 _tolerance(COMPASS_CAL_DEFAULT_TOLERANCE),
-_sample_buffer(NULL)
+_sample_buffer(nullptr)
 {
     clear();
 }
@@ -86,15 +80,17 @@ void CompassCalibrator::clear() {
     set_status(COMPASS_CAL_NOT_STARTED);
 }
 
-void CompassCalibrator::start(bool retry, bool autosave, float delay) {
+void CompassCalibrator::start(bool retry, float delay, uint16_t offset_max, uint8_t compass_idx)
+{
     if(running()) {
         return;
     }
-    _autosave = autosave;
+    _offset_max = offset_max;
     _attempt = 1;
     _retry = retry;
     _delay_start_sec = delay;
-    _start_time_ms = hal.scheduler->millis();
+    _start_time_ms = AP_HAL::millis();
+    _compass_idx = compass_idx;
     set_status(COMPASS_CAL_WAITING_TO_START);
 }
 
@@ -122,13 +118,42 @@ float CompassCalibrator::get_completion_percent() const {
         case COMPASS_CAL_SUCCESS:
             return 100.0f;
         case COMPASS_CAL_FAILED:
+        case COMPASS_CAL_BAD_ORIENTATION:
         default:
             return 0.0f;
     };
 }
 
+void CompassCalibrator::update_completion_mask(const Vector3f& v)
+{
+    Matrix3f softiron{
+        _params.diag.x,    _params.offdiag.x, _params.offdiag.y,
+        _params.offdiag.x, _params.diag.y,    _params.offdiag.z,
+        _params.offdiag.y, _params.offdiag.z, _params.diag.z
+    };
+    Vector3f corrected = softiron * (v + _params.offset);
+    int section = AP_GeodesicGrid::section(corrected, true);
+    if (section < 0) {
+        return;
+    }
+    _completion_mask[section / 8] |= 1 << (section % 8);
+}
+
+void CompassCalibrator::update_completion_mask()
+{
+    memset(_completion_mask, 0, sizeof(_completion_mask));
+    for (int i = 0; i < _samples_collected; i++) {
+        update_completion_mask(_sample_buffer[i].get());
+    }
+}
+
+CompassCalibrator::completion_mask_t& CompassCalibrator::get_completion_mask()
+{
+    return _completion_mask;
+}
+
 bool CompassCalibrator::check_for_timeout() {
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
     if(running() && tnow - _last_sample_ms > 1000) {
         _retry = false;
         set_status(COMPASS_CAL_FAILED);
@@ -138,14 +163,16 @@ bool CompassCalibrator::check_for_timeout() {
 }
 
 void CompassCalibrator::new_sample(const Vector3f& sample) {
-    _last_sample_ms = hal.scheduler->millis();
+    _last_sample_ms = AP_HAL::millis();
 
     if(_status == COMPASS_CAL_WAITING_TO_START) {
         set_status(COMPASS_CAL_RUNNING_STEP_ONE);
     }
 
     if(running() && _samples_collected < COMPASS_CAL_NUM_SAMPLES && accept_sample(sample)) {
+        update_completion_mask(sample);
         _sample_buffer[_samples_collected].set(sample);
+        _sample_buffer[_samples_collected].att.set_from_ahrs();
         _samples_collected++;
     }
 }
@@ -159,18 +186,21 @@ void CompassCalibrator::update(bool &failure) {
 
     if(_status == COMPASS_CAL_RUNNING_STEP_ONE) {
         if (_fit_step >= 10) {
-            if(_fitness == _initial_fitness || isnan(_fitness)) {           //if true, means that fitness is diverging instead of converging
+            if(is_equal(_fitness,_initial_fitness) || isnan(_fitness)) {           //if true, means that fitness is diverging instead of converging
                 set_status(COMPASS_CAL_FAILED);
                 failure = true;
             }
             set_status(COMPASS_CAL_RUNNING_STEP_TWO);
         } else {
+            if (_fit_step == 0) {
+                calc_initial_offset();
+            }
             run_sphere_fit();
             _fit_step++;
         }
     } else if(_status == COMPASS_CAL_RUNNING_STEP_TWO) {
         if (_fit_step >= 35) {
-            if(fit_acceptable()) {
+            if(fit_acceptable() && calculate_orientation()) {
                 set_status(COMPASS_CAL_SUCCESS);
             } else {
                 set_status(COMPASS_CAL_FAILED);
@@ -218,6 +248,7 @@ void CompassCalibrator::reset_state() {
     _params.diag = Vector3f(1.0f,1.0f,1.0f);
     _params.offdiag.zero();
 
+    memset(_completion_mask, 0, sizeof(_completion_mask));
     initialize_fit();
 }
 
@@ -231,9 +262,9 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
             reset_state();
             _status = COMPASS_CAL_NOT_STARTED;
 
-            if(_sample_buffer != NULL) {
+            if(_sample_buffer != nullptr) {
                 free(_sample_buffer);
-                _sample_buffer = NULL;
+                _sample_buffer = nullptr;
             }
             return true;
 
@@ -249,19 +280,16 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
                 return false;
             }
 
-            if(_attempt == 1 && (hal.scheduler->millis()-_start_time_ms)*1.0e-3f < _delay_start_sec) {
+            if(_attempt == 1 && (AP_HAL::millis()-_start_time_ms)*1.0e-3f < _delay_start_sec) {
                 return false;
             }
 
-            if(_sample_buffer != NULL) {
-                initialize_fit();
-                _status = COMPASS_CAL_RUNNING_STEP_ONE;
-                return true;
+            if (_sample_buffer == nullptr) {
+                _sample_buffer =
+                    (CompassSample*) calloc(COMPASS_CAL_NUM_SAMPLES, sizeof(CompassSample));
             }
 
-            _sample_buffer = (CompassSample*)malloc(sizeof(CompassSample)*COMPASS_CAL_NUM_SAMPLES);
-
-            if(_sample_buffer != NULL) {
+            if(_sample_buffer != nullptr) {
                 initialize_fit();
                 _status = COMPASS_CAL_RUNNING_STEP_ONE;
                 return true;
@@ -283,15 +311,22 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
                 return false;
             }
 
-            if(_sample_buffer != NULL) {
+            if(_sample_buffer != nullptr) {
                 free(_sample_buffer);
-                _sample_buffer = NULL;
+                _sample_buffer = nullptr;
             }
 
             _status = COMPASS_CAL_SUCCESS;
             return true;
 
         case COMPASS_CAL_FAILED:
+            if (_status == COMPASS_CAL_BAD_ORIENTATION) {
+                // don't overwrite bad orientation status
+                return false;
+            }
+            FALLTHROUGH;
+            
+        case COMPASS_CAL_BAD_ORIENTATION:
             if(_status == COMPASS_CAL_NOT_STARTED) {
                 return false;
             }
@@ -301,14 +336,14 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
                 return true;
             }
 
-            if(_sample_buffer != NULL) {
+            if(_sample_buffer != nullptr) {
                 free(_sample_buffer);
-                _sample_buffer = NULL;
+                _sample_buffer = nullptr;
             }
 
-            _status = COMPASS_CAL_FAILED;
+            _status = status;
             return true;
-
+            
         default:
             return false;
     };
@@ -317,9 +352,9 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
 bool CompassCalibrator::fit_acceptable() {
     if( !isnan(_fitness) &&
         _params.radius > 150 && _params.radius < 950 && //Earth's magnetic field strength range: 250-850mG
-        fabsf(_params.offset.x) < 1000 &&
-        fabsf(_params.offset.y) < 1000 &&
-        fabsf(_params.offset.z) < 1000 &&
+        fabsf(_params.offset.x) < _offset_max &&
+        fabsf(_params.offset.y) < _offset_max &&
+        fabsf(_params.offset.z) < _offset_max &&
         _params.diag.x > 0.2f && _params.diag.x < 5.0f &&
         _params.diag.y > 0.2f && _params.diag.y < 5.0f &&
         _params.diag.z > 0.2f && _params.diag.z < 5.0f &&
@@ -333,7 +368,7 @@ bool CompassCalibrator::fit_acceptable() {
 }
 
 void CompassCalibrator::thin_samples() {
-    if(_sample_buffer == NULL) {
+    if(_sample_buffer == nullptr) {
         return;
     }
 
@@ -341,7 +376,7 @@ void CompassCalibrator::thin_samples() {
     // shuffle the samples http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
     // this is so that adjacent samples don't get sequentially eliminated
     for(uint16_t i=_samples_collected-1; i>=1; i--) {
-        uint16_t j = get_random() % (i+1);
+        uint16_t j = get_random16() % (i+1);
         CompassSample temp = _sample_buffer[i];
         _sample_buffer[i] = _sample_buffer[j];
         _sample_buffer[j] = temp;
@@ -354,17 +389,36 @@ void CompassCalibrator::thin_samples() {
             _samples_thinned ++;
         }
     }
+
+    update_completion_mask();
 }
 
+/*
+ * The sample acceptance distance is determined as follows:
+ * For any regular polyhedron with triangular faces, the angle theta subtended
+ * by two closest points is defined as
+ *
+ *      theta = arccos(cos(A)/(1-cos(A)))
+ *
+ * Where:
+ *      A = (4pi/F + pi)/3
+ * and
+ *      F = 2V - 4 is the number of faces for the polyhedron in consideration,
+ *      which depends on the number of vertices V
+ *
+ * The above equation was proved after solving for spherical triangular excess
+ * and related equations.
+ */
 bool CompassCalibrator::accept_sample(const Vector3f& sample)
 {
-    if(_sample_buffer == NULL) {
+    static const uint16_t faces = (2 * COMPASS_CAL_NUM_SAMPLES - 4);
+    static const float a = (4.0f * M_PI / (3.0f * faces)) + M_PI / 3.0f;
+    static const float theta = 0.5f * acosf(cosf(a) / (1.0f - cosf(a)));
+
+    if(_sample_buffer == nullptr) {
         return false;
     }
 
-    float faces = 2*COMPASS_CAL_NUM_SAMPLES-4;
-    float theta = acosf(cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)/(1.0f-cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)));
-    theta *= 0.5f;
     float min_distance = _params.radius * 2*sinf(theta/2);
 
     for (uint16_t i = 0; i<_samples_collected; i++){
@@ -396,7 +450,7 @@ float CompassCalibrator::calc_mean_squared_residuals() const
 
 float CompassCalibrator::calc_mean_squared_residuals(const param_t& params) const
 {
-    if(_sample_buffer == NULL || _samples_collected == 0) {
+    if(_sample_buffer == nullptr || _samples_collected == 0) {
         return 1.0e30f;
     }
     float sum = 0.0f;
@@ -432,9 +486,19 @@ void CompassCalibrator::calc_sphere_jacob(const Vector3f& sample, const param_t&
     ret[3] = -1.0f * (((offdiag.y * A) + (offdiag.z * B) + (diag.z    * C))/length);
 }
 
+void CompassCalibrator::calc_initial_offset()
+{
+    // Set initial offset to the average value of the samples
+    _params.offset.zero();
+    for(uint16_t k = 0; k<_samples_collected; k++) {
+        _params.offset -= _sample_buffer[k].get();
+    }
+    _params.offset /= _samples_collected;
+}
+
 void CompassCalibrator::run_sphere_fit()
 {
-    if(_sample_buffer == NULL) {
+    if(_sample_buffer == nullptr) {
         return;
     }
 
@@ -445,13 +509,10 @@ void CompassCalibrator::run_sphere_fit()
     param_t fit1_params, fit2_params;
     fit1_params = fit2_params = _params;
 
-    float JTJ[COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS];
-    float JTJ2[COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS];
-    float JTFI[COMPASS_CAL_NUM_SPHERE_PARAMS];
+    float JTJ[COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS] = { };
+    float JTJ2[COMPASS_CAL_NUM_SPHERE_PARAMS*COMPASS_CAL_NUM_SPHERE_PARAMS] = { };
+    float JTFI[COMPASS_CAL_NUM_SPHERE_PARAMS] = { };
 
-    memset(&JTJ,0,sizeof(JTJ));
-    memset(&JTJ2,0,sizeof(JTJ2));
-    memset(&JTFI,0,sizeof(JTFI));
     // Gauss Newton Part common for all kind of extensions including LM
     for(uint16_t k = 0; k<_samples_collected; k++) {
         Vector3f sample = _sample_buffer[k].get();
@@ -511,6 +572,7 @@ void CompassCalibrator::run_sphere_fit()
     if(!isnan(fitness) && fitness < _fitness) {
         _fitness = fitness;
         _params = fit1_params;
+        update_completion_mask();
     }
 }
 
@@ -547,7 +609,7 @@ void CompassCalibrator::calc_ellipsoid_jacob(const Vector3f& sample, const param
 
 void CompassCalibrator::run_ellipsoid_fit()
 {
-    if(_sample_buffer == NULL) {
+    if(_sample_buffer == nullptr) {
         return;
     }
 
@@ -560,13 +622,10 @@ void CompassCalibrator::run_ellipsoid_fit()
     fit1_params = fit2_params = _params;
 
 
-    float JTJ[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
-    float JTJ2[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
-    float JTFI[COMPASS_CAL_NUM_ELLIPSOID_PARAMS];
+    float JTJ[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS] = { };
+    float JTJ2[COMPASS_CAL_NUM_ELLIPSOID_PARAMS*COMPASS_CAL_NUM_ELLIPSOID_PARAMS] = { };
+    float JTFI[COMPASS_CAL_NUM_ELLIPSOID_PARAMS] = { };
 
-    memset(&JTJ,0,sizeof(JTJ));
-    memset(&JTJ2,0,sizeof(JTJ2));
-    memset(&JTFI,0,sizeof(JTFI));
     // Gauss Newton Part common for all kind of extensions including LM
     for(uint16_t k = 0; k<_samples_collected; k++) {
         Vector3f sample = _sample_buffer[k].get();
@@ -627,33 +686,205 @@ void CompassCalibrator::run_ellipsoid_fit()
     if(fitness < _fitness) {
         _fitness = fitness;
         _params = fit1_params;
+        update_completion_mask();
     }
 }
 
-
-uint16_t CompassCalibrator::get_random(void)
-{
-    static uint32_t m_z = 1234;
-    static uint32_t m_w = 76542;
-    m_z = 36969 * (m_z & 65535) + (m_z >> 16);
-    m_w = 18000 * (m_w & 65535) + (m_w >> 16);
-    return ((m_z << 16) + m_w) & 0xFFFF;
-}
 
 //////////////////////////////////////////////////////////
 //////////// CompassSample public interface //////////////
 //////////////////////////////////////////////////////////
 
+#define COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(__X) ((int16_t)constrain_float(roundf(__X*8.0f), INT16_MIN, INT16_MAX))
+#define COMPASS_CAL_SAMPLE_SCALE_TO_FLOAT(__X) (__X/8.0f)
+
 Vector3f CompassCalibrator::CompassSample::get() const {
-    Vector3f out;
-    out.x = (float)x*2048.0f/32700.0f;
-    out.y = (float)y*2048.0f/32700.0f;
-    out.z = (float)z*2048.0f/32700.0f;
-    return out;
+    return Vector3f(COMPASS_CAL_SAMPLE_SCALE_TO_FLOAT(x),
+                    COMPASS_CAL_SAMPLE_SCALE_TO_FLOAT(y),
+                    COMPASS_CAL_SAMPLE_SCALE_TO_FLOAT(z));
 }
 
 void CompassCalibrator::CompassSample::set(const Vector3f &in) {
-    x = (int16_t)(in.x*32700.0f/2048.0f + 0.5f);
-    y = (int16_t)(in.y*32700.0f/2048.0f + 0.5f);
-    z = (int16_t)(in.z*32700.0f/2048.0f + 0.5f);
+    x = COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(in.x);
+    y = COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(in.y);
+    z = COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(in.z);
+}
+
+
+void CompassCalibrator::AttitudeSample::set_from_ahrs(void) {
+    const Matrix3f &dcm = AP::ahrs().get_DCM_rotation_body_to_ned();
+    float roll_rad, pitch_rad, yaw_rad;
+    dcm.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
+    roll = constrain_int16(127 * (roll_rad / M_PI), -127, 127);
+    pitch = constrain_int16(127 * (pitch_rad / M_PI_2), -127, 127);
+    yaw = constrain_int16(127 * (yaw_rad / M_PI), -127, 127);
+}
+
+Matrix3f CompassCalibrator::AttitudeSample::get_rotmat(void) {
+    float roll_rad, pitch_rad, yaw_rad;
+    roll_rad = roll * (M_PI / 127);
+    pitch_rad = pitch * (M_PI_2 / 127);
+    yaw_rad = yaw * (M_PI / 127);
+    Matrix3f dcm;
+    dcm.from_euler(roll_rad, pitch_rad, yaw_rad);
+    return dcm;
+}
+
+/*
+  calculate the implied earth field for a compass sample and compass
+  rotation. This is used to check for consistency between
+  samples. 
+
+  If the orientation is correct then when rotated the same (or
+  similar) earth field should be given for all samples. 
+
+  Note that this earth field uses an arbitrary north reference, so it
+  may not match the true earth field.
+ */
+Vector3f CompassCalibrator::calculate_earth_field(CompassSample &sample, enum Rotation r)
+{
+    Vector3f v = sample.get();
+
+    // convert the sample back to sensor frame
+    v.rotate_inverse(_orientation);
+
+    // rotate to body frame for this rotation
+    v.rotate(r);
+
+    // apply offsets, rotating them for the orientation we are testing
+    Vector3f rot_offsets = _params.offset;
+    rot_offsets.rotate_inverse(_orientation);
+
+    rot_offsets.rotate(r);
+    
+    v += rot_offsets;
+
+    // rotate the sample from body frame back to earth frame
+    Matrix3f rot = sample.att.get_rotmat();
+
+    Vector3f efield = rot * v;
+
+    // earth field is the mag sample in earth frame
+    return efield;
+}
+
+/*
+  calculate compass orientation using the attitude estimate associated
+  with each sample, and fix orientation on external compasses if
+  the feature is enabled
+ */
+bool CompassCalibrator::calculate_orientation(void)
+{
+    if (!_check_orientation) {
+        // we are not checking orientation
+        return true;
+    }
+
+    float variance[ROTATION_MAX] {};
+
+    for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
+        // calculate the average implied earth field across all samples
+        Vector3f total_ef {};
+        for (uint32_t i=0; i<_samples_collected; i++) {
+            Vector3f efield = calculate_earth_field(_sample_buffer[i], r);
+            total_ef += efield;
+        }
+        Vector3f avg_efield = total_ef / _samples_collected;
+
+        // now calculate the square error for this rotation against the average earth field
+        for (uint32_t i=0; i<_samples_collected; i++) {
+            Vector3f efield = calculate_earth_field(_sample_buffer[i], r);
+            float err = (efield - avg_efield).length_squared();
+            // divide by number of samples collected to get the variance
+            variance[r] += err / _samples_collected;
+        }
+    }
+
+    // find the rotation with the lowest variance
+    enum Rotation besti = ROTATION_NONE;
+    float bestv = variance[0];
+    for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
+        if (variance[r] < bestv) {
+            bestv = variance[r];
+            besti = r;
+        }
+    }
+
+    // consider this a pass if the best orientation is 2x better
+    // variance than 2nd best
+    const float variance_threshold = 2.0;
+    
+    float second_best = besti==ROTATION_NONE?variance[1]:variance[0];
+    enum Rotation besti2 = ROTATION_NONE;
+    for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
+        if (!rotation_equal(besti, r)) {
+            if (variance[r] < second_best) {
+                second_best = variance[r];
+                besti2 = r;
+            }
+        }
+    }
+
+    _orientation_confidence = second_best/bestv;
+    
+    bool pass;
+    if (besti == _orientation) {
+        // if the orientation matched then allow for a low threshold
+        pass = true;
+    } else {
+        pass = _orientation_confidence > variance_threshold;
+    }
+    if (!pass) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u/%u %.1f", _compass_idx,
+                        besti, besti2, (double)_orientation_confidence);
+    } else if (besti == _orientation) {
+        // no orientation change
+        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) good orientation: %u %.1f", _compass_idx, besti, (double)_orientation_confidence);
+    } else if (!_is_external || !_fix_orientation) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) internal bad orientation: %u %.1f", _compass_idx, besti, (double)_orientation_confidence);
+    } else {
+        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) new orientation: %u was %u %.1f", _compass_idx, besti, _orientation, (double)_orientation_confidence);
+    }
+
+    if (!pass) {
+        set_status(COMPASS_CAL_BAD_ORIENTATION);
+        return false;
+    }
+
+    if (_orientation == besti) {
+        // no orientation change
+        return true;
+    }
+
+    if (!_is_external || !_fix_orientation) {
+        // we won't change the orientation, but we set _orientation
+        // for reporting purposes
+        _orientation = besti;
+        set_status(COMPASS_CAL_BAD_ORIENTATION);
+        return false;
+    }
+    
+    // correct the offsets for the new orientation
+    Vector3f rot_offsets = _params.offset;
+    rot_offsets.rotate_inverse(_orientation);
+    rot_offsets.rotate(besti);
+    _params.offset = rot_offsets;
+
+    // rotate the samples for the new orientation
+    for (uint32_t i=0; i<_samples_collected; i++) {
+        Vector3f s = _sample_buffer[i].get();
+        s.rotate_inverse(_orientation);
+        s.rotate(besti);
+        _sample_buffer[i].set(s);
+    }
+
+    _orientation = besti;
+
+    // re-run the fit to get the diagonals and off-diagonals for the
+    // new orientation
+    initialize_fit();
+    run_sphere_fit();
+    run_ellipsoid_fit();
+    
+    return fit_acceptable();
 }

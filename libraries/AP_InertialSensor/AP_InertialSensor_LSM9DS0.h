@@ -1,57 +1,88 @@
-
-#ifndef __AP_INERTIAL_SENSOR_LSM9DS0_H__
-#define __AP_INERTIAL_SENSOR_LSM9DS0_H__
+#pragma once
 
 #define LSM9DS0_DEBUG 0
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/SPIDevice.h>
+
 #include "AP_InertialSensor.h"
+#include "AP_InertialSensor_Backend.h"
 
 class AP_InertialSensor_LSM9DS0 : public AP_InertialSensor_Backend
 {
 public:
+    virtual ~AP_InertialSensor_LSM9DS0() { }
+    void start(void) override;
+    bool update() override;
 
-    enum gyro_scale
-    {
-        G_SCALE_245DPS = 0,
-        G_SCALE_500DPS,
-        G_SCALE_2000DPS,
-    };
-
-    enum accel_scale
-    {
-        A_SCALE_2G = 0,
-        A_SCALE_4G,
-        A_SCALE_6G,
-        A_SCALE_8G,
-        A_SCALE_16G
-    };
-
-    AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
-                              int drdy_pin_num_a, int drdy_pin_num_b);
-
-    bool        update();
-
-    bool        gyro_sample_available() {
-        return _gyro_sample_available;
-    };
-
-    bool        accel_sample_available() {
-        return _accel_sample_available;
-    };
-
-    static AP_InertialSensor_Backend *      detect(AP_InertialSensor &imu);
+    static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
+                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
+                                            enum Rotation rotation_a = ROTATION_NONE,
+                                            enum Rotation rotation_g = ROTATION_NONE,
+                                            enum Rotation rotation_gH = ROTATION_NONE);
 
 private:
-    struct PACKED        sensor_raw_data {
+    AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
+                              int drdy_pin_num_a, int drdy_pin_num_b,
+                              enum Rotation rotation_a,
+                              enum Rotation rotation_g,
+                              enum Rotation rotation_gH);
+
+    struct PACKED sensor_raw_data {
         int16_t x;
         int16_t y;
         int16_t z;
     };
 
-    AP_HAL::SPIDeviceDriver *       _accel_spi;
-    AP_HAL::SPIDeviceDriver *       _gyro_spi;
-    AP_HAL::Semaphore *             _spi_sem;
+    enum gyro_scale {
+        G_SCALE_245DPS = 0,
+        G_SCALE_500DPS,
+        G_SCALE_2000DPS,
+    };
+
+    enum accel_scale {
+        A_SCALE_2G = 0,
+        A_SCALE_4G,
+        A_SCALE_6G,
+        A_SCALE_8G,
+        A_SCALE_16G,
+    };
+
+    bool _accel_data_ready();
+    bool _gyro_data_ready();
+
+    void _poll_data();
+
+    bool _init_sensor();
+    bool _hardware_init();
+
+    void _gyro_init();
+    void _accel_init();
+
+    void _gyro_disable_i2c();
+    void _accel_disable_i2c();
+
+    void _set_gyro_scale(gyro_scale scale);
+    void _set_accel_scale(accel_scale scale);
+
+    uint8_t _register_read_xm(uint8_t reg);
+    uint8_t _register_read_g(uint8_t reg);
+    void _register_write_xm(uint8_t reg, uint8_t val, bool checked=false);
+    void _register_write_g(uint8_t reg, uint8_t val, bool checked=false);
+
+    void _read_data_transaction_a();
+    void _read_data_transaction_g();
+
+#if LSM9DS0_DEBUG
+    void        _dump_registers();
+#endif
+
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev_gyro;
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev_accel;
+    AP_HAL::Semaphore *_spi_sem;
 
     /*
      * If data-ready GPIO pins numbers are not defined (i.e. any negative
@@ -59,62 +90,23 @@ private:
      * by reading the status register. It is *strongly* recommended to use
      * data-ready GPIO pins for performance reasons.
      */
-    int                             _drdy_pin_num_a;
-    AP_HAL::DigitalSource *         _drdy_pin_a;
-    int                             _drdy_pin_num_g;
-    AP_HAL::DigitalSource *         _drdy_pin_g;
+    AP_HAL::DigitalSource * _drdy_pin_a;
+    AP_HAL::DigitalSource * _drdy_pin_g;
+    float _gyro_scale;
+    float _accel_scale;
+    int _drdy_pin_num_a;
+    int _drdy_pin_num_g;
+    uint8_t _gyro_instance;
+    uint8_t _accel_instance;
 
-    bool                            _gyro_sample_available;
-    bool                            _accel_sample_available;
-
-    bool                            _accel_data_ready();
-    bool                            _gyro_data_ready();
-
-    void                            _poll_data();
-
-    bool                            _init_sensor();
-    bool                            _hardware_init();
-
-    uint8_t                         _gyro_instance;
-    uint8_t                         _accel_instance;
-
-    void                            _gyro_init();
-    void                            _accel_init();
-
-    float                           _gyro_scale, _accel_scale;
-    void                            _set_gyro_scale(gyro_scale scale);
-    void                            _set_accel_scale(accel_scale scale);
-
-    uint8_t                         _register_read_xm( uint8_t reg );
-    uint8_t                         _register_read_g( uint8_t reg );
-
-    void                            _register_write_xm( uint8_t reg, uint8_t val );
-    void                            _register_write_g( uint8_t reg, uint8_t val );
-
-    void                            _accel_raw_data(struct sensor_raw_data *raw_data);
-    void                            _gyro_raw_data(struct sensor_raw_data *raw_data);
-
-    void                            _read_data_transaction_a();
-    void                            _read_data_transaction_g();
-
-    /* support for updating filter at runtime */
-    int16_t         _last_gyro_filter_hz;
-    int16_t         _last_accel_filter_hz;
-
-    /* change the filter frequency */
-    void            _set_accel_filter(uint8_t filter_hz);
-    void            _set_gyro_filter(uint8_t filter_hz);
-
-    Vector3f        _accel_filtered;
-    Vector3f        _gyro_filtered;
-
-    /* Low Pass filters for gyro and accel */
-    LowPassFilter2pVector3f         _accel_filter;
-    LowPassFilter2pVector3f         _gyro_filter;
-
-#if LSM9DS0_DEBUG
-    void        _dump_registers();
-#endif
+    // gyro whoami
+    uint8_t whoami_g;
+    
+    /*
+      for boards that have a separate LSM303D and L3GD20 there can be
+      different rotations for each
+     */
+    enum Rotation _rotation_a;
+    enum Rotation _rotation_g;  // for L3GD20
+    enum Rotation _rotation_gH; // for L3GD20H
 };
-
-#endif /* __AP_INERTIAL_SENSOR_LSM9DS0_H__ */
