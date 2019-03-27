@@ -211,7 +211,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         !copter.flightmode->has_manual_throttle() &&
         new_flightmode->get_pilot_desired_throttle() > copter.get_non_takeoff_throttle()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: throttle too high");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 #endif
