@@ -709,7 +709,6 @@ if __name__ == "__main__":
     steps = [
         'prerequisites',
         'build.All',
-        'build.Binaries',
         'build.Parameters',
 
         'build.unit_tests',
@@ -743,6 +742,8 @@ if __name__ == "__main__":
         'dive.ArduSub',
 
         'convertgpx',
+
+        'build.Binaries',
     ]
 
     skipsteps = opts.skip.split(',')
