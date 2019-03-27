@@ -24,7 +24,4 @@ void Copter::read_inertia()
     }
     current_loc.set_alt_cm(inertial_nav.get_altitude(), frame);
     current_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
-
-    // set flags and get velocity
-    climb_rate = inertial_nav.get_velocity_z();
 }
