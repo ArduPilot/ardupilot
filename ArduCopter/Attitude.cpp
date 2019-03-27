@@ -56,7 +56,7 @@ void Copter::update_throttle_hover()
     float throttle = motors->get_throttle();
 
     // calc average throttle if we are in a level hover
-    if (throttle > 0.0f && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
+    if (throttle > 0.0f && abs(inertial_nav.get_velocity_z()) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
     }
