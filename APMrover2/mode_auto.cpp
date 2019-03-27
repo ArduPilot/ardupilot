@@ -251,7 +251,7 @@ void ModeAuto::start_guided(const Location& loc)
         // sanity check target location
         if ((loc.lat != 0) || (loc.lng != 0)) {
             guided_target.loc = loc;
-            location_sanitize(rover.current_loc, guided_target.loc);
+            guided_target.loc.sanitize(rover.current_loc);
             guided_target.valid = true;
         } else {
             guided_target.valid = false;
@@ -499,7 +499,7 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
 
     // retrieve and sanitize target location
     Location cmdloc = cmd.content.location;
-    location_sanitize(rover.current_loc, cmdloc);
+    cmdloc.sanitize(rover.current_loc);
     set_desired_location(cmdloc, next_leg_bearing_cd);
 }
 
