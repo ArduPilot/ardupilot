@@ -30,6 +30,7 @@
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_OpticalFlow/OpticalFlow.h>
 
 #include "GCS.h"
 
@@ -3014,6 +3015,17 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t *msg)
     RC_Channels::set_override(15, packet.chan16_raw, tnow);
 }
 
+// allow override of RC channel values for HIL or for complete GCS
+// control of switch position and RC PWM values.
+void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t *msg)
+{
+    OpticalFlow *optflow = AP::opticalflow();
+    if (optflow == nullptr) {
+        return;
+    }
+    optflow->handle_msg(msg);
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -3178,6 +3190,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
         handle_rc_channels_override(msg);
+        break;
+
+    case MAVLINK_MSG_ID_OPTICAL_FLOW:
+        handle_optical_flow(msg);
         break;
     }
 }
