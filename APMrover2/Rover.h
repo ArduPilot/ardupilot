@@ -423,7 +423,6 @@ private:
     bool trim_radio();
 
     // sensors.cpp
-    void init_compass_location(void);
     void update_compass(void);
     void compass_save(void);
     void init_beacon();
