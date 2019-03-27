@@ -85,21 +85,6 @@ void Copter::rpm_update(void)
 #endif
 }
 
-/*
-  initialise compass's location used for declination
- */
-void Copter::init_compass_location()
-{
-    // update initial location used for declination
-    if (!ap.compass_init_location) {
-        Location loc;
-        if (ahrs.get_position(loc)) {
-            compass.set_initial_location(loc.lat, loc.lng);
-            ap.compass_init_location = true;
-        }
-    }
-}
-
 // initialise optical flow sensor
 void Copter::init_optflow()
 {
