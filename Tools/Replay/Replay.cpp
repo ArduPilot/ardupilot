@@ -75,7 +75,7 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 
     // @Group: LOG
     // @Path: ../libraries/AP_Logger/AP_Logger.cpp
-    GOBJECT(dataflash, "LOG", AP_Logger),
+    GOBJECT(logger, "LOG", AP_Logger),
     
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
@@ -109,7 +109,7 @@ void ReplayVehicle::setup(void)
     // message as a product of Replay), or the format understood in
     // the current code (if we do emit the message in the normal
     // places in the EKF, for example)
-    dataflash.Init(log_structure, 0);
+    logger.Init(log_structure, 0);
 
     ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
@@ -169,8 +169,8 @@ enum {
     OPT_PACKET_COUNTS,
 };
 
-void Replay::flush_dataflash(void) {
-    _vehicle.dataflash.flush();
+void Replay::flush_logger(void) {
+    _vehicle.logger.flush();
 }
 
 /*
@@ -474,8 +474,8 @@ bool Replay::find_log_info(struct log_information &info)
 // catch floating point exceptions
 static void _replay_sig_fpe(int signum)
 {
-    fprintf(stderr, "ERROR: Floating point exception - flushing dataflash...\n");
-    replay.flush_dataflash();
+    fprintf(stderr, "ERROR: Floating point exception - flushing logger...\n");
+    replay.flush_logger();
     fprintf(stderr, "ERROR: ... and aborting.\n");
     if (replay.check_solution) {
         FILE *f = fopen("replay_results.txt","a");
@@ -614,13 +614,13 @@ void Replay::set_signal_handlers(void)
 void Replay::write_ekf_logs(void)
 {
     if (!LogReader::in_list("EKF", nottypes)) {
-        _vehicle.dataflash.Write_EKF(_vehicle.ahrs);
+        _vehicle.logger.Write_EKF(_vehicle.ahrs);
     }
     if (!LogReader::in_list("AHRS2", nottypes)) {
-        _vehicle.dataflash.Write_AHRS2(_vehicle.ahrs);
+        _vehicle.logger.Write_AHRS2(_vehicle.ahrs);
     }
     if (!LogReader::in_list("POS", nottypes)) {
-        _vehicle.dataflash.Write_POS(_vehicle.ahrs);
+        _vehicle.logger.Write_POS(_vehicle.ahrs);
     }
 }
 
@@ -730,7 +730,7 @@ void Replay::log_check_generate(void)
     _vehicle.EKF2.getVelNED(-1,velocity);
     _vehicle.EKF2.getLLH(loc);
 
-    _vehicle.dataflash.Write(
+    _vehicle.logger.Write(
         "CHEK",
         "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD",
         "sdddDUmnnn",
@@ -779,7 +779,7 @@ void Replay::log_check_solution(void)
 
 void Replay::flush_and_exit()
 {
-    flush_dataflash();
+    flush_logger();
 
     if (check_solution) {
         report_checks();
