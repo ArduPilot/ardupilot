@@ -441,14 +441,14 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Path: ../AP_InertialSensor/BatchSampler.cpp
     AP_SUBGROUPINFO(batchsampler, "LOG_",  39, AP_InertialSensor, AP_InertialSensor::BatchSampler),
 
-    // @Group: ENABLE_MASK
+    // @Param: ENABLE_MASK
     // @DisplayName: IMU enable mask
-    // @Description: This is a bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs
+    // @Description: Bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs
     // @User: Advanced
     // @Values: 1:FirstIMUOnly,3:FirstAndSecondIMU,7:FirstSecondAndThirdIMU,127:AllIMUs
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
-    
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
