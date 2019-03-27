@@ -586,14 +586,9 @@ float Copter::Mode::get_pilot_desired_throttle() const
     // calculate normalised throttle input
     float throttle_in;
     if (throttle_control < mid_stick) {
-        // below the deadband
         throttle_in = ((float)throttle_control)*0.5f/(float)mid_stick;
-    } else if (throttle_control > mid_stick) {
-        // above the deadband
-        throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
     } else {
-        // must be in the deadband
-        throttle_in = 0.5f;
+        throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
     }
 
     float expo = constrain_float(-(thr_mid-0.5)/0.375, -0.5f, 1.0f);
