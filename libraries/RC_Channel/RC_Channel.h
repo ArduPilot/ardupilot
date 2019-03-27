@@ -66,7 +66,7 @@ public:
     float       norm_input_dz() const;
 
     uint8_t     percent_input() const;
-    int16_t     pwm_to_range() const;
+    int16_t     pwm_to_range();
     int16_t     pwm_to_range_dz(uint16_t dead_zone);
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -85,7 +85,7 @@ public:
     bool       has_override() const;
 
     // get control input with zero deadzone
-    int16_t    get_control_in_zero_dz(void) const;
+    int16_t    get_control_in_zero_dz(void);
 
     int16_t    get_radio_min() const {return radio_min.get();}
     void       set_radio_min(int16_t val) { radio_min = val;}

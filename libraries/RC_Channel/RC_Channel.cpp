@@ -256,13 +256,13 @@ RC_Channel::pwm_to_range_dz(uint16_t _dead_zone)
   range
  */
 int16_t
-RC_Channel::pwm_to_range() const
+RC_Channel::pwm_to_range()
 {
     return pwm_to_range_dz(dead_zone);
 }
 
 
-int16_t RC_Channel::get_control_in_zero_dz(void) const
+int16_t RC_Channel::get_control_in_zero_dz(void)
 {
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         return pwm_to_range_dz(0);
