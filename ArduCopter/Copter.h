@@ -402,8 +402,6 @@ private:
 #endif
 
     // Altitude
-    // The cm/s we are moving up or down based on filtered data - Positive = UP
-    int16_t climb_rate;
     float target_rangefinder_alt;   // desired altitude in cm above the ground
     bool target_rangefinder_alt_used; // true if mode is using target_rangefinder_alt
     int32_t baro_alt;            // barometer altitude in cm above home
