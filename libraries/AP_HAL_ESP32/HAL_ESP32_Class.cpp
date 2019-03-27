@@ -23,6 +23,7 @@
 #include "UARTDriver.h"
 #include "WiFiDriver.h"
 #include "Storage.h"
+#include "RCInput.h"
 
 static ESP32::UARTDriver cons(0);
 static Empty::UARTDriver uartADriver;
@@ -37,7 +38,7 @@ static ESP32::SPIDeviceManager spiDeviceManager;
 static Empty::AnalogIn analogIn;
 static ESP32::Storage storageDriver;
 static Empty::GPIO gpioDriver;
-static Empty::RCInput rcinDriver;
+static ESP32::RCInput rcinDriver;
 static Empty::RCOutput rcoutDriver;
 static ESP32::Scheduler schedulerInstance;
 static Empty::Util utilInstance;

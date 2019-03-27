@@ -18,6 +18,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "RCInput.h"
+
+
 using namespace ESP32;
 
 extern const AP_HAL::HAL& hal;
@@ -170,7 +173,8 @@ void Scheduler::_rcin_thread(void *arg)
     }
     while (true) {
         sched->delay_microseconds(2500);
-        //((RCInput *)hal.rcin)->_timer_tick();
+        //hal.rcin->_timer_tick();
+        RCInput::from(hal.rcin)->_timer_tick();
     }
 }
 

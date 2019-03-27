@@ -16,4 +16,5 @@ class Semaphore_Recursive;
 class GPIO;
 class DigitalSource;
 class Storage;
+class SoftSigReaderInt;
 }  // namespace ESP32
