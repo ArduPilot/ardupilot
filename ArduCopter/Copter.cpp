@@ -454,9 +454,6 @@ void Copter::one_hz_loop()
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     gcs().update_sensor_status_flags();
-
-    // init compass location for declination
-    init_compass_location();
 }
 
 // called at 50hz
