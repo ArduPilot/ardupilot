@@ -97,9 +97,6 @@ void Tracker::one_second_loop()
     // updated armed/disarmed status LEDs
     update_armed_disarmed();
 
-    // init compass location for declination
-    init_compass_location();
-
     if (!ahrs.home_is_set()) {
         // set home to current location
         Location temp_loc;
