@@ -766,6 +766,98 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_manual_control(self):
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("RC12_OPTION", 46) # enable/disable rc overrides
+            self.reboot_sitl()
+
+            self.change_mode("MANUAL")
+            self.wait_ready_to_arm()
+            self.zero_throttle()
+            self.arm_vehicle()
+            self.progress("start moving forward a little")
+            normal_rc_throttle = 1700
+            self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+            self.wait_groundspeed(5, 100)
+
+            self.progress("allow overrides")
+            self.set_rc(12, 2000)
+
+            self.progress("now override to stop")
+            throttle_override_normalized = 0
+            expected_throttle = 0 # in VFR_HUD
+
+            tstart = self.get_sim_time_cached()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise AutoTestTimeoutException("Did not reach speed")
+                self.progress("Sending normalized throttle of %d" % (throttle_override_normalized,))
+                self.mav.mav.manual_control_send(
+                    1, # target system
+                    32767, # x (pitch)
+                    32767, # y (roll)
+                    throttle_override_normalized, # z (thrust)
+                    32767, # r (yaw)
+                    0) # button mask
+
+                m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+                want_speed = 2.0
+                self.progress("Speed=%f want=<%f  throttle=%u want=%u" %
+                              (m.groundspeed, want_speed, m.throttle, expected_throttle))
+                if m.groundspeed < want_speed and m.throttle == expected_throttle:
+                    break
+
+            self.progress("now override to stop - but set the switch on the RC transmitter to deny overrides; this should send the speed back up to 5 metres/second")
+            self.set_rc(12, 1000)
+
+            throttle_override_normalized = 500
+            expected_throttle = 36 # in VFR_HUD, corresponding to normal_rc_throttle adjusted for channel min/max
+
+            tstart = self.get_sim_time_cached()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise AutoTestTimeoutException("Did not stop")
+                print("Sending normalized throttle of %u" % (throttle_override_normalized,))
+                self.mav.mav.manual_control_send(
+                    1, # target system
+                    32767, # x (pitch)
+                    32767, # y (roll)
+                    throttle_override_normalized, # z (thrust)
+                    32767, # r (yaw)
+                    0) # button mask
+
+                m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+                want_speed = 5.0
+
+                self.progress("Speed=%f want=>%f  throttle=%u want=%u" %
+                              (m.groundspeed, want_speed, m.throttle, expected_throttle))
+                if m.groundspeed > want_speed and m.throttle == expected_throttle:
+                    break
+
+            # re-enable RC overrides
+            self.set_rc(12, 2000)
+
+            # check we revert to normal RC inputs when gcs overrides cease:
+            self.progress("Waiting for RC to revert to normal RC input")
+            while True:
+                m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
+                print("%s" % m)
+                if m.chan3_raw == normal_rc_throttle:
+                    break
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop()
+        self.disarm_vehicle()
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def test_camera_mission_items(self):
         self.context_push()
         ex = None
@@ -1008,6 +1100,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("RCOverrides", "Test RC overrides", self.test_rc_overrides),
 
             ("RCOverridesCancel", "Test RC overrides Cancel", self.test_rc_override_cancel),
+
+            ("MANUAL_CONTROL", "Test mavlink MANUAL_CONTROL", self.test_manual_control),
 
             ("Sprayer", "Test Sprayer", self.test_sprayer),
 
