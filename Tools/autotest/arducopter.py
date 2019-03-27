@@ -2818,6 +2818,41 @@ class AutoTestCopter(AutoTest):
         ret[5] = 1800 # mode switch
         return ret
 
+    def test_manual_control(self):
+        '''test manual_control mavlink message'''
+        self.change_mode('STABILIZE')
+        self.takeoff(10)
+
+        tstart = self.get_sim_time_cached()
+        want_pitch_degrees = -20
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise AutoTestTimeoutException("Did not reach pitch")
+            self.progress("Sending pitch-forward")
+            self.mav.mav.manual_control_send(
+                1, # target system
+                500, # x (pitch)
+                32767, # y (roll)
+                32767, # z (thrust)
+                32767, # r (yaw)
+                0) # button mask
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
+            print("m=%s" % str(m))
+            if m is None:
+                continue
+            p = math.degrees(m.pitch)
+            self.progress("pitch=%f want<=%f" % (p, want_pitch_degrees))
+            if p <= want_pitch_degrees:
+                break
+        self.mav.mav.manual_control_send(
+            1, # target system
+            32767, # x (pitch)
+            32767, # y (roll)
+            32767, # z (thrust)
+            32767, # r (yaw)
+            0) # button mask
+        self.do_RTL()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
@@ -2973,6 +3008,10 @@ class AutoTestCopter(AutoTest):
             ("ManualThrottleModeChange",
              "Check manual throttle mode changes denied on high throttle",
              self.fly_manual_throttle_mode_change),
+
+            ("MANUAL_CONTROL",
+             "Test mavlink MANUAL_CONTROL",
+             self.test_manual_control),
 
             ("LogDownLoad",
              "Log download",
