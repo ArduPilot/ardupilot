@@ -62,8 +62,12 @@ def esp32_firmware(self):
         
         #add generated include files
         cmd = "cd {0}&&{1} showinc".format(self.env.AP_HAL_PLANE, self.env.MAKE[0])
+        print(cmd)
         result = subprocess.check_output(cmd, shell=True)
-        self.env.INCLUDES += parse_inc_dir(result)
+        try:
+            self.env.INCLUDES += parse_inc_dir(result)
+        except TypeError:
+            pass
     if str(self.link_task.outputs[0]).endswith('libarducopter.a'):
         #build final image
         src_in = [self.bld.bldnode.find_or_declare('lib/libArduCopter_libs.a'),
@@ -74,7 +78,11 @@ def esp32_firmware(self):
         
         #add generated include files
         cmd = "cd {0}&&{1} showinc".format(self.env.AP_HAL_COPTER, self.env.MAKE[0])
+        print(cmd)
         result = subprocess.check_output(cmd, shell=True)
-        self.env.INCLUDES += parse_inc_dir(result)
+        try:
+            self.env.INCLUDES += parse_inc_dir(result)
+        except TypeError:
+            pass
         
         
