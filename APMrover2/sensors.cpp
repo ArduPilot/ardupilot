@@ -3,21 +3,6 @@
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 
-/*
-  initialise compass's location used for declination
- */
-void Rover::init_compass_location(void)
-{
-    // update initial location used for declination
-    if (!compass_init_location) {
-        Location loc;
-        if (ahrs.get_position(loc)) {
-            compass.set_initial_location(loc.lat, loc.lng);
-            compass_init_location = true;
-        }
-    }
-}
-
 // check for new compass data - 10Hz
 void Rover::update_compass(void)
 {
