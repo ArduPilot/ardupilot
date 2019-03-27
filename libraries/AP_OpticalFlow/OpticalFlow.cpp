@@ -5,6 +5,7 @@
 #include "AP_OpticalFlow_Pixart.h"
 #include "AP_OpticalFlow_PX4Flow.h"
 #include "AP_OpticalFlow_CXOF.h"
+#include "AP_OpticalFlow_MAV.h"
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
@@ -118,6 +119,9 @@ void OpticalFlow::init(uint32_t log_bit)
         if (backend == nullptr) {
             backend = AP_OpticalFlow_CXOF::detect(*this);
         }
+        if (backend == nullptr) {
+            backend = AP_OpticalFlow_MAV::detect(*this);
+        }
     }
 
     if (backend != nullptr) {
@@ -138,6 +142,18 @@ void OpticalFlow::update(void)
 
     // only healthy if the data is less than 0.5s old
     _flags.healthy = (AP_HAL::millis() - _last_update_ms < 500);
+}
+
+void OpticalFlow::handle_msg(const mavlink_message_t *msg)
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    if (backend != nullptr) {
+        backend->handle_msg(msg);
+    }
 }
 
 void OpticalFlow::update_state(const OpticalFlow_state &state)
