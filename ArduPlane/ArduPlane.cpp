@@ -379,11 +379,6 @@ void Plane::update_GPS_10Hz(void)
 
                 next_WP_loc = prev_WP_loc = home;
 
-                if (AP::compass().enabled()) {
-                    // Set compass declination automatically
-                    const Location &loc = gps.location();
-                    compass.set_initial_location(loc.lat, loc.lng);
-                }
                 ground_start_count = 0;
             }
         }
