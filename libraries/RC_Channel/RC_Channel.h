@@ -67,7 +67,7 @@ public:
 
     uint8_t     percent_input() const;
     int16_t     pwm_to_range() const;
-    int16_t     pwm_to_range_dz(uint16_t dead_zone) const;
+    int16_t     pwm_to_range_dz(uint16_t dead_zone);
 
     static const struct AP_Param::GroupInfo var_info[];
 

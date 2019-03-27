@@ -225,7 +225,7 @@ RC_Channel::pwm_to_angle() const
   range, using the specified deadzone
  */
 int16_t
-RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
+RC_Channel::pwm_to_range_dz(uint16_t _dead_zone)
 {
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
     int16_t ret = 0;
