@@ -90,6 +90,7 @@ enum ap_message : uint8_t {
     MSG_WHEEL_DISTANCE,
     MSG_MISSION_ITEM_REACHED,
     MSG_POSITION_TARGET_GLOBAL_INT,
+    MSG_POSITION_TARGET_LOCAL_NED,
     MSG_ADSB_VEHICLE,
     MSG_BATTERY_STATUS,
     MSG_AOA_SSA,
@@ -227,6 +228,7 @@ public:
     void send_home_position() const;
     void send_gps_global_origin() const;
     virtual void send_position_target_global_int() { };
+    virtual void send_position_target_local_ned() { };
     void send_servo_output_raw();
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);

@@ -950,6 +950,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_RPM,                   MSG_RPM},
         { MAVLINK_MSG_ID_MISSION_ITEM_REACHED,  MSG_MISSION_ITEM_REACHED},
         { MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT,  MSG_POSITION_TARGET_GLOBAL_INT},
+        { MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED,  MSG_POSITION_TARGET_LOCAL_NED},
         { MAVLINK_MSG_ID_ADSB_VEHICLE,          MSG_ADSB_VEHICLE},
         { MAVLINK_MSG_ID_BATTERY_STATUS,        MSG_BATTERY_STATUS},
         { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
@@ -4184,6 +4185,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_POSITION_TARGET_GLOBAL_INT:
         CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
         send_position_target_global_int();
+        break;
+
+    case MSG_POSITION_TARGET_LOCAL_NED:
+        CHECK_PAYLOAD_SIZE(POSITION_TARGET_LOCAL_NED);
+        send_position_target_local_ned();
         break;
 
     case MSG_POWER_STATUS:
