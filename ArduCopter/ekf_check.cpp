@@ -171,7 +171,6 @@ void Copter::failsafe_ekf_off_event(void)
         return;
     }
 
-    // clear flag and log recovery
     failsafe.ekf = false;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }

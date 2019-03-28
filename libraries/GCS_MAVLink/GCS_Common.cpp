@@ -2787,7 +2787,6 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
         return;
     }
 
-    // log ahrs home and ekf origin
     ahrs.Log_Write_Home_And_Origin();
 
     // send ekf origin to GCS

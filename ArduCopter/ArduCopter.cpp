@@ -571,7 +571,6 @@ void Copter::update_altitude()
     // read in baro altitude
     read_barometer();
 
-    // write altitude info to logger
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
     }

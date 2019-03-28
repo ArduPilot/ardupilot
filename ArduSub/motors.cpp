@@ -67,7 +67,6 @@ bool Sub::init_arm_motors(AP_Arming::Method method)
     // finally actually arm the motors
     motors.armed(true);
 
-    // log arming
     Log_Write_Event(DATA_ARMED);
 
     // log flight mode in case it was changed while vehicle was disarmed
@@ -108,7 +107,6 @@ void Sub::init_disarm_motors()
         }
     }
 
-    // log disarm
     Log_Write_Event(DATA_DISARMED);
 
     // send disarm command to motors

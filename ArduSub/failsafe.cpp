@@ -340,7 +340,6 @@ void Sub::failsafe_gcs_check()
         return;
     }
 
-    // update state, log it
     failsafe.gcs = true;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
 
