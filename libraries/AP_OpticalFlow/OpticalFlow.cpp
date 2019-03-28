@@ -104,9 +104,6 @@ void OpticalFlow::init(uint32_t log_bit)
         if (backend == nullptr) {
             backend = AP_OpticalFlow_PX4Flow::detect(*this);
         }
-        if (backend == nullptr) {
-            backend = AP_OpticalFlow_CXOF::detect(*this);
-        }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
         backend = new AP_OpticalFlow_SITL(*this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
@@ -118,6 +115,9 @@ void OpticalFlow::init(uint32_t log_bit)
 #elif defined(HAL_HAVE_PIXARTFLOW_SPI)
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #endif
+        if (backend == nullptr) {
+            backend = AP_OpticalFlow_CXOF::detect(*this);
+        }
     }
 
     if (backend != nullptr) {
@@ -156,12 +156,12 @@ void OpticalFlow::update_state(const OpticalFlow_state &state)
 
 void OpticalFlow::Log_Write_Optflow()
 {
-    AP_Logger *instance = AP_Logger::get_singleton();
-    if (instance == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return;
     }
     if (_log_bit != (uint32_t)-1 &&
-        !instance->should_log(_log_bit)) {
+        !logger->should_log(_log_bit)) {
         return;
     }
 
@@ -174,7 +174,7 @@ void OpticalFlow::Log_Write_Optflow()
         body_x          : _state.bodyRate.x,
         body_y          : _state.bodyRate.y
     };
-    instance->WriteBlock(&pkt, sizeof(pkt));
+    logger->WriteBlock(&pkt, sizeof(pkt));
 }
 
 

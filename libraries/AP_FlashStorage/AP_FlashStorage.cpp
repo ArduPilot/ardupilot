@@ -17,6 +17,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_FlashStorage/AP_FlashStorage.h>
+#include <AP_Math/AP_Math.h>
 #include <stdio.h>
 
 #define FLASHSTORAGE_DEBUG 0
@@ -111,12 +112,7 @@ bool AP_FlashStorage::init(void)
     // if the first sector is full then write out all data so we can erase it
     if (states[first_sector] == SECTOR_STATE_FULL) {
         current_sector = first_sector ^ 1;
-        // we start by writing all except the sector header
-        if (!write_all(sizeof(sector_header))) {
-            return erase_all();
-        }
-        // now write the header
-        if (!write(0, sizeof(sector_header))) {
+        if (!write_all()) {
             return erase_all();
         }
     }
@@ -314,13 +310,14 @@ bool AP_FlashStorage::erase_all(void)
 /*
   write all of mem_buffer to current sector
  */
-bool AP_FlashStorage::write_all(uint16_t start_ofs)
+bool AP_FlashStorage::write_all()
 {
     debug("write_all to sector %u at %u with reserved_space=%u\n",
            current_sector, write_offset, reserved_space);
-    for (uint16_t ofs=start_ofs; ofs<storage_size; ofs += max_write) {
-        if (!all_zero(ofs, max_write)) {
-            if (!write(ofs, max_write)) {
+    for (uint16_t ofs=0; ofs<storage_size; ofs += max_write) {
+        uint8_t n = MIN(max_write, storage_size-ofs);
+        if (!all_zero(ofs, n)) {
+            if (!write(ofs, n)) {
                 return false;
             }
         }

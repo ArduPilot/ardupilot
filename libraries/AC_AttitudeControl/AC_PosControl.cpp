@@ -827,7 +827,6 @@ float AC_PosControl::time_since_last_xy_update() const
     return (now_us - _last_update_xy_us) * 1.0e-6f;
 }
 
-// write log to dataflash
 void AC_PosControl::write_log()
 {
     const Vector3f &pos_target = get_pos_target();

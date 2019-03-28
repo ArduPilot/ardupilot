@@ -237,7 +237,7 @@ AP_GPS_SBF::parse(uint8_t temp)
 void
 AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
 {
-    if (!should_df_log()) {
+    if (!should_log()) {
         return;
     }
 

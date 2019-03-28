@@ -22,7 +22,6 @@ bool Copter::ModeRTL::init(bool ignore_checks)
 // re-start RTL with terrain following disabled
 void Copter::ModeRTL::restart_without_terrain()
 {
-    // log an error
     AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::RESTARTED_RTL);
     if (rtl_path.terrain_used) {
         build_path(false);

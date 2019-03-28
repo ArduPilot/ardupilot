@@ -694,9 +694,9 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             SRV_Channels::set_emergency_stop(true);
 
             // log E-stop
-            AP_Logger *df = AP_Logger::get_singleton();
-            if (df && df->logging_enabled()) {
-                df->Write_Event(DATA_MOTORS_EMERGENCY_STOPPED);
+            AP_Logger *logger = AP_Logger::get_singleton();
+            if (logger && logger->logging_enabled()) {
+                logger->Write_Event(DATA_MOTORS_EMERGENCY_STOPPED);
             }
             break;
         }
@@ -707,9 +707,9 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             SRV_Channels::set_emergency_stop(false);
 
             // log E-stop cleared
-            AP_Logger *df = AP_Logger::get_singleton();
-            if (df && df->logging_enabled()) {
-                df->Write_Event(DATA_MOTORS_EMERGENCY_STOP_CLEARED);
+            AP_Logger *logger = AP_Logger::get_singleton();
+            if (logger && logger->logging_enabled()) {
+                logger->Write_Event(DATA_MOTORS_EMERGENCY_STOP_CLEARED);
             }
             break;
         }

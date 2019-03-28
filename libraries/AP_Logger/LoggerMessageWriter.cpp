@@ -38,8 +38,8 @@ void LoggerMessageWriter_DFLogStart::process()
     switch(stage) {
     case ls_blockwriter_stage_formats:
         // write log formats so the log is self-describing
-        while (next_format_to_send < _dataflash_backend->num_types()) {
-            if (!_dataflash_backend->Write_Format(_dataflash_backend->structure(next_format_to_send))) {
+        while (next_format_to_send < _logger_backend->num_types()) {
+            if (!_logger_backend->Write_Format(_logger_backend->structure(next_format_to_send))) {
                 return; // call me again!
             }
             next_format_to_send++;
@@ -49,8 +49,8 @@ void LoggerMessageWriter_DFLogStart::process()
         FALLTHROUGH;
 
     case ls_blockwriter_stage_units:
-        while (_next_unit_to_send < _dataflash_backend->num_units()) {
-            if (!_dataflash_backend->Write_Unit(_dataflash_backend->unit(_next_unit_to_send))) {
+        while (_next_unit_to_send < _logger_backend->num_units()) {
+            if (!_logger_backend->Write_Unit(_logger_backend->unit(_next_unit_to_send))) {
                 return; // call me again!
             }
             _next_unit_to_send++;
@@ -59,8 +59,8 @@ void LoggerMessageWriter_DFLogStart::process()
         FALLTHROUGH;
 
     case ls_blockwriter_stage_multipliers:
-        while (_next_multiplier_to_send < _dataflash_backend->num_multipliers()) {
-            if (!_dataflash_backend->Write_Multiplier(_dataflash_backend->multiplier(_next_multiplier_to_send))) {
+        while (_next_multiplier_to_send < _logger_backend->num_multipliers()) {
+            if (!_logger_backend->Write_Multiplier(_logger_backend->multiplier(_next_multiplier_to_send))) {
                 return; // call me again!
             }
             _next_multiplier_to_send++;
@@ -69,8 +69,8 @@ void LoggerMessageWriter_DFLogStart::process()
         FALLTHROUGH;
 
     case ls_blockwriter_stage_format_units:
-        while (_next_format_unit_to_send < _dataflash_backend->num_types()) {
-            if (!_dataflash_backend->Write_Format_Units(_dataflash_backend->structure(_next_format_unit_to_send))) {
+        while (_next_format_unit_to_send < _logger_backend->num_types()) {
+            if (!_logger_backend->Write_Format_Units(_logger_backend->structure(_next_format_unit_to_send))) {
                 return; // call me again!
             }
             _next_format_unit_to_send++;
@@ -80,7 +80,7 @@ void LoggerMessageWriter_DFLogStart::process()
 
     case ls_blockwriter_stage_parms:
         while (ap) {
-            if (!_dataflash_backend->Write_Parameter(ap, token, type)) {
+            if (!_logger_backend->Write_Parameter(ap, token, type)) {
                 return;
             }
             ap = AP_Param::next_scalar(&token, &type);
@@ -117,11 +117,11 @@ void LoggerMessageWriter_DFLogStart::process()
         // we guarantee 200 bytes of space for the vehicle startup
         // messages.  This allows them to be simple functions rather
         // than e.g. LoggerMessageWriter-based state machines
-        if (_dataflash_backend->vehicle_message_writer()) {
-            if (_dataflash_backend->bufferspace_available() < 200) {
+        if (_logger_backend->vehicle_message_writer()) {
+            if (_logger_backend->bufferspace_available() < 200) {
                 return;
             }
-            (_dataflash_backend->vehicle_message_writer())();
+            (_logger_backend->vehicle_message_writer())();
         }
         stage = ls_blockwriter_stage_done;
         FALLTHROUGH;
@@ -149,7 +149,7 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         FALLTHROUGH;
 
     case ws_blockwriter_stage_firmware_string:
-        if (! _dataflash_backend->Write_Message(fwver.fw_string)) {
+        if (! _logger_backend->Write_Message(fwver.fw_string)) {
             return; // call me again
         }
         stage = ws_blockwriter_stage_git_versions;
@@ -157,7 +157,7 @@ void LoggerMessageWriter_WriteSysInfo::process() {
 
     case ws_blockwriter_stage_git_versions:
         if (fwver.middleware_name && fwver.os_name) {
-            if (! _dataflash_backend->Write_MessageF("%s: %s %s: %s",
+            if (! _logger_backend->Write_MessageF("%s: %s %s: %s",
                                                         fwver.middleware_name,
                                                         fwver.middleware_hash_str,
                                                         fwver.os_name,
@@ -165,7 +165,7 @@ void LoggerMessageWriter_WriteSysInfo::process() {
                 return; // call me again
             }
         } else if (fwver.os_name) {
-            if (! _dataflash_backend->Write_MessageF("%s: %s",
+            if (! _logger_backend->Write_MessageF("%s: %s",
                                                         fwver.os_name,
                                                         fwver.os_hash_str)) {
                 return; // call me again
@@ -177,7 +177,7 @@ void LoggerMessageWriter_WriteSysInfo::process() {
     case ws_blockwriter_stage_system_id:
         char sysid[40];
         if (hal.util->get_system_id(sysid)) {
-            if (! _dataflash_backend->Write_Message(sysid)) {
+            if (! _logger_backend->Write_Message(sysid)) {
                 return; // call me again
             }
         }
@@ -197,7 +197,7 @@ void LoggerMessageWriter_WriteAllRallyPoints::process()
     switch(stage) {
 
     case ar_blockwriter_stage_write_new_rally_message:
-        if (! _dataflash_backend->Write_Message("New rally")) {
+        if (! _logger_backend->Write_Message("New rally")) {
             return; // call me again
         }
         stage = ar_blockwriter_stage_write_all_rally_points;
@@ -207,7 +207,7 @@ void LoggerMessageWriter_WriteAllRallyPoints::process()
         while (_rally_number_to_send < _rally->get_rally_total()) {
             RallyLocation rallypoint;
             if (_rally->get_rally_point_with_index(_rally_number_to_send, rallypoint)) {
-                if (!_dataflash_backend->Write_RallyPoint(
+                if (!_logger_backend->Write_RallyPoint(
                         _rally->get_rally_total(),
                         _rally_number_to_send,
                         rallypoint)) {
@@ -243,7 +243,7 @@ void LoggerMessageWriter_WriteEntireMission::process() {
     switch(stage) {
 
     case em_blockwriter_stage_write_new_mission_message:
-        if (! _dataflash_backend->Write_Message("New mission")) {
+        if (! _logger_backend->Write_Message("New mission")) {
             return; // call me again
         }
         stage = em_blockwriter_stage_write_mission_items;
@@ -255,7 +255,7 @@ void LoggerMessageWriter_WriteEntireMission::process() {
             // upon failure to write the mission we will re-read from
             // storage; this could be improved.
             if (_mission->read_cmd_from_storage(_mission_number_to_send,cmd)) {
-                if (!_dataflash_backend->Write_Mission_Cmd(*_mission, cmd)) {
+                if (!_logger_backend->Write_Mission_Cmd(*_mission, cmd)) {
                     return; // call me again
                 }
             }

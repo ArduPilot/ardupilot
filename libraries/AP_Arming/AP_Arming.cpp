@@ -762,11 +762,11 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
     // the arming check flag is set - disabling the arming check
     // should not stop logging from working.
 
-    AP_Logger *df = AP_Logger::get_singleton();
-    if (df->logging_present()) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger->logging_present()) {
         // If we're configured to log, prep it
-        df->PrepForArming();
-        if (!df->logging_started() &&
+        logger->PrepForArming();
+        if (!logger->logging_started() &&
             ((checks_to_perform & ARMING_CHECK_ALL) ||
              (checks_to_perform & ARMING_CHECK_LOGGING))) {
             check_failed(ARMING_CHECK_LOGGING, true, "Logging not started");
@@ -799,7 +799,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 
         gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
 
-        //TODO: Log motor arming to the dataflash
+        //TODO: Log motor arming
         //Can't do this from this class until there is a unified logging library
 
     } else {
@@ -832,7 +832,7 @@ bool AP_Arming::disarm()
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
 
-    //TODO: Log motor disarming to the dataflash
+    //TODO: Log motor disarming to the logger
     //Can't do this from this class until there is a unified logging library.
 
     return true;

@@ -1346,9 +1346,9 @@ void AP_BLHeli::read_telemetry_packet(void)
     last_telem[last_telem_esc] = td;
     last_telem[last_telem_esc].count++;
 
-    AP_Logger *df = AP_Logger::get_singleton();
-    if (df && df->logging_enabled()) {
-        df->Write_ESC(uint8_t(last_telem_esc),
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger && logger->logging_enabled()) {
+        logger->Write_ESC(uint8_t(last_telem_esc),
                       AP_HAL::micros64(),
                       td.rpm*100U,
                       td.voltage,

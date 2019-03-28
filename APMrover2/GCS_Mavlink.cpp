@@ -678,11 +678,9 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         }
 
         uint32_t tnow = AP_HAL::millis();
-        
-        const int16_t roll = (packet.y == INT16_MAX) ? 0 : rover.channel_steer->get_radio_min() + (rover.channel_steer->get_radio_max() - rover.channel_steer->get_radio_min()) * (packet.y + 1000) / 2000.0f;
-        const int16_t throttle = (packet.z == INT16_MAX) ? 0 : rover.channel_throttle->get_radio_min() + (rover.channel_throttle->get_radio_max() - rover.channel_throttle->get_radio_min()) * (packet.z + 1000) / 2000.0f;
-        RC_Channels::set_override(uint8_t(rover.rcmap.roll() - 1), roll, tnow);
-        RC_Channels::set_override(uint8_t(rover.rcmap.throttle() - 1), throttle, tnow);
+
+        manual_override(rover.channel_steer, packet.y, 1000, 2000, tnow);
+        manual_override(rover.channel_throttle, packet.z, 1000, 2000, tnow);
 
         // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         rover.failsafe.last_heartbeat_ms = tnow;

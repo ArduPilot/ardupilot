@@ -48,7 +48,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define MAX_LOG_FILES 500U
-#define DATAFLASH_PAGE_SIZE 1024UL
+#define LOGGER_PAGE_SIZE 1024UL
 
 #ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
 #define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
@@ -665,7 +665,7 @@ void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & st
     }
 
     start_page = 0;
-    end_page = _get_log_size(log_num) / DATAFLASH_PAGE_SIZE;
+    end_page = _get_log_size(log_num) / LOGGER_PAGE_SIZE;
 }
 
 /*
@@ -708,7 +708,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         _read_offset = 0;
         _read_fd_log_num = log_num;
     }
-    uint32_t ofs = page * (uint32_t)DATAFLASH_PAGE_SIZE + offset;
+    uint32_t ofs = page * (uint32_t)LOGGER_PAGE_SIZE + offset;
 
     /*
       this rather strange bit of code is here to work around a bug

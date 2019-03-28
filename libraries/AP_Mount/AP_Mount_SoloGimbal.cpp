@@ -118,13 +118,13 @@ void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, const mav
     _gimbal.update_target(_angle_ef_target_rad);
     _gimbal.receive_feedback(chan,msg);
 
-    AP_Logger *df = AP_Logger::get_singleton();
-    if (df == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return;
     }
 
-    if(!_params_saved && df->logging_started()) {
-        _gimbal.fetch_params();       //last parameter save might not be stored in dataflash so retry
+    if(!_params_saved && logger->logging_started()) {
+        _gimbal.fetch_params();       //last parameter save might not be stored in logger so retry
         _params_saved = true;
     }
 
