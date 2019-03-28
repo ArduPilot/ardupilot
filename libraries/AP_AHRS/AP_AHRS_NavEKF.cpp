@@ -1325,7 +1325,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
         Quaternion ekf2_quat;
         Vector3f angle_diff;
-        EKF2.getQuaternion(i, ekf2_quat);
+        EKF2.getQuaternionBodyToNED(i, ekf2_quat);
         primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
         float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
         if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
@@ -1343,7 +1343,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
         Quaternion ekf3_quat;
         Vector3f angle_diff;
-        EKF3.getQuaternion(i, ekf3_quat);
+        EKF3.getQuaternionBodyToNED(i, ekf3_quat);
         primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
         float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
         if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
