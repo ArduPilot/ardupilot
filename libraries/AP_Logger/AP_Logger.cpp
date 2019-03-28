@@ -703,6 +703,11 @@ void AP_Logger::Write_RallyPoint(uint8_t total,
     FOR_EACH_BACKEND(Write_RallyPoint(total, sequence, rally_point));
 }
 
+void AP_Logger::Write_Rally()
+{
+    FOR_EACH_BACKEND(Write_Rally());
+}
+
 uint32_t AP_Logger::num_dropped() const
 {
     if (_next_backend == 0) {
