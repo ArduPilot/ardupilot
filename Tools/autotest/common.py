@@ -1152,14 +1152,39 @@ class AutoTest(ABC):
         return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
     @staticmethod
+    def get_latlon_attr(loc, attrs):
+        '''return any found latitude attribute from loc'''
+        latattrs = "lat", "latitude"
+        ret = None
+        for attr in attrs:
+            if hasattr(loc, attr):
+                ret = getattr(loc, attr)
+                break
+        if ret is None:
+            raise ValueError("None of %s in loc" % str(attrs))
+        return ret
+
+    @staticmethod
+    def get_lat_attr(loc):
+        '''return any found latitude attribute from loc'''
+        return AutoTest.get_latlon_attr(loc, ["lat", "latitude"])
+
+    @staticmethod
+    def get_lon_attr(loc):
+        '''return any found latitude attribute from loc'''
+        return AutoTest.get_latlon_attr(loc, ["lng", "lon", "longitude"])
+
+    @staticmethod
     def get_distance_int(loc1, loc2):
         """Get ground distance between two locations in the normal "int" form
         - lat/lon multiplied by 1e7"""
-        dlat = loc2.lat - loc1.lat
-        try:
-            dlong = loc2.lng - loc1.lng
-        except AttributeError:
-            dlong = loc2.lon - loc1.lon
+        loc1_lat = AutoTest.get_lat_attr(loc1)
+        loc2_lat = AutoTest.get_lat_attr(loc2)
+        loc1_lon = AutoTest.get_lon_attr(loc1)
+        loc2_lon = AutoTest.get_lon_attr(loc2)
+
+        dlat = loc2_lat - loc1_lat
+        dlong = loc2_lon - loc1_lon
 
         dlat /= 10000000.0
         dlong /= 10000000.0
@@ -1911,11 +1936,9 @@ class AutoTest(ABC):
         m = self.mav.messages.get("HOME_POSITION", None)
         if use_cached_home is False or m is None:
             m = self.poll_home_position(quiet=True)
-        loc = mavutil.location(m.latitude * 1.0e-7,
-                               m.longitude * 1.0e-7,
-                               m.altitude * 1.0e-3,
-                               0)
-        return self.get_distance(loc, self.mav.location())
+        here = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                   blocking=True)
+        return self.get_distance_int(m, here)
 
     def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
         tstart = self.get_sim_time()
@@ -2011,7 +2034,7 @@ class AutoTest(ABC):
                          )
         home = self.poll_home_position()
         self.progress("home: %s" % str(home))
-        if self.distance_to_home() > 1:
+        if self.distance_to_home(use_cached_home=True) > 1:
             raise NotAchievedException("Setting home to current location did not work")
 
         self.progress("Setting home elsewhere again")
