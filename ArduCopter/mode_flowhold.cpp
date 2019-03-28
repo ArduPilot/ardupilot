@@ -478,7 +478,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
     // new height estimate for logging
     height_estimate = ins_height + height_offset;
 
-    AP::logger().Write("FXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
+    AP::logger().Write("FHXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
                                            AP_HAL::micros64(),
                                            (double)delta_flowrate.x,
                                            (double)delta_flowrate.y,
