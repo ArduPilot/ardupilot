@@ -149,7 +149,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: LOG
     // @DisplayName: ADS-B logging
     // @Description: 0: no logging, 1: log only special ID, 2:log all
-    // @Values: 0: no logging, 1: log only special ID, 2:log all
+    // @Values: 0:no logging,1:log only special ID,2:log all
     // @User: Advanced
     AP_GROUPINFO("LOG",  14, AP_ADSB, _log, 1),
 
@@ -889,7 +889,7 @@ bool AP_ADSB::get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) 
 }
 
 /*
- * Write dataflash log of a vehicle
+ * Write vehicle to log
  */
 void AP_ADSB::write_log(const adsb_vehicle_t &vehicle)
 {
