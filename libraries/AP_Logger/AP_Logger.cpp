@@ -96,7 +96,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     validate_structures(structures, num_types);
     dump_structures(structures, num_types);
 #endif
-    if (_next_backend == DATAFLASH_MAX_BACKENDS) {
+    if (_next_backend == LOGGER_MAX_BACKENDS) {
         AP_HAL::panic("Too many backends");
         return;
     }
@@ -122,9 +122,9 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
  #endif
 #endif // HAL_BOARD_LOG_DIRECTORY
 
-#if DATAFLASH_MAVLINK_SUPPORT
+#if LOGGER_MAVLINK_SUPPORT
     if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
-        if (_next_backend == DATAFLASH_MAX_BACKENDS) {
+        if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
         }
@@ -144,7 +144,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
-        if (_next_backend == DATAFLASH_MAX_BACKENDS) {
+        if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
         }
@@ -163,7 +163,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 
 #ifdef HAL_LOGGING_DATAFLASH
     if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
-        if (_next_backend == DATAFLASH_MAX_BACKENDS) {
+        if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
             return;
         }

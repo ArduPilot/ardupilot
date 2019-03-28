@@ -600,9 +600,9 @@ void AP_KDECAN::update()
         debug_can(2, "KDECAN: failed to get PWM semaphore on write\n\r");
     }
 
-    AP_Logger *df = AP_Logger::get_singleton();
+    AP_Logger *logger = AP_Logger::get_singleton();
 
-    if (df == nullptr || !df->should_log(0xFFFFFFFF)) {
+    if (logger == nullptr || !logger->should_log(0xFFFFFFFF)) {
         return;
     }
 
@@ -627,7 +627,7 @@ void AP_KDECAN::update()
     // log ESC telemetry data
     for (uint8_t i = 0; i < _esc_max_node_id; i++) {
         if (telem_buffer[i].new_data) {
-            df->Write_ESC(i, telem_buffer[i].time,
+            logger->Write_ESC(i, telem_buffer[i].time,
                           int32_t(telem_buffer[i].rpm * 60UL * 2 / num_poles * 100),
                           telem_buffer[i].voltage,
                           telem_buffer[i].current,

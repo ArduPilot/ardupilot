@@ -51,7 +51,6 @@ void Sub::mainloop_failsafe_check()
         if (motors.armed()) {
             motors.output_min();
         }
-        // log an error
         AP::logger().Write_Error(LogErrorSubsystem::CPU,LogErrorCode::FAILSAFE_OCCURRED);
     }
 
@@ -73,7 +72,10 @@ void Sub::failsafe_sensors_check()
 
     // We need a depth sensor to do any sort of auto z control
     if (sensor_health.depth) {
-        failsafe.sensor_health = false;
+        if (failsafe.sensor_health) {
+            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::ERROR_RESOLVED);
+            failsafe.sensor_health = false;
+        }
         return;
     }
 
@@ -338,7 +340,6 @@ void Sub::failsafe_gcs_check()
         return;
     }
 
-    // update state, log to dataflash
     failsafe.gcs = true;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
 
@@ -406,7 +407,6 @@ void Sub::failsafe_crash_check()
     }
 
     failsafe.crash = true;
-    // log an error in the dataflash
     AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
 
     // disarm motors

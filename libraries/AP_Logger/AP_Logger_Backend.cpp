@@ -11,7 +11,7 @@ AP_Logger_Backend::AP_Logger_Backend(AP_Logger &front,
     _front(front),
     _startup_messagewriter(writer)
 {
-    writer->set_dataflash_backend(this);
+    writer->set_logger_backend(this);
 }
 
 uint8_t AP_Logger_Backend::num_types() const
@@ -432,6 +432,6 @@ bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
 void AP_Logger_Backend::Write_Rally()
 {
     LoggerMessageWriter_WriteAllRallyPoints writer;
-    writer.set_dataflash_backend(this);
+    writer.set_logger_backend(this);
     writer.process();
 }

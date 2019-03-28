@@ -69,7 +69,7 @@ public:
     AP_Int32 unused; // logging is magic for Replay; this is unused
     struct LogStructure log_structure[256] = {
     };
-    AP_Logger dataflash{unused};
+    AP_Logger logger{unused};
 
 private:
     Parameters g;
@@ -91,7 +91,7 @@ public:
     void setup() override;
     void loop() override;
 
-    void flush_dataflash(void);
+    void flush_logger(void);
     void show_packet_counts();
 
     bool check_solution = false;
@@ -124,7 +124,7 @@ private:
             _vehicle.compass,
             _vehicle.gps,
             _vehicle.airspeed,
-            _vehicle.dataflash,
+            _vehicle.logger,
             _vehicle.log_structure,
             0,
             nottypes};

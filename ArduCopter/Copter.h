@@ -224,7 +224,6 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
 
-    // Dataflash
     AP_Logger logger;
 
     AP_GPS gps;
@@ -292,7 +291,7 @@ private:
             uint8_t pre_arm_rc_check        : 1; // 3       // true if rc input pre-arm checks have been completed successfully
             uint8_t pre_arm_check           : 1; // 4       // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
             uint8_t auto_armed              : 1; // 5       // stops auto missions from beginning until throttle is raised
-            uint8_t logging_started         : 1; // 6       // true if dataflash logging has started
+            uint8_t logging_started         : 1; // 6       // true if logging has started
             uint8_t land_complete           : 1; // 7       // true if we have detected a landing
             uint8_t new_radio_frame         : 1; // 8       // Set true if we have new PWM data to act on from the Radio
             uint8_t usb_connected_unused    : 1; // 9       // UNUSED
@@ -402,8 +401,6 @@ private:
 #endif
 
     // Altitude
-    // The cm/s we are moving up or down based on filtered data - Positive = UP
-    int16_t climb_rate;
     float target_rangefinder_alt;   // desired altitude in cm above the ground
     bool target_rangefinder_alt_used; // true if mode is using target_rangefinder_alt
     int32_t baro_alt;            // barometer altitude in cm above home

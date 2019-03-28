@@ -78,6 +78,8 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
 #endif
 
 #if !HAL_MINIMIZE_FEATURES
+    // @Group: SLCAN_
+    // @Path: ../AP_BoardConfig/canbus_slcan.cpp
     AP_SUBGROUPINFO(_slcan, "SLCAN_", 7, AP_BoardConfig_CAN, AP_BoardConfig_CAN::SLCAN_Interface),
 #endif
     AP_GROUPEND

@@ -817,7 +817,7 @@ AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3f &p1, co
     return {dP.length(), midpoint};
 }
 
-// de-activate SmartRTL, send warning to GCS and log to dataflash
+// de-activate SmartRTL, send warning to GCS and logger
 void AP_SmartRTL::deactivate(SRTL_Actions action, const char *reason)
 {
     _active = false;

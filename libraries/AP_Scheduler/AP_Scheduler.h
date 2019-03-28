@@ -84,7 +84,7 @@ public:
     // call to update any logging the scheduler might do; call at 1Hz
     void update_logging();
 
-    // write out PERF message to dataflash
+    // write out PERF message to logger
     void Log_Write_Performance();
 
     // call when one tick has passed
@@ -201,7 +201,7 @@ private:
     // performance counters
     AP_HAL::Util::perf_counter_t *_perf_counters;
 
-    // bitmask bit which indicates if we should log PERF message to dataflash
+    // bitmask bit which indicates if we should log PERF message
     uint32_t _log_performance_bit;
 };
 

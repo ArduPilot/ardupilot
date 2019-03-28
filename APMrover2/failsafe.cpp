@@ -32,7 +32,7 @@ void Rover::failsafe_check()
         // we have gone at least 0.2 seconds since the main loop
         // ran. That means we're in trouble, or perhaps are in
         // an initialisation routine or log erase. disarm the motors
-        // To-Do: log error to dataflash
+        // To-Do: log error
         if (arming.is_armed()) {
             // disarm motors
             disarm_motors();

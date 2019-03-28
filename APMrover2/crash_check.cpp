@@ -45,7 +45,6 @@ void Rover::crash_check()
     }
 
     if (crashed) {
-        // log an error in the dataflash
         AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK,
                                  LogErrorCode::CRASH_CHECK_CRASH);
 

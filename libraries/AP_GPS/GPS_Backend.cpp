@@ -170,9 +170,9 @@ void AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages() const
     AP::logger().Write_Message(buffer);
 }
 
-bool AP_GPS_Backend::should_df_log() const
+bool AP_GPS_Backend::should_log() const
 {
-    return gps.should_df_log();
+    return gps.should_log();
 }
 
 

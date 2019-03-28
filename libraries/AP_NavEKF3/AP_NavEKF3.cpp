@@ -634,9 +634,9 @@ bool NavEKF3::InitialiseFilter(void)
     if (core == nullptr) {
 
         // see if we will be doing logging
-        AP_Logger *dataflash = AP_Logger::get_singleton();
-        if (dataflash != nullptr) {
-            logging.enabled = dataflash->log_replay();
+        AP_Logger *logger = AP_Logger::get_singleton();
+        if (logger != nullptr) {
+            logging.enabled = logger->log_replay();
         }
 
         // don't run multiple filters for 1 IMU

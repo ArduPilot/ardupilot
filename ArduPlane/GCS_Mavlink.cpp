@@ -1082,15 +1082,10 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 
         uint32_t tnow = AP_HAL::millis();
 
-        int16_t roll = (packet.y == INT16_MAX) ? 0 : plane.channel_roll->get_radio_min() + (plane.channel_roll->get_radio_max() - plane.channel_roll->get_radio_min()) * (packet.y + 1000) / 2000.0f;
-        int16_t pitch = (packet.x == INT16_MAX) ? 0 : plane.channel_pitch->get_radio_min() + (plane.channel_pitch->get_radio_max() - plane.channel_pitch->get_radio_min()) * (-packet.x + 1000) / 2000.0f;
-        int16_t throttle = (packet.z == INT16_MAX) ? 0 : plane.channel_throttle->get_radio_min() + (plane.channel_throttle->get_radio_max() - plane.channel_throttle->get_radio_min()) * (packet.z) / 1000.0f;
-        int16_t yaw = (packet.r == INT16_MAX) ? 0 : plane.channel_rudder->get_radio_min() + (plane.channel_rudder->get_radio_max() - plane.channel_rudder->get_radio_min()) * (packet.r + 1000) / 2000.0f;
-
-        RC_Channels::set_override(uint8_t(plane.rcmap.roll() - 1), roll, tnow);
-        RC_Channels::set_override(uint8_t(plane.rcmap.pitch() - 1), pitch, tnow);
-        RC_Channels::set_override(uint8_t(plane.rcmap.throttle() - 1), throttle, tnow);
-        RC_Channels::set_override(uint8_t(plane.rcmap.yaw() - 1), yaw, tnow);
+        manual_override(plane.channel_roll, packet.y, 1000, 2000, tnow);
+        manual_override(plane.channel_pitch, packet.x, 1000, 2000, tnow, true);
+        manual_override(plane.channel_throttle, packet.z, 0, 1000, tnow);
+        manual_override(plane.channel_rudder, packet.r, 1000, 2000, tnow);
 
         // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         plane.failsafe.last_heartbeat_ms = tnow;
