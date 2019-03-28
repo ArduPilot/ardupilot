@@ -236,6 +236,7 @@ public:
     void Write_RCIN(void);
     void Write_RCOUT(void);
     void Write_RSSI();
+    void Write_Rally();
     void Write_Baro(uint64_t time_us=0);
     void Write_Power(void);
     void Write_AHRS2(AP_AHRS &ahrs);
