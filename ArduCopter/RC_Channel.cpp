@@ -94,6 +94,8 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case THROW:
     case SMART_RTL:
     case GUIDED:
+    case LOITER:
+    case FOLLOW:
     case PARACHUTE_RELEASE:
     case ARMDISARM:
     case WINCH_CONTROL:
@@ -290,6 +292,14 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
         case GUIDED:
             do_aux_function_change_mode(control_mode_t::GUIDED, ch_flag);
+            break;
+
+        case LOITER:
+            do_aux_function_change_mode(control_mode_t::LOITER, ch_flag);
+            break;
+
+        case FOLLOW:
+            do_aux_function_change_mode(control_mode_t::FOLLOW, ch_flag);
             break;
 
         case PARACHUTE_ENABLE:
