@@ -2,14 +2,13 @@
 # vi: set ft=ruby :
 
 # Testing an ArduPilot VM:
-# sim_vehicle.py # in the starting directory should start a Copter simulation
-# xterm # X11 forwarding should work
+# sim_vehicle.py --map --console # in the starting directory should start a Copter simulation
 # sim_vehicle.py --debug --gdb
 # sim_vehicle.py --valgrind
 # time (cd /vagrant && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~9 minutes
 # time (cd /vagrant && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
 # time (cd /vagrant && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)
-# time (cd /vagrant && ./Tools/autotest/sim_vehicle.py --map --console -v ArduPlane -f jsbsim # should test JSBSim)
+# time (cd /vagrant && ./Tools/autotest/sim_vehicle.py --map --console -v ArduPlane -f jsbsim) # should test JSBSim
 # time (cd /vagrant && ./Tools/autotest/autotest.py build.APMrover2 drive.APMrover2)
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
@@ -98,7 +97,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 18.04 LTS , bleeding edge.
+  # 18.04 LTS
   config.vm.define "bionic32", autostart: false do |bionic32|
     config.vm.box = "ubuntu/bionic32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -108,7 +107,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 18.04 LTS , bleeding edge.
+  # 18.04 LTS
   config.vm.define "bionic64", primary: true do |bionic64|
     config.vm.box = "ubuntu/bionic64"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -119,7 +118,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
 
-  # 18.10 bleeding edge
+  # 18.10
   config.vm.define "cosmic32", autostart: false do |cosmic32|
     config.vm.box = "ubuntu/cosmic32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -129,12 +128,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 18.10 bleeding edge
+  # 18.10
   config.vm.define "cosmic64", autostart: false do |cosmic64|
     config.vm.box = "ubuntu/cosmic64"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (cosmic64)"
+      vb.gui = true
+    end
+  end
+
+  # 19.04 bleeding edge
+  config.vm.define "disco64", autostart: false do |disco64|
+    config.vm.box = "ubuntu/disco64"
+    config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (disco64)"
       vb.gui = true
     end
   end
