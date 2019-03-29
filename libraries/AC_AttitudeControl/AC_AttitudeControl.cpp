@@ -383,6 +383,10 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float 
     bf_yaw_Q.from_axis_angle(Vector3f(-cosf(euler_pitch), 0, 0), body_roll);
     _attitude_target_quat = _attitude_target_quat * bf_roll_Q * bf_yaw_Q;
 
+    // calculate the attitude target euler angles
+    _attitude_target_euler_angle.x = _attitude_target_quat.get_euler_roll();
+    _attitude_target_euler_angle.y = _attitude_target_quat.get_euler_pitch();
+
     // Set rate feedforward requests to zero
     _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
     _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
@@ -428,6 +432,10 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(float 
     Quaternion bf_yaw_Q;
     bf_yaw_Q.from_axis_angle(Vector3f(cpitch, 0, 0), euler_yaw_rate);
     _attitude_target_quat = _attitude_target_quat * bf_roll_Q * bf_yaw_Q;
+
+    // calculate the attitude target euler angles
+    _attitude_target_euler_angle.x = _attitude_target_quat.get_euler_roll();
+    _attitude_target_euler_angle.y = _attitude_target_quat.get_euler_pitch();
 
     // Set rate feedforward requests to zero
     _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
