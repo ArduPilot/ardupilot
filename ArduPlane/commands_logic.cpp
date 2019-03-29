@@ -494,6 +494,7 @@ void Plane::do_altitude_wait(const AP_Mission::Mission_Command& cmd)
 {
     // set all servos to trim until we reach altitude or descent speed
     auto_state.idle_mode = true;
+    auto_state.highest_baro_alt = barometer.get_altitude();
 }
 
 void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
@@ -806,10 +807,18 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
         gcs().send_text(MAV_SEVERITY_INFO,"Reached altitude");
         return true;
     }
-    if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
+    if (cmd.content.altitude_wait.descent_rate > 0 && auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached descent rate %.1f m/s", (double)auto_state.sink_rate);
         return true;        
     }
+
+    float baro_alt = barometer.get_altitude();
+    if (auto_state.highest_baro_alt - baro_alt > 50) {
+        // we've dropped 50m baro alt, trigger
+        gcs().send_text(MAV_SEVERITY_INFO, "Dropped %.1fm", auto_state.highest_baro_alt - baro_alt);
+        return true;        
+    }
+    auto_state.highest_baro_alt = MAX(auto_state.highest_baro_alt, baro_alt);
 
     // if requested, wiggle servos
     if (cmd.content.altitude_wait.wiggle_time != 0) {

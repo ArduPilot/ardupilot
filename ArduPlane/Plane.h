@@ -532,6 +532,9 @@ private:
 
         // are we doing loiter mode as a VTOL?
         bool vtol_loiter:1;
+
+        // highest barometric altitude seen (for ALTITUDE_WAIT)
+        float highest_baro_alt;
     } auto_state;
 
     struct {
