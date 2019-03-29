@@ -345,6 +345,14 @@ void AP_BoardConfig::board_setup()
     hal.rcin->init();
     hal.rcout->init();
 #endif
+
+#if HAL_GPIO_PWM_VOLT_PIN
+    if (_pwm_volt_sel == 0) {
+        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, 1); //set pin for 3.3V PWM Output
+    } else if (_pwm_volt_sel == 1) {
+        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, 0); //set pin for 5V PWM Output
+    }
+#endif
     board_setup_uart();
     board_setup_sbus();
 #if AP_FEATURE_BOARD_DETECT
