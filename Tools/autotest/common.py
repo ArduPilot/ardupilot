@@ -2090,11 +2090,12 @@ class AutoTest(ABC):
         # TEST ARMING/DISARM
         if not self.is_sub() and not self.is_tracker():
             self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
-        interlock_channel = 8  # Plane got flighmode_ch on channel 8
-        if not self.is_heli():  # heli don't need interlock option
-            interlock_channel = 9
-            self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
-        self.set_rc(interlock_channel, 1000)
+        if self.is_copter():
+            interlock_channel = 8  # Plane got flighmode_ch on channel 8
+            if not self.is_heli():  # heli don't need interlock option
+                interlock_channel = 9
+                self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
+            self.set_rc(interlock_channel, 1000)
         self.zero_throttle()
         # Disable auto disarm for next tests
         # Rover and Sub don't have auto disarm
