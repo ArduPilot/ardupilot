@@ -251,10 +251,14 @@ void Plane::dspoiler_update(void)
  */
 void Plane::set_servos_idle(void)
 {
-    int16_t servo_value = 0;
+    int16_t servo_value;
     // move over full range for 2 seconds
-    auto_state.idle_wiggle_stage += 2;
-    if (auto_state.idle_wiggle_stage < 50) {
+    if (auto_state.idle_wiggle_stage != 0) {
+        auto_state.idle_wiggle_stage += 2;
+    }
+    if (auto_state.idle_wiggle_stage == 0) {
+        servo_value = 0;
+    } else if (auto_state.idle_wiggle_stage < 50) {
         servo_value = auto_state.idle_wiggle_stage * (4500 / 50);
     } else if (auto_state.idle_wiggle_stage < 100) {
         servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);        
@@ -264,6 +268,7 @@ void Plane::set_servos_idle(void)
         servo_value = (auto_state.idle_wiggle_stage-200) * (4500 / 50);        
     } else {
         auto_state.idle_wiggle_stage = 0;
+        servo_value = 0;
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_value);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_value);
