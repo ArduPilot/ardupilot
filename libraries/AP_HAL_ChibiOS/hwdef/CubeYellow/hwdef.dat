@@ -309,6 +309,9 @@ PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
 PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
 
+# Pin for PWM Voltage Selection
+PB4 PWM_VOLT_SEL OUTPUT GPIO(3)
+
 # this is the invensense data-ready pin. We don't use it in the
 # default driver
 PD15 MPU_DRDY INPUT
@@ -434,6 +437,7 @@ define HAL_BATT_VOLT_PIN 2
 define HAL_BATT_CURR_PIN 3
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
+define HAL_GPIO_PWM_VOLT_PIN 3
 
 # this defines the default maximum clock on I2C devices.
 define HAL_I2C_MAX_CLOCK 100000
