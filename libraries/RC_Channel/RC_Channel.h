@@ -342,6 +342,10 @@ public:
         return _options & uint32_t(Option::IGNORE_RECEIVER);
     }
 
+    float override_timeout_ms() const {
+        return _override_timeout.get() * 1e3f;
+    }
+
 protected:
 
     enum class Option {
@@ -356,7 +360,6 @@ private:
     static RC_Channel *channels;
 
     static bool has_new_overrides;
-    static AP_Float *override_timeout;
     AP_Float _override_timeout;
     AP_Int32  _options;
 
