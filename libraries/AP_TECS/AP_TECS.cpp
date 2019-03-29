@@ -858,6 +858,15 @@ void AP_TECS::_update_pitch(void)
     // causing massive integrator changes. See Issue#4066
     integSEB_delta = constrain_float(integSEB_delta, -integSEB_range*0.1f, integSEB_range*0.1f);
 
+    // prevent the constraint on pitch integrator _integSEB_state from
+    // itself injecting step changes in the variable. We only want the
+    // constraint to prevent large changes due to integSEB_delta, not
+    // to cause step changes due to a change in the constrain
+    // limits. Large steps in _integSEB_state can cause long term
+    // pitch changes
+    integSEB_min = MIN(integSEB_min, _integSEB_state);
+    integSEB_max = MAX(integSEB_max, _integSEB_state);
+
     // integrate
     _integSEB_state = constrain_float(_integSEB_state + integSEB_delta, integSEB_min, integSEB_max);
 
