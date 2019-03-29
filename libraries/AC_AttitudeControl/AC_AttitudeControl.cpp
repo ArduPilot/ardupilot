@@ -359,15 +359,25 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float 
     // init attitude target to desired euler yaw and pitch with zero roll
     _attitude_target_quat.from_euler(0, euler_pitch, _attitude_target_euler_angle.z);
 
+    const float cpitch = cosf(euler_pitch);
+    const float spitch = fabsf(sinf(euler_pitch));
+
     // apply body-frame yaw/roll (this is roll/yaw for a tailsitter in forward flight)
     // rotate body_roll axis by |sin(pitch angle)|
     Quaternion bf_roll_Q;
-    bf_roll_Q.from_axis_angle(Vector3f(0, 0, fabsf(sinf(euler_pitch)) * body_roll));
+    bf_roll_Q.from_axis_angle(Vector3f(0, 0, spitch * body_roll));
 
     // rotate body_yaw axis by cos(pitch angle)
     Quaternion bf_yaw_Q;
-    bf_yaw_Q.from_axis_angle(Vector3f(-cosf(euler_pitch), 0, 0), body_roll);
+    bf_yaw_Q.from_axis_angle(Vector3f(-cpitch * body_roll, 0, 0));
     _attitude_target_quat = _attitude_target_quat * bf_roll_Q * bf_yaw_Q;
+
+    // _attitude_target_euler_angle roll and pitch: Note: roll/yaw will be indeterminate when pitch is near +/-90
+    // These should be used only for logging target eulers, with the caveat noted above.
+    // Also note that _attitude_target_quat.from_euler() should only be used in special circumstances
+    // such as when attitude is specified directly in terms of Euler angles.
+    //    _attitude_target_euler_angle.x = _attitude_target_quat.get_euler_roll();
+    //    _attitude_target_euler_angle.y = euler_pitch;
 
     // Set rate feedforward requests to zero
     _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
@@ -414,6 +424,13 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(float 
     Quaternion bf_yaw_Q;
     bf_yaw_Q.from_axis_angle(Vector3f(cpitch, 0, 0), euler_yaw_rate);
     _attitude_target_quat = _attitude_target_quat * bf_roll_Q * bf_yaw_Q;
+
+    // _attitude_target_euler_angle roll and pitch: Note: roll/yaw will be indeterminate when pitch is near +/-90
+    // These should be used only for logging target eulers, with the caveat noted above
+    // Also note that _attitude_target_quat.from_euler() should only be used in special circumstances
+    // such as when attitude is specified directly in terms of Euler angles.
+    //    _attitude_target_euler_angle.x = _attitude_target_quat.get_euler_roll();
+    //    _attitude_target_euler_angle.y = euler_pitch;
 
     // Set rate feedforward requests to zero
     _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
