@@ -354,12 +354,17 @@ protected:
         IGNORE_FAILSAFE  = (1 << 2), // ignore RC failsafe bits
     };
 
+    void new_override_received() {
+        has_new_overrides = true;
+    }
+
 private:
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;
 
-    static bool has_new_overrides;
+    bool has_new_overrides;
+
     AP_Float _override_timeout;
     AP_Int32  _options;
 
