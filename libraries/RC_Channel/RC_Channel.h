@@ -16,12 +16,6 @@ public:
     // Constructor
     RC_Channel(void);
 
-    enum InputIgnore {
-        RC_IGNORE_RECEIVER  = (1 << 0), // RC receiver modules
-        RC_IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
-        RC_IGNORE_FAILSAFE  = (1 << 2), // ignore RC failsafe bits
-    };
-
     enum ChannelType {
         RC_CHANNEL_TYPE_ANGLE = 0,
         RC_CHANNEL_TYPE_RANGE = 1,
@@ -200,6 +194,7 @@ protected:
         // no action by default (e.g. Tracker, Sub, who do their own thing)
     };
 
+
 private:
 
     // pwm is stored here
@@ -335,10 +330,26 @@ public:
     }
 
     // should we ignore RC failsafe bits from receivers?
-    static bool ignore_rc_failsafe(void) {
-        return options && ((*options) & RC_Channel::RC_IGNORE_FAILSAFE) != 0;
+    bool ignore_rc_failsafe(void) const {
+        return _options & uint32_t(Option::IGNORE_FAILSAFE);
     }
-    
+
+    bool ignore_overrides() const {
+        return _options & uint32_t(Option::IGNORE_OVERRIDES);
+    }
+
+    bool ignore_receiver() const {
+        return _options & uint32_t(Option::IGNORE_RECEIVER);
+    }
+
+protected:
+
+    enum class Option {
+        IGNORE_RECEIVER  = (1 << 0), // RC receiver modules
+        IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
+        IGNORE_FAILSAFE  = (1 << 2), // ignore RC failsafe bits
+    };
+
 private:
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
@@ -346,7 +357,6 @@ private:
 
     static bool has_new_overrides;
     static AP_Float *override_timeout;
-    static AP_Int32 *options;
     AP_Float _override_timeout;
     AP_Int32  _options;
 
