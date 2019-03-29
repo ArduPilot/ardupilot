@@ -140,7 +140,7 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
 
 void SoaringController::get_target(Location &wp)
 {
-    _ahrs.get_position(wp);
+    wp = _ahrs.get_home();
     wp.offset(_ekf.X[2], _ekf.X[3]);
 }
 
@@ -221,8 +221,8 @@ void SoaringController::init_thermalling()
     // New state vector filter will be reset. Thermal location is placed in front of a/c
     const float init_xr[4] = {INITIAL_THERMAL_STRENGTH,
                               INITIAL_THERMAL_RADIUS,
-                              thermal_distance_ahead * cosf(_ahrs.yaw),
-                              thermal_distance_ahead * sinf(_ahrs.yaw)};
+                              position.x + thermal_distance_ahead * cosf(_ahrs.yaw),
+                              position.y + thermal_distance_ahead * sinf(_ahrs.yaw)};
     const VectorN<float,4> xr{init_xr};
 
     // Also reset covariance matrix p so filter is not affected by previous data
@@ -295,7 +295,7 @@ void SoaringController::update_thermalling()
                                            (double)dy_w);
 
     //log_data();
-    _ekf.update(_vario.reading,dx, dy);       // update the filter
+    _ekf.update(_vario.reading, current_position.x, current_position.y, dx_w, dy_w);       // update the filter
 
     _prev_update_location = current_position;      // save for next time
     _prev_update_time = AP_HAL::micros64();
