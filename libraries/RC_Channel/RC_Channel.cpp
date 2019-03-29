@@ -126,9 +126,9 @@ RC_Channel::get_reverse(void) const
 bool
 RC_Channel::update(void)
 {
-    if (has_override() && !(*RC_Channels::options & RC_IGNORE_OVERRIDES)) {
+    if (has_override() && !rc().ignore_overrides()) {
         radio_in = override_value;
-    } else if (!(*RC_Channels::options & RC_IGNORE_RECEIVER)) {
+    } else if (!rc().ignore_receiver()) {
         radio_in = hal.rcin->read(ch_in);
     } else {
         return false;
