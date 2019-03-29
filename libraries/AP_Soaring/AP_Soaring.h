@@ -33,7 +33,7 @@ class SoaringController {
     const AP_Vehicle::FixedWing &_aparm;
 
     // store aircraft location at last update
-    struct Location _prev_update_location;
+    Vector3f _prev_update_location;
 
     // store time thermal was entered for hysteresis
     unsigned long _thermal_start_time_us;
@@ -47,7 +47,7 @@ class SoaringController {
     bool _throttle_suppressed;
 
     float McCready(float alt);
-    void get_wind_corrected_drift(const Location *current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy);
+    void get_wind_corrected_drift(Vector3f current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy);
     void get_altitude_wrt_home(float *alt);
 
 protected:

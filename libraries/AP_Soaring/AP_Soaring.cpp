@@ -140,7 +140,7 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
 
 void SoaringController::get_target(Location &wp)
 {
-    wp = _prev_update_location;
+    _ahrs.get_position(wp);
     wp.offset(_ekf.X[2], _ekf.X[3]);
 }
 
@@ -212,6 +212,12 @@ void SoaringController::init_thermalling()
     const float init_p[4] = {INITIAL_STRENGTH_COVARIANCE, INITIAL_RADIUS_COVARIANCE, INITIAL_POSITION_COVARIANCE, INITIAL_POSITION_COVARIANCE};
     const MatrixN<float,4> p{init_p};
 
+    Vector3f position;
+    
+    if (!_ahrs.get_relative_position_NED_home(position)) {
+        return;
+    }
+
     // New state vector filter will be reset. Thermal location is placed in front of a/c
     const float init_xr[4] = {INITIAL_THERMAL_STRENGTH,
                               INITIAL_THERMAL_RADIUS,
@@ -222,7 +228,7 @@ void SoaringController::init_thermalling()
     // Also reset covariance matrix p so filter is not affected by previous data
     _ekf.reset(xr, p, q, r);
 
-    _ahrs.get_position(_prev_update_location);
+    _prev_update_location = position;
     _prev_update_time = AP_HAL::micros64();
     _thermal_start_time_us = AP_HAL::micros64();
 }
@@ -236,9 +242,9 @@ void SoaringController::init_cruising()
     }
 }
 
-void SoaringController::get_wind_corrected_drift(const Location *current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy)
+void SoaringController::get_wind_corrected_drift(Vector3f current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy)
 {
-    const Vector2f diff = _prev_update_location.get_distance_NE(*current_loc); // get distances from previous update
+    Vector3f diff = current_loc - _prev_update_location; // get distances from previous update
     *dx = diff.x;
     *dy = diff.y;
 
@@ -256,15 +262,21 @@ void SoaringController::get_altitude_wrt_home(float *alt)
 }
 void SoaringController::update_thermalling()
 {
-    struct Location current_loc;
-    _ahrs.get_position(current_loc);
+    Vector3f current_position;
+
+    if (!_ahrs.get_relative_position_NED_home(current_position)) {
+        return;
+    }
 
     float dx = 0;
     float dy = 0;
     float dx_w = 0;
     float dy_w = 0;
     Vector3f wind = _ahrs.wind_estimate();
-    get_wind_corrected_drift(&current_loc, &wind, &dx_w, &dy_w, &dx, &dy);
+    get_wind_corrected_drift(current_position, &wind, &dx_w, &dy_w, &dx, &dy);
+
+    struct Location current_loc;
+    _ahrs.get_position(current_loc);
 
     // write log - save the data.
     AP::logger().Write("SOAR", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w", "QfffffffLLfff", 
@@ -285,7 +297,7 @@ void SoaringController::update_thermalling()
     //log_data();
     _ekf.update(_vario.reading,dx, dy);       // update the filter
 
-    _prev_update_location = current_loc;      // save for next time
+    _prev_update_location = current_position;      // save for next time
     _prev_update_time = AP_HAL::micros64();
 }
 
