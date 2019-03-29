@@ -63,7 +63,7 @@ class AutoTestTracker(AutoTest):
         if self.armed():
             self.disarm_vehicle()
         self.mavproxy.send("reboot\n")
-        self.mavproxy.expect("Initialising APM")
+        self.mavproxy.expect("Init AntennaTracker")
         # empty mav to avoid getting old timestamps:
         while self.mav.recv_match(blocking=False):
             pass
