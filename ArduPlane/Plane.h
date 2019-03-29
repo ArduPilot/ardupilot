@@ -509,6 +509,9 @@ private:
 
         // how much correction have we added for terrain data
         float terrain_correction;
+
+        // highest barometric altitude seen (for ALTITUDE_WAIT)
+        float highest_baro_alt;
     } auto_state;
 
     struct {
