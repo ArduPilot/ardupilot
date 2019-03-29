@@ -259,48 +259,34 @@ void SoaringController::update_thermalling()
     struct Location current_loc;
     _ahrs.get_position(current_loc);
 
-    if (_vario.new_data) {
-        float dx = 0;
-        float dy = 0;
-        float dx_w = 0;
-        float dy_w = 0;
-        Vector3f wind = _ahrs.wind_estimate();
-        get_wind_corrected_drift(&current_loc, &wind, &dx_w, &dy_w, &dx, &dy);
+    float dx = 0;
+    float dy = 0;
+    float dx_w = 0;
+    float dy_w = 0;
+    Vector3f wind = _ahrs.wind_estimate();
+    get_wind_corrected_drift(&current_loc, &wind, &dx_w, &dy_w, &dx, &dy);
 
-#if (0)
-        // Print32_t filter info for debugging
-        int32_t i;
-        for (i = 0; i < 4; i++) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%e ", (double)_ekf.P[i][i]);
-        }
-        for (i = 0; i < 4; i++) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%e ", (double)_ekf.X[i]);
-        }
-#endif
+    // write log - save the data.
+    AP::logger().Write("SOAR", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w", "QfffffffLLfff", 
+                                           AP_HAL::micros64(),
+                                           (double)_vario.reading,
+                                           (double)dx,
+                                           (double)dy,
+                                           (double)_ekf.X[0],
+                                           (double)_ekf.X[1],
+                                           (double)_ekf.X[2],
+                                           (double)_ekf.X[3],
+                                           current_loc.lat,
+                                           current_loc.lng,
+                                           (double)_vario.alt,
+                                           (double)dx_w,
+                                           (double)dy_w);
 
-        // write log - save the data.
-        AP::logger().Write("SOAR", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w", "QfffffffLLfff", 
-                                               AP_HAL::micros64(),
-                                               (double)_vario.reading,
-                                               (double)dx,
-                                               (double)dy,
-                                               (double)_ekf.X[0],
-                                               (double)_ekf.X[1],
-                                               (double)_ekf.X[2],
-                                               (double)_ekf.X[3],
-                                               current_loc.lat,
-                                               current_loc.lng,
-                                               (double)_vario.alt,
-                                               (double)dx_w,
-                                               (double)dy_w);
+    //log_data();
+    _ekf.update(_vario.reading,dx, dy);       // update the filter
 
-        //log_data();
-        _ekf.update(_vario.reading,dx, dy);       // update the filter
-
-        _prev_update_location = current_loc;      // save for next time
-        _prev_update_time = AP_HAL::micros64();
-        _vario.new_data = false;
-    }
+    _prev_update_location = current_loc;      // save for next time
+    _prev_update_time = AP_HAL::micros64();
 }
 
 void SoaringController::update_cruising()

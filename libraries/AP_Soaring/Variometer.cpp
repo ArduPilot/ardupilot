@@ -6,8 +6,7 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 
 Variometer::Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
     _ahrs(ahrs),
-    _aparm(parms),
-    new_data(false)
+    _aparm(parms)
 {
 }
 
@@ -50,7 +49,6 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
     displayed_reading = TE_FILT_DISPLAYED * reading + (1 - TE_FILT_DISPLAYED) * displayed_reading;
 
     _prev_update_time = AP_HAL::micros64();
-    new_data = true;
 
     AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt", "Qffffff",
                        AP_HAL::micros64(),
