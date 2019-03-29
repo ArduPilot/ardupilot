@@ -399,7 +399,7 @@ void RCOutput::push_local(void)
                     pwmEnableChannel(group.pwm_drv, j, width);
                 }
 #ifndef DISABLE_DSHOT 
-                else if (group.current_mode >= MODE_PWM_DSHOT150 && group.current_mode <= MODE_PWM_DSHOT1200) {
+                else if (is_dshot_protocol(group.current_mode) || group.current_mode == MODE_NEOPIXEL) {
                     // set period_us to time for pulse output, to enable very fast rates
                     period_us = dshot_pulse_time_us;
                 }
@@ -409,8 +409,8 @@ void RCOutput::push_local(void)
                 }
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
-                    (group.current_mode >= MODE_PWM_DSHOT150 &&
-                     group.current_mode <= MODE_PWM_DSHOT1200)) {
+                    group.current_mode == MODE_NEOPIXEL ||
+                    is_dshot_protocol(group.current_mode)) {
                     need_trigger |= (1U<<i);
                 }
             }
@@ -485,18 +485,11 @@ void RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
  */
 bool RCOutput::mode_requires_dma(enum output_mode mode) const
 {
-#ifndef DISABLE_DSHOT
-    switch (mode) {
-    case MODE_PWM_DSHOT150:
-    case MODE_PWM_DSHOT300:
-    case MODE_PWM_DSHOT600:
-    case MODE_PWM_DSHOT1200:
-        return true;
-    default:
-        break;
-    }
-#endif //#ifndef DISABLE_DSHOT
+#ifdef DISABLE_DSHOT
     return false;
+#else
+    return is_dshot_protocol(mode) || (mode == MODE_NEOPIXEL);
+#endif //#ifdef DISABLE_DSHOT
 }
 
 /*
@@ -505,11 +498,11 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
 
   This is used for both DShot and serial output
  */
-bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high)
+bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length)
 {
 #ifndef DISABLE_DSHOT
     if (!group.dma_buffer) {
-        group.dma_buffer = (uint32_t *)hal.util->malloc_type(dshot_buffer_length, AP_HAL::Util::MEM_DMA_SAFE);
+        group.dma_buffer = (uint32_t *)hal.util->malloc_type(buffer_length, AP_HAL::Util::MEM_DMA_SAFE);
         if (!group.dma_buffer) {
             return false;
         }
@@ -603,13 +596,28 @@ void RCOutput::set_group_mode(pwm_group &group)
         }
         break;
 
-    case MODE_PWM_DSHOT150 ... MODE_PWM_DSHOT1200: {
-        const uint16_t rates[(1 + MODE_PWM_DSHOT1200) - MODE_PWM_DSHOT150] = { 150, 300, 600, 1200 };
-        uint32_t rate = rates[uint8_t(group.current_mode - MODE_PWM_DSHOT150)] * 1000UL;
+    case MODE_NEOPIXEL:
+    {
+        const uint32_t rate = protocol_bitrate(group.current_mode);
         const uint32_t bit_period = 20;
 
         // configure timer driver for DMAR at requested rate
-        if (!setup_group_DMA(group, rate, bit_period, true)) {
+        if (!setup_group_DMA(group, rate, bit_period, true, neopixel_buffer_length)) {
+            group.current_mode = MODE_PWM_NONE;
+            break;
+        }
+
+        // calculate min time between pulses
+        dshot_pulse_time_us = 1000000UL * neopixel_bit_length / rate;
+        break;
+    }
+
+    case MODE_PWM_DSHOT150 ... MODE_PWM_DSHOT1200: {
+        const uint32_t rate = protocol_bitrate(group.current_mode);
+        const uint32_t bit_period = 20;
+
+        // configure timer driver for DMAR at requested rate
+        if (!setup_group_DMA(group, rate, bit_period, true, dshot_buffer_length)) {
             group.current_mode = MODE_PWM_NONE;
             break;
         }
@@ -764,8 +772,10 @@ void RCOutput::trigger_groups(void)
     if (!serial_group) {
         for (uint8_t i = 0; i < NUM_GROUPS; i++) {
             pwm_group &group = pwm_group_list[i];
-            if (group.current_mode >= MODE_PWM_DSHOT150 && group.current_mode <= MODE_PWM_DSHOT1200) {
+            if (is_dshot_protocol(group.current_mode)) {
                 dshot_send(group, false);
+            } else if (group.current_mode == MODE_NEOPIXEL) {
+                neopixel_send(group);
             }
         }
     }
@@ -791,9 +801,8 @@ void RCOutput::timer_tick(void)
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         if (!serial_group &&
-            group.current_mode >= MODE_PWM_DSHOT150 &&
-            group.current_mode <= MODE_PWM_DSHOT1200 &&
-            now - group.last_dshot_send_us > 400) {
+            is_dshot_protocol(group.current_mode) &&
+            now - group.last_dmar_send_us > 400) {
             // do a blocking send now, to guarantee DShot sends at
             // above 1000 Hz. This makes the protocol more reliable on
             // long cables, and also keeps some ESCs happy that don't
@@ -965,9 +974,57 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
     // start sending the pulses out
     send_pulses_DMAR(group, dshot_buffer_length);
 
-    group.last_dshot_send_us = AP_HAL::micros64();
+    group.last_dmar_send_us = AP_HAL::micros64();
 #endif //#ifndef DISABLE_DSHOT
 }
+
+
+
+
+/*
+  fill in a DMA buffer for Neopixel LED
+ */
+void RCOutput::fill_DMA_buffer_neopixel(uint32_t *buffer, const uint8_t stride, uint32_t rgb, const uint16_t clockmul)
+{
+    // TODO: chane clockmul to a define or constant
+    const uint32_t DSHOT_MOTOR_BIT_0 = 7 * clockmul;
+    const uint32_t DSHOT_MOTOR_BIT_1 = 14 * clockmul;
+
+    for (uint16_t i=0; i < 24; i++) {
+        buffer[i * stride] = (rgb & 0x800000) ? DSHOT_MOTOR_BIT_1 : DSHOT_MOTOR_BIT_0;
+        rgb <<= 1;
+    }
+}
+
+/*
+  send a set of Neopixel packets for a channel group
+ */
+void RCOutput::neopixel_send(pwm_group &group)
+{
+#ifndef DISABLE_DSHOT
+    if (irq.waiter || !group.dma_handle->lock_nonblock()) {
+        // doing serial output, don't send Neopixel pulses
+        return;
+    }
+
+    memset((uint8_t *)group.dma_buffer, 0, neopixel_buffer_length);
+    
+    for (uint8_t i=0; i<4; i++) {
+        uint8_t chan = group.chan[i];
+        if (chan != CHAN_DISABLED) {
+            fill_DMA_buffer_neopixel(group.dma_buffer + i, 4, neopixel_rgb_data[i], group.bit_width_mul);
+        }
+    }
+
+    // start sending the pulses out
+    send_pulses_DMAR(group, neopixel_buffer_length);
+
+    group.last_dmar_send_us = AP_HAL::micros64();
+#endif //#ifndef DISABLE_DSHOT
+}
+
+
+
 
 /*
   send a series of pulses for a group using DMAR. Pulses must have
@@ -1087,7 +1144,7 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t cha
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         if (group.ch_mask & chanmask) {
-            if (!setup_group_DMA(group, baudrate, 10, false)) {
+            if (!setup_group_DMA(group, baudrate, 10, false, dshot_buffer_length)) {
                 serial_end();
                 return false;
             }
@@ -1518,4 +1575,41 @@ void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
 #endif
 }
 
+/*
+  true when the output mode is of type dshot
+*/
+bool RCOutput::is_dshot_protocol(const enum output_mode mode) const
+{
+    switch (mode) {
+    case MODE_PWM_DSHOT150:
+    case MODE_PWM_DSHOT300:
+    case MODE_PWM_DSHOT600:
+    case MODE_PWM_DSHOT1200:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/*
+    returns the bitrate in Hz of the given output_mode
+*/
+uint32_t RCOutput::protocol_bitrate(const enum output_mode mode) const
+{
+    switch (mode) {
+    case MODE_PWM_DSHOT150:
+        return 150000;
+    case MODE_PWM_DSHOT300:
+        return 300000;
+    case MODE_PWM_DSHOT600:
+        return 600000;
+    case MODE_PWM_DSHOT1200:
+        return 1200000;
+    case MODE_NEOPIXEL:
+        return 800000;
+    default:
+        // use 1 to prevent a possible divide-by-zero
+        return 1;
+    }
+}
 #endif // HAL_USE_PWM
