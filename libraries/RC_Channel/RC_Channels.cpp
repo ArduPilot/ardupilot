@@ -28,8 +28,6 @@ extern const AP_HAL::HAL& hal;
 
 #include "RC_Channel.h"
 
-bool RC_Channels::has_new_overrides;
-
 /*
   channels group object constructor
  */

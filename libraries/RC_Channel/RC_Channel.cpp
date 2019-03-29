@@ -338,7 +338,7 @@ void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_us)
     }
     last_override_time = timestamp_us != 0 ? timestamp_us : AP_HAL::millis();
     override_value = v;
-    RC_Channels::has_new_overrides = true;
+    rc().new_override_received();
 }
 
 void RC_Channel::clear_override()
