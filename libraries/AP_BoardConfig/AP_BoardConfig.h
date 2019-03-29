@@ -216,6 +216,10 @@ private:
     AP_Float _vservo_min;
 #endif
 
+#ifdef HAL_GPIO_PWM_VOLT_PIN
+    AP_Int8 _pwm_volt_sel;
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     AP_Int8 _sdcard_slowdown;
 #endif
