@@ -178,6 +178,7 @@ public:
         MODE_PWM_DSHOT300,
         MODE_PWM_DSHOT600,
         MODE_PWM_DSHOT1200,
+        MODE_NEOPIXEL,      // same as MODE_PWM_DSHOT at 800kHz but it's an LED
     };
     virtual void    set_output_mode(uint16_t mask, enum output_mode mode) {}
 
@@ -191,4 +192,6 @@ public:
       with DShot to get telemetry feedback
      */
     virtual void set_telem_request_mask(uint16_t mask) {}
+
+    virtual void set_neopixel_rgb_data(const uint16_t i, const uint32_t rgb_data) {} 
 };
