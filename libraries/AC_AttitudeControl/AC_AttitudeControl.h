@@ -177,6 +177,9 @@ public:
     // same result with the fewest multiplications. Even though it may look like a bug, it is intentional. See issue 4895.
     Vector3f get_att_target_euler_cd() const { return _attitude_target_euler_angle * degrees(100.0f); }
 
+    // Return the body-to-NED target attitude used by the quadplane-specific attitude control input methods
+    Quaternion get_attitude_target_quat() const { return _attitude_target_quat; }
+
     // Return the angle between the target thrust vector and the current thrust vector.
     float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
 
