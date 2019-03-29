@@ -442,10 +442,12 @@ class AutoTest(ABC):
                 continue
             util.pexpect_drain(p)
 
-    def drain_mav(self):
+    def drain_mav(self, mav=None):
+        if mav is None:
+            mav = self.mav
         count = 0
         tstart = time.time()
-        while self.mav.recv_match(blocking=False) is not None:
+        while mav.recv_match(blocking=False) is not None:
             count += 1
         tdelta = time.time() - tstart
         if tdelta == 0:
