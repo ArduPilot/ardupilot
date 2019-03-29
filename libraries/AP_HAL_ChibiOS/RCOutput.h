@@ -154,6 +154,8 @@ public:
     void set_reversible_mask(uint16_t chanmask) override {
         reversible_mask |= chanmask;
     }
+
+    void set_neopixel_rgb_data(const uint16_t i, const uint32_t rgb_data) override { neopixel_rgb_data[i] = rgb_data; }
     
 private:
     struct pwm_group {
@@ -180,7 +182,7 @@ private:
         uint32_t bit_width_mul;
         uint32_t rc_frequency;
         bool in_serial_dma;
-        uint64_t last_dshot_send_us;
+        uint64_t last_dmar_send_us;
         virtual_timer_t dma_timeout;
         
         // serial output
@@ -310,7 +312,18 @@ private:
     static const uint16_t dshot_min_gap_us = 100;
     uint32_t dshot_pulse_time_us;
     uint16_t telem_request_mask;
-    
+
+/*
+NeoPixel handling
+*/
+    uint32_t neopixel_rgb_data[4];
+    const uint16_t neopixel_bit_length = 24;
+    const uint16_t neopixel_buffer_length = (neopixel_bit_length+1)*4*sizeof(uint32_t);
+    void neopixel_send(pwm_group &group);
+    void fill_DMA_buffer_neopixel(uint32_t *buffer, const uint8_t stride, uint32_t rgb, const uint16_t clockmul);
+
+
+
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);    
     uint16_t create_dshot_packet(const uint16_t value, bool telem_request);
@@ -319,9 +332,11 @@ private:
     static void dma_irq_callback(void *p, uint32_t flags);
     static void dma_unlock(void *p);
     bool mode_requires_dma(enum output_mode mode) const;
-    bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high);
+    bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
     void set_group_mode(pwm_group &group);
+    bool is_dshot_protocol(const enum output_mode mode) const;
+    uint32_t protocol_bitrate(const enum output_mode mode) const;
 
     // serial output support
     static const eventmask_t serial_event_mask = EVENT_MASK(1);
