@@ -16,13 +16,6 @@ public:
     // Constructor
     RC_Channel(void);
 
-    // used to get min/max/trim limit value based on _reverse
-    enum LimitValue {
-        RC_CHANNEL_LIMIT_TRIM,
-        RC_CHANNEL_LIMIT_MIN,
-        RC_CHANNEL_LIMIT_MAX
-    };
-
     enum InputIgnore {
         RC_IGNORE_RECEIVER  = (1 << 0), // RC receiver modules
         RC_IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
