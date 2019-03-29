@@ -164,7 +164,7 @@ class AutoTestSub(AutoTest):
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
         self.mavproxy.send("reboot\n")
-        self.mavproxy.expect("Initialising APM")
+        self.mavproxy.expect("Init ArduSub")
         # empty mav to avoid getting old timestamps:
         while self.mav.recv_match(blocking=False):
             pass
