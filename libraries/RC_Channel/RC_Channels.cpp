@@ -29,15 +29,12 @@ extern const AP_HAL::HAL& hal;
 #include "RC_Channel.h"
 
 bool RC_Channels::has_new_overrides;
-AP_Float *RC_Channels::override_timeout;
 
 /*
   channels group object constructor
  */
 RC_Channels::RC_Channels(void)
 {
-    override_timeout = &_override_timeout;
-
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
 
