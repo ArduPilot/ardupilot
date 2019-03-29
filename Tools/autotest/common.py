@@ -2088,7 +2088,8 @@ class AutoTest(ABC):
     def test_arm_feature(self):
         """Common feature to test."""
         # TEST ARMING/DISARM
-        self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
+        if not self.is_sub() and not self.is_tracker():
+            self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
         interlock_channel = 8  # Plane got flighmode_ch on channel 8
         if not self.is_heli():  # heli don't need interlock option
             interlock_channel = 9
