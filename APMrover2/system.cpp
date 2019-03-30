@@ -283,6 +283,7 @@ void Rover::startup_INS_ground(void)
 // update notify with mode change
 void Rover::notify_mode(const Mode *mode)
 {
+    AP_Notify::flags.autopilot_mode = mode->is_autopilot_mode();
     notify.flags.flight_mode = mode->mode_number();
     notify.set_flight_mode_str(mode->name4());
 }
