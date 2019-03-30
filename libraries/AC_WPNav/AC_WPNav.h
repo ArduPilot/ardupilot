@@ -64,7 +64,7 @@ public:
     void init_brake_target(float accel_cmss);
     ///
     /// update_brake - run the brake controller - should be called at 400hz
-    void update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler);
+    void update_brake();
 
     ///
     /// waypoint controller
@@ -75,17 +75,21 @@ public:
     ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
     void wp_and_spline_init();
 
-    /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
+    /// set current target horizontal speed during wp navigation
     void set_speed_xy(float speed_cms);
 
-    /// get_speed_xy - allows main code to retrieve target horizontal velocity for wp navigation
-    float get_speed_xy() const { return _wp_speed_cms; }
+    /// set current target climb or descent rate during wp navigation
+    void set_speed_up(float speed_up_cms);
+    void set_speed_down(float speed_down_cms);
 
-    /// get_speed_up - returns target climb speed in cm/s during missions
-    float get_speed_up() const { return _wp_speed_up_cms; }
+    /// get default target horizontal velocity during wp navigation
+    float get_default_speed_xy() const { return _wp_speed_cms; }
 
-    /// get_speed_down - returns target descent speed in cm/s during missions.  Note: always positive
-    float get_speed_down() const { return _wp_speed_down_cms; }
+    /// get default target climb speed in cm/s during missions
+    float get_default_speed_up() const { return _wp_speed_up_cms; }
+
+    /// get default target descent rate in cm/s during missions.  Note: always positive
+    float get_default_speed_down() const { return _wp_speed_down_cms; }
 
     /// get_speed_z - returns target descent speed in cm/s during missions.  Note: always positive
     float get_accel_z() const { return _wp_accel_z_cmss; }
@@ -101,12 +105,12 @@ public:
 
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
-    bool set_wp_destination(const Location_Class& destination);
+    bool set_wp_destination(const Location& destination);
 
     // returns wp location using location class.
     // returns false if unable to convert from target vector to global
     // coordinates
-    bool get_wp_destination(Location_Class& destination);
+    bool get_wp_destination(Location& destination);
 
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
@@ -138,6 +142,11 @@ public:
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
     bool reached_wp_destination() const { return _flags.reached_destination; }
+
+    // reached_wp_destination_xy - true if within RADIUS_CM of waypoint in x/y
+    bool reached_wp_destination_xy() const {
+        return get_wp_distance_to_destination() < _wp_radius_cm;
+    }
 
     /// set_fast_waypoint - set to true to ignore the waypoint radius and consider the waypoint 'reached' the moment the intermediate point reaches it
     void set_fast_waypoint(bool fast) { _flags.fast_waypoint = fast; }
@@ -176,7 +185,7 @@ public:
     ///     stopped_at_start should be set to true if vehicle is stopped at the origin
     ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
     ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
-    bool set_spline_destination(const Location_Class& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location_Class next_destination);
+    bool set_spline_destination(const Location& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location next_destination);
 
     /// set_spline_destination waypoint using position vector (distance from ekf origin in cm)
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
@@ -259,7 +268,7 @@ protected:
 
     // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
-    bool get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt);
+    bool get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt);
 
     // set heading used for spline and waypoint navigation
     void set_yaw_cd(float heading_cd);
@@ -269,20 +278,19 @@ protected:
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
-    AP_Terrain              *_terrain = nullptr;
-    AC_Avoid                *_avoid = nullptr;
+    AP_Terrain              *_terrain;
+    AC_Avoid                *_avoid;
 
     // parameters
-    AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
-    AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
-    AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
+    AP_Float    _wp_speed_cms;          // default maximum horizontal speed in cm/s during missions
+    AP_Float    _wp_speed_up_cms;       // default maximum climb rate in cm/s
+    AP_Float    _wp_speed_down_cms;     // default maximum descent rate in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     AP_Float    _wp_accel_cmss;          // horizontal acceleration in cm/s/s during missions
     AP_Float    _wp_accel_z_cmss;        // vertical acceleration in cm/s/s during missions
 
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call
-    uint8_t     _wp_step;               // used to decide which portion of wpnav controller to run during this iteration
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
@@ -306,10 +314,9 @@ protected:
     float       _yaw;                   // heading according to yaw
 
     // terrain following variables
-    bool        _terrain_alt = false;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
-    bool        _ekf_origin_terrain_alt_set = false;
+    bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
     bool        _rangefinder_available;
     AP_Int8     _rangefinder_use;
-    bool        _rangefinder_healthy = false;
-    float       _rangefinder_alt_cm = 0.0f;
+    bool        _rangefinder_healthy;
+    float       _rangefinder_alt_cm;
 };

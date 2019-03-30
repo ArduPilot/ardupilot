@@ -49,6 +49,7 @@ public:
         Proximity_Type_RPLidarA2 = 5,
         Proximity_Type_TRTOWEREVO = 6,
         Proximity_Type_SITL    = 10,
+        Proximity_Type_MorseSITL = 11,
     };
 
     enum Proximity_Status {
@@ -121,7 +122,7 @@ public:
     };
 
     //
-    // support for upwardward facing sensors
+    // support for upward facing sensors
     //
 
     // get distance upwards in meters. returns true on success
@@ -135,7 +136,7 @@ public:
 
     static AP_Proximity *get_singleton(void) { return _singleton; };
 
-    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    // methods for mavlink SYS_STATUS message (send_sys_status)
     // these methods cover only the primary instance
     bool sensor_present() const;
     bool sensor_enabled() const;
@@ -146,8 +147,8 @@ private:
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
     const RangeFinder *_rangefinder;
-    uint8_t primary_instance:3;
-    uint8_t num_instances:3;
+    uint8_t primary_instance;
+    uint8_t num_instances;
     AP_SerialManager &serial_manager;
 
     // parameters for all instances

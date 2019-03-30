@@ -51,7 +51,7 @@ void AP_Proximity_SITL::update(void)
     current_loc.lat = sitl->state.latitude * 1.0e7;
     current_loc.lng = sitl->state.longitude * 1.0e7;
     current_loc.alt = sitl->state.altitude * 1.0e2;
-    if (fence && fence_loader.boundary_valid(fence_count->get(), fence, true)) {
+    if (fence && fence_loader.boundary_valid(fence_count->get(), fence)) {
         // update distance in one sector
         if (get_distance_to_fence(_sector_middle_deg[last_sector], _distance[last_sector])) {
             set_status(AP_Proximity::Proximity_Good);
@@ -92,7 +92,7 @@ void AP_Proximity_SITL::load_fence(void)
 // get distance in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
 bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) const
 {
-    if (!fence_loader.boundary_valid(fence_count->get(), fence, true)) {
+    if (!fence_loader.boundary_valid(fence_count->get(), fence)) {
         return false;
     }
 
@@ -109,7 +109,7 @@ bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) 
         Location loc = current_loc;
         location_update(loc, angle_deg, test_dist);
         Vector2l vecloc(loc.lat, loc.lng);
-        if (fence_loader.boundary_breached(vecloc, fence_count->get(), fence, true)) {
+        if (fence_loader.boundary_breached(vecloc, fence_count->get(), fence)) {
             max_dist = test_dist;
         } else {
             min_dist = test_dist;

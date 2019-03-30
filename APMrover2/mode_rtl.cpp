@@ -25,7 +25,7 @@ bool ModeRTL::_enter()
 void ModeRTL::update()
 {
     // calculate distance to home
-    _distance_to_destination = get_distance(rover.current_loc, _destination);
+    _distance_to_destination = rover.current_loc.get_distance(_destination);
     const bool near_wp = _distance_to_destination <= rover.g.waypoint_radius;
     // check if we've reached the destination
     if (!_reached_destination && (near_wp || location_passed_point(rover.current_loc, _origin, _destination))) {
@@ -37,7 +37,7 @@ void ModeRTL::update()
     if (!_reached_destination || (rover.is_boat() && !near_wp)) {
         // continue driving towards destination
         calc_steering_to_waypoint(_reached_destination ? rover.current_loc :_origin, _destination, _reversed);
-        calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, false);
+        calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, true);
     } else {
         // we've reached destination so stop
         stop_vehicle();

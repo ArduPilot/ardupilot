@@ -126,11 +126,11 @@ bool Vector2<T>::operator !=(const Vector2<T> &v) const
 template <typename T>
 float Vector2<T>::angle(const Vector2<T> &v2) const
 {
-    float len = this->length() * v2.length();
+    const float len = this->length() * v2.length();
     if (len <= 0) {
         return 0.0f;
     }
-    float cosv = ((*this)*v2) / len;
+    const float cosv = ((*this)*v2) / len;
     if (cosv >= 1) {
         return 0.0f;
     }
@@ -158,8 +158,8 @@ bool Vector2<T>::segment_intersection(const Vector2<T>& seg1_start, const Vector
     } else {
         // t = (q - p) * s / (r * s)
         // u = (q - p) * r / (r * s)
-        float t = (ss2_ss1 % r2) / r1xr2;
-        float u = q_pxr / r1xr2;
+        const float t = (ss2_ss1 % r2) / r1xr2;
+        const float u = q_pxr / r1xr2;
         if ((u >= 0) && (u <= 1) && (t >= 0) && (t <= 1)) {
             // lines intersect
             // t can be any non-negative value because (p, p + r) is a ray
@@ -191,7 +191,7 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     const float delta = sq(b) - (4.0f * a * c);
 
     // check for invalid data
-    if (fabsf(a) < FLT_EPSILON) {
+    if (::is_zero(a)) {
         return false;
     }
     if (isnan(a) || isnan(b) || isnan(c) || isnan(delta)) {
@@ -203,7 +203,7 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
         return false;
     }
 
-    const float delta_sqrt = safe_sqrt(delta);
+    const float delta_sqrt = sqrtf(delta);
     const float t1 = (-b + delta_sqrt) / (2.0f * a);
     const float t2 = (-b - delta_sqrt) / (2.0f * a);
 

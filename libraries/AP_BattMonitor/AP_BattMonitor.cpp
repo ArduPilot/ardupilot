@@ -3,6 +3,8 @@
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
 #include "AP_BattMonitor_BLHeliESC.h"
+#include "AP_BattMonitor_Sum.h"
+#include "AP_BattMonitor_FuelFlow.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -11,8 +13,9 @@
 #endif
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Notify/AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -28,6 +31,34 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 2_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 24, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 3_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[2], "3_", 25, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 4_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[3], "4_", 26, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 5_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[4], "5_", 27, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 6_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[5], "6_", 28, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 7_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[6], "7_", 29, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 8_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[7], "8_", 30, AP_BattMonitor, AP_BattMonitor_Params),
+
+    // @Group: 9_
+    // @Path: AP_BattMonitor_Params.cpp
+    AP_SUBGROUPINFO(_params[8], "9_", 31, AP_BattMonitor, AP_BattMonitor_Params),
 
     AP_GROUPEND
 };
@@ -63,9 +94,11 @@ AP_BattMonitor::init()
 
     convert_params();
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-    // force monitor for bebop
-    _params[0]._type.set(AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP);
+#ifdef HAL_BATT_MONITOR_DEFAULT
+    if (_params[0]._type == 0) {
+        // we can't use set_default() as the type is used as a flag for parameter conversion
+        _params[0]._type.set((AP_BattMonitor_Params::BattMonitor_Type)HAL_BATT_MONITOR_DEFAULT);
+    }
 #endif
 
     // create each instance
@@ -77,37 +110,37 @@ AP_BattMonitor::init()
             case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY:
             case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT:
                 drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
-                _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_SOLO:
                 drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance],
                                                                   hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                           100000, true, 20));
-                _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_MAXELL:
                 drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance],
                                                                     hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                             100000, true, 20));
-                _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance], _params[instance]);
-                _num_instances++;
 #endif
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_UAVCAN_BatteryInfo:
 #if HAL_WITH_UAVCAN
                 drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
-                _num_instances++;
 #endif
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_BLHeliESC:
 #ifdef HAVE_AP_BLHELI_SUPPORT
                 drivers[instance] = new AP_BattMonitor_BLHeliESC(*this, state[instance], _params[instance]);
-                _num_instances++;
 #endif
+                break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_Sum:
+                drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
+                break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_FuelFlow:
+                drivers[instance] = new AP_BattMonitor_FuelFlow(*this, state[instance], _params[instance]);
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
@@ -117,6 +150,11 @@ AP_BattMonitor::init()
         // call init function for each backend
         if (drivers[instance] != nullptr) {
             drivers[instance]->init();
+            // _num_instances is actually the index for looping over instances
+            // the user may have BATT_MONITOR=0 and BATT2_MONITOR=7, in which case
+            // there will be a gap, but as we always check for drivers[instances] being nullptr
+            // this is safe
+            _num_instances = instance + 1;
         }
     }
 }
@@ -181,9 +219,9 @@ void AP_BattMonitor::convert_params(void) {
         info.old_group_element = conversionTable[i].old_element;
         info.type = (ap_var_type)AP_BattMonitor_Params::var_info[destination_index].type;
         if (param_instance) {
-            hal.util->snprintf(param_name, 17, "BATT2_%s", AP_BattMonitor_Params::var_info[destination_index].name);
+            hal.util->snprintf(param_name, sizeof(param_name), "BATT2_%s", AP_BattMonitor_Params::var_info[destination_index].name);
         } else {
-            hal.util->snprintf(param_name, 17, "BATT_%s", AP_BattMonitor_Params::var_info[destination_index].name);
+            hal.util->snprintf(param_name, sizeof(param_name), "BATT_%s", AP_BattMonitor_Params::var_info[destination_index].name);
         }
 
         AP_Param::convert_old_parameter(&info, 1.0f, 0);
@@ -204,13 +242,15 @@ AP_BattMonitor::read()
         }
     }
 
-    DataFlash_Class *df = DataFlash_Class::instance();
-    if (df->should_log(_log_battery_bit)) {
-        df->Log_Write_Current();
-        df->Log_Write_Power();
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger->should_log(_log_battery_bit)) {
+        logger->Write_Current();
+        logger->Write_Power();
     }
 
     check_failsafes();
+    
+    checkPoweringOff();
 }
 
 // healthy - returns true if monitor is functioning
@@ -254,9 +294,8 @@ float AP_BattMonitor::voltage(uint8_t instance) const
 /// this will always be greater than or equal to the raw voltage
 float AP_BattMonitor::voltage_resting_estimate(uint8_t instance) const
 {
-    if (instance < _num_instances) {
-        // resting voltage should always be greater than or equal to the raw voltage
-        return MAX(state[instance].voltage, state[instance].voltage_resting_estimate);
+    if (instance < _num_instances && drivers[instance] != nullptr) {
+        return drivers[instance]->voltage_resting_estimate();
     } else {
         return 0.0f;
     }
@@ -313,7 +352,11 @@ void AP_BattMonitor::check_failsafes(void)
 {
     if (hal.util->get_soft_armed()) {
         for (uint8_t i = 0; i < _num_instances; i++) {
-            const BatteryFailsafe type = check_failsafe(i);
+            if (drivers[i] == nullptr) {
+                continue;
+            }
+
+            const BatteryFailsafe type = drivers[i]->update_failsafes();
             if (type <= state[i].failsafe) {
                 continue;
             }
@@ -359,71 +402,6 @@ void AP_BattMonitor::check_failsafes(void)
             }
         }
     }
-}
-
-// returns the failsafe state of the battery
-AP_BattMonitor::BatteryFailsafe AP_BattMonitor::check_failsafe(const uint8_t instance)
-{
-    // exit immediately if no monitors setup
-    if (_num_instances == 0 || instance >= _num_instances) {
-        return BatteryFailsafe_None;
-    }
-
-    const uint32_t now = AP_HAL::millis();
-
-    // use voltage or sag compensated voltage
-    float voltage_used;
-    switch (_params[instance].failsafe_voltage_source()) {
-        case AP_BattMonitor_Params::BattMonitor_LowVoltageSource_Raw:
-        default:
-            voltage_used = state[instance].voltage;
-            break;
-        case AP_BattMonitor_Params::BattMonitor_LowVoltageSource_SagCompensated:
-            voltage_used = voltage_resting_estimate(instance);
-            break;
-    }
-
-    // check critical battery levels
-    if ((voltage_used > 0) && (_params[instance]._critical_voltage > 0) && (voltage_used < _params[instance]._critical_voltage)) {
-        // this is the first time our voltage has dropped below minimum so start timer
-        if (state[instance].critical_voltage_start_ms == 0) {
-            state[instance].critical_voltage_start_ms = now;
-        } else if (_params[instance]._low_voltage_timeout > 0 &&
-                   now - state[instance].critical_voltage_start_ms > uint32_t(_params[instance]._low_voltage_timeout)*1000U) {
-            return BatteryFailsafe_Critical;
-        }
-    } else {
-        // acceptable voltage so reset timer
-        state[instance].critical_voltage_start_ms = 0;
-    }
-
-    // check capacity if current monitoring is enabled
-    if (has_current(instance) && (_params[instance]._critical_capacity > 0) &&
-        ((_params[instance]._pack_capacity - state[instance].consumed_mah) < _params[instance]._critical_capacity)) {
-        return BatteryFailsafe_Critical;
-    }
-
-    if ((voltage_used > 0) && (_params[instance]._low_voltage > 0) && (voltage_used < _params[instance]._low_voltage)) {
-        // this is the first time our voltage has dropped below minimum so start timer
-        if (state[instance].low_voltage_start_ms == 0) {
-            state[instance].low_voltage_start_ms = now;
-        } else if (_params[instance]._low_voltage_timeout > 0 &&
-                   now - state[instance].low_voltage_start_ms > uint32_t(_params[instance]._low_voltage_timeout)*1000U) {
-            return BatteryFailsafe_Low;
-        }
-    } else {
-        // acceptable voltage so reset timer
-        state[instance].low_voltage_start_ms = 0;
-    }
-
-    // check capacity if current monitoring is enabled
-    if (has_current(instance) && (_params[instance]._low_capacity > 0) &&
-        ((_params[instance]._pack_capacity - state[instance].consumed_mah) < _params[instance]._low_capacity)) {
-        return BatteryFailsafe_Low;
-    }
-
-    // if we've gotten this far then battery is ok
-    return BatteryFailsafe_None;
 }
 
 // return true if any battery is pushing too much power
@@ -479,12 +457,48 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
     }
 }
 
+bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
+{
+    char temp_buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+
+    for (uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+        if (drivers[i] != nullptr && !(drivers[i]->arming_checks(temp_buffer, sizeof(temp_buffer)))) {
+            hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, temp_buffer);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Check's each smart battery instance for its powering off state and broadcasts notifications
+void AP_BattMonitor::checkPoweringOff(void)
+{
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        if (state[i].is_powering_off && !state[i].powerOffNotified) {
+            // Set the AP_Notify flag, which plays the power off tones
+            AP_Notify::flags.powering_off = true;
+
+            // Send a Mavlink broadcast announcing the shutdown
+            mavlink_message_t msg;
+            mavlink_command_long_t cmd_msg{};
+            cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
+            cmd_msg.param1 = i+1;
+            mavlink_msg_command_long_encode(mavlink_system.sysid, MAV_COMP_ID_ALL, &msg, &cmd_msg);
+            GCS_MAVLINK::send_to_components(&msg);
+            gcs().send_text(MAV_SEVERITY_WARNING, "Vehicle %d battery %d is powering off", mavlink_system.sysid, i+1);
+
+            // only send this once
+            state[i].powerOffNotified = true;
+        }
+    }
+}
 
 namespace AP {
 
 AP_BattMonitor &battery()
 {
-    return AP_BattMonitor::battery();
+    return *AP_BattMonitor::get_singleton();
 }
 
 };

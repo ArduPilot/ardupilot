@@ -21,16 +21,18 @@ bool ModeLoiter::_enter()
 void ModeLoiter::update()
 {
     // get distance (in meters) to destination
-    _distance_to_destination = get_distance(rover.current_loc, _destination);
+    _distance_to_destination = rover.current_loc.get_distance(_destination);
 
-    // if within waypoint radius slew desired speed towards zero and use existing desired heading
-    if (_distance_to_destination <= g.waypoint_radius) {
-        _desired_speed = attitude_control.get_desired_speed_accel_limited(0.0f, rover.G_Dt);
+    // if within loiter radius slew desired speed towards zero and use existing desired heading
+    if (_distance_to_destination <= g2.loit_radius) {
+        // sailboats do not stop
+        const float desired_speed_within_radius = g2.motors.has_sail() ? 0.1f : 0.0f;
+        _desired_speed = attitude_control.get_desired_speed_accel_limited(desired_speed_within_radius, rover.G_Dt);
         _yaw_error_cd = 0.0f;
     } else {
         // P controller with hard-coded gain to convert distance to desired speed
         // To-Do: make gain configurable or calculate from attitude controller's maximum accelearation
-        _desired_speed = MIN((_distance_to_destination - g.waypoint_radius) * 0.5f, g.speed_cruise);
+        _desired_speed = MIN((_distance_to_destination - g2.loit_radius) * 0.5f, g.speed_cruise);
 
         // calculate bearing to destination
         _desired_yaw_cd = get_bearing_cd(rover.current_loc, _destination);
@@ -49,6 +51,6 @@ void ModeLoiter::update()
     }
 
     // run steering and throttle controllers
-    calc_steering_to_heading(_desired_yaw_cd, _desired_speed < 0);
+    calc_steering_to_heading(_desired_yaw_cd);
     calc_throttle(_desired_speed, false, true);
 }

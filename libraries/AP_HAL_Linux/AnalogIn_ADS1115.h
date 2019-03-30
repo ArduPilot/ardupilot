@@ -9,14 +9,14 @@ class AnalogSource_ADS1115: public AP_HAL::AnalogSource {
 public:
     friend class AnalogIn_ADS1115;
     AnalogSource_ADS1115(int16_t pin);
-    float read_average();
-    float read_latest();
-    void set_pin(uint8_t p);
-    void set_stop_pin(uint8_t p) {}
-    void set_settle_time(uint16_t settle_time_ms){}
-    float voltage_average();
-    float voltage_latest();
-    float voltage_average_ratiometric();
+    float read_average() override;
+    float read_latest() override;
+    void set_pin(uint8_t p) override;
+    void set_stop_pin(uint8_t p) override {}
+    void set_settle_time(uint16_t settle_time_ms) override {}
+    float voltage_average() override;
+    float voltage_latest() override;
+    float voltage_average_ratiometric() override;
 private:
     int16_t _pin;
     float _value;

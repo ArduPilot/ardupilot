@@ -1,7 +1,6 @@
 #include "Copter.h"
 
-// get_pilot_desired_heading - transform pilot's yaw input into a
-// desired yaw rate
+// transform pilot's yaw input into a desired yaw rate
 // returns desired yaw rate in centi-degrees per second
 float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
@@ -57,7 +56,7 @@ void Copter::update_throttle_hover()
     float throttle = motors->get_throttle();
 
     // calc average throttle if we are in a level hover
-    if (throttle > 0.0f && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
+    if (throttle > 0.0f && abs(inertial_nav.get_velocity_z()) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
     }
@@ -69,44 +68,6 @@ void Copter::set_throttle_takeoff()
 {
     // tell position controller to reset alt target and reset I terms
     pos_control->init_takeoff();
-}
-
-// transform pilot's manual throttle input to make hover throttle mid stick
-// used only for manual throttle modes
-// thr_mid should be in the range 0 to 1
-// returns throttle output 0 to 1
-float Copter::get_pilot_desired_throttle(int16_t throttle_control, float thr_mid)
-{
-    if (thr_mid <= 0.0f) {
-        thr_mid = motors->get_throttle_hover();
-    }
-
-    int16_t mid_stick = get_throttle_mid();
-    // protect against unlikely divide by zero
-    if (mid_stick <= 0) {
-        mid_stick = 500;
-    }
-
-    // ensure reasonable throttle values
-    throttle_control = constrain_int16(throttle_control,0,1000);
-
-    // calculate normalised throttle input
-    float throttle_in;
-    if (throttle_control < mid_stick) {
-        // below the deadband
-        throttle_in = ((float)throttle_control)*0.5f/(float)mid_stick;
-    }else if(throttle_control > mid_stick) {
-        // above the deadband
-        throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
-    }else{
-        // must be in the deadband
-        throttle_in = 0.5f;
-    }
-
-    float expo = constrain_float(-(thr_mid-0.5)/0.375, -0.5f, 1.0f);
-    // calculate the output throttle using the given expo function
-    float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
-    return throttle_out;
 }
 
 // get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
@@ -230,7 +191,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 float Copter::get_avoidance_adjusted_climbrate(float target_rate)
 {
 #if AC_AVOID_ENABLED == ENABLED
-    avoid.adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_accel_z(), target_rate, G_Dt);
+    avoid.adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), target_rate, G_Dt);
     return target_rate;
 #else
     return target_rate;

@@ -25,7 +25,6 @@
 #include <utility>
 
 #include "AP_Airspeed_Backend.h"
-#include <AP_HAL/I2CDevice.h>
 
 class AP_Airspeed_MS5525 : public AP_Airspeed_Backend
 {

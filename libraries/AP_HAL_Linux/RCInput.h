@@ -16,12 +16,12 @@ public:
         return static_cast<RCInput*>(rcinput);
     }
 
-    virtual void init();
-    bool new_input();
-    uint8_t num_channels();
+    virtual void init() override;
+    bool new_input() override;
+    uint8_t num_channels() override;
     void set_num_channels(uint8_t num);
-    uint16_t read(uint8_t ch);
-    uint8_t read(uint16_t* periods, uint8_t len);
+    uint16_t read(uint8_t ch) override;
+    uint8_t read(uint16_t* periods, uint8_t len) override;
 
     int16_t get_rssi(void) override {
         return _rssi;

@@ -10,6 +10,10 @@
 #define HAL_BARO_MS5611_I2C_ADDR 0x77
 #endif
 
+#ifndef HAL_BARO_MS5611_I2C_ADDR2
+#define HAL_BARO_MS5611_I2C_ADDR2 0x76
+#endif
+
 #ifndef HAL_BARO_MS5607_I2C_ADDR
 #define HAL_BARO_MS5607_I2C_ADDR 0x77
 #endif
@@ -25,7 +29,7 @@
 class AP_Baro_MS56XX : public AP_Baro_Backend
 {
 public:
-    void update();
+    void update() override;
 
     enum MS56XX_TYPE {
         BARO_MS5611 = 0,

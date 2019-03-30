@@ -28,6 +28,12 @@
 #define AR_ATTCONTROL_BAL_SPEED_FF      1.0f
 #define AR_ATTCONTROL_DT                0.02f
 #define AR_ATTCONTROL_TIMEOUT_MS        200
+#define AR_ATTCONTROL_HEEL_SAIL_P       1.0f
+#define AR_ATTCONTROL_HEEL_SAIL_I       0.1f
+#define AR_ATTCONTROL_HEEL_SAIL_D       0.0f
+#define AR_ATTCONTROL_HEEL_SAIL_IMAX    1.0f
+#define AR_ATTCONTROL_HEEL_SAIL_FILT    10.0f
+#define AR_ATTCONTROL_DT                0.02f
 
 // throttle/speed control maximum acceleration/deceleration (in m/s) (_ACCEL_MAX parameter default)
 #define AR_ATTCONTROL_THR_ACCEL_MAX     2.00f
@@ -55,8 +61,9 @@ public:
     float get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right, float dt);
 
     // return a steering servo output given a heading in radians
+    // set rate_max_rads to a non-zero number to apply a limit on the desired turn rate
     // return value is normally in range -1.0 to +1.0 but can be higher or lower
-    float get_steering_out_heading(float heading_rad, float rate_max, bool motor_limit_left, bool motor_limit_right, float dt);
+    float get_steering_out_heading(float heading_rad, float rate_max_rads, bool motor_limit_left, bool motor_limit_right, float dt);
 
     // return a steering servo output given a desired yaw rate in radians/sec.
     // positive yaw is to the right
@@ -98,11 +105,15 @@ public:
     // get latest desired pitch in radians for reporting purposes
     float get_desired_pitch() const;
 
+    // Sailboat heel(roll) angle contorller, release sail to keep at maximum heel angle
+    float get_sail_out_from_heel(float desired_heel, float dt);
+
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
     AC_PID& get_steering_rate_pid() { return _steer_rate_pid; }
     AC_PID& get_throttle_speed_pid() { return _throttle_speed_pid; }
     AC_PID& get_pitch_to_throttle_pid() { return _pitch_to_throttle_pid; }
+    AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
 
     // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
     bool get_forward_speed(float &speed) const;
@@ -127,6 +138,9 @@ public:
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
+
+    // relax I terms of throttle and steering controllers
+    void relax_I();
 
 private:
 
@@ -162,4 +176,8 @@ private:
 
     // balancebot pitch control
     uint32_t _balance_last_ms = 0;
+
+    // Sailboat heel control
+    AC_PID   _sailboat_heel_pid;    // Sailboat heel angle pid controller
+    uint32_t _heel_controller_last_ms = 0;
 };

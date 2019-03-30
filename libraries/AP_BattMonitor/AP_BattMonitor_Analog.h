@@ -10,18 +10,6 @@
  # define AP_BATT_CURR_PIN                  HAL_BATT_CURR_PIN
  # define AP_BATT_VOLTDIVIDER_DEFAULT       HAL_BATT_VOLT_SCALE
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  HAL_BATT_CURR_SCALE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
- // px4
- # define AP_BATT_VOLT_PIN                  100
- # define AP_BATT_CURR_PIN                  101
- # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && (defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO))
- // pixhawk
- # define AP_BATT_VOLT_PIN                  2
- # define AP_BATT_CURR_PIN                  3
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
  # define AP_BATT_VOLT_PIN                  4
  # define AP_BATT_CURR_PIN                  3
@@ -31,23 +19,6 @@
  # define AP_BATT_VOLT_PIN                  13
  # define AP_BATT_CURR_PIN                  12
  # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && (defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E) || defined(CONFIG_ARCH_BOARD_VRCORE_V10) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V54))
- # define AP_BATT_VOLT_PIN                  10
- # define AP_BATT_CURR_PIN                  11
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
- # define AP_BATT_VOLT_PIN                  10
- # define AP_BATT_CURR_PIN                  -1
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
- # define AP_BATT_VOLT_PIN                  10
- # define AP_BATT_CURR_PIN                  1
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&  (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF)
@@ -112,7 +83,7 @@ public:
     AP_BattMonitor_Analog(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params);
 
     /// Read the battery voltage and current.  Should be called at 10hz
-    void read();
+    void read() override;
 
     /// returns true if battery monitor provides consumed energy info
     bool has_consumed_energy() const override { return has_current(); }

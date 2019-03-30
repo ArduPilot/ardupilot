@@ -1,0 +1,303 @@
+/*
+  logging to a DataFlash block based storage device on SPI
+*/
+
+
+#include <AP_HAL/AP_HAL.h>
+
+#ifdef HAL_LOGGING_DATAFLASH
+
+#include "AP_Logger_DataFlash.h"
+#include <stdio.h>
+
+extern const AP_HAL::HAL& hal;
+
+#define JEDEC_WRITE_ENABLE           0x06
+#define JEDEC_WRITE_DISABLE          0x04
+#define JEDEC_READ_STATUS            0x05
+#define JEDEC_WRITE_STATUS           0x01
+#define JEDEC_READ_DATA              0x03
+#define JEDEC_FAST_READ              0x0b
+#define JEDEC_DEVICE_ID              0x9F
+#define JEDEC_PAGE_WRITE             0x02
+
+#define JEDEC_BULK_ERASE             0xC7
+#define JEDEC_SECTOR4_ERASE          0x20 // 4k erase
+#define JEDEC_BLOCK32_ERASE          0x52 // 32K erase
+#define JEDEC_BLOCK64_ERASE          0xD8 // 64K erase
+
+#define JEDEC_STATUS_BUSY            0x01
+#define JEDEC_STATUS_WRITEPROTECT    0x02
+#define JEDEC_STATUS_BP0             0x04
+#define JEDEC_STATUS_BP1             0x08
+#define JEDEC_STATUS_BP2             0x10
+#define JEDEC_STATUS_TP              0x20
+#define JEDEC_STATUS_SEC             0x40
+#define JEDEC_STATUS_SRP0            0x80
+
+/*
+  flash device IDs taken from betaflight flash_m25p16.c
+
+  Format is manufacturer, memory type, then capacity
+*/
+#define JEDEC_ID_MACRONIX_MX25L3206E   0xC22016
+#define JEDEC_ID_MACRONIX_MX25L6406E   0xC22017
+#define JEDEC_ID_MACRONIX_MX25L25635E  0xC22019
+#define JEDEC_ID_MICRON_M25P16         0x202015
+#define JEDEC_ID_MICRON_N25Q064        0x20BA17
+#define JEDEC_ID_MICRON_N25Q128        0x20ba18
+#define JEDEC_ID_WINBOND_W25Q16        0xEF4015
+#define JEDEC_ID_WINBOND_W25Q32        0xEF4016
+#define JEDEC_ID_WINBOND_W25Q64        0xEF4017
+#define JEDEC_ID_WINBOND_W25Q128       0xEF4018
+#define JEDEC_ID_WINBOND_W25Q256       0xEF4019
+#define JEDEC_ID_CYPRESS_S25FL128L     0x016018
+
+void AP_Logger_DataFlash::Init()
+{
+    dev = hal.spi->get_device("dataflash");
+    if (!dev) {
+        AP_HAL::panic("PANIC: AP_Logger SPIDeviceDriver not found");
+        return;
+    }
+
+    dev_sem = dev->get_semaphore();
+
+    if (!getSectorCount()) {
+        flash_died = true;
+        return;
+    }
+
+    flash_died = false;
+
+    AP_Logger_Block::Init();
+
+    //flash_test();
+}
+
+/*
+  wait for busy flag to be cleared
+ */
+void AP_Logger_DataFlash::WaitReady()
+{
+    if (flash_died) {
+        return;
+    }
+
+    uint32_t t = AP_HAL::millis();
+    while (Busy()) {
+        hal.scheduler->delay_microseconds(100);
+        if (AP_HAL::millis() - t > 5000) {
+            printf("DataFlash: flash_died\n");
+            flash_died = true;
+            break;
+        }
+    }
+}
+
+bool AP_Logger_DataFlash::getSectorCount(void)
+{
+    WaitReady();
+
+    WITH_SEMAPHORE(dev_sem);
+
+    // Read manufacturer ID
+    uint8_t cmd = JEDEC_DEVICE_ID;
+    dev->transfer(&cmd, 1, buffer, 4);
+
+    uint32_t id = buffer[0] << 16 | buffer[1] << 8 | buffer[2];
+
+    uint32_t sectors = 0;
+
+    switch (id) {
+    case JEDEC_ID_WINBOND_W25Q16:
+    case JEDEC_ID_MICRON_M25P16:
+        sectors = 32;
+        df_PagePerSector = 256;
+        break;
+    case JEDEC_ID_WINBOND_W25Q32:
+    case JEDEC_ID_MACRONIX_MX25L3206E:
+        sectors = 64;
+        df_PagePerSector = 256;
+        break;
+    case JEDEC_ID_MICRON_N25Q064:
+    case JEDEC_ID_WINBOND_W25Q64:
+    case JEDEC_ID_MACRONIX_MX25L6406E:
+        sectors = 128;
+        df_PagePerSector = 256;
+        break;
+    case JEDEC_ID_MICRON_N25Q128:
+    case JEDEC_ID_WINBOND_W25Q128:
+    case JEDEC_ID_CYPRESS_S25FL128L:
+        sectors = 256;
+        df_PagePerSector = 256;
+        break;
+    case JEDEC_ID_WINBOND_W25Q256:
+    case JEDEC_ID_MACRONIX_MX25L25635E:
+        sectors = 512;
+        df_PagePerSector = 256;
+        use_32bit_address = true;
+        break;
+    default:
+        hal.scheduler->delay(2000);
+        printf("Unknown SPI Flash 0x%08x\n", id);
+        return false;
+    }
+
+    df_PageSize = 256;
+    df_NumPages = sectors * df_PagePerSector;
+    erase_cmd = JEDEC_BLOCK64_ERASE;
+
+    hal.scheduler->delay(2000);
+    printf("SPI Flash 0x%08x found pages=%u erase=%uk\n",
+           id, df_NumPages, (df_PagePerSector * (uint32_t)df_PageSize)/1024);
+    return true;
+
+}
+
+// Read the status register
+uint8_t AP_Logger_DataFlash::ReadStatusReg()
+{
+    WITH_SEMAPHORE(dev_sem);
+    uint8_t cmd = JEDEC_READ_STATUS;
+    uint8_t status;
+    dev->transfer(&cmd, 1, &status, 1);
+    return status;
+}
+
+bool AP_Logger_DataFlash::Busy()
+{
+    int32_t status = ReadStatusReg();
+    if (status < 0) {
+        return true;
+    }
+    return (status & JEDEC_STATUS_BUSY) != 0;
+}
+
+
+/*
+  send a command with an address
+*/
+void AP_Logger_DataFlash::send_command_addr(uint8_t command, uint32_t PageAdr)
+{
+    uint8_t cmd[5];
+    cmd[0] = command;
+    if (use_32bit_address) {
+        cmd[1] = (PageAdr >> 24) & 0xff;
+        cmd[2] = (PageAdr >> 16) & 0xff;
+        cmd[3] = (PageAdr >>  8) & 0xff;
+        cmd[4] = (PageAdr >>  0) & 0xff;
+    } else {
+        cmd[1] = (PageAdr >> 16) & 0xff;
+        cmd[2] = (PageAdr >>  8) & 0xff;
+        cmd[3] = (PageAdr >>  0) & 0xff;
+    }
+
+    dev->transfer(cmd, use_32bit_address?5:4, NULL, 0);
+}
+
+
+void AP_Logger_DataFlash::PageToBuffer(uint32_t pageNum)
+{
+    if (pageNum == 0 || pageNum > df_NumPages+1) {
+        printf("Invalid page read %u\n", pageNum);
+        memset(buffer, 0xFF, df_PageSize);
+        return;
+    }
+    WaitReady();
+
+    uint32_t PageAdr = (pageNum-1) * df_PageSize;
+
+    WITH_SEMAPHORE(dev_sem);
+    dev->set_chip_select(true);
+    send_command_addr(JEDEC_READ_DATA, PageAdr);
+    dev->transfer(NULL, 0, buffer, df_PageSize);
+    dev->set_chip_select(false);
+}
+
+void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
+{
+    if (pageNum == 0 || pageNum > df_NumPages+1) {
+        printf("Invalid page write %u\n", pageNum);
+        return;
+    }
+    WriteEnable();
+
+    WITH_SEMAPHORE(dev_sem);
+
+    uint32_t PageAdr = (pageNum-1) * df_PageSize;
+
+    dev->set_chip_select(true);
+    send_command_addr(JEDEC_PAGE_WRITE, PageAdr);
+    dev->transfer(buffer, df_PageSize, NULL, 0);
+    dev->set_chip_select(false);
+}
+
+/*
+  erase one sector (sizes varies with hw)
+*/
+void AP_Logger_DataFlash::SectorErase(uint32_t sectorNum)
+{
+    WriteEnable();
+
+    WITH_SEMAPHORE(dev_sem);
+
+    uint32_t PageAdr = sectorNum * df_PageSize * df_PagePerSector;
+    send_command_addr(erase_cmd, PageAdr);
+}
+
+
+void AP_Logger_DataFlash::StartErase()
+{
+    WriteEnable();
+
+    WITH_SEMAPHORE(dev_sem);
+
+    uint8_t cmd = JEDEC_BULK_ERASE;
+    dev->transfer(&cmd, 1, NULL, 0);
+
+    erase_start_ms = AP_HAL::millis();
+    printf("Dataflash: erase started\n");
+}
+
+bool AP_Logger_DataFlash::InErase()
+{
+    if (erase_start_ms && !Busy()) {
+        printf("Dataflash: erase done (%u ms)\n", AP_HAL::millis() - erase_start_ms);
+        erase_start_ms = 0;
+    }
+    return erase_start_ms != 0;
+}
+
+
+void AP_Logger_DataFlash::WriteEnable(void)
+{
+    WaitReady();
+    WITH_SEMAPHORE(dev_sem);
+    uint8_t b = JEDEC_WRITE_ENABLE;
+    dev->transfer(&b, 1, NULL, 0);
+}
+
+void AP_Logger_DataFlash::flash_test()
+{
+    for (uint8_t i=1; i<=20; i++) {
+        printf("Flash fill %u\n", i);
+        if (i % df_PagePerSector == 0) {
+            SectorErase(i / df_PagePerSector);
+        }
+        memset(buffer, i, df_PageSize);
+        BufferToPage(i);
+    }
+    for (uint8_t i=1; i<=20; i++) {
+        printf("Flash check %u\n", i);
+        PageToBuffer(i);
+        for (uint16_t j=0; j<df_PageSize; j++) {
+            if (buffer[j] != i) {
+                printf("Test error: page %u j=%u v=%u\n", i, j, buffer[j]);
+                break;
+            }
+        }
+    }
+}
+
+#endif // HAL_LOGGING_DATAFLASH

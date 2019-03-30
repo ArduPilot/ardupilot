@@ -9,7 +9,7 @@
 #include <RC_Channel/RC_Channel.h>
 
 // we need a boardconfig created so that the io processor is available
-#if HAL_WITH_IO_MCU || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_IOMCU/AP_IOMCU.h>
 AP_BoardConfig BoardConfig;
@@ -57,7 +57,7 @@ void setup()
 {
     hal.console->printf("ArduPilot AC_PID library test\n");
 
-#if HAL_WITH_IO_MCU || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if HAL_WITH_IO_MCU
     BoardConfig.init();
 #endif
 
@@ -76,8 +76,8 @@ void loop()
     // display PID gains
     hal.console->printf("P %f  I %f  D %f  imax %f\n", (double)pid.kP(), (double)pid.kI(), (double)pid.kD(), (double)pid.imax());
 
-    RC_Channel *ch = rc().channel(0);
-    if (ch == nullptr) {
+    RC_Channel *c = rc().channel(0);
+    if (c == nullptr) {
         while (true) {
             hal.console->printf("No channel 0?");
             hal.scheduler->delay(1000);
@@ -85,11 +85,11 @@ void loop()
     }
 
     // capture radio trim
-    const uint16_t radio_trim = ch->get_radio_in();
+    const uint16_t radio_trim = c->get_radio_in();
 
     while (true) {
         rc().read_input(); // poll the radio for new values
-        const uint16_t radio_in = ch->get_radio_in();
+        const uint16_t radio_in = c->get_radio_in();
         const int16_t error = radio_in - radio_trim;
         pid.set_input_filter_all(error);
         const float control_P = pid.get_p();

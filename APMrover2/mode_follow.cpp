@@ -68,6 +68,18 @@ void ModeFollow::update()
     _desired_yaw_cd = wrap_180_cd(atan2f(desired_velocity_ne.y, desired_velocity_ne.x) * DEGX100);
 
     // run steering and throttle controllers
-    calc_steering_to_heading(_desired_yaw_cd, desired_speed < 0);
+    calc_steering_to_heading(_desired_yaw_cd);
     calc_throttle(calc_reduced_speed_for_turn_or_distance(desired_speed), false, true);
+}
+
+// return desired heading (in degrees) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+float ModeFollow::wp_bearing() const
+{
+    return g2.follow.get_bearing_to_target();
+}
+
+// return distance (in meters) to destination
+float ModeFollow::get_distance_to_destination() const
+{
+    return g2.follow.get_distance_to_target();
 }

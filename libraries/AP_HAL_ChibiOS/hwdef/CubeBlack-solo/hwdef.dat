@@ -1,0 +1,10 @@
+# hw definition file for processing by chibios_hwdef.py
+# for The CUBE Black and the Cube Purple hardware in a 3DR Solo
+# this is based on the CubeBlack hwdef, with Solo's required parameter defaults
+# do not use this hwdef with any configuration other than a 3DR Solo with a stock or black cube running Copter 3.7.
+
+include ../CubeBlack/hwdef.dat
+
+# pull Solo's default parameters from /Tools/Frame_params
+# these are parameters the Solo requires for proper operation that are differnet from the 3.7 standard defaults.
+env DEFAULT_PARAMETERS 'Tools/Frame_params/Solo_Copter-3.7_BlackCube.param'

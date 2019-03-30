@@ -49,6 +49,7 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
 void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
     frame->calculate_forces(*this, input, rot_accel, body_accel);
+    add_shove_forces(rot_accel, body_accel);
 }
     
 /*
@@ -62,6 +63,9 @@ void MultiCopter::update(const struct sitl_input &input)
     Vector3f rot_accel;
 
     calculate_forces(input, rot_accel, accel_body);
+
+    // estimate voltage and current
+    frame->current_and_voltage(input, battery_voltage, battery_current);
 
     update_dynamics(rot_accel);
     update_external_payload(input);

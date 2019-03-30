@@ -32,25 +32,29 @@ class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
 
-    void begin(uint32_t b);
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
-    void end();
-    void flush();
-    bool is_initialized();
-    void set_blocking_writes(bool blocking);
-    bool tx_pending();
+    void begin(uint32_t b) override;
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void end() override;
+    void flush() override;
+    bool is_initialized() override;
+    void set_blocking_writes(bool blocking) override;
+    bool tx_pending() override;
 
 
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
+    int16_t read_locked(uint32_t key) override;
     void _timer_tick(void) override;
 
-    size_t write(uint8_t c);
-    size_t write(const uint8_t *buffer, size_t size);
+    size_t write(uint8_t c) override;
+    size_t write(const uint8_t *buffer, size_t size) override;
 
     // lock a port for exclusive use. Use a key of 0 to unlock
-    bool lock_port(uint32_t key) override;
+    bool lock_port(uint32_t write_key, uint32_t read_key) override;
+
+    // control optional features
+    bool set_options(uint8_t options) override;
 
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
@@ -66,6 +70,10 @@ public:
         uint8_t dma_tx_stream_id;
         uint32_t dma_tx_channel_id; 
         ioline_t rts_line;
+        int8_t rxinv_gpio;
+        uint8_t rxinv_polarity;
+        int8_t txinv_gpio;
+        uint8_t txinv_polarity;
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
@@ -96,7 +104,14 @@ public:
       A return value of zero means the HAL does not support this API
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
-    
+
+    uint32_t bw_in_kilobytes_per_second() const override {
+        if (sdef.is_usb) {
+            return 200;
+        }
+        return _baudrate/(9*1024);
+    }
+
 private:
     bool tx_bounce_buf_ready;
     const SerialDef &sdef;
@@ -111,8 +126,9 @@ private:
     uint8_t serial_num;
 
     // key for a locked port
-    uint32_t lock_key;
-    
+    uint32_t lock_write_key;
+    uint32_t lock_read_key;
+
     uint32_t _baudrate;
     uint16_t tx_len;
 #if HAL_USE_SERIAL == TRUE
@@ -155,7 +171,18 @@ private:
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
     uint32_t _total_written;
-    
+
+    // we remember cr2 and cr2 options from set_options to apply on sdStart()
+    uint32_t _cr3_options;
+    uint32_t _cr2_options;
+
+    // half duplex control. After writing we throw away bytes for 4 byte widths to
+    // prevent reading our own bytes back
+    bool half_duplex;
+    uint32_t hd_read_delay_us;
+    uint32_t hd_write_us;
+    void half_duplex_setup_delay(uint16_t len);
+
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;
     

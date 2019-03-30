@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_BRAKE_ENABLED == ENABLED
+
 /*
  * Init and run calls for brake flight mode
  */
@@ -7,27 +9,22 @@
 // brake_init - initialise brake controller
 bool Copter::ModeBrake::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
+    // set target to current position
+    wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
 
-        // set target to current position
-        wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
+    // initialize vertical speed and acceleration
+    pos_control->set_max_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
+    pos_control->set_max_accel_z(BRAKE_MODE_DECEL_RATE);
 
-        // initialize vertical speed and acceleration
-        pos_control->set_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
-        pos_control->set_accel_z(BRAKE_MODE_DECEL_RATE);
-
-        // initialise position and desired velocity
-        if (!pos_control->is_active_z()) {
-            pos_control->set_alt_target_to_current_alt();
-            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-        }
-
-        _timeout_ms = 0;
-
-        return true;
-    }else{
-        return false;
+    // initialise position and desired velocity
+    if (!pos_control->is_active_z()) {
+        pos_control->set_alt_target_to_current_alt();
+        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
     }
+
+    _timeout_ms = 0;
+
+    return true;
 }
 
 // brake_run - runs the brake controller
@@ -56,7 +53,7 @@ void Copter::ModeBrake::run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run brake controller
-    wp_nav->update_brake(ekfGndSpdLimit, ekfNavVelGainScaler);
+    wp_nav->update_brake();
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
@@ -79,3 +76,5 @@ void Copter::ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
     _timeout_start = millis();
     _timeout_ms = timeout_ms;
 }
+
+#endif

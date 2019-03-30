@@ -19,14 +19,9 @@
 
 // show all status on only 2 leds
 
-#if defined(HAL_GPIO_A_LED_PIN) || defined(HAL_GPIO_B_LED_PIN)
+#if defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN)
 
-#ifndef HAL_GPIO_A_LED_PIN
-#define HAL_GPIO_A_LED_PIN        -1
-#endif
-#ifndef HAL_GPIO_B_LED_PIN
-#define HAL_GPIO_B_LED_PIN        -1
-#endif
+static_assert((HAL_GPIO_A_LED_PIN != HAL_GPIO_B_LED_PIN), "Duplicate LED assignments detected");
 
 extern const AP_HAL::HAL& hal;
 

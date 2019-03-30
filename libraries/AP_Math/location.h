@@ -17,15 +17,6 @@
 /*
  * LOCATION
  */
-// longitude_scale - returns the scaler to compensate for shrinking longitude as you move north or south from the equator
-// Note: this does not include the scaling to convert longitude/latitude points to meters or centimeters
-float        longitude_scale(const struct Location &loc);
-
-// return distance in meters between two locations
-float        get_distance(const struct Location &loc1, const struct Location &loc2);
-
-// return distance in centimeters between two locations
-uint32_t     get_distance_cm(const struct Location &loc1, const struct Location &loc2);
 
 // return horizontal distance in centimeters between two positions
 float        get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
@@ -55,9 +46,6 @@ float       location_path_proportion(const struct Location &location,
 
 //  extrapolate latitude/longitude given bearing and distance
 void        location_update(struct Location &loc, float bearing, float distance);
-
-// extrapolate latitude/longitude given distances north and east
-void        location_offset(struct Location &loc, float ofs_north, float ofs_east);
 
 /*
   return the distance in meters in North/East plane as a N/E vector

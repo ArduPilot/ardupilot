@@ -215,7 +215,7 @@ public:
         k_param_pitch_limit_min_cd,
         k_param_airspeed_cruise_cm,
         k_param_RTL_altitude_cm,
-        k_param_inverted_flight_ch,
+        k_param_inverted_flight_ch_unused, // unused
         k_param_min_gndspeed_cm,
         k_param_crosstrack_use_wind, // unused
 
@@ -342,7 +342,7 @@ public:
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
 
-        k_param_DataFlash = 253, // Logging Group
+        k_param_logger = 253, // Logging Group
 
         // 254,255: reserved
     };
@@ -467,7 +467,6 @@ public:
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
     AP_Int8 takeoff_flap_percent;  
-    AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
@@ -488,7 +487,7 @@ public:
     AP_Int8 fbwa_tdrag_chan;
     AP_Int8 rangefinder_landing;
     AP_Int8 flap_slewrate;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAL_WITH_IO_MCU
     AP_Int8 override_channel;
     AP_Int8 override_safety;
 #endif
@@ -546,6 +545,21 @@ public:
 #endif
 
     AP_Int32 flight_options;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
+    AP_Int8 takeoff_throttle_accel_count;
+    AP_Int8 takeoff_timeout;
+
+#if LANDING_GEAR_ENABLED == ENABLED
+    AP_LandingGear landing_gear;
+#endif
+
+    // crow flaps weighting
+    AP_Int8 crow_flap_weight1;
+    AP_Int8 crow_flap_weight2;
 };
 
 extern const AP_Param::Info var_info[];

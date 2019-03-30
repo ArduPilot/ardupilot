@@ -31,8 +31,7 @@
 class AP_Compass_IST8310 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                      bool force_external = false,
                                      enum Rotation rotation = ROTATION_NONE);
 
@@ -41,8 +40,7 @@ public:
     static constexpr const char *name = "IST8310";
 
 private:
-    AP_Compass_IST8310(Compass &compass,
-                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    AP_Compass_IST8310(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                        bool force_external,
                        enum Rotation rotation);
 
@@ -54,9 +52,6 @@ private:
     AP_HAL::Device::PeriodicHandle _periodic_handle;
     AP_HAL::Util::perf_counter_t _perf_xfer_err;
     AP_HAL::Util::perf_counter_t _perf_bad_data;
-
-    Vector3f _accum = Vector3f();
-    uint32_t _accum_count = 0;
 
     enum Rotation _rotation;
     uint8_t _instance;

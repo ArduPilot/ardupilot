@@ -88,8 +88,8 @@
                 <y> 0 </y>
                 <z> -4 </z>
             </location>
-            <static_friction> 8.0 </static_friction>
-            <dynamic_friction> 5.0 </dynamic_friction>
+            <static_friction> 0.8 </static_friction>
+            <dynamic_friction> 0.5 </dynamic_friction>
             <rolling_friction> 0.1 </rolling_friction>
             <spring_coeff unit="LBS/FT"> 480 </spring_coeff>
             <damping_coeff unit="LBS/FT/SEC"> 100 </damping_coeff>
@@ -519,4 +519,15 @@
             </function>
         </axis>
     </aerodynamics>
+
+    <!-- <output name="RascalOutputFile.csv" type="CSV" rate="10">
+        <rates> ON </rates>
+        <velocities> ON </velocities>
+        <position> ON </position>
+        <fcs> ON </fcs>
+        <propulsion> ON </propulsion>
+    </output> -->
+
+  <input port="5505"/>
+
 </fdm_config>

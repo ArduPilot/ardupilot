@@ -18,6 +18,7 @@
 #pragma once
 
 #include "AP_RCProtocol.h"
+#include "SoftSerial.h"
 
 #define ST24_DATA_LEN_MAX	64
 #define ST24_MAX_FRAMELEN   70
@@ -39,8 +40,9 @@ class AP_RCProtocol_ST24 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_ST24(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
-    void process_byte(uint8_t byte) override;
+    void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
+    void _process_byte(uint8_t byte);
     static uint8_t st24_crc8(uint8_t *ptr, uint8_t len);
     enum ST24_PACKET_TYPE {
         ST24_PACKET_TYPE_CHANNELDATA12 = 0,
@@ -145,9 +147,5 @@ private:
 
     ReceiverFcPacket _rxpacket;
 
-    struct {
-        uint16_t bytes[70];
-        uint16_t bit_ofs;
-        bool packet_parsed;
-    } st24_state;
+    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };

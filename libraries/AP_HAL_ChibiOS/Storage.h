@@ -36,9 +36,9 @@
 
 class ChibiOS::Storage : public AP_HAL::Storage {
 public:
-    void init() {}
-    void read_block(void *dst, uint16_t src, size_t n);
-    void write_block(uint16_t dst, const void* src, size_t n);
+    void init() override {}
+    void read_block(void *dst, uint16_t src, size_t n) override;
+    void write_block(uint16_t dst, const void* src, size_t n) override;
 
     void _timer_tick(void) override;
     bool healthy(void) override;

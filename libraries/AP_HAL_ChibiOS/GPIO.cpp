@@ -27,6 +27,8 @@ static struct gpio_entry {
     uint8_t pwm_num;
     ioline_t pal_line;
     AP_HAL::GPIO::irq_handler_fn_t fn; // callback for GPIO interface
+    bool is_input;
+    uint8_t mode;
 } _gpio_tab[] = HAL_GPIO_PINS;
 
 #define NUM_PINS ARRAY_SIZE(_gpio_tab)
@@ -70,7 +72,15 @@ void GPIO::pinMode(uint8_t pin, uint8_t output)
 {
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
-        palSetLineMode(g->pal_line, output);
+        if (!output && g->is_input &&
+            (g->mode == PAL_MODE_INPUT_PULLUP ||
+             g->mode == PAL_MODE_INPUT_PULLDOWN)) {
+            // already set
+            return;
+        }
+        g->mode = output?PAL_MODE_OUTPUT_PUSHPULL:PAL_MODE_INPUT;
+        palSetLineMode(g->pal_line, g->mode);
+        g->is_input = !output;
     }
 }
 
@@ -88,7 +98,11 @@ void GPIO::write(uint8_t pin, uint8_t value)
 {
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
-        if (value == PAL_LOW) {
+        if (g->is_input) {
+            // control pullup/pulldown
+            g->mode = value==1?PAL_MODE_INPUT_PULLUP:PAL_MODE_INPUT_PULLDOWN;
+            palSetLineMode(g->pal_line, g->mode);
+        } else if (value == PAL_LOW) {
             palClearLine(g->pal_line);
         } else {
             palSetLine(g->pal_line);

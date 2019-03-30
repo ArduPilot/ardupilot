@@ -38,7 +38,7 @@ public:
     // destructor
     ~AP_RSSI(void);
 
-    static AP_RSSI *get_instance();
+    static AP_RSSI *get_singleton();
 
     // Initialize the rssi object and prepare it for use
     void init();
@@ -59,7 +59,7 @@ public:
 
 private:
 
-    static AP_RSSI *_s_instance;
+    static AP_RSSI *_singleton;
 
     // RSSI parameters
     AP_Int8         rssi_type;                              // Type of RSSI being used

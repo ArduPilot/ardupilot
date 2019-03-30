@@ -381,15 +381,12 @@ void AP_AccelCal::_printf(const char* fmt, ...)
     if (!_gcs) {
         return;
     }
-    char msg[50];
+    char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     va_list ap;
     va_start(ap, fmt);
     hal.util->vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
-    if (msg[strlen(msg)-1] == '\n') {
-        // STATUSTEXT messages should not add linefeed
-        msg[strlen(msg)-1] = 0;
-    }
+
     AP_HAL::UARTDriver *uart = _gcs->get_uart();
     /*
      *     to ensure these messages get to the user we need to wait for the

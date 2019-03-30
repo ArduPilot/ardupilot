@@ -35,7 +35,7 @@ using namespace Linux;
 
 static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
-Perf *Perf::_instance;
+Perf *Perf::_singleton;
 
 static inline uint64_t now_nsec()
 {
@@ -44,13 +44,13 @@ static inline uint64_t now_nsec()
     return ts.tv_nsec + (ts.tv_sec * AP_NSEC_PER_SEC);
 }
 
-Perf *Perf::get_instance()
+Perf *Perf::get_singleton()
 {
-    if (!_instance) {
-        _instance = new Perf();
+    if (!_singleton) {
+        _singleton = new Perf();
     }
 
-    return _instance;
+    return _singleton;
 }
 
 void Perf::_debug_counters()

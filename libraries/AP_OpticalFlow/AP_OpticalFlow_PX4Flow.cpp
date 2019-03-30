@@ -71,12 +71,10 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
             if (!tdev) {
                 continue;
             }
-            if (!tdev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-                continue;
-            }
+            WITH_SEMAPHORE(tdev->get_semaphore());
+
             struct i2c_integral_frame frame;
             success = tdev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame));
-            tdev->get_semaphore()->give();
             if (success) {
                 printf("Found PX4Flow on bus %u\n", bus);
                 dev = std::move(tdev);

@@ -25,15 +25,12 @@ public:
     static void handle_temperature(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TemperatureCb &cb);
 
 private:
-    static bool take_registry();
-    static void give_registry();
 
     uint8_t _instance;
 
     bool new_pressure;
     float _pressure;
     float _temperature;
-    uint64_t _last_timestamp;
 
     HAL_Semaphore _sem_baro;
 
@@ -47,5 +44,5 @@ private:
         AP_Baro_UAVCAN* driver;
     } _detected_modules[BARO_MAX_DRIVERS];
 
-    static AP_HAL::Semaphore *_sem_registry;
+    static HAL_Semaphore _sem_registry;
 };

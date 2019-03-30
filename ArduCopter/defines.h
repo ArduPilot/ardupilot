@@ -53,6 +53,7 @@ enum control_mode_t {
     SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
     FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
     FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
+    ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
 };
 
 enum mode_reason_t {
@@ -144,6 +145,7 @@ enum AutoMode {
     Auto_Spline,
     Auto_NavGuided,
     Auto_Loiter,
+    Auto_LoiterToAlt,
     Auto_NavPayloadPlace,
 };
 
@@ -230,6 +232,7 @@ enum PayloadPlaceStateType {
 // bit options for DEV_OPTIONS parameter
 enum DevOptions {
     DevOptionADSBMAVLink = 1,
+    DevOptionVFR_HUDRelativeAlt = 2,
 };
 
 //  Logging parameters
@@ -237,16 +240,11 @@ enum LoggingParameters {
      TYPE_AIRSTART_MSG,
      TYPE_GROUNDSTART_MSG,
      LOG_CONTROL_TUNING_MSG,
-     LOG_OPTFLOW_MSG,
-     LOG_EVENT_MSG,
-     LOG_ERROR_MSG,
      LOG_DATA_INT16_MSG,
      LOG_DATA_UINT16_MSG,
      LOG_DATA_INT32_MSG,
      LOG_DATA_UINT32_MSG,
      LOG_DATA_FLOAT_MSG,
-     LOG_AUTOTUNE_MSG,
-     LOG_AUTOTUNEDETAILS_MSG,
      LOG_MOTBATT_MSG,
      LOG_PARAMTUNE_MSG,
      LOG_HELI_MSG,
@@ -274,125 +272,6 @@ enum LoggingParameters {
 #define MASK_LOG_IMU_FAST               (1UL<<18)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ANY                    0xFFFF
-
-// DATA - event logging
-#define DATA_AP_STATE                       7
-// 8 was DATA_SYSTEM_TIME_SET
-#define DATA_INIT_SIMPLE_BEARING            9
-#define DATA_ARMED                          10
-#define DATA_DISARMED                       11
-#define DATA_AUTO_ARMED                     15
-#define DATA_LAND_COMPLETE_MAYBE            17
-#define DATA_LAND_COMPLETE                  18
-#define DATA_NOT_LANDED                     28
-#define DATA_LOST_GPS                       19
-#define DATA_FLIP_START                     21
-#define DATA_FLIP_END                       22
-#define DATA_SET_HOME                       25
-#define DATA_SET_SIMPLE_ON                  26
-#define DATA_SET_SIMPLE_OFF                 27
-#define DATA_SET_SUPERSIMPLE_ON             29
-#define DATA_AUTOTUNE_INITIALISED           30
-#define DATA_AUTOTUNE_OFF                   31
-#define DATA_AUTOTUNE_RESTART               32
-#define DATA_AUTOTUNE_SUCCESS               33
-#define DATA_AUTOTUNE_FAILED                34
-#define DATA_AUTOTUNE_REACHED_LIMIT         35
-#define DATA_AUTOTUNE_PILOT_TESTING         36
-#define DATA_AUTOTUNE_SAVEDGAINS            37
-#define DATA_SAVE_TRIM                      38
-#define DATA_SAVEWP_ADD_WP                  39
-#define DATA_FENCE_ENABLE                   41
-#define DATA_FENCE_DISABLE                  42
-#define DATA_ACRO_TRAINER_DISABLED          43
-#define DATA_ACRO_TRAINER_LEVELING          44
-#define DATA_ACRO_TRAINER_LIMITED           45
-#define DATA_GRIPPER_GRAB                   46
-#define DATA_GRIPPER_RELEASE                47
-#define DATA_PARACHUTE_DISABLED             49
-#define DATA_PARACHUTE_ENABLED              50
-#define DATA_PARACHUTE_RELEASED             51
-#define DATA_LANDING_GEAR_DEPLOYED          52
-#define DATA_LANDING_GEAR_RETRACTED         53
-#define DATA_MOTORS_EMERGENCY_STOPPED       54
-#define DATA_MOTORS_EMERGENCY_STOP_CLEARED  55
-#define DATA_MOTORS_INTERLOCK_DISABLED      56
-#define DATA_MOTORS_INTERLOCK_ENABLED       57
-#define DATA_ROTOR_RUNUP_COMPLETE           58  // Heli only
-#define DATA_ROTOR_SPEED_BELOW_CRITICAL     59  // Heli only
-#define DATA_EKF_ALT_RESET                  60
-#define DATA_LAND_CANCELLED_BY_PILOT        61
-#define DATA_EKF_YAW_RESET                  62
-#define DATA_AVOIDANCE_ADSB_ENABLE          63
-#define DATA_AVOIDANCE_ADSB_DISABLE         64
-#define DATA_AVOIDANCE_PROXIMITY_ENABLE     65
-#define DATA_AVOIDANCE_PROXIMITY_DISABLE    66
-#define DATA_GPS_PRIMARY_CHANGED            67
-#define DATA_WINCH_RELAXED                  68
-#define DATA_WINCH_LENGTH_CONTROL           69
-#define DATA_WINCH_RATE_CONTROL             70
-
-// Error message sub systems and error codes
-#define ERROR_SUBSYSTEM_MAIN                1
-#define ERROR_SUBSYSTEM_RADIO               2
-#define ERROR_SUBSYSTEM_COMPASS             3
-#define ERROR_SUBSYSTEM_OPTFLOW             4
-#define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
-#define ERROR_SUBSYSTEM_FAILSAFE_BATT       6
-#define ERROR_SUBSYSTEM_FAILSAFE_GPS        7   // not used
-#define ERROR_SUBSYSTEM_FAILSAFE_GCS        8
-#define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
-#define ERROR_SUBSYSTEM_FLIGHT_MODE         10
-#define ERROR_SUBSYSTEM_GPS                 11
-#define ERROR_SUBSYSTEM_CRASH_CHECK         12
-#define ERROR_SUBSYSTEM_FLIP                13
-#define ERROR_SUBSYSTEM_AUTOTUNE            14
-#define ERROR_SUBSYSTEM_PARACHUTE           15
-#define ERROR_SUBSYSTEM_EKFCHECK            16
-#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
-#define ERROR_SUBSYSTEM_BARO                18
-#define ERROR_SUBSYSTEM_CPU                 19
-#define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20
-#define ERROR_SUBSYSTEM_TERRAIN             21
-#define ERROR_SUBSYSTEM_NAVIGATION          22
-#define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
-#define ERROR_SUBSYSTEM_EKF_PRIMARY         24
-// general error codes
-#define ERROR_CODE_ERROR_RESOLVED           0
-#define ERROR_CODE_FAILED_TO_INITIALISE     1
-#define ERROR_CODE_UNHEALTHY                4
-// subsystem specific error codes -- radio
-#define ERROR_CODE_RADIO_LATE_FRAME         2
-// subsystem specific error codes -- failsafe_thr, batt, gps
-#define ERROR_CODE_FAILSAFE_RESOLVED        0
-#define ERROR_CODE_FAILSAFE_OCCURRED        1
-// subsystem specific error codes -- compass
-#define ERROR_CODE_COMPASS_FAILED_TO_READ   2
-// subsystem specific error codes -- main
-#define ERROR_CODE_MAIN_INS_DELAY           1
-// subsystem specific error codes -- crash checker
-#define ERROR_CODE_CRASH_CHECK_CRASH        1
-#define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
-// subsystem specific error codes -- flip
-#define ERROR_CODE_FLIP_ABANDONED           2
-// subsystem specific error codes -- terrain
-#define ERROR_CODE_MISSING_TERRAIN_DATA     2
-// subsystem specific error codes -- navigation
-#define ERROR_CODE_FAILED_TO_SET_DESTINATION    2
-#define ERROR_CODE_RESTARTED_RTL            3
-#define ERROR_CODE_FAILED_CIRCLE_INIT       4
-#define ERROR_CODE_DEST_OUTSIDE_FENCE       5
-
-// parachute failed to deploy because of low altitude or landed
-#define ERROR_CODE_PARACHUTE_TOO_LOW        2
-#define ERROR_CODE_PARACHUTE_LANDED         3
-// EKF check definitions
-#define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
-#define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
-// Baro specific error codes
-#define ERROR_CODE_BARO_GLITCH              2
-// GPS specific error coces
-#define ERROR_CODE_GPS_GLITCH               2
 
 // Radio failsafe definitions (FS_THR parameter)
 #define FS_THR_DISABLED                            0

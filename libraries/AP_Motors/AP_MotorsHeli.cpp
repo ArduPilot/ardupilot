@@ -229,6 +229,10 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
 
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
+
+    // set flag to true so targets are initialized once aircraft is armed for first time
+    _heliflags.init_targets_on_arming = true;
+
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
@@ -258,6 +262,9 @@ void AP_MotorsHeli::output()
     // update throttle filter
     update_throttle_filter();
 
+    // run spool logic
+    output_logic();
+
     if (_flags.armed) {
         calculate_armed_scalars();
         if (!_flags.interlock) {
@@ -268,6 +275,9 @@ void AP_MotorsHeli::output()
     } else {
         output_disarmed();
     }
+    
+    output_to_motors();
+
 };
 
 // sends commands to the motors
@@ -279,8 +289,6 @@ void AP_MotorsHeli::output_armed_stabilizing()
     }
 
     move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
-
-    update_motor_control(ROTOR_CONTROL_ACTIVE);
 }
 
 // output_armed_zero_throttle - sends commands to the motors
@@ -292,8 +300,6 @@ void AP_MotorsHeli::output_armed_zero_throttle()
     }
 
     move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
-
-    update_motor_control(ROTOR_CONTROL_IDLE);
 }
 
 // output_disarmed - sends commands to the motors
@@ -351,8 +357,92 @@ void AP_MotorsHeli::output_disarmed()
 
     // helicopters always run stabilizing flight controls
     move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
+}
 
-    update_motor_control(ROTOR_CONTROL_STOP);
+// run spool logic
+void AP_MotorsHeli::output_logic()
+{
+    // force desired and current spool mode if disarmed and armed with interlock enabled
+    if (_flags.armed) {
+        if (!_flags.interlock) {
+            _spool_desired = DESIRED_GROUND_IDLE;
+        } else {
+            _heliflags.init_targets_on_arming = false;
+        }
+    } else {
+        _heliflags.init_targets_on_arming = true;
+        _spool_desired = DESIRED_SHUT_DOWN;
+        _spool_mode = SHUT_DOWN;
+    }
+
+    switch (_spool_mode) {
+        case SHUT_DOWN:
+            // Motors should be stationary.
+            // Servos set to their trim values or in a test condition.
+
+            // make sure the motors are spooling in the correct direction
+            if (_spool_desired != DESIRED_SHUT_DOWN) {
+                _spool_mode = GROUND_IDLE;
+                break;
+            }
+
+            break;
+
+        case GROUND_IDLE: {
+            // Motors should be stationary or at ground idle.
+            // Servos should be moving to correct the current attitude.
+            if (_spool_desired == DESIRED_SHUT_DOWN){
+                _spool_mode = SHUT_DOWN;
+            } else if(_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
+                _spool_mode = SPOOL_UP;
+            } else {    // _spool_desired == GROUND_IDLE
+
+            }
+
+            break;
+        }
+        case SPOOL_UP:
+            // Maximum throttle should move from minimum to maximum.
+            // Servos should exhibit normal flight behavior.
+
+            // make sure the motors are spooling in the correct direction
+            if (_spool_desired != DESIRED_THROTTLE_UNLIMITED ){
+                _spool_mode = SPOOL_DOWN;
+                break;
+            }
+
+            if (_heliflags.rotor_runup_complete){
+                _spool_mode = THROTTLE_UNLIMITED;
+            }
+            break;
+
+        case THROTTLE_UNLIMITED:
+            // Throttle should exhibit normal flight behavior.
+            // Servos should exhibit normal flight behavior.
+
+            // make sure the motors are spooling in the correct direction
+            if (_spool_desired != DESIRED_THROTTLE_UNLIMITED) {
+                _spool_mode = SPOOL_DOWN;
+                break;
+            }
+
+
+            break;
+
+        case SPOOL_DOWN:
+            // Maximum throttle should move from maximum to minimum.
+            // Servos should exhibit normal flight behavior.
+
+            // make sure the motors are spooling in the correct direction
+            if (_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
+                _spool_mode = SPOOL_UP;
+                break;
+            }
+            if (!rotor_speed_above_critical()){
+                _spool_mode = GROUND_IDLE;
+            }
+            break;
+    }
 }
 
 // parameter_check - check if helicopter specific parameters are sensible

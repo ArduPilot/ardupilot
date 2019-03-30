@@ -94,10 +94,9 @@ extern const AP_HAL::HAL& hal;
 #define HMC5843_REG_ID_A 0x0A
 
 
-AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_BusDriver *bus,
+AP_Compass_HMC5843::AP_Compass_HMC5843(AP_HMC5843_BusDriver *bus,
                                        bool force_external, enum Rotation rotation)
-    : AP_Compass_Backend(compass)
-    , _bus(bus)
+    : _bus(bus)
     , _rotation(rotation)
     , _force_external(force_external)
 {
@@ -108,8 +107,7 @@ AP_Compass_HMC5843::~AP_Compass_HMC5843()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_HMC5843::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_HMC5843::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
@@ -121,7 +119,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe(Compass &compass,
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, force_external, rotation);
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(bus, force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -130,9 +128,9 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe(Compass &compass,
     return sensor;
 }
 
-AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(Compass &compass, enum Rotation rotation)
+AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(enum Rotation rotation)
 {
-    AP_InertialSensor &ins = *AP_InertialSensor::get_instance();
+    AP_InertialSensor &ins = *AP_InertialSensor::get_singleton();
 
     AP_HMC5843_BusDriver *bus =
         new AP_HMC5843_BusDriver_Auxiliary(ins, HAL_INS_MPU60XX_SPI,
@@ -141,7 +139,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(Compass &compass, enum Rot
         return nullptr;
     }
 
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus, false, rotation);
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(bus, false, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -235,47 +233,19 @@ void AP_Compass_HMC5843::_timer()
         return;
     }
 
-    // the _mag_N values are in the range -2048 to 2047, so we can
-    // accumulate up to 15 of them in an int16_t. Let's make it 14
-    // for ease of calculation. We expect to do reads at 10Hz, and
-    // we get new data at most 75Hz, so we don't expect to
-    // accumulate more than 8 before a read
     // get raw_field - sensor frame, uncorrected
     Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
     raw_field *= _gain_scale;
-    
+
     // rotate to the desired orientation
     if (is_external(_compass_instance)) {
         raw_field.rotate(ROTATION_YAW_90);
     }
 
-    // rotate raw_field from sensor frame to body frame
-    rotate_field(raw_field, _compass_instance);
-    
-    // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, _compass_instance);
-    
-    // correct raw_field for known errors
-    correct_field(raw_field, _compass_instance);
-    
-    if (!field_ok(raw_field)) {
-        return;
-    }
-
-    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return; 
-    }
-    _mag_x_accum += raw_field.x;
-    _mag_y_accum += raw_field.y;
-    _mag_z_accum += raw_field.z;
-    _accum_count++;
-    if (_accum_count == 14) {
-        _mag_x_accum /= 2;
-        _mag_y_accum /= 2;
-        _mag_z_accum /= 2;
-        _accum_count = 7;
-    }
-    _sem->give();
+    // We expect to do reads at 10Hz, and  we get new data at most 75Hz, so we
+    // don't expect to accumulate more than 8 before a read; let's make it
+    // 14 to give more room for the initialization phase
+    accumulate_sample(raw_field, _compass_instance, 14);
 }
 
 /*
@@ -293,26 +263,7 @@ void AP_Compass_HMC5843::read()
         return;
     }
 
-    if (!_sem->take_nonblocking()) {
-        return;
-    }
-    
-    if (_accum_count == 0) {
-        _sem->give();
-        return;
-    }
-
-    Vector3f field(_mag_x_accum * _scaling[0],
-                   _mag_y_accum * _scaling[1],
-                   _mag_z_accum * _scaling[2]);
-    field /= _accum_count;
-
-    _accum_count = 0;
-    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-
-    _sem->give();
-    
-    publish_filtered_field(field, _compass_instance);
+    drain_accumulated_samples(_compass_instance, &_scaling);
 }
 
 bool AP_Compass_HMC5843::_setup_sampling_mode()

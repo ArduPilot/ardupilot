@@ -14,8 +14,6 @@
  */
 #pragma once
 
-#pragma once
-
 /*
   a method to make semaphores less error prone. The WITH_SEMAPHORE()
   macro will block forever for a semaphore, and will automatically
@@ -28,11 +26,18 @@
 
   The WITH_SEMAPHORE() macro can be used with either type of semaphore
  */
+
+#include <AP_HAL/Semaphores.h>
+
+namespace AP_HAL {
+class Semaphore;
+}
+
 class WithSemaphore {
 public:
-    WithSemaphore(HAL_Semaphore &mtx) :
-    _mtx(mtx)
-    {
+    WithSemaphore(AP_HAL::Semaphore *mtx) : WithSemaphore(*mtx) { }
+
+    WithSemaphore(AP_HAL::Semaphore &mtx) : _mtx(mtx) {
         _mtx.take_blocking();
     }
 
@@ -40,8 +45,10 @@ public:
         _mtx.give();
     }
 private:
-    HAL_Semaphore &_mtx;
+    AP_HAL::Semaphore &_mtx;
 };
 
-#define WITH_SEMAPHORE(sem) WithSemaphore _getsem(sem)
-
+// From: https://stackoverflow.com/questions/19666142/why-is-a-level-of-indirection-needed-for-this-concatenation-macro
+#define WITH_SEMAPHORE( sem ) JOIN( sem, __COUNTER__ )
+#define JOIN( symbol1, symbol2 ) _DO_JOIN( symbol1, symbol2 )
+#define _DO_JOIN( symbol1, symbol2 ) WithSemaphore _getsem ## symbol2(symbol1)

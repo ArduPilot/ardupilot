@@ -1,5 +1,57 @@
-APMrover2 Release Notes:
-========================
+Rover Release Notes:
+--------------------------------
+Rover 3.5.0 06-Feb-2019
+Changes from 3.5.0-rc3
+1) Bug fixes and minor enhancements
+    a) Avoid potential divide-by-zero when waypoints are almost in a straight line
+    b) LOIT_TYPE parameter description fix
+--------------------------------
+Rover 3.5.0-rc3 30-Jan-2019
+Changes from 3.5.0-rc2
+1) Fix build issue affecting fmuv2
+--------------------------------
+Rover 3.5.0-rc2 24-Jan-2019
+Changes from 3.5.0-rc1
+1) ChibiOS fixes and enhancements to many boards including Pixhawk4
+2) EKF failsafe added and checked before entering autonomous modes
+3) Object avoidance enabled in autonomous modes (Auto, Guided, RTL)
+4) Cruise speed/throttle learning always runs for 2 seconds (saves user from having to lower switch) 
+5) Boats hold position after reaching target in Auto and Guided (also see MIS_DONE_BEHAVE)
+6) MAVLink message interval support (allows precise control of mavlink message update rates) 
+7) Bug fixes and minor enhancements:
+    a) DShot ESC support
+    b) Auxiliary switch 7 parameter copy from CH7_OPTION to RC7_OPTION
+    c) Wheel encoder offset fix
+    d) SmartRTL default num points increased to 300 
+--------------------------------
+Rover 3.5.0-rc1 12-Nov-2018
+Changes from 3.4.2:
+1) ChibiOS provides improved performance and support for many new boards including:
+   a) F4BY 
+   b) TauLabs Sparky2
+   c) Furious FPV F-35 lightening and Wing FC-10
+   d) Holybro KakuteF4
+   e) Mateksys F405-Wing
+   f) Omnibus F4 Pro, NanoV6 and F7
+   g) SpeedyBee F4
+2) BalanceBot support
+3) Sailboat support
+4) OmniPlus, OmniX frame support (vehicles can move laterally using 4 thrusters or wheels)
+5) Auxiliary Switches expanded to many channels (see RCx_OPTION parameters)
+6) External position estimates accepted from ROS and Vicon systems
+7) Mode changes:
+   a) Follow mode (allows following another vehicle if connected via telemetry)
+   b) Simple mode (pilot controls direction regardless of vehicle's heading)
+   c) Loiter can be configured to always drive towards target (i.e. does not reverse) (see LOIT_TYPE parameter)
+   d) Guided, RTL, SmartRTL will reverse towards target if DO_SET_REVERSE command received (via telemetry or as mission command)
+8) Bug fixes and small enhancements:
+   a) RC and GCS failsafe timeout shortened
+   b) Object avoidance fix to include all sectors from proximity sensor (aka 360 lidar)
+   c) Safety switch ability to arm/disarm vehicle now configurable (see BRD_SAFETYOPTION parameter)
+   d) Onboard OSD support (for ChibiOS-only boards)
+   e) Gripper support
+   f) Sprayer support
+--------------------------------
 Rover 3.4.2 30-Jul-2018 / 3.4.2-rc1 23-Jul-2018
 Changes from 3.4.1:
 1) bug fix to pivot turn logic during missions

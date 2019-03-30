@@ -12,6 +12,7 @@
 #include "support.h"
 #include "mcu_f4.h"
 #include "mcu_f7.h"
+#include "mcu_h7.h"
 
 static BaseChannel *uarts[] = { BOOTLOADER_DEV_LIST };
 #if HAL_USE_SERIAL == TRUE
@@ -23,6 +24,12 @@ static uint8_t last_uart;
 #ifndef BOOTLOADER_BAUDRATE
 #define BOOTLOADER_BAUDRATE 115200
 #endif
+
+// optional uprintf() code for debug
+// #define BOOTLOADER_DEBUG SD7
+
+
+// #pragma GCC optimize("O0")
 
 int16_t cin(unsigned timeout_ms)
 {
@@ -90,29 +97,38 @@ uint32_t flash_func_read_word(uint32_t offset)
     return *(const uint32_t *)(flash_base + offset);
 }
 
-void flash_func_write_word(uint32_t offset, uint32_t v)
+bool flash_func_write_word(uint32_t offset, uint32_t v)
 {
-    stm32_flash_write(uint32_t(flash_base+offset), &v, sizeof(v));
+    return stm32_flash_write(uint32_t(flash_base+offset), &v, sizeof(v));
+}
+
+bool flash_func_write_words(uint32_t offset, uint32_t *v, uint8_t n)
+{
+    return stm32_flash_write(uint32_t(flash_base+offset), v, n*sizeof(*v));
 }
 
 uint32_t flash_func_sector_size(uint32_t sector)
 {
-    if (sector >= flash_base_page+num_pages) {
+    if (sector >= num_pages-flash_base_page) {
         return 0;
     }
     return stm32_flash_getpagesize(flash_base_page+sector);
 }
 
-void flash_func_erase_sector(uint32_t sector)
+bool flash_func_erase_sector(uint32_t sector)
 {
     if (!stm32_flash_ispageerased(flash_base_page+sector)) {
-        stm32_flash_erasepage(flash_base_page+sector);
+        return stm32_flash_erasepage(flash_base_page+sector);
     }
+    return true;
 }
 
 // read one-time programmable memory
 uint32_t flash_func_read_otp(uint32_t idx)
 {
+#ifndef OTP_SIZE
+    return 0;
+#else
     if (idx & 3) {
         return 0;
     }
@@ -122,6 +138,7 @@ uint32_t flash_func_read_otp(uint32_t idx)
     }
 
     return *(uint32_t *)(idx + OTP_BASE);
+#endif
 }
 
 // read chip serial number
@@ -242,13 +259,19 @@ extern "C" {
 // printf to USB for debugging
 void uprintf(const char *fmt, ...)
 {
-#if HAL_USE_SERIAL_USB == TRUE
-    char msg[200];
+#ifdef BOOTLOADER_DEBUG
     va_list ap;
+    static bool initialised;
+    char umsg[200];
+    if (!initialised) {
+        initialised = true;
+        sercfg.speed = 57600;
+        sdStart(&BOOTLOADER_DEBUG, &sercfg);
+    }
     va_start(ap, fmt);
-    uint32_t n = vsnprintf(msg, sizeof(msg), fmt, ap);
+    uint32_t n = vsnprintf(umsg, sizeof(umsg), fmt, ap);
     va_end(ap);
-    chnWriteTimeout(&SDU1, (const uint8_t *)msg, n, chTimeMS2I(100));
+    chnWriteTimeout(&BOOTLOADER_DEBUG, (const uint8_t *)umsg, n, chTimeMS2I(100));
 #endif
 }
 

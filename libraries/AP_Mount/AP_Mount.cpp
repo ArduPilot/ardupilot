@@ -393,10 +393,17 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Mount::AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc) :
-    _ahrs(ahrs),
+AP_Mount::AP_Mount(const struct Location &current_loc) :
     _current_loc(current_loc)
 {
+    if (_singleton != nullptr) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Mount must be singleton");
+#endif
+        return;
+    }
+    _singleton = this;
+
 	AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -552,47 +559,79 @@ void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float
     _backends[instance]->set_angle_targets(roll, tilt, pan);
 }
 
-/// Change the configuration of the mount
-/// triggered by a MavLink packet.
-void AP_Mount::configure_msg(uint8_t instance, mavlink_message_t* msg)
+MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_long_t &packet)
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
-        return;
+    if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+    _backends[_primary]->set_mode((MAV_MOUNT_MODE)packet.param1);
+    state[0]._stab_roll = packet.param2;
+    state[0]._stab_tilt = packet.param3;
+    state[0]._stab_pan = packet.param4;
+
+    return MAV_RESULT_ACCEPTED;
+}
+
+
+MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_t &packet)
+{
+    if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
+        return MAV_RESULT_FAILED;
     }
 
     // send message to backend
-    _backends[instance]->configure_msg(msg);
+    _backends[_primary]->control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
+{
+    switch (packet.command) {
+    case MAV_CMD_DO_MOUNT_CONFIGURE:
+        return handle_command_do_mount_configure(packet);
+    case MAV_CMD_DO_MOUNT_CONTROL:
+        return handle_command_do_mount_control(packet);
+    default:
+        return MAV_RESULT_UNSUPPORTED;
+    }
+}
+
+/// Change the configuration of the mount
+void AP_Mount::handle_mount_configure(const mavlink_message_t *msg)
+{
+    if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
+        return;
+    }
+
+    mavlink_mount_configure_t packet;
+    mavlink_msg_mount_configure_decode(msg, &packet);
+
+    // send message to backend
+    _backends[_primary]->handle_mount_configure(packet);
 }
 
 /// Control the mount (depends on the previously set mount configuration)
-/// triggered by a MavLink packet.
-void AP_Mount::control_msg(uint8_t instance, mavlink_message_t *msg)
+void AP_Mount::handle_mount_control(const mavlink_message_t *msg)
 {
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+    if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
         return;
     }
 
-    // send message to backend
-    _backends[instance]->control_msg(msg);
-}
-
-void AP_Mount::control(uint8_t instance, int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode)
-{
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
-        return;
-    }
+    mavlink_mount_control_t packet;
+    mavlink_msg_mount_control_decode(msg, &packet);
 
     // send message to backend
-    _backends[instance]->control(pitch_or_lat, roll_or_lon, yaw_or_alt, mount_mode);
+    _backends[_primary]->handle_mount_control(packet);
 }
 
 /// Return mount status information
-void AP_Mount::status_msg(mavlink_channel_t chan)
+void AP_Mount::send_mount_status(mavlink_channel_t chan)
 {
-    // call status_msg for  each instance
+    // call send_mount_status for  each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
-            _backends[instance]->status_msg(chan);
+            _backends[instance]->send_mount_status(chan);
         }
     }
 }
@@ -607,7 +646,7 @@ void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_lo
 }
 
 // pass a GIMBAL_REPORT message to the backend
-void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg)
+void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
@@ -616,8 +655,28 @@ void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *m
     }
 }
 
+void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t *msg)
+{
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_GIMBAL_REPORT:
+        handle_gimbal_report(chan, msg);
+        break;
+    case MAVLINK_MSG_ID_MOUNT_CONFIGURE:
+        handle_mount_configure(msg);
+        break;
+    case MAVLINK_MSG_ID_MOUNT_CONTROL:
+        handle_mount_control(msg);
+        break;
+    default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Unhandled mount case");
+#endif
+        break;
+    }
+}
+
 // handle PARAM_VALUE
-void AP_Mount::handle_param_value(mavlink_message_t *msg)
+void AP_Mount::handle_param_value(const mavlink_message_t *msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
@@ -635,3 +694,16 @@ void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
         }
     }    
 }
+
+
+// singleton instance
+AP_Mount *AP_Mount::_singleton;
+
+namespace AP {
+
+AP_Mount *mount()
+{
+    return AP_Mount::get_singleton();
+}
+
+};

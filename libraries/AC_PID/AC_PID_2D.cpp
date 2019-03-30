@@ -59,8 +59,8 @@ AC_PID_2D::AC_PID_2D(float initial_p, float initial_i, float initial_d, float in
     filt_hz(initial_filt_hz);
     filt_d_hz(initial_filt_d_hz);
 
-    // reset input filter to first value received
-    _flags._reset_filter = true;
+    // reset input filter to first value received and derivitive to zero
+    reset_filter();
 }
 
 // set_dt - set time step in seconds
@@ -129,13 +129,6 @@ void AC_PID_2D::set_input_filter_d(const Vector2f& input_delta)
         return;
     }
 
-    // reset input filter
-    if (_flags._reset_filter) {
-        _flags._reset_filter = false;
-        _derivative.x = 0.0f;
-        _derivative.y = 0.0f;
-    }
-
     // update filter and calculate derivative
     if (is_positive(_dt)) {
         const Vector2f derivative = input_delta / _dt;
@@ -190,6 +183,14 @@ Vector2f AC_PID_2D::get_pid()
 
 void AC_PID_2D::reset_I()
 {
+    _integrator.zero();
+}
+
+void AC_PID_2D::reset_filter()
+{
+    _flags._reset_filter = true;
+    _derivative.x = 0.0f;
+    _derivative.y = 0.0f;
     _integrator.zero();
 }
 

@@ -21,7 +21,9 @@ public:
         BattMonitor_TYPE_BEBOP                      = 6,
         BattMonitor_TYPE_MAXELL                     = 7,
         BattMonitor_TYPE_UAVCAN_BatteryInfo         = 8,
-        BattMonitor_TYPE_BLHeliESC                  = 9
+        BattMonitor_TYPE_BLHeliESC                  = 9,
+        BattMonitor_TYPE_Sum                        = 10,
+        BattMonitor_TYPE_FuelFlow                   = 11,
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)
@@ -50,5 +52,7 @@ public:
     AP_Float _critical_capacity;        /// capacity level used to trigger a critical battery failsafe
     AP_Int8  _failsafe_low_action;      /// action to preform on a low battery failsafe
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe
+    AP_Int32 _arming_minimum_capacity;  /// capacity level required to arm
+    AP_Float _arming_minimum_voltage;   /// voltage level required to arm
 
 };

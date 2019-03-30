@@ -37,6 +37,8 @@
 #include "Thread.h"
 #include "Util.h"
 
+#define DEBUG 0
+
 namespace Linux {
 
 static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
@@ -149,12 +151,15 @@ SPIDesc SPIDeviceManager::_device[] = {
 #define LINUX_SPI_DEVICE_NUM_DEVICES ARRAY_SIZE(SPIDeviceManager::_device)
 #endif
 
+#define MAX_SUBDEVS 6
+
 const uint8_t SPIDeviceManager::_n_device_desc = LINUX_SPI_DEVICE_NUM_DEVICES;
 
 
 /* Private struct to maintain for each bus */
 class SPIBus : public TimerPollable::WrapperCb {
 public:
+    SPIBus(uint16_t bus_);
     ~SPIBus();
 
     /*
@@ -164,21 +169,26 @@ public:
     void start_cb() override;
     void end_cb() override;
 
-    int open(uint16_t bus_, uint16_t kernel_cs_);
+    void open(uint16_t subdev);
 
     PollerThread thread;
     Semaphore sem;
-    int fd = -1;
+    int fd[MAX_SUBDEVS];
     uint16_t bus;
-    uint16_t kernel_cs;
-    uint8_t ref;
     int16_t last_mode = -1;
+    uint8_t ref;
 };
+
+SPIBus::SPIBus(uint16_t bus_)
+    : bus(bus_)
+{
+    memset(fd, -1, sizeof(fd));
+}
 
 SPIBus::~SPIBus()
 {
-    if (fd >= 0) {
-        ::close(fd);
+    for (unsigned i = 0; i < MAX_SUBDEVS; i++) {
+        ::close(fd[i]);
     }
 }
 
@@ -193,25 +203,21 @@ void SPIBus::end_cb()
 }
 
 
-int SPIBus::open(uint16_t bus_, uint16_t kernel_cs_)
+void SPIBus::open(uint16_t subdev)
 {
     char path[sizeof("/dev/spidevXXXXX.XXXXX")];
 
-    if (fd > 0) {
-        return -EBUSY;
+    /* Already open by another device */
+    if (fd[subdev] >= 0) {
+        return;
     }
 
-    snprintf(path, sizeof(path), "/dev/spidev%u.%u", bus_, kernel_cs_);
-    fd = ::open(path, O_RDWR | O_CLOEXEC);
-    if (fd < 0) {
+    snprintf(path, sizeof(path), "/dev/spidev%u.%u", bus, subdev);
+    fd[subdev] = ::open(path, O_RDWR | O_CLOEXEC);
+    if (fd[subdev] < 0) {
         AP_HAL::panic("SPI: unable to open SPI bus %s: %s",
                       path, strerror(errno));
     }
-
-    bus = bus_;
-    kernel_cs = kernel_cs_;
-
-    return fd;
 }
 
 
@@ -222,7 +228,7 @@ SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
     set_device_bus(_bus.bus);
     set_device_address(_desc.subdev);
     _speed = _desc.highspeed;
-    
+
     if (_desc.cs_pin != SPI_CS_KERNEL) {
         _cs = hal.gpio->channel(_desc.cs_pin);
         if (!_cs) {
@@ -261,8 +267,9 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
 {
     struct spi_ioc_transfer msgs[2] = { };
     unsigned nmsgs = 0;
+    int fd = _bus.fd[_desc.subdev];
 
-    assert(_bus.fd >= 0);
+    assert(fd >= 0);
 
     if (send && send_len != 0) {
         msgs[nmsgs].tx_buf = (uint64_t) send;
@@ -290,8 +297,8 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         return false;
     }
 
-    int r;
-    if (_bus.last_mode == _desc.mode) {
+#if DEBUG
+    if (_desc.mode == _bus.last_mode) {
         /*
           the mode in the kernel is not tied to the file descriptor,
           so there is a chance some other process has changed it since
@@ -301,33 +308,36 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
           an extra syscall per transfer.
          */
         uint8_t current_mode;
-        if (ioctl(_bus.fd, SPI_IOC_RD_MODE, &current_mode) < 0) {
+        if (ioctl(fd, SPI_IOC_RD_MODE, &current_mode) < 0) {
             hal.console->printf("SPIDevice: error on getting mode fd=%d (%s)\n",
-                                _bus.fd, strerror(errno));
+                                fd, strerror(errno));
             _bus.last_mode = -1;
         } else if (current_mode != _bus.last_mode) {
             hal.console->printf("SPIDevice: bus mode conflict fd=%d mode=%u/%u\n",
-                                _bus.fd, (unsigned)_bus.last_mode, (unsigned)current_mode);
+                                fd, (unsigned)_bus.last_mode, (unsigned)current_mode);
             _bus.last_mode = -1;
         }
     }
+#endif
+
+    int r;
     if (_desc.mode != _bus.last_mode) {
-        r = ioctl(_bus.fd, SPI_IOC_WR_MODE, &_desc.mode);
+        r = ioctl(fd, SPI_IOC_WR_MODE, &_desc.mode);
         if (r < 0) {
             hal.console->printf("SPIDevice: error on setting mode fd=%d (%s)\n",
-                                _bus.fd, strerror(errno));
+                                fd, strerror(errno));
             return false;
         }
         _bus.last_mode = _desc.mode;
     }
 
     _cs_assert();
-    r = ioctl(_bus.fd, SPI_IOC_MESSAGE(nmsgs), &msgs);
+    r = ioctl(fd, SPI_IOC_MESSAGE(nmsgs), &msgs);
     _cs_release();
 
     if (r == -1) {
         hal.console->printf("SPIDevice: error transferring data fd=%d (%s)\n",
-                            _bus.fd, strerror(errno));
+                            fd, strerror(errno));
         return false;
     }
 
@@ -338,8 +348,9 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                                     uint32_t len)
 {
     struct spi_ioc_transfer msgs[1] = { };
+    int fd = _bus.fd[_desc.subdev];
 
-    assert(_bus.fd >= 0);
+    assert(fd >= 0);
 
     if (!send || !recv || len == 0) {
         return false;
@@ -353,20 +364,20 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
     msgs[0].bits_per_word = _desc.bits_per_word;
     msgs[0].cs_change = 0;
 
-    int r = ioctl(_bus.fd, SPI_IOC_WR_MODE, &_desc.mode);
+    int r = ioctl(fd, SPI_IOC_WR_MODE, &_desc.mode);
     if (r < 0) {
         hal.console->printf("SPIDevice: error on setting mode fd=%d (%s)\n",
-                            _bus.fd, strerror(errno));
+                            fd, strerror(errno));
         return false;
     }
 
     _cs_assert();
-    r = ioctl(_bus.fd, SPI_IOC_MESSAGE(1), &msgs);
+    r = ioctl(fd, SPI_IOC_MESSAGE(1), &msgs);
     _cs_release();
 
     if (r == -1) {
         hal.console->printf("SPIDevice: error transferring data fd=%d (%s)\n",
-                            _bus.fd, strerror(errno));
+                            fd, strerror(errno));
         return false;
     }
 
@@ -438,21 +449,19 @@ SPIDeviceManager::get_device(const char *name)
     }
 
     if (!desc) {
-        printf("SPI: Invalid device name: %s\n", name);
         return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
     }
 
-    /* Find if bus is already open */
+    /* Find if bus already exists */
     for (uint8_t i = 0, n = _buses.size(); i < n; i++) {
-        if (_buses[i]->bus == desc->bus &&
-            _buses[i]->kernel_cs == desc->subdev) {
+        if (_buses[i]->bus == desc->bus) {
             return _create_device(*_buses[i], *desc);
         }
     }
 
     /* Bus not found for this device, create a new one */
-    AP_HAL::OwnPtr<SPIBus> b{new SPIBus()};
-    if (!b || b->open(desc->bus, desc->subdev) < 0) {
+    AP_HAL::OwnPtr<SPIBus> b{new SPIBus(desc->bus)};
+    if (!b) {
         return nullptr;
     }
 
@@ -466,7 +475,8 @@ SPIDeviceManager::get_device(const char *name)
     return dev;
 }
 
-uint8_t SPIDeviceManager::get_count() {
+uint8_t SPIDeviceManager::get_count()
+{
    return _n_device_desc;
 }
 
@@ -479,11 +489,16 @@ const char* SPIDeviceManager::get_device_name(uint8_t idx)
 AP_HAL::OwnPtr<AP_HAL::SPIDevice>
 SPIDeviceManager::_create_device(SPIBus &b, SPIDesc &desc) const
 {
+    // Ensure bus is open
+    b.open(desc.subdev);
+
     auto dev = AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(b, desc));
     if (!dev) {
         return nullptr;
     }
+
     b.ref++;
+
     return dev;
 }
 
@@ -494,7 +509,7 @@ void SPIDeviceManager::_unregister(SPIBus &b)
     }
 
     for (auto it = _buses.begin(); it != _buses.end(); it++) {
-        if ((*it)->bus == b.bus && (*it)->kernel_cs == b.kernel_cs) {
+        if ((*it)->bus == b.bus) {
             _buses.erase(it);
             delete &b;
             break;

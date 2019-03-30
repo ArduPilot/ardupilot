@@ -183,6 +183,6 @@ AC_PID& AP_WheelRateControl::get_pid(uint8_t instance)
     if (instance == 0) {
         return _rate_pid0;
     } else {
-        return _rate_pid0;
+        return _rate_pid1;
     }
 }

@@ -8,7 +8,7 @@
 
 void Copter::init_precland()
 {
-    copter.precland.init();
+    copter.precland.init(400);
 }
 
 void Copter::update_precland()
@@ -19,11 +19,11 @@ void Copter::update_precland()
     if (rangefinder_alt_ok()) {
         height_above_ground_cm = rangefinder_state.alt_cm;
     } else if (terrain_use()) {
-        if (!current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, height_above_ground_cm)) {
+        if (!current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, height_above_ground_cm)) {
             height_above_ground_cm = current_loc.alt;
         }
     }
 
-    copter.precland.update(height_above_ground_cm, rangefinder_alt_ok());
+    precland.update(height_above_ground_cm, rangefinder_alt_ok());
 }
 #endif

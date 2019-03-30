@@ -3,19 +3,20 @@
 
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Declination/AP_Declination.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include "Compass_learn.h"
+#include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
 
 // constructor
-CompassLearn::CompassLearn(AP_AHRS &_ahrs, Compass &_compass) :
-    ahrs(_ahrs),
+CompassLearn::CompassLearn(Compass &_compass) :
     compass(_compass)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: Initialised");
 }
 
 /*
@@ -23,6 +24,7 @@ CompassLearn::CompassLearn(AP_AHRS &_ahrs, Compass &_compass) :
  */
 void CompassLearn::update(void)
 {
+    const AP_AHRS &ahrs = AP::ahrs();
     if (converged || compass.get_learn_type() != Compass::LEARN_INFLIGHT ||
         !hal.util->get_soft_armed() || ahrs.get_time_flying_ms() < 3000) {
         // only learn when flying and with enough time to be clear of
@@ -37,6 +39,9 @@ void CompassLearn::update(void)
             return;
         }
 
+        // remember primary mag
+        primary_mag = compass.get_primary();
+
         // setup the expected earth field at this location
         float declination_deg=0, inclination_deg=0, intensity_gauss=0;
         AP_Declination::get_mag_field_ef(loc.lat*1.0e-7, loc.lng*1.0e-7, intensity_gauss, declination_deg, inclination_deg);
@@ -48,15 +53,13 @@ void CompassLearn::update(void)
         R.from_euler(0.0f, -ToRad(inclination_deg), ToRad(declination_deg));
         mag_ef = R * mag_ef;
 
-        sem = hal.util->new_semaphore();
-
         have_earth_field = true;
 
         // form eliptical correction matrix and invert it. This is
         // needed to remove the effects of the eliptical correction
         // when calculating new offsets
-        const Vector3f &diagonals = compass.get_diagonals(0);
-        const Vector3f &offdiagonals = compass.get_offdiagonals(0);
+        const Vector3f &diagonals = compass.get_diagonals(primary_mag);
+        const Vector3f &offdiagonals = compass.get_offdiagonals(primary_mag);
         mat = Matrix3f(
             diagonals.x, offdiagonals.x, offdiagonals.y,
             offdiagonals.x,    diagonals.y, offdiagonals.z,
@@ -72,33 +75,36 @@ void CompassLearn::update(void)
             errors[i] = intensity_gauss*1000;
         }
         
+        gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: have earth field");
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&CompassLearn::io_timer, void));
     }
+
+    AP_Notify::flags.compass_cal_running = true;
 
     if (sample_available) {
         // last sample still being processed by IO thread
         return;
     }
 
-    Vector3f field = compass.get_field(0);
+    Vector3f field = compass.get_field(primary_mag);
     Vector3f field_change = field - last_field;
     if (field_change.length() < min_field_change) {
         return;
     }
-    
-    if (sem->take_nonblocking()) {
+
+    {
+        WITH_SEMAPHORE(sem);
         // give a sample to the backend to process
         new_sample.field = field;
-        new_sample.offsets = compass.get_offsets(0);
+        new_sample.offsets = compass.get_offsets(primary_mag);
         new_sample.attitude = Vector3f(ahrs.roll, ahrs.pitch, ahrs.yaw);
         sample_available = true;
         last_field = field;
         num_samples++;
-        sem->give();
     }
 
     if (sample_available) {
-        DataFlash_Class::instance()->Log_Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
+        AP::logger().Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
                                                AP_HAL::micros64(),
                                                (double)best_offsets.x,
                                                (double)best_offsets.y,
@@ -109,18 +115,48 @@ void CompassLearn::update(void)
                                                num_samples);
     }
 
-    if (!converged && sem->take_nonblocking()) {
+    if (!converged) {
+        WITH_SEMAPHORE(sem);
+
+        // set offsets to current best guess
+        compass.set_offsets(primary_mag, best_offsets);
+
+        // set non-primary offsets to match primary
+        Vector3f field_primary = compass.get_field(primary_mag);
+        for (uint8_t i=0; i<compass.get_count(); i++) {
+            if (i == primary_mag || !compass._state[i].use_for_yaw) {
+                continue;
+            }
+            Vector3f field2 = compass.get_field(i);
+            Vector3f new_offsets = compass.get_offsets(i) + (field_primary - field2);
+            compass.set_offsets(i, new_offsets);
+        }
+
         // stop updating the offsets once converged
-        compass.set_offsets(0, best_offsets);
         if (num_samples > 30 && best_error < 50 && worst_error > 65) {
             // set the offsets and enable compass for EKF use. Let the
             // EKF learn the remaining compass offset error
-            compass.save_offsets(0);
-            compass.set_use_for_yaw(0, true);
-            compass.set_learn_type(Compass::LEARN_EKF, true);
-            converged = true;
+            for (uint8_t i=0; i<compass.get_count(); i++) {
+                if (compass._state[i].use_for_yaw) {
+                    compass.save_offsets(i);
+                    compass.set_use_for_yaw(i, true);
+                }
+            }
+            compass.set_learn_type(Compass::LEARN_NONE, true);
+            // setup so use can trigger it again
+            converged = false;
+            sample_available = false;
+            num_samples = 0;
+            have_earth_field = false;
+            memset(predicted_offsets, 0, sizeof(predicted_offsets));
+            worst_error = 0;
+            best_error = 0;
+            best_yaw_deg = 0;
+            best_offsets.zero();
+            gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: finished");
+            AP_Notify::flags.compass_cal_running = false;
+            AP_Notify::events.compass_cal_saved = true;
         }
-        sem->give();
     }
 }
 
@@ -132,13 +168,14 @@ void CompassLearn::io_timer(void)
     if (!sample_available) {
         return;
     }
+
     struct sample s;
-    if (!sem->take_nonblocking()) {
-        return;
+
+    {
+        WITH_SEMAPHORE(sem);
+        s = new_sample;
+        sample_available = false;
     }
-    s = new_sample;
-    sample_available = false;
-    sem->give();
 
     process_sample(s);
 }
@@ -192,12 +229,11 @@ void CompassLearn::process_sample(const struct sample &s)
         }
     }
 
-    if (sem->take_nonblocking()) {
-        // pass the current estimate to the front-end
-        best_offsets = predicted_offsets[besti];
-        best_error = bestv;
-        worst_error = worstv;
-        best_yaw_deg = wrap_360(degrees(s.attitude.z) + besti * (360/num_sectors));
-        sem->give();
-    }
+    WITH_SEMAPHORE(sem);
+
+    // pass the current estimate to the front-end
+    best_offsets = predicted_offsets[besti];
+    best_error = bestv;
+    worst_error = worstv;
+    best_yaw_deg = wrap_360(degrees(s.attitude.z) + besti * (360/num_sectors));
 }

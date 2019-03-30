@@ -59,23 +59,23 @@ public:
     // control - control the mount
     virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
     
-    // configure_msg - process MOUNT_CONFIGURE messages received from GCS
-    virtual void configure_msg(mavlink_message_t* msg);
+    // process MOUNT_CONFIGURE messages received from GCS:
+    void handle_mount_configure(const mavlink_mount_configure_t &msg);
 
-    // control_msg - process MOUNT_CONTROL messages received from GCS
-    virtual void control_msg(mavlink_message_t* msg);
+    // process MOUNT_CONTROL messages received from GCS:
+    void handle_mount_control(const mavlink_mount_control_t &packet);
 
-    // status_msg - called to allow mounts to send their status to GCS via MAVLink
-    virtual void status_msg(mavlink_channel_t chan) {}
+    // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
+    virtual void send_mount_status(mavlink_channel_t chan) = 0;
 
     // handle a GIMBAL_REPORT message
-    virtual void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg) {}
+    virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg) {}
 
     // handle a PARAM_VALUE message
-    virtual void handle_param_value(mavlink_message_t *msg) {}
+    virtual void handle_param_value(const mavlink_message_t *msg) {}
 
     // send a GIMBAL_REPORT message to the GCS
-    virtual void send_gimbal_report(mavlink_channel_t chan) {}
+    virtual void send_gimbal_report(const mavlink_channel_t chan) {}
 
 protected:
 
@@ -83,8 +83,8 @@ protected:
     void update_targets_from_rc();
 
     // angle_input, angle_input_rad - convert RC input into an earth-frame target angle
-    int32_t angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
-    float angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    int32_t angle_input(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    float angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
     void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
@@ -96,4 +96,8 @@ protected:
     AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
+
+private:
+
+    void rate_input_rad(float &out, const RC_Channel *ch, float min, float max) const;
 };

@@ -32,6 +32,8 @@ define STM32_PLLQ_VALUE 9
 # board ID for firmware load
 APJ_BOARD_ID 120
 
+# with 2M flash we can afford to optimize for speed
+env OPTIMIZE -O3
 # on some boards you will need to also set the various PLL values. See
 # the defaults in common/mcuconf.h, and use the define mechanism
 # explained later in this file to override values suitable for your
@@ -357,18 +359,21 @@ PE15 VDD_5V_PERIPH_OC INPUT PULLUP
 # of ArduPilot so users don't need to re-do their accel and compass
 # calibrations when moving to ChibiOS
 
-SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE0 20*MHZ 20*MHZ
+SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 20*MHZ 20*MHZ
 SPIDEV ms5611_ext     SPI4 DEVID2  BARO_EXT_CS  MODE3 20*MHZ 20*MHZ
-SPIDEV mpu6000        SPI1 DEVID4  MPU_CS       MODE0  2*MHZ  8*MHZ
-SPIDEV icm20608-am    SPI1 DEVID4  MPU_CS       MODE0  4*MHZ  8*MHZ
-SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE0  4*MHZ  8*MHZ
+SPIDEV mpu6000        SPI1 DEVID4  MPU_CS       MODE3  2*MHZ  8*MHZ
+SPIDEV icm20608-am    SPI1 DEVID2  ACCEL_EXT_CS MODE3  4*MHZ  8*MHZ
+SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
 SPIDEV mpu9250_ext    SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
+SPIDEV icm20948       SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
+SPIDEV icm20948_ext   SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
 SPIDEV hmc5843        SPI1 DEVID5  MAG_CS       MODE3 11*MHZ 11*MHZ
-SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE0 11*MHZ 11*MHZ 
-SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE0 11*MHZ 11*MHZ 
-SPIDEV lsm9ds0_ext_g  SPI4 DEVID4  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ 
-SPIDEV lsm9ds0_ext_am SPI4 DEVID3  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ 
-SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ 
+SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_ext_g  SPI4 DEVID4  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_ext_am SPI4 DEVID3  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
+SPIDEV icm20602_ext   SPI4 DEVID4  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
+SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ
 SPIDEV external0m0    SPI4 DEVID5  MPU_EXT_CS   MODE0  2*MHZ  2*MHZ
 SPIDEV external0m1    SPI4 DEVID5  MPU_EXT_CS   MODE1  2*MHZ  2*MHZ
 SPIDEV external0m2    SPI4 DEVID5  MPU_EXT_CS   MODE2  2*MHZ  2*MHZ

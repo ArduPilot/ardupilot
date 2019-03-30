@@ -22,7 +22,7 @@ void Copter::terrain_logging()
 {
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     if (should_log(MASK_LOG_GPS)) {
-        terrain.log_terrain_data(DataFlash);
+        terrain.log_terrain_data();
     }
 #endif
 }

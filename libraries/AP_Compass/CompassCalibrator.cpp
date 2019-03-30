@@ -815,10 +815,12 @@ bool CompassCalibrator::calculate_orientation(void)
     const float variance_threshold = 2.0;
     
     float second_best = besti==ROTATION_NONE?variance[1]:variance[0];
+    enum Rotation besti2 = ROTATION_NONE;
     for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
-        if (r != besti) {
+        if (!rotation_equal(besti, r)) {
             if (variance[r] < second_best) {
                 second_best = variance[r];
+                besti2 = r;
             }
         }
     }
@@ -833,7 +835,8 @@ bool CompassCalibrator::calculate_orientation(void)
         pass = _orientation_confidence > variance_threshold;
     }
     if (!pass) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u %.1f", _compass_idx, besti, (double)_orientation_confidence);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u/%u %.1f", _compass_idx,
+                        besti, besti2, (double)_orientation_confidence);
     } else if (besti == _orientation) {
         // no orientation change
         gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) good orientation: %u %.1f", _compass_idx, besti, (double)_orientation_confidence);

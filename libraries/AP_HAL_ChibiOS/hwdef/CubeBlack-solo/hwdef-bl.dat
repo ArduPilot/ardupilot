@@ -1,0 +1,5 @@
+# hw definition file for processing by chibios_hwdef.py
+# for The CUBE Black and the Cube Purple hardware in a 3DR Solo
+# this is based on the CubeBlack hwdef-bl, with Solo's required parameter defaults
+
+include ../CubeBlack/hwdef-bl.dat

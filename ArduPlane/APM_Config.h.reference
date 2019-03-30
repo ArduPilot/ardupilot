@@ -837,24 +837,24 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// Dataflash logging control
+// Logging control
 //
 // Each of these logging options may be set to ENABLED to enable, or DISABLED
 // to disable the logging of the respective data.
 //
 // LOG_ATTITUDE_FAST                        DEBUG
 //
-// Logs basic attitude info to the dataflash at 50Hz (uses more space).
+// Logs basic attitude info at 50Hz (uses more space).
 // Defaults to DISABLED.
 //
 // LOG_ATTITUDE_MED                         OPTIONAL
 //
-// Logs basic attitude info to the dataflash at 10Hz (uses less space than
+// Logs basic attitude info at 10Hz (uses less space than
 // LOG_ATTITUDE_FAST).  Defaults to ENABLED.
 //
 // LOG_GPS                                  OPTIONAL
 //
-// Logs GPS info to the dataflash at 10Hz.  Defaults to ENABLED.
+// Logs GPS info at 10Hz.  Defaults to ENABLED.
 //
 // LOG_PM                                   OPTIONAL
 //

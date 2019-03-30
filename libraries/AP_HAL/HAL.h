@@ -18,11 +18,6 @@ class AP_Param;
 #endif
 
 
-#if defined(HAL_NEEDS_PARAM_HELPER)
-#include <AP_Param/AP_Param.h>
-class AP_Param_Helper;
-#endif
-
 class AP_HAL::HAL {
 public:
     HAL(AP_HAL::UARTDriver* _uartA, // console

@@ -20,14 +20,14 @@ public:
     {};
 
     // init
-    void                init(motor_frame_class frame_class, motor_frame_type frame_type);
+    void                init(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-    void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
+    void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
-    void                set_update_rate(uint16_t speed_hz);
+    void                set_update_rate(uint16_t speed_hz) override;
 
     // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
@@ -42,15 +42,25 @@ public:
     bool                output_test_num(uint8_t motor, int16_t pwm);
 
     // output_to_motors - sends minimum values out to the motors
-    void                output_to_motors();
+    void                output_to_motors() override;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t            get_motor_mask() override;
 
+    // return number of motor that has failed.  Should only be called if get_thrust_boost() returns true
+    uint8_t             get_lost_motor() const override { return _motor_lost_index; }
+
+    // return the roll factor of any motor, this is used for tilt rotors and tail sitters
+    // using copter motors for forward flight
+    float               get_roll_factor(uint8_t i) override { return _roll_factor[i]; }
+
 protected:
     // output - sends commands to the motors
-    void                output_armed_stabilizing();
+    void                output_armed_stabilizing() override;
+
+    // check for failed motor
+    void                check_for_failed_motor(float throttle_thrust_best);
 
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
@@ -80,4 +90,8 @@ protected:
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
     motor_frame_class   _last_frame_class; // most recently requested frame class (i.e. quad, hexa, octa, etc)
     motor_frame_type    _last_frame_type; // most recently requested frame type (i.e. plus, x, v, etc)
+
+    // motor failure handling
+    float               _thrust_rpyt_out_filt[AP_MOTORS_MAX_NUM_MOTORS];    // filtered thrust outputs with 1 second time constant
+    uint8_t             _motor_lost_index;  // index number of the lost motor
 };

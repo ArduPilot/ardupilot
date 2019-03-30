@@ -16,6 +16,10 @@ public:
         PWM_TYPE_ONESHOT125 = 2,
         PWM_TYPE_BRUSHED_WITH_RELAY = 3,
         PWM_TYPE_BRUSHED_BIPOLAR = 4,
+        PWM_TYPE_DSHOT150 = 5,
+        PWM_TYPE_DSHOT300 = 6,
+        PWM_TYPE_DSHOT600 = 7,
+        PWM_TYPE_DSHOT1200 = 8
      };
 
     enum motor_test_order {
@@ -23,9 +27,11 @@ public:
         MOTOR_TEST_STEERING = 2,
         MOTOR_TEST_THROTTLE_LEFT = 3,
         MOTOR_TEST_THROTTLE_RIGHT = 4,
+        MOTOR_TEST_MAINSAIL = 5,
+        MOTOR_TEST_LAST
     };
 
-    // supported custom motor configurations
+    // supported omni motor configurations
     enum frame_type {
         FRAME_TYPE_UNDEFINED = 0,
         FRAME_TYPE_OMNI3 = 1,
@@ -45,18 +51,6 @@ public:
     // setup servo output ranges
     void setup_servo_output();
 
-    // config for frames with vectored motors
-    void setup_motors();
-
-    // add motor using separate throttle, steering and lateral factors for frames with custom motor configuration
-    void add_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor);
-
-    // add a motor and set up output function
-    void add_motor_num(int8_t motor_num);
-
-    // disable motor and remove all throttle, steering and lateral factor for this motor
-    void clear_motors(int8_t motor_num);
-
     // get or set steering as a value from -4500 to +4500
     //   apply_scaling should be set to false for manual modes where
     //   no scaling by speed or angle should e performed
@@ -70,6 +64,10 @@ public:
     // set lateral input as a value from -100 to +100
     void set_lateral(float lateral);
 
+    // set mainsail input as a value from 0 to 100
+    void set_mainsail(float mainsail);
+    float get_mainsail() const { return _mainsail; }
+
     // get slew limited throttle
     // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
     // same as private slew_limit_throttle method (see below) but does not update throttle state
@@ -80,6 +78,9 @@ public:
 
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
     bool have_vectored_thrust() const { return is_positive(_vector_throttle_base); }
+
+    // true if the vehicle has a mainsail
+    bool has_sail() const;
 
     // output to motors and steering servos
     // ground_speed should be the vehicle's speed over the surface in m/s
@@ -115,18 +116,33 @@ protected:
     // setup pwm output type
     void setup_pwm_type();
 
+    // setup for frames with omni motors
+    void setup_omni();
+
+    // add omni motor using separate throttle, steering and lateral factors
+    void add_omni_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor);
+
+    // add a motor and set up output function
+    void add_omni_motor_num(int8_t motor_num);
+
+    // disable omni motor and remove all throttle, steering and lateral factor for this motor
+    void clear_omni_motors(int8_t motor_num);
+
     // output to regular steering and throttle channels
     void output_regular(bool armed, float ground_speed, float steering, float throttle);
 
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle, float dt);
 
-    // output for vectored and custom motors configuration
-    void output_custom_config(bool armed, float steering, float throttle, float lateral);
+    // output for omni motors
+    void output_omni(bool armed, float steering, float throttle, float lateral);
 
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     // dt is the main loop time interval and is required when rate control is required
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt = 0.0f);
+
+    // output for sailboat's mainsail in the range of 0 to 100
+    void output_mainsail();
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
@@ -162,8 +178,9 @@ protected:
     float   _throttle_prev; // throttle input from previous iteration
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
     float   _lateral;  // requested lateral input as a value from -100 to +100
+    float   _mainsail;  // requested mainsail input as a value from 0 to 100
 
-    // custom config variables
+    // omni variables
     float   _throttle_factor[AP_MOTORS_NUM_MOTORS_MAX];
     float   _steering_factor[AP_MOTORS_NUM_MOTORS_MAX];
     float   _lateral_factor[AP_MOTORS_NUM_MOTORS_MAX];

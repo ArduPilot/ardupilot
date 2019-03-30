@@ -46,6 +46,8 @@
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3
 
+class CompassLearn;
+
 class Compass
 {
 friend class AP_Compass_Backend;
@@ -68,7 +70,7 @@ public:
     /// @returns    True if the compass was initialized OK, false if it was not
     ///             found or is not functioning.
     ///
-    bool init();
+    void init();
 
     /// Read the compass and update the mag_ variables.
     ///
@@ -187,7 +189,7 @@ public:
     }
 
     // learn offsets accessor
-    bool learn_offsets_enabled() const { return _learn; }
+    bool learn_offsets_enabled() const { return _learn == LEARN_INFLIGHT; }
 
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(uint8_t i) const;
@@ -334,7 +336,7 @@ private:
     uint8_t register_compass(void);
 
     // load backend drivers
-    bool _add_backend(AP_Compass_Backend *backend, const char *name, bool external);
+    bool _add_backend(AP_Compass_Backend *backend);
     void _probe_external_i2c_compasses(void);
     void _detect_backends(void);
 
@@ -376,6 +378,8 @@ private:
         DRIVER_QMC5883  =12,
         DRIVER_SITL     =13,
         DRIVER_MAG3110  =14,
+        DRIVER_IST8308  = 15,
+		DRIVER_RM3100   =16,
     };
 
     bool _driver_enabled(enum DriverType driver_type);
@@ -454,6 +458,10 @@ private:
 
         // board specific orientation
         enum Rotation rotation;
+
+        // accumulated samples, protected by _sem, used by AP_Compass_Backend
+        Vector3f accum;
+        uint32_t accum_count;
     } _state[COMPASS_MAX_INSTANCES];
 
     AP_Int16 _offset_max;
@@ -472,6 +480,9 @@ private:
     AP_Int32 _driver_type_mask;
     
     AP_Int8 _filter_range;
+
+    CompassLearn *learn;
+    bool learn_allocated;
 };
 
 namespace AP {

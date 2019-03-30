@@ -44,7 +44,8 @@ void setup(void)
     ahrs.init();
     serial_manager.init();
 
-    if( compass.init() ) {
+    compass.init();
+    if(compass.read()) {
         hal.console->printf("Enabling compass\n");
         ahrs.set_compass(&compass);
     } else {

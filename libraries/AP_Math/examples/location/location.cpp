@@ -6,6 +6,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Common/Location.h>
 
 void setup();
 void loop();
@@ -71,10 +72,10 @@ static void test_one_offset(const struct Location &loc,
 
     loc2 = loc;
     uint32_t t1 = AP_HAL::micros();
-    location_offset(loc2, ofs_north, ofs_east);
+    loc2.offset(ofs_north, ofs_east);
     hal.console->printf("location_offset took %u usec\n",
                         (unsigned)(AP_HAL::micros() - t1));
-    dist2 = get_distance(loc, loc2);
+    dist2 = loc.get_distance(loc2);
     bearing2 = get_bearing_cd(loc, loc2) * 0.01f;
     float brg_error = bearing2-bearing;
     if (brg_error > 180) {
@@ -133,19 +134,19 @@ static void test_accuracy(void)
     loc2 = loc;
     loc2.lat += 10000000;
     v2 = Vector2f(loc2.lat * 1.0e-7f, loc2.lng * 1.0e-7f);
-    hal.console->printf("1 degree lat dist=%.4f\n", (double)get_distance(loc, loc2));
+    hal.console->printf("1 degree lat dist=%.4f\n", (double)loc.get_distance(loc2));
 
     loc2 = loc;
     loc2.lng += 10000000;
     v2 = Vector2f(loc2.lat * 1.0e-7f, loc2.lng * 1.0e-7f);
-    hal.console->printf("1 degree lng dist=%.4f\n", (double)get_distance(loc, loc2));
+    hal.console->printf("1 degree lng dist=%.4f\n", (double)loc.get_distance(loc2));
 
     for (int32_t i = 0; i < 100; i++) {
         loc2 = loc;
         loc2.lat += i;
         v2 = Vector2f((loc.lat + i) * 1.0e-7f, loc.lng * 1.0e-7f);
         if (v2 != v) {
-            hal.console->printf("lat v2 != v at i=%d dist=%.4f\n", (int)i, (double)get_distance(loc, loc2));
+            hal.console->printf("lat v2 != v at i=%d dist=%.4f\n", (int)i, (double)loc.get_distance(loc2));
             break;
         }
     }
@@ -154,7 +155,7 @@ static void test_accuracy(void)
         loc2.lng += i;
         v2 = Vector2f(loc.lat * 1.0e-7f, (loc.lng + i) * 1.0e-7f);
         if (v2 != v) {
-            hal.console->printf("lng v2 != v at i=%d dist=%.4f\n", (int)i, (double)get_distance(loc, loc2));
+            hal.console->printf("lng v2 != v at i=%d dist=%.4f\n", (int)i, (double)loc.get_distance(loc2));
             break;
         }
     }
@@ -164,7 +165,7 @@ static void test_accuracy(void)
         loc2.lat -= i;
         v2 = Vector2f((loc.lat - i) * 1.0e-7f, loc.lng * 1.0e-7f);
         if (v2 != v) {
-            hal.console->printf("-lat v2 != v at i=%d dist=%.4f\n", (int)i, (double)get_distance(loc, loc2));
+            hal.console->printf("-lat v2 != v at i=%d dist=%.4f\n", (int)i, (double)loc.get_distance(loc2));
             break;
         }
     }
@@ -173,7 +174,7 @@ static void test_accuracy(void)
         loc2.lng -= i;
         v2 = Vector2f(loc.lat * 1.0e-7f, (loc.lng - i) * 1.0e-7f);
         if (v2 != v) {
-            hal.console->printf("-lng v2 != v at i=%d dist=%.4f\n", (int)i, (double)get_distance(loc, loc2));
+            hal.console->printf("-lng v2 != v at i=%d dist=%.4f\n", (int)i, (double)loc.get_distance(loc2));
             break;
         }
     }

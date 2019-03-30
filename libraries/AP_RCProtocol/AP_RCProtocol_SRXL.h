@@ -18,6 +18,7 @@
 #pragma once
 
 #include "AP_RCProtocol.h"
+#include "SoftSerial.h"
 
 #define SRXL_MIN_FRAMESPACE_US 8000U    /* Minumum space between srxl frames in us (applies to all variants)  */
 #define SRXL_MAX_CHANNELS 20U           /* Maximum number of channels from srxl datastream  */
@@ -39,14 +40,15 @@ class AP_RCProtocol_SRXL : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
-    void process_byte(uint8_t byte) override;
+    void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
+    void _process_byte(uint32_t timestamp_us, uint8_t byte);
     static uint16_t srxl_crc16(uint16_t crc, uint8_t new_byte);
     int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
     int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
     uint8_t buffer[SRXL_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
     uint8_t buflen;                          /* length in number of bytes of received srxl dataframe in buffer  */
-    uint64_t last_data_us;                   /* timespan since last received data in us   */
+    uint32_t last_data_us;                   /* timespan since last received data in us   */
     uint16_t channels[SRXL_MAX_CHANNELS] = {0};    /* buffer for extracted RC channel data as pulsewidth in microseconds */
     uint16_t max_channels = 0;
     enum {
@@ -61,8 +63,5 @@ private:
     uint16_t crc_fmu = 0U;                       /* CRC calculated over payload from srxl datastream on this machine */
     uint16_t crc_receiver = 0U;                  /* CRC extracted from srxl datastream  */
 
-    struct {
-        uint16_t bytes[SRXL_FRAMELEN_MAX];
-        uint16_t bit_ofs;
-    } srxl_state;
+    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };

@@ -50,13 +50,6 @@ extern const AP_HAL::HAL& hal;
 #define DIGIT_TO_VAL(_x)        (_x - '0')
 #define hexdigit(x) ((x)>9?'A'+((x)-10):'0'+(x))
 
-AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
-{
-    // this guarantees that _term is always nul terminated
-    memset(_term, 0, sizeof(_term));
-}
-
 bool AP_GPS_NMEA::read(void)
 {
     int16_t numc;
@@ -85,6 +78,8 @@ bool AP_GPS_NMEA::_decode(char c)
 {
     bool valid_sentence = false;
 
+    _sentence_length++;
+        
     switch (c) {
     case ',': // term terminators
         _parity ^= c;
@@ -107,6 +102,7 @@ bool AP_GPS_NMEA::_decode(char c)
         _sentence_type = _GPS_SENTENCE_OTHER;
         _is_checksum_term = false;
         _gps_data_good = false;
+        _sentence_length = 1;
         return valid_sentence;
     }
 
@@ -252,6 +248,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course    = wrap_360(_new_course*0.01f);
                     make_gps_time(_new_date, _new_time * 10);
+                    set_uart_timestamp(_sentence_length);
                     state.last_gps_time_ms = now;
                     fill_3d_velocity();
                     break;

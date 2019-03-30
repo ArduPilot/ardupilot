@@ -20,9 +20,7 @@ static void setup()
 
     board_config.init();
 
-    if (!compass.init()) {
-        AP_HAL::panic("compass initialisation failed!");
-    }
+    compass.init();
     hal.console->printf("init done - %u compasses detected\n", compass.get_count());
 
     // set offsets to account for surrounding interference

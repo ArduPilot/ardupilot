@@ -12,7 +12,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
 class AP_SpdHgtControl {

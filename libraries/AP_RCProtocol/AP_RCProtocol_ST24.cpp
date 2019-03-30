@@ -77,71 +77,14 @@ uint8_t AP_RCProtocol_ST24::st24_crc8(uint8_t *ptr, uint8_t len)
 
 void AP_RCProtocol_ST24::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
-    // convert to bit widths, allowing for up to about 4usec error, assuming 115200 bps
-    uint16_t bits_s0 = ((width_s0+4)*(uint32_t)115200) / 1000000;
-    uint16_t bits_s1 = ((width_s1+4)*(uint32_t)115200) / 1000000;
-    uint8_t bit_ofs, byte_ofs;
-    uint16_t nbits;
-
-    if (bits_s0 == 0 || bits_s1 == 0) {
-        // invalid data
-        goto reset;
+    uint8_t b;
+    if (ss.process_pulse(width_s0, width_s1, b)) {
+        _process_byte(b);
     }
-
-    byte_ofs = st24_state.bit_ofs/10;
-    bit_ofs = st24_state.bit_ofs%10;
-    if (byte_ofs >= ST24_MAX_FRAMELEN) {
-        goto reset;
-    }
-    // pull in the high bits
-    nbits = bits_s0;
-    if (nbits+bit_ofs > 10) {
-        nbits = 10 - bit_ofs;
-    }
-    st24_state.bytes[byte_ofs] |= ((1U<<nbits)-1) << bit_ofs;
-    st24_state.bit_ofs += nbits;
-    bit_ofs += nbits;
-    if (bits_s0 - nbits > 10) {
-        // we have a full frame
-        uint8_t byte;
-        uint8_t i;
-        for (i=0; i <= byte_ofs; i++) {
-            // get raw data
-            uint16_t v = st24_state.bytes[i];
-
-            // check start bit
-            if ((v & 1) != 0) {
-                break;
-            }
-            // check stop bits
-            if ((v & 0x200) != 0x200) {
-                break;
-            }
-            byte = ((v>>1) & 0xFF);
-            process_byte(byte);
-        }
-        memset(&st24_state, 0, sizeof(st24_state));
-    }
-
-    byte_ofs = st24_state.bit_ofs/10;
-    bit_ofs = st24_state.bit_ofs%10;
-
-    if (bits_s1+bit_ofs > 10) {
-        // invalid data
-        goto reset;
-    }
-
-    // pull in the low bits
-    st24_state.bit_ofs += bits_s1;
-    return;
-reset:
-    memset(&st24_state, 0, sizeof(st24_state));
 }
 
-void AP_RCProtocol_ST24::process_byte(uint8_t byte)
+void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
 {
-
-
     switch (_decode_state) {
     case ST24_DECODE_STATE_UNSYNCED:
         if (byte == ST24_STX1) {
@@ -279,4 +222,12 @@ void AP_RCProtocol_ST24::process_byte(uint8_t byte)
         _decode_state = ST24_DECODE_STATE_UNSYNCED;
         break;
     }
+}
+
+void AP_RCProtocol_ST24::process_byte(uint8_t byte, uint32_t baudrate)
+{
+    if (baudrate != 115200) {
+        return;
+    }
+    _process_byte(byte);
 }

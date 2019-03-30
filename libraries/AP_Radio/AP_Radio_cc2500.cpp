@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 #define LP_FIFO_SIZE  16      // Physical data FIFO lengths in Radio
 
 // object instance for trampoline
-AP_Radio_cc2500 *AP_Radio_cc2500::radio_instance;
+AP_Radio_cc2500 *AP_Radio_cc2500::radio_singleton;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 thread_t *AP_Radio_cc2500::_irq_handler_ctx;
 virtual_timer_t AP_Radio_cc2500::timeout_vt;
@@ -49,7 +49,7 @@ AP_Radio_cc2500::AP_Radio_cc2500(AP_Radio &_radio) :
     cc2500(hal.spi->get_device("cc2500"))
 {
     // link to instance for irq_trampoline
-    radio_instance = this;
+    radio_singleton = this;
 }
 
 /*
@@ -68,8 +68,6 @@ bool AP_Radio_cc2500::init(void)
                      irq_handler_thd,  /* Thread function.     */
                      NULL);                     /* Thread parameter.    */
 #endif
-    sem = hal.util->new_semaphore();    
-    
     return reset();
 }
 
@@ -284,9 +282,7 @@ void AP_Radio_cc2500::radio_init(void)
     hal.scheduler->delay_microseconds(10*1000);
     
     // setup handler for rising edge of IRQ pin
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    stm32_gpiosetevent(CYRF_IRQ_INPUT, true, false, false, irq_radio_trampoline);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     hal.gpio->attach_interrupt(HAL_GPIO_RADIO_IRQ, trigger_irq_radio_event, AP_HAL::GPIO::INTERRUPT_RISING);
 #endif
 
@@ -340,26 +336,26 @@ void AP_Radio_cc2500::handle_data_packet(mavlink_channel_t chan, const mavlink_d
     uint32_t ofs=0;
     memcpy(&ofs, &m.data[0], 4);
     Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, unsigned(ofs));
-    if (sem->take_nonblocking()) {
-        fwupload.chan = chan;
-        fwupload.need_ack = false;
-        fwupload.offset = ofs;
-        fwupload.length = MIN(m.len-4, 92);
-        fwupload.acked = 0;
-        fwupload.sequence++;
-        if (m.type == 43) {
-            // sending a tune to play - for development testing
-            fwupload.fw_type = TELEM_PLAY;
-            fwupload.length = MIN(m.len, 90);
-            fwupload.offset = 0;
-            memcpy(&fwupload.pending_data[0], &m.data[0], fwupload.length);
-        } else {
-            // sending a chunk of firmware OTA upload
-            fwupload.fw_type = TELEM_FW;
-            memcpy(&fwupload.pending_data[0], &m.data[4], fwupload.length);
-        }
-        sem->give();
-    } 
+
+    WITH_SEMAPHORE(sem);
+
+    fwupload.chan = chan;
+    fwupload.need_ack = false;
+    fwupload.offset = ofs;
+    fwupload.length = MIN(m.len-4, 92);
+    fwupload.acked = 0;
+    fwupload.sequence++;
+    if (m.type == 43) {
+        // sending a tune to play - for development testing
+        fwupload.fw_type = TELEM_PLAY;
+        fwupload.length = MIN(m.len, 90);
+        fwupload.offset = 0;
+        memcpy(&fwupload.pending_data[0], &m.data[0], fwupload.length);
+    } else {
+        // sending a chunk of firmware OTA upload
+        fwupload.fw_type = TELEM_FW;
+        memcpy(&fwupload.pending_data[0], &m.data[4], fwupload.length);
+    }
 }
 
 /*
@@ -462,14 +458,14 @@ bool AP_Radio_cc2500::handle_SRT_packet(const uint8_t *packet)
             // got an fw upload ack 
             Debug(4, "ack %u seq=%u acked=%u length=%u len=%u\n",
                   data, fwupload.sequence, unsigned(fwupload.acked), unsigned(fwupload.length), fwupload.len);
-            if (fwupload.sequence == data && sem->take_nonblocking()) {
+            if (fwupload.sequence == data && sem.take_nonblocking()) {
                 fwupload.sequence++;
                 fwupload.acked += fwupload.len;
                 if (fwupload.acked == fwupload.length) {
                     // trigger send of DATA16 ack to client
                     fwupload.need_ack = true;
                 }
-                sem->give();
+                sem.give();
             }
         break;
     }
@@ -708,31 +704,31 @@ void AP_Radio_cc2500::irq_handler_thd(void *arg)
     while(true) {
         eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
 
-        radio_instance->cc2500.lock_bus();
+        radio_singleton->cc2500.lock_bus();
         
         switch(evt) {
         case EVT_IRQ:
-            if (radio_instance->protocolState == STATE_FCCTEST) {
+            if (radio_singleton->protocolState == STATE_FCCTEST) {
                 hal.console->printf("IRQ FCC\n");
             }
-            radio_instance->irq_handler();
+            radio_singleton->irq_handler();
             break;
         case EVT_TIMEOUT:
-            if (radio_instance->cc2500.ReadReg(CC2500_3B_RXBYTES | CC2500_READ_BURST) & 0x80) {
+            if (radio_singleton->cc2500.ReadReg(CC2500_3B_RXBYTES | CC2500_READ_BURST) & 0x80) {
                 irq_time_us = AP_HAL::micros();
-                radio_instance->irq_handler();
+                radio_singleton->irq_handler();
             } else {
-                radio_instance->irq_timeout();
+                radio_singleton->irq_timeout();
             }
             break;
         case EVT_BIND:
-            radio_instance->initTuneRx();
+            radio_singleton->initTuneRx();
             break;
         default:
             break;
         }
 
-        radio_instance->cc2500.unlock_bus();
+        radio_singleton->cc2500.unlock_bus();
     }
 }
 
@@ -1030,7 +1026,7 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
     if (fwupload.length != 0 &&
         fwupload.length > fwupload.acked &&
         ((fwupload.counter++ & 0x07) != 0) &&
-        sem->take_nonblocking()) {
+        sem.take_nonblocking()) {
         pkt.type = fwupload.fw_type;
         pkt.payload.fw.seq = fwupload.sequence;
         uint32_t len = fwupload.length>fwupload.acked?fwupload.length - fwupload.acked:0;
@@ -1043,7 +1039,7 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
                pkt.payload.fw.offset,
                pkt.payload.fw.len,
                pkt.type);
-        sem->give();
+        sem.give();
     } else {
         pkt.type = TELEM_STATUS;
         pkt.payload.status = t_status;
@@ -1070,7 +1066,7 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
  */
 void AP_Radio_cc2500::check_fw_ack(void)
 {
-    if (fwupload.need_ack && sem->take_nonblocking()) {
+    if (fwupload.need_ack && sem.take_nonblocking()) {
         // ack the send of a DATA96 fw packet to TX
         fwupload.need_ack = false;
         uint8_t data16[16] {};
@@ -1078,7 +1074,7 @@ void AP_Radio_cc2500::check_fw_ack(void)
         memcpy(&data16[0], &ack_to, 4);
         mavlink_msg_data16_send(fwupload.chan, 42, 4, data16);
         Debug(4,"sent ack DATA16\n");
-        sem->give();
+        sem.give();
     }
 }
 

@@ -17,60 +17,86 @@
 #include "SPIDevice.h"
 #include "sdcard.h"
 #include "hwdef/common/spi_hook.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
 #ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
-static bool sdcard_init_done;
+static bool sdcard_running;
+static HAL_Semaphore sem;
 #endif
 
-#if HAL_USE_MMC_SPI
+#if HAL_USE_SDC
+static SDCConfig sdcconfig = {
+  NULL,
+  SDC_MODE_4BIT,
+  0
+};
+#elif HAL_USE_MMC_SPI
 MMCDriver MMCD1;
 static AP_HAL::OwnPtr<AP_HAL::SPIDevice> device;
 static MMCConfig mmcconfig;
 static SPIConfig lowspeed;
 static SPIConfig highspeed;
-static bool sdcard_running;
 #endif
 
 /*
-  initialise microSD card if avaialble
+  initialise microSD card if avaialble. This is called during
+  AP_BoardConfig initialisation. The parameter BRD_SD_SLOWDOWN
+  controls a scaling factor on the microSD clock
  */
-void sdcard_init()
+bool sdcard_init()
 {
 #ifdef USE_POSIX
-    if (sdcard_init_done) {
-        return;
-    }
-    sdcard_init_done = true;
+    WITH_SEMAPHORE(sem);
+
+    uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
 #if HAL_USE_SDC
 
-    bouncebuffer_init(&SDCD1.bouncebuffer, 512);
-    
-    sdcStart(&SDCD1, NULL);
+    if (SDCD1.bouncebuffer == nullptr) {
+        bouncebuffer_init(&SDCD1.bouncebuffer, 512, true);
+    }
 
-    if(sdcConnect(&SDCD1) == HAL_FAILED) {
-        printf("Err: Failed to initialize SDIO!\n");
-    } else {
-        if (f_mount(&SDC_FS, "/", 1) != FR_OK) {
-            printf("Err: Failed to mount SD Card!\n");
-            sdcDisconnect(&SDCD1);
-        } else {
-            printf("Successfully mounted SDCard..\n");
+    if (sdcard_running) {
+        sdcard_stop();
+    }
+
+    const uint8_t tries = 3;
+    for (uint8_t i=0; i<tries; i++) {
+        sdcconfig.slowdown = sd_slowdown;
+        sdcStart(&SDCD1, &sdcconfig);
+        if(sdcConnect(&SDCD1) == HAL_FAILED) {
+            sdcStop(&SDCD1);
+            continue;
         }
-        //Create APM Directory
+        if (f_mount(&SDC_FS, "/", 1) != FR_OK) {
+            sdcDisconnect(&SDCD1);
+            sdcStop(&SDCD1);
+            continue;
+        }
+        printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
+
+        // Create APM Directory if needed
         mkdir("/APM", 0777);
+        sdcard_running = true;
+        return true;
     }
 #elif HAL_USE_MMC_SPI
+    if (sdcard_running) {
+        sdcard_stop();
+    }
+
+    sdcard_running = true;
+
     device = AP_HAL::get_HAL().spi->get_device("sdcard");
     if (!device) {
         printf("No sdcard SPI device found\n");
-        return;
+        return false;
     }
+    device->set_slowdown(sd_slowdown);
     
-    sdcard_running = true;
-
     mmcObjectInit(&MMCD1);
 
     mmcconfig.spip =
@@ -78,23 +104,32 @@ void sdcard_init()
     mmcconfig.hscfg = &highspeed;
     mmcconfig.lscfg = &lowspeed;
 
-    mmcStart(&MMCD1, &mmcconfig);
+    /*
+      try up to 3 times to init microSD interface
+     */
+    const uint8_t tries = 3;
+    for (uint8_t i=0; i<tries; i++) {
+        mmcStart(&MMCD1, &mmcconfig);
 
-    if (mmcConnect(&MMCD1) == HAL_FAILED) {
-        printf("Err: Failed to initialize SDCARD_SPI!\n");
-        sdcard_running = false;
-    } else {
-        if (f_mount(&SDC_FS, "/", 1) != FR_OK) {
-            printf("Err: Failed to mount SD Card!\n");
-            mmcDisconnect(&MMCD1);
-        } else {
-            printf("Successfully mounted SDCard..\n");
+        if (mmcConnect(&MMCD1) == HAL_FAILED) {
+            mmcStop(&MMCD1);
+            continue;
         }
-        //Create APM Directory
+        if (f_mount(&SDC_FS, "/", 1) != FR_OK) {
+            mmcDisconnect(&MMCD1);
+            mmcStop(&MMCD1);
+            continue;
+        }
+        printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
+
+        // Create APM Directory if needed
         mkdir("/APM", 0777);
+        return true;
     }
+    sdcard_running = false;
 #endif
 #endif
+    return false;
 }
 
 /*
@@ -106,11 +141,26 @@ void sdcard_stop(void)
     // unmount
     f_mount(nullptr, "/", 1);
 #endif
-#if HAL_USE_MMC_SPI
+#if HAL_USE_SDC
+    if (sdcard_running) {
+        sdcDisconnect(&SDCD1);
+        sdcStop(&SDCD1);
+        sdcard_running = false;
+    }
+#elif HAL_USE_MMC_SPI
     if (sdcard_running) {
         mmcDisconnect(&MMCD1);
         mmcStop(&MMCD1);
         sdcard_running = false;
+    }
+#endif
+}
+
+void sdcard_retry(void)
+{
+#ifdef USE_POSIX
+    if (!sdcard_running) {
+        sdcard_init();
     }
 #endif
 }

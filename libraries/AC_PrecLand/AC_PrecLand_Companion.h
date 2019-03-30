@@ -1,12 +1,13 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AC_PrecLand_Backend.h"
 
 /*
  * AC_PrecLand_Companion - implements precision landing using target vectors provided
  *                         by a companion computer (i.e. Odroid) communicating via MAVLink
+ *                         The companion computer must provide "Line-Of-Sight" measurements
+ *                         in the form of LANDING_TARGET mavlink messages.
  */
 
 class AC_PrecLand_Companion : public AC_PrecLand_Backend

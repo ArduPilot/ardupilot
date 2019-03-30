@@ -1,16 +1,14 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Notify/AP_Notify.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_SMBus_Solo.h"
 #include <utility>
 
 #define BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE         0x28    // cell voltage register
 #define BATTMONITOR_SMBUS_SOLO_CURRENT              0x2a    // current register
-#define BATTMONITOR_SMBUS_SOLO_BUTTON_DEBOUNCE      3       // button held down for 3 intervals will cause a power off event
-
-#define BATTMONITOR_SMBUS_SOLO_NUM_CELLS 4
+#define BATTMONITOR_SMBUS_SOLO_BUTTON_DEBOUNCE      6       // button held down for 5 intervals will cause a power off event
+#define BATTMONITOR_SMBUS_SOLO_NUM_CELLS            4       // solo's battery pack is 4S
 
 /*
  * Other potentially useful registers, listed here for future use
@@ -81,16 +79,14 @@ void AP_BattMonitor_SMBus_Solo::timer()
         bool pressed = (buff[1] >> 3) & 0x01;
 
         if (_button_press_count >= BATTMONITOR_SMBUS_SOLO_BUTTON_DEBOUNCE) {
-            // battery will power off
-            AP_Notify::flags.powering_off = true;
+            // vehicle will power off, set state flag
+            _state.is_powering_off = true;
         } else if (pressed) {
             // battery will power off if the button is held
             _button_press_count++;
-
         } else {
             // button released, reset counters
             _button_press_count = 0;
-            AP_Notify::flags.powering_off = false;
         }
     }
 
@@ -134,4 +130,3 @@ uint8_t AP_BattMonitor_SMBus_Solo::read_block(uint8_t reg, uint8_t* data, uint8_
     // return success
     return bufflen;
 }
-

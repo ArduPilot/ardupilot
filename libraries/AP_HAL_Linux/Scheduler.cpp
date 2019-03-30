@@ -29,6 +29,7 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_RCIN_PRIORITY         13
 #define APM_LINUX_MAIN_PRIORITY         12
 #define APM_LINUX_IO_PRIORITY           10
+#define APM_LINUX_SCRIPTING_PRIORITY     1
 
 #define APM_LINUX_TIMER_RATE            1000
 #define APM_LINUX_UART_RATE             100
@@ -37,7 +38,7 @@ extern const AP_HAL::HAL& hal;
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
-#define APM_LINUX_RCIN_RATE             2000
+#define APM_LINUX_RCIN_RATE             500
 #define APM_LINUX_IO_RATE               50
 #else
 #define APM_LINUX_RCIN_RATE             100
@@ -55,6 +56,30 @@ extern const AP_HAL::HAL& hal;
 
 Scheduler::Scheduler()
 { }
+
+
+void Scheduler::init_realtime()
+{
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    // we don't run Replay in real-time...
+    return;
+#endif
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    // we opportunistically run examples/tools in realtime
+    if (geteuid() != 0) {
+        fprintf(stderr, "WARNING: not running as root. Will not use realtime scheduling\n");
+        return;
+    }
+#endif
+
+    mlockall(MCL_CURRENT|MCL_FUTURE);
+
+    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
+    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+        AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
+                      strerror(errno));
+    }
+}
 
 void Scheduler::init()
 {
@@ -74,16 +99,7 @@ void Scheduler::init()
 
     _main_ctx = pthread_self();
 
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
-    // we don't run Replay in real-time...
-    mlockall(MCL_CURRENT|MCL_FUTURE);
-
-    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
-    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-        AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
-                      strerror(errno));
-    }
-#endif
+    init_realtime();
 
     /* set barrier to N + 1 threads: worker threads + main */
     unsigned n_threads = ARRAY_SIZE(sched_table) + 1;
@@ -351,6 +367,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         { PRIORITY_IO, APM_LINUX_IO_PRIORITY},
         { PRIORITY_UART, APM_LINUX_UART_PRIORITY},
         { PRIORITY_STORAGE, APM_LINUX_IO_PRIORITY},
+        { PRIORITY_SCRIPTING, APM_LINUX_SCRIPTING_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
@@ -359,7 +376,8 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         }
     }
 
-    thread->set_stack_size(stack_size);
+    // Add 256k to HAL-independent requested stack size
+    thread->set_stack_size(256 * 1024 + stack_size);
 
     /*
      * We should probably store the thread handlers and join() when exiting,

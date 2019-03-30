@@ -29,6 +29,7 @@
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
 #define APM_STARTUP_PRIORITY     10
+#define APM_SCRIPTING_PRIORITY  LOWPRIO
 
 /*
   boost priority handling
@@ -51,7 +52,22 @@
 #define APM_I2C_PRIORITY        176
 #endif
 
-#define APM_MAIN_THREAD_STACK_SIZE 8192
+#ifndef TIMER_THD_WA_SIZE
+#define TIMER_THD_WA_SIZE   2048
+#endif
+
+#ifndef RCIN_THD_WA_SIZE
+#define RCIN_THD_WA_SIZE    512
+#endif
+
+#ifndef IO_THD_WA_SIZE
+#define IO_THD_WA_SIZE      2048
+#endif
+
+#ifndef STORAGE_THD_WA_SIZE
+#define STORAGE_THD_WA_SIZE 2048
+#endif
+
 
 /* Scheduler implementation: */
 class ChibiOS::Scheduler : public AP_HAL::Scheduler {
@@ -60,7 +76,7 @@ public:
     /* AP_HAL::Scheduler methods */
 
 
-    void     init();
+    void     init() override;
     void     delay(uint16_t ms) override;
     void     delay_microseconds(uint16_t us) override;
     void     delay_microseconds_boost(uint16_t us) override;
@@ -71,7 +87,7 @@ public:
     void     reboot(bool hold_in_bootloader) override;
 
     bool     in_main_thread() const override;
-    void     system_initialized();
+    void     system_initialized() override;
     void     hal_initialized() { _hal_initialized = true; }
 
     bool     check_called_boost(void);

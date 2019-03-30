@@ -39,12 +39,25 @@ public:
     virtual bool tx_pending() = 0;
 
     // lock a port for exclusive use. Use a key of 0 to unlock
-    virtual bool lock_port(uint32_t key) { return false; }
+    virtual bool lock_port(uint32_t write_key, uint32_t read_key) { return false; }
 
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     virtual size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) { return 0; }
+
+    // read from a locked port. If port is locked and key is not correct then 0 is returned
+    virtual int16_t read_locked(uint32_t key) { return -1; }
     
+    // control optional features
+    virtual bool set_options(uint8_t options) { return options==0; }
+
+    enum {
+        OPTION_RXINV=(1U<<0),  // invert RX line
+        OPTION_TXINV=(1U<<1),  // invert TX line
+        OPTION_HDPLEX=(1U<<2), // half-duplex (one-wire) mode
+        OPTION_SWAP=(1U<<3), // swap RX and TX pins
+    };
+
     enum flow_control {
         FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2
     };
@@ -86,4 +99,8 @@ public:
       A return value of zero means the HAL does not support this API
      */
     virtual uint64_t receive_time_constraint_us(uint16_t nbytes) { return 0; }
+
+    virtual uint32_t bw_in_kilobytes_per_second() const {
+        return 57;
+    }
 };

@@ -56,8 +56,8 @@ void Copter::ModeThrow::run()
 
         // initialize vertical speed and acceleration limits
         // use brake mode values for rapid response
-        pos_control->set_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
-        pos_control->set_accel_z(BRAKE_MODE_DECEL_RATE);
+        pos_control->set_max_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
+        pos_control->set_max_accel_z(BRAKE_MODE_DECEL_RATE);
 
         // initialise the demanded height to 3m above the throw height
         // we want to rapidly clear surrounding obstacles
@@ -78,7 +78,8 @@ void Copter::ModeThrow::run()
         gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
         stage = Throw_PosHold;
 
-        // initialise the loiter target to the curent position and velocity
+        // initialise the loiter target to the current position and velocity
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
@@ -109,7 +110,7 @@ void Copter::ModeThrow::run()
 
         // prevent motors from rotating before the throw is detected unless enabled by the user
         if (g.throw_motor_start == 1) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         }
@@ -122,7 +123,7 @@ void Copter::ModeThrow::run()
 
         // prevent motors from rotating before the throw is detected unless enabled by the user
         if (g.throw_motor_start == 1) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         }
@@ -168,7 +169,7 @@ void Copter::ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // run loiter controller
-        loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+        loiter_nav->update();
 
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), 0.0f);
@@ -193,7 +194,7 @@ void Copter::ModeThrow::run()
         const bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
         const bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
         const bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
-        DataFlash_Class::instance()->Log_Write(
+        AP::logger().Write(
             "THRO",
             "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk",
             "s-nnoo----",

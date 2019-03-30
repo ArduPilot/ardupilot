@@ -114,10 +114,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ///  Note: fdevopen assigns stdin,stdout,stderr
 
-///@brief POSIX errno.
-int errno;
-
-
 ///@brief POSIX fileno to POSIX FILE stream table
 ///
 /// - Note: the index of __iob[] is reffered to "fileno".
@@ -126,50 +122,6 @@ int errno;
 /// - __iob[1] = stdout.
 /// - __iob[2] = stderr.
 FILE *__iob[MAX_FILES];
-
-/// @brief POSIX error messages for each errno value.
-///
-/// - man page errno (3)
-const char *sys_errlist[] =
-{
-    "OK",
-    "Operation not permitted",
-    "No such file or directory",
-    "No such process",
-    "Interrupted system call",
-    "I/O error",
-    "No such device or address",
-    "Argument list too long",
-    "Exec format error",
-    "Bad file number",
-    "No child processes",
-    "Try again",
-    "Out of memory",
-    "Permission denied",
-    "Bad address",
-    "Block device required",
-    "Device or resource busy",
-    "File exists",
-    "Cross-device link",
-    "No such device",
-    "Not a directory",
-    "Is a directory",
-    "Invalid argument",
-    "File table overflow",
-    "Too many open files",
-    "Not a typewriter",
-    "Text file busy",
-    "File too large",
-    "No space left on device",
-    "Illegal seek",
-    "Read-only file system",
-    "Too many links",
-    "Broken pipe",
-    "Math argument out of domain of func",
-    "Math result not representable",
-    "Bad Message",
-    NULL
-};
 
 // =============================================
 /// - POSIX character I/O functions
@@ -1594,7 +1546,7 @@ int fchmod(int fd, mode_t mode)
 /// @return 0 on sucess.
 /// @return -1 on error with errno set.
 
-char *getcwd(char *pathname, int len)
+char *getcwd(char *pathname, size_t len)
 {
     int res;
     errno = 0;
@@ -1815,45 +1767,62 @@ int ferror(FILE *stream)
     return(0);
 }
 
-/// @brief POSIX perror() -  convert POSIX errno to text with user message.
-///
-/// - man page errno (3).
-///
-/// @param[in] s: User message displayed before the error message
-///
-/// @see sys_errlist[].
-/// @return  void.
-
-void perror(const char *s)
-{
-    const char *ptr = NULL;
-
-
-    if(errno >=0 && errno < EBADMSG)
-        ptr = sys_errlist[errno];
-    else
-        ptr = sys_errlist[EBADMSG];
-
-    if(s && *s)
-        printf("%s: %s\n", s, ptr);
-    else
-        printf("%s\n", ptr);
-}
 
 /// @brief POSIX strerror() -  convert POSIX errno to text with user message.
 ///
 /// - man page strerror (3).
 ///
-/// @param[in] errnum: index for sys_errlist[]
+/// @param[in] errnum: error provided from <errno.h>
 ///
-/// @see sys_errlist[].
 /// @return  char *
 
 char *strerror(int errnum)
 {
-    return( (char *)sys_errlist[errnum] );
-}
+#define SWITCH_ERROR(errno) case errno: return #errno; break
+    switch (errnum) {
+        SWITCH_ERROR(EPERM);
+        SWITCH_ERROR(ENOENT);
+        SWITCH_ERROR(ESRCH);
+        SWITCH_ERROR(EINTR);
+        SWITCH_ERROR(EIO);
+        SWITCH_ERROR(ENXIO);
+        SWITCH_ERROR(E2BIG);
+        SWITCH_ERROR(ENOEXEC);
+        SWITCH_ERROR(EBADF);
+        SWITCH_ERROR(ECHILD);
+        SWITCH_ERROR(EAGAIN);
+        SWITCH_ERROR(ENOMEM);
+        SWITCH_ERROR(EACCES);
+        SWITCH_ERROR(EFAULT);
+#ifdef ENOTBLK
+        SWITCH_ERROR(ENOTBLK);
+#endif // ENOTBLK
+        SWITCH_ERROR(EBUSY);
+        SWITCH_ERROR(EEXIST);
+        SWITCH_ERROR(EXDEV);
+        SWITCH_ERROR(ENODEV);
+        SWITCH_ERROR(ENOTDIR);
+        SWITCH_ERROR(EISDIR);
+        SWITCH_ERROR(EINVAL);
+        SWITCH_ERROR(ENFILE);
+        SWITCH_ERROR(EMFILE);
+        SWITCH_ERROR(ENOTTY);
+        SWITCH_ERROR(ETXTBSY);
+        SWITCH_ERROR(EFBIG);
+        SWITCH_ERROR(ENOSPC);
+        SWITCH_ERROR(ESPIPE);
+        SWITCH_ERROR(EROFS);
+        SWITCH_ERROR(EMLINK);
+        SWITCH_ERROR(EPIPE);
+        SWITCH_ERROR(EDOM);
+        SWITCH_ERROR(ERANGE);
+        SWITCH_ERROR(EBADMSG);
+    }
 
+#undef SWITCH_ERROR
+
+    return NULL;
+}
 
 /// @brief POSIX strerror_r() -  convert POSIX errno to text with user message.
 ///
@@ -1868,10 +1837,9 @@ char *strerror(int errnum)
 
 char *__wrap_strerror_r(int errnum, char *buf, size_t buflen)
 {
-        strncpy(buf, sys_errlist[errnum], buflen);
+        strncpy(buf, strerror(errnum), buflen);
         return(buf);
 }
-
 
 // =============================================
 // =============================================
@@ -2536,7 +2504,7 @@ static void _fprintf_putc(struct _printf_t *p, char ch)
 /// @return size of printed result
 
 int
-fprintf(FILE *fp, const char *fmt, ...)
+__wrap_fprintf(FILE *fp, const char *fmt, ...)
 {
     va_list va;
     char* buf;

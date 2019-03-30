@@ -218,14 +218,13 @@ void AP_Airspeed_MS5525::calculate(void)
     }
 #endif
     
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        pressure_sum += P_Pa;
-        temperature_sum += Temp_C;
-        press_count++;
-        temp_count++;
-        last_sample_time_ms = AP_HAL::millis();
-        sem->give();
-    }
+    WITH_SEMAPHORE(sem);
+
+    pressure_sum += P_Pa;
+    temperature_sum += Temp_C;
+    press_count++;
+    temp_count++;
+    last_sample_time_ms = AP_HAL::millis();
 }
 
 // 80Hz timer
@@ -287,15 +286,16 @@ bool AP_Airspeed_MS5525::get_differential_pressure(float &_pressure)
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (press_count > 0) {
-            pressure = pressure_sum / press_count;
-            press_count = 0;
-            pressure_sum = 0;
-        }
-        sem->give();
+
+    WITH_SEMAPHORE(sem);
+
+    if (press_count > 0) {
+        pressure = pressure_sum / press_count;
+        press_count = 0;
+        pressure_sum = 0;
     }
     _pressure = pressure;
+
     return true;
 }
 
@@ -305,14 +305,15 @@ bool AP_Airspeed_MS5525::get_temperature(float &_temperature)
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (temp_count > 0) {
-            temperature = temperature_sum / temp_count;
-            temp_count = 0;
-            temperature_sum = 0;
-        }
-        sem->give();
+
+    WITH_SEMAPHORE(sem);
+
+    if (temp_count > 0) {
+        temperature = temperature_sum / temp_count;
+        temp_count = 0;
+        temperature_sum = 0;
     }
+
     _temperature = temperature;
     return true;
 }

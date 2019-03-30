@@ -114,7 +114,6 @@ void RC_Channels::set_override(const uint8_t chan, const int16_t value, const ui
     RC_Channels &_rc = rc();
     if (chan < NUM_RC_CHANNELS) {
         _rc.channel(chan)->set_override(value, timestamp_ms);
-        has_new_overrides = true;
     }
 }
 

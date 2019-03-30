@@ -189,7 +189,27 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: EFF
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(eff, "EFF", 36, AP_OSD_Screen, AP_OSD_Setting),
+    
+    // @Group: BTEMP
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(btemp, "BTEMP", 37, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: ATEMP
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(atemp, "ATEMP", 38, AP_OSD_Screen, AP_OSD_Setting),
+    
+    // @Group: BAT2VLT
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(bat2_vlt, "BAT2_VLT", 39, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: BAT2USED
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(bat2used, "BAT2USED", 40, AP_OSD_Screen, AP_OSD_Setting),
+    
+    // @Group: ASPD2
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(aspd2, "ASPD2", 41, AP_OSD_Screen, AP_OSD_Setting),
+    
     AP_GROUPEND
 };
 
@@ -283,6 +303,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_DIST      0x22
 #define SYM_FLY       0x9C
 #define SYM_EFF       0xF2
+#define SYM_AH        0xF3
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -412,7 +433,7 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     uint8_t pct = battery.capacity_remaining_pct();
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
@@ -421,7 +442,7 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
-    AP_RSSI *ap_rssi = AP_RSSI::get_instance();
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         int rssiv = ap_rssi->read_receiver_rssi_uint8();
         rssiv = (rssiv * 99) / 255;
@@ -431,14 +452,14 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     float amps = battery.current_amps();
     backend->write(x, y, false, "%2.1f%c", (double)amps, SYM_AMP);
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 {
-    AP_Notify * notify = AP_Notify::instance();
+    AP_Notify * notify = AP_Notify::get_singleton();
     char arm;
     if (AP_Notify::flags.armed) {
         arm = SYM_ARMED;
@@ -453,13 +474,14 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
-    int nsat = gps.num_sats();
-    backend->write(x, y, nsat < osd->warn_nsat, "%c%c%2d", SYM_SAT_L, SYM_SAT_R, nsat);
+    uint8_t nsat = gps.num_sats();
+    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
+    backend->write(x, y, flash, "%c%c%2u", SYM_SAT_L, SYM_SAT_R, nsat);
 }
 
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(), SYM_MAH);
 }
 
@@ -467,7 +489,7 @@ void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 //Thanks to night-ghost for the approach.
 void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 {
-    AP_Notify * notify = AP_Notify::instance();
+    AP_Notify * notify = AP_Notify::get_singleton();
     if (notify) {
         int32_t visible_time = AP_HAL::millis() - notify->get_text_updated_millis();
         if (visible_time < osd->msgtime_s *1000) {
@@ -475,10 +497,14 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
             strncpy(buffer, notify->get_text(), sizeof(buffer));
             int16_t len = strnlen(buffer, sizeof(buffer));
 
-            //converted to uppercase,
-            //because we do not have small letter chars inside used font
             for (int16_t i=0; i<len; i++) {
+                //converted to uppercase,
+                //because we do not have small letter chars inside used font
                 buffer[i] = toupper(buffer[i]);
+                //normalize whitespace
+                if (isspace(buffer[i])) {
+                    buffer[i] = ' ';
+                }
             }
 
             int16_t start_position = 0;
@@ -603,7 +629,7 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     Location loc;
     if (ahrs.get_position(loc) && ahrs.home_is_set()) {
         const Location &home_loc = ahrs.get_home();
-        float distance = get_distance(home_loc, loc);
+        float distance = home_loc.get_distance(loc);
         int32_t angle = wrap_360_cd(get_bearing_cd(loc, home_loc) - ahrs.yaw_sensor);
         int32_t interval = 36000 / SYM_ARROW_COUNT;
         if (distance < 2.0f) {
@@ -735,9 +761,7 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
         if (!blheli->get_telem_data(0, td)) {
             return;
         }
-
-        int esc_rpm = td.rpm * 14;   // hard-wired assumption for now that motor has 14 poles, so multiply eRPM * 14 to get motor RPM.
-        backend->write(x, y, false, "%5d%c", esc_rpm, SYM_RPM);
+        backend->write(x, y, false, "%5d%c", td.rpm, SYM_RPM);
     }
 }
 
@@ -751,7 +775,7 @@ void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
             return;
         }
 
-        float esc_amps = td.current;
+        float esc_amps = td.current * 0.01;
         backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
     }
 }
@@ -877,7 +901,7 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     AP_AHRS &ahrs = AP::ahrs();
     Vector2f v = ahrs.groundspeed_vector();
     float speed = u_scale(SPEED,v.length());
@@ -899,13 +923,69 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
         vspd = AP::baro().get_climb_rate();
     }
     if (vspd < 0.0) vspd = 0.0;
-    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_BattMonitor &battery = AP::battery();
     float amps = battery.current_amps();
     if (amps > 0.0) {
         backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(double)(3.6f * u_scale(VSPEED,vspd)/amps),unit_icon);
     } else {
         backend->write(x, y, false,"%c%c---%c",SYM_PTCHUP,SYM_EFF,unit_icon);
     } 
+}
+
+void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
+{
+    AP_Baro &barometer = AP::baro();
+    float btmp = barometer.get_temperature(1);
+    backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, btmp), u_icon(TEMPERATURE));
+}
+
+void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
+{
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (!airspeed) {
+        return;
+    }
+    float temperature = 0;
+    airspeed->get_temperature(temperature);
+    if (airspeed->healthy()) {
+        backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, temperature), u_icon(TEMPERATURE));
+    } else {
+        backend->write(x, y, false, "--%c", u_icon(TEMPERATURE));
+    }
+}
+
+void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP::battery();
+    uint8_t pct2 = battery.capacity_remaining_pct(1);
+    uint8_t p2 = (100 - pct2) / 16.6;
+    float v2 = battery.voltage(1);
+    backend->write(x,y, v2 < osd->warn_bat2volt, "%c%2.1f%c", SYM_BATT_FULL + p2, (double)v2, SYM_VOLT);
+}
+
+void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP::battery();
+    float ah = battery.consumed_mah(1) / 1000;
+    if (battery.consumed_mah(1) <= 9999) {
+        backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(1), SYM_MAH);
+    } else {
+        backend->write(x,y, false, "%2.2f%c", (double)ah, SYM_AH);
+    }
+}
+
+void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
+{
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (!airspeed) {
+        return;
+    }
+    float asp2 = airspeed->get_airspeed(1);
+    if (airspeed != nullptr && airspeed->healthy(1)) {
+        backend->write(x, y, false, "%c%4d%c", SYM_ASPD, (int)u_scale(SPEED, asp2), u_icon(SPEED));
+    } else {
+        backend->write(x, y, false, "%c ---%c", SYM_ASPD, u_icon(SPEED));
+    }
 }
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
@@ -926,13 +1006,16 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(waypoint);
     DRAW_SETTING(xtrack_error);
     DRAW_SETTING(bat_volt);
+    DRAW_SETTING(bat2_vlt);
     DRAW_SETTING(rssi);
     DRAW_SETTING(current);
     DRAW_SETTING(batused);
+    DRAW_SETTING(bat2used);
     DRAW_SETTING(sats);
     DRAW_SETTING(fltmode);
     DRAW_SETTING(gspeed);
     DRAW_SETTING(aspeed);
+    DRAW_SETTING(aspd2);
     DRAW_SETTING(vspeed);
     DRAW_SETTING(throttle);
     DRAW_SETTING(heading);
@@ -941,6 +1024,8 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
+    DRAW_SETTING(btemp);
+    DRAW_SETTING(atemp);
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
 

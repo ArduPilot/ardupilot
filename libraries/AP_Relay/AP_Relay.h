@@ -11,7 +11,7 @@
 
 #include <AP_Param/AP_Param.h>
 
-#define AP_RELAY_NUM_RELAYS 4
+#define AP_RELAY_NUM_RELAYS 6
 
 /// @class	AP_Relay
 /// @brief	Class to manage the ArduPilot relay

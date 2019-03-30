@@ -174,6 +174,12 @@ public:
         const char *new_name;
     };
 
+    // param default table element
+    struct defaults_table_struct {
+        const char *name;   // parameter name
+        float value;        // parameter value
+    };
+
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
@@ -198,14 +204,14 @@ public:
         uint32_t group_element : 18;
     } ParamToken;
 
-    
+
     // nesting structure for recursive call states
     struct GroupNesting {
         static const uint8_t numlevels = 2;
         uint8_t level;
         const struct GroupInfo *group_ret[numlevels];
     };
-    
+
     // return true if AP_Param has been initialised via setup()
     static bool initialised(void);
 
@@ -216,7 +222,7 @@ public:
     // level gets the next 6 bits, and the 3rd level gets the last 6
     // bits. This limits groups to having at most 64 elements.
     static uint32_t group_id(const struct GroupInfo *grpinfo, uint32_t base, uint8_t i, uint8_t shift);
-    
+
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
     ///
@@ -233,7 +239,7 @@ public:
                         const struct GroupInfo *ginfo,
                         const struct GroupNesting &group_nesting,
                         uint8_t idx, char *buffer, size_t bufferSize, bool force_scalar=false) const;
-    
+
     /// Copy the variable's name, prefixed by any containing group name, to a
     /// buffer.
     ///
@@ -256,7 +262,13 @@ public:
     /// @param  value           The default value
     /// @return                 true if the variable is found
     static bool set_default_by_name(const char *name, float value);
-    
+
+    /// set parameter defaults from a defaults_table_struct
+    ///
+    /// @param table            pointer to array of defaults_table_struct structures
+    /// @param count            number of elements in table array
+    static void set_defaults_from_table(const struct defaults_table_struct *table, uint8_t count);
+
     /// set a value by name
     ///
     /// @param  name            The full name of the variable to be found.
@@ -280,7 +292,6 @@ public:
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
 
-    
     /// Find a variable by pointer
     ///
     ///
@@ -289,7 +300,7 @@ public:
     static bool find_key_by_pointer_group(const void *ptr, uint16_t vindex, const struct GroupInfo *group_info,
                                           ptrdiff_t offset, uint16_t &key);
     static bool find_key_by_pointer(const void *ptr, uint16_t &key);
-    
+
     /// Find a object in the top level var_info table
     ///
     /// If the variable has no name, it cannot be found by this interface.
@@ -301,7 +312,7 @@ public:
     /// Notify GCS of current parameter value
     ///
     void notify() const;
-    
+
     /// Save the current value of the variable to storage, synchronous API
     ///
     /// @param  force_save     If true then force save even if default
@@ -313,13 +324,13 @@ public:
     /// flush all pending parameter saves
     /// used on reboot
     static void flush(void);
-    
+
     /// Save the current value of the variable to storage, async interface
     ///
     /// @param  force_save     If true then force save even if default
     ///
     void save(bool force_save=false);
-    
+
     /// Load the variable from EEPROM.
     ///
     /// @return                True if the variable was loaded successfully.
@@ -339,9 +350,9 @@ public:
     /// reoad the hal.util defaults file. Called after pointer parameters have been allocated
     ///
     static void reload_defaults_file(bool last_pass);
-    
+
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
-    
+
     // set a AP_Param variable to a specified value
     static void         set_value(enum ap_var_type type, void *ptr, float def_value);
 
@@ -366,7 +377,7 @@ public:
 
     // find an old parameter and return it.
     static bool find_old_parameter(const struct ConversionInfo *info, AP_Param *value);
-    
+
     // convert old vehicle parameters to new object parameters
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
 
@@ -380,7 +391,7 @@ public:
     // move old class variables for a class that was sub-classed to one that isn't
     static void         convert_parent_class(uint8_t param_key, void *object_pointer,
                                              const struct AP_Param::GroupInfo *group_info);
-    
+
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
@@ -444,7 +455,7 @@ public:
                              enum ap_var_type ptype, 
                              AP_HAL::BetterStream *port);
 #endif // AP_PARAM_KEY_DUMP
-    
+
 private:
     /// EEPROM header
     ///
@@ -498,8 +509,8 @@ private:
         volatile char data[AP_PARAM_MAX_EMBEDDED_PARAM];
     };
     static const param_defaults_struct param_defaults_data;
-    
-    
+
+
     static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
@@ -512,7 +523,7 @@ private:
 
     /// get group_info pointer based on flags
     static const struct GroupInfo *get_group_info(const struct Info &ginfo);
-        
+
     const struct Info *         find_var_info_group(
                                     const struct GroupInfo *    group_info,
                                     uint16_t                    vindex,
@@ -579,7 +590,7 @@ private:
     static float get_default_value(const AP_Param *object_ptr, const float *def_value_ptr);
 
     static bool parse_param_line(char *line, char **vname, float &value);
-    
+
 #if HAL_OS_POSIX_IO == 1
     /*
       load a parameter defaults file. This happens as part of load_all()
@@ -594,10 +605,10 @@ private:
      */
     static bool count_embedded_param_defaults(uint16_t &count);
     static void load_embedded_param_defaults(bool last_pass);
-    
+
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
-    
+
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
     static uint16_t             _parameter_count;
@@ -867,7 +878,6 @@ public:
 protected:
     T _value[N];
 };
-
 
 
 /// Convenience macro for defining instances of the AP_ParamT template.

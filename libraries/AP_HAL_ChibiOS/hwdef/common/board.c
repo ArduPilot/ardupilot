@@ -33,6 +33,22 @@
 /*===========================================================================*/
 
 /**
+ * @brief   STM32 GPIO static initialization data.
+ */
+#ifdef STM32F100_MCUCONF
+
+const PALConfig pal_default_config =
+{
+  {VAL_GPIOA_ODR, VAL_GPIOA_CRL, VAL_GPIOA_CRH},
+  {VAL_GPIOB_ODR, VAL_GPIOB_CRL, VAL_GPIOB_CRH},
+  {VAL_GPIOC_ODR, VAL_GPIOC_CRL, VAL_GPIOC_CRH},
+  {VAL_GPIOD_ODR, VAL_GPIOD_CRL, VAL_GPIOD_CRH},
+  {VAL_GPIOE_ODR, VAL_GPIOE_CRL, VAL_GPIOE_CRH},
+};
+
+#else //Other than STM32F1 series
+
+/**
  * @brief   Type of STM32 GPIO port setup.
  */
 typedef struct {
@@ -153,8 +169,13 @@ static void stm32_gpio_init(void) {
 
   /* Enabling GPIO-related clocks, the mask comes from the
      registry header file.*/
+#if defined(STM32H7)
+  rccResetAHB4(STM32_GPIO_EN_MASK);
+  rccEnableAHB4(STM32_GPIO_EN_MASK, true);
+#else
   rccResetAHB1(STM32_GPIO_EN_MASK);
   rccEnableAHB1(STM32_GPIO_EN_MASK, true);
+#endif
 
   /* Initializing all the defined GPIO ports.*/
 #if STM32_HAS_GPIOA
@@ -192,14 +213,21 @@ static void stm32_gpio_init(void) {
 #endif
 }
 
+#endif //!STM32F100_MCUCONF
+
 /**
  * @brief   Early initialization code.
  * @details This initialization must be performed just after stack setup
  *          and before any other initialization.
  */
 void __early_init(void) {
+#ifndef STM32F100_MCUCONF
   stm32_gpio_init();
+#endif
   stm32_clock_init();
+#if defined(HAL_DISABLE_DCACHE)
+  SCB_DisableDCache();
+#endif
 }
 
 void __late_init(void) {
@@ -218,11 +246,8 @@ void __late_init(void) {
  * @brief   SDC card detection.
  */
 bool sdc_lld_is_card_inserted(SDCDriver *sdcp) {
-  static bool last_status = false;
-
-  if (blkIsTransferring(sdcp))
-    return last_status;
-  return last_status = (bool)palReadPad(GPIOC, 11);
+    (void)sdcp;
+    return true;
 }
 
 /**

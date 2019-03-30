@@ -9,6 +9,11 @@ public:
 
 protected:
 
+    void init_aux_function(aux_func_t ch_option,
+                           aux_switch_pos_t ch_flag) override;
+    void do_aux_function(aux_func_t ch_option, aux_switch_pos_t) override;
+
+
 private:
 
 };
@@ -24,6 +29,8 @@ public:
         }
         return &obj_channels[chan];
     }
+
+    bool has_valid_input() const override;
 
 protected:
 

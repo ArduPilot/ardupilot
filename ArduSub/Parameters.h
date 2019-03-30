@@ -4,6 +4,10 @@
 
 #include <AP_Gripper/AP_Gripper.h>
 
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
+#endif
+
 // Global parameter class.
 //
 class Parameters {
@@ -58,7 +62,7 @@ public:
         // Hardware/Software configuration
         k_param_BoardConfig = 20, // Board configuration (PX4/Linux/etc)
         k_param_scheduler, // Scheduler (for debugging/perf_info)
-        k_param_DataFlash, // DataFlash Logging
+        k_param_logger, // AP_Logger Logging
         k_param_serial_manager, // Serial ports, AP_SerialManager
         k_param_notify, // Notify Library, AP_Notify
         k_param_arming = 26, // Arming checks
@@ -331,6 +335,11 @@ public:
 
     // control over servo output ranges
     SRV_Channels servo_channels;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern const AP_Param::Info        var_info[];

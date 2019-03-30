@@ -62,6 +62,7 @@ public:
         Invensense_MPU9250,
         Invensense_ICM20608,
         Invensense_ICM20602,
+        Invensense_ICM20601,
         Invensense_ICM20789,
         Invensense_ICM20689,
     };
@@ -116,6 +117,7 @@ private:
     
     float _temp_filtered;
     float _accel_scale;
+    float _gyro_scale;
 
     float _fifo_accel_scale;
     float _fifo_gyro_scale;

@@ -8,7 +8,7 @@ void Sub::enable_motor_output()
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Sub::init_arm_motors(AP_Arming::ArmingMethod method)
+bool Sub::init_arm_motors(AP_Arming::Method method)
 {
     static bool in_arm_motors = false;
 
@@ -25,8 +25,8 @@ bool Sub::init_arm_motors(AP_Arming::ArmingMethod method)
         return false;
     }
 
-    // let dataflash know that we're armed (it may open logs e.g.)
-    DataFlash_Class::instance()->set_vehicle_armed(true);
+    // let logger know that we're armed (it may open logs e.g.)
+    AP::logger().set_vehicle_armed(true);
 
     // disable cpu failsafe because initialising everything takes a while
     mainloop_failsafe_disable();
@@ -52,7 +52,9 @@ bool Sub::init_arm_motors(AP_Arming::ArmingMethod method)
         // Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location(false);
+        if (!set_home_to_current_location(false)) {
+            // ignore this failure
+        }
     }
 	
     // enable gps velocity based centrefugal force compensation
@@ -65,11 +67,10 @@ bool Sub::init_arm_motors(AP_Arming::ArmingMethod method)
     // finally actually arm the motors
     motors.armed(true);
 
-    // log arming to dataflash
     Log_Write_Event(DATA_ARMED);
 
     // log flight mode in case it was changed while vehicle was disarmed
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Mode(control_mode, control_mode_reason);
 
     // reenable failsafe
     mainloop_failsafe_enable();
@@ -106,7 +107,6 @@ void Sub::init_disarm_motors()
         }
     }
 
-    // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
 
     // send disarm command to motors
@@ -115,7 +115,7 @@ void Sub::init_disarm_motors()
     // reset the mission
     mission.reset();
 
-    DataFlash_Class::instance()->set_vehicle_armed(false);
+    AP::logger().set_vehicle_armed(false);
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
@@ -148,6 +148,7 @@ bool Sub::init_motor_test()
     // after failure.
     if (tnow < last_do_motor_test_fail_ms + 10000 && last_do_motor_test_fail_ms > 0) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cool down required");
+        return false;
     }
 
     // check if safety switch has been pushed

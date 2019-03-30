@@ -25,7 +25,7 @@ uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
  * #define BATTMONITOR_SMBUS_MAXELL_SERIALNUM             0x1c    // serial number register
  * #define BATTMONITOR_SMBUS_MAXELL_HEALTH_STATUS         0x4f    // state of health
  * #define BATTMONITOR_SMBUS_MAXELL_SAFETY_ALERT          0x50    // safety alert
- * #define BATTMONITOR_SMBUS_MAXELL_SAFETY_STATUS         0x50    // safety status
+ * #define BATTMONITOR_SMBUS_MAXELL_SAFETY_STATUS         0x51    // safety status
  * #define BATTMONITOR_SMBUS_MAXELL_PF_ALERT              0x52    // safety status
  * #define BATTMONITOR_SMBUS_MAXELL_PF_STATUS             0x53    // safety status
 */
@@ -79,7 +79,7 @@ void AP_BattMonitor_SMBus_Maxell::timer()
 
     read_full_charge_capacity();
 
-    // FIXME: Preform current integration if the remaining capacity can't be requested
+    // FIXME: Perform current integration if the remaining capacity can't be requested
     read_remaining_capacity();
 
     read_temp();

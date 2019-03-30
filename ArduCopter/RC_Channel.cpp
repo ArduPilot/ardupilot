@@ -2,7 +2,7 @@
 
 #include "RC_Channel.h"
 
-// defining these two macros and including the RC_Channels_VarInfo header defines the parmaeter information common to all vehicle types
+// defining these two macros and including the RC_Channels_VarInfo header defines the parameter information common to all vehicle types
 #define RC_CHANNELS_SUBCLASS RC_Channels_Copter
 #define RC_CHANNEL_SUBCLASS RC_Channel_Copter
 
@@ -74,14 +74,11 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case MISSION_RESET:
     case ATTCON_FEEDFWD:
     case ATTCON_ACCEL_LIM:
-    case MOTOR_ESTOP:
     case MOTOR_INTERLOCK:
     case AVOID_ADSB:
     case PRECISION_LOITER:
-    case AVOID_PROXIMITY:
     case INVERTED:
     case WINCH_ENABLE:
-    case RC_OVERRIDE_ENABLE:
         do_aux_function(ch_option, ch_flag);
         break;
     // the following functions do not need to be initialised:
@@ -92,6 +89,21 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case RESETTOARMEDYAW:
     case AUTO:
     case AUTOTUNE:
+    case LAND:
+    case BRAKE:
+    case THROW:
+    case SMART_RTL:
+    case GUIDED:
+    case LOITER:
+    case FOLLOW:
+    case PARACHUTE_RELEASE:
+    case ARMDISARM:
+    case WINCH_CONTROL:
+    case USER_FUNC1:
+    case USER_FUNC2:
+    case USER_FUNC3:
+    case ZIGZAG:
+    case ZIGZAG_SaveWP:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -105,10 +117,18 @@ void RC_Channel_Copter::do_aux_function_change_mode(const control_mode_t mode,
                                                      const aux_switch_pos_t ch_flag)
 {
     switch(ch_flag) {
-    case HIGH:
+    case HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        copter.set_mode(mode, MODE_REASON_TX_COMMAND);
+        const bool success = copter.set_mode(mode, MODE_REASON_TX_COMMAND);
+        if (copter.ap.initialised) {
+            if (success) {
+                AP_Notify::events.user_mode_change = 1;
+            } else {
+                AP_Notify::events.user_mode_change_failed = 1;
+            }
+        }
         break;
+    }
     default:
         // return to flight mode switch's flight mode if we are currently
         // in this mode
@@ -118,13 +138,13 @@ void RC_Channel_Copter::do_aux_function_change_mode(const control_mode_t mode,
     }
 }
 
-// do_aux_function - implement the function invoked by auxillary switches
+// do_aux_function - implement the function invoked by auxiliary switches
 void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
         case FLIP:
             // flip if switch is on, positive throttle and we're actually flying
-            if (ch_flag == aux_switch_pos::HIGH) {
+            if (ch_flag == aux_switch_pos_t::HIGH) {
                 copter.set_mode(control_mode_t::FLIP, MODE_REASON_TX_COMMAND);
             }
             break;
@@ -162,7 +182,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 }
 
                 // do not allow saving the first waypoint with zero throttle
-                if ((copter.mission.num_commands() == 0) && (copter.channel_throttle->get_control_in() == 0)) {
+                if ((copter.mode_auto.mission.num_commands() == 0) && (copter.channel_throttle->get_control_in() == 0)) {
                     return;
                 }
 
@@ -170,18 +190,14 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 AP_Mission::Mission_Command cmd  = {};
 
                 // if the mission is empty save a takeoff command
-                if (copter.mission.num_commands() == 0) {
+                if (copter.mode_auto.mission.num_commands() == 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
                     cmd.id = MAV_CMD_NAV_TAKEOFF;
-                    cmd.content.location.options = 0;
-                    cmd.p1 = 0;
-                    cmd.content.location.lat = 0;
-                    cmd.content.location.lng = 0;
                     cmd.content.location.alt = MAX(copter.current_loc.alt,100);
 
                     // use the current altitude for the target alt for takeoff.
                     // only altitude will matter to the AP mission script for takeoff.
-                    if (copter.mission.add_cmd(cmd)) {
+                    if (copter.mode_auto.mission.add_cmd(cmd)) {
                         // log event
                         copter.Log_Write_Event(DATA_SAVEWP_ADD_WP);
                     }
@@ -199,7 +215,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 }
 
                 // save command
-                if (copter.mission.add_cmd(cmd)) {
+                if (copter.mode_auto.mission.add_cmd(cmd)) {
                     // log event
                     copter.Log_Write_Event(DATA_SAVEWP_ADD_WP);
                 }
@@ -210,7 +226,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
         case MISSION_RESET:
 #if MODE_AUTO_ENABLED == ENABLED
             if (ch_flag == HIGH) {
-                copter.mission.reset();
+                copter.mode_auto.mission.reset();
             }
 #endif
             break;
@@ -278,6 +294,14 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             do_aux_function_change_mode(control_mode_t::GUIDED, ch_flag);
             break;
 
+        case LOITER:
+            do_aux_function_change_mode(control_mode_t::LOITER, ch_flag);
+            break;
+
+        case FOLLOW:
+            do_aux_function_change_mode(control_mode_t::FOLLOW, ch_flag);
+            break;
+
         case PARACHUTE_ENABLE:
 #if PARACHUTE == ENABLED
             // Parachute enable/disable
@@ -339,39 +363,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 #endif
             break;
 
-       case LANDING_GEAR:
-            switch (ch_flag) {
-                case LOW:
-                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
-                    break;
-                case MIDDLE:
-                    // nothing
-                    break;
-                case HIGH:
-                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
-                    break;
-            }
-            break;
-
-        case LOST_COPTER_SOUND:
-            switch (ch_flag) {
-                case HIGH:
-                    AP_Notify::flags.vehicle_lost = true;
-                    break;
-                case MIDDLE:
-                    // nothing
-                    break;
-                case LOW:
-                    AP_Notify::flags.vehicle_lost = false;
-                    break;
-            }
-            break;
-
-        case MOTOR_ESTOP:
-            // Turn on Emergency Stop logic when channel is high
-            copter.set_motor_emergency_stop(ch_flag == HIGH);
-            break;
-
         case MOTOR_INTERLOCK:
             // Turn on when above LOW, because channel will also be used for speed
             // control signal in tradheli
@@ -419,28 +410,11 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 #endif
             break;
 
-        case AVOID_PROXIMITY:
-#if PROXIMITY_ENABLED == ENABLED && AC_AVOID_ENABLED == ENABLED
-            switch (ch_flag) {
-                case HIGH:
-                    copter.avoid.proximity_avoidance_enable(true);
-                    copter.Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_ENABLE);
-                    break;
-                case MIDDLE:
-                    // nothing
-                    break;
-                case LOW:
-                    copter.avoid.proximity_avoidance_enable(false);
-                    copter.Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_DISABLE);
-                    break;
-            }
-#endif
-            break;
         case ARMDISARM:
             // arm or disarm the vehicle
             switch (ch_flag) {
             case HIGH:
-                copter.init_arm_motors(AP_Arming::ArmingMethod::AUXSWITCH);
+                copter.init_arm_motors(AP_Arming::Method::AUXSWITCH);
                 // remember that we are using an arming switch, for use by set_throttle_zero_flag
                 copter.ap.armed_with_switch = true;
                 break;
@@ -514,23 +488,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 #endif
             break;
 
-        case RC_OVERRIDE_ENABLE:
-            // Allow or disallow RC_Override
-            switch (ch_flag) {
-                case HIGH: {
-                    copter.ap.rc_override_enable = true;
-                    break;
-                }
-                case MIDDLE:
-                    // nothing
-                    break;
-                case LOW: {
-                    copter.ap.rc_override_enable = false;
-                    break;
-                }
-            }
-            break;
-            
 #ifdef USERHOOK_AUXSWITCH
         case USER_FUNC1:
             userhook_auxSwitch1(ch_flag);
@@ -544,6 +501,31 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             userhook_auxSwitch3(ch_flag);
             break;
 #endif
+
+        case ZIGZAG:
+#if MODE_ZIGZAG_ENABLED == ENABLED
+            do_aux_function_change_mode(control_mode_t::ZIGZAG, ch_flag);
+#endif
+            break;
+
+        case ZIGZAG_SaveWP:
+#if MODE_ZIGZAG_ENABLED == ENABLED
+            if (copter.flightmode == &copter.mode_zigzag) {
+                switch (ch_flag) {
+                    case LOW:
+                        copter.mode_zigzag.save_or_move_to_destination(0);
+                        break;
+                    case MIDDLE:
+                        copter.mode_zigzag.return_to_manual_control();
+                        break;
+                    case HIGH:
+                        copter.mode_zigzag.save_or_move_to_destination(1);
+                        break;
+                }
+            }
+#endif
+            break;
+
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
         break;

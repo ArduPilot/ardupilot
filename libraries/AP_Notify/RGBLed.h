@@ -27,14 +27,14 @@ public:
     RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim);
 
     // init - initialised the LED
-    virtual bool init(void);
+    virtual bool init(void) override;
 
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
     virtual void set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
     // update - updates led according to timed_updated.  Should be
     // called at 50Hz
-    virtual void update();
+    virtual void update() override;
 
     // handle LED control, only used when LED_OVERRIDE=1
     virtual void handle_led_control(mavlink_message_t *msg) override;
@@ -47,7 +47,7 @@ protected:
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
     virtual void _set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
-    virtual void update_override();
+    void update_override();
     
     // meta-data common to all hw devices
     uint8_t _red_des, _green_des, _blue_des;     // color requested by timed update
@@ -66,6 +66,7 @@ protected:
 private:
     void update_colours();
     uint32_t get_colour_sequence() const;
+    uint32_t get_colour_sequence_obc() const;
 
     uint8_t get_brightness(void) const;
 
@@ -101,5 +102,13 @@ private:
     const uint32_t sequence_disarmed_good_dgps = DEFINE_COLOUR_SEQUENCE_ALTERNATE(GREEN,OFF);
     const uint32_t sequence_disarmed_good_gps = DEFINE_COLOUR_SEQUENCE_SLOW(GREEN);
     const uint32_t sequence_disarmed_bad_gps = DEFINE_COLOUR_SEQUENCE_SLOW(BLUE);
+
+    uint8_t last_step;
+    enum rgb_source_t {
+        standard = 0,
+        mavlink = 1,
+        obc = 2,
+    };
+    rgb_source_t rgb_source() const;
 
 };

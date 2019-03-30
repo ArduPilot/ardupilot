@@ -23,7 +23,7 @@
 
 using namespace HALSITL;
 
-static EEPROMStorage sitlEEPROMStorage;
+static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);
 static RCInput  sitlRCInput(&sitlState);
@@ -58,7 +58,7 @@ HAL_SITL::HAL_SITL() :
         &i2c_mgr_instance,
         &emptySPI,          /* spi */
         &sitlAnalogIn,      /* analogin */
-        &sitlEEPROMStorage, /* storage */
+        &sitlStorage, /* storage */
         &sitlUart0Driver,   /* console */
         &sitlGPIO,          /* gpio */
         &sitlRCInput,       /* rcinput */
