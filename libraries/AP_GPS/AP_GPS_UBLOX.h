@@ -47,11 +47,14 @@
 #define UBLOX_MAX_GNSS_CONFIG_BLOCKS 7
 #define UBX_MSG_TYPES 2
 
+#define UBX_TIMEGPS_VALID_WEEK_MASK 0x2
+
 #define UBLOX_MAX_PORTS 6
 
 #define RATE_POSLLH 1
 #define RATE_STATUS 1
 #define RATE_SOL 1
+#define RATE_TIMEGPS 5
 #define RATE_PVT 1
 #define RATE_VELNED 1
 #define RATE_DOP 1
@@ -73,7 +76,8 @@
 #define CONFIG_SBAS          (1<<12)
 #define CONFIG_RATE_PVT      (1<<13)
 #define CONFIG_TP5           (1<<14)
-#define CONFIG_LAST          (1<<15) // this must always be the last bit
+#define CONFIG_RATE_TIMEGPS  (1<<15)
+#define CONFIG_LAST          (1<<16) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
@@ -289,6 +293,15 @@ private:
         uint32_t heading_accuracy;
     };
 
+    struct PACKED ubx_nav_timegps {
+        uint32_t itow;
+        int32_t ftow;
+        uint16_t week;
+        int8_t leapS;
+        uint8_t valid; //  leapsvalid | weekvalid | tow valid;
+        uint32_t tAcc;
+    };
+
     // Lea6 uses a 60 byte message
     struct PACKED ubx_mon_hw_60 {
         uint32_t pinSel;
@@ -414,6 +427,7 @@ private:
         ubx_nav_dop dop;
         ubx_nav_solution solution;
         ubx_nav_pvt pvt;
+        ubx_nav_timegps timegps;
         ubx_nav_velned velned;
         ubx_cfg_msg_rate msg_rate;
         ubx_cfg_msg_rate_6 msg_rate_6;
@@ -452,6 +466,7 @@ private:
         MSG_DOP = 0x4,
         MSG_SOL = 0x6,
         MSG_PVT = 0x7,
+        MSG_TIMEGPS = 0x20,
         MSG_VELNED = 0x12,
         MSG_CFG_CFG = 0x09,
         MSG_CFG_RATE = 0x08,
@@ -507,6 +522,7 @@ private:
         STEP_STATUS,
         STEP_POSLLH,
         STEP_VELNED,
+        STEP_TIMEGPS,
         STEP_POLL_SVINFO, // poll svinfo
         STEP_POLL_SBAS, // poll SBAS
         STEP_POLL_NAV, // poll NAV settings
