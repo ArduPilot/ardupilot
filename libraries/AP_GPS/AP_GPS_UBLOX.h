@@ -73,6 +73,7 @@
 #define CONFIG_SBAS          (1<<12)
 #define CONFIG_RATE_PVT      (1<<13)
 #define CONFIG_TP5           (1<<14)
+#define CONFIG_LAST          (1<<15) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 

@@ -1335,8 +1335,10 @@ static const char *reasons[] = {"navigation rate",
                                 "navigation settings",
                                 "GNSS settings",
                                 "SBAS settings",
-                                "PVT rate"};
+                                "PVT rate",
+                                "time pulse settings"};
 
+static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 
 void
 AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {
