@@ -2138,6 +2138,112 @@ class AutoTestCopter(AutoTest):
         if z_achieved - z_up > 1:
             raise NotAchievedException("Did not achieve z position: want=%f got=%f" % (z_up, z_achieved))
 
+    def test_guided_local_position_target(self, x, y, z_up):
+        """ Check target position being received by vehicle """
+        # set POSITION_TARGET_LOCAL_NED message rate using SET_MESSAGE_INTERVAL
+        self.progress("Setting local target in NED: (%f, %f, %f)" % (x, y, -z_up))
+        self.progress("Setting rate to 1 Hz")
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 1)
+        # set position target
+        self.mav.mav.set_position_target_local_ned_send(
+                0, # timestamp
+                1, # target system_id
+                1, # target component id
+                mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                0b1111111111111000, # mask specifying use only xyz
+                x, # x
+                y, # y
+                -z_up, # z
+                0, # vx
+                0, # vy
+                0, # vz
+                0, # afx
+                0, # afy
+                0, # afz
+                0, # yaw
+                0, # yawrate
+            )
+        m = self.mav.recv_match(type='POSITION_TARGET_LOCAL_NED', blocking=True, timeout=2)
+        self.progress("Received local target: %s" % str(m))
+        
+        if not (m.type_mask == 0xFFF8 or m.type_mask == 0x0FF8):
+            raise NotAchievedException("Did not receive proper mask: expected=65528 or 4088, got=%u" % m.type_mask)
+
+        if x - m.x > 0.1:
+            raise NotAchievedException("Did not receive proper target position x: wanted=%f got=%f" % (x, m.x))
+
+        if y - m.y > 0.1:
+            raise NotAchievedException("Did not receive proper target position y: wanted=%f got=%f" % (y, m.y))
+
+        if z_up - (-m.z) > 0.1:
+            raise NotAchievedException("Did not receive proper target position z: wanted=%f got=%f" % (z_up, -m.z))
+
+    def test_guided_local_velocity_target(self, vx, vy, vz_up, timeout=3):
+        " Check local target velocity being recieved by vehicle "
+        self.progress("Setting local NED velocity target: (%f, %f, %f)" %(vx, vy, -vz_up))
+        self.progress("Setting POSITION_TARGET_LOCAL_NED message rate to 10Hz")
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 10)
+
+        # Drain old messages and ignore the ramp-up to the required target velocity
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < timeout:
+            # send velocity-control command
+            self.mav.mav.set_position_target_local_ned_send(
+                    0, # timestamp
+                    1, # target system_id
+                    1, # target component id
+                    mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                    0b1111111111000111, # mask specifying use only vx,vy,vz
+                    0, # x
+                    0, # y
+                    0, # z
+                    vx, # vx
+                    vy, # vy
+                    -vz_up, # vz
+                    0, # afx
+                    0, # afy
+                    0, # afz
+                    0, # yaw
+                    0, # yawrate
+                )
+            m = self.mav.recv_match(type='POSITION_TARGET_LOCAL_NED', blocking=True, timeout=1)
+
+            if m is None:
+                raise NotAchievedException("Did not receive any message for 1 sec")
+
+            self.progress("Received local target: %s" % str(m))
+
+        # Check the last received message
+        if not (m.type_mask == 0xFFC7 or m.type_mask == 0x0FC7):
+            raise NotAchievedException("Did not receive proper mask: expected=65479 or 4039, got=%u" % m.type_mask)
+
+        if vx - m.vx > 0.1:
+            raise NotAchievedException("Did not receive proper target velocity vx: wanted=%f got=%f" % (vx, m.vx))
+
+        if vy - m.vy > 0.1:
+            raise NotAchievedException("Did not receive proper target velocity vy: wanted=%f got=%f" % (vy, m.vy))
+
+        if vz_up - (-m.vz) > 0.1:
+            raise NotAchievedException("Did not receive proper target velocity vz: wanted=%f got=%f" % (vz_up, -m.vz))
+
+        self.progress("Received proper target velocity commands")
+
+    def test_position_target_message_mode(self):
+        " Ensure that POSITION_TARGET_LOCAL_NED messages are sent in Guided Mode only "
+        self.change_mode('LOITER')
+        self.progress("Setting POSITION_TARGET_LOCAL_NED message rate to 10Hz")
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 10)
+
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() < tstart + 5:
+            m = self.mav.recv_match(type='POSITION_TARGET_LOCAL_NED', blocking=True, timeout=1)
+            if m is None:
+                continue
+
+            raise NotAchievedException("Received POSITION_TARGET message in LOITER mode: %s" % str(m))
+
+        self.progress("Did not receive any POSITION_TARGET_LOCAL_NED message in LOITER mode. Success")
+
     def earth_to_body(self, vector):
         m = self.mav.messages["ATTITUDE"]
         x = rotmat.Vector3(m.roll, m.pitch, m.yaw)
@@ -2261,6 +2367,11 @@ class AutoTestCopter(AutoTest):
         """move the vehicle using MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED"""
         self.fly_guided_stop()
         self.fly_guided_move_local(5, 5, 10)
+
+        """ Check target position received by vehicle using SET_MESSAGE_INTERVAL """
+        self.test_guided_local_position_target(5, 5, 10)
+        self.test_guided_local_velocity_target(2, 2, 1)
+        self.test_position_target_message_mode()
 
         self.do_RTL()
 
