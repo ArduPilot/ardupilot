@@ -111,6 +111,9 @@ void Copter::init_ardupilot()
     // allocate the motors class
     allocate_motors();
 
+    // initialise rc channels including setting mode
+    rc().init();
+
     // sets up motors and output to escs
     init_rc_out();
 
@@ -214,9 +217,6 @@ void Copter::init_ardupilot()
 
     // initialise AP_Logger library
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
-
-    // initialise rc channels including setting mode
-    rc().init();
 
     startup_INS_ground();
 
