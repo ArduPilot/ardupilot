@@ -62,6 +62,9 @@ public:
     // convert user input to targets, implement high level control for this mode
     virtual void update() = 0;
 
+    // true for all q modes
+    virtual bool is_vtol_mode() const { return false; }
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -326,6 +329,8 @@ public:
     const char *name() const override { return "QSTABILIZE"; }
     const char *name4() const override { return "QSTB"; }
 
+    bool is_vtol_mode() const override { return true; }
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -344,6 +349,8 @@ public:
     const char *name() const override { return "QHOVER"; }
     const char *name4() const override { return "QHOV"; }
 
+    bool is_vtol_mode() const override { return true; }
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -359,6 +366,8 @@ public:
     Number mode_number() const override { return Number::QLOITER; }
     const char *name() const override { return "QLOITER"; }
     const char *name4() const override { return "QLOT"; }
+
+    bool is_vtol_mode() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -376,6 +385,8 @@ public:
     const char *name() const override { return "QLAND"; }
     const char *name4() const override { return "QLND"; }
 
+    bool is_vtol_mode() const override { return true; }
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -391,6 +402,8 @@ public:
     Number mode_number() const override { return Number::QRTL; }
     const char *name() const override { return "QRTL"; }
     const char *name4() const override { return "QRTL"; }
+
+    bool is_vtol_mode() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -408,6 +421,8 @@ public:
     const char *name() const override { return "QACO"; }
     const char *name4() const override { return "QACRO"; }
 
+    bool is_vtol_mode() const override { return true; }
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -423,6 +438,8 @@ public:
     Number mode_number() const override { return Number::QAUTOTUNE; }
     const char *name() const override { return "QAUTOTUNE"; }
     const char *name4() const override { return "QATN"; }
+
+    bool is_vtol_mode() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
