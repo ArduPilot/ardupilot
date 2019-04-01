@@ -286,8 +286,12 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
 
     // always check if inertial nav has started and is ready
-    if (!ahrs.healthy()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "AHRS not healthy");
+    if (!ahrs.prearm_healthy()) {
+        const char *reason = ahrs.prearm_failure_reason();
+        if (reason == nullptr) {
+            reason = "AHRS not healthy";
+        }
+        check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
         return false;
     }
 
