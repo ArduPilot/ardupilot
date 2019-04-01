@@ -19,7 +19,7 @@ public:
     /**
        update internal state
     */
-    void        update() override;
+    void        update(bool high_vibes = false) override;
 
     /**
      * get_filter_status - returns filter status as a series of flags
