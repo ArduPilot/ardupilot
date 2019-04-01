@@ -237,17 +237,17 @@ void Plane::startup_ground(void)
 
 bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
 {
+    if (control_mode == &new_mode) {
+        // don't switch modes if we are already in the correct mode.
+        return true;
+    }
+
 #if !QAUTOTUNE_ENABLED
     if (&new_mode == plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
         new_mode = plane.mode_qhover;
     }
 #endif
-
-    if (control_mode == &new_mode) {
-        // don't switch modes if we are already in the correct mode.
-        return true;
-    }
 
     // backup current control_mode and previous_mode
     Mode &old_previous_mode = *previous_mode;
@@ -260,11 +260,6 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
     previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
 
-    if (previous_mode == &mode_autotune && control_mode != &mode_autotune) {
-        // restore last gains
-        autotune_restore();
-    }
-
     // attempt to enter new mode
     if (!new_mode.enter()) {
         // Log error that we failed to enter desired flight mode
@@ -274,6 +269,11 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
         previous_mode = &old_previous_mode;
         control_mode = &old_mode;
         return false;
+    }
+
+    if (previous_mode == &mode_autotune) {
+        // restore last gains
+        autotune_restore();
     }
 
     // exit previous mode
