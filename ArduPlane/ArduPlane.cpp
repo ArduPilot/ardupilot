@@ -289,7 +289,7 @@ void Plane::one_second_loop()
     }
 #endif
 
-    // update home position if armed and gps position has
+    // update home position if NOT armed and gps position has
     // changed. Update every 5s at most
     if (!arming.is_armed() &&
         gps.last_message_time_ms() - last_home_update_ms > 5000 &&
