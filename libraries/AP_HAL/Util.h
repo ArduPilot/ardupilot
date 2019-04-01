@@ -170,6 +170,9 @@ public:
      */
     virtual bool fs_init(void) { return false; }
 
+    // attempt to trap the processor, presumably to enter an attached debugger
+    virtual bool trap() const { return false; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
