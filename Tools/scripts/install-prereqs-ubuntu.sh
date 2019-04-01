@@ -5,7 +5,7 @@ set -x
 
 OPT="/opt"
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
-PYTHON_PKGS="future lxml pymavlink MAVProxy"
+PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect"
 PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo libftdi-dev zlib1g-dev \
           zip genromfs python-empy cmake cmake-data"
