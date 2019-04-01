@@ -1,3 +1,21 @@
+Release 3.9.7, 1st April 2019
+-----------------------------
+
+This is a minor release to fix a single important bug in speed/height
+handling. The bug was in the TECS (total energy control system) and
+could cause a sustained pitch down due to a transient glitch in
+airspeed demand resulting in a large negative pitch integrator.
+
+The log that found the bug was of a quadplane in CRUISE mode, and
+resulted in the aircraft forcing nose down for long enough to crash.
+
+The fix includes both protections for the pitch integrator and a fix
+for the cause of the transient in airspeed demand affecting the TECS
+demanded airspeed.
+
+Happy flying!
+
+
 Release 3.9.6, 4th March 2019
 -----------------------------
 
