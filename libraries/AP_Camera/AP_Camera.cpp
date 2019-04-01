@@ -326,13 +326,17 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) const
         // completely ignore this failure!  AHRS will provide its best guess.
     }
 
-    float altitude, altitude_rel;
-    if (current_loc.relative_alt) {
-        altitude = current_loc.alt+ahrs.get_home().alt;
-        altitude_rel = current_loc.alt;
-    } else {
-        altitude = current_loc.alt;
-        altitude_rel = current_loc.alt - ahrs.get_home().alt;
+    int32_t altitude = 0;
+    if (!current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, altitude)) {
+        // completely ignore this failure!  this is a shouldn't-happen
+        // as current_loc should never be in an altitude we can't
+        // convert.
+    }
+    int32_t altitude_rel = 0;
+    if (!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, altitude_rel)) {
+        // completely ignore this failure!  this is a shouldn't-happen
+        // as current_loc should never be in an altitude we can't
+        // convert.
     }
 
     mavlink_msg_camera_feedback_send(
