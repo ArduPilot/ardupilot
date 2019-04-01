@@ -245,13 +245,15 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
 #if !QAUTOTUNE_ENABLED
     if (&new_mode == plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
-        new_mode = plane.mode_qhover;
+        set_mode(plane.mode_qhover);
+        return;
     }
 #endif
 
     // backup current control_mode and previous_mode
     Mode &old_previous_mode = *previous_mode;
     Mode &old_mode = *control_mode;
+    const mode_reason_t previous_mode_reason_backup = previous_mode_reason;
 
     // update control_mode assuming success
     // TODO: move these to be after enter() once start_command_callback() no longer checks control_mode
@@ -268,6 +270,16 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
         // we failed entering new mode, roll back to old
         previous_mode = &old_previous_mode;
         control_mode = &old_mode;
+
+        control_mode_reason = previous_mode_reason;
+        previous_mode_reason = previous_mode_reason_backup;
+
+        // currently, only Q modes can fail enter(). This will likely change in the future and all modes
+        // should be changed to check dependencies and fail early before depending on changes in Mode::set_mode()
+        if (control_mode->is_vtol_mode()) {
+            // ignore result because if we fail we risk looping at the qautotune check above
+            control_mode->enter();
+        }
         return false;
     }
 
