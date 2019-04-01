@@ -310,7 +310,7 @@ PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
 
 # Pin for PWM Voltage Selection
-PB4 PWM_VOLT_SEL OUTPUT GPIO(3)
+PB4 PWM_VOLT_SEL OUTPUT HIGH GPIO(3)
 
 # this is the invensense data-ready pin. We don't use it in the
 # default driver
