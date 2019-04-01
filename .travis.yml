@@ -1,11 +1,12 @@
 language: cpp
 sudo: false
 
+dist: xenial
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-7 main'
+      - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main'
         key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     packages:
       - build-essential
@@ -19,8 +20,8 @@ addons:
       - zlib1g-dev
       - gcc-4.9
       - g++-4.9
-      - cmake3
-      - cmake3-data
+      - cmake
+      - cmake-data
       - clang-7
       - llvm-7
 
