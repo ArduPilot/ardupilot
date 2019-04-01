@@ -48,6 +48,9 @@ PD12 USART3_RTS USART3
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
+# Pin for PWM Voltage Selection
+PB4 PWM_VOLT_SEL OUTPUT HIGH
+
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
