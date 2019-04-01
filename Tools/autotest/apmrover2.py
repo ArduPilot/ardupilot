@@ -966,6 +966,44 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def drain_mav_seconds(self, seconds):
+        tstart = self.get_sim_time_cached()
+        while self.get_sim_time_cached() - tstart < seconds:
+            self.drain_mav();
+            self.delay_sim_time(0.5)
+
+    def test_button(self):
+        self.set_parameter("SIM_PIN_MASK", 0)
+        self.set_parameter("BTN_ENABLE", 1)
+        btn = 2
+        pin = 3
+        self.set_parameter("BTN_PIN%u" % btn, pin)
+        self.drain_mav()
+        m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("m: %s" % str(m))
+        if m is None:
+            raise NotAchievedException("Did not get BUTTON_CHANGE event")
+        mask = 1<<btn
+        if m.state & mask:
+            raise NotAchievedException("Bit incorrectly set in mask (got=%u dontwant=%u)" % (m.state, mask))
+        # SITL instantly reverts the pin to its old value
+        m2 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("m2: %s" % str(m2))
+        if m2 is None:
+            raise NotAchievedException("Did not get repeat message")
+        # wait for messages to stop coming:
+        self.drain_mav_seconds(15)
+
+        self.set_parameter("SIM_PIN_MASK", 0)
+        m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("m3: %s" % str(m3))
+        if m3 is None:
+            raise NotAchievedException("Did not get new message")
+        if m.last_change_ms == m3.last_change_ms:
+            raise NotAchievedException("last_change_ms same as first message")
+        if m3.state != 0:
+            raise NotAchievedException("Didn't get expected mask back in message (mask=0 state=%u" % (m3.state))
+
     def test_rally_points(self):
         self.reboot_sitl() # to ensure starting point is as expected
 
@@ -1133,6 +1171,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("SYSID_ENFORCE",
              "Test enforcement of SYSID_MYGCS",
              self.test_sysid_enforce),
+
+            ("Button",
+             "Test Buttons",
+             self.test_button),
 
             ("Rally",
              "Test Rally Points",
