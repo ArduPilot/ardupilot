@@ -69,6 +69,7 @@ public:
         Notify_LED_UAVCAN                   = (1 << 5), // UAVCAN RGB LED
         Notify_LED_NCP5623_I2C_External     = (1 << 6), // External NCP5623
         Notify_LED_NCP5623_I2C_Internal     = (1 << 7), // Internal NCP5623
+        Notify_LED_NeoPixel                 = (1 << 8), // NeoPixel 5050 AdaFruit 1655 SK6812  Worldsemi WS2812B
         Notify_LED_MAX
     };
 
