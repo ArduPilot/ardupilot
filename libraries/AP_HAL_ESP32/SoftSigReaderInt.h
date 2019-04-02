@@ -25,18 +25,6 @@
 #include "AP_HAL_ESP32.h"
 
 
-
-// hack
-//#define EICUDriver int
-//#define eicuchannel_t int
-//#define EICUConfig int
-//#define EICUChannelConfig int
-//#define EICU_CHANNEL_1 1
-//#define EICU_CHANNEL_2 2
-//#define EICU_CHANNEL_3 3
-//#define EICU_CHANNEL_4 4
-//#define EICU_CHANNEL_ENUM_END 5
-
 #if HAL_USE_EICU == TRUE
 
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
@@ -48,6 +36,7 @@
 class ESP32::SoftSigReaderInt  {
 public:
     SoftSigReaderInt();
+    ~SoftSigReaderInt();
     /* Do not allow copies */
     SoftSigReaderInt(const SoftSigReaderInt &other) = delete;
     SoftSigReaderInt &operator=(const SoftSigReaderInt&) = delete;
@@ -64,18 +53,13 @@ private:
     // singleton
     static SoftSigReaderInt *_instance;
 
-    static void _irq_handler();
+    static void _irq_handler(void * arg);
     
-    //static eicuchannel_t get_pair_channel(eicuchannel_t channel);
     typedef struct PACKED {
         uint16_t w0;
         uint16_t w1;
     } pulse_t;
     ObjectBuffer<pulse_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
-   // EICUConfig icucfg;
-   // EICUChannelConfig channel_config;
-   // EICUChannelConfig aux_channel_config;
-   // EICUDriver* _icu_drv = nullptr;
     uint16_t last_value;
 };
 

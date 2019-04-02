@@ -60,23 +60,9 @@ private:
     bool _init;
     const char *last_protocol;
 
-// #if HAL_RCINPUT_WITH_AP_RADIO
-//     bool _radio_init;
-//     AP_Radio *radio;
-//     uint32_t last_radio_us;
-// #endif
-
-// #if HAL_USE_ICU == TRUE
-//     ESP32::SoftSigReader sig_reader;
-//     AP_RCProtocol rcin_prot;
-// #endif
-
 //#if HAL_USE_EICU == TRUE
     ESP32::SoftSigReaderInt sig_reader;
     AP_RCProtocol rcin_prot;
 //#endif
 
-// #if HAL_WITH_IO_MCU
-//     uint32_t last_iomcu_us;
-// #endif
 };

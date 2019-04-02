@@ -126,21 +126,13 @@ void RCInput::_timer_tick(void)
         return;
     }
 
-    // #if HAL_USE_ICU == TRUE
-    //     const uint32_t *p;
-    //     uint32_t n;
-    //     while ((p = (const uint32_t *)sig_reader.sigbuf.readptr(n)) != nullptr) {
-    //         rcin_prot.process_pulse_list(p, n*2, sig_reader.need_swap);
-    //         sig_reader.sigbuf.advance(n);
-    //     }
-    // #endif
 
-    #if HAL_USE_EICU == TRUE
+   // #if HAL_USE_EICU == TRUE
         uint32_t width_s0, width_s1;
         while(sig_reader.read(width_s0, width_s1)) {
             rcin_prot.process_pulse(width_s0, width_s1);
         }
-    #endif
+   // #endif
 
     #ifndef HAL_NO_UARTDRIVER
         const char *rc_protocol = nullptr;
@@ -178,24 +170,7 @@ void RCInput::_timer_tick(void)
  */
 bool RCInput::rc_bind(int dsmMode)
 {
-#if HAL_WITH_IO_MCU
-    rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
-    if (AP_BoardConfig::io_enabled()) {
-        iomcu.bind_dsm(dsmMode);
-    }
-    rcin_mutex.give();
-#endif
-
-#if HAL_USE_ICU == TRUE
-    // ask AP_RCProtocol to start a bind
-    rcin_prot.start_bind();
-#endif
-    
-#if HAL_RCINPUT_WITH_AP_RADIO
-    if (radio) {
-        radio->start_recv_bind();
-    }
-#endif
+  // not impl
     return true;
 }
 #endif //#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
