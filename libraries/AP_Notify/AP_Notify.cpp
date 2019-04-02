@@ -52,7 +52,7 @@ AP_Notify *AP_Notify::_singleton;
 
 #ifndef BUILD_DEFAULT_LED_TYPE
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS | Notify_LED_NeoPixel)
 
 // Linux boards    
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
