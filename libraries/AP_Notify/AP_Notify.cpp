@@ -22,6 +22,7 @@
 #include "ExternalLED.h"
 #include "PCA9685LED_I2C.h"
 #include "NeoPixel.h"
+#include "NeoPixel_Oreo.h"
 #include "NCP5623.h"
 #include "OreoLED_I2C.h"
 #include "RCOutputRGBLed.h"
@@ -253,7 +254,15 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new PCA9685LED_I2C());
                 break;
             case Notify_LED_NeoPixel:
+#if HAL_MINIMIZE_FEATURES
                 ADD_BACKEND(new NeoPixel());
+#else
+                if (_oreo_theme) {
+                    ADD_BACKEND(new NeoPixel_Oreo(_oreo_theme));
+                } else {
+                    ADD_BACKEND(new NeoPixel());
+                }
+#endif
                 break;
             case Notify_LED_OreoLED:
 #if !HAL_MINIMIZE_FEATURES
