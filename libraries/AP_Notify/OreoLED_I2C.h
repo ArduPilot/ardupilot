@@ -40,7 +40,6 @@ public:
     // handle a LED_CONTROL message, by default device ignore message
     void handle_led_control(const mavlink_message_t &msg) override;
 
-private:
     enum oreoled_pattern {
         OREOLED_PATTERN_OFF = 0,
         OREOLED_PATTERN_SINE = 1,
@@ -87,7 +86,16 @@ private:
         OREOLED_PARAM_APP_CHECKSUM = 11,
         OREOLED_PARAM_ENUM_COUNT
     };
+    
+    // oreo led modes (pattern, macro or rgb)
+    enum oreoled_mode {
+        OREOLED_MODE_NONE=0,
+        OREOLED_MODE_MACRO,
+        OREOLED_MODE_RGB,
+        OREOLED_MODE_RGB_EXTENDED,
+    };
 
+private:
     // update_timer - called by scheduler and updates driver with commands
     void update_timer(void);
 
@@ -121,14 +129,6 @@ private:
     // Clear the desired state
     void clear_state(void);
 
-    // oreo led modes (pattern, macro or rgb)
-    enum oreoled_mode {
-        OREOLED_MODE_NONE=0,
-        OREOLED_MODE_MACRO,
-        OREOLED_MODE_RGB,
-        OREOLED_MODE_RGB_EXTENDED,
-    };
-
     // Oreo LED modes
     enum Oreo_LED_Theme {
         OreoLED_Disabled        = 0,
@@ -150,6 +150,8 @@ private:
         uint16_t period;
         int8_t repeat;
         uint16_t phase_offset;
+        uint32_t last_update_ms;
+        bool    period_toggle;
 
         oreo_state();
 
@@ -164,6 +166,8 @@ private:
                      uint16_t new_period, uint16_t new_phase_offset);
 
         bool operator==(const oreo_state &os);
+
+        uint32_t get_update_offset();
     };
 
     typedef struct {
@@ -182,8 +186,6 @@ private:
     HAL_Semaphore_Recursive _sem;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     bool    _send_required;                         // true when we need to send an update to at least one led
-    oreo_state _state_desired[OREOLED_NUM_LEDS];    // desired state
-    oreo_state _state_sent[OREOLED_NUM_LEDS];       // last state sent to led
     uint8_t _pattern_override;                      // holds last processed pattern override, 0 if we are not overriding a pattern
     uint8_t _oreo_theme;                            // theme (1=AirCraft, 2=Ground Vehicle)
     uint8_t _rear_color_r = 255;                    // the rear LED red value
@@ -194,5 +196,10 @@ private:
     uint8_t _boot_count;
     uint32_t _last_boot_ms;
     uint32_t _last_sync_ms;
+
+public:
+    oreo_state _state_desired[OREOLED_NUM_LEDS];    // desired state
+    oreo_state _state_sent[OREOLED_NUM_LEDS];       // last state sent to led
+
 };
 

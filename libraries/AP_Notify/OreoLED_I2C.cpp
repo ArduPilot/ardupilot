@@ -306,6 +306,8 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
     // get semaphore
     WITH_SEMAPHORE(_sem);
 
+    const uint32_t now_ms = AP_HAL::millis();
+
     // check for all instances
     if (instance == OREOLED_INSTANCE_ALL) {
         // store desired rgb for all LEDs
@@ -313,6 +315,7 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
             _state_desired[i].set_rgb(pattern, red, green, blue);
             if (!(_state_desired[i] == _state_sent[i])) {
                 _send_required = true;
+                _state_desired[i].last_update_ms = now_ms + _state_desired[i].get_update_offset();
             }
         }
     } else if (instance < OREOLED_NUM_LEDS) {
@@ -320,6 +323,7 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
         _state_desired[instance].set_rgb(pattern, red, green, blue);
         if (!(_state_desired[instance] == _state_sent[instance])) {
             _send_required = true;
+            _state_desired[instance].last_update_ms = now_ms + _state_desired[instance].get_update_offset();
         }
     }
 }
@@ -332,6 +336,8 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
 {
     WITH_SEMAPHORE(_sem);
 
+    const uint32_t now_ms = AP_HAL::millis();
+
     // check for all instances
     if (instance == OREOLED_INSTANCE_ALL) {
         // store desired rgb for all LEDs
@@ -339,6 +345,7 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
             _state_desired[i].set_rgb(pattern, red, green, blue, amplitude_red, amplitude_green, amplitude_blue, period, phase_offset);
             if (!(_state_desired[i] == _state_sent[i])) {
                 _send_required = true;
+                _state_desired[i].last_update_ms = now_ms + _state_desired[i].get_update_offset();
             }
         }
     } else if (instance < OREOLED_NUM_LEDS) {
@@ -346,6 +353,7 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
         _state_desired[instance].set_rgb(pattern, red, green, blue, amplitude_red, amplitude_green, amplitude_blue, period, phase_offset);
         if (!(_state_desired[instance] == _state_sent[instance])) {
             _send_required = true;
+            _state_desired[instance].last_update_ms = now_ms + _state_desired[instance].get_update_offset();
         }
     }
 }
@@ -356,6 +364,8 @@ void OreoLED_I2C::set_macro(uint8_t instance, oreoled_macro macro)
 {
     WITH_SEMAPHORE(_sem);
 
+    const uint32_t now_ms = AP_HAL::millis();
+
     // check for all instances
     if (instance == OREOLED_INSTANCE_ALL) {
         // store desired macro for all LEDs
@@ -363,6 +373,7 @@ void OreoLED_I2C::set_macro(uint8_t instance, oreoled_macro macro)
             _state_desired[i].set_macro(macro);
             if (!(_state_desired[i] == _state_sent[i])) {
                 _send_required = true;
+                _state_desired[i].last_update_ms = now_ms + _state_desired[i].get_update_offset();
             }
         }
     } else if (instance < OREOLED_NUM_LEDS) {
@@ -370,6 +381,7 @@ void OreoLED_I2C::set_macro(uint8_t instance, oreoled_macro macro)
         _state_desired[instance].set_macro(macro);
         if (!(_state_desired[instance] == _state_sent[instance])) {
             _send_required = true;
+            _state_desired[instance].last_update_ms = now_ms + _state_desired[instance].get_update_offset();
         }
     }
 }
@@ -440,9 +452,9 @@ void OreoLED_I2C::update_timer(void)
     }
 
     // send a sync every 4.1s. The driver uses 4ms, but using
-    // exactly 4ms does not work. It seems that the oreoled firmware
+    // exactly 4s does not work. It seems that the oreoled firmware
     // relies on the inaccuracy of the NuttX scheduling for this to
-    // work, and exactly 4ms from ChibiOS causes syncronisation to
+    // work, and exactly 4s from ChibiOS causes syncronisation to
     // fail
     if (now - _last_sync_ms > 4100) {
         _last_sync_ms = now;
@@ -689,3 +701,33 @@ bool OreoLED_I2C::oreo_state::operator==(const OreoLED_I2C::oreo_state &os)
             && (os.amplitude_red==amplitude_red) && (os.amplitude_green==amplitude_green) && (os.amplitude_blue==amplitude_blue)
             && (os.period==period) && (os.repeat==repeat) && (os.phase_offset==phase_offset));
 }
+
+uint32_t OreoLED_I2C::oreo_state::get_update_offset()
+{
+    if (period == 0) {
+        return 0;
+    }
+
+    // phase offset means one LED is doing the same pattern as another but its
+    // timer is delayed into the future/past. By adding time to the timer it
+    // skips ahead and is therefor offset. It is otherwise a normal timer blink
+    switch (phase_offset) {
+        case 0:
+        case 360:
+        default:
+            return 0;
+
+        case 1:
+        case 90:
+            return (period * 0.25f);
+
+        case 2:
+        case PO_ALTERNATE: // 180
+            return (period * 0.5f);
+
+        case 3:
+        case 270:
+            return (period * 0.75f);
+    } // switch
+}
+
