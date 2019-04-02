@@ -1007,7 +1007,7 @@ class AutoTest(ABC):
             returned_value = self.get_parameter(name)
             delta = float(value) - returned_value
             if abs(delta) < epsilon:
-                # yes, exactly equal.
+                # yes, near-enough-to-equal.
                 if add_to_context:
                     self.context_get().parameters.append((name, old_value))
                 if self.should_fetch_all_for_parameter_change(name.upper()) and value != 0:
@@ -1025,7 +1025,7 @@ class AutoTest(ABC):
                 return float(self.mavproxy.match.group(1))
             except pexpect.TIMEOUT:
                 pass
-        raise NotAchievedException("Failed to retrieve parameter")
+        raise NotAchievedException("Failed to retrieve parameter (%s)" % name)
 
     def context_get(self):
         """Get Saved parameters."""
@@ -1858,6 +1858,20 @@ class AutoTest(ABC):
     def defaults_filepath(self):
         return None
 
+    def start_mavproxy(self):
+        self.progress("Starting MAVProxy")
+        self.mavproxy = util.start_MAVProxy_SITL(
+            self.vehicleinfo_key(),
+            logfile=self.mavproxy_logfile,
+            options=self.mavproxy_options())
+        self.mavproxy.expect('Telemetry log: (\S+)\r\n')
+        self.logfile = self.mavproxy.match.group(1)
+        self.progress("LOGFILE %s" % self.logfile)
+        self.try_symlink_tlog()
+
+        self.progress("Waiting for Parameters")
+        self.mavproxy.expect('Received [0-9]+ parameters')
+
     def init(self):
         """Initilialize autotest feature."""
         self.check_test_syntax(test_file=self.test_filepath())
@@ -1880,18 +1894,8 @@ class AutoTest(ABC):
                                     vicon=self.uses_vicon(),
                                     wipe=True,
                                     )
-        self.progress("Starting MAVProxy")
-        self.mavproxy = util.start_MAVProxy_SITL(
-            self.vehicleinfo_key(),
-            logfile=self.mavproxy_logfile,
-            options=self.mavproxy_options())
-        self.mavproxy.expect('Telemetry log: (\S+)\r\n')
-        self.logfile = self.mavproxy.match.group(1)
-        self.progress("LOGFILE %s" % self.logfile)
-        self.try_symlink_tlog()
 
-        self.progress("Waiting for Parameters")
-        self.mavproxy.expect('Received [0-9]+ parameters')
+        self.start_mavproxy()
 
         self.progress("Starting MAVLink connection")
         self.get_mavlink_connection_going()
