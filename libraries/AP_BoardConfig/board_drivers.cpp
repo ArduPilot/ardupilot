@@ -346,7 +346,7 @@ void AP_BoardConfig::board_setup()
     hal.rcout->init();
 #endif
 
-#if HAL_GPIO_PWM_VOLT_PIN
+#ifdef HAL_GPIO_PWM_VOLT_PIN
     if (_pwm_volt_sel == 0) {
         hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, 1); //set pin for 3.3V PWM Output
     } else if (_pwm_volt_sel == 1) {
