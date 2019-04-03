@@ -1317,7 +1317,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
 {
     // get primary attitude source's attitude as quaternion
     Quaternion primary_quat;
-    primary_quat.from_euler(roll, pitch, yaw);
+    get_quat_body_to_ned(primary_quat);
     // only check yaw if compasses are being used
     bool check_yaw = _compass && _compass->use_for_yaw();
 
@@ -1360,7 +1360,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     // check primary vs dcm
     Quaternion dcm_quat;
     Vector3f angle_diff;
-    dcm_quat.from_euler(_dcm_attitude.x, _dcm_attitude.y, _dcm_attitude.z);
+    dcm_quat.from_rotation_matrix(get_DCM_rotation_body_to_ned());
     primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
     float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
     if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
