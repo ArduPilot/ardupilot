@@ -425,28 +425,28 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
 {
     // init channel options
     switch(ch_option) {
-    case RC_OVERRIDE_ENABLE:
-    case AVOID_PROXIMITY:
+    case AUX_FUNC::RC_OVERRIDE_ENABLE:
+    case AUX_FUNC::AVOID_PROXIMITY:
         do_aux_function(ch_option, ch_flag);
         break;
     // the following functions to not need to be initialised:
-    case RELAY:
-    case RELAY2:
-    case RELAY3:
-    case RELAY4:
-    case RELAY5:
-    case RELAY6:
-    case CAMERA_TRIGGER:
-    case LOST_VEHICLE_SOUND:
-    case DO_NOTHING:
-    case CLEAR_WP:
-    case COMPASS_LEARN:
-    case LANDING_GEAR:
+    case AUX_FUNC::RELAY:
+    case AUX_FUNC::RELAY2:
+    case AUX_FUNC::RELAY3:
+    case AUX_FUNC::RELAY4:
+    case AUX_FUNC::RELAY5:
+    case AUX_FUNC::RELAY6:
+    case AUX_FUNC::CAMERA_TRIGGER:
+    case AUX_FUNC::LOST_VEHICLE_SOUND:
+    case AUX_FUNC::DO_NOTHING:
+    case AUX_FUNC::CLEAR_WP:
+    case AUX_FUNC::COMPASS_LEARN:
+    case AUX_FUNC::LANDING_GEAR:
         break;
-    case MOTOR_ESTOP:
-    case GRIPPER:
-    case SPRAYER:
-    case GPS_DISABLE:
+    case AUX_FUNC::MOTOR_ESTOP:
+    case AUX_FUNC::GRIPPER:
+    case AUX_FUNC::SPRAYER:
+    case AUX_FUNC::GPS_DISABLE:
         do_aux_function(ch_option, ch_flag);
         break;
     default:
@@ -461,7 +461,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
 void RC_Channel::read_aux()
 {
     const aux_func_t _option = (aux_func_t)option.get();
-    if (_option == DO_NOTHING) {
+    if (_option == AUX_FUNC::DO_NOTHING) {
         // may wish to add special cases for other "AUXSW" things
         // here e.g. RCMAP_ROLL etc once they become options
         return;
@@ -611,61 +611,61 @@ void RC_Channel::do_aux_function_rc_override_enable(const aux_switch_pos_t ch_fl
 void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
-    case CAMERA_TRIGGER:
+    case AUX_FUNC::CAMERA_TRIGGER:
         do_aux_function_camera_trigger(ch_flag);
         break;
 
-    case GRIPPER:
+    case AUX_FUNC::GRIPPER:
         do_aux_function_gripper(ch_flag);
         break;
 
-    case RC_OVERRIDE_ENABLE:
+    case AUX_FUNC::RC_OVERRIDE_ENABLE:
         // Allow or disallow RC_Override
         do_aux_function_rc_override_enable(ch_flag);
         break;
 
-    case AVOID_PROXIMITY:
+    case AUX_FUNC::AVOID_PROXIMITY:
         do_aux_function_avoid_proximity(ch_flag);
         break;
 
-    case RELAY:
+    case AUX_FUNC::RELAY:
         do_aux_function_relay(0, ch_flag == HIGH);
         break;
-    case RELAY2:
+    case AUX_FUNC::RELAY2:
         do_aux_function_relay(1, ch_flag == HIGH);
         break;
-    case RELAY3:
+    case AUX_FUNC::RELAY3:
         do_aux_function_relay(2, ch_flag == HIGH);
         break;
-    case RELAY4:
+    case AUX_FUNC::RELAY4:
         do_aux_function_relay(3, ch_flag == HIGH);
         break;
-    case RELAY5:
+    case AUX_FUNC::RELAY5:
         do_aux_function_relay(4, ch_flag == HIGH);
         break;
-    case RELAY6:
+    case AUX_FUNC::RELAY6:
         do_aux_function_relay(5, ch_flag == HIGH);
         break;
-    case CLEAR_WP:
+    case AUX_FUNC::CLEAR_WP:
         do_aux_function_clear_wp(ch_flag);
         break;
 
-    case SPRAYER:
+    case AUX_FUNC::SPRAYER:
         do_aux_function_sprayer(ch_flag);
         break;
 
-    case LOST_VEHICLE_SOUND:
+    case AUX_FUNC::LOST_VEHICLE_SOUND:
         do_aux_function_lost_vehicle_sound(ch_flag);
         break;
 
-    case COMPASS_LEARN:
+    case AUX_FUNC::COMPASS_LEARN:
         if (ch_flag == HIGH) {
             Compass &compass = AP::compass();
             compass.set_learn_type(Compass::LEARN_INFLIGHT, false);
         }
         break;
 
-    case LANDING_GEAR: {
+    case AUX_FUNC::LANDING_GEAR: {
         AP_LandingGear *lg = AP_LandingGear::get_singleton();
         if (lg == nullptr) {
             break;
@@ -684,11 +684,11 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         break;
     }
 
-    case GPS_DISABLE:
+    case AUX_FUNC::GPS_DISABLE:
         AP::gps().force_disable(ch_flag == HIGH);
         break;
 
-    case MOTOR_ESTOP:
+    case AUX_FUNC::MOTOR_ESTOP:
         switch (ch_flag) {
         case HIGH: {
             SRV_Channels::set_emergency_stop(true);
