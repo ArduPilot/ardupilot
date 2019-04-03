@@ -98,7 +98,7 @@ public:
     void read_aux();
 
     // Aux Switch enumeration
-    enum aux_func {
+    enum class AUX_FUNC {
         DO_NOTHING =           0, // aux switch disabled
         FLIP =                 2, // flip
         SIMPLE_MODE =          3, // change to simple mode
@@ -166,7 +166,7 @@ public:
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
-    typedef enum aux_func aux_func_t;
+    typedef enum AUX_FUNC aux_func_t;
 
 protected:
 
