@@ -86,6 +86,6 @@ void Copter::update_using_interlock()
 #else
     // check if we are using motor interlock control on an aux switch or are in throw mode
     // which uses the interlock to stop motors while the copter is being thrown
-    ap.using_interlock = rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_INTERLOCK) != nullptr;
+    ap.using_interlock = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) != nullptr;
 #endif
 }

@@ -34,8 +34,8 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 
     // check if motor interlock and Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
-    if (rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_INTERLOCK) &&
-        rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP)){
+    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
+        rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP)){
         check_failed(ARMING_CHECK_NONE, display_failure, "Interlock/E-Stop Conflict");
         return false;
     }
@@ -484,10 +484,10 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method
 
     // if we are not using Emergency Stop switch option, force Estop false to ensure motors
     // can run normally
-    if (!rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP)){
+    if (!rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP)){
         SRV_Channels::set_emergency_stop(false);
         // if we are using motor Estop switch, it must not be in Estop position
-    } else if (rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP) && SRV_Channels::get_emergency_stop()){
+    } else if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) && SRV_Channels::get_emergency_stop()){
         gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Emergency Stopped");
         return false;
     }

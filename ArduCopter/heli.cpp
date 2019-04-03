@@ -140,7 +140,7 @@ void Copter::heli_update_rotor_speed_targets()
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
     float rsc_control_deglitched = 0.0f;
-    RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_INTERLOCK);
+    RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK);
     if (rc_ptr != nullptr) {
         rsc_control_deglitched = rotor_speed_deglitch_filter.apply((float)rc_ptr->get_control_in()) * 0.001f;
     }
