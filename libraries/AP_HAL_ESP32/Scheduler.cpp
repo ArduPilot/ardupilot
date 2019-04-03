@@ -168,9 +168,9 @@ void Scheduler::_run_timers()
 void Scheduler::_rcin_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    while (!_initialized) {
-        sched->delay_microseconds(20000);
-    }
+    //while (!_initialized) {
+    //    sched->delay_microseconds(20000);
+   // }
     while (true) {
         sched->delay_microseconds(2500);
         //hal.rcin->_timer_tick();

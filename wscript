@@ -228,6 +228,10 @@ def configure(cfg):
     cfg.define('WAF_BUILD', 1)
 
     cfg.msg('Autoconfiguration', 'enabled' if cfg.options.autoconfig else 'disabled')
+    
+    cfg.env.append_value('CFLAGS', '-fno-inline-functions')
+    cfg.env.append_value('CXXFLAGS', '-fno-inline-functions')
+    cfg.msg('Using NO-INLINE-FUNCTIONS', 'yes', color='RED')
 
     if cfg.options.static:
         cfg.msg('Using static linking', 'yes', color='YELLOW')

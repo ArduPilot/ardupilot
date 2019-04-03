@@ -1,0 +1,501 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"target_",
+				"target_system"
+			],
+			[
+				"id",
+				"idle_task"
+			],
+			[
+				"X",
+				"Xslave"
+			],
+			[
+				"auto",
+				"AUTO"
+			],
+			[
+				"crc",
+				"crc_extra"
+			],
+			[
+				"dev",
+				"devnum"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "Waf",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Waf",
+					""
+				],
+				[
+					"Waf",
+					"Configure SITL"
+				],
+				[
+					"Waf",
+					"Configure ESP32"
+				],
+				[
+					"Waf",
+					"Build SITL"
+				],
+				[
+					"Waf",
+					"Build ESP32-Plane"
+				],
+				[
+					"Waf",
+					"Clean"
+				]
+			],
+			[
+				"Waf",
+				"Build ESP32-Plane"
+			]
+		],
+		[
+			[
+				[
+					"Waf",
+					""
+				],
+				[
+					"Waf",
+					"Configure SITL"
+				],
+				[
+					"Waf",
+					"Configure ESP32"
+				],
+				[
+					"Waf",
+					"Build SITL"
+				],
+				[
+					"Waf",
+					"Build ESP32-Plane"
+				],
+				[
+					"Waf",
+					"Flash ESP32-Plane"
+				],
+				[
+					"Waf",
+					"Clean"
+				]
+			],
+			[
+				"Waf",
+				"Flash ESP32-Plane"
+			]
+		],
+		[
+			[
+				[
+					"waf",
+					""
+				],
+				[
+					"waf",
+					"Waf: Configure"
+				],
+				[
+					"waf",
+					"Waf: Build"
+				],
+				[
+					"waf",
+					"Run"
+				],
+				[
+					"waf",
+					"Waf: Nunit"
+				]
+			],
+			[
+				"waf",
+				"Waf: Configure"
+			]
+		],
+		[
+			[
+				[
+					"waf",
+					""
+				],
+				[
+					"waf",
+					"Waf: Configure SITL"
+				],
+				[
+					"waf",
+					"Waf: Configure ESP32"
+				],
+				[
+					"waf",
+					"Waf: Build"
+				],
+				[
+					"waf",
+					"Run"
+				],
+				[
+					"waf",
+					"Waf: build esp32"
+				]
+			],
+			[
+				"waf",
+				"Waf: Configure ESP32"
+			]
+		],
+		[
+			[
+				[
+					"waf",
+					""
+				],
+				[
+					"waf",
+					"Waf: Configure SITL"
+				],
+				[
+					"waf",
+					"Waf: Configure ESP32"
+				],
+				[
+					"waf",
+					"Waf: Build"
+				],
+				[
+					"waf",
+					"Run"
+				],
+				[
+					"waf",
+					"Waf: build esp32 plane"
+				]
+			],
+			[
+				"waf",
+				"Waf: build esp32 plane"
+			]
+		],
+		[
+			[
+				[
+					"waf",
+					""
+				],
+				[
+					"waf",
+					"Waf: Configure SITL"
+				],
+				[
+					"waf",
+					"Waf: Configure ESP32"
+				],
+				[
+					"waf",
+					"Waf: Build SITL"
+				],
+				[
+					"waf",
+					"Clean"
+				],
+				[
+					"waf",
+					"Waf: Build ESP32-Plane"
+				]
+			],
+			[
+				"waf",
+				"Waf: Configure ESP32"
+			]
+		]
+	],
+	"build_varint": "Flash ESP32-Plane",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"sublimegdb",
+				"Preferences: SublimeGDB Settings – Default"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 150.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+	],
+	"file_history":
+	[
+		"/home/buzz/ardupilot/waf-ardupilot.sublime-project",
+		"/home/buzz/.config/sublime-text-3/Packages/SublimeGDB/Default.sublime-keymap",
+		"/home/buzz/.config/sublime-text-3/Packages/SublimeGDB/SublimeGDB.sublime-settings",
+		"/home/buzz/ardupilot/build/c4che/esp32_cache.py",
+		"/home/buzz/ardupilot/build/c4che/esp32_cache.py0",
+		"/home/buzz/.config/sublime-text-3/Packages/User/SublimeGDB.sublime-settings",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/0",
+		"/home/buzz/ardupilot/waf-ardupilot.sublime-workspace",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/plane/sdkconfig0",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ChibiOS/SoftSigReaderInt.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ChibiOS/SoftSigReaderInt.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/Scheduler.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ChibiOS/AnalogIn.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_SITL/RCInput.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_SITL/RCInput.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ChibiOS/RCInput.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ChibiOS/SoftSigReader.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ChibiOS/SoftSigReader.cpp",
+		"/home/buzz/ardupilot/libraries/AP_RCProtocol/AP_RCProtocol.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ChibiOS/RCInput.h",
+		"/home/buzz/ardupilot/libraries/AP_RCProtocol/AP_RCProtocol.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/SoftSigReaderInt.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/HAL_ESP32_Class.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_Linux/Scheduler.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_Linux/RCInput.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_Linux/RCInput.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/Storage.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/Storage.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/README.md",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/HAL_ESP32_Class.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL/AP_HAL.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL/AP_HAL_Boards.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL/AP_HAL_Macros.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL/AP_HAL_Main.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL/AP_HAL_Namespace.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL/RCInput.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/HAL_ESP32_Namespace.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/AP_HAL_ESP32.h",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/system.cpp",
+		"/home/buzz/ardupilot/libraries/AP_HAL/board/esp32.h",
+		"/home/buzz/ardupilot/Tools/ardupilotwaf/esp32.py",
+		"/home/buzz/ardupilot/libraries/AP_HAL_ESP32/RCInput.cpp",
+		"/home/buzz/ardupilot/libraries/AP_RCProtocol/AP_RCProtocol_PPMSum.h",
+		"/home/buzz/ardupilot/libraries/AP_RCProtocol/AP_RCProtocol_PPMSum.cpp",
+		"/home/buzz/MAVProxy/MAVProxy/mavproxy.py",
+		"/home/buzz/MAVProxy/MAVProxy/mavproxy_functions.py",
+		"/home/buzz/MAVProxy/MAVProxy/mavproxy_state.py",
+		"/home/buzz/MAVProxy/MAVProxy/mavproxy_status.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_id.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_GPSInput.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_link.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_wp.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_output.py",
+		"/home/buzz/ardupilot/multi.sh",
+		"/home/buzz/MAVProxy/MAVProxy/pty1.py",
+		"/home/buzz/MAVProxy/MAVProxy/mavproxy_globals.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_kmlread.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_serial.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_joystick/controls.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_joystick/findjoy.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_joystick/__init__.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/lib/mp_module.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_param.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_arm.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_sensors.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_fence.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_example.py",
+		"/home/buzz/ardupilot/Tools/autotest/default_params/plane1.parm",
+		"/home/buzz/ardupilot/Tools/autotest/default_params/plane3.parm",
+		"/home/buzz/ardupilot/Tools/autotest/default_params/plane2.parm",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_battery.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_msg.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_relay.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_sysidchanger.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/lib/win_layout.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_layout.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_nsh.py",
+		"/home/buzz/MAVProxy/MAVProxy/modules/mavproxy_adsb.py",
+		"/home/buzz/MAVProxy/MAVProxy/mavproxy.py0",
+		"/home/buzz/.local/bin/mavproxy.py0",
+		"/home/buzz/.local/bin/mavproxy.py",
+		"/home/buzz/ardupilot/Multi_Sim.py",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/mavesp8266_httpd.cpp",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/TXPoleFirmware.ino",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/XModem.h",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/updater.h",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/ESP8266HTTPUpdateServer.cpp",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/ESP8266HTTPUpdateServer.h",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/esp32_pin_cfg.h",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/crc.h",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/SmartSerial.h",
+		"/home/buzz/txmod/TXPole/TXPoleFirmware/mavesp8266_vehicle.cpp",
+		"/home/buzz/Dropbox/RFD TX Module/buzz_tcp_and_udp_prerelease_21_Jan_2019/mavesp8266/data/index.htm",
+		"/home/buzz/Dropbox/RFD TX Module/buzz_tcp_and_udp_prerelease_21_Jan_2019/mavesp8266/platformio.ini",
+		"/home/buzz/trading/buzz-building_strategies.ipynb",
+		"/home/buzz/.config/sublime-text-3/Packages/User/jupyter.sublime-build",
+		"/home/buzz/.config/sublime-text-3/Packages/User/Package Control.sublime-settings",
+		"/home/buzz/.config/sublime-text-3/Packages/Default/Default (Linux).sublime-keymap",
+		"/home/buzz/.config/sublime-text-3/Packages/User/Default (Linux).sublime-keymap"
+	],
+	"find":
+	{
+		"height": 39.0
+	},
+	"find_in_files":
+	{
+		"height": 101.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			" "
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"\",\""
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 26.0
+	},
+	"input":
+	{
+		"height": 315.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 608.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "Waf",
+	"project": "waf-ardupilot.sublime-project",
+	"replace":
+	{
+		"height": 70.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 246.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

@@ -1,0 +1,107 @@
+{
+	"build_systems":
+	[
+
+		{
+			"cmd":
+			[
+				"${project_path:.}/sublime_waf.sh",
+				"${file_name}"
+			],
+			"name": "Waf",
+			"variants":
+			[
+                {
+                    "cmd":
+                    [
+                "${project_path:.}/sublime_waf.sh",
+                        "configure"
+                    ],
+                    "name": "Configure SITL"
+                },
+                {
+                    "cmd":
+                    [
+                "${project_path:.}/sublime_waf.sh",
+                        "configure",
+                        "--board=esp32"
+                    ],
+                    "name": "Configure ESP32"
+                },
+				{
+					"cmd":
+					[
+                "${project_path:.}/sublime_waf.sh",
+                        "build"
+					],
+					"name": "Build SITL"
+				},
+				{
+					"cmd":
+					[
+                "${project_path:.}/sublime_waf.sh",
+						"plane"
+					],
+					"name": "Build ESP32-Plane"
+				},
+                {
+                    "cmd":
+                    [ "python","/home/buzz/esp/esp-idf/components/esptool_py/esptool/esptool.py","--chip","esp32","--port","/dev/ttyUSB0","--baud","115200",
+                        "--before","default_reset","--after","hard_reset","write_flash","-z","--flash_mode","dio","--flash_freq","80m",
+                        "--flash_size","detect","0x1000","/home/buzz/ardupilot/build/esp32/idf-plane/bootloader/bootloader.bin","0x10000",
+                        "/home/buzz/ardupilot/build/esp32/idf-plane/arduplane.bin","0x8000",
+                        "/home/buzz/ardupilot/build/esp32/idf-plane/partitions.bin"
+                    ],
+                    "name": "Flash ESP32-Plane"
+                },
+                {
+                    "cmd":
+                    [
+                "${project_path:.}/sublime_waf.sh",
+                        "clean"
+                    ],
+                    "name": "Clean"
+                }
+			],
+			"working_dir": "${project_path}"
+		}
+	],
+	"folders":
+	[
+		{
+			"path": "ArduCopter"
+		},
+		{
+			"path": "ArduPlane"
+		},
+		{
+			"path": "build"
+		},
+		{
+			"path": "libraries"
+		},
+		{
+			"path": "docs"
+		},
+		{
+			"path": "mk"
+		},
+		{
+			"path": "modules"
+		},
+		{
+			"path": "tests"
+		},
+		{
+			"path": "Tools"
+		}
+	],
+
+    "settings":
+    {
+         "sublimegdb_workingdir": "/home/buzz/ardupilot",
+         // NOTE: You MUST provide --interpreter=mi for the plugin to work
+         "sublimegdb_commandline": "/home/buzz/esp/xtensa-esp32-elf/bin/xtensa-esp32-elf-gdb/xtensa-esp32-elf-gdb -x /home/buzz/chibi-esp/openocd-esp32/gdbinit  --interpreter=mi ./build/esp32/idf-plane/arduplane.elf"
+    }
+
+}

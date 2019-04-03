@@ -120,11 +120,11 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 void RCInput::_timer_tick(void)
 {
 
-    printf("RCInput _timer_tick debug");
+    //printf("RCInput _timer_tick debug");
 
-    if (!_init) {
-        return;
-    }
+    //if (!_init) { //BUZZ PUT THIS BACK HACK
+    //    return;
+    //}
 
 
    // #if HAL_USE_EICU == TRUE

@@ -15,6 +15,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include "AP_HAL_ESP32.h"
+#include "HAL_ESP32_Class.h"
+
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "HAL_ESP32_Class.h"
@@ -45,6 +48,8 @@ static Empty::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
 extern const AP_HAL::HAL& hal;
+
+
 
 HAL_ESP32::HAL_ESP32() :
     AP_HAL::HAL(
@@ -80,5 +85,11 @@ void HAL_ESP32::run(int argc, char * const argv[], Callbacks* callbacks) const
 void AP_HAL::init()
 {
 }
+
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_ESP32 hal_esp;
+    return hal_esp;
+}
+
 
 #endif
