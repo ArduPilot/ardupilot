@@ -1698,8 +1698,11 @@ class AutoTestCopter(AutoTest):
             if delta > max_delta:
                 raise NotAchievedException("Did not land close enough to original position (%fm > %fm" % (delta, max_delta))
 
+            if not self.current_onboard_log_contains_message("PL"):
+                raise NotAchievedException("Did not see expected PL message")
+
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught (%s)" % str(e))
             ex = e
 
         self.zero_throttle()

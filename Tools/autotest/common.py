@@ -13,7 +13,7 @@ import pexpect
 import fnmatch
 import operator
 
-from pymavlink import mavwp, mavutil
+from pymavlink import mavwp, mavutil, DFReader
 from pysim import util, vehicleinfo
 
 # a list of pexpect objects to read while waiting for
@@ -2531,6 +2531,26 @@ switch value'''
         (name, desc, func) = test
         self.progress("##### %s is skipped: %s" % (name, reason))
         self.skip_list.append((test, reason))
+
+    def last_onboard_log(self):
+        '''return number of last onboard log'''
+        self.mavproxy.send("log list\n")
+        self.mavproxy.expect("lastLog ([0-9]+)")
+        return int(self.mavproxy.match.group(1))
+
+    def current_onboard_log_filepath(self):
+        '''return filepath to currently open dataflash log'''
+        return os.path.join("logs/%08u.BIN" % self.last_onboard_log())
+
+    def dfreader_for_current_onboard_log(self):
+        return DFReader.DFReader_binary(self.current_onboard_log_filepath(),
+                                        zero_time_base=True);
+
+    def current_onboard_log_contains_message(self, messagetype):
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type=messagetype)
+        print("m=%s" % str(m))
+        return m is not None
 
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
