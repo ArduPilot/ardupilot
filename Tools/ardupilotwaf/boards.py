@@ -182,6 +182,25 @@ class Board:
                 '-Werror=inconsistent-missing-override',
                 '-Werror=overloaded-virtual',
 
+                '-Werror=int-conversion',
+
+                # catch conversion issues:
+                "-Werror=string-conversion",
+                #    "-Werror=sign-conversion", # can't use as we assign into AP_Int8 from uint8_ts
+
+                "-Werror=bitfield-enum-conversion",
+                "-Werror=bool-conversion",
+                "-Werror=constant-conversion",
+                "-Werror=enum-conversion",
+#                "-Werror=implicit-float-conversion",
+#                "-Werror=implicit-int-conversion",
+                "-Werror=literal-conversion",
+                "-Werror=non-literal-null-conversion",
+                "-Werror=null-conversion",
+                "-Werror=objc-literal-conversion",
+#                "-Werror=shorten-64-to-32",  # ARRAY_SIZE() creates this all over the place as the caller typically takes a uint32_t not a size_t
+
+
                 '-Wno-gnu-designator',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
@@ -317,8 +336,16 @@ class sitl(Board):
             AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
         )
 
+        env.CFLAGS += [
+#            "-Werror=int-conversion",
+#            "-Werror=float-conversion",
+        ]
+
         env.CXXFLAGS += [
-            '-Werror=float-equal'
+            '-Werror=float-equal',
+
+            # catch conversion errors:
+#            '-Werror=float-conversion', # we do a lot of this...
         ]
 
         if not cfg.env.DEBUG:
