@@ -233,7 +233,7 @@ public:
     static uint32_t make_bus_id(enum BusType bus_type, uint8_t bus, uint8_t address, uint8_t devtype) {
         union DeviceId d {};
         d.devid_s.bus_type = bus_type;
-        d.devid_s.bus = bus;
+        d.devid_s.bus = static_cast<uint8_t>(bus & 0x1f);
         d.devid_s.address = address;
         d.devid_s.devtype = devtype;
         return d.devid;
@@ -290,7 +290,7 @@ protected:
 
     // set device bus number
     void set_device_bus(uint8_t bus) {
-        _bus_id.devid_s.bus = bus;
+        _bus_id.devid_s.bus = static_cast<uint8_t>(bus & 0x1f);
     }
 
 private:
