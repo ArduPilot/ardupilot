@@ -276,8 +276,11 @@ private:
     bool _ekf2_started;
     bool _ekf3_started;
     bool _force_ekf;
+    
+    // rotation from vehicle body to NED frame
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
+    
     Vector3f _gyro_drift;
     Vector3f _gyro_estimate;
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
