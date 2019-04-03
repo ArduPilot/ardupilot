@@ -33,18 +33,18 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     // init channel options
     switch(ch_option) {
         // the following functions do not need initialising:
-    case SAVE_WP:
-    case LEARN_CRUISE:
-    case ARMDISARM:
-    case MANUAL:
-    case ACRO:
-    case STEERING:
-    case HOLD:
-    case AUTO:
-    case GUIDED:
-    case LOITER:
-    case FOLLOW:
-    case SAILBOAT_TACK:
+    case AUX_FUNC::SAVE_WP:
+    case AUX_FUNC::LEARN_CRUISE:
+    case AUX_FUNC::ARMDISARM:
+    case AUX_FUNC::MANUAL:
+    case AUX_FUNC::ACRO:
+    case AUX_FUNC::STEERING:
+    case AUX_FUNC::HOLD:
+    case AUX_FUNC::AUTO:
+    case AUX_FUNC::GUIDED:
+    case AUX_FUNC::LOITER:
+    case AUX_FUNC::FOLLOW:
+    case AUX_FUNC::SAILBOAT_TACK:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -98,9 +98,9 @@ void RC_Channel_Rover::add_waypoint_for_current_loc()
 void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch (ch_option) {
-    case DO_NOTHING:
+    case AUX_FUNC::DO_NOTHING:
         break;
-    case SAVE_WP:
+    case AUX_FUNC::SAVE_WP:
         if (ch_flag == HIGH) {
             // do nothing if in AUTO mode
             if (rover.control_mode == &rover.mode_auto) {
@@ -128,14 +128,14 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
         break;
 
     // learn cruise speed and throttle
-    case LEARN_CRUISE:
+    case AUX_FUNC::LEARN_CRUISE:
         if (ch_flag == HIGH) {
             rover.cruise_learn_start();
         }
         break;
 
     // arm or disarm the motors
-    case ARMDISARM:
+    case AUX_FUNC::ARMDISARM:
         if (ch_flag == HIGH) {
             rover.arm_motors(AP_Arming::Method::RUDDER);
         } else if (ch_flag == LOW) {
@@ -144,62 +144,62 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
         break;
 
     // set mode to Manual
-    case MANUAL:
+    case AUX_FUNC::MANUAL:
         do_aux_function_change_mode(rover.mode_manual, ch_flag);
         break;
 
     // set mode to Acro
-    case ACRO:
+    case AUX_FUNC::ACRO:
         do_aux_function_change_mode(rover.mode_acro, ch_flag);
         break;
 
     // set mode to Steering
-    case STEERING:
+    case AUX_FUNC::STEERING:
         do_aux_function_change_mode(rover.mode_steering, ch_flag);
         break;
 
     // set mode to Hold
-    case HOLD:
+    case AUX_FUNC::HOLD:
         do_aux_function_change_mode(rover.mode_hold, ch_flag);
         break;
 
     // set mode to Auto
-    case AUTO:
+    case AUX_FUNC::AUTO:
         do_aux_function_change_mode(rover.mode_auto, ch_flag);
         break;
 
     // set mode to RTL
-    case RTL:
+    case AUX_FUNC::RTL:
         do_aux_function_change_mode(rover.mode_rtl, ch_flag);
         break;
 
     // set mode to SmartRTL
-    case SMART_RTL:
+    case AUX_FUNC::SMART_RTL:
         do_aux_function_change_mode(rover.mode_smartrtl, ch_flag);
         break;
 
     // set mode to Guided
-    case GUIDED:
+    case AUX_FUNC::GUIDED:
         do_aux_function_change_mode(rover.mode_guided, ch_flag);
         break;
 
     // Set mode to LOITER
-    case LOITER:
+    case AUX_FUNC::LOITER:
         do_aux_function_change_mode(rover.mode_loiter, ch_flag);
         break;
 
     // Set mode to Follow
-    case FOLLOW:
+    case AUX_FUNC::FOLLOW:
         do_aux_function_change_mode(rover.mode_follow, ch_flag);
         break;
 
     // set mode to Simple
-    case SIMPLE:
+    case AUX_FUNC::SIMPLE:
         do_aux_function_change_mode(rover.mode_simple, ch_flag);
         break;
 
     // trigger sailboat tack
-    case SAILBOAT_TACK:
+    case AUX_FUNC::SAILBOAT_TACK:
         // any switch movement interpreted as request to tack
         rover.control_mode->handle_tack_request();
         break;
