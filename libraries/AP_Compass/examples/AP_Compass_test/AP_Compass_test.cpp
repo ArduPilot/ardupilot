@@ -42,7 +42,7 @@ static void setup()
     hal.console->printf("init done - %u compasses detected\n", compass.get_count());
 
     // set offsets to account for surrounding interference
-    compass.set_and_save_offsets(0, 0, 0, 0);
+    compass.set_and_save_offsets(0, Vector3f(0, 0, 0));
     // set local difference between magnetic north and true north
     compass.set_declination(ToRad(0.0f));
 
