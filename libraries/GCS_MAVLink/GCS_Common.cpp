@@ -3315,7 +3315,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlin
     if (compassNumber == (uint8_t) -1) {
         return MAV_RESULT_FAILED;
     }
-    compass.set_and_save_offsets(compassNumber, packet.param2, packet.param3, packet.param4);
+    compass.set_and_save_offsets(compassNumber, Vector3f(packet.param2, packet.param3, packet.param4));
     return MAV_RESULT_ACCEPTED;
 }
 
