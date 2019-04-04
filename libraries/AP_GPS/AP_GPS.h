@@ -237,7 +237,7 @@ public:
 
     // ground speed in cm/s
     uint32_t ground_speed_cm(void) {
-        return ground_speed() * 100;
+        return uint32_t(ground_speed() * 100);
     }
 
     // ground course in degrees
@@ -249,7 +249,7 @@ public:
     }
     // ground course in centi-degrees
     int32_t ground_course_cd(uint8_t instance) const {
-        return ground_course(instance) * 100;
+        return int32_t(ground_course(instance) * 100);
     }
     int32_t ground_course_cd() const {
         return ground_course_cd(primary_instance);
