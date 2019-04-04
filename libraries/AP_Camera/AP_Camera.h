@@ -5,9 +5,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Relay/AP_Relay.h>
-#include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Mission/AP_Mission.h>
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
