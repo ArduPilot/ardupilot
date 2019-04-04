@@ -77,6 +77,7 @@
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
 #include <AC_AutoTune/AC_AutoTune.h>
+#include <AP_Common/AP_FWVersion.h>
 
 // Configuration
 #include "defines.h"
