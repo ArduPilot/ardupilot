@@ -74,7 +74,7 @@ void AP_Baro::SimpleUnderWaterAtmosphere(
     // \f$T(D)\approx\frac{S}{1.8 \cdot 10^{-4} \cdot S \cdot T + 1}\f$
     const float seaTempSurface = 15.0f; // Celsius
     const float S = seaTempSurface * 0.338f;
-    theta = 1.0f / ((1.8e-4) * S * (alt * 1e3) + 1.0f);
+    theta = 1.0f / ((1.8e-4f) * S * (alt * 1e3f) + 1.0f);
 }
 
 /*
