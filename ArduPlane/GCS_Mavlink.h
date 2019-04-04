@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 class GCS_MAVLINK_Plane : public GCS_MAVLINK
 {
