@@ -20,6 +20,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_RTC/AP_RTC.h>
 #include <climits>
 
 #include "AP_GPS_NOVA.h"
@@ -42,6 +43,10 @@
 #include "AP_GPS_UAVCAN.h"
 #endif
 
+#include <AP_Logger/AP_Logger.h>
+
+#define GPS_RTK_INJECT_TO_ALL 127
+#define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
 #define GPS_BAUD_TIME_MS 1200
 #define GPS_TIMEOUT_MS 4000u
 
@@ -1103,7 +1108,7 @@ void AP_GPS::Write_AP_Logger_Log_Startup_messages()
 bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 {
     // always enusre a lag is provided
-    lag_sec = GPS_WORST_LAG_SEC;
+    lag_sec = 0.22f;
 
     if (instance >= GPS_MAX_INSTANCES) {
         return false;
@@ -1541,7 +1546,9 @@ bool AP_GPS::is_healthy(uint8_t instance) const
         return false;
     }
 
-    bool last_msg_valid = last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS;
+    const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
+
+    bool last_msg_valid = last_message_delta_time_ms(instance) < gps_max_delta_ms;
 
     if (instance == GPS_BLENDED_INSTANCE) {
         return last_msg_valid && blend_health_check();
