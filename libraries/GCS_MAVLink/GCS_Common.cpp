@@ -1326,7 +1326,7 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
     // send messages out at most 80% of main loop rate
     if (interval_ms != 0 &&
         interval_ms*800 < AP::scheduler().get_loop_period_us()) {
-        interval_ms = AP::scheduler().get_loop_period_us()/800.0;
+        interval_ms = AP::scheduler().get_loop_period_us()/800.0f;
     }
 
     // check if it's a specially-handled message:
