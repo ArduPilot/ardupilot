@@ -22,10 +22,13 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 #include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Camera/AP_Camera.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/Semaphore.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Mount/AP_Mount.h>
+#include <AP_Common/AP_FWVersion.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 
 #include "GCS.h"
