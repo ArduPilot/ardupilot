@@ -19,7 +19,7 @@ def write_table(f,name, table):
     for i in range(NUM_LAT):
         f.write("    {")
         for j in range(NUM_LON):
-            f.write("%.5f" % table[i][j])
+            f.write("%.5ff" % table[i][j])
             if j != NUM_LON-1:
                 f.write(",")
         f.write("}")
