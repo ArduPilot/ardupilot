@@ -2,9 +2,6 @@
 
 #include "AP_Logger_Backend.h"
 
-#include <AP_Mission/AP_Mission.h>
-#include <AP_Rally/AP_Rally.h>
-
 class LoggerMessageWriter {
 public:
 
