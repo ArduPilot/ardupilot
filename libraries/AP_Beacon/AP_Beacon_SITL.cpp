@@ -66,15 +66,15 @@ void AP_Beacon_SITL::update(void)
 
     // truth location of the flight vehicle
     Location current_loc;
-    current_loc.lat = sitl->state.latitude * 1.0e7;
-    current_loc.lng = sitl->state.longitude * 1.0e7;
-    current_loc.alt = sitl->state.altitude * 1.0e2;
+    current_loc.lat = sitl->state.latitude * 1.0e7f;
+    current_loc.lng = sitl->state.longitude * 1.0e7f;
+    current_loc.alt = sitl->state.altitude * 1.0e2f;
 
     // where the beacon system origin is located
     Location beacon_origin;
-    beacon_origin.lat = get_beacon_origin_lat() * 1.0e7;
-    beacon_origin.lng = get_beacon_origin_lon() * 1.0e7;
-    beacon_origin.alt = get_beacon_origin_alt() * 1.0e2;
+    beacon_origin.lat = get_beacon_origin_lat() * 1.0e7f;
+    beacon_origin.lng = get_beacon_origin_lon() * 1.0e7f;
+    beacon_origin.alt = get_beacon_origin_alt() * 1.0e2f;
 
     // position of each beacon
     Location beacon_loc = beacon_origin;
