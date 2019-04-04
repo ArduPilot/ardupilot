@@ -31,8 +31,10 @@ extern const AP_HAL::HAL& hal;
 
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AC_Sprayer/AC_Sprayer.h>
+#include <AP_Camera/AP_Camera.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_LandingGear/AP_LandingGear.h>
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
