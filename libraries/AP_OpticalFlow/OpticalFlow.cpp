@@ -10,13 +10,24 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef OPTICAL_FLOW_TYPE_DEFAULT
+ #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412 || defined(HAL_HAVE_PIXARTFLOW_SPI)
+  #define OPTICAL_FLOW_TYPE_DEFAULT OpticalFlowType::PIXART
+ #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+  #define OPTICAL_FLOW_TYPE_DEFAULT OpticalFlowType::BEBOP
+ #else
+  #define OPTICAL_FLOW_TYPE_DEFAULT OpticalFlowType::NONE
+ #endif
+#endif
+
 const AP_Param::GroupInfo OpticalFlow::var_info[] = {
-    // @Param: _ENABLE
-    // @DisplayName: Optical flow enable/disable
-    // @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
-    // @Values: 0:Disabled, 1:Enabled
+    // @Param: _TYPE
+    // @DisplayName: Optical flow sensor type
+    // @Description: Optical flow sensor type
+    // @Values: 0:None, 1:PX4Flow, 2:Pixart, 3:Bebop, 4:CXOF, 5:MAVLink
     // @User: Standard
-    AP_GROUPINFO("_ENABLE", 0,  OpticalFlow,    _enabled,   0),
+    // @RebootRequired: True
+    AP_GROUPINFO("_TYPE", 0,  OpticalFlow,    _type,   (int8_t)OPTICAL_FLOW_TYPE_DEFAULT),
 
     // @Param: _FXSCALER
     // @DisplayName: X axis optical flow scale factor correction
@@ -70,7 +81,14 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     AP_GROUPINFO("_ADDR", 5,  OpticalFlow, _address,   0),
-    
+
+    // the parameter description below is for GCSs (like MP) that use master for the parameter descriptions.  This should be removed when Copter-3.7 is released
+    // @Param: _TYPE
+    // @DisplayName: Optical flow enable/disable
+    // @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Standard
+
     AP_GROUPEND
 };
 
@@ -86,42 +104,39 @@ void OpticalFlow::init(uint32_t log_bit)
 {
      _log_bit = log_bit;
 
-    // return immediately if not enabled
-    if (!_enabled) {
+    // return immediately if not enabled or backend already created
+    if ((_type == (int8_t)OpticalFlowType::NONE) || (backend != nullptr)) {
         return;
     }
 
-    if (!backend) {
-#if AP_FEATURE_BOARD_DETECT
-        if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK ||
-            AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2 ||
-            AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PCNC1) {
-            // possibly have pixhart on external SPI
-            backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
-        }
-        if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_SP01) {
+    switch ((OpticalFlowType)_type.get()) {
+    case OpticalFlowType::NONE:
+        break;
+    case OpticalFlowType::PX4FLOW:
+        backend = AP_OpticalFlow_PX4Flow::detect(*this);
+        break;
+    case OpticalFlowType::PIXART:
+        backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
+        if (backend == nullptr) {
             backend = AP_OpticalFlow_Pixart::detect("pixartPC15", *this);
         }
-        if (backend == nullptr) {
-            backend = AP_OpticalFlow_PX4Flow::detect(*this);
-        }
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        backend = new AP_OpticalFlow_SITL(*this);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+        break;
+    case OpticalFlowType::BEBOP:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
         backend = new AP_OpticalFlow_Onboard(*this);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-        backend = AP_OpticalFlow_PX4Flow::detect(*this);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-        backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
-#elif defined(HAL_HAVE_PIXARTFLOW_SPI)
-        backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #endif
-        if (backend == nullptr) {
-            backend = AP_OpticalFlow_CXOF::detect(*this);
-        }
-        if (backend == nullptr) {
-            backend = AP_OpticalFlow_MAV::detect(*this);
-        }
+        break;
+    case OpticalFlowType::CXOF:
+        backend = AP_OpticalFlow_CXOF::detect(*this);
+        break;
+    case OpticalFlowType::MAVLINK:
+        backend = AP_OpticalFlow_MAV::detect(*this);
+        break;
+    case OpticalFlowType::SITL:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        backend = new AP_OpticalFlow_SITL(*this);
+#endif
+        break;
     }
 
     if (backend != nullptr) {
