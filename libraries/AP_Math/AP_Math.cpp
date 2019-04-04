@@ -2,6 +2,8 @@
 
 #include <float.h>
 
+#include <AP_InternalError/AP_InternalError.h>
+
 /*
  * is_equal(): Integer implementation, provided for convenience and
  * compatibility with old code. Expands to the same as comparing the values
@@ -185,6 +187,7 @@ T constrain_value(const T amt, const T low, const T high)
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
+        AP::internalerror().error(AP_InternalError::error_t::constraining_nan);
         return (low + high) / 2;
     }
 
