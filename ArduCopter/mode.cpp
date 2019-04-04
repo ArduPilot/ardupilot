@@ -591,7 +591,7 @@ float Copter::Mode::get_pilot_desired_throttle() const
         throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
     }
 
-    float expo = constrain_float(-(thr_mid-0.5)/0.375, -0.5f, 1.0f);
+    const float expo = constrain_float(-(thr_mid-0.5f)/0.375f, -0.5f, 1.0f);
     // calculate the output throttle using the given expo function
     float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
     return throttle_out;
