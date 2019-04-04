@@ -179,17 +179,6 @@ public:
     ///
     void set_initial_location(int32_t latitude, int32_t longitude);
 
-    /// Program new offset values.
-    ///
-    /// @param  i                   compass instance
-    /// @param  x                   Offset to the raw mag_x value in milligauss.
-    /// @param  y                   Offset to the raw mag_y value in milligauss.
-    /// @param  z                   Offset to the raw mag_z value in milligauss.
-    ///
-    void set_and_save_offsets(uint8_t i, int x, int y, int z) {
-        set_and_save_offsets(i, Vector3f(x, y, z));
-    }
-
     // learn offsets accessor
     bool learn_offsets_enabled() const { return _learn == LEARN_INFLIGHT; }
 
