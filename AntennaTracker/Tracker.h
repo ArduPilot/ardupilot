@@ -59,6 +59,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Beacon/AP_Beacon.h>
+#include <AP_Common/AP_FWVersion.h>
 
 // Configuration
 #include "config.h"
