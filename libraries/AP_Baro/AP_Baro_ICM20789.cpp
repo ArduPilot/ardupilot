@@ -296,7 +296,7 @@ static struct {
 void AP_Baro_ICM20789::convert_data(uint32_t Praw, uint32_t Traw)
 {
     // temperature is easy
-    float T = -45 + (175.0 / (1U<<16)) * Traw;
+    float T = -45 + (175.0f / (1U<<16)) * Traw;
 
     // pressure involves a few more calculations
     float P = get_pressure(Praw, Traw);
