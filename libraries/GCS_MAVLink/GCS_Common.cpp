@@ -1866,9 +1866,9 @@ void GCS_MAVLINK::send_sensor_offsets()
     const AP_Baro &barometer = AP::baro();
 
     mavlink_msg_sensor_offsets_send(chan,
-                                    mag_offsets.x,
-                                    mag_offsets.y,
-                                    mag_offsets.z,
+                                    int16_t(mag_offsets.x),
+                                    int16_t(mag_offsets.y),
+                                    int16_t(mag_offsets.z),
                                     compass.get_declination(),
                                     barometer.get_pressure(),
                                     barometer.get_temperature()*100,
