@@ -226,30 +226,30 @@ void AP_InertialSensor_Invensense::start()
      */
     switch (_mpu_type) {
     case Invensense_MPU9250:
-        temp_zero = 21;
-        temp_sensitivity = 1.0/340;
+        temp_zero = 21.0f;
+        temp_sensitivity = 1.0f/340;
         break;
 
     case Invensense_MPU6000:
     case Invensense_MPU6500:
-        temp_zero = 36.53;
-        temp_sensitivity = 1.0/340;
+        temp_zero = 36.53f;
+        temp_sensitivity = 1.0f/340;
         break;
 
     case Invensense_ICM20608:
     case Invensense_ICM20602:
     case Invensense_ICM20601:
-        temp_zero = 25;
-        temp_sensitivity = 1.0/326.8; 
+        temp_zero = 25.0f;
+        temp_sensitivity = 1.0f/326.8f;
         break;
 
     case Invensense_ICM20789:
-        temp_zero = 25;
-        temp_sensitivity = 0.003;
+        temp_zero = 25.0f;
+        temp_sensitivity = 0.003f;
         break;
     case Invensense_ICM20689:
-        temp_zero = 25;
-        temp_sensitivity = 0.003;
+        temp_zero = 25.0f;
+        temp_sensitivity = 0.003f;
         break;
     }
 
