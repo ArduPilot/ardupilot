@@ -12,7 +12,7 @@ class TestFlow(Test):
     # correctly aligned, is focussed and the test is performed over a textured surface with adequate lighting.
     # Note that the strobing effect from non incandescent artifical lighting can produce poor optical flow measurements.
     #
-    # 1) Set LOG_DISARMED and FLOW_ENABLE to 1 and verify that ATT and OF messages are being logged onboard
+    # 1) Set LOG_DISARMED and FLOW_TYPE to 10 and verify that ATT and OF messages are being logged onboard
     # 2) Place on level ground, apply power and wait for EKF to complete attitude alignment
     # 3) Keeping the copter level, lift it to shoulder height and rock between +-20 and +-30 degrees
     #    in roll about an axis that passes through the flow sensor lens assembly. The time taken to rotate from
