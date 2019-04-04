@@ -36,6 +36,8 @@
   #endif
 #endif
 
+#include <AP_Logger/AP_Logger.h>
+
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
