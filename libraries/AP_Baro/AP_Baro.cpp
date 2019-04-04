@@ -44,6 +44,8 @@
 #include "AP_Baro_UAVCAN.h"
 #endif
 
+#include <AP_Logger/AP_Logger.h>
+
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
 #ifndef HAL_BARO_FILTER_DEFAULT
