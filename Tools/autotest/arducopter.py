@@ -1676,7 +1676,20 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("RNGFND1_MIN_CM", 0)
             self.set_parameter("RNGFND1_MAX_CM", 4000)
             self.set_parameter("RNGFND1_PIN", 0)
-            self.set_parameter("RNGFND1_SCALING", 12.12)
+            self.set_parameter("RNGFND1_SCALING", 12)
+            self.set_parameter("SIM_SONAR_SCALE", 12)
+
+            start = self.mav.location()
+            target = start
+            (target.lat, target.lng) = mavextra.gps_offset(start.lat, start.lng, 4, -4)
+            self.progress("Setting target to %f %f" % (target.lat, target.lng))
+
+            self.set_parameter("SIM_PLD_ENABLE", 1)
+            self.set_parameter("SIM_PLD_LAT", target.lat)
+            self.set_parameter("SIM_PLD_LON", target.lng)
+            self.set_parameter("SIM_PLD_HEIGHT", 0)
+            self.set_parameter("SIM_PLD_ALT_LMT", 15)
+            self.set_parameter("SIM_PLD_DIST_LMT", 10)
 
             self.reboot_sitl()
 
@@ -1684,19 +1697,15 @@ class AutoTestCopter(AutoTest):
             old_pos = self.mav.location()
             self.zero_throttle()
             self.takeoff(10, 1800)
-            # move away a little
-            self.set_rc(2, 1550)
-            self.wait_distance(5)
-            self.set_rc(2, 1500)
             self.change_mode("LAND")
             self.mav.motors_disarmed_wait()
             self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             new_pos = self.mav.location()
-            delta = self.get_distance(old_pos, new_pos)
-            self.progress("Landed %f metres from original position" % delta)
+            delta = self.get_distance(target, new_pos)
+            self.progress("Landed %f metres from target position" % delta)
             max_delta = 1
             if delta > max_delta:
-                raise NotAchievedException("Did not land close enough to original position (%fm > %fm" % (delta, max_delta))
+                raise NotAchievedException("Did not land close enough to target position (%fm > %fm" % (delta, max_delta))
 
             if not self.current_onboard_log_contains_message("PL"):
                 raise NotAchievedException("Did not see expected PL message")
