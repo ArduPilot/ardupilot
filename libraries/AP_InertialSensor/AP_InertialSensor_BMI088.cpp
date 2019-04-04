@@ -333,7 +333,7 @@ void AP_InertialSensor_BMI088::read_fifo_accel(void)
         } else {
             uint16_t temp_uint11 = (tbuf[0]<<3) | (tbuf[1]>>5);
             int16_t temp_int11 = temp_uint11>1023?temp_uint11-2048:temp_uint11;
-            float temp_degc = temp_int11 * 0.125 + 23;
+            float temp_degc = temp_int11 * 0.125f + 23;
             _publish_temperature(accel_instance, temp_degc);
         }
     }
@@ -365,7 +365,7 @@ void AP_InertialSensor_BMI088::read_fifo_gyro(void)
     }
 
     // data is 16 bits with 2000dps range
-    const float scale = radians(2000.0) / 32767.0;
+    const float scale = radians(2000.0f) / 32767.0f;
     for (uint8_t i = 0; i < num_frames; i++) {
         const uint8_t *d = &data[i*6];
         int16_t xyz[3] {

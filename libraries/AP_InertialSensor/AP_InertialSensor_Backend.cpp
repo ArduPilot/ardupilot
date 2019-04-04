@@ -62,18 +62,18 @@ void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &s
     } else {
         count++;
         if (now - start_us > 1000000UL) {
-            float observed_rate_hz = count * 1.0e6 / (now - start_us);
+            float observed_rate_hz = count * 1.0e6f / (now - start_us);
 #if SENSOR_RATE_DEBUG
             printf("RATE: %.1f should be %.1f\n", observed_rate_hz, rate_hz);
 #endif
-            float filter_constant = 0.98;
-            float upper_limit = 1.05;
-            float lower_limit = 0.95;
+            float filter_constant = 0.98f;
+            float upper_limit = 1.05f;
+            float lower_limit = 0.95f;
             if (AP_HAL::millis() < 30000) {
                 // converge quickly for first 30s, then more slowly
-                filter_constant = 0.8;
-                upper_limit = 2.0;
-                lower_limit = 0.5;
+                filter_constant = 0.8f;
+                upper_limit = 2.0f;
+                lower_limit = 0.5f;
             }
             observed_rate_hz = constrain_float(observed_rate_hz, rate_hz*lower_limit, rate_hz*upper_limit);
             rate_hz = filter_constant * rate_hz + (1-filter_constant) * observed_rate_hz;
@@ -158,7 +158,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
       difference between the two is whether sample_us is provided.
      */
     if (sample_us != 0 && _imu._gyro_last_sample_us[instance] != 0) {
-        dt = (sample_us - _imu._gyro_last_sample_us[instance]) * 1.0e-6;
+        dt = (sample_us - _imu._gyro_last_sample_us[instance]) * 1.0e-6f;
     } else {
         // don't accept below 100Hz
         if (_imu._gyro_raw_sample_rates[instance] < 100) {
@@ -291,7 +291,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
       difference between the two is whether sample_us is provided.
      */
     if (sample_us != 0 && _imu._accel_last_sample_us[instance] != 0) {
-        dt = (sample_us - _imu._accel_last_sample_us[instance]) * 1.0e-6;
+        dt = (sample_us - _imu._accel_last_sample_us[instance]) * 1.0e-6f;
     } else {
         // don't accept below 100Hz
         if (_imu._accel_raw_sample_rates[instance] < 100) {
