@@ -19,6 +19,7 @@
 
 #include "AP_Common/AP_FWVersion.h"
 #include "GCS.h"
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
