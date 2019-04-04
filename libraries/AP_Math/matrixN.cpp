@@ -48,7 +48,7 @@ void MatrixN<T,N>::force_symmetry(void)
 {
     for (uint8_t i = 0; i < N; i++) {
         for (uint8_t j = 0; j < (i - 1); j++) {
-            v[i][j] = (v[i][j] + v[j][i]) * 0.5;
+            v[i][j] = (v[i][j] + v[j][i]) * 0.5f;
             v[j][i] = v[i][j];
         }
     }
