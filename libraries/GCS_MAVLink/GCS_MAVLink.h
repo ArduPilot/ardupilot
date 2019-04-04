@@ -70,7 +70,9 @@ uint16_t comm_get_available(mavlink_channel_t chan);
 uint16_t comm_get_txspace(mavlink_channel_t chan);
 
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
+#pragma GCC diagnostic ignored "-Wconversion"
 #include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
+#pragma GCC diagnostic pop
 
 // return a MAVLink parameter type given a AP_Param type
 MAV_PARAM_TYPE mav_param_type(enum ap_var_type t);
