@@ -1123,7 +1123,7 @@ class AutoTestCopter(AutoTest):
         try:
 
             self.set_parameter("SIM_FLOW_ENABLE", 1)
-            self.set_parameter("FLOW_ENABLE", 1)
+            self.set_parameter("FLOW_TYPE", 10)
 
             self.set_parameter("RNGFND1_TYPE", 1)
             self.set_parameter("RNGFND1_MIN_CM", 0)
