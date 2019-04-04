@@ -47,9 +47,9 @@ public:
     void update();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    int32_t get_roll() const { return _pos_control.get_roll(); }
-    int32_t get_pitch() const { return _pos_control.get_pitch(); }
-    int32_t get_yaw() const { return _yaw; }
+    float get_roll() const { return _pos_control.get_roll(); }
+    float get_pitch() const { return _pos_control.get_pitch(); }
+    float get_yaw() const { return _yaw; }
 
     // get_closest_point_on_circle - returns closest point on the circle
     //  circle's center should already have been set
