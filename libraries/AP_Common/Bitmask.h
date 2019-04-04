@@ -26,7 +26,7 @@ class Bitmask {
 public:
     Bitmask() :
         numbits(num_bits),
-        numwords((num_bits+31)/32) {
+        numwords(uint16_t(num_bits+31)/32) {
         clearall();
     }
 
@@ -88,16 +88,17 @@ public:
         return true;
     }
 
+#pragma GCC diagnostic ignored "-Wconversion"
     // return number of bits set
     uint16_t count() const {
         uint16_t sum = 0;
         for (uint16_t i=0; i<numwords; i++) {
             if (sizeof(bits[i]) <= sizeof(int)) {
-                sum += __builtin_popcount(bits[i]);
+                sum += (uint16_t)__builtin_popcount(bits[i]);
             } else if (sizeof(bits[i]) <= sizeof(long)) {
-                sum += __builtin_popcountl(bits[i]);
+                sum += uint16_t(__builtin_popcountl(bits[i]));
             } else {
-                sum += __builtin_popcountll(bits[i]);
+                sum += uint16_t(__builtin_popcountll(bits[i]));
             }
         }
         return sum;
@@ -121,6 +122,7 @@ public:
         }
         return -1;
     }
+#pragma GCC diagnostic pop
 
     // return number of bits available
     uint16_t size() const {
