@@ -5,6 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Common/AP_FWVersion.h>
 
 void setup();
 void loop();

@@ -1,4 +1,5 @@
 #include "GCS.h"
+#include <AP_Common/AP_FWVersion.h>
 
 const AP_FWVersion AP_FWVersion::fwver
 {
