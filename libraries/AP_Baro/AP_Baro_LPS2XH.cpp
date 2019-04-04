@@ -224,7 +224,7 @@ void AP_Baro_LPS2XH::_update_temperature(void)
     WITH_SEMAPHORE(_sem);
 
     if (_lps2xh_type == BARO_LPS25H) {
-        _temperature=((float)(Temp_Reg_s16/480)+42.5);
+        _temperature=((float)(Temp_Reg_s16/480)+42.5f);
     }
     if (_lps2xh_type == BARO_LPS22H) {
         _temperature=(float)(Temp_Reg_s16/100);
@@ -237,7 +237,7 @@ void AP_Baro_LPS2XH::_update_pressure(void)
     uint8_t pressure[3];
     _dev->read_registers(PRESS_OUT_XL_ADDR, pressure, 3);
     int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|(uint32_t)pressure[0];
-    int32_t Pressure_mb = Pressure_Reg_s32 * (100.0 / 4096); // scale for pa
+    int32_t Pressure_mb = Pressure_Reg_s32 * (100.0f / 4096); // scale for pa
 
     WITH_SEMAPHORE(_sem);
     _pressure = Pressure_mb;
