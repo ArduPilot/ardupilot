@@ -669,13 +669,13 @@ private:
     void update_height_estimate(void);
 
     // minimum assumed height
-    const float height_min = 0.1;
+    const float height_min = 0.1f;
 
     // maximum scaling height
-    const float height_max = 3.0;
+    const float height_max = 3.0f;
 
     AP_Float flow_max;
-    AC_PI_2D flow_pi_xy{0.2, 0.3, 3000, 5, 0.0025};
+    AC_PI_2D flow_pi_xy{0.2f, 0.3f, 3000, 5, 0.0025f};
     AP_Float flow_filter_hz;
     AP_Int8  flow_min_quality;
     AP_Int8  brake_rate_dps;
