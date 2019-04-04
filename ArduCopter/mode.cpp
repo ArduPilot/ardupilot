@@ -557,8 +557,8 @@ void Copter::Mode::land_run_horizontal_control()
     // run loiter controller
     loiter_nav->update();
 
-    int32_t nav_roll  = loiter_nav->get_roll();
-    int32_t nav_pitch = loiter_nav->get_pitch();
+    float nav_roll  = loiter_nav->get_roll();
+    float nav_pitch = loiter_nav->get_pitch();
 
     if (g2.wp_navalt_min > 0) {
         // user has requested an altitude below which navigation
