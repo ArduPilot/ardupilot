@@ -2,6 +2,8 @@
 
 #include "Tracker.h"
 
+#include <AP_Camera/AP_Camera.h>
+
 /*
  *  !!NOTE!!
  *
