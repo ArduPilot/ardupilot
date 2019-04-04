@@ -42,11 +42,21 @@ public:
         return _singleton;
     }
 
+    enum class OpticalFlowType {
+        NONE = 0,
+        PX4FLOW = 1,
+        PIXART = 2,
+        BEBOP = 3,
+        CXOF = 4,
+        MAVLINK = 5,
+        SITL = 10
+    };
+
     // init - initialise sensor
     void init(uint32_t log_bit);
 
     // enabled - returns true if optical flow is enabled
-    bool enabled() const { return _enabled; }
+    bool enabled() const { return _type != (int8_t)OpticalFlowType::NONE; }
 
     // healthy - return true if the sensor is healthy
     bool healthy() const { return backend != nullptr && _flags.healthy; }
@@ -98,7 +108,7 @@ private:
     } _flags;
 
     // parameters
-    AP_Int8  _enabled;              // enabled/disabled flag
+    AP_Int8  _type;                 // user configurable sensor type
     AP_Int16 _flowScalerX;          // X axis flow scale factor correction - parts per thousand
     AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
     AP_Int16 _yawAngle_cd;          // yaw angle of sensor X axis with respect to vehicle X axis - centi degrees
