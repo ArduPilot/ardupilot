@@ -24,8 +24,8 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Common/AP_FWVersion.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
