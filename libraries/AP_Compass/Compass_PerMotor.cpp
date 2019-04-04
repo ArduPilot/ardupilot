@@ -117,7 +117,7 @@ float Compass_PerMotor::scaled_output(uint8_t motor)
     uint16_t pwm = hal.rcout->read_last_sent(motor_map[motor]);
 
     // get 0 to 1 motor demand
-    float output = (hal.rcout->scale_esc_to_unity(pwm)+1) * 0.5;
+    float output = (hal.rcout->scale_esc_to_unity(pwm)+1) * 0.5f;
 
     if (output <= 0) {
         return 0;

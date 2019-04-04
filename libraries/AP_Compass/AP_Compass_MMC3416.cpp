@@ -220,7 +220,7 @@ void AP_Compass_MMC3416::timer()
             have_initial_offset = true;
         } else {
             // low pass changes to the offset
-            offset = offset * 0.95 + new_offset * 0.05;
+            offset = offset * 0.95f + new_offset * 0.05f;
         }
 
 #if 0
