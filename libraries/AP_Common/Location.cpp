@@ -270,3 +270,16 @@ bool Location::sanitize(const Location &defaultLoc)
 
 // make sure we know what size the Location object is:
 assert_storage_size<Location, 16> _assert_storage_size_Location;
+
+
+// return bearing in centi-degrees from location to loc2
+int32_t Location::get_bearing_to(const struct Location &loc2) const
+{
+    const int32_t off_x = loc2.lng - lng;
+    const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale();
+    int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
+    if (bearing < 0) {
+        bearing += 36000;
+    }
+    return bearing;
+}
