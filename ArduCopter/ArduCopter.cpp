@@ -341,7 +341,7 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCIN)) {
         logger.Write_RCIN();
         if (rssi.enabled()) {
-            logger.Write_RSSI(rssi);
+            logger.Write_RSSI();
         }
     }
     if (should_log(MASK_LOG_RCOUT)) {
