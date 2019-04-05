@@ -787,7 +787,7 @@ bool Plane::verify_continue_and_change_alt()
         // Is the next_WP less than 200 m away?
         if (current_loc.get_distance(next_WP_loc) < 200.0f) {
             //push another 300 m down the line
-            int32_t next_wp_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+            int32_t next_wp_bearing_cd = prev_WP_loc.get_bearing_to(next_WP_loc);
             location_update(next_WP_loc, next_wp_bearing_cd * 0.01f, 300.0f);
         }
 
@@ -1079,7 +1079,7 @@ bool Plane::verify_loiter_heading(bool init)
     }
 
     // Bearing in degrees
-    int32_t bearing_cd = get_bearing_cd(current_loc,next_nav_cmd.content.location);
+    int32_t bearing_cd = current_loc.get_bearing_to(next_nav_cmd.content.location);
 
     // get current heading.
     int32_t heading_cd = gps.ground_course_cd();
