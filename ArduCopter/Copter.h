@@ -660,6 +660,7 @@ private:
     void esc_calibration_passthrough();
     void esc_calibration_auto();
     void esc_calibration_notify();
+    void esc_calibration_setup();
 
     // events.cpp
     void failsafe_radio_on_event();

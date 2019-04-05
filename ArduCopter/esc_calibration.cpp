@@ -87,39 +87,10 @@ void Copter::esc_calibration_startup_check()
 void Copter::esc_calibration_passthrough()
 {
 #if FRAME_CONFIG != HELI_FRAME
-    // clear esc flag for next time
-    g.esc_calibrate.set_and_save(ESCCAL_NONE);
-
-    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
-        // run at full speed for oneshot ESCs (actually done on push)
-        motors->set_update_rate(g.rc_speed);
-    } else {
-        // reduce update rate to motors to 50Hz
-        motors->set_update_rate(50);
-    }
-
     // send message to GCS
     gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Passing pilot throttle to ESCs");
 
-    // disable safety if requested
-    BoardConfig.init_safety();
-
-    // wait for safety switch to be pressed
-    uint32_t tstart = AP_HAL::millis();
-    while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        const uint32_t tnow = AP_HAL::millis();
-        if (tnow - tstart >= 5000) {
-            gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
-            tstart = tnow;
-        }
-        esc_calibration_notify();
-        hal.scheduler->delay(3);
-    }
-
-    // arm motors
-    motors->armed(true);
-    SRV_Channels::enable_by_mask(motors->get_motor_mask());
-    hal.util->set_soft_armed(true);
+    esc_calibration_setup();
 
     while(1) {
         // flash LEDs
@@ -144,39 +115,10 @@ void Copter::esc_calibration_passthrough()
 void Copter::esc_calibration_auto()
 {
 #if FRAME_CONFIG != HELI_FRAME
-    // clear esc flag for next time
-    g.esc_calibrate.set_and_save(ESCCAL_NONE);
-
-    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
-        // run at full speed for oneshot ESCs (actually done on push)
-        motors->set_update_rate(g.rc_speed);
-    } else {
-        // reduce update rate to motors to 50Hz
-        motors->set_update_rate(50);
-    }
-
     // send message to GCS
     gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Auto calibration");
 
-    // disable safety if requested
-    BoardConfig.init_safety();
-
-    // wait for safety switch to be pressed
-    uint32_t tstart = AP_HAL::millis();
-    while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        const uint32_t tnow = AP_HAL::millis();
-        if (tnow - tstart >= 5000) {
-            gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
-            tstart = tnow;
-        }
-        esc_calibration_notify();
-        hal.scheduler->delay(3);
-    }
-
-    // arm and enable motors
-    motors->armed(true);
-    SRV_Channels::enable_by_mask(motors->get_motor_mask());
-    hal.util->set_soft_armed(true);
+    esc_calibration_setup();
 
     // raise throttle to maximum
     SRV_Channels::cork();
@@ -213,4 +155,38 @@ void Copter::esc_calibration_notify()
         esc_calibration_notify_update_ms = now;
         notify.update();
     }
+}
+
+void Copter::esc_calibration_setup()
+{
+    // clear esc flag for next time
+    g.esc_calibrate.set_and_save(ESCCAL_NONE);
+
+    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
+        // run at full speed for oneshot ESCs (actually done on push)
+        motors->set_update_rate(g.rc_speed);
+    } else {
+        // reduce update rate to motors to 50Hz
+        motors->set_update_rate(50);
+    }
+
+    // disable safety if requested
+    BoardConfig.init_safety();
+
+    // wait for safety switch to be pressed
+    uint32_t tstart = 0;
+    while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        const uint32_t tnow = AP_HAL::millis();
+        if (tnow - tstart >= 5000) {
+            gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
+            tstart = tnow;
+        }
+        esc_calibration_notify();
+        hal.scheduler->delay(3);
+    }
+
+    // arm and enable motors
+    motors->armed(true);
+    SRV_Channels::enable_by_mask(motors->get_motor_mask());
+    hal.util->set_soft_armed(true);
 }
