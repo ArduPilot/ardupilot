@@ -1,6 +1,7 @@
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Common/Location.h>
 
 #include "lua_bindings.h"
 
@@ -230,9 +231,7 @@ static int location_project(lua_State *L) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    location_update(*check_location(L, -3),
-                    luaL_checknumber(L, -2),
-                    luaL_checknumber(L, -1));
+    (*check_location(L, -3)).offset_bearing(luaL_checknumber(L, -2), luaL_checknumber(L, -1));
 
     lua_pop(L, 2);
 
