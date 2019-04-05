@@ -42,9 +42,6 @@ float       location_path_proportion(const struct Location &location,
                                const struct Location &point1,
                                const struct Location &point2);
 
-//  extrapolate latitude/longitude given bearing and distance
-void        location_update(struct Location &loc, float bearing, float distance);
-
 /*
   return the distance in meters in North/East plane as a N/E vector
   from loc1 to loc2
