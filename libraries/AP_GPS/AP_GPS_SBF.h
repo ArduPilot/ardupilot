@@ -22,7 +22,6 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
-#define SBF_SETUP_MSG "\nsso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic, msec100\n"
 #define SBF_DISK_ACTIVITY (1 << 7)
 #define SBF_DISK_FULL     (1 << 8)
 #define SBF_DISK_MOUNTED  (1 << 9)
@@ -66,7 +65,7 @@ private:
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, all\n",
-    "sso, Stream2, Dsk1, postprocess+event+comment, msec100\n"};
+    "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
     uint32_t _config_last_ack_time;
 
     const char* _port_enable = "\nSSSSSSSSSS\n";
