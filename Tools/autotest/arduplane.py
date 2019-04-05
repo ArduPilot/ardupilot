@@ -1255,10 +1255,46 @@ class AutoTestPlane(AutoTest):
         self.change_mode("FBWA") # we don't update PIDs in MANUAL
         super(AutoTestPlane, self).test_pid_tuning()
 
+
+    def test_setting_modes_via_auxswitches(self):
+        self.set_parameter("FLTMODE5", 1)
+        self.mavproxy.send('switch 1\n')  # random mode
+        self.wait_heartbeat()
+        self.change_mode('MANUAL')
+        self.mavproxy.send('switch 5\n')  # acro mode
+        self.wait_mode("CIRCLE")
+        self.set_rc(9, 1000)
+        self.set_rc(10, 1000)
+        self.set_parameter("RC9_OPTION", 4) # RTL
+        self.set_parameter("RC10_OPTION", 55) # guided
+        self.set_rc(9, 1900)
+        self.wait_mode("RTL")
+        self.set_rc(10, 1900)
+        self.wait_mode("GUIDED")
+
+        self.progress("resetting both switches - should go back to CIRCLE")
+        self.set_rc(9, 1000)
+        self.set_rc(10, 1000)
+        self.wait_mode("CIRCLE")
+
+        self.set_rc(9, 1900)
+        self.wait_mode("RTL")
+        self.set_rc(10, 1900)
+        self.wait_mode("GUIDED")
+
+        self.progress("Resetting switch should repoll mode switch")
+        self.set_rc(10, 1000) # this re-polls the mode switch
+        self.wait_mode("CIRCLE")
+        self.set_rc(9, 1000)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
         ret.extend([
+
+            ("AuxModeSwitch",
+             "Set modes via auxswitches",
+             self.test_setting_modes_via_auxswitches),
 
             ("TestRCCamera",
              "Test RC Option - Camera Trigger",
