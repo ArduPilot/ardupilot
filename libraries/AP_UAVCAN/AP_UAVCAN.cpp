@@ -37,11 +37,13 @@
 #include <uavcan/equipment/indication/RGB565.hpp>
 
 #include <AP_Baro/AP_Baro_UAVCAN.h>
+#include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
 #include <AP_GPS/AP_GPS_UAVCAN.h>
 #include <AP_BattMonitor/AP_BattMonitor_UAVCAN.h>
 #include <AP_Compass/AP_Compass_UAVCAN.h>
 #include <AP_Airspeed/AP_Airspeed_UAVCAN.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_OpticalFlow/AP_OpticalFlow_UAVCAN.h>
 
 #define LED_DELAY_US 50000
 
@@ -205,6 +207,8 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     AP_Baro_UAVCAN::subscribe_msgs(this);
     AP_BattMonitor_UAVCAN::subscribe_msgs(this);
     AP_Airspeed_UAVCAN::subscribe_msgs(this);
+    AP_OpticalFlow_UAVCAN::subscribe_msgs(this);
+    AP_RangeFinder_UAVCAN::subscribe_msgs(this);
 
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
     act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
