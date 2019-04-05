@@ -103,7 +103,9 @@ public:
 
     // parameters for each instance
     static const struct AP_Param::GroupInfo var_info[];
-    
+
+    void set_log_rfnd_bit(uint32_t log_rfnd_bit) { _log_rfnd_bit = log_rfnd_bit; }
+
     // Return the number of range finder instances
     uint8_t num_sensors(void) const {
         return num_instances;
@@ -141,6 +143,9 @@ public:
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
     uint32_t last_reading_ms(enum Rotation orientation) const;
 
+    // indicate which bit in LOG_BITMASK indicates RFND should be logged
+    void set_rfnd_bit(uint32_t log_rfnd_bit) { _log_rfnd_bit = log_rfnd_bit; }
+
     /*
       set an externally estimated terrain height. Used to enable power
       saving (where available) at high altitudes.
@@ -177,4 +182,11 @@ private:
     void update_instance(uint8_t instance);  
 
     bool _add_backend(AP_RangeFinder_Backend *driver);
+
+    uint32_t _log_rfnd_bit = -1;
+    void Log_RFND();
+};
+
+namespace AP {
+    RangeFinder *rangefinder();
 };
