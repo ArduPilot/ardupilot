@@ -186,7 +186,8 @@ struct PACKED log_Sonar {
     float correction;
 };
 
-// Write a sonar packet
+// Write a sonar packet.  Note that RFND log messages are written by
+// RangeFinder itself as part of update().
 void Plane::Log_Write_Sonar()
 {
     uint16_t distance = 0;
@@ -203,8 +204,6 @@ void Plane::Log_Write_Sonar()
         correction  : rangefinder_state.correction
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
-
-    logger.Write_RFND(rangefinder);
 }
 
 struct PACKED log_Arm_Disarm {
