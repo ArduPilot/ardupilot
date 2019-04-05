@@ -1,6 +1,12 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.5.4 5-April-2019
+
+- major depth hold performance improvement: remove overshoot and bounce-back
+- bugfix motor test initialization condition
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 3.5.3-beta 29-April-2018 / Sub 3.5.3 8-May-2018
 
 Changes from 3.5.2:
