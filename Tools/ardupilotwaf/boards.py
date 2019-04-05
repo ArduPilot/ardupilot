@@ -368,8 +368,12 @@ class esp32(Board):
         env.AP_LIBRARIES += [
             'AP_HAL_ESP32',
         ]
+        # debug: - remove -Os and add -Og and -fno-inline
+        # normal add -Os and remove -Og and -fno-inline
         env.CXXFLAGS += ['-mlongcalls',
-                         '-Os',
+#                         '-Os',
+                         '-Og',
+                         '-fno-inline',
                          '-ffunction-sections',
                          '-fdata-sections',
                          '-fno-exceptions',
