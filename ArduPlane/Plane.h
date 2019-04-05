@@ -222,7 +222,7 @@ private:
 
     AP_InertialSensor ins;
 
-    RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder{serial_manager};
 
     AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 
