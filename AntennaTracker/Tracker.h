@@ -113,7 +113,7 @@ private:
 
     AP_InertialSensor ins;
 
-    RangeFinder rng{serial_manager, ROTATION_NONE};
+    RangeFinder rng{serial_manager};
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
