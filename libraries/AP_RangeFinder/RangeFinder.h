@@ -38,7 +38,7 @@ class RangeFinder
     friend class AP_RangeFinder_Backend;
 
 public:
-    RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
+    RangeFinder(AP_SerialManager &_serial_manager);
 
     /* Do not allow copies */
     RangeFinder(const RangeFinder &other) = delete;
@@ -110,7 +110,7 @@ public:
     }
 
     // detect and initialise any available rangefinders
-    void init(void);
+    void init(enum Rotation orientation_default);
 
     // update state of all rangefinders. Should be called at around
     // 10Hz from main loop
