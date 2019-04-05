@@ -283,9 +283,7 @@ void Plane::update_cruise()
     if (cruise_state.locked_heading) {
         next_WP_loc = prev_WP_loc;
         // always look 1km ahead
-        location_update(next_WP_loc,
-                        cruise_state.locked_heading_cd*0.01f, 
-                        prev_WP_loc.get_distance(current_loc) + 1000);
+        next_WP_loc.offset_bearing(cruise_state.locked_heading_cd*0.01f, prev_WP_loc.get_distance(current_loc) + 1000);
         nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
     }
 }

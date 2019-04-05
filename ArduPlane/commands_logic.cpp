@@ -473,12 +473,12 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
         // use gps ground course based bearing hold
         steer_state.hold_course_cd = -1;
         bearing = AP::gps().ground_course_cd() * 0.01f;
-        location_update(next_WP_loc, bearing, 1000); // push it out 1km
+        next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
     } else {
         // use yaw based bearing hold
         steer_state.hold_course_cd = wrap_360_cd(ahrs.yaw_sensor);
         bearing = ahrs.yaw_sensor * 0.01f;
-        location_update(next_WP_loc, bearing, 1000); // push it out 1km
+        next_WP_loc.offset_bearing(bearing, 1000); // push it out 1km
     }
 
     next_WP_loc.alt = cmd.content.location.alt + home.alt;
@@ -788,7 +788,7 @@ bool Plane::verify_continue_and_change_alt()
         if (current_loc.get_distance(next_WP_loc) < 200.0f) {
             //push another 300 m down the line
             int32_t next_wp_bearing_cd = prev_WP_loc.get_bearing_to(next_WP_loc);
-            location_update(next_WP_loc, next_wp_bearing_cd * 0.01f, 300.0f);
+            next_WP_loc.offset_bearing(next_wp_bearing_cd * 0.01f, 300.0f);
         }
 
         //keep flying the same course
@@ -1030,14 +1030,14 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 Location end = cmd.content.location;
 
                 // project a 1km waypoint to either side of the landing location
-                location_update(start, vtol_approach_s.approach_direction_deg + 180, 1000);
-                location_update(end, vtol_approach_s.approach_direction_deg, 1000);
+                start.offset_bearing(vtol_approach_s.approach_direction_deg + 180, 1000);
+                end.offset_bearing(vtol_approach_s.approach_direction_deg, 1000);
 
                 nav_controller->update_waypoint(start, end);
 
                 // check if we should move on to the next waypoint
                 Location breakout_loc = cmd.content.location;
-                location_update(breakout_loc, vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance());
+                breakout_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance());
                 if(location_passed_point(current_loc, start, breakout_loc)) {
                     vtol_approach_s.approach_stage = VTOL_LANDING;
                     quadplane.do_vtol_land(cmd);
