@@ -13,6 +13,7 @@ void Copter::read_barometer(void)
 void Copter::init_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
+   rangefinder.set_log_rfnd_bit(MASK_LOG_CTUN);
    rangefinder.init(ROTATION_PITCH_270);
    rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
    rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
@@ -24,11 +25,6 @@ void Copter::read_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
-
-    if (rangefinder.num_sensors() > 0 &&
-        should_log(MASK_LOG_CTUN)) {
-        logger.Write_RFND(rangefinder);
-    }
 
     rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
 
