@@ -1566,7 +1566,7 @@ namespace AP {
 
 AP_GPS &gps()
 {
-    return AP_GPS::get_singleton();
+    return *AP_GPS::get_singleton();
 }
 
 };
