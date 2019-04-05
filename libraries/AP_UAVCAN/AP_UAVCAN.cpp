@@ -41,6 +41,7 @@
 #include <AP_BattMonitor/AP_BattMonitor_UAVCAN.h>
 #include <AP_Compass/AP_Compass_UAVCAN.h>
 #include <AP_Airspeed/AP_Airspeed_UAVCAN.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #define LED_DELAY_US 50000
 
