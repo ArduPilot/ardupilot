@@ -11,7 +11,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Rally/AP_Rally.h>
@@ -219,7 +218,6 @@ public:
     void Write_Error(LogErrorSubsystem sub_system,
                      LogErrorCode error_code);
     void Write_GPS(uint8_t instance, uint64_t time_us=0);
-    void Write_RFND(const RangeFinder &rangefinder);
     void Write_IMU();
     void Write_IMUDT(uint64_t time_us, uint8_t imu_mask);
     bool Write_ISBH(uint16_t seqno,
