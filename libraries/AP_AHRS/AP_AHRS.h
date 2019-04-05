@@ -30,6 +30,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Semaphore.h>
+#include <AP_Common/Location.h>
 
 class OpticalFlow;
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
