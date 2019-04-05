@@ -107,7 +107,7 @@ bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) 
     while (max_dist - min_dist > PROXIMITY_ACCURACY) {
         float test_dist = (max_dist+min_dist)*0.5f;
         Location loc = current_loc;
-        location_update(loc, angle_deg, test_dist);
+        loc.offset_bearing(angle_deg, test_dist);
         Vector2l vecloc(loc.lat, loc.lng);
         if (fence_loader.boundary_breached(vecloc, fence_count->get(), fence)) {
             max_dist = test_dist;
