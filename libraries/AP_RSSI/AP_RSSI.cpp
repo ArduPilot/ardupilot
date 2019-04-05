@@ -131,35 +131,25 @@ void AP_RSSI::init()
 // 0.0 represents weakest signal, 1.0 represents maximum signal.
 float AP_RSSI::read_receiver_rssi()
 {
-    // Default to 0 RSSI
-    float receiver_rssi = 0.0f;  
-
-    switch (rssi_type) {
-        case RssiType::RSSI_DISABLED:
-            receiver_rssi = 0.0f;
-            break;
-        case RssiType::RSSI_ANALOG_PIN:
-            receiver_rssi = read_pin_rssi();
-            break;
-        case RssiType::RSSI_RC_CHANNEL_VALUE:
-            receiver_rssi = read_channel_rssi();
-            break;
-        case RssiType::RSSI_RECEIVER: {
+    switch (RssiType(rssi_type.get())) {
+        case RssiType::TYPE_DISABLED:
+            return 0.0f;
+        case RssiType::ANALOG_PIN:
+            return read_pin_rssi();
+        case RssiType::RC_CHANNEL_VALUE:
+            return read_channel_rssi();
+        case RssiType::RECEIVER: {
             int16_t rssi = RC_Channels::get_receiver_rssi();
             if (rssi != -1) {
-                receiver_rssi = rssi / 255.0;
+                return rssi / 255.0;
             }
-            break;
+            return 0.0f;
         }
-        case RssiType::RSSI_PWM_PIN:
-            receiver_rssi = read_pwm_pin_rssi();
-            break;
-        default :   
-            receiver_rssi = 0.0f;
-            break;
-    }    
-                  
-    return receiver_rssi;
+        case RssiType::PWM_PIN:
+            return read_pwm_pin_rssi();
+    }
+    // should never get to here
+    return 0.0f;
 }
 
 // Read the receiver RSSI value as an 8-bit integer
