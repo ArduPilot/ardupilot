@@ -381,7 +381,7 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
     if (cmd.id == MAV_CMD_NAV_SET_YAW_SPEED) {
         return (_nav_cmd.content.set_yaw_speed.angle_deg * 100);
     }
-    return get_bearing_cd(_nav_cmd.content.location, cmd.content.location);
+    return _nav_cmd.content.location.get_bearing_to(cmd.content.location);
 }
 
 // set_current_cmd - jumps to command specified by index
