@@ -168,7 +168,7 @@ bool Copter::ModeFollow::get_wp(Location &loc)
     float dist = g2.follow.get_distance_to_target();
     float bearing = g2.follow.get_bearing_to_target();
     loc = copter.current_loc;
-    location_update(loc, bearing, dist);
+    loc.offset_bearing(bearing, dist);
     return true;
 }
 
