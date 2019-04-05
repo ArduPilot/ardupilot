@@ -13,7 +13,7 @@ void Sub::read_barometer()
 void Sub::init_rangefinder()
 {
 #if RANGEFINDER_ENABLED == ENABLED
-    rangefinder.init();
+    rangefinder.init(ROTATION_PITCH_270);
     rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
     rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
 #endif
