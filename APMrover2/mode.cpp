@@ -205,7 +205,7 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
     // set final desired speed
     _desired_speed_final = 0.0f;
     if (!is_equal(next_leg_bearing_cd, MODE_NEXT_HEADING_UNKNOWN)) {
-        const float curr_leg_bearing_cd = get_bearing_cd(_origin, _destination);
+        const float curr_leg_bearing_cd = _origin.get_bearing_to(_destination);
         const float turn_angle_cd = wrap_180_cd(next_leg_bearing_cd - curr_leg_bearing_cd);
         if (fabsf(turn_angle_cd) < 10.0f) {
             // if turning less than 0.1 degrees vehicle can continue at full speed
@@ -432,7 +432,7 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
     const float turn_angle_rad = fabsf(radians(wp_yaw_diff * 0.01f));
 
     // calculate distance from vehicle to line + wp_overshoot
-    const float line_yaw_diff = wrap_180_cd(get_bearing_cd(_origin, _destination) - heading_cd);
+    const float line_yaw_diff = wrap_180_cd(_origin.get_bearing_to(_destination) - heading_cd);
     const float xtrack_error = rover.nav_controller->crosstrack_error();
     const float dist_from_line = fabsf(xtrack_error);
     const bool heading_away = is_positive(line_yaw_diff) == is_positive(xtrack_error);
