@@ -105,11 +105,12 @@ void Copter::esc_calibration_passthrough()
     BoardConfig.init_safety();
 
     // wait for safety switch to be pressed
+    uint32_t tstart = AP_HAL::millis();
     while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        bool printed_msg = false;
-        if (!printed_msg) {
+        const uint32_t tnow = AP_HAL::millis();
+        if (tnow - tstart >= 5000) {
             gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
-            printed_msg = true;
+            tstart = tnow;
         }
         esc_calibration_notify();
         hal.scheduler->delay(3);
@@ -161,11 +162,12 @@ void Copter::esc_calibration_auto()
     BoardConfig.init_safety();
 
     // wait for safety switch to be pressed
+    uint32_t tstart = AP_HAL::millis();
     while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        bool printed_msg = false;
-        if (!printed_msg) {
+        const uint32_t tnow = AP_HAL::millis();
+        if (tnow - tstart >= 5000) {
             gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
-            printed_msg = true;
+            tstart = tnow;
         }
         esc_calibration_notify();
         hal.scheduler->delay(3);
