@@ -232,6 +232,20 @@ void Location::offset(float ofs_north, float ofs_east)
     }
 }
 
+/*
+ *  extrapolate latitude/longitude given bearing and distance
+ * Note that this function is accurate to about 1mm at a distance of
+ * 100m. This function has the advantage that it works in relative
+ * positions, so it keeps the accuracy even when dealing with small
+ * distances and floating point numbers
+ */
+void Location::offset_bearing(float bearing, float distance)
+{
+    const float ofs_north = cosf(radians(bearing)) * distance;
+    const float ofs_east  = sinf(radians(bearing)) * distance;
+    offset(ofs_north, ofs_east);
+}
+
 float Location::longitude_scale() const
 {
     float scale = cosf(lat * (1.0e-7f * DEG_TO_RAD));
