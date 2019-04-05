@@ -271,7 +271,7 @@ float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 
     // check for terrain at grid spacing intervals
     while (distance > 0) {
-        location_update(loc, bearing, grid_spacing);
+        loc.offset_bearing(bearing, grid_spacing);
         climb += climb_ratio * grid_spacing;
         distance -= grid_spacing;
         float height;
