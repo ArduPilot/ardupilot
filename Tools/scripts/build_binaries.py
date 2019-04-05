@@ -509,6 +509,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "erlebrain2",
                 "navio",
                 "navio2",
+                "edge",
                 "pxf",
                 "pxfmini",
                 "KakuteF4",
