@@ -64,8 +64,8 @@ public:
     AP_GPS(const AP_GPS &other) = delete;
     AP_GPS &operator=(const AP_GPS&) = delete;
 
-    static AP_GPS &get_singleton() {
-        return *_singleton;
+    static AP_GPS *get_singleton() {
+        return _singleton;
     }
 
     // GPS driver types
