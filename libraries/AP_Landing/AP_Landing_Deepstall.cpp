@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Common/Location.h>
 
 // table of user settable parameters for deepstall
 const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
@@ -278,7 +279,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), height_above_target, false);
 
         memcpy(&entry_point, &landing_point, sizeof(Location));
-        location_update(entry_point, target_heading_deg + 180.0, travel_distance);
+        entry_point.offset_bearing(target_heading_deg + 180.0, travel_distance);
 
         if (!location_passed_point(current_loc, arc_exit, entry_point)) {
             if (location_passed_point(current_loc, arc_exit, extended_approach)) {
@@ -488,7 +489,7 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
     memcpy(&arc_exit, &landing_point, sizeof(Location));
 
     //extend the approach point to 1km away so that there is always a navigational target
-    location_update(extended_approach, target_heading_deg, 1000.0);
+    extended_approach.offset_bearing(target_heading_deg, 1000.0);
 
     float expected_travel_distance = predict_travel_distance(wind, is_zero(approach_alt_offset) ?  landing_point.alt * 0.01f : approach_alt_offset,
                                                              false);
@@ -498,13 +499,13 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
     // decent chance to be misaligned on final approach
     approach_extension_m = MAX(approach_extension_m, loiter_radius_m_abs * 0.5f);
 
-    location_update(arc_exit, target_heading_deg + 180, approach_extension_m);
+    arc_exit.offset_bearing(target_heading_deg + 180, approach_extension_m);
     memcpy(&arc, &arc_exit, sizeof(Location));
     memcpy(&arc_entry, &arc_exit, sizeof(Location));
 
     float arc_heading_deg = target_heading_deg + (landing_point.loiter_ccw ? -90.0f : 90.0f);
-    location_update(arc, arc_heading_deg, loiter_radius_m_abs);
-    location_update(arc_entry, arc_heading_deg, loiter_radius_m_abs * 2);
+    arc.offset_bearing(arc_heading_deg, loiter_radius_m_abs);
+    arc_entry.offset_bearing(arc_heading_deg, loiter_radius_m_abs * 2);
 
 #ifdef DEBUG_PRINTS
     // TODO: Send this information via a MAVLink packet

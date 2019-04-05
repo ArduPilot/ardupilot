@@ -138,9 +138,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     struct Location land_WP_loc = next_WP_loc;
 
     int32_t land_bearing_cd = prev_WP_loc.get_bearing_to(next_WP_loc);
-    location_update(land_WP_loc,
-                    land_bearing_cd*0.01f,
-                    prev_WP_loc.get_distance(current_loc) + 200);
+    land_WP_loc.offset_bearing(land_bearing_cd * 0.01f, prev_WP_loc.get_distance(current_loc) + 200);
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
     // once landed and stationary, post some statistics
@@ -294,11 +292,11 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     // now calculate our aim point, which is before the landing
     // point and above it
     Location loc = next_WP_loc;
-    location_update(loc, land_bearing_cd*0.01f, -flare_distance);
+    loc.offset_bearing(land_bearing_cd * 0.01f, -flare_distance);
     loc.alt += aim_height*100;
 
     // calculate point along that slope 500m ahead
-    location_update(loc, land_bearing_cd*0.01f, land_projection);
+    loc.offset_bearing(land_bearing_cd * 0.01f, land_projection);
     loc.alt -= slope * land_projection * 100;
 
     // setup the offset_cm for set_target_altitude_proportion()
