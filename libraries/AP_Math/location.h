@@ -22,9 +22,6 @@
 // return horizontal distance in centimeters between two positions
 float        get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
 
-// return bearing in centi-degrees between two locations
-int32_t      get_bearing_cd(const struct Location &loc1, const struct Location &loc2);
-
 // return bearing in centi-degrees between two positions
 float        get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
 

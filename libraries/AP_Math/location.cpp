@@ -30,16 +30,6 @@ float get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destina
     return norm(destination.x-origin.x,destination.y-origin.y);
 }
 
-// return bearing in centi-degrees between two locations
-int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
-{
-    int32_t off_x = loc2.lng - loc1.lng;
-    const int32_t off_y = (loc2.lat - loc1.lat) / loc2.longitude_scale();
-    int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
-    if (bearing < 0) bearing += 36000;
-    return bearing;
-}
-
 // return bearing in centi-degrees between two positions
 float get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
 {
