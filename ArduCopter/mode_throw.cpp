@@ -34,7 +34,6 @@ void Copter::ModeThrow::run()
     Throw_PosHold - the copter is kept at a constant position and height
     */
 
-    // Don't enter THROW mode if interlock will prevent motors running
     if (!motors->armed()) {
         // state machine entry is always from a disarmed state
         stage = Throw_Disarmed;
@@ -116,6 +115,8 @@ void Copter::ModeThrow::run()
         }
 
         // demand zero throttle (motors will be stopped anyway) and continually reset the attitude controller
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
         break;
 
@@ -129,6 +130,8 @@ void Copter::ModeThrow::run()
         }
 
         // Hold throttle at zero during the throw and continually reset the attitude controller
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_throttle_out(0,true,g.throttle_filt);
 
         // Play the waiting for throw tone sequence to alert the user
