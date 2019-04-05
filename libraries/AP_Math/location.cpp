@@ -73,19 +73,7 @@ float location_path_proportion(const struct Location &location,
     return (vec1 * vec2) / dsquared;
 }
 
-/*
- *  extrapolate latitude/longitude given bearing and distance
- * Note that this function is accurate to about 1mm at a distance of 
- * 100m. This function has the advantage that it works in relative
- * positions, so it keeps the accuracy even when dealing with small
- * distances and floating point numbers
- */
-void location_update(struct Location &loc, float bearing, float distance)
-{
-    float ofs_north = cosf(radians(bearing))*distance;
-    float ofs_east  = sinf(radians(bearing))*distance;
-    loc.offset(ofs_north, ofs_east);
-}
+
 
 /*
   return the distance in meters in North/East plane as a N/E vector
