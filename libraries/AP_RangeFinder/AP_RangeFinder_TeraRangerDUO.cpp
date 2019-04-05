@@ -15,9 +15,10 @@
 #include "AP_RangeFinder_TeraRangerDUO.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/crc.h>
-#include <GCS_MAVLink/GCS.h>
 #include <ctype.h>
 #include <stdio.h>
+
+extern const AP_HAL::HAL& hal;
 
 /* 
    The constructor also initialises the rangefinder. Note that this
@@ -98,11 +99,17 @@ bool AP_RangeFinder_TeraRangerDUO::get_reading(uint16_t &reading_cm)
 
         _buffer[_buffer_count++] = c;
         
+        /*
+            The distance information is a message of exactly 7 bytes, the headers
+            are the character T(0x54) at byte one and S (0x53) at byte four.
+            Each header is followed by two bytes for the distance value in millimeter.
+            Byte seven is the checksum(CRC8) of all 6 bytes before.
+        */
         if (_buffer_count >= TRDUO_BUFFER_SIZE_FULL) {
             // check if message has right CRC
             if (crc_crc8(_buffer, TRDUO_BUFFER_SIZE_FULL - 1) == _buffer[TRDUO_BUFFER_SIZE_FULL - 1]){
-                uint16_t t_distance = process_distance(_buffer[1], _buffer[2]);
-                uint16_t s_distance = process_distance(_buffer[4], _buffer[5]);
+                uint16_t t_distance = UINT16_VALUE(_buffer[1], _buffer[2]);
+                uint16_t s_distance = UINT16_VALUE(_buffer[4], _buffer[5]);
 
                 // check ToF distance range
                 if (t_distance > TRDUO_MIN_DISTANCE_TOF && t_distance < TRDUO_MAX_DISTANCE_TOF) {
@@ -131,12 +138,4 @@ bool AP_RangeFinder_TeraRangerDUO::get_reading(uint16_t &reading_cm)
     }
 
     return false;
-}
-
-uint16_t AP_RangeFinder_TeraRangerDUO::process_distance(uint8_t buf1, uint8_t buf2)
-{
-    uint16_t val = buf1 << 8;
-    val |= buf2;
-
-    return val / TRDUO_VALUE_TO_CM_FACTOR;
 }

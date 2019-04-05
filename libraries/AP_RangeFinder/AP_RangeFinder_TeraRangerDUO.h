@@ -37,7 +37,6 @@ private:
 
     // check and process replies from sensor
     bool get_reading(uint16_t &distance_cm);
-    uint16_t process_distance(uint8_t buf1, uint8_t buf2);
     void update_status();
 
     // uart driver
