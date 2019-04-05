@@ -174,7 +174,7 @@ void AP_Landing_Deepstall::verify_abort_landing(const Location &prev_WP_loc, Loc
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
     // the altitude has been reached, restart the landing sequence
     throttle_suppressed = false;
-    landing.nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
+    landing.nav_controller->update_heading_hold(prev_WP_loc.get_bearing_to(next_WP_loc));
 }
 
 
