@@ -62,7 +62,7 @@ private:
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
     const char* _initialisation_blob[5] = {
-    "sso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic+ReceiverStatus+VelCovGeodetic, msec100\n",
+    "sso, Stream1, COM1, PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic, msec100\n",
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, all\n",
@@ -83,7 +83,6 @@ private:
         DOP = 4001,
         PVTGeodetic = 4007,
         ReceiverStatus = 4014,
-        ExtEventPVTGeodetic = 4038,
         VelCovGeodetic = 5908
     };
 
@@ -196,10 +195,8 @@ private:
         uint16_t read;
     } sbf_msg;
 
-    void log_ExtEventPVTGeodetic(const msg4007 &temp);
-
     enum {
-        SOFTWARE      = (1 << 3),   // set upon detection of a software warning or  error. This bit is reset by the command  “lif, error”
+        SOFTWARE      = (1 << 3),   // set upon detection of a software warning or  error. This bit is reset by the command lif, error
         WATCHDOG      = (1 << 4),   // set when the watch-dog expired at least once since the last power-on.
         CONGESTION    = (1 << 6),   // set when an output data congestion has been detected on at least one of the communication ports of the receiver during the last second.
         MISSEDEVENT   = (1 << 8),   // set when an external event congestion has been detected during the last second. It indicates that the receiver is receiving too many events on its EVENTx pins.
