@@ -93,7 +93,7 @@ void Rover::init_ardupilot()
     AP::compass().init();
 
     // initialise rangefinder
-    rangefinder.init();
+    rangefinder.init(ROTATION_NONE);
 
     // init proximity sensor
     init_proximity();
