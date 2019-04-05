@@ -11,6 +11,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
+#include <AP_RSSI/AP_RSSI.h>
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -245,12 +246,17 @@ void AP_Logger::Write_RCOUT(void)
 }
 
 // Write an RSSI packet
-void AP_Logger::Write_RSSI(AP_RSSI &rssi)
+void AP_Logger::Write_RSSI()
 {
+    AP_RSSI *rssi = AP::rssi();
+    if (rssi == nullptr) {
+        return;
+    }
+
     struct log_RSSI pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RSSI_MSG),
         time_us       : AP_HAL::micros64(),
-        RXRSSI        : rssi.read_receiver_rssi()
+        RXRSSI        : rssi->read_receiver_rssi()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
