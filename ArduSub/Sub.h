@@ -178,7 +178,7 @@ private:
     Compass compass;
     AP_InertialSensor ins;
 
-    RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder{serial_manager};
     struct {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
