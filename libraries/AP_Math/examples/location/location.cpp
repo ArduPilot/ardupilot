@@ -76,7 +76,7 @@ static void test_one_offset(const struct Location &loc,
     hal.console->printf("location_offset took %u usec\n",
                         (unsigned)(AP_HAL::micros() - t1));
     dist2 = loc.get_distance(loc2);
-    bearing2 = get_bearing_cd(loc, loc2) * 0.01f;
+    bearing2 = loc.get_bearing_to(loc2) * 0.01f;
     float brg_error = bearing2-bearing;
     if (brg_error > 180) {
         brg_error -= 360;
