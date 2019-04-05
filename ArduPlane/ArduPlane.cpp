@@ -359,12 +359,12 @@ void Plane::airspeed_ratio_update(void)
  */
 void Plane::update_GPS_50Hz(void)
 {
+    gps.update();
+
     // get position from AHRS
     have_position = ahrs.get_position(current_loc);
     ahrs.get_relative_position_D_home(relative_altitude);
     relative_altitude *= -1.0f;
-
-    gps.update();
 }
 
 /*
