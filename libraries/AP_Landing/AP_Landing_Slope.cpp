@@ -39,7 +39,7 @@ void AP_Landing::type_slope_verify_abort_landing(const Location &prev_WP_loc, Lo
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
     // the altitude has been reached, restart the landing sequence
     throttle_suppressed = false;
-    nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
+    nav_controller->update_heading_hold(prev_WP_loc.get_bearing_to(next_WP_loc));
 }
 
 /*
@@ -136,7 +136,8 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
       prevents sudden turns if we overshoot the landing point
      */
     struct Location land_WP_loc = next_WP_loc;
-    int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+
+    int32_t land_bearing_cd = prev_WP_loc.get_bearing_to(next_WP_loc);
     location_update(land_WP_loc,
                     land_bearing_cd*0.01f,
                     prev_WP_loc.get_distance(current_loc) + 200);
@@ -288,7 +289,7 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     // project a point 500 meters past the landing point, passing
     // through the landing point
     const float land_projection = 500;
-    int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+    int32_t land_bearing_cd = prev_WP_loc.get_bearing_to(next_WP_loc);
 
     // now calculate our aim point, which is before the landing
     // point and above it
