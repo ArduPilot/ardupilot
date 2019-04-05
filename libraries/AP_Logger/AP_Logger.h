@@ -7,7 +7,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_RSSI/AP_RSSI.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -238,7 +237,7 @@ public:
     void Write_Vibration();
     void Write_RCIN(void);
     void Write_RCOUT(void);
-    void Write_RSSI(AP_RSSI &rssi);
+    void Write_RSSI();
     void Write_Baro(uint64_t time_us=0);
     void Write_Power(void);
     void Write_AHRS2(AP_AHRS &ahrs);
