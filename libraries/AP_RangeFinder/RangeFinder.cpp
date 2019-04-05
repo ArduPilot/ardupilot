@@ -147,15 +147,10 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
 const AP_Param::GroupInfo *RangeFinder::backend_var_info[RANGEFINDER_MAX_INSTANCES];
 
-RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default) :
+RangeFinder::RangeFinder(AP_SerialManager &_serial_manager) :
     serial_manager(_serial_manager)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // set orientation defaults
-    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
-        params[i].orientation.set_default(orientation_default);
-    }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
@@ -290,7 +285,7 @@ void RangeFinder::convert_params(void) {
   finders here. For now we won't allow for hot-plugging of
   rangefinders.
  */
-void RangeFinder::init(void)
+void RangeFinder::init(enum Rotation orientation_default)
 {
     if (num_instances != 0) {
         // init called a 2nd time?
@@ -298,6 +293,11 @@ void RangeFinder::init(void)
     }
 
     convert_params();
+
+    // set orientation defaults
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        params[i].orientation.set_default(orientation_default);
+    }
 
     for (uint8_t i=0, serial_instance = 0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         // serial_instance will be increased inside detect_instance
