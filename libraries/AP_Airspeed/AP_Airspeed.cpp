@@ -457,10 +457,7 @@ void AP_Airspeed::update(bool log)
     check_sensor_failures();
 
     if (log) {
-        AP_Logger *logger = AP_Logger::get_singleton();
-        if (logger != nullptr) {
-            logger->Write_Airspeed(*this);
-        }
+        AP::logger().Write_Airspeed();
     }
 }
 
