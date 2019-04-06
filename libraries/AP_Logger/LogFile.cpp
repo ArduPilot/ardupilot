@@ -8,7 +8,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Motors/AP_Motors.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
@@ -1528,40 +1527,6 @@ void AP_Logger::Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t vo
         current_tot : current_tot
     };
     WriteBlock(&pkt, sizeof(pkt));
-}
-
-// Write a AIRSPEED packet
-void AP_Logger::Write_Airspeed()
-{
-    AP_Airspeed *airspeed = AP::airspeed();
-    if (airspeed == nullptr) {
-        return;
-    }
-
-    uint64_t now = AP_HAL::micros64();
-    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        if (!airspeed->enabled(i)) {
-            continue;
-        }
-        float temperature;
-        if (!airspeed->get_temperature(i, temperature)) {
-            temperature = 0;
-        }
-        struct log_AIRSPEED pkt = {
-            LOG_PACKET_HEADER_INIT(i==0?LOG_ARSP_MSG:LOG_ASP2_MSG),
-            time_us       : now,
-            airspeed      : airspeed->get_raw_airspeed(i),
-            diffpressure  : airspeed->get_differential_pressure(i),
-            temperature   : (int16_t)(temperature * 100.0f),
-            rawpressure   : airspeed->get_corrected_pressure(i),
-            offset        : airspeed->get_offset(i),
-            use           : airspeed->use(i),
-            healthy       : airspeed->healthy(i),
-            health_prob   : airspeed->get_health_failure_probability(i),
-            primary       : airspeed->get_primary()
-        };
-        WriteBlock(&pkt, sizeof(pkt));
-    }
 }
 
 // Write a Yaw PID packet
