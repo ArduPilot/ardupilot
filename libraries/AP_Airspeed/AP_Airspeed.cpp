@@ -457,7 +457,35 @@ void AP_Airspeed::update(bool log)
     check_sensor_failures();
 
     if (log) {
-        AP::logger().Write_Airspeed();
+        Log_Airspeed();
+    }
+}
+
+void AP_Airspeed::Log_Airspeed()
+{
+    const uint64_t now = AP_HAL::micros64();
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (!enabled(i)) {
+            continue;
+        }
+        float temperature;
+        if (!get_temperature(i, temperature)) {
+            temperature = 0;
+        }
+        struct log_AIRSPEED pkt = {
+            LOG_PACKET_HEADER_INIT(i==0?LOG_ARSP_MSG:LOG_ASP2_MSG),
+            time_us       : now,
+            airspeed      : get_raw_airspeed(i),
+            diffpressure  : get_differential_pressure(i),
+            temperature   : (int16_t)(temperature * 100.0f),
+            rawpressure   : get_corrected_pressure(i),
+            offset        : get_offset(i),
+            use           : use(i),
+            healthy       : healthy(i),
+            health_prob   : get_health_failure_probability(i),
+            primary       : get_primary()
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
 }
 
