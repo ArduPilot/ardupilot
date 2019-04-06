@@ -16,3 +16,6 @@
 [submodule "modules/ChibiOS"]
 	path = modules/ChibiOS
 	url = git://github.com/ArduPilot/ChibiOS.git
+[submodule "modules/esp_idf"]
+	path = modules/esp_idf
+	url = https://github.com/espressif/esp-idf.git
