@@ -247,6 +247,19 @@ float linear_interpolate(float low_output, float high_output,
                          float var_value,
                          float var_low, float var_high);
 
+/* cubic "expo" curve generator 
+ * alpha range: [0,1] min to max expo
+ * input range: [-1,1]
+ */
+float expo_curve(float alpha, float input);
+
+/* throttle curve generator
+ * thr_mid: output at mid stick
+ * alpha: expo coefficient
+ * thr_in: [0-1]
+ */
+float throttle_curve(float thr_mid, float alpha, float thr_in);
+
 /* simple 16 bit random number generator */
 uint16_t get_random16(void);
 
