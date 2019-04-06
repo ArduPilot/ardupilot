@@ -29,7 +29,7 @@
 #include "RCInput.h"
 
 static ESP32::UARTDriver cons(0);
-static Empty::UARTDriver uartADriver;
+static ESP32::UARTDriver uartADriver(1);
 static Empty::UARTDriver uartBDriver;
 static ESP32::WiFiDriver uartCDriver;
 static Empty::UARTDriver uartDDriver;
