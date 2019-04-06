@@ -501,3 +501,12 @@ bool AP_Airspeed::all_healthy(void) const
 
 // singleton instance
 AP_Airspeed *AP_Airspeed::_singleton;
+
+namespace AP {
+
+AP_Airspeed *airspeed()
+{
+    return AP_Airspeed::get_singleton();
+}
+
+};
