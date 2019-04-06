@@ -409,6 +409,14 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Bitmask: 0:Motor 1,1:Motor 2,2:Motor 3,3:Motor 4, 4:Motor 5,5:Motor 6,6:Motor 7,7:Motor 8
     AP_GROUPINFO("TAILSIT_MOTMX", 9, QuadPlane, tailsitter.motor_mask, 0),
 
+    // @Param: THROTTLE_EXPO
+    // @DisplayName: Throttle expo strength
+    // @Description: Amount of curvature in throttle curve: 0 is linear, 1 is cubic
+    // @Range: 0 1
+    // @Increment: .1
+    // @User: Advanced
+    AP_GROUPINFO("THROTTLE_EXPO", 10, QuadPlane, throttle_expo, 0.2),
+
     AP_GROUPEND
 };
 
@@ -794,7 +802,7 @@ void QuadPlane::control_stabilize(void)
     }
 
     // normal QSTABILIZE mode
-    float pilot_throttle_scaled = plane.get_throttle_input() / 100.0f;
+    float pilot_throttle_scaled = get_pilot_throttle();
     hold_stabilize(pilot_throttle_scaled);
 
 }
@@ -904,6 +912,20 @@ void QuadPlane::hold_hover(float target_climb_rate)
     run_z_controller();
 }
 
+float QuadPlane::get_pilot_throttle()
+{
+    // get normalized throttle [0,1]
+    float throttle_in = plane.channel_throttle->get_control_in() / plane.channel_throttle->get_range();
+
+    // get hover throttle level [0,1]
+    float thr_mid = motors->get_throttle_hover();
+
+    float thrust_curve_expo = constrain_float(throttle_expo, 0.0f, 1.0f);
+
+    // this puts mid stick at hover throttle
+    return throttle_curve(thr_mid, thrust_curve_expo, throttle_in);;
+}
+
 /*
   control QACRO mode
  */
@@ -933,29 +955,7 @@ void QuadPlane::control_qacro(void)
             target_yaw  = plane.channel_rudder->norm_input() * yaw_rate_max * 100.0;
         }
 
-        // get pilot's desired throttle
-        int16_t mid_stick = plane.channel_throttle->get_control_mid();
-        // protect against unlikely divide by zero
-        if (mid_stick <= 0) {
-            mid_stick = 50;
-        }
-        float thr_mid = motors->get_throttle_hover();
-        int16_t throttle_control = plane.channel_throttle->get_control_in();
-        float throttle_in;
-        if (throttle_control < mid_stick) {
-            // below the deadband
-            throttle_in = ((float)throttle_control) * 0.5f / (float)mid_stick;
-        } else if (throttle_control > mid_stick) {
-            // above the deadband
-            throttle_in = 0.5f + ((float)(throttle_control - mid_stick)) * 0.5f / (float)(100 - mid_stick);
-        } else {
-            // must be in the deadband
-            throttle_in = 0.5f;
-        }
-
-        float expo = constrain_float(-(thr_mid - 0.5) / 0.375, -0.5f, 1.0f);
-        // calculate the output throttle using the given expo function
-        float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
+        float throttle_out = get_pilot_throttle();
 
         // run attitude controller
         if (plane.g.acro_locking) {
@@ -1753,6 +1753,11 @@ void QuadPlane::update_throttle_hover()
 
     // do not update while climbing or descending
     if (!is_zero(pos_control->get_desired_velocity().z)) {
+        return;
+    }
+
+    // do not update if quadplane forward motor is running (wing may be generating lift)
+    if (!is_tailsitter() && (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != 0)) {
         return;
     }
 
