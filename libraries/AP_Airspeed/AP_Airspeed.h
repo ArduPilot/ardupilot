@@ -248,3 +248,7 @@ private:
     AP_Airspeed_Backend *sensor[AIRSPEED_MAX_SENSORS];
 
 };
+
+namespace AP {
+    AP_Airspeed *airspeed();
+};
