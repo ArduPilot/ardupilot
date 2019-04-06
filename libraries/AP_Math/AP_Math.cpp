@@ -78,7 +78,7 @@ template float safe_sqrt<float>(const float v);
 template float safe_sqrt<double>(const double v);
 
 /*
-  linear interpolation based on a variable in a range
+ * linear interpolation based on a variable in a range
  */
 float linear_interpolate(float low_output, float high_output,
                          float var_value,
@@ -92,6 +92,35 @@ float linear_interpolate(float low_output, float high_output,
     }
     float p = (var_value - var_low) / (var_high - var_low);
     return low_output + p * (high_output - low_output);
+}
+
+/* cubic "expo" curve generator
+ * alpha range: [0,1] min to max expo
+ * input range: [-1,1]
+ */
+float expo_curve(float alpha, float x)
+{
+    return (1.0f - alpha) * x + alpha * x * x * x;
+}
+
+/* throttle curve generator
+ * thr_mid: output at mid stick
+ * alpha: expo coefficient
+ * thr_in: [0-1]
+ */
+float throttle_curve(float thr_mid, float alpha, float thr_in)
+{
+    float alpha2 = alpha + 1.25 * (1.0f - alpha) * (0.5f - thr_mid) / 0.5f;
+    alpha2 = constrain_float(alpha2, 0.0f, 1.0f);
+    float thr_out = 0.0f;
+    if (thr_in < 0.5f) {
+        float t = linear_interpolate(-1.0f, 0.0f, thr_in, 0.0f, 0.5f);
+        thr_out = linear_interpolate(0.0f, thr_mid, expo_curve(alpha, t), -1.0f, 0.0f);
+    } else {
+        float t = linear_interpolate(0.0f, 1.0f, thr_in, 0.5f, 1.0f);
+        thr_out = linear_interpolate(thr_mid, 1.0f, expo_curve(alpha2, t), 0.0f, 1.0f);
+    }
+    return thr_out;
 }
 
 template <typename T>
