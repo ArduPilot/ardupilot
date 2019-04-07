@@ -10,9 +10,15 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+/*
+    Web: http://www.teraranger.com/product/teraranger-duo/
+    Manual: https://www.terabee.com/wp-content/uploads/2017/09/TR_Duo_Manual_FW4.0.0_DUO-1.pdf
+    Code for ROS: https://github.com/Terabee/terarangerduo-ros/blob/master/src/terarangerduo.cpp
+    TestVideo with precise mode: https://www.youtube.com/watch?v=mnKjZbB9USM
+*/
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_RangeFinder_TeraRangerDUO.h"
+#include "AP_RangeFinder_TeraRangerDUOSerial.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/crc.h>
 #include <ctype.h>
@@ -25,7 +31,7 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_TeraRangerDUO::AP_RangeFinder_TeraRangerDUO(RangeFinder::RangeFinder_State &_state,
+AP_RangeFinder_TeraRangerDUOSerial::AP_RangeFinder_TeraRangerDUOSerial(RangeFinder::RangeFinder_State &_state,
                                                            AP_RangeFinder_Params &_params,
                                                            AP_SerialManager &serial_manager,
                                                            uint8_t serial_instance) :
@@ -38,13 +44,13 @@ AP_RangeFinder_TeraRangerDUO::AP_RangeFinder_TeraRangerDUO(RangeFinder::RangeFin
 }
 
 // detect if a TeraRanger DUO rangefinder sensor is connected by looking for a configured serial port
-bool AP_RangeFinder_TeraRangerDUO::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
+bool AP_RangeFinder_TeraRangerDUOSerial::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
 {
     return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 // update the state of the sensor
-void AP_RangeFinder_TeraRangerDUO::update(void)
+void AP_RangeFinder_TeraRangerDUOSerial::update(void)
 {
     if (uart == nullptr) {
         return;
@@ -58,7 +64,7 @@ void AP_RangeFinder_TeraRangerDUO::update(void)
 }
 
 // update status
-void AP_RangeFinder_TeraRangerDUO::update_status()
+void AP_RangeFinder_TeraRangerDUOSerial::update_status()
 {
     if (AP_HAL::millis() - _last_reading_ms > TRDUO_TIMEOUT_MS) {
         set_status(RangeFinder::RangeFinder_NoData);
@@ -74,7 +80,7 @@ void AP_RangeFinder_TeraRangerDUO::update_status()
 }
 
 // read - return last value measured by sensor
-bool AP_RangeFinder_TeraRangerDUO::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_TeraRangerDUOSerial::get_reading(uint16_t &reading_cm)
 {
     if (uart == nullptr) {
         return false;

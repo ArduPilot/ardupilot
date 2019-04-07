@@ -36,7 +36,7 @@
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake.h"
 #include "AP_RangeFinder_PWM.h"
-#include "AP_RangeFinder_TeraRangerDUO.h"
+#include "AP_RangeFinder_TeraRangerDUOSerial.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -495,8 +495,8 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
     case RangeFinder_TYPE_TeraRangerDUO:
-        if (AP_RangeFinder_TeraRangerDUO::detect(serial_manager, serial_instance)) {
-            drivers[instance] = new AP_RangeFinder_TeraRangerDUO(state[instance], params[instance], serial_manager, serial_instance++);
+        if (AP_RangeFinder_TeraRangerDUOSerial::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_TeraRangerDUOSerial(state[instance], params[instance], serial_manager, serial_instance++);
         }
         break;
     default:

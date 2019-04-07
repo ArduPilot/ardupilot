@@ -12,12 +12,12 @@
 #define TRDUO_DIFF_LIMIT 30
 #define TRDUO_TIMEOUT_MS 300
 
-class AP_RangeFinder_TeraRangerDUO : public AP_RangeFinder_Backend
+class AP_RangeFinder_TeraRangerDUOSerial : public AP_RangeFinder_Backend
 {
 
 public:
     // constructor
-    AP_RangeFinder_TeraRangerDUO(RangeFinder::RangeFinder_State &_state,
+    AP_RangeFinder_TeraRangerDUOSerial(RangeFinder::RangeFinder_State &_state,
                                  AP_RangeFinder_Params &_params,
                                  AP_SerialManager &serial_manager,
                                  uint8_t serial_instance);
@@ -45,7 +45,7 @@ private:
     uint32_t _last_reading_ms;
 
     // buffer
-    uint8_t _buffer[7];
+    uint8_t _buffer[TRDUO_BUFFER_SIZE_FULL];
     uint8_t _buffer_count;
     bool _found_start;
 };
