@@ -15,24 +15,40 @@
 #define AR_ATTCONTROL_STEER_RATE_FILT   10.00f
 #define AR_ATTCONTROL_STEER_RATE_MAX    360.0f
 #define AR_ATTCONTROL_STEER_ACCEL_MAX   180.0f
+
 #define AR_ATTCONTROL_THR_SPEED_P       0.20f
 #define AR_ATTCONTROL_THR_SPEED_I       0.20f
 #define AR_ATTCONTROL_THR_SPEED_IMAX    1.00f
 #define AR_ATTCONTROL_THR_SPEED_D       0.00f
 #define AR_ATTCONTROL_THR_SPEED_FILT    10.00f
+
 #define AR_ATTCONTROL_PITCH_THR_P       1.80f
 #define AR_ATTCONTROL_PITCH_THR_I       1.50f
 #define AR_ATTCONTROL_PITCH_THR_D       0.03f
 #define AR_ATTCONTROL_PITCH_THR_IMAX    1.0f
 #define AR_ATTCONTROL_PITCH_THR_FILT    10.0f
+
 #define AR_ATTCONTROL_BAL_SPEED_FF      1.0f
-#define AR_ATTCONTROL_DT                0.02f
-#define AR_ATTCONTROL_TIMEOUT_MS        200
+
 #define AR_ATTCONTROL_HEEL_SAIL_P       1.0f
 #define AR_ATTCONTROL_HEEL_SAIL_I       0.1f
 #define AR_ATTCONTROL_HEEL_SAIL_D       0.0f
 #define AR_ATTCONTROL_HEEL_SAIL_IMAX    1.0f
 #define AR_ATTCONTROL_HEEL_SAIL_FILT    10.0f
+
+#define AR_ATTCONTROL_ROLL_P       1.0f
+#define AR_ATTCONTROL_ROLL_I       0.1f
+#define AR_ATTCONTROL_ROLL_D       0.0f
+#define AR_ATTCONTROL_ROLL_IMAX    1.0f
+#define AR_ATTCONTROL_ROLL_FILT    10.0f
+
+#define AR_ATTCONTROL_PITCH_P       1.0f
+#define AR_ATTCONTROL_PITCH_I       0.1f
+#define AR_ATTCONTROL_PITCH_D       0.0f
+#define AR_ATTCONTROL_PITCH_IMAX    1.0f
+#define AR_ATTCONTROL_PITCH_FILT    10.0f
+
+#define AR_ATTCONTROL_TIMEOUT_MS        200
 #define AR_ATTCONTROL_DT                0.02f
 
 // throttle/speed control maximum acceleration/deceleration (in m/s) (_ACCEL_MAX parameter default)
@@ -112,8 +128,12 @@ public:
     // get latest desired pitch in radians for reporting purposes
     float get_desired_pitch() const;
 
-    // Sailboat heel(roll) angle contorller, release sail to keep at maximum heel angle
+    // Sailboat heel(roll) angle controller, release sail to keep at maximum heel angle
     float get_sail_out_from_heel(float desired_heel, float dt);
+
+    // roll and pitch angle controllers for boats with trim tabs
+    float get_servo_out_from_roll(float desired_roll, float dt);
+    float get_servo_out_from_pitch(float desired_pitch, float dt);
 
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
@@ -121,6 +141,8 @@ public:
     AC_PID& get_throttle_speed_pid() { return _throttle_speed_pid; }
     AC_PID& get_pitch_to_throttle_pid() { return _pitch_to_throttle_pid; }
     AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
+    AC_PID& get_roll_pid() { return _roll_pid; }
+    AC_PID& get_pitch_pid() { return _pitch_pid; }
 
     // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
     bool get_forward_speed(float &speed) const;
@@ -187,4 +209,10 @@ private:
     // Sailboat heel control
     AC_PID   _sailboat_heel_pid;    // Sailboat heel angle pid controller
     uint32_t _heel_controller_last_ms = 0;
+
+    // roll and pitch control
+    AC_PID   _roll_pid;     // roll angle pid controller
+    AC_PID   _pitch_pid;    // pitch angle pid controller
+    uint32_t _roll_controller_last_ms = 0;
+    uint32_t _pitch_controller_last_ms = 0;
 };
