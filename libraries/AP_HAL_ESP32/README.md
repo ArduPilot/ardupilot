@@ -72,13 +72,15 @@ Currently fw boots and runs on the test hw.
 - [x] Build system
 - [x] Scheduler and semaphores
 - [x] SPI driver
-- [x] WiFi driver
-- [x] Uart driver
-- [ ] RCIN driver
+- [x] WiFi driver ( TCP mavlink over 192.168.4.1 port 5760 )
+- [x] Uart driver ( non-mavlink console messages and ardupilot Serial0 with mavlink or gps )
+- [X] RCIN driver ( PPMSUM INPUT on GPIO4 )
+- [X] GPS testing/integration ( Serial ublox GPS, as ardupilot SERIAL0 on RX2/TX2 aka GPIO16 and GPIO17 )
+- [ ] PWM driver
+- [ ] RCOUT driver
 - [ ] I2C driver
 - [ ] GPIO driver
 - [ ] AnalogIn driver
-- [ ] PWM driver
 - [x] Storage
 - [ ] SdCard
 - [ ] Buzzer
