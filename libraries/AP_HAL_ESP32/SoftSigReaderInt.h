@@ -12,7 +12,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by David "Buzz" Bussenschutt. Derived from other HAL work by Andrew Tridgell 
+ * Code by David "Buzz" Bussenschutt and others
+ *
   */
 #pragma once
 
