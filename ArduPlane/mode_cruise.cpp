@@ -9,8 +9,10 @@ bool ModeCruise::_enter()
     plane.cruise_state.locked_heading = false;
     plane.cruise_state.lock_timer_ms = 0;
 
+#if SOARING_ENABLED == ENABLED
     // for ArduSoar soaring_controller
     plane.g2.soaring_controller.init_cruising();
+#endif
 
     plane.set_target_altitude_current();
 
