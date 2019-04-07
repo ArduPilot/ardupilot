@@ -163,6 +163,12 @@ public:
         GPS_DISABLE  =        65, // disable GPS for testing
         RELAY5 =              66, // Relay5 pin on/off
         RELAY6 =              67, // Relay6 pin on/off
+        STABILIZE =           68, // stabilize mode
+        POSHOLD   =           69, // poshold mode
+        ALTHOLD   =           70, // althold mode
+        FLOWHOLD  =           71, // flowhold mode
+        CIRCLE    =           72, // circle mode
+        DRIFT     =           73  // drift mode
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
