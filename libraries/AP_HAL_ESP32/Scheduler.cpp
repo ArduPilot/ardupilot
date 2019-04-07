@@ -168,13 +168,20 @@ void Scheduler::_run_timers()
 void Scheduler::_rcin_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    //while (!_initialized) {
-    //    sched->delay_microseconds(20000);
-   // }
+    while (!_initialized) {
+        sched->delay_microseconds(20000);
+    }
+
+    printf("Scheduler::_rcin_thread initialized\n");
     while (true) {
         sched->delay_microseconds(2500);
-        //hal.rcin->_timer_tick();
-        RCInput::from(hal.rcin)->_timer_tick();
+			//if (! hal.rcin ) {
+			//	hal.rcin = RCInput::from(hal.rcin); //->_timer_tick();
+			//} else {
+				//hal.rcin->_timer_tick();
+			//}
+			((RCInput *)hal.rcin)->_timer_tick();
+    	//}
     }
 }
 
@@ -260,6 +267,7 @@ void Scheduler::_main_thread(void *arg)
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
     hal.analogin->init();
+    hal.rcin->init();
 
     sched->callbacks->setup();
     sched->system_initialized();
@@ -267,7 +275,7 @@ void Scheduler::_main_thread(void *arg)
     while (true) {
         sched->callbacks->loop();
         sched->delay_microseconds(1);
-        //print_stats();
+        print_stats();
     }
 }
 

@@ -50,6 +50,10 @@ static xQueueHandle gpio_evt_queue = NULL;
 void IRAM_ATTR SoftSigReaderInt::_irq_handler(void *arg)
 //static void IRAM_ATTR gpio_isr_handler(void* arg)
 {
+
+	// don't printf from an interrupt....
+
+
     uint32_t gpio_num = (uint32_t) arg;
     //gpio_num_t gpio_num = (gpio_num_t) arg; // some number between 0 and 39 inclusive.
 
@@ -58,6 +62,8 @@ void IRAM_ATTR SoftSigReaderInt::_irq_handler(void *arg)
     static uint16_t last_transitioned_time; // timestamp of the last transition
 
     int current_state = gpio_get_level((gpio_num_t)gpio_num);
+
+	//printf("%d\n",current_state);
 
     if ( last_transitioned_from != current_state ) { // if pin state has changed
         
@@ -87,9 +93,9 @@ void IRAM_ATTR SoftSigReaderInt::_irq_handler(void *arg)
     if ( AP_HAL::micros() - last_transitioned_time > 1000000 ) { // thats 1 second with no data at all. 
         //we have probably missed some pulses
         //try to reset RCProtocol parser by returning invalid value (i.e. 0 width pulse)
-        pulse.w0 = 0;
-        pulse.w1 = 0;
-        _instance->sigbuf.push(pulse);
+        //pulse.w0 = 0;
+        //pulse.w1 = 0;
+        //_instance->sigbuf.push(pulse);
     }
 }
 
@@ -99,6 +105,7 @@ SoftSigReaderInt *SoftSigReaderInt::_instance;
 SoftSigReaderInt::SoftSigReaderInt()
 {
     _instance = this;
+    printf("SoftSigReaderInt-constructed\n");
 }
 
 SoftSigReaderInt::~SoftSigReaderInt()
@@ -112,6 +119,7 @@ SoftSigReaderInt::~SoftSigReaderInt()
 void SoftSigReaderInt::init()
 {
 
+	printf("SoftSigReaderInt::init\n");
 
 // lets start with GPIO4:  input, pulled up, interrupt from rising edge and falling edge
 

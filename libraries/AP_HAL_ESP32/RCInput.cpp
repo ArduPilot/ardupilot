@@ -15,11 +15,12 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include "RCInput.h"
+#include <stdio.h>
 
 
 //#include "hal.h"
 //#include "hwdef/common/ppm.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+//#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 
 // #if HAL_WITH_IO_MCU
 // #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -38,16 +39,17 @@ using namespace ESP32;
 extern const AP_HAL::HAL& hal;
 void RCInput::init()
 {
+   printf("RCInput::init()");
 // #if HAL_USE_ICU == TRUE
 //     //attach timer channel on which the signal will be received
 //     sig_reader.attach_capture_timer(&RCIN_ICU_TIMER, RCIN_ICU_CHANNEL, STM32_RCIN_DMA_STREAM, STM32_RCIN_DMA_CHANNEL);
 //     rcin_prot.init();
 // #endif
 
-#if HAL_USE_EICU == TRUE
-    //sig_reader.init(&RCININT_EICU_TIMER, RCININT_EICU_CHANNEL);
+//#if HAL_USE_EICU == TRUE
+    sig_reader.init();
     rcin_prot.init();
-#endif
+//#endif
 
     _init = true;
 }
@@ -93,12 +95,12 @@ uint16_t RCInput::read(uint8_t channel)
     rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
     uint16_t v = _rc_values[channel];
     rcin_mutex.give();
-#if HAL_RCINPUT_WITH_AP_RADIO
-    if (radio && channel == 0) {
-        // hook to allow for update of radio on main thread, for mavlink sends
-        radio->update();
-    }
-#endif
+//#if HAL_RCINPUT_WITH_AP_RADIO
+//    if (radio && channel == 0) {
+//        // hook to allow for update of radio on main thread, for mavlink sends
+//        radio->update();
+//    }
+//#endif
     return v;
 }
 
@@ -120,12 +122,11 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 void RCInput::_timer_tick(void)
 {
 
-    //printf("RCInput _timer_tick debug");
+	//printf("RCInput _timer_tick debug");
 
-    //if (!_init) { //BUZZ PUT THIS BACK HACK
-    //    return;
-    //}
-
+    if (!_init) { //BUZZ PUT THIS BACK HACK
+        return;
+    }
 
    // #if HAL_USE_EICU == TRUE
         uint32_t width_s0, width_s1;
@@ -134,11 +135,11 @@ void RCInput::_timer_tick(void)
         }
    // #endif
 
-    #ifndef HAL_NO_UARTDRIVER
+    //#ifndef HAL_NO_UARTDRIVER
         const char *rc_protocol = nullptr;
-    #endif
+    //#endif
 
-    #if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
+    //#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
         if (rcin_prot.new_input()) {
             rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
             _rcin_timestamp_last_signal = AP_HAL::micros();
@@ -148,18 +149,18 @@ void RCInput::_timer_tick(void)
                 _rc_values[i] = rcin_prot.read(i);
             }
             rcin_mutex.give();
-    #ifndef HAL_NO_UARTDRIVER
+    //#ifndef HAL_NO_UARTDRIVER
             rc_protocol = rcin_prot.protocol_name();
-    #endif
+    //#endif
     }
-#endif
+//#endif
 
-    #ifndef HAL_NO_UARTDRIVER
+    //#ifndef HAL_NO_UARTDRIVER
         if (rc_protocol && rc_protocol != last_protocol) {
             last_protocol = rc_protocol;
             gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
         }
-    #endif
+    //#endif
 
     // note, we rely on the vehicle code checking new_input()
     // and a timeout for the last valid input to handle failsafe
@@ -173,4 +174,4 @@ bool RCInput::rc_bind(int dsmMode)
   // not impl
     return true;
 }
-#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+//#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
