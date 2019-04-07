@@ -104,6 +104,12 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case AUX_FUNC::USER_FUNC3:
     case AUX_FUNC::ZIGZAG:
     case AUX_FUNC::ZIGZAG_SaveWP:
+    case AUX_FUNC::STABILIZE:
+    case AUX_FUNC::POSHOLD:
+    case AUX_FUNC::ALTHOLD:
+    case AUX_FUNC::FLOWHOLD:
+    case AUX_FUNC::CIRCLE:
+    case AUX_FUNC::DRIFT:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -523,6 +529,38 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                         break;
                 }
             }
+#endif
+            break;
+
+        case AUX_FUNC::STABILIZE:
+            do_aux_function_change_mode(control_mode_t::STABILIZE, ch_flag);
+            break;
+
+        case AUX_FUNC::POSHOLD:
+#if MODE_POSHOLD_ENABLED == ENABLED
+            do_aux_function_change_mode(control_mode_t::POSHOLD, ch_flag);
+#endif
+            break;
+
+        case AUX_FUNC::ALTHOLD:
+            do_aux_function_change_mode(control_mode_t::ALT_HOLD, ch_flag);
+            break;
+
+	case AUX_FUNC::FLOWHOLD:
+#if OPTFLOW == ENABLED
+            do_aux_function_change_mode(control_mode_t::FLOWHOLD, ch_flag);
+#endif
+            break;
+
+        case AUX_FUNC::CIRCLE:
+#if MODE_CIRCLE_ENABLED == ENABLED
+            do_aux_function_change_mode(control_mode_t::CIRCLE, ch_flag);
+#endif
+            break;
+
+        case AUX_FUNC::DRIFT:
+#if MODE_DRIFT_ENABLED == ENABLED
+            do_aux_function_change_mode(control_mode_t::DRIFT, ch_flag);
 #endif
             break;
 
