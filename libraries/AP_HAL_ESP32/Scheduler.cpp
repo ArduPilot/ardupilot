@@ -54,8 +54,13 @@ void Scheduler::delay(uint16_t ms)
 
 void Scheduler::delay_microseconds(uint16_t us)
 {
-    uint16_t count = us/(portTICK_PERIOD_MS * 1000);
-    vTaskDelay(count == 0 ? 1 : count);
+    uint64_t start = AP_HAL::micros64();
+    uint16_t tick = portTICK_PERIOD_MS * 1000;
+    vTaskDelay((us+tick/2)/tick);
+    uint64_t now = AP_HAL::micros64();
+    if(start + us > now) {
+        ets_delay_us((start + us) - now);
+    }
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -169,7 +174,7 @@ void Scheduler::_rcin_thread(void *arg)
         sched->delay_microseconds(20000);
     }
     while (true) {
-        sched->delay_microseconds(2500);
+        sched->delay_microseconds(20000);
         //((RCInput *)hal.rcin)->_timer_tick();
     }
 }

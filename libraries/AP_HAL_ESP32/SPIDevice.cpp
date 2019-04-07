@@ -27,6 +27,8 @@ using namespace ESP32;
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
+
 ESP32::SPIDesc SPIDeviceManager::device_table[] = {
     {
         .name = "MPU9250",
@@ -49,6 +51,21 @@ ESP32::SPIDesc SPIDeviceManager::device_table[] = {
     }
 };
 
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
+
+ESP32::SPIDesc SPIDeviceManager::device_table[] = {
+    {
+        .name = "MPU6000",
+        .device = 1,
+        .bus = 2,
+        .cs_gpio = 5,
+        .mode = 0,
+        .lowspeed = 1 * MHZ,
+        .highspeed = 4 * MHZ,
+    }
+};
+
+#endif
 
 //two available spi buses : 1 and 2, device 0 is connected to internal flash
 spi_bus_config_t bus_config[3] = {

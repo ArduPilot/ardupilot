@@ -22,8 +22,16 @@ UARTDriver::UARTDriver(uint8_t serial_num)
 {
     _initialized = false;
     uart_num = (uart_port_t)serial_num;
-    rx_pin = 3;
-    tx_pin = 1;
+    if (serial_num  == 0) {
+        rx_pin = 3;
+        tx_pin = 1;
+    } else if (serial_num == 1) {
+        rx_pin = 34;
+        tx_pin = 32;
+    } else if (serial_num == 2) {
+        rx_pin = 35;
+        tx_pin = 33;
+    }
 }
 
 void UARTDriver::begin(uint32_t b)

@@ -159,7 +159,6 @@ class Board:
             '-Werror=format-security',
             '-Werror=enum-compare',
             '-Werror=array-bounds',
-            '-Werror=uninitialized',
             '-Werror=init-self',
             '-Werror=narrowing',
             '-Werror=return-type',
@@ -393,7 +392,7 @@ class esp32(Board):
         cfg.load('esp32')
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_FC',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_DIY',
         )
         env.AP_LIBRARIES += [
             'AP_HAL_ESP32',

@@ -44,23 +44,26 @@ Internally connected on most devboards, just for reference
 
 
 ## Current progress
-Currently fw boots and runs on the test hw.
+### Main tasks
 - [x] Build system
 - [x] Scheduler and semaphores
 - [x] SPI driver
 - [x] WiFi driver
 - [x] Uart driver
 - [ ] RCIN driver
-- [ ] I2C driver
-- [ ] GPIO driver
-- [ ] AnalogIn driver
+- [x] I2C driver
 - [ ] PWM driver
+- [ ] INA219 driver
 - [x] Storage
+- [ ] OTA update of the fw
 - [ ] SdCard
 - [ ] Buzzer
 - [ ] GSD
-- [ ] Led strip
+
+### Future development
 - [ ] Pin remapping via parameters
 - [ ] Custom boards build
-- [ ] OTA update of the fw
 - [ ] Perfomance optimization
+- [ ] GPIO driver
+- [ ] AnalogIn driver
+- [ ] DShot driver / 4way pass / esc telemetry / ws2812b led

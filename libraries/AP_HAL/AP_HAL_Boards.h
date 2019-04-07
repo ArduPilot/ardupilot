@@ -63,7 +63,8 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10    5019
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54   5020
 
-#define HAL_BOARD_SUBTYPE_ESP32_FC              6001
+#define HAL_BOARD_SUBTYPE_ESP32_DIY             6001
+#define HAL_BOARD_SUBTYPE_ESP32_ICARUS          6002
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
