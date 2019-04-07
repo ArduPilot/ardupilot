@@ -27,6 +27,7 @@
 #include "WiFiDriver.h"
 #include "Storage.h"
 #include "RCInput.h"
+#include "RCOutput.h"
 
 static ESP32::UARTDriver cons(0);
 static ESP32::UARTDriver uartADriver(1);
@@ -42,14 +43,12 @@ static Empty::AnalogIn analogIn;
 static ESP32::Storage storageDriver;
 static Empty::GPIO gpioDriver;
 static ESP32::RCInput rcinDriver;
-static Empty::RCOutput rcoutDriver;
+static ESP32::RCOutput rcoutDriver;
 static ESP32::Scheduler schedulerInstance;
 static Empty::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
 extern const AP_HAL::HAL& hal;
-
-
 
 HAL_ESP32::HAL_ESP32() :
     AP_HAL::HAL(
