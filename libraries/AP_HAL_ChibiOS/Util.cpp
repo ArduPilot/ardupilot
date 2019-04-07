@@ -258,6 +258,6 @@ bool Util::get_system_id(char buf[40])
  */
 bool Util::fs_init(void)
 {
-    return sdcard_init();
+    return sdcard_retry();
 }
 #endif
