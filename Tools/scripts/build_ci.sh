@@ -109,6 +109,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "fmuv2-plane" ]; then
+        echo "Building fmuv2 plane"
+        $waf configure --board fmuv2
+        $waf clean
+        $waf plane
+        continue
+    fi
+    
     if [ "$t" == "iofirmware" ]; then
         echo "Building iofirmware"
         $waf configure --board iomcu
