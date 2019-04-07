@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -49,7 +49,7 @@ public:
     int16_t get_rssi(void) override {
         return _rssi;
     }
-        
+
     void _timer_tick(void);
     bool rc_bind(int dsmMode) override;
 
