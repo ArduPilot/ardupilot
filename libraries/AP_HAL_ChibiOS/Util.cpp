@@ -307,6 +307,6 @@ bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
  */
 bool Util::fs_init(void)
 {
-    return sdcard_init();
+    return sdcard_retry();
 }
 #endif
