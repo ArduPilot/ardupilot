@@ -1506,7 +1506,14 @@ void ModeAuto::do_RTL(void)
 bool ModeAuto::verify_takeoff()
 {
     // have we reached our target altitude?
-    return copter.wp_nav->reached_wp_destination();
+    const bool reached_wp_dest = copter.wp_nav->reached_wp_destination();
+
+    // retract the landing gear
+    if (reached_wp_dest) {
+        copter.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
+    }
+
+    return reached_wp_dest;
 }
 
 // verify_land - returns true if landing has been completed
