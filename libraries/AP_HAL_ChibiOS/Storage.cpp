@@ -74,7 +74,7 @@ void Storage::_storage_open(void)
     _flash_load();
 #elif defined(USE_POSIX)
     // allow for fallback to microSD based storage
-    sdcard_init();
+    sdcard_retry();
     
     log_fd = open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
     if (log_fd == -1) {
@@ -112,7 +112,7 @@ void Storage::_save_backup(void)
 {
 #ifdef USE_POSIX
     // allow for fallback to microSD based storage
-    sdcard_init();
+    sdcard_retry();
     int fd = open(HAL_STORAGE_BACKUP_FILE, O_WRONLY|O_CREAT|O_TRUNC);
     if (fd != -1) {
         write(fd, _buffer, CH_STORAGE_SIZE);
