@@ -195,6 +195,7 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
     // if we are motoring or attempting to reverse relax the sail
     if (motor_state == UseMotor::USE_MOTOR_ALWAYS || !is_positive(desired_speed)) {
         mainsail_out = 100.0f;
+        rover.g2.attitude_control.get_sailboat_heel_pid().reset_I();
     } else {
         // + is wind over starboard side, - is wind over port side, but as the sails are sheeted the same on each side it makes no difference so take abs
         float wind_dir_apparent = fabsf(rover.g2.windvane.get_apparent_wind_direction_rad());

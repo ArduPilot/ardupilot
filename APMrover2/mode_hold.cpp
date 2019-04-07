@@ -10,8 +10,9 @@ void ModeHold::update()
         rover.balancebot_pitch_control(throttle);
     }
 
-    // relax mainsail
+    // relax mainsail and controller
     g2.motors.set_mainsail(100.0f);
+    g2.attitude_control.get_sailboat_heel_pid().reset_I();
 
     // hold position - stop motors and center steering
     g2.motors.set_throttle(throttle);
