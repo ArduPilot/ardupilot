@@ -15,7 +15,9 @@ bool ModeAuto::_enter()
     // start or resume the mission, based on MIS_AUTORESET
     plane.mission.start_or_resume();
 
+#if SOARING_ENABLED == ENABLED
     plane.g2.soaring_controller.init_cruising();
+#endif
 
     return true;
 }
