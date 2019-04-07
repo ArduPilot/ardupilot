@@ -244,10 +244,10 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
     }
 
 #if !QAUTOTUNE_ENABLED
-    if (&new_mode == plane.mode_qautotune) {
+    if (&new_mode == &plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
-        set_mode(plane.mode_qhover);
-        return;
+        set_mode(plane.mode_qhover, MODE_REASON_UNAVAILABLE);
+        return false;
     }
 #endif
 
