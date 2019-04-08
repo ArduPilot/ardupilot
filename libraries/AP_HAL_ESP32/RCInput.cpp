@@ -39,7 +39,7 @@ using namespace ESP32;
 extern const AP_HAL::HAL& hal;
 void RCInput::init()
 {
-   printf("RCInput::init()");
+   printf("RCInput::init()\n");
 // #if HAL_USE_ICU == TRUE
 //     //attach timer channel on which the signal will be received
 //     sig_reader.attach_capture_timer(&RCIN_ICU_TIMER, RCIN_ICU_CHANNEL, STM32_RCIN_DMA_STREAM, STM32_RCIN_DMA_CHANNEL);

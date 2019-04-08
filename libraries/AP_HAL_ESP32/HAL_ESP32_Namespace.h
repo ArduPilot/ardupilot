@@ -9,7 +9,6 @@ class AnalogIn;
 class RCInput;
 class RCOutput;
 class ADCSource;
-class RCInput;
 class Util;
 class Semaphore;
 class Semaphore_Recursive;

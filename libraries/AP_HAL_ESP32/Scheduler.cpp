@@ -268,6 +268,7 @@ void Scheduler::_main_thread(void *arg)
     hal.uartC->begin(57600);
     hal.analogin->init();
     hal.rcin->init();
+    hal.rcout->init();
 
     sched->callbacks->setup();
     sched->system_initialized();

@@ -87,7 +87,7 @@ private:
 };
 
     struct pwm_group {
-	pwm_out out_list[4];
+	pwm_out out_list[6];
 	enum output_mode current_mode;
 	uint16_t ch_mask;
     };
