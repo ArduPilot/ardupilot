@@ -576,7 +576,7 @@ float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const f
 bool AP_Landing_Deepstall::verify_breakout(const Location &current_loc, const Location &target_loc,
                                                const float height_error) const
 {
-    Vector2f location_delta = location_diff(current_loc, target_loc);
+    const Vector2f location_delta = current_loc.get_distance_NE(target_loc);
     const float heading_error = degrees(landing.ahrs.groundspeed_vector().angle(location_delta));
 
     // Check to see if the the plane is heading toward the land waypoint. We use 20 degrees (+/-10 deg)
@@ -607,9 +607,9 @@ float AP_Landing_Deepstall::update_steering()
         float dt = constrain_float(time - last_time, (uint32_t)10UL, (uint32_t)200UL) * 1e-3;
         last_time = time;
 
-        Vector2f ab = location_diff(arc_exit, extended_approach);
+        Vector2f ab = arc_exit.get_distance_NE(extended_approach);
         ab.normalize();
-        Vector2f a_air = location_diff(arc_exit, current_loc);
+        const Vector2f a_air = arc_exit.get_distance_NE(current_loc);
 
         crosstrack_error = a_air % ab;
         float sine_nu1 = constrain_float(crosstrack_error / MAX(L1_period, 0.1f), -0.7071f, 0.7107f);
