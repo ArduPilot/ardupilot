@@ -811,7 +811,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
         }
         Location loc;
         get_position(loc);
-        const Vector2f diff2d = location_diff(get_home(), loc);
+        const Vector2f diff2d = get_home().get_distance_NE(loc);
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         vec = Vector3f(diff2d.x, diff2d.y,
                        -(fdm.altitude - get_home().alt*0.01f));
@@ -863,7 +863,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_origin(Vector2f &posNE) const
     case EKF_TYPE_SITL: {
         Location loc;
         get_position(loc);
-        posNE = location_diff(get_home(), loc);
+        posNE = get_home().get_distance_NE(loc);
         return true;
     }
 #endif
@@ -881,7 +881,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_home(Vector2f &posNE) const
         return false;
     }
 
-    const Vector2f offset = location_diff(originLLH, _home);
+    const Vector2f offset = originLLH.get_distance_NE(_home);
 
     posNE.x = originNE.x - offset.x;
     posNE.y = originNE.y - offset.y;
