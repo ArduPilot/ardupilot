@@ -88,12 +88,6 @@ Vector3f location_3d_diff_NED(const struct Location &loc1, const struct Location
                     (loc1.alt - loc2.alt) * 0.01f);
 }
 
-/*
-  return true if lat and lng match. Ignores altitude and options
- */
-bool locations_are_same(const struct Location &loc1, const struct Location &loc2) {
-    return (loc1.lat == loc2.lat) && (loc1.lng == loc2.lng);
-}
 
 // return true when lat and lng are within range
 bool check_lat(float lat)

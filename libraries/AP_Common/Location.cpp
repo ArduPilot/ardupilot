@@ -308,3 +308,11 @@ int32_t Location::get_bearing_to(const struct Location &loc2) const
     }
     return bearing;
 }
+
+/*
+  return true if lat and lng match. Ignores altitude and options
+ */
+bool Location::same_latlon_as(const Location &loc2) const
+{
+    return (lat == loc2.lat) && (lng == loc2.lng);
+}
