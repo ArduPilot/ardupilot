@@ -51,7 +51,7 @@ bool UARTDriver::_console;
 
 void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
-    if (_portNumber > ARRAY_SIZE(_sitlState->_uart_path)) {
+    if (_portNumber >= ARRAY_SIZE(_sitlState->_uart_path)) {
         AP_HAL::panic("port number out of range; you may need to extend _sitlState->_uart_path");
     }
 
