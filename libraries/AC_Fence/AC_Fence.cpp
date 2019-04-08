@@ -512,7 +512,7 @@ void AC_Fence::handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
             // attempt to retrieve from eeprom
             Vector2l point;
             if (_poly_loader.load_point_from_eeprom(packet.idx, point)) {
-                mavlink_msg_fence_point_send_buf(msg, link.get_chan(), msg->sysid, msg->compid, packet.idx, _total, point.x*1.0e-7f, point.y*1.0e-7f);
+                mavlink_msg_fence_point_send(link.get_chan(), msg->sysid, msg->compid, packet.idx, _total, point.x*1.0e-7f, point.y*1.0e-7f);
             } else {
                 link.send_text(MAV_SEVERITY_WARNING, "Bad fence point");
             }
