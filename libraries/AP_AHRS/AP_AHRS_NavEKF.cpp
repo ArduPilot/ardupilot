@@ -832,7 +832,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_home(Vector3f &vec) const
         return false;
     }
 
-    const Vector3f offset = location_3d_diff_NED(originLLH, _home);
+    const Vector3f offset = originLLH.get_distance_NED(_home);
 
     vec.x = originNED.x - offset.x;
     vec.y = originNED.y - offset.y;
