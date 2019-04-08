@@ -46,9 +46,12 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 
 
 ### GY-91 connection
+This is how buzz has the GY91 wired ATM, but its probable that connecting external 3.3V supply to the VIN is better than connecting a 5V supply, and then the 3V3 pin on the sensor board can be left disconnected, as it's actually 3.3v out from the LDO onboard.
+
 |ESP32|GY-91|
 |---|---|
 |GND|GND|
+|5V|VIN|
 |3.3V|3V3|
 |IO5|NCS|
 |IO23|SDA|
@@ -57,15 +60,17 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 |IO26|CSB|
 
 ## debugger connection
+Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a red PCB with a bunch of jtag headers on it and doesn't cost too much. https://www.amazon.com/TIAO-Multi-Protocol-Adapter-JTAG-Serial/dp/B0156ML5LY
 
-ESP32| 20PINJTAG
-D12  | TDI(PIN5)
-D13  | SWCLK/TCLK(PIN9)
-D14  | SWDIO/TMS(PIN7)
-D15  | SWO/TDO(PIN13)
-3.3v | -- ( powered via usb, not programmer, or PIN1)
-GND  | GND(any of PIN4,PIN6,or PIN8 , all GND)
-EN   | TRST(PIN3)
+|ESP32| 20PINJTAG|
+| --- | --- |
+|D12  | TDI(PIN5)|
+|D13  | SWCLK/TCLK(PIN9)|
+|D14  | SWDIO/TMS(PIN7)|
+|D15  | SWO/TDO(PIN13)|
+|3.3v | -- ( powered via usb, not programmer, or PIN1)|
+|GND  | GND(any of PIN4,PIN6,or PIN8 , all GND)|
+|EN   | TRST(PIN3)|
 
 ## Current progress
 Currently fw boots and runs on the test hw.
