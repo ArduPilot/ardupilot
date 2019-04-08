@@ -851,13 +851,12 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     waypoint_request_i++;
     
     if (waypoint_request_i >= waypoint_request_last) {
-        mavlink_msg_mission_ack_send_buf(
-            msg,
-            chan,
-            msg->sysid,
-            msg->compid,
-            MAV_MISSION_ACCEPTED,
-            MAV_MISSION_TYPE_MISSION);
+        mavlink_msg_mission_ack_send(
+                chan,
+                msg->sysid,
+                msg->compid,
+                MAV_MISSION_ACCEPTED,
+                MAV_MISSION_TYPE_MISSION);
         
         send_text(MAV_SEVERITY_INFO,"Flight plan received");
         waypoint_receiving = false;
@@ -877,13 +876,12 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
 
 mission_ack:
     // we are rejecting the mission/waypoint
-    mavlink_msg_mission_ack_send_buf(
-        msg,
-        chan,
-        msg->sysid,
-        msg->compid,
-        result,
-        MAV_MISSION_TYPE_MISSION);
+    mavlink_msg_mission_ack_send(
+            chan,
+            msg->sysid,
+            msg->compid,
+            result,
+            MAV_MISSION_TYPE_MISSION);
 
     return mission_is_complete;
 }
@@ -2065,7 +2063,7 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg)
     const MAV_RESULT result = _set_mode_common(_base_mode, _custom_mode);
 
     // send ACK or NAK
-    mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
+    mavlink_msg_command_ack_send(chan, MAVLINK_MSG_ID_SET_MODE, result);
 }
 
 /*
@@ -3734,7 +3732,7 @@ void GCS_MAVLINK::handle_command_long(mavlink_message_t *msg)
     const MAV_RESULT result = handle_command_long_packet(packet);
 
     // send ACK or NAK
-    mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
+    mavlink_msg_command_ack_send(chan, packet.command, result);
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
@@ -3851,7 +3849,7 @@ void GCS_MAVLINK::handle_command_int(mavlink_message_t *msg)
     const MAV_RESULT result = handle_command_int_packet(packet);
 
     // send ACK or NAK
-    mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
+    mavlink_msg_command_ack_send(chan, packet.command, result);
 }
 
 bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)
