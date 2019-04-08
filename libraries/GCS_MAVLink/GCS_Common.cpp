@@ -1813,7 +1813,7 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
     float press_diff = 0; // pascal
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed != nullptr &&
-        instance < AIRSPEED_MAX_SENSORS) {
+        airspeed->enabled(instance)) {
         press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
         have_data = true;
     }
