@@ -114,7 +114,4 @@ bool check_latlng(int32_t lat, int32_t lng)
 {
     return check_lat(lat) && check_lng(lng);
 }
-bool check_latlng(Location loc)
-{
-    return check_lat(loc.lat) && check_lng(loc.lng);
-}
+
