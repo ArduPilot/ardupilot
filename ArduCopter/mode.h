@@ -616,13 +616,13 @@ private:
     // Flip
     Vector3f orig_attitude;         // original vehicle attitude before flip
 
-    enum FlipState {
-        Flip_Start,
-        Flip_Roll,
-        Flip_Pitch_A,
-        Flip_Pitch_B,
-        Flip_Recover,
-        Flip_Abandon
+    enum class FlipState : uint8_t {
+        Start,
+        Roll,
+        Pitch_A,
+        Pitch_B,
+        Recover,
+        Abandon
     };
     FlipState _state;               // current state of flip
     control_mode_t   orig_control_mode;   // flight mode when flip was initated
