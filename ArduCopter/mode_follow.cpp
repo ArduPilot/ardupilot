@@ -27,7 +27,7 @@ bool Copter::ModeFollow::init(const bool ignore_checks)
 void Copter::ModeFollow::run()
 {
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         return;
     }

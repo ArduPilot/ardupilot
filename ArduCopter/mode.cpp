@@ -390,6 +390,14 @@ bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
     return true;
 }
 
+bool Copter::Mode::is_disarmed_or_landed() const
+{
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        return true;
+    }
+    return false;
+}
+
 void Copter::Mode::zero_throttle_and_relax_ac(bool spool_up)
 {
     if (spool_up) {
