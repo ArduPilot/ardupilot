@@ -591,7 +591,7 @@ void AC_PosControl::run_z_controller()
     // Calculate Earth Frame Z acceleration
     z_accel_meas = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
 
-    // reset target altitude if this controller has just been engaged
+    // reset target acceleration if this controller has just been engaged
     if (_flags.reset_accel_to_throttle) {
         // Reset Filter
         _accel_error.z = 0;
