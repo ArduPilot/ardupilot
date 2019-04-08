@@ -2776,7 +2776,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
 void GCS_MAVLINK::set_ekf_origin(const Location& loc)
 {
     // check location is valid
-    if (!check_latlng(loc)) {
+    if (!loc.check_latlng()) {
         return;
     }
 
@@ -3731,7 +3731,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
     }
 
     // sanity check location
-    if (!check_latlng(roi_loc)) {
+    if (!roi_loc.check_latlng()) {
         return MAV_RESULT_FAILED;
     }
 
