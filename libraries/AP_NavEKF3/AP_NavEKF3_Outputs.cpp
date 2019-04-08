@@ -250,7 +250,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
             if ((AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const struct Location &gpsloc = AP::gps().location();
-                Vector2f tempPosNE = location_diff(EKF_origin, gpsloc);
+                const Vector2f tempPosNE = EKF_origin.get_distance_NE(gpsloc);
                 posNE.x = tempPosNE.x;
                 posNE.y = tempPosNE.y;
                 return false;
