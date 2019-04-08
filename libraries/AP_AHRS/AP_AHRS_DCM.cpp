@@ -1037,7 +1037,7 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
         return false;
     }
-    if (!check_latlng(loc)) {
+    if (!loc.check_latlng()) {
         return false;
     }
     // home must always be global frame at the moment as .alt is
