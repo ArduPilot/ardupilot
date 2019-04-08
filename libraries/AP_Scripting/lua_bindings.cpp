@@ -287,7 +287,7 @@ static int location_equal(lua_State *L) {
     Location *l2 = check_location(L, -2);
     Location *l1 = check_location(L, -1);
 
-    lua_pushboolean(L, locations_are_same(*l1, *l2));
+    lua_pushboolean(L, l1->same_latlon_as(*l2));
 
     return 1;
 }
