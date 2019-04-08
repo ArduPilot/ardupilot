@@ -2017,7 +2017,7 @@ void QuadPlane::vtol_position_controller(void)
     switch (poscontrol.state) {
 
     case QPOS_POSITION1: {
-        Vector2f diff_wp = location_diff(plane.current_loc, loc);
+        const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
         const float distance = diff_wp.length();
 
         if (poscontrol.speed_scale <= 0) {
@@ -2209,11 +2209,9 @@ void QuadPlane::setup_target_position(void)
 {
     const Location &loc = plane.next_WP_loc;
     Location origin = inertial_nav.get_origin();
-    Vector2f diff2d;
-
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    diff2d = location_diff(origin, loc);
+    const Vector2f diff2d = origin.get_distance_NE(loc);
     poscontrol.target.x = diff2d.x * 100;
     poscontrol.target.y = diff2d.y * 100;
     poscontrol.target.z = plane.next_WP_loc.alt - origin.alt;
