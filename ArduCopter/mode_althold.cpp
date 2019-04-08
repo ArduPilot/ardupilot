@@ -70,10 +70,6 @@ void Copter::ModeAltHold::run()
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
-            // indicate we are taking off
-            set_land_complete(false);
-            // clear i terms
-            set_throttle_takeoff();
         }
 
         // get take-off adjusted pilot and takeoff climb rates
