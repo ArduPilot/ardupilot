@@ -28,6 +28,7 @@ AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_
         state(_state),
 		params(_params)
 {
+    _backend_type = (RangeFinder::RangeFinder_Type)params.type.get();
 }
 
 MAV_DISTANCE_SENSOR AP_RangeFinder_Backend::get_mav_distance_sensor_type() const {

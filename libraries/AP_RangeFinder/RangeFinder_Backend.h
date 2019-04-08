@@ -70,5 +70,8 @@ protected:
     // semaphore for access to shared frontend data
     HAL_Semaphore _sem;
 
+    //Type Backend initialised with
+    RangeFinder::RangeFinder_Type _backend_type;
+
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const = 0;
 };

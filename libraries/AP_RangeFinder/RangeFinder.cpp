@@ -37,6 +37,7 @@
 #include "AP_RangeFinder_Benewake.h"
 #include "AP_RangeFinder_PWM.h"
 #include "AP_RangeFinder_BLPing.h"
+#include "AP_RangeFinder_UAVCAN.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
