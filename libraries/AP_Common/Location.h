@@ -102,6 +102,9 @@ public:
      */
     bool sanitize(const struct Location &defaultLoc);
 
+    // return true when lat and lng are within range
+    bool check_latlng() const;
+
 private:
     static AP_Terrain *_terrain;
 };

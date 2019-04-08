@@ -284,7 +284,7 @@ bool Location::sanitize(const Location &defaultLoc)
     }
 
     // limit lat/lng to appropriate ranges
-    if (!check_latlng(lat, lng)) {
+    if (!check_latlng()) {
         lat = defaultLoc.lat;
         lng = defaultLoc.lng;
         has_changed = true;
@@ -315,4 +315,10 @@ int32_t Location::get_bearing_to(const struct Location &loc2) const
 bool Location::same_latlon_as(const Location &loc2) const
 {
     return (lat == loc2.lat) && (lng == loc2.lng);
+}
+
+// return true when lat and lng are within range
+bool Location::check_latlng() const
+{
+    return check_lat(lat) && check_lng(lng);
 }
