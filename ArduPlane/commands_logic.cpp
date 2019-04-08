@@ -466,7 +466,7 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     // be computed. However, if we had just changed modes before this, such as an aborted landing
     // via mode change, the prev and next wps are the same.
     float bearing;
-    if (!locations_are_same(prev_WP_loc, next_WP_loc)) {
+    if (!prev_WP_loc.same_latlon_as(next_WP_loc)) {
         // use waypoint based bearing, this is the usual case
         steer_state.hold_course_cd = -1;
     } else if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
@@ -778,7 +778,7 @@ bool Plane::verify_RTL()
 bool Plane::verify_continue_and_change_alt()
 {
     // is waypoint info not available and heading hold is?
-    if (locations_are_same(prev_WP_loc, next_WP_loc) &&
+    if (prev_WP_loc.same_latlon_as(next_WP_loc) &&
         steer_state.hold_course_cd != -1) {
         //keep flying the same course with fixed steering heading computed at start if cmd
         nav_controller->update_heading_hold(steer_state.hold_course_cd);
