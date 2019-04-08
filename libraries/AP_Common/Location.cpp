@@ -220,6 +220,17 @@ float Location::get_distance(const struct Location &loc2) const
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
+
+/*
+  return the distance in meters in North/East plane as a N/E vector
+  from loc1 to loc2
+ */
+Vector2f Location::get_distance_NE(const Location &loc2) const
+{
+    return Vector2f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale());
+}
+
 // extrapolate latitude/longitude given distances (in meters) north and east
 void Location::offset(float ofs_north, float ofs_east)
 {

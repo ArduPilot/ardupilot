@@ -43,12 +43,6 @@ float       location_path_proportion(const struct Location &location,
                                const struct Location &point2);
 
 /*
-  return the distance in meters in North/East plane as a N/E vector
-  from loc1 to loc2
- */
-Vector2f    location_diff(const struct Location &loc1, const struct Location &loc2);
-
-/*
   return the distance in meters in North/East/Down plane as a N/E/D vector
   from loc1 to loc2
  */
