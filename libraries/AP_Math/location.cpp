@@ -75,15 +75,7 @@ float location_path_proportion(const struct Location &location,
 
 
 
-/*
-  return the distance in meters in North/East plane as a N/E vector
-  from loc1 to loc2
- */
-Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
-{
-    return Vector2f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
-                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * loc1.longitude_scale());
-}
+
 
 /*
   return the distance in meters in North/East/Down plane as a N/E/D vector
