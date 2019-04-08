@@ -35,7 +35,8 @@ class AP_RangeFinder_Backend;
 class RangeFinder
 {
     friend class AP_RangeFinder_Backend;
-
+    //UAVCAN drivers are initialised in the Backend, hence list of drivers is needed there.
+    friend class AP_RangeFinder_UAVCAN;
 public:
     RangeFinder(AP_SerialManager &_serial_manager);
 
@@ -69,6 +70,7 @@ public:
         RangeFinder_TYPE_PLI2CV3HP = 21,
         RangeFinder_TYPE_PWM = 22,
         RangeFinder_TYPE_BLPing = 23,
+        RangeFinder_TYPE_UAVCAN = 24
     };
 
     enum RangeFinder_Function {
