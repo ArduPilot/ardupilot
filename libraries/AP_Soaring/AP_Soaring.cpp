@@ -238,7 +238,7 @@ void SoaringController::init_cruising()
 
 void SoaringController::get_wind_corrected_drift(const Location *current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy)
 {
-    Vector2f diff = location_diff(_prev_update_location, *current_loc); // get distances from previous update
+    const Vector2f diff = _prev_update_location.get_distance_NE(*current_loc); // get distances from previous update
     *dx = diff.x;
     *dy = diff.y;
 
