@@ -451,7 +451,7 @@ MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_command_do_set_roi(const Location &roi_loc)
 {
-    if (!check_latlng(roi_loc)) {
+    if (!roi_loc.check_latlng()) {
         return MAV_RESULT_FAILED;
     }
     sub.set_auto_yaw_roi(roi_loc);
