@@ -531,6 +531,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "Pixhawk4",
                 "PH4-mini",
                 "CUAVv5",
+                "CUAVv5Nano",
                 "mRoX21",
                 "Pixracer",
                 "F4BY",
