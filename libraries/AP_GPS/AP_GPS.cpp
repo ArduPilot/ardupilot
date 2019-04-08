@@ -1010,7 +1010,7 @@ bool AP_GPS::all_consistent(float &distance) const
     }
 
     // calculate distance
-    distance = location_3d_diff_NED(state[0].location, state[1].location).length();
+    distance = state[0].location.get_distance_NED(state[1].location).length();
     // success if distance is within 50m
     return (distance < 50);
 }
