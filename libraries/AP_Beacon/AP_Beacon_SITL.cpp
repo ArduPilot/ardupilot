@@ -97,8 +97,8 @@ void AP_Beacon_SITL::update(void)
         break;
     }
 
-    Vector2f beac_diff = location_diff(beacon_origin, beacon_loc);
-    Vector2f veh_diff = location_diff(beacon_origin, current_loc);
+    const Vector2f beac_diff = beacon_origin.get_distance_NE(beacon_loc);
+    const Vector2f veh_diff = beacon_origin.get_distance_NE(current_loc);
 
     Vector3f veh_pos3d(veh_diff.x, veh_diff.y, (current_loc.alt - beacon_origin.alt)*1.0e-2f);
     Vector3f beac_pos3d(beac_diff.x, beac_diff.y, (beacon_origin.alt - beacon_loc.alt)*1.0e-2f);
