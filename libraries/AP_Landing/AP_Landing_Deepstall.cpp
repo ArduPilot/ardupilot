@@ -632,7 +632,7 @@ float AP_Landing_Deepstall::update_steering()
                                     (double)crosstrack_error,
                                     (double)error,
                                     (double)degrees(yaw_rate),
-                                    (double)location_diff(current_loc, landing_point).length());
+                                    (double)current_loc.get_distance(landing_point));
 #endif // DEBUG_PRINTS
 
     return ds_PID.get_pid(error);
