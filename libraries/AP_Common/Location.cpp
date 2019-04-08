@@ -231,6 +231,14 @@ Vector2f Location::get_distance_NE(const Location &loc2) const
                     (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale());
 }
 
+// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
+Vector3f Location::get_distance_NED(const Location &loc2) const
+{
+    return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale(),
+                    (alt - loc2.alt) * 0.01f);
+}
+
 // extrapolate latitude/longitude given distances (in meters) north and east
 void Location::offset(float ofs_north, float ofs_east)
 {
