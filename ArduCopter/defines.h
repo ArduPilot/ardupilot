@@ -176,16 +176,6 @@ enum SmartRTLState {
     SmartRTL_Land
 };
 
-// Flip states
-enum FlipState {
-    Flip_Start,
-    Flip_Roll,
-    Flip_Pitch_A,
-    Flip_Pitch_B,
-    Flip_Recover,
-    Flip_Abandon
-};
-
 enum LandStateType {
     LandStateType_FlyToLocation = 0,
     LandStateType_Descending = 1
