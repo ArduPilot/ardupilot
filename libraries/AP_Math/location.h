@@ -42,12 +42,6 @@ float       location_path_proportion(const struct Location &location,
                                const struct Location &point1,
                                const struct Location &point2);
 
-/*
-  return the distance in meters in North/East/Down plane as a N/E/D vector
-  from loc1 to loc2
- */
-Vector3f    location_3d_diff_NED(const struct Location &loc1, const struct Location &loc2);
-
 
 // Converts from WGS84 geodetic coordinates (lat, lon, height)
 // into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
