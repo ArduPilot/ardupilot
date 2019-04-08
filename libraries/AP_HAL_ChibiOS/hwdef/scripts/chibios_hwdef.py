@@ -912,6 +912,7 @@ def write_UART_config(f):
     f.write('\n')
 
     need_uart_driver = False
+    OTG2_index = None
     devlist = []
     for dev in uart_list:
         if dev.startswith('UART'):
@@ -930,7 +931,12 @@ def write_UART_config(f):
             rts_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
         else:
             rts_line = "0"
-        if dev.startswith('OTG'):
+        if dev.startswith('OTG2'):
+            f.write(
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, true, false, 0, 0, false, 0, 0}\n'
+                % dev)
+            OTG2_index = uart_list.index(dev)
+        elif dev.startswith('OTG'):
             f.write(
                 '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0}\n'
                 % dev)
@@ -947,7 +953,14 @@ def write_UART_config(f):
             f.write("%s, " % get_extra_bylabel(dev + "_RXINV", "POL", "0"))
             f.write("%d, " % get_gpio_bylabel(dev + "_TXINV"))
             f.write("%s}\n" % get_extra_bylabel(dev + "_TXINV", "POL", "0"))
-
+    if OTG2_index is not None:
+        f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
+        f.write('''
+#if HAL_WITH_UAVCAN
+#define HAL_SERIAL%d_PROTOCOL SerialProtocol_SLCAN
+#define HAL_SERIAL%d_BAUD 115200
+#endif
+''' % (OTG2_index, OTG2_index))
     f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
     if not need_uart_driver and not args.bootloader:
         f.write('''
@@ -963,14 +976,20 @@ def write_UART_config_bootloader(f):
     f.write('\n// UART configuration\n')
     devlist = []
     have_uart = False
+    OTG2_index = None
     for u in uart_list:
-        if u.startswith('OTG'):
+        if u.startswith('OTG2'):
+            devlist.append('(BaseChannel *)&SDU2')
+            OTG2_index = uart_list.index(u)
+        elif u.startswith('OTG'):
             devlist.append('(BaseChannel *)&SDU1')
         else:
             unum = int(u[-1])
             devlist.append('(BaseChannel *)&SD%u' % unum)
             have_uart = True
     f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
+    if OTG2_index is not None:
+        f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
     if not have_uart:
         f.write('''
 #ifndef HAL_USE_SERIAL

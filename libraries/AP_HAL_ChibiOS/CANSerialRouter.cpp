@@ -33,7 +33,10 @@ void SLCANRouter::init(ChibiOS_CAN::CanIface* can_if, ChibiOS_CAN::BusEvent* upd
 
 void SLCANRouter::run()
 {
-    _port = AP_SerialManager::get_singleton()->get_serial_by_id(AP::can().get_slcan_serial());
+    _port = AP::can().get_slcan_serial();
+    if (_port == nullptr) {
+        return;
+    }
     if (_slcan_if.init(921600, SLCAN::CAN::OperatingMode::NormalMode, _port) < 0) {
         return;
     }
@@ -57,7 +60,7 @@ void SLCANRouter::run()
 
 void SLCANRouter::timer()
 {
-    if ((!_thread_started || _thread_suspended) && (AP::can().get_slcan_serial() != -1)) {
+    if ((!_thread_started || _thread_suspended) && (AP::can().get_slcan_serial() != nullptr)) {
         run();
         AP::can().reset_slcan_serial();
         _last_active_time = AP_HAL::millis();

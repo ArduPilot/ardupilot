@@ -31,10 +31,10 @@
 
 #include <stdlib.h>
 #include <string.h>
-
+#include "usbcfg.h"
 // #pragma GCC optimize("O0")
 
-#ifdef HAL_USB_PRODUCT_ID
+#if defined(HAL_USB_PRODUCT_ID) && !HAL_HAVE_DUAL_USB_CDC
 
 /* Virtual serial port over USB.*/
 SerialUSBDriver SDU1;
@@ -178,69 +178,7 @@ static USBDescriptor vcom_strings[] = {
   {0, NULL}, // version
 };
 
-#define USB_DESC_MAX_STRLEN 100
 static uint8_t vcom_buffers[3][2+2*USB_DESC_MAX_STRLEN];
-
-/*
-  check if one string contains another
- */
-static bool string_contains(const char *haystack, const char *needle)
-{
-    uint8_t needle_len = strlen(needle);
-    while (*haystack) {
-        if (strncmp(haystack, needle, needle_len) == 0) {
-            return true;
-        }
-        haystack++;
-    }
-    return false;
-}
-
-/*
-  handle substitution of variables in strings for USB descriptors
- */
-static void string_substitute(const char *str, char *str2)
-{
-    const char *board = "%BOARD%";
-    const char *serial = "%SERIAL%";
-    uint8_t new_len = strlen(str);
-    if (string_contains(str, board)) {
-        new_len += strlen(HAL_BOARD_NAME) - strlen(board);
-    }
-    if (string_contains(str, serial)) {
-        new_len += 24 - strlen(serial);
-    }
-    if (new_len+1 > USB_DESC_MAX_STRLEN) {
-        strcpy(str2, str);
-        return;
-    }
-    char *p = str2;
-    while (*str) {
-        char c = *str;
-        if (c == '%') {
-            if (strncmp(str, board, strlen(board)) == 0) {
-                memcpy(p, HAL_BOARD_NAME, strlen(HAL_BOARD_NAME));
-                str += 7;
-                p += strlen(HAL_BOARD_NAME);
-                continue;
-            }
-            if (strncmp(str, serial, strlen(serial)) == 0) {
-                const char *hex = "0123456789ABCDEF";
-                const uint8_t *cpu_id = (const uint8_t *)UDID_START;
-                uint8_t i;
-                for (i=0; i<12; i++) {
-                    *p++ = hex[(cpu_id[i]>>4)&0xF];
-                    *p++ = hex[cpu_id[i]&0xF];
-                }
-                str += 8;
-                continue;
-            }
-        }
-        *p++ = *str++;
-    }
-    *p = 0;
-}
-
 
 /*
   dynamically allocate a USB descriptor string
@@ -416,7 +354,7 @@ const USBConfig usbcfg = {
 /*
  * Serial over USB driver configuration.
  */
-const SerialUSBConfig serusbcfg = {
+const SerialUSBConfig serusbcfg1 = {
   &USBD1,
   USBD1_DATA_REQUEST_EP,
   USBD1_DATA_AVAILABLE_EP,
