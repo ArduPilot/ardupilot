@@ -63,8 +63,8 @@ float location_path_proportion(const struct Location &location,
                                const struct Location &point1,
                                const struct Location &point2)
 {
-    Vector2f vec1 = location_diff(point1, point2);
-    Vector2f vec2 = location_diff(point1, location);
+    const Vector2f vec1 = point1.get_distance_NE(point2);
+    const Vector2f vec2 = point1.get_distance_NE(location);
     float dsquared = sq(vec1.x) + sq(vec1.y);
     if (dsquared < 0.001f) {
         // the two points are very close together
