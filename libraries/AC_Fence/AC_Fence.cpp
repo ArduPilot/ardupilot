@@ -567,7 +567,7 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
         // move into location structure and convert to offset from ekf origin
         temp_loc.lat = temp_latlon.x;
         temp_loc.lng = temp_latlon.y;
-        _boundary[index] = location_diff(ekf_origin, temp_loc) * 100.0f;
+        _boundary[index] = ekf_origin.get_distance_NE(temp_loc) * 100.0f;
     }
     _boundary_num_points = _total;
     _boundary_loaded = true;
