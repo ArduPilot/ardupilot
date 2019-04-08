@@ -128,7 +128,7 @@ void Copter::ModeRTL::return_start()
 void Copter::ModeRTL::climb_return_run()
 {
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         return;
     }
@@ -185,7 +185,7 @@ void Copter::ModeRTL::loiterathome_start()
 void Copter::ModeRTL::loiterathome_run()
 {
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         return;
     }
@@ -257,7 +257,7 @@ void Copter::ModeRTL::descent_run()
     float target_yaw_rate = 0.0f;
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         return;
     }
@@ -362,7 +362,7 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
     }
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         loiter_nav->init_target();
         return;

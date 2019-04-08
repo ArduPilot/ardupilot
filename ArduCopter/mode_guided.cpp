@@ -426,7 +426,7 @@ void Copter::ModeGuided::pos_control_run()
     }
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         return;
     }
@@ -468,7 +468,7 @@ void Copter::ModeGuided::vel_control_run()
     }
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         return;
     }
@@ -521,7 +521,7 @@ void Copter::ModeGuided::posvel_control_run()
     }
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         return;
     }

@@ -32,7 +32,7 @@ bool Copter::ModeBrake::init(bool ignore_checks)
 void Copter::ModeBrake::run()
 {
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
         return;

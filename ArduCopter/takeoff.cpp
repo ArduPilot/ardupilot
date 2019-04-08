@@ -138,7 +138,7 @@ void Copter::Mode::auto_takeoff_set_start_alt(void)
     // start with our current altitude
     auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
     
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
+    if (is_disarmed_or_landed() || !motors->get_interlock()) {
         // we are not flying, add the wp_navalt_min
         auto_takeoff_no_nav_alt_cm += g2.wp_navalt_min * 100;
     }
