@@ -94,6 +94,9 @@ public:
     // return bearing in centi-degrees from location to loc2
     int32_t get_bearing_to(const struct Location &loc2) const;
 
+    // check if lat and lng match. Ignore altitude and options
+    bool same_latlon_as(const Location &loc2) const;
+
     /*
      * convert invalid waypoint with useful data. return true if location changed
      */

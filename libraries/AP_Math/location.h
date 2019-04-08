@@ -48,10 +48,6 @@ float       location_path_proportion(const struct Location &location,
  */
 Vector3f    location_3d_diff_NED(const struct Location &loc1, const struct Location &loc2);
 
-/*
- * check if lat and lng match. Ignore altitude and options
- */
-bool        locations_are_same(const struct Location &loc1, const struct Location &loc2);
 
 // Converts from WGS84 geodetic coordinates (lat, lon, height)
 // into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
