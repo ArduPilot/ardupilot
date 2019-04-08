@@ -66,5 +66,3 @@ bool        check_lat(int32_t lat);
 bool        check_lng(int32_t lng);
 bool        check_latlng(float lat, float lng);
 bool        check_latlng(int32_t lat, int32_t lng);
-bool        check_latlng(Location loc);
-
