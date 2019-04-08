@@ -185,7 +185,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     }
 
     // calculate difference
-    const Vector3f dist_vec = location_3d_diff_NED(current_loc, target_loc);
+    const Vector3f dist_vec = current_loc.get_distance_NED(target_loc);
 
     // fail if too far
     if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
