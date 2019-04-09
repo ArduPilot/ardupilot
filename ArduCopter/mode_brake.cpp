@@ -39,7 +39,7 @@ void Copter::ModeBrake::run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // relax stop target if we might be landed
     if (ap.land_complete_maybe) {
@@ -54,7 +54,7 @@ void Copter::ModeBrake::run()
 
     // update altitude target and call position controller
     // protects heli's from inflight motor interlock disable
-    if (motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE && !ap.land_complete) {
+    if (motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::GROUND_IDLE && !ap.land_complete) {
         pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
     } else {
         pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);

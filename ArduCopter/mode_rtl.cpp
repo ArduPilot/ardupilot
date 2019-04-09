@@ -144,7 +144,7 @@ void Copter::ModeRTL::climb_return_run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
@@ -201,7 +201,7 @@ void Copter::ModeRTL::loiterathome_run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
@@ -293,7 +293,7 @@ void Copter::ModeRTL::descent_run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // process roll, pitch inputs
     loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
@@ -357,7 +357,7 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
     _state_complete = ap.land_complete;
 
     // disarm when the landing detector says we've landed
-    if (disarm_on_land && ap.land_complete && motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
+    if (disarm_on_land && ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
         copter.init_disarm_motors();
     }
 
@@ -369,7 +369,7 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     land_run_horizontal_control();
     land_run_vertical_control();
