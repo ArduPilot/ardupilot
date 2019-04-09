@@ -291,7 +291,7 @@ void Sub::guided_pos_control_run()
 {
     // if motors not enabled set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
@@ -309,7 +309,7 @@ void Sub::guided_pos_control_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     failsafe_terrain_set_status(wp_nav.update_wpnav());
@@ -342,7 +342,7 @@ void Sub::guided_vel_control_run()
     if (!motors.armed()) {
         // initialise velocity controller
         pos_control.init_vel_controller_xyz();
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
@@ -360,7 +360,7 @@ void Sub::guided_vel_control_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
@@ -397,7 +397,7 @@ void Sub::guided_posvel_control_run()
         // set target position and velocity to current position and velocity
         pos_control.set_pos_target(inertial_nav.get_position());
         pos_control.set_desired_velocity(Vector3f(0,0,0));
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
@@ -416,7 +416,7 @@ void Sub::guided_posvel_control_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
@@ -467,7 +467,7 @@ void Sub::guided_angle_control_run()
 {
     // if motors not enabled set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0.0f,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
@@ -501,7 +501,7 @@ void Sub::guided_angle_control_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // call attitude controller
     attitude_control.input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);

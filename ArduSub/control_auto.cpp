@@ -117,7 +117,7 @@ void Sub::auto_wp_run()
         //    (of course it would be better if people just used take-off)
         // call attitude controller
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
         return;
@@ -134,7 +134,7 @@ void Sub::auto_wp_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     // TODO logic for terrain tracking target going below fence limit
@@ -203,7 +203,7 @@ void Sub::auto_spline_run()
         // To-Do: reset waypoint origin to current location because vehicle is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
         return;
@@ -220,7 +220,7 @@ void Sub::auto_spline_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     wp_nav.update_spline();
@@ -389,7 +389,7 @@ void Sub::auto_loiter_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
@@ -404,7 +404,7 @@ void Sub::auto_loiter_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint and z-axis position controller
     failsafe_terrain_set_status(wp_nav.update_wpnav());
@@ -675,7 +675,7 @@ void Sub::auto_terrain_recover_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
         return;

@@ -19,13 +19,13 @@ void Sub::manual_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
         return;
     }
 
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     motors.set_roll(channel_roll->norm_input());
     motors.set_pitch(channel_pitch->norm_input());
