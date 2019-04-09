@@ -785,7 +785,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
 {
     const uint32_t now = AP_HAL::millis();
-
+    if (sitl == nullptr) {
+        return;
+    }
     if (sitl->shove.t == 0) {
         return;
     }
