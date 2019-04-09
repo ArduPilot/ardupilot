@@ -833,6 +833,59 @@ class AutoTestPlane(AutoTest):
                                 timeout=5)
         self.mav.motors_disarmed_wait()
 
+    def test_rangefinder(self):
+        ex = None
+        self.context_push()
+        self.progress("Making sure we don't ordinarily get RANGEFINDER")
+        try:
+            m = self.mav.recv_match(type='RANGEFINDER',
+                                    blocking=True,
+                                    timeout=5)
+        except Exception as e:
+            print("Caught exception %s" % str(e))
+
+        if m is not None:
+            raise NotAchievedException("Received unexpected RANGEFINDER msg")
+
+        try:
+            self.set_parameter("RNGFND1_TYPE", 1)
+            self.set_parameter("RNGFND1_MIN_CM", 0)
+            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_PIN", 0)
+            self.set_parameter("RNGFND1_SCALING", 12.12)
+
+            self.reboot_sitl()
+
+            '''ensure rangefinder gives height-above-ground'''
+            self.load_mission("plane-gripper-mission.txt") # borrow this
+            self.mavproxy.send("wp set 1\n")
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            home = self.poll_home_position()
+            self.wait_altitude(10, 1000, timeout=30, relative=True)
+            rf = self.mav.recv_match(type="RANGEFINDER", timeout=1, blocking=True)
+            if rf is None:
+                raise NotAchievedException("Did not receive rangefinder message")
+            gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
+            if gpi is None:
+                raise NotAchievedException("Did not receive GLOBAL_POSITION_INT message")
+            if abs(rf.distance - gpi.relative_alt/1000.0) > 3:
+                raise NotAchievedException("rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" % (rf.distance, gpi.relative_alt/1000.0))
+            self.mavproxy.expect("Auto disarmed")
+
+            self.progress("Ensure RFND messages in log")
+            if not self.current_onboard_log_contains_message("RFND"):
+                raise NotAchievedException("No RFND messages in log")
+
+        except Exception as e:
+            self.progress("Exception caught: %s" % str(e))
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def rc_defaults(self):
         ret = super(AutoTestPlane, self).rc_defaults()
         ret[3] = 1000
@@ -874,6 +927,10 @@ class AutoTestPlane(AutoTest):
             ("Parachute", "Test Parachute", self.test_parachute),
 
             ("AIRSPEED_AUTOCAL", "Test AIRSPEED_AUTOCAL", self.airspeed_autocal),
+
+            ("RangeFinder",
+             "Test RangeFinder Basic Functionality",
+             self.test_rangefinder),
 
             ("LogDownLoad",
              "Log download",
