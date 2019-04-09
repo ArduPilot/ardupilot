@@ -22,15 +22,6 @@ float        get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &
 // return bearing in centi-degrees between two positions
 float        get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
 
-/*
-  return the proportion we are along the path from point1 to
-  point2. This will be less than >1 if we have passed point2
- */
-float       location_path_proportion(const struct Location &location,
-                               const struct Location &point1,
-                               const struct Location &point2);
-
-
 // Converts from WGS84 geodetic coordinates (lat, lon, height)
 // into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
 // (X, Y, Z)
