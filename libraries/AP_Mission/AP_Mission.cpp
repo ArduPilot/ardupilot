@@ -586,6 +586,7 @@ struct PACKED Packed_Location_Option_Flags {
     uint8_t terrain_alt  : 1;           // this altitude is above terrain
     uint8_t origin_alt   : 1;           // this altitude is above ekf origin
     uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
+    uint8_t local_frame : 1;            // 1 if lat/lng is N/E postion vector in centimeters relative to ekf origin
 };
 
 struct PACKED PackedLocation {
@@ -639,6 +640,24 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
     const uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
     PackedContent packed_content {};
+    if (stored_in_location(cmd.id)) {
+        // Location is not PACKED; field-wise copy it:
+        cmd.content.location.relative_alt = packed_content.location.flags.relative_alt;
+        cmd.content.location.loiter_ccw = packed_content.location.flags.loiter_ccw;
+        cmd.content.location.terrain_alt = packed_content.location.flags.terrain_alt;
+        cmd.content.location.origin_alt = packed_content.location.flags.origin_alt;
+        cmd.content.location.loiter_xtrack = packed_content.location.flags.loiter_xtrack;
+        cmd.content.location.local_frame = packed_content.location.flags.local_frame;
+        cmd.content.location.alt = packed_content.location.alt;
+        cmd.content.location.lat = packed_content.location.lat;
+        cmd.content.location.lng = packed_content.location.lng;
+    } else {
+        // all other options in Content are assumed to be packed:
+        static_assert(sizeof(cmd.content) >= 12,
+                      "content is big enough to take bytes");
+        // (void *) cast to specify gcc that we know that we are copy byte into a non trivial type and leaving 4 bytes untouched
+        memcpy((void *)&cmd.content, packed_content.bytes, 12);
+    }
 
     const uint8_t b1 = _storage.read_byte(pos_in_storage);
     if (b1 == 0) {
@@ -730,6 +749,7 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
         packed.location.flags.terrain_alt = cmd.content.location.terrain_alt;
         packed.location.flags.origin_alt = cmd.content.location.origin_alt;
         packed.location.flags.loiter_xtrack = cmd.content.location.loiter_xtrack;
+        packed.location.flags.local_frame = cmd.content.location.local_frame;
         packed.location.alt = cmd.content.location.alt;
         packed.location.lat = cmd.content.location.lat;
         packed.location.lng = cmd.content.location.lng;
@@ -819,6 +839,7 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
 //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
 MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd)
 {
+    bool local_frame_supported = false;
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
     cmd.id = packet.command;
@@ -837,6 +858,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         return MAV_MISSION_INVALID;
 
     case MAV_CMD_NAV_WAYPOINT: {                        // MAV ID: 16
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        local_frame_supported = true;
+#endif
         /*
           the 15 byte limit means we can't fit both delay and radius
           in the cmd structure. When we expand the mission structure
@@ -889,6 +914,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
     case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22
         cmd.p1 = packet.param1;                         // minimum pitch (plane only)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        local_frame_supported = true;
+#endif
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:           // MAV ID: 30
@@ -1116,7 +1144,18 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
 
         switch (packet.frame) {
-
+        case MAV_FRAME_LOCAL_NED:
+            if (local_frame_supported) {
+                cmd.content.location.alt = -cmd.content.location.alt;
+                //mavlink spec MISSION_ITEM_INT states local: position in meters * 1e4"
+                cmd.content.location.lat = packet.x * 0.01f; //convert to cm
+                cmd.content.location.lng = packet.y * 0.01f;
+                cmd.content.location.local_frame = 1;
+                cmd.content.location.origin_alt = 1;
+            } else {
+                return MAV_MISSION_UNSUPPORTED_FRAME;
+            }
+            break;
         case MAV_FRAME_MISSION:
         case MAV_FRAME_GLOBAL:
         case MAV_FRAME_GLOBAL_INT:
@@ -1182,16 +1221,22 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
         break;
 
     default:
-        // all other commands use x and y as lat/lon. We need to
-        // multiply by 1e7 to convert to int32_t
-        if (!check_lat(packet.x)) {
-            return MAV_MISSION_INVALID_PARAM5_X;
+        if (packet.frame == MAV_FRAME_LOCAL_NED) {
+            //mavlink spec MISSION_ITEM_INT states local: position in meters * 1e4"
+            mav_cmd.x = packet.x * 10000;
+            mav_cmd.y = packet.y * 10000;
+        } else {
+            // all other commands use x and y as lat/lon. We need to
+            // multiply by 1e7 to convert to int32_t
+            if (!check_lat(packet.x)) {
+                return MAV_MISSION_INVALID_PARAM5_X;
+            }
+            if (!check_lng(packet.y)) {
+                return MAV_MISSION_INVALID_PARAM6_Y;
+            }
+            mav_cmd.x = packet.x * 1.0e7f;
+            mav_cmd.y = packet.y * 1.0e7f;
         }
-        if (!check_lng(packet.y)) {
-            return MAV_MISSION_INVALID_PARAM6_Y;
-        }
-        mav_cmd.x = packet.x * 1.0e7f;
-        mav_cmd.y = packet.y * 1.0e7f;
         break;
     }
 
@@ -1223,15 +1268,21 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
         break;
 
     default:
-        // all other commands use x and y as lat/lon. We need to
-        // multiply by 1e-7 to convert to float
-        item.x = item_int.x * 1.0e-7f;
-        item.y = item_int.y * 1.0e-7f;
-        if (!check_lat(item.x)) {
-            return MAV_MISSION_INVALID_PARAM5_X;
-        }
-        if (!check_lng(item.y)) {
-            return MAV_MISSION_INVALID_PARAM6_Y;
+        if (item.frame == MAV_FRAME_LOCAL_NED) {
+            //mavlink spec MISSION_ITEM_INT states local: position in meters * 1e4"
+            item.x = item_int.x * 10000;
+            item.y = item_int.y * 10000;
+        } else {
+            // all other commands use x and y as lat/lon. We need to
+            // multiply by 1e-7 to convert to float
+            item.x = item_int.x * 1.0e-7f;
+            item.y = item_int.y * 1.0e-7f;
+            if (!check_lat(item.x)) {
+                return MAV_MISSION_INVALID_PARAM5_X;
+            }
+            if (!check_lng(item.y)) {
+                return MAV_MISSION_INVALID_PARAM6_Y;
+            }
         }
         break;
     }
@@ -1538,14 +1589,22 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     // copy location from mavlink to command
     if (stored_in_location(cmd.id)) {
-        packet.x = cmd.content.location.lat;
-        packet.y = cmd.content.location.lng;
-
-        packet.z = cmd.content.location.alt / 100.0f;   // cmd alt in cm to m
-        if (cmd.content.location.relative_alt) {
-            packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+        if (cmd.content.location.local_frame) {
+            //position in meters * 1e4
+            packet.x = cmd.content.location.lat * 100;
+            packet.y = cmd.content.location.lng * 100;
+            packet.z = cmd.content.location.alt * -0.01f;
+            packet.frame = MAV_FRAME_LOCAL_NED;
         } else {
-            packet.frame = MAV_FRAME_GLOBAL;
+            packet.x = cmd.content.location.lat;
+            packet.y = cmd.content.location.lng;
+
+            packet.z = cmd.content.location.alt / 100.0f;   // cmd alt in cm to m
+            if (cmd.content.location.relative_alt) {
+                packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+            } else {
+                packet.frame = MAV_FRAME_GLOBAL;
+            }
         }
 #if AP_TERRAIN_AVAILABLE
         if (cmd.content.location.terrain_alt) {
