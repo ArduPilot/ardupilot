@@ -31,7 +31,7 @@ using namespace ESP32;
 extern const AP_HAL::HAL& hal;
 
 DeviceBus::DeviceBus(uint8_t _thread_priority) :
-    thread_priority(_thread_priority)
+    thread_priority(_thread_priority), semaphore()
 {
 }
 

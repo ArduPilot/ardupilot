@@ -30,11 +30,11 @@
 #include "RCOutput.h"
 #include "Util.h"
 
-static ESP32::UARTDriver cons(0);
-static ESP32::UARTDriver uartADriver(1);
-static Empty::UARTDriver uartBDriver;
-static ESP32::WiFiDriver uartCDriver;
-static Empty::UARTDriver uartDDriver;
+static ESP32::UARTDriver cons(0);        // console      on hardware serial 0
+static ESP32::UARTDriver uartADriver(1); // mavlink1/gps on hardware serial 1
+static Empty::UARTDriver uartBDriver;    // unused
+static ESP32::WiFiDriver uartCDriver;    // wifi/tcp doesnt use real serial hardware
+static Empty::UARTDriver uartDDriver;    // unused
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;

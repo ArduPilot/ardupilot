@@ -18,15 +18,22 @@
 
 using namespace ESP32;
 
+// note that the ESP32 hardware actually only has THREE hardware uarts, so we cant
+// enable all these at the same time, serial2 is probably least likely to be used.
 UARTDriver::UARTDriver(uint8_t serial_num)
 {
     _initialized = false;
     uart_num = (uart_port_t)serial_num;
-    if (serial_num == 0 ) {
+    if (serial_num == 0 ) { //typically console
     	rx_pin = 3;
     	tx_pin = 1;
-    }
-    if (serial_num == 1 ) {
+    } else if (serial_num == 1) { //typically mavlink or gps
+        rx_pin = 34;
+        tx_pin = 32;
+    } else if (serial_num == 2) { //typically mavlink or gps
+        rx_pin = 35;
+        tx_pin = 33;
+    } else if (serial_num == 3) { //typically mavlink or gps
     	rx_pin = 16;
     	tx_pin = 17;
     }

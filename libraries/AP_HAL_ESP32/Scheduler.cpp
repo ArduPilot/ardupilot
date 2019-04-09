@@ -57,8 +57,13 @@ void Scheduler::delay(uint16_t ms)
 
 void Scheduler::delay_microseconds(uint16_t us)
 {
-    uint16_t count = us/(portTICK_PERIOD_MS * 1000);
-    vTaskDelay(count == 0 ? 1 : count);
+    uint64_t start = AP_HAL::micros64();
+    uint16_t tick = portTICK_PERIOD_MS * 1000;
+    vTaskDelay((us+tick/2)/tick);
+    uint64_t now = AP_HAL::micros64();
+    if(start + us > now) {
+        ets_delay_us((start + us) - now);
+    }
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -175,13 +180,7 @@ void Scheduler::_rcin_thread(void *arg)
     printf("Scheduler::_rcin_thread initialized\n");
     while (true) {
         sched->delay_microseconds(2500);
-			//if (! hal.rcin ) {
-			//	hal.rcin = RCInput::from(hal.rcin); //->_timer_tick();
-			//} else {
-				//hal.rcin->_timer_tick();
-			//}
 			((RCInput *)hal.rcin)->_timer_tick();
-    	//}
     }
 }
 
@@ -240,11 +239,11 @@ void Scheduler::_uart_thread(void *arg)
     }
     while (true) {
         sched->delay_microseconds(1000);
-        hal.uartA->_timer_tick();
-        hal.uartB->_timer_tick();
-        hal.uartC->_timer_tick();
-        hal.uartD->_timer_tick();
-        hal.console->_timer_tick();
+        hal.uartA->_timer_tick();  // serial mavlink or serial gps
+        hal.uartB->_timer_tick();  // unused
+        hal.uartC->_timer_tick();  // mavlink over WiFi/TCP
+        hal.uartD->_timer_tick();  // unused
+        hal.console->_timer_tick(); // console message, serial 0
     }
 }
 
@@ -263,9 +262,13 @@ void print_stats()
 void Scheduler::_main_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    hal.uartA->begin(115200);
-    hal.uartB->begin(38400);
-    hal.uartC->begin(57600);
+    // hal->console() is also a serial device for console/boot messages, at 115200
+    hal.uartA->begin(115200);  // serial mavlink or serial gps
+    hal.uartB->begin(115200);  // unused
+    hal.uartC->begin(115200);  // mavlink over WiFi/TCP
+    hal.uartD->begin(115200);  // unused
+    // note that right now we begin() and _timer_tick() on B and D but dont use them normally.
+    // but E,F,G,H we don't even do that on.
     hal.analogin->init();
     hal.rcin->init();
     hal.rcout->init();

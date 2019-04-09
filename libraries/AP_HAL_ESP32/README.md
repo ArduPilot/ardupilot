@@ -73,7 +73,7 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 |EN   | TRST(PIN3)|
 
 ## Current progress
-Currently fw boots and runs on the test hw.
+### Main tasks
 - [x] Build system
 - [x] Scheduler and semaphores
 - [x] SPI driver
@@ -83,18 +83,22 @@ Currently fw boots and runs on the test hw.
 - [X] GPS testing/integration ( Serial ublox GPS, as ardupilot SERIAL0 on RX2/TX2 aka GPIO16 and GPIO17 )
 - [ ] PWM driver
 - [ ] RCOUT driver
-- [ ] I2C driver
 - [ ] GPIO driver
 - [ ] AnalogIn driver
+- [x] I2C driver
 - [x] Storage
+- [ ] OTA update of the fw
 - [ ] SdCard
 - [ ] Buzzer
 - [ ] GSD
-- [ ] Led strip
+
+### Future development
 - [ ] Pin remapping via parameters
 - [ ] Custom boards build
-- [ ] OTA update of the fw
 - [ ] Perfomance optimization
+- [ ] GPIO driver
+- [ ] AnalogIn driver
+- [ ] DShot driver / 4way pass / esc telemetry / ws2812b led
 
 
 example log of boot messages:
