@@ -141,35 +141,46 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
 {
     _mode = Auto_TakeOff;
 
-    Location dest(dest_loc);
+    if (dest_loc.local_frame) {
+        float dest_alt = dest_loc.alt;
+        const Vector3f& curr_pos = inertial_nav.get_position();
+        //you can't go lower than you currently are and you can't takeoff to less than 100cm above
+        if (dest_loc.alt < curr_pos.z || ((dest_loc.alt - curr_pos.z) < 100)) {
+            dest_alt = curr_pos.z + 100;
+        }
+        // no need to check return status because terrain data is not used
+        wp_nav->set_wp_destination(Vector3f(curr_pos.x, curr_pos.y, dest_alt), false);
+    } else {
+        Location dest(dest_loc);
 
-    // set horizontal target
-    dest.lat = copter.current_loc.lat;
-    dest.lng = copter.current_loc.lng;
+        // set horizontal target
+        dest.lat = copter.current_loc.lat;
+        dest.lng = copter.current_loc.lng;
 
-    // get altitude target
-    int32_t alt_target;
-    if (!dest.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_target)) {
-        // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
-        AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
-        // fall back to altitude above current altitude
-        alt_target = copter.current_loc.alt + dest.alt;
-    }
+        // get altitude target
+        int32_t alt_target;
+        if (!dest.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_target)) {
+            // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
+            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            // fall back to altitude above current altitude
+            alt_target = copter.current_loc.alt + dest.alt;
+        }
 
-    // sanity check target
-    if (alt_target < copter.current_loc.alt) {
-        dest.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
-    }
-    // Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
-    if (alt_target < 100) {
-        dest.set_alt_cm(100, Location::AltFrame::ABOVE_HOME);
-    }
+        // sanity check target
+        if (alt_target < copter.current_loc.alt) {
+            dest.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+        }
+        // Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
+        if (alt_target < 100) {
+            dest.set_alt_cm(100, Location::AltFrame::ABOVE_HOME);
+        }
 
-    // set waypoint controller target
-    if (!wp_nav->set_wp_destination(dest)) {
-        // failure to set destination can only be because of missing terrain data
-        copter.failsafe_terrain_on_event();
-        return;
+	// set waypoint controller target
+	if (!wp_nav->set_wp_destination(dest)) {
+	    // failure to set destination can only be because of missing terrain data
+            copter.failsafe_terrain_on_event();
+            return;
+        }
     }
 
     // initialise yaw
@@ -1096,15 +1107,25 @@ Location Copter::ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd) 
 // do_nav_wp - initiate move to next waypoint
 void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location target_loc = loc_from_cmd(cmd);
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
     loiter_time_max = cmd.p1;
 
-    // Set wp navigation target
-    wp_start(target_loc);
+    if (cmd.content.location.local_frame) {
+        //going to (0,0,0) would be a disaster waiting to happen as the origin is presumably on the ground
+        if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0) {
+            const Vector3f& curr_pos = inertial_nav.get_position();
+            wp_start(curr_pos);
+        } else {
+            wp_start(Vector3f(cmd.content.location.lat, cmd.content.location.lng, cmd.content.location.alt));
+        }
+    } else {
+        Location target_loc = loc_from_cmd(cmd);
+        // Set wp navigation target
+        wp_start(target_loc);
+    }
 
     // if no delay as well as not final waypoint set the waypoint as "fast"
     AP_Mission::Mission_Command temp_cmd;
