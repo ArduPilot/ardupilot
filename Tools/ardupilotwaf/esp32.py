@@ -24,6 +24,8 @@ def configure(cfg):
     env.AP_HAL_COPTER = srcpath('libraries/AP_HAL_ESP32/copter')
     env.AP_HAL_ROVER = srcpath('libraries/AP_HAL_ESP32/rover')
     env.AP_PROGRAM_FEATURES += ['esp32_ap_program']
+    if env.BOARD == 'esp32icarus':
+   		print("ICARUS SUBTYPE				 : yes")
 
 def parse_inc_dir(lines):
     for line in lines.splitlines():
@@ -39,6 +41,17 @@ class build_esp32_image_plane(Task.Task):
         return "Generating"
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class build_esp32icarus_image_plane(Task.Task):
+    '''build an esp32 image'''
+    color='CYAN'
+    run_str="(cd ${AP_HAL_PLANE} && ${MAKE} -f Makefile.icarus V=1)"
+    always_run = True
+    def keyword(self):
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
 
 class build_esp32_image_copter(Task.Task):
     '''build an esp32 image'''
@@ -64,12 +77,20 @@ class build_esp32_image_rover(Task.Task):
 @after_method('process_source')
 def esp32_firmware(self):
     if str(self.link_task.outputs[0]).endswith('libarduplane.a'):
-        #build final image
-        src_in = [self.bld.bldnode.find_or_declare('lib/libArduPlane_libs.a'),
-                  self.bld.bldnode.find_or_declare('lib/bin/libarduplane.a')]
-        img_out = self.bld.bldnode.find_or_declare('idf-plane/arduplane.elf')
-        generate_bin_task = self.create_task('build_esp32_image_plane', src=src_in, tgt=img_out)
-        generate_bin_task.set_run_after(self.link_task)
+    	if self.env.BOARD == "esp32icarus":
+	        #build final image
+	        src_in = [self.bld.bldnode.find_or_declare('lib/libArduPlane_libs.a'),
+	                  self.bld.bldnode.find_or_declare('lib/bin/libarduplane.a')]
+	        img_out = self.bld.bldnode.find_or_declare('idf-plane/arduplane.elf')
+	        generate_bin_task = self.create_task('build_esp32icarus_image_plane', src=src_in, tgt=img_out)
+	        generate_bin_task.set_run_after(self.link_task)
+    	if self.env.BOARD == "esp32":
+	        #build final image
+	        src_in = [self.bld.bldnode.find_or_declare('lib/libArduPlane_libs.a'),
+	                  self.bld.bldnode.find_or_declare('lib/bin/libarduplane.a')]
+	        img_out = self.bld.bldnode.find_or_declare('idf-plane/arduplane.elf')
+	        generate_bin_task = self.create_task('build_esp32_image_plane', src=src_in, tgt=img_out)
+	        generate_bin_task.set_run_after(self.link_task)
 
         #add generated include files
         cmd = "cd {0}&&{1} showinc".format(self.env.AP_HAL_PLANE, self.env.MAKE[0])
