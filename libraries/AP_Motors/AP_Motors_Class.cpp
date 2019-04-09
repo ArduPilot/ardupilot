@@ -34,8 +34,8 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _loop_rate(loop_rate),
     _speed_hz(speed_hz),
     _throttle_filter(),
-    _spool_desired(DESIRED_SHUT_DOWN),
-    _spool_mode(SHUT_DOWN),
+    _spool_desired(DesiredSpoolState::SHUT_DOWN),
+    _spool_state(SpoolState::SHUT_DOWN),
     _air_density_ratio(1.0f)
 {
     _singleton = this;
@@ -64,9 +64,9 @@ void AP_Motors::armed(bool arm)
     }
 };
 
-void AP_Motors::set_desired_spool_state(enum spool_up_down_desired spool)
+void AP_Motors::set_desired_spool_state(DesiredSpoolState spool)
 {
-    if (_flags.armed || (spool == DESIRED_SHUT_DOWN)) {
+    if (_flags.armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
         _spool_desired = spool;
     }
 };
