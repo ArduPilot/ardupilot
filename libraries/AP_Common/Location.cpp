@@ -328,3 +328,14 @@ bool Location::check_latlng() const
 {
     return check_lat(lat) && check_lng(lng);
 }
+
+// see if location is past a line perpendicular to
+// the line between point1 and point2 and passing through point2.
+// If point1 is our previous waypoint and point2 is our target waypoint
+// then this function returns true if we have flown past
+// the target waypoint
+bool Location::past_interval_finish_line(const Location &point1, const Location &point2) const
+{
+    return this->line_path_proportion(point1, point2) >= 1.0f;
+}
+
