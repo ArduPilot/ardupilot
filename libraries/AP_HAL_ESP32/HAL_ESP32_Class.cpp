@@ -31,9 +31,19 @@
 #include "Util.h"
 
 static ESP32::UARTDriver cons(0);        // console      on hardware serial 0
+// ICARUS has console + 2 uarts enabled
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
 static ESP32::UARTDriver uartADriver(1); // mavlink1/gps on hardware serial 1
+static ESP32::UARTDriver uartBDriver(2);    // unused
+#endif
+// DIY has console + 1 uart enabled
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
+static ESP32::UARTDriver uartADriver(3); // mavlink1/gps on hardware serial 1
 static Empty::UARTDriver uartBDriver;    // unused
+#endif
+// both boards use the Wifi UART as well
 static ESP32::WiFiDriver uartCDriver;    // wifi/tcp doesnt use real serial hardware
+
 static Empty::UARTDriver uartDDriver;    // unused
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
