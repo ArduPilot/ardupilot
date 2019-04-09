@@ -1040,22 +1040,24 @@ private:
     RPMode roll_mode;
     RPMode pitch_mode;
 
-    uint8_t braking_time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
-    uint8_t braking_time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
-
     // pilot input related variables
     float pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
     float pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
 
     // braking related variables
-    float brake_gain;                           // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from brake_rate)
-    float brake_roll;                           // target roll angle during braking periods
-    float brake_pitch;                          // target pitch angle during braking periods
-    int16_t brake_timeout_roll;                 // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
-    int16_t brake_timeout_pitch;                // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
-    float brake_angle_max_roll;                 // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
-    float brake_angle_max_pitch;                // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
-    int16_t brake_to_loiter_timer;              // cycles to mix brake and loiter controls in POSHOLD_BRAKE_TO_LOITER
+    struct {
+        uint8_t time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+        uint8_t time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+
+        float gain;                         // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from rate)
+        float roll;                         // target roll angle during braking periods
+        float pitch;                        // target pitch angle during braking periods
+        int16_t timeout_roll;               // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
+        int16_t timeout_pitch;              // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
+        float angle_max_roll;               // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        float angle_max_pitch;              // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+        int16_t to_loiter_timer;            // cycles to mix brake and loiter controls in POSHOLD_TO_LOITER
+    } brake;
 
     // loiter related variables
     int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
