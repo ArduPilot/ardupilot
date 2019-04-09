@@ -180,7 +180,7 @@ bool AP_InertialSensor_BMI088::setup_accel_config(void)
         }
     }
     done_accel_config = true;
-    hal.console->printf("BMI088: accel config OK (%u tries)\n", accel_config_count);
+    hal.console->printf("BMI088: accel config OK (%u tries)\n", (unsigned)accel_config_count);
     return true;
 }
 
