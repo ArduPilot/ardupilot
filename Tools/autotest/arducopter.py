@@ -124,12 +124,13 @@ class AutoTestCopter(AutoTest):
                                relative=True,
                                timeout=timeout)
 
-    def land(self, timeout=60):
+    def land_and_disarm(self, timeout=60):
         """Land the quad."""
         self.progress("STARTING LANDING")
         self.change_mode("LAND")
         self.wait_altitude(-5, 1, relative=True, timeout=timeout)
         self.progress("LANDING: ok!")
+        self.mav.motors_disarmed_wait()
 
     def hover(self, hover_throttle=1500):
         self.set_rc(3, hover_throttle)
@@ -1523,6 +1524,12 @@ class AutoTestCopter(AutoTest):
         if m is not None:
             raise NotAchievedException("Received unexpected RANGEFINDER msg")
 
+        # may need to force a rotation if some other test has used the
+        # rangefinder...
+        self.progress("Ensure no RFND messages in log")
+        if self.current_onboard_log_contains_message("RFND"):
+            raise NotAchievedException("Found unexpected RFND message")
+
         try:
             self.set_parameter("RNGFND1_TYPE", 1)
             self.set_parameter("RNGFND1_MIN_CM", 0)
@@ -1579,12 +1586,14 @@ class AutoTestCopter(AutoTest):
             if abs(m_r.distance - m_p.relative_alt/1000) > 1:
                 raise NotAchievedException("rangefinder/global position int mismatch")
 
-            self.land()
+            self.land_and_disarm()
+
+            if not self.current_onboard_log_contains_message("RFND"):
+                raise NotAchievedException("Did not see expected RFND message")
 
         except Exception as e:
             self.progress("Exception caught")
             ex = e
-        self.land()
         self.context_pop()
         self.reboot_sitl()
         if ex is not None:
