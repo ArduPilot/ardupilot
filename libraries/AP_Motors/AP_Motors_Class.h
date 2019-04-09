@@ -105,27 +105,27 @@ public:
     virtual uint8_t     get_lost_motor() const { return 0; }
 
     // desired spool states
-    enum spool_up_down_desired {
-        DESIRED_SHUT_DOWN = 0,              // all motors stop
-        DESIRED_GROUND_IDLE = 1,            // all motors at ground idle
-        DESIRED_THROTTLE_UNLIMITED = 2,     // motors are no longer constrained by start up procedure
+    enum class DesiredSpoolState : uint8_t {
+        SHUT_DOWN = 0,              // all motors should move to stop
+        GROUND_IDLE = 1,            // all motors should move to ground idle
+        THROTTLE_UNLIMITED = 2,     // motors should move to being a state where throttle is unconstrained (e.g. by start up procedure)
     };
 
-    void set_desired_spool_state(enum spool_up_down_desired spool);
+    void set_desired_spool_state(enum DesiredSpoolState spool);
 
-    enum spool_up_down_desired get_desired_spool_state(void) const { return _spool_desired; }
+    enum DesiredSpoolState get_desired_spool_state(void) const { return _spool_desired; }
 
     // spool states
-    enum spool_up_down_mode {
+    enum class SpoolState : uint8_t {
         SHUT_DOWN = 0,                      // all motors stop
         GROUND_IDLE = 1,                    // all motors at ground idle
-        SPOOL_UP = 2,                       // increasing maximum throttle while stabilizing
+        SPOOLING_UP = 2,                       // increasing maximum throttle while stabilizing
         THROTTLE_UNLIMITED = 3,             // throttle is no longer constrained by start up procedure
-        SPOOL_DOWN = 4,                     // decreasing maximum throttle while stabilizing
+        SPOOLING_DOWN = 4,                     // decreasing maximum throttle while stabilizing
     };
 
-    // get_spool_mode - get current spool mode
-    enum spool_up_down_mode  get_spool_mode(void) const { return _spool_mode; }
+    // get_spool_state - get current spool state
+    enum SpoolState  get_spool_state(void) const { return _spool_state; }
 
     // set_density_ratio - sets air density as a proportion of sea level density
     void                set_air_density_ratio(float ratio) { _air_density_ratio = ratio; }
@@ -221,8 +221,8 @@ protected:
     float               _lateral_in;                // last lateral input from set_lateral caller
     float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
-    spool_up_down_desired _spool_desired;           // desired spool state
-    spool_up_down_mode  _spool_mode;                // current spool mode
+    DesiredSpoolState   _spool_desired;             // desired spool state
+    SpoolState          _spool_state;               // current spool mode
 
     // air pressure compensation variables
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
