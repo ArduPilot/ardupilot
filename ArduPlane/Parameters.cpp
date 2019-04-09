@@ -401,7 +401,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
-    // @Description: Minimum throttle percentage used in automatic throttle modes. Negative values allow reverse thrust if hardware supports it.
+    // @Description: Minimum throttle percentage used in all modes except manual, provided THR_PASS_STAB is not set. Negative values allow reverse thrust if hardware supports it.
     // @Units: %
     // @Range: -100 100
     // @Increment: 1
