@@ -266,7 +266,7 @@ void Plane::control_failsafe()
             case Mode::Number::QRTL:  // throttle is ignored, but reset anyways
             case Mode::Number::QACRO:
             case Mode::Number::QAUTOTUNE:
-                if (quadplane.available() && quadplane.motors->get_desired_spool_state() > AP_Motors::DESIRED_GROUND_IDLE) {
+                if (quadplane.available() && quadplane.motors->get_desired_spool_state() > AP_Motors::DesiredSpoolState::GROUND_IDLE) {
                     // set half throttle to avoid descending at maximum rate, still has a slight descent due to throttle deadzone
                     channel_throttle->set_control_in(channel_throttle->get_range() / 2);
                     break;
