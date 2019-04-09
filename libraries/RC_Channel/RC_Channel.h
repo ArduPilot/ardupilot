@@ -331,7 +331,7 @@ public:
 
     // should we ignore RC failsafe bits from receivers?
     bool ignore_rc_failsafe(void) const {
-        return _options & uint32_t(Option::IGNORE_FAILSAFE);
+        return get_singleton() != nullptr && (_options & uint32_t(Option::IGNORE_FAILSAFE));
     }
 
     bool ignore_overrides() const {
