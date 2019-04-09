@@ -442,9 +442,10 @@ void Plane::set_servos_controlled(void)
         } else if (g.throttle_passthru_stabilize) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         } else {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
+                                            constrain_int16(get_throttle_input(true), min_throttle, max_throttle));
         }
     } else if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
                guided_throttle_passthru) {
@@ -749,9 +750,10 @@ void Plane::set_servos(void)
 
         case AP_Arming::Required::YES_MIN_PWM:
         default:
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0);
+            int8_t min_throttle = MAX(aparm.throttle_min.get(),0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, min_throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, min_throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, min_throttle);
             break;
         }
     }
