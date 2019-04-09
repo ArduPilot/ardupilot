@@ -433,23 +433,23 @@ void AP_MotorsHeli_Single::output_to_motors()
         }
     }
 
-    switch (_spool_mode) {
-        case SHUT_DOWN:
+    switch (_spool_state) {
+        case SpoolState::SHUT_DOWN:
             // sends minimum values out to the motors
             update_motor_control(ROTOR_CONTROL_STOP);
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){
                 rc_write_angle(AP_MOTORS_MOT_4, -YAW_SERVO_MAX_ANGLE);
             }
             break;
-        case GROUND_IDLE:
+        case SpoolState::GROUND_IDLE:
             // sends idle output to motors when armed. rotor could be static or turning (autorotation)
             update_motor_control(ROTOR_CONTROL_IDLE);
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){
                 rc_write_angle(AP_MOTORS_MOT_4, -YAW_SERVO_MAX_ANGLE);
             }
             break;
-        case SPOOL_UP:
-        case THROTTLE_UNLIMITED:
+        case SpoolState::SPOOLING_UP:
+        case SpoolState::THROTTLE_UNLIMITED:
             // set motor output based on thrust requests
             update_motor_control(ROTOR_CONTROL_ACTIVE);
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){
@@ -459,7 +459,7 @@ void AP_MotorsHeli_Single::output_to_motors()
                 rc_write_angle(AP_MOTORS_MOT_4, _servo4_out * YAW_SERVO_MAX_ANGLE);
             }
             break;
-        case SPOOL_DOWN:
+        case SpoolState::SPOOLING_DOWN:
             // sends idle output to motors and wait for rotor to stop
             update_motor_control(ROTOR_CONTROL_IDLE);
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){

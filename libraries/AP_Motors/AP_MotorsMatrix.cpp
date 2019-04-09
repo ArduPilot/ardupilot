@@ -73,8 +73,8 @@ void AP_MotorsMatrix::output_to_motors()
 {
     int8_t i;
 
-    switch (_spool_mode) {
-        case SHUT_DOWN: {
+    switch (_spool_state) {
+        case SpoolState::SHUT_DOWN: {
             // no output
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
@@ -83,7 +83,7 @@ void AP_MotorsMatrix::output_to_motors()
             }
             break;
         }
-        case GROUND_IDLE:
+        case SpoolState::GROUND_IDLE:
             // sends output to motors when armed but not flying
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
@@ -91,9 +91,9 @@ void AP_MotorsMatrix::output_to_motors()
                 }
             }
             break;
-        case SPOOL_UP:
-        case THROTTLE_UNLIMITED:
-        case SPOOL_DOWN:
+        case SpoolState::SPOOLING_UP:
+        case SpoolState::THROTTLE_UNLIMITED:
+        case SpoolState::SPOOLING_DOWN:
             // set motor output based on thrust requests
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
