@@ -98,6 +98,13 @@ public:
     // return true when lat and lng are within range
     bool check_latlng() const;
 
+    // see if location is past a line perpendicular to
+    // the line between point1 and point2 and passing through point2.
+    // If point1 is our previous waypoint and point2 is our target waypoint
+    // then this function returns true if we have flown past
+    // the target waypoint
+    bool past_interval_finish_line(const Location &point1, const Location &point2) const;
+
 private:
     static AP_Terrain *_terrain;
 };
