@@ -348,7 +348,7 @@ void AC_AutoTune::run()
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     // this should not actually be possible because of the init() checks
     if (!motors->armed() || !motors->get_interlock()) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0.0f, true, 0.0f);
         pos_control->relax_alt_hold_controllers(0.0f);
         return;
@@ -399,7 +399,7 @@ void AC_AutoTune::run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // if pilot override call attitude controller
     if (pilot_override || mode != TUNING) {
