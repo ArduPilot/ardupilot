@@ -139,6 +139,7 @@ private:
     // Such cases will be firmware update, etc.
     class RaiiSynchronizer {};
 
+    void imu_check_and_broadcast(void);
     void loop(void);
 
     ///// SRV output /////
@@ -157,9 +158,6 @@ private:
     AP_Int16 _servo_rate_hz;
     AP_Int8 _imu_pub_mask;
     AP_Int16 _imu_pub_frequency;
-    AP_Int16 _imu_pub_gyr_bandwidth;
-    AP_Int16 _imu_pub_acc_bandwidth;
-
 
     uavcan::Node<0> *_node;
 

@@ -179,7 +179,9 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     // register IMU accumulators
     auto ins = AP_InertialSensor::get_singleton();
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        ins->register_delta_accumulator(i, _imu_accumulators[i]);
+        if (_imu_pub_mask & (1<<i)) {
+            ins->register_delta_accumulator(i, _imu_accumulators[i]);
+        }
     }
 
     uavcan::NodeID self_node_id(_uavcan_node);
@@ -269,6 +271,35 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     debug_uavcan(2, "UAVCAN: init done\n\r");
 }
 
+void AP_UAVCAN::imu_check_and_broadcast(void)
+{
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (_imu_pub_mask & (1<<i)) {
+            if (_imu_accumulators[i].get_del_ang_dt() >= 1.0f/_imu_pub_frequency) {
+                auto deltas = _imu_accumulators[i].pop_imu_deltas();
+                Vector3f del_ang;
+                deltas.del_quat.to_axis_angle(del_ang);
+
+                org::ardupilot::sensor_output::IMUDeltas msg;
+                msg.timestamp.usec = msg.timestamp.UNKNOWN;
+                msg.sensor_index = i;
+
+                msg.delta_angle_dt = deltas.del_ang_dt;
+                msg.delta_angle[0] = del_ang.x;
+                msg.delta_angle[1] = del_ang.y;
+                msg.delta_angle[2] = del_ang.z;
+
+                msg.delta_velocity_dt = deltas.del_vel_dt;
+                msg.delta_velocity[0] = deltas.del_vel.x;
+                msg.delta_velocity[1] = deltas.del_vel.y;
+                msg.delta_velocity[2] = deltas.del_vel.z;
+
+                imu_delta_publisher[_driver_index]->broadcast(msg);
+            }
+        }
+    }
+}
+
 void AP_UAVCAN::loop(void)
 {
     while (true) {
@@ -284,31 +315,7 @@ void AP_UAVCAN::loop(void)
             continue;
         }
 
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_imu_pub_mask & (1<<i)) {
-                if (_imu_accumulators[i].get_del_ang_dt() >= 1.0f/_imu_pub_frequency) {
-                    auto deltas = _imu_accumulators[i].pop_imu_deltas();
-                    Vector3f del_ang;
-                    deltas.del_quat.to_axis_angle(del_ang);
-
-                    org::ardupilot::sensor_output::IMUDeltas msg;
-                    msg.timestamp.usec = msg.timestamp.UNKNOWN;
-                    msg.sensor_index = i;
-
-                    msg.delta_angle_dt = deltas.del_ang_dt;
-                    msg.delta_angle[0] = del_ang.x;
-                    msg.delta_angle[1] = del_ang.y;
-                    msg.delta_angle[2] = del_ang.z;
-
-                    msg.delta_velocity_dt = deltas.del_vel_dt;
-                    msg.delta_velocity[0] = deltas.del_vel.x;
-                    msg.delta_velocity[1] = deltas.del_vel.y;
-                    msg.delta_velocity[2] = deltas.del_vel.z;
-
-                    imu_delta_publisher[_driver_index]->broadcast(msg);
-                }
-            }
-        }
+        imu_check_and_broadcast();
 
         if (_SRV_armed) {
             bool sent_servos = false;
