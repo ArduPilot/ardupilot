@@ -240,9 +240,9 @@ void Scheduler::_uart_thread(void *arg)
     while (true) {
         sched->delay_microseconds(1000);
         hal.uartA->_timer_tick();  // serial mavlink or serial gps
-        hal.uartB->_timer_tick();  // unused
+        hal.uartB->_timer_tick();  // we handle this becasue the uart is used on icarus board/s
         hal.uartC->_timer_tick();  // mavlink over WiFi/TCP
-        hal.uartD->_timer_tick();  // unused
+        //hal.uartD->_timer_tick();  // unused
         hal.console->_timer_tick(); // console message, serial 0
     }
 }
@@ -266,7 +266,7 @@ void Scheduler::_main_thread(void *arg)
     hal.uartA->begin(115200);  // serial mavlink or serial gps
     hal.uartB->begin(115200);  // unused
     hal.uartC->begin(115200);  // mavlink over WiFi/TCP
-    hal.uartD->begin(115200);  // unused
+    //hal.uartD->begin(115200);  // unused
     // note that right now we begin() and _timer_tick() on B and D but dont use them normally.
     // but E,F,G,H we don't even do that on.
     hal.analogin->init();

@@ -30,17 +30,17 @@
 #include "RCOutput.h"
 #include "Util.h"
 
+// the three available hardware uarts are assigned by at most (0), (1), (2) only. no more.
+// both boards use the first two:
 static ESP32::UARTDriver cons(0);        // console      on hardware serial 0
-// ICARUS has console + 2 uarts enabled
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
 static ESP32::UARTDriver uartADriver(1); // mavlink1/gps on hardware serial 1
-static ESP32::UARTDriver uartBDriver(2);    // unused
+// ...then ICARUS has an extra uart enabled:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
+static ESP32::UARTDriver uartBDriver(2);
+#else // and the other board/s do not, for now.
+static Empty::UARTDriver uartBDriver;
 #endif
-// DIY has console + 1 uart enabled
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
-static ESP32::UARTDriver uartADriver(3); // mavlink1/gps on hardware serial 1
-static Empty::UARTDriver uartBDriver;    // unused
-#endif
+
 // both boards use the Wifi UART as well
 static ESP32::WiFiDriver uartCDriver;    // wifi/tcp doesnt use real serial hardware
 

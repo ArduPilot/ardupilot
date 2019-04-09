@@ -23,20 +23,27 @@ using namespace ESP32;
 UARTDriver::UARTDriver(uint8_t serial_num)
 {
     _initialized = false;
-    uart_num = (uart_port_t)serial_num;
-    if (serial_num == 0 ) { //typically console
+    uart_num = (uart_port_t)serial_num; // hardware zero
+    if (serial_num == 0 ) { //typically console, used by both boars the same, on the same pins.
     	rx_pin = 3;
     	tx_pin = 1;
-    } else if (serial_num == 1) { //typically mavlink or gps
+    }
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
+     else if (serial_num == 1) { //typically mavlink or gps, connected to the pins normally labeled RX2 and TX2
+    	rx_pin = 16;
+    	tx_pin = 17;
+    }
+#endif
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
+    else if (serial_num == 1) { //typically mavlink or gps
         rx_pin = 34;
         tx_pin = 32;
     } else if (serial_num == 2) { //typically mavlink or gps
         rx_pin = 35;
         tx_pin = 33;
-    } else if (serial_num == 3) { //typically mavlink or gps
-    	rx_pin = 16;
-    	tx_pin = 17;
     }
+#endif
+
 }
 
 void UARTDriver::begin(uint32_t b)
