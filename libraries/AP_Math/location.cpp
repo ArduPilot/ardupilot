@@ -39,27 +39,6 @@ float get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
     return bearing;
 }
 
-/*
-  return the proportion we are along the path from point1 to
-  point2, along a line parallel to point1<->point2.
-
-  This will be less than >1 if we have passed point2
- */
-float location_path_proportion(const struct Location &location,
-                               const struct Location &point1,
-                               const struct Location &point2)
-{
-    const Vector2f vec1 = point1.get_distance_NE(point2);
-    const Vector2f vec2 = point1.get_distance_NE(location);
-    float dsquared = sq(vec1.x) + sq(vec1.y);
-    if (dsquared < 0.001f) {
-        // the two points are very close together
-        return 1.0f;
-    }
-    return (vec1 * vec2) / dsquared;
-}
-
-
 // return true when lat and lng are within range
 bool check_lat(float lat)
 {

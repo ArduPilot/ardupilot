@@ -339,3 +339,20 @@ bool Location::past_interval_finish_line(const Location &point1, const Location 
     return this->line_path_proportion(point1, point2) >= 1.0f;
 }
 
+/*
+  return the proportion we are along the path from point1 to
+  point2, along a line parallel to point1<->point2.
+
+  This will be more than 1 if we have passed point2
+ */
+float Location::line_path_proportion(const Location &point1, const Location &point2) const
+{
+    const Vector2f vec1 = point1.get_distance_NE(point2);
+    const Vector2f vec2 = point1.get_distance_NE(*this);
+    const float dsquared = sq(vec1.x) + sq(vec1.y);
+    if (dsquared < 0.001f) {
+        // the two points are very close together
+        return 1.0f;
+    }
+    return (vec1 * vec2) / dsquared;
+}

@@ -105,6 +105,13 @@ public:
     // the target waypoint
     bool past_interval_finish_line(const Location &point1, const Location &point2) const;
 
+    /*
+      return the proportion we are along the path from point1 to
+      point2, along a line parallel to point1<->point2.
+      This will be more than 1 if we have passed point2
+     */
+    float line_path_proportion(const Location &point1, const Location &point2) const;
+
 private:
     static AP_Terrain *_terrain;
 };
