@@ -747,7 +747,7 @@ void Copter::ModeAuto::wp_run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
@@ -787,7 +787,7 @@ void Copter::ModeAuto::spline_run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     wp_nav->update_spline();
@@ -818,7 +818,7 @@ void Copter::ModeAuto::land_run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     
     land_run_horizontal_control();
     land_run_vertical_control();
@@ -879,7 +879,7 @@ void Copter::ModeAuto::loiter_run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint and z-axis position controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
@@ -972,7 +972,7 @@ void Copter::ModeAuto::payload_place_run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     switch (nav_payload_place.state) {
     case PayloadPlaceStateType_FlyToLocation:
@@ -1509,7 +1509,7 @@ bool Copter::ModeAuto::verify_land()
 
         case LandStateType_Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
-            retval = ap.land_complete && (motors->get_spool_mode() == AP_Motors::GROUND_IDLE);
+            retval = ap.land_complete && (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE);
             break;
 
         default:
@@ -1729,7 +1729,7 @@ bool Copter::ModeAuto::verify_RTL()
 {
     return (copter.mode_rtl.state_complete() && 
     (copter.mode_rtl.state() == RTL_FinalDescent || copter.mode_rtl.state() == RTL_Land) &&
-    (motors->get_spool_mode() == AP_Motors::GROUND_IDLE));
+    (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE));
 }
 
 /********************************************************************************/

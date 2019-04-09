@@ -54,7 +54,7 @@ void Copter::ModeLand::run()
 void Copter::ModeLand::gps_run()
 {
     // disarm when the landing detector says we've landed
-    if (ap.land_complete && motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
+    if (ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
         copter.init_disarm_motors();
     }
 
@@ -64,7 +64,7 @@ void Copter::ModeLand::gps_run()
         loiter_nav->init_target();
     } else {
         // set motors to full range
-        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // pause before beginning land descent
         if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
@@ -105,7 +105,7 @@ void Copter::ModeLand::nogps_run()
     }
 
     // disarm when the landing detector says we've landed
-    if (ap.land_complete && motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
+    if (ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
         copter.init_disarm_motors();
     }
 
@@ -114,7 +114,7 @@ void Copter::ModeLand::nogps_run()
         make_safe_spool_down();
     } else {
         // set motors to full range
-        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // pause before beginning land descent
         if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
