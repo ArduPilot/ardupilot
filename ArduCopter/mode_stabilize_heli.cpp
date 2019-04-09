@@ -41,27 +41,34 @@ void Copter::ModeStabilize_Heli::run()
 
     if (!motors->armed()) {
         // Motors should be Stopped
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
     } else {
         // heli will not let the spool state progress to THROTTLE_UNLIMITED until motor interlock is enabled
-        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
 
-    if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+    switch (motors->get_spool_state()) {
+    case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
-    } else if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
+        break;
+    case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
         if (motors->init_targets_on_arming()) {
             attitude_control->set_yaw_target_to_current_heading();
             attitude_control->reset_rate_controller_I_terms();
         }
-    } else if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
+        break;
+    case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
         // clear landing flag above zero throttle
         if (!motors->limit.throttle_lower) {
             set_land_complete(false);
         }
+    case AP_Motors::SpoolState::SPOOLING_UP:
+    case AP_Motors::SpoolState::SPOOLING_DOWN:
+        // do nothing
+        break;
     }
 
     // call attitude controller

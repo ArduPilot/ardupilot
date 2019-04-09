@@ -255,7 +255,7 @@ void Copter::ModeFlowHold::run()
 
     case AltHold_MotorStopped:
 
-        copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         copter.attitude_control->reset_rate_controller_I_terms();
         copter.attitude_control->set_yaw_target_to_current_heading();
         copter.pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
@@ -264,7 +264,7 @@ void Copter::ModeFlowHold::run()
 
     case AltHold_Takeoff:
         // set motors to full range
-        copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // initiate take-off
         if (!takeoff.running()) {
@@ -297,7 +297,7 @@ void Copter::ModeFlowHold::run()
         break;
 
     case AltHold_Flying:
-        copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // adjust climb rate using rangefinder
         target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate, copter.pos_control->get_alt_target(), copter.G_Dt);
@@ -353,7 +353,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
 #if 1
     // assume on ground when disarmed, or if we have only just started spooling the motors up
     if (!hal.util->get_soft_armed() ||
-        copter.motors->get_desired_spool_state() != AP_Motors::DESIRED_THROTTLE_UNLIMITED ||
+        copter.motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED ||
         AP_HAL::millis() - copter.arm_time_ms < 1500) {
         height_offset = -ins_height;
         last_ins_height = ins_height;
