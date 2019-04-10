@@ -22,6 +22,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "HAL_ESP32_Class.h"
 #include "Scheduler.h"
+#include "I2CDevice.h"
 #include "SPIDevice.h"
 #include "UARTDriver.h"
 #include "WiFiDriver.h"
@@ -48,7 +49,7 @@ static Empty::UARTDriver uartDDriver;    // unused
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;
-static Empty::I2CDeviceManager i2cDeviceManager;
+static ESP32::I2CDeviceManager i2cDeviceManager;
 static ESP32::SPIDeviceManager spiDeviceManager;
 static Empty::AnalogIn analogIn;
 static ESP32::Storage storageDriver;

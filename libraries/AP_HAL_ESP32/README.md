@@ -72,6 +72,14 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 |GND  | GND(any of PIN4,PIN6,or PIN8 , all GND)|
 |EN   | TRST(PIN3)|
 
+|ESP32|  SDCARD  | 
+| --- |     ---  |
+|D2   | D0/PIN7  |
+|D14  | CLK/PIN5 |
+|D15  | CMD/PIN2 |
+|GND  | Vss1/PIN3 and Vss2/PIN6 |
+|3.3v | Vcc/PIN4 |
+
 ## Current progress
 ### Main tasks
 - [x] Build system
