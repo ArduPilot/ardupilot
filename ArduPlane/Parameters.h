@@ -559,6 +559,8 @@ public:
     // crow flaps weighting
     AP_Int8 crow_flap_weight1;
     AP_Int8 crow_flap_weight2;
+
+    AP_Float lim_roll_auto;
 };
 
 extern const AP_Param::Info var_info[];

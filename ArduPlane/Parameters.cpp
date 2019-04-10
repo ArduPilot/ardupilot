@@ -1210,6 +1210,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_CROW_W2", 18, ParametersG2, crow_flap_weight2, 0),
+
+    // @Param: LIM_ROLL_AUTO
+    // @DisplayName: Roll limit for AUTO modes
+    // @Description: This is the limit for roll when under auto control. If zero then LIM_ROLL_CD is used
+    // @Range: 0 80
+    // @Increment: 1
+    // @User: Advanced
+    // @Units: Degrees
+    AP_GROUPINFO("LIM_ROLL_AUTO", 19, ParametersG2, lim_roll_auto, 0),
     
     AP_GROUPEND
 };

@@ -581,6 +581,10 @@ void Plane::calc_nav_roll()
 {
     int32_t commanded_roll = nav_controller->nav_roll_cd();
 
+    if (g2.lim_roll_auto > 0) {
+        commanded_roll = constrain_int32(commanded_roll, -g2.lim_roll_auto*100, g2.lim_roll_auto*100);
+    }
+
     // Received an external msg that guides roll in the last 3 seconds?
     if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
             plane.guided_state.last_forced_rpy_ms.x > 0 &&
