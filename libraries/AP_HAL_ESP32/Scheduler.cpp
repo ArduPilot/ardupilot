@@ -279,7 +279,7 @@ void Scheduler::_main_thread(void *arg)
     while (true) {
         sched->callbacks->loop();
         sched->delay_microseconds(1);
-        print_stats();
+        //print_stats();
     }
 }
 
