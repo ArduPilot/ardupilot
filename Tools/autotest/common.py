@@ -2222,6 +2222,60 @@ class AutoTest(ABC):
                             self.set_rc(interlock_channel, 1000)
                             raise NotAchievedException("Motor interlock was changed while disarmed")
                 self.set_rc(interlock_channel, 1000)
+
+        if not self.is_rover():
+            self.context_push()
+            ex = None
+            try:
+                # n.b. no reason we shouldn't run this for Rover, I just
+                # can't get the altitude to drift :-)
+                self.start_subtest("Ensure we can't arm if AHRS and GPS don't agree on height")
+                if self.is_copter():
+                    # change to a mode which actually cares about height:
+                    self.change_mode("LOITER")
+                self.progress("First ensure we can arm")
+                self.wait_ready_to_arm()
+                self.arm_vehicle()
+                self.disarm_vehicle()
+                self.progress("Hurt the baro and try again")
+                vfr_hud_init = self.mav.recv_match(type="VFR_HUD", blocking=True, timeout=1)
+                if vfr_hud_init is None:
+                    raise NotAchievedException("Did not get initial VFR_HUD message")
+                self.set_parameter("SIM_BARO_DRIFT", 20)
+                tstart = self.get_sim_time()
+                while True:
+                    if self.get_sim_time_cached() - tstart > 100:
+                        raise NotAchievedException("Did not get expected altitude delta")
+                    m = self.mav.recv_match(type="VFR_HUD", blocking=True, timeout=1)
+                    if m is None:
+                        continue
+                    drift = abs(m.alt - vfr_hud_init.alt)
+                    self.progress("drift: %f metres" % drift)
+                    if drift > 60:
+                        break
+                tstart = self.get_sim_time()
+                while True:
+                    if self.get_sim_time_cached() - tstart > 10:
+                        raise NotAchievedException("Did not get expected failure message")
+                    self.send_mavlink_arm_command()
+                    if self.armed():
+                        raise NotAchievedException("Vehicle armed when it shouldn't have")
+                    m = self.mav.recv_match(type="STATUSTEXT", blocking=True, timeout=1)
+                    if m is None:
+                        continue
+                    if "GPS and AHRS differ in altitude by" in m.text:
+                        self.progress("Received expected text")
+                        break
+            except Exception as e:
+                ex = e
+
+            self.context_pop()
+            # we've really stuffed up our altitude estimates, so a
+            # reboot is warranted (perhaps we could see if we recover instead?)
+            self.reboot_sitl()
+
+            if ex:
+                raise ex
         self.progress("ALL PASS")
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
 
