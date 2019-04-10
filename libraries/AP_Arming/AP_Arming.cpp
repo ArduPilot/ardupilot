@@ -43,7 +43,8 @@
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
-#define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
+#define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS horizontally
+#define AP_ARMING_AHRS_GPS_ERROR_Z_MAX_CM   5000      // accept up to 50m difference between AHRS and GPS vertically
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMONLY
@@ -430,13 +431,29 @@ bool AP_Arming::gps_checks(bool report)
             return false;
         }
 
-        // check AHRS and GPS are within 10m of each other
         const Location gps_loc = gps.location();
         Location ahrs_loc;
         if (AP::ahrs().get_position(ahrs_loc)) {
+            // check AHRS and GPS are within 10m of each other horizontally
             const float distance = gps_loc.get_distance(ahrs_loc);
             if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
                 check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ by %4.1fm", (double)distance);
+                return false;
+            }
+            // check AHRS and GPS are close vertically
+            int32_t gps_alt_cm;
+            if (!gps_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, gps_alt_cm)) {
+                check_failed(ARMING_CHECK_GPS, report, "Failed to retrieve GPS altitude");
+                return false;
+            }
+            int32_t ahrs_alt_cm;
+            if (!ahrs_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, ahrs_alt_cm)) {
+                check_failed(ARMING_CHECK_GPS, report, "Failed to retrieve AHRS altitude");
+                return false;
+            }
+            const uint32_t distance_z_cm = abs(gps_alt_cm - ahrs_alt_cm);
+            if (distance_z_cm > AP_ARMING_AHRS_GPS_ERROR_Z_MAX_CM) { //
+                check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ in altitude by %.1fm", distance_z_cm/100.0f);
                 return false;
             }
         }
