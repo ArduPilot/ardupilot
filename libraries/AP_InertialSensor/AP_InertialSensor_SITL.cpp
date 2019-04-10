@@ -54,6 +54,10 @@ bool AP_InertialSensor_SITL::init_sensor(void)
  */
 void AP_InertialSensor_SITL::generate_accel(uint8_t instance)
 {
+    if ((uint8_t)sitl->imu_fail.get() & (1<<instance)) {
+        return;
+    }
+
     // minimum noise levels are 2 bits, but averaged over many
     // samples, giving around 0.01 m/s/s
     float accel_noise = 0.01f;
@@ -107,6 +111,10 @@ void AP_InertialSensor_SITL::generate_accel(uint8_t instance)
  */
 void AP_InertialSensor_SITL::generate_gyro(uint8_t instance)
 {
+    if ((uint8_t)sitl->imu_fail.get() & (1<<instance)) {
+        return;
+    }
+
     // minimum gyro noise is less than 1 bit
     float gyro_noise = ToRad(0.04f);
     
