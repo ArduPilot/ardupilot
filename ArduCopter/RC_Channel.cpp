@@ -39,9 +39,9 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
         // if none of the Aux Switches are set to Simple or Super Simple Mode then
         // set Simple Mode using stored parameters from EEPROM
         if (BIT_IS_SET(copter.g.super_simple, new_pos)) {
-            copter.set_simple_mode(2);
+            copter.set_simple_mode(Copter::SimpleMode::SUPER);
         } else {
-            copter.set_simple_mode(BIT_IS_SET(copter.g.simple_modes, new_pos));
+            copter.set_simple_mode(BIT_IS_SET(copter.g.simple_modes, new_pos) ? Copter::SimpleMode::ON : Copter::SimpleMode::OFF);
         }
     }
 }
@@ -157,12 +157,12 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
         case AUX_FUNC::SIMPLE_MODE:
             // low = simple mode off, middle or high position turns simple mode on
-            copter.set_simple_mode(ch_flag == HIGH || ch_flag == MIDDLE);
+            copter.set_simple_mode((ch_flag == HIGH || ch_flag == MIDDLE) ? Copter::SimpleMode::ON : Copter::SimpleMode::OFF);
             break;
 
         case AUX_FUNC::SUPERSIMPLE_MODE:
             // low = simple mode off, middle = simple mode, high = super simple mode
-            copter.set_simple_mode(ch_flag);
+            copter.set_simple_mode(static_cast<Copter::SimpleMode>(ch_flag));
             break;
 
         case AUX_FUNC::RTL:

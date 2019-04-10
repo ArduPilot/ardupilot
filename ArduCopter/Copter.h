@@ -585,11 +585,15 @@ private:
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
 
-
+    enum class SimpleMode : uint8_t {
+        OFF = 0,  // simple mode off
+        ON,       // simple mode on
+        SUPER,    // super simple mode on
+    };
 
     // AP_State.cpp
     void set_auto_armed(bool b);
-    void set_simple_mode(uint8_t b);
+    void set_simple_mode(SimpleMode b);
     void set_failsafe_radio(bool b);
     void set_failsafe_gcs(bool b);
     void update_using_interlock();

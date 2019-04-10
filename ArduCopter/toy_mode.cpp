@@ -579,11 +579,11 @@ void ToyMode::update()
         break;
 
     case ACTION_TOGGLE_SIMPLE:
-        copter.set_simple_mode(copter.ap.simple_mode?0:1);
+        copter.set_simple_mode(copter.ap.simple_mode ? Copter::SimpleMode::OFF : Copter::SimpleMode::ON);
         break;
 
     case ACTION_TOGGLE_SSIMPLE:
-        copter.set_simple_mode(copter.ap.simple_mode?0:2);
+        copter.set_simple_mode(copter.ap.simple_mode ? Copter::SimpleMode::OFF : Copter::SimpleMode::SUPER);
         break;
         
     case ACTION_ARM_LAND_RTL:
