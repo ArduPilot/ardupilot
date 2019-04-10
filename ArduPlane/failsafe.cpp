@@ -55,6 +55,9 @@ void Plane::failsafe_check(void)
         // pass RC inputs to outputs every 20ms
         RC_Channels::clear_overrides();
 
+        if (!RC_Channels::read_input()) {
+            // be sad, but continue (see afs termination below)
+        }
         int16_t roll = channel_roll->get_control_in_zero_dz();
         int16_t pitch = channel_pitch->get_control_in_zero_dz();
         int16_t throttle = channel_throttle->get_control_in_zero_dz();
