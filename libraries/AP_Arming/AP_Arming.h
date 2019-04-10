@@ -17,22 +17,23 @@ public:
     static AP_Arming *get_singleton();
 
     enum ArmingChecks {
-        ARMING_CHECK_NONE       = 0x0000,
-        ARMING_CHECK_ALL        = 0x0001,
-        ARMING_CHECK_BARO       = 0x0002,
-        ARMING_CHECK_COMPASS    = 0x0004,
-        ARMING_CHECK_GPS        = 0x0008,
-        ARMING_CHECK_INS        = 0x0010,
-        ARMING_CHECK_PARAMETERS = 0x0020,
-        ARMING_CHECK_RC         = 0x0040,
-        ARMING_CHECK_VOLTAGE    = 0x0080,
-        ARMING_CHECK_BATTERY    = 0x0100,
-        ARMING_CHECK_AIRSPEED   = 0x0200,
-        ARMING_CHECK_LOGGING    = 0x0400,
-        ARMING_CHECK_SWITCH     = 0x0800,
-        ARMING_CHECK_GPS_CONFIG = 0x1000,
-        ARMING_CHECK_SYSTEM     = 0x2000,
-        ARMING_CHECK_MISSION    = 0x4000,
+        ARMING_CHECK_NONE        = 0x0000,
+        ARMING_CHECK_ALL         = (1U << 0),
+        ARMING_CHECK_BARO        = (1U << 1),
+        ARMING_CHECK_COMPASS     = (1U << 2),
+        ARMING_CHECK_GPS         = (1U << 3),
+        ARMING_CHECK_INS         = (1U << 4),
+        ARMING_CHECK_PARAMETERS  = (1U << 5),
+        ARMING_CHECK_RC          = (1U << 6),
+        ARMING_CHECK_VOLTAGE     = (1U << 7),
+        ARMING_CHECK_BATTERY     = (1U << 8),
+        ARMING_CHECK_AIRSPEED    = (1U << 9),
+        ARMING_CHECK_LOGGING     = (1U << 10),
+        ARMING_CHECK_SWITCH      = (1U << 11),
+        ARMING_CHECK_GPS_CONFIG  = (1U << 12),
+        ARMING_CHECK_SYSTEM      = (1U << 13),
+        ARMING_CHECK_MISSION     = (1U << 14),
+        ARMING_CHECK_RANGEFINDER = (1U << 15),
     };
 
     enum class Method {
@@ -48,6 +49,8 @@ public:
         YES_MIN_PWM  = 1,
         YES_ZERO_PWM = 2
     };
+
+    void init(void);
 
     // these functions should not be used by Copter which holds the armed state in the motors library
     Required arming_required();
@@ -84,7 +87,7 @@ protected:
 
     // Parameters
     AP_Int8                 require;
-    AP_Int16                checks_to_perform;      // bitmask for which checks are required
+    AP_Int32                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
     AP_Int32                 _required_mission_items;
@@ -117,6 +120,8 @@ protected:
     bool manual_transmitter_checks(bool report);
 
     bool mission_checks(bool report);
+
+    bool rangefinder_checks(bool report);
 
     bool fence_checks(bool report);
 
