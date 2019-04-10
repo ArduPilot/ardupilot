@@ -61,7 +61,7 @@ ESP32::SPIDesc SPIDeviceManager::device_table[] = {
         .cs_gpio = 5,
         .mode = 0,
         .lowspeed = 1 * MHZ,
-        .highspeed = 4 * MHZ,
+        .highspeed = 6 * MHZ,
     }
 };
 

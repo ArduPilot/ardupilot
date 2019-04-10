@@ -19,10 +19,12 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "HAL_ESP32_Class.h"
 #include "Scheduler.h"
+#include "I2CDevice.h"
 #include "SPIDevice.h"
 #include "UARTDriver.h"
 #include "WiFiDriver.h"
 #include "Storage.h"
+#include "Util.h"
 
 static ESP32::UARTDriver cons(0);
 static Empty::UARTDriver uartADriver;
@@ -32,7 +34,7 @@ static Empty::UARTDriver uartDDriver;
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;
-static Empty::I2CDeviceManager i2cDeviceManager;
+static ESP32::I2CDeviceManager i2cDeviceManager;
 static ESP32::SPIDeviceManager spiDeviceManager;
 static Empty::AnalogIn analogIn;
 static ESP32::Storage storageDriver;
@@ -40,7 +42,7 @@ static Empty::GPIO gpioDriver;
 static Empty::RCInput rcinDriver;
 static Empty::RCOutput rcoutDriver;
 static ESP32::Scheduler schedulerInstance;
-static Empty::Util utilInstance;
+static ESP32::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
 extern const AP_HAL::HAL& hal;

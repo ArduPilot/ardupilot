@@ -392,7 +392,7 @@ class esp32(Board):
         cfg.load('esp32')
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_DIY',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_ICARUS',
         )
         env.AP_LIBRARIES += [
             'AP_HAL_ESP32',
