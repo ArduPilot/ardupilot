@@ -693,6 +693,18 @@ void RangeFinder::Log_RFND()
     }
 }
 
+bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_len) const
+{
+    for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+        if ((params[i].type != RangeFinder_TYPE_NONE) && (drivers[i] == nullptr)) {
+          hal.util->snprintf(failure_msg, failure_msg_len, "Rangefinder %d was not detected", i + 1);
+          return false;
+        }
+    }
+
+    return true;
+}
+
 RangeFinder *RangeFinder::_singleton;
 
 namespace AP {
