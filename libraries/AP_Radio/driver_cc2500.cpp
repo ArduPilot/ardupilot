@@ -7,6 +7,8 @@
 #include "driver_cc2500.h"
 #include <utility>
 
+#include "string.h"
+
 // #pragma GCC optimize("O0")
 
 extern const AP_HAL::HAL& hal;

@@ -22,6 +22,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "StorageManager.h"
 
+#include "string.h"
+
 
 extern const AP_HAL::HAL& hal;
 

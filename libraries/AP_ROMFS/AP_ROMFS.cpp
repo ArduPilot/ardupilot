@@ -19,6 +19,9 @@
 #include "AP_ROMFS.h"
 #include "tinf.h"
 
+#include "string.h"
+
+
 #ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
 #include <ap_romfs_embedded.h>
 #else

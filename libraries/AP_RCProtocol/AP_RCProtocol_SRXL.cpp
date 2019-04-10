@@ -22,6 +22,9 @@
 
 #include "AP_RCProtocol_SRXL.h"
 
+#include "string.h"
+
+
 // #define SUMD_DEBUG
 extern const AP_HAL::HAL& hal;
 

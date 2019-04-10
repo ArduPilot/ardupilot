@@ -18,6 +18,7 @@
 
 #include "RCOutput.h"
 
+#include "string.h"
 
 
 //HINTS: see more about MCPWM peripheral here: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/mcpwm.html
