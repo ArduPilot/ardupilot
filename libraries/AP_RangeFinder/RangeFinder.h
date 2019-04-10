@@ -111,6 +111,9 @@ public:
         return num_instances;
     }
 
+    // prearm checks
+    bool prearm_healthy(char *failure_msg, const uint8_t failure_msg_len) const;
+
     // detect and initialise any available rangefinders
     void init(enum Rotation orientation_default);
 
