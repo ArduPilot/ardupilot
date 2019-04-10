@@ -264,7 +264,7 @@ void Scheduler::_main_thread(void *arg)
     Scheduler *sched = (Scheduler *)arg;
     // hal->console() is also a serial device for console/boot messages, at 115200
     hal.uartA->begin(115200);  // serial mavlink or serial gps
-    hal.uartB->begin(115200);  // unused
+    hal.uartB->begin(115200);  // only used on icarus boards right now.
     hal.uartC->begin(115200);  // mavlink over WiFi/TCP
     //hal.uartD->begin(115200);  // unused
     // note that right now we begin() and _timer_tick() on B and D but dont use them normally.
