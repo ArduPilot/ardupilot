@@ -4958,6 +4958,38 @@ Also, ignores heartbeats not from our target system'''
                 break
         return m
 
+    # FIXME: stop having to pass redundant parameter in here:
+    def poll_message(self, message_name, message_id, quiet=False, timeout=30):
+        '''poke the autopilot until we get a new message of the supplied type'''
+        old = self.mav.messages.get(message_name, None)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Failed to poll home position")
+            if not quiet:
+                self.progress("Sending MAV_CMD_REQUEST_MESSAGE")
+            try:
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                    message_id,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    quiet=quiet)
+            except ValueError as e:
+                continue
+            m = self.mav.messages.get(message_name, None)
+            if m is None:
+                continue
+            if old is None:
+                break
+            if m._timestamp != old._timestamp:
+                break
+        return m
+
     def distance_to_home(self, use_cached_home=False):
         m = self.mav.messages.get("HOME_POSITION", None)
         if use_cached_home is False or m is None:
@@ -5004,6 +5036,7 @@ Also, ignores heartbeats not from our target system'''
 
         # HOME_POSITION is used as a surrogate for origin until we
         # start emitting GPS_GLOBAL_ORIGIN
+        # FIXME: GPS_GLOBAL_ORIGIN can now be polled using poll_message(...)
         orig_home = self.poll_home_position()
         if orig_home is None:
             raise AutoTestTimeoutException()
@@ -5990,6 +6023,23 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
+    def assert_cant_arm(self, timeout=10, expected_text=None):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not get expected failure message")
+            self.send_mavlink_arm_command()
+            if self.armed():
+                raise NotAchievedException("Vehicle armed when it shouldn't have")
+            m = self.mav.recv_match(type="STATUSTEXT", blocking=True, timeout=1)
+            if m is None:
+                continue
+            if expected_text is None:
+                break
+            if expected_text in m.text:
+                self.progress("Received expected text")
+                break
+
     def test_arm_feature(self):
         """Common feature to test."""
         # TEST ARMING/DISARM
@@ -6230,6 +6280,110 @@ Also, ignores heartbeats not from our target system'''
         m = dfreader.recv_match(type="ARM", condition="ARM.ArmState==0")
         if m is None:
             raise NotAchievedException("Did not find a disarmed ARM message")
+
+        # altitude source consistency checks - ahrs and GPS:
+        if not self.is_rover():
+            self.context_push()
+            ex = None
+            try:
+                # n.b. no reason we shouldn't run this for Rover, I just
+                # can't get the altitude to drift :-)
+                self.start_subtest("Ensure we can't arm if AHRS and GPS don't agree on height")
+                if self.is_copter():
+                    # change to a mode which actually cares about height:
+                    self.change_mode("LOITER")
+                self.progress("First ensure we can arm")
+                self.wait_ready_to_arm()
+                self.arm_vehicle()
+                self.disarm_vehicle()
+                self.progress("Hurt the baro and try again")
+                vfr_hud_init = self.mav.recv_match(type="VFR_HUD", blocking=True, timeout=1)
+                if vfr_hud_init is None:
+                    raise NotAchievedException("Did not get initial VFR_HUD message")
+                self.set_parameter("SIM_BARO_DRIFT", 20)
+                tstart = self.get_sim_time()
+                while True:
+                    if self.get_sim_time_cached() - tstart > 100:
+                        raise NotAchievedException("Did not get expected altitude delta")
+                    m = self.mav.recv_match(type="VFR_HUD", blocking=True, timeout=1)
+                    if m is None:
+                        continue
+                    drift = abs(m.alt - vfr_hud_init.alt)
+                    self.progress("drift: %f metres" % drift)
+                    if drift > 60:
+                        break
+                self.assert_cant_arm(expected_text="Bad GPS/AHRS alt delta",
+                                     timeout=10)
+            except Exception as e:
+                ex = e
+
+            self.context_pop()
+            # we've really stuffed up our altitude estimates, so a
+            # reboot is warranted (perhaps we could see if we recover instead?)
+            self.reboot_sitl()
+
+            if ex:
+                raise ex
+
+        self.start_subtest("Ensure we can arm when home is set significantly different to origin")
+        ex = None
+        try:
+            if self.is_copter():
+                # Copter doesn't do GPS checks in stabilize
+                self.change_mode("LOITER")
+            self.wait_ready_to_arm()
+            origin = self.poll_message("GPS_GLOBAL_ORIGIN", mavutil.mavlink.MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN)
+            new_latitude = origin.latitude
+            new_longitude = origin.longitude
+            new_altitude = origin.altitude - 400000 # 400m down
+            self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                             0, # p1,
+                             0, # p2,
+                             0, # p3,
+                             0, # p4,
+                             new_latitude,
+                             new_longitude,
+                             new_altitude/1000.0, # mm => m
+            )
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        except Exception as e:
+            ex = e
+
+        if ex is not None:
+            self.reboot_sitl()
+            raise ex
+
+        if self.is_copter():
+            self.start_subtest("Ensure we can't set home ridiculously far from origin")
+            ex = None
+            try:
+                self.change_mode("LOITER")
+                self.wait_ready_to_arm()
+                origin = self.poll_message("GPS_GLOBAL_ORIGIN", mavutil.mavlink.MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN)
+                new_latitude = 12 # this within cm of 0-lat, 0-lon
+                new_longitude = 15;
+                new_altitude = 0
+                self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                                 0, # p1,
+                                 0, # p2,
+                                 0, # p3,
+                                 0, # p4,
+                                 new_latitude,
+                                 new_longitude,
+                                 new_altitude/1000.0, # mm => m
+                                 want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+                )
+            except Exception as e:
+                self.progress("Caught exception %s" %
+                              self.get_exception_stacktrace(e))
+                ex = e
+
+        # our home location is garbage; reboot
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
 
         self.progress("ALL PASS")
     # TODO : Test arming magic;
