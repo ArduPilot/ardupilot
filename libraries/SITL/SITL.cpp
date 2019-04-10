@@ -121,6 +121,7 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("MAG_DIA",     18, SITL,  mag_diag, 0),
     AP_GROUPINFO("MAG_ODI",     19, SITL,  mag_offdiag, 0),
     AP_GROUPINFO("MAG_ORIENT",  20, SITL,  mag_orient, 0),
+    AP_GROUPINFO("IMU_FAIL",   21, SITL,  imu_fail, 0),
     AP_GROUPEND
 };
     

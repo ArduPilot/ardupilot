@@ -143,7 +143,8 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
-    
+    AP_Int8  imu_fail; // bitmask of which imus to fail entirely
+
     // wind control
     enum WindType {
         WIND_TYPE_SQRT = 0,
