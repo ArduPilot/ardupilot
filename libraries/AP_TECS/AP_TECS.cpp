@@ -1020,7 +1020,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
         // and use max pitch from TECS_LAND_PMAX
         if (_land_pitch_max != 0) {
-            _PITCHmaxf = MIN(_PITCHmaxf, _land_pitch_max);
+            // note that this allows a flare pitch outside the normal TECS auto limits
+            _PITCHmaxf = _land_pitch_max;
         }
 
         // and allow zero throttle
@@ -1057,6 +1058,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // convert to radians
     _PITCHmaxf = radians(_PITCHmaxf);
     _PITCHminf = radians(_PITCHminf);
+
+    // don't allow max pitch to go below min pitch
+    _PITCHmaxf = MAX(_PITCHmaxf, _PITCHminf);
 
     // initialise selected states and variables if DT > 1 second or in climbout
     _initialise_states(ptchMinCO_cd, hgt_afe);
