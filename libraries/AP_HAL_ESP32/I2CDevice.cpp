@@ -66,21 +66,21 @@ I2CDevice::~I2CDevice()
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();    
-    if( send_len != 0 && send != nullptr ) {
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    if (send_len != 0 && send != nullptr) {
         //tx with optional rx (after tx)
         i2c_master_start(cmd);
         i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_WRITE, true);
         i2c_master_write(cmd, (uint8_t*)send, send_len, true);
-    }    
-    if(recv_len != 0 && recv != nullptr) {
+    }
+    if (recv_len != 0 && recv != nullptr) {
         //rx only or rx after tx
         //rx separated from tx by (re)start
-        i2c_master_start(cmd); 
+        i2c_master_start(cmd);
         i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_READ, true);
         i2c_master_read(cmd, (uint8_t *)recv, recv_len, I2C_MASTER_LAST_NACK);
-    }        
-    i2c_master_stop(cmd);    
+    }
+    i2c_master_stop(cmd);
     bool result = (i2c_master_cmd_begin((i2c_port_t)bus.bus, cmd, portMAX_DELAY) == ESP_OK);
     i2c_cmd_link_delete(cmd);
     return result;

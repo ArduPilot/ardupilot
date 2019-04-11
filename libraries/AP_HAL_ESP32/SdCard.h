@@ -15,21 +15,5 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include "HAL_ESP32_Namespace.h"
-
-//see components/heap/include/esp_heas_cap.h
-
-class ESP32::Util : public AP_HAL::Util {
-public:
-    bool run_debug_shell(AP_HAL::BetterStream *stream) override
-    {
-        return false;
-    }
-
-    //returns the amount of malloc capable memory
-    virtual uint32_t available_memory(void)
-    {
-        return heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
-    }
-};
+void mount_sdcard();
+void unmount_sdcard();
