@@ -2325,6 +2325,7 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
             port->printf("Key %i: Index %i: GroupElement %i  :  ", token.key, token.idx, token.group_element);
         }
         show(ap, token, type, port);
+        hal.scheduler->delay(1);
     }
 }
 #endif // AP_PARAM_KEY_DUMP
