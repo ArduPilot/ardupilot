@@ -106,6 +106,9 @@ public:
     /// get origin using position vector (distance from ekf origin in cm)
     const Vector3f &get_wp_origin() const { return _origin; }
 
+    /// true if origin.z and destination.z are alt-above-terrain, false if alt-above-ekf-origin
+    bool origin_and_destination_are_terrain_alt() const { return _terrain_alt; }
+
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     bool set_wp_destination(const Location& destination);
