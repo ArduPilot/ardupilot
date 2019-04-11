@@ -14,6 +14,9 @@ public:
     void set_soft_armed(const bool b) { soft_armed = b; }
     bool get_soft_armed() const { return soft_armed; }
 
+    // return true if the reason for the reboot was a watchdog reset
+    virtual bool was_watchdog_reset() const { return false; }
+
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
     virtual const char *get_custom_storage_directory() const { return nullptr;  }
