@@ -945,7 +945,6 @@ private:
     void check_long_failsafe();
     void check_short_failsafe();
     void startup_INS_ground(void);
-    void update_notify();
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
     void change_arm_state(void);
