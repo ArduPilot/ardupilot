@@ -265,7 +265,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 // called at 100hz or more
 void Copter::update_flight_mode()
 {
-    target_rangefinder_alt_used = false;
+    surface_tracking.valid_for_logging = false; // invalidate surface tracking alt, flight mode will set to true if used
 
     flightmode->run();
 }
