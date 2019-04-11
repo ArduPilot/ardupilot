@@ -688,9 +688,9 @@ Copter::Mode::AltHoldModeState Copter::Mode::get_alt_hold_state(float target_cli
 // these are candidates for moving into the Mode base
 // class.
 
-float Copter::Mode::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
+float Copter::Mode::get_surface_tracking_climb_rate(int16_t target_rate)
 {
-    return copter.get_surface_tracking_climb_rate(target_rate, current_alt_target, dt);
+    return copter.get_surface_tracking_climb_rate(target_rate);
 }
 
 float Copter::Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
