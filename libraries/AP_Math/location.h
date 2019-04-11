@@ -2,9 +2,6 @@
 
 #include <inttypes.h>
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-
 #include "vector2.h"
 #include "vector3.h"
 #include <AP_Common/Location.h>
