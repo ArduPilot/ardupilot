@@ -70,6 +70,7 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
     _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
     _perf_overruns(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_overruns"))
 {
+	printf("AP_Logger_File::constructed.\n");
     df_stats_clear();
 }
 
@@ -104,17 +105,21 @@ void AP_Logger_File::Init()
     // If we can't allocate the full size, try to reduce it until we can allocate it
     while (!_writebuf.set_size(bufsize) && bufsize >= _writebuf_chunk) {
         hal.console->printf("AP_Logger_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
+        printf("AP_Logger_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
         bufsize >>= 1;
     }
 
     if (!_writebuf.get_size()) {
         hal.console->printf("Out of memory for logging\n");
+        printf("Out of memory for logging\n");
         return;
     }
 
     hal.console->printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
+    printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
+	printf("AP_Logger_File::REGESTERING _io_timer ---------------\n");
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_File::_io_timer, void));
 }
 
@@ -334,9 +339,11 @@ void AP_Logger_File::Prep_MinSpace()
         }
         if (file_exists(filename_to_remove)) {
             hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
+            printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
             if (unlink(filename_to_remove) == -1) {
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
+                printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
                     // corruption - should always have a continuous
@@ -446,6 +453,7 @@ char *AP_Logger_File::_lastlog_file_name(void) const
 // remove all log files
 void AP_Logger_File::EraseAll()
 {
+	printf("%s\n",__PRETTY_FUNCTION__);
     if (hal.util->get_soft_armed()) {
         // do not want to do any filesystem operations while we are e.g. flying
         return;
@@ -484,6 +492,7 @@ bool AP_Logger_File::WritesOK() const
         return false;
     }
     if (_open_error) {
+		printf("%s -> WritesOK open_error",__PRETTY_FUNCTION__);
         return false;
     }
     return true;
@@ -493,6 +502,7 @@ bool AP_Logger_File::WritesOK() const
 bool AP_Logger_File::StartNewLogOK() const
 {
     if (_open_error) {
+    	printf("%s -> open error\n",__PRETTY_FUNCTION__);
         return false;
     }
     return AP_Logger_Backend::StartNewLogOK();
@@ -595,6 +605,7 @@ uint32_t AP_Logger_File::_get_log_size(const uint16_t log_num)
     struct stat st;
     if (::stat(fname, &st) != 0) {
         printf("Unable to fetch Log File Size: %s\n", strerror(errno));
+        printf("Unable to fetch Log File Size: %s,%s\n", fname,strerror(errno));
         free(fname);
         return 0;
     }
@@ -701,6 +712,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
             ::printf("Log read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
             hal.console->printf("Log read open fail for %s - %s\n",
+            printf("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
             return -1;            
@@ -756,6 +768,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
  */
 void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
 {
+	printf("%s\n",__PRETTY_FUNCTION__);
     uint16_t log_num = _log_num_from_list_entry(list_entry);
     if (log_num == 0) {
         // that failed - probably no logs
@@ -800,6 +813,7 @@ uint16_t AP_Logger_File::get_num_logs()
  */
 void AP_Logger_File::stop_logging(void)
 {
+	printf("%s\n",__PRETTY_FUNCTION__);
     // best-case effort to avoid annoying the IO thread
     const bool have_sem = write_fd_semaphore.take(1);
     if (_write_fd != -1) {
@@ -817,8 +831,10 @@ void AP_Logger_File::stop_logging(void)
 void AP_Logger_File::PrepForArming()
 {
     if (logging_started()) {
+    	printf("%s -> logging_starrted already\n",__PRETTY_FUNCTION__);
         return;
     }
+    printf("%s -> start new log\n",__PRETTY_FUNCTION__);
     start_new_log();
 }
 
@@ -827,6 +843,7 @@ void AP_Logger_File::PrepForArming()
  */
 uint16_t AP_Logger_File::start_new_log(void)
 {
+	printf("%s\n",__PRETTY_FUNCTION__);
     stop_logging();
 
     start_new_log_reset_variables();
@@ -834,16 +851,19 @@ uint16_t AP_Logger_File::start_new_log(void)
     if (_open_error) {
         // we have previously failed to open a file - don't try again
         // to prevent us trying to open files while in flight
+    	printf("%s -> open error\n",__PRETTY_FUNCTION__);
         return 0xFFFF;
     }
 
     if (_read_fd != -1) {
         ::close(_read_fd);
         _read_fd = -1;
+    	printf("%s -> read fd -1\n",__PRETTY_FUNCTION__);
     }
 
     if (disk_space_avail() < _free_space_min_avail) {
         hal.console->printf("Out of space for logging\n");
+        printf("Out of space for logging\n");
         _open_error = true;
         return 0xffff;
     }
@@ -867,9 +887,11 @@ uint16_t AP_Logger_File::start_new_log(void)
     _write_filename = _log_file_name(log_num);
     if (_write_filename == nullptr) {
         _open_error = true;
+    	printf("%s -> open error nullptr\n",__PRETTY_FUNCTION__);
         write_fd_semaphore.give();
         return 0xFFFF;
     }
+    printf("AP_Logger_File::_write_filename: %s\n",_write_filename);
 #if HAL_OS_POSIX_IO
     _write_fd = ::open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
 #else
@@ -886,6 +908,7 @@ uint16_t AP_Logger_File::start_new_log(void)
         ::printf("Log open fail for %s - %s\n",
                  _write_filename, strerror(saved_errno));
         hal.console->printf("Log open fail for %s - %s\n",
+        printf("Log open fail for %s - %s\n",
                             _write_filename, strerror(saved_errno));
         return 0xFFFF;
     }
@@ -907,6 +930,7 @@ uint16_t AP_Logger_File::start_new_log(void)
     free(fname);
     if (fd == -1) {
         _open_error = true;
+    	printf("%s -> _open_error fd = -1\n",__PRETTY_FUNCTION__);
         return 0xFFFF;
     }
 
@@ -920,6 +944,7 @@ uint16_t AP_Logger_File::start_new_log(void)
         _open_error = true;
         return 0xFFFF;
     }
+	printf("%s -> returned OK\n",__PRETTY_FUNCTION__);
 
     return log_num;
 }
@@ -977,6 +1002,7 @@ void AP_Logger_File::_io_timer(void)
         last_io_operation = "disk_space_avail";
         if (disk_space_avail() < _free_space_min_avail) {
             hal.console->printf("Out of space for logging\n");
+            printf("Out of space for logging\n");
             stop_logging();
             _open_error = true; // prevent logging starting again
             last_io_operation = "";
@@ -1070,6 +1096,7 @@ bool AP_Logger_File::logging_failed() const
         return true;
     }
     if (_open_error) {
+    	printf("%s -> FAILED, logging failed, open error\n",__PRETTY_FUNCTION__);
         return true;
     }
     if (!io_thread_alive()) {

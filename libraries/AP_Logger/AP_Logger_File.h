@@ -11,6 +11,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_Logger_Backend.h"
 
+#include <stdio.h> //for printf
 class AP_Logger_File : public AP_Logger_Backend
 {
 public:

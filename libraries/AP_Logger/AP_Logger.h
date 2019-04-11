@@ -25,6 +25,7 @@
 #include <AP_InertialSensor/AP_InertialSensor_Backend.h>
 
 #include <stdint.h>
+#include <stdio.h> // for printf
 
 #include "LoggerMessageWriter.h"
 
