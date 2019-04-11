@@ -235,6 +235,9 @@ void __late_init(void) {
   halInit();
   chSysInit();
   stm32_watchdog_save_reason();
+#ifndef HAL_BOOTLOADER_BUILD
+  stm32_watchdog_clear_reason();
+#endif
 #if CH_CFG_USE_HEAP == TRUE
   malloc_init();
 #endif
