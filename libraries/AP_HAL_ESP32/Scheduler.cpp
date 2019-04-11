@@ -14,18 +14,12 @@
  */
 
 #include "AP_HAL_ESP32/Scheduler.h"
+#include "SdCard.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 #include "RCInput.h"
-
-
-#include "esp_vfs_fat.h"
-#include "driver/sdmmc_host.h"
-#include <sys/stat.h>
-#include <sys/types.h>
-
 using namespace ESP32;
 
 extern const AP_HAL::HAL& hal;
@@ -39,6 +33,7 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
+    mount_sdcard();
     xTaskCreate(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle);
     xTaskCreate(_timer_thread, "APM_TIMER", TIMER_SS, this, TIMER_PRIO, &_timer_task_handle);
     xTaskCreate(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle);
@@ -62,12 +57,12 @@ void Scheduler::delay(uint16_t ms)
 
 void Scheduler::delay_microseconds(uint16_t us)
 {
-    if( us <= 100) {
+    if (us <= 100) {
         ets_delay_us(us);
     } else {
         uint32_t tick = portTICK_PERIOD_MS * 1000;
         vTaskDelay((us+tick-1)/tick);
-    }    
+    }
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -113,6 +108,7 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
 void Scheduler::reboot(bool hold_in_bootloader)
 {
     printf("Restarting now...\n");
+    unmount_sdcard();
     esp_restart();
 }
 
@@ -271,42 +267,6 @@ void print_stats()
     }
 }
 
-void init_sdcard() {
-    sdmmc_host_t host = SDMMC_HOST_DEFAULT();    
-    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();                                                                                                                                                                                                                                                                                                        
-    slot_config.width = 1;
-    gpio_set_pull_mode((gpio_num_t)15, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
-    gpio_set_pull_mode((gpio_num_t)2, GPIO_PULLUP_ONLY);    // D0 ,needed in 4- and 1- line modes
-    //gpio_set_pull_mode((gpio_num_t)13, GPIO_PULLUP_ONLY);   // not needed?
-
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-         .format_if_mount_failed = true,
-         .max_files = 5,
-         .allocation_unit_size = 4 * 1024
-     };
-     sdmmc_card_t* card;
-     esp_err_t ret = esp_vfs_fat_sdmmc_mount("/SDCARD", &host, &slot_config, &mount_config, &card);
-     if (ret == ESP_OK) {
-         mkdir("/SDCARD/APM", 0777);
-         printf("sdcard is mounted\n");
-     } else {
-         printf("sdcard is not mounted\n");
-     }
-
-     // Use POSIX and C standard library functions to work with files.
-     // First create a file.
-     printf("Opening file on SD to write...\n");
-     FILE* f = fopen("/SDCARD/hello2.txt", "w");
-     if (f == NULL) {
-    	 printf( "Failed to open file on SD for writing\n");
-         return;
-     }
-     fprintf(f, "Hello %s!\n", card->cid.name);
-     fclose(f);
-     printf( "Test File written to SD OK\n");
-
-}
-
 void Scheduler::_main_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
@@ -320,7 +280,6 @@ void Scheduler::_main_thread(void *arg)
     hal.analogin->init();
     hal.rcin->init();
     hal.rcout->init();
-    init_sdcard();
     sched->callbacks->setup();
     sched->system_initialized();
 
