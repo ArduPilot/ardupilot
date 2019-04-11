@@ -693,6 +693,16 @@ float Copter::Mode::get_surface_tracking_climb_rate(int16_t target_rate)
     return copter.get_surface_tracking_climb_rate(target_rate);
 }
 
+bool Copter::Mode::get_surface_tracking_target_alt_cm(float &target_alt_cm) const
+{
+    return copter.get_surface_tracking_target_alt_cm(target_alt_cm);
+}
+
+void Copter::Mode::set_surface_tracking_target_alt_cm(float target_alt_cm)
+{
+   copter.set_surface_tracking_target_alt_cm(target_alt_cm);
+}
+
 float Copter::Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
     return copter.get_pilot_desired_yaw_rate(stick_angle);
