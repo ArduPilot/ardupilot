@@ -275,10 +275,12 @@ void init_sdcard() {
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();    
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();                                                                                                                                                                                                                                                                                                        
     slot_config.width = 1;
-    gpio_set_pull_mode((gpio_num_t)15, GPIO_PULLUP_ONLY);   // CMD
-    gpio_set_pull_mode((gpio_num_t)2, GPIO_PULLUP_ONLY);    // D0
+    gpio_set_pull_mode((gpio_num_t)15, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
+    gpio_set_pull_mode((gpio_num_t)2, GPIO_PULLUP_ONLY);    // D0 ,needed in 4- and 1- line modes
+    //gpio_set_pull_mode((gpio_num_t)13, GPIO_PULLUP_ONLY);   // not needed?
+
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-         .format_if_mount_failed = false,
+         .format_if_mount_failed = true,
          .max_files = 5,
          .allocation_unit_size = 4 * 1024
      };
@@ -290,6 +292,19 @@ void init_sdcard() {
      } else {
          printf("sdcard is not mounted\n");
      }
+
+     // Use POSIX and C standard library functions to work with files.
+     // First create a file.
+     printf("Opening file on SD to write...\n");
+     FILE* f = fopen("/SDCARD/hello2.txt", "w");
+     if (f == NULL) {
+    	 printf( "Failed to open file on SD for writing\n");
+         return;
+     }
+     fprintf(f, "Hello %s!\n", card->cid.name);
+     fclose(f);
+     printf( "Test File written to SD OK\n");
+
 }
 
 void Scheduler::_main_thread(void *arg)
