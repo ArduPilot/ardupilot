@@ -5,9 +5,9 @@
 extern const AP_HAL::HAL& hal;
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f,
-                             AP_Logger &_dataflash,
+                             AP_Logger &_logger,
                              uint64_t &_last_timestamp_usec) :
-    dataflash(_dataflash), last_timestamp_usec(_last_timestamp_usec),
+    logger(_logger), last_timestamp_usec(_last_timestamp_usec),
     MsgHandler(_f) {
 }
 

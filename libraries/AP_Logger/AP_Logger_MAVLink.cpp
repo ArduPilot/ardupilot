@@ -4,7 +4,7 @@
 
 #include "AP_Logger_MAVLink.h"
 
-#if DATAFLASH_MAVLINK_SUPPORT
+#if LOGGER_MAVLINK_SUPPORT
 
 #include "LogStructure.h"
 
@@ -17,6 +17,7 @@
  # define Debug(fmt, args ...)
 #endif
 
+#include <AP_InternalError/AP_InternalError.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -148,7 +149,7 @@ bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
             _current_block = next_block();
             if (_current_block == nullptr) {
                 // should not happen - there's a sanity check above
-                internal_error();
+                AP::internalerror().error(AP_InternalError::error_t::logger_bad_current_block);
                 semaphore.give();
                 return false;
             }
@@ -298,7 +299,6 @@ void AP_Logger_MAVLink::handle_retry(uint32_t seqno)
 
 void AP_Logger_MAVLink::stats_init() {
     _dropped = 0;
-    _internal_errors = 0;
     stats.resends = 0;
     stats_reset();
 }
@@ -318,28 +318,27 @@ void AP_Logger_MAVLink::stats_reset() {
     stats.collection_count = 0;
 }
 
-void AP_Logger_MAVLink::Write_DF_MAV(AP_Logger_MAVLink &df)
+void AP_Logger_MAVLink::Write_logger_MAV(AP_Logger_MAVLink &logger_mav)
 {
-    if (df.stats.collection_count == 0) {
+    if (logger_mav.stats.collection_count == 0) {
         return;
     }
-    struct log_DF_MAV_Stats pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_DF_MAV_STATS),
+    struct log_MAV_Stats pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MAV_STATS),
         timestamp         : AP_HAL::millis(),
-        seqno             : df._next_seq_num-1,
-        dropped           : df._dropped,
-        retries           : df._blocks_retry.sent_count,
-        resends           : df.stats.resends,
-        internal_errors   : df._internal_errors,
-        state_free_avg    : (uint8_t)(df.stats.state_free/df.stats.collection_count),
-        state_free_min    : df.stats.state_free_min,
-        state_free_max    : df.stats.state_free_max,
-        state_pending_avg : (uint8_t)(df.stats.state_pending/df.stats.collection_count),
-        state_pending_min : df.stats.state_pending_min,
-        state_pending_max : df.stats.state_pending_max,
-        state_sent_avg    : (uint8_t)(df.stats.state_sent/df.stats.collection_count),
-        state_sent_min    : df.stats.state_sent_min,
-        state_sent_max    : df.stats.state_sent_max,
+        seqno             : logger_mav._next_seq_num-1,
+        dropped           : logger_mav._dropped,
+        retries           : logger_mav._blocks_retry.sent_count,
+        resends           : logger_mav.stats.resends,
+        state_free_avg    : (uint8_t)(logger_mav.stats.state_free/logger_mav.stats.collection_count),
+        state_free_min    : logger_mav.stats.state_free_min,
+        state_free_max    : logger_mav.stats.state_free_max,
+        state_pending_avg : (uint8_t)(logger_mav.stats.state_pending/logger_mav.stats.collection_count),
+        state_pending_min : logger_mav.stats.state_pending_min,
+        state_pending_max : logger_mav.stats.state_pending_max,
+        state_sent_avg    : (uint8_t)(logger_mav.stats.state_sent/logger_mav.stats.collection_count),
+        state_sent_min    : logger_mav.stats.state_sent_min,
+        state_sent_max    : logger_mav.stats.state_sent_max,
     };
     WriteBlock(&pkt,sizeof(pkt));
 }
@@ -352,13 +351,12 @@ void AP_Logger_MAVLink::stats_log()
     if (stats.collection_count == 0) {
         return;
     }
-    Write_DF_MAV(*this);
+    Write_logger_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
-    printf("D:%d Retry:%d Resent:%d E:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
+    printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
            dropped,
            _blocks_retry.sent_count,
            stats.resends,
-           internal_errors,
            stats.state_free_min,
            stats.state_free_max,
            stats.state_free/stats.collection_count,
@@ -403,7 +401,7 @@ void AP_Logger_MAVLink::stats_collect()
     uint8_t sfree = stack_size(_blocks_free);
 
     if (sfree != _blockcount_free) {
-        internal_error();
+        AP::internalerror().error(AP_InternalError::error_t::logger_blockcount_mismatch);
     }
     semaphore.give();
 
@@ -458,7 +456,7 @@ bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
         if (tmp != nullptr) { // should never be nullptr
             enqueue_block(_blocks_sent, tmp);
         } else {
-            internal_error();
+            AP::internalerror().error(AP_InternalError::error_t::logger_dequeue_failure);
         }
     }
     return true;

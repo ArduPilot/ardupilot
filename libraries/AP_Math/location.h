@@ -7,6 +7,7 @@
 
 #include "vector2.h"
 #include "vector3.h"
+#include <AP_Common/Location.h>
 
 // scaling factor from 1e-7 degrees to meters at equator
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
@@ -17,21 +18,9 @@
 /*
  * LOCATION
  */
-// longitude_scale - returns the scaler to compensate for shrinking longitude as you move north or south from the equator
-// Note: this does not include the scaling to convert longitude/latitude points to meters or centimeters
-float        longitude_scale(const struct Location &loc);
-
-// return distance in meters between two locations
-float        get_distance(const struct Location &loc1, const struct Location &loc2);
-
-// return distance in centimeters between two locations
-uint32_t     get_distance_cm(const struct Location &loc1, const struct Location &loc2);
 
 // return horizontal distance in centimeters between two positions
 float        get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
-
-// return bearing in centi-degrees between two locations
-int32_t      get_bearing_cd(const struct Location &loc1, const struct Location &loc2);
 
 // return bearing in centi-degrees between two positions
 float        get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
@@ -53,38 +42,6 @@ float       location_path_proportion(const struct Location &location,
                                const struct Location &point1,
                                const struct Location &point2);
 
-//  extrapolate latitude/longitude given bearing and distance
-void        location_update(struct Location &loc, float bearing, float distance);
-
-// extrapolate latitude/longitude given distances north and east
-void        location_offset(struct Location &loc, float ofs_north, float ofs_east);
-
-/*
-  return the distance in meters in North/East plane as a N/E vector
-  from loc1 to loc2
- */
-Vector2f    location_diff(const struct Location &loc1, const struct Location &loc2);
-
-/*
-  return the distance in meters in North/East/Down plane as a N/E/D vector
-  from loc1 to loc2
- */
-Vector3f    location_3d_diff_NED(const struct Location &loc1, const struct Location &loc2);
-
-/*
- * check if lat and lng match. Ignore altitude and options
- */
-bool        locations_are_same(const struct Location &loc1, const struct Location &loc2);
-
-/*
- * convert invalid waypoint with useful data. return true if location changed
- */
-bool        location_sanitize(const struct Location &defaultLoc, struct Location &loc);
-
-/*
-  print a int32_t lat/long in decimal degrees
- */
-void        print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
 
 // Converts from WGS84 geodetic coordinates (lat, lon, height)
 // into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
@@ -103,5 +60,3 @@ bool        check_lat(int32_t lat);
 bool        check_lng(int32_t lng);
 bool        check_latlng(float lat, float lng);
 bool        check_latlng(int32_t lat, int32_t lng);
-bool        check_latlng(Location loc);
-

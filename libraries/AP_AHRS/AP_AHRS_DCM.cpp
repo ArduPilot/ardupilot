@@ -3,7 +3,7 @@
  *
  *       AHRS system using DCM matrices
  *
- *       Based on DCM code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+ *       Based on DCM code by Doug Weibel, Jordi Munoz and Jose Julio. DIYDrones.com
  *
  *       Adapted for the general ArduPilot AHRS interface by Andrew Tridgell
 
@@ -286,7 +286,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
  *  to approximations rather than identities. In effect, the axes in the two frames of reference no
  *  longer describe a rigid body. Fortunately, numerical error accumulates very slowly, so it is a
  *  simple matter to stay ahead of it.
- *  We call the process of enforcing the orthogonality conditions ÒrenormalizationÓ.
+ *  We call the process of enforcing the orthogonality conditions: renormalization.
  */
 void
 AP_AHRS_DCM::normalize(void)
@@ -984,12 +984,12 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     loc.alt = AP::baro().get_altitude() * 100 + _home.alt;
     loc.relative_alt = 0;
     loc.terrain_alt = 0;
-    location_offset(loc, _position_offset_north, _position_offset_east);
+    loc.offset(_position_offset_north, _position_offset_east);
     const AP_GPS &_gps = AP::gps();
     if (_flags.fly_forward && _have_position) {
         float gps_delay_sec = 0;
         _gps.get_lag(gps_delay_sec);
-        location_update(loc, _gps.ground_course_cd() * 0.01f, _gps.ground_speed() * gps_delay_sec);
+        loc.offset_bearing(_gps.ground_course_cd() * 0.01f, _gps.ground_speed() * gps_delay_sec);
     }
     return _have_position;
 }
@@ -1037,19 +1037,25 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
         return false;
     }
-    if (!check_latlng(loc)) {
+    if (!loc.check_latlng()) {
+        return false;
+    }
+    // home must always be global frame at the moment as .alt is
+    // accessed directly by the vehicles and they may not be rigorous
+    // in checking the frame type.
+    Location tmp = loc;
+    if (!tmp.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
         return false;
     }
 
-    _home = loc;
+    _home = tmp;
     _home_is_set = true;
 
-    // log ahrs home and ekf origin dataflash
     Log_Write_Home_And_Origin();
 
     // send new home and ekf origin to GCS
-    gcs().send_home();
-    gcs().send_ekf_origin();
+    gcs().send_message(MSG_HOME);
+    gcs().send_message(MSG_ORIGIN);
 
     return true;
 }
@@ -1070,12 +1076,15 @@ bool AP_AHRS_DCM::healthy(void) const
 }
 
 /*
-  return amount of time that AHRS has been up
+  return NED velocity if we have GPS lock
  */
-uint32_t AP_AHRS_DCM::uptime_ms(void) const
+bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
 {
-    if (_last_startup_ms == 0) {
-        return 0;
+    const AP_GPS &_gps = AP::gps();
+    if (_gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+        return false;
     }
-    return AP_HAL::millis() - _last_startup_ms;
+    vec = _gps.velocity();
+    return true;
 }
+

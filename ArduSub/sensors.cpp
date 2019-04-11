@@ -13,7 +13,7 @@ void Sub::read_barometer()
 void Sub::init_rangefinder()
 {
 #if RANGEFINDER_ENABLED == ENABLED
-    rangefinder.init();
+    rangefinder.init(ROTATION_PITCH_270);
     rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
     rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
 #endif
@@ -79,18 +79,6 @@ void Sub::rpm_update(void)
     }
 }
 #endif
-
-// initialise compass
-void Sub::init_compass()
-{
-    if (!compass.init() || !compass.read()) {
-        // make sure we don't pass a broken compass to DCM
-        hal.console->println("COMPASS INIT ERROR");
-        Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
-        return;
-    }
-    ahrs.set_compass(&compass);
-}
 
 /*
   initialise compass's location used for declination

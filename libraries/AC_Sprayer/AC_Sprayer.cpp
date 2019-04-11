@@ -1,5 +1,9 @@
-#include <AP_HAL/AP_HAL.h>
 #include "AC_Sprayer.h"
+
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 

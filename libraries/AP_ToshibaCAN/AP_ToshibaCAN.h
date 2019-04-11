@@ -38,6 +38,9 @@ public:
     // called from SRV_Channels
     void update();
 
+    // send ESC telemetry messages over MAVLink
+    void send_esc_telemetry_mavlink(uint8_t mav_chan);
+
 private:
 
     // loop to send output to ESCs in background thread
@@ -45,6 +48,9 @@ private:
 
     // write frame on CAN bus, returns true on success
     bool write_frame(uavcan::CanFrame &out_frame, uavcan::MonotonicTime timeout);
+
+    // read frame on CAN bus, returns true on success
+    bool read_frame(uavcan::CanFrame &recv_frame, uavcan::MonotonicTime timeout);
 
     bool _initialized;
     char _thread_name[9];
@@ -59,6 +65,21 @@ private:
     uint16_t update_count_buffered; // counter when outputs copied to buffer before before sending to ESCs
     uint16_t update_count_sent;     // counter of outputs successfully sent
     uint8_t send_stage;             // stage of sending algorithm (each stage sends one frame to ESCs)
+
+    // telemetry data (rpm, voltage)
+    HAL_Semaphore _telem_sem;
+    struct telemetry_info_t {
+        uint16_t rpm;
+        uint16_t millivolts;
+        uint16_t temperature;
+        uint16_t count;
+        bool new_data;
+    } _telemetry[TOSHIBACAN_MAX_NUM_ESCS];
+    uint32_t _telemetry_req_ms;     // system time (in milliseconds) to request data from escs (updated at 10hz)
+    uint8_t _telemetry_temp_req_counter;    // counter used to trigger temp data requests from ESCs (10x slower than other telem data)
+
+    // bitmask of which escs seem to be present
+    uint16_t _esc_present_bitmask;
 
     // structure for sending motor lock command to ESC
     union motor_lock_cmd_t {
@@ -86,6 +107,38 @@ private:
             uint16_t motor3;
             uint16_t motor2;
             uint16_t motor1;
+        };
+        uint8_t data[8];
+    };
+
+    // structure for requesting data from ESC
+    union motor_request_data_cmd_t {
+        struct PACKED {
+            uint8_t motor2:4;
+            uint8_t motor1:4;
+            uint8_t motor4:4;
+            uint8_t motor3:4;
+            uint8_t motor6:4;
+            uint8_t motor5:4;
+            uint8_t motor8:4;
+            uint8_t motor7:4;
+            uint8_t motor10:4;
+            uint8_t motor9:4;
+            uint8_t motor12:4;
+            uint8_t motor11:4;
+        };
+        uint8_t data[6];
+    };
+
+    // structure for replies from ESC of data1 (rpm and voltage)
+    union motor_reply_data1_t {
+        struct PACKED {
+            uint8_t rxng:1;
+            uint8_t state:7;
+            uint16_t rpm;
+            uint16_t reserved;
+            uint16_t millivolts;
+            uint8_t position_est_error;
         };
         uint8_t data[8];
     };

@@ -63,7 +63,20 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
-    if (plane.control_mode == AUTO && plane.mission.num_commands() <= 1) {
+    if (plane.quadplane.enabled() && plane.quadplane.available()) {
+        // ensure controllers are OK with us arming:
+        char failure_msg[50];
+        if (!plane.quadplane.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
+            return false;
+        }
+        if (!plane.quadplane.attitude_control->pre_arm_checks("ATC", failure_msg, ARRAY_SIZE(failure_msg))) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
+            return false;
+        }
+    }
+
+    if (plane.control_mode == &plane.mode_auto && plane.mission.num_commands() <= 1) {
         check_failed(ARMING_CHECK_NONE, display_failure, "No mission loaded");
         ret = false;
     }
@@ -71,6 +84,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     // check adsb avoidance failsafe
     if (plane.failsafe.adsb) {
         check_failed(ARMING_CHECK_NONE, display_failure, "ADSB threat detected");
+        ret = false;
+    }
+
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(ARMING_CHECK_NONE, display_failure,"Motors Emergency Stopped");
         ret = false;
     }
 
@@ -87,7 +105,7 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
     // additional plane specific checks
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
-        if (!AP::ahrs().healthy()) {
+        if (!AP::ahrs().prearm_healthy()) {
             const char *reason = AP::ahrs().prearm_failure_reason();
             if (reason == nullptr) {
                 reason = "AHRS not healthy";

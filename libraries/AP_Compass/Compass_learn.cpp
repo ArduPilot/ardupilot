@@ -44,7 +44,7 @@ void CompassLearn::update(void)
 
         // setup the expected earth field at this location
         float declination_deg=0, inclination_deg=0, intensity_gauss=0;
-        AP_Declination::get_mag_field_ef(loc.lat*1.0e-7, loc.lng*1.0e-7, intensity_gauss, declination_deg, inclination_deg);
+        AP_Declination::get_mag_field_ef(loc.lat*1.0e-7f, loc.lng*1.0e-7f, intensity_gauss, declination_deg, inclination_deg);
 
         // create earth field
         mag_ef = Vector3f(intensity_gauss*1000, 0.0, 0.0);
@@ -213,7 +213,7 @@ void CompassLearn::process_sample(const struct sample &s)
             predicted_offsets[i] = offsets;
         } else {
             // lowpass the predicted offsets and the error
-            const float learn_rate = 0.92;
+            const float learn_rate = 0.92f;
             predicted_offsets[i] = predicted_offsets[i] * learn_rate + offsets * (1-learn_rate);
             errors[i] = errors[i] * learn_rate + delta * (1-learn_rate);
         }

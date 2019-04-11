@@ -10,7 +10,6 @@
 
 #include "definitions.h"
 #include "edc.h"
-#include "location.h"
 #include "matrix3.h"
 #include "polygon.h"
 #include "quaternion.h"
@@ -18,6 +17,7 @@
 #include "vector2.h"
 #include "vector3.h"
 #include "spline5.h"
+#include "location.h"
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
@@ -174,7 +174,8 @@ static inline constexpr float degrees(float rad)
 template<typename T>
 float sq(const T val)
 {
-    return powf(static_cast<float>(val), 2);
+    float v = static_cast<float>(val);
+    return v*v;
 }
 
 /*

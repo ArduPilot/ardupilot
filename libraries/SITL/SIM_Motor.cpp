@@ -121,5 +121,7 @@ void Motor::current_and_voltage(const struct sitl_input &input, float &voltage, 
     current = 10 * motor_speed;
 
     // assume 3S, and full throttle drops voltage by 0.7V
-    voltage = AP::sitl()->batt_voltage - motor_speed * 0.7;
+    if (AP::sitl()) {
+        voltage = AP::sitl()->batt_voltage - motor_speed * 0.7;
+    }
 }

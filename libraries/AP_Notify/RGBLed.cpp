@@ -52,10 +52,15 @@ void RGBLed::_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     }
 }
 
+RGBLed::rgb_source_t RGBLed::rgb_source() const
+{
+    return rgb_source_t(pNotify->_rgb_led_override.get());
+}
+
 // set_rgb - set color as a combination of red, green and blue values
 void RGBLed::set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    if (pNotify->_rgb_led_override) {
+    if (rgb_source() == mavlink) {
         // don't set if in override mode
         return;
     }
@@ -86,6 +91,14 @@ uint8_t RGBLed::get_brightness(void) const
         brightness = _led_dim;
     }
     return brightness;
+}
+
+uint32_t RGBLed::get_colour_sequence_obc(void) const
+{
+    if (AP_Notify::flags.armed) {
+        return DEFINE_COLOUR_SEQUENCE_SOLID(RED);
+    }
+    return DEFINE_COLOUR_SEQUENCE_SOLID(GREEN);
 }
 
 // _scheduled_update - updates _red, _green, _blue according to notify flags
@@ -149,12 +162,25 @@ uint32_t RGBLed::get_colour_sequence(void) const
     return sequence_disarmed_bad_gps;
 }
 
-// _scheduled_update - updates _red, _green, _blue according to notify flags
-void RGBLed::update_colours(void)
+// update - updates led according to timed_updated.  Should be called
+// at 50Hz
+void RGBLed::update()
 {
-    const uint8_t brightness = get_brightness();
+    uint32_t current_colour_sequence = 0;
 
-    const uint32_t current_colour_sequence = get_colour_sequence();
+    switch (rgb_source()) {
+    case mavlink:
+        update_override();
+        return; // note this is a return not a break!
+    case standard:
+        current_colour_sequence = get_colour_sequence();
+        break;
+    case obc:
+        current_colour_sequence = get_colour_sequence_obc();
+        break;
+    }
+
+    const uint8_t brightness = get_brightness();
 
     uint8_t step = (AP_HAL::millis()/100) % 10;
 
@@ -169,18 +195,8 @@ void RGBLed::update_colours(void)
     _red_des = (colour & RED) ? brightness : 0;
     _green_des = (colour & GREEN) ? brightness : 0;
     _blue_des = (colour & BLUE) ? brightness : 0;
-}
 
-// update - updates led according to timed_updated.  Should be called
-// at 50Hz
-void RGBLed::update()
-{
-    if (!pNotify->_rgb_led_override) {
-        update_colours();
-        set_rgb(_red_des, _green_des, _blue_des);
-    } else {
-        update_override();
-    }
+    set_rgb(_red_des, _green_des, _blue_des);
 }
 
 /*
@@ -188,7 +204,7 @@ void RGBLed::update()
 */
 void RGBLed::handle_led_control(mavlink_message_t *msg)
 {
-    if (!pNotify->_rgb_led_override) {
+    if (rgb_source() == mavlink) {
         // ignore LED_CONTROL commands if not in LED_OVERRIDE mode
         return;
     }

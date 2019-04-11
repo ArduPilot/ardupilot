@@ -4,6 +4,7 @@
 #include "AP_BattMonitor_Bebop.h"
 #include "AP_BattMonitor_BLHeliESC.h"
 #include "AP_BattMonitor_Sum.h"
+#include "AP_BattMonitor_FuelFlow.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -138,6 +139,9 @@ AP_BattMonitor::init()
             case AP_BattMonitor_Params::BattMonitor_TYPE_Sum:
                 drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
                 break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_FuelFlow:
+                drivers[instance] = new AP_BattMonitor_FuelFlow(*this, state[instance], _params[instance]);
+                break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
                 break;
@@ -238,10 +242,10 @@ AP_BattMonitor::read()
         }
     }
 
-    AP_Logger *df = AP_Logger::get_singleton();
-    if (df->should_log(_log_battery_bit)) {
-        df->Write_Current();
-        df->Write_Power();
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger->should_log(_log_battery_bit)) {
+        logger->Write_Current();
+        logger->Write_Power();
     }
 
     check_failsafes();

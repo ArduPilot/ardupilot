@@ -83,6 +83,12 @@ static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
+#ifndef HAL_NO_FLASH_SUPPORT
+static ChibiOS::Flash flashDriver;
+#else
+static Empty::Flash flashDriver;
+#endif
+
 
 #if HAL_WITH_IO_MCU
 HAL_UART_IO_DRIVER;
@@ -110,6 +116,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlowDriver,
+        &flashDriver,
         nullptr
         )
 {}
@@ -198,7 +205,7 @@ static void main_loop()
         g_callbacks->loop();
 
         /*
-          give up 250 microseconds of time if the INS loop hasn't
+          give up 50 microseconds of time if the INS loop hasn't
           called delay_microseconds_boost(), to ensure low priority
           drivers get a chance to run. Calling
           delay_microseconds_boost() means we have already given up
@@ -207,7 +214,7 @@ static void main_loop()
          */
 #ifndef HAL_DISABLE_LOOP_DELAY
         if (!schedulerInstance.check_called_boost()) {
-            hal.scheduler->delay_microseconds(250);
+            hal.scheduler->delay_microseconds(50);
         }
 #endif
     }

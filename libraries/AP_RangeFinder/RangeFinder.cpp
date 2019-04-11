@@ -36,8 +36,11 @@
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake.h"
 #include "AP_RangeFinder_PWM.h"
+#include "AP_RangeFinder_BLPing.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -147,15 +150,10 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
 const AP_Param::GroupInfo *RangeFinder::backend_var_info[RANGEFINDER_MAX_INSTANCES];
 
-RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default) :
+RangeFinder::RangeFinder(AP_SerialManager &_serial_manager) :
     serial_manager(_serial_manager)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // set orientation defaults
-    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
-        params[i].orientation.set_default(orientation_default);
-    }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
@@ -290,7 +288,7 @@ void RangeFinder::convert_params(void) {
   finders here. For now we won't allow for hot-plugging of
   rangefinders.
  */
-void RangeFinder::init(void)
+void RangeFinder::init(enum Rotation orientation_default)
 {
     if (num_instances != 0) {
         // init called a 2nd time?
@@ -298,6 +296,11 @@ void RangeFinder::init(void)
     }
 
     convert_params();
+
+    // set orientation defaults
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        params[i].orientation.set_default(orientation_default);
+    }
 
     for (uint8_t i=0, serial_instance = 0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         // serial_instance will be increased inside detect_instance
@@ -337,6 +340,8 @@ void RangeFinder::update(void)
             drivers[i]->update_pre_arm_check();
         }
     }
+
+    Log_RFND();
 }
 
 bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
@@ -491,6 +496,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_PWM:
         if (AP_RangeFinder_PWM::detect()) {
             drivers[instance] = new AP_RangeFinder_PWM(state[instance], params[instance], estimated_terrain_height);
+        }
+        break;
+    case RangeFinder_TYPE_BLPing:
+        if (AP_RangeFinder_BLPing::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_BLPing(state[instance], params[instance], serial_manager, serial_instance++);
         }
         break;
     default:
@@ -664,4 +674,44 @@ MAV_DISTANCE_SENSOR RangeFinder::get_mav_distance_sensor_type_orient(enum Rotati
     return backend->get_mav_distance_sensor_type();
 }
 
+// Write an RFND (rangefinder) packet
+void RangeFinder::Log_RFND()
+{
+    if (_log_rfnd_bit == uint32_t(-1)) {
+        return;
+    }
+
+    AP_Logger &logger = AP::logger();
+    if (!logger.should_log(_log_rfnd_bit)) {
+        return;
+    }
+
+    const AP_RangeFinder_Backend *s0 = get_backend(0);
+    const AP_RangeFinder_Backend *s1 = get_backend(1);
+    if (s0 == nullptr && s1 == nullptr) {
+        return;
+    }
+
+    struct log_RFND pkt = {
+        LOG_PACKET_HEADER_INIT((uint8_t)(LOG_RFND_MSG)),
+        time_us       : AP_HAL::micros64(),
+        dist1         : s0 ? s0->distance_cm() : (uint16_t)0,
+        status1       : s0 ? (uint8_t)s0->status() : (uint8_t)0,
+        orient1       : s0 ? s0->orientation() : ROTATION_NONE,
+        dist2         : s1 ? s1->distance_cm() : (uint16_t)0,
+        status2       : s1 ? (uint8_t)s1->status() : (uint8_t)0,
+        orient2       : s1 ? s1->orientation() : ROTATION_NONE,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
 RangeFinder *RangeFinder::_singleton;
+
+namespace AP {
+
+RangeFinder *rangefinder()
+{
+    return RangeFinder::get_singleton();
+}
+
+}

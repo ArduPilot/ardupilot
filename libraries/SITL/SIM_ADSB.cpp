@@ -190,10 +190,10 @@ void ADSB::send_report(void)
             ADSB_Vehicle &vehicle = vehicles[i];
             Location loc = home;
 
-            location_offset(loc, vehicle.position.x, vehicle.position.y);
+            loc.offset(vehicle.position.x, vehicle.position.y);
 
             // re-init when exceeding radius range
-            if (get_distance(home, loc) > _sitl->adsb_radius_m) {
+            if (home.get_distance(loc) > _sitl->adsb_radius_m) {
                 vehicle.initialised = false;
             }
             

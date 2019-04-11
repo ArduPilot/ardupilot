@@ -139,6 +139,9 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
+    // relax I terms of throttle and steering controllers
+    void relax_I();
+
 private:
 
     // external references

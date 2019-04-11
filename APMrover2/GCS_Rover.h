@@ -17,6 +17,16 @@ public:
     // return GCS link at offset ofs
     const GCS_MAVLINK_Rover &chan(const uint8_t ofs) const override { return _chan[ofs]; };
 
+    uint32_t custom_mode() const override;
+    MAV_TYPE frame_type() const override;
+
+    bool vehicle_initialised() const override;
+
+    void update_vehicle_sensor_status_flags(void) override;
+
+    bool simple_input_active() const override;
+    bool supersimple_input_active() const override;
+
 private:
 
     GCS_MAVLINK_Rover _chan[MAVLINK_COMM_NUM_BUFFERS];

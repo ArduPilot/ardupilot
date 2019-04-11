@@ -1,6 +1,7 @@
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Common/Location.h>
 
 #include "lua_bindings.h"
 
@@ -219,8 +220,7 @@ static int location_distance(lua_State *L) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    lua_pushnumber(L, get_distance(*check_location(L, -2),
-                                   *check_location(L, -1)));
+    lua_pushnumber(L, check_location(L, -2)->get_distance(*check_location(L, -1)));
 
     return 1;
 }
@@ -231,9 +231,7 @@ static int location_project(lua_State *L) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    location_update(*check_location(L, -3),
-                    luaL_checknumber(L, -2),
-                    luaL_checknumber(L, -1));
+    (*check_location(L, -3)).offset_bearing(luaL_checknumber(L, -2), luaL_checknumber(L, -1));
 
     lua_pop(L, 2);
 
@@ -272,9 +270,8 @@ static int location_offset(lua_State *L) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    location_offset(*check_location(L, -3),
-                    luaL_checknumber(L, -2),
-                    luaL_checknumber(L, -1));
+    check_location(L, -3)->offset(luaL_checknumber(L, -2),
+                                  luaL_checknumber(L, -1));
 
     lua_pop(L, 2);
 
@@ -290,7 +287,7 @@ static int location_equal(lua_State *L) {
     Location *l2 = check_location(L, -2);
     Location *l1 = check_location(L, -1);
 
-    lua_pushboolean(L, locations_are_same(*l1, *l2));
+    lua_pushboolean(L, l1->same_latlon_as(*l2));
 
     return 1;
 }

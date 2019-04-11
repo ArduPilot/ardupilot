@@ -17,6 +17,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Common/Location.h>
 
 #if (HAL_OS_POSIX_IO || HAL_OS_FATFS_IO) && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
@@ -91,6 +92,8 @@ public:
 
     // update terrain state. Should be called at 1Hz or more
     void update(void);
+
+    bool enabled() const { return enable; }
 
     // return status enum for health reporting
     enum TerrainStatus status(void) const { return system_status; }

@@ -31,7 +31,7 @@
 #endif
 
 #ifndef UAVCAN_NODE_POOL_BLOCK_SIZE
-#define UAVCAN_NODE_POOL_BLOCK_SIZE 256
+#define UAVCAN_NODE_POOL_BLOCK_SIZE 64
 #endif
 
 #ifndef UAVCAN_SRV_NUMBER
@@ -52,9 +52,10 @@
 */
 #define UC_REGISTRY_BINDER(ClassName_, DataType_) \
 	class ClassName_ : public AP_UAVCAN::RegistryBinder<DataType_> { \
+        typedef void (*CN_Registry)(AP_UAVCAN*, uint8_t, const ClassName_&); \
 	    public: \
 	        ClassName_() : RegistryBinder() {} \
-	        ClassName_(AP_UAVCAN* uc,  void (*ffunc)(AP_UAVCAN*, uint8_t, const ClassName_&)) : \
+	        ClassName_(AP_UAVCAN* uc,  CN_Registry ffunc) : \
 				RegistryBinder(uc, (Registry)ffunc) {} \
 	}
 
@@ -84,7 +85,7 @@ public:
     template <typename DataType_>
     class RegistryBinder {
     protected:
-        typedef void* (*Registry)(AP_UAVCAN* _ap_uavcan, uint8_t _node_id, const RegistryBinder& _cb);
+        typedef void (*Registry)(AP_UAVCAN* _ap_uavcan, uint8_t _node_id, const RegistryBinder& _cb);
         AP_UAVCAN* _uc;
         Registry _ffunc;
 
@@ -146,6 +147,7 @@ private:
     ///// LED /////
     void led_out_send();
 
+    uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
     // UAVCAN parameters
     AP_Int8 _uavcan_node;
@@ -154,7 +156,7 @@ private:
     AP_Int16 _servo_rate_hz;
 
     uavcan::Node<0> *_node;
-    uavcan::HeapBasedPoolAllocator<UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
+
     uint8_t _driver_index;
     char _thread_name[9];
     bool _initialized;

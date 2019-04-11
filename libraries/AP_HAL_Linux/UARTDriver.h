@@ -18,13 +18,13 @@ public:
     }
 
     /* Linux implementations of UARTDriver virtual methods */
-    void begin(uint32_t b);
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
-    void end();
-    void flush();
-    bool is_initialized();
-    void set_blocking_writes(bool blocking);
-    bool tx_pending();
+    void begin(uint32_t b) override;
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void end() override;
+    void flush() override;
+    bool is_initialized() override;
+    void set_blocking_writes(bool blocking) override;
+    bool tx_pending() override;
 
     /* Linux implementations of Stream virtual methods */
     uint32_t available() override;
@@ -32,8 +32,8 @@ public:
     int16_t read() override;
 
     /* Linux implementations of Print virtual methods */
-    size_t write(uint8_t c);
-    size_t write(const uint8_t *buffer, size_t size);
+    size_t write(uint8_t c) override;
+    size_t write(const uint8_t *buffer, size_t size) override;
 
     void set_device_path(const char *path);
 

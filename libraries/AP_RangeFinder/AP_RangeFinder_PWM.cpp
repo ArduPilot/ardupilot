@@ -67,7 +67,7 @@ bool AP_RangeFinder_PWM::get_reading(uint16_t &reading_cm)
     if (value_us == 0 || sample_count == 0) {
         return false;
     }
-    reading_cm = (value_us/sample_count) * 1e-1f; // correct for LidarLite.  Parameter needed?
+    reading_cm = value_us/(sample_count * 10); // correct for LidarLite.  Parameter needed?  Converts from decimetres -> cm here
     return true;
 }
 

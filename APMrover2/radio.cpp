@@ -15,7 +15,7 @@ void Rover::set_control_channels(void)
     channel_throttle->set_angle(100);
     channel_lateral->set_angle(100);
 
-    // Allow to reconfigure ouput when not armed
+    // Allow to reconfigure output when not armed
     if (!arming.is_armed()) {
         g2.motors.setup_servo_output();
         // For a rover safety is TRIM throttle
@@ -42,8 +42,8 @@ void Rover::init_rc_in()
 void Rover::rudder_arm_disarm_check()
 {
     // check if arming/disarm using rudder is allowed
-    AP_Arming::ArmingRudder arming_rudder = arming.get_rudder_arming_type();
-    if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
+    const AP_Arming::RudderArming arming_rudder = arming.get_rudder_arming_type();
+    if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
         return;
     }
 
@@ -72,14 +72,14 @@ void Rover::rudder_arm_disarm_check()
                 }
             } else {
                 // time to arm!
-                arm_motors(AP_Arming::RUDDER);
+                arm_motors(AP_Arming::Method::RUDDER);
                 rudder_arm_timer = 0;
             }
         } else {
             // not at full right rudder
             rudder_arm_timer = 0;
         }
-    } else if ((arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM) && !g2.motors.active()) {
+    } else if ((arming_rudder == AP_Arming::RudderArming::ARMDISARM) && !g2.motors.active()) {
         // when armed and motor not active (not moving), full left rudder starts disarming counter
         if (channel_steer->get_control_in() < -4000) {
             const uint32_t now = millis();

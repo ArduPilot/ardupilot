@@ -51,7 +51,7 @@ bool UARTDriver::_console;
 
 void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
-    if (_portNumber > ARRAY_SIZE(_sitlState->_uart_path)) {
+    if (_portNumber >= ARRAY_SIZE(_sitlState->_uart_path)) {
         AP_HAL::panic("port number out of range; you may need to extend _sitlState->_uart_path");
     }
 
@@ -305,6 +305,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
         fcntl(_fd, F_SETFD, FD_CLOEXEC);
         _connected = true;
+        fprintf(stdout, "Connection on serial port %u\n", _portNumber);
     }
 }
 
@@ -361,6 +362,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 
     setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    fcntl(_fd, F_SETFD, FD_CLOEXEC);
     _connected = true;
 }
 
@@ -546,6 +548,7 @@ void UARTDriver::_check_connection(void)
             _connected = true;
             setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
             setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+            fcntl(_fd, F_SETFD, FD_CLOEXEC);
             fprintf(stdout, "New connection on serial port %u\n", _portNumber);
         }
     }

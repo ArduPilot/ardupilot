@@ -21,6 +21,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include "AP_Mount.h"
+#include <RC_Channel/RC_Channel.h>
 
 class AP_Mount_Backend
 {
@@ -82,8 +83,7 @@ protected:
     // update_targets_from_rc - updates angle targets (i.e. _angle_ef_target_rad) using input from receiver
     void update_targets_from_rc();
 
-    // angle_input, angle_input_rad - convert RC input into an earth-frame target angle
-    int32_t angle_input(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    // angle_input_rad - convert RC input into an earth-frame target angle
     float angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target

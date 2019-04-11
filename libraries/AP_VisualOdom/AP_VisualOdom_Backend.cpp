@@ -37,5 +37,5 @@ void AP_VisualOdom_Backend::set_deltas(const Vector3f &angle_delta, const Vector
 
     _frontend._state.time_delta_usec = time_delta_usec;
     _frontend._state.confidence = confidence;
-    _frontend._state.last_update_ms = AP_HAL::millis();
+    _frontend._state.last_sensor_update_ms = AP_HAL::millis();
 }

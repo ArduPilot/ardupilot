@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -355,7 +353,7 @@ void NavEKF2_core::SelectVelPosFusion()
         // store the time of the reset
         lastPosReset_ms = imuSampleTime_ms;
 
-        // If we are alseo using GPS as the height reference, reset the height
+        // If we are also using GPS as the height reference, reset the height
         if (activeHgtSource == HGT_SOURCE_GPS) {
             // Store the position before the reset so that we can record the reset delta
             posResetD = stateStruct.position.z;
@@ -469,7 +467,7 @@ void NavEKF2_core::FuseVelPosNED()
             }
             R_OBS[4] = R_OBS[3];
             // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
-            // For horizontal GPs velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPs perfomrance
+            // For horizontal GPS velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPS perfomrance
             // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
             for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
         }
@@ -711,12 +709,12 @@ void NavEKF2_core::FuseVelPosNED()
                         }
                     }
 
-                    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+                    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
                     ForceSymmetry();
                     ConstrainVariances();
 
                     // update the states
-                    // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+                    // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
                     stateStruct.angErr.zero();
 
                     // calculate state corrections and re-normalise the quaternions for states predicted using the blended IMU data
@@ -803,7 +801,7 @@ void NavEKF2_core::selectHeightForFusion()
 
     // select height source
     if (extNavUsedForPos) {
-        // always use external vision as the hight source if using for position.
+        // always use external vision as the height source if using for position.
         activeHgtSource = HGT_SOURCE_EV;
     } else if (((frontend->_useRngSwHgt > 0) || (frontend->_altSource == 1)) && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
         if (frontend->_altSource == 1) {
@@ -948,4 +946,3 @@ void NavEKF2_core::selectHeightForFusion()
     }
 }
 
-#endif // HAL_CPU_CLASS

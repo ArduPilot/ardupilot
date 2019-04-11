@@ -19,7 +19,7 @@ void Copter::update_precland()
     if (rangefinder_alt_ok()) {
         height_above_ground_cm = rangefinder_state.alt_cm;
     } else if (terrain_use()) {
-        if (!current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, height_above_ground_cm)) {
+        if (!current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, height_above_ground_cm)) {
             height_above_ground_cm = current_loc.alt;
         }
     }

@@ -44,6 +44,8 @@
 #include "AP_Baro_UAVCAN.h"
 #endif
 
+#include <AP_Logger/AP_Logger.h>
+
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
 #ifndef HAL_BARO_FILTER_DEFAULT
@@ -530,6 +532,7 @@ void AP_Baro::init(void)
         break;
 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
         break;
@@ -705,16 +708,16 @@ void AP_Baro::_probe_i2c_barometers(void)
     }
 }
 
-bool AP_Baro::should_df_log() const
+bool AP_Baro::should_log() const
 {
-    AP_Logger *instance = AP_Logger::get_singleton();
-    if (instance == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return false;
     }
     if (_log_baro_bit == (uint32_t)-1) {
         return false;
     }
-    if (!instance->should_log(_log_baro_bit)) {
+    if (!logger->should_log(_log_baro_bit)) {
         return false;
     }
     return true;
@@ -788,7 +791,7 @@ void AP_Baro::update(void)
     }
 
     // logging
-    if (should_df_log() && !AP::ahrs().have_ekf_logging()) {
+    if (should_log() && !AP::ahrs().have_ekf_logging()) {
         AP::logger().Write_Baro();
     }
 }

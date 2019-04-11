@@ -1,6 +1,7 @@
 #include "AC_AttitudeControl.h"
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
+
+extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
  // default gains for Plane
@@ -146,24 +147,11 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     AP_GROUPEND
 };
 
-// Set output throttle and disable stabilization
-void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
-{
-    _throttle_in = throttle_in;
-    _motors.set_throttle_filter_cutoff(filter_cutoff);
-    if (reset_attitude_control) {
-        relax_attitude_controllers();
-    }
-    _motors.set_throttle(throttle_in);
-    _angle_boost = 0.0f;
-}
-
 // Ensure attitude controller have zero errors to relax rate controller output
 void AC_AttitudeControl::relax_attitude_controllers()
 {
     // Initialize the attitude variables to the current attitude
-    // TODO add _ahrs.get_quaternion()
-    _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(_attitude_target_quat);
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
     _attitude_ang_error.initialise();
 
@@ -358,6 +346,102 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     attitude_controller_run_quat();
 }
 
+// Command euler pitch and yaw angles and roll rate (used only by tailsitter quadplanes)
+// Multicopter style controls: roll stick is tailsitter bodyframe yaw in hover
+void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float euler_yaw_rate_cds, float euler_pitch_cd, float body_roll_cd)
+{
+    // Convert from centidegrees on public interface to radians
+    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
+    float euler_pitch = radians(euler_pitch_cd*0.01f);
+    float body_roll = radians(body_roll_cd*0.01f);
+
+    // new heading
+    _attitude_target_euler_angle.z = wrap_PI(_attitude_target_euler_angle.z + euler_yaw_rate * _dt);
+
+    // init attitude target to desired euler yaw and pitch with zero roll
+    _attitude_target_quat.from_euler(0, euler_pitch, _attitude_target_euler_angle.z);
+
+    // apply body-frame yaw/roll (this is roll/yaw for a tailsitter in forward flight)
+    // rotate body_roll axis by |sin(pitch angle)|
+    Quaternion bf_roll_Q;
+    bf_roll_Q.from_axis_angle(Vector3f(0, 0, fabsf(sinf(euler_pitch)) * body_roll));
+
+    // rotate body_yaw axis by cos(pitch angle)
+    Quaternion bf_yaw_Q;
+    bf_yaw_Q.from_axis_angle(Vector3f(-cosf(euler_pitch), 0, 0), body_roll);
+    _attitude_target_quat = _attitude_target_quat * bf_roll_Q * bf_yaw_Q;
+
+    // calculate the attitude target euler angles
+    _attitude_target_euler_angle.x = _attitude_target_quat.get_euler_roll();
+    _attitude_target_euler_angle.y = _attitude_target_quat.get_euler_pitch();
+
+    // Set rate feedforward requests to zero
+    _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
+    _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+
+    // Compute attitude error
+    Quaternion attitude_vehicle_quat;
+    _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
+
+    Quaternion error_quat;
+    error_quat = attitude_vehicle_quat.inverse() * _attitude_target_quat;
+    Vector3f att_error;
+    error_quat.to_axis_angle(att_error);
+
+    // Compute the angular velocity target from the attitude error
+    _rate_target_ang_vel = update_ang_vel_target_from_att_error(att_error);
+}
+
+// Command euler pitch and yaw angles and roll rate (used only by tailsitter quadplanes)
+// Plane style controls: yaw stick is tailsitter bodyframe yaw in hover
+void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(float euler_yaw_rate_cds, float euler_pitch_cd, float body_roll_cd)
+{
+    // Convert from centidegrees on public interface to radians
+    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
+    float euler_pitch = radians(euler_pitch_cd*0.01f);
+    float body_roll = radians(body_roll_cd*0.01f);
+
+    const float cpitch = cosf(euler_pitch);
+    const float spitch = fabsf(sinf(euler_pitch));
+
+    // new heading
+    float yaw_rate = euler_yaw_rate * spitch + body_roll * cpitch;
+    _attitude_target_euler_angle.z = wrap_PI(_attitude_target_euler_angle.z + yaw_rate * _dt);
+
+    // init attitude target to desired euler yaw and pitch with zero roll
+    _attitude_target_quat.from_euler(0, euler_pitch, _attitude_target_euler_angle.z);
+
+    // apply body-frame yaw/roll (this is roll/yaw for a tailsitter in forward flight)
+    // rotate body_roll axis by |sin(pitch angle)|
+    Quaternion bf_roll_Q;
+    bf_roll_Q.from_axis_angle(Vector3f(0, 0, spitch * body_roll));
+
+    // rotate body_yaw axis by cos(pitch angle)
+    Quaternion bf_yaw_Q;
+    bf_yaw_Q.from_axis_angle(Vector3f(cpitch, 0, 0), euler_yaw_rate);
+    _attitude_target_quat = _attitude_target_quat * bf_roll_Q * bf_yaw_Q;
+
+    // calculate the attitude target euler angles
+    _attitude_target_euler_angle.x = _attitude_target_quat.get_euler_roll();
+    _attitude_target_euler_angle.y = _attitude_target_quat.get_euler_pitch();
+
+    // Set rate feedforward requests to zero
+    _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
+    _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+
+    // Compute attitude error
+    Quaternion attitude_vehicle_quat;
+    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+
+    Quaternion error_quat;
+    error_quat = attitude_vehicle_quat.inverse() * _attitude_target_quat;
+    Vector3f att_error;
+    error_quat.to_axis_angle(att_error);
+
+    // Compute the angular velocity target from the attitude error
+    _rate_target_ang_vel = update_ang_vel_target_from_att_error(att_error);
+}
+
 // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
 void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
 {
@@ -453,7 +537,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, 
     _attitude_target_ang_vel.z = input_shaping_ang_vel(_attitude_target_ang_vel.z, yaw_rate_rads, get_accel_yaw_max_radss(), _dt);
 
     // Update the unused targets attitude based on current attitude to condition mode change
-    _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(_attitude_target_quat);
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
     ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
@@ -482,9 +566,8 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
     _attitude_target_ang_vel.z = input_shaping_ang_vel(_attitude_target_ang_vel.z, yaw_rate_rads, get_accel_yaw_max_radss(), _dt);
 
     // Retrieve quaternion vehicle attitude
-    // TODO add _ahrs.get_quaternion()
     Quaternion attitude_vehicle_quat;
-    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
 
     // Update the unused targets attitude based on current attitude to condition mode change
     _attitude_target_quat = attitude_vehicle_quat*_attitude_ang_error;
@@ -535,9 +618,8 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_ste
 void AC_AttitudeControl::attitude_controller_run_quat()
 {
     // Retrieve quaternion vehicle attitude
-    // TODO add _ahrs.get_quaternion()
     Quaternion attitude_vehicle_quat;
-    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
 
     // Compute attitude error
     Vector3f attitude_error_vector;
@@ -744,9 +826,8 @@ void AC_AttitudeControl::shift_ef_yaw_target(float yaw_shift_cd)
 void AC_AttitudeControl::inertial_frame_reset()
 {
     // Retrieve quaternion vehicle attitude
-    // TODO add _ahrs.get_quaternion()
     Quaternion attitude_vehicle_quat;
-    attitude_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+    _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
 
     // Recalculate the target quaternion
     _attitude_target_quat = attitude_vehicle_quat * _attitude_ang_error;
@@ -1006,4 +1087,69 @@ float AC_AttitudeControl::max_rate_step_bf_yaw()
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
     return 2.0f*throttle_hover*AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_yaw_pid().kD())/_dt + get_rate_yaw_pid().kP());
+}
+
+bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
+                                        char *failure_msg,
+                                        const uint8_t failure_msg_len)
+{
+    // validate AC_P members:
+    const struct {
+        const char *pid_name;
+        AC_P &p;
+    } ps[] = {
+        { "ANG_PIT", get_angle_pitch_p() },
+        { "ANG_RLL", get_angle_roll_p() },
+        { "ANG_YAW", get_angle_yaw_p() }
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(ps); i++) {
+        // all AC_P's must have a positive P value:
+        if (!is_positive(ps[i].p.kP())) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, ps[i].pid_name);
+            return false;
+        }
+    }
+
+    // validate AC_PID members:
+    const struct {
+        const char *pid_name;
+        AC_PID &pid;
+    } pids[] = {
+        { "RAT_RLL", get_rate_roll_pid() },
+        { "RAT_PIT", get_rate_pitch_pid() },
+        { "RAT_YAW", get_rate_yaw_pid() },
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(pids); i++) {
+        // if the PID has a positive FF then we just ensure kP and
+        // kI aren't negative
+        AC_PID &pid = pids[i].pid;
+        const char *pid_name = pids[i].pid_name;
+        if (is_positive(pid.ff())) {
+            // kP and kI must be non-negative:
+            if (is_negative(pid.kP())) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be >= 0", param_prefix, pid_name);
+                return false;
+            }
+            if (is_negative(pid.kI())) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_I must be >= 0", param_prefix, pid_name);
+                return false;
+            }
+        } else {
+            // kP and kI must be positive:
+            if (!is_positive(pid.kP())) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, pid_name);
+                return false;
+            }
+            if (!is_positive(pid.kI())) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_I must be > 0", param_prefix, pid_name);
+                return false;
+            }
+        }
+        // never allow a negative D term (but zero is allowed)
+        if (is_negative(pid.kD())) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_D must be >= 0", param_prefix, pid_name);
+            return false;
+        }
+    }
+    return true;
 }

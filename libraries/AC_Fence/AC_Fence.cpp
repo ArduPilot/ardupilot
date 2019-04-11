@@ -1,7 +1,7 @@
-#include <AP_HAL/AP_HAL.h>
 #include "AC_Fence.h"
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
+
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -166,7 +166,7 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) ||
         (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
         Vector2f position;
-        if (AP::ahrs().get_relative_position_NE_home(position)) {
+        if (!AP::ahrs().get_relative_position_NE_home(position)) {
             fail_msg = "fence requires position";
             return false;
         }
@@ -236,6 +236,23 @@ bool AC_Fence::check_fence_alt_max()
 // check_fence_polygon - returns true if the polygon fence is freshly breached
 bool AC_Fence::check_fence_polygon()
 {
+    const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
+    const bool breached = polygon_fence_is_breached();
+    if (breached) {
+        if (!was_breached) {
+            record_breach(AC_FENCE_TYPE_POLYGON);
+            return true;
+        }
+        return false;
+    }
+    if (was_breached) {
+        clear_breach(AC_FENCE_TYPE_POLYGON);
+    }
+    return false;
+}
+
+bool AC_Fence::polygon_fence_is_breached()
+{
     if (!(_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
         // not enabled; no breach
         return false;
@@ -261,23 +278,7 @@ bool AC_Fence::check_fence_polygon()
     }
 
     position = position * 100.0f;  // m to cm
-    if (_poly_loader.boundary_breached(position, _boundary_num_points, _boundary)) {
-        // check if this is a new breach
-        if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
-            // not a new breach
-            return false;
-        }
-        // record that we have breached the polygon
-        record_breach(AC_FENCE_TYPE_POLYGON);
-        return true;
-    }
-
-    // inside boundary; clear breach if present
-    if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
-        clear_breach(AC_FENCE_TYPE_POLYGON);
-    }
-
-    return false;
+    return _poly_loader.boundary_breached(position, _boundary_num_points, _boundary);
 }
 
 bool AC_Fence::check_fence_circle()
@@ -370,7 +371,7 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
     // Altitude fence check
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {
         int32_t alt_above_home_cm;
-        if (loc.get_alt_cm(Location::ALT_FRAME_ABOVE_HOME, alt_above_home_cm)) {
+        if (loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm)) {
             if ((alt_above_home_cm * 0.01f) > _alt_max) {
                 return false;
             }
@@ -379,7 +380,7 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
 
     // Circular fence check
     if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE)) {
-        if ((get_distance_cm(AP::ahrs().get_home(), loc) * 0.01f) > _circle_radius) {
+        if (AP::ahrs().get_home().get_distance(loc) > _circle_radius) {
             return false;
         }
     }
@@ -498,7 +499,7 @@ void AC_Fence::handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
                     link.send_text(MAV_SEVERITY_WARNING, "Failed to save polygon point, too many points?");
                 } else {
                     // trigger reload of points
-                    _boundary_loaded = false;
+                    _boundary_num_points = 0;
                 }
             }
             break;
@@ -549,7 +550,9 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
         return false;
     }
     struct Location ekf_origin {};
-    AP::ahrs().get_origin(ekf_origin);
+    if (!AP::ahrs().get_origin(ekf_origin)) {
+        return false;
+    }
 
     // sanity check total
     _total = constrain_int16(_total, 0, _poly_loader.max_points());
@@ -558,11 +561,13 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
     Vector2l temp_latlon;
     for (uint16_t index=0; index<_total; index++) {
         // load boundary point as lat/lon point
-        _poly_loader.load_point_from_eeprom(index, temp_latlon);
+        if (!_poly_loader.load_point_from_eeprom(index, temp_latlon)) {
+            return false;
+        }
         // move into location structure and convert to offset from ekf origin
         temp_loc.lat = temp_latlon.x;
         temp_loc.lng = temp_latlon.y;
-        _boundary[index] = location_diff(ekf_origin, temp_loc) * 100.0f;
+        _boundary[index] = ekf_origin.get_distance_NE(temp_loc) * 100.0f;
     }
     _boundary_num_points = _total;
     _boundary_loaded = true;

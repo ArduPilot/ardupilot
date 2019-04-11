@@ -15,9 +15,8 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <StorageManager/StorageManager.h>
 
 #define AP_RALLY_WP_SIZE        15  // eeprom size of rally points
 
@@ -36,7 +35,7 @@ struct PACKED RallyLocation {
 /// @brief    Object managing Rally Points
 class AP_Rally {
 public:
-    AP_Rally(AP_AHRS &ahrs);
+    AP_Rally();
 
     /* Do not allow copies */
     AP_Rally(const AP_Rally &other) = delete;
@@ -73,15 +72,12 @@ private:
 
     static StorageAccess _storage;
 
-    // internal variables
-    const AP_AHRS& _ahrs; // used only for home position
-
     // parameters
     AP_Int8  _rally_point_total_count;
     AP_Float _rally_limit_km;
     AP_Int8  _rally_incl_home;
 
-    uint32_t _last_change_time_ms;
+    uint32_t _last_change_time_ms = 0xFFFFFFFF;
 };
 
 namespace AP {

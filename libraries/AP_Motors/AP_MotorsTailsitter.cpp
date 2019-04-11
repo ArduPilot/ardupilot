@@ -81,16 +81,13 @@ void AP_MotorsTailsitter::output_to_motors()
     if (!_flags.initialised_ok) {
         return;
     }
-    float throttle_pwm = 0.0f;
 
     switch (_spool_mode) {
         case SHUT_DOWN:
-            throttle_pwm = get_pwm_output_min();
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, get_pwm_output_min());
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, get_pwm_output_min());
             break;
         case GROUND_IDLE:
-            throttle_pwm = output_to_pwm(actuator_spin_up_to_ground_idle());
             set_actuator_with_slew(_actuator[1], actuator_spin_up_to_ground_idle());
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, output_to_pwm(actuator_spin_up_to_ground_idle()));
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, output_to_pwm(actuator_spin_up_to_ground_idle()));
@@ -98,7 +95,6 @@ void AP_MotorsTailsitter::output_to_motors()
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
-            throttle_pwm = output_to_pwm(thrust_to_actuator(_throttle));
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, output_to_pwm(thrust_to_actuator(_thrust_left)));
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, output_to_pwm(thrust_to_actuator(_thrust_right)));
             break;
@@ -108,11 +104,6 @@ void AP_MotorsTailsitter::output_to_motors()
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, _tilt_left*SERVO_OUTPUT_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, _tilt_right*SERVO_OUTPUT_RANGE);
 
-    // plane outputs for Qmodes are setup here, and written to the HAL by the plane servos loop
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, -_yaw_in*SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, _pitch_in*SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, _roll_in*SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, throttle_pwm);
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)

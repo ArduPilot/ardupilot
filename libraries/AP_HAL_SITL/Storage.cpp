@@ -121,7 +121,7 @@ void Storage::_timer_tick(void)
 
 #if STORAGE_USE_POSIX
     if (using_filesystem && log_fd != -1) {
-        uint32_t offset = STORAGE_LINE_SIZE*i;
+        const off_t offset = STORAGE_LINE_SIZE*i;
         if (lseek(log_fd, offset, SEEK_SET) != offset) {
             return;
         }

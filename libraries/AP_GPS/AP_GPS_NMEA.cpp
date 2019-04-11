@@ -50,13 +50,6 @@ extern const AP_HAL::HAL& hal;
 #define DIGIT_TO_VAL(_x)        (_x - '0')
 #define hexdigit(x) ((x)>9?'A'+((x)-10):'0'+(x))
 
-AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
-{
-    // this guarantees that _term is always null terminated
-    memset(_term, 0, sizeof(_term));
-}
-
 bool AP_GPS_NMEA::read(void)
 {
     int16_t numc;

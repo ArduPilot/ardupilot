@@ -186,7 +186,7 @@ public:
         k_param_imu = 130,  // unused
         k_param_altitude_mix, // deprecated
 
-        k_param_compass_enabled,
+        k_param_compass_enabled_deprecated,
         k_param_compass,
         k_param_battery_monitoring, // unused
         k_param_volt_div_ratio,     // unused
@@ -461,7 +461,6 @@ public:
     AP_Int8  hil_mode;
 #endif
 
-    AP_Int8 compass_enabled;
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;
     AP_Int8 flap_2_percent;
@@ -551,14 +550,17 @@ public:
 #endif // ENABLE_SCRIPTING
 
     AP_Int8 takeoff_throttle_accel_count;
+    AP_Int8 takeoff_timeout;
 
 #if LANDING_GEAR_ENABLED == ENABLED
     AP_LandingGear landing_gear;
 #endif
 
     // crow flaps weighting
-    AP_Int8 crow_flap_weight1;
-    AP_Int8 crow_flap_weight2;
+    AP_Int8 crow_flap_weight_outer;
+    AP_Int8 crow_flap_weight_inner;
+    AP_Int8 crow_flap_options;
+    AP_Int8 crow_flap_aileron_matching;
 };
 
 extern const AP_Param::Info var_info[];

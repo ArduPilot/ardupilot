@@ -6,6 +6,7 @@ The init_ardupilot function processes everything we need for an in - air restart
 *****************************************************************************/
 
 #include "Rover.h"
+#include <AP_Common/AP_FWVersion.h>
 
 static void mavlink_delay_cb_static()
 {
@@ -26,8 +27,6 @@ void Rover::init_ardupilot()
                         "\n\nFree RAM: %u\n",
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
-
-    init_capabilities();
 
     //
     // Check the EEPROM format version before loading any parameters from EEPROM.
@@ -82,14 +81,6 @@ void Rover::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
-    // setup frsky telemetry
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init((is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
-#endif
-#if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.init();
-#endif
-
 #if OSD_ENABLED == ENABLED
     osd.init();
 #endif
@@ -99,10 +90,10 @@ void Rover::init_ardupilot()
 #endif
 
     // initialise compass
-    init_compass();
+    AP::compass().init();
 
     // initialise rangefinder
-    rangefinder.init();
+    rangefinder.init(ROTATION_NONE);
 
     // init proximity sensor
     init_proximity();
@@ -123,7 +114,7 @@ void Rover::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    set_control_channels();  // setup radio channels and ouputs ranges
+    set_control_channels();  // setup radio channels and outputs ranges
     init_rc_in();            // sets up rc channels deadzone
     g2.motors.init();        // init motors including setting servo out channels ranges
     SRV_Channels::enable_aux_servos();
@@ -198,6 +189,12 @@ void Rover::startup_ground(void)
         );
 #endif
 
+#ifdef ENABLE_SCRIPTING
+    if (!g2.scripting.init()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
+    }
+#endif // ENABLE_SCRIPTING
+
     // we don't want writes to the serial port to cause us to pause
     // so set serial ports non-blocking once we are ready to drive
     serial_manager.set_blocking_writes_all(false);
@@ -244,7 +241,8 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     Mode &old_mode = *control_mode;
     if (!new_mode.enter()) {
         // Log error that we failed to enter desired flight mode
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE, new_mode.mode_number());
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE,
+                                 LogErrorCode(new_mode.mode_number()));
         gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
         return false;
     }
@@ -255,13 +253,6 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
     // but it should be harmless to disable the fence temporarily in these situations as well
     g2.fence.manual_recovery_start();
-
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.update_control_mode(control_mode->mode_number());
-#endif
-#if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.update_control_mode(control_mode->mode_number());
-#endif
 
 #if CAMERA == ENABLED
     camera.set_is_auto_mode(control_mode->mode_number() == Mode::Number::AUTO);
@@ -282,7 +273,7 @@ void Rover::startup_INS_ground(void)
     hal.scheduler->delay(100);
 
     ahrs.init();
-    // say to EKF that rover only move by goind forward
+    // say to EKF that rover only move by going forward
     ahrs.set_fly_forward(true);
     ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 
@@ -293,12 +284,13 @@ void Rover::startup_INS_ground(void)
 // update notify with mode change
 void Rover::notify_mode(const Mode *mode)
 {
+    AP_Notify::flags.autopilot_mode = mode->is_autopilot_mode();
     notify.flags.flight_mode = mode->mode_number();
     notify.set_flight_mode_str(mode->name4());
 }
 
 /*
-  check a digitial pin for high,low (1/0)
+  check a digital pin for high,low (1/0)
  */
 uint8_t Rover::check_digital_pin(uint8_t pin)
 {
@@ -331,7 +323,7 @@ void Rover::change_arm_state(void)
 /*
   arm motors
  */
-bool Rover::arm_motors(AP_Arming::ArmingMethod method)
+bool Rover::arm_motors(AP_Arming::Method method)
 {
     if (!arming.arm(method)) {
         AP_Notify::events.arming_failed = true;

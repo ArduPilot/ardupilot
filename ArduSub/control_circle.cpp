@@ -43,8 +43,8 @@ void Sub::circle_run()
         // To-Do: add some initialisation of position controllers
         motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
         pos_control.set_alt_target_to_current_alt();
         return;
     }

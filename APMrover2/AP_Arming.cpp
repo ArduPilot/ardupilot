@@ -42,6 +42,18 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Rover::gps_checks(bool display_failure)
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    // always check if inertial nav has started and is ready
+    if (!ahrs.prearm_healthy()) {
+        const char *reason = ahrs.prearm_failure_reason();
+        if (reason == nullptr) {
+            reason = "AHRS not healthy";
+        }
+        check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
+        return false;
+    }
+
     if (!rover.control_mode->requires_position() && !rover.control_mode->requires_velocity()) {
         // we don't care!
         return true;
@@ -49,15 +61,13 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
     // check for ekf failsafe
     if (rover.failsafe.ekf) {
-        if (display_failure) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: EKF failsafe");
-        }
+        check_failed(ARMING_CHECK_NONE, display_failure, "EKF failsafe");
         return false;
     }
 
     // ensure position esetimate is ok
     if (!rover.ekf_position_ok()) {
-        const char *reason = AP::ahrs().prearm_failure_reason();
+        const char *reason = ahrs.prearm_failure_reason();
         if (reason == nullptr) {
             reason = "Need Position Estimate";
         }
@@ -71,23 +81,15 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
 bool AP_Arming_Rover::pre_arm_checks(bool report)
 {
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(ARMING_CHECK_NONE, report, "Motors Emergency Stopped");
+        return false;
+    }
+
     return (AP_Arming::pre_arm_checks(report)
             & rover.g2.motors.pre_arm_check(report)
             & fence_checks(report)
             & proximity_check(report));
-}
-
-bool AP_Arming_Rover::fence_checks(bool report)
-{
-    // check fence is initialised
-    const char *fail_msg = nullptr;
-    if (!rover.g2.fence.pre_arm_check(fail_msg)) {
-        if (report && fail_msg != nullptr) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Fence : %s", fail_msg);
-        }
-        return false;
-    }
-    return true;
 }
 
 // check nothing is too close to vehicle
@@ -100,9 +102,7 @@ bool AP_Arming_Rover::proximity_check(bool report)
 
     // return false if proximity sensor unhealthy
     if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
-        if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
-        }
+        check_failed(ARMING_CHECK_NONE, report, "check proximity sensor");
         return false;
     }
 

@@ -2,6 +2,8 @@
 
 #include "LoggerMessageWriter.h"
 
+#include <AP_InternalError/AP_InternalError.h>
+
 extern const AP_HAL::HAL& hal;
 
 AP_Logger_Backend::AP_Logger_Backend(AP_Logger &front,
@@ -9,7 +11,7 @@ AP_Logger_Backend::AP_Logger_Backend(AP_Logger &front,
     _front(front),
     _startup_messagewriter(writer)
 {
-    writer->set_dataflash_backend(this);
+    writer->set_logger_backend(this);
 }
 
 uint8_t AP_Logger_Backend::num_types() const
@@ -74,13 +76,6 @@ void AP_Logger_Backend::start_new_log_reset_variables()
 {
     _startup_messagewriter->reset();
     _front.backend_starting_new_log(this);
-}
-
-void AP_Logger_Backend::internal_error() {
-    _internal_errors++;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    abort();
-#endif
 }
 
 // this method can be overridden to do extra things with your buffer.
@@ -164,7 +159,7 @@ bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
         // this is a bug; we've been asked to write out the FMT
         // message for a msg_type, but the frontend can't supply the
         // required information
-        internal_error();
+        AP::internalerror().error(AP_InternalError::error_t::logger_missing_logstructure);
         return false;
     }
 
@@ -194,8 +189,7 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
         }
     }
     if (fmt == nullptr) {
-        // this is a bug.
-        internal_error();
+        AP::internalerror().error(AP_InternalError::error_t::logger_logwrite_missingfmt);
         return false;
     }
     if (bufferspace_available() < msg_len) {
@@ -438,6 +432,6 @@ bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
 void AP_Logger_Backend::Write_Rally()
 {
     LoggerMessageWriter_WriteAllRallyPoints writer;
-    writer.set_dataflash_backend(this);
+    writer.set_logger_backend(this);
     writer.process();
 }

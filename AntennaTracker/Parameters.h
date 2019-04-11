@@ -48,7 +48,7 @@ public:
         k_param_serial0_baud,       // deprecated
         k_param_serial1_baud,       // deprecated
         k_param_imu,
-        k_param_compass_enabled,
+        k_param_compass_enabled_deprecated,
         k_param_compass,
         k_param_ahrs,  // AHRS group
         k_param_barometer,
@@ -69,7 +69,7 @@ public:
         k_param_startup_delay,
         k_param_BoardConfig,
         k_param_gps,
-        k_param_scan_speed,
+        k_param_scan_speed_unused, // deprecated
         k_param_proxy_mode_unused, // deprecated
         k_param_servo_pitch_type,
         k_param_onoff_yaw_rate,
@@ -108,12 +108,18 @@ public:
         k_param_rc_channels,
         k_param_servo_channels,
 
+        k_param_scripting = 219,
+
         //
         // 220: Waypoint data
         //
         k_param_command_total = 220,
 
         // 254,255: reserved
+        k_param_gcs_pid_mask = 225,
+        k_param_scan_speed_yaw,
+        k_param_scan_speed_pitch,
+        k_param_initial_mode
     };
 
     AP_Int16 format_version;
@@ -124,12 +130,11 @@ public:
     AP_Int16 sysid_my_gcs;
     AP_Int16 sysid_target;
 
-    AP_Int8 compass_enabled;
-
     AP_Float yaw_slew_time;
     AP_Float pitch_slew_time;
     AP_Float min_reverse_time;
-    AP_Float scan_speed;
+    AP_Int16 scan_speed_yaw;
+    AP_Int16 scan_speed_pitch;
 
     AP_Float start_latitude;
     AP_Float start_longitude;
@@ -149,6 +154,8 @@ public:
     AP_Int16 distance_min;          // target's must be at least this distance from tracker to be tracked
     AP_Int16 pitch_min;
     AP_Int16 pitch_max;
+    AP_Int16 gcs_pid_mask;
+    AP_Int8  initial_mode;
 
     // Waypoints
     //

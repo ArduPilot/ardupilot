@@ -130,11 +130,11 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         if (motors.armed()) {
             init_disarm_motors();
         } else {
-            init_arm_motors(AP_Arming::ArmingMethod::MAVLINK);
+            init_arm_motors(AP_Arming::Method::MAVLINK);
         }
         break;
     case JSButton::button_function_t::k_arm:
-        init_arm_motors(AP_Arming::ArmingMethod::MAVLINK);
+        init_arm_motors(AP_Arming::Method::MAVLINK);
         break;
     case JSButton::button_function_t::k_disarm:
         init_disarm_motors();

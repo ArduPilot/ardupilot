@@ -87,7 +87,7 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 #endif
     } else {
         // Log error that we failed to enter desired flight mode
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
     }
 
     // return success or failure

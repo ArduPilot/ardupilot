@@ -32,4 +32,5 @@ private:
     AP_HAL::UARTDriver *uart = nullptr;
     char linebuf[10];
     uint8_t linebuf_len = 0;
+    uint32_t last_init_ms;
 };

@@ -54,7 +54,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200),
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200),
     SCHED_TASK_CLASS(AP_WindVane,         &rover.g2.windvane,      update,         20,  100),
-    SCHED_TASK(update_visual_odom,     50,    200),
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    SCHED_TASK_CLASS(AP_VisualOdom,       &rover.g2.visual_odom,   update,         50,  200),
+#endif
     SCHED_TASK(update_wheel_encoder,   50,    200),
     SCHED_TASK(update_compass,         10,    200),
     SCHED_TASK(update_mission,         50,    200),
@@ -204,20 +206,6 @@ void Rover::gcs_failsafe_check(void)
 }
 
 /*
-  check for new compass data - 10Hz
- */
-void Rover::update_compass(void)
-{
-    if (g.compass_enabled && compass.read()) {
-        ahrs.set_compass(&compass);
-        // update offsets
-        if (should_log(MASK_LOG_COMPASS)) {
-            logger.Write_Compass();
-        }
-    }
-}
-
-/*
   log some key data - 10Hz
  */
 void Rover::update_logging1(void)
@@ -270,7 +258,7 @@ void Rover::one_second_loop(void)
     gcs().send_message(MSG_HEARTBEAT);
 
     // allow orientation change at runtime to aid config
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     set_control_channels();
 
@@ -280,7 +268,8 @@ void Rover::one_second_loop(void)
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
-    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::Required::NO;
+    AP_Notify::flags.flying = hal.util->get_soft_armed();
 
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
@@ -297,7 +286,7 @@ void Rover::one_second_loop(void)
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    update_sensor_status_flags();
+    gcs().update_sensor_status_flags();
 
     // need to set "likely flying" when armed to allow for compass
     // learning to run
@@ -318,7 +307,23 @@ void Rover::update_GPS(void)
 
 void Rover::update_current_mode(void)
 {
+    // check for emergency stop
+    if (SRV_Channels::get_emergency_stop()) {
+        // relax controllers, motor stopping done at output level
+        g2.attitude_control.relax_I();
+    }
+
     control_mode->update();
+}
+
+// update mission including starting or stopping commands. called by scheduler at 10Hz
+void Rover::update_mission(void)
+{
+    if (control_mode == &mode_auto) {
+        if (ahrs.home_is_set() && mode_auto.mission.num_commands() > 1) {
+            mode_auto.mission.update();
+        }
+    }
 }
 
 AP_HAL_MAIN_CALLBACKS(&rover);

@@ -38,6 +38,7 @@
  *
  */
 #include "AP_SBusOut.h"
+#include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
 

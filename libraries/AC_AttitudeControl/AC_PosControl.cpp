@@ -827,7 +827,6 @@ float AC_PosControl::time_since_last_xy_update() const
     return (now_us - _last_update_xy_us) * 1.0e-6f;
 }
 
-// write log to dataflash
 void AC_PosControl::write_log()
 {
     const Vector3f &pos_target = get_pos_target();
@@ -838,21 +837,24 @@ void AC_PosControl::write_log()
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-    AP::logger().Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
-                                           "smmmmnnnnoooo", "FBBBBBBBBBBBB", "Qffffffffffff",
-                                           AP_HAL::micros64(),
-                                           (double)pos_target.x,
-                                           (double)pos_target.y,
-                                           (double)position.x,
-                                           (double)position.y,
-                                           (double)vel_target.x,
-                                           (double)vel_target.y,
-                                           (double)velocity.x,
-                                           (double)velocity.y,
-                                           (double)accel_target.x,
-                                           (double)accel_target.y,
-                                           (double)accel_x,
-                                           (double)accel_y);
+    AP::logger().Write("PSC",
+                       "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
+                       "smmmmnnnnoooo",
+                       "F000000000000",
+                       "Qffffffffffff",
+                       AP_HAL::micros64(),
+                       double(pos_target.x * 0.01f),
+                       double(pos_target.y * 0.01f),
+                       double(position.x * 0.01f),
+                       double(position.y * 0.01f),
+                       double(vel_target.x * 0.01f),
+                       double(vel_target.y * 0.01f),
+                       double(velocity.x * 0.01f),
+                       double(velocity.y * 0.01f),
+                       double(accel_target.x * 0.01f),
+                       double(accel_target.y * 0.01f),
+                       double(accel_x * 0.01f),
+                       double(accel_y * 0.01f));
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
@@ -1218,4 +1220,38 @@ Vector3f AC_PosControl::sqrt_controller(const Vector3f& error, float p, float se
     } else {
         return Vector3f(error.x*p, error.y*p, error.z);
     }
+}
+
+bool AC_PosControl::pre_arm_checks(const char *param_prefix,
+                                   char *failure_msg,
+                                   const uint8_t failure_msg_len)
+{
+    // validate AC_P members:
+    const struct {
+        const char *pid_name;
+        AC_P &p;
+    } ps[] = {
+        { "POSXY", get_pos_xy_p() },
+        { "POSZ", get_pos_z_p() },
+        { "VELZ", get_vel_z_p() },
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(ps); i++) {
+        // all AC_P's must have a positive P value:
+        if (!is_positive(ps[i].p.kP())) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s_%s_P must be > 0", param_prefix, ps[i].pid_name);
+            return false;
+        }
+    }
+
+    // the z-control PID doesn't use FF, so P and I must be positive
+    if (!is_positive(get_accel_z_pid().kP())) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ACCZ_P must be > 0", param_prefix);
+        return false;
+    }
+    if (!is_positive(get_accel_z_pid().kI())) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ACCZ_I must be > 0", param_prefix);
+        return false;
+    }
+
+    return true;
 }

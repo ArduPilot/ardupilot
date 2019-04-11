@@ -11,6 +11,7 @@
 /Tools/autotest/jsb_sim/rascal_test.xml
 /Tools/autotest/jsbsim_fgout_0.xml
 /Tools/autotest/jsbsim_start_0.xml
+/Tools/autotest/rover-ch7_mission.txt
 /tmp/*
 *.bin
 *.d
@@ -109,4 +110,6 @@ parameters.edn
 .idea/*
 # CMake
 cmake-build-*/
+/reports/
+/GCOV_*.log
 

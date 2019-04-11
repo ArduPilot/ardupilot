@@ -21,7 +21,7 @@ bool ModeLoiter::_enter()
 void ModeLoiter::update()
 {
     // get distance (in meters) to destination
-    _distance_to_destination = get_distance(rover.current_loc, _destination);
+    _distance_to_destination = rover.current_loc.get_distance(_destination);
 
     // if within loiter radius slew desired speed towards zero and use existing desired heading
     if (_distance_to_destination <= g2.loit_radius) {
@@ -35,7 +35,7 @@ void ModeLoiter::update()
         _desired_speed = MIN((_distance_to_destination - g2.loit_radius) * 0.5f, g.speed_cruise);
 
         // calculate bearing to destination
-        _desired_yaw_cd = get_bearing_cd(rover.current_loc, _destination);
+        _desired_yaw_cd = rover.current_loc.get_bearing_to(_destination);
         _yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
         // if destination is behind vehicle, reverse towards it
         if (fabsf(_yaw_error_cd) > 9000 && g2.loit_type == 0) {

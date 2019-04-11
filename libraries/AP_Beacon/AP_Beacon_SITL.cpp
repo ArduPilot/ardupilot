@@ -66,14 +66,14 @@ void AP_Beacon_SITL::update(void)
 
     // truth location of the flight vehicle
     Location current_loc;
-    current_loc.lat = sitl->state.latitude * 1.0e7;
-    current_loc.lng = sitl->state.longitude * 1.0e7;
+    current_loc.lat = sitl->state.latitude * 1.0e7f;
+    current_loc.lng = sitl->state.longitude * 1.0e7f;
     current_loc.alt = sitl->state.altitude * 1.0e2;
 
     // where the beacon system origin is located
     Location beacon_origin;
-    beacon_origin.lat = get_beacon_origin_lat() * 1.0e7;
-    beacon_origin.lng = get_beacon_origin_lon() * 1.0e7;
+    beacon_origin.lat = get_beacon_origin_lat() * 1.0e7f;
+    beacon_origin.lng = get_beacon_origin_lon() * 1.0e7f;
     beacon_origin.alt = get_beacon_origin_alt() * 1.0e2;
 
     // position of each beacon
@@ -81,27 +81,27 @@ void AP_Beacon_SITL::update(void)
     switch (beacon_id) {
     case 0:
         // NE corner
-        location_offset(beacon_loc, ORIGIN_OFFSET_NORTH + BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST + BEACON_SPACING_EAST/2);
+        beacon_loc.offset(ORIGIN_OFFSET_NORTH + BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST + BEACON_SPACING_EAST/2);
         break;
     case 1:
         // SE corner
-        location_offset(beacon_loc, ORIGIN_OFFSET_NORTH - BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST + BEACON_SPACING_EAST/2);
+        beacon_loc.offset(ORIGIN_OFFSET_NORTH - BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST + BEACON_SPACING_EAST/2);
         break;
     case 2:
         // SW corner
-        location_offset(beacon_loc, ORIGIN_OFFSET_NORTH - BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST - BEACON_SPACING_EAST/2);
+        beacon_loc.offset(ORIGIN_OFFSET_NORTH - BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST - BEACON_SPACING_EAST/2);
         break;
     case 3:
         // NW corner
-        location_offset(beacon_loc, ORIGIN_OFFSET_NORTH + BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST - BEACON_SPACING_EAST/2);
+        beacon_loc.offset(ORIGIN_OFFSET_NORTH + BEACON_SPACING_NORTH/2, ORIGIN_OFFSET_EAST - BEACON_SPACING_EAST/2);
         break;
     }
 
-    Vector2f beac_diff = location_diff(beacon_origin, beacon_loc);
-    Vector2f veh_diff = location_diff(beacon_origin, current_loc);
+    const Vector2f beac_diff = beacon_origin.get_distance_NE(beacon_loc);
+    const Vector2f veh_diff = beacon_origin.get_distance_NE(current_loc);
 
-    Vector3f veh_pos3d(veh_diff.x, veh_diff.y, (current_loc.alt - beacon_origin.alt)*1.0e-2);
-    Vector3f beac_pos3d(beac_diff.x, beac_diff.y, (beacon_origin.alt - beacon_loc.alt)*1.0e-2);
+    Vector3f veh_pos3d(veh_diff.x, veh_diff.y, (current_loc.alt - beacon_origin.alt)*1.0e-2f);
+    Vector3f beac_pos3d(beac_diff.x, beac_diff.y, (beacon_origin.alt - beacon_loc.alt)*1.0e-2f);
     Vector3f beac_veh_offset = veh_pos3d - beac_pos3d;
 
     set_beacon_position(beacon_id, beac_pos3d);

@@ -186,7 +186,8 @@ struct PACKED log_Sonar {
     float correction;
 };
 
-// Write a sonar packet
+// Write a sonar packet.  Note that RFND log messages are written by
+// RangeFinder itself as part of update().
 void Plane::Log_Write_Sonar()
 {
     uint16_t distance = 0;
@@ -203,8 +204,6 @@ void Plane::Log_Write_Sonar()
         correction  : rangefinder_state.correction
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
-
-    logger.Write_RFND(rangefinder);
 }
 
 struct PACKED log_Arm_Disarm {
@@ -255,7 +254,7 @@ void Plane::Log_Write_RC(void)
     logger.Write_RCIN();
     logger.Write_RCOUT();
     if (rssi.enabled()) {
-        logger.Write_RSSI(rssi);
+        logger.Write_RSSI();
     }
     Log_Write_AETR();
 }
@@ -299,7 +298,7 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-    logger.Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }

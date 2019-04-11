@@ -23,44 +23,11 @@
 #include <stdlib.h>
 #include "AP_Math.h"
 #include "location.h"
-#include "AP_Common/Location.h"
-
-float longitude_scale(const struct Location &loc)
-{
-    float scale = cosf(loc.lat * (1.0e-7f * DEG_TO_RAD));
-    return constrain_float(scale, 0.01f, 1.0f);
-}
-
-
-
-// return distance in meters between two locations
-float get_distance(const struct Location &loc1, const struct Location &loc2)
-{
-    float dlat              = (float)(loc2.lat - loc1.lat);
-    float dlong             = ((float)(loc2.lng - loc1.lng)) * longitude_scale(loc2);
-    return norm(dlat, dlong) * LOCATION_SCALING_FACTOR;
-}
-
-// return distance in centimeters to between two locations
-uint32_t get_distance_cm(const struct Location &loc1, const struct Location &loc2)
-{
-    return get_distance(loc1, loc2) * 100;
-}
 
 // return horizontal distance between two positions in cm
 float get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
 {
     return norm(destination.x-origin.x,destination.y-origin.y);
-}
-
-// return bearing in centi-degrees between two locations
-int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
-{
-    int32_t off_x = loc2.lng - loc1.lng;
-    int32_t off_y = (loc2.lat - loc1.lat) / longitude_scale(loc2);
-    int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
-    if (bearing < 0) bearing += 36000;
-    return bearing;
 }
 
 // return bearing in centi-degrees between two positions
@@ -96,8 +63,8 @@ float location_path_proportion(const struct Location &location,
                                const struct Location &point1,
                                const struct Location &point2)
 {
-    Vector2f vec1 = location_diff(point1, point2);
-    Vector2f vec2 = location_diff(point1, location);
+    const Vector2f vec1 = point1.get_distance_NE(point2);
+    const Vector2f vec2 = point1.get_distance_NE(location);
     float dsquared = sq(vec1.x) + sq(vec1.y);
     if (dsquared < 0.001f) {
         // the two points are very close together
@@ -106,111 +73,11 @@ float location_path_proportion(const struct Location &location,
     return (vec1 * vec2) / dsquared;
 }
 
-/*
- *  extrapolate latitude/longitude given bearing and distance
- * Note that this function is accurate to about 1mm at a distance of 
- * 100m. This function has the advantage that it works in relative
- * positions, so it keeps the accuracy even when dealing with small
- * distances and floating point numbers
- */
-void location_update(struct Location &loc, float bearing, float distance)
-{
-    float ofs_north = cosf(radians(bearing))*distance;
-    float ofs_east  = sinf(radians(bearing))*distance;
-    location_offset(loc, ofs_north, ofs_east);
-}
 
-/*
- *  extrapolate latitude/longitude given distances north and east
- */
-void location_offset(struct Location &loc, float ofs_north, float ofs_east)
-{
-    if (!is_zero(ofs_north) || !is_zero(ofs_east)) {
-        int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
-        int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(loc);
-        loc.lat += dlat;
-        loc.lng += dlng;
-    }
-}
 
-/*
-  return the distance in meters in North/East plane as a N/E vector
-  from loc1 to loc2
- */
-Vector2f location_diff(const struct Location &loc1, const struct Location &loc2)
-{
-    return Vector2f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
-                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * longitude_scale(loc1));
-}
 
-/*
-  return the distance in meters in North/East/Down plane as a N/E/D vector
-  from loc1 to loc2
- */
-Vector3f location_3d_diff_NED(const struct Location &loc1, const struct Location &loc2)
-{
-    return Vector3f((loc2.lat - loc1.lat) * LOCATION_SCALING_FACTOR,
-                    (loc2.lng - loc1.lng) * LOCATION_SCALING_FACTOR * longitude_scale(loc1),
-                    (loc1.alt - loc2.alt) * 0.01f);
-}
 
-/*
-  return true if lat and lng match. Ignores altitude and options
- */
-bool locations_are_same(const struct Location &loc1, const struct Location &loc2) {
-    return (loc1.lat == loc2.lat) && (loc1.lng == loc2.lng);
-}
 
-/*
- * convert invalid waypoint with useful data. return true if location changed
- */
-bool location_sanitize(const struct Location &defaultLoc, struct Location &loc)
-{
-    bool has_changed = false;
-    // convert lat/lng=0 to mean current point
-    if (loc.lat == 0 && loc.lng == 0) {
-        loc.lat = defaultLoc.lat;
-        loc.lng = defaultLoc.lng;
-        has_changed = true;
-    }
-
-    // convert relative alt=0 to mean current alt
-    if (loc.alt == 0 && loc.relative_alt) {
-        loc.relative_alt = false;
-        loc.alt = defaultLoc.alt;
-        has_changed = true;
-    }
-
-    // limit lat/lng to appropriate ranges
-    if (!check_latlng(loc)) {
-        loc.lat = defaultLoc.lat;
-        loc.lng = defaultLoc.lng;
-        has_changed = true;
-    }
-
-    return has_changed;
-}
-
-/*
-  print a int32_t lat/long in decimal degrees
- */
-void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
-{
-    int32_t dec_portion, frac_portion;
-    int32_t abs_lat_or_lon = labs(lat_or_lon);
-
-    // extract decimal portion (special handling of negative numbers to ensure we round towards zero)
-    dec_portion = abs_lat_or_lon / 10000000UL;
-
-    // extract fractional portion
-    frac_portion = abs_lat_or_lon - dec_portion*10000000UL;
-
-    // print output including the minus sign
-    if( lat_or_lon < 0 ) {
-        s->printf("-");
-    }
-    s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
-}
 
 // return true when lat and lng are within range
 bool check_lat(float lat)
@@ -237,7 +104,4 @@ bool check_latlng(int32_t lat, int32_t lng)
 {
     return check_lat(lat) && check_lng(lng);
 }
-bool check_latlng(Location loc)
-{
-    return check_lat(loc.lat) && check_lng(loc.lng);
-}
+

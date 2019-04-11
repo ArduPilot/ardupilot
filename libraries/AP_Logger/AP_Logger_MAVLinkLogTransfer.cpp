@@ -66,6 +66,8 @@ void AP_Logger::handle_log_message(GCS_MAVLINK &link, mavlink_message_t *msg)
  */
 void AP_Logger::handle_log_request_list(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
+    WITH_SEMAPHORE(_log_send_sem);
+
     if (_log_sending_link != nullptr) {
         link.send_text(MAV_SEVERITY_INFO, "Log download in progress");
         return;
@@ -102,6 +104,8 @@ void AP_Logger::handle_log_request_list(GCS_MAVLINK &link, mavlink_message_t *ms
  */
 void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
+    WITH_SEMAPHORE(_log_send_sem);
+
     if (_log_sending_link != nullptr) {
         // some GCS (e.g. MAVProxy) attempt to stream request_data
         // messages when they're filling gaps in the downloaded logs.
@@ -167,6 +171,7 @@ void AP_Logger::handle_log_request_erase(GCS_MAVLINK &link, mavlink_message_t *m
  */
 void AP_Logger::handle_log_request_end(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
+    WITH_SEMAPHORE(_log_send_sem);
     mavlink_log_request_end_t packet;
     mavlink_msg_log_request_end_decode(msg, &packet);
 
@@ -179,6 +184,8 @@ void AP_Logger::handle_log_request_end(GCS_MAVLINK &link, mavlink_message_t *msg
  */
 void AP_Logger::handle_log_send()
 {
+    WITH_SEMAPHORE(_log_send_sem);
+
     if (_log_sending_link == nullptr) {
         return;
     }
@@ -200,6 +207,8 @@ void AP_Logger::handle_log_send()
 
 void AP_Logger::handle_log_sending()
 {
+    WITH_SEMAPHORE(_log_send_sem);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // assume USB speeds in SITL for the purposes of log download
     const uint8_t num_sends = 40;
@@ -233,6 +242,8 @@ void AP_Logger::handle_log_sending()
  */
 void AP_Logger::handle_log_send_listing()
 {
+    WITH_SEMAPHORE(_log_send_sem);
+
     if (!HAVE_PAYLOAD_SPACE(_log_sending_link->get_chan(), LOG_ENTRY)) {
         // no space
         return;
@@ -268,6 +279,8 @@ void AP_Logger::handle_log_send_listing()
  */
 bool AP_Logger::handle_log_send_data()
 {
+    WITH_SEMAPHORE(_log_send_sem);
+
     if (!HAVE_PAYLOAD_SPACE(_log_sending_link->get_chan(), LOG_DATA)) {
         // no space
         return false;

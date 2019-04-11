@@ -16,6 +16,7 @@
  */
 
 #include "GCS.h"
+#include <AP_Rally/AP_Rally.h>
 
 void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
 {

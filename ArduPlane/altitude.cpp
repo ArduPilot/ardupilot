@@ -27,8 +27,8 @@ void Plane::adjust_altitude_target()
 {
     Location target_location;
 
-    if (control_mode == FLY_BY_WIRE_B ||
-        control_mode == CRUISE) {
+    if (control_mode == &mode_fbwb ||
+        control_mode == &mode_cruise) {
         return;
     }
     if (landing.is_flaring()) {
@@ -65,7 +65,7 @@ void Plane::setup_glide_slope(void)
 {
     // establish the distance we are travelling to the next waypoint,
     // for calculating out rate of change of altitude
-    auto_state.wp_distance = get_distance(current_loc, next_WP_loc);
+    auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
     auto_state.wp_proportion = location_path_proportion(current_loc, 
                                                         prev_WP_loc, next_WP_loc);
     SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
@@ -75,10 +75,10 @@ void Plane::setup_glide_slope(void)
       work out if we will gradually change altitude, or try to get to
       the new altitude as quickly as possible.
      */
-    switch (control_mode) {
-    case RTL:
-    case AVOID_ADSB:
-    case GUIDED:
+    switch (control_mode->mode_number()) {
+    case Mode::Number::RTL:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
         /* glide down slowly if above target altitude, but ascend more
            rapidly if below it. See
            https://github.com/ArduPilot/ardupilot/issues/39
@@ -90,7 +90,7 @@ void Plane::setup_glide_slope(void)
         }
         break;
 
-    case AUTO:
+    case Mode::Number::AUTO:
         // we only do glide slide handling in AUTO when above 20m or
         // when descending. The 20 meter threshold is arbitrary, and
         // is basically to prevent situations where we try to slowly
@@ -137,6 +137,16 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         return altitude;
     }
 #endif
+
+    if (quadplane.in_vtol_land_descent() &&
+        !(quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)) {
+        // when doing a VTOL landing we can use the waypoint height as
+        // ground height. We can't do this if using the
+        // LAND_FW_APPROACH as that uses the wp height as the approach
+        // height
+        return height_above_target();
+    }
+
     return relative_altitude;
 }
 
@@ -456,7 +466,7 @@ int32_t Plane::adjusted_relative_altitude_cm(void)
 float Plane::mission_alt_offset(void)
 {
     float ret = g.alt_offset;
-    if (control_mode == AUTO &&
+    if (control_mode == &mode_auto &&
             (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND || auto_state.wp_is_land_approach)) {
         // when landing after an aborted landing due to too high glide
         // slope we use an offset from the last landing attempt
@@ -496,7 +506,7 @@ float Plane::lookahead_adjustment(void)
     int32_t bearing_cd;
     int16_t distance;
     // work out distance and bearing to target
-    if (control_mode == FLY_BY_WIRE_B) {
+    if (control_mode == &mode_fbwb) {
         // there is no target waypoint in FBWB, so use yaw as an approximation
         bearing_cd = ahrs.yaw_sensor;
         distance = g.terrain_lookahead;
@@ -601,9 +611,9 @@ void Plane::rangefinder_height_update(void)
             rangefinder_state.in_range = true;
             if (!rangefinder_state.in_use &&
                 (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
-                 control_mode == QLAND ||
-                 control_mode == QRTL ||
-                 (control_mode == AUTO && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) &&
+                 control_mode == &mode_qland ||
+                 control_mode == &mode_qrtl ||
+                 (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);

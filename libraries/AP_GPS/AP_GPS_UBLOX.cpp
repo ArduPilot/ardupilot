@@ -480,7 +480,7 @@ AP_GPS_UBLOX::read(void)
 // Private Methods /////////////////////////////////////////////////////////////
 void AP_GPS_UBLOX::log_mon_hw(void)
 {
-    if (!should_df_log()) {
+    if (!should_log()) {
         return;
     }
     struct log_Ubx1 pkt = {
@@ -504,7 +504,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
 
 void AP_GPS_UBLOX::log_mon_hw2(void)
 {
-    if (!should_df_log()) {
+    if (!should_log()) {
         return;
     }
 
@@ -523,7 +523,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
 #if UBLOX_RXM_RAW_LOGGING
 void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 {
-    if (!should_df_log()) {
+    if (!should_log()) {
         return;
     }
 
@@ -549,7 +549,7 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 
 void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 {
-    if (!should_df_log()) {
+    if (!should_log()) {
         return;
     }
 
@@ -1335,8 +1335,10 @@ static const char *reasons[] = {"navigation rate",
                                 "navigation settings",
                                 "GNSS settings",
                                 "SBAS settings",
-                                "PVT rate"};
+                                "PVT rate",
+                                "time pulse settings"};
 
+static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 
 void
 AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {

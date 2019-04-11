@@ -21,9 +21,13 @@
 #include <stdio.h>
 #include "bouncebuffer.h"
 
-#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
-// on F7 we check we are in the DTCM region, and 16 bit aligned
-#define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & ((0xFFFFFFFF & ~(DTCM_RAM_SIZE_KB*1024U-1)) | 1U)) == 0x20000000)
+#if defined(STM32H7)
+// always use a bouncebuffer on H7, to ensure alignment and padding
+#define IS_DMA_SAFE(addr) false
+#elif defined(STM32F7)
+// on F76x we only consider first half of DTCM memory as DMA safe, 2nd half is used as fast memory for EKF
+// on F74x we only have 64k of DTCM
+#define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & ((0xFFFFFFFF & ~(64*1024U-1)) | 1U)) == 0x20000000)
 #else
 // this checks an address is in main memory and 16 bit aligned
 #define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & 0xF0000001) == 0x20000000)
@@ -32,12 +36,13 @@
 /*
   initialise a bouncebuffer
  */
-void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes)
+void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes, bool sdcard)
 {
     (*bouncebuffer) = calloc(1, sizeof(struct bouncebuffer_t));
     osalDbgAssert(((*bouncebuffer) != NULL), "bouncebuffer init");
+    (*bouncebuffer)->is_sdcard = sdcard;
     if (prealloc_bytes) {
-        (*bouncebuffer)->dma_buf = malloc_dma(prealloc_bytes);
+        (*bouncebuffer)->dma_buf = sdcard?malloc_sdcard_dma(prealloc_bytes):malloc_dma(prealloc_bytes);
         osalDbgAssert(((*bouncebuffer)->dma_buf != NULL), "bouncebuffer preallocate");
         (*bouncebuffer)->size = prealloc_bytes;
     }
@@ -45,6 +50,8 @@ void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_b
 
 /*
   setup for reading from a device into memory, allocating a bouncebuffer if needed
+  Note that *buf can be NULL, in which case we allocate DMA capable memory, but don't
+  copy to it in bouncebuffer_finish_read(). This avoids DMA failures in dummyrx in the SPI LLD
  */
 void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf, uint32_t size)
 {
@@ -58,11 +65,15 @@ void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
         if (bouncebuffer->size > 0) {
             free(bouncebuffer->dma_buf);
         }
-        bouncebuffer->dma_buf = malloc_dma(size);
+        bouncebuffer->dma_buf = bouncebuffer->is_sdcard?malloc_sdcard_dma(size):malloc_dma(size);
         osalDbgAssert((bouncebuffer->dma_buf != NULL), "bouncebuffer read allocate");
         bouncebuffer->size = size;
     }
     *buf = bouncebuffer->dma_buf;
+#if defined(STM32H7)
+    osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer read align");
+    cacheBufferInvalidate(*buf, (size+31)&~31);
+#endif
     bouncebuffer->busy = true;
 }
 
@@ -72,8 +83,10 @@ void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
 void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t *buf, uint32_t size)
 {
     if (bouncebuffer && buf == bouncebuffer->dma_buf) {
-        osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_read");        
-        memcpy(bouncebuffer->orig_buf, buf, size);
+        osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_read");
+        if (bouncebuffer->orig_buf) {
+            memcpy(bouncebuffer->orig_buf, buf, size);
+        }
         bouncebuffer->busy = false;
     }
 }
@@ -93,12 +106,18 @@ void bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t
         if (bouncebuffer->size > 0) {
             free(bouncebuffer->dma_buf);
         }
-        bouncebuffer->dma_buf = malloc_dma(size);
+        bouncebuffer->dma_buf = bouncebuffer->is_sdcard?malloc_sdcard_dma(size):malloc_dma(size);
         osalDbgAssert((bouncebuffer->dma_buf != NULL), "bouncebuffer write allocate");
         bouncebuffer->size = size;
     }
-    memcpy(bouncebuffer->dma_buf, *buf, size);
+    if (*buf) {
+        memcpy(bouncebuffer->dma_buf, *buf, size);
+    }
     *buf = bouncebuffer->dma_buf;
+#if defined(STM32H7)
+    osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer write align");
+    cacheBufferFlush(*buf, (size+31)&~31);
+#endif
     bouncebuffer->busy = true;
 }
 

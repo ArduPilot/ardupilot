@@ -110,7 +110,8 @@ const struct UnitStructure log_Units[] = {
     { 'P', "Pa" },            // Pascal
     { 'w', "Ohm" },           // Ohm
     { 'Y', "us" },            // pulse width modulation in microseconds
-    { 'z', "Hz" }             // Hertz
+    { 'z', "Hz" },            // Hertz
+    { '#', "instance" }       // (e.g.)Sensor instance number
 };
 
 // this multiplier information applies to the raw value present in the
@@ -150,7 +151,6 @@ struct PACKED log_DSF {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint32_t dropped;
-    uint8_t  internal_errors;
     uint16_t blocks;
     uint32_t bytes;
     uint32_t buf_space_min;
@@ -163,6 +163,14 @@ struct PACKED log_Event {
     uint64_t time_us;
     uint8_t id;
 };
+
+struct PACKED log_Error {
+  LOG_PACKET_HEADER;
+  uint64_t time_us;
+  uint8_t sub_system;
+  uint8_t error_code;
+};
+
 struct PACKED log_GPS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -322,6 +330,15 @@ struct PACKED log_RCOUT {
     uint16_t chan12;
     uint16_t chan13;
     uint16_t chan14;
+};
+
+struct PACKED log_MAV {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t chan;
+    uint16_t packet_tx_count;
+    uint16_t packet_rx_success_count;
+    uint16_t packet_rx_drop_count;
 };
 
 struct PACKED log_RSSI {
@@ -708,6 +725,19 @@ struct PACKED log_WheelEncoder {
     uint8_t quality_1;
 };
 
+struct PACKED log_ADSB {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint32_t ICAO_address;
+    int32_t lat;
+    int32_t lng;
+    int32_t alt;
+    uint16_t heading;
+    uint16_t hor_velocity;
+    int16_t ver_velocity;
+    uint16_t squawk;
+};
+
 struct PACKED log_Current_Cells {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -890,14 +920,13 @@ struct PACKED log_GYRO {
     float GyrX, GyrY, GyrZ;
 };
 
-struct PACKED log_DF_MAV_Stats {
+struct PACKED log_MAV_Stats {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
     uint32_t seqno;
     uint32_t dropped;
     uint32_t retries;
     uint32_t resends;
-    uint8_t internal_errors; // uint8_t - wishful thinking?
     uint8_t state_free_avg;
     uint8_t state_free_min;
     uint8_t state_free_max;
@@ -1057,6 +1086,7 @@ struct PACKED log_Performance {
     uint32_t max_time;
     uint32_t mem_avail;
     uint16_t load;
+    uint32_t internal_errors;
 };
 
 struct PACKED log_SRTL {
@@ -1293,14 +1323,14 @@ Format characters in the format string for binary log messages
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QCBBCBB", "TimeUS,Dist1,Stat1,Orient1,Dist2,Stat2,Orient2", "sm--m--", "FB--B--" }, \
-    { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
-      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s--------------", "C--------------" }, \
+    { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
+      "DMS", "IIIIIBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "C-------------" }, \
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
       "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--BBBBBBB" }, \
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
       "PRX", "QBfffffffffff", "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s-mmmmmmmmmhm", "F-BBBBBBBBB00" }, \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
-      "PM",  "QHHIIH", "TimeUS,NLon,NLoop,MaxT,Mem,Load", "s---b%", "F---0A" }, \
+      "PM",  "QHHIIHI", "TimeUS,NLon,NLoop,MaxT,Mem,Load,IntErr", "s---b%-", "F---0A-" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }
 
@@ -1447,7 +1477,7 @@ Format characters in the format string for binary log messages
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
       "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt", "s-DUm", "F-GGB" },   \
     { LOG_DF_FILE_STATS, sizeof(log_DSF), \
-      "DSF", "QIBHIIII", "TimeUS,Dp,IErr,Blk,Bytes,FMn,FMx,FAv", "s---b---", "F---0---" }, \
+      "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
       "RPM",  "Qff", "TimeUS,rpm1,rpm2", "sqq", "F00" }, \
     { LOG_GIMBAL1_MSG, sizeof(log_Gimbal1), \
@@ -1460,12 +1490,16 @@ Format characters in the format string for binary log messages
       "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
+    { LOG_MAV_MSG, sizeof(log_MAV),   \
+      "MAV", "QBHHH",   "TimeUS,chan,txp,rxp,rxdp", "s#---", "F-000" },   \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
-      "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" }
+      "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" }, \
+    { LOG_ADSB_MSG, sizeof(log_ADSB), \
+      "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }
 
 
 // #if SBP_HW_LOGGING
@@ -1479,7 +1513,10 @@ Format characters in the format string for binary log messages
     { LOG_EVENT_MSG, sizeof(log_Event), \
       "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
-      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }
+      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }, \
+    { LOG_ERROR_MSG, sizeof(log_Error), \
+      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
+
 // #endif
 
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES, LOG_SBP_STRUCTURES
@@ -1603,7 +1640,7 @@ enum LogMessages : uint8_t {
     LOG_GPAB_MSG,
     LOG_RFND_MSG,
     LOG_BAR3_MSG,
-    LOG_DF_MAV_STATS,
+    LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,
     LOG_MULT_MSG,
@@ -1636,6 +1673,10 @@ enum LogMessages : uint8_t {
     LOG_OPTFLOW_MSG,
     LOG_EVENT_MSG,
     LOG_WHEELENCODER_MSG,
+    LOG_MAV_MSG,
+    LOG_ERROR_MSG,
+    LOG_ADSB_MSG,
+
     _LOG_LAST_MSG_
 };
 

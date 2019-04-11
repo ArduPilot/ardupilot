@@ -29,12 +29,12 @@ public:
     }
 
     void init(int argc, char *const *argv);
-    bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
+    bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
 
     /**
        return commandline arguments, if available
      */
-    void commandline_arguments(uint8_t &argc, char * const *&argv);
+    void commandline_arguments(uint8_t &argc, char * const *&argv) override;
 
     /*
       set system clock in UTC microseconds

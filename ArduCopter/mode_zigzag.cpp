@@ -11,10 +11,6 @@
 // initialise zigzag controller
 bool Copter::ModeZigZag::init(bool ignore_checks)
 {
-    if (!copter.position_ok() && !ignore_checks) {
-        return false;
-    }
-
     // initialize's loiter position and velocity on xy-axes from current pos and velocity
     loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();

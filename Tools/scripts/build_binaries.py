@@ -150,9 +150,12 @@ is bob we will attempt to checkout bob-AVR'''
         try:
             out = self.run_program('waf', ['./waf', 'configure', '--board=BOARDTEST'], False)
             lines = out.split('\n')
-            needle = "BOARDTEST' (choose from"
+            needles = ["BOARDTEST' (choose from", "BOARDTEST': choices are"]
             for line in lines:
-                idx = line.find(needle)
+                for needle in needles:
+                    idx = line.find(needle)
+                    if idx != -1:
+                        break
                 if idx != -1:
                     line = line[idx+len(needle):-1]
                     line = line.replace("'","")
@@ -506,6 +509,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "erlebrain2",
                 "navio",
                 "navio2",
+                "edge",
                 "pxf",
                 "pxfmini",
                 "KakuteF4",
@@ -527,6 +531,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "Pixhawk4",
                 "PH4-mini",
                 "CUAVv5",
+                "CUAVv5Nano",
                 "mRoX21",
                 "Pixracer",
                 "F4BY",
@@ -538,7 +543,15 @@ is bob we will attempt to checkout bob-AVR'''
                 "VRBrain-v52",
                 "VRUBrain-v51",
                 "VRCore-v10",
-                "VRBrain-v54"]
+                "VRBrain-v54",
+                "TBS-Colibri-F7",
+                "Pixhawk4Pro",
+                "CubeOrange",
+                "CubeYellow",
+                # SITL targets
+                "SITL_x86_64_linux_gnu",
+                "SITL_arm_linux_gnueabihf",
+                ]
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
@@ -566,7 +579,7 @@ is bob we will attempt to checkout bob-AVR'''
 
     def build_antennatracker(self, tag):
         '''build Tracker binaries'''
-        boards = ['navio', 'navio2']
+        boards = self.common_boards()[:]
         self.build_vehicle(tag,
                            "AntennaTracker",
                            boards,

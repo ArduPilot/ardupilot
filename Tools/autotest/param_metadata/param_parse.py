@@ -4,7 +4,7 @@ import glob
 import os
 import re
 import sys
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 from param import (Library, Parameter, Vehicle, known_group_fields,
                    known_param_fields, required_param_fields, known_units)
@@ -14,21 +14,21 @@ from wikiemit import WikiEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
 
-parser = OptionParser("param_parse.py [options]")
-parser.add_option("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
-parser.add_option("--vehicle", default='*', help="Vehicle type to generate for")
-parser.add_option("--no-emit",
-                  dest='emit_params',
-                  action='store_false',
-                  default=True,
-                  help="don't emit parameter documention, just validate")
-parser.add_option("--format",
-                  dest='output_format',
-                  action='store',
-                  default='all',
-                  choices=['all', 'html', 'rst', 'wiki', 'xml', 'edn', 'md'],
-                  help="what output format to use")
-(opts, args) = parser.parse_args()
+parser = ArgumentParser(description="Parse ArduPilot parameters.")
+parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
+parser.add_argument("--vehicle", required=True, help="Vehicle type to generate for")
+parser.add_argument("--no-emit",
+                    dest='emit_params',
+                    action='store_false',
+                    default=True,
+                    help="don't emit parameter documention, just validate")
+parser.add_argument("--format",
+                    dest='output_format',
+                    action='store',
+                    default='all',
+                    choices=['all', 'html', 'rst', 'wiki', 'xml', 'edn', 'md'],
+                    help="what output format to use")
+args = parser.parse_args()
 
 
 # Regular expressions for parsing the parameter metadata
@@ -43,10 +43,10 @@ prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: (.*)")
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
-vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % opts.vehicle)
+vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % args.vehicle)
 extension = 'cpp'
 if len(vehicle_paths) == 0:
-    vehicle_paths = glob.glob(apm_path + "%s/Parameters.pde" % opts.vehicle)
+    vehicle_paths = glob.glob(apm_path + "%s/Parameters.pde" % args.vehicle)
     extension = 'pde'
 vehicle_paths.sort(reverse=True)
 
@@ -60,7 +60,7 @@ current_file = None
 
 def debug(str_to_print):
     """Debug output if verbose is set."""
-    if opts.verbose:
+    if args.verbose:
         print(str_to_print)
 
 
@@ -335,27 +335,27 @@ def do_emit(emit):
     emit.close()
 
 
-if opts.emit_params:
-    if opts.output_format == 'all' or opts.output_format == 'xml':
+if args.emit_params:
+    if args.output_format == 'all' or args.output_format == 'xml':
         do_emit(XmlEmit())
-    if opts.output_format == 'all' or opts.output_format == 'wiki':
+    if args.output_format == 'all' or args.output_format == 'wiki':
         do_emit(WikiEmit())
-    if opts.output_format == 'all' or opts.output_format == 'html':
+    if args.output_format == 'all' or args.output_format == 'html':
         do_emit(HtmlEmit())
-    if opts.output_format == 'all' or opts.output_format == 'rst':
+    if args.output_format == 'all' or args.output_format == 'rst':
         do_emit(RSTEmit())
-    if opts.output_format == 'all' or opts.output_format == 'md':
+    if args.output_format == 'all' or args.output_format == 'md':
         do_emit(MDEmit())
-    if opts.output_format == 'all' or opts.output_format == 'edn':
+    if args.output_format == 'all' or args.output_format == 'edn':
         try:
             from ednemit import EDNEmit
             do_emit(EDNEmit())
         except ImportError:
             # if the user wanted edn only then don't hide any errors
-            if opts.output_format == 'edn':
+            if args.output_format == 'edn':
                 raise
 
-            if opts.verbose:
+            if args.verbose:
                 print("Unable to emit EDN, install edn_format and pytz if edn is desired")
 
 sys.exit(error_count)

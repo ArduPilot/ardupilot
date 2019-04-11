@@ -27,14 +27,14 @@ extern const AP_HAL::HAL& hal;
 void AP_Logger_SITL::Init()
 {
     if (flash_fd == 0) {
-        flash_fd = open("dataflash.bin", O_RDWR|O_CLOEXEC, 0777);
+        flash_fd = open(filename, O_RDWR|O_CLOEXEC, 0777);
         if (flash_fd == -1) {
-            flash_fd = open("dataflash.bin", O_RDWR | O_CREAT | O_CLOEXEC, 0777);
+            flash_fd = open(filename, O_RDWR | O_CREAT | O_CLOEXEC, 0777);
             StartErase();
             erase_started_ms = 0;
         }
         if (ftruncate(flash_fd, DF_PAGE_SIZE*uint32_t(DF_NUM_PAGES)) != 0) {
-            AP_HAL::panic("Failed to create dataflash.bin");
+            AP_HAL::panic("Failed to create %s", filename);
         }
     }
 

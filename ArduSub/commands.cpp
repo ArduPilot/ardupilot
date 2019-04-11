@@ -71,7 +71,7 @@ bool Sub::set_home(const Location& loc, bool lock)
     // init inav and compass declination
     if (!home_was_set) {
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
-        scaleLongDown = longitude_scale(loc);
+        scaleLongDown = loc.longitude_scale();
         // record home is set
         Log_Write_Event(DATA_SET_HOME);
 
@@ -99,5 +99,5 @@ bool Sub::far_from_EKF_origin(const Location& loc)
 {
     // check distance to EKF origin
     const struct Location &ekf_origin = inertial_nav.get_origin();
-    return (get_distance(ekf_origin, loc) > EKF_ORIGIN_MAX_DIST_M);
+    return (ekf_origin.get_distance(loc) > EKF_ORIGIN_MAX_DIST_M);
 }

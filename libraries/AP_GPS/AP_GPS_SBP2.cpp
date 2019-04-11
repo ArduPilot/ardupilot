@@ -213,7 +213,7 @@ AP_GPS_SBP2::_sbp_process_message() {
     }
 
     // send all messages we receive to log, even if it's an unsupported message,
-    // so we can do additional post-processing from Dataflash logs.
+    // so we can do additional post-processing from logs.
     // The log mask will be used to adjust or suppress logging
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
 }
@@ -440,7 +440,7 @@ AP_GPS_SBP2::_detect(struct SBP2_detect_state &state, uint8_t data)
 void
 AP_GPS_SBP2::logging_log_full_update()
 {
-    if (!should_df_log()) {
+    if (!should_log()) {
       return;
     }
 
@@ -462,7 +462,7 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
         uint8_t *msg_buff) {
-    if (!should_df_log()) {
+    if (!should_log()) {
       return;
     }
 
@@ -507,7 +507,7 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
 
 void
 AP_GPS_SBP2::logging_ext_event() {
-    if (!should_df_log()) {
+    if (!should_log()) {
       return;
     }
 

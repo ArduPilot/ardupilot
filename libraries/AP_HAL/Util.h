@@ -14,10 +14,6 @@ public:
     void set_soft_armed(const bool b) { soft_armed = b; }
     bool get_soft_armed() const { return soft_armed; }
 
-    void set_capabilities(uint64_t cap) { capabilities |= cap; }
-    void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
-    uint64_t get_capabilities() const { return capabilities; }
-
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
     virtual const char *get_custom_storage_directory() const { return nullptr;  }
@@ -128,6 +124,4 @@ protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
     bool soft_armed = false;
-    uint64_t capabilities = 0;
-
 };

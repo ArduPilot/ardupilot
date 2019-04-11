@@ -21,12 +21,12 @@
 class AP_RSSI
 {
 public:
-    enum RssiType {
-        RSSI_DISABLED           = 0,
-        RSSI_ANALOG_PIN         = 1,
-        RSSI_RC_CHANNEL_VALUE   = 2,
-        RSSI_RECEIVER           = 3,
-        RSSI_PWM_PIN            = 4
+    enum class RssiType {
+        TYPE_DISABLED      = 0,
+        ANALOG_PIN         = 1,
+        RC_CHANNEL_VALUE   = 2,
+        RECEIVER           = 3,
+        PWM_PIN            = 4
     };
 
     AP_RSSI();
@@ -44,7 +44,7 @@ public:
     void init();
 
     // return true if rssi reading is enabled
-    bool enabled() const { return rssi_type != RSSI_DISABLED; }
+    bool enabled() const { return RssiType(rssi_type.get()) != RssiType::TYPE_DISABLED; }
 
     // Read the receiver RSSI value as a float 0.0f - 1.0f.
     // 0.0 represents weakest signal, 1.0 represents maximum signal.

@@ -828,15 +828,15 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
 
     // update mixing structure, checking for changes
     for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
-        const SRV_Channel *ch = SRV_Channels::srv_channel(i);
-        if (!ch) {
+        const SRV_Channel *c = SRV_Channels::srv_channel(i);
+        if (!c) {
             continue;
         }
-        MIX_UPDATE(mixing.servo_trim[i], ch->get_trim());
-        MIX_UPDATE(mixing.servo_min[i], ch->get_output_min());
-        MIX_UPDATE(mixing.servo_max[i], ch->get_output_max());
-        MIX_UPDATE(mixing.servo_function[i], ch->get_function());
-        MIX_UPDATE(mixing.servo_reversed[i], ch->get_reversed());
+        MIX_UPDATE(mixing.servo_trim[i], c->get_trim());
+        MIX_UPDATE(mixing.servo_min[i], c->get_output_min());
+        MIX_UPDATE(mixing.servo_max[i], c->get_output_max());
+        MIX_UPDATE(mixing.servo_function[i], c->get_function());
+        MIX_UPDATE(mixing.servo_reversed[i], c->get_reversed());
     }
     // update RCMap
     MIX_UPDATE(mixing.rc_channel[0], rcmap->roll());
@@ -844,17 +844,17 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
     MIX_UPDATE(mixing.rc_channel[2], rcmap->throttle());
     MIX_UPDATE(mixing.rc_channel[3], rcmap->yaw());
     for (uint8_t i=0; i<4; i++) {
-        const RC_Channel *ch = RC_Channels::rc_channel(mixing.rc_channel[i]-1);
-        if (!ch) {
+        const RC_Channel *c = RC_Channels::rc_channel(mixing.rc_channel[i]-1);
+        if (!c) {
             continue;
         }
-        MIX_UPDATE(mixing.rc_min[i], ch->get_radio_min());
-        MIX_UPDATE(mixing.rc_max[i], ch->get_radio_max());
-        MIX_UPDATE(mixing.rc_trim[i], ch->get_radio_trim());
-        MIX_UPDATE(mixing.rc_reversed[i], ch->get_reverse());
+        MIX_UPDATE(mixing.rc_min[i], c->get_radio_min());
+        MIX_UPDATE(mixing.rc_max[i], c->get_radio_max());
+        MIX_UPDATE(mixing.rc_trim[i], c->get_radio_trim());
+        MIX_UPDATE(mixing.rc_reversed[i], c->get_reverse());
 
         // cope with reversible throttle
-        if (i == 2 && ch->get_type() == RC_Channel::RC_CHANNEL_TYPE_ANGLE) {
+        if (i == 2 && c->get_type() == RC_Channel::RC_CHANNEL_TYPE_ANGLE) {
             MIX_UPDATE(mixing.throttle_is_angle, 1);
         } else {
             MIX_UPDATE(mixing.throttle_is_angle, 0);

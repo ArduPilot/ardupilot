@@ -23,6 +23,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AC_Fence/AC_Fence.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -35,6 +36,8 @@
   #endif
 #endif
 
+#include <AP_Logger/AP_Logger.h>
+
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
@@ -43,9 +46,9 @@
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-  #define ARMING_RUDDER_DEFAULT         ARMING_RUDDER_ARMONLY
+  #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMONLY
 #else
-  #define ARMING_RUDDER_DEFAULT         ARMING_RUDDER_ARMDISARM
+  #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -121,7 +124,7 @@ uint16_t AP_Arming::compass_magfield_expected() const
 
 bool AP_Arming::is_armed()
 {
-    return (ArmingRequired)require.get() == NO || armed;
+    return (Required)require.get() == Required::NO || armed;
 }
 
 uint16_t AP_Arming::get_enabled_checks()
@@ -325,6 +328,13 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(ARMING_CHECK_INS, report, "Gyros inconsistent");
             return false;
         }
+
+        // check AHRS attitudes are consistent
+        char failure_msg[50] = {};
+        if (!AP::ahrs().attitudes_consistent(failure_msg, ARRAY_SIZE(failure_msg))) {
+            check_failed(ARMING_CHECK_INS, report, "%s", failure_msg);
+            return false;
+        }
     }
 
     return true;
@@ -332,10 +342,22 @@ bool AP_Arming::ins_checks(bool report)
 
 bool AP_Arming::compass_checks(bool report)
 {
+    Compass &_compass = AP::compass();
+
+    // check if compass is calibrating
+    if (_compass.is_calibrating()) {
+        check_failed(ARMING_CHECK_NONE, report, "Compass calibration running");
+        return false;
+    }
+
+    // check if compass has calibrated and requires reboot
+    if (_compass.compass_cal_requires_reboot()) {
+        check_failed(ARMING_CHECK_NONE, report, "Compass calibrated requires reboot");
+        return false;
+    }
+
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
-
-        Compass &_compass = AP::compass();
 
         // avoid Compass::use_for_yaw(void) as it implicitly calls healthy() which can
         // incorrectly skip the remaining checks, pass the primary instance directly
@@ -351,18 +373,6 @@ bool AP_Arming::compass_checks(bool report)
         // check compass learning is on or offsets have been set
         if (!_compass.learn_offsets_enabled() && !_compass.configured()) {
             check_failed(ARMING_CHECK_COMPASS, report, "Compass not calibrated");
-            return false;
-        }
-
-        //check if compass is calibrating
-        if (_compass.is_calibrating()) {
-            check_failed(ARMING_CHECK_COMPASS, report, "Compass calibration running");
-            return false;
-        }
-
-        //check if compass has calibrated and requires reboot
-        if (_compass.compass_cal_requires_reboot()) {
-            check_failed(ARMING_CHECK_COMPASS, report, "Compass calibrated requires reboot");
             return false;
         }
 
@@ -424,7 +434,7 @@ bool AP_Arming::gps_checks(bool report)
         const Location gps_loc = gps.location();
         Location ahrs_loc;
         if (AP::ahrs().get_position(ahrs_loc)) {
-            const float distance = location_diff(gps_loc, ahrs_loc).length();
+            const float distance = gps_loc.get_distance(ahrs_loc);
             if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
                 check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ by %4.1fm", (double)distance);
                 return false;
@@ -456,7 +466,7 @@ bool AP_Arming::battery_checks(bool report)
 
         char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
         if (!AP::battery().arming_checks(sizeof(buffer), buffer)) {
-            check_failed(ARMING_CHECK_BATTERY, report, buffer);
+            check_failed(ARMING_CHECK_BATTERY, report, "%s", buffer);
             return false;
         }
      }
@@ -689,10 +699,33 @@ bool AP_Arming::can_checks(bool report)
     return true;
 }
 
+
+bool AP_Arming::fence_checks(bool display_failure)
+{
+    const AC_Fence *fence = AP::fence();
+    if (fence == nullptr) {
+        return true;
+    }
+
+    // check fence is ready
+    const char *fail_msg = nullptr;
+    if (fence->pre_arm_check(fail_msg)) {
+        return true;
+    }
+
+    if (fail_msg == nullptr) {
+        check_failed(ARMING_CHECK_NONE, display_failure, "Check fence");
+    } else {
+        check_failed(ARMING_CHECK_NONE, display_failure, "%s", fail_msg);
+    }
+
+    return false;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    if (armed || require == NO) {
+    if (armed || require == (uint8_t)Required::NO) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
@@ -714,7 +747,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  can_checks(report);
 }
 
-bool AP_Arming::arm_checks(ArmingMethod method)
+bool AP_Arming::arm_checks(AP_Arming::Method method)
 {
     // ensure the GPS drivers are ready on any final changes
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -731,11 +764,11 @@ bool AP_Arming::arm_checks(ArmingMethod method)
     // the arming check flag is set - disabling the arming check
     // should not stop logging from working.
 
-    AP_Logger *df = AP_Logger::get_singleton();
-    if (df->logging_present()) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger->logging_present()) {
         // If we're configured to log, prep it
-        df->PrepForArming();
-        if (!df->logging_started() &&
+        logger->PrepForArming();
+        if (!logger->logging_started() &&
             ((checks_to_perform & ARMING_CHECK_ALL) ||
              (checks_to_perform & ARMING_CHECK_LOGGING))) {
             check_failed(ARMING_CHECK_LOGGING, true, "Logging not started");
@@ -746,7 +779,7 @@ bool AP_Arming::arm_checks(ArmingMethod method)
 }
 
 //returns true if arming occurred successfully
-bool AP_Arming::arm(AP_Arming::ArmingMethod method, const bool do_arming_checks)
+bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // Copter should never use this function
@@ -768,7 +801,7 @@ bool AP_Arming::arm(AP_Arming::ArmingMethod method, const bool do_arming_checks)
 
         gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
 
-        //TODO: Log motor arming to the dataflash
+        //TODO: Log motor arming
         //Can't do this from this class until there is a unified logging library
 
     } else {
@@ -801,16 +834,16 @@ bool AP_Arming::disarm()
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
 
-    //TODO: Log motor disarming to the dataflash
+    //TODO: Log motor disarming to the logger
     //Can't do this from this class until there is a unified logging library.
 
     return true;
 #endif
 }
 
-AP_Arming::ArmingRequired AP_Arming::arming_required() 
+AP_Arming::Required AP_Arming::arming_required() 
 {
-    return (AP_Arming::ArmingRequired)require.get();
+    return (AP_Arming::Required)require.get();
 }
 
 // Copter and sub share the same RC input limits

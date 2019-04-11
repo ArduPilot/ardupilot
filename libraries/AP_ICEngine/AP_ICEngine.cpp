@@ -108,10 +108,14 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
 // constructor
 AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm) :
-    rpm(_rpm),
-    state(ICE_OFF)
+    rpm(_rpm)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_ICEngine must be singleton");
+    }
+    _singleton = this;
 }
 
 /*
@@ -288,4 +292,12 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     }
     state = ICE_STARTING;
     return true;
+}
+
+// singleton instance. Should only ever be set in the constructor.
+AP_ICEngine *AP_ICEngine::_singleton;
+namespace AP {
+AP_ICEngine *ice() {
+        return AP_ICEngine::get_singleton();
+    }
 }

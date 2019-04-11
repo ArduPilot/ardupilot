@@ -1,3 +1,7 @@
+#pragma once
+
+#include <stdint.h>
+#include <AP_Common/AP_Common.h>
 /*
   common protocol definitions between AP_IOMCU and iofirmware
  */

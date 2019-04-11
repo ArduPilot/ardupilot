@@ -112,6 +112,12 @@ void SRV_Channel::calc_pwm(int16_t output_scaled)
     if (have_pwm_mask & (1U<<ch_num)) {
         return;
     }
+
+    // check for E - stop
+    if (SRV_Channel::should_e_stop(get_function()) && SRV_Channels::emergency_stop) {
+        output_scaled = 0;
+    }
+
     uint16_t pwm;
     if (type_angle) {
         pwm = pwm_from_angle(output_scaled);
@@ -186,4 +192,14 @@ bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
 {
     return ((function >= SRV_Channel::k_motor1 && function <= SRV_Channel::k_motor8) ||
             (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12));
+}
+
+// return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
+bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
+{
+    return ((function >= SRV_Channel::k_heli_rsc && function <= SRV_Channel::k_motor8) ||
+            function == SRV_Channel::k_starter || function == SRV_Channel::k_throttle ||
+            function == SRV_Channel::k_throttleLeft || function == SRV_Channel::k_throttleRight ||
+            (function >= SRV_Channel::k_boost_throttle && function <= SRV_Channel::k_motor12) ||
+            function == k_engine_run_enable);
 }

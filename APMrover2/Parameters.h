@@ -84,7 +84,7 @@ public:
         //
         // 130: Sensor parameters
         //
-        k_param_compass_enabled = 130,
+        k_param_compass_enabled_deprecated = 130,
         k_param_steering_learn,     // unused
         k_param_NavEKF,             // deprecated - remove
         k_param_mission,            // mission library
@@ -226,9 +226,6 @@ public:
     AP_Int16    sysid_this_mav;
     AP_Int16    sysid_my_gcs;
     AP_Int8     telem_delay;
-
-    // sensor parameters
-    AP_Int8     compass_enabled;
 
     // navigation parameters
     //
@@ -396,6 +393,14 @@ public:
 
     // mission behave
     AP_Int8 mis_done_behave;
+
+    // balance both pitch trim
+    AP_Float bal_pitch_trim;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern const AP_Param::Info var_info[];

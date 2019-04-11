@@ -21,6 +21,7 @@ import apmrover2
 import arducopter
 import arduplane
 import ardusub
+import antennatracker
 import quadplane
 import balancebot
 
@@ -222,6 +223,7 @@ def alarm_handler(signum, frame):
     """Handle test timeout."""
     global results, opts
     try:
+        print("Alarm handler called")
         results.add('TIMEOUT',
                     '<span class="failed-text">FAILED</span>',
                     opts.timeout)
@@ -281,7 +283,7 @@ def binary_path(step, debug=False):
 
 def split_specific_test_step(step):
     print('step=%s' % str(step))
-    m = re.match("((fly|drive|dive)[.][^.]+)[.](.*)", step)
+    m = re.match("((fly|drive|dive|test)[.][^.]+)[.](.*)", step)
     if m is None:
         return None
     return ( (m.group(1), m.group(3)) )
@@ -293,21 +295,23 @@ def find_specific_test_to_run(step):
     (testname, test) = t
     return "%s.%s" % (testname, test)
 
+tester_class_map = {
+    "fly.ArduCopter": arducopter.AutoTestCopter,
+    "fly.ArduPlane": arduplane.AutoTestPlane,
+    "fly.QuadPlane": quadplane.AutoTestQuadPlane,
+    "drive.APMrover2": apmrover2.AutoTestRover,
+    "drive.balancebot": balancebot.AutoTestBalanceBot,
+    "fly.CopterAVC": arducopter.AutoTestHeli,
+    "dive.ArduSub": ardusub.AutoTestSub,
+    "test.AntennaTracker": antennatracker.AutoTestTracker,
+}
+
 def run_specific_test(step, *args, **kwargs):
     t = split_specific_test_step(step)
     if t is None:
         return []
     (testname, test) = t
 
-    tester_class_map = {
-        "fly.ArduCopter": arducopter.AutoTestCopter,
-        "fly.ArduPlane": arduplane.AutoTestPlane,
-        "fly.QuadPlane": quadplane.AutoTestQuadPlane,
-        "drive.APMrover2": apmrover2.AutoTestRover,
-        "drive.BalanceBot": balancebot.AutoTestBalanceBot,
-        "fly.CopterAVC": arducopter.AutoTestHeli,
-        "dive.ArduSub": ardusub.AutoTestSub,
-    }
     tester_class = tester_class_map[testname]
     tester = tester_class(*args, **kwargs)
 
@@ -377,33 +381,9 @@ def run_step(step):
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
 
-    if step == 'fly.ArduCopter':
-        tester = arducopter.AutoTestCopter(binary, **fly_opts)
-        return tester.autotest()
-
-    if step == 'fly.CopterAVC':
-        tester = arducopter.AutoTestHeli(binary, **fly_opts)
-        return tester.autotest()
-
-    if step == 'fly.ArduPlane':
-        tester = arduplane.AutoTestPlane(binary, **fly_opts)
-        return tester.autotest()
-
-    if step == 'fly.QuadPlane':
-        tester = quadplane.AutoTestQuadPlane(binary, **fly_opts)
-        return tester.autotest()
-
-    if step == 'drive.APMrover2':
-        tester = apmrover2.AutoTestRover(binary, **fly_opts)
-        return tester.autotest()
-
-    if step == 'drive.balancebot':
-        tester = balancebot.AutoTestBalanceBot(binary, **fly_opts)
-        return tester.autotest()
-
-    if step == 'dive.ArduSub':
-        tester = ardusub.AutoTestSub(binary, **fly_opts)
-        return tester.autotest()
+    # handle "fly.ArduCopter" etc:
+    if step in tester_class_map:
+        return tester_class_map[step](binary, **fly_opts).autotest()
 
     specific_test_to_run = find_specific_test_to_run(step)
     if specific_test_to_run is not None:
@@ -664,7 +644,7 @@ if __name__ == "__main__":
                       action='store_true',
                       help='enable experimental tests')
     parser.add_option("--timeout",
-                      default=3000,
+                      default=3600,
                       type='int',
                       help='maximum runtime in seconds')
     parser.add_option("--frame",
@@ -755,6 +735,8 @@ if __name__ == "__main__":
         'fly.CopterAVC',
 
         'build.AntennaTracker',
+        'defaults.AntennaTracker',
+        'test.AntennaTracker',
 
         'build.ArduSub',
         'defaults.ArduSub',
