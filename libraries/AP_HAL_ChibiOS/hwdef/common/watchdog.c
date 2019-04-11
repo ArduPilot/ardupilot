@@ -8,11 +8,36 @@
 #ifndef IWDG_BASE
 #if defined(STM32H7)
 #define IWDG_BASE             0x58004800
-#elif defined(STM32F7) || defined(STM32F4) || defined(STM32F1)
+#elif defined(STM32F7) || defined(STM32F4)
+#define IWDG_BASE             0x40003000
+#elif defined(STM32F1)
 #define IWDG_BASE             0x40003000
 #else
-#error "Unknown IWDG_BASE"
+#error "Unsupported IWDG MCU config"
 #endif
+#endif
+
+#ifndef RCC_BASE
+#error "Unsupported IWDG RCC MCU config"
+#endif
+
+/*
+  defines for working out if the reset was from the watchdog
+ */
+#if defined(STM32H7)
+#define WDG_RESET_STATUS (*(__IO uint32_t *)(RCC_BASE + ))
+#define WDG_RESET_CLEAR (1U<<16)
+#define WDG_RESET_IS_IWDG (1U<<26)
+#elif defined(STM32F7) || defined(STM32F4)
+#define WDG_RESET_STATUS (*(__IO uint32_t *)(RCC_BASE + 0x74))
+#define WDG_RESET_CLEAR (1U<<24)
+#define WDG_RESET_IS_IWDG (1U<<29)
+#elif defined(STM32F1)
+#define WDG_RESET_STATUS (*(__IO uint32_t *)(RCC_BASE + 0x24))
+#define WDG_RESET_CLEAR (1U<<24)
+#define WDG_RESET_IS_IWDG (1U<<29)
+#else
+#error "Unsupported IWDG MCU config"
 #endif
 
 typedef struct
@@ -46,3 +71,25 @@ void stm32_watchdog_pat(void)
 {
     IWDGD.KR = 0xAAAA;
 }
+
+static bool was_watchdog_reset;
+
+/*
+  save reason code for reset
+ */
+void stm32_watchdog_save_reason(void)
+{
+    if (WDG_RESET_STATUS & WDG_RESET_IS_IWDG) {
+        was_watchdog_reset = true;
+    }
+    WDG_RESET_STATUS = WDG_RESET_CLEAR;
+}
+
+/*
+  return true if reboot was from a watchdog reset
+ */
+bool stm32_was_watchdog_reset(void)
+{
+    return was_watchdog_reset;
+}
+
