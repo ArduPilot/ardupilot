@@ -136,6 +136,8 @@ void Scheduler::_timer_thread(void *arg)
     while (!_initialized) {
         sched->delay_microseconds(1000);
     }
+    printf("Scheduler::_timer_thread initialized\n");
+
     while (true) {
         sched->delay_microseconds(1000);
         sched->_run_timers();
@@ -215,6 +217,8 @@ void Scheduler::_io_thread(void* arg)
     while (!sched->_initialized) {
         sched->delay_microseconds(1000);
     }
+    printf("Scheduler::_io_thread initialized\n");
+
     while (true) {
         sched->delay_microseconds(1000);
         // run registered IO processes
@@ -228,6 +232,8 @@ void Scheduler::_storage_thread(void* arg)
     while (sched->_initialized) {
         sched->delay_microseconds(10000);
     }
+    printf("Scheduler::_storage_thread initialized\n");
+
     while (true) {
         sched->delay_microseconds(10000);
         // process any pending storage writes
@@ -241,6 +247,8 @@ void Scheduler::_uart_thread(void *arg)
     while (!_initialized) {
         sched->delay_microseconds(20000);
     }
+    printf("Scheduler::_uart_thread initialized\n");
+
     while (true) {
         sched->delay_microseconds(1000);
         hal.uartA->_timer_tick();  // serial mavlink or serial gps
