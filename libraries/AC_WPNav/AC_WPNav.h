@@ -57,6 +57,9 @@ public:
     /// provide rangefinder altitude
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
+    // return true if range finder may be used for terrain following
+    bool rangefinder_used() const { return _rangefinder_use && _rangefinder_healthy; }
+
     ///
     /// brake controller
     ///
