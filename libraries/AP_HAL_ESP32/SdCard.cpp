@@ -45,6 +45,16 @@ void mount_sdcard()
     } else {
         printf("sdcard is not mounted\n");
     }
+
+    printf("Opening TEST file on SD to write...\n");
+    FILE* f = fopen("/SDCARD/hello.txt", "w");
+    if (f == NULL) {
+   	 printf( "Failed to open file on SD for writing\n");
+        return;
+    }
+    fprintf(f, "Hello %s!\n", card->cid.name);
+    fclose(f);
+    printf( "TEST File written to SD OK\n");
 }
 
 void unmount_sdcard()
