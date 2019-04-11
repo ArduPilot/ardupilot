@@ -1996,6 +1996,17 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
     return result;
 }
 
+/*
+  see if gyro calibration should be performed
+ */
+AP_InertialSensor::Gyro_Calibration_Timing AP_InertialSensor::gyro_calibration_timing()
+{
+    if (hal.util->was_watchdog_reset()) {
+        return GYRO_CAL_NEVER;
+    }
+    return (Gyro_Calibration_Timing)_gyro_cal_timing.get();
+}
+
 
 namespace AP {
 
