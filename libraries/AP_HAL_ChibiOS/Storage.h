@@ -50,7 +50,7 @@ private:
     void _save_backup(void);
     void _mark_dirty(uint16_t loc, uint16_t length);
     uint8_t _buffer[CH_STORAGE_SIZE] __attribute__((aligned(4)));
-    Bitmask _dirty_mask{CH_STORAGE_NUM_LINES};
+    Bitmask<CH_STORAGE_NUM_LINES> _dirty_mask;
 
     bool _flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length);
     bool _flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length);
