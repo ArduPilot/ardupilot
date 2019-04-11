@@ -477,7 +477,7 @@ private:
 
     SRV_Channel::servo_mask_t trimmed_mask;
 
-    static Bitmask function_mask;
+    static Bitmask<SRV_Channel::k_nr_aux_servo_functions> function_mask;
     static bool initialised;
 
     // this static arrangement is to avoid having static objects in AP_Param tables
