@@ -17,6 +17,13 @@ bool ModeQStabilize::_enter()
 
 void ModeQStabilize::update()
 {
+    if (plane.quadplane.tailsitter_active() && (plane.control_mode == &plane.mode_qacro)) {
+        // get nav_roll and nav_pitch from multicopter attitude controller
+        Vector3f att_target = plane.quadplane.attitude_control->get_att_target_euler_cd();
+        plane.nav_pitch_cd = att_target.y;
+        plane.nav_roll_cd = att_target.x;
+        return;
+    }
     // set nav_roll and nav_pitch using sticks
     int16_t roll_limit = MIN(plane.roll_limit_cd, plane.quadplane.aparm.angle_max);
     plane.nav_roll_cd  = (plane.channel_roll->get_control_in() / 4500.0) * roll_limit;
