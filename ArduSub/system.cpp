@@ -207,6 +207,10 @@ void Sub::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
+
+#if AP_PARAM_KEY_DUMP
+    AP_Param::show_all(hal.console, true);
+#endif
 }
 
 
