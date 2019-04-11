@@ -228,6 +228,16 @@ static void main_loop()
         if (using_watchdog) {
             stm32_watchdog_pat();
         }
+
+#if 0
+        // simple method to test watchdog functionality
+        static bool done_pause;
+        if (!done_pause && AP_HAL::millis() > 20000) {
+            done_pause = true;
+            while (AP_HAL::millis() < 22000) ;
+        }
+#endif
+
     }
     thread_running = false;
 }
