@@ -121,7 +121,7 @@ float Copter::get_non_takeoff_throttle()
 
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
 //      returns climb rate (in cm/s) which should be passed to the position controller
-float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
+float Copter::get_surface_tracking_climb_rate(int16_t target_rate)
 {
 #if RANGEFINDER_ENABLED == ENABLED
     if (!copter.rangefinder_alt_ok()) {
@@ -130,9 +130,10 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
     }
 
     static uint32_t last_call_ms = 0;
+    const float current_alt = inertial_nav.get_altitude();
+    const float current_alt_target = pos_control->get_alt_target();
     float distance_error;
     float velocity_correction;
-    float current_alt = inertial_nav.get_altitude();
 
     uint32_t now = millis();
 
@@ -146,7 +147,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 
     // adjust rangefinder target alt if motors have not hit their limits
     if ((target_rate<0 && !motors->limit.throttle_lower) || (target_rate>0 && !motors->limit.throttle_upper)) {
-        target_rangefinder_alt += target_rate * dt;
+        target_rangefinder_alt += target_rate * G_Dt;
     }
 
     /*
