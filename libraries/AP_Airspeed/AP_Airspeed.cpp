@@ -34,6 +34,7 @@
 #if HAL_WITH_UAVCAN
 #include "AP_Airspeed_UAVCAN.h"
 #endif
+#include "AP_Airspeed_SSCMRRN100MDSA3.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -275,6 +276,9 @@ void AP_Airspeed::init()
 #if HAL_WITH_UAVCAN
             sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i);
 #endif
+            break;
+        case TYPE_SPI_SSCMRRN100MDSA3:
+            sensor[i] = new AP_Airspeed_SSCMRRN100MDSA3(*this, i);
             break;
         }
 
