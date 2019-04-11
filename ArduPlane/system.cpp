@@ -419,13 +419,6 @@ void Plane::startup_INS_ground(void)
     }
 }
 
-// updates the status of the notify objects
-// should be called at 50hz
-void Plane::update_notify()
-{
-    notify.update();
-}
-
 // sets notify object flight mode information
 void Plane::notify_mode(const Mode& mode)
 {
