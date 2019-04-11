@@ -247,6 +247,12 @@ private:
         int8_t glitch_count;
     } rangefinder_state = { false, false, 0, 0 };
 
+    struct {
+        float target_alt_cm;        // desired altitude in cm above the ground
+        uint32_t last_update_ms;    // system time of last update to target_alt_cm
+        bool valid_for_logging;     // true if target_alt_cm is valid for logging
+    } surface_tracking;
+
 #if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
 #endif
@@ -402,8 +408,6 @@ private:
 #endif
 
     // Altitude
-    float target_rangefinder_alt;   // desired altitude in cm above the ground
-    bool target_rangefinder_alt_used; // true if mode is using target_rangefinder_alt
     int32_t baro_alt;            // barometer altitude in cm above home
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
