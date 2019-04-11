@@ -160,6 +160,13 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("GYR_FAIL_MSK",   35, SITL,  gyro_fail_mask,  0),
     AP_GROUPINFO("ACC_FAIL_MSK",   36, SITL,  accel_fail_mask,  0),
 
+    AP_GROUPINFO("TWIST_X",     37, SITL,  twist.x, 0),
+    AP_GROUPINFO("TWIST_Y",     38, SITL,  twist.y, 0),
+    AP_GROUPINFO("TWIST_Z",     39, SITL,  twist.z, 0),
+    AP_GROUPINFO("TWIST_TIME",  40, SITL,  twist.t, 0),
+
+    AP_GROUPINFO("GND_BEHAV",   41, SITL,  gnd_behav, -1),
+
     AP_GROUPEND
 };
     

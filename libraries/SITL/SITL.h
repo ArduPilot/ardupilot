@@ -244,6 +244,17 @@ public:
         uint32_t start_ms;
     } shove;
 
+    struct {
+        AP_Float x;
+        AP_Float y;
+        AP_Float z;
+        AP_Int32 t;
+
+        uint32_t start_ms;
+    } twist;
+
+    AP_Int8 gnd_behav;
+
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);
