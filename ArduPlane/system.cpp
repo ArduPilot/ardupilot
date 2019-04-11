@@ -395,6 +395,8 @@ void Plane::startup_INS_ground(void)
     if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
         gcs().send_text(MAV_SEVERITY_ALERT, "Beginning INS calibration. Do not move plane");
         hal.scheduler->delay(100);
+    } else {
+        gcs().send_text(MAV_SEVERITY_ALERT, "Skipping INS calibration");
     }
 
     ahrs.init();
