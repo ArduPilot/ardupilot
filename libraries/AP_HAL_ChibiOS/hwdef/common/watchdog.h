@@ -23,6 +23,11 @@ bool stm32_was_watchdog_reset(void);
   save the reset reason code
  */
 void stm32_watchdog_save_reason(void);
+
+/*
+  clear reset reason code
+ */
+void stm32_watchdog_clear_reason(void);
     
 #ifdef __cplusplus
 }

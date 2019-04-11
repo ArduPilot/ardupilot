@@ -33,6 +33,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
 #include "shared_dma.h"
 #include "sdcard.h"
 
@@ -305,6 +306,13 @@ void Scheduler::_timer_thread(void *arg)
 
         // process any pending RC output requests
         hal.rcout->timer_tick();
+
+        if (sched->expect_delay_start != 0) {
+            uint32_t now = AP_HAL::millis();
+            if (now - sched->expect_delay_start <= sched->expect_delay_length) {
+                stm32_watchdog_pat();
+            }
+        }
     }
 }
 
@@ -470,6 +478,26 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         return false;
     }
     return true;
+}
+
+/*
+  inform the scheduler that we are calling an operation from the
+  main thread that may take an extended amount of time. This can
+  be used to prevent watchdog reset during expected long delays
+  A value of zero cancels the previous expected delay
+*/
+void Scheduler::expect_delay_ms(uint32_t ms)
+{
+    if (!in_main_thread()) {
+        // only for main thread
+        return;
+    }
+    if (ms == 0) {
+        expect_delay_start = 0;
+    } else {
+        expect_delay_start = AP_HAL::millis();
+        expect_delay_length = ms;
+    }
 }
 
 #endif // CH_CFG_USE_DYNAMIC
