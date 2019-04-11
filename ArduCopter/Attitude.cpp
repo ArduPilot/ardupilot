@@ -187,6 +187,25 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate)
 #endif
 }
 
+// get surfacing tracking alt
+// returns true if there is a valid target
+bool Copter::get_surface_tracking_target_alt_cm(float &target_alt_cm) const
+{
+    // check target has been updated recently
+    if (AP_HAL::millis() - surface_tracking.last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
+        return false;
+    }
+    target_alt_cm = surface_tracking.target_alt_cm;
+    return true;
+}
+
+// set surface tracking target altitude
+void Copter::set_surface_tracking_target_alt_cm(float target_alt_cm)
+{
+    surface_tracking.target_alt_cm = target_alt_cm;
+    surface_tracking.last_update_ms = AP_HAL::millis();
+}
+
 // get target climb rate reduced to avoid obstacles and altitude fence
 float Copter::get_avoidance_adjusted_climbrate(float target_rate)
 {
