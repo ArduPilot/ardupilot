@@ -4,7 +4,7 @@
 
 TEST(Bitmask, Tests)
 {
-    Bitmask x{49};
+    Bitmask<49> x;
 
     EXPECT_EQ(-1, x.first_set());
     x.set(5);
@@ -40,7 +40,7 @@ TEST(Bitmask, Tests)
 
 TEST(Bitmask, SetAll)
 {
-    Bitmask x{49};
+    Bitmask<49> x;
     EXPECT_EQ(-1, x.first_set());
     EXPECT_EQ(false, x.get(45));
     x.setall();
@@ -59,13 +59,13 @@ TEST(Bitmask, SetAll)
 
 TEST(Bitmask, Assignment)
 {
-    Bitmask x{49};
+    Bitmask<49> x;
     x.set(0);
     x.set(5);
     x.set(6);
     x.set(48);
 
-    Bitmask y{49};
+    Bitmask<49> y;
     y = x;
     x.clear(0);
     EXPECT_EQ(true, y.get(0));
