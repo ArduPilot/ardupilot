@@ -78,7 +78,9 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
     : _log_bitmask(log_bitmask)
 {
+#ifdef DBG_CONSOLEMSGS
 	printf("AP_Logger constructor\n");
+#endif
     AP_Param::setup_object_defaults(this, var_info);
     if (_instance != nullptr) {
         AP_HAL::panic("AP_Logger must be singleton");
@@ -89,7 +91,9 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
 
 void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 {
+#ifdef DBG_CONSOLEMSGS
 	printf("AP_Logger::Init\n");
+#endif
     gcs().send_text(MAV_SEVERITY_INFO, "Preparing log system");
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     validate_structures(structures, num_types);
@@ -464,7 +468,9 @@ void AP_Logger::Write_MessageF(const char *fmt, ...)
 
 void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
 {
+#ifdef DBG_CONSOLEMSGS
 	printf("AP_Logger::backend_starting_new_log(...)\n");
+#endif
     for (uint8_t i=0; i<_next_backend; i++) {
         if (backends[i] == backend) { // pointer comparison!
             // reset sent masks

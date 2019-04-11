@@ -298,22 +298,24 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
 bool AP_Logger_Backend::StartNewLogOK() const
 {
     if (logging_started()) {
-    	printf("%s -> FALSE1\n",__PRETTY_FUNCTION__);
+    	//printf("%s -> FALSE1\n",__PRETTY_FUNCTION__);
         return false;
     }
     if (_front._log_bitmask == 0) {
-    	printf("%s -> FALSE2\n",__PRETTY_FUNCTION__);
+    	//printf("%s -> FALSE2\n",__PRETTY_FUNCTION__);
         return false;
     }
     if (_front.in_log_download()) {
-    	printf("%s -> FALSE3\n",__PRETTY_FUNCTION__);
+    	//printf("%s -> FALSE3\n",__PRETTY_FUNCTION__);
         return false;
     }
     if (!hal.scheduler->in_main_thread()) {
-    	printf("%s -> FALSE4\n",__PRETTY_FUNCTION__);
+    	//printf("%s -> FALSE4\n",__PRETTY_FUNCTION__);
         return false;
     }
+#ifdef DBG_CONSOLEMSGS
 	printf("%s -> TRUE\n",__PRETTY_FUNCTION__);
+#endif
     return true;
 }
 
@@ -366,15 +368,21 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
     validate_WritePrioritisedBlock(pBuffer, size);
 #endif
     if (!ShouldLog(is_critical)) {
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> ShouldLog\n",__PRETTY_FUNCTION__);
+#endif
         return false;
     }
     if (StartNewLogOK()) {
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> StartNewLogOK\n",__PRETTY_FUNCTION__);
+#endif
         start_new_log();
     }
     if (!WritesOK()) {
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> WritesOK\n",__PRETTY_FUNCTION__);
+#endif
         return false;
     }
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
@@ -383,15 +391,24 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
 bool AP_Logger_Backend::ShouldLog(bool is_critical)
 {
     if (!_front.WritesEnabled()) {
+#ifdef DBG_CONSOLEMSGS
+    	printf("%s -> NOT front WritesEnabled \n",__PRETTY_FUNCTION__);
+#endif
         return false;
     }
     if (!_initialised) {
+#ifdef DBG_CONSOLEMSGS
+    	printf("%s -> NOT _initialised\n",__PRETTY_FUNCTION__);
+#endif
         return false;
     }
 
     if (!_startup_messagewriter->finished() &&
         !hal.scheduler->in_main_thread()) {
         // only the main thread may write startup messages out
+#ifdef DBG_CONSOLEMSGS
+    	printf("%s -> NOT MAIN THREAD\n",__PRETTY_FUNCTION__);
+#endif
         return false;
     }
 
@@ -399,17 +416,26 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
         // if we have previously logged while armed then we log all
         // critical messages from then on. That fixes a problem where
         // logs show the wrong flight mode if you disarm then arm again
+#ifdef DBG_CONSOLEMSGS
+    	printf("%s -> OK is_critical\n",__PRETTY_FUNCTION__);
+#endif
         return true;
     }
     
     if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
+#ifdef DBG_CONSOLEMSGS
+    	printf("%s -> NOT ARMED / LOG_DISARMED\n",__PRETTY_FUNCTION__);
+#endif
         return false;
     }
 
     if (_front.vehicle_is_armed()) {
+
         have_logged_armed = true;
     }
     
+	//printf("%s -> OK OK\n",__PRETTY_FUNCTION__);
+
     return true;
 }
 

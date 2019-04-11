@@ -29,6 +29,9 @@
 
 #include "LoggerMessageWriter.h"
 
+// many of the AP_Logger classes use this to emit more to the console with 'printf', uncomment to use this.
+//#define DBG_CONSOLEMSGS
+
 class AP_Logger_Backend;
 
 enum AP_Logger_Backend_Type {

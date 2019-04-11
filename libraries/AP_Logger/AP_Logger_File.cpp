@@ -70,7 +70,9 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
     _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
     _perf_overruns(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_overruns"))
 {
+#ifdef DBG_CONSOLEMSGS
 	printf("AP_Logger_File::constructed.\n");
+#endif
     df_stats_clear();
 }
 
@@ -93,7 +95,9 @@ void AP_Logger_File::Init()
         ret = mkdir(_log_directory, 0777);
     }
     if (ret == -1) {
+#ifdef DBG_CONSOLEMSGS
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
+#endif
     }
 
     // determine and limit file backend buffersize
@@ -105,22 +109,27 @@ void AP_Logger_File::Init()
 
     // If we can't allocate the full size, try to reduce it until we can allocate it
     while (!_writebuf.set_size(bufsize) && bufsize >= _writebuf_chunk) {
-        hal.console->printf("AP_Logger_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
+#ifdef DBG_CONSOLEMSGS
         printf("AP_Logger_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
+#endif
         bufsize >>= 1;
     }
 
     if (!_writebuf.get_size()) {
-        hal.console->printf("Out of memory for logging\n");
-        printf("Out of memory for logging\n");
+#ifdef DBG_CONSOLEMSGS
+    	printf("Out of memory for logging\n");
+#endif
         return;
     }
 
-    hal.console->printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
+#ifdef DBG_CONSOLEMSGS
     printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
+#endif
 
     _initialised = true;
+#ifdef DBG_CONSOLEMSGS
 	printf("AP_Logger_File::REGESTERING _io_timer ---------------\n");
+#endif
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_File::_io_timer, void));
 }
 
@@ -149,7 +158,7 @@ bool AP_Logger_File::log_exists(const uint16_t lognum) const
 void AP_Logger_File::periodic_1Hz()
 {
     if (!io_thread_alive()) {
-    	//printf("%s -> IO THREAD DEAD\n",__PRETTY_FUNCTION__);
+   	//printf("%s -> IO THREAD DEAD\n",__PRETTY_FUNCTION__);
         if (io_thread_warning_decimation_counter == 0 && _initialised) {
             // we don't print this error unless we did initialise. When _initialised is set to true
             // we register the IO timer callback
@@ -341,10 +350,14 @@ void AP_Logger_File::Prep_MinSpace()
             break;
         }
         if (file_exists(filename_to_remove)) {
+#ifdef DBG_CONSOLEMSGS
             printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
+#endif
             if (unlink(filename_to_remove) == -1) {
+#ifdef DBG_CONSOLEMSGS
                 printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
+#endif
                 free(filename_to_remove);
                 if (errno == ENOENT) {
                     // corruption - should always have a continuous
@@ -454,7 +467,9 @@ char *AP_Logger_File::_lastlog_file_name(void) const
 // remove all log files
 void AP_Logger_File::EraseAll()
 {
+#ifdef DBG_CONSOLEMSGS
 	printf("%s\n",__PRETTY_FUNCTION__);
+#endif
     if (hal.util->get_soft_armed()) {
         // do not want to do any filesystem operations while we are e.g. flying
         return;
@@ -493,7 +508,9 @@ bool AP_Logger_File::WritesOK() const
         return false;
     }
     if (_open_error) {
+#ifdef DBG_CONSOLEMSGS
 		printf("%s -> WritesOK open_error",__PRETTY_FUNCTION__);
+#endif
         return false;
     }
     return true;
@@ -503,7 +520,9 @@ bool AP_Logger_File::WritesOK() const
 bool AP_Logger_File::StartNewLogOK() const
 {
     if (_open_error) {
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> open error\n",__PRETTY_FUNCTION__);
+#endif
         return false;
     }
     return AP_Logger_Backend::StartNewLogOK();
@@ -605,8 +624,9 @@ uint32_t AP_Logger_File::_get_log_size(const uint16_t log_num)
     }
     struct stat st;
     if (::stat(fname, &st) != 0) {
-        printf("Unable to fetch Log File Size: %s\n", strerror(errno));
+#ifdef DBG_CONSOLEMSGS
         printf("Unable to fetch Log File Size: %s,%s\n", fname,strerror(errno));
+#endif
         free(fname);
         return 0;
     }
@@ -710,10 +730,10 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         if (_read_fd == -1) {
             _open_error = true;
             int saved_errno = errno;
-            ::printf("Log read open fail for %s - %s\n",
-                     fname, strerror(saved_errno));
+#ifdef DBG_CONSOLEMSGS
             printf("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
+#endif
             free(fname);
             return -1;            
         }
@@ -768,7 +788,9 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
  */
 void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
 {
+#ifdef DBG_CONSOLEMSGS
 	printf("%s\n",__PRETTY_FUNCTION__);
+#endif
     uint16_t log_num = _log_num_from_list_entry(list_entry);
     if (log_num == 0) {
         // that failed - probably no logs
@@ -813,7 +835,9 @@ uint16_t AP_Logger_File::get_num_logs()
  */
 void AP_Logger_File::stop_logging(void)
 {
+#ifdef DBG_CONSOLEMSGS
 	printf("%s\n",__PRETTY_FUNCTION__);
+#endif
     // best-case effort to avoid annoying the IO thread
     const bool have_sem = write_fd_semaphore.take(1);
     if (_write_fd != -1) {
@@ -831,10 +855,14 @@ void AP_Logger_File::stop_logging(void)
 void AP_Logger_File::PrepForArming()
 {
     if (logging_started()) {
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> logging_starrted already\n",__PRETTY_FUNCTION__);
+#endif
         return;
     }
+#ifdef DBG_CONSOLEMSGS
     printf("%s -> start new log\n",__PRETTY_FUNCTION__);
+#endif
     start_new_log();
 }
 
@@ -843,7 +871,9 @@ void AP_Logger_File::PrepForArming()
  */
 uint16_t AP_Logger_File::start_new_log(void)
 {
+#ifdef DBG_CONSOLEMSGS
 	printf("%s\n",__PRETTY_FUNCTION__);
+#endif
     stop_logging();
 
     start_new_log_reset_variables();
@@ -851,19 +881,24 @@ uint16_t AP_Logger_File::start_new_log(void)
     if (_open_error) {
         // we have previously failed to open a file - don't try again
         // to prevent us trying to open files while in flight
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> open error\n",__PRETTY_FUNCTION__);
+#endif
         return 0xFFFF;
     }
 
     if (_read_fd != -1) {
         ::close(_read_fd);
         _read_fd = -1;
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> read fd -1\n",__PRETTY_FUNCTION__);
+#endif
     }
 
     if (disk_space_avail() < _free_space_min_avail) {
-        hal.console->printf("Out of space for logging\n");
+#ifdef DBG_CONSOLEMSGS
         printf("Out of space for logging\n");
+#endif
         _open_error = true;
         return 0xffff;
     }
@@ -887,11 +922,15 @@ uint16_t AP_Logger_File::start_new_log(void)
     _write_filename = _log_file_name(log_num);
     if (_write_filename == nullptr) {
         _open_error = true;
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> open error nullptr\n",__PRETTY_FUNCTION__);
+#endif
         write_fd_semaphore.give();
         return 0xFFFF;
     }
+#ifdef DBG_CONSOLEMSGS
     printf("AP_Logger_File::_write_filename: %s\n",_write_filename);
+#endif
 #if HAL_OS_POSIX_IO
     _write_fd = ::open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
 #else
@@ -905,10 +944,10 @@ uint16_t AP_Logger_File::start_new_log(void)
         _open_error = true;
         write_fd_semaphore.give();
         int saved_errno = errno;
-        ::printf("Log open fail for %s - %s\n",
-                 _write_filename, strerror(saved_errno));
+#ifdef DBG_CONSOLEMSGS
         printf("Log open fail for %s - %s\n",
                             _write_filename, strerror(saved_errno));
+#endif
         return 0xFFFF;
     }
     _last_write_ms = AP_HAL::millis();
@@ -929,7 +968,9 @@ uint16_t AP_Logger_File::start_new_log(void)
     free(fname);
     if (fd == -1) {
         _open_error = true;
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> _open_error fd = -1\n",__PRETTY_FUNCTION__);
+#endif
         return 0xFFFF;
     }
 
@@ -943,7 +984,9 @@ uint16_t AP_Logger_File::start_new_log(void)
         _open_error = true;
         return 0xFFFF;
     }
+#ifdef DBG_CONSOLEMSGS
 	printf("%s -> returned OK\n",__PRETTY_FUNCTION__);
+#endif
 
     return log_num;
 }
@@ -1000,8 +1043,9 @@ void AP_Logger_File::_io_timer(void)
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
         if (disk_space_avail() < _free_space_min_avail) {
-            hal.console->printf("Out of space for logging\n");
-            printf("Out of space for logging\n");
+#ifdef DBG_CONSOLEMSGS
+        	printf("Out of space for logging\n");
+#endif
             stop_logging();
             _open_error = true; // prevent logging starting again
             last_io_operation = "";
@@ -1051,7 +1095,9 @@ void AP_Logger_File::_io_timer(void)
             last_io_operation = "";
             _write_fd = -1;
             _initialised = false;
+#ifdef DBG_CONSOLEMSGS
             printf("Failed to write to File: %s\n", strerror(errno));
+#endif
         }
     } else {
         _last_write_ms = tnow;
@@ -1092,12 +1138,14 @@ bool AP_Logger_File::io_thread_alive() const
 		return true;
 	}
 
+
+
 	bool alive = last_seen < 1000;
 	//printf("%s -> alive:%d\n",__PRETTY_FUNCTION__,alive);
 	//printf("%s -> _io_timer_heartbeat:%d\n",__PRETTY_FUNCTION__,_io_timer_heartbeat);
 	//printf("%s -> AP_HAL::millis():%d\n",__PRETTY_FUNCTION__,AP_HAL::millis());
 	//printf("%s -> AP_HAL::int...:%d\n",__PRETTY_FUNCTION__,(int)(AP_HAL::millis() - _io_timer_heartbeat));
-
+#endif
     // if the io thread hasn't had a heartbeat in a full second then it is dead
     return alive;
 }
@@ -1108,7 +1156,9 @@ bool AP_Logger_File::logging_failed() const
         return true;
     }
     if (_open_error) {
+#ifdef DBG_CONSOLEMSGS
     	printf("%s -> FAILED, logging failed, open error\n",__PRETTY_FUNCTION__);
+#endif
         return true;
     }
     if (!io_thread_alive()) {
