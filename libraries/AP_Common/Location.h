@@ -1,17 +1,7 @@
-/*
- * Location.h
- *
- */
+#pragma once
 
-
-#ifndef LOCATION_H
-#define LOCATION_H
-
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_HAL/AP_HAL.h>
 
-class AP_AHRS_NavEKF;
 class AP_Terrain;
 
 #define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
@@ -111,5 +101,3 @@ public:
 private:
     static AP_Terrain *_terrain;
 };
-
-#endif /* LOCATION_H */
