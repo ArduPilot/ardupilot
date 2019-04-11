@@ -341,11 +341,9 @@ void AP_Logger_File::Prep_MinSpace()
             break;
         }
         if (file_exists(filename_to_remove)) {
-            hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
             printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
             if (unlink(filename_to_remove) == -1) {
-                hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
@@ -714,7 +712,6 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
             int saved_errno = errno;
             ::printf("Log read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
-            hal.console->printf("Log read open fail for %s - %s\n",
             printf("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
@@ -910,7 +907,6 @@ uint16_t AP_Logger_File::start_new_log(void)
         int saved_errno = errno;
         ::printf("Log open fail for %s - %s\n",
                  _write_filename, strerror(saved_errno));
-        hal.console->printf("Log open fail for %s - %s\n",
         printf("Log open fail for %s - %s\n",
                             _write_filename, strerror(saved_errno));
         return 0xFFFF;
