@@ -998,7 +998,7 @@ class AutoTest(ABC):
             return True
         return False
 
-    def set_parameter(self, name, value, add_to_context=True, epsilon=0.00001):
+    def set_parameter(self, name, value, add_to_context=True, epsilon=0.0002):
         """Set parameters from vehicle."""
         self.progress("Setting %s to %f" % (name, value))
         old_value = self.get_parameter(name, retry=2)
