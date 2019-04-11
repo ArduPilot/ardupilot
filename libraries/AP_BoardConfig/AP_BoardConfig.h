@@ -157,13 +157,22 @@ public:
         return _singleton?_singleton->_sdcard_slowdown.get():0;
     }
 #endif
-    
+
+    enum board_options {
+        BOARD_OPTION_WATCHDOG = (1 << 0),
+    };
+
+    // return true if watchdog enabled
+    static bool watchdog_enabled(void) {
+        return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:false;
+    }
+
 private:
     static AP_BoardConfig *_singleton;
     
     AP_Int16 vehicleSerialNumber;
     AP_Int8 pwm_count;
-    
+
 #if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || HAL_HAVE_SAFETY_SWITCH
     struct {
         AP_Int8 safety_enable;
@@ -223,4 +232,6 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     AP_Int8 _sdcard_slowdown;
 #endif
+
+    AP_Int32 _options;
 };
