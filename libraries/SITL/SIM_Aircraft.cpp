@@ -804,3 +804,32 @@ void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
         sitl->shove.t = 0;
     }
 }
+
+void Aircraft::add_twist_forces(Vector3f &rot_accel)
+{
+    if (sitl == nullptr) {
+        return;
+    }
+    if (sitl->gnd_behav != -1) {
+        ground_behavior = (GroundBehaviour)sitl->gnd_behav.get();
+    }
+    const uint32_t now = AP_HAL::millis();
+    if (sitl == nullptr) {
+        return;
+    }
+    if (sitl->twist.t == 0) {
+        return;
+    }
+    if (sitl->twist.start_ms == 0) {
+        sitl->twist.start_ms = now;
+    }
+    if (now - sitl->twist.start_ms < uint32_t(sitl->twist.t)) {
+        // FIXME: can we get a vector operation here instead?
+        rot_accel.x += sitl->twist.x;
+        rot_accel.y += sitl->twist.y;
+        rot_accel.z += sitl->twist.z;
+    } else {
+        sitl->twist.start_ms = 0;
+        sitl->twist.t = 0;
+    }
+}

@@ -181,7 +181,7 @@ protected:
     // allow for AHRS_ORIENTATION
     AP_Int8 *ahrs_orientation;
 
-    enum {
+    enum GroundBehaviour {
         GROUND_BEHAVIOR_NONE = 0,
         GROUND_BEHAVIOR_NO_MOVEMENT,
         GROUND_BEHAVIOR_FWD_ONLY,
@@ -244,6 +244,7 @@ protected:
     void update_external_payload(const struct sitl_input &input);
 
     void add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel);
+    void add_twist_forces(Vector3f &rot_accel);
 
 private:
     uint64_t last_time_us = 0;
