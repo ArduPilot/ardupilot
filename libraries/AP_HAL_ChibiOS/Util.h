@@ -20,6 +20,7 @@
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"
 #include <ch.h>
+#include "hwdef/common/watchdog.h"
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
@@ -64,6 +65,9 @@ public:
      */
     bool fs_init(void) override;
 #endif
+
+    // return true if the reason for the reboot was a watchdog reset
+    bool was_watchdog_reset() const override { return stm32_was_watchdog_reset(); }
     
 private:
 #ifdef HAL_PWM_ALARM
