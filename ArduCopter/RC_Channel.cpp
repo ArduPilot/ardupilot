@@ -522,7 +522,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                         copter.mode_zigzag.save_or_move_to_destination(0);
                         break;
                     case MIDDLE:
-                        copter.mode_zigzag.return_to_manual_control();
+                        copter.mode_zigzag.return_to_manual_control(false);
                         break;
                     case HIGH:
                         copter.mode_zigzag.save_or_move_to_destination(1);

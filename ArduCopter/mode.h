@@ -198,6 +198,8 @@ protected:
     // these are candidates for moving into the Mode base
     // class.
     float get_surface_tracking_climb_rate(int16_t target_rate);
+    bool get_surface_tracking_target_alt_cm(float &target_alt_cm) const;
+    void set_surface_tracking_target_alt_cm(float target_alt_cm);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_pilot_desired_throttle() const;
@@ -1206,7 +1208,7 @@ public:
     void save_or_move_to_destination(uint8_t dest_num);
 
     // return manual control to the pilot
-    void return_to_manual_control();
+    void return_to_manual_control(bool maintain_target);
 
 protected:
 
@@ -1218,7 +1220,7 @@ private:
     void auto_control();
     void manual_control();
     bool reached_destination();
-    bool calculate_next_dest(uint8_t position_num, Vector3f& next_dest) const;
+    bool calculate_next_dest(uint8_t position_num, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
 
     Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
     Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
