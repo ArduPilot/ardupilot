@@ -27,6 +27,7 @@
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include <hwdef.h>
 
@@ -203,7 +204,10 @@ static void main_loop()
     chThdSetPriority(APM_MAIN_PRIORITY);
 
     // setup watchdog to reset if main loop stops
-    stm32_watchdog_init();
+    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+    if (using_watchdog) {
+        stm32_watchdog_init();
+    }
 
     while (true) {
         g_callbacks->loop();
@@ -221,7 +225,9 @@ static void main_loop()
             hal.scheduler->delay_microseconds(50);
         }
 #endif
-        stm32_watchdog_pat();
+        if (using_watchdog) {
+            stm32_watchdog_pat();
+        }
     }
     thread_running = false;
 }
