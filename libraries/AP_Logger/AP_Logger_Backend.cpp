@@ -298,17 +298,22 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
 bool AP_Logger_Backend::StartNewLogOK() const
 {
     if (logging_started()) {
+    	printf("%s -> FALSE1\n",__PRETTY_FUNCTION__);
         return false;
     }
     if (_front._log_bitmask == 0) {
+    	printf("%s -> FALSE2\n",__PRETTY_FUNCTION__);
         return false;
     }
     if (_front.in_log_download()) {
+    	printf("%s -> FALSE3\n",__PRETTY_FUNCTION__);
         return false;
     }
     if (!hal.scheduler->in_main_thread()) {
+    	printf("%s -> FALSE4\n",__PRETTY_FUNCTION__);
         return false;
     }
+	printf("%s -> TRUE\n",__PRETTY_FUNCTION__);
     return true;
 }
 
@@ -361,12 +366,15 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
     validate_WritePrioritisedBlock(pBuffer, size);
 #endif
     if (!ShouldLog(is_critical)) {
+    	printf("%s -> ShouldLog\n",__PRETTY_FUNCTION__);
         return false;
     }
     if (StartNewLogOK()) {
+    	printf("%s -> StartNewLogOK\n",__PRETTY_FUNCTION__);
         start_new_log();
     }
     if (!WritesOK()) {
+    	printf("%s -> WritesOK\n",__PRETTY_FUNCTION__);
         return false;
     }
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
