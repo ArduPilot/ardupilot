@@ -431,7 +431,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case AUX_FUNC::AVOID_PROXIMITY:
         do_aux_function(ch_option, ch_flag);
         break;
-    // the following functions to not need to be initialised:
+    // the following functions do not need to be initialised:
     case AUX_FUNC::RELAY:
     case AUX_FUNC::RELAY2:
     case AUX_FUNC::RELAY3:
