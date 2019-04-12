@@ -930,9 +930,9 @@ uint16_t AP_Logger_File::start_new_log(void)
     // systems as open/write
     hal.scheduler->expect_delay_ms(3000);
 #if HAL_OS_POSIX_IO
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+    int fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
 #else
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC);
+    int fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
 #endif
     hal.scheduler->expect_delay_ms(0);
     free(fname);
@@ -1092,7 +1092,7 @@ bool AP_Logger_File::logging_enabled() const
 bool AP_Logger_File::io_thread_alive() const
 {
     // if the io thread hasn't had a heartbeat in a full second then it is dead
-    return (AP_HAL::millis() - _io_timer_heartbeat) < 1000;
+    return (AP_HAL::millis() - _io_timer_heartbeat) < 10000;
 }
 
 bool AP_Logger_File::logging_failed() const
