@@ -55,7 +55,7 @@ static void test_passed_waypoint(void)
         struct Location loc = location_from_point(test_points[i].location);
         struct Location wp1 = location_from_point(test_points[i].wp1);
         struct Location wp2 = location_from_point(test_points[i].wp2);
-        if (location_passed_point(loc, wp1, wp2) != test_points[i].passed) {
+        if (loc.past_interval_finish_line(wp1, wp2) != test_points[i].passed) {
             hal.console->printf("Failed waypoint test %u\n", (unsigned)i);
             return;
         }
