@@ -37,6 +37,9 @@ public:
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
 
+    // return true if this is a synthetic airspeed sensor
+    virtual bool is_synthetic(void) const { return false; }
+    
 protected:
     int8_t get_pin(void) const;
     float get_psi_range(void) const;

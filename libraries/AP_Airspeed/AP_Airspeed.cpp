@@ -34,6 +34,7 @@
 #if HAL_WITH_UAVCAN
 #include "AP_Airspeed_UAVCAN.h"
 #endif
+#include "AP_Airspeed_Synthetic.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -276,6 +277,9 @@ void AP_Airspeed::init()
             sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i);
 #endif
             break;
+        case TYPE_SYNTHETIC:
+            sensor[i] = new AP_Airspeed_Synthetic(*this, i);
+            break;
         }
 
         if (sensor[i] && !sensor[i]->init()) {
@@ -311,6 +315,18 @@ bool AP_Airspeed::get_temperature(uint8_t i, float &temperature)
     }
     if (sensor[i]) {
         return sensor[i]->get_temperature(temperature);
+    }
+    return false;
+}
+
+// return true if airspeed source is synthetic
+bool AP_Airspeed::is_synthetic(uint8_t i) const
+{
+    if (!enabled(i)) {
+        return false;
+    }
+    if (sensor[i]) {
+        return sensor[i]->is_synthetic();
     }
     return false;
 }
