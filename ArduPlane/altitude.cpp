@@ -45,7 +45,7 @@ void Plane::adjust_altitude_target()
         // altitude target
         set_target_altitude_location(next_WP_loc);
     } else if (target_altitude.offset_cm != 0 && 
-               !location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+               !current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
         // control climb/descent rate
         set_target_altitude_proportion(next_WP_loc, 1.0f-auto_state.wp_proportion);
 
@@ -66,8 +66,7 @@ void Plane::setup_glide_slope(void)
     // establish the distance we are travelling to the next waypoint,
     // for calculating out rate of change of altitude
     auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
-    auto_state.wp_proportion = location_path_proportion(current_loc, 
-                                                        prev_WP_loc, next_WP_loc);
+    auto_state.wp_proportion = current_loc.line_path_proportion(prev_WP_loc, next_WP_loc);
     SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
     update_flight_stage();
 
