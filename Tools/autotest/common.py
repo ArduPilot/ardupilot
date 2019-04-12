@@ -1782,6 +1782,9 @@ class AutoTest(ABC):
             fmt = "%" + str(longest) + "s: %.2fs"
             self.progress(fmt % (desc, time))
 
+    def send_statustext(self, text):
+        self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text),
+
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
         test_output_filename = self.buildlogs_path("%s-%s.txt" %
@@ -1789,6 +1792,7 @@ class AutoTest(ABC):
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile)
 
         prettyname = "%s (%s)" % (name, desc)
+        self.send_statustext(prettyname)
         self.start_test(prettyname)
 
         self.context_push()
