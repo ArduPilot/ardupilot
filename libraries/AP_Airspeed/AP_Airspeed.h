@@ -77,6 +77,10 @@ public:
     bool get_temperature(uint8_t i, float &temperature);
     bool get_temperature(float &temperature) { return get_temperature(primary, temperature); }
 
+    // return true if the sensor is synthetic
+    bool is_synthetic(uint8_t i) const;
+    bool is_synthetic(void) const { return is_synthetic(primary); }
+    
     // set the airspeed ratio (dimensionless)
     void set_airspeed_ratio(uint8_t i, float ratio) {
         param[i].ratio.set(ratio);
@@ -156,6 +160,7 @@ public:
         TYPE_I2C_DLVR_20IN=10,
         TYPE_I2C_DLVR_30IN=11,
         TYPE_I2C_DLVR_60IN=12,
+        TYPE_SYNTHETIC=13,
     };
 
     // get current primary sensor
@@ -191,6 +196,8 @@ private:
         AP_Int8  autocal;
         AP_Int8  tube_order;
         AP_Int8  skip_cal;
+        AP_Float wind_direction_from;
+        AP_Float wind_speed_mps;
     } param[AIRSPEED_MAX_SENSORS];
 
     struct airspeed_state {

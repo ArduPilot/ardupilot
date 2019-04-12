@@ -34,6 +34,7 @@
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_Airspeed_UAVCAN.h"
 #endif
+#include "AP_Airspeed_Synthetic.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -234,6 +235,12 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // Note that 21 is used above by the _OPTIONS parameter.  Do not use 21.
 
+    AP_GROUPINFO("_WIND_DIR",  22, AP_Airspeed, param[0].wind_direction_from, 0),
+    AP_GROUPINFO("_WIND_SPD",  23, AP_Airspeed, param[0].wind_speed_mps, 0),
+
+    AP_GROUPINFO("2_WIND_DIR",  24, AP_Airspeed, param[1].wind_direction_from, 0),
+    AP_GROUPINFO("2_WIND_SPD",  25, AP_Airspeed, param[1].wind_speed_mps, 0),
+    
     AP_GROUPEND
 };
 
@@ -326,6 +333,9 @@ void AP_Airspeed::init()
             sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i);
 #endif
             break;
+        case TYPE_SYNTHETIC:
+            sensor[i] = new AP_Airspeed_Synthetic(*this, i);
+            break;
         }
 
         if (sensor[i] && !sensor[i]->init()) {
@@ -364,6 +374,18 @@ bool AP_Airspeed::get_temperature(uint8_t i, float &temperature)
     }
     if (sensor[i]) {
         return sensor[i]->get_temperature(temperature);
+    }
+    return false;
+}
+
+// return true if airspeed source is synthetic
+bool AP_Airspeed::is_synthetic(uint8_t i) const
+{
+    if (!enabled(i)) {
+        return false;
+    }
+    if (sensor[i]) {
+        return sensor[i]->is_synthetic();
     }
     return false;
 }
