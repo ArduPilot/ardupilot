@@ -2169,8 +2169,7 @@ void QuadPlane::vtol_position_controller(void)
             float target_altitude = plane.next_WP_loc.alt;
             if (poscontrol.slow_descent) {
                 // gradually descend as we approach target
-                plane.auto_state.wp_proportion = location_path_proportion(plane.current_loc, 
-                                                                          plane.prev_WP_loc, plane.next_WP_loc);
+                plane.auto_state.wp_proportion = plane.current_loc.line_path_proportion(plane.prev_WP_loc, plane.next_WP_loc);
                 target_altitude = linear_interpolate(plane.prev_WP_loc.alt,
                                                      plane.next_WP_loc.alt,
                                                      plane.auto_state.wp_proportion,

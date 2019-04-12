@@ -617,7 +617,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // If override with p3 - then this is not used as it will overfly badly
     if (g.waypoint_max_radius > 0 &&
         auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
-        if (location_passed_point(current_loc, prev_WP_loc, flex_next_WP_loc)) {
+        if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
             if (cmd_passby == 0) {
                 prev_WP_loc = current_loc;
@@ -644,7 +644,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 	}
 
     // have we flown past the waypoint?
-    if (location_passed_point(current_loc, prev_WP_loc, flex_next_WP_loc)) {
+    if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)current_loc.get_distance(flex_next_WP_loc));
@@ -1038,7 +1038,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 // check if we should move on to the next waypoint
                 Location breakout_loc = cmd.content.location;
                 breakout_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance());
-                if(location_passed_point(current_loc, start, breakout_loc)) {
+                if(current_loc.past_interval_finish_line(start, breakout_loc)) {
                     vtol_approach_s.approach_stage = VTOL_LANDING;
                     quadplane.do_vtol_land(cmd);
                     // fallthrough
