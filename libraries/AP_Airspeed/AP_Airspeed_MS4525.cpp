@@ -34,42 +34,43 @@ AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend, uint8_t _instance
 {
 }
 
-// probe and initialise the sensor
+// Probe and initialize the sensor
 bool AP_Airspeed_MS4525::init()
 {
-    const struct {
-        uint8_t bus;
-        uint8_t addr;
-    } addresses[] = {
-        { 1, MS4525D0_I2C_ADDR },
-        { 0, MS4525D0_I2C_ADDR },
-        { 2, MS4525D0_I2C_ADDR },
-        { 3, MS4525D0_I2C_ADDR },
-    };
+    // Create boolean to represent if sensor has been successfully found yet
     bool found = false;
-    for (uint8_t i=0; i<ARRAY_SIZE(addresses); i++) {
-        _dev = hal.i2c_mgr->get_device(addresses[i].bus, addresses[i].addr);
-        if (!_dev) {
-            continue;
-        }
-        WITH_SEMAPHORE(_dev->get_semaphore());
 
-        // lots of retries during probe
-        _dev->set_retries(10);
-    
-        _measure();
-        hal.scheduler->delay(10);
-        _collect();
+    // Attempt to locate sensor on any I2C bus
+    _dev = hal.i2c_mgr->get_device(get_bus(), MS4525D0_I2C_ADDR);
 
-        found = (_last_sample_time_ms != 0);
-        if (found) {
-            printf("MS4525: Found sensor on bus %u address 0x%02x\n", addresses[i].bus, addresses[i].addr);
-            break;
-        }
+    // Confirm sensor has been found
+    if (!_dev) {
+        continue;
     }
+
+    // Get semapore
+    WITH_SEMAPHORE(_dev->get_semaphore());
+
+    // Increase number of retries when probing sensor
+    _dev->set_retries(10);
+    
+    // Probe sensor
+    _measure();
+    hal.scheduler->delay(10);
+    _collect();
+
+    // Set found boolean to true if the sensor has actually been successfully found
+    found = (_last_sample_time_ms != 0);
+
+    // Report if sensor was not found, return false if initialization unsuccessful
     if (!found) {
         printf("MS4525: no sensor found\n");
         return false;
+    }
+
+    // Report I2C bus and address if the sensor was found, if statement not strictly needed
+    if (found) {
+        printf("MS4525: Found sensor on bus %u address 0x%02x\n", get_bus(), MS4525D0_I2C_ADDR);
     }
 
     // drop to 2 retries for runtime
@@ -78,16 +79,6 @@ bool AP_Airspeed_MS4525::init()
     _dev->register_periodic_callback(20000,
                                      FUNCTOR_BIND_MEMBER(&AP_Airspeed_MS4525::_timer, void));
     return true;
-}
-
-// start a measurement
-void AP_Airspeed_MS4525::_measure()
-{
-    _measurement_started_ms = 0;
-    uint8_t cmd = 0;
-    if (_dev->transfer(&cmd, 1, nullptr, 0)) {
-        _measurement_started_ms = AP_HAL::millis();
-    }
 }
 
 /*
