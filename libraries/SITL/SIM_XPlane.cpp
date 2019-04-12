@@ -407,10 +407,10 @@ void XPlane::send_data(const struct sitl_input &input)
 
     // uses misc wings, setup for elevator control
     send_dref("sim/operation/override/override_control_surfaces", 1);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[12]", rear_right*45);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[13]", rear_left*45);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[14]", front_left*45);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[15]", front_right*45);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[12]", rear_right*20);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[13]", rear_left*20);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[14]", front_left*20);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[15]", front_right*20);
 
     // get wing sweep from SERVO9
     //float sweep = (input.servos[8]-1000)/1000.0;
