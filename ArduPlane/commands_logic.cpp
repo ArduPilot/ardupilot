@@ -803,7 +803,8 @@ bool Plane::verify_continue_and_change_alt()
  */
 bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
 {
-    if (current_loc.alt > cmd.content.altitude_wait.altitude*100.0f) {
+    if (!is_zero(cmd.content.altitude_wait.altitude) &&
+        current_loc.alt > cmd.content.altitude_wait.altitude*100.0f) {
         gcs().send_text(MAV_SEVERITY_INFO,"Reached altitude");
         return true;
     }
@@ -813,12 +814,21 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
     }
 
     float baro_alt = barometer.get_altitude();
-    if (auto_state.highest_baro_alt - baro_alt > 50) {
-        // we've dropped 50m baro alt, trigger
-        gcs().send_text(MAV_SEVERITY_INFO, "Dropped %.1fm", auto_state.highest_baro_alt - baro_alt);
-        return true;        
+    if (cmd.content.altitude_wait.alt_change > 0) {
+        if (auto_state.highest_baro_alt - baro_alt > cmd.content.altitude_wait.alt_change) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Dropped %.1fm", auto_state.highest_baro_alt - baro_alt);
+            return true;
+        }
     }
     auto_state.highest_baro_alt = MAX(auto_state.highest_baro_alt, baro_alt);
+
+    float aspeed;
+    if (cmd.content.altitude_wait.airspeed > 0 && ahrs.airspeed_estimate(&aspeed)) {
+        if (aspeed >= cmd.content.altitude_wait.airspeed) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Reached airspeed %.1fm/s", aspeed);
+            return true;
+        }
+    }
 
     // if requested, wiggle servos
     if (cmd.content.altitude_wait.wiggle_time != 0) {
