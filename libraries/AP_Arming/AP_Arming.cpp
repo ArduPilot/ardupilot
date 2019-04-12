@@ -44,7 +44,11 @@
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS horizontally
+
 #define AP_ARMING_AHRS_GPS_ERROR_Z_MAX_CM   5000      // accept up to 50m difference between AHRS and GPS vertically
+#if !APM_BUILD_TYPE(APM_BUILD_APMrover2) // Rover doesn't get altitudes correct
+const uint16_t AP_ARMING_BARO_GPS_ERROR_Z_MAX_CM = 5000;      // accept up to 50m difference between BARO and GPS vertically
+#endif
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMONLY
@@ -455,6 +459,21 @@ bool AP_Arming::gps_checks(bool report)
             if (distance_z_cm > AP_ARMING_AHRS_GPS_ERROR_Z_MAX_CM) { //
                 check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ in altitude by %.1fm", distance_z_cm/100.0f);
                 return false;
+            }
+            if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_BARO)) {
+                int32_t gps_alt_rel_cm;
+                if (!gps_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, gps_alt_rel_cm)) {
+                    check_failed(ARMING_CHECK_GPS, report, "Failed to retrieve GPS home-relative altitude");
+                    return false;
+                }
+#if !APM_BUILD_TYPE(APM_BUILD_APMrover2) // Rover doesn't get altitudes correct
+                // also check that the Baro and GPS align:
+                const float baro_distance_z_cm = fabsf(gps_alt_rel_cm - AP::baro().get_altitude()*100.0f);
+                if (baro_distance_z_cm > AP_ARMING_BARO_GPS_ERROR_Z_MAX_CM) {
+                    check_failed(ARMING_CHECK_GPS, report, "GPS and BARO differ in altitude by %.1fm", baro_distance_z_cm/100.0f);
+                    return false;
+                }
+#endif
             }
         }
     }
