@@ -1,5 +1,6 @@
 // auto generated bindings, don't manually edit
 #include "lua_generated_bindings.h"
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -39,7 +40,7 @@ int Vector3f_z(lua_State *L) {
             lua_pushnumber(L, ud->z);
             return 1;
         case 2: {
-            const float data_2 = luaL_checknumber(L, 2);
+            const float data_2 = static_cast<float>(luaL_checknumber(L, 2));
             luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "z out of range");
             ud->z = data_2;
             return 0;
@@ -56,7 +57,7 @@ int Vector3f_y(lua_State *L) {
             lua_pushnumber(L, ud->y);
             return 1;
         case 2: {
-            const float data_2 = luaL_checknumber(L, 2);
+            const float data_2 = static_cast<float>(luaL_checknumber(L, 2));
             luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "y out of range");
             ud->y = data_2;
             return 0;
@@ -73,7 +74,7 @@ int Vector3f_x(lua_State *L) {
             lua_pushnumber(L, ud->x);
             return 1;
         case 2: {
-            const float data_2 = luaL_checknumber(L, 2);
+            const float data_2 = static_cast<float>(luaL_checknumber(L, 2));
             luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "x out of range");
             ud->x = data_2;
             return 0;
@@ -90,7 +91,7 @@ int Location_loiter_xtrack(lua_State *L) {
             lua_pushinteger(L, ud->loiter_xtrack);
             return 1;
         case 2: {
-            const bool data_2 = lua_toboolean(L, 2);
+            const bool data_2 = static_cast<bool>(lua_toboolean(L, 2));
             ud->loiter_xtrack = data_2;
             return 0;
          }
@@ -106,7 +107,7 @@ int Location_origin_alt(lua_State *L) {
             lua_pushinteger(L, ud->origin_alt);
             return 1;
         case 2: {
-            const bool data_2 = lua_toboolean(L, 2);
+            const bool data_2 = static_cast<bool>(lua_toboolean(L, 2));
             ud->origin_alt = data_2;
             return 0;
          }
@@ -122,7 +123,7 @@ int Location_terrain_alt(lua_State *L) {
             lua_pushinteger(L, ud->terrain_alt);
             return 1;
         case 2: {
-            const bool data_2 = lua_toboolean(L, 2);
+            const bool data_2 = static_cast<bool>(lua_toboolean(L, 2));
             ud->terrain_alt = data_2;
             return 0;
          }
@@ -138,7 +139,7 @@ int Location_relative_alt(lua_State *L) {
             lua_pushinteger(L, ud->relative_alt);
             return 1;
         case 2: {
-            const bool data_2 = lua_toboolean(L, 2);
+            const bool data_2 = static_cast<bool>(lua_toboolean(L, 2));
             ud->relative_alt = data_2;
             return 0;
          }
@@ -154,7 +155,7 @@ int Location_lng(lua_State *L) {
             lua_pushinteger(L, ud->lng);
             return 1;
         case 2: {
-            const int32_t data_2 = luaL_checkinteger(L, 2);
+            const int32_t data_2 = static_cast<int32_t>(luaL_checkinteger(L, 2));
             luaL_argcheck(L, ((data_2 >= -1800000000) && (data_2 <= 1800000000)), 2, "lng out of range");
             ud->lng = data_2;
             return 0;
@@ -171,7 +172,7 @@ int Location_lat(lua_State *L) {
             lua_pushinteger(L, ud->lat);
             return 1;
         case 2: {
-            const int32_t data_2 = luaL_checkinteger(L, 2);
+            const int32_t data_2 = static_cast<int32_t>(luaL_checkinteger(L, 2));
             luaL_argcheck(L, ((data_2 >= -900000000) && (data_2 <= 900000000)), 2, "lat out of range");
             ud->lat = data_2;
             return 0;
@@ -207,9 +208,9 @@ int Location_offset(lua_State *L) {
     }
 
     Location * ud = check_Location(L, 1);
-    const float data_2 = luaL_checknumber(L, 2);
+    const float data_2 = static_cast<float>(luaL_checknumber(L, 2));
     luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "argument out of range");
-    const float data_3 = luaL_checknumber(L, 3);
+    const float data_3 = static_cast<float>(luaL_checknumber(L, 3));
     luaL_argcheck(L, ((data_3 >= -FLT_MAX) && (data_3 <= FLT_MAX)), 3, "argument out of range");
     ud->offset(
             data_2,
@@ -255,23 +256,7 @@ const luaL_Reg Location_meta[] = {
     {NULL, NULL}
 };
 
-int notify_play_tune(lua_State *L) {
-    const int args = lua_gettop(L);
-    if (args > 2) {
-        return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 2) {
-        return luaL_argerror(L, args, "too few arguments");
-    }
-
-    luaL_checkudata(L, 1, "notify");
-    const char * data_2 = luaL_checkstring(L, 2);
-    AP::notify().play_tune(
-            data_2);
-
-    return 0;
-}
-
-int ahrs_get_home(lua_State *L) {
+int RangeFinder_num_sensors(lua_State *L) {
     const int args = lua_gettop(L);
     if (args > 1) {
         return luaL_argerror(L, args, "too many arguments");
@@ -279,16 +264,20 @@ int ahrs_get_home(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "ahrs");
-    const Location &data = AP::ahrs().get_home(
+    luaL_checkudata(L, 1, "RangeFinder");
+
+    RangeFinder *singleton = RangeFinder::get_singleton();    if (singleton == nullptr) {
+        return luaL_argerror(L, args, "RangeFinder not supported on this firmware");
+    }
+
+    const uint8_t data = singleton->num_sensors(
 );
 
-    new_Location(L);
-    *check_Location(L, -1) = data;
+    lua_pushinteger(L, data);
     return 1;
 }
 
-int ahrs_get_position(lua_State *L) {
+int AP_Notify_play_tune(lua_State *L) {
     const int args = lua_gettop(L);
     if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
@@ -296,23 +285,76 @@ int ahrs_get_position(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "ahrs");
+    luaL_checkudata(L, 1, "AP_Notify");
+
+    AP_Notify *singleton = AP_Notify::get_singleton();    if (singleton == nullptr) {
+        return luaL_argerror(L, args, "AP_Notify not supported on this firmware");
+    }
+
+    const char * data_2 = luaL_checkstring(L, 2);
+    singleton->play_tune(
+            data_2);
+
+    return 0;
+}
+
+int AP_AHRS_get_home(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 1) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 1) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    luaL_checkudata(L, 1, "AP_AHRS");
+
+    AP_AHRS *singleton = AP_AHRS::get_singleton();    if (singleton == nullptr) {
+        return luaL_argerror(L, args, "AP_AHRS not supported on this firmware");
+    }
+
+    const Location &data = singleton->get_home(
+);
+
+    new_Location(L);
+    *check_Location(L, -1) = data;
+    return 1;
+}
+
+int AP_AHRS_get_position(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    luaL_checkudata(L, 1, "AP_AHRS");
+
+    AP_AHRS *singleton = AP_AHRS::get_singleton();    if (singleton == nullptr) {
+        return luaL_argerror(L, args, "AP_AHRS not supported on this firmware");
+    }
+
     Location & data_2 = *check_Location(L, 2);
-    const bool data = AP::ahrs().get_position(
+    const bool data = singleton->get_position(
             data_2);
 
     lua_pushboolean(L, data);
     return 1;
 }
 
-const luaL_Reg notify_meta[] = {
-    {"play_tune", notify_play_tune},
+const luaL_Reg RangeFinder_meta[] = {
+    {"num_sensors", RangeFinder_num_sensors},
     {NULL, NULL}
 };
 
-const luaL_Reg ahrs_meta[] = {
-    {"get_home", ahrs_get_home},
-    {"get_position", ahrs_get_position},
+const luaL_Reg AP_Notify_meta[] = {
+    {"play_tune", AP_Notify_play_tune},
+    {NULL, NULL}
+};
+
+const luaL_Reg AP_AHRS_meta[] = {
+    {"get_home", AP_AHRS_get_home},
+    {"get_position", AP_AHRS_get_position},
     {NULL, NULL}
 };
 
@@ -328,8 +370,9 @@ const struct singleton_fun {
     const char *name;
     const luaL_Reg *reg;
 } singleton_fun[] = {
-    {"notify", notify_meta},
-    {"ahrs", ahrs_meta},
+    {"RangeFinder", RangeFinder_meta},
+    {"AP_Notify", AP_Notify_meta},
+    {"AP_AHRS", AP_AHRS_meta},
 };
 
 void load_generated_bindings(lua_State *L) {
@@ -359,8 +402,9 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
-    "notify",
-    "ahrs",
+    "RangeFinder",
+    "AP_Notify",
+    "AP_AHRS",
 };
 
 const struct userdata {

@@ -16,11 +16,15 @@ char keyword_userdata[]  = "userdata";
 char keyword_write[]     = "write";
 
 // type keywords
-char keyword_boolean[] = "boolean";
-char keyword_float[]   = "float";
-char keyword_int32_t[] = "int32_t";
-char keyword_string[]  = "string";
-char keyword_void[]    = "void";
+char keyword_boolean[]  = "boolean";
+char keyword_float[]    = "float";
+char keyword_int8_t[]   = "int8_t";
+char keyword_int16_t[]  = "int16_t";
+char keyword_int32_t[]  = "int32_t";
+char keyword_string[]   = "string";
+char keyword_uint8_t[]  = "uint8_t";
+char keyword_uint16_t[] = "uint16_t";
+char keyword_void[]     = "void";
 
 enum error_codes {
   ERROR_OUT_OF_MEMORY   = 1, // ran out of memory
@@ -67,7 +71,11 @@ enum access_flags {
 enum field_type {
   TYPE_BOOLEAN,
   TYPE_FLOAT,
+  TYPE_INT8_T,
+  TYPE_INT16_T,
   TYPE_INT32_T,
+  TYPE_UINT8_T,
+  TYPE_UINT16_T,
   TYPE_NONE,
   TYPE_STRING,
   TYPE_USERDATA,
@@ -282,7 +290,11 @@ unsigned int parse_access_flags(struct type * type) {
       flags |= ACCESS_FLAG_WRITE;
       switch (type->type) {
         case TYPE_FLOAT:
+        case TYPE_INT8_T:
+        case TYPE_INT16_T:
         case TYPE_INT32_T:
+        case TYPE_UINT8_T:
+        case TYPE_UINT16_T:
           type->range = parse_range_check();
           break;
         case TYPE_USERDATA:
@@ -343,8 +355,16 @@ int parse_type(struct type *type, const enum type_restriction restrictions, enum
     type->type = TYPE_BOOLEAN;
   } else if (strcmp(data_type, keyword_float) == 0) {
     type->type = TYPE_FLOAT;
+  } else if (strcmp(data_type, keyword_int8_t) == 0) {
+    type->type = TYPE_INT8_T;
+  } else if (strcmp(data_type, keyword_int16_t) == 0) {
+    type->type = TYPE_INT16_T;
   } else if (strcmp(data_type, keyword_int32_t) == 0) {
     type->type = TYPE_INT32_T;
+  } else if (strcmp(data_type, keyword_uint8_t) == 0) {
+    type->type = TYPE_UINT8_T;
+  } else if (strcmp(data_type, keyword_uint16_t) == 0) {
+    type->type = TYPE_UINT16_T;
   } else if (strcmp(data_type, keyword_string) == 0) {
     type->type = TYPE_STRING;
   } else if (strcmp(data_type, keyword_void) == 0) {
@@ -358,8 +378,11 @@ int parse_type(struct type *type, const enum type_restriction restrictions, enum
   if (range_type != RANGE_CHECK_NONE) {
     switch (type->type) {
       case TYPE_FLOAT:
+      case TYPE_INT8_T:
+      case TYPE_INT16_T:
       case TYPE_INT32_T:
-              printf("loading a range");
+      case TYPE_UINT8_T:
+      case TYPE_UINT16_T:
         type->range = parse_range_check();
         break;
       case TYPE_BOOLEAN:
@@ -580,6 +603,8 @@ void emit_range_check(const struct range_check *range, const char * name, const 
   if (range == NULL) {
     error(ERROR_INTERNAL, "Internal Error: Attempted to emit a range check for %s but no range check information was found", name);
   }
+  // FIXME: emit an implict range check on primitive int types to ensure that they are within a representable range
+  //        should be able to use MAX() around the call
   fprintf(source, "%sluaL_argcheck(L, ((%s >= %s) && (%s <= %s)), 2, \"%s out of range\");\n",
           indentation != NULL ? indentation : "",
           internal_name, range->low,
@@ -593,13 +618,25 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
   // consider the arg numberto provide both the name, and the stack position of the variable
   switch (t.type) {
     case TYPE_BOOLEAN:
-      fprintf(source, "%sconst bool data_%d = lua_toboolean(L, %d);\n", indentation, arg_number, arg_number);
+      fprintf(source, "%sconst bool data_%d = static_cast<bool>(lua_toboolean(L, %d));\n", indentation, arg_number, arg_number);
       break;
     case TYPE_FLOAT:
-      fprintf(source, "%sconst float data_%d = luaL_checknumber(L, %d);\n", indentation, arg_number, arg_number);
+      fprintf(source, "%sconst float data_%d = static_cast<float>(luaL_checknumber(L, %d));\n", indentation, arg_number, arg_number);
+      break;
+    case TYPE_INT8_T:
+      fprintf(source, "%sconst int8_t data_%d = static_cast<int8_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+      break;
+    case TYPE_INT16_T:
+      fprintf(source, "%sconst int16_t data_%d = static_cast<int16_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
       break;
     case TYPE_INT32_T:
-      fprintf(source, "%sconst int32_t data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number);
+      fprintf(source, "%sconst int32_t data_%d = static_cast<int32_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+      break;
+    case TYPE_UINT8_T:
+      fprintf(source, "%sconst uint8_t data_%d = static_cast<uint8_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+      break;
+    case TYPE_UINT16_T:
+      fprintf(source, "%sconst uint16_t data_%d = static_cast<uint16_t>luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
       break;
     case TYPE_NONE:
       return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
@@ -634,7 +671,11 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
       case TYPE_FLOAT:
         fprintf(source, "            lua_pushnumber(L, ud->%s);\n", field->name);
         break;
+      case TYPE_INT8_T:
+      case TYPE_INT16_T:
       case TYPE_INT32_T:
+      case TYPE_UINT8_T:
+      case TYPE_UINT16_T:
         fprintf(source, "            lua_pushinteger(L, ud->%s);\n", field->name);
         break;
       case TYPE_NONE:
@@ -712,8 +753,20 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case TYPE_FLOAT:
       fprintf(source, "    const float data = ud->%s(\n", method->name);
       break;
+    case TYPE_INT8_T:
+      fprintf(source, "    const int8_t data = ud->%s(\n", method->name);
+      break;
+    case TYPE_INT16_T:
+      fprintf(source, "    const int16_t data = ud->%s(\n", method->name);
+      break;
     case TYPE_INT32_T:
       fprintf(source, "    const int32_t data = ud->%s(\n", method->name);
+      break;
+    case TYPE_UINT8_T:
+      fprintf(source, "    const uint8_t data = ud->%s(\n", method->name);
+      break;
+    case TYPE_UINT16_T:
+      fprintf(source, "    const uint16_t data = ud->%s(\n", method->name);
       break;
     case TYPE_STRING:
       fprintf(source, "    const char * data = ud->%s(\n", method->name);
@@ -745,7 +798,11 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case TYPE_FLOAT:
       fprintf(source, "    lua_pushnumber(L, data);\n");
       break;
+    case TYPE_INT8_T:
+    case TYPE_INT16_T:
     case TYPE_INT32_T:
+    case TYPE_UINT8_T:
+    case TYPE_UINT16_T:
       fprintf(source, "    lua_pushinteger(L, data);\n");
       break;
     case TYPE_STRING:
@@ -783,7 +840,6 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
     arg_count++;
     arg = arg->next;
   }
-  const char * dereference = ".";
 
   fprintf(source, "int %s_%s(lua_State *L) {\n", data->name, method->name);
   fprintf(source, "    const int args = lua_gettop(L);\n");
@@ -792,7 +848,13 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
   fprintf(source, "    } else if (args < %d) {\n", arg_count);
   fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
   fprintf(source, "    }\n\n");
-  fprintf(source, "    luaL_checkudata(L, 1, \"%s\");\n", data->name);
+  fprintf(source, "    luaL_checkudata(L, 1, \"%s\");\n\n", data->name);
+
+  // fetch and check the singleton pointer
+  fprintf(source, "    %s *singleton = %s::get_singleton();", data->name, data->name);
+  fprintf(source, "    if (singleton == nullptr) {\n");
+  fprintf(source, "        return luaL_argerror(L, args, \"%s not supported on this firmware\");\n", data->name);
+  fprintf(source, "    }\n\n");
 
   // extract the arguments
   arg = method->arguments;
@@ -806,22 +868,34 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
 
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:
-      fprintf(source, "    const bool data = AP::%s()%s%s(\n", data->name, dereference, method->name);
+      fprintf(source, "    const bool data = singleton->%s(\n", method->name);
       break;
     case TYPE_FLOAT:
-      fprintf(source, "    const float data = AP::%s()%s%s(\n", data->name, dereference, method->name);
+      fprintf(source, "    const float data = singleton->%s(\n", method->name);
+      break;
+    case TYPE_INT8_T:
+      fprintf(source, "    const int8_t data = singleton->%s(\n", method->name);
+      break;
+    case TYPE_INT16_T:
+      fprintf(source, "    const int6_t data = singleton->%s(\n", method->name);
       break;
     case TYPE_INT32_T:
-      fprintf(source, "    const int32_t data = AP::%s()%s%s(\n", data->name, dereference, method->name);
+      fprintf(source, "    const int32_t data = singleton->%s(\n", method->name);
       break;
     case TYPE_STRING:
-      fprintf(source, "    const char * data = AP::%s()%s%s(\n", data->name, dereference, method->name);
+      fprintf(source, "    const char * data = singleton->%s(\n", method->name);
+      break;
+    case TYPE_UINT8_T:
+      fprintf(source, "    const uint8_t data = singleton->%s(\n", method->name);
+      break;
+    case TYPE_UINT16_T:
+      fprintf(source, "    const uint6_t data = singleton->%s(\n", method->name);
       break;
     case TYPE_USERDATA:
-      fprintf(source, "    const %s &data = AP::%s()%s%s(\n", method->return_type.data.userdata_name, data->name, dereference, method->name);
+      fprintf(source, "    const %s &data = singleton->%s(\n", method->return_type.data.userdata_name, method->name);
       break;
     case TYPE_NONE:
-      fprintf(source, "    AP::%s()%s%s(\n", data->name, dereference, method->name);
+      fprintf(source, "    singleton->%s(\n", method->name);
       break;
   }
 
@@ -845,7 +919,11 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
     case TYPE_FLOAT:
       fprintf(source, "    lua_pushnumber(L, data);\n");
       break;
+    case TYPE_INT8_T:
+    case TYPE_INT16_T:
     case TYPE_INT32_T:
+    case TYPE_UINT8_T:
+    case TYPE_UINT16_T:
       fprintf(source, "    lua_pushinteger(L, data);\n");
       break;
     case TYPE_STRING:
