@@ -916,9 +916,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_ALTITUDE_WAIT:                     // MAV ID: 83
-        cmd.content.altitude_wait.altitude = packet.param1;
+        cmd.content.altitude_wait.altitude = packet.z;
+        cmd.content.altitude_wait.alt_change = packet.param1;
         cmd.content.altitude_wait.descent_rate = packet.param2;
         cmd.content.altitude_wait.wiggle_time = packet.param3;
+        cmd.content.altitude_wait.airspeed = packet.param4;
         break;
 
     case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -1357,9 +1359,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_ALTITUDE_WAIT:                     // MAV ID: 83
-        packet.param1 = cmd.content.altitude_wait.altitude;
+        packet.z = cmd.content.altitude_wait.altitude;
+        packet.param1 = cmd.content.altitude_wait.alt_change;
         packet.param2 = cmd.content.altitude_wait.descent_rate;
         packet.param3 = cmd.content.altitude_wait.wiggle_time;
+        packet.param4 = cmd.content.altitude_wait.airspeed;
         break;
 
     case MAV_CMD_NAV_VTOL_TAKEOFF:
