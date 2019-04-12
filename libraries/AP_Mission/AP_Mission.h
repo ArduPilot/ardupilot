@@ -153,6 +153,8 @@ public:
         float altitude; // meters
         float descent_rate; // m/s
         uint8_t wiggle_time; // seconds
+        uint8_t airspeed;// m/s
+        uint8_t alt_change; // m
     };
 
     // nav guided command
