@@ -25,7 +25,7 @@
   defines for working out if the reset was from the watchdog
  */
 #if defined(STM32H7)
-#define WDG_RESET_STATUS (*(__IO uint32_t *)(RCC_BASE + ))
+#define WDG_RESET_STATUS (*(__IO uint32_t *)(RCC_BASE + 0xD0))
 #define WDG_RESET_CLEAR (1U<<16)
 #define WDG_RESET_IS_IWDG (1U<<26)
 #elif defined(STM32F7) || defined(STM32F4)
