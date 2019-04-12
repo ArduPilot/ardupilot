@@ -28,7 +28,9 @@ An example script is given below:
 
 ```lua
 function update () -- periodic function that will be called
-  distance = ahrs:position():distance(ahrs:home()) -- calculate the distance from home
+  current_pos = Location()
+  AP_AHRS:get_position(current_pos)
+  distance = current_pos:get_distance(AP_AHRS:get_home()) -- calculate the distance from home
   if distance > 1000 then -- if more then 1000 meters away
     distance = 1000;      -- clamp the distance to 1000 meters
   end
@@ -36,6 +38,4 @@ function update () -- periodic function that will be called
 
   return update, 1000 -- request to be rerun again 1000 milliseconds (1 second) from now
 end
-
-return update, 0 -- immediately run the update function
 ```
