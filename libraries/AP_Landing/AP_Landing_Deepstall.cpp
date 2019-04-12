@@ -281,8 +281,8 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         memcpy(&entry_point, &landing_point, sizeof(Location));
         entry_point.offset_bearing(target_heading_deg + 180.0, travel_distance);
 
-        if (!location_passed_point(current_loc, arc_exit, entry_point)) {
-            if (location_passed_point(current_loc, arc_exit, extended_approach)) {
+        if (!current_loc.past_interval_finish_line(arc_exit, entry_point)) {
+            if (current_loc.past_interval_finish_line(arc_exit, extended_approach)) {
                 // this should never happen, but prevent against an indefinite fly away
                 stage = DEEPSTALL_STAGE_FLY_TO_LANDING;
             }
