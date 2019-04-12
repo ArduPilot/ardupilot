@@ -21,7 +21,7 @@ void ModeGuided::update()
             _distance_to_destination = rover.current_loc.get_distance(_destination);
             const bool near_wp = _distance_to_destination <= rover.g.waypoint_radius;
             // check if we've reached the destination
-            if (!_reached_destination && (near_wp || location_passed_point(rover.current_loc, _origin, _destination))) {
+            if (!_reached_destination && (near_wp || rover.current_loc.past_interval_finish_line(_origin, _destination))) {
                 _reached_destination = true;
                 rover.gcs().send_mission_item_reached_message(0);
             }
