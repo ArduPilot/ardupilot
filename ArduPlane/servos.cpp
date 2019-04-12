@@ -420,9 +420,9 @@ void Plane::set_servos_controlled(void)
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
         } else {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, min_throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, min_throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, min_throttle);
         }
     } else if (suppress_throttle()) {
         // throttle is suppressed in auto mode
