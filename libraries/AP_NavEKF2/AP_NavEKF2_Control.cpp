@@ -363,7 +363,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
 // return true if we should use the airspeed sensor
 bool NavEKF2_core::useAirspeed(void) const
 {
-    return _ahrs->airspeed_sensor_enabled();
+    return _ahrs->airspeed_sensor_enabled() && !_ahrs->get_airspeed()->is_synthetic();
 }
 
 // return true if we should use the range finder sensor
