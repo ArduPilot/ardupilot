@@ -961,9 +961,9 @@ uint16_t AP_Logger_File::start_new_log(void)
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write
 #if HAL_OS_POSIX_IO
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+    int fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
 #else
-    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC);
+    int fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
 #endif
     free(fname);
     if (fd == -1) {
@@ -1131,23 +1131,8 @@ bool AP_Logger_File::logging_enabled() const
 
 bool AP_Logger_File::io_thread_alive() const
 {
-	int last_seen = (AP_HAL::millis() - _io_timer_heartbeat);
-
-	// on boot when _io_timer_heartbeat == 0 , the count might get as big as ( say ) 6000?
-	if ( ( _io_timer_heartbeat == 0 ) && ( last_seen < 7000) ) {
-		return true;
-	}
-
-
-
-	bool alive = last_seen < 1000;
-	//printf("%s -> alive:%d\n",__PRETTY_FUNCTION__,alive);
-	//printf("%s -> _io_timer_heartbeat:%d\n",__PRETTY_FUNCTION__,_io_timer_heartbeat);
-	//printf("%s -> AP_HAL::millis():%d\n",__PRETTY_FUNCTION__,AP_HAL::millis());
-	//printf("%s -> AP_HAL::int...:%d\n",__PRETTY_FUNCTION__,(int)(AP_HAL::millis() - _io_timer_heartbeat));
-#endif
     // if the io thread hasn't had a heartbeat in a full second then it is dead
-    return alive;
+    return (AP_HAL::millis() - _io_timer_heartbeat) < 10000;
 }
 
 bool AP_Logger_File::logging_failed() const
