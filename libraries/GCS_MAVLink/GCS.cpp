@@ -88,6 +88,15 @@ void GCS::update_sensor_status_flags()
         }
     }
 
+    const Compass &compass = AP::compass();
+    if (AP::compass().enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_MAG;
+    }
+    if (compass.enabled() && compass.healthy() && ahrs.use_compass()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
+    }
+
     const AP_Baro &barometer = AP::baro();
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
