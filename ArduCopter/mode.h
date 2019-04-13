@@ -1219,14 +1219,14 @@ private:
     bool reached_destination();
     bool calculate_next_dest(uint8_t position_num, Vector3f& next_dest) const;
 
-    Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
-    Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
+    Vector2f _dest_A;    // in NEU frame in cm relative to ekf origin
+    Vector2f _dest_B;    // in NEU frame in cm relative to ekf origin
 
     enum zigzag_state {
         STORING_POINTS, // storing points A and B, pilot has manual control
         AUTO,           // after A and B defined, pilot toggle the switch from one side to the other, vehicle flies autonomously
         MANUAL_REGAIN   // pilot toggle the switch to middle position, has manual control
-    } stage;
+    } _stage;
 
-    uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
+    uint32_t _reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
 };

@@ -22,9 +22,9 @@ bool Copter::ModeZigZag::init(bool ignore_checks)
     }
 
     // initialise waypoint state
-    stage = STORING_POINTS;
-    dest_A.zero();
-    dest_B.zero();
+    _stage = STORING_POINTS;
+    _dest_A.zero();
+    _dest_B.zero();
 
     return true;
 }
@@ -44,11 +44,11 @@ void Copter::ModeZigZag::run()
     }
 
     // auto control
-    if (stage == AUTO) {
+    if (_stage == AUTO) {
         // if vehicle has reached destination switch to manual control
         if (reached_destination()) {
             AP_Notify::events.waypoint_complete = 1;
-            stage = MANUAL_REGAIN;
+            _stage = MANUAL_REGAIN;
             loiter_nav->init_target(wp_nav->get_wp_destination());
         } else {
             auto_control();
@@ -56,7 +56,7 @@ void Copter::ModeZigZag::run()
     }
 
     // manual control
-    if (stage == STORING_POINTS || stage == MANUAL_REGAIN) {
+    if (_stage == STORING_POINTS || _stage == MANUAL_REGAIN) {
         // receive pilot's inputs, do position and attitude control
         manual_control();
     }
@@ -74,25 +74,25 @@ void Copter::ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
     const Vector3f curr_pos = inertial_nav.get_position();
 
     // handle state machine changes
-    switch (stage) {
+    switch (_stage) {
 
         case STORING_POINTS:
             if (dest_num == 0) {
                 // store point A
-                dest_A.x = curr_pos.x;
-                dest_A.y = curr_pos.y;
+                _dest_A.x = curr_pos.x;
+                _dest_A.y = curr_pos.y;
                 gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: point A stored");
                 copter.Log_Write_Event(DATA_ZIGZAG_STORE_A);
             } else {
                 // store point B
-                dest_B.x = curr_pos.x;
-                dest_B.y = curr_pos.y;
+                _dest_B.x = curr_pos.x;
+                _dest_B.y = curr_pos.y;
                 gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: point B stored");
                 copter.Log_Write_Event(DATA_ZIGZAG_STORE_B);
             }
             // if both A and B have been stored advance state
-            if (!dest_A.is_zero() && !dest_B.is_zero() && is_positive((dest_B - dest_A).length_squared())) {
-                stage = MANUAL_REGAIN;
+            if (!_dest_A.is_zero() && !_dest_B.is_zero() && is_positive((_dest_B - _dest_A).length_squared())) {
+                _stage = MANUAL_REGAIN;
             }
             break;
 
@@ -104,8 +104,8 @@ void Copter::ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
                 // initialise waypoint controller
                 wp_nav->wp_and_spline_init();
                 if (wp_nav->set_wp_destination(next_dest, false)) {
-                    stage = AUTO;
-                    reach_wp_time_ms = 0;
+                    _stage = AUTO;
+                    _reach_wp_time_ms = 0;
                     if (dest_num == 0) {
                         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to A");
                     } else {
@@ -120,15 +120,15 @@ void Copter::ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
 // return manual control to the pilot
 void Copter::ModeZigZag::return_to_manual_control()
 {
-    if (stage == AUTO) {
-        stage = MANUAL_REGAIN;
+    if (_stage == AUTO) {
+        _stage = MANUAL_REGAIN;
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: manual control");
     }
 }
 
-// fly the vehicle to closest point on line perpendicular to dest_A or dest_B
+// fly the vehicle to closest point on line perpendicular to _dest_A or _dest_B
 void Copter::ModeZigZag::auto_control()
 {
     // process pilot's yaw input
@@ -149,7 +149,7 @@ void Copter::ModeZigZag::auto_control()
 
     // call attitude controller
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);        
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
 }
 
 // manual_control - process manual control
@@ -219,10 +219,10 @@ bool Copter::ModeZigZag::reached_destination()
 
     // wait at least one second
     uint32_t now = AP_HAL::millis();
-    if (reach_wp_time_ms == 0) {
-        reach_wp_time_ms = now;
+    if (_reach_wp_time_ms == 0) {
+        _reach_wp_time_ms = now;
     }
-    return ((now - reach_wp_time_ms) > 1000);
+    return ((now - _reach_wp_time_ms) > 1000);
 }
 
 // calculate next destination according to vector A-B and current position
@@ -234,10 +234,10 @@ bool Copter::ModeZigZag::calculate_next_dest(uint8_t dest_num, Vector3f& next_de
     }
 
     // define start_pos as either A or B depending upon dest_num
-    Vector2f start_pos = dest_num == 0 ? dest_A : dest_B;
+    Vector2f start_pos = dest_num == 0 ? _dest_A : _dest_B;
 
     // calculate vector from A to B
-    Vector2f AB_diff = dest_B - dest_A;
+    Vector2f AB_diff = _dest_B - _dest_A;
 
     // check distance between A and B
     if (!is_positive(AB_diff.length_squared())) {
