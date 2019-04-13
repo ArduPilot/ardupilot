@@ -201,37 +201,38 @@ void GCS_MAVLINK_Copter::send_pid_tuning()
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
-        AC_PID &pid = copter.attitude_control->get_rate_roll_pid(); // dummy ref
+        const AP_Logger::PID_Info *pid_info = nullptr;
         float achieved;
         switch (axes[i]) {
         case PID_TUNING_ROLL:
-            pid = copter.attitude_control->get_rate_roll_pid();
+            pid_info = &copter.attitude_control->get_rate_roll_pid().get_pid_info();
             achieved = degrees(gyro.x);
             break;
         case PID_TUNING_PITCH:
-            pid = copter.attitude_control->get_rate_pitch_pid();
+            pid_info = &copter.attitude_control->get_rate_pitch_pid().get_pid_info();
             achieved = degrees(gyro.y);
             break;
         case PID_TUNING_YAW:
-            pid = copter.attitude_control->get_rate_yaw_pid();
+            pid_info = &copter.attitude_control->get_rate_yaw_pid().get_pid_info();
             achieved = degrees(gyro.z);
             break;
         case PID_TUNING_ACCZ:
-            pid = copter.pos_control->get_accel_z_pid();
+            pid_info = &copter.pos_control->get_accel_z_pid().get_pid_info();
             achieved = -(AP::ahrs().get_accel_ef_blended().z + GRAVITY_MSS);
             break;
         default:
             continue;
         }
-        const AP_Logger::PID_Info &pid_info = pid.get_pid_info();
-        mavlink_msg_pid_tuning_send(chan,
-                                    axes[i],
-                                    pid_info.desired*0.01f,
-                                    achieved,
-                                    pid_info.FF*0.01f,
-                                    pid_info.P*0.01f,
-                                    pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+        if (pid_info != nullptr) {
+            mavlink_msg_pid_tuning_send(chan,
+                                        axes[i],
+                                        pid_info->desired*0.01f,
+                                        achieved,
+                                        pid_info->FF*0.01f,
+                                        pid_info->P*0.01f,
+                                        pid_info->I*0.01f,
+                                        pid_info->D*0.01f);
+        }
     }
 }
 
