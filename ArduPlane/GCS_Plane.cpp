@@ -4,11 +4,6 @@
 void GCS_Plane::update_vehicle_sensor_status_flags(void)
 {
     // first what sensors/controllers we have
-    if (AP::compass().enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
-
     const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed && airspeed->enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
@@ -110,12 +105,6 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION;
     }
 
-    AP_AHRS &ahrs = AP::ahrs();
-
-    const Compass &compass = AP::compass();
-    if (AP::compass().enabled() && compass.healthy() && ahrs.use_compass()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
     if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.is_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
