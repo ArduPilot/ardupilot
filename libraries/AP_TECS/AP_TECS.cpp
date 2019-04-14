@@ -1013,7 +1013,12 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _PITCHminf = constrain_float(_PITCHminf, -_pitch_max_limit, _PITCHmaxf);
         _pitch_max_limit = 90;
     }
-        
+
+    if (!_landing.is_on_approach()) {
+        // reset land pitch min when not landing
+        _land_pitch_min = _PITCHminf;
+    }
+    
     if (_landing.is_flaring()) {
         // in flare use min pitch from LAND_PITCH_CD
         _PITCHminf = MAX(_PITCHminf, _landing.get_pitch_cd() * 0.01f);
@@ -1045,6 +1050,21 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 #endif
             _PITCHminf = MAX(_PITCHminf, pitch_limit_cd*0.01f);
         }
+    }
+
+    if (_landing.is_on_approach()) {
+        // don't allow the lower bound of pitch to decrease, nor allow
+        // it to increase rapidly. This prevents oscillation of pitch
+        // demand while in landing approach based on rapidly changing
+        // time to flare estimate
+        if (_land_pitch_min <= -90) {
+            _land_pitch_min = _PITCHminf;
+        }
+        const float flare_pitch_range = 20;
+        const float delta_per_loop = (flare_pitch_range/_landTimeConst) * _DT;
+        _PITCHminf = MIN(_PITCHminf, _land_pitch_min+delta_per_loop);
+        _land_pitch_min = MAX(_land_pitch_min, _PITCHminf);
+        _PITCHminf = MAX(_land_pitch_min, _PITCHminf);
     }
 
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
@@ -1125,12 +1145,15 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         (double)_TAS_rate_dem,
         (double)logging.SKE_weighting,
         _flags_byte);
-    AP::logger().Write("TEC2", "TimeUS,KErr,PErr,EDelta,LF,PMax,PMin", "Qffffff",
+    AP::logger().Write("TEC2", "TimeUS,pmax,pmin,KErr,PErr,EDelta,LF",
+                       "s------",
+                       "F------",
+                       "Qffffff",
                        now,
+                       (double)degrees(_PITCHmaxf),
+                       (double)degrees(_PITCHminf),
                        (double)logging.SKE_error,
                        (double)logging.SPE_error,
                        (double)logging.SEB_delta,
-                       (double)load_factor,
-                       (double)degrees(_PITCHmaxf),
-                       (double)degrees(_PITCHminf));
+                       (double)load_factor);
 }
