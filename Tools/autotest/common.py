@@ -1783,7 +1783,7 @@ class AutoTest(ABC):
             self.progress(fmt % (desc, time))
 
     def send_statustext(self, text):
-        self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text),
+        self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, bytes(text))
 
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
