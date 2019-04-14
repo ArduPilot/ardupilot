@@ -318,6 +318,8 @@ private:
 
     float _distance_beyond_land_wp;
 
+    float _land_pitch_min = -90;
+
     // internal variables to be logged
     struct {
         float SKE_weighting;
