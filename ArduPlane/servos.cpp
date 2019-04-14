@@ -199,9 +199,9 @@ void Plane::dspoiler_update(void)
     }
 
     const int8_t bitmask = g2.crow_flap_options.get();
-    const bool flying_wing       = bitmask & CrowFlapOptions::FLYINGWING;
-    const bool full_span_aileron = bitmask & CrowFlapOptions::FULLSPAN;
-    const bool progresive_crow   = bitmask & CrowFlapOptions::PROGRESSIVE_CROW;
+    const bool flying_wing       = (bitmask & CrowFlapOptions::FLYINGWING) != 0;
+    const bool full_span_aileron = (bitmask & CrowFlapOptions::FULLSPAN) != 0;
+    const bool progresive_crow   = (bitmask & CrowFlapOptions::PROGRESSIVE_CROW) != 0;
 
     // if flying wing use elevons else use ailerons
     float elevon_left;
@@ -881,7 +881,7 @@ void Plane::servos_auto_trim(void)
     // adjust trim on channels by a small amount according to I value
     float roll_I = rollController.get_pid_info().I;
     float pitch_I = pitchController.get_pid_info().I;
-    
+
     g2.servo_channels.adjust_trim(SRV_Channel::k_aileron, roll_I);
     g2.servo_channels.adjust_trim(SRV_Channel::k_elevator, pitch_I);
 
@@ -894,11 +894,30 @@ void Plane::servos_auto_trim(void)
     g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_left,  roll_I);
     g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_right, -roll_I);
 
-    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft1,  pitch_I - roll_I);
-    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft2,  pitch_I - roll_I);
-    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerRight1, pitch_I + roll_I);
-    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerRight2, pitch_I + roll_I);
-    
+    // cope with various dspoiler options
+    const int8_t bitmask = g2.crow_flap_options.get();
+    const bool flying_wing       = (bitmask & CrowFlapOptions::FLYINGWING) != 0;
+    const bool full_span_aileron = (bitmask & CrowFlapOptions::FULLSPAN) != 0;
+
+    float dspoiler_outer_left = - roll_I;
+    float dspoiler_inner_left = 0.0f;
+    float dspoiler_outer_right = roll_I;
+    float dspoiler_inner_right = 0.0f;
+
+    if (flying_wing) {
+        dspoiler_outer_left += pitch_I;
+        dspoiler_outer_right += pitch_I;
+    }
+    if (full_span_aileron) {
+        dspoiler_inner_left = dspoiler_outer_left;
+        dspoiler_inner_right = dspoiler_outer_right;
+    }
+
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft1,  dspoiler_outer_left);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft2,  dspoiler_inner_left);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerRight1, dspoiler_outer_right);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerRight2, dspoiler_inner_right);
+
     auto_trim.last_trim_check = now;
 
     if (now - auto_trim.last_trim_save > 10000) {
