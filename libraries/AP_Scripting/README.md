@@ -29,8 +29,8 @@ An example script is given below:
 ```lua
 function update () -- periodic function that will be called
   current_pos = Location()
-  AP_AHRS:get_position(current_pos)
-  distance = current_pos:get_distance(AP_AHRS:get_home()) -- calculate the distance from home
+  ahrs:get_position(current_pos)
+  distance = current_pos:get_distance(ahrs:get_home()) -- calculate the distance from home
   if distance > 1000 then -- if more then 1000 meters away
     distance = 1000;      -- clamp the distance to 1000 meters
   end

@@ -15,6 +15,7 @@ userdata Location method get_vector_from_origin_NEU boolean Vector3f
 
 include AP_AHRS/AP_AHRS.h
 
+singleton AP_AHRS alias ahrs
 singleton AP_AHRS method get_position boolean Location
 singleton AP_AHRS method get_home Location
 
@@ -25,7 +26,9 @@ userdata Vector3f field y float read write -FLT_MAX FLT_MAX
 userdata Vector3f field z float read write -FLT_MAX FLT_MAX
 
 include AP_Notify/AP_Notify.h
+singleton notify alias notify
 singleton AP_Notify method play_tune void string
 
 include AP_RangeFinder/AP_RangeFinder.h
+singleton RangeFinder alias rangefinder
 singleton RangeFinder method num_sensors uint8_t

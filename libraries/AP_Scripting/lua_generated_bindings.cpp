@@ -264,10 +264,11 @@ int RangeFinder_num_sensors(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "RangeFinder");
+    luaL_checkudata(L, 1, "rangefinder");
 
-    RangeFinder *singleton = RangeFinder::get_singleton();    if (singleton == nullptr) {
-        return luaL_argerror(L, args, "RangeFinder not supported on this firmware");
+    RangeFinder *singleton = RangeFinder::get_singleton();
+    if (singleton == nullptr) {
+        return luaL_argerror(L, args, "rangefinder not supported on this firmware");
     }
 
     const uint8_t data = singleton->num_sensors(
@@ -287,7 +288,8 @@ int AP_Notify_play_tune(lua_State *L) {
 
     luaL_checkudata(L, 1, "AP_Notify");
 
-    AP_Notify *singleton = AP_Notify::get_singleton();    if (singleton == nullptr) {
+    AP_Notify *singleton = AP_Notify::get_singleton();
+    if (singleton == nullptr) {
         return luaL_argerror(L, args, "AP_Notify not supported on this firmware");
     }
 
@@ -306,10 +308,11 @@ int AP_AHRS_get_home(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "AP_AHRS");
+    luaL_checkudata(L, 1, "ahrs");
 
-    AP_AHRS *singleton = AP_AHRS::get_singleton();    if (singleton == nullptr) {
-        return luaL_argerror(L, args, "AP_AHRS not supported on this firmware");
+    AP_AHRS *singleton = AP_AHRS::get_singleton();
+    if (singleton == nullptr) {
+        return luaL_argerror(L, args, "ahrs not supported on this firmware");
     }
 
     const Location &data = singleton->get_home(
@@ -328,10 +331,11 @@ int AP_AHRS_get_position(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "AP_AHRS");
+    luaL_checkudata(L, 1, "ahrs");
 
-    AP_AHRS *singleton = AP_AHRS::get_singleton();    if (singleton == nullptr) {
-        return luaL_argerror(L, args, "AP_AHRS not supported on this firmware");
+    AP_AHRS *singleton = AP_AHRS::get_singleton();
+    if (singleton == nullptr) {
+        return luaL_argerror(L, args, "ahrs not supported on this firmware");
     }
 
     Location & data_2 = *check_Location(L, 2);
@@ -349,6 +353,10 @@ const luaL_Reg RangeFinder_meta[] = {
 
 const luaL_Reg AP_Notify_meta[] = {
     {"play_tune", AP_Notify_play_tune},
+    {NULL, NULL}
+};
+
+const luaL_Reg notify_meta[] = {
     {NULL, NULL}
 };
 
@@ -370,9 +378,10 @@ const struct singleton_fun {
     const char *name;
     const luaL_Reg *reg;
 } singleton_fun[] = {
-    {"RangeFinder", RangeFinder_meta},
+    {"rangefinder", RangeFinder_meta},
     {"AP_Notify", AP_Notify_meta},
-    {"AP_AHRS", AP_AHRS_meta},
+    {"notify", notify_meta},
+    {"ahrs", AP_AHRS_meta},
 };
 
 void load_generated_bindings(lua_State *L) {
@@ -402,9 +411,10 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
-    "RangeFinder",
+    "rangefinder",
     "AP_Notify",
-    "AP_AHRS",
+    "notify",
+    "ahrs",
 };
 
 const struct userdata {
