@@ -25,9 +25,10 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_LeddarOne::AP_RangeFinder_LeddarOne(RangeFinder::RangeFinder_State &_state,
+                                                   AP_RangeFinder_Params &_params,
                                                    AP_SerialManager &serial_manager,
                                                    uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state)
+    AP_RangeFinder_Backend(_state, _params)
 {
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
@@ -128,9 +129,9 @@ void AP_RangeFinder_LeddarOne::update(void)
 {
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
-        last_reading_ms = AP_HAL::millis();
+        state.last_reading_ms = AP_HAL::millis();
         update_status();
-    } else if (AP_HAL::millis() - last_reading_ms > 200) {
+    } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 }

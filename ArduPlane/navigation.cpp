@@ -86,7 +86,7 @@ void Plane::navigate()
 
     // waypoint distance from plane
     // ----------------------------
-    auto_state.wp_distance = get_distance(current_loc, next_WP_loc);
+    auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
     auto_state.wp_proportion = location_path_proportion(current_loc, 
                                                         prev_WP_loc, next_WP_loc);
     SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
@@ -107,18 +107,51 @@ void Plane::calc_airspeed_errors()
     // may be using synthetic airspeed
     ahrs.airspeed_estimate(&airspeed_measured);
 
-    // FBW_B airspeed target
-    if (control_mode == FLY_BY_WIRE_B || 
-        control_mode == CRUISE) {
-        target_airspeed_cm = ((int32_t)(aparm.airspeed_max -
-                                        aparm.airspeed_min) *
-                              channel_throttle->get_control_in()) +
-                             ((int32_t)aparm.airspeed_min * 100);
+    // FBW_B/cruise airspeed target
+    if (!failsafe.rc_failsafe && (control_mode == &mode_fbwb || control_mode == &mode_cruise)) {
+        if (g2.flight_options & FlightOptions::CRUISE_TRIM_AIRSPEED) {
+            target_airspeed_cm = aparm.airspeed_cruise_cm;
+        } else if (g2.flight_options & FlightOptions::CRUISE_TRIM_THROTTLE) {
+            float control_min = 0.0f;
+            float control_mid = 0.0f;
+            const float control_max = channel_throttle->get_range();
+            const float control_in = get_throttle_input();
+            switch (channel_throttle->get_type()) {
+                case RC_Channel::RC_CHANNEL_TYPE_ANGLE:
+                    control_min = -control_max;
+                    break;
+                case RC_Channel::RC_CHANNEL_TYPE_RANGE:
+                    control_mid = channel_throttle->get_control_mid();
+                    break;
+            }
+            if (control_in <= control_mid) {
+                target_airspeed_cm = linear_interpolate(aparm.airspeed_min * 100, aparm.airspeed_cruise_cm,
+                                                        control_in,
+                                                        control_min, control_mid);
+            } else {
+                target_airspeed_cm = linear_interpolate(aparm.airspeed_cruise_cm, aparm.airspeed_max * 100,
+                                                        control_in,
+                                                        control_mid, control_max);
+            }
+        } else {
+            target_airspeed_cm = ((int32_t)(aparm.airspeed_max - aparm.airspeed_min) *
+                                  get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
+        }
 
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-
+    } else if ((control_mode == &mode_auto) &&
+               (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
+							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
+							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
+        float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+        if (is_positive(land_airspeed)) {
+            target_airspeed_cm = SpdHgt_Controller->get_land_airspeed() * 100;
+        } else {
+            // fallover to normal airspeed
+            target_airspeed_cm = aparm.airspeed_cruise_cm;
+        }
     } else {
         // Normal airspeed target
         target_airspeed_cm = aparm.airspeed_cruise_cm;
@@ -129,7 +162,7 @@ void Plane::calc_airspeed_errors()
     // above.
     if (auto_throttle_mode &&
     	aparm.min_gndspeed_cm > 0 &&
-    	control_mode != CIRCLE) {
+    	control_mode != &mode_circle) {
         int32_t min_gnd_target_airspeed = airspeed_measured*100 + groundspeed_undershoot;
         if (min_gnd_target_airspeed > target_airspeed_cm) {
             target_airspeed_cm = min_gnd_target_airspeed;
@@ -152,19 +185,19 @@ void Plane::calc_airspeed_errors()
 
 void Plane::calc_gndspeed_undershoot()
 {
- 	// Use the component of ground speed in the forward direction
-	// This prevents flyaway if wind takes plane backwards
+    // Use the component of ground speed in the forward direction
+    // This prevents flyaway if wind takes plane backwards
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-	    Vector2f gndVel = ahrs.groundspeed_vector();
-		const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
-		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
+	      Vector2f gndVel = ahrs.groundspeed_vector();
+        const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
+        Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
         if (!yawVect.is_zero()) {
             yawVect.normalize();
             float gndSpdFwd = yawVect * gndVel;
             groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
         }
     } else {
-    	groundspeed_undershoot = 0;
+        groundspeed_undershoot = 0;
     }
 }
 
@@ -173,7 +206,7 @@ void Plane::update_loiter(uint16_t radius)
     if (radius <= 1) {
         // if radius is <=1 then use the general loiter radius. if it's small, use default
         radius = (abs(aparm.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(aparm.loiter_radius);
-        if (next_WP_loc.flags.loiter_ccw == 1) {
+        if (next_WP_loc.loiter_ccw == 1) {
             loiter.direction = -1;
         } else {
             loiter.direction = (aparm.loiter_radius < 0) ? -1 : 1;
@@ -190,10 +223,10 @@ void Plane::update_loiter(uint16_t radius)
             quadplane.guided_start();
         }
     } else if ((loiter.start_time_ms == 0 &&
-                (control_mode == AUTO || control_mode == GUIDED) &&
+                (control_mode == &mode_auto || control_mode == &mode_guided) &&
                 auto_state.crosstrack &&
-                get_distance(current_loc, next_WP_loc) > radius*3) ||
-               (control_mode == RTL && quadplane.available() && quadplane.rtl_mode == 1)) {
+                current_loc.get_distance(next_WP_loc) > radius*3) ||
+               (control_mode == &mode_rtl && quadplane.available() && quadplane.rtl_mode == 1)) {
         /*
           if never reached loiter point and using crosstrack and somewhat far away from loiter point
           navigate to it like in auto-mode for normal crosstrack behavior
@@ -212,7 +245,7 @@ void Plane::update_loiter(uint16_t radius)
             auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
-            if (control_mode == GUIDED || control_mode == AVOID_ADSB) {
+            if (control_mode == &mode_guided || control_mode == &mode_avoidADSB) {
                 // starting a loiter in GUIDED means we just reached the target point
                 gcs().send_mission_item_reached_message(0);
             }
@@ -231,7 +264,7 @@ void Plane::update_cruise()
 {
     if (!cruise_state.locked_heading &&
         channel_roll->get_control_in() == 0 &&
-        rudder_input == 0 &&
+        rudder_input() == 0 &&
         gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
         gps.ground_speed() >= 3 &&
         cruise_state.lock_timer_ms == 0) {
@@ -250,9 +283,7 @@ void Plane::update_cruise()
     if (cruise_state.locked_heading) {
         next_WP_loc = prev_WP_loc;
         // always look 1km ahead
-        location_update(next_WP_loc,
-                        cruise_state.locked_heading_cd*0.01f, 
-                        get_distance(prev_WP_loc, current_loc) + 1000);
+        next_WP_loc.offset_bearing(cruise_state.locked_heading_cd*0.01f, prev_WP_loc.get_distance(current_loc) + 1000);
         nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
     }
 }
@@ -311,7 +342,7 @@ void Plane::setup_turn_angle(void)
         auto_state.next_turn_angle = 90.0f;
     } else {
         // get the heading of the current leg
-        int32_t ground_course_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+        int32_t ground_course_cd = prev_WP_loc.get_bearing_to(next_WP_loc);
 
         // work out the angle we need to turn through
         auto_state.next_turn_angle = wrap_180_cd(next_ground_course_cd - ground_course_cd) * 0.01f;

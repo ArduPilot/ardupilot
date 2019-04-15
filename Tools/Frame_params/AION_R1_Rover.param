@@ -32,7 +32,7 @@ BATT_VOLT_MULT,13.99818
 BATT_VOLT_PIN,2
 BRD_PWM_COUNT,2
 #default save waypoint
-CH7_OPTION,1
+RC7_OPTION,1
 COMPASS_OFFS_MAX,2000
 #default use only first (hopefully external) compass
 COMPASS_USE,1

@@ -2,14 +2,15 @@
 
 #include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
+
+#include <AP_Common/Semaphore.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
-AP_Compass_Backend::AP_Compass_Backend(Compass &compass) :
-    _compass(compass)
+AP_Compass_Backend::AP_Compass_Backend()
+    : _compass(AP::compass())
 {
-    _sem = hal.util->new_semaphore();    
 }
 
 void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
@@ -95,6 +96,55 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     mag += state.motor_offset;
 }
 
+void AP_Compass_Backend::accumulate_sample(Vector3f &field, uint8_t instance,
+                                           uint32_t max_samples)
+{
+    /* rotate raw_field from sensor frame to body frame */
+    rotate_field(field, instance);
+
+    /* publish raw_field (uncorrected point sample) for calibration use */
+    publish_raw_field(field, instance);
+
+    /* correct raw_field for known errors */
+    correct_field(field, instance);
+
+    if (!field_ok(field)) {
+        return;
+    }
+
+    WITH_SEMAPHORE(_sem);
+
+    Compass::mag_state &state = _compass._state[instance];
+    state.accum += field;
+    state.accum_count++;
+    if (max_samples && state.accum_count >= max_samples) {
+        state.accum_count /= 2;
+        state.accum /= 2;
+    }
+}
+
+void AP_Compass_Backend::drain_accumulated_samples(uint8_t instance,
+                                                   const Vector3f *scaling)
+{
+    WITH_SEMAPHORE(_sem);
+
+    Compass::mag_state &state = _compass._state[instance];
+
+    if (state.accum_count == 0) {
+        return;
+    }
+
+    if (scaling) {
+        state.accum *= *scaling;
+    }
+    state.accum /= state.accum_count;
+
+    publish_filtered_field(state.accum, instance);
+
+    state.accum.zero();
+    state.accum_count = 0;
+}
+
 /*
   copy latest data to the frontend from a backend
  */
@@ -130,6 +180,15 @@ uint8_t AP_Compass_Backend::register_compass(void) const
 void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 {
     _compass._state[instance].dev_id.set_and_notify(dev_id);
+    _compass._state[instance].detected_dev_id = dev_id;
+}
+
+/*
+  save dev_id, used by SITL
+*/
+void AP_Compass_Backend::save_dev_id(uint8_t instance)
+{
+    _compass._state[instance].dev_id.save();
 }
 
 /*
@@ -194,3 +253,8 @@ bool AP_Compass_Backend::field_ok(const Vector3f &field)
     return ret;
 }
 
+
+enum Rotation AP_Compass_Backend::get_board_orientation(void) const
+{
+    return _compass._board_orientation;
+}

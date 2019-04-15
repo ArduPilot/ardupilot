@@ -1,9 +1,9 @@
 #pragma once
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
+#include <SITL/SITL.h>
 
 /*
  * AC_PrecLand_SITL - supplies vectors to a fake landing target
@@ -14,7 +14,7 @@ class AC_PrecLand_SITL : public AC_PrecLand_Backend
 public:
 
     // Constructor
-    AC_PrecLand_SITL(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state);
+    using AC_PrecLand_Backend::AC_PrecLand_Backend;
 
     // perform any required initialisation of backend
     void init() override;
@@ -33,9 +33,10 @@ public:
     bool have_los_meas() override;
 
 private:
-
+    SITL::SITL          *_sitl;                 // sitl instance pointer
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
+    bool                _have_los_meas;         // true if there is a valid measurement from the camera
 };
 
 #endif

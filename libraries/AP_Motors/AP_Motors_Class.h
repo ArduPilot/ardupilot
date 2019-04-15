@@ -52,15 +52,19 @@ public:
         MOTOR_FRAME_TYPE_H = 3,
         MOTOR_FRAME_TYPE_VTAIL = 4,
         MOTOR_FRAME_TYPE_ATAIL = 5,
+        MOTOR_FRAME_TYPE_PLUSREV = 6, // plus with reversed motor direction
         MOTOR_FRAME_TYPE_Y6B = 10,
-        MOTOR_FRAME_TYPE_Y6F = 11 // for FireFlyY6
+        MOTOR_FRAME_TYPE_Y6F = 11, // for FireFlyY6
+        MOTOR_FRAME_TYPE_BF_X = 12, // X frame, betaflight ordering
+        MOTOR_FRAME_TYPE_DJI_X = 13, // X frame, DJI ordering
+        MOTOR_FRAME_TYPE_CW_X = 14, // X frame, clockwise ordering
     };
 
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // singleton support
-    static AP_Motors *get_instance(void) { return _instance; }
+    static AP_Motors *get_singleton(void) { return _singleton; }
 
     // check initialisation succeeded
     bool                initialised_ok() const { return _flags.initialised_ok; }
@@ -95,17 +99,34 @@ public:
     float               get_lateral() const { return _lateral_in; }
     virtual float       get_throttle_hover() const = 0;
 
-    // spool up states
-    enum spool_up_down_desired {
-        DESIRED_SHUT_DOWN = 0,              // all motors stop
-        DESIRED_SPIN_WHEN_ARMED = 1,        // all motors at spin when armed
-        DESIRED_THROTTLE_UNLIMITED = 2,     // motors are no longer constrained by start up procedure
+    // motor failure handling
+    void                set_thrust_boost(bool enable) { _thrust_boost = enable; }
+    bool                get_thrust_boost() const { return _thrust_boost; }
+    virtual uint8_t     get_lost_motor() const { return 0; }
+
+    // desired spool states
+    enum class DesiredSpoolState : uint8_t {
+        SHUT_DOWN = 0,              // all motors should move to stop
+        GROUND_IDLE = 1,            // all motors should move to ground idle
+        THROTTLE_UNLIMITED = 2,     // motors should move to being a state where throttle is unconstrained (e.g. by start up procedure)
     };
 
-    virtual void set_desired_spool_state(enum spool_up_down_desired spool) { _spool_desired = spool; };
+    void set_desired_spool_state(enum DesiredSpoolState spool);
 
-    enum spool_up_down_desired get_desired_spool_state(void) const { return _spool_desired; }
-    
+    enum DesiredSpoolState get_desired_spool_state(void) const { return _spool_desired; }
+
+    // spool states
+    enum class SpoolState : uint8_t {
+        SHUT_DOWN = 0,                      // all motors stop
+        GROUND_IDLE = 1,                    // all motors at ground idle
+        SPOOLING_UP = 2,                       // increasing maximum throttle while stabilizing
+        THROTTLE_UNLIMITED = 3,             // throttle is no longer constrained by start up procedure
+        SPOOLING_DOWN = 4,                     // decreasing maximum throttle while stabilizing
+    };
+
+    // get_spool_state - get current spool state
+    enum SpoolState  get_spool_state(void) const { return _spool_state; }
+
     // set_density_ratio - sets air density as a proportion of sea level density
     void                set_air_density_ratio(float ratio) { _air_density_ratio = ratio; }
 
@@ -136,10 +157,10 @@ public:
     // output_min - sends minimum values out to the motors
     virtual void        output_min() = 0;
 
-    // output_test - spin a motor at the pwm value specified
+    // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
+    virtual void        output_test_seq(uint8_t motor_seq, int16_t pwm) = 0;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -150,6 +171,10 @@ public:
 
     // set loop rate. Used to support loop rate as a parameter
     void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
+
+    // return the roll factor of any motor, this is used for tilt rotors and tail sitters
+    // using copter motors for forward flight
+    virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
 
     enum pwm_type { PWM_TYPE_NORMAL     = 0,
                     PWM_TYPE_ONESHOT    = 1,
@@ -178,12 +203,6 @@ protected:
     // save parameters as part of disarming
     virtual void save_params_on_disarm() {}
 
-    // convert input in -1 to +1 range to pwm output
-    int16_t calc_pwm_output_1to1(float input, const SRV_Channel *servo);
-
-    // convert input in 0 to +1 range to pwm output
-    int16_t calc_pwm_output_0to1(float input, const SRV_Channel *servo);
-
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
@@ -202,7 +221,8 @@ protected:
     float               _lateral_in;                // last lateral input from set_lateral caller
     float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
-    spool_up_down_desired _spool_desired;           // desired spool state
+    DesiredSpoolState   _spool_desired;             // desired spool state
+    SpoolState          _spool_state;               // current spool mode
 
     // air pressure compensation variables
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
@@ -218,6 +238,11 @@ protected:
 
     AP_Int8             _pwm_type;            // PWM output type
 
+    // motor failure handling
+    bool                _thrust_boost;          // true if thrust boost is enabled to handle motor failure
+    bool                _thrust_balanced;       // true when output thrust is well balanced
+    float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
+
 private:
-    static AP_Motors *_instance;
+    static AP_Motors *_singleton;
 };

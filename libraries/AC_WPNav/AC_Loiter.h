@@ -51,11 +51,11 @@ public:
     float get_angle_max_cd() const;
 
     /// run the loiter controller
-    void update(float ekfGndSpdLimit, float ekfNavVelGainScaler);
+    void update();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    int32_t get_roll() const { return _pos_control.get_roll(); }
-    int32_t get_pitch() const { return _pos_control.get_pitch(); }
+    float get_roll() const { return _pos_control.get_roll(); }
+    float get_pitch() const { return _pos_control.get_pitch(); }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -66,7 +66,7 @@ protected:
 
     /// updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
     ///		updated velocity sent directly to position controller
-    void calc_desired_velocity(float nav_dt, float ekfGndSpdLimit);
+    void calc_desired_velocity(float nav_dt);
 
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;

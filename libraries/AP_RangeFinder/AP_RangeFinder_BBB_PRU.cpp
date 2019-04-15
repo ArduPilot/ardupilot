@@ -39,8 +39,8 @@ volatile struct range *rangerpru;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_BBB_PRU::AP_RangeFinder_BBB_PRU(RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_state)
+AP_RangeFinder_BBB_PRU::AP_RangeFinder_BBB_PRU(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend(_state, _params)
 {
 }
 
@@ -116,5 +116,6 @@ void AP_RangeFinder_BBB_PRU::update(void)
 {
     state.status = (RangeFinder::RangeFinder_Status)rangerpru->status;
     state.distance_cm = rangerpru->distance;
+    state.last_reading_ms = AP_HAL::millis();
 }
 #endif // CONFIG_HAL_BOARD_SUBTYPE

@@ -18,8 +18,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
-#include "Semaphores.h"
-#include "ToneAlarm.h"
+#include "AP_HAL_ChibiOS.h"
+#include <ch.h>
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
@@ -27,13 +27,18 @@ public:
         return static_cast<Util*>(util);
     }
 
-    bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
-    AP_HAL::Semaphore *new_semaphore(void) override { return new ChibiOS::Semaphore; }
+    bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
     uint32_t available_memory() override;
 
     // Special Allocation Routines
-    void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type);
-    void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type);
+    void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
+    void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
+
+#ifdef ENABLE_HEAP
+    // heap functions, note that a heap once alloc'd cannot be dealloc'd
+    virtual void *allocate_heap_memory(size_t size);
+    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size);
+#endif // ENABLE_HEAP
 
     /*
       return state of safety switch, if applicable
@@ -41,31 +46,63 @@ public:
     enum safety_state safety_switch_state(void) override;
 
     // IMU temperature control
-    void set_imu_temp(float current);
-    void set_imu_target_temp(int8_t *target);
+    void set_imu_temp(float current) override;
+    void set_imu_target_temp(int8_t *target) override;
+
+    // get system ID as a string
+    bool get_system_id(char buf[40]) override;
+    bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
 #ifdef HAL_PWM_ALARM
-    bool toneAlarm_init();
-    void toneAlarm_set_tune(uint8_t tone);
-    void _toneAlarm_timer_tick();
-
-    static ToneAlarm& get_ToneAlarm() { return _toneAlarm; }
+    bool toneAlarm_init() override;
+    void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 #endif
 
+#ifdef USE_POSIX
+    /*
+      initialise (or re-initialise) filesystem storage
+     */
+    bool fs_init(void) override;
+#endif
+    
 private:
 #ifdef HAL_PWM_ALARM
-    static ToneAlarm _toneAlarm;
-#endif
-    void* try_alloc_from_ccm_ram(size_t size);
-    uint32_t available_memory_in_ccm_ram(void);
+    struct ToneAlarmPwmGroup {
+        pwmchannel_t chan;
+        PWMConfig pwm_cfg;
+        PWMDriver* pwm_drv;
+    };
 
-#if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
+    static ToneAlarmPwmGroup _toneAlarm_pwm_group;
+#endif
+
+#if HAL_HAVE_IMU_HEATER
     struct {
         int8_t *target;
         float integrator;
         uint16_t count;
         float sum;
         uint32_t last_update_ms;
+        uint8_t duty_counter;
+        float output;
     } heater;
 #endif
+
+    /*
+      set HW RTC in UTC microseconds
+     */
+    void set_hw_rtc(uint64_t time_utc_usec) override;
+
+    /*
+      get system clock in UTC microseconds
+     */
+    uint64_t get_hw_rtc() const override;
+#ifndef HAL_NO_FLASH_SUPPORT
+    bool flash_bootloader() override;
+#endif
+
+#ifdef ENABLE_HEAP
+    static memory_heap_t scripting_heap;
+#endif // ENABLE_HEAP
+
 };

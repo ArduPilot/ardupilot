@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Common/Location.h>
 
 // table of user settable parameters for deepstall
 const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
@@ -54,7 +55,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     AP_GROUPINFO("APP_EXT", 4, AP_Landing_Deepstall, approach_extension, 50),
 
     // @Param: V_DWN
-    // @DisplayName: Deepstall veloicty down
+    // @DisplayName: Deepstall velocity down
     // @Description: The downward velocity of the aircraft while stalled
     // @Range: 0 20
     // @Units: m/s
@@ -160,7 +161,7 @@ void AP_Landing_Deepstall::do_land(const AP_Mission::Mission_Command& cmd, const
     // load the landing point in, the rest of path building is deferred for a better wind estimate
     memcpy(&landing_point, &cmd.content.location, sizeof(Location));
 
-    if (!landing_point.flags.relative_alt && !landing_point.flags.terrain_alt) {
+    if (!landing_point.relative_alt && !landing_point.terrain_alt) {
         approach_alt_offset = cmd.p1;
         landing_point.alt += approach_alt_offset * 100;
     } else {
@@ -174,7 +175,7 @@ void AP_Landing_Deepstall::verify_abort_landing(const Location &prev_WP_loc, Loc
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
     // the altitude has been reached, restart the landing sequence
     throttle_suppressed = false;
-    landing.nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
+    landing.nav_controller->update_heading_hold(prev_WP_loc.get_bearing_to(next_WP_loc));
 }
 
 
@@ -187,7 +188,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
 {
     switch (stage) {
     case DEEPSTALL_STAGE_FLY_TO_LANDING:
-        if (get_distance(current_loc, landing_point) > fabsf(2 * landing.aparm.loiter_radius)) {
+        if (current_loc.get_distance(landing_point) > abs(2 * landing.aparm.loiter_radius)) {
             landing.nav_controller->update_waypoint(current_loc, landing_point);
             return false;
         }
@@ -196,7 +197,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         FALLTHROUGH;
     case DEEPSTALL_STAGE_ESTIMATE_WIND:
         {
-        landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
+        landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.loiter_ccw ? -1 : 1);
         if (!landing.nav_controller->reached_loiter_target() || (fabsf(height - approach_alt_offset) > DEEPSTALL_LOITER_ALT_TOLERANCE)) {
             // wait until the altitude is correct before considering a breakout
             return false;
@@ -204,7 +205,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         // only count loiter progress when within the target altitude
         int32_t target_bearing = landing.nav_controller->target_bearing_cd();
         int32_t delta = wrap_180_cd(target_bearing - last_target_bearing);
-        delta *= (landing_point.flags.loiter_ccw ? -1 : 1);
+        delta *= (landing_point.loiter_ccw ? -1 : 1);
         if (delta > 0) { // only accumulate turns in the correct direction
             loiter_sum_cd += delta;
         }
@@ -232,14 +233,14 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
                 loiter_sum_cd += delta;
             }
             last_target_bearing = target_bearing;
-            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
+            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.loiter_ccw ? -1 : 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_FLY_TO_ARC;
         memcpy(&breakout_location, &current_loc, sizeof(Location));
         FALLTHROUGH;
     case DEEPSTALL_STAGE_FLY_TO_ARC:
-        if (get_distance(current_loc, arc_entry) > 2 * landing.aparm.loiter_radius) {
+        if (current_loc.get_distance(arc_entry) > 2 * landing.aparm.loiter_radius) {
             landing.nav_controller->update_waypoint(breakout_location, arc_entry);
             return false;
         }
@@ -251,7 +252,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         if (!landing.nav_controller->reached_loiter_target() ||
             (fabsf(wrap_180(target_heading_deg -
                             degrees(atan2f(-groundspeed.y, -groundspeed.x) + M_PI))) >= 10.0f)) {
-            landing.nav_controller->update_loiter(arc, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
+            landing.nav_controller->update_loiter(arc, landing.aparm.loiter_radius, landing_point.loiter_ccw ? -1 : 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_APPROACH;
@@ -278,7 +279,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), height_above_target, false);
 
         memcpy(&entry_point, &landing_point, sizeof(Location));
-        location_update(entry_point, target_heading_deg + 180.0, travel_distance);
+        entry_point.offset_bearing(target_heading_deg + 180.0, travel_distance);
 
         if (!location_passed_point(current_loc, arc_exit, entry_point)) {
             if (location_passed_point(current_loc, arc_exit, extended_approach)) {
@@ -337,7 +338,10 @@ bool AP_Landing_Deepstall::override_servos(void)
 
     // use the current airspeed to dictate the travel limits
     float airspeed;
-    landing.ahrs.airspeed_estimate(&airspeed);
+    if (!landing.ahrs.airspeed_estimate(&airspeed)) {
+        airspeed = 0; // safely forces control to the deepstall steering since we don't have an estimate
+    }
+
 
     // only allow the deepstall steering controller to run below the handoff airspeed
     if (slew_progress >= 1.0f || airspeed <= handoff_airspeed) {
@@ -423,13 +427,13 @@ bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
     return true;
 }
 
-const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
+const AP_Logger::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
 {
     return ds_PID.get_pid_info();
 }
 
 void AP_Landing_Deepstall::Log(void) const {
-    const DataFlash_Class::PID_Info& pid_info = ds_PID.get_pid_info();
+    const AP_Logger::PID_Info& pid_info = ds_PID.get_pid_info();
     struct log_DSTL pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DSTL_MSG),
         time_us          : AP_HAL::micros64(),
@@ -449,7 +453,7 @@ void AP_Landing_Deepstall::Log(void) const {
         I                : pid_info.I,
         D                : pid_info.D,
     };
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 // termination handling, expected to set the servo outputs
@@ -485,7 +489,7 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
     memcpy(&arc_exit, &landing_point, sizeof(Location));
 
     //extend the approach point to 1km away so that there is always a navigational target
-    location_update(extended_approach, target_heading_deg, 1000.0);
+    extended_approach.offset_bearing(target_heading_deg, 1000.0);
 
     float expected_travel_distance = predict_travel_distance(wind, is_zero(approach_alt_offset) ?  landing_point.alt * 0.01f : approach_alt_offset,
                                                              false);
@@ -495,13 +499,13 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
     // decent chance to be misaligned on final approach
     approach_extension_m = MAX(approach_extension_m, loiter_radius_m_abs * 0.5f);
 
-    location_update(arc_exit, target_heading_deg + 180, approach_extension_m);
+    arc_exit.offset_bearing(target_heading_deg + 180, approach_extension_m);
     memcpy(&arc, &arc_exit, sizeof(Location));
     memcpy(&arc_entry, &arc_exit, sizeof(Location));
 
-    float arc_heading_deg = target_heading_deg + (landing_point.flags.loiter_ccw ? -90.0f : 90.0f);
-    location_update(arc, arc_heading_deg, loiter_radius_m_abs);
-    location_update(arc_entry, arc_heading_deg, loiter_radius_m_abs * 2);
+    float arc_heading_deg = target_heading_deg + (landing_point.loiter_ccw ? -90.0f : 90.0f);
+    arc.offset_bearing(arc_heading_deg, loiter_radius_m_abs);
+    arc_entry.offset_bearing(arc_heading_deg, loiter_radius_m_abs * 2);
 
 #ifdef DEBUG_PRINTS
     // TODO: Send this information via a MAVLink packet
@@ -572,7 +576,7 @@ float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const f
 bool AP_Landing_Deepstall::verify_breakout(const Location &current_loc, const Location &target_loc,
                                                const float height_error) const
 {
-    Vector2f location_delta = location_diff(current_loc, target_loc);
+    const Vector2f location_delta = current_loc.get_distance_NE(target_loc);
     const float heading_error = degrees(landing.ahrs.groundspeed_vector().angle(location_delta));
 
     // Check to see if the the plane is heading toward the land waypoint. We use 20 degrees (+/-10 deg)
@@ -603,9 +607,9 @@ float AP_Landing_Deepstall::update_steering()
         float dt = constrain_float(time - last_time, (uint32_t)10UL, (uint32_t)200UL) * 1e-3;
         last_time = time;
 
-        Vector2f ab = location_diff(arc_exit, extended_approach);
+        Vector2f ab = arc_exit.get_distance_NE(extended_approach);
         ab.normalize();
-        Vector2f a_air = location_diff(arc_exit, current_loc);
+        const Vector2f a_air = arc_exit.get_distance_NE(current_loc);
 
         crosstrack_error = a_air % ab;
         float sine_nu1 = constrain_float(crosstrack_error / MAX(L1_period, 0.1f), -0.7071f, 0.7107f);
@@ -628,7 +632,7 @@ float AP_Landing_Deepstall::update_steering()
                                     (double)crosstrack_error,
                                     (double)error,
                                     (double)degrees(yaw_rate),
-                                    (double)location_diff(current_loc, landing_point).length());
+                                    (double)current_loc.get_distance(landing_point));
 #endif // DEBUG_PRINTS
 
     return ds_PID.get_pid(error);

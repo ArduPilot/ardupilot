@@ -27,6 +27,9 @@
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
+#define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
+#define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
+
 extern const AP_HAL::HAL& hal;
 
 // constructor
@@ -70,6 +73,9 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
 //  should be called if gyro offsets are recalculated
 void AP_AHRS_NavEKF::reset_gyro_drift(void)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     // update DCM
     AP_AHRS_DCM::reset_gyro_drift();
 
@@ -80,6 +86,9 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
 
 void AP_AHRS_NavEKF::update(bool skip_ins_update)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     // drop back to normal priority if we were boosted by the INS
     // calling delay_microseconds_boost()
     hal.scheduler->boost_end();
@@ -88,7 +97,6 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     if (_ekf_type == 1) {
         _ekf_type.set(2);
     }
-
 
     update_DCM(skip_ins_update);
 
@@ -291,34 +299,30 @@ void AP_AHRS_NavEKF::update_EKF3(void)
 void AP_AHRS_NavEKF::update_SITL(void)
 {
     if (_sitl == nullptr) {
-        _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
+        _sitl = AP::sitl();
         if (_sitl == nullptr) {
             return;
         }
     }
 
     const struct SITL::sitl_fdm &fdm = _sitl->state;
+    const AP_InertialSensor &_ins = AP::ins();
 
     if (active_EKF_type() == EKF_TYPE_SITL) {
-        roll  = radians(fdm.rollDeg);
-        pitch = radians(fdm.pitchDeg);
-        yaw   = radians(fdm.yawDeg);
 
         fdm.quaternion.rotation_matrix(_dcm_matrix);
+        _dcm_matrix = _dcm_matrix * get_rotation_vehicle_body_to_autopilot_body();
+        _dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
         update_cd_values();
         update_trig();
 
         _gyro_drift.zero();
 
-        _gyro_estimate = Vector3f(radians(fdm.rollRate),
-                                  radians(fdm.pitchRate),
-                                  radians(fdm.yawRate));
+        _gyro_estimate = _ins.get_gyro();
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            const Vector3f accel(fdm.xAccel,
-                           fdm.yAccel,
-                           fdm.zAccel);
+            const Vector3f &accel = _ins.get_accel(i);
             _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
         }
         _accel_ef_ekf_blended = _accel_ef_ekf[0];
@@ -334,9 +338,8 @@ void AP_AHRS_NavEKF::update_SITL(void)
             const float delTime = 0.001f * (timeStamp_ms - _last_body_odm_update_ms);
             _last_body_odm_update_ms = timeStamp_ms;
             timeStamp_ms -= (timeStamp_ms - _last_body_odm_update_ms)/2; // correct for first order hold average delay
-            Vector3f delAng(radians(fdm.rollRate),
-                                       radians(fdm.pitchRate),
-                                       radians(fdm.yawRate));
+            Vector3f delAng = _ins.get_gyro();
+            
             delAng *= delTime;
             // rotate earth velocity into body frame and calculate delta position
             Matrix3f Tbn;
@@ -370,6 +373,9 @@ const Vector3f &AP_AHRS_NavEKF::get_accel_ef_blended(void) const
 
 void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     AP_AHRS_DCM::reset(recover_eulers);
     _dcm_attitude(roll, pitch, yaw);
     if (_ekf2_started) {
@@ -383,6 +389,9 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 // reset the current attitude, used on new IMU calibration
 void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
     _dcm_attitude(roll, pitch, yaw);
     if (_ekf2_started) {
@@ -396,24 +405,18 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
 // dead-reckoning support
 bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {
-    Vector3f ned_pos;
-    Location origin;
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
         return AP_AHRS_DCM::get_position(loc);
 
     case EKF_TYPE2:
-        if (EKF2.getLLH(loc) && EKF2.getPosD(-1,ned_pos.z) && EKF2.getOriginLLH(-1,origin)) {
-            // fixup altitude using relative position from EKF origin
-            loc.alt = origin.alt - ned_pos.z*100;
+        if (EKF2.getLLH(loc)) {
             return true;
         }
         break;
 
     case EKF_TYPE3:
-        if (EKF3.getLLH(loc) && EKF3.getPosD(-1,ned_pos.z) && EKF3.getOriginLLH(-1,origin)) {
-            // fixup altitude using relative position from EKF origin
-            loc.alt = origin.alt - ned_pos.z*100;
+        if (EKF3.getLLH(loc)) {
             return true;
         }
         break;
@@ -422,7 +425,7 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
     case EKF_TYPE_SITL: {
         if (_sitl) {
             const struct SITL::sitl_fdm &fdm = _sitl->state;
-            memset(&loc, 0, sizeof(loc));
+            loc = {};
             loc.lat = fdm.latitude * 1e7;
             loc.lng = fdm.longitude * 1e7;
             loc.alt = fdm.altitude*100;
@@ -640,7 +643,7 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
 {
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
-        return false;
+        return AP_AHRS_DCM::get_velocity_NED(vec);
 
     case EKF_TYPE2:
     default:
@@ -808,7 +811,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
         }
         Location loc;
         get_position(loc);
-        const Vector2f diff2d = location_diff(get_home(), loc);
+        const Vector2f diff2d = get_home().get_distance_NE(loc);
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         vec = Vector3f(diff2d.x, diff2d.y,
                        -(fdm.altitude - get_home().alt*0.01f));
@@ -829,7 +832,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_home(Vector3f &vec) const
         return false;
     }
 
-    const Vector3f offset = location_3d_diff_NED(originLLH, _home);
+    const Vector3f offset = originLLH.get_distance_NED(_home);
 
     vec.x = originNED.x - offset.x;
     vec.y = originNED.y - offset.y;
@@ -860,7 +863,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_origin(Vector2f &posNE) const
     case EKF_TYPE_SITL: {
         Location loc;
         get_position(loc);
-        posNE = location_diff(get_home(), loc);
+        posNE = get_home().get_distance_NE(loc);
         return true;
     }
 #endif
@@ -878,7 +881,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_home(Vector2f &posNE) const
         return false;
     }
 
-    const Vector2f offset = location_diff(originLLH, _home);
+    const Vector2f offset = originLLH.get_distance_NE(_home);
 
     posNE.x = originNE.x - offset.x;
     posNE.y = originNE.y - offset.y;
@@ -1050,8 +1053,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
                   accept EKF as healthy to allow arming. Once we reach
                   speed the EKF should get yaw alignment
                 */
-                if (filt_state.flags.pred_horiz_pos_abs &&
-                    filt_state.flags.pred_horiz_pos_rel) {
+                if (filt_state.flags.gps_quality_good) {
                     return ret;
                 }
             }
@@ -1110,6 +1112,33 @@ bool AP_AHRS_NavEKF::healthy(void) const
     }
 
     return AP_AHRS_DCM::healthy();
+}
+
+bool AP_AHRS_NavEKF::prearm_healthy(void) const
+{
+    bool prearm_health = false;
+    switch (ekf_type()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+#endif
+    case EKF_TYPE_NONE:
+        prearm_health = true;
+        break;
+
+    case EKF_TYPE2:
+    default:
+        if (_ekf2_started && EKF2.all_cores_healthy()) {
+            prearm_health = true;
+        }
+        break;
+
+    case EKF_TYPE3:
+        if (_ekf3_started && EKF3.all_cores_healthy()) {
+            prearm_health = true;
+        }
+        break;
+    }
+   return prearm_health && healthy();
 }
 
 void AP_AHRS_NavEKF::set_ekf_use(bool setting)
@@ -1175,7 +1204,7 @@ bool AP_AHRS_NavEKF::get_filter_status(nav_filter_status &status) const
 }
 
 // write optical flow data to EKF
-void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset)
+void  AP_AHRS_NavEKF::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
 {
     EKF2.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
     EKF3.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
@@ -1310,6 +1339,70 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
     return nullptr;
 }
 
+// check all cores providing consistent attitudes for prearm checks
+bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const
+{
+    // get primary attitude source's attitude as quaternion
+    Quaternion primary_quat;
+    get_quat_body_to_ned(primary_quat);
+    // only check yaw if compasses are being used
+    bool check_yaw = _compass && _compass->use_for_yaw();
+
+    // check primary vs ekf2
+    for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
+        Quaternion ekf2_quat;
+        Vector3f angle_diff;
+        EKF2.getQuaternionBodyToNED(i, ekf2_quat);
+        primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
+        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
+            return false;
+        }
+        diff = fabsf(angle_diff.z);
+        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(diff));
+            return false;
+        }
+    }
+
+    // check primary vs ekf3
+    for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
+        Quaternion ekf3_quat;
+        Vector3f angle_diff;
+        EKF3.getQuaternionBodyToNED(i, ekf3_quat);
+        primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
+        float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+        if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
+            return false;
+        }
+        diff = fabsf(angle_diff.z);
+        if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(diff));
+            return false;
+        }
+    }
+
+    // check primary vs dcm
+    Quaternion dcm_quat;
+    Vector3f angle_diff;
+    dcm_quat.from_rotation_matrix(get_DCM_rotation_body_to_ned());
+    primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
+    float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
+    if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(diff));
+        return false;
+    }
+    diff = fabsf(angle_diff.z);
+    if (check_yaw && (diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(diff));
+        return false;
+    }
+
+    return true;
+}
+
 // return the amount of yaw angle change due to the last yaw angle reset in radians
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
 uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng) const
@@ -1400,6 +1493,9 @@ uint32_t AP_AHRS_NavEKF::getLastPosDownReset(float &posDelta) const
 // If using a range finder for height no reset is performed and it returns false
 bool AP_AHRS_NavEKF::resetHeightDatum(void)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     switch (ekf_type()) {
 
     case 2:

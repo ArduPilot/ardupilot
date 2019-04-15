@@ -21,63 +21,6 @@ enum autopilot_yaw_mode {
     AUTO_YAW_RATE =             6,  // turn at a specified rate (held in auto_yaw_rate)
 };
 
-// Ch6... Ch12 aux switch control
-#define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
-#define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
-
-// values used by the ap.ch7_opt and ap.ch8_opt flags
-#define AUX_SWITCH_LOW              0       // indicates auxiliary switch is in the low position (pwm <1200)
-#define AUX_SWITCH_MIDDLE           1       // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
-#define AUX_SWITCH_HIGH             2       // indicates auxiliary switch is in the high position (pwm >1800)
-
-// Aux Switch enumeration
-enum aux_sw_func {
-    AUXSW_DO_NOTHING =           0, // aux switch disabled
-    AUXSW_FLIP =                 2, // flip
-    AUXSW_SIMPLE_MODE =          3, // change to simple mode
-    AUXSW_RTL =                  4, // change to RTL flight mode
-    AUXSW_SAVE_TRIM =            5, // save current position as level
-    AUXSW_SAVE_WP =              7, // save mission waypoint or RTL if in auto mode
-    AUXSW_CAMERA_TRIGGER =       9, // trigger camera servo or relay
-    AUXSW_RANGEFINDER =         10, // allow enabling or disabling rangefinder in flight which helps avoid surface tracking when you are far above the ground
-    AUXSW_FENCE =               11, // allow enabling or disabling fence in flight
-    AUXSW_RESETTOARMEDYAW =     12, // UNUSED
-    AUXSW_SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
-    AUXSW_ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
-    AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
-    AUXSW_AUTO =                16, // change to auto flight mode
-    AUXSW_AUTOTUNE =            17, // auto tune
-    AUXSW_LAND =                18, // change to LAND flight mode
-    AUXSW_GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
-    AUXSW_PARACHUTE_ENABLE  =   21, // Parachute enable/disable
-    AUXSW_PARACHUTE_RELEASE =   22, // Parachute release
-    AUXSW_PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
-    AUXSW_MISSION_RESET =       24, // Reset auto mission to start from first command
-    AUXSW_ATTCON_FEEDFWD =      25, // enable/disable the roll and pitch rate feed forward
-    AUXSW_ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
-    AUXSW_RETRACT_MOUNT =       27, // Retract Mount
-    AUXSW_RELAY =               28, // Relay pin on/off (only supports first relay)
-    AUXSW_LANDING_GEAR =        29, // Landing gear controller
-    AUXSW_LOST_COPTER_SOUND =   30, // Play lost copter sound
-    AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
-    AUXSW_MOTOR_INTERLOCK =     32, // Motor On/Off switch
-    AUXSW_BRAKE =               33, // Brake flight mode
-	AUXSW_RELAY2 =              34, // Relay2 pin on/off (in Mission planner set CH8_OPT  = 34)
-    AUXSW_RELAY3 =              35, // Relay3 pin on/off (in Mission planner set CH9_OPT  = 35)
-    AUXSW_RELAY4 =              36, // Relay4 pin on/off (in Mission planner set CH10_OPT = 36)
-    AUXSW_THROW =               37,  // change to THROW flight mode
-    AUXSW_AVOID_ADSB =          38,  // enable AP_Avoidance library
-    AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
-    AUXSW_AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
-    AUXSW_ARMDISARM =           41,  // arm or disarm vehicle
-    AUXSW_SMART_RTL =           42, // change to SmartRTL flight mode
-    AUXSW_INVERTED  =           43,  // enable inverted flight
-    AUXSW_WINCH_ENABLE =        44, // winch enable/disable
-    AUXSW_WINCH_CONTROL =       45, // winch control
-    AUXSW_RC_OVERRIDE_ENABLE =  46, // enable RC Override
-    AUXSW_SWITCH_MAX,
-};
-
 // Frame types
 #define UNDEFINED_FRAME 0
 #define MULTICOPTER_FRAME 1
@@ -110,6 +53,7 @@ enum control_mode_t {
     SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
     FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
     FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
+    ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
 };
 
 enum mode_reason_t {
@@ -188,7 +132,7 @@ enum tuning_func {
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
-#define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
+#define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicopters)
 
 // Auto modes
 enum AutoMode {
@@ -201,6 +145,7 @@ enum AutoMode {
     Auto_Spline,
     Auto_NavGuided,
     Auto_Loiter,
+    Auto_LoiterToAlt,
     Auto_NavPayloadPlace,
 };
 
@@ -231,40 +176,6 @@ enum SmartRTLState {
     SmartRTL_Land
 };
 
-// Alt_Hold states
-enum AltHoldModeState {
-    AltHold_MotorStopped,
-    AltHold_Takeoff,
-    AltHold_Flying,
-    AltHold_Landed
-};
-
-// Loiter states
-enum LoiterModeState {
-    Loiter_MotorStopped,
-    Loiter_Takeoff,
-    Loiter_Flying,
-    Loiter_Landed
-};
-
-// Sport states
-enum SportModeState {
-    Sport_MotorStopped,
-    Sport_Takeoff,
-    Sport_Flying,
-    Sport_Landed
-};
-
-// Flip states
-enum FlipState {
-    Flip_Start,
-    Flip_Roll,
-    Flip_Pitch_A,
-    Flip_Pitch_B,
-    Flip_Recover,
-    Flip_Abandon
-};
-
 enum LandStateType {
     LandStateType_FlyToLocation = 0,
     LandStateType_Descending = 1
@@ -287,6 +198,7 @@ enum PayloadPlaceStateType {
 // bit options for DEV_OPTIONS parameter
 enum DevOptions {
     DevOptionADSBMAVLink = 1,
+    DevOptionVFR_HUDRelativeAlt = 2,
 };
 
 //  Logging parameters
@@ -294,16 +206,11 @@ enum LoggingParameters {
      TYPE_AIRSTART_MSG,
      TYPE_GROUNDSTART_MSG,
      LOG_CONTROL_TUNING_MSG,
-     LOG_OPTFLOW_MSG,
-     LOG_EVENT_MSG,
-     LOG_ERROR_MSG,
      LOG_DATA_INT16_MSG,
      LOG_DATA_UINT16_MSG,
      LOG_DATA_INT32_MSG,
      LOG_DATA_UINT32_MSG,
      LOG_DATA_FLOAT_MSG,
-     LOG_AUTOTUNE_MSG,
-     LOG_AUTOTUNEDETAILS_MSG,
      LOG_MOTBATT_MSG,
      LOG_PARAMTUNE_MSG,
      LOG_HELI_MSG,
@@ -331,125 +238,6 @@ enum LoggingParameters {
 #define MASK_LOG_IMU_FAST               (1UL<<18)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ANY                    0xFFFF
-
-// DATA - event logging
-#define DATA_AP_STATE                       7
-#define DATA_SYSTEM_TIME_SET                8
-#define DATA_INIT_SIMPLE_BEARING            9
-#define DATA_ARMED                          10
-#define DATA_DISARMED                       11
-#define DATA_AUTO_ARMED                     15
-#define DATA_LAND_COMPLETE_MAYBE            17
-#define DATA_LAND_COMPLETE                  18
-#define DATA_NOT_LANDED                     28
-#define DATA_LOST_GPS                       19
-#define DATA_FLIP_START                     21
-#define DATA_FLIP_END                       22
-#define DATA_SET_HOME                       25
-#define DATA_SET_SIMPLE_ON                  26
-#define DATA_SET_SIMPLE_OFF                 27
-#define DATA_SET_SUPERSIMPLE_ON             29
-#define DATA_AUTOTUNE_INITIALISED           30
-#define DATA_AUTOTUNE_OFF                   31
-#define DATA_AUTOTUNE_RESTART               32
-#define DATA_AUTOTUNE_SUCCESS               33
-#define DATA_AUTOTUNE_FAILED                34
-#define DATA_AUTOTUNE_REACHED_LIMIT         35
-#define DATA_AUTOTUNE_PILOT_TESTING         36
-#define DATA_AUTOTUNE_SAVEDGAINS            37
-#define DATA_SAVE_TRIM                      38
-#define DATA_SAVEWP_ADD_WP                  39
-#define DATA_FENCE_ENABLE                   41
-#define DATA_FENCE_DISABLE                  42
-#define DATA_ACRO_TRAINER_DISABLED          43
-#define DATA_ACRO_TRAINER_LEVELING          44
-#define DATA_ACRO_TRAINER_LIMITED           45
-#define DATA_GRIPPER_GRAB                   46
-#define DATA_GRIPPER_RELEASE                47
-#define DATA_PARACHUTE_DISABLED             49
-#define DATA_PARACHUTE_ENABLED              50
-#define DATA_PARACHUTE_RELEASED             51
-#define DATA_LANDING_GEAR_DEPLOYED          52
-#define DATA_LANDING_GEAR_RETRACTED         53
-#define DATA_MOTORS_EMERGENCY_STOPPED       54
-#define DATA_MOTORS_EMERGENCY_STOP_CLEARED  55
-#define DATA_MOTORS_INTERLOCK_DISABLED      56
-#define DATA_MOTORS_INTERLOCK_ENABLED       57
-#define DATA_ROTOR_RUNUP_COMPLETE           58  // Heli only
-#define DATA_ROTOR_SPEED_BELOW_CRITICAL     59  // Heli only
-#define DATA_EKF_ALT_RESET                  60
-#define DATA_LAND_CANCELLED_BY_PILOT        61
-#define DATA_EKF_YAW_RESET                  62
-#define DATA_AVOIDANCE_ADSB_ENABLE          63
-#define DATA_AVOIDANCE_ADSB_DISABLE         64
-#define DATA_AVOIDANCE_PROXIMITY_ENABLE     65
-#define DATA_AVOIDANCE_PROXIMITY_DISABLE    66
-#define DATA_GPS_PRIMARY_CHANGED            67
-#define DATA_WINCH_RELAXED                  68
-#define DATA_WINCH_LENGTH_CONTROL           69
-#define DATA_WINCH_RATE_CONTROL             70
-
-// Error message sub systems and error codes
-#define ERROR_SUBSYSTEM_MAIN                1
-#define ERROR_SUBSYSTEM_RADIO               2
-#define ERROR_SUBSYSTEM_COMPASS             3
-#define ERROR_SUBSYSTEM_OPTFLOW             4
-#define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
-#define ERROR_SUBSYSTEM_FAILSAFE_BATT       6
-#define ERROR_SUBSYSTEM_FAILSAFE_GPS        7   // not used
-#define ERROR_SUBSYSTEM_FAILSAFE_GCS        8
-#define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
-#define ERROR_SUBSYSTEM_FLIGHT_MODE         10
-#define ERROR_SUBSYSTEM_GPS                 11
-#define ERROR_SUBSYSTEM_CRASH_CHECK         12
-#define ERROR_SUBSYSTEM_FLIP                13
-#define ERROR_SUBSYSTEM_AUTOTUNE            14
-#define ERROR_SUBSYSTEM_PARACHUTE           15
-#define ERROR_SUBSYSTEM_EKFCHECK            16
-#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
-#define ERROR_SUBSYSTEM_BARO                18
-#define ERROR_SUBSYSTEM_CPU                 19
-#define ERROR_SUBSYSTEM_FAILSAFE_ADSB       20
-#define ERROR_SUBSYSTEM_TERRAIN             21
-#define ERROR_SUBSYSTEM_NAVIGATION          22
-#define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
-#define ERROR_SUBSYSTEM_EKF_PRIMARY         24
-// general error codes
-#define ERROR_CODE_ERROR_RESOLVED           0
-#define ERROR_CODE_FAILED_TO_INITIALISE     1
-#define ERROR_CODE_UNHEALTHY                4
-// subsystem specific error codes -- radio
-#define ERROR_CODE_RADIO_LATE_FRAME         2
-// subsystem specific error codes -- failsafe_thr, batt, gps
-#define ERROR_CODE_FAILSAFE_RESOLVED        0
-#define ERROR_CODE_FAILSAFE_OCCURRED        1
-// subsystem specific error codes -- compass
-#define ERROR_CODE_COMPASS_FAILED_TO_READ   2
-// subsystem specific error codes -- main
-#define ERROR_CODE_MAIN_INS_DELAY           1
-// subsystem specific error codes -- crash checker
-#define ERROR_CODE_CRASH_CHECK_CRASH        1
-#define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
-// subsystem specific error codes -- flip
-#define ERROR_CODE_FLIP_ABANDONED           2
-// subsystem specific error codes -- terrain
-#define ERROR_CODE_MISSING_TERRAIN_DATA     2
-// subsystem specific error codes -- navigation
-#define ERROR_CODE_FAILED_TO_SET_DESTINATION    2
-#define ERROR_CODE_RESTARTED_RTL            3
-#define ERROR_CODE_FAILED_CIRCLE_INIT       4
-#define ERROR_CODE_DEST_OUTSIDE_FENCE       5
-
-// parachute failed to deploy because of low altitude or landed
-#define ERROR_CODE_PARACHUTE_TOO_LOW        2
-#define ERROR_CODE_PARACHUTE_LANDED         3
-// EKF check definitions
-#define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
-#define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
-// Baro specific error codes
-#define ERROR_CODE_BARO_GLITCH              2
-// GPS specific error coces
-#define ERROR_CODE_GPS_GLITCH               2
 
 // Radio failsafe definitions (FS_THR parameter)
 #define FS_THR_DISABLED                            0

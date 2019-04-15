@@ -1,0 +1,11 @@
+# hw definition file for processing by chibios_hwdef.py
+# for The CUBE Green hardware in a 3DR Solo
+# this is based on the CubeBlack hwdef, with Solo's required parameter defaults
+# The CUBE green is identical to a CUBE Black, but uses 5v signalling for the Solo ESC issues
+# do not use this hwdef with any configuration other than a 3DR Solo with a Green Cube running Copter 3.7.
+
+include ../CubeBlack/hwdef.dat
+
+# pull Solo's default parameters from /Tools/Frame_params
+# these are parameters the Solo requires for proper operation that are differnet from the 3.7 standard defaults.
+env DEFAULT_PARAMETERS 'Tools/Frame_params/Solo_Copter-3.7_GreenCube.param'

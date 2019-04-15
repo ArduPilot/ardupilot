@@ -40,7 +40,7 @@ class WikiEmit(Emit):
     def start_libraries(self):
         self.emit_comment("Libraries")
 
-    def emit(self, g, f):
+    def emit(self, g):
         t = "\n\n== %s Parameters ==\n" % (self.camelcase_escape(g.name))
 
         for param in g.params:

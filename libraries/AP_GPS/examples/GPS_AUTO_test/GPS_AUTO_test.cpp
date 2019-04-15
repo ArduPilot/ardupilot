@@ -1,6 +1,20 @@
-//
-// Test for AP_GPS_AUTO
-//
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
+     Test for AP_GPS_AUTO
+*/
 
 #include <stdlib.h>
 
@@ -8,9 +22,8 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_GPS/AP_GPS.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_ADC/AP_ADC.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Baro/AP_Baro.h>
 #include <Filter/Filter.h>
@@ -43,10 +56,10 @@ AP_BoardLED board_led;
 
 // This example uses GPS system. Create it.
 static AP_GPS gps;
-// Serial manager is needed for UART comunications
+// Serial manager is needed for UART communications
 static AP_SerialManager serial_manager;
 
-
+//to be called only once on boot for initializing objects
 void setup()
 {
     hal.console->printf("GPS AUTO library test\n");
@@ -61,6 +74,29 @@ void setup()
     gps.init(serial_manager);
 }
 
+
+/*
+  print a int32_t lat/long in decimal degrees
+ */
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
+{
+    int32_t dec_portion, frac_portion;
+    int32_t abs_lat_or_lon = labs(lat_or_lon);
+
+    // extract decimal portion (special handling of negative numbers to ensure we round towards zero)
+    dec_portion = abs_lat_or_lon / 10000000UL;
+
+    // extract fractional portion
+    frac_portion = abs_lat_or_lon - dec_portion*10000000UL;
+
+    // print output including the minus sign
+    if( lat_or_lon < 0 ) {
+        s->printf("-");
+    }
+    s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
+}
+
+// loop
 void loop()
 {
     static uint32_t last_msg_ms;

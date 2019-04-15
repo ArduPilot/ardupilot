@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -212,12 +210,12 @@ void NavEKF2_core::FuseRngBcn()
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
                 ForceSymmetry();
                 ConstrainVariances();
 
                 // update the states
-                // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+                // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
                 stateStruct.angErr.zero();
 
                 // correct the state vector
@@ -308,7 +306,7 @@ void NavEKF2_core::FuseRngBcnStatic()
                 // We are using a different height reference for the main EKF so need to estimate a vertical
                 // position offset to be applied to the beacon system that minimises the range innovations
                 // The position estimate should be stable after 100 iterations so we use a simple dual
-                // hypothesis 1-state EKF to estiate the offset
+                // hypothesis 1-state EKF to estimate the offset
                 Vector3f refPosNED;
                 refPosNED.x = receiverPos.x;
                 refPosNED.y = receiverPos.y;
@@ -581,4 +579,3 @@ void NavEKF2_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
 
 }
 
-#endif // HAL_CPU_CLASS

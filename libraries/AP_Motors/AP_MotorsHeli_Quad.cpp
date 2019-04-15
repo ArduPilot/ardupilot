@@ -28,6 +28,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Quad::var_info[] = {
     AP_GROUPEND
 };
 
+#define QUAD_SERVO_MAX_ANGLE 4500
+
 // set update rate to motors - a value in hertz
 void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 {
@@ -51,10 +53,8 @@ bool AP_MotorsHeli_Quad::init_outputs()
     }
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        _servo[i] = SRV_Channels::get_channel_for(SRV_Channels::get_motor_function(i), CH_1+i);
-        if (!_servo[i]) {
-            return false;
-        }
+        add_motor_num(CH_1+i);
+        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), QUAD_SERVO_MAX_ANGLE);
     }
 
     // set rotor servo range
@@ -65,10 +65,10 @@ bool AP_MotorsHeli_Quad::init_outputs()
     return true;
 }
 
-// output_test - spin a motor at the pwm value specified
+// output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsHeli_Quad::output_test(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsHeli_Quad::output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
     if (!armed()) {
@@ -232,10 +232,8 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // reserve some collective for attitude control
     collective_out *= collective_range;
 
-    float out[AP_MOTORS_HELI_QUAD_NUM_MOTORS] {};
-
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        out[i] =
+        _out[i] =
             _rollFactor[CH_1+i] * roll_out +
             _pitchFactor[CH_1+i] * pitch_out +
             _collectiveFactor[CH_1+i] * collective_out;
@@ -244,16 +242,16 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // see if we need to scale down yaw_out
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (out[i] < 0) {
+        if (_out[i] < 0) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }
-        if (out[i] * (out[i] + y) < 0) {
+        if (_out[i] * (_out[i] + y) < 0) {
             // applying this yaw demand would change the sign of the
             // collective, which means the yaw would not be applied
             // evenly. We scale down the overall yaw demand to prevent
             // it crossing over zero
-            float s = -(out[i] / y);
+            float s = -(_out[i] / y);
             yaw_out *= s;
         }
     }
@@ -261,19 +259,46 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // now apply the yaw correction
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         float y = _yawFactor[CH_1+i] * yaw_out;
-        if (out[i] < 0) {
+        if (_out[i] < 0) {
             // the slope of the yaw effect changes at zero collective
             y = -y;
         }
-        out[i] += y;
+        _out[i] += y;
+    }
+
+}
+
+void AP_MotorsHeli_Quad::output_to_motors()
+{
+    if (!_flags.initialised_ok) {
+        return;
     }
 
     // move the servos
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        rc_write(AP_MOTORS_MOT_1+i, calc_pwm_output_1to1(out[i], _servo[i]));
+        rc_write_angle(AP_MOTORS_MOT_1+i, _out[i] * QUAD_SERVO_MAX_ANGLE);
+    }
+
+    switch (_spool_state) {
+        case SpoolState::SHUT_DOWN:
+            // sends minimum values out to the motors
+            update_motor_control(ROTOR_CONTROL_STOP);
+            break;
+        case SpoolState::GROUND_IDLE:
+            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
+            update_motor_control(ROTOR_CONTROL_IDLE);
+            break;
+        case SpoolState::SPOOLING_UP:
+        case SpoolState::THROTTLE_UNLIMITED:
+            // set motor output based on thrust requests
+            update_motor_control(ROTOR_CONTROL_ACTIVE);
+            break;
+        case SpoolState::SPOOLING_DOWN:
+            // sends idle output to motors and wait for rotor to stop
+            update_motor_control(ROTOR_CONTROL_IDLE);
+            break;
     }
 }
-
 
 // servo_test - move servos through full range of movement
 void AP_MotorsHeli_Quad::servo_test()

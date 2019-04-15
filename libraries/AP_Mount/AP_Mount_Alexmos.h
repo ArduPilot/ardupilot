@@ -67,38 +67,23 @@ class AP_Mount_Alexmos : public AP_Mount_Backend
 public:
     //constructor
     AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
-        AP_Mount_Backend(frontend, state, instance),
-        _port(nullptr),
-        _initialised(false),
-        _board_version(0),
-        _current_firmware_version(0.0f),
-        _firmware_beta_version(0),
-        _gimbal_3axis(false),
-        _gimbal_bat_monitoring(false),
-        _current_angle(0,0,0),
-        _param_read_once(false),
-        _checksum(0),
-        _step(0),
-        _command_id(0),
-        _payload_length(0),
-        _payload_counter(0),
-        _last_command_confirmed(false)
+        AP_Mount_Backend(frontend, state, instance)
     {}
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager);
+    virtual void init(const AP_SerialManager& serial_manager) override;
 
     // update mount position - should be called periodically
-    virtual void update();
+    virtual void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    virtual bool has_pan_control() const;
+    virtual bool has_pan_control() const override;
 
     // set_mode - sets mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) ;
+    virtual void set_mode(enum MAV_MOUNT_MODE mode) override;
 
-    // status_msg - called to allow mounts to send their status to GCS via MAVLink
-    virtual void status_msg(mavlink_channel_t chan) ;
+    // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
+    virtual void send_mount_status(mavlink_channel_t chan) override;
 
 private:
 

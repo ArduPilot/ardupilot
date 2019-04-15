@@ -7,23 +7,28 @@
 
 // tuning - updates parameters based on the ch6 tuning knob's position
 //  should be called at 3.3hz
-void Copter::tuning() {
-    RC_Channel *rc6 = RC_Channels::rc_channel(CH_6);
+void Copter::tuning()
+{
+    const RC_Channel *rc6 = rc().channel(CH_6);
 
-    // exit immediately if not using tuning function, or when radio failsafe is invoked, so tuning values are not set to zero
-    if ((g.radio_tuning <= 0) || failsafe.radio || failsafe.radio_counter != 0 || rc6->get_radio_in() == 0) {
+    // exit immediately if the tuning function is not set or min and max are both zero
+    if ((g.radio_tuning <= 0) || (is_zero(g2.tuning_min.get()) && is_zero(g2.tuning_max.get()))) {
         return;
     }
 
-    uint16_t radio_in = rc6->get_radio_in();
-    float v = constrain_float((radio_in - rc6->get_radio_min()) / float(rc6->get_radio_max() - rc6->get_radio_min()), 0, 1);
-    int16_t control_in = g.radio_tuning_low + v * (g.radio_tuning_high - g.radio_tuning_low);
-    float tuning_value = control_in / 1000.0f;
-    
-    // Tuning Value should never be outside the bounds of the specified low and high value
-    tuning_value = constrain_float(tuning_value, g.radio_tuning_low/1000.0f, g.radio_tuning_high/1000.0f);
+    // exit immediately when radio failsafe is invoked or transmitter has not been turned on
+    if (failsafe.radio || failsafe.radio_counter != 0 || rc6->get_radio_in() == 0) {
+        return;
+    }
 
-    Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, control_in, g.radio_tuning_low, g.radio_tuning_high);
+    // exit immediately if a function is assigned to channel 6
+    if ((RC_Channel::aux_func_t)rc6->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING) {
+        return;
+    }
+
+    const uint16_t radio_in = rc6->get_radio_in();
+    float tuning_value = linear_interpolate(g2.tuning_min, g2.tuning_max, radio_in, rc6->get_radio_min(), rc6->get_radio_max());
+    Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, g2.tuning_min, g2.tuning_max);
 
     switch(g.radio_tuning) {
 
@@ -96,8 +101,7 @@ void Copter::tuning() {
         break;
 
     case TUNING_WP_SPEED:
-        // set waypoint navigation horizontal speed to 0 ~ 1000 cm/s
-        wp_nav->set_speed_xy(control_in);
+        wp_nav->set_speed_xy(tuning_value);
         break;
 
     // Acro roll pitch gain
@@ -112,7 +116,7 @@ void Copter::tuning() {
 
 #if FRAME_CONFIG == HELI_FRAME
     case TUNING_HELI_EXTERNAL_GYRO:
-        motors->ext_gyro_gain((float)control_in / 1000.0f);
+        motors->ext_gyro_gain(tuning_value);
         break;
 
     case TUNING_RATE_PITCH_FF:
@@ -129,14 +133,12 @@ void Copter::tuning() {
 #endif
 
     case TUNING_DECLINATION:
-        // set declination to +-20degrees
-        compass.set_declination(ToRad((2.0f * control_in - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
+        compass.set_declination(ToRad(tuning_value), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
 
 #if MODE_CIRCLE_ENABLED == ENABLED
     case TUNING_CIRCLE_RATE:
-        // set circle rate up to approximately 45 deg/sec in either direction
-        circle_nav->set_rate((float)control_in/25.0f-20.0f);
+        circle_nav->set_rate(tuning_value);
         break;
 #endif
 
@@ -179,8 +181,7 @@ void Copter::tuning() {
 #endif
 
     case TUNING_RC_FEEL_RP:
-        // convert from control_in to input time constant
-        attitude_control->set_input_tc(1.0f / (2.0f + MAX((control_in * 0.01f), 0.0f)));
+        attitude_control->set_input_tc(tuning_value);
         break;
 
     case TUNING_RATE_PITCH_KP:
@@ -209,7 +210,7 @@ void Copter::tuning() {
 
 #if FRAME_CONFIG != HELI_FRAME
     case TUNING_RATE_MOT_YAW_HEADROOM:
-        motors->set_yaw_headroom(tuning_value*1000);
+        motors->set_yaw_headroom(tuning_value);
         break;
 #endif
 
@@ -218,17 +219,13 @@ void Copter::tuning() {
          break;
 
 #if WINCH_ENABLED == ENABLED
-     case TUNING_WINCH: {
-         float desired_rate = 0.0f;
-         if (v > 0.6f) {
-             desired_rate = g2.winch.get_rate_max() * (v - 0.6f) / 0.4f;
+     case TUNING_WINCH:
+         // add small deadzone
+         if (fabsf(tuning_value) < 0.05f) {
+             tuning_value = 0;
          }
-         if (v < 0.4f) {
-             desired_rate = g2.winch.get_rate_max() * (v - 0.4) / 0.4f;
-         }
-         g2.winch.set_desired_rate(desired_rate);
+         g2.winch.set_desired_rate(tuning_value);
          break;
-         }
 #endif
      }
 }

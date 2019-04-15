@@ -1,3 +1,5 @@
+#pragma once
+
 #include <AP_Math/AP_Math.h>
 
 #define COMPASS_CAL_NUM_SPHERE_PARAMS 4
@@ -13,7 +15,8 @@ enum compass_cal_status_t {
     COMPASS_CAL_RUNNING_STEP_ONE=2,
     COMPASS_CAL_RUNNING_STEP_TWO=3,
     COMPASS_CAL_SUCCESS=4,
-    COMPASS_CAL_FAILED=5
+    COMPASS_CAL_FAILED=5,
+    COMPASS_CAL_BAD_ORIENTATION=6,
 };
 
 class CompassCalibrator {
@@ -22,7 +25,7 @@ public:
 
     CompassCalibrator();
 
-    void start(bool retry, float delay, uint16_t offset_max);
+    void start(bool retry, float delay, uint16_t offset_max, uint8_t compass_idx);
     void clear();
 
     void update(bool &failure);
@@ -32,14 +35,25 @@ public:
 
     bool running() const;
 
+    void set_orientation(enum Rotation orientation, bool is_external, bool fix_orientation) {
+        _check_orientation = true;
+        _orientation = orientation;
+        _orig_orientation = orientation;
+        _is_external = is_external;
+        _fix_orientation = fix_orientation;
+    }
+    
     void set_tolerance(float tolerance) { _tolerance = tolerance; }
 
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
+    enum Rotation get_orientation(void) { return _orientation; }
+    enum Rotation get_original_orientation(void) { return _orig_orientation; }
 
     float get_completion_percent() const;
     completion_mask_t& get_completion_mask();
     enum compass_cal_status_t get_status() const { return _status; }
     float get_fitness() const { return sqrtf(_fitness); }
+    float get_orientation_confidence() const { return _orientation_confidence; }
     uint8_t get_attempt() const { return _attempt; }
 
 private:
@@ -59,17 +73,34 @@ private:
         Vector3f offdiag;
     };
 
+    // compact class for approximate attitude, to save memory
+    class AttitudeSample {
+    public:
+        Matrix3f get_rotmat();
+        void set_from_ahrs();
+    private:
+        int8_t roll;
+        int8_t pitch;
+        int8_t yaw;
+    };
+
     class CompassSample {
     public:
         Vector3f get() const;
         void set(const Vector3f &in);
+        AttitudeSample att;
     private:
         int16_t x;
         int16_t y;
         int16_t z;
     };
 
-
+    enum Rotation _orientation;
+    enum Rotation _orig_orientation;
+    bool _is_external;
+    bool _check_orientation;
+    bool _fix_orientation;
+    uint8_t _compass_idx;
 
     enum compass_cal_status_t _status;
 
@@ -96,6 +127,7 @@ private:
     float _ellipsoid_lambda;
     uint16_t _samples_collected;
     uint16_t _samples_thinned;
+    float _orientation_confidence;
 
     bool set_status(compass_cal_status_t status);
 
@@ -136,4 +168,7 @@ private:
      * Reset and update #_completion_mask with the current samples.
      */
     void update_completion_mask();
+
+    Vector3f calculate_earth_field(CompassSample &sample, enum Rotation r);
+    bool calculate_orientation();
 };

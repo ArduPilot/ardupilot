@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
 #include <stdio.h>
+#include <AP_RTC/AP_RTC.h>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -29,45 +30,11 @@
 #endif
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-# define BOARD_SAFETY_ENABLE_DEFAULT 1
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-#define BOARD_PWM_COUNT_DEFAULT 2
-#define BOARD_SER1_RTSCTS_DEFAULT 0 // no flow control on UART5 on FMUv1
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-#define BOARD_PWM_COUNT_DEFAULT 6
-#define BOARD_SER1_RTSCTS_DEFAULT 2
-#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-#define BOARD_PWM_COUNT_DEFAULT 0
-#define BOARD_SER1_RTSCTS_DEFAULT 0
-# undef BOARD_SAFETY_ENABLE_DEFAULT
-# define BOARD_SAFETY_ENABLE_DEFAULT 0
-#else // V2
-#define BOARD_PWM_COUNT_DEFAULT 4
-#define BOARD_SER1_RTSCTS_DEFAULT 2
-#endif
+#ifndef BOARD_TYPE_DEFAULT
 #define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
+#endif
 
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-# define BOARD_SAFETY_ENABLE_DEFAULT 0
-# define BOARD_PWM_COUNT_DEFAULT 8
-# if defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
-#  define BOARD_TYPE_DEFAULT VRX_BOARD_BRAIN51
-# elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
-#  define BOARD_TYPE_DEFAULT VRX_BOARD_BRAIN52
-# elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E)
-#  define BOARD_TYPE_DEFAULT VRX_BOARD_BRAIN52E
-# elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
-#  define BOARD_TYPE_DEFAULT VRX_BOARD_UBRAIN51
-# elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
-#  define BOARD_TYPE_DEFAULT VRX_BOARD_UBRAIN52
-# elif defined(CONFIG_ARCH_BOARD_VRCORE_V10)
-#  define BOARD_TYPE_DEFAULT VRX_BOARD_CORE10
-# elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
-#  define BOARD_TYPE_DEFAULT VRX_BOARD_BRAIN54
-# endif
-
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 # define BOARD_SAFETY_ENABLE_DEFAULT 1
 #ifndef BOARD_PWM_COUNT_DEFAULT
 # define BOARD_PWM_COUNT_DEFAULT 6
@@ -75,32 +42,41 @@
 #ifndef BOARD_SER1_RTSCTS_DEFAULT
 # define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
+#ifndef BOARD_TYPE_DEFAULT
 # define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
+#endif
 #endif
 
 #ifndef HAL_IMU_TEMP_DEFAULT
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
 #endif
 
-#if AP_FEATURE_SAFETY_BUTTON
-#ifndef BOARD_SAFETY_OPTION_DEFAULT
-#define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
-#endif
+#if HAL_HAVE_SAFETY_SWITCH
+#  ifndef BOARD_SAFETY_OPTION_DEFAULT
+#    define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
+#  endif
+#  ifndef BOARD_SAFETY_ENABLE
+#    define BOARD_SAFETY_ENABLE 1
+#  endif
 #endif
 
 #ifndef BOARD_PWM_COUNT_DEFAULT
 #define BOARD_PWM_COUNT_DEFAULT 8
 #endif
 
+#ifndef BOARD_CONFIG_BOARD_VOLTAGE_MIN
+#define BOARD_CONFIG_BOARD_VOLTAGE_MIN 4.3f
+#endif
+
 extern const AP_HAL::HAL& hal;
-AP_BoardConfig *AP_BoardConfig::instance;
+AP_BoardConfig *AP_BoardConfig::_singleton;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: PWM_COUNT
     // @DisplayName: Auxiliary pin config
-    // @Description: Control assigning of FMU pins to PWM output, timer capture and GPIO. All unassigned pins can be used for GPIO
-    // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,7:Three PWMs and One Capture
+    // @Description: Controls number of FMU outputs which are setup for PWM. All unassigned pins can be used for GPIO
+    // @Values: 0:No PWMs,1:One PWMs,2:Two PWMs,3:Three PWMs,4:Four PWMs,5:Five PWMs,6:Six PWMs,7:Seven PWMs,8:Eight PWMs
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
@@ -123,7 +99,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser2_rtscts, 2),
 #endif
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
@@ -150,9 +126,9 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETY_MASK
-    // @DisplayName: Channels to which ignore the safety switch state
+    // @DisplayName: Channels which ignore the safety switch state
     // @Description: A bitmask which controls what channels can move while the safety switch has not been pressed
     // @Values: 0:Disabled,1:Enabled
     // @Bitmask: 0:Ch1,1:Ch2,2:Ch3,3:Ch4,4:Ch5,5:Ch6,6:Ch7,7:Ch8,8:Ch9,9:Ch10,10:Ch11,11:Ch12,12:Ch13,13:Ch14
@@ -199,21 +175,61 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_SUBGROUPINFO(_radio, "RADIO", 11, AP_BoardConfig, AP_Radio),
 #endif
 
-#if defined(HAL_NEEDS_PARAM_HELPER)
-    // @Group: ""
-    // @Path: ../libraries/AP_Param_Helper/AP_Param_Helper.cpp
-    AP_SUBGROUPINFO(param_helper, "", 12, AP_BoardConfig, AP_Param_Helper),
-#endif
-
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETYOPTION
     // @DisplayName: Options for safety button behavior
     // @Description: This controls the activation of the safety button. It allows you to control if the safety button can be used for safety enable and/or disable, and whether the button is only active when disarmed
-    // @Bitmask: 0:ActiveForSafetyEnable,1:ActiveForSafetyDisable,2:ActiveWhenArmed
+    // @Bitmask: 0:ActiveForSafetyEnable,1:ActiveForSafetyDisable,2:ActiveWhenArmed,3:Force safety on when the aircraft disarms
     // @User: Standard
     AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
 #endif
-    
+
+    // @Group: RTC
+    // @Path: ../AP_RTC/AP_RTC.cpp
+    AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
+
+#if HAL_HAVE_BOARD_VOLTAGE
+    // @Param: VBUS_MIN
+    // @DisplayName: Autopilot board voltage requirement
+    // @Description: Minimum voltage on the autopilot power rail to allow the aircraft to arm. 0 to disable the check.
+    // @Units: V
+    // @Range: 4.0 5.5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("VBUS_MIN",    15,     AP_BoardConfig,  _vbus_min,  BOARD_CONFIG_BOARD_VOLTAGE_MIN),
+
+#endif
+
+#if HAL_HAVE_SERVO_VOLTAGE
+    // @Param: VSERVO_MIN
+    // @DisplayName: Servo voltage requirement
+    // @Description: Minimum voltage on the servo rail to allow the aircraft to arm. 0 to disable the check.
+    // @Units: V
+    // @Range: 3.3 12.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("VSERVO_MIN",    16,     AP_BoardConfig, _vservo_min,  0),
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    // @Param: SD_SLOWDOWN
+    // @DisplayName: microSD slowdown
+    // @Description: This is a scaling factor to slow down microSD operation. It can be used on flight board and microSD card combinations where full speed is not reliable. For normal full speed operation a value of 0 should be used.
+    // @Range: 0 32
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("SD_SLOWDOWN",  17,     AP_BoardConfig, _sdcard_slowdown,  0),
+#endif
+
+#ifdef HAL_GPIO_PWM_VOLT_PIN
+    // @Param: PWM_VOLT_SEL
+    // @DisplayName: Set PWM Out Voltage
+    // @Description: This sets the voltage max for PWM output pulses. 0 for 3.3V and 1 for 5V output.
+    // @Values: 0:3.3V,1:5V
+    // @User: Advanced
+    AP_GROUPINFO("PWM_VOLT_SEL", 18, AP_BoardConfig, _pwm_volt_sel, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -227,24 +243,38 @@ void AP_BoardConfig::init()
     // rebooting
     hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
 #endif
+
+    AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(USE_POSIX)
+    uint8_t slowdown = constrain_int16(_sdcard_slowdown.get(), 0, 32);
+    const uint8_t max_slowdown = 8;
+    do {
+        if (hal.util->fs_init()) {
+            break;
+        }
+        slowdown++;
+        hal.scheduler->delay(5);
+    } while (slowdown < max_slowdown);
+    if (slowdown < max_slowdown) {
+        _sdcard_slowdown.set(slowdown);
+    } else {
+        printf("SDCard failed to start\n");
+    }
+#endif
 }
 
 // set default value for BRD_SAFETY_MASK
 void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 {
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     state.ignore_safety_channels.set_default(mask);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    px4_setup_safety_mask();
-#endif
 #endif
 }
 
 void AP_BoardConfig::init_safety()
 {
-#if AP_FEATURE_SAFETY_BUTTON
     board_init_safety();
-#endif
 }
 
 /*
@@ -261,9 +291,20 @@ void AP_BoardConfig::sensor_config_error(const char *reason)
       before this, so the user can change parameters (and in
       particular BRD_TYPE if needed)
     */
+    uint32_t last_print_ms = 0;
     while (true) {
-        printf("Sensor failure: %s\n", reason);
-        gcs().send_text(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
-        hal.scheduler->delay(3000);
+        uint32_t now = AP_HAL::millis();
+        if (now - last_print_ms >= 3000) {
+            last_print_ms = now;
+            printf("Sensor failure: %s\n", reason);
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+            gcs().send_text(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
+#endif
+        }
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+        gcs().update_receive();
+        gcs().update_send();
+#endif
+        hal.scheduler->delay(5);
     }
 }

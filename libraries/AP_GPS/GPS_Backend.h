@@ -19,6 +19,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_RTC/JitterCorrection.h>
 #include "AP_GPS.h"
 
 class AP_GPS_Backend
@@ -50,7 +51,6 @@ public:
     virtual void broadcast_configuration_failure_reason(void) const { return ; }
 
     virtual void handle_msg(const mavlink_message_t *msg) { return ; }
-    virtual void handle_gnss_msg(const AP_GPS::GPS_State &msg) { return ; }
 
     // driver specific lag, returns true if the driver is confident in the provided lag
     virtual bool get_lag(float &lag) const { lag = 0.2f; return true; }
@@ -61,7 +61,7 @@ public:
     virtual const char *name() const = 0;
 
     void broadcast_gps_type() const;
-    virtual void Write_DataFlash_Log_Startup_messages() const;
+    virtual void Write_AP_Logger_Log_Startup_messages() const;
 
     virtual bool prepare_for_arming(void) { return true; }
 
@@ -87,5 +87,24 @@ protected:
 
     void _detection_message(char *buffer, uint8_t buflen) const;
 
-    bool should_df_log() const;
+    bool should_log() const;
+
+    /*
+      set a timestamp based on arrival time on uart at current byte,
+      assuming the message started nbytes ago
+     */
+    void set_uart_timestamp(uint16_t nbytes);
+
+    void check_new_itow(uint32_t itow, uint32_t msg_length);
+    
+private:
+    // itow from previous message
+    uint32_t _last_itow;
+    uint64_t _pseudo_itow;
+    uint32_t _last_ms;
+    uint32_t _rate_ms;
+    uint32_t _last_rate_ms;
+    uint16_t _rate_counter;
+
+    JitterCorrection jitter_correction;
 };

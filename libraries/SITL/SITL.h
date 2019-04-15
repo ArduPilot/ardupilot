@@ -2,10 +2,28 @@
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Common/Location.h>
 
-class DataFlash_Class;
+#include "SIM_Sprayer.h"
+#include "SIM_Gripper_Servo.h"
+#include "SIM_Gripper_EPM.h"
+#include "SIM_Parachute.h"
+#include "SIM_Precland.h"
+
+class AP_Logger;
 
 namespace SITL {
+
+struct vector3f_array {
+    uint16_t length;
+    Vector3f *data;
+};
+
+struct float_array {
+    uint16_t length;
+    float *data;
+};
+    
 
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
@@ -29,6 +47,12 @@ struct sitl_fdm {
     double range;           // rangefinder value
     Vector3f bodyMagField;  // Truth XYZ magnetic field vector in body-frame. Includes motor interference. Units are milli-Gauss.
     Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
+
+    struct {
+        // data from simulated laser scanner, if available
+        struct vector3f_array points;
+        struct float_array ranges;
+    } scanner;
 };
 
 // number of rc output channels
@@ -42,18 +66,24 @@ public:
         mag_ofs.set(Vector3f(5, 13, -18));
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
-        if (_s_instance != nullptr) {
+        if (_singleton != nullptr) {
             AP_HAL::panic("Too many SITL instances");
         }
-        _s_instance = this;
+        _singleton = this;
     }
 
     /* Do not allow copies */
     SITL(const SITL &other) = delete;
     SITL &operator=(const SITL&) = delete;
 
-    static SITL *_s_instance;
-    static SITL *get_instance() { return _s_instance; }
+    static SITL *_singleton;
+    static SITL *get_singleton() { return _singleton; }
+
+    enum SITL_RCFail {
+        SITL_RCFail_None = 0,
+        SITL_RCFail_NoPulses = 1,
+        SITL_RCFail_Throttle950 = 2,
+    };
 
     enum GPSType {
         GPS_TYPE_NONE  = 0,
@@ -108,6 +138,9 @@ public:
     AP_Float mag_error;   // in degrees
     AP_Vector3f mag_mot;  // in mag units per amp
     AP_Vector3f mag_ofs;  // in mag units
+    AP_Vector3f mag_diag;  // diagonal corrections
+    AP_Vector3f mag_offdiag;  // off-diagonal corrections
+    AP_Int8 mag_orient;   // external compass orientation
     AP_Float servo_speed; // servo speed in seconds
 
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
@@ -131,6 +164,7 @@ public:
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
+    AP_Int8  rc_chancount; // channel count
     AP_Int8  baro_disable; // disable simulated barometer
     AP_Int8  float_exception; // enable floating point exception checks
     AP_Int8  flow_enable; // enable simulated optflow
@@ -140,7 +174,9 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
-    
+    AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
+    AP_Float flow_noise; // optical flow measurement noise (rad/sec)
+
     // wind control
     enum WindType {
         WIND_TYPE_SQRT = 0,
@@ -189,11 +225,26 @@ public:
     // differential pressure sensor tube order
     AP_Int8 arspd_signflip;
 
+    // weight on wheels pin
+    AP_Int8 wow_pin;
+
+    // vibration frequencies in Hz on each axis
+    AP_Vector3f vibe_freq;
+
+    struct {
+        AP_Float x;
+        AP_Float y;
+        AP_Float z;
+        AP_Int32 t;
+
+        uint32_t start_ms;
+    } shove;
+
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);
 
-    void Log_Write_SIMSTATE(DataFlash_Class *dataflash);
+    void Log_Write_SIMSTATE();
 
     // convert a set of roll rates from earth frame to body frame
     static void convert_body_frame(double rollDeg, double pitchDeg,
@@ -202,6 +253,14 @@ public:
 
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
+
+    Sprayer sprayer_sim;
+
+    Gripper_Servo gripper_sim;
+    Gripper_EPM gripper_epm_sim;
+
+    Parachute parachute_sim;
+    SIM_Precland precland_sim;
 };
 
 } // namespace SITL

@@ -15,11 +15,15 @@ bool Plane::auto_takeoff_check(void)
     uint32_t now = millis();
     uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
+    // reset all takeoff state if disarmed
+    if (!hal.util->get_soft_armed()) {
+        memset(&takeoff_state, 0, sizeof(takeoff_state));
+        return false;
+    }
+
     // Reset states if process has been interrupted
     if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
-	    takeoff_state.launchTimerStarted = false;
-	    takeoff_state.last_tkoff_arm_time = 0;
-        takeoff_state.last_check_ms = now;
+        memset(&takeoff_state, 0, sizeof(takeoff_state));
         return false;
     }
 
@@ -31,11 +35,28 @@ bool Plane::auto_takeoff_check(void)
         return false;
     }
 
-    // Check for launch acceleration if set. NOTE: relies on TECS 50Hz processing
-    if (!takeoff_state.launchTimerStarted &&
-        !is_zero(g.takeoff_throttle_min_accel) &&
-        SpdHgt_Controller->get_VXdot() < g.takeoff_throttle_min_accel) {
-        goto no_launch;
+    if (!takeoff_state.launchTimerStarted && !is_zero(g.takeoff_throttle_min_accel)) {
+        // we are requiring an X acceleration event to launch
+        float xaccel = SpdHgt_Controller->get_VXdot();
+        if (g2.takeoff_throttle_accel_count <= 1) {
+            if (xaccel < g.takeoff_throttle_min_accel) {
+                goto no_launch;
+            }
+        } else {
+            // we need multiple accel events
+            if (now - takeoff_state.accel_event_ms > 500) {
+                takeoff_state.accel_event_counter = 0;
+            }
+            bool odd_event = ((takeoff_state.accel_event_counter & 1) != 0);
+            bool got_event = (odd_event?xaccel < -g.takeoff_throttle_min_accel : xaccel > g.takeoff_throttle_min_accel);
+            if (got_event) {
+                takeoff_state.accel_event_counter++;
+                takeoff_state.accel_event_ms = now;
+            }
+            if (takeoff_state.accel_event_counter < g2.takeoff_throttle_accel_count) {
+                goto no_launch;
+            }
+        }
     }
 
     // we've reached the acceleration threshold, so start the timer
@@ -58,12 +79,13 @@ bool Plane::auto_takeoff_check(void)
         goto no_launch;
     }
 
-    if (!quadplane.is_tailsitter()) {
+    if (!quadplane.is_tailsitter() &&
+        !(g2.flight_options & FlightOptions::DISABLE_TOFF_ATTITUDE_CHK)) {
         // Check aircraft attitude for bad launch
-        if (ahrs.pitch_sensor <= -3000 ||
-            ahrs.pitch_sensor >= 4500 ||
+        if (ahrs.pitch_sensor <= -3000 || ahrs.pitch_sensor >= 4500 ||
             (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Bad launch AUTO");
+            takeoff_state.accel_event_counter = 0;
             goto no_launch;
         }
     }
@@ -74,6 +96,7 @@ bool Plane::auto_takeoff_check(void)
         gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
         takeoff_state.launchTimerStarted = false;
         takeoff_state.last_tkoff_arm_time = 0;
+        takeoff_state.start_time_ms = now;
         steer_state.locked_course_err = 0; // use current heading without any error offset
         return true;
     }
@@ -204,8 +227,8 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
  */
 int8_t Plane::takeoff_tail_hold(void)
 {
-    bool in_takeoff = ((control_mode == AUTO && !auto_state.takeoff_complete) ||
-                       (control_mode == FLY_BY_WIRE_A && auto_state.fbwa_tdrag_takeoff_mode));
+    bool in_takeoff = ((control_mode == &mode_auto && !auto_state.takeoff_complete) ||
+                       (control_mode == &mode_fbwa && auto_state.fbwa_tdrag_takeoff_mode));
     if (!in_takeoff) {
         // not in takeoff
         return 0;
@@ -254,3 +277,14 @@ void Plane::complete_auto_takeoff(void)
     }
 #endif
 }
+
+
+#if LANDING_GEAR_ENABLED == ENABLED
+/*
+  update landing gear
+ */
+void Plane::landing_gear_update(void)
+{
+    g2.landing_gear.update(relative_ground_altitude(g.rangefinder_landing));
+}
+#endif

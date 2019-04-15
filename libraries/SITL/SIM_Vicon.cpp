@@ -35,6 +35,10 @@ Vicon::Vicon()
     fd_my_end    = tmp[1];
     fd_their_end = tmp[0];
 
+    // close file descriptors on exec:
+    fcntl(fd_my_end, F_SETFD, FD_CLOEXEC);
+    fcntl(fd_their_end, F_SETFD, FD_CLOEXEC);
+
     // make sure we don't screw the simulation up by blocking:
     fcntl(fd_my_end, F_SETFL, fcntl(fd_my_end, F_GETFL, 0) | O_NONBLOCK);
     fcntl(fd_their_end, F_SETFL, fcntl(fd_their_end, F_GETFL, 0) | O_NONBLOCK);
@@ -111,7 +115,8 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         position.z,
         roll,
         pitch,
-        yaw);
+        yaw,
+        NULL);
 
     uint32_t delay_ms = 25 + unsigned(random()) % 300;
     time_send_us = now_us + delay_ms * 1000UL;
@@ -120,7 +125,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
 bool Vicon::init_sitl_pointer()
 {
     if (_sitl == nullptr) {
-        _sitl = (SITL *)AP_Param::find_object("SIM_");
+        _sitl = AP::sitl();
         if (_sitl == nullptr) {
             return false;
         }

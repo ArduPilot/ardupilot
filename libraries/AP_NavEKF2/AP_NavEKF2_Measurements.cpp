@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -117,7 +116,7 @@ void NavEKF2_core::readRangeFinder(void)
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset)
+void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
 {
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
     // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
@@ -200,6 +199,19 @@ void NavEKF2_core::readMagData()
         return;
     }
 
+    if (_ahrs->get_compass()->learn_offsets_enabled()) {
+        // while learning offsets keep all mag states reset
+        InitialiseVariablesMag();
+        wasLearningCompass_ms = imuSampleTime_ms;
+    } else if (wasLearningCompass_ms != 0 && imuSampleTime_ms - wasLearningCompass_ms > 1000) {
+        wasLearningCompass_ms = 0;
+        // force a new yaw alignment 1s after learning completes. The
+        // delay is to ensure any buffered mag samples are discarded
+        yawAlignComplete = false;
+        InitialiseVariablesMag();
+    }
+
+    
     // do not accept new compass data faster than 14Hz (nominal rate is 10Hz) to prevent high processor loading
     // because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
     if (use_compass() && _ahrs->get_compass()->last_update_usec() - lastMagUpdate_us > 70000) {
@@ -234,6 +246,7 @@ void NavEKF2_core::readMagData()
                     magStateResetRequest = true;
                     // declare the field unlearned so that the reset request will be obeyed
                     magFieldLearned = false;
+                    break;
                 }
             }
         }
@@ -362,7 +375,7 @@ void NavEKF2_core::readIMUData()
         // reset the counter used to let the frontend know how many frames have elapsed since we started a new update cycle
         framesSincePredict = 0;
 
-        // set the flag to let the filter know it has new IMU data nad needs to run
+        // set the flag to let the filter know it has new IMU data and needs to run
         runUpdates = true;
 
         // extract the oldest available data from the FIFO buffer
@@ -423,9 +436,12 @@ void NavEKF2_core::readGpsData()
             // get current fix time
             lastTimeGpsReceived_ms = gps.last_message_time_ms();
 
+
             // estimate when the GPS fix was valid, allowing for GPS processing and other delays
             // ideally we should be using a timing signal from the GPS receiver to set this time
-            gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend->_gpsDelay_ms;
+            float gps_delay = 0.0;
+            gps.get_lag(gps_delay); // ignore the return value
+            gpsDataNew.time_ms = lastTimeGpsReceived_ms - (uint32_t)(1e3f * gps_delay);
 
             // Correct for the average intersampling delay due to the filter updaterate
             gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
@@ -494,7 +510,7 @@ void NavEKF2_core::readGpsData()
             // Post-alignment checks
             calcGpsGoodForFlight();
 
-            // Read the GPS locaton in WGS-84 lat,long,height coordinates
+            // Read the GPS location in WGS-84 lat,long,height coordinates
             const struct Location &gpsloc = gps.location();
 
             // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
@@ -508,14 +524,14 @@ void NavEKF2_core::readGpsData()
                 // Set the height of the NED origin
                 ekfGpsRefHgt = (double)0.01 * (double)gpsloc.alt + (double)outputDataNew.position.z;
 
-                // Set the uncertinty of the GPS origin height
+                // Set the uncertainty of the GPS origin height
                 ekfOriginHgtVar = sq(gpsHgtAccuracy);
 
             }
 
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
             if (validOrigin) {
-                gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
+                gpsDataNew.pos = EKF_origin.get_distance_NE(gpsloc);
                 gpsDataNew.hgt = (float)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
                 storedGPS.push(gpsDataNew);
                 // declare GPS available for use
@@ -822,13 +838,21 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
 
     extNavDataNew.pos = pos;
     extNavDataNew.quat = quat;
-    extNavDataNew.posErr = posErr;
+    if (posErr > 0) {
+        extNavDataNew.posErr = posErr;
+    } else {
+        extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
+    }
     extNavDataNew.angErr = angErr;
     extNavDataNew.body_offset = &sensOffset;
+    timeStamp_ms = timeStamp_ms - frontend->_extnavDelay_ms;
+    // Correct for the average intersampling delay due to the filter updaterate
+    timeStamp_ms -= localFilterTimeStep_ms/2;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer
+    timeStamp_ms = MAX(timeStamp_ms,imuDataDelayed.time_ms);
     extNavDataNew.time_ms = timeStamp_ms;
 
     storedExtNav.push(extNavDataNew);
 
 }
 
-#endif // HAL_CPU_CLASS

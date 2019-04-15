@@ -27,7 +27,14 @@ extern const AP_HAL::HAL& hal;
 
 #include "RC_Channel.h"
 
-uint32_t RC_Channel::configured_mask;
+#include <GCS_MAVLink/GCS.h>
+
+#include <AC_Avoidance/AC_Avoid.h>
+#include <AC_Sprayer/AC_Sprayer.h>
+#include <AP_Camera/AP_Camera.h>
+#include <AP_Gripper/AP_Gripper.h>
+#include <AP_LandingGear/AP_LandingGear.h>
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
@@ -72,6 +79,15 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DZ",   5, RC_Channel, dead_zone, 0),
 
+    // @Param: OPTION
+    // @DisplayName: RC input option
+    // @Description: Function assigned to this RC channel
+    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66: Relay5, 67: Relay6
+    // @Values{Rover}: 0:Do Nothing, 4:RTL, 7:Save WP, 9:Camera Trigger, 16:Auto, 19:Gripper, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66: Relay5, 67: Relay6
+    // @Values{Plane}: 0:Do Nothing, 9:Camera Trigger, 28:Relay On/Off, 29:Landing Gear, 34:Relay2 On/Off, 30:Lost Plane Sound, 31:Motor Emergency Stop, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 43:InvertedFlight, 46:RC Override Enable, 58:Clear Waypoints, 62:Compass Learn, 64: Reverse Throttle, 65:GPS Disable, 66: Relay5, 67: Relay6
+    // @User: Standard
+    AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE),
+
     AP_GROUPEND
 };
 
@@ -108,14 +124,16 @@ RC_Channel::get_reverse(void) const
     return bool(reversed.get());
 }
 
-// read input from APM_RC - create a control_in value
-void
-RC_Channel::set_pwm(int16_t pwm)
+// read input from hal.rcin or overrides
+bool
+RC_Channel::update(void)
 {
-    if (has_override()) {
+    if (has_override() && !rc().ignore_overrides()) {
         radio_in = override_value;
+    } else if (!rc().ignore_receiver()) {
+        radio_in = hal.rcin->read(ch_in);
     } else {
-        radio_in = pwm;
+        return false;
     }
 
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
@@ -124,6 +142,8 @@ RC_Channel::set_pwm(int16_t pwm)
         //RC_CHANNEL_TYPE_ANGLE
         control_in = pwm_to_angle();
     }
+
+    return true;
 }
 
 // recompute control values with no deadzone
@@ -161,32 +181,12 @@ int16_t RC_Channel::get_control_mid() const
     }
 }
 
-// ------------------------------------------
-
-void RC_Channel::load_eeprom(void)
-{
-    radio_min.load();
-    radio_trim.load();
-    radio_max.load();
-    reversed.load();
-    dead_zone.load();
-}
-
-void RC_Channel::save_eeprom(void)
-{
-    radio_min.save();
-    radio_trim.save();
-    radio_max.save();
-    reversed.save();
-    dead_zone.save();
-}
-
 /*
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim)
+RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
 {
     int16_t radio_trim_high = _trim + _dead_zone;
     int16_t radio_trim_low  = _trim - _dead_zone;
@@ -206,7 +206,7 @@ RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim)
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone)
+RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
 {
     return pwm_to_angle_dz_trim(_dead_zone, radio_trim);
 }
@@ -216,7 +216,7 @@ RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone)
   the current radio_in value
  */
 int16_t
-RC_Channel::pwm_to_angle()
+RC_Channel::pwm_to_angle() const
 {
 	return pwm_to_angle_dz(dead_zone);
 }
@@ -227,7 +227,7 @@ RC_Channel::pwm_to_angle()
   range, using the specified deadzone
  */
 int16_t
-RC_Channel::pwm_to_range_dz(uint16_t _dead_zone)
+RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
 {
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
@@ -248,13 +248,13 @@ RC_Channel::pwm_to_range_dz(uint16_t _dead_zone)
   range
  */
 int16_t
-RC_Channel::pwm_to_range()
+RC_Channel::pwm_to_range() const
 {
     return pwm_to_range_dz(dead_zone);
 }
 
 
-int16_t RC_Channel::get_control_in_zero_dz(void)
+int16_t RC_Channel::get_control_in_zero_dz(void) const
 {
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         return pwm_to_range_dz(0);
@@ -265,7 +265,7 @@ int16_t RC_Channel::get_control_in_zero_dz(void)
 // ------------------------------------------
 
 float
-RC_Channel::norm_input()
+RC_Channel::norm_input() const
 {
     float ret;
     int16_t reverse_mul = (reversed?-1:1);
@@ -284,7 +284,7 @@ RC_Channel::norm_input()
 }
 
 float
-RC_Channel::norm_input_dz()
+RC_Channel::norm_input_dz() const
 {
     int16_t dz_min = radio_trim - dead_zone;
     int16_t dz_max = radio_trim + dead_zone;
@@ -304,7 +304,7 @@ RC_Channel::norm_input_dz()
   get percentage input from 0 to 100. This ignores the trim value.
  */
 uint8_t
-RC_Channel::percent_input()
+RC_Channel::percent_input() const
 {
     if (radio_in <= radio_min) {
         return reversed?100:0;
@@ -319,24 +319,28 @@ RC_Channel::percent_input()
     return ret;
 }
 
-uint16_t
-RC_Channel::read() const
-{
-    return hal.rcin->read(ch_in);
-}
-
 /*
-  Return true if the channel is at trim and within the DZ
+  return true if input is within deadzone of trim
 */
-bool RC_Channel::in_trim_dz()
+bool RC_Channel::in_trim_dz() const
 {
     return is_bounded_int32(radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
 }
 
 void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_us)
 {
+    if (!rc().gcs_overrides_enabled()) {
+        return;
+    }
+    // this UINT16_MAX stuff should really, really be in the
+    // mavlink packet handling code.  It can be moved once that
+    // code is in the GCS_MAVLink class!
+    if (v == UINT16_MAX) {
+        return;
+    }
     last_override_time = timestamp_us != 0 ? timestamp_us : AP_HAL::millis();
     override_value = v;
+    rc().new_override_received();
 }
 
 void RC_Channel::clear_override()
@@ -347,19 +351,444 @@ void RC_Channel::clear_override()
 
 bool RC_Channel::has_override() const
 {
-    return (override_value > 0) && ((AP_HAL::millis() - last_override_time) < *RC_Channels::override_timeout * 1000);
+    if (override_value <= 0) {
+        return false;
+    }
+
+    const float override_timeout_ms = rc().override_timeout_ms();
+    return is_positive(override_timeout_ms) && ((AP_HAL::millis() - last_override_time) < (uint32_t)override_timeout_ms);
 }
 
-bool RC_Channel::min_max_configured() const
+//
+// support for auxillary switches:
+//
+#define MODE_SWITCH_DEBOUNCE_TIME_MS  200
+
+uint32_t RC_Channel::old_switch_positions;
+RC_Channel::modeswitch_state_t RC_Channel::mode_switch_state;
+
+void RC_Channel::reset_mode_switch()
 {
-    if (configured_mask & (1U << ch_in)) {
-        return true;
+    mode_switch_state.last_position = -1;
+    mode_switch_state.debounced_position = -1;
+    read_mode_switch();
+}
+
+void RC_Channel::read_mode_switch()
+{
+    // calculate position of flight mode switch
+    const uint16_t pulsewidth = get_radio_in();
+    if (pulsewidth <= 900 || pulsewidth >= 2200) {
+        return;  // This is an error condition
     }
-    if (radio_min.configured() && radio_max.configured()) {
-        // once a channel is known to be configured it has to stay
-        // configured due to the nature of AP_Param
-        configured_mask |= (1U<<ch_in);
-        return true;
+
+    modeswitch_pos_t position;
+    if      (pulsewidth < 1231) position = 0;
+    else if (pulsewidth < 1361) position = 1;
+    else if (pulsewidth < 1491) position = 2;
+    else if (pulsewidth < 1621) position = 3;
+    else if (pulsewidth < 1750) position = 4;
+    else position = 5;
+
+    if (mode_switch_state.last_position == position) {
+        // nothing to do
+        return;
     }
-    return false;
+
+    const uint32_t tnow_ms = AP_HAL::millis();
+    if (position != mode_switch_state.debounced_position) {
+        mode_switch_state.debounced_position = position;
+        // store time that switch last moved
+        mode_switch_state.last_edge_time_ms = tnow_ms;
+        return;
+    }
+
+    if (tnow_ms - mode_switch_state.last_edge_time_ms < MODE_SWITCH_DEBOUNCE_TIME_MS) {
+        // still in debounce
+        return;
+    }
+
+    // set flight mode and simple mode setting
+    mode_switch_changed(position);
+
+    // set the last switch position.  This marks the
+    // transition as complete, even if the mode switch actually
+    // failed.  This prevents the vehicle changing modes
+    // unexpectedly some time later.
+    mode_switch_state.last_position = position;
+}
+
+//
+// support for auxillary switches:
+//
+
+// init_aux_switch_function - initialize aux functions
+void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
+{
+    // init channel options
+    switch(ch_option) {
+    case AUX_FUNC::RC_OVERRIDE_ENABLE:
+    case AUX_FUNC::AVOID_PROXIMITY:
+        do_aux_function(ch_option, ch_flag);
+        break;
+    // the following functions do not need to be initialised:
+    case AUX_FUNC::RELAY:
+    case AUX_FUNC::RELAY2:
+    case AUX_FUNC::RELAY3:
+    case AUX_FUNC::RELAY4:
+    case AUX_FUNC::RELAY5:
+    case AUX_FUNC::RELAY6:
+    case AUX_FUNC::CAMERA_TRIGGER:
+    case AUX_FUNC::LOST_VEHICLE_SOUND:
+    case AUX_FUNC::DO_NOTHING:
+    case AUX_FUNC::CLEAR_WP:
+    case AUX_FUNC::COMPASS_LEARN:
+    case AUX_FUNC::LANDING_GEAR:
+        break;
+    case AUX_FUNC::MOTOR_ESTOP:
+    case AUX_FUNC::GRIPPER:
+    case AUX_FUNC::SPRAYER:
+    case AUX_FUNC::GPS_DISABLE:
+        do_aux_function(ch_option, ch_flag);
+        break;
+    default:
+        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to initialise RC function (%u)", (unsigned)ch_option);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("RC function (%u) initialisation not handled", (unsigned)ch_option);
+#endif
+        break;
+    }
+}
+
+void RC_Channel::read_aux()
+{
+    const aux_func_t _option = (aux_func_t)option.get();
+    if (_option == AUX_FUNC::DO_NOTHING) {
+        // may wish to add special cases for other "AUXSW" things
+        // here e.g. RCMAP_ROLL etc once they become options
+        return;
+    }
+    aux_switch_pos_t new_position;
+    if (!read_3pos_switch(new_position)) {
+        return;
+    }
+    const aux_switch_pos_t old_position = old_switch_position();
+    if (new_position == old_position) {
+        debounce.count = 0;
+        return;
+    }
+    if (debounce.new_position != new_position) {
+        debounce.new_position = new_position;
+        debounce.count = 0;
+    }
+    // a value of 2 means we need 3 values in a row with the same
+    // value to activate
+    if (debounce.count++ < 2) {
+        return;
+    }
+
+    // debounced; undertake the action:
+    do_aux_function(_option, new_position);
+    set_old_switch_position(new_position);
+}
+
+
+void RC_Channel::do_aux_function_avoid_proximity(const aux_switch_pos_t ch_flag)
+{
+    AC_Avoid *avoid = AP::ac_avoid();
+    if (avoid == nullptr) {
+        return;
+    }
+
+    switch (ch_flag) {
+    case HIGH:
+        avoid->proximity_avoidance_enable(true);
+        break;
+    case MIDDLE:
+        // nothing
+        break;
+    case LOW:
+        avoid->proximity_avoidance_enable(false);
+        break;
+    }
+}
+
+void RC_Channel::do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return;
+    }
+    if (ch_flag == HIGH) {
+        camera->take_picture();
+    }
+}
+
+void RC_Channel::do_aux_function_clear_wp(const aux_switch_pos_t ch_flag)
+{
+    AP_Mission *mission = AP::mission();
+    if (mission == nullptr) {
+        return;
+    }
+    if (ch_flag == HIGH) {
+        mission->clear();
+    }
+}
+
+void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
+{
+    AP_ServoRelayEvents *servorelayevents = AP::servorelayevents();
+    if (servorelayevents == nullptr) {
+        return;
+    }
+    servorelayevents->do_set_relay(relay, val);
+}
+
+void RC_Channel::do_aux_function_sprayer(const aux_switch_pos_t ch_flag)
+{
+    AC_Sprayer *sprayer = AP::sprayer();
+    if (sprayer == nullptr) {
+        return;
+    }
+
+    sprayer->run(ch_flag == HIGH);
+    // if we are disarmed the pilot must want to test the pump
+    sprayer->test_pump((ch_flag == HIGH) && !hal.util->get_soft_armed());
+}
+
+void RC_Channel::do_aux_function_gripper(const aux_switch_pos_t ch_flag)
+{
+    AP_Gripper *gripper = AP::gripper();
+    if (gripper == nullptr) {
+        return;
+    }
+
+    switch(ch_flag) {
+    case LOW:
+        gripper->release();
+//        copter.Log_Write_Event(DATA_GRIPPER_RELEASE);
+        break;
+    case MIDDLE:
+        // nothing
+        break;
+    case HIGH:
+        gripper->grab();
+//        copter.Log_Write_Event(DATA_GRIPPER_GRAB);
+        break;
+    }
+}
+
+void RC_Channel::do_aux_function_lost_vehicle_sound(const aux_switch_pos_t ch_flag)
+{
+    switch (ch_flag) {
+    case HIGH:
+        AP_Notify::flags.vehicle_lost = true;
+        break;
+    case MIDDLE:
+        // nothing
+        break;
+    case LOW:
+        AP_Notify::flags.vehicle_lost = false;
+        break;
+    }
+}
+
+void RC_Channel::do_aux_function_rc_override_enable(const aux_switch_pos_t ch_flag)
+{
+    switch (ch_flag) {
+    case HIGH: {
+        rc().set_gcs_overrides_enabled(true);
+        break;
+    }
+    case MIDDLE:
+        // nothing
+        break;
+    case LOW: {
+        rc().set_gcs_overrides_enabled(false);
+        break;
+    }
+    }
+}
+
+void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
+{
+    switch(ch_option) {
+    case AUX_FUNC::CAMERA_TRIGGER:
+        do_aux_function_camera_trigger(ch_flag);
+        break;
+
+    case AUX_FUNC::GRIPPER:
+        do_aux_function_gripper(ch_flag);
+        break;
+
+    case AUX_FUNC::RC_OVERRIDE_ENABLE:
+        // Allow or disallow RC_Override
+        do_aux_function_rc_override_enable(ch_flag);
+        break;
+
+    case AUX_FUNC::AVOID_PROXIMITY:
+        do_aux_function_avoid_proximity(ch_flag);
+        break;
+
+    case AUX_FUNC::RELAY:
+        do_aux_function_relay(0, ch_flag == HIGH);
+        break;
+    case AUX_FUNC::RELAY2:
+        do_aux_function_relay(1, ch_flag == HIGH);
+        break;
+    case AUX_FUNC::RELAY3:
+        do_aux_function_relay(2, ch_flag == HIGH);
+        break;
+    case AUX_FUNC::RELAY4:
+        do_aux_function_relay(3, ch_flag == HIGH);
+        break;
+    case AUX_FUNC::RELAY5:
+        do_aux_function_relay(4, ch_flag == HIGH);
+        break;
+    case AUX_FUNC::RELAY6:
+        do_aux_function_relay(5, ch_flag == HIGH);
+        break;
+    case AUX_FUNC::CLEAR_WP:
+        do_aux_function_clear_wp(ch_flag);
+        break;
+
+    case AUX_FUNC::SPRAYER:
+        do_aux_function_sprayer(ch_flag);
+        break;
+
+    case AUX_FUNC::LOST_VEHICLE_SOUND:
+        do_aux_function_lost_vehicle_sound(ch_flag);
+        break;
+
+    case AUX_FUNC::COMPASS_LEARN:
+        if (ch_flag == HIGH) {
+            Compass &compass = AP::compass();
+            compass.set_learn_type(Compass::LEARN_INFLIGHT, false);
+        }
+        break;
+
+    case AUX_FUNC::LANDING_GEAR: {
+        AP_LandingGear *lg = AP_LandingGear::get_singleton();
+        if (lg == nullptr) {
+            break;
+        }
+        switch (ch_flag) {
+        case LOW:
+            lg->set_position(AP_LandingGear::LandingGear_Deploy);
+            break;
+        case MIDDLE:
+            // nothing
+            break;
+        case HIGH:
+            lg->set_position(AP_LandingGear::LandingGear_Retract);
+            break;
+        }
+        break;
+    }
+
+    case AUX_FUNC::GPS_DISABLE:
+        AP::gps().force_disable(ch_flag == HIGH);
+        break;
+
+    case AUX_FUNC::MOTOR_ESTOP:
+        switch (ch_flag) {
+        case HIGH: {
+            SRV_Channels::set_emergency_stop(true);
+
+            // log E-stop
+            AP_Logger *logger = AP_Logger::get_singleton();
+            if (logger && logger->logging_enabled()) {
+                logger->Write_Event(DATA_MOTORS_EMERGENCY_STOPPED);
+            }
+            break;
+        }
+        case MIDDLE:
+            // nothing
+            break;
+        case LOW: {
+            SRV_Channels::set_emergency_stop(false);
+
+            // log E-stop cleared
+            AP_Logger *logger = AP_Logger::get_singleton();
+            if (logger && logger->logging_enabled()) {
+                logger->Write_Event(DATA_MOTORS_EMERGENCY_STOP_CLEARED);
+            }
+            break;
+        }
+    }
+   break;
+
+    default:
+        gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", ch_option);
+        break;
+    }
+}
+
+void RC_Channel::init_aux()
+{
+    aux_switch_pos_t position;
+    if (!read_3pos_switch(position)) {
+        position = aux_switch_pos_t::LOW;
+    }
+    init_aux_function((aux_func_t)option.get(), position);
+}
+
+// read_3pos_switch
+bool RC_Channel::read_3pos_switch(RC_Channel::aux_switch_pos_t &ret) const
+{
+    const uint16_t in = get_radio_in();
+    if (in <= 900 or in >= 2200) {
+        return false;
+    }
+    if (in < AUX_PWM_TRIGGER_LOW) {
+        ret = LOW;
+    } else if (in > AUX_PWM_TRIGGER_HIGH) {
+        ret = HIGH;
+    } else {
+        ret = MIDDLE;
+    }
+    return true;
+}
+
+RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::aux_func_t option)
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            // odd?
+            continue;
+        }
+        if ((RC_Channel::aux_func_t)c->option.get() == option) {
+            return c;
+        }
+    }
+    return nullptr;
+}
+
+// duplicate_options_exist - returns true if any options are duplicated
+bool RC_Channels::duplicate_options_exist()
+{
+    uint8_t auxsw_option_counts[256] = {};
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        const RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            // odd?
+            continue;
+        }
+        const uint16_t option = c->option.get();
+        if (option >= sizeof(auxsw_option_counts)) {
+            continue;
+        }
+        auxsw_option_counts[option]++;
+    }
+
+    for (uint16_t i=0; i<sizeof(auxsw_option_counts); i++) {
+        if (i == 0) { // MAGIC VALUE! This is AUXSW_DO_NOTHING
+            continue;
+        }
+        if (auxsw_option_counts[i] > 1) {
+            return true;
+        }
+    }
+   return false;
 }

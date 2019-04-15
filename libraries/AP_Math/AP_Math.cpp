@@ -2,6 +2,8 @@
 
 #include <float.h>
 
+#include <AP_InternalError/AP_InternalError.h>
+
 /*
  * is_equal(): Integer implementation, provided for convenience and
  * compatibility with old code. Expands to the same as comparing the values
@@ -185,6 +187,7 @@ T constrain_value(const T amt, const T low, const T high)
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
+        AP::internalerror().error(AP_InternalError::error_t::constraining_nan);
         return (low + high) / 2;
     }
 
@@ -201,6 +204,7 @@ T constrain_value(const T amt, const T low, const T high)
 
 template int constrain_value<int>(const int amt, const int low, const int high);
 template long constrain_value<long>(const long amt, const long low, const long high);
+template long long constrain_value<long long>(const long long amt, const long long low, const long long high);
 template short constrain_value<short>(const short amt, const short low, const short high);
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
@@ -231,7 +235,7 @@ Vector3f rand_vec3f(void)
     Vector3f v = Vector3f(rand_float(),
                           rand_float(),
                           rand_float());
-    if (v.length() != 0.0f) {
+    if (!is_zero(v.length())) {
         v.normalize();
     }
     return v;
@@ -254,3 +258,21 @@ bool is_valid_octal(uint16_t octal)
     }
     return true;
 }
+
+/*
+  return true if two rotations are equivalent
+  This copes with the fact that we have some duplicates, like ROLL_180_YAW_90 and PITCH_180_YAW_270
+ */
+bool rotation_equal(enum Rotation r1, enum Rotation r2)
+{
+    if (r1 == r2) {
+        return true;
+    }
+    Vector3f v(1,2,3);
+    Vector3f v1 = v;
+    Vector3f v2 = v;
+    v1.rotate(r1);
+    v2.rotate(r2);
+    return (v1 - v2).length() < 0.001;
+}
+

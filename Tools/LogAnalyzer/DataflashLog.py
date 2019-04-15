@@ -543,36 +543,46 @@ class DataflashLog(object):
 
     def handleModeChange(self, lineNumber, e):
         if self.vehicleType == VehicleType.Copter:
+            modes = {
+                0:'STABILIZE',
+                1:'ACRO',
+                2:'ALT_HOLD',
+                3:'AUTO',
+                4:'GUIDED',
+                5:'LOITER',
+                6:'RTL',
+                7:'CIRCLE',
+                9:'LAND',
+                10:'OF_LOITER',
+                11:'DRIFT',
+                13:'SPORT',
+                14:'FLIP',
+                15:'AUTOTUNE',
+                16:'POSHOLD',
+                17:'BRAKE',
+                18:'THROW',
+                19:'AVOID_ADSB',
+                20:'GUIDED_NOGPS',
+                21:'SMART_RTL',
+            }
             try:
-                modes = {0:'STABILIZE',
-                    1:'ACRO',
-                    2:'ALT_HOLD',
-                    3:'AUTO',
-                    4:'GUIDED',
-                    5:'LOITER',
-                    6:'RTL',
-                    7:'CIRCLE',
-                    9:'LAND',
-                    10:'OF_LOITER',
-                    11:'DRIFT',
-                    13:'SPORT',
-                    14:'FLIP',
-                    15:'AUTOTUNE',
-                    16:'POSHOLD',
-                    17:'BRAKE',
-                    18:'THROW',
-                    19:'AVOID_ADSB',
-                    20:'GUIDED_NOGPS',
-                    21:'SMART_RTL'}
                 if hasattr(e, 'ThrCrs'):
                     self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ThrCrs)
                 else:
                     # assume it has ModeNum:
                     self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ModeNum)
-            except:
+            except ValueError as x:
                 if hasattr(e, 'ThrCrs'):
                     self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
                 else:
+                    # some .log files have the name spelt out by name
+                    # rather than number, contrary to the format
+                    # string.  Attempt to map that back to a number:
+                    uppername = str(e.Mode).upper()
+                    for num in modes:
+                        if modes[num].upper() == uppername:
+                            self.modeChanges[lineNumber] = (uppername, num)
+                            return
                     # assume it has ModeNum:
                     print("Unknown mode=%u" % e.ModeNum)
                     self.modeChanges[lineNumber] = (e.Mode, "mode=%u" % e.ModeNum)

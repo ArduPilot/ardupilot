@@ -47,6 +47,7 @@ public:
         k_param_g2, // 2nd block of parameters
         k_param_NavEKF3,
         k_param_BoardConfig_CAN,
+        k_param_osd,
 
         // simulation
         k_param_sitl = 10,
@@ -93,7 +94,7 @@ public:
         k_param_pilot_speed_up,    // renamed from k_param_pilot_velocity_z_max
         k_param_circle_rate,                // deprecated - remove
         k_param_rangefinder_gain,
-        k_param_ch8_option,
+        k_param_ch8_option_old, // deprecated
         k_param_arming_check_old,       // deprecated - remove
         k_param_sprayer,
         k_param_angle_max,
@@ -202,11 +203,11 @@ public:
         k_param_serial2_baud_old, // deprecated
         k_param_serial2_protocol, // deprecated
         k_param_serial_manager,
-        k_param_ch9_option,
-        k_param_ch10_option,
-        k_param_ch11_option,
-        k_param_ch12_option,
-        k_param_takeoff_trigger_dz,
+        k_param_ch9_option_old,
+        k_param_ch10_option_old,
+        k_param_ch11_option_old,
+        k_param_ch12_option_old,
+        k_param_takeoff_trigger_dz_old,
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
 
@@ -226,13 +227,13 @@ public:
         k_param_curr_amp_per_volt,  // deprecated - can be deleted
         k_param_input_voltage,  // deprecated - can be deleted
         k_param_pack_capacity,  // deprecated - can be deleted
-        k_param_compass_enabled,
+        k_param_compass_enabled_deprecated,
         k_param_compass,
         k_param_rangefinder_enabled_old, // deprecated
         k_param_frame_type,
         k_param_optflow_enabled,    // deprecated
         k_param_fs_batt_voltage,    // unused - moved to AP_BattMonitor
-        k_param_ch7_option,
+        k_param_ch7_option_old,
         k_param_auto_slew_rate,     // deprecated - can be deleted
         k_param_rangefinder_type_old,     // deprecated
         k_param_super_simple = 155,
@@ -258,7 +259,7 @@ public:
         k_param_camera_mount2,      // deprecated
 
         //
-        // Batery monitoring parameters
+        // Battery monitoring parameters
         //
         k_param_battery_volt_pin = 168, // deprecated - can be deleted
         k_param_battery_curr_pin,   // 169 deprecated - can be deleted
@@ -284,8 +285,8 @@ public:
         k_param_throttle_trim,          // remove
         k_param_esc_calibrate,
         k_param_radio_tuning,
-        k_param_radio_tuning_high,
-        k_param_radio_tuning_low,
+        k_param_radio_tuning_high_old,   // unused
+        k_param_radio_tuning_low_old,    // unused
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled, // unused - moved to AP_BattMonitor
         k_param_throttle_mid,           // remove
@@ -349,15 +350,15 @@ public:
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p,
-        k_param_autotune_axis_bitmask,
-        k_param_autotune_aggressiveness,
+        k_param_autotune_axis_bitmask, // remove
+        k_param_autotune_aggressiveness, // remove
         k_param_pi_vel_xy,              // remove
         k_param_fs_ekf_action,
         k_param_rtl_climb_min,
         k_param_rpm_sensor,
-        k_param_autotune_min_d, // 251
+        k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
-        k_param_DataFlash = 253, // 253 - Logging Group
+        k_param_logger = 253, // 253 - Logging Group
 
         // 254,255: reserved
 
@@ -375,7 +376,6 @@ public:
 
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
-    AP_Int16        takeoff_trigger_dz;
     AP_Float        pilot_takeoff_alt;
 
     AP_Int16        rtl_altitude;
@@ -388,7 +388,6 @@ public:
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
-    AP_Int8         compass_enabled;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
     AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
@@ -428,15 +427,7 @@ public:
     AP_Int32        log_bitmask;
     AP_Int8         esc_calibrate;
     AP_Int8         radio_tuning;
-    AP_Int16        radio_tuning_high;
-    AP_Int16        radio_tuning_low;
     AP_Int8         frame_type;
-    AP_Int8         ch7_option;
-    AP_Int8         ch8_option;
-    AP_Int8         ch9_option;
-    AP_Int8         ch10_option;
-    AP_Int8         ch11_option;
-    AP_Int8         ch12_option;
     AP_Int8         disarm_delay;
 
     AP_Int8         land_repositioning;
@@ -462,13 +453,6 @@ public:
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
-
-    // Autotune
-#if AUTOTUNE_ENABLED == ENABLED
-    AP_Int8                 autotune_axis_bitmask;
-    AP_Float                autotune_aggressiveness;
-    AP_Float                autotune_min_d;
-#endif
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -550,7 +534,7 @@ public:
     AP_Int8 frame_class;
 
     // RC input channels
-    RC_Channels rc_channels;
+    RC_Channels_Copter rc_channels;
     
     // control over servo output ranges
     SRV_Channels servo_channels;
@@ -585,6 +569,23 @@ public:
     // follow
     AP_Follow follow;
 #endif
+
+#ifdef USER_PARAMS_ENABLED
+    // User custom parameters
+    UserParameters user_parameters;
+#endif
+
+#if AUTOTUNE_ENABLED == ENABLED
+    // we need a pointer to autotune for the G2 table
+    void *autotune_ptr;
+#endif
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
+    AP_Float tuning_min;
+    AP_Float tuning_max;
 };
 
 extern const AP_Param::Info        var_info[];

@@ -26,6 +26,7 @@ void Copter::update_land_and_crash_detectors()
 #endif
 
     crash_check();
+    thrust_loss_check();
 }
 
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
@@ -46,7 +47,7 @@ void Copter::update_land_detector()
     } else if (ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME
         // if rotor speed and collective pitch are high then clear landing flag
-        if (motors->get_throttle() > get_non_takeoff_throttle() && !motors->limit.throttle_lower && motors->rotor_runup_complete()) {
+        if (motors->get_throttle() > get_non_takeoff_throttle() && !motors->limit.throttle_lower && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
 #else
         // if throttle output is high then clear landing flag
         if (motors->get_throttle() > get_non_takeoff_throttle()) {

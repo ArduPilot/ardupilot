@@ -25,7 +25,8 @@ extern "C" {
 #endif
 
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
-int snprintf(char *str, size_t size, const char *fmt, ...);
+int __wrap_snprintf(char *str, size_t size, const char *fmt, ...);
+int snprintf(char *str, size_t size, const char *fmt, ...); //undefined, only used as a placeholder, its replaced by wrap method at link time
 int vasprintf(char **strp, const char *fmt, va_list ap);
 int asprintf(char **strp, const char *fmt, ...);
 int vprintf(const char *fmt, va_list arg);
@@ -35,13 +36,16 @@ int fscanf ( FILE * stream, const char * format, ... );
 #endif
 
 int scanf (const char *fmt, ...);
-int sscanf (const char *buf, const char *fmt, ...);
+int __wrap_sscanf (const char *buf, const char *fmt, ...);
+int sscanf (const char *buf, const char *fmt, ...); //undefined, only used as a placeholder, its replaced by wrap method at link time
 int vsscanf (const char *buf, const char *s, va_list ap);
 void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
 void free(void *ptr);
 
 extern int (*vprintf_console_hook)(const char *fmt, va_list arg);
+
+#define L_tmpnam 32
 
 #ifdef __cplusplus
 }

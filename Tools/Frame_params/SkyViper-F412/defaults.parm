@@ -235,5 +235,5 @@ GPS_HDOP_GOOD        160
 # throw mode
 THROW_NEXTMODE       5
 
-# enable optical flow
-FLOW_ENABLE          1
+# enable pixart optical flow
+FLOW_TYPE            2

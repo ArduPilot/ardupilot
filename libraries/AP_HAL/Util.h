@@ -14,10 +14,6 @@ public:
     void set_soft_armed(const bool b) { soft_armed = b; }
     bool get_soft_armed() const { return soft_armed; }
 
-    void set_capabilities(uint64_t cap) { capabilities |= cap; }
-    void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
-    uint64_t get_capabilities() const { return capabilities; }
-
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
     virtual const char *get_custom_storage_directory() const { return nullptr;  }
@@ -42,21 +38,17 @@ public:
     virtual enum safety_state safety_switch_state(void) { return SAFETY_NONE; }
 
     /*
-      set system clock in UTC microseconds
+      set HW RTC in UTC microseconds
      */
-    virtual void set_system_clock(uint64_t time_utc_usec) {}
+    virtual void set_hw_rtc(uint64_t time_utc_usec);
 
     /*
-      get system clock in UTC milliseconds
+      get system clock in UTC microseconds
      */
-    uint64_t get_system_clock_ms() const;
+    virtual uint64_t get_hw_rtc() const;
 
-    /*
-      get system time in UTC hours, minutes, seconds and milliseconds
-     */
-    void get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms) const;
-
-    uint32_t get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms) const;
+    // overwrite bootloader (probably with one from ROMFS)
+    virtual bool flash_bootloader() { return false; }
 
     /*
       get system identifier (eg. serial number)
@@ -66,6 +58,7 @@ public:
       terminated
      */
     virtual bool get_system_id(char buf[40]) { return false; }
+    virtual bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) { return false; }
 
     /**
        return commandline arguments, if available
@@ -76,8 +69,7 @@ public:
         ToneAlarm Driver
     */
     virtual bool toneAlarm_init() { return false;}
-    virtual void toneAlarm_set_tune(uint8_t tune) {}
-    virtual void _toneAlarm_timer_tick() {}
+    virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
     /*
       return a stream for access to a system shell, if available
@@ -104,9 +96,6 @@ public:
     virtual void perf_end(perf_counter_t h) {}
     virtual void perf_count(perf_counter_t h) {}
 
-    // create a new semaphore
-    virtual Semaphore *new_semaphore(void) { return nullptr; }
-
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
     enum Memory_Type {
         MEM_DMA_SAFE,
@@ -115,13 +104,24 @@ public:
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
 
+#ifdef ENABLE_HEAP
+    // heap functions, note that a heap once alloc'd cannot be dealloc'd
+    virtual void *allocate_heap_memory(size_t size) = 0;
+    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size) = 0;
+#endif // ENABLE_HEAP
+
     /**
        how much free memory do we have in bytes. If unknown return 4096
      */
     virtual uint32_t available_memory(void) { return 4096; }
+
+    /*
+      initialise (or re-initialise) filesystem storage
+     */
+    virtual bool fs_init(void) { return false; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
     bool soft_armed = false;
-    uint64_t capabilities = 0;
 };

@@ -29,8 +29,6 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
 {
     mass = 1.5f;
 
-    gripper.set_aircraft(this);
-
     frame = Frame::find_frame(frame_str);
     if (frame == nullptr) {
         printf("Frame '%s' not found", frame_str);
@@ -51,6 +49,7 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
 void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
     frame->calculate_forces(*this, input, rot_accel, body_accel);
+    add_shove_forces(rot_accel, body_accel);
 }
     
 /*
@@ -65,7 +64,11 @@ void MultiCopter::update(const struct sitl_input &input)
 
     calculate_forces(input, rot_accel, accel_body);
 
+    // estimate voltage and current
+    frame->current_and_voltage(input, battery_voltage, battery_current);
+
     update_dynamics(rot_accel);
+    update_external_payload(input);
 
     // update lat/lon/altitude
     update_position();
@@ -73,16 +76,4 @@ void MultiCopter::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
-
-    // update sprayer
-    sprayer.update(input);
-
-    // update gripper
-    gripper.update(input);
-    gripper_epm.update(input);
-}
-
-float MultiCopter::gross_mass() const
-{
-    return Aircraft::gross_mass() + sprayer.payload_mass() + gripper.payload_mass();
 }

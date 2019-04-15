@@ -86,7 +86,6 @@ AP_OpticalFlow_Pixart::AP_OpticalFlow_Pixart(const char *devname, OpticalFlow &_
     _dev = std::move(hal.spi->get_device(devname));
 }
 
-
 // detect the device
 AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(const char *devname, OpticalFlow &_frontend)
 {
@@ -107,9 +106,7 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
     if (!_dev) {
         return false;
     }
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("Unable to get bus semaphore");
-    }
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
     uint8_t id;
     uint16_t crc;
@@ -133,7 +130,7 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
         model = PIXART_3901;
     } else {
         debug("Not a recognised device\n");
-        goto failed;
+        return false;
     }
 
     if (model == PIXART_3900) {
@@ -142,16 +139,16 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
         id = reg_read(PIXART_REG_SROM_ID);
         if (id != srom_id) {
             debug("Pixart: bad SROM ID: 0x%02x\n", id);
-            goto failed;
+            return false;
         }
-        
+
         reg_write(PIXART_REG_SROM_EN, 0x15);
         hal.scheduler->delay(10);
-    
+
         crc = reg_read16u(PIXART_REG_DOUT_L);
         if (crc != 0xBEEF) {
             debug("Pixart: bad SROM CRC: 0x%04x\n", crc);
-            goto failed;
+            return false;
         }
     }
 
@@ -167,18 +164,11 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
 
     debug("Pixart %s ready\n", model==PIXART_3900?"3900":"3901");
 
-    _dev->get_semaphore()->give();
-
     integral.last_frame_us = AP_HAL::micros();
 
     _dev->register_periodic_callback(2000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Pixart::timer, void));
     return true;
-
-failed:
-    _dev->get_semaphore()->give();
-    return false;
 }
-
 
 // write an 8 bit register
 void AP_OpticalFlow_Pixart::reg_write(uint8_t reg, uint8_t value)
@@ -218,7 +208,6 @@ int16_t AP_OpticalFlow_Pixart::reg_read16s(uint8_t reg)
 {
     return (int16_t)reg_read16u(reg);
 }
-
 
 void AP_OpticalFlow_Pixart::srom_download(void)
 {
@@ -262,14 +251,13 @@ void AP_OpticalFlow_Pixart::load_configuration(const RegData *init_data, uint16_
     }
 }
 
-
 void AP_OpticalFlow_Pixart::motion_burst(void)
 {
     uint8_t *b = (uint8_t *)&burst;
 
     burst.delta_x = 0;
     burst.delta_y = 0;
-    
+
     _dev->set_chip_select(true);
     uint8_t reg = model==PIXART_3900?PIXART_REG_MOT_BURST:PIXART_REG_MOT_BURST2;
 
@@ -297,17 +285,18 @@ void AP_OpticalFlow_Pixart::timer(void)
 
     uint32_t dt_us = last_burst_us - integral.last_frame_us;
     float dt = dt_us * 1.0e-6;
-    const Vector3f &gyro = get_ahrs().get_gyro();
+    const Vector3f &gyro = AP::ahrs_navekf().get_gyro();
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    {
+        WITH_SEMAPHORE(_sem);
+
         integral.sum.x += burst.delta_x;
         integral.sum.y += burst.delta_y;
         integral.sum_us += dt_us;
         integral.last_frame_us = last_burst_us;
         integral.gyro += Vector2f(gyro.x, gyro.y) * dt;
-        _sem->give();
     }
-    
+
 #if 0
     static uint32_t last_print_ms;
     static int fd = -1;
@@ -319,7 +308,7 @@ void AP_OpticalFlow_Pixart::timer(void)
     static int32_t sum_y;
     sum_x += burst.delta_x;
     sum_y += burst.delta_y;
-    
+
     uint32_t now = AP_HAL::millis();
     if (now - last_print_ms >= 100 && (sum_x != 0 || sum_y != 0)) {
         last_print_ms = now;
@@ -339,30 +328,31 @@ void AP_OpticalFlow_Pixart::update(void)
         return;
     }
     last_update_ms = now;
-    
+
     struct OpticalFlow::OpticalFlow_state state;
     state.device_id = 1;
     state.surface_quality = burst.squal;
-    
-    if (integral.sum_us > 0 && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+
+    if (integral.sum_us > 0) {
+        WITH_SEMAPHORE(_sem);
+
         const Vector2f flowScaler = _flowScaler();
         float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
         float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
         float dt = integral.sum_us * 1.0e-6;
-        
+
         state.flowRate = Vector2f(integral.sum.x * flowScaleFactorX,
                                   integral.sum.y * flowScaleFactorY);
         state.flowRate *= flow_pixel_scaling / dt;
 
         // we only apply yaw to flowRate as body rate comes from AHRS
         _applyYaw(state.flowRate);
-        
+
         state.bodyRate = integral.gyro / dt;
 
         integral.sum.zero();
         integral.sum_us = 0;
         integral.gyro.zero();
-        _sem->give();
     } else {
         state.flowRate.zero();
         state.bodyRate.zero();

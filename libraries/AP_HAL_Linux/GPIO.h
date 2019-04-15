@@ -7,10 +7,10 @@ namespace Linux {
 class DigitalSource : public AP_HAL::DigitalSource {
 public:
     DigitalSource(uint8_t v);
-    void    mode(uint8_t output);
-    uint8_t read();
-    void    write(uint8_t value);
-    void    toggle();
+    void    mode(uint8_t output) override;
+    uint8_t read() override;
+    void    write(uint8_t value) override;
+    void    toggle() override;
 private:
     uint8_t _v;
 
@@ -35,8 +35,6 @@ private:
 #include "GPIO_Navio2.h"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
 #include "GPIO_Edge.h"
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-#include "GPIO_Minnow.h"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #include "GPIO_Bebop.h"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO

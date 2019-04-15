@@ -56,7 +56,7 @@ public:
     }
 
     /* See AP_HAL::Device::get_semaphore() */
-    AP_HAL::Semaphore *get_semaphore()
+    AP_HAL::Semaphore *get_semaphore() override
     {
         return &_semaphore;
     }

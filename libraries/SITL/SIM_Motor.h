@@ -69,12 +69,16 @@ public:
         pitch_max(_pitch_max)
     {}
 
-    void calculate_forces(const Aircraft::sitl_input &input,
+    void calculate_forces(const struct sitl_input &input,
                           float thrust_scale,
                           uint8_t motor_offset,
                           Vector3f &rot_accel, // rad/sec
                           Vector3f &body_thrust); // Z is down
 
     uint16_t update_servo(uint16_t demand, uint64_t time_usec, float &last_value);
+
+    // calculate current and voltage
+    void current_and_voltage(const struct sitl_input &input, float &voltage, float &current, uint8_t motor_offset);
 };
+
 }

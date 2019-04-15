@@ -33,8 +33,11 @@ public:
     // set_update_rate - set update rate to motors
     void set_update_rate( uint16_t speed_hz ) override;
 
-    // output_test - spin a motor at the pwm value specified
-    void output_test(uint8_t motor_seq, int16_t pwm) override;
+    // output_test_seq - spin a motor at the pwm value specified
+    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+
+    // output_to_motors - sends values out to the motors
+    void output_to_motors() override;
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(float desired_speed) override;
@@ -78,7 +81,7 @@ protected:
     void update_motor_control(RotorControlState state) override;
 
     // calculate_roll_pitch_collective_factors - setup rate factors
-    void calculate_roll_pitch_collective_factors () override;
+    void calculate_roll_pitch_collective_factors ();
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;
@@ -86,14 +89,12 @@ protected:
     //  objects we depend upon
     AP_MotorsHeli_RSC           _rotor;             // main rotor controller
 
-    // parameters
-    SRV_Channel    *_servo[AP_MOTORS_HELI_QUAD_NUM_MOTORS];
-
     // rate factors
     float _rollFactor[AP_MOTORS_HELI_QUAD_NUM_MOTORS];
     float _pitchFactor[AP_MOTORS_HELI_QUAD_NUM_MOTORS];
     float _collectiveFactor[AP_MOTORS_HELI_QUAD_NUM_MOTORS];
     float _yawFactor[AP_MOTORS_HELI_QUAD_NUM_MOTORS];
+    float _out[AP_MOTORS_HELI_QUAD_NUM_MOTORS];
 };
 
 

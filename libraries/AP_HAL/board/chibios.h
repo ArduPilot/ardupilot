@@ -1,19 +1,11 @@
 #pragma once
 
 #include <hwdef.h>
+#include <hal.h>
 
 #define HAL_BOARD_NAME "ChibiOS"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
 
-#ifndef HAL_GPIO_A_LED_PIN
-#define HAL_GPIO_A_LED_PIN        0
-#endif
-#ifndef HAL_GPIO_B_LED_PIN
-#define HAL_GPIO_B_LED_PIN        0
-#endif
-#ifndef HAL_GPIO_C_LED_PIN
-#define HAL_GPIO_C_LED_PIN        0
-#endif
 #ifndef HAL_GPIO_LED_ON
 #define HAL_GPIO_LED_ON           0
 #endif
@@ -29,6 +21,14 @@
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #endif
 
+#ifndef HAL_HAVE_SERVO_VOLTAGE
+#define HAL_HAVE_SERVO_VOLTAGE 0
+#endif
+
+#ifdef HAL_GPIO_PIN_SAFETY_IN
+#define HAL_HAVE_SAFETY_SWITCH 1
+#endif
+
 #ifndef HAL_HAVE_SAFETY_SWITCH
 #define HAL_HAVE_SAFETY_SWITCH 0
 #endif
@@ -42,6 +42,11 @@
 #ifndef HAL_WITH_RAMTRON
 #define HAL_WITH_RAMTRON 0
 #endif
+
+// allow for static semaphores
+#include <AP_HAL_ChibiOS/Semaphores.h>
+#define HAL_Semaphore ChibiOS::Semaphore
+#define HAL_Semaphore_Recursive ChibiOS::Semaphore_Recursive
 
 /* string names for well known SPI devices */
 #define HAL_BARO_MS5611_NAME "ms5611"
@@ -73,6 +78,10 @@
 #define HAL_COMPASS_HMC5843_NAME "hmc5843"
 #define HAL_COMPASS_LIS3MDL_NAME "lis3mdl"
 
+// allow for short names overridden in hwdef.dat
+#ifndef CHIBIOS_SHORT_BOARD_NAME
+#define CHIBIOS_SHORT_BOARD_NAME CHIBIOS_BOARD_NAME
+#endif
 
 #ifndef CONFIG_HAL_BOARD_SUBTYPE
 // allow for generic boards
@@ -81,3 +90,13 @@
 
 // we support RC serial for BLHeli pass-thru
 #define HAL_SUPPORT_RCOUT_SERIAL 1
+
+// by default assume first I2C bus is internal
+#ifndef HAL_I2C_INTERNAL_MASK
+#define HAL_I2C_INTERNAL_MASK 1
+#endif
+
+// put all storage of files under /APM directory
+#ifndef HAL_BOARD_STORAGE_DIRECTORY
+#define HAL_BOARD_STORAGE_DIRECTORY "/APM"
+#endif

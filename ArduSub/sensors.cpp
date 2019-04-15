@@ -1,7 +1,7 @@
 #include "Sub.h"
 
 // return barometric altitude in centimeters
-void Sub::read_barometer(void)
+void Sub::read_barometer()
 {
     barometer.update();
 
@@ -10,17 +10,17 @@ void Sub::read_barometer(void)
     }
 }
 
-void Sub::init_rangefinder(void)
+void Sub::init_rangefinder()
 {
 #if RANGEFINDER_ENABLED == ENABLED
-    rangefinder.init();
+    rangefinder.init(ROTATION_PITCH_270);
     rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
     rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
 #endif
 }
 
 // return rangefinder altitude in centimeters
-void Sub::read_rangefinder(void)
+void Sub::read_rangefinder()
 {
 #if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
@@ -74,36 +74,17 @@ void Sub::rpm_update(void)
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RCIN)) {
-            DataFlash.Log_Write_RPM(rpm_sensor);
+            logger.Write_RPM(rpm_sensor);
         }
     }
 }
 #endif
 
-// initialise compass
-void Sub::init_compass()
-{
-    if (!compass.init() || !compass.read()) {
-        // make sure we don't pass a broken compass to DCM
-        hal.console->println("COMPASS INIT ERROR");
-        Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
-        return;
-    }
-    ahrs.set_compass(&compass);
-}
-
 /*
-  if the compass is enabled then try to accumulate a reading
-  also update initial location used for declination
+  initialise compass's location used for declination
  */
-void Sub::compass_accumulate(void)
+void Sub::init_compass_location()
 {
-    if (!g.compass_enabled) {
-        return;
-    }
-
-    compass.accumulate();
-
     // update initial location used for declination
     if (!ap.compass_init_location) {
         Location loc;
@@ -119,38 +100,9 @@ void Sub::compass_accumulate(void)
 void Sub::init_optflow()
 {
     // initialise optical flow sensor
-    optflow.init();
+    optflow.init(MASK_LOG_OPTFLOW);
 }
 #endif      // OPTFLOW == ENABLED
-
-// called at 200hz
-#if OPTFLOW == ENABLED
-void Sub::update_optical_flow(void)
-{
-    static uint32_t last_of_update = 0;
-
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
-    // read from sensor
-    optflow.update();
-
-    // write to log and send to EKF if new data has arrived
-    if (optflow.last_update() != last_of_update) {
-        last_of_update = optflow.last_update();
-        uint8_t flowQuality = optflow.quality();
-        Vector2f flowRate = optflow.flowRate();
-        Vector2f bodyRate = optflow.bodyRate();
-        const Vector3f &posOffset = optflow.get_pos_offset();
-        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, posOffset);
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
-            Log_Write_Optflow();
-        }
-    }
-}
-#endif  // OPTFLOW == ENABLED
 
 void Sub::compass_cal_update()
 {

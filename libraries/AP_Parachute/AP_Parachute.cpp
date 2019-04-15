@@ -5,6 +5,8 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -70,6 +72,8 @@ void AP_Parachute::enabled(bool on_off)
 
     // clear release_time
     _release_time = 0;
+
+    AP::logger().Write_Event(_enabled ? DATA_PARACHUTE_ENABLED : DATA_PARACHUTE_DISABLED);
 }
 
 /// release - release parachute
@@ -79,6 +83,9 @@ void AP_Parachute::release()
     if (_enabled <= 0) {
         return;
     }
+
+    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
+    AP::logger().Write_Event(DATA_PARACHUTE_RELEASED);
 
     // set release time to current system time
     if (_release_time == 0) {
@@ -130,4 +137,16 @@ void AP_Parachute::update()
         // update AP_Notify
         AP_Notify::flags.parachute_release = 0;
     }
+}
+
+// singleton instance
+AP_Parachute *AP_Parachute::_singleton;
+
+namespace AP {
+
+AP_Parachute *parachute()
+{
+    return AP_Parachute::get_singleton();
+}
+
 }

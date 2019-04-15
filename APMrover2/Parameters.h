@@ -2,6 +2,10 @@
 
 #include <AP_Common/AP_Common.h>
 
+#include "RC_Channel.h"
+#include "AC_Sprayer/AC_Sprayer.h"
+#include "AP_Rally.h"
+
 // Global parameter class.
 //
 class Parameters {
@@ -54,7 +58,8 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
-
+        k_param_rpm_sensor,     // rpm sensor 98
+        
         // 100: Arming parameters
         k_param_arming = 100,
 
@@ -79,7 +84,7 @@ public:
         //
         // 130: Sensor parameters
         //
-        k_param_compass_enabled = 130,
+        k_param_compass_enabled_deprecated = 130,
         k_param_steering_learn,     // unused
         k_param_NavEKF,             // deprecated - remove
         k_param_mission,            // mission library
@@ -102,9 +107,9 @@ public:
         k_param_crosstrack_gain = 150,  // unused
         k_param_crosstrack_entry_angle, // unused
         k_param_speed_cruise,
-        k_param_speed_turn_gain,
+        k_param_speed_turn_gain,    // unused
         k_param_speed_turn_dist,    // unused
-        k_param_ch7_option,
+        k_param_ch7_option,         // unused
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
         k_param_turn_circle,  // unused
@@ -138,6 +143,8 @@ public:
         k_param_fs_throttle_value,
         k_param_fs_gcs_enabled,
         k_param_fs_crash_check,
+        k_param_fs_ekf_action,
+        k_param_fs_ekf_thresh,  // 187
 
         // obstacle control
         k_param_sonar_enabled = 190,  // deprecated, can be removed
@@ -159,7 +166,7 @@ public:
         k_param_mode4,
         k_param_mode5,
         k_param_mode6,
-        k_param_aux_channel,
+        k_param_aux_channel_old,
 
         //
         // 220: Waypoint data
@@ -199,8 +206,9 @@ public:
         k_param_barometer,
         k_param_notify,
         k_param_button,
+        k_param_osd,
 
-        k_param_DataFlash = 253,  // Logging Group
+        k_param_logger = 253,  // Logging Group
 
         // 254,255: reserved
         };
@@ -219,13 +227,9 @@ public:
     AP_Int16    sysid_my_gcs;
     AP_Int8     telem_delay;
 
-    // sensor parameters
-    AP_Int8     compass_enabled;
-
     // navigation parameters
     //
     AP_Float    speed_cruise;
-    AP_Int8     speed_turn_gain;
     AP_Int8     ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
@@ -245,6 +249,8 @@ public:
     AP_Int16    fs_throttle_value;
     AP_Int8     fs_gcs_enabled;
     AP_Int8     fs_crash_check;
+    AP_Int8     fs_ekf_action;
+    AP_Float    fs_ekf_thresh;
 
     // obstacle avoidance control
     AP_Int16    rangefinder_trigger_cm;
@@ -262,7 +268,6 @@ public:
     AP_Int8     mode4;
     AP_Int8     mode5;
     AP_Int8     mode6;
-    AP_Int8     aux_channel;
 
     // Waypoints
     //
@@ -291,7 +296,7 @@ public:
     AP_Int8 sysid_enforce;
 
     // RC input channels
-    RC_Channels rc_channels;
+    RC_Channels_Rover rc_channels;
 
     // control over servo output ranges
     SRV_Channels servo_channels;
@@ -311,6 +316,7 @@ public:
 
     // wheel encoders
     AP_WheelEncoder wheel_encoder;
+    AP_WheelRateControl wheel_rate_control;
 
     // steering and throttle controller
     AR_AttitudeControl attitude_control;
@@ -342,6 +348,59 @@ public:
 
     // pivot turn rate
     AP_Int16 pivot_turn_rate;
+
+    // pitch angle at 100% throttle
+    AP_Float bal_pitch_max;
+
+    // pitch/roll angle for crash check
+    AP_Int8 crash_angle;
+
+    // follow mode library
+    AP_Follow follow;
+
+    // frame type for vehicle (used for vectored motor vehicles and custom motor configs)
+    AP_Int8 frame_type;
+
+    // loiter type
+    AP_Int8 loit_type;
+    AP_Float loit_radius;
+
+    // Sprayer
+    AC_Sprayer sprayer;
+
+#if GRIPPER_ENABLED
+    AP_Gripper gripper;
+#endif
+
+    // Rally point library
+    AP_Rally_Rover rally;
+
+    // Simple mode types
+    AP_Int8 simple_type;
+
+    // sailboat parameters
+    AP_Float sail_angle_min;
+    AP_Float sail_angle_max;
+    AP_Float sail_angle_ideal;
+    AP_Float sail_heel_angle_max;
+    AP_Float sail_no_go;
+
+    // windvane
+    AP_WindVane windvane;
+
+    // Airspeed
+    AP_Airspeed airspeed;
+
+    // mission behave
+    AP_Int8 mis_done_behave;
+
+    // balance both pitch trim
+    AP_Float bal_pitch_trim;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern const AP_Param::Info var_info[];

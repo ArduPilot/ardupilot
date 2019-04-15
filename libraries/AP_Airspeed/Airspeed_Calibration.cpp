@@ -8,6 +8,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "AP_Airspeed.h"
 
@@ -157,22 +158,33 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         update_calibration(i, vground, max_airspeed_allowed_during_cal);
     }
+    send_airspeed_calibration(vground);
 }
 
-// log airspeed calibration data to MAVLink
-void AP_Airspeed::log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground)
+
+void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
 {
-    mavlink_msg_airspeed_autocal_send(chan,
-                                      vground.x,
-                                      vground.y,
-                                      vground.z,
-                                      get_differential_pressure(primary),
-                                      state[primary].EAS2TAS,
-                                      param[primary].ratio.get(),
-                                      state[primary].calibration.state.x,
-                                      state[primary].calibration.state.y,
-                                      state[primary].calibration.state.z,
-                                      state[primary].calibration.P.a.x,
-                                      state[primary].calibration.P.b.y,
-                                      state[primary].calibration.P.c.z);
+    for (uint8_t i=0; i<gcs().num_gcs(); i++) {
+        if (!gcs().chan(i).initialised) {
+            continue;
+        }
+        const mavlink_channel_t chan = (mavlink_channel_t)i;
+        if (!HAVE_PAYLOAD_SPACE(chan, AIRSPEED_AUTOCAL)) {
+            continue;
+        }
+        mavlink_msg_airspeed_autocal_send(
+            chan,
+            vground.x,
+            vground.y,
+            vground.z,
+            get_differential_pressure(primary),
+            state[primary].EAS2TAS,
+            param[primary].ratio.get(),
+            state[primary].calibration.state.x,
+            state[primary].calibration.state.y,
+            state[primary].calibration.state.z,
+            state[primary].calibration.P.a.x,
+            state[primary].calibration.P.b.y,
+            state[primary].calibration.P.c.z);
+    }
 }

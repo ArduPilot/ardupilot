@@ -3,7 +3,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>          // ArduPilot Mega IMU Library
 #include <AP_Baro/AP_Baro.h>                    // ArduPilot Mega Barometer Library
-#include <AP_Buffer/AP_Buffer.h>                  // FIFO buffer library
 #include <AP_NavEKF/AP_Nav_Common.h> // definitions shared by inertial and ekf nav filters
 
 /*
@@ -87,11 +86,11 @@ public:
     virtual const Vector3f&    get_velocity() const = 0;
 
     /**
-     * get_velocity_xy - returns the current horizontal velocity in cm/s
+     * get_speed_xy - returns the current horizontal speed in cm/s
      *
-     * @returns the current horizontal velocity in cm/s
+     * @returns the current horizontal speed in cm/s
      */
-    virtual float get_velocity_xy() const = 0;
+    virtual float get_speed_xy() const = 0;
 
     //
     // Z Axis methods

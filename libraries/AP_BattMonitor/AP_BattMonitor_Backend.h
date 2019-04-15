@@ -46,17 +46,26 @@ public:
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
 
+    /// get voltage with sag removed (based on battery current draw and resistance)
+    /// this will always be greater than or equal to the raw voltage
+    float voltage_resting_estimate() const;
+
     // update battery resistance estimate and voltage_resting_estimate
     void update_resistance_estimate();
 
-    // callback for UAVCAN messages
-    virtual void handle_bi_msg(float voltage, float current,
-            float temperature) {}
+    // updates failsafe timers, and returns what failsafes are active
+    AP_BattMonitor::BatteryFailsafe update_failsafes(void);
+
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool arming_checks(char * buffer, size_t buflen) const;
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)
     AP_BattMonitor_Params               &_params;   // reference to this instances parameters (held in the front-end)
+
+    // checks what failsafes could be triggered
+    void check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const;
 
 private:
     // resistance estimate

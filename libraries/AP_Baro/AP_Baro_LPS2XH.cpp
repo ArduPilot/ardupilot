@@ -47,10 +47,12 @@ extern const AP_HAL::HAL &hal;
 #define LPS25H_CTRL_REG1_ADDR      0x20
 #define LPS25H_CTRL_REG2_ADDR      0x21
 #define LPS25H_CTRL_REG3_ADDR      0x22
-#define LPS25H_CTRL_REG4_ADDR     	0x23
-#define LPS25H_FIFO_CTRL          			0x2E
-#define TEMP_OUT_ADDR      					0x2B
-#define PRESS_OUT_XL_ADDR		  		0x28
+#define LPS25H_CTRL_REG4_ADDR      0x23
+#define LPS25H_FIFO_CTRL           0x2E
+#define TEMP_OUT_ADDR      		   0x2B
+#define PRESS_OUT_XL_ADDR		   0x28
+#define STATUS_ADDR		  		   0x27
+
 //putting 1 in the MSB of those two registers turns on Auto increment for faster reading.
 
 AP_Baro_LPS2XH::AP_Baro_LPS2XH(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
@@ -161,7 +163,7 @@ bool AP_Baro_LPS2XH::_init()
 		_dev->write_register(LPS22H_CTRL_REG2,0x18);
 
 		// request 75Hz update
-		CallTime = 1000000/75;
+        CallTime = 1000000/75;
     }
 
     _instance = _frontend.register_sensor();
@@ -197,40 +199,48 @@ bool AP_Baro_LPS2XH::_check_whoami(void)
 //  acumulate a new sensor reading
 void AP_Baro_LPS2XH::_timer(void)
 {
-    _update_temperature();
-    _update_pressure();
+    uint8_t status;
+    // use status to check if data is available
+    if (!_dev->read_registers(STATUS_ADDR, &status, 1)) {
+        return;
+    }
+    if (status & 0x02) {
+        _update_temperature();
+    }
+    if (status & 0x01) {
+        _update_pressure();
+    }
     _has_sample = true;
 }
 
 // transfer data to the frontend
 void AP_Baro_LPS2XH::update(void)
 {
-    if (_sem->take_nonblocking()) {
-        if (!_has_sample) {
-            _sem->give();
-            return;
-        }
-
-        _copy_to_frontend(_instance, _pressure, _temperature);
-        _has_sample = false;
-        _sem->give();
+    if (!_has_sample) {
+        return;
     }
+
+    WITH_SEMAPHORE(_sem);
+    _copy_to_frontend(_instance, _pressure, _temperature);
+    _has_sample = false;
 }
 
 // calculate temperature
 void AP_Baro_LPS2XH::_update_temperature(void)
 {
     uint8_t pu8[2];
-    _dev->read_registers(TEMP_OUT_ADDR, pu8, 2);
+    if (!_dev->read_registers(TEMP_OUT_ADDR, pu8, 2)) {
+        return;
+    }
     int16_t Temp_Reg_s16 = (uint16_t)(pu8[1]<<8) | pu8[0];
-    if (_sem->take_nonblocking()) {
-    	if(_lps2xh_type == BARO_LPS25H){
-    		_temperature=((float)(Temp_Reg_s16/480)+42.5);
-    	}
-    	if(_lps2xh_type == BARO_LPS22H){
-    		_temperature=(float)(Temp_Reg_s16/100);
-    	}
-        _sem->give();
+    
+    WITH_SEMAPHORE(_sem);
+
+    if (_lps2xh_type == BARO_LPS25H) {
+        _temperature = (Temp_Reg_s16 * (1.0/480)) + 42.5;
+    }
+    if (_lps2xh_type == BARO_LPS22H) {
+        _temperature = Temp_Reg_s16 * 0.01;
     }
 }
 
@@ -238,11 +248,12 @@ void AP_Baro_LPS2XH::_update_temperature(void)
 void AP_Baro_LPS2XH::_update_pressure(void)
 {
     uint8_t pressure[3];
-    _dev->read_registers(PRESS_OUT_XL_ADDR, pressure, 3);
-    int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|(uint32_t)pressure[0];
-    int32_t Pressure_mb = Pressure_Reg_s32 * (100.0 / 4096); // scale for pa
-    if (_sem->take_nonblocking()) {
-        _pressure=Pressure_mb;
-        _sem->give();
+    if (!_dev->read_registers(PRESS_OUT_XL_ADDR, pressure, 3)) {
+        return;
     }
+    int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|(uint32_t)pressure[0];
+    int32_t Pressure_mb = Pressure_Reg_s32 * (100.0f / 4096); // scale for pa
+
+    WITH_SEMAPHORE(_sem);
+    _pressure = Pressure_mb;
 }

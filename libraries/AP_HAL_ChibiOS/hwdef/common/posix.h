@@ -27,75 +27,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef USE_POSIX
 #define POSIX
 #pragma GCC diagnostic ignored "-Wshadow"
-///@brief make sure we use our EDOM and ERANGE values
-#undef EDOM
-#undef ERANGE
 #include <stdint.h>
 #include <stddef.h>
 #include <ff.h>
 #include <stdarg.h>
 #include <time.h>
+#include <errno.h>
 
 #define MAXLN 128
 #define ISSPACE " \t\n\r\f\v"
+
+#define BUFSIZ 256
 
 ///@brief make sure we use our strerror_r function
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-// =============================================
-///@brief Standard POSIX typedefs.
-///
-/// - Using these makes code portable accross many acrchitectures
-//typedef uint32_t blkcnt_t;  /*< blkcnt_t for this architecture */
-//typedef uint32_t blksize_t; /*< blksize_t for this architecture */
-typedef int32_t      off_t;
-typedef off_t        fpos_t;
-extern int errno;
-// =============================================
-
-// @brief posix errno values
-enum POSIX_errno
-{
-    EOK,        /*< 	0   NO ERROR */
-    EPERM,     /*< 	1   Operation not permitted */
-    ENOENT,    /*< 	2   No such file or directory */
-    ESRCH,     /*< 	3   No such process */
-    EINTR,     /*< 	4   Interrupted system call */
-    EIO,       /*< 	5   I/O error */
-    ENXIO,     /*< 	6   No such device or address */
-    E2BIG,     /*< 	7   Argument list too long */
-    ENOEXEC,   /*< 	8   Exec format error */
-    EBADF,     /*< 	9   Bad file number */
-    ECHILD,    /*< 	10  No child processes */
-    EAGAIN,    /*< 	11  Try again */
-    ENOMEM,    /*< 	12  Out of memory */
-    EACCES,    /*< 	13  Permission denied */
-    EFAULT,    /*< 	14  Bad address */
-    ENOTBLK,   /*< 	15  Block device required */
-    EBUSY,     /*< 	16  Device or resource busy */
-    EEXIST,    /*< 	17  File exists */
-    EXDEV,     /*< 	18  Cross-device link */
-    ENODEV,    /*< 	19  No such device */
-    ENOTDIR,   /*< 	20  Not a directory */
-    EISDIR,    /*< 	21  Is a directory */
-    EINVAL,    /*< 	22  Invalid argument */
-    ENFILE,    /*< 	23  File table overflow */
-    EMFILE,    /*< 	24  Too many open files */
-    ENOTTY,    /*< 	25  Not a typewriter */
-    ETXTBSY,   /*< 	26  Text file busy */
-    EFBIG,     /*< 	27  File too large */
-    ENOSPC,    /*< 	28  No space left on device */
-    ESPIPE,    /*< 	29  Illegal seek */
-    EROFS,     /*< 	30  Read-only file system */
-    EMLINK,    /*< 	31  Too many links */
-    EPIPE,     /*< 	32  Broken pipe */
-    EDOM,      /*< 	33  Math argument out of domain of func */
-    ERANGE,    /*< 	34  Math result not representable */
-    EBADMSG    /*< 	35  Bad Message */
-};
-// =============================================
 
 ///@brief POSIX stat structure
 ///@see stat()
@@ -125,8 +73,8 @@ typedef struct utimbuf
    time_t modtime;      /* modification time */
 } utime_t;
 
-#if _USE_LFN != 0
-#define MAX_NAME_LEN _MAX_LFN 
+#if FF_USE_LFN != 0
+#define MAX_NAME_LEN FF_MAX_LFN 
 #else
 #define MAX_NAME_LEN 13
 #endif
@@ -361,7 +309,7 @@ int dirname ( char *str );
  int fchmod ( int fd , mode_t mode );
 #endif
 
-char *getcwd ( char *pathname , int len );
+char *getcwd ( char *pathname , size_t len );
 int mkdir ( const char *pathname , mode_t mode );
 int rename ( const char *oldpath , const char *newpath );
 int rmdir ( const char *pathname );
@@ -372,7 +320,6 @@ DIR *opendir ( const char *pathdir );
 struct dirent *readdir ( DIR *dirp );
 void clrerror ( FILE *stream );
 int ferror ( FILE *stream );
-void perror ( const char *s );
 char *strerror ( int errnum );
 char *__wrap_strerror_r ( int errnum , char *buf , size_t buflen );
 FILE *fdevopen ( int (*put )(char ,FILE *), int (*get )(FILE *));
@@ -388,7 +335,7 @@ int free_file_descriptor ( int fileno );
 int new_file_descriptor ( void );
 int posix_fopen_modes_to_open ( const char *mode );
 
-int fprintf(FILE *fp, const char *format, ...);
+int __wrap_fprintf(FILE *fp, const char *format, ...);
 
 #ifdef __cplusplus
 }

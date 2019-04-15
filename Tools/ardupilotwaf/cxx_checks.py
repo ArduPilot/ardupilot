@@ -128,6 +128,19 @@ def ap_common_checks(cfg):
 
     cfg.check(header_name='byteswap.h', mandatory=False)
 
+    cfg.check(
+        compiler='cxx',
+        fragment='''
+        #include <string.h>
+        int main() {
+        const char *s = "abc";
+          return memrchr((const void *)s, 0, 3) != NULL;
+        }''',
+        define_name="HAVE_MEMRCHR",
+        msg="Checking for HAVE_MEMRCHR",
+        mandatory=False,
+    )
+    
 @conf
 def check_librt(cfg, env):
     if cfg.env.DEST_OS == 'darwin':
@@ -223,3 +236,51 @@ def check_libdl(cfg, env):
     if ret:
         env.LIB += cfg.env['LIB_DL']
     return ret
+
+@conf
+def check_SFML(cfg, env):
+    if not cfg.options.enable_sfml:
+        cfg.msg("Checking for SFML graphics:", 'disabled', color='YELLOW')
+        return False
+    libs = ['sfml-graphics', 'sfml-window','sfml-system']
+    for lib in libs:
+        if not cfg.check(compiler='cxx', lib=lib, mandatory=False,
+                         global_define=True):
+            cfg.fatal("Missing SFML libraries - please install libsfml-dev")
+            return False
+    
+    # see if we need Graphics.hpp or Graphics.h
+    if not cfg.check(compiler='cxx',
+                     fragment='''#include <SFML/Graphics.hpp>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_HPP",
+                     msg="Checking for Graphics.hpp", mandatory=False):
+        if not cfg.check(compiler='cxx', fragment='''#include <SFML/Graphics.h>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_H",
+                         msg="Checking for Graphics.h", mandatory=False):
+            cfg.fatal("Missing SFML headers SFML/Graphics.hpp or SFML/Graphics.h")
+            return False
+    env.LIB += libs
+    return True
+
+
+@conf
+def check_SFML_Audio(cfg, env):
+    if not cfg.options.enable_sfml_audio:
+        cfg.msg("Checking for SFML audio:", 'disabled', color='YELLOW')
+        return False
+    libs = ['sfml-audio']
+    for lib in libs:
+        if not cfg.check(compiler='cxx', lib=lib, mandatory=False,
+                         global_define=True):
+            cfg.fatal("Missing SFML libraries - please install libsfml-dev")
+            return False
+
+    # see if we need Audio.hpp or Audio.h
+    if not cfg.check(compiler='cxx',
+                     fragment='''#include <SFML/Audio.hpp>\nint main() {}''', define_name="HAVE_SFML_AUDIO_HPP",
+                     msg="Checking for Audio.hpp", mandatory=False):
+        if not cfg.check(compiler='cxx', fragment='''#include <SFML/Audio.h>\nint main() {}''', define_name="HAVE_SFML_AUDIO_H",
+                         msg="Checking for Audio.h", mandatory=False):
+            cfg.fatal("Missing SFML headers SFML/Audio.hpp or SFML/Audio.h")
+            return False
+    env.LIB += libs
+    return True
+

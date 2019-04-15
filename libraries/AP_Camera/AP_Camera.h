@@ -4,15 +4,8 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_Relay/AP_Relay.h>
-#include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Mission/AP_Mission.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <drivers/drv_hrt.h>
-#endif
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
@@ -32,20 +25,24 @@ class AP_Camera {
 
 public:
     AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_AHRS &_ahrs)
-        : _trigger_counter(0) // count of number of cycles shutter has been held open
-        , _image_index(0)
-        , log_camera_bit(_log_camera_bit)
+        : log_camera_bit(_log_camera_bit)
         , current_loc(_loc)
         , ahrs(_ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
         _apm_relay = obj_relay;
+        _singleton = this;
     }
 
     /* Do not allow copies */
     AP_Camera(const AP_Camera &other) = delete;
     AP_Camera &operator=(const AP_Camera&) = delete;
 
+    // get singleton instance
+    static AP_Camera *get_singleton()
+    {
+        return _singleton;
+    }
 
     // MAVLink methods
     void            control_msg(const mavlink_message_t* msg);
@@ -57,7 +54,10 @@ public:
     void            control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
 
     // set camera trigger distance in a mission
-    void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
+    void            set_trigger_distance(uint32_t distance_m)
+    {
+        _trigg_dist.set(distance_m);
+    }
 
     void take_picture();
 
@@ -70,43 +70,54 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
     // set if vehicle is in AUTO mode
-    void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
+    void set_is_auto_mode(bool enable)
+    {
+        _is_in_auto_mode = enable;
+    }
+
+    enum camera_types {
+        CAMERA_TYPE_STD,
+        CAMERA_TYPE_BMMCC
+    };
 
 private:
+
+    static AP_Camera *_singleton;
+
     AP_Int8         _trigger_type;      // 0:Servo,1:Relay
     AP_Int8         _trigger_duration;  // duration in 10ths of a second that the camera shutter is held open
     AP_Int8         _relay_on;          // relay value to trigger camera
     AP_Int16        _servo_on_pwm;      // PWM value to move servo to when shutter is activated
     AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
     uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
+    uint8_t         _trigger_counter_cam_function;   // count of number of cycles alternative camera function has been held open
     AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay.
     AP_Int8         _auto_mode_only;    // if 1: trigger by distance only if in AUTO mode.
+    AP_Int8         _type;              // Set the type of camera in use, will open additional parameters if set
     bool            _is_in_auto_mode;   // true if in AUTO mode
 
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
     void            feedback_pin_timer();
+    void            feedback_pin_isr(uint8_t, bool, uint32_t);
     void            setup_feedback_callback(void);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    static void     capture_callback(void *context, uint32_t chan_index,
-                                     hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow);
-#endif
-    
+
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     AP_Int16        _min_interval;      // Minimum time between shots required by camera
     AP_Int16        _max_roll;          // Maximum acceptable roll angle when trigging camera
     uint32_t        _last_photo_time;   // last time a photo was taken
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
-    uint16_t        _feedback_events;   // number of feedback events since boot
 
     // pin number for accurate camera feedback messages
     AP_Int8         _feedback_pin;
     AP_Int8         _feedback_polarity;
 
-    // this is set to 1 when camera trigger pin has fired
-    static volatile bool   _camera_triggered;
-    bool            _timer_installed:1;
+    uint32_t        _camera_trigger_count;
+    uint32_t        _camera_trigger_logged;
+    uint32_t        _feedback_timestamp_us;
+    bool            _timer_installed;
+    bool            _isr_installed;
     uint8_t         _last_pin_state;
 
     void log_picture();
@@ -122,10 +133,14 @@ private:
     // should be called at 50hz from main program
     void trigger_pic_cleanup();
 
-    // check if trigger pin has fired
-    bool check_trigger_pin(void);
-
     // return true if we are using a feedback pin
-    bool using_feedback_pin(void) const { return _feedback_pin > 0; }
+    bool using_feedback_pin(void) const
+    {
+        return _feedback_pin > 0;
+    }
 
+};
+
+namespace AP {
+AP_Camera *camera();
 };

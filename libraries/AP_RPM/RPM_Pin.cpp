@@ -16,12 +16,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "RPM_Pin.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <AP_BoardConfig/AP_BoardConfig.h>
-#include <board_config.h>
-#endif
-
-#include <stdio.h>
+#include <AP_HAL/GPIO.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 AP_RPM_Pin::IrqState AP_RPM_Pin::irq_state[RPM_MAX_INSTANCES];
@@ -37,108 +33,41 @@ AP_RPM_Pin::AP_RPM_Pin(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_st
 /*
   handle interrupt on an instance
  */
-void AP_RPM_Pin::irq_handler(uint8_t instance)
+void AP_RPM_Pin::irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp)
 {
-    uint32_t now = AP_HAL::micros();
-    uint32_t dt = now - irq_state[instance].last_pulse_us;
-    irq_state[instance].last_pulse_us = now;
+    const uint32_t dt = timestamp - irq_state[state.instance].last_pulse_us;
+    irq_state[state.instance].last_pulse_us = timestamp;
     // we don't accept pulses less than 100us. Using an irq for such
     // high RPM is too inaccurate, and it is probably just bounce of
     // the signal which we should ignore
     if (dt > 100 && dt < 1000*1000) {
-        irq_state[instance].dt_sum += dt;
-        irq_state[instance].dt_count++;
+        irq_state[state.instance].dt_sum += dt;
+        irq_state[state.instance].dt_count++;
     }
 }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-/*
-  interrupt handler for instance 0
- */
-int AP_RPM_Pin::irq_handler0(int irq, void *context)
-{
-    irq_handler(0);
-    return 0;
-}
-
-/*
-  interrupt handler for instance 1
- */
-int AP_RPM_Pin::irq_handler1(int irq, void *context)
-{
-    irq_handler(1);
-    return 0;
-}
-#else // other HALs
-/*
-  interrupt handler for instance 0
- */
-void AP_RPM_Pin::irq_handler0(void)
-{
-    irq_handler(0);
-}
-
-/*
-  interrupt handler for instance 1
- */
-void AP_RPM_Pin::irq_handler1(void)
-{
-    irq_handler(1);
-}
-#endif
 
 void AP_RPM_Pin::update(void)
 {
     if (last_pin != get_pin()) {
-        last_pin = get_pin();
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        uint32_t gpio = 0;
-
-#ifdef GPIO_GPIO0_INPUT
-        switch (last_pin) {
-        case 50:
-            gpio = GPIO_GPIO0_INPUT;
-            break;
-        case 51:
-            gpio = GPIO_GPIO1_INPUT;
-            break;
-        case 52:
-            gpio = GPIO_GPIO2_INPUT;
-            break;
-        case 53:
-            gpio = GPIO_GPIO3_INPUT;
-            break;
-        case 54:
-            gpio = GPIO_GPIO4_INPUT;
-            break;
-        case 55:
-            gpio = GPIO_GPIO5_INPUT;
-            break;
-        }
-#endif // GPIO_GPIO5_INPUT
-        
-        // uninstall old handler if installed
-        if (last_gpio != 0) {
-            stm32_gpiosetevent(last_gpio, false, false, false, nullptr);
+        // detach from last pin
+        if (last_pin != (uint8_t)-1 &&
+            !hal.gpio->detach_interrupt(last_pin)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "RPM: Failed to detach from pin %u", last_pin);
+            // ignore this failure or the user may be stuck
         }
         irq_state[state.instance].dt_count = 0;
         irq_state[state.instance].dt_sum = 0;
-
-        last_gpio = gpio;
-
-        if (gpio == 0) {
-            return;
+        // attach to new pin
+        last_pin = get_pin();
+        if (last_pin) {
+            hal.gpio->pinMode(last_pin, HAL_GPIO_INPUT);
+            if (!hal.gpio->attach_interrupt(
+                    last_pin,
+                    FUNCTOR_BIND_MEMBER(&AP_RPM_Pin::irq_handler, void, uint8_t, bool, uint32_t),
+                    AP_HAL::GPIO::INTERRUPT_RISING)) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "RPM: Failed to attach to pin %u", last_pin);
+            }
         }
-        
-        // install interrupt handler on rising edge of pin. This works
-        // for either polarity of pulse, as all we want is the period
-        stm32_gpiosetevent(gpio, true, false, false,
-                           state.instance==0?irq_handler0:irq_handler1);
-#else // other HALs
-        hal.gpio->attach_interrupt(last_pin, state.instance==0?irq_handler0:irq_handler1,
-                                   HAL_GPIO_INTERRUPT_RISING);
-#endif
     }
 
     if (irq_state[state.instance].dt_count > 0) {

@@ -1,11 +1,16 @@
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
 #include "Scheduler.h"
 #include "UARTDriver.h"
 #include <sys/time.h>
 #include <fenv.h>
+#if defined (__clang__)
+#include <stdlib.h>
+#else
+#include <malloc.h>
+#endif
+#include <AP_Common/Semaphore.h>
 
 using namespace HALSITL;
 
@@ -23,6 +28,9 @@ uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
 bool Scheduler::_should_reboot = false;
 
+Scheduler::thread_attr *Scheduler::threads;
+HAL_Semaphore Scheduler::_thread_sem;
+
 Scheduler::Scheduler(SITL_State *sitlState) :
     _sitlState(sitlState),
     _stopped_clock_usec(0)
@@ -31,6 +39,15 @@ Scheduler::Scheduler(SITL_State *sitlState) :
 
 void Scheduler::init()
 {
+    _main_ctx = pthread_self();
+}
+
+bool Scheduler::in_main_thread() const
+{
+    if (!_in_timer_proc && !_in_io_proc && pthread_self() == _main_ctx) {
+        return true;
+    }
+    return false;
 }
 
 void Scheduler::delay_microseconds(uint16_t usec)
@@ -47,13 +64,17 @@ void Scheduler::delay_microseconds(uint16_t usec)
 
 void Scheduler::delay(uint16_t ms)
 {
-    while (ms > 0) {
+    uint32_t start = AP_HAL::millis();
+    uint32_t now = start;
+    do {
         delay_microseconds(1000);
-        ms--;
-        if (_min_delay_cb_ms <= ms) {
-            call_delay_cb();
+        if (_min_delay_cb_ms <= (ms - (now - start))) {
+            if (in_main_thread()) {
+                call_delay_cb();
+            }
         }
-    }
+        now = AP_HAL::millis();
+    } while (now - start < ms);
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -177,6 +198,10 @@ void Scheduler::_run_io_procs()
     hal.uartD->_timer_tick();
     hal.uartE->_timer_tick();
     hal.uartF->_timer_tick();
+    hal.uartG->_timer_tick();
+    hal.storage->_timer_tick();
+
+    check_thread_stacks();
 }
 
 /*
@@ -191,4 +216,105 @@ void Scheduler::stop_clock(uint64_t time_usec)
     }
 }
 
+/*
+  trampoline for thread create
+*/
+void *Scheduler::thread_create_trampoline(void *ctx)
+{
+    struct thread_attr *a = (struct thread_attr *)ctx;
+    a->f[0]();
+    
+    WITH_SEMAPHORE(_thread_sem);
+    if (threads == a) {
+        threads = a->next;
+    } else {
+        for (struct thread_attr *p=threads; p->next; p=p->next) {
+            if (p->next == a) {
+                p->next = p->next->next;
+                break;
+            }
+        }
+    }
+    free(a->stack);
+    free(a->f);
+    delete a;
+    return nullptr;
+}
+
+#ifndef PTHREAD_STACK_MIN
+#define PTHREAD_STACK_MIN 16384U
 #endif
+
+/*
+  create a new thread
+*/
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+{
+    WITH_SEMAPHORE(_thread_sem);
+
+    // even an empty thread takes 2500 bytes on Linux, so always add 2300, giving us 200 bytes
+    // safety margin
+    stack_size += 2300;
+    
+    pthread_t thread {};
+    const uint32_t alloc_stack = MAX(size_t(PTHREAD_STACK_MIN),stack_size);
+
+    struct thread_attr *a = new struct thread_attr;
+    if (!a) {
+        return false;
+    }
+    // take a copy of the MemberProc, it is freed after thread exits
+    a->f = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    if (!a->f) {
+        goto failed;
+    }
+    if (posix_memalign(&a->stack, 4096, alloc_stack) != 0) {
+        goto failed;
+    }
+    if (!a->stack) {
+        goto failed;
+    }
+    memset(a->stack, stackfill, alloc_stack);
+    a->stack_min = (const uint8_t *)((((uint8_t *)a->stack) + alloc_stack) - stack_size);
+
+    a->stack_size = stack_size;
+    a->f[0] = proc;
+    a->name = name;
+    
+    pthread_attr_init(&a->attr);
+    if (pthread_attr_setstack(&a->attr, a->stack, alloc_stack) != 0) {
+        AP_HAL::panic("Failed to set stack of size %u for thread %s", alloc_stack, name);
+    }
+    if (pthread_create(&thread, &a->attr, thread_create_trampoline, a) != 0) {
+        goto failed;
+    }
+    a->next = threads;
+    threads = a;
+    return true;
+
+failed:
+    if (a->stack) {
+        free(a->stack);
+    }
+    if (a->f) {
+        free(a->f);
+    }
+    delete a;
+    return false;
+}
+
+/*
+  check for stack overflow
+ */
+void Scheduler::check_thread_stacks(void)
+{
+    WITH_SEMAPHORE(_thread_sem);
+    for (struct thread_attr *p=threads; p; p=p->next) {
+        const uint8_t ncheck = 8;
+        for (uint8_t i=0; i<ncheck; i++) {
+            if (p->stack_min[i] != stackfill) {
+                AP_HAL::panic("stack overflow in thread %s\n", p->name);
+            }
+        }
+    }
+}

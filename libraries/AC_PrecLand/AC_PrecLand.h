@@ -1,12 +1,10 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <stdint.h>
 #include "PosVelEKF.h"
-#include <AP_Buffer/AP_Buffer.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 // declare backend classes
 class AC_PrecLand_Backend;
@@ -25,7 +23,7 @@ class AC_PrecLand
     friend class AC_PrecLand_SITL;
 
 public:
-    AC_PrecLand(const AP_AHRS_NavEKF& ahrs);
+    AC_PrecLand();
 
     /* Do not allow copies */
     AC_PrecLand(const AC_PrecLand &other) = delete;
@@ -48,7 +46,8 @@ public:
     };
 
     // perform any required initialisation of landing controllers
-    void init();
+    // update_rate_hz should be the rate at which the update method will be called in hz
+    void init(uint16_t update_rate_hz);
 
     // returns true if precision landing is healthy
     bool healthy() const { return _backend_state.healthy; }
@@ -59,11 +58,23 @@ public:
     // returns time of last update
     uint32_t last_update_ms() const { return _last_update_ms; }
 
+    // returns time of last time target was seen
+    uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
+
+    // returns estimator type
+    uint8_t estimator_type() const { return _estimator_type; }
+
+    // returns ekf outlier count
+    uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
+
     // give chance to driver to get updates from sensor, should be called at 400hz
     void update(float rangefinder_alt_cm, bool rangefinder_alt_valid);
 
     // returns target position relative to the EKF origin
     bool get_target_position_cm(Vector2f& ret);
+
+    // returns target relative position as 3D vector
+    void get_target_position_measurement_cm(Vector3f& ret);
 
     // returns target position relative to vehicle
     bool get_target_position_relative_cm(Vector2f& ret);
@@ -92,7 +103,7 @@ private:
     // run target position estimator
     void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
-    // If a new measurement was retreived, sets _target_pos_rel_meas_NED and returns true
+    // If a new measurement was retrieved, sets _target_pos_rel_meas_NED and returns true
     bool construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
     // get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
@@ -102,18 +113,16 @@ private:
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
     void run_output_prediction();
 
-    // references to inertial nav and ahrs libraries
-    const AP_AHRS_NavEKF&       _ahrs;
-
     // parameters
     AP_Int8                     _enabled;           // enabled/disabled and behaviour
     AP_Int8                     _type;              // precision landing sensor type
     AP_Int8                     _bus;               // which sensor bus
     AP_Int8                     _estimator_type;    // precision landing estimator type
+    AP_Float                    _lag;               // sensor lag in seconds
     AP_Float                    _yaw_align;         // Yaw angle from body x-axis to sensor x-axis.
     AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
-    AP_Float                    _accel_noise;       // accelometer process noise
+    AP_Float                    _accel_noise;       // accelerometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
@@ -131,15 +140,16 @@ private:
     Vector2f                    _target_pos_rel_out_NE; // target's position relative to the camera, fed into position controller
     Vector2f                    _target_vel_rel_out_NE; // target's velocity relative to the CG, fed into position controller
 
-    // structure and buffer to hold a short history of vehicle velocity
+    // structure and buffer to hold a history of vehicle velocity
     struct inertial_data_frame_s {
         Matrix3f Tbn;                               // dcm rotation matrix to rotate body frame to north
         Vector3f correctedVehicleDeltaVelocityNED;
         Vector3f inertialNavVelocity;
         bool inertialNavVelocityValid;
         float dt;
+        uint64_t time_usec;
     };
-    AP_Buffer<inertial_data_frame_s,8>       _inertial_history;
+    ObjectArray<inertial_data_frame_s> *_inertial_history;
 
     // backend state
     struct precland_state {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AP_Baro.h"
+#include <AP_Common/Semaphore.h>
 
 class AP_Baro_Backend
 {
@@ -17,9 +18,6 @@ public:
     // trigger them to read the sensor
     virtual void accumulate(void) {}
 
-    // callback for UAVCAN messages
-    virtual void handle_baro_msg(float pressure, float temperature) {}
-
     void backend_update(uint8_t instance);
 
     //  Check that the baro valid by using a mean filter.
@@ -33,7 +31,7 @@ protected:
     void _copy_to_frontend(uint8_t instance, float pressure, float temperature);
 
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;    
+    HAL_Semaphore_Recursive _sem;
 
     virtual void update_healthy_flag(uint8_t instance);
 

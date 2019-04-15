@@ -58,8 +58,9 @@ class build_binaries(object):
         cmd_list.extend(args)
         self.run_program("BB-WAF", cmd_list)
 
-    def run_program(self, prefix, cmd_list):
-        self.progress("Running (%s)" % " ".join(cmd_list))
+    def run_program(self, prefix, cmd_list, show_output=True):
+        if show_output:
+            self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list, bufsize=1, stdin=None,
                              stdout=subprocess.PIPE, close_fds=True,
                              stderr=subprocess.STDOUT)
@@ -75,9 +76,10 @@ class build_binaries(object):
                 continue
             output += x
             x = x.rstrip()
-            print("%s: %s" % (prefix, x))
+            if show_output:
+                print("%s: %s" % (prefix, x))
         (_, status) = returncode
-        if status != 0:
+        if status != 0 and show_output:
             self.progress("Process failed (%s)" %
                           str(returncode))
             raise subprocess.CalledProcessError(
@@ -146,24 +148,23 @@ is bob we will attempt to checkout bob-AVR'''
         '''
 
         try:
-            if self.string_in_filepath(board,
-                                       os.path.join(self.basedir,
-                                                    'Tools',
-                                                    'ardupilotwaf',
-                                                    'boards.py')):
-                return False
+            out = self.run_program('waf', ['./waf', 'configure', '--board=BOARDTEST'], False)
+            lines = out.split('\n')
+            needles = ["BOARDTEST' (choose from", "BOARDTEST': choices are"]
+            for line in lines:
+                for needle in needles:
+                    idx = line.find(needle)
+                    if idx != -1:
+                        break
+                if idx != -1:
+                    line = line[idx+len(needle):-1]
+                    line = line.replace("'","")
+                    line = line.replace(" ","")
+                    boards = line.split(",")
+                    return not board in boards
         except IOError as e:
             if e.errno != 2:
                 raise
-
-        # see if there's a hwdef.dat for this board:
-        if os.path.exists(os.path.join(self.basedir,
-                                       'libraries',
-                                       'AP_HAL_ChibiOS',
-                                       'hwdef',
-                                       board)):
-            self.progress("ChibiOS build: %s" % (board,))
-            return False
 
         self.progress("Skipping unsupported board %s" % (board,))
         return True
@@ -171,7 +172,7 @@ is bob we will attempt to checkout bob-AVR'''
     def skip_frame(self, board, frame):
         '''returns true if this board/frame combination should not be built'''
         if frame == "heli":
-            if board in ["bebop", "aerofc-v1", "skyviper-v2450"]:
+            if board in ["bebop", "aerofc-v1", "skyviper-v2450", "CubeBlack-solo", "CubeGreen-solo"]:
                 self.progress("Skipping heli build for %s" % board)
                 return True
         return False
@@ -323,15 +324,6 @@ is bob we will attempt to checkout bob-AVR'''
         '''build vehicle binaries'''
         self.progress("Building %s %s binaries (cwd=%s)" %
                       (vehicle, tag, os.getcwd()))
-        # if not self.checkout(vehicle, tag):
-        #     self.progress("Failed to check out (%s)" % tag)
-        #     return
-
-        # # begin pointless checkout
-        # if not self.checkout(vehicle, "latest"):
-        #     self.progress("Failed to check out (%s)" % "latest")
-        #     return
-        # # end pointless checkout
 
         for board in boards:
             self.progress("Building board: %s" % board)
@@ -363,6 +355,9 @@ is bob we will attempt to checkout bob-AVR'''
                 if self.skip_frame(board, frame):
                     continue
 
+                if os.path.exists(self.buildroot):
+                    shutil.rmtree(self.buildroot)
+
                 self.remove_tmpdir();
 
                 self.progress("Configuring for %s in %s" %
@@ -393,7 +388,7 @@ is bob we will attempt to checkout bob-AVR'''
                                          "bin",
                                          "".join([binaryname, framesuffix]))
                 files_to_copy = []
-                for extension in [".px4", ".apj", ".abin"]:
+                for extension in [".px4", ".apj", ".abin", "_with_bl.hex", ".hex"]:
                     filepath = "".join([bare_path, extension])
                     if os.path.exists(filepath):
                         files_to_copy.append(filepath)
@@ -409,6 +404,17 @@ is bob we will attempt to checkout bob-AVR'''
                 # why is touching this important? -pb20170816
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
+
+        if not self.checkout(vehicle, tag, "PX4", None):
+            self.checkout(vehicle, "latest")
+            return
+
+        board_list = self.run_program('BB-WAF', ['./waf', 'list_boards'])
+        board_list = board_list.split(' ')
+        self.checkout(vehicle, "latest")
+        if not 'px4-v2' in board_list:
+            print("Skipping px4 builds")
+            return
 
         # PX4-building
         board = "px4"
@@ -430,6 +436,7 @@ is bob we will attempt to checkout bob-AVR'''
             try:
                 deadwood = "../Build.%s" % vehicle
                 if os.path.exists(deadwood):
+                    self.progress("#### Removing (%s)" % deadwood)
                     shutil.rmtree(os.path.join(deadwood))
             except Exception as e:
                 self.progress("FIXME: narrow exception (%s)" % repr(e))
@@ -449,6 +456,9 @@ is bob we will attempt to checkout bob-AVR'''
 
                 if self.skip_board_waf(px4_v):
                     continue
+
+                if os.path.exists(self.buildroot):
+                    shutil.rmtree(self.buildroot)
 
                 self.progress("Configuring for %s in %s" %
                               (px4_v, self.buildroot))
@@ -494,17 +504,59 @@ is bob we will attempt to checkout bob-AVR'''
         return ["fmuv2",
                 "fmuv3",
                 "fmuv4",
+                "fmuv5",
                 "mindpx-v2",
                 "erlebrain2",
                 "navio",
                 "navio2",
+                "edge",
                 "pxf",
-                "pxfmini"]
+                "pxfmini",
+                "KakuteF4",
+                "KakuteF7",
+                "MatekF405",
+                "MatekF405-STD",
+                "MatekF405-Wing",
+                "OMNIBUSF7V2",
+                "sparky2",
+                "omnibusf4pro",
+                "omnibusf4v6",
+                "OmnibusNanoV6",
+                "mini-pix",
+                "airbotf4",
+                "revo-mini",
+                "CubeBlack",
+                "CubePurple",
+                "Pixhawk1",
+                "Pixhawk4",
+                "PH4-mini",
+                "CUAVv5",
+                "CUAVv5Nano",
+                "mRoX21",
+                "Pixracer",
+                "F4BY",
+                "mRoX21-777",
+                "F35Lightning",
+                "speedybeef4",
+                "DrotekP3Pro",
+                "VRBrain-v51",
+                "VRBrain-v52",
+                "VRUBrain-v51",
+                "VRCore-v10",
+                "VRBrain-v54",
+                "TBS-Colibri-F7",
+                "Pixhawk4Pro",
+                "CubeOrange",
+                "CubeYellow",
+                # SITL targets
+                "SITL_x86_64_linux_gnu",
+                "SITL_arm_linux_gnueabihf",
+                ]
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
         boards = []
-        boards.extend(["skyviper-v2450", "aerofc-v1", "bebop"])
+        boards.extend(["skyviper-v2450", "aerofc-v1", "bebop", "CubeBlack-solo", "CubeGreen-solo"])
         boards.extend(self.common_boards()[:])
         self.build_vehicle(tag,
                            "ArduCopter",
@@ -527,7 +579,7 @@ is bob we will attempt to checkout bob-AVR'''
 
     def build_antennatracker(self, tag):
         '''build Tracker binaries'''
-        boards = ['navio', 'navio2']
+        boards = self.common_boards()[:]
         self.build_vehicle(tag,
                            "AntennaTracker",
                            boards,
@@ -643,8 +695,6 @@ is bob we will attempt to checkout bob-AVR'''
             self.run_git_update_submodules()
         self.buildroot = os.path.join(os.environ.get("TMPDIR"),
                                       "binaries.build")
-        if os.path.exists(self.buildroot):
-            shutil.rmtree(self.buildroot)
 
         for tag in self.tags:
             self.build_arducopter(tag)

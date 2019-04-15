@@ -8,10 +8,40 @@
 #include <AC_PID/AC_HELI_PID.h>
 #include <RC_Channel/RC_Channel.h>
 
+// we need a boardconfig created so that the io processor is available
+#if HAL_WITH_IO_MCU
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_IOMCU/AP_IOMCU.h>
+AP_BoardConfig BoardConfig;
+#endif
+
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+class RC_Channel_PIDTest : public RC_Channel
+{
+};
+
+class RC_Channels_PIDTest : public RC_Channels
+{
+public:
+    RC_Channel *channel(uint8_t chan) {
+        return &obj_channels[chan];
+    }
+
+    RC_Channel_PIDTest obj_channels[NUM_RC_CHANNELS];
+private:
+    int8_t flight_mode_channel_number() const override { return -1; };
+};
+
+#define RC_CHANNELS_SUBCLASS RC_Channels_PIDTest
+#define RC_CHANNEL_SUBCLASS RC_Channel_PIDTest
+
+#include <RC_Channel/RC_Channels_VarInfo.h>
+
+RC_Channels_PIDTest _rc;
 
 // default PID values
 #define TEST_P 1.0f
@@ -25,7 +55,13 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 // setup function
 void setup()
 {
-    hal.console->printf("ArduPilot Mega AC_PID library test\n");
+    hal.console->printf("ArduPilot AC_PID library test\n");
+
+#if HAL_WITH_IO_MCU
+    BoardConfig.init();
+#endif
+
+    rc().init();
 
     hal.scheduler->delay(1000);
 }
@@ -36,25 +72,29 @@ void loop()
     // setup (unfortunately must be done here as we cannot create a global AC_PID object)
     AC_PID pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100, TEST_FILTER, TEST_DT);
     AC_HELI_PID heli_pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100, TEST_FILTER, TEST_DT, TEST_INITIAL_FF);
-    uint16_t radio_in;
-    uint16_t radio_trim;
-    int16_t error;
-    float control_P, control_I, control_D;
 
     // display PID gains
     hal.console->printf("P %f  I %f  D %f  imax %f\n", (double)pid.kP(), (double)pid.kI(), (double)pid.kD(), (double)pid.imax());
 
+    RC_Channel *c = rc().channel(0);
+    if (c == nullptr) {
+        while (true) {
+            hal.console->printf("No channel 0?");
+            hal.scheduler->delay(1000);
+        }
+    }
+
     // capture radio trim
-    radio_trim = RC_Channels::get_radio_in(0);
+    const uint16_t radio_trim = c->get_radio_in();
 
     while (true) {
-        RC_Channels::read_input(); // poll the radio for new values
-        radio_in = RC_Channels::get_radio_in(0);
-        error = radio_in - radio_trim;
+        rc().read_input(); // poll the radio for new values
+        const uint16_t radio_in = c->get_radio_in();
+        const int16_t error = radio_in - radio_trim;
         pid.set_input_filter_all(error);
-        control_P = pid.get_p();
-        control_I = pid.get_i();
-        control_D = pid.get_d();
+        const float control_P = pid.get_p();
+        const float control_I = pid.get_i();
+        const float control_D = pid.get_d();
 
         // display pid results
         hal.console->printf("radio: %d\t err: %d\t pid:%4.2f (p:%4.2f i:%4.2f d:%4.2f)\n",

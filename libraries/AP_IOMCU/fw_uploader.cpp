@@ -63,11 +63,8 @@ extern const AP_HAL::HAL &hal;
 /*
   upload a firmware to the IOMCU
  */
-bool AP_IOMCU::upload_fw(const char *filename)
+bool AP_IOMCU::upload_fw(void)
 {
-    uint32_t fw_size;
-    fw = AP_ROMFS::find_file(filename, fw_size);
-
     // set baudrate for bootloader
     uart.begin(115200, 256, 256);
 
@@ -290,20 +287,20 @@ bool AP_IOMCU::erase()
 /*
   send new firmware to bootloader
  */
-bool AP_IOMCU::program(uint32_t fw_size)
+bool AP_IOMCU::program(uint32_t size)
 {
     bool ret = false;
     uint32_t sent = 0;
 
-    if (fw_size & 3) {
+    if (size & 3) {
         return false;
     }
 
-    debug("programming %u bytes...", (unsigned)fw_size);
+    debug("programming %u bytes...", (unsigned)size);
 
-    while (sent < fw_size) {
+    while (sent < size) {
         /* get more bytes to program */
-        uint32_t n = fw_size - sent;
+        uint32_t n = size - sent;
         if (n > PROG_MULTI_MAX) {
             n = PROG_MULTI_MAX;
         }
@@ -328,7 +325,7 @@ bool AP_IOMCU::program(uint32_t fw_size)
 /*
   verify firmware for a rev2 bootloader
  */
-bool AP_IOMCU::verify_rev2(uint32_t fw_size)
+bool AP_IOMCU::verify_rev2(uint32_t size)
 {
     bool ret;
     size_t sent = 0;
@@ -342,9 +339,9 @@ bool AP_IOMCU::verify_rev2(uint32_t fw_size)
         return ret;
     }
 
-    while (sent < fw_size) {
+    while (sent < size) {
         /* get more bytes to verify */
-        uint32_t n = fw_size - sent;
+        uint32_t n = size - sent;
         if (n > 4) {
             n = 4;
         }
@@ -386,10 +383,9 @@ bool AP_IOMCU::verify_rev3(uint32_t fw_size_local)
 {
     bool ret;
     uint32_t sum = 0;
-    uint32_t bytes_read = 0;
     uint32_t crc = 0;
     uint32_t fw_size_remote;
-    uint8_t fill_blank = 0xff;
+    const uint8_t fill_blank = 0xff;
 
     debug("verify...");
 
@@ -401,23 +397,11 @@ bool AP_IOMCU::verify_rev3(uint32_t fw_size_local)
         return ret;
     }
 
-    /* read through the firmware file again and calculate the checksum */
-    while (bytes_read < fw_size_local) {
-        uint32_t n = fw_size_local - bytes_read;
-        if (n > 4) {
-            n = 4;
-        }
+    sum = crc_crc32(0, fw, fw_size_local);
 
-        /* calculate crc32 sum */
-        sum = crc_crc32(sum, &fw[bytes_read], n);
-
-        bytes_read += n;
-    }
-
-    /* fill the rest with 0xff */
-    while (bytes_read < fw_size_remote) {
+    /* fill the rest of CRC with 0xff */
+    for (uint32_t i=0; i<fw_size_remote - fw_size_local; i++) {
         sum = crc_crc32(sum, &fill_blank, 1);
-        bytes_read++;
     }
 
     /* request CRC from IO */

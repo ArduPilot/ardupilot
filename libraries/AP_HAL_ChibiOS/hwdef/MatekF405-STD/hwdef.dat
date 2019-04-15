@@ -1,0 +1,6 @@
+# adds default support for board versions with ICM20602 
+
+include ../MatekF405/hwdef.dat
+
+undef HAL_INS_DEFAULT_ROTATION ROTATION_YAW_180
+define HAL_INS_DEFAULT_ROTATION ROTATION_YAW_90

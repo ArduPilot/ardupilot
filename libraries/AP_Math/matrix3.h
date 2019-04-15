@@ -38,6 +38,7 @@
 #pragma once
 
 #include "vector3.h"
+#include "vector2.h"
 
 // 3x3 matrix with elements of type T
 template <typename T>
@@ -232,7 +233,10 @@ public:
     // create a rotation matrix from Euler angles
     void        from_euler(float roll, float pitch, float yaw);
 
-    // create eulers from a rotation matrix
+    // create eulers from a rotation matrix.
+    // roll is from -Pi to Pi
+    // pitch is from -Pi/2 to Pi/2
+    // yaw is from -Pi to Pi
     void        to_euler(float *roll, float *pitch, float *yaw) const;
 
     // create matrix from rotation enum

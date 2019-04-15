@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -85,7 +83,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
         }
     }
 
-    // determine if the vehicle is manoevring
+    // determine if the vehicle is manoeuvring
     if (accNavMagHoriz > 0.5f) {
         manoeuvring = true;
     } else {
@@ -211,7 +209,7 @@ void NavEKF3_core::setAidingMode()
             // GPS aiding is the preferred option unless excluded by the user
             if(readyToUseGPS() || readyToUseRangeBeacon()) {
                 PV_AidingMode = AID_ABSOLUTE;
-            } else if (readyToUseOptFlow() || readyToUseBodyOdm()) {
+            } else if ((readyToUseOptFlow()  && (frontend->_flowUse == FLOW_USE_NAV)) || readyToUseBodyOdm()) {
                 PV_AidingMode = AID_RELATIVE;
             }
             break;
@@ -303,7 +301,7 @@ void NavEKF3_core::setAidingMode()
 
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (PV_AidingMode != PV_AidingModePrev) {
-        // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
+        // set various usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         switch (PV_AidingMode) {
         case AID_NONE:
             // We have ceased aiding
@@ -367,9 +365,6 @@ void NavEKF3_core::setAidingMode()
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
             break;
-
-        default:
-            break;
         }
 
         // Always reset the position and velocity when changing mode
@@ -432,7 +427,7 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
     bool wencDataGood = (imuSampleTime_ms - wheelOdmMeasTime_ms < 200);
 
     // We require stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use odometry measurements
-    // becasue they are in a body frame of reference
+    // because they are in a body frame of reference
     return (visoDataGood || wencDataGood)
             && tiltAlignComplete
             && delAngBiasLearned;
@@ -562,6 +557,6 @@ void  NavEKF3_core::updateFilterStatus(void)
     filterStatus.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_fusionModeGPS != 3); // GPS glitching is affecting navigation accuracy
+    filterStatus.flags.gps_quality_good = gpsGoodToAlign;
 }
 
-#endif // HAL_CPU_CLASS

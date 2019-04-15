@@ -54,7 +54,7 @@ class embedded_defaults(object):
 
     def save_binary(self):
         '''save binary file'''
-        f = open(self.filename, 'w')
+        f = open(self.filename, 'wb')
         f.write(self.firmware)
         f.close()
         print("Saved binary of length %u" % len(self.firmware))
@@ -188,7 +188,7 @@ class embedded_defaults(object):
             a = (a[0], '.bin')
             binfile = ''.join(a)
             print("Extracting firmware to %s" % binfile)
-            f = open(binfile,'w')
+            f = open(binfile,'wb')
             f.write(self.firmware)
             f.close()
     

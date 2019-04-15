@@ -17,24 +17,27 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "Util.h"
+
+#if HAL_USE_I2C == TRUE
+
 #include "Scheduler.h"
 #include "hwdef/common/stm32_util.h"
 
 #include "ch.h"
 #include "hal.h"
 
-#if HAL_USE_I2C == TRUE
-
 static const struct I2CInfo {
     struct I2CDriver *i2c;
     uint8_t dma_channel_rx;
     uint8_t dma_channel_tx;
+    ioline_t scl_line;
+    ioline_t sda_line;
 } I2CD[] = { HAL_I2C_DEVICE_LIST };
 
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
-I2CBus I2CDeviceManager::businfo[ARRAY_SIZE_SIMPLE(I2CD)];
+I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 
 #ifndef HAL_I2C_BUS_BASE
 #define HAL_I2C_BUS_BASE 0
@@ -50,6 +53,13 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE_SIMPLE(I2CD)];
 #define HAL_I2C_F7_100_TIMINGR 0x20404768
 #define HAL_I2C_F7_400_TIMINGR 0x6000030D
 
+/*
+  enable clear (toggling SCL) on I2C bus timeouts which leave SDA stuck low
+ */
+#ifndef HAL_I2C_CLEAR_ON_TIMEOUT
+#define HAL_I2C_CLEAR_ON_TIMEOUT 1
+#endif
+
 // get a handle for DMA sharing DMA channels with other subsystems
 void I2CBus::dma_init(void)
 {
@@ -62,39 +72,45 @@ void I2CBus::dma_init(void)
 // Clear Bus to avoid bus lockup
 void I2CBus::clear_all()
 {
-#if defined(HAL_GPIO_PIN_I2C1_SCL) && defined(HAL_I2C1_SCL_AF)
-    clear_bus(HAL_GPIO_PIN_I2C1_SCL, HAL_I2C1_SCL_AF);
-#endif
-
-#if defined(HAL_GPIO_PIN_I2C2_SCL) && defined(HAL_I2C2_SCL_AF)
-    clear_bus(HAL_GPIO_PIN_I2C2_SCL, HAL_I2C2_SCL_AF);
-#endif
-
-#if defined(HAL_GPIO_PIN_I2C3_SCL) && defined(HAL_I2C3_SCL_AF)
-    clear_bus(HAL_GPIO_PIN_I2C3_SCL, HAL_I2C3_SCL_AF);
-#endif
-
-#if defined(HAL_GPIO_PIN_I2C4_SCL) && defined(HAL_I2C4_SCL_AF)
-    clear_bus(HAL_GPIO_PIN_I2C4_SCL, HAL_I2C4_SCL_AF);
-#endif
+    for (uint8_t i=0; i<ARRAY_SIZE(I2CD); i++) {
+        clear_bus(i);
+    }
 }
 
-//This code blocks!
-void I2CBus::clear_bus(ioline_t scl_line, uint8_t scl_af)
+/*
+  clear a stuck bus (bus held by a device that is holding SDA low) by
+  clocking out pulses on SCL to let the device complete its
+  transaction
+ */
+void I2CBus::clear_bus(uint8_t busidx)
 {
-    //send dummy clock
-    palSetLineMode(scl_line, PAL_MODE_OUTPUT_PUSHPULL);
-    for(int i = 0; i < 20; i++) {
-        palToggleLine(scl_line);
-        hal.scheduler->delay_microseconds(200);
+    const struct I2CInfo &info = I2CD[busidx];
+    const iomode_t mode_saved = palReadLineMode(info.scl_line);
+    palSetLineMode(info.scl_line, PAL_MODE_OUTPUT_PUSHPULL);
+    for(uint8_t j = 0; j < 20; j++) {
+        palToggleLine(info.scl_line);
+        hal.scheduler->delay_microseconds(10);
     }
-    palSetLineMode(scl_line, PAL_MODE_ALTERNATE(scl_af) | PAL_STM32_OSPEED_MID2 | PAL_STM32_OTYPE_OPENDRAIN);
+    palSetLineMode(info.scl_line, mode_saved);
+}
+
+/*
+  read SDA on a bus, to check if it may be stuck
+ */
+uint8_t I2CBus::read_sda(uint8_t busidx)
+{
+    const struct I2CInfo &info = I2CD[busidx];
+    const iomode_t mode_saved = palReadLineMode(info.sda_line);
+    palSetLineMode(info.sda_line, PAL_MODE_INPUT);
+    uint8_t ret = palReadLine(info.sda_line);
+    palSetLineMode(info.sda_line, mode_saved);
+    return ret;
 }
 
 // setup I2C buses
 I2CDeviceManager::I2CDeviceManager(void)
 {
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(I2CD); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(I2CD); i++) {
         businfo[i].busnum = i;
         businfo[i].dma_init();
         /*
@@ -102,7 +118,7 @@ I2CDeviceManager::I2CDeviceManager(void)
           drop the speed to be the minimum speed requested
          */
         businfo[i].busclock = HAL_I2C_MAX_CLOCK;
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
         if (businfo[i].busclock <= 100000) {
             businfo[i].i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             businfo[i].busclock = 100000;
@@ -134,7 +150,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
     if (bus_clock < bus.busclock) {
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
         if (bus_clock <= 100000) {
             bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             bus.busclock = 100000;
@@ -160,18 +176,10 @@ I2CDevice::~I2CDevice()
 }
 
 /*
-  allocate DMA channel
+  allocate DMA channel, nothing to do, as we don't keep the bus active between transactions
  */
 void I2CBus::dma_allocate(Shared_DMA *ctx)
 {
-    chMtxLock(&dma_lock);    
-    if (!i2c_started) {
-        osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
-        i2cStart(I2CD[busnum].i2c, &i2ccfg);
-        osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");
-        i2c_started = true;
-    }
-    chMtxUnlock(&dma_lock);    
 }
 
 /*
@@ -179,14 +187,6 @@ void I2CBus::dma_allocate(Shared_DMA *ctx)
  */
 void I2CBus::dma_deallocate(Shared_DMA *)
 {
-    chMtxLock(&dma_lock);    
-    if (i2c_started) {
-        osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");
-        i2cStop(I2CD[busnum].i2c);
-        osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
-        i2c_started = false;
-    }
-    chMtxUnlock(&dma_lock);    
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
@@ -197,9 +197,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         return false;
     }
     
-    bus.dma_handle->lock();
-
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
     if (_use_smbus) {
         bus.i2ccfg.cr1 |= I2C_CR1_SMBHEN;
     } else {
@@ -221,25 +219,21 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         */
         if (send && send_len) {
             if (!_transfer(send, send_len, nullptr, 0)) {
-                bus.dma_handle->unlock();
                 return false;
             }
         }
         if (recv && recv_len) {
             if (!_transfer(nullptr, 0, recv, recv_len)) {
-                bus.dma_handle->unlock();
                 return false;
             }
         }
     } else {
         // combined transfer
         if (!_transfer(send, send_len, recv, recv_len)) {
-            bus.dma_handle->unlock();
             return false;
         }
     }
 
-    bus.dma_handle->unlock();
     return true;
 }
 
@@ -255,29 +249,37 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
         uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*MAX(send_len, recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
-        bus.i2c_active = true;
+
+        // we get the lock and start the bus inside the retry loop to
+        // allow us to give up the DMA channel to an SPI device on
+        // retries
+        bus.dma_handle->lock();
+
+        i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
+        
         if(send_len == 0) {
-            ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv, recv_len, MS2ST(timeout_ms));
+            ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv, recv_len, chTimeMS2I(timeout_ms));
         } else {
             ret = i2cMasterTransmitTimeout(I2CD[bus.busnum].i2c, _address, send, send_len,
-                                           recv, recv_len, MS2ST(timeout_ms));
+                                           recv, recv_len, chTimeMS2I(timeout_ms));
         }
-           
-        bus.i2c_active = false;
-        if (ret != MSG_OK) {
-            //restart the bus
-            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY || I2CD[bus.busnum].i2c->state == I2C_LOCKED, "i2cStart state");
-            i2cStop(I2CD[bus.busnum].i2c);
-            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
-            i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
-            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
-        } else {
-            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
+
+        i2cStop(I2CD[bus.busnum].i2c);
+        osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
+        
+        bus.dma_handle->unlock();
+        
+        if (ret == MSG_OK) {
             bus.bouncebuffer_finish(send, recv, recv_len);
             i2cReleaseBus(I2CD[bus.busnum].i2c);
             return true;
         }
+#if HAL_I2C_CLEAR_ON_TIMEOUT
+        if (ret == MSG_TIMEOUT && I2CBus::read_sda(bus.busnum) == 0) {
+            I2CBus::clear_bus(bus.busnum);
+        }
+#endif
     }
     bus.bouncebuffer_finish(send, recv, recv_len);
     i2cReleaseBus(I2CD[bus.busnum].i2c);
@@ -315,11 +317,37 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
                              uint32_t timeout_ms)
 {
     bus -= HAL_I2C_BUS_BASE;
-    if (bus >= ARRAY_SIZE_SIMPLE(I2CD)) {
+    if (bus >= ARRAY_SIZE(I2CD)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
     auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
     return dev;
+}
+
+/*
+  get mask of bus numbers for all configured I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask(void) const
+{
+    return ((1U << ARRAY_SIZE(I2CD)) - 1) << HAL_I2C_BUS_BASE;
+}
+
+/*
+  get mask of bus numbers for all configured internal I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
+{
+    // assume first bus is internal
+    return get_bus_mask() & HAL_I2C_INTERNAL_MASK;
+}
+
+/*
+  get mask of bus numbers for all configured external I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_external(void) const
+{
+    // assume first bus is internal
+    return get_bus_mask() & ~HAL_I2C_INTERNAL_MASK;
 }
 
 #endif // HAL_USE_I2C

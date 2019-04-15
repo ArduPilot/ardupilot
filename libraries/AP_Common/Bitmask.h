@@ -18,6 +18,9 @@
 
 #pragma once
 
+#include <stdint.h>
+#include <string.h>
+
 class Bitmask {
 public:
     Bitmask(uint16_t num_bits) :
@@ -29,6 +32,9 @@ public:
     ~Bitmask(void) {
         delete[] bits;
     }
+
+    Bitmask &operator=(const Bitmask&other);
+    Bitmask(const Bitmask &other) = delete;
 
     // set given bitnumber
     void set(uint16_t bit) {
@@ -94,6 +100,25 @@ public:
             }
         }
         return sum;
+    }
+
+    // return first bit set, or -1 if none set
+    int16_t first_set() const {
+        for (uint16_t i=0; i<numwords; i++) {
+            if (bits[i] == 0) {
+                continue;
+            }
+            int fs;
+            if (sizeof(bits[i]) <= sizeof(int)) {
+                fs = __builtin_ffs(bits[i]);
+            } else if (sizeof(bits[i]) <= sizeof(long)) {
+                fs = __builtin_ffsl(bits[i]);
+            } else {
+                fs = __builtin_ffsll(bits[i]);
+            }
+            return i*32 + fs - 1;
+        }
+        return -1;
     }
 
     // return number of bits available

@@ -1,0 +1,28 @@
+-- Location stuff (this is a commented line)
+
+include AP_Common/Location.h
+
+userdata Location field lat int32_t read write -900000000 900000000
+userdata Location field lng int32_t read write -1800000000 1800000000
+userdata Location field relative_alt boolean read write
+userdata Location field terrain_alt boolean read write
+userdata Location field origin_alt boolean read write
+userdata Location field loiter_xtrack boolean read write
+
+userdata Location method get_distance float Location
+userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
+userdata Location method get_vector_from_origin_NEU boolean Vector3f
+
+include AP_AHRS/AP_AHRS.h
+
+singleton ahrs method get_position boolean Location
+singleton ahrs method get_home Location
+
+include AP_Math/AP_Math.h
+
+userdata Vector3f field x float read write -FLT_MAX FLT_MAX
+userdata Vector3f field y float read write -FLT_MAX FLT_MAX
+userdata Vector3f field z float read write -FLT_MAX FLT_MAX
+
+include AP_Notify/AP_Notify.h
+singleton notify method play_tune void string

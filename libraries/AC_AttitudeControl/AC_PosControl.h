@@ -31,7 +31,7 @@
 #define POSCONTROL_DT_50HZ                      0.02f   // time difference in seconds for 50hz update rate
 #define POSCONTROL_DT_400HZ                     0.0025f // time difference in seconds for 400hz update rate
 
-#define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 0.2 seconds
+#define POSCONTROL_ACTIVE_TIMEOUT_US            200000  // position controller is considered active if it has been called within the past 0.2 seconds
 
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // low-pass filter on velocity error (unit: hz)
 #define POSCONTROL_THROTTLE_CUTOFF_FREQ         2.0f    // low-pass filter on accel error (unit: hz)
@@ -61,26 +61,26 @@ public:
     /// z position controller
     ///
 
-    /// set_speed_z - sets maximum climb and descent rates
+    /// set_max_speed_z - sets maximum climb and descent rates
     ///     speed_down can be positive or negative but will always be interpreted as a descent speed
-    ///     leash length will be recalculated the next time update_z_controller() is called
-    void set_speed_z(float speed_down, float speed_up);
+    ///     leash length will be recalculated
+    void set_max_speed_z(float speed_down, float speed_up);
 
-    /// get_speed_up - accessor for current up speed in cm/s
-    float get_speed_up() const { return _speed_up_cms; }
+    /// get_max_speed_up - accessor for current maximum up speed in cm/s
+    float get_max_speed_up() const { return _speed_up_cms; }
 
-    /// get_speed_down - accessors for current down speed in cm/s.  Will be a negative number
-    float get_speed_down() const { return _speed_down_cms; }
+    /// get_max_speed_down - accessors for current maximum down speed in cm/s.  Will be a negative number
+    float get_max_speed_down() const { return _speed_down_cms; }
 
     /// get_vel_target_z - returns current vertical speed in cm/s
     float get_vel_target_z() const { return _vel_target.z; }
 
-    /// set_accel_z - set vertical acceleration in cm/s/s
-    ///     leash length will be recalculated the next time update_z_controller() is called
-    void set_accel_z(float accel_cmss);
+    /// set_max_accel_z - set the maximum vertical acceleration in cm/s/s
+    ///     leash length will be recalculated
+    void set_max_accel_z(float accel_cmss);
 
-    /// get_accel_z - returns current vertical acceleration in cm/s/s
-    float get_accel_z() const { return _accel_z_cms; }
+    /// get_max_accel_z - returns current maximum vertical acceleration in cm/s/s
+    float get_max_accel_z() const { return _accel_z_cms; }
 
     /// calc_leash_length - calculates the vertical leash lengths from maximum speed, acceleration
     ///     called by update_z_controller if z-axis speed or accelerations are changed
@@ -123,8 +123,7 @@ public:
     /// relax_alt_hold_controllers - set all desired and targets to measured
     void relax_alt_hold_controllers(float throttle_setting);
 
-    /// get_alt_target, get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
-    /// To-Do: remove one of the two functions below
+    /// get_alt_target - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
     float get_alt_target() const { return _pos_target.z; }
 
     /// get_alt_error - returns altitude error in cm
@@ -163,17 +162,17 @@ public:
     ///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
     ///     should be called once whenever significant changes to the position target are made
     ///     this does not update the xy target
-    void init_xy_controller(bool reset_I = true);
+    void init_xy_controller();
 
-    /// set_accel_xy - set horizontal acceleration in cm/s/s
-    ///     leash length will be recalculated the next time update_xy_controller() is called
-    void set_accel_xy(float accel_cmss);
-    float get_accel_xy() const { return _accel_cms; }
+    /// set_max_accel_xy - set the maximum horizontal acceleration in cm/s/s
+    ///     leash length will be recalculated
+    void set_max_accel_xy(float accel_cmss);
+    float get_max_accel_xy() const { return _accel_cms; }
 
-    /// set_speed_xy - set horizontal speed maximum in cm/s
-    ///     leash length will be recalculated the next time update_xy_controller() is called
-    void set_speed_xy(float speed_cms);
-    float get_speed_xy() const { return _speed_cms; }
+    /// set_max_speed_xy - set the maximum horizontal speed maximum in cm/s
+    ///     leash length will be recalculated
+    void set_max_speed_xy(float speed_cms);
+    float get_max_speed_xy() const { return _speed_cms; }
 
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
@@ -230,7 +229,7 @@ public:
 
     /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
-    void update_xy_controller(float ekfNavVelGainScaler);
+    void update_xy_controller();
 
     /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
     void set_target_to_stopping_point_xy();
@@ -257,13 +256,13 @@ public:
     ///     velocity targets should we set using set_desired_velocity_xy() method
     ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
     ///     throttle targets will be sent directly to the motors
-    void update_vel_controller_xy(float ekfNavVelGainScaler);
+    void update_vel_controller_xy();
     
     /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
     ///     velocity targets should we set using set_desired_velocity_xyz() method
     ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
     ///     throttle targets will be sent directly to the motors
-    void update_vel_controller_xyz(float ekfNavVelGainScaler);
+    void update_vel_controller_xyz();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _roll_target; }
@@ -292,8 +291,12 @@ public:
     // time_since_last_xy_update - returns time in seconds since the horizontal position controller was last run
     float time_since_last_xy_update() const;
 
-    // write log to dataflash
     void write_log();
+
+    // provide feedback on whether arming would be a good idea right now:
+    bool pre_arm_checks(const char *param_prefix,
+                        char *failure_msg,
+                        const uint8_t failure_msg_len);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -347,7 +350,7 @@ protected:
     ///     desired velocity (_vel_desired) is combined into final target velocity
     ///     converts desired velocities in lat/lon directions to accelerations in lat/lon frame
     ///     converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void run_xy_controller(float dt, float ekfNavVelGainScaler);
+    void run_xy_controller(float dt);
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
@@ -381,8 +384,8 @@ protected:
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
-    uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
-    uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
+    uint64_t    _last_update_xy_us;     // system time (in microseconds) since last update_xy_controller call
+    uint64_t    _last_update_z_us;      // system time (in microseconds) of last update_z_controller call
     float       _speed_down_cms;        // max descent rate in cm/s
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
@@ -408,7 +411,6 @@ protected:
     Vector3f    _accel_target;          // acceleration target in cm/s/s
     Vector3f    _accel_error;           // acceleration error in cm/s/s
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
-    float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 
     LowPassFilterVector2f _accel_target_filter; // acceleration target filter

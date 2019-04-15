@@ -22,12 +22,12 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if AP_FEATURE_SAFETY_BUTTON
 /*
   init safety state
  */
 void AP_BoardConfig::board_init_safety()
 {
+#if HAL_HAVE_SAFETY_SWITCH
     if (state.safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
         hal.rcout->force_safety_no_wait();
@@ -37,8 +37,8 @@ void AP_BoardConfig::board_init_safety()
             hal.scheduler->delay(20);
         }
     }
-}
 #endif
+}
 
 
 #if AP_FEATURE_BOARD_DETECT
@@ -89,6 +89,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_PIXHAWK:
     case PX4_BOARD_PIXHAWK2:
     case PX4_BOARD_FMUV5:
+    case PX4_BOARD_FMUV6:
     case PX4_BOARD_SP01:
     case PX4_BOARD_PIXRACER:
     case PX4_BOARD_PHMINI:
@@ -112,6 +113,8 @@ void AP_BoardConfig::board_setup_drivers(void)
     }
 }
 
+#define SPI_PROBE_DEBUG 0
+
 /*
   check a SPI device for a register value
  */
@@ -119,7 +122,9 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 {
     auto dev = hal.spi->get_device(devname);
     if (!dev) {
+#if SPI_PROBE_DEBUG
         hal.console->printf("%s: no device\n", devname);
+#endif
         return false;
     }
     dev->set_read_flag(read_flag);
@@ -128,12 +133,16 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     }
     uint8_t v;
     if (!dev->read_registers(regnum, &v, 1)) {
+#if SPI_PROBE_DEBUG
         hal.console->printf("%s: reg %02x read fail\n", devname, (unsigned)regnum);
+#endif
         dev->get_semaphore()->give();
         return false;
     }
     dev->get_semaphore()->give();
+#if SPI_PROBE_DEBUG
     hal.console->printf("%s: reg %02x expected:%02x got:%02x\n", devname, (unsigned)regnum, (unsigned)value, (unsigned)v);
+#endif
     return v == value;
 }
 
@@ -146,6 +155,8 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 #define LSMREG_WHOAMI 0x0f
 #define LSM_WHOAMI_LSM303D 0x49
 
+#define INV2REG_WHOAMI 0x00
+#define INV2_WHOAMI_ICM20948 0xEA
 /*
   validation of the board type
  */
@@ -161,8 +172,10 @@ void AP_BoardConfig::validate_board_type(void)
         (spi_check_register("mpu6000_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
          spi_check_register("icm20608", MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-         spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-        spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
+         spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
+         spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
+        (spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) ||
+         spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
         // Pixhawk2 has LSM303D and MPUxxxx on external bus. If we
         // detect those, then force PIXHAWK2, even if the user has
         // configured for PIXHAWK1
@@ -202,8 +215,10 @@ void AP_BoardConfig::board_autodetect(void)
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
          spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-         spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-        spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
+         spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
+         spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
+        (spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) ||
+         spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
         // Pixhawk2 has LSM303D and MPUxxxx on external bus
         state.board_type.set(PX4_BOARD_PIXHAWK2);
         hal.console->printf("Detected PIXHAWK2\n");
@@ -233,7 +248,7 @@ void AP_BoardConfig::board_autodetect(void)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
     hal.console->printf("Detected MindPX-V2\n");
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
     hal.console->printf("Detected Pixhawk Pro\n");	
@@ -243,25 +258,28 @@ void AP_BoardConfig::board_autodetect(void)
 #elif defined(HAL_CHIBIOS_ARCH_FMUV5)
     state.board_type.set_and_notify(PX4_BOARD_FMUV5);
     hal.console->printf("Detected FMUv5\n");
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
+#elif defined(HAL_CHIBIOS_ARCH_FMUV6)
+    state.board_type.set_and_notify(PX4_BOARD_FMUV5);
+    hal.console->printf("Detected FMUv6\n");
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(HAL_CHIBIOS_ARCH_BRAINV51)
     state.board_type.set_and_notify(VRX_BOARD_BRAIN51);
     hal.console->printf("Detected VR Brain 5.1\n");
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(HAL_CHIBIOS_ARCH_BRAINV52)
     state.board_type.set_and_notify(VRX_BOARD_BRAIN52);
     hal.console->printf("Detected VR Brain 5.2\n");
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E)
     state.board_type.set_and_notify(VRX_BOARD_BRAIN52E);
     hal.console->printf("Detected VR Brain 5.2E\n");
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51) || defined(HAL_CHIBIOS_ARCH_UBRAINV51)
     state.board_type.set_and_notify(VRX_BOARD_UBRAIN51);
     hal.console->printf("Detected VR Micro Brain 5.1\n");
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
     state.board_type.set_and_notify(VRX_BOARD_UBRAIN52);
     hal.console->printf("Detected VR Micro Brain 5.2\n");
-#elif defined(CONFIG_ARCH_BOARD_VRCORE_V10)
+#elif defined(CONFIG_ARCH_BOARD_VRCORE_V10) || defined(HAL_CHIBIOS_ARCH_COREV10)
     state.board_type.set_and_notify(VRX_BOARD_CORE10);
     hal.console->printf("Detected VR Core 1.0\n");
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54) || defined(HAL_CHIBIOS_ARCH_BRAINV54)
     state.board_type.set_and_notify(VRX_BOARD_BRAIN54);
     hal.console->printf("Detected VR Brain 5.4\n");
 #endif
@@ -321,15 +339,19 @@ void AP_BoardConfig::board_setup_sbus(void)
  */
 void AP_BoardConfig::board_setup()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    px4_setup_peripherals();
-    px4_setup_pwm();
-    px4_setup_safety_mask();
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     // init needs to be done after boardconfig is read so parameters are set
     hal.gpio->init();
     hal.rcin->init();
     hal.rcout->init();
+#endif
+
+#ifdef HAL_GPIO_PWM_VOLT_PIN
+    if (_pwm_volt_sel == 0) {
+        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, 1); //set pin for 3.3V PWM Output
+    } else if (_pwm_volt_sel == 1) {
+        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, 0); //set pin for 5V PWM Output
+    }
 #endif
     board_setup_uart();
     board_setup_sbus();

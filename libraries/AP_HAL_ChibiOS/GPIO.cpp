@@ -18,8 +18,6 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#if HAL_USE_EXT == TRUE
-
 using namespace ChibiOS;
 
 // GPIO pin table from hwdef.dat
@@ -28,10 +26,12 @@ static struct gpio_entry {
     bool enabled;
     uint8_t pwm_num;
     ioline_t pal_line;
-    uint16_t port;
+    AP_HAL::GPIO::irq_handler_fn_t fn; // callback for GPIO interface
+    bool is_input;
+    uint8_t mode;
 } _gpio_tab[] = HAL_GPIO_PINS;
 
-#define NUM_PINS ARRAY_SIZE_SIMPLE(_gpio_tab)
+#define NUM_PINS ARRAY_SIZE(_gpio_tab)
 #define PIN_ENABLED(pin) ((pin)<NUM_PINS && _gpio_tab[pin].enabled)
 
 /*
@@ -39,7 +39,7 @@ static struct gpio_entry {
  */
 static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=true)
 {
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(_gpio_tab); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         if (pin_num == _gpio_tab[i].pin_num) {
             if (check_enabled && !_gpio_tab[i].enabled) {
                 return NULL;
@@ -50,10 +50,8 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=tr
     return NULL;
 }
 
-static void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel);
-
-static EXTConfig extcfg;
-static AP_HAL::Proc ext_irq[EXT_MAX_CHANNELS]; // ext int irq list
+static void pal_interrupt_cb(void *arg);
+static void pal_interrupt_cb_functor(void *arg);
 
 GPIO::GPIO()
 {}
@@ -62,7 +60,7 @@ void GPIO::init()
 {
     // auto-disable pins being used for PWM output based on BRD_PWM_COUNT parameter
     uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(_gpio_tab); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         struct gpio_entry *g = &_gpio_tab[i];
         if (g->pwm_num != 0) {
             g->enabled = g->pwm_num > pwm_count;
@@ -74,13 +72,16 @@ void GPIO::pinMode(uint8_t pin, uint8_t output)
 {
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
-        palSetLineMode(g->pal_line, output);
+        if (!output && g->is_input &&
+            (g->mode == PAL_MODE_INPUT_PULLUP ||
+             g->mode == PAL_MODE_INPUT_PULLDOWN)) {
+            // already set
+            return;
+        }
+        g->mode = output?PAL_MODE_OUTPUT_PUSHPULL:PAL_MODE_INPUT;
+        palSetLineMode(g->pal_line, g->mode);
+        g->is_input = !output;
     }
-}
-
-int8_t GPIO::analogPinToDigitalPin(uint8_t pin)
-{
-    return -1;
 }
 
 
@@ -97,7 +98,11 @@ void GPIO::write(uint8_t pin, uint8_t value)
 {
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
-        if (value == PAL_LOW) {
+        if (g->is_input) {
+            // control pullup/pulldown
+            g->mode = value==1?PAL_MODE_INPUT_PULLUP:PAL_MODE_INPUT_PULLDOWN;
+            palSetLineMode(g->pal_line, g->mode);
+        } else if (value == PAL_LOW) {
             palClearLine(g->pal_line);
         } else {
             palSetLine(g->pal_line);
@@ -126,93 +131,83 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
 extern const AP_HAL::HAL& hal;
 
 /* 
+   Attach an interrupt handler to a GPIO pin number. The pin number
+   must be one specified with a GPIO() marker in hwdef.dat
+ */
+bool GPIO::attach_interrupt(uint8_t pin,
+                            irq_handler_fn_t fn,
+                            INTERRUPT_TRIGGER_TYPE mode)
+{
+    struct gpio_entry *g = gpio_by_pin_num(pin, false);
+    if (!g) {
+        return false;
+    }
+    if (!_attach_interrupt(g->pal_line,
+                           palcallback_t(fn?pal_interrupt_cb_functor:nullptr),
+                           g,
+                           mode)) {
+        return false;
+    }
+    g->fn = fn;
+    return true;
+}
+
+/*
    Attach an interrupt handler to ioline_t
  */
 bool GPIO::_attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode)
 {
-    uint8_t pad = PAL_PAD(line);
-    stm32_gpio_t *pal_port = PAL_PORT(line);
-    uint8_t ext_port = 0xff;
-    const struct {
-        stm32_gpio_t *port;
-        uint8_t ext_port;
-    } port_mapping[] = {
-        { GPIOA, EXT_MODE_GPIOA },
-        { GPIOB, EXT_MODE_GPIOB },
-        { GPIOC, EXT_MODE_GPIOC },
-        { GPIOD, EXT_MODE_GPIOD },
-        { GPIOE, EXT_MODE_GPIOE },
-        { GPIOF, EXT_MODE_GPIOF },
-#ifdef GPIOG
-        { GPIOG, EXT_MODE_GPIOG },
-#endif
-#ifdef GPIOH
-        { GPIOH, EXT_MODE_GPIOH },
-#endif
-#ifdef GPIOI
-        { GPIOI, EXT_MODE_GPIOI },
-#endif
-    };
-    // convert the line to a EXT_MODE_GPIOn value,  this is STM32 specific
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(port_mapping); i++) {
-        if (pal_port == port_mapping[i].port) {
-            ext_port = port_mapping[i].ext_port;
-        }
-    }
-    if (ext_port == 0xff) {
+    return _attach_interrupt(line, palcallback_t(p?pal_interrupt_cb:nullptr), (void*)p, mode);
+}
+
+bool GPIO::attach_interrupt(uint8_t pin,
+                            AP_HAL::Proc proc,
+                            INTERRUPT_TRIGGER_TYPE mode) {
+    struct gpio_entry *g = gpio_by_pin_num(pin, false);
+    if (!g) {
         return false;
     }
-    if (p && ext_irq[pad] != nullptr && ext_irq[pad] != p) {
-        // already used
-        return false;
-    } else if (!p && !ext_irq[pad]) {
-        // nothing to remove
-        return false;
-    }
+    return _attach_interrupt(g->pal_line, proc, mode);
+}
+
+bool GPIO::_attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t mode)
+{
     uint32_t chmode = 0;
     switch(mode) {
-        case HAL_GPIO_INTERRUPT_LOW:
-            chmode = EXT_CH_MODE_LOW_LEVEL;
+        case INTERRUPT_FALLING:
+            chmode = PAL_EVENT_MODE_FALLING_EDGE;
             break;
-        case HAL_GPIO_INTERRUPT_FALLING:
-            chmode = EXT_CH_MODE_FALLING_EDGE;
+        case INTERRUPT_RISING:
+            chmode = PAL_EVENT_MODE_RISING_EDGE;
             break;
-        case HAL_GPIO_INTERRUPT_RISING:
-            chmode = EXT_CH_MODE_RISING_EDGE;
-            break;
-        case HAL_GPIO_INTERRUPT_BOTH:
-            chmode = EXT_CH_MODE_BOTH_EDGES;
+        case INTERRUPT_BOTH:
+            chmode = PAL_EVENT_MODE_BOTH_EDGES;
             break;
         default:
             if (p) {
                 return false;
             }
             break;
-    }
-    if (_ext_started) {
-        extStop(&EXTD1);
-        _ext_started = false;
-    }
-    extcfg.channels[pad].mode = chmode;
-    extcfg.channels[pad].mode |= (p?EXT_CH_MODE_AUTOSTART:0) | ext_port;
-    ext_irq[pad] = p;
-    extcfg.channels[pad].cb = ext_interrupt_cb;
-    extStart(&EXTD1, &extcfg);
-    _ext_started = true;
-    return true;
-}
+    }    
 
-/* 
-   Attach an interrupt handler to a GPIO pin number. The pin number
-   must be one specified with a GPIO() marker in hwdef.dat
- */
-bool GPIO::attach_interrupt(uint8_t pin, AP_HAL::Proc p, uint8_t mode)
-{
-    struct gpio_entry *g = gpio_by_pin_num(pin, false);
-    if (!g) {
+    osalSysLock();
+    palevent_t *pep = pal_lld_get_line_event(line);
+    if (pep->cb && p != nullptr) {
+        // the pad is already being used for a callback
+        osalSysUnlock();
         return false;
     }
-    return _attach_interrupt(g->pal_line, p, mode);
+
+    if (!p) {
+        chmode = PAL_EVENT_MODE_DISABLED;
+    }
+
+    palDisableLineEventI(line);
+    palSetLineCallbackI(line, cb, p);
+    palEnableLineEventI(line, chmode);
+    osalSysUnlock();
+
+    return true;
 }
 
 bool GPIO::usb_connected(void)
@@ -244,11 +239,25 @@ void DigitalSource::toggle()
     palToggleLine(line);
 }
 
-void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel)
+void pal_interrupt_cb(void *arg)
 {
-    if (ext_irq[channel] != nullptr) {
-        ext_irq[channel]();
+    if (arg != nullptr) {
+        ((AP_HAL::Proc)arg)();
     }
 }
 
-#endif // HAL_USE_EXT
+void pal_interrupt_cb_functor(void *arg)
+{
+    const uint32_t now = AP_HAL::micros();
+
+    struct gpio_entry *g = (gpio_entry *)arg;
+    if (g == nullptr) {
+        // what?
+        return;
+    }
+    if (!(g->fn)) {
+        return;
+    }
+    (g->fn)(g->pin_num, palReadLine(g->pal_line), now);
+}
+

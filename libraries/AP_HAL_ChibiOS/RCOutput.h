@@ -23,16 +23,20 @@
 
 #if HAL_USE_PWM == TRUE
 
+#if !STM32_DMA_ADVANCED
+#define DISABLE_DSHOT
+#endif
+
 class ChibiOS::RCOutput : public AP_HAL::RCOutput {
 public:
-    void     init();
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
-    uint16_t get_freq(uint8_t ch);
-    void     enable_ch(uint8_t ch);
-    void     disable_ch(uint8_t ch);
-    void     write(uint8_t ch, uint16_t period_us);
-    uint16_t read(uint8_t ch);
-    void     read(uint16_t* period_us, uint8_t len);
+    void     init() override;
+    void     set_freq(uint32_t chmask, uint16_t freq_hz) override;
+    uint16_t get_freq(uint8_t ch) override;
+    void     enable_ch(uint8_t ch) override;
+    void     disable_ch(uint8_t ch) override;
+    void     write(uint8_t ch, uint16_t period_us) override;
+    uint16_t read(uint8_t ch) override;
+    void     read(uint16_t* period_us, uint8_t len) override;
     uint16_t read_last_sent(uint8_t ch) override;
     void     read_last_sent(uint16_t* period_us, uint8_t len) override;
     void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override {
@@ -100,7 +104,7 @@ public:
       same channel timer group) may also be stopped, depending on the
       implementation
      */
-    bool serial_setup_output(uint8_t chan, uint32_t baudrate) override;
+    bool serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t motor_mask) override;
 
     /*
       write a set of bytes to an ESC, using settings from
@@ -125,12 +129,31 @@ public:
       enable telemetry request for a mask of channels. This is used
       with DShot to get telemetry feedback
      */
-    void set_telem_request_mask(uint16_t mask) { telem_request_mask = (mask >> chan_offset); }
+    void set_telem_request_mask(uint16_t mask) override { telem_request_mask = (mask >> chan_offset); }
 
     /*
       get safety switch state, used by Util.cpp
     */
     AP_HAL::Util::safety_state _safety_switch_state(void);
+
+    /*
+      set PWM to send to a set of channels if the FMU firmware dies
+     */
+    void set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
+
+    /*
+      set safety mask for IOMCU
+     */
+    void set_safety_mask(uint16_t mask) { safety_mask = mask; }
+
+    /*
+     * mark the channels in chanmask as reversible. This is needed for some ESC types (such as DShot)
+     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into
+     * any existing mask.
+     */
+    void set_reversible_mask(uint16_t chanmask) override {
+        reversible_mask |= chanmask;
+    }
     
 private:
     struct pwm_group {
@@ -158,7 +181,8 @@ private:
         uint32_t rc_frequency;
         bool in_serial_dma;
         uint64_t last_dshot_send_us;
-
+        virtual_timer_t dma_timeout;
+        
         // serial output
         struct {
             // expected time per bit
@@ -199,6 +223,10 @@ private:
         
         // thread waiting for byte to be read
         thread_t *waiter;
+
+        // timeout for byte read
+        virtual_timer_t serial_timeout;
+        bool timed_out;
     } irq;
 
     
@@ -206,7 +234,7 @@ private:
     struct pwm_group *serial_group;
     thread_t *serial_thread;
     tprio_t serial_priority;
-
+    
     static pwm_group pwm_group_list[];
     uint16_t _esc_pwm_min;
     uint16_t _esc_pwm_max;
@@ -233,6 +261,7 @@ private:
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;
     uint16_t io_fast_channel_mask;
+    uint16_t reversible_mask;
 
     // min time to trigger next pulse to prevent overlap
     uint64_t min_pulse_trigger_us;
@@ -273,9 +302,12 @@ private:
     /*
       DShot handling
      */
-    const uint8_t dshot_post = 6;
-    const uint16_t dshot_bit_length = 16 + dshot_post;
+    // the pre-bit is needed with TIM5, or we can get some corrupt frames
+    const uint8_t dshot_pre = 1;
+    const uint8_t dshot_post = 2;
+    const uint16_t dshot_bit_length = 16 + dshot_pre + dshot_post;
     const uint16_t dshot_buffer_length = dshot_bit_length*4*sizeof(uint32_t);
+    static const uint16_t dshot_min_gap_us = 100;
     uint32_t dshot_pulse_time_us;
     uint16_t telem_request_mask;
     
@@ -285,6 +317,7 @@ private:
     void fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
     void dshot_send(pwm_group &group, bool blocking);
     static void dma_irq_callback(void *p, uint32_t flags);
+    static void dma_unlock(void *p);
     bool mode_requires_dma(enum output_mode mode) const;
     bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
@@ -296,6 +329,7 @@ private:
     bool serial_read_byte(uint8_t &b);
     void fill_DMA_buffer_byte(uint32_t *buffer, uint8_t stride, uint8_t b , uint32_t bitval);
     static void serial_bit_irq(void);
+    static void serial_byte_timeout(void *ctx);
 
 };
 

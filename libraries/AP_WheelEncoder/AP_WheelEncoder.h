@@ -34,8 +34,12 @@ public:
 
     AP_WheelEncoder(void);
 
+    /* Do not allow copies */
+    AP_WheelEncoder(const AP_WheelEncoder &other) = delete;
+    AP_WheelEncoder &operator=(const AP_WheelEncoder&) = delete;
+
     // WheelEncoder driver types
-    enum WheelEncoder_Type {
+    enum WheelEncoder_Type : uint8_t {
         WheelEncoder_TYPE_NONE          = 0,
         WheelEncoder_TYPE_QUADRATURE    = 1
     };
@@ -44,10 +48,12 @@ public:
     struct WheelEncoder_State {
         uint8_t                instance;        // the instance number of this WheelEncoder
         int32_t                distance_count;  // cumulative number of forward + backwards events received from wheel encoder
-        float                  distance;        // total distance measured
+        float                  distance;        // total distance measured in meters
         uint32_t               total_count;     // total number of successful readings from sensor (used for sensor quality calcs)
         uint32_t               error_count;     // total number of errors reading from sensor (used for sensor quality calcs)
         uint32_t               last_reading_ms; // time of last reading
+        int32_t                dist_count_change; // distance count change during the last update (used to calculating rate)
+        uint32_t               dt_ms;             // time change (in milliseconds) for the previous period (used to calculating rate)
     };
 
     // detect and initialise any available rpm sensors
@@ -55,6 +61,9 @@ public:
 
     // update state of all sensors. Should be called from main loop
     void update(void);
+
+    // log data to logger
+    void Log_Write();
 
     // return the number of wheel encoder sensor instances
     uint8_t num_sensors(void) const { return num_instances; }
@@ -71,14 +80,17 @@ public:
     // get the wheel radius in meters
     float get_wheel_radius(uint8_t instance) const;
 
-    // get the position of the wheel associated with the wheel encoder
-    Vector3f get_position(uint8_t instance) const;
+    // return a 3D vector defining the position offset of the center of the wheel in meters relative to the body frame origin
+    const Vector3f &get_pos_offset(uint8_t instance) const;
 
     // get total delta angle (in radians) measured by the wheel encoder
     float get_delta_angle(uint8_t instance) const;
 
     // get the total distance traveled in meters
     float get_distance(uint8_t instance) const;
+
+    // get the instantaneous rate in radians/second
+    float get_rate(uint8_t instance) const;
 
     // get the total number of sensor reading from the encoder
     uint32_t get_total_count(uint8_t instance) const;
@@ -106,4 +118,5 @@ protected:
     WheelEncoder_State state[WHEELENCODER_MAX_INSTANCES];
     AP_WheelEncoder_Backend *drivers[WHEELENCODER_MAX_INSTANCES];
     uint8_t num_instances;
+    Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 };

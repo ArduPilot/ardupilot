@@ -21,12 +21,11 @@ bool Copter::ModeAltHold::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModeAltHold::run()
 {
-    AltHoldModeState althold_state;
     float takeoff_climb_rate = 0.0f;
 
     // initialize vertical speeds and acceleration
-    pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control->set_accel_z(g.pilot_accel_z);
+    pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control->set_max_accel_z(g.pilot_accel_z);
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
@@ -43,47 +42,34 @@ void Copter::ModeAltHold::run()
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Alt Hold State Machine Determination
-    if (!motors->armed() || !motors->get_interlock()) {
-        althold_state = AltHold_MotorStopped;
-    } else if (takeoff_state.running || takeoff_triggered(target_climb_rate)) {
-        althold_state = AltHold_Takeoff;
-    } else if (!ap.auto_armed || ap.land_complete) {
-        althold_state = AltHold_Landed;
-    } else {
-        althold_state = AltHold_Flying;
-    }
+    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate);
 
     // Alt Hold State Machine
     switch (althold_state) {
 
     case AltHold_MotorStopped:
 
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
-#if FRAME_CONFIG == HELI_FRAME    
-        // force descent rate and call position controller
-        pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
-        heli_flags.init_targets_on_arming=true;
-#else
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
-#endif
-        pos_control->update_z_controller();
+        break;
+
+    case AltHold_Landed_Ground_Idle:
+
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
+        // FALLTHROUGH
+
+    case AltHold_Landed_Pre_Takeoff:
+
+        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 
     case AltHold_Takeoff:
-#if FRAME_CONFIG == HELI_FRAME    
-        if (heli_flags.init_targets_on_arming) {
-            heli_flags.init_targets_on_arming=false;
-        }
-#endif
-        // set motors to full range
-        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // initiate take-off
-        if (!takeoff_state.running) {
-            takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+        if (!takeoff.running()) {
+            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
             // indicate we are taking off
             set_land_complete(false);
             // clear i terms
@@ -91,55 +77,23 @@ void Copter::ModeAltHold::run()
         }
 
         // get take-off adjusted pilot and takeoff climb rates
-        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
+        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-
-        // call position controller
+        // set position controller targets
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control->add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
-        pos_control->update_z_controller();
-        break;
-
-    case AltHold_Landed:
-        // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-        if (target_climb_rate < 0.0f) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        } else {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        }
-
-#if FRAME_CONFIG == HELI_FRAME    
-        if (heli_flags.init_targets_on_arming) {
-            attitude_control->reset_rate_controller_I_terms();
-            attitude_control->set_yaw_target_to_current_heading();
-            if (motors->get_interlock()) {
-                heli_flags.init_targets_on_arming=false;
-            }
-        }
-#else
-        attitude_control->reset_rate_controller_I_terms();
-        attitude_control->set_yaw_target_to_current_heading();
-#endif
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
-        pos_control->update_z_controller();
         break;
 
     case AltHold_Flying:
-        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
 #if AC_AVOID_ENABLED == ENABLED
         // apply avoidance
         copter.avoid.adjust_roll_pitch(target_roll, target_pitch, copter.aparm.angle_max);
 #endif
-
-        // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
         // adjust climb rate using rangefinder
         target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
@@ -147,9 +101,14 @@ void Copter::ModeAltHold::run()
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        // call position controller
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        pos_control->update_z_controller();
         break;
     }
+
+    // call attitude controller
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+
+    // call z-axis position controller
+    pos_control->update_z_controller();
+
 }

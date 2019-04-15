@@ -17,11 +17,13 @@
 #include <inttypes.h>
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/SPIDevice.h>
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_USE_SPI == TRUE
+
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "Device.h"
-
-#if HAL_USE_SPI == TRUE
 
 namespace ChibiOS {
 
@@ -34,6 +36,7 @@ public:
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);
     bool spi_started;
+    uint8_t slowdown;
     
     // we need an additional lock in the dma_allocate and
     // dma_deallocate functions to cope with 3-way contention as we
@@ -45,7 +48,7 @@ public:
 struct SPIDesc {
     SPIDesc(const char *_name, uint8_t _bus,
             uint8_t _device, ioline_t _pal_line,
-            uint16_t _mode, uint32_t _lowspeed, uint32_t _highspeed)
+            uint32_t _mode, uint32_t _lowspeed, uint32_t _highspeed)
         : name(_name), bus(_bus), device(_device),
           pal_line(_pal_line), mode(_mode),
           lowspeed(_lowspeed), highspeed(_highspeed)
@@ -56,7 +59,7 @@ struct SPIDesc {
     uint8_t bus;
     uint8_t device;
     ioline_t pal_line;
-    uint16_t mode;
+    uint32_t mode;
     uint32_t lowspeed;
     uint32_t highspeed;
 };
@@ -108,19 +111,22 @@ public:
     // used to measure clock frequencies
     static void test_clock_freq(void);
 #endif
-    
+
+    // setup a bus clock slowdown factor
+    void set_slowdown(uint8_t slowdown) override;
+
 private:
     SPIBus &bus;
     SPIDesc &device_desc;
     uint32_t frequency;
-    uint16_t freq_flag;
-    uint16_t freq_flag_low;
-    uint16_t freq_flag_high;
+    uint32_t freq_flag;
+    uint32_t freq_flag_low;
+    uint32_t freq_flag_high;
     char *pname;
     bool cs_forced;
     static void *spi_thread(void *arg);
-    static uint16_t derive_freq_flag_bus(uint8_t busid, uint32_t _frequency);
-    uint16_t derive_freq_flag(uint32_t _frequency);
+    static uint32_t derive_freq_flag_bus(uint8_t busid, uint32_t _frequency);
+    uint32_t derive_freq_flag(uint32_t _frequency);
 };
 
 class SPIDeviceManager : public AP_HAL::SPIDeviceManager {
@@ -132,7 +138,7 @@ public:
         return static_cast<SPIDeviceManager*>(spi_mgr);
     }
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name);
+    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
 
 private:
     static SPIDesc device_table[];

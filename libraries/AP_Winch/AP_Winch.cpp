@@ -137,3 +137,5 @@ void AP_Winch::set_desired_rate(float rate)
     }
 
 PASS_TO_BACKEND(update)
+
+#undef PASS_TO_BACKEND

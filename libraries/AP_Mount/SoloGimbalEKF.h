@@ -75,15 +75,12 @@ public:
 #endif
 
     // Constructor
-    SoloGimbalEKF(const AP_AHRS_NavEKF &ahrs);
+    SoloGimbalEKF();
 
     // Run the EKF main loop once every time we receive sensor data
     void RunEKF(float delta_time, const Vector3f &delta_angles, const Vector3f &delta_velocity, const Vector3f &joint_angles);
 
     void reset();
-
-    // get some debug information
-    void getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector3f &gyroBias) const;
 
     // get gyro bias data
     void getGyroBias(Vector3f &gyroBias) const;
@@ -100,7 +97,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    const AP_AHRS_NavEKF &_ahrs;
 
     // the states are available in two forms, either as a Vector13 or
     // broken down as individual elements. Both are equivalent (same
@@ -124,7 +120,7 @@ private:
 
     float Cov[9][9];                // covariance matrix
     Matrix3f Tsn;                   // Sensor to NED rotation matrix
-    float TiltCorrection;           // Angle correction applied to tilt from last velocity fusion (rad)
+    float TiltCorrectionSquared;    // Angle correction applied to tilt from last velocity fusion (rad)
     bool newDataMag;                // true when new magnetometer data is waiting to be used
     uint32_t StartTime_ms;          // time the EKF was started (msec)
     bool FiltInit;                  // true when EKF is initialised

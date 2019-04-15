@@ -57,16 +57,15 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_QMC5883L::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-											  bool force_external,
-											  enum Rotation rotation)
+AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                               bool force_external,
+                                               enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
 
-    AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(compass, std::move(dev),force_external,rotation);
+    AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(std::move(dev),force_external,rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -75,12 +74,10 @@ AP_Compass_Backend *AP_Compass_QMC5883L::probe(Compass &compass,
     return sensor;
 }
 
-AP_Compass_QMC5883L::AP_Compass_QMC5883L(Compass &compass,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
-									   bool force_external,
-									   enum Rotation rotation)
-    : AP_Compass_Backend(compass)
-    , _dev(std::move(dev))
+AP_Compass_QMC5883L::AP_Compass_QMC5883L(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                         bool force_external,
+                                         enum Rotation rotation)
+    : _dev(std::move(dev))
     , _rotation(rotation)
 	, _force_external(force_external)
 {
@@ -198,52 +195,12 @@ void AP_Compass_QMC5883L::timer()
         field.rotate(ROTATION_YAW_90);
     }
 
-    /* rotate raw_field from sensor frame to body frame */
-    rotate_field(field, _instance);
-
-    /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, _instance);
-
-    /* correct raw_field for known errors */
-    correct_field(field, _instance);
-
-    if (!field_ok(field)) {
-        return;
-    }
-
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _accum += field;
-        _accum_count++;
-        if(_accum_count == 20){
-            _accum.x /= 2;
-            _accum.y /= 2;
-            _accum.z /= 2;
-            _accum_count = 10;
-        }
-        _sem->give();
-    }
+    accumulate_sample(field, _instance, 20);
 }
 
 void AP_Compass_QMC5883L::read()
 {
-    if (!_sem->take_nonblocking()) {
-        return;
-    }
-
-    if (_accum_count == 0) {
-        _sem->give();
-        return;
-    }
-
-    Vector3f field(_accum);
-    field /= _accum_count;
-
-    publish_filtered_field(field, _instance);
-
-    _accum.zero();
-    _accum_count = 0;
-
-    _sem->give();
+    drain_accumulated_samples(_instance);
 }
 
 void AP_Compass_QMC5883L::_dump_registers()

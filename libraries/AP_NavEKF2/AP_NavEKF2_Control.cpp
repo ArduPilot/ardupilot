@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -85,7 +83,7 @@ void NavEKF2_core::setWindMagStateLearningMode()
         }
     }
 
-    // determine if the vehicle is manoevring
+    // determine if the vehicle is manoeuvring
     if (accNavMagHoriz > 0.5f) {
         manoeuvring = true;
     } else {
@@ -172,7 +170,7 @@ void NavEKF2_core::setAidingMode()
         bool canUseExtNav = readyToUseExtNav();
         if(canUseGPS || canUseRangeBeacon || canUseExtNav) {
             PV_AidingMode = AID_ABSOLUTE;
-        } else if (optFlowDataPresent() && filterIsStable) {
+        } else if (optFlowDataPresent() && (frontend->_flowUse == FLOW_USE_NAV) && filterIsStable) {
             PV_AidingMode = AID_RELATIVE;
         }
         }
@@ -257,16 +255,13 @@ void NavEKF2_core::setAidingMode()
             rngBcnTimeout = true;
             gpsNotAvailable = true;
         }
-        }
         break;
-
-    default:
-        break;
+    }
     }
 
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (PV_AidingMode != PV_AidingModePrev) {
-        // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
+        // set various usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         switch (PV_AidingMode) {
         case AID_NONE:
             // We have ceased aiding
@@ -331,9 +326,6 @@ void NavEKF2_core::setAidingMode()
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
             }
-            break;
-
-        default:
             break;
         }
 
@@ -521,6 +513,6 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && !extNavUsedForPos; // GPS glitching is affecting navigation accuracy
+    filterStatus.flags.gps_quality_good = gpsGoodToAlign;
 }
 
-#endif // HAL_CPU_CLASS

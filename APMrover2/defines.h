@@ -13,46 +13,13 @@
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
-// CH 7 control
-enum ch7_option {
-    CH7_DO_NOTHING      = 0,
-    CH7_SAVE_WP         = 1,
-    CH7_LEARN_CRUISE    = 2,
-    CH7_ARM_DISARM      = 3,
-    CH7_MANUAL          = 4,
-    CH7_ACRO            = 5,
-    CH7_STEERING        = 6,
-    CH7_HOLD            = 7,
-    CH7_AUTO            = 8,
-    CH7_RTL             = 9,
-    CH7_SMART_RTL       = 10,
-    CH7_GUIDED          = 11,
-    CH7_LOITER          = 12
-};
-
 // HIL enumerations
 #define HIL_MODE_DISABLED 0
 #define HIL_MODE_SENSORS  1
 
-// Auto Pilot modes
-// ----------------
-enum mode {
-    MANUAL       = 0,
-    ACRO         = 1,
-    STEERING     = 3,
-    HOLD         = 4,
-    LOITER       = 5,
-    AUTO         = 10,
-    RTL          = 11,
-    SMART_RTL    = 12,
-    GUIDED       = 15,
-    INITIALISING = 16
-};
-
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
-#define FAILSAFE_EVENT_RC       (1<<2)
 
 //  Logging parameters
 #define LOG_THR_MSG             0x01
@@ -62,8 +29,6 @@ enum mode {
 #define LOG_ARM_DISARM_MSG      0x08
 #define LOG_STEERING_MSG        0x0D
 #define LOG_GUIDEDTARGET_MSG    0x0E
-#define LOG_WHEELENCODER_MSG    0x0F
-#define LOG_ERROR_MSG           0x13
 
 #define TYPE_AIRSTART_MSG       0x00
 #define TYPE_GROUNDSTART_MSG    0x01
@@ -101,14 +66,19 @@ enum mode {
 #define MAVLINK_SET_ATT_TYPE_MASK_THROTTLE_IGNORE      (1<<6)
 #define MAVLINK_SET_ATT_TYPE_MASK_ATTITUDE_IGNORE      (1<<7)
 
-// general error codes
-#define ERROR_CODE_ERROR_RESOLVED       0
-// Error message sub systems and error codes
-#define ERROR_SUBSYSTEM_FAILSAFE_FENCE  9
-#define ERROR_SUBSYSTEM_FLIGHT_MODE     10
-#define ERROR_SUBSYSTEM_CRASH_CHECK     12
-// subsystem specific error codes -- crash checker
-#define ERROR_CODE_CRASH_CHECK_CRASH 1
+// radio failsafe enum (FS_THR_ENABLE parameter)
+enum fs_thr_enable {
+    FS_THR_DISABLED = 0,
+    FS_THR_ENABLED,
+    FS_THR_ENABLED_CONTINUE_MISSION,
+};
+
+// gcs failsafe enum (FS_GCS_ENABLE parameter)
+enum fs_gcs_enable {
+    FS_GCS_DISABLED = 0,
+    FS_GCS_ENABLED,
+    FS_GCS_ENABLED_CONTINUE_MISSION,
+};
 
 enum fs_crash_action {
   FS_CRASH_DISABLE = 0,
@@ -116,7 +86,12 @@ enum fs_crash_action {
   FS_CRASH_HOLD_AND_DISARM = 2
 };
 
-#define DISTANCE_HOME_MAX 0.5f  // Distance max to home location before changing it when disarm
+enum fs_ekf_action {
+    FS_EKF_DISABLE = 0,
+    FS_EFK_HOLD = 1
+};
+
+#define DISTANCE_HOME_MINCHANGE 0.5f  // minimum distance to adjust home location
 
 enum mode_reason_t {
     MODE_REASON_INITIALISED = 0,
@@ -127,13 +102,7 @@ enum mode_reason_t {
     MODE_REASON_CRASH_FAILSAFE,
     MODE_REASON_MISSION_COMMAND,
     MODE_REASON_FENCE_BREACH,
-};
-
-// values used by the ap.ch7_opt and ap.ch8_opt flags
-enum aux_switch_pos {
-    AUX_SWITCH_LOW,
-    AUX_SWITCH_MIDDLE,
-    AUX_SWITCH_HIGH
+    MODE_REASON_EKF_FAILSAFE,
 };
 
 enum pilot_steer_type_t {
@@ -147,7 +116,8 @@ enum pilot_steer_type_t {
 enum frame_class {
     FRAME_UNDEFINED = 0,
     FRAME_ROVER = 1,
-    FRAME_BOAT = 2
+    FRAME_BOAT = 2,
+    FRAME_BALANCEBOT = 3,
 };
 
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked

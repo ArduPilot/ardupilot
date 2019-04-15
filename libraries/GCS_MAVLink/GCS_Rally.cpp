@@ -16,10 +16,11 @@
  */
 
 #include "GCS.h"
+#include <AP_Rally/AP_Rally.h>
 
 void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
 {
-    AP_Rally *r = get_rally();
+    AP_Rally *r = AP::rally();
     if (r == nullptr) {
         return;
     }
@@ -58,7 +59,7 @@ void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
 
 void GCS_MAVLINK::handle_rally_fetch_point(mavlink_message_t *msg)
 {
-    AP_Rally *r = get_rally();
+    AP_Rally *r = AP::rally();
     if (r == nullptr) {
         return;
     }
@@ -94,6 +95,9 @@ void GCS_MAVLINK::handle_common_rally_message(mavlink_message_t *msg)
         handle_rally_fetch_point(msg);
         break;
     default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Unhandled common rally message");
+#endif
         break;
     }
 }

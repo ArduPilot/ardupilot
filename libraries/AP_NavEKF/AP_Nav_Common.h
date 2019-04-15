@@ -33,6 +33,7 @@ union nav_filter_status {
         bool touchdown          : 1; // 12 - true if filter is compensating for baro errors during touchdown
         bool using_gps          : 1; // 13 - true if we are using GPS position
         bool gps_glitching      : 1; // 14 - true if GPS glitching is affecting navigation accuracy
+        bool gps_quality_good   : 1; // 15 - true if we can use GPS for navigation
     } flags;
     uint16_t value;
 };

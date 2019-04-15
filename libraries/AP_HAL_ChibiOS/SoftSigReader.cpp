@@ -30,31 +30,35 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     if (chan > ICU_CHANNEL_2) {
         return false;
     }
-    signal = (uint32_t*)hal.util->malloc_type(sizeof(uint32_t)*_bounce_buf_size, AP_HAL::Util::MEM_DMA_SAFE);
+    signal = (uint32_t*)hal.util->malloc_type(sizeof(uint32_t)*SOFTSIG_BOUNCE_BUF_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
     if (signal == nullptr) {
         return false;
     }
     _icu_drv = icu_drv;
     //Setup Burst transfer of period and width measurement
-    dma = STM32_DMA_STREAM(dma_stream);
+    osalDbgAssert(dma == nullptr, "double DMA allocation");
     chSysLock();
-    bool dma_allocated = dmaStreamAllocate(dma,
-                                            12,  //IRQ Priority
-                                            (stm32_dmaisr_t)_irq_handler,
-                                            (void *)this);
-    osalDbgAssert(!dma_allocated, "stream already allocated");
+    dma = dmaStreamAllocI(dma_stream,
+                          12,  //IRQ Priority
+                          (stm32_dmaisr_t)_irq_handler,
+                          (void *)this);
+    osalDbgAssert(dma, "stream allocation failed");
     chSysUnlock();
+#if STM32_DMA_SUPPORTS_DMAMUX
+    dmaSetRequestSource(dma, dma_channel);
+#endif
     //setup address for full word transfer from Timer
     dmaStreamSetPeripheral(dma, &icu_drv->tim->DMAR);
 
-    uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
+    dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
     dmamode |= STM32_DMA_CR_CHSEL(dma_channel);
     dmamode |= STM32_DMA_CR_PL(0);
+    dmamode |= STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_PSIZE_WORD |
+        STM32_DMA_CR_MSIZE_WORD | STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE;
     dmaStreamSetMemory0(dma, signal);
-    dmaStreamSetTransactionSize(dma, _bounce_buf_size);
-    dmaStreamSetMode(dma, dmamode | STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_PSIZE_WORD |
-                            STM32_DMA_CR_MSIZE_WORD | STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
-    
+    dmaStreamSetTransactionSize(dma, SOFTSIG_BOUNCE_BUF_SIZE);
+    dmaStreamSetMode(dma, dmamode);
+
     icucfg.frequency = INPUT_CAPTURE_FREQUENCY;
     icucfg.channel = chan;
     icucfg.width_cb = NULL;
@@ -90,50 +94,21 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
 void SoftSigReader::_irq_handler(void* self, uint32_t flags)
 {
     SoftSigReader* sig_reader = (SoftSigReader*)self;
-    sig_reader->sigbuf.push(sig_reader->signal, sig_reader->_bounce_buf_size);
+    // we need to restart the DMA as quickly as possible to prevent losing pulses, so we
+    // make a fixed length copy to a 2nd buffer. On the F100 this reduces the time with DMA
+    // disabled from 20us to under 1us
+    cacheBufferInvalidate(sig_reader->signal, SOFTSIG_BOUNCE_BUF_SIZE*4);
+    memcpy(sig_reader->signal2, sig_reader->signal, SOFTSIG_BOUNCE_BUF_SIZE*4);
     //restart the DMA transfers
+    dmaStreamDisable(sig_reader->dma);
+    dmaStreamSetPeripheral(sig_reader->dma, &sig_reader->_icu_drv->tim->DMAR);
     dmaStreamSetMemory0(sig_reader->dma, sig_reader->signal);
-    dmaStreamSetTransactionSize(sig_reader->dma, sig_reader->_bounce_buf_size);
+    dmaStreamSetTransactionSize(sig_reader->dma, SOFTSIG_BOUNCE_BUF_SIZE);
+    dmaStreamSetMode(sig_reader->dma, sig_reader->dmamode);
     dmaStreamEnable(sig_reader->dma);
+    sig_reader->sigbuf.push((const pulse_t *)sig_reader->signal2, SOFTSIG_BOUNCE_BUF_SIZE/2);
 }
 
-
-bool SoftSigReader::read(uint32_t &widths0, uint32_t &widths1)
-{
-    if (sigbuf.pop(widths0) && sigbuf.pop(widths1)) {
-        //the data is period and width, order depending on which
-        //channel is used and width type (0 or 1) depends on mode
-        //being set to HIGH or LOW. We need to swap the words when on
-        //channel 1
-        if (need_swap) {
-            uint32_t tmp = widths1;
-            widths1 = widths0;
-            widths0 = tmp;
-        }
-        widths1 -= widths0;
-    } else {
-        return false;
-    }
-    return true;
-}
-
-
-bool SoftSigReader::set_bounce_buf_size(uint16_t buf_size)
-{
-    if (buf_size > _bounce_buf_size) {
-        if (signal) {
-            hal.util->free_type(signal, sizeof(uint32_t)*_bounce_buf_size, AP_HAL::Util::MEM_DMA_SAFE);
-        }
-        signal = (uint32_t*)hal.util->malloc_type(sizeof(uint32_t)*buf_size, AP_HAL::Util::MEM_DMA_SAFE);
-        if (signal == nullptr) {
-            return false;
-        }
-        _bounce_buf_size = buf_size;
-    } else {
-        _bounce_buf_size = buf_size;
-    }
-    return true;
-}
 
 #endif // HAL_USE_ICU
 

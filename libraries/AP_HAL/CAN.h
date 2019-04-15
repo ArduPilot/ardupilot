@@ -32,7 +32,18 @@
 #define MAX_NUMBER_OF_CAN_INTERFACES    2
 #define MAX_NUMBER_OF_CAN_DRIVERS       2
 
-class AP_UAVCAN;
+/**
+ * Interface that CAN protocols need to implement
+ */
+class AP_HAL::CANProtocol {
+public:
+    /* method called when initializing the CAN interfaces
+     *
+     * if initialization doesn't have errors, protocol class
+     * should create a thread to do send and receive operations
+     */
+    virtual void init(uint8_t driver_index, bool enable_filters) = 0;
+};
 
 /**
  * Single non-blocking CAN interface.
@@ -44,7 +55,7 @@ public:
      bitrate     Selects the speed that the port will be configured to.  If zero, the port speed is left unchanged.
 
      return      false - CAN port open failed
-     true  - CAN port open succeeded
+                 true  - CAN port open succeeded
      */
     virtual bool begin(uint32_t bitrate) = 0;
 
@@ -65,7 +76,7 @@ public:
      Test if CAN port is opened and initialized
 
      return      false - CAN port not initialized
-     true - CAN port is initialized
+                 true - CAN port is initialized
      */
     virtual bool is_initialized() = 0;
 
@@ -73,17 +84,17 @@ public:
      Return if CAN port has some untransmitted pending messages
 
      return      -1 - CAN port is not opened or initialized
-     0 - no messages are pending
-     positive - number of pending messages
+                 0 - no messages are pending
+                 positive - number of pending messages
      */
     virtual int32_t tx_pending() = 0;
 
     /*
-     Return if CAN port has received but yet read messages
+     Return if CAN port has received but not yet read messages
 
      return      -1 - CAN port is not opened or initialized
-     0 - no messages are pending for read
-     positive - number of pending messages for read
+                 0 - no messages are pending for read
+                 positive - number of pending messages for read
      */
     virtual int32_t available() = 0;
 
@@ -103,7 +114,7 @@ public:
      can_number - the index of can interface to be opened
 
      return      false - CAN port open failed
-     true - CAN port open succeeded
+                 true - CAN port open succeeded
      */
     virtual bool begin(uint32_t bitrate, uint8_t can_number) = 0;
 
@@ -115,8 +126,6 @@ public:
     virtual bool is_initialized() = 0;
     virtual void initialized(bool val) = 0;
 
-    virtual AP_UAVCAN *get_UAVCAN(void) = 0;
-    virtual void set_UAVCAN(AP_UAVCAN *uavcan) = 0;
     uavcan::ICanDriver* get_driver() { return _driver; }
 private:
     uavcan::ICanDriver* _driver;

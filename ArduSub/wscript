@@ -8,8 +8,6 @@ def build(bld):
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AC_AttitudeControl',
-            'AC_Fence',
-            'AC_Avoidance',
             'AC_PID',
             'AC_WPNav',
             'AP_Camera',
@@ -18,10 +16,10 @@ def build(bld):
             'AP_LeakDetector',
             'AP_Motors',
             'AP_RCMapper',
-            'AP_Gripper',
             'AP_Beacon',
             'AP_TemperatureSensor',
-            'AP_Arming'
+            'AP_Arming',
+            'AP_KDECAN',
         ],
     )
 

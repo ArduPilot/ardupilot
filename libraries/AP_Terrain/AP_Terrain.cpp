@@ -18,7 +18,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
@@ -56,25 +56,12 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
 };
 
 // constructor
-AP_Terrain::AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rally &_rally) :
-    ahrs(_ahrs),
+AP_Terrain::AP_Terrain(const AP_Mission &_mission) :
     mission(_mission),
-    rally(_rally),
     disk_io_state(DiskIoIdle),
-    fd(-1),
-    timer_setup(false),
-    file_lat_degrees(0),
-    file_lon_degrees(0),
-    io_failure(false),
-    directory_created(false),
-    home_height(0),
-    have_current_loc_height(false),
-    last_current_loc_height(0)
+    fd(-1)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    memset(&home_loc, 0, sizeof(home_loc));
-    memset(&disk_block, 0, sizeof(disk_block));
-    memset(last_request_time_ms, 0, sizeof(last_request_time_ms));
 }
 
 /*
@@ -88,9 +75,11 @@ AP_Terrain::AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rall
  */
 bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 {
-    if (!enable || !allocate()) {
+    if (!allocate()) {
         return false;
     }
+
+    const AP_AHRS &ahrs = AP::ahrs();
 
     // quick access for home altitude
     if (loc.lat == home_loc.lat &&
@@ -172,6 +161,8 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 */
 bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool extrapolate)
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
     float height_home, height_loc;
     if (!height_amsl(ahrs.get_home(), height_home, false)) {
         // we don't know the height of home
@@ -219,7 +210,7 @@ bool AP_Terrain::height_above_terrain(float &terrain_altitude, bool extrapolate)
     }
 
     float relative_home_altitude;
-    ahrs.get_relative_position_D_home(relative_home_altitude);
+    AP::ahrs().get_relative_position_D_home(relative_home_altitude);
     relative_home_altitude = -relative_home_altitude;
 
     terrain_altitude = relative_home_altitude - terrain_difference;
@@ -260,12 +251,12 @@ bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude,
 */
 float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 {
-    if (!enable || !allocate() || grid_spacing <= 0) {
+    if (!allocate() || grid_spacing <= 0) {
         return 0;
     }
 
     Location loc;
-    if (!ahrs.get_position(loc)) {
+    if (!AP::ahrs().get_position(loc)) {
         // we don't know where we are
         return 0;
     }
@@ -280,7 +271,7 @@ float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 
     // check for terrain at grid spacing intervals
     while (distance > 0) {
-        location_update(loc, bearing, grid_spacing);
+        loc.offset_bearing(bearing, grid_spacing);
         climb += climb_ratio * grid_spacing;
         distance -= grid_spacing;
         float height;
@@ -306,6 +297,8 @@ void AP_Terrain::update(void)
     // just schedule any needed disk IO
     schedule_disk_io();
 
+    const AP_AHRS &ahrs = AP::ahrs();
+
     // try to ensure the home location is populated
     float height;
     height_amsl(ahrs.get_home(), height, false);
@@ -326,8 +319,7 @@ void AP_Terrain::update(void)
     update_rally_data();
 
     // update capabilities and status
-    if (enable) {
-        hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
+    if (allocate()) {
         if (!pos_valid) {
             // we don't know where we are
             system_status = TerrainStatusUnhealthy;
@@ -338,22 +330,18 @@ void AP_Terrain::update(void)
             system_status = TerrainStatusOK;
         }
     } else {
-        hal.util->clear_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
         system_status = TerrainStatusDisabled;
     }
 
 }
 
-/*
-  log terrain data to dataflash log
- */
-void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
+void AP_Terrain::log_terrain_data()
 {
-    if (!enable) {
+    if (!allocate()) {
         return;
     }
     Location loc;
-    if (!ahrs.get_position(loc)) {
+    if (!AP::ahrs().get_position(loc)) {
         // we don't know where we are
         return;
     }
@@ -377,7 +365,7 @@ void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
         pending        : pending,
         loaded         : loaded
     };
-    dataflash.WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*

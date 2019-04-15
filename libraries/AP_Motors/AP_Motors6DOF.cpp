@@ -229,8 +229,8 @@ void AP_Motors6DOF::output_to_motors()
     int8_t i;
     int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final pwm values sent to the motor
 
-    switch (_spool_mode) {
-    case SHUT_DOWN:
+    switch (_spool_state) {
+    case SpoolState::SHUT_DOWN:
         // sends minimum values out to the motors
         // set motor output based on thrust requests
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -239,7 +239,7 @@ void AP_Motors6DOF::output_to_motors()
             }
         }
         break;
-    case SPIN_WHEN_ARMED:
+    case SpoolState::GROUND_IDLE:
         // sends output to motors when armed but not flying
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
@@ -247,9 +247,9 @@ void AP_Motors6DOF::output_to_motors()
             }
         }
         break;
-    case SPOOL_UP:
-    case THROTTLE_UNLIMITED:
-    case SPOOL_DOWN:
+    case SpoolState::SPOOLING_UP:
+    case SpoolState::THROTTLE_UNLIMITED:
+    case SpoolState::SPOOLING_DOWN:
         // set motor output based on thrust requests
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {

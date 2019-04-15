@@ -151,22 +151,27 @@ void panic(const char *errormsg, ...)
 
 uint32_t micros()
 {
-    return micros64() & 0xFFFFFFFF;
+    return hrt_micros32();
 }
 
 uint32_t millis()
 {
-    return millis64() & 0xFFFFFFFF;
+    return hrt_millis32();
+}
+
+uint16_t millis16()
+{
+    return hrt_millis32() & 0xFFFF;
 }
 
 uint64_t micros64()
 {
-    return hrt_micros();
+    return hrt_micros64();
 }
 
 uint64_t millis64()
 {
-    return micros64() / 1000;
+    return hrt_micros64() / 1000U;
 }
 
 } // namespace AP_HAL

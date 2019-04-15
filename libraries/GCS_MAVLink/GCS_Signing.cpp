@@ -65,6 +65,13 @@ bool GCS_MAVLINK::signing_key_load(struct SigningKey &key)
  */
 void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t *msg)
 {
+    // setting up signing key when armed generally not useful /
+    // possibly not a good idea
+    if (hal.util->get_soft_armed()) {
+        send_text(MAV_SEVERITY_WARNING, "ERROR: Won't setup signing when armed");
+        return;
+    }
+
     // decode
     mavlink_setup_signing_t packet;
     mavlink_msg_setup_signing_decode(msg, &packet);
@@ -75,7 +82,7 @@ void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t *msg)
     memcpy(key.secret_key, packet.secret_key, 32);
 
     if (!signing_key_save(key)) {
-        hal.console->printf("Failed to save signing key");
+        send_text(MAV_SEVERITY_WARNING, "ERROR: Failed to save signing key");
         return;
     }
 

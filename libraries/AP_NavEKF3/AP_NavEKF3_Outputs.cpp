@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -58,7 +56,7 @@ void NavEKF3_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     gndOffset = terrainState;
     flowInnovX = innovOptFlow[0];
     flowInnovY = innovOptFlow[1];
-    auxInnov = auxFlowObsInnov;
+    auxInnov = norm(auxFlowObsInnov.x,auxFlowObsInnov.y);
     HAGL = terrainState - stateStruct.position.z;
     rngInnov = innovRng;
     range = rangeDataDelayed.rng;
@@ -220,7 +218,7 @@ void NavEKF3_core::getVelNED(Vector3f &vel) const
     vel = outputDataNew.velocity + velOffsetNED;
 }
 
-// Return the rate of change of vertical position in the down diection (dPosD/dt) of the body frame origin in m/s
+// Return the rate of change of vertical position in the down direction (dPosD/dt) of the body frame origin in m/s
 float NavEKF3_core::getPosDownDerivative(void) const
 {
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
@@ -252,7 +250,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
             if ((AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const struct Location &gpsloc = AP::gps().location();
-                Vector2f tempPosNE = location_diff(EKF_origin, gpsloc);
+                const Vector2f tempPosNE = EKF_origin.get_distance_NE(gpsloc);
                 posNE.x = tempPosNE.x;
                 posNE.y = tempPosNE.y;
                 return false;
@@ -313,21 +311,24 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 bool NavEKF3_core::getLLH(struct Location &loc) const
 {
     const AP_GPS &gps = AP::gps();
+    Location origin;
+    float posD;
 
-    if(validOrigin) {
+
+    if(getPosD(posD) && getOriginLLH(origin)) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-        loc.alt =  100 * (int32_t)(ekfGpsRefHgt - (double)outputDataNew.position.z);
-        loc.flags.relative_alt = 0;
-        loc.flags.terrain_alt = 0;
+        loc.alt = origin.alt - posD*100;
+        loc.relative_alt = 0;
+        loc.terrain_alt = 0;
 
         // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
         if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
             loc.lat = EKF_origin.lat;
             loc.lng = EKF_origin.lng;
-            location_offset(loc, outputDataNew.position.x, outputDataNew.position.y);
+            loc.offset(outputDataNew.position.x, outputDataNew.position.y);
             return true;
         } else {
-            // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
+            // we could be in constant position mode because the vehicle has taken off without GPS, or has lost GPS
             // in this mode we cannot use the EKF states to estimate position so will return the best available data
             if ((gps.status() >= AP_GPS::GPS_OK_FIX_2D)) {
                 // we have a GPS position fix to return
@@ -337,7 +338,7 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
                 return true;
             } else {
                 // if no GPS fix, provide last known position before entering the mode
-                location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
+                loc.offset(lastKnownPositionNE.x, lastKnownPositionNE.y);
                 return false;
             }
         }
@@ -347,8 +348,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
         if ((gps.status() >= AP_GPS::GPS_OK_FIX_3D)) {
             const struct Location &gpsloc = gps.location();
             loc = gpsloc;
-            loc.flags.relative_alt = 0;
-            loc.flags.terrain_alt = 0;
+            loc.relative_alt = 0;
+            loc.terrain_alt = 0;
         }
         return false;
     }
@@ -626,4 +627,3 @@ void NavEKF3_core::getOutputTrackingError(Vector3f &error) const
     error = outputTrackError;
 }
 
-#endif // HAL_CPU_CLASS

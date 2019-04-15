@@ -8,28 +8,32 @@ void Tracker::update_ahrs()
     ahrs.update();
 }
 
+/*
+  initialise compass's location used for declination
+ */
+void Tracker::init_compass_location(void)
+{
+    // update initial location used for declination
+    if (!compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            compass_init_location = true;
+        }
+    }
+}
 
 /*
   read and update compass
  */
 void Tracker::update_compass(void)
 {
-    if (g.compass_enabled && compass.read()) {
+    if (AP::compass().enabled() && compass.read()) {
         ahrs.set_compass(&compass);
         if (should_log(MASK_LOG_COMPASS)) {
-            DataFlash.Log_Write_Compass(compass);
+            logger.Write_Compass();
         }
     }
-}
-
-/*
-  if the compass is enabled then try to accumulate a reading
- */
-void Tracker::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }    
 }
 
 /*
@@ -38,6 +42,15 @@ void Tracker::compass_accumulate(void)
 void Tracker::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
+    }
+}
+
+// Save compass offsets
+void Tracker::compass_save() {
+    if (AP::compass().enabled() &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !hal.util->get_soft_armed()) {
+        compass.save_offsets();
     }
 }
 
@@ -81,17 +94,11 @@ void Tracker::update_GPS(void)
                 // Now have an initial GPS position
                 // use it as the HOME position in future startups
                 current_loc = gps.location();
-                set_home(current_loc);
+                if (!set_home(current_loc)) {
+                    // silently ignored
+                }
 
-                // set system clock for log timestamps
-                uint64_t gps_timestamp = gps.time_epoch_usec();
-                
-                hal.util->set_system_clock(gps_timestamp);
-                
-                // update signing timestamp
-                GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
-
-                if (g.compass_enabled) {
+                if (AP::compass().enabled()) {
                     // Set compass declination automatically
                     compass.set_initial_location(gps.location().lat, gps.location().lng);
                 }
@@ -107,4 +114,3 @@ void Tracker::handle_battery_failsafe(const char* type_str, const int8_t action)
     // useful failsafes in the future would include actually recalling the vehicle
     // that is tracked before the tracker loses power to continue tracking it
 }
-

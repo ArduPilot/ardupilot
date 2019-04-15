@@ -33,9 +33,10 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State &_state,
+                                                 AP_RangeFinder_Params &_params,
                                                  AP_SerialManager &serial_manager,
                                                  uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state)
+    AP_RangeFinder_Backend(_state, _params)
 {
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
@@ -211,10 +212,10 @@ bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
 void AP_RangeFinder_uLanding::update(void)
 {
     if (get_reading(state.distance_cm)) {
+        state.last_reading_ms = AP_HAL::millis();
         // update range_valid state based on distance measured
-        _last_reading_ms = AP_HAL::millis();
         update_status();
-    } else if (AP_HAL::millis() - _last_reading_ms > 200) {
+    } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 }

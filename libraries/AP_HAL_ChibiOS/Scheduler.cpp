@@ -27,27 +27,35 @@
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/CAN.h>
 
+#if CH_CFG_USE_DYNAMIC == TRUE
+
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include "hwdef/common/stm32_util.h"
 #include "shared_dma.h"
 #include "sdcard.h"
 
-#if CH_CFG_USE_DYNAMIC == TRUE
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
 
 using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
-THD_WORKING_AREA(_timer_thread_wa, 2048);
-THD_WORKING_AREA(_rcin_thread_wa, 512);
-#ifdef HAL_PWM_ALARM
-THD_WORKING_AREA(_toneAlarm_thread_wa, 512);
+#ifndef HAL_NO_TIMER_THREAD
+THD_WORKING_AREA(_timer_thread_wa, TIMER_THD_WA_SIZE);
 #endif
-THD_WORKING_AREA(_io_thread_wa, 2048);
-THD_WORKING_AREA(_storage_thread_wa, 2048);
-#if HAL_WITH_UAVCAN
-THD_WORKING_AREA(_uavcan_thread_wa, 4096);
+#ifndef HAL_NO_RCIN_THREAD
+THD_WORKING_AREA(_rcin_thread_wa, RCIN_THD_WA_SIZE);
 #endif
-
+#ifndef HAL_USE_EMPTY_IO
+THD_WORKING_AREA(_io_thread_wa, IO_THD_WA_SIZE);
+#endif
+#ifndef HAL_USE_EMPTY_STORAGE
+THD_WORKING_AREA(_storage_thread_wa, STORAGE_THD_WA_SIZE);
+#endif
 Scheduler::Scheduler()
 {
 }
@@ -56,49 +64,42 @@ void Scheduler::init()
 {
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
+
+#ifndef HAL_NO_TIMER_THREAD
     // setup the timer thread - this will call tasks at 1kHz
     _timer_thread_ctx = chThdCreateStatic(_timer_thread_wa,
                      sizeof(_timer_thread_wa),
                      APM_TIMER_PRIORITY,        /* Initial priority.    */
                      _timer_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
-
-    // setup the uavcan thread - this will call tasks at 1kHz
-#if HAL_WITH_UAVCAN
-    _uavcan_thread_ctx = chThdCreateStatic(_uavcan_thread_wa,
-                     sizeof(_uavcan_thread_wa),
-                     APM_UAVCAN_PRIORITY,        /* Initial priority.    */
-                     _uavcan_thread,            /* Thread function.     */
-                     this);                     /* Thread parameter.    */
 #endif
+
+#ifndef HAL_NO_RCIN_THREAD
     // setup the RCIN thread - this will call tasks at 1kHz
     _rcin_thread_ctx = chThdCreateStatic(_rcin_thread_wa,
                      sizeof(_rcin_thread_wa),
                      APM_RCIN_PRIORITY,        /* Initial priority.    */
                      _rcin_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
-
-    // the toneAlarm thread runs at a medium priority
-#ifdef HAL_PWM_ALARM
-    _toneAlarm_thread_ctx = chThdCreateStatic(_toneAlarm_thread_wa,
-                     sizeof(_toneAlarm_thread_wa),
-                     APM_TONEALARM_PRIORITY,        /* Initial priority.    */
-                     _toneAlarm_thread,             /* Thread function.     */
-                     this);                    /* Thread parameter.    */
 #endif
+#ifndef HAL_USE_EMPTY_IO
     // the IO thread runs at lower priority
     _io_thread_ctx = chThdCreateStatic(_io_thread_wa,
                      sizeof(_io_thread_wa),
                      APM_IO_PRIORITY,        /* Initial priority.      */
                      _io_thread,             /* Thread function.       */
                      this);                  /* Thread parameter.      */
+#endif
 
+#ifndef HAL_USE_EMPTY_STORAGE
     // the storage thread runs at just above IO priority
     _storage_thread_ctx = chThdCreateStatic(_storage_thread_wa,
                      sizeof(_storage_thread_wa),
                      APM_STORAGE_PRIORITY,        /* Initial priority.      */
                      _storage_thread,             /* Thread function.       */
                      this);                  /* Thread parameter.      */
+#endif
+
 }
 
 
@@ -108,12 +109,7 @@ void Scheduler::delay_microseconds(uint16_t usec)
         return;
     }
     uint32_t ticks;
-    if (usec >= 4096) {
-        // we need to use 64 bit calculations for tick conversions
-        ticks = US2ST64(usec);
-    } else {
-        ticks = US2ST(usec);
-    }
+    ticks = chTimeUS2I(usec);
     if (ticks == 0) {
         // calling with ticks == 0 causes a hard fault on ChibiOS
         ticks = 1;
@@ -174,16 +170,14 @@ bool Scheduler::check_called_boost(void)
 
 void Scheduler::delay(uint16_t ms)
 {
-    if (!in_main_thread()) {
-        //chprintf("ERROR: delay() from timer process\n");
-        return;
-    }
     uint64_t start = AP_HAL::micros64();
 
     while ((AP_HAL::micros64() - start)/1000 < ms) {
         delay_microseconds(1000);
         if (_min_delay_cb_ms <= ms) {
-            call_delay_cb();
+            if (in_main_thread()) {
+                call_delay_cb();
+            }
         }
     }
 }
@@ -231,15 +225,31 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
-extern void Reset_Handler();
 void Scheduler::reboot(bool hold_in_bootloader)
 {
     // disarm motors to ensure they are off during a bootloader upload
     hal.rcout->force_safety_on();
-    hal.rcout->force_safety_no_wait();
+
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.shutdown();
+    }
+#endif
+
+#ifndef NO_LOGGING
+    //stop logging
+    if (AP_Logger::get_singleton()) {
+        AP::logger().StopLogging();
+    }
 
     // stop sdcard driver, if active
     sdcard_stop();
+#endif
+
+#if defined(HAL_USE_RTC) && HAL_USE_RTC
+    // setup RTC for fast reboot
+    set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
+#endif
 
     // disable all interrupt sources
     port_disable();
@@ -271,7 +281,7 @@ void Scheduler::_run_timers()
         _failsafe();
     }
 
-#if HAL_USE_ADC == TRUE
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
     // process analog input
     ((AnalogIn *)hal.analogin)->_timer_tick();
 #endif
@@ -297,24 +307,6 @@ void Scheduler::_timer_thread(void *arg)
         hal.rcout->timer_tick();
     }
 }
-#if HAL_WITH_UAVCAN
-void Scheduler::_uavcan_thread(void *arg)
-{
-    Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_uavcan");
-    while (!sched->_hal_initialized) {
-        sched->delay_microseconds(20000);
-    }
-    while (true) {
-        sched->delay_microseconds(100);
-        for (int i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
-            if(hal.can_mgr[i] != nullptr) {
-                CANManager::from(hal.can_mgr[i])->_timer_tick();
-            }
-        }
-    }
-}
-#endif
 
 void Scheduler::_rcin_thread(void *arg)
 {
@@ -328,23 +320,7 @@ void Scheduler::_rcin_thread(void *arg)
         ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
-#ifdef HAL_PWM_ALARM
 
-void Scheduler::_toneAlarm_thread(void *arg)
-{
-    Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("toneAlarm");
-    while (!sched->_hal_initialized) {
-        sched->delay_microseconds(20000);
-    }
-    while (true) {
-        sched->delay_microseconds(20000);
-
-        // process tone command
-        Util::from(hal.util)->_toneAlarm_timer_tick();
-    }
-}
-#endif
 void Scheduler::_run_io(void)
 {
     if (_in_io_proc) {
@@ -373,11 +349,22 @@ void Scheduler::_io_thread(void* arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
+    uint32_t last_sd_start_ms = AP_HAL::millis();
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
+
+        if (!hal.util->get_soft_armed()) {
+            // if sdcard hasn't mounted then retry it every 3s in the IO
+            // thread when disarmed
+            uint32_t now = AP_HAL::millis();
+            if (now - last_sd_start_ms > 3000) {
+                last_sd_start_ms = now;
+                sdcard_retry();
+            }
+        }
     }
 }
 
@@ -426,6 +413,63 @@ void *Scheduler::disable_interrupts_save(void)
 void Scheduler::restore_interrupts(void *state)
 {
     chSysRestoreStatusX((syssts_t)(uintptr_t)state);
+}
+
+/*
+  trampoline for thread create
+*/
+void Scheduler::thread_create_trampoline(void *ctx)
+{
+    AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
+    (*t)();
+    free(t);
+}
+
+/*
+  create a new thread
+*/
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+{
+    // take a copy of the MemberProc, it is freed after thread exits
+    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    if (!tproc) {
+        return false;
+    }
+    *tproc = proc;
+
+    uint8_t thread_priority = APM_IO_PRIORITY;
+    static const struct {
+        priority_base base;
+        uint8_t p;
+    } priority_map[] = {
+        { PRIORITY_BOOST, APM_MAIN_PRIORITY_BOOST},
+        { PRIORITY_MAIN, APM_MAIN_PRIORITY},
+        { PRIORITY_SPI, APM_SPI_PRIORITY},
+        { PRIORITY_I2C, APM_I2C_PRIORITY},
+        { PRIORITY_CAN, APM_CAN_PRIORITY},
+        { PRIORITY_TIMER, APM_TIMER_PRIORITY},
+        { PRIORITY_RCIN, APM_RCIN_PRIORITY},
+        { PRIORITY_IO, APM_IO_PRIORITY},
+        { PRIORITY_UART, APM_UART_PRIORITY},
+        { PRIORITY_STORAGE, APM_STORAGE_PRIORITY},
+        { PRIORITY_SCRIPTING, APM_SCRIPTING_PRIORITY},
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
+        if (priority_map[i].base == base) {
+            thread_priority = constrain_int16(priority_map[i].p + priority, LOWPRIO, HIGHPRIO);
+            break;
+        }
+    }
+    thread_t *thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(stack_size),
+                                               name,
+                                               thread_priority,
+                                               thread_create_trampoline,
+                                               tproc);
+    if (thread_ctx == nullptr) {
+        free(tproc);
+        return false;
+    }
+    return true;
 }
 
 #endif // CH_CFG_USE_DYNAMIC

@@ -22,23 +22,24 @@
 #include "AP_ServoRelayEvents.h"
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
 bool AP_ServoRelayEvents::do_set_servo(uint8_t _channel, uint16_t pwm)
 {
-    if (!(mask & 1U<<(_channel-1))) {
-        // not allowed
+    SRV_Channel *c = SRV_Channels::srv_channel(_channel-1);
+    if (c == nullptr) {
+        return false;
+    }
+    if (c->get_function() != SRV_Channel::k_none) {
+        gcs().send_text(MAV_SEVERITY_INFO, "ServoRelayEvent: Channel %d is already in use", _channel);
         return false;
     }
     if (type == EVENT_TYPE_SERVO && 
         channel == _channel) {
         // cancel previous repeat
         repeat = 0;
-    }
-    SRV_Channel *c = SRV_Channels::srv_channel(_channel-1);
-    if (c == nullptr) {
-        return false;
     }
     c->set_output_pwm(pwm);
     return true;
@@ -67,8 +68,12 @@ bool AP_ServoRelayEvents::do_set_relay(uint8_t relay_num, uint8_t state)
 bool AP_ServoRelayEvents::do_repeat_servo(uint8_t _channel, uint16_t _servo_value, 
                                           int16_t _repeat, uint16_t _delay_ms)
 {
-    if (!(mask & 1U<<(_channel-1))) {
-        // not allowed
+    SRV_Channel *c = SRV_Channels::srv_channel(_channel-1);
+    if (c == nullptr) {
+        return false;
+    }
+    if (c->get_function() != SRV_Channel::k_none) {
+        gcs().send_text(MAV_SEVERITY_INFO, "ServoRelayEvent: Channel %d is already in use", _channel);
         return false;
     }
     channel = _channel;

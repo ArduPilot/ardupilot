@@ -1,3 +1,9 @@
+
+// given we are in the Math library, you're epected to know what
+// you're doing when directly comparing floats:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+
 #include <AP_gtest.h>
 
 #include <AP_Math/AP_Math.h>
@@ -128,14 +134,17 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(250, constrain_float(i, 250, 500));
             EXPECT_EQ(250, constrain_int16(i, 250, 500));
             EXPECT_EQ(250, constrain_int32(i, 250, 500));
+            EXPECT_EQ(250, constrain_int64(i, 250, 500));
         } else if (i > 500) {
             EXPECT_EQ(500, constrain_float(i, 250, 500));
             EXPECT_EQ(500, constrain_int16(i, 250, 500));
             EXPECT_EQ(500, constrain_int32(i, 250, 500));
+            EXPECT_EQ(500, constrain_int64(i, 250, 500));
         } else {
             EXPECT_EQ(i, constrain_float(i, 250, 500));
             EXPECT_EQ(i, constrain_int16(i, 250, 500));
             EXPECT_EQ(i, constrain_int32(i, 250, 500));
+            EXPECT_EQ(i, constrain_int64(i, 250, 500));
         }
     }
 
@@ -145,14 +154,17 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(-250, constrain_float(c, -250, -50));
             EXPECT_EQ(-250, constrain_int16(c, -250, -50));
             EXPECT_EQ(-250, constrain_int32(c, -250, -50));
+            EXPECT_EQ(-250, constrain_int64(c, -250, -50));
         } else if(c > -50) {
             EXPECT_EQ(-50, constrain_float(c, -250, -50));
             EXPECT_EQ(-50, constrain_int16(c, -250, -50));
             EXPECT_EQ(-50, constrain_int32(c, -250, -50));
+            EXPECT_EQ(-50, constrain_int64(c, -250, -50));
         } else {
             EXPECT_EQ(c, constrain_float(c, -250, -50));
             EXPECT_EQ(c, constrain_int16(c, -250, -50));
             EXPECT_EQ(c, constrain_int32(c, -250, -50));
+            EXPECT_EQ(c, constrain_int64(c, -250, -50));
         }
     }
 
@@ -162,14 +174,17 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(-250, constrain_float(c, -250, 50));
             EXPECT_EQ(-250, constrain_int16(c, -250, 50));
             EXPECT_EQ(-250, constrain_int32(c, -250, 50));
+            EXPECT_EQ(-250, constrain_int64(c, -250, 50));
         } else if(c > 50) {
             EXPECT_EQ(50, constrain_float(c, -250, 50));
             EXPECT_EQ(50, constrain_int16(c, -250, 50));
             EXPECT_EQ(50, constrain_int32(c, -250, 50));
+            EXPECT_EQ(50, constrain_int64(c, -250, 50));
         } else {
             EXPECT_EQ(c, constrain_float(c, -250, 50));
             EXPECT_EQ(c, constrain_int16(c, -250, 50));
             EXPECT_EQ(c, constrain_int32(c, -250, 50));
+            EXPECT_EQ(c, constrain_int64(c, -250, 50));
         }
     }
 
@@ -246,6 +261,7 @@ TEST(MathWrapTest, Angle360)
     EXPECT_EQ(18000.f, wrap_360_cd(18000.f));
     EXPECT_EQ(27000.f, wrap_360_cd(27000.f));
     EXPECT_EQ(0.f,     wrap_360_cd(36000.f));
+    EXPECT_EQ(5.f,     wrap_360_cd(36005.f));
     EXPECT_EQ(0.f,     wrap_360_cd(72000.f));
     EXPECT_EQ(0.f,     wrap_360_cd(360000.f));
     EXPECT_EQ(0.f,     wrap_360_cd(720000.f));
@@ -256,6 +272,7 @@ TEST(MathWrapTest, Angle360)
     EXPECT_EQ(18000.f, wrap_360_cd(-18000.f));
     EXPECT_EQ(9000.f,  wrap_360_cd(-27000.f));
     EXPECT_EQ(0.f,     wrap_360_cd(-36000.f));
+    EXPECT_EQ(35995.0f,wrap_360_cd(-36005.f));
     EXPECT_EQ(0.f,     wrap_360_cd(-72000.f));
 }
 
@@ -281,3 +298,5 @@ TEST(MathWrapTest, Angle2PI)
 }
 
 AP_GTEST_MAIN()
+
+#pragma GCC diagnostic pop

@@ -26,7 +26,7 @@ class BuildExamples():
 if __name__ == '__main__':
 
     parser = optparse.OptionParser("build_examples.py")
-    parser.add_option("--target", type='string', default=['navio','px4-v2'], help='list of targets for which to build examples', action='append')
+    parser.add_option("--target", type='string', default=['navio','Pixhawk1'], help='list of targets for which to build examples', action='append')
     parser.add_option("--clean", action='store_true', default=False, help='clean build')
     opts, args = parser.parse_args()
 

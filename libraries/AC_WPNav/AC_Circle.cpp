@@ -159,7 +159,7 @@ void AC_Circle::update()
     }
 
     // update position controller
-    _pos_control.update_xy_controller(1.0f);
+    _pos_control.update_xy_controller();
 }
 
 // get_closest_point_on_circle - returns closest point on the circle
@@ -176,12 +176,13 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     }
 
     // get current position
-    const Vector3f &curr_pos = _inav.get_position();
+    Vector3f stopping_point;
+    _pos_control.get_stopping_point_xy(stopping_point);
 
-    // calc vector from current location to circle center
+    // calc vector from stopping point to circle center
     Vector2f vec;   // vector from circle center to current location
-    vec.x = (curr_pos.x - _center.x);
-    vec.y = (curr_pos.y - _center.y);
+    vec.x = (stopping_point.x - _center.x);
+    vec.y = (stopping_point.y - _center.y);
     float dist = norm(vec.x, vec.y);
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
@@ -209,14 +210,14 @@ void AC_Circle::calc_velocities(bool init_velocity)
         _angular_accel = MAX(fabsf(_angular_vel_max),ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
     }else{
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
-        float velocity_max = MIN(_pos_control.get_speed_xy(), safe_sqrt(0.5f*_pos_control.get_accel_xy()*_radius));
+        float velocity_max = MIN(_pos_control.get_max_speed_xy(), safe_sqrt(0.5f*_pos_control.get_max_accel_xy()*_radius));
 
         // angular_velocity in radians per second
         _angular_vel_max = velocity_max/_radius;
         _angular_vel_max = constrain_float(ToRad(_rate),-_angular_vel_max,_angular_vel_max);
 
         // angular_velocity in radians per second
-        _angular_accel = MAX(_pos_control.get_accel_xy()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
+        _angular_accel = MAX(_pos_control.get_max_accel_xy()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
     }
 
     // initialise angular velocity

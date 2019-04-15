@@ -20,28 +20,77 @@
 #include "hrt.h"
 #include <stdint.h>
 
-static uint64_t timer_base = 0;
+static uint64_t timer_base_us64;
+#if CH_CFG_ST_RESOLUTION == 16
+static uint32_t timer_base_us32;
+#endif
+static uint32_t timer_base_ms;
+static volatile systime_t last_systime;
 
-uint64_t hrt_micros()
+#if CH_CFG_ST_RESOLUTION == 16
+static uint32_t get_systime_us32(void)
 {
-	static volatile uint64_t last_micros;
+    systime_t now = chVTGetSystemTimeX();
+#if CH_CFG_ST_FREQUENCY != 1000000
+    now *= (1000000UL / CH_CFG_ST_FREQUENCY);
+#endif
+    if (now < last_systime) {
+        uint32_t last_u32 = timer_base_us32;
+        timer_base_us32 += (uint32_t)TIME_MAX_SYSTIME;
+        if (timer_base_us32 < last_u32) {
+            timer_base_us64 += ((uint32_t)-1);
+            timer_base_ms += ((uint32_t)-1)/1000;
+        }
+    }
+    last_systime = now;
+    return timer_base_us32 + (uint32_t)now;
+}
 
-    /*
-      use chSysGetStatusAndLockX() to prevent an interrupt while
-      allowing this call from any context
-     */
-	syssts_t sts = chSysGetStatusAndLockX();
-	uint64_t micros;
-	micros = timer_base + (uint64_t)chVTGetSystemTimeX();
-	// we are doing this to avoid an additional interupt routing
-	// since we are definitely going to get called atleast once in
-	// a full timer period
-	if (last_micros > micros) {
-        const uint64_t step = ST2US(1ULL<<CH_CFG_ST_RESOLUTION);
-		timer_base += step;
-		micros += step;
-	}
-	last_micros = micros;
-	chSysRestoreStatusX(sts);
-	return micros;
+#elif CH_CFG_ST_RESOLUTION == 32
+static uint32_t get_systime_us32(void)
+{
+    systime_t now = chVTGetSystemTimeX();
+#if CH_CFG_ST_FREQUENCY != 1000000
+    now *= (1000000UL / CH_CFG_ST_FREQUENCY);
+#endif
+    if (now < last_systime) {
+        timer_base_us64 += TIME_MAX_SYSTIME;
+        timer_base_ms += TIME_MAX_SYSTIME/1000;
+    }
+    last_systime = now;
+    return now;
+}
+#else
+#error "unsupported timer resolution"
+#endif
+
+/*
+  we use chSysGetStatusAndLockX() to prevent an interrupt while
+  allowing this call from any context
+*/
+
+uint64_t hrt_micros64()
+{
+    syssts_t sts = chSysGetStatusAndLockX();
+    uint32_t now = get_systime_us32();
+    uint64_t ret = timer_base_us64 + now;
+    chSysRestoreStatusX(sts);
+    return ret;
+}
+
+uint32_t hrt_micros32()
+{
+    syssts_t sts = chSysGetStatusAndLockX();
+    uint32_t ret = get_systime_us32();
+    chSysRestoreStatusX(sts);
+    return ret;
+}
+
+uint32_t hrt_millis32()
+{
+    syssts_t sts = chSysGetStatusAndLockX();
+    uint32_t now = get_systime_us32();
+    uint32_t ret = (now / 1000U) + timer_base_ms;
+    chSysRestoreStatusX(sts);
+    return ret;
 }

@@ -7,6 +7,9 @@
 // init_servos - initialises the servos
 void Tracker::init_servos()
 {
+    // update assigned functions and enable auxiliary servos
+    SRV_Channels::enable_aux_servos();
+
     SRV_Channels::set_default_function(CH_YAW, SRV_Channel::k_tracker_yaw);
     SRV_Channels::set_default_function(CH_PITCH, SRV_Channel::k_tracker_pitch);
 
@@ -16,10 +19,9 @@ void Tracker::init_servos()
     // pitch range is +/- (PITCH_MIN/MAX parameters/2) converted to centi-degrees
     SRV_Channels::set_angle(SRV_Channel::k_tracker_pitch, (-g.pitch_min+g.pitch_max) * 100/2);
 
-    SRV_Channels::output_trim_all();
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
-    
+
     yaw_servo_out_filt.set_cutoff_frequency(SERVO_OUT_FILT_HZ);
     pitch_servo_out_filt.set_cutoff_frequency(SERVO_OUT_FILT_HZ);
 }
@@ -128,12 +130,9 @@ void Tracker::update_pitch_onoff_servo(float pitch)
 */
 void Tracker::update_pitch_cr_servo(float pitch)
 {
-    int32_t pitch_min_cd = g.pitch_min*100;
-    int32_t pitch_max_cd = g.pitch_max*100;
-    if ((pitch>pitch_min_cd) && (pitch<pitch_max_cd)) {
-        g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, g.pidPitch2Srv.get_pid());
-    }
+    g.pidPitch2Srv.set_input_filter_all(nav_status.angle_error_pitch);
+    const float pitch_out = constrain_float(g.pidPitch2Srv.get_pid(), -(-g.pitch_min+g.pitch_max) * 100/2, (-g.pitch_min+g.pitch_max) * 100/2);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, pitch_out);
 }
 
 /**
@@ -251,5 +250,6 @@ void Tracker::update_yaw_onoff_servo(float yaw)
 void Tracker::update_yaw_cr_servo(float yaw)
 {
     g.pidYaw2Srv.set_input_filter_all(nav_status.angle_error_yaw);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, -g.pidYaw2Srv.get_pid());
+    const float yaw_out = constrain_float(-g.pidYaw2Srv.get_pid(), -g.yaw_range * 100/2, g.yaw_range * 100/2);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, yaw_out);
 }

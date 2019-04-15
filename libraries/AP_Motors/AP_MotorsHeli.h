@@ -56,28 +56,24 @@ public:
         AP_Motors(loop_rate, speed_hz)
     {
         AP_Param::setup_object_defaults(this, var_info);
-
-        // initialise flags
-        _heliflags.landing_collective = 0;
-        _heliflags.rotor_runup_complete = 0;
     };
 
     // init
-    void init(motor_frame_class frame_class, motor_frame_type frame_type);
+    void init(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
+    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // set update rate to motors - a value in hertz
-    virtual void set_update_rate( uint16_t speed_hz ) = 0;
+    virtual void set_update_rate( uint16_t speed_hz ) override = 0;
 
     // output_min - sets servos to neutral point with motors stopped
-    void output_min();
+    void output_min() override;
 
-    // output_test - spin a motor at the pwm value specified
+    // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void output_test(uint8_t motor_seq, int16_t pwm) = 0;
+    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override = 0;
 
     //
     // heli specific methods
@@ -99,7 +95,7 @@ public:
     uint8_t get_rsc_mode() const { return _rsc_mode; }
 
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
-    float get_rsc_setpoint() const { return _rsc_setpoint / 1000.0f; }
+    float get_rsc_setpoint() const { return _rsc_setpoint * 0.001f; }
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed) = 0;
@@ -118,7 +114,7 @@ public:
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    virtual uint16_t get_motor_mask() = 0;
+    virtual uint16_t get_motor_mask() override = 0;
 
     virtual void set_acro_tail(bool set) {}
 
@@ -126,12 +122,15 @@ public:
     virtual void ext_gyro_gain(float gain) {}
 
     // output - sends commands to the motors
-    void output();
+    void output() override;
 
     // supports_yaw_passthrough
     virtual bool supports_yaw_passthrough() const { return false; }
 
-    float get_throttle_hover() const { return 0.5f; }
+    float get_throttle_hover() const override { return 0.5f; }
+
+    // support passing init_targets_on_arming flag to greater code
+    bool init_targets_on_arming() const { return _heliflags.init_targets_on_arming; }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -149,24 +148,30 @@ protected:
     };
 
     // output - sends commands to the motors
-    void output_armed_stabilizing();
+    void output_armed_stabilizing() override;
     void output_armed_zero_throttle();
     void output_disarmed();
 
     // update_motor_controls - sends commands to motor controllers
     virtual void update_motor_control(RotorControlState state) = 0;
 
+    // run spool logic
+    void                output_logic();
+
+    // output_to_motors - sends commands to the motors
+    virtual void        output_to_motors() = 0;
+
     // reset_flight_controls - resets all controls and scalars to flight status
     void reset_flight_controls();
 
     // update the throttle input filter
-    void update_throttle_filter();
+    void update_throttle_filter() override;
 
     // move_actuators - moves swash plate and tail rotor
     virtual void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) = 0;
 
     // reset_swash_servo - free up swash servo for maximum movement
-    void reset_swash_servo(SRV_Channel *servo);
+    void reset_swash_servo(SRV_Channel::Aux_servo_function_t function);
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
     virtual bool init_outputs() = 0;
@@ -177,22 +182,19 @@ protected:
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;
 
-    // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
-    virtual void calculate_roll_pitch_collective_factors() = 0;
-
     // servo_test - move servos through full range of movement
     // to be overloaded by child classes, different vehicle types would have different movement patterns
     virtual void servo_test() = 0;
 
-    // convert input in -1 to +1 range to pwm output for swashplate servos. .  Special handling of trim is required 
-    // to keep travel between the swashplate servos consistent.
-    int16_t calc_pwm_output_1to1_swash_servo(float input, const SRV_Channel *servo);
-
+    // write to a swash servo. output value is pwm
+    void rc_write_swash(uint8_t chan, float swash_in);
+    
     // flags bitmask
     struct heliflags_type {
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
         uint8_t rotor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
         uint8_t inverted_flight         : 1;    // true for inverted flight
+        uint8_t init_targets_on_arming  : 1;    // 0 if targets were initialized, 1 if targets were not initialized after arming
     } _heliflags;
 
     // parameters

@@ -20,6 +20,18 @@ public:
         return _chan[ofs];
     };
 
+    void update_vehicle_sensor_status_flags(void) override;
+
+    uint32_t custom_mode() const override;
+    MAV_TYPE frame_type() const override;
+
+    const char* frame_string() const override;
+
+    bool vehicle_initialised() const override;
+
+    bool simple_input_active() const override;
+    bool supersimple_input_active() const override;
+
 private:
 
     GCS_MAVLINK_Copter _chan[MAVLINK_COMM_NUM_BUFFERS];

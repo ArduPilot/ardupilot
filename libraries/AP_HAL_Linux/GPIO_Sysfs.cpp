@@ -171,11 +171,6 @@ void GPIO_Sysfs::toggle(uint8_t vpin)
     write(vpin, !read(vpin));
 }
 
-int8_t GPIO_Sysfs::analogPinToDigitalPin(uint8_t vpin)
-{
-    return -1;
-}
-
 AP_HAL::DigitalSource* GPIO_Sysfs::channel(uint16_t vpin)
 {
     assert_vpin(vpin, n_pins, nullptr);
@@ -191,12 +186,6 @@ AP_HAL::DigitalSource* GPIO_Sysfs::channel(uint16_t vpin)
      * reads and writes fail later due to invalid. Otherwise we
      * could crash in undesired places */
     return new DigitalSource_Sysfs(pin, value_fd);
-}
-
-bool GPIO_Sysfs::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
-                                       uint8_t mode)
-{
-    return false;
 }
 
 bool GPIO_Sysfs::usb_connected(void)

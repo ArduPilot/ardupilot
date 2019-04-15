@@ -10,7 +10,6 @@
 
 #include "definitions.h"
 #include "edc.h"
-#include "location.h"
 #include "matrix3.h"
 #include "polygon.h"
 #include "quaternion.h"
@@ -18,6 +17,7 @@
 #include "vector2.h"
 #include "vector3.h"
 #include "spline5.h"
+#include "location.h"
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
@@ -154,6 +154,11 @@ inline int32_t constrain_int32(const int32_t amt, const int32_t low, const int32
     return constrain_value(amt, low, high);
 }
 
+inline int64_t constrain_int64(const int64_t amt, const int64_t low, const int64_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
 // degrees -> radians
 static inline constexpr float radians(float deg)
 {
@@ -169,7 +174,8 @@ static inline constexpr float degrees(float rad)
 template<typename T>
 float sq(const T val)
 {
-    return powf(static_cast<float>(val), 2);
+    float v = static_cast<float>(val);
+    return v*v;
 }
 
 /*
@@ -253,3 +259,5 @@ Vector3f rand_vec3f(void);
 // confirm a value is a valid octal value
 bool is_valid_octal(uint16_t octal);
 
+// return true if two rotations are equal
+bool rotation_equal(enum Rotation r1, enum Rotation r2);

@@ -20,6 +20,7 @@
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
+#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -34,8 +35,9 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state,
+                                                           AP_RangeFinder_Params &_params,
                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
-    : AP_RangeFinder_Backend(_state)
+    : AP_RangeFinder_Backend(_state, _params)
     , dev(std::move(i2c_dev))
 {
 }
@@ -46,9 +48,14 @@ AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFin
    there.
 */
 AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder::RangeFinder_State &_state,
+																AP_RangeFinder_Params &_params,
                                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
 {
-    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(_state, std::move(i2c_dev));
+    if (!i2c_dev) {
+        return nullptr;
+    }
+
+    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(_state, _params, std::move(i2c_dev));
     if (!sensor) {
         return nullptr;
     }
@@ -76,9 +83,10 @@ bool AP_RangeFinder_TeraRangerI2C::init(void)
     uint8_t whoami;
     if (!dev->read_registers(TR_WHOAMI, &whoami, 1) ||
         whoami != TR_WHOAMI_VALUE) {
+        dev->get_semaphore()->give();
         return false;
     }
-    
+
     if (!measure()) {
         dev->get_semaphore()->give();
         return false;
@@ -88,7 +96,7 @@ bool AP_RangeFinder_TeraRangerI2C::init(void)
     hal.scheduler->delay(70);
 
     uint16_t _distance_cm;
-    if (!collect(_distance_cm)) {
+    if (!collect_raw(_distance_cm)) {
         dev->get_semaphore()->give();
         return false;
     }
@@ -97,7 +105,7 @@ bool AP_RangeFinder_TeraRangerI2C::init(void)
 
     dev->set_retries(1);
 
-    dev->register_periodic_callback(50000,
+    dev->register_periodic_callback(10000,
                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_TeraRangerI2C::timer, void));
 
     return true;
@@ -110,58 +118,80 @@ bool AP_RangeFinder_TeraRangerI2C::measure()
     return dev->transfer(&cmd, 1, nullptr, 0);
 }
 
-// collect - return last value measured by sensor
-bool AP_RangeFinder_TeraRangerI2C::collect(uint16_t &_distance_cm)
+// collect_raw() - return last value measured by sensor
+bool AP_RangeFinder_TeraRangerI2C::collect_raw(uint16_t &raw_distance)
 {
     uint8_t d[3];
 
-    // take range reading and read back results
+    // Take range reading
     if (!dev->transfer(nullptr, 0, d, sizeof(d))) {
         return false;
     }
 
+    // Check for CRC
     if (d[2] != crc_crc8(d, 2)) {
-        // bad CRC
         return false;
+    } else {
+        raw_distance = ((uint16_t(d[0]) << 8) | d[1]);
+        return true;
     }
-    
-    _distance_cm = ((uint16_t(d[0]) << 8) | d[1]) / 10;
+}
 
+// Checks for error code and if correct converts to cm
+bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, uint16_t &output_distance_cm)
+{
+  // Check for error codes
+  if (raw_distance == 0xFFFF) {
+      // Too far away is unreliable so we dont enforce max range here
+      return false;
+  } else if (raw_distance == 0x0000) {
+      // Too close
+      output_distance_cm =  params.min_distance_cm;
+      return true;
+  } else if (raw_distance == 0x0001) {
+      // Unable to measure
+      return false;
+  } else {
+    output_distance_cm = raw_distance/10; // Conversion to centimeters
     return true;
+  }
 }
 
 /*
-  timer called at 20Hz
+  timer called at 100Hz, EVO sensors max freq is 100..240Hz
 */
 void AP_RangeFinder_TeraRangerI2C::timer(void)
 {
-    // take a reading
-    uint16_t _distance_cm;
-    if (collect(_distance_cm) && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        accum.sum += _distance_cm;
-        accum.count++;
-        _sem->give();
-    }
+    // Take a reading
+    uint16_t _raw_distance = 0;
+    uint16_t _distance_cm = 0;
 
+    if (collect_raw(_raw_distance)) {
+        WITH_SEMAPHORE(_sem);
+
+        if (process_raw_measure(_raw_distance, _distance_cm)){
+            accum.sum += _distance_cm;
+            accum.count++;
+        }
+    }
     // and immediately ask for a new reading
     measure();
 }
-
 
 /*
    update the state of the sensor
 */
 void AP_RangeFinder_TeraRangerI2C::update(void)
 {
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (accum.count > 0) {
-            state.distance_cm = accum.sum / accum.count;
-            accum.sum = 0;
-            accum.count = 0;
-            update_status();
-        } else {
-            set_status(RangeFinder::RangeFinder_NoData);
-        }
-         _sem->give();
+    WITH_SEMAPHORE(_sem);
+
+    if (accum.count > 0) {
+        state.distance_cm = accum.sum / accum.count;
+        state.last_reading_ms = AP_HAL::millis();
+        accum.sum = 0;
+        accum.count = 0;
+        update_status();        
+    } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
+        set_status(RangeFinder::RangeFinder_NoData);
     }
 }

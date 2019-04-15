@@ -15,8 +15,8 @@ bool Sub::poshold_init()
     }
 
     // initialize vertical speeds and acceleration
-    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control.set_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control.set_max_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
     pos_control.set_alt_target(inertial_nav.get_altitude());
@@ -24,6 +24,7 @@ bool Sub::poshold_init()
 
     // set target to current position
     // only init here as we can switch to PosHold in flight with a velocity <> 0 that will be used as _last_vel in PosControl and never updated again as we inhibit Reset_I
+    loiter_nav.clear_pilot_desired_acceleration();
     loiter_nav.init_target();
 
     last_pilot_heading = ahrs.yaw_sensor;
@@ -39,18 +40,20 @@ void Sub::poshold_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        loiter_nav.clear_pilot_desired_acceleration();
         loiter_nav.init_target();
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         return;
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run loiter controller
-    loiter_nav.update(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav.update();
 
     ///////////////////////
     // update xy outputs //
@@ -64,6 +67,7 @@ void Sub::poshold_run()
     if (fabsf(pilot_lateral) > 0.1 || fabsf(pilot_forward) > 0.1) {
         lateral_out = pilot_lateral;
         forward_out = pilot_forward;
+        loiter_nav.clear_pilot_desired_acceleration();
         loiter_nav.init_target(); // initialize target to current position after repositioning
     } else {
         translate_wpnav_rp(lateral_out, forward_out);

@@ -304,19 +304,17 @@ void AP_Baro_MS56XX::_timer(void)
         return;
     }
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (_state == 0) {
-            _update_and_wrap_accumulator(&_accum.s_D2, adc_val,
-                                         &_accum.d2_count, 32);
-        } else {
-            if (pressure_ok(adc_val)) {
-                _update_and_wrap_accumulator(&_accum.s_D1, adc_val,
-                                             &_accum.d1_count, 128);
-            }
-        }
-        _sem->give();
-        _state = next_state;
+    WITH_SEMAPHORE(_sem);
+
+    if (_state == 0) {
+        _update_and_wrap_accumulator(&_accum.s_D2, adc_val,
+                                     &_accum.d2_count, 32);
+    } else if (pressure_ok(adc_val)) {
+        _update_and_wrap_accumulator(&_accum.s_D1, adc_val,
+                                     &_accum.d1_count, 128);
     }
+    
+    _state = next_state;
 }
 
 void AP_Baro_MS56XX::_update_and_wrap_accumulator(uint32_t *accum, uint32_t val,
@@ -335,22 +333,19 @@ void AP_Baro_MS56XX::update()
     uint32_t sD1, sD2;
     uint8_t d1count, d2count;
 
-    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
+    {
+        WITH_SEMAPHORE(_sem);
+
+        if (_accum.d1_count == 0) {
+            return;
+        }
+
+        sD1 = _accum.s_D1;
+        sD2 = _accum.s_D2;
+        d1count = _accum.d1_count;
+        d2count = _accum.d2_count;
+        memset(&_accum, 0, sizeof(_accum));
     }
-
-    if (_accum.d1_count == 0) {
-        _sem->give();
-        return;
-    }
-
-    sD1 = _accum.s_D1;
-    sD2 = _accum.s_D2;
-    d1count = _accum.d1_count;
-    d2count = _accum.d2_count;
-    memset(&_accum, 0, sizeof(_accum));
-
-    _sem->give();
 
     if (d1count != 0) {
         _D1 = ((float)sD1) / d1count;

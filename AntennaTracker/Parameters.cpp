@@ -39,13 +39,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Advanced
     GSCALAR(sysid_target,           "SYSID_TARGET",    0),
 
-    // @Param: MAG_ENABLE
-    // @DisplayName: Enable Compass
-    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    GSCALAR(compass_enabled,        "MAG_ENABLE",     1),
-
     // @Param: YAW_SLEW_TIME
     // @DisplayName: Time for yaw to slew through its full range
     // @Description: This controls how rapidly the tracker will change the servo output for yaw. It is set as the number of seconds to do a full rotation. You can use this parameter to slow the trackers movements, which may help with some types of trackers. A value of zero will allow for unlimited servo movement per update.
@@ -63,15 +56,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Range: 0 20
     // @User: Standard
     GSCALAR(pitch_slew_time,        "PITCH_SLEW_TIME",  2),
-
-    // @Param: SCAN_SPEED
-    // @DisplayName: Speed at which to rotate in scan mode
-    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
-    // @Units: deg/s
-    // @Increment: 1
-    // @Range: 0 100
-    // @User: Standard
-    GSCALAR(scan_speed,             "SCAN_SPEED",      5),
 
     // @Param: MIN_REVERSE_TIME
     // @DisplayName: Minimum time to apply a yaw reversal
@@ -300,8 +284,8 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
-    // @Path: ../libraries/RC_Channel/RC_Channels.cpp
-    GOBJECT(rc_channels,     "RC", RC_Channels),
+    // @Path: RC_Channels.cpp
+    GOBJECT(rc_channels,     "RC", RC_Channels_Tracker),
 
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels,     "SERVO", SRV_Channels),
@@ -370,6 +354,11 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
 	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
+#ifdef ENABLE_SCRIPTING
+    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
+    GOBJECT(scripting, "SCR_", AP_Scripting),
+#endif
+
     // @Param: CMD_TOTAL
     // @DisplayName: Number of loaded mission items
     // @Description: Set to 1 if HOME location has been loaded by the ground station. Do not change this manually.
@@ -380,6 +369,38 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery,                "BATT", AP_BattMonitor),
+
+    // @Param: GCS_PID_MASK
+    // @DisplayName: GCS PID tuning mask
+    // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
+    // @User: Advanced
+    // @Values: 0:None,1:Pitch,2:Yaw
+    // @Bitmask: 0:Pitch,1:Yaw
+    GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
+
+    // @Param: SCAN_SPEED_YAW
+    // @DisplayName: Speed at which to rotate the yaw axis in scan mode
+    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
+    // @Units: deg/s
+    // @Increment: 1
+    // @Range: 0 100
+    // @User: Standard
+    GSCALAR(scan_speed_yaw,         "SCAN_SPEED_YAW",   2),
+
+    // @Param: SCAN_SPEED_PIT
+    // @DisplayName: Speed at which to rotate pitch axis in scan mode
+    // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
+    // @Units: deg/s
+    // @Increment: 1
+    // @Range: 0 100
+    // @User: Standard
+    GSCALAR(scan_speed_pitch,       "SCAN_SPEED_PIT",   5),
+
+    // @Param: INITIAL_MODE
+    // @DisplayName: Mode tracker will switch into after initialization
+    // @Description: 0:MANUAL, 1:STOP, 2:SCAN, 10:AUTO
+    // @User: Standard
+    GSCALAR(initial_mode,            "INITIAL_MODE",     10),
 
     AP_VAREND
 };
@@ -392,6 +413,7 @@ void Tracker::load_parameters(void)
 
         // erase all parameters
         hal.console->printf("Firmware change: erasing EEPROM...\n");
+        StorageManager::erase();
         AP_Param::erase_all();
 
         // save the current format version
@@ -403,4 +425,11 @@ void Tracker::load_parameters(void)
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
     hal.console->printf("load_all took %luus\n", (unsigned long)(AP_HAL::micros() - before));
+
+#if HAL_HAVE_SAFETY_SWITCH
+    // configure safety switch to allow stopping the motors while armed
+    AP_Param::set_default_by_name("BRD_SAFETYOPTION", AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|
+                                                      AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON|
+                                                      AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
+#endif
 }

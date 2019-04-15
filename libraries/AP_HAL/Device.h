@@ -30,7 +30,8 @@ public:
         BUS_TYPE_UNKNOWN = 0,
         BUS_TYPE_I2C     = 1,
         BUS_TYPE_SPI     = 2,
-        BUS_TYPE_UAVCAN  = 3
+        BUS_TYPE_UAVCAN  = 3,
+        BUS_TYPE_SITL    = 4
     };
 
     enum Speed {
@@ -230,7 +231,7 @@ public:
      * the standard HAL Device types, such as UAVCAN devices
      */
     static uint32_t make_bus_id(enum BusType bus_type, uint8_t bus, uint8_t address, uint8_t devtype) {
-        union DeviceId d;
+        union DeviceId d {};
         d.devid_s.bus_type = bus_type;
         d.devid_s.bus = bus;
         d.devid_s.address = address;

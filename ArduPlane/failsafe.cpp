@@ -41,11 +41,13 @@ void Plane::failsafe_check(void)
     if (in_failsafe && tnow - last_timestamp > 20000) {
         last_timestamp = tnow;
 
+#if ADVANCED_FAILSAFE == ENABLED
         if (in_calibration) {
             // tell the failsafe system that we are calibrating
             // sensors, so don't trigger failsafe
             afs.heartbeat();
         }
+#endif
 
         if (RC_Channels::get_valid_channel_count() < 5) {
             // we don't have any RC input to pass through
@@ -57,7 +59,7 @@ void Plane::failsafe_check(void)
 
         int16_t roll = channel_roll->get_control_in_zero_dz();
         int16_t pitch = channel_pitch->get_control_in_zero_dz();
-        int16_t throttle = channel_throttle->get_control_in_zero_dz();
+        int16_t throttle = get_throttle_input(true);
         int16_t rudder = channel_rudder->get_control_in_zero_dz();
 
         if (!hal.util->get_soft_armed()) {
@@ -75,10 +77,12 @@ void Plane::failsafe_check(void)
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
+#if ADVANCED_FAILSAFE == ENABLED
         if (afs.should_crash_vehicle()) {
             afs.terminate_vehicle();
             return;
         }
+#endif
 
         // setup secondary output channels that do have
         // corresponding input channels

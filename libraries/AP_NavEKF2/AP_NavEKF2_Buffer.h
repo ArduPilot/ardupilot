@@ -19,7 +19,7 @@ public:
         {
             return false;
         }
-        memset(buffer,0,size*sizeof(element_t));
+        memset((void *)buffer,0,size*sizeof(element_t));
         _size = size;
         _head = 0;
         _tail = 0;
@@ -103,7 +103,7 @@ public:
         _head = 0;
         _tail = 0;
         _new_data = false;
-        memset(buffer,0,_size*sizeof(element_t));
+        memset((void *)buffer,0,_size*sizeof(element_t));
     }
 
 private:
@@ -130,7 +130,7 @@ public:
         {
             return false;
         }
-        memset(buffer,0,size*sizeof(element_t));
+        memset((void *)buffer,0,size*sizeof(element_t));
         _size = size;
         _youngest = 0;
         _oldest = 0;
@@ -173,7 +173,7 @@ public:
     inline void reset() {
         _youngest = 0;
         _oldest = 0;
-        memset(buffer,0,_size*sizeof(element_t));
+        memset((void *)buffer,0,_size*sizeof(element_t));
     }
 
     // retrieves data from the ring buffer at a specified index

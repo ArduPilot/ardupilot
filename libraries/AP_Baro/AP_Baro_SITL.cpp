@@ -11,10 +11,10 @@ extern const AP_HAL::HAL& hal;
   constructor - registers instance at top Baro driver
  */
 AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
+    _sitl(AP::sitl()),
     _has_sample(false),
     AP_Baro_Backend(baro)
 {
-    _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     if (_sitl != nullptr) {
         _instance = _frontend.register_sensor();
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -121,16 +121,13 @@ void AP_Baro_SITL::_timer()
 // Read the sensor
 void AP_Baro_SITL::update(void)
 {
-    if (_sem->take_nonblocking()) {
-        if (!_has_sample) {
-            _sem->give();
-            return;
-        }
-
-        _copy_to_frontend(_instance, _recent_press, _recent_temp);
-        _has_sample = false;
-        _sem->give();
+    if (!_has_sample) {
+        return;
     }
+
+    WITH_SEMAPHORE(_sem);
+    _copy_to_frontend(_instance, _recent_press, _recent_temp);
+    _has_sample = false;
 }
 
 #endif  // CONFIG_HAL_BOARD

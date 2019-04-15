@@ -28,6 +28,8 @@
 #include "DataFlashFileReader.h"
 #include "Replay.h"
 
+#include <AP_Camera/AP_Camera.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -74,8 +76,8 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     GOBJECT(compass, "COMPASS_", Compass),
 
     // @Group: LOG
-    // @Path: ../libraries/DataFlash/DataFlash.cpp
-    GOBJECT(dataflash, "LOG", DataFlash_Class),
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(logger, "LOG", AP_Logger),
     
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
@@ -100,22 +102,16 @@ void ReplayVehicle::load_parameters(void)
     AP_Param::set_default_by_name("LOG_FILE_BUFSIZE", 60);
 }
 
-static const struct LogStructure min_log_structure[] = {
-    { LOG_FORMAT_MSG, sizeof(log_Format),
-      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns", "-b---", "-----" },
-    { LOG_PARAMETER_MSG, sizeof(log_Parameter),
-      "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--" },
-    { LOG_MESSAGE_MSG, sizeof(log_Message),
-      "MSG",  "QZ",     "TimeUS,Message", "s-", "F-" },
-};
-
 void ReplayVehicle::setup(void) 
 {
     load_parameters();
-    
-    // we pass a minimal log structure, as we will be outputting the
-    // log structures we need manually, to prevent FMT duplicates
-    dataflash.Init(min_log_structure, ARRAY_SIZE(min_log_structure));
+
+    // we pass an empty log structure, filling the structure in with
+    // either the format present in the log (if we do not emit the
+    // message as a product of Replay), or the format understood in
+    // the current code (if we do emit the message in the normal
+    // places in the EKF, for example)
+    logger.Init(log_structure, 0);
 
     ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
@@ -175,8 +171,8 @@ enum {
     OPT_PACKET_COUNTS,
 };
 
-void Replay::flush_dataflash(void) {
-    _vehicle.dataflash.flush();
+void Replay::flush_logger(void) {
+    _vehicle.logger.flush();
 }
 
 /*
@@ -233,7 +229,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "r:p:ha:g:A:", options);
+    GetOptLong gopt(argc, argv, "r:p:ha:g:A:n", options);
 
     int opt;
     while ((opt = gopt.getoption()) != -1) {
@@ -332,7 +328,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     }
 }
 
-class IMUCounter : public DataFlashFileReader {
+class IMUCounter : public AP_LoggerFileReader {
 public:
     IMUCounter() {}
     bool handle_log_format_msg(const struct log_Format &f);
@@ -480,8 +476,8 @@ bool Replay::find_log_info(struct log_information &info)
 // catch floating point exceptions
 static void _replay_sig_fpe(int signum)
 {
-    fprintf(stderr, "ERROR: Floating point exception - flushing dataflash...\n");
-    replay.flush_dataflash();
+    fprintf(stderr, "ERROR: Floating point exception - flushing logger...\n");
+    replay.flush_logger();
     fprintf(stderr, "ERROR: ... and aborting.\n");
     if (replay.check_solution) {
         FILE *f = fopen("replay_results.txt","a");
@@ -539,6 +535,7 @@ void Replay::setup()
     _vehicle.setup();
 
     inhibit_gyro_cal();
+    force_log_disarmed();
 
     if (log_info.update_rate == 400) {
         // assume copter for 400Hz
@@ -560,6 +557,12 @@ void Replay::set_ins_update_rate(uint16_t _update_rate) {
 void Replay::inhibit_gyro_cal() {
     if (!logreader.set_parameter("INS_GYR_CAL", AP_InertialSensor::GYRO_CAL_NEVER)) {
         ::fprintf(stderr, "Failed to set GYR_CAL parameter\n");
+        abort();
+    }
+}
+void Replay::force_log_disarmed() {
+    if (!logreader.set_parameter("LOG_DISARMED", 1)) {
+        ::fprintf(stderr, "Failed to set LOG_DISARMED parameter\n");
         abort();
     }
 }
@@ -613,27 +616,22 @@ void Replay::set_signal_handlers(void)
 void Replay::write_ekf_logs(void)
 {
     if (!LogReader::in_list("EKF", nottypes)) {
-        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs);
+        _vehicle.logger.Write_EKF(_vehicle.ahrs);
     }
     if (!LogReader::in_list("AHRS2", nottypes)) {
-        _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
+        _vehicle.logger.Write_AHRS2(_vehicle.ahrs);
     }
     if (!LogReader::in_list("POS", nottypes)) {
-        _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
+        _vehicle.logger.Write_POS(_vehicle.ahrs);
     }
 }
 
 void Replay::read_sensors(const char *type)
 {
-    if (!done_parameters && !streq(type,"FMT") && !streq(type,"PARM")) {
-        done_parameters = true;
+    if (streq(type, "PARM")) {
         set_user_parameters();
     }
 
-    if (done_parameters && streq(type, "PARM")) {
-        set_user_parameters();
-    }
-    
     if (!done_home_init) {
         if (streq(type, "GPS") &&
             (_vehicle.gps.status() >= AP_GPS::GPS_OK_FIX_3D) && done_baro_init) {
@@ -643,7 +641,9 @@ void Replay::read_sensors(const char *type)
                      loc.lng * 1.0e-7f,
                      loc.alt * 0.01f,
                      AP_HAL::millis()*0.001f);
-            _vehicle.ahrs.set_home(loc);
+            if (!_vehicle.ahrs.set_home(loc)) {
+                ::printf("Failed to set home to that location!");
+            }
             _vehicle.compass.set_initial_location(loc.lat, loc.lng);
             done_home_init = true;
         }
@@ -667,13 +667,21 @@ void Replay::read_sensors(const char *type)
         }
     } 
 
+    static bool ekf_force_started = false;
+    if (!ekf_force_started) {
+        if (log_info.have_imt2 ||
+            log_info.have_imt) {
+            _vehicle.ahrs.force_ekf_start();
+            ::fprintf(stderr, "EKF force-started at %u\n", AP_HAL::micros());
+            ekf_force_started = true;
+        }
+    }
+
     bool run_ahrs = false;
     if (log_info.have_imt2) {
         run_ahrs = streq(type, "IMT2");
-        _vehicle.ahrs.force_ekf_start();
     } else if (log_info.have_imt) {
         run_ahrs = streq(type, "IMT");
-        _vehicle.ahrs.force_ekf_start();
     } else if (log_info.have_imu2) {
         run_ahrs = streq(type, "IMU2");
     } else {
@@ -724,21 +732,23 @@ void Replay::log_check_generate(void)
     _vehicle.EKF2.getVelNED(-1,velocity);
     _vehicle.EKF2.getLLH(loc);
 
-    struct log_Chek packet = {
-        LOG_PACKET_HEADER_INIT(LOG_CHEK_MSG),
-        time_us : AP_HAL::micros64(),
-        roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
-        pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
-        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
-        lat     : loc.lat,
-        lng     : loc.lng,
-        alt     : loc.alt*0.01f,
-        vnorth  : velocity.x,
-        veast   : velocity.y,
-        vdown   : velocity.z
-    };
-
-    _vehicle.dataflash.WriteBlock(&packet, sizeof(packet));
+    _vehicle.logger.Write(
+        "CHEK",
+        "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD",
+        "sdddDUmnnn",
+        "FBBBGGB000",
+        "QccCLLffff",
+        AP_HAL::micros64(),
+        (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
+        (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
+        (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
+        loc.lat,
+        loc.lng,
+        loc.alt*0.01f,
+        velocity.x,
+        velocity.y,
+        velocity.z
+        );
 }
 
 
@@ -760,7 +770,7 @@ void Replay::log_check_solution(void)
     float pitch_error = degrees(fabsf(euler.y - check_state.euler.y));
     float yaw_error = wrap_180_cd(100*degrees(fabsf(euler.z - check_state.euler.z)))*0.01f;
     float vel_error = (velocity - check_state.velocity).length();
-    float pos_error = get_distance(check_state.pos, loc);
+    float pos_error = check_state.pos.get_distance(loc);
 
     check_result.max_roll_error  = MAX(check_result.max_roll_error,  roll_error);
     check_result.max_pitch_error = MAX(check_result.max_pitch_error, pitch_error);
@@ -771,7 +781,7 @@ void Replay::log_check_solution(void)
 
 void Replay::flush_and_exit()
 {
-    flush_dataflash();
+    flush_logger();
 
     if (check_solution) {
         report_checks();
@@ -826,11 +836,15 @@ void Replay::loop()
     }
     last_timestamp = AP_HAL::micros64();
 
-    read_sensors(type);
-
-    if (!streq(type,"ATT")) {
-        return;
+    if (streq(type, "FMT")) {
+        if (!seen_non_fmt) {
+            return;
+        }
+    } else {
+        seen_non_fmt = true;
     }
+
+    read_sensors(type);
 }
 
 
@@ -950,7 +964,13 @@ const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
 GCS_Dummy _gcs;
 
 // dummy methods to avoid linking with these libraries
+AP_Camera *AP::camera() { return nullptr; }
 void AP_Camera::send_feedback(mavlink_channel_t) {}
+void AP_Camera::control(float, float, float, float, float, float) {}
+void AP_Camera::configure(float, float, float, float, float, float, float) {}
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
+
+// avoid building/linking Devo:
+void AP_DEVO_Telem::init() {};
 
 AP_HAL_MAIN_CALLBACKS(&replay);

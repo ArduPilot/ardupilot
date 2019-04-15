@@ -48,12 +48,15 @@ public:
 
     // calculate rotational and linear accelerations
     void calculate_forces(const Aircraft &aircraft,
-                          const Aircraft::sitl_input &input,
+                          const struct sitl_input &input,
                           Vector3f &rot_accel, Vector3f &body_accel);
     
     float terminal_velocity;
     float terminal_rotation_rate;
     float thrust_scale;
     uint8_t motor_offset;
+
+    // calculate current and voltage
+    void current_and_voltage(const struct sitl_input &input, float &voltage, float &current);
 };
 }

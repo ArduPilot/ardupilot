@@ -26,9 +26,13 @@
 
 #if HAL_SUPPORT_RCOUT_SERIAL
 
+#define HAVE_AP_BLHELI_SUPPORT
+
 #include <AP_Param/AP_Param.h>
 #include "msp_protocol.h"
 #include "blheli_4way_protocol.h"
+
+#define AP_BLHELI_MAX_ESCS 8
 
 class AP_BLHeli {
 
@@ -40,17 +44,41 @@ public:
     bool process_input(uint8_t b);
 
     static const struct AP_Param::GroupInfo var_info[];
+
+    struct telem_data {
+        uint8_t temperature; // degrees C
+        uint16_t voltage;    // volts * 100
+        uint16_t current;    // amps * 100
+        uint16_t consumption;// mAh
+        uint16_t rpm;        // eRPM
+        uint16_t count;
+        uint32_t timestamp_ms;
+    };
+
+    // get the most recent telemetry data packet for a motor
+    bool get_telem_data(uint8_t esc_index, struct telem_data &td);
+
+    static AP_BLHeli *get_singleton(void) {
+        return _singleton;
+    }
+
+    // send ESC telemetry messages over MAVLink
+    void send_esc_telemetry_mavlink(uint8_t mav_chan);
     
 private:
-
+    static AP_BLHeli *_singleton;
+    
     // mask of channels to use for BLHeli protocol
     AP_Int32 channel_mask;
+    AP_Int32 channel_reversible_mask;
     AP_Int8 channel_auto;
     AP_Int8 run_test;
     AP_Int16 timeout_sec;
     AP_Int16 telem_rate;
     AP_Int8 debug_level;
     AP_Int8 output_type;
+    AP_Int8 control_port;
+    AP_Int8 motor_poles;
     
     enum mspState {
         MSP_IDLE=0,
@@ -158,18 +186,41 @@ private:
         uint8_t buf[256+3+8];
         uint8_t crc1;
         uint16_t crc;
-        uint8_t interface_mode;
-        uint8_t deviceInfo[4];
+        bool connected[AP_BLHELI_MAX_ESCS];
+        uint8_t interface_mode[AP_BLHELI_MAX_ESCS];
+        uint8_t deviceInfo[AP_BLHELI_MAX_ESCS][4];
         uint8_t chan;
         uint8_t ack;
     } blheli;
 
+    const uint16_t esc_status_addr = 0xEB00;
+    
+    // protocol reported by ESC in esc_status
+    enum esc_protocol {
+        ESC_PROTOCOL_NONE=0,
+        ESC_PROTOCOL_NORMAL=1,
+        ESC_PROTOCOL_ONESHOT125=2,
+        ESC_PROTOCOL_DSHOT=5,
+    };
+    
+    // ESC status structure at address 0xEB00
+    struct PACKED esc_status {
+        uint8_t unknown[3];
+        enum esc_protocol protocol;
+        uint32_t good_frames;
+        uint32_t bad_frames;
+        uint32_t unknown2;
+    };
+    
+    
     AP_HAL::UARTDriver *uart;
     AP_HAL::UARTDriver *debug_uart;
     AP_HAL::UARTDriver *telem_uart;    
     
-    static const uint8_t max_motors = 8;
+    static const uint8_t max_motors = AP_BLHELI_MAX_ESCS;
     uint8_t num_motors;
+
+    struct telem_data last_telem[max_motors];
 
     // have we initialised the interface?
     bool initialised;
@@ -188,11 +239,15 @@ private:
 
     // mapping from BLHeli motor numbers to RC output channels
     uint8_t motor_map[max_motors];
+    uint16_t motor_mask;
 
     // when did we last request telemetry?
     uint32_t last_telem_request_us;
     uint8_t last_telem_esc;
     static const uint8_t telem_packet_size = 10;
+    bool telem_uart_started;
+    uint32_t last_telem_byte_read_us;
+    int8_t last_control_port;
 
     bool msp_process_byte(uint8_t c);
     void blheli_crc_update(uint8_t c);

@@ -23,6 +23,12 @@ class AP_Gripper {
 public:
     AP_Gripper();
 
+    AP_Gripper(const AP_Gripper &other) = delete;
+    AP_Gripper &operator=(const AP_Gripper&) = delete;
+
+    static AP_Gripper *get_singleton();
+    static AP_Gripper *_singleton;
+
     // indicate whether this module is enabled or not
     bool enabled() const { return _enabled; }
 
@@ -73,4 +79,8 @@ public:
 private:
 
     AP_Gripper_Backend *backend;
+};
+
+namespace AP {
+    AP_Gripper *gripper();
 };

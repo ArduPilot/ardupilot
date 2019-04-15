@@ -89,6 +89,29 @@ public:
         // Not implemented
         return nullptr;
     }
+
+    /*
+      get mask of bus numbers for all configured I2C buses
+     */
+    virtual uint32_t get_bus_mask(void) const { return 0x0F; }
+
+    /*
+      get mask of bus numbers for all configured external I2C buses
+     */
+    virtual uint32_t get_bus_mask_external(void) const { return 0x0F; }
+
+    /*
+      get mask of bus numbers for all configured internal I2C buses
+     */
+    virtual uint32_t get_bus_mask_internal(void) const { return 0x01; }
 };
+
+/*
+  convenient macros for iterating over I2C bus numbers
+ */
+#define FOREACH_I2C_MASK(i,mask) for (uint32_t _bmask=mask, i=0; i<32; i++) if ((1U<<i)&_bmask)
+#define FOREACH_I2C_EXTERNAL(i) FOREACH_I2C_MASK(i,hal.i2c_mgr->get_bus_mask_external())
+#define FOREACH_I2C_INTERNAL(i) FOREACH_I2C_MASK(i,hal.i2c_mgr->get_bus_mask_internal())
+#define FOREACH_I2C(i) FOREACH_I2C_MASK(i,hal.i2c_mgr->get_bus_mask())
 
 }

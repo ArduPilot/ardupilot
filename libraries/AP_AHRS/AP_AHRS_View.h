@@ -26,7 +26,7 @@ class AP_AHRS_View
 {
 public:
     // Constructor
-    AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation);
+    AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation, float pitch_trim_deg=0);
 
     // update state
     void update(bool skip_ins_update=false);
@@ -42,11 +42,18 @@ public:
     // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
     Vector3f get_gyro_latest(void) const;
 
-    // return a DCM rotation matrix representing our current
-    // attitude in this view
+    // return a DCM rotation matrix representing our current attitude in this view
     const Matrix3f &get_rotation_body_to_ned(void) const {
         return rot_body_to_ned;
     }
+
+    // return a Quaternion representing our current attitude in this view
+    void get_quat_body_to_ned(Quaternion &quat) const {
+        quat.from_rotation_matrix(rot_body_to_ned);
+    }
+
+    // apply pitch trim
+    void set_pitch_trim(float trim_deg);
 
     // helper trig value accessors
     float cos_roll() const {
@@ -73,7 +80,7 @@ public:
       wrappers around ahrs functions which pass-thru directly. See
       AP_AHRS.h for description of each function
      */
-    bool get_position(struct Location &loc) const {
+    bool get_position(struct Location &loc) const WARN_IF_UNUSED {
         return ahrs.get_position(loc);
     }
 
@@ -81,11 +88,11 @@ public:
         return ahrs.wind_estimate();
     }
 
-    bool airspeed_estimate(float *airspeed_ret) const {
+    bool airspeed_estimate(float *airspeed_ret) const WARN_IF_UNUSED {
         return ahrs.airspeed_estimate(airspeed_ret);
     }
 
-    bool airspeed_estimate_true(float *airspeed_ret) const {
+    bool airspeed_estimate_true(float *airspeed_ret) const WARN_IF_UNUSED {
         return ahrs.airspeed_estimate_true(airspeed_ret);
     }
 
@@ -97,38 +104,38 @@ public:
         return ahrs.groundspeed_vector();
     }
 
-    bool get_velocity_NED(Vector3f &vec) const {
+    bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED {
         return ahrs.get_velocity_NED(vec);
     }
 
-    bool get_expected_mag_field_NED(Vector3f &ret) const {
+    bool get_expected_mag_field_NED(Vector3f &ret) const WARN_IF_UNUSED {
         return ahrs.get_expected_mag_field_NED(ret);
     }
 
-    bool get_relative_position_NED_home(Vector3f &vec) const {
+    bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NED_home(vec);
     }
 
-    bool get_relative_position_NED_origin(Vector3f &vec) const {
+    bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NED_origin(vec);
     }
-    
-    bool get_relative_position_NE_home(Vector2f &vecNE) const {
+
+    bool get_relative_position_NE_home(Vector2f &vecNE) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NE_home(vecNE);
     }
 
-    bool get_relative_position_NE_origin(Vector2f &vecNE) const {
+    bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NE_origin(vecNE);
     }
-    
+
     void get_relative_position_D_home(float &posD) const {
         ahrs.get_relative_position_D_home(posD);
     }
 
-    bool get_relative_position_D_origin(float &posD) const {
+    bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_D_origin(posD);
     }
-    
+
     float groundspeed(void) {
         return ahrs.groundspeed();
     }
@@ -137,11 +144,11 @@ public:
         return ahrs.get_accel_ef_blended();
     }
 
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) const {
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) const WARN_IF_UNUSED {
         return ahrs.getLastPosNorthEastReset(pos);
     }
 
-    uint32_t getLastPosDownReset(float &posDelta) const {
+    uint32_t getLastPosDownReset(float &posDelta) const WARN_IF_UNUSED {
         return ahrs.getLastPosDownReset(posDelta);
     }
 
@@ -152,7 +159,7 @@ public:
     // rotate a 2D vector from earth frame to body frame
     // in input, x is forward, y is right
     Vector2f rotate_body_to_earth2D(const Vector2f &bf) const;
-    
+
     // return the average size of the roll/pitch error estimate
     // since last call
     float get_error_rp(void) const {
@@ -164,7 +171,7 @@ public:
     float get_error_yaw(void) const {
         return ahrs.get_error_yaw();
     }
-    
+
     float roll;
     float pitch;
     float yaw;
@@ -176,7 +183,10 @@ private:
     const enum Rotation rotation;
     AP_AHRS &ahrs;
 
+    // body frame rotation for this View
     Matrix3f rot_view;
+    // transpose of rot_view
+    Matrix3f rot_view_T;
     Matrix3f rot_body_to_ned;
     Vector3f gyro;
 
@@ -188,4 +198,7 @@ private:
         float sin_pitch;
         float sin_yaw;
     } trig;
+
+    float y_angle;
+    float _pitch_trim_deg;
 };

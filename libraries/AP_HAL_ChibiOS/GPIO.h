@@ -29,19 +29,24 @@
 class ChibiOS::GPIO : public AP_HAL::GPIO {
 public:
     GPIO();
-    void    init();
-    void    pinMode(uint8_t pin, uint8_t output);
-    int8_t  analogPinToDigitalPin(uint8_t pin);
-    uint8_t read(uint8_t pin);
-    void    write(uint8_t pin, uint8_t value);
-    void    toggle(uint8_t pin);
+    void    init() override;
+    void    pinMode(uint8_t pin, uint8_t output) override;
+    uint8_t read(uint8_t pin) override;
+    void    write(uint8_t pin, uint8_t value) override;
+    void    toggle(uint8_t pin) override;
 
     /* Alternative interface: */
-    AP_HAL::DigitalSource* channel(uint16_t n);
+    AP_HAL::DigitalSource* channel(uint16_t n) override;
 
-    /* Interrupt interface: */
-    bool    attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
-            uint8_t mode);
+    /* Interrupt interface - fast, for RCOutput and SPI radios */
+    bool    attach_interrupt(uint8_t interrupt_num,
+                             AP_HAL::Proc p,
+                             INTERRUPT_TRIGGER_TYPE mode) override;
+
+    /* Interrupt interface - for AP_HAL::GPIO */
+    bool    attach_interrupt(uint8_t pin,
+                             irq_handler_fn_t fn,
+                             INTERRUPT_TRIGGER_TYPE mode) override;
 
     /* return true if USB cable is connected */
     bool    usb_connected(void) override;
@@ -54,15 +59,17 @@ public:
 private:
     bool _usb_connected;
     bool _ext_started;
+
+    bool _attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t mode);
 };
 
 class ChibiOS::DigitalSource : public AP_HAL::DigitalSource {
 public:
     DigitalSource(ioline_t line);
-    void    mode(uint8_t output);
-    uint8_t read();
-    void    write(uint8_t value);
-    void    toggle();
+    void    mode(uint8_t output) override;
+    uint8_t read() override;
+    void    write(uint8_t value) override;
+    void    toggle() override;
 private:
     ioline_t line;
 };

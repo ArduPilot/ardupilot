@@ -67,9 +67,10 @@ const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
 };
 
 AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
+                                         AP_RangeFinder_Params &_params,
                                          AP_SerialManager &serial_manager,
                                          uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state) {
+    AP_RangeFinder_Backend(_state, _params) {
     AP_Param::setup_object_defaults(this, var_info);
 
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
@@ -103,7 +104,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
         if (c == '\n') {
             linebuf[linebuf_len] = 0;
             linebuf_len = 0;
-            last_reading_ms = AP_HAL::millis();
+            state.last_reading_ms = AP_HAL::millis();
             if (isalpha(linebuf[0])) {
                 parse_response();
             } else {
@@ -144,7 +145,7 @@ void AP_RangeFinder_Wasp::update(void) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 
-    if (AP_HAL::millis() - last_reading_ms > 500) {
+    if (AP_HAL::millis() - state.last_reading_ms > 500) {
         // attempt to reconfigure on the assumption this was a bad baud setting
         configuration_state = WASP_CFG_RATE;
     }

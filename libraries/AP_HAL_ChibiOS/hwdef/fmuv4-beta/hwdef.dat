@@ -5,6 +5,7 @@ include ../fmuv4/hwdef.dat
 # SPI2 SCK is on PB13
 #define GPIO_SPI2_SCK	(GPIO_SPI2_SCK_2|GPIO_SPEED_50MHz)
 undef SPI2_SCK
+undef PB13
 PB13 SPI2_SCK SPI2
 
 # note that PC13 (SBUS invert) is active low on this board

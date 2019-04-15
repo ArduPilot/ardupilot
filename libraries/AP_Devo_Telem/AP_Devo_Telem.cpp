@@ -25,22 +25,18 @@
 #define AP_SERIALMANAGER_DEVO_BUFSIZE_TX        32
 
 #include "AP_Devo_Telem.h"
+
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
-
-//constructor
-AP_DEVO_Telem::AP_DEVO_Telem(const AP_AHRS &ahrs) :
-    _ahrs(ahrs)
+void AP_DEVO_Telem::init()
 {
-    devoPacket.header = DEVOM_SYNC_BYTE;
-}
+    const AP_SerialManager& serial_manager = AP::serialmanager();
 
-// init - perform require initialisation including detecting which protocol to use
-void AP_DEVO_Telem::init(const AP_SerialManager& serial_manager)
-{
     // check for DEVO_DPort
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Devo_Telem, 0))) {
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
@@ -57,30 +53,44 @@ uint32_t AP_DEVO_Telem::gpsDdToDmsFormat(float ddm)
     int32_t deg = (int32_t)ddm;
     float mm = (ddm - deg) * 60.0f;
 
-    mm = ((float)deg * 100.0f + mm) /100.0;
+    mm = ((float)deg * 100.0f + mm) /100.0f;
 
     if ((mm < -180.0f) || (mm > 180.0f)) {
         mm = 0.0f;
     }
 
-    return mm * 1.0e7;
+    return mm * 1.0e7f;
 }
 
 
 /*
   send_frames - sends updates down telemetry link
-  should be called by main program at 1hz
+  should be called at 1hz
 */
 
 #define DEVO_SPEED_FACTOR 0.0194384f
 
-void AP_DEVO_Telem::send_frames(uint8_t control_mode)
+void AP_DEVO_Telem::send_frames()
 {
     // return immediately if not initialised
     if (_port == nullptr) {
         return;
     }
 
+    struct PACKED {
+        uint8_t header;                                ///< 0xAA for a valid packet
+        int32_t lon;
+        int32_t lat;
+        int32_t alt;
+        int16_t speed;
+        int16_t temp;
+        int16_t volt;
+        uint8_t checksum8;
+    } devoPacket{};
+
+    devoPacket.header = DEVOM_SYNC_BYTE;
+
+    const AP_AHRS &_ahrs = AP::ahrs();
     const AP_GPS &gps = AP::gps();
     Location loc;
 
@@ -96,20 +106,16 @@ void AP_DEVO_Telem::send_frames(uint8_t control_mode)
         float alt;
         _ahrs.get_relative_position_D_home(alt);
         devoPacket.alt   = alt * -100.0f; // coordinates was in NED, so it needs to change sign. Protocol requires in cm!
-    } else {
-        devoPacket.lat = 0;
-        devoPacket.lon = 0;
-        devoPacket.speed = 0;
-        devoPacket.alt=0;
     }
 
 
 
     devoPacket.volt = roundf(AP::battery().voltage() * 10.0f);
-    devoPacket.temp = control_mode; // Send mode as temperature
+    devoPacket.temp = gcs().custom_mode(); // Send mode as temperature
 
-    devoPacket.checksum8 = 0; // Init Checksum with zero Byte
-
+    // emit the packet to the port byte-by-byte, calculating checksum
+    // as we go.  Note we are stepping backwards through the structure
+    // - presumably to get endianness correct on the entries!
     uint8_t *b = (uint8_t *)&devoPacket;
     for (uint8_t i = sizeof(devoPacket)-1; i !=0; i--) {
         _port->write(b, 1);
@@ -124,6 +130,6 @@ void AP_DEVO_Telem::tick(void)
 
     if (now - _last_frame_ms > 1000) {
         _last_frame_ms = now;
-        send_frames(_control_mode);
+        send_frames();
     }
 }

@@ -1,16 +1,12 @@
 #pragma once
 
-#include <AP_Buffer/AP_Buffer.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS.h>
 
 // definitions and macros
 #define SMARTRTL_ACCURACY_DEFAULT        2.0f   // default _ACCURACY parameter value.  Points will be no closer than this distance (in meters) together.
-#define SMARTRTL_POINTS_DEFAULT          150    // default _POINTS parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
+#define SMARTRTL_POINTS_DEFAULT          300    // default _POINTS parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
 #define SMARTRTL_POINTS_MAX              500    // the absolute maximum number of points this library can support.
 #define SMARTRTL_TIMEOUT                 15000  // the time in milliseconds with no points saved to the path (for whatever reason), before SmartRTL is disabled for the flight
 #define SMARTRTL_CLEANUP_POINT_TRIGGER   50     // simplification will trigger when this many points are added to the path
@@ -159,7 +155,7 @@ private:
     // get the closest distance between 2 line segments and the point midway between the closest points
     static dist_point segment_segment_dist(const Vector3f& p1, const Vector3f& p2, const Vector3f& p3, const Vector3f& p4);
 
-    // de-activate SmartRTL, send warning to GCS and log to dataflash
+    // de-activate SmartRTL, send warning to GCS and logger
     void deactivate(SRTL_Actions action, const char *reason);
 
     // logging
@@ -184,7 +180,7 @@ private:
     uint16_t _path_points_max;  // after the array has been allocated, we will need to know how big it is. We can't use the parameter, because a user could change the parameter in-flight
     uint16_t _path_points_count;// number of points in the path array
     uint16_t _path_points_completed_limit;  // set by main thread to the path_point_count when a point is popped.  used by simplify and prune algorithms to detect path shrinking
-    AP_HAL::Semaphore *_path_sem;   // semaphore for updating path
+    HAL_Semaphore _path_sem;   // semaphore for updating path
 
     // Simplify
     // structure and buffer to hold the "to-do list" for the simplify algorithm.
@@ -200,7 +196,7 @@ private:
         simplify_start_finish_t* stack;
         uint16_t stack_max;     // maximum number of elements in the _simplify_stack array
         uint16_t stack_count;   // number of elements in _simplify_stack array
-        Bitmask bitmask = Bitmask(SMARTRTL_POINTS_MAX);  // simplify algorithm clears bits for each point that can be removed
+        Bitmask bitmask{SMARTRTL_POINTS_MAX};  // simplify algorithm clears bits for each point that can be removed
     } _simplify;
 
     // Pruning

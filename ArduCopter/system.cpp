@@ -23,12 +23,9 @@ void Copter::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    // init vehicle capabilties
-    init_capabilities();
-
     hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
-                        fwver.fw_string,
+                        AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
     //
@@ -47,8 +44,6 @@ void Copter::init_ardupilot()
     // initialise stats module
     g2.stats.init();
 #endif
-
-    gcs().set_dataflash(&DataFlash);
 
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
@@ -78,7 +73,7 @@ void Copter::init_ardupilot()
     winch_init();
 
     // initialise notify system
-    notify.init(true);
+    notify.init();
     notify_flight_mode();
 
     // initialise battery monitor
@@ -89,26 +84,11 @@ void Copter::init_ardupilot()
     
     barometer.init();
 
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
-    ap.usb_connected = true;
-    check_usb_mux();
-
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // setup frsky, and pass a number of parameters to the library
-    char firmware_buf[50];
-    snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", fwver.fw_string, get_frame_string());
-    frsky_telemetry.init(serial_manager, firmware_buf,
-                         get_frame_mav_type(),
-                         &ap.value);
-#endif
-
-#if DEVO_TELEM_ENABLED == ENABLED
-    // setup devo
-    devo_telemetry.init(serial_manager);
+#if OSD_ENABLED == ENABLED
+    osd.init();
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -140,9 +120,6 @@ void Copter::init_ardupilot()
     // motors initialised so parameters can be sent
     ap.initialised_params = true;
 
-    // initialise which outputs Servo and Relay events can use
-    ServoRelayEvents.set_channel_mask(~motors->get_motor_mask());
-
     relay.init();
 
     /*
@@ -160,7 +137,7 @@ void Copter::init_ardupilot()
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);
 
-    init_compass();
+    AP::compass().init();
 
 #if OPTFLOW == ENABLED
     // make optflow available to AHRS
@@ -169,7 +146,7 @@ void Copter::init_ardupilot()
 
     // init Location class
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    Location_Class::set_terrain(&terrain);
+    Location::set_terrain(&terrain);
     wp_nav->set_terrain(&terrain);
 #endif
 
@@ -239,7 +216,7 @@ void Copter::init_ardupilot()
 
 #if MODE_AUTO_ENABLED == ENABLED
     // initialise mission library
-    mission.init();
+    mode_auto.mission.init();
 #endif
 
 #if MODE_SMARTRTL_ENABLED == ENABLED
@@ -247,18 +224,19 @@ void Copter::init_ardupilot()
     g2.smart_rtl.init();
 #endif
 
-    // initialise DataFlash library
-#if MODE_AUTO_ENABLED == ENABLED
-    DataFlash.set_mission(&mission);
-#endif
-    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
+    // initialise AP_Logger library
+    logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
-    // initialise the flight mode and aux switch
-    // ---------------------------
-    reset_control_switch();
-    init_aux_switches();
+    // initialise rc channels including setting mode
+    rc().init();
 
     startup_INS_ground();
+
+#ifdef ENABLE_SCRIPTING
+    if (!g2.scripting.init()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
+    }
+#endif // ENABLE_SCRIPTING
 
     // set landed flags
     set_land_complete(true);
@@ -282,9 +260,6 @@ void Copter::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
-    // default enable RC override
-    copter.ap.rc_override_enable = true;
-    
     hal.console->printf("\nReady to FLY ");
 
     // flag that initialisation has completed
@@ -393,40 +368,27 @@ void Copter::update_auto_armed()
         if(flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
-        if(ap.land_complete && !motors->rotor_runup_complete()) {
+        if(ap.land_complete && motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED && ap.using_interlock) {
             set_auto_armed(false);
         }
-#endif // HELI_FRAME
     }else{
         // arm checks
         
-#if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors->armed() && !ap.throttle_zero && motors->rotor_runup_complete()) {
-            set_auto_armed(true);
-        }
-#else
+        if(motors->armed() && ap.using_interlock) {
+            if(!ap.throttle_zero && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+                set_auto_armed(true);
+            }
         // if motors are armed and throttle is above zero auto_armed should be true
         // if motors are armed and we are in throw mode, then auto_armed should be true
-        if(motors->armed() && (!ap.throttle_zero || control_mode == THROW)) {
-            set_auto_armed(true);
+        } else if (motors->armed() && !ap.using_interlock) {
+            if(!ap.throttle_zero || control_mode == THROW) {
+                set_auto_armed(true);
+            }
         }
-#endif // HELI_FRAME
     }
-}
-
-void Copter::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == ap.usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    ap.usb_connected = usb_check;
 }
 
 /*
@@ -435,8 +397,8 @@ void Copter::check_usb_mux(void)
 bool Copter::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    ap.logging_started = DataFlash.logging_started();
-    return DataFlash.should_log(mask);
+    ap.logging_started = logger.logging_started();
+    return logger.should_log(mask);
 #else
     return false;
 #endif
@@ -578,7 +540,7 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
-    AP_AHRS_View *ahrs_view = ahrs.create_view(ROTATION_NONE);
+    ahrs_view = ahrs.create_view(ROTATION_NONE);
     if (ahrs_view == nullptr) {
         AP_HAL::panic("Unable to allocate AP_AHRS_View");
     }
@@ -624,7 +586,7 @@ void Copter::allocate_motors(void)
 #endif
 
     // reload lines from the defaults file that may now be accessible
-    AP_Param::reload_defaults_file();
+    AP_Param::reload_defaults_file(true);
     
     // now setup some frame-class specific defaults
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
@@ -675,4 +637,16 @@ void Copter::allocate_motors(void)
 
     // upgrade parameters. This must be done after allocating the objects
     convert_pid_parameters();
+#if FRAME_CONFIG == HELI_FRAME
+    convert_tradheli_parameters();
+#endif
+}
+
+bool Copter::is_tradheli() const
+{
+#if FRAME_CONFIG == HELI_FRAME
+    return true;
+#else
+    return false;
+#endif
 }

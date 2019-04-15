@@ -25,17 +25,16 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_Compass_HIL::AP_Compass_HIL(Compass &compass):
-    AP_Compass_Backend(compass)
+AP_Compass_HIL::AP_Compass_HIL()
 {
     memset(_compass_instance, 0, sizeof(_compass_instance));
     _compass._setup_earth_field();
 }
 
 // detect the sensor
-AP_Compass_Backend *AP_Compass_HIL::detect(Compass &compass)
+AP_Compass_Backend *AP_Compass_HIL::detect()
 {
-    AP_Compass_HIL *sensor = new AP_Compass_HIL(compass);
+    AP_Compass_HIL *sensor = new AP_Compass_HIL();
     if (sensor == nullptr) {
         return nullptr;
     }

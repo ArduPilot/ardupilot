@@ -33,7 +33,7 @@ endif
 
 # FPU-related options
 ifeq ($(USE_FPU),)
-  USE_FPU = no
+  USE_FPU = hard
 endif
 ifneq ($(USE_FPU),no)
   OPT    += $(USE_FPU_OPT)
@@ -124,6 +124,10 @@ LDFLAGS   = $(MCFLAGS) $(OPT) -nostartfiles $(LLIBDIR) -Wl,-Map=$(BUILDDIR)/$(PR
 # provide a marker for ArduPilot build options in ChibiOS
 CFLAGS    += -D_ARDUPILOT_
 
+ifeq ($(ENABLE_ASSERTS),yes)
+  ASXFLAGS += -DHAL_CHIBIOS_ENABLE_ASSERTS
+endif
+
 # Thumb interwork enabled only if needed because it kills performance.
 ifneq ($(strip $(TSRC)),)
   CFLAGS   += -DTHUMB_PRESENT
@@ -162,7 +166,6 @@ CPPFLAGS += -MD -MP -MF .dep/$(@F).d
 
 # Paths where to search for sources
 VPATH     = $(SRCPATHS)
-
 
 ifndef ECHO
 T := $(shell $(MAKE) $(MAKECMDGOALS) --no-print-directory \

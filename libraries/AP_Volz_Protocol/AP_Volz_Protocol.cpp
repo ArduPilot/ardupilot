@@ -67,21 +67,21 @@ void AP_Volz_Protocol::update()
         // check if current channel is needed for Volz protocol
         if (last_used_bitmask & (1U<<i)) {
 
-            SRV_Channel *ch = SRV_Channels::srv_channel(i);
-            if (ch == nullptr) {
+            SRV_Channel *c = SRV_Channels::srv_channel(i);
+            if (c == nullptr) {
                 continue;
             }
             
             // check if current channel PWM is within range
-            if (ch->get_output_pwm() < ch->get_output_min()) {
+            if (c->get_output_pwm() < c->get_output_min()) {
                 value = 0;
             } else {
-                value = ch->get_output_pwm() - ch->get_output_min();
+                value = c->get_output_pwm() - c->get_output_min();
             }
 
             // scale the PWM value to Volz value
             value = value + VOLZ_EXTENDED_POSITION_MIN;
-            value = value * VOLZ_SCALE_VALUE / (ch->get_output_max() - ch->get_output_min());
+            value = value * VOLZ_SCALE_VALUE / (c->get_output_max() - c->get_output_min());
 
             // make sure value stays in range
             if (value > VOLZ_EXTENDED_POSITION_MAX) {

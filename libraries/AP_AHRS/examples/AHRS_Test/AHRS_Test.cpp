@@ -2,7 +2,6 @@
 // Simple test for the AP_AHRS interface
 //
 
-#include <AP_ADC/AP_ADC.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -25,7 +24,7 @@ static AP_SerialManager serial_manager;
 
 class DummyVehicle {
 public:
-    RangeFinder sonar{serial_manager, ROTATION_PITCH_270};
+    RangeFinder sonar{serial_manager};
     NavEKF2 EKF2{&ahrs, sonar};
     NavEKF3 EKF3{&ahrs, sonar};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3,
@@ -45,7 +44,8 @@ void setup(void)
     ahrs.init();
     serial_manager.init();
 
-    if( compass.init() ) {
+    compass.init();
+    if(compass.read()) {
         hal.console->printf("Enabling compass\n");
         ahrs.set_compass(&compass);
     } else {

@@ -36,16 +36,18 @@
 
 class ChibiOS::Storage : public AP_HAL::Storage {
 public:
-    void init() {}
-    void read_block(void *dst, uint16_t src, size_t n);
-    void write_block(uint16_t dst, const void* src, size_t n);
+    void init() override {}
+    void read_block(void *dst, uint16_t src, size_t n) override;
+    void write_block(uint16_t dst, const void* src, size_t n) override;
 
     void _timer_tick(void) override;
+    bool healthy(void) override;
 
 private:
     volatile bool _initialised;
     void _storage_create(void);
     void _storage_open(void);
+    void _save_backup(void);
     void _mark_dirty(uint16_t loc, uint16_t length);
     uint8_t _buffer[CH_STORAGE_SIZE] __attribute__((aligned(4)));
     Bitmask _dirty_mask{CH_STORAGE_NUM_LINES};
@@ -57,6 +59,7 @@ private:
     uint8_t _flash_page;
     bool _flash_failed;
     uint32_t _last_re_init_ms;
+    uint32_t _last_empty_ms;
 
 #ifdef STORAGE_FLASH_PAGE
     AP_FlashStorage _flash{_buffer,
@@ -73,6 +76,10 @@ private:
 #if HAL_WITH_RAMTRON
     AP_RAMTRON fram;
     bool using_fram;
+#endif
+#ifdef USE_POSIX
+    bool using_filesystem;
+    int log_fd;
 #endif
 };
 

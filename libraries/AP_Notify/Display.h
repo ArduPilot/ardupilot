@@ -13,8 +13,8 @@ class Display: public NotifyDevice {
 public:
     friend class Display_Backend;
 
-    bool init(void);
-    void update();
+    bool init(void) override;
+    void update() override;
 
 private:
     void draw_char(uint16_t x, uint16_t y, const char c);
@@ -31,8 +31,6 @@ private:
     void update_text_empty(uint8_t r);
 
     Display_Backend *_driver;
-
-    bool _healthy;
 
     uint8_t _mstartpos; // ticker shift position
     uint8_t _movedelay; // ticker delay before shifting after new message displayed

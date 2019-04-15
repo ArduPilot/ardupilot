@@ -119,6 +119,7 @@ void AC_PID::set_input_filter_d(float input)
     // reset input filter to value received
     if (_flags._reset_filter) {
         _flags._reset_filter = false;
+        _input = input;
         _derivative = 0.0f;
     }
 

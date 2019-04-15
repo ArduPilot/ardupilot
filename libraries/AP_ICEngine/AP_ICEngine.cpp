@@ -16,6 +16,7 @@
 
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include "AP_ICEngine.h"
 
 extern const AP_HAL::HAL& hal;
@@ -24,7 +25,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable ICEngine control
-    // @Description: This enables internal combusion engine control
+    // @Description: This enables internal combustion engine control
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE", 0, AP_ICEngine, enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -51,10 +52,10 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Units: s
     // @Range: 1 10
     AP_GROUPINFO("START_DELAY", 3, AP_ICEngine, starter_delay, 2),
-    
+
     // @Param: RPM_THRESH
     // @DisplayName: RPM threshold
-    // @Description: This is the measured RPM above which tne engine is considered to be running
+    // @Description: This is the measured RPM above which the engine is considered to be running
     // @User: Standard
     // @Range: 100 100000
     AP_GROUPINFO("RPM_THRESH", 4, AP_ICEngine, rpm_threshold, 100),
@@ -100,18 +101,21 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @User: Standard
     // @Range: 0 100
     AP_GROUPINFO("START_PCT", 10, AP_ICEngine, start_percent, 5),
-    
+
     AP_GROUPEND    
 };
 
 
 // constructor
-AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm, const AP_AHRS &_ahrs) :
-    rpm(_rpm),
-    ahrs(_ahrs),
-    state(ICE_OFF)
+AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm) :
+    rpm(_rpm)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_ICEngine must be singleton");
+    }
+    _singleton = this;
 }
 
 /*
@@ -124,9 +128,10 @@ void AP_ICEngine::update(void)
     }
 
     uint16_t cvalue = 1500;
-    if (start_chan != 0) {
+    RC_Channel *c = rc().channel(start_chan-1);
+    if (c != nullptr) {
         // get starter control channel
-        cvalue = RC_Channels::get_radio_in(start_chan-1);
+        cvalue = c->get_radio_in();
     }
 
     bool should_run = false;
@@ -152,7 +157,7 @@ void AP_ICEngine::update(void)
         Vector3f pos;
         if (!should_run) {
             state = ICE_OFF;
-        } else if (ahrs.get_relative_position_NED_origin(pos)) {
+        } else if (AP::ahrs().get_relative_position_NED_origin(pos)) {
             if (height_pending) {
                 height_pending = false;
                 initial_height = -pos.z;
@@ -201,7 +206,7 @@ void AP_ICEngine::update(void)
         if (state == ICE_START_HEIGHT_DELAY) {
             // when disarmed we can be waiting for takeoff
             Vector3f pos;
-            if (ahrs.get_relative_position_NED_origin(pos)) {
+            if (AP::ahrs().get_relative_position_NED_origin(pos)) {
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }
@@ -210,7 +215,7 @@ void AP_ICEngine::update(void)
             state = ICE_OFF;
         }
     }
-    
+
     /* now set output channels */
     switch (state) {
     case ICE_OFF:
@@ -224,7 +229,7 @@ void AP_ICEngine::update(void)
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
         break;
-        
+
     case ICE_STARTING:
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_on);
@@ -269,9 +274,10 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         state = ICE_OFF;
         return true;
     }
-    if (start_chan != 0) {
+    RC_Channel *c = rc().channel(start_chan-1);
+    if (c != nullptr) {
         // get starter control channel
-        if (RC_Channels::get_radio_in(start_chan-1) <= 1300) {
+        if (c->get_radio_in() <= 1300) {
             gcs().send_text(MAV_SEVERITY_INFO, "Engine: start control disabled");
             return false;
         }
@@ -286,4 +292,12 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     }
     state = ICE_STARTING;
     return true;
+}
+
+// singleton instance. Should only ever be set in the constructor.
+AP_ICEngine *AP_ICEngine::_singleton;
+namespace AP {
+AP_ICEngine *ice() {
+        return AP_ICEngine::get_singleton();
+    }
 }

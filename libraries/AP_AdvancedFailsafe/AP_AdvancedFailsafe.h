@@ -65,6 +65,8 @@ public:
             _saved_wp = 0;
         }
 
+    bool enabled() { return _enable; }
+
     // check that everything is OK
     void check(uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms);
 
@@ -83,7 +85,11 @@ public:
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
-        
+
+    bool terminating_vehicle_via_landing() const {
+        return _terminate_action == TERMINATE_ACTION_LAND;
+    };
+
 protected:
     // setup failsafe values for if FMU firmware stops running
     virtual void setup_IO_failsafe(void) = 0;

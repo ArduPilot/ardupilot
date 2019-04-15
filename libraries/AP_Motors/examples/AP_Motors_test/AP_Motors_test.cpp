@@ -12,9 +12,8 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_GPS/AP_GPS.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_ADC/AP_ADC.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Baro/AP_Baro.h>
 #include <Filter/Filter.h>
@@ -23,6 +22,7 @@
 #include <AP_Declination/AP_Declination.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Mission/AP_Mission.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_Terrain/AP_Terrain.h>
@@ -52,6 +52,8 @@ AP_MotorsMatrix   motors(400);
 //AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
 //AP_MotorsSingle motors(400);
 //AP_MotorsCoax motors(400);
+
+AP_BattMonitor _battmonitor{0, nullptr, nullptr};
 
 // setup
 void setup()
@@ -112,9 +114,9 @@ void motor_order_test()
     motors.armed(true);
     for (int8_t i=1; i <= AP_MOTORS_MAX_NUM_MOTORS; i++) {
         hal.console->printf("Motor %d\n",(int)i);
-        motors.output_test(i, 1150);
+        motors.output_test_seq(i, 1150);
         hal.scheduler->delay(300);
-        motors.output_test(i, 1000);
+        motors.output_test_seq(i, 1000);
         hal.scheduler->delay(2000);
     }
     motors.armed(false);
@@ -161,7 +163,7 @@ void stability_test()
                     motors.set_pitch(pitch_in/4500.0f);
                     motors.set_yaw(yaw_in/4500.0f);
                     motors.set_throttle(throttle_in);
-                    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+                    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
                     update_motors();
                     avg_out = ((hal.rcout->read(0) + hal.rcout->read(1) + hal.rcout->read(2) + hal.rcout->read(3))/4);
                     // display input and output

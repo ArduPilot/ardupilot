@@ -1,0 +1,62 @@
+dcache enabled, 384MHz
+
+SYSCLK 384MHz
+Type sizes:
+char      : 1
+short     : 2
+int       : 4
+long      : 4
+long long : 8
+bool      : 1
+void*     : 4
+printing NaN: nan
+printing +Inf: inf
+printing -Inf: -inf
+
+Operation timings:
+Note: timings for some operations are very data dependent
+nop           0.00 usec/call
+micros()      0.39 usec/call
+millis()      0.42 usec/call
+fadd          0.00 usec/call
+fsub          0.00 usec/call
+fmul          0.00 usec/call
+fdiv /=       0.04 usec/call
+fdiv 2/x      0.04 usec/call
+dadd          0.14 usec/call
+dsub          0.14 usec/call
+dmul          0.06 usec/call
+ddiv          0.08 usec/call
+sinf()        0.30 usec/call
+cosf()        0.30 usec/call
+tanf()        0.50 usec/call
+acosf()       0.40 usec/call
+asinf()       0.30 usec/call
+atan2f()      0.40 usec/call
+sqrtf()       0.10 usec/call
+sin()         4.40 usec/call
+cos()         4.10 usec/call
+tan()         8.40 usec/call
+acos()        5.70 usec/call
+asin()        5.10 usec/call
+atan2()       7.50 usec/call
+sqrt()        1.20 usec/call
+iadd8         0.00 usec/call
+isub8         0.00 usec/call
+imul8         0.00 usec/call
+idiv8         0.02 usec/call
+iadd16        0.00 usec/call
+isub16        0.00 usec/call
+imul16        0.00 usec/call
+idiv16        0.02 usec/call
+iadd32        0.00 usec/call
+isub32        0.00 usec/call
+imul32        0.00 usec/call
+idiv32        0.02 usec/call
+iadd64        0.00 usec/call
+isub64        0.00 usec/call
+imul64        0.02 usec/call
+idiv64        0.16 usec/call
+memcpy128     1.06 usec/call
+memset128     1.06 usec/call
+delay(1)   1000.00 usec/call

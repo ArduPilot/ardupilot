@@ -229,6 +229,10 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
 
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
+
+    // set flag to true so targets are initialized once aircraft is armed for first time
+    _heliflags.init_targets_on_arming = true;
+
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
@@ -258,6 +262,9 @@ void AP_MotorsHeli::output()
     // update throttle filter
     update_throttle_filter();
 
+    // run spool logic
+    output_logic();
+
     if (_flags.armed) {
         calculate_armed_scalars();
         if (!_flags.interlock) {
@@ -268,6 +275,9 @@ void AP_MotorsHeli::output()
     } else {
         output_disarmed();
     }
+    
+    output_to_motors();
+
 };
 
 // sends commands to the motors
@@ -279,8 +289,6 @@ void AP_MotorsHeli::output_armed_stabilizing()
     }
 
     move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
-
-    update_motor_control(ROTOR_CONTROL_ACTIVE);
 }
 
 // output_armed_zero_throttle - sends commands to the motors
@@ -292,8 +300,6 @@ void AP_MotorsHeli::output_armed_zero_throttle()
     }
 
     move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
-
-    update_motor_control(ROTOR_CONTROL_IDLE);
 }
 
 // output_disarmed - sends commands to the motors
@@ -351,8 +357,92 @@ void AP_MotorsHeli::output_disarmed()
 
     // helicopters always run stabilizing flight controls
     move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
+}
 
-    update_motor_control(ROTOR_CONTROL_STOP);
+// run spool logic
+void AP_MotorsHeli::output_logic()
+{
+    // force desired and current spool mode if disarmed and armed with interlock enabled
+    if (_flags.armed) {
+        if (!_flags.interlock) {
+            _spool_desired = DesiredSpoolState::GROUND_IDLE;
+        } else {
+            _heliflags.init_targets_on_arming = false;
+        }
+    } else {
+        _heliflags.init_targets_on_arming = true;
+        _spool_desired = DesiredSpoolState::SHUT_DOWN;
+        _spool_state = SpoolState::SHUT_DOWN;
+    }
+
+    switch (_spool_state) {
+        case SpoolState::SHUT_DOWN:
+            // Motors should be stationary.
+            // Servos set to their trim values or in a test condition.
+
+            // make sure the motors are spooling in the correct direction
+            if (_spool_desired != DesiredSpoolState::SHUT_DOWN) {
+                _spool_state = SpoolState::GROUND_IDLE;
+                break;
+            }
+
+            break;
+
+        case SpoolState::GROUND_IDLE: {
+            // Motors should be stationary or at ground idle.
+            // Servos should be moving to correct the current attitude.
+            if (_spool_desired == DesiredSpoolState::SHUT_DOWN){
+                _spool_state = SpoolState::SHUT_DOWN;
+            } else if(_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {
+                _spool_state = SpoolState::SPOOLING_UP;
+            } else {    // _spool_desired == GROUND_IDLE
+
+            }
+
+            break;
+        }
+        case SpoolState::SPOOLING_UP:
+            // Maximum throttle should move from minimum to maximum.
+            // Servos should exhibit normal flight behavior.
+
+            // make sure the motors are spooling in the correct direction
+            if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED ){
+                _spool_state = SpoolState::SPOOLING_DOWN;
+                break;
+            }
+
+            if (_heliflags.rotor_runup_complete){
+                _spool_state = SpoolState::THROTTLE_UNLIMITED;
+            }
+            break;
+
+        case SpoolState::THROTTLE_UNLIMITED:
+            // Throttle should exhibit normal flight behavior.
+            // Servos should exhibit normal flight behavior.
+
+            // make sure the motors are spooling in the correct direction
+            if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
+                _spool_state = SpoolState::SPOOLING_DOWN;
+                break;
+            }
+
+
+            break;
+
+        case SpoolState::SPOOLING_DOWN:
+            // Maximum throttle should move from maximum to minimum.
+            // Servos should exhibit normal flight behavior.
+
+            // make sure the motors are spooling in the correct direction
+            if (_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {
+                _spool_state = SpoolState::SPOOLING_UP;
+                break;
+            }
+            if (!rotor_speed_above_critical()){
+                _spool_state = SpoolState::GROUND_IDLE;
+            }
+            break;
+    }
 }
 
 // parameter_check - check if helicopter specific parameters are sensible
@@ -395,13 +485,13 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
 }
 
 // reset_swash_servo
-void AP_MotorsHeli::reset_swash_servo(SRV_Channel *servo)
+void AP_MotorsHeli::reset_swash_servo(SRV_Channel::Aux_servo_function_t function)
 {
-    servo->set_range(1000);
+    // outputs are defined on a -500 to 500 range for swash servos
+    SRV_Channels::set_range(function, 1000);
 
     // swash servos always use full endpoints as restricting them would lead to scaling errors
-    servo->set_output_min(1000);
-    servo->set_output_max(2000);
+    SRV_Channels::set_output_min_max(function, 1000, 2000);
 }
 
 // update the throttle input filter
@@ -426,22 +516,16 @@ void AP_MotorsHeli::reset_flight_controls()
     calculate_scalars();
 }
 
-// convert input in -1 to +1 range to pwm output for swashplate servo.  Special handling of trim is required 
-// to keep travel between the swashplate servos consistent.  Swashplate servo travel range is fixed to 1000 pwm
-// and therefore the input is multiplied by 500 to get PWM output.
-int16_t AP_MotorsHeli::calc_pwm_output_1to1_swash_servo(float input, const SRV_Channel *servo)
+// convert input in -1 to +1 range to pwm output for swashplate servo.
+// The value 0 corresponds to the trim value of the servo. Swashplate
+// servo travel range is fixed to 1000 pwm and therefore the input is
+// multiplied by 500 to get PWM output.
+void AP_MotorsHeli::rc_write_swash(uint8_t chan, float swash_in)
 {
-    int16_t ret;
-
-    input = constrain_float(input, -1.0f, 1.0f);
-
-    if (servo->get_reversed()) {
-        input = -input;
-    }
-
-    ret = (int16_t (input * 500.0f) + servo->get_trim());
-
-    return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
+    uint16_t pwm = (uint16_t)(1500 + 500 * swash_in);
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    SRV_Channels::set_output_pwm_trimmed(function, pwm);
 }
+
 
 

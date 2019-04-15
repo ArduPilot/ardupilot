@@ -5,6 +5,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #include <AC_Fence/AC_PolyFence_loader.h>
+#include <AP_Common/Location.h>
 
 class AP_Proximity_SITL : public AP_Proximity_Backend
 {
@@ -17,11 +18,11 @@ public:
     void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const;
-    float distance_min() const;
+    float distance_max() const override;
+    float distance_min() const override;
 
     // get distance upwards in meters. returns true on success
-    bool get_upward_distance(float &distance) const;
+    bool get_upward_distance(float &distance) const override;
 
 private:
     SITL::SITL *sitl;

@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #include <utility>
 
@@ -314,9 +315,6 @@ static const uint8_t _font[] = {
 #endif
 };
 
-// probe first 3 busses:
-static const uint8_t I2C_BUS_PROBE_MASK = 0x7;
-
 bool Display::init(void)
 {
     // exit immediately if already initialised
@@ -325,10 +323,7 @@ bool Display::init(void)
     }
 
     // initialise driver
-    for(uint8_t i=0; i<8 && _driver == nullptr; i++) {
-        if (! (I2C_BUS_PROBE_MASK & (1<<i))) {
-            continue;
-        }
+    FOREACH_I2C(i) {
         switch (pNotify->_display_type) {
         case DISPLAY_SSD1306: {
             _driver = Display_SSD1306_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
@@ -342,13 +337,14 @@ bool Display::init(void)
         default:
             break;
         }
+        if (_driver != nullptr) {
+            break;
+        }
     }
 
     if (_driver == nullptr) {
-        _healthy = false;
         return false;
     }
-    _healthy = true;
 
     // update all on display
     update_all();
@@ -359,11 +355,6 @@ bool Display::init(void)
 
 void Display::update()
 {
-    // return immediately if not enabled
-    if (!_healthy) {
-        return;
-    }
-
     // max update frequency 2Hz
     static uint8_t timer = 0;
     if (timer++ < 25) {
@@ -518,7 +509,7 @@ void Display::update_ekf(uint8_t r)
 void Display::update_battery(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP_Notify::flags.battery_voltage) ;
+    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP::battery().voltage()) ;
     draw_text(COLUMN(0), ROW(r), msg);
  }
 

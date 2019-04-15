@@ -14,7 +14,6 @@
  */
 
 #include "AP_RPM.h"
-#include "RPM_PX4_PWM.h"
 #include "RPM_Pin.h"
 #include "RPM_SITL.h"
 
@@ -90,14 +89,14 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     AP_GROUPEND
 };
 
-AP_RPM::AP_RPM(void) :
-    num_instances(0)
+AP_RPM::AP_RPM(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    // init state and drivers
-    memset(state,0,sizeof(state));
-    memset(drivers,0,sizeof(drivers));
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_RPM must be singleton");
+    }
+    _singleton = this;
 }
 
 /*
@@ -110,34 +109,22 @@ void AP_RPM::init(void)
         return;
     }
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
-#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) || ((CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN) && (!defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) && !defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)))
-        {
-            uint8_t type = _type[num_instances];
-            uint8_t instance = num_instances;
+        uint8_t type = _type[i];
 
-            if (type == RPM_TYPE_PX4_PWM) {
-                state[instance].instance = instance;
-                drivers[instance] = new AP_RPM_PX4_PWM(*this, instance, state[instance]);
-            }
+        if (type == RPM_TYPE_PX4_PWM) {
+            // on non-PX4 treat PX4-pin as AUXPIN option, for upgrade
+            type = RPM_TYPE_PIN;
         }
-#endif
-        {
-            uint8_t type = _type[num_instances];
-            uint8_t instance = num_instances;
-            if (type == RPM_TYPE_PIN) {
-                state[instance].instance = instance;
-                drivers[instance] = new AP_RPM_Pin(*this, instance, state[instance]);
-            }
+        if (type == RPM_TYPE_PIN) {
+            drivers[i] = new AP_RPM_Pin(*this, i, state[i]);
         }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        uint8_t instance = num_instances;
-        state[instance].instance = instance;
-        drivers[instance] = new AP_RPM_SITL(*this, instance, state[instance]);
+        drivers[i] = new AP_RPM_SITL(*this, i, state[i]);
 #endif
         if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
-            num_instances = i+1;
+            num_instances = i+1; // num_instances is a high-water-mark
         }
     }
 }
@@ -150,9 +137,11 @@ void AP_RPM::update(void)
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr) {
             if (_type[i] == RPM_TYPE_NONE) {
-                // allow user to disable a RPM sensor at runtime
+                // allow user to disable an RPM sensor at runtime and force it to re-learn the quality if re-enabled.
+                state[i].signal_quality = 0;
                 continue;
             }
+
             drivers[i]->update();
         }
     }
@@ -163,7 +152,7 @@ void AP_RPM::update(void)
  */
 bool AP_RPM::healthy(uint8_t instance) const
 {
-    if (instance >= num_instances) {
+    if (instance >= num_instances || _type[instance] == RPM_TYPE_NONE) {
         return false;
     }
 
@@ -188,4 +177,16 @@ bool AP_RPM::enabled(uint8_t instance) const
         return false;
     }
     return true;
+}
+
+// singleton instance
+AP_RPM *AP_RPM::_singleton;
+
+namespace AP {
+
+AP_RPM *rpm()
+{
+    return AP_RPM::get_singleton();
+}
+
 }

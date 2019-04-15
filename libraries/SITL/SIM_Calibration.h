@@ -66,22 +66,22 @@ class Calibration : public Aircraft {
 public:
     Calibration(const char *home_str, const char *frame_str);
 
-    void update(const struct sitl_input& input);
+    void update(const struct sitl_input &input) override;
 
     static Aircraft *create(const char *home_str, const char *frame_str) {
         return new Calibration(home_str, frame_str);
     }
 
 private:
-    void _stop_control(const struct sitl_input& input, Vector3f& rot_accel);
+    void _stop_control(const struct sitl_input &input, Vector3f& rot_accel);
 
     void _attitude_set(float desired_roll, float desired_pitch, float desired_yaw,
                        Vector3f& rot_accel);
 
-    void _attitude_control(const struct sitl_input& input,
+    void _attitude_control(const struct sitl_input &input,
                            Vector3f& rot_accel);
 
-    void _angular_velocity_control(const struct sitl_input& input,
+    void _angular_velocity_control(const struct sitl_input &input,
                                    Vector3f& rot_accel);
 
     void _calibration_poses(Vector3f& rot_accel);

@@ -25,15 +25,27 @@
 #include "shared_dma.h"
 #include "sdcard.h"
 #include "hwdef/common/usbcfg.h"
+#include "hwdef/common/stm32_util.h"
 
 #include <hwdef.h>
 
+#ifndef HAL_NO_UARTDRIVER
 static HAL_UARTA_DRIVER;
 static HAL_UARTB_DRIVER;
 static HAL_UARTC_DRIVER;
 static HAL_UARTD_DRIVER;
 static HAL_UARTE_DRIVER;
 static HAL_UARTF_DRIVER;
+static HAL_UARTG_DRIVER;
+#else
+static Empty::UARTDriver uartADriver;
+static Empty::UARTDriver uartBDriver;
+static Empty::UARTDriver uartCDriver;
+static Empty::UARTDriver uartDDriver;
+static Empty::UARTDriver uartEDriver;
+static Empty::UARTDriver uartFDriver;
+static Empty::UARTDriver uartGDriver;
+#endif
 
 #if HAL_USE_I2C == TRUE
 static ChibiOS::I2CDeviceManager i2cDeviceManager;
@@ -47,7 +59,7 @@ static ChibiOS::SPIDeviceManager spiDeviceManager;
 static Empty::SPIDeviceManager spiDeviceManager;
 #endif
 
-#if HAL_USE_ADC == TRUE
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 static ChibiOS::AnalogIn analogIn;
 #else
 static Empty::AnalogIn analogIn;
@@ -71,6 +83,12 @@ static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
+#ifndef HAL_NO_FLASH_SUPPORT
+static ChibiOS::Flash flashDriver;
+#else
+static Empty::Flash flashDriver;
+#endif
+
 
 #if HAL_WITH_IO_MCU
 HAL_UART_IO_DRIVER;
@@ -86,6 +104,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &uartDDriver,
         &uartEDriver,
         &uartFDriver,
+        &uartGDriver,
         &i2cDeviceManager,
         &spiDeviceManager,
         &analogIn,
@@ -97,6 +116,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlowDriver,
+        &flashDriver,
         nullptr
         )
 {}
@@ -129,9 +149,15 @@ thread_t* get_main_thread()
 }
 
 static AP_HAL::HAL::Callbacks* g_callbacks;
-static THD_FUNCTION(main_loop,arg)
+
+static void main_loop()
 {
     daemon_task = chThdGetSelfX();
+
+    /*
+      switch to high priority for main loop
+     */
+    chThdSetPriority(APM_MAIN_PRIORITY);
 
 #ifdef HAL_I2C_CLEAR_BUS
     // Clear all I2C Buses. This can be needed on some boards which
@@ -139,17 +165,17 @@ static THD_FUNCTION(main_loop,arg)
     ChibiOS::I2CBus::clear_all();
 #endif
 
+#if STM32_DMA_ADVANCED
     ChibiOS::Shared_DMA::init();
-    
+#endif
+    peripheral_power_enable();
+        
     hal.uartA->begin(115200);
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // optional test of SPI clock frequencies
     ChibiOS::SPIDevice::test_clock_freq();
 #endif 
-
-    //Setup SD Card and Initialise FATFS bindings
-    sdcard_init();
 
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
@@ -179,16 +205,18 @@ static THD_FUNCTION(main_loop,arg)
         g_callbacks->loop();
 
         /*
-          give up 250 microseconds of time if the INS loop hasn't
+          give up 50 microseconds of time if the INS loop hasn't
           called delay_microseconds_boost(), to ensure low priority
           drivers get a chance to run. Calling
           delay_microseconds_boost() means we have already given up
           time from the main loop, so we don't need to do it again
           here
          */
+#ifndef HAL_DISABLE_LOOP_DELAY
         if (!schedulerInstance.check_called_boost()) {
-            hal.scheduler->delay_microseconds(250);
+            hal.scheduler->delay_microseconds(50);
         }
+#endif
     }
     thread_running = false;
 }
@@ -222,13 +250,8 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
     assert(callbacks);
     g_callbacks = callbacks;
 
-    void *main_thread_wa = hal.util->malloc_type(THD_WORKING_AREA_SIZE(APM_MAIN_THREAD_STACK_SIZE), AP_HAL::Util::MEM_FAST);
-    chThdCreateStatic(main_thread_wa,
-                      APM_MAIN_THREAD_STACK_SIZE,
-                      APM_MAIN_PRIORITY,     /* Initial priority.    */
-                      main_loop,             /* Thread function.     */
-                      nullptr);              /* Thread parameter.    */
-    chThdExit(0);
+    //Takeover main
+    main_loop();
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {

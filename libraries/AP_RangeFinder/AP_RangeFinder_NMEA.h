@@ -24,6 +24,7 @@ class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend
 public:
     // constructor
     AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
+                        AP_RangeFinder_Params &_params,
                         AP_SerialManager &serial_manager,
                         uint8_t serial_instance);
 
@@ -64,7 +65,6 @@ private:
     static int16_t char_to_hex(char a);
 
     AP_HAL::UARTDriver *uart = nullptr;     // pointer to serial uart
-    uint32_t _last_reading_ms;              // system time of last successful reading
 
     // message decoding related members
     char _term[15];                         // buffer for the current term within the current sentence

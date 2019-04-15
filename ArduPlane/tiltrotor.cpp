@@ -19,7 +19,7 @@ float QuadPlane::tilt_max_change(bool up)
     }
     if (tilt.tilt_type != TILT_TYPE_BINARY && !up) {
         bool fast_tilt = false;
-        if (plane.control_mode == MANUAL) {
+        if (plane.control_mode == &plane.mode_manual) {
             fast_tilt = true;
         }
         if (hal.util->get_soft_armed() && !in_vtol_mode() && !assisted_flight) {
@@ -80,7 +80,7 @@ void QuadPlane::tiltrotor_continuous_update(void)
         } else {
             // the motors are all the way forward, start using them for fwd thrust
             uint8_t mask = is_zero(tilt.current_throttle)?0:(uint8_t)tilt.tilt_mask.get();
-            motors->output_motor_mask(tilt.current_throttle, mask);
+            motors->output_motor_mask(tilt.current_throttle, mask, plane.rudder_dt);
             // prevent motor shutdown
             tilt.motors_active = true;
         }
@@ -109,8 +109,9 @@ void QuadPlane::tiltrotor_continuous_update(void)
       3) if we are in TRANSITION_TIMER mode then we are transitioning
          to forward flight and should put the rotors all the way forward
     */
-    if (plane.control_mode == QSTABILIZE ||
-        plane.control_mode == QHOVER) {
+    if (plane.control_mode == &plane.mode_qstabilize ||
+        plane.control_mode == &plane.mode_qhover ||
+        plane.control_mode == &plane.mode_qautotune) {
         tiltrotor_slew(0);
         return;
     }
@@ -166,7 +167,7 @@ void QuadPlane::tiltrotor_binary_update(void)
         if (tilt.current_tilt >= 1) {
             uint8_t mask = is_zero(new_throttle)?0:(uint8_t)tilt.tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
-            motors->output_motor_mask(new_throttle, mask);
+            motors->output_motor_mask(new_throttle, mask, plane.rudder_dt);
         }
     } else {
         tiltrotor_binary_slew(false);

@@ -8,7 +8,6 @@
 #include "GPIO.h"
 #include "I2CDevice.h"
 #include "OpticalFlow.h"
-#include "PrivateMember.h"
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "Scheduler.h"
@@ -17,3 +16,4 @@
 #include "Storage.h"
 #include "UARTDriver.h"
 #include "Util.h"
+#include "Flash.h"

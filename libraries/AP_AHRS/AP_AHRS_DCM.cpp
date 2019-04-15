@@ -3,7 +3,7 @@
  *
  *       AHRS system using DCM matrices
  *
- *       Based on DCM code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+ *       Based on DCM code by Doug Weibel, Jordi Munoz and Jose Julio. DIYDrones.com
  *
  *       Adapted for the general ArduPilot AHRS interface by Andrew Tridgell
 
@@ -22,6 +22,7 @@
  */
 #include "AP_AHRS.h"
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -49,6 +50,9 @@ AP_AHRS_DCM::reset_gyro_drift(void)
 void
 AP_AHRS_DCM::update(bool skip_ins_update)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     float delta_t;
 
     if (_last_startup_ms == 0) {
@@ -69,7 +73,7 @@ AP_AHRS_DCM::update(bool skip_ins_update)
     // otherwise we may move too far. This happens when arming motors
     // in ArduCopter
     if (delta_t > 0.2f) {
-        memset(&_ra_sum[0], 0, sizeof(_ra_sum));
+        memset((void *)&_ra_sum[0], 0, sizeof(_ra_sum));
         _ra_deltat = 0;
         return;
     }
@@ -141,6 +145,9 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
 void
 AP_AHRS_DCM::reset(bool recover_eulers)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     // reset the integration terms
     _omega_I.zero();
     _omega_P.zero();
@@ -279,7 +286,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
  *  to approximations rather than identities. In effect, the axes in the two frames of reference no
  *  longer describe a rigid body. Fortunately, numerical error accumulates very slowly, so it is a
  *  simple matter to stay ahead of it.
- *  We call the process of enforcing the orthogonality conditions ÒrenormalizationÓ.
+ *  We call the process of enforcing the orthogonality conditions: renormalization.
  */
 void
 AP_AHRS_DCM::normalize(void)
@@ -436,6 +443,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 
     const AP_GPS &_gps = AP::gps();
 
+    if (_compass && _compass->is_calibrating()) {
+        // don't do any yaw correction while calibrating
+        return;
+    }
+    
     if (AP_AHRS_DCM::use_compass()) {
         /*
           we are using compass for yaw
@@ -663,8 +675,14 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
         // keep last airspeed estimate for dead-reckoning purposes
         Vector3f airspeed = velocity - _wind;
-        airspeed.z = 0;
-        _last_airspeed = airspeed.length();
+
+        // rotate vector to body frame
+        const Matrix3f &rot = get_rotation_body_to_ned();
+        airspeed = rot.mul_transpose(airspeed);
+
+        // take positive component in X direction. This mimics a pitot
+        // tube
+        _last_airspeed = MAX(airspeed.x, 0);
     }
 
     if (have_gps()) {
@@ -872,7 +890,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     // zero our accumulator ready for the next GPS step
-    memset(&_ra_sum[0], 0, sizeof(_ra_sum));
+    memset((void *)&_ra_sum[0], 0, sizeof(_ra_sum));
     _ra_deltat = 0;
     _ra_sum_start = last_correction_time;
 
@@ -964,14 +982,14 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     loc.lat = _last_lat;
     loc.lng = _last_lng;
     loc.alt = AP::baro().get_altitude() * 100 + _home.alt;
-    loc.flags.relative_alt = 0;
-    loc.flags.terrain_alt = 0;
-    location_offset(loc, _position_offset_north, _position_offset_east);
+    loc.relative_alt = 0;
+    loc.terrain_alt = 0;
+    loc.offset(_position_offset_north, _position_offset_east);
     const AP_GPS &_gps = AP::gps();
     if (_flags.fly_forward && _have_position) {
         float gps_delay_sec = 0;
         _gps.get_lag(gps_delay_sec);
-        location_update(loc, _gps.ground_course_cd() * 0.01f, _gps.ground_speed() * gps_delay_sec);
+        loc.offset_bearing(_gps.ground_course_cd() * 0.01f, _gps.ground_speed() * gps_delay_sec);
     }
     return _have_position;
 }
@@ -1005,14 +1023,41 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
                                         gnd_speed + _wind_max);
         *airspeed_ret = true_airspeed / get_EAS2TAS();
     }
+    if (!ret) {
+        // give the last estimate, but return false. This is used by
+        // dead-reckoning code
+        *airspeed_ret = _last_airspeed;
+    }
     return ret;
 }
 
-void AP_AHRS_DCM::set_home(const Location &loc)
+bool AP_AHRS_DCM::set_home(const Location &loc)
 {
-    _home = loc;
-    _home.options = 0;
+    // check location is valid
+    if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
+        return false;
+    }
+    if (!loc.check_latlng()) {
+        return false;
+    }
+    // home must always be global frame at the moment as .alt is
+    // accessed directly by the vehicles and they may not be rigorous
+    // in checking the frame type.
+    Location tmp = loc;
+    if (!tmp.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+        return false;
+    }
+
+    _home = tmp;
     _home_is_set = true;
+
+    Log_Write_Home_And_Origin();
+
+    // send new home and ekf origin to GCS
+    gcs().send_message(MSG_HOME);
+    gcs().send_message(MSG_ORIGIN);
+
+    return true;
 }
 
 //  a relative ground position to home in meters, Down
@@ -1031,12 +1076,15 @@ bool AP_AHRS_DCM::healthy(void) const
 }
 
 /*
-  return amount of time that AHRS has been up
+  return NED velocity if we have GPS lock
  */
-uint32_t AP_AHRS_DCM::uptime_ms(void) const
+bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
 {
-    if (_last_startup_ms == 0) {
-        return 0;
+    const AP_GPS &_gps = AP::gps();
+    if (_gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+        return false;
     }
-    return AP_HAL::millis() - _last_startup_ms;
+    vec = _gps.velocity();
+    return true;
 }
+

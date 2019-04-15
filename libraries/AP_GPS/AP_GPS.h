@@ -17,9 +17,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -28,13 +27,9 @@
    than 1 then redundant sensors may be available
  */
 #define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
-#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPs instances including the 'virtual' GPS created by blending receiver data
+#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPS instances including the 'virtual' GPS created by blending receiver data
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
-#define GPS_RTK_INJECT_TO_ALL 127
-#define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
 #define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
-#define GPS_WORST_LAG_SEC 0.22f // worst lag value any GPS driver is expected to return, expressed in seconds
-#define GPS_MAX_DELTA_MS 245 // 200 ms (5Hz) + 45 ms buffer
 
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
@@ -69,8 +64,8 @@ public:
     AP_GPS(const AP_GPS &other) = delete;
     AP_GPS &operator=(const AP_GPS&) = delete;
 
-    static AP_GPS &gps() {
-        return *_singleton;
+    static AP_GPS *get_singleton() {
+        return _singleton;
     }
 
     // GPS driver types
@@ -142,11 +137,12 @@ public:
         float speed_accuracy;               ///< 3D velocity RMS accuracy estimate in m/s
         float horizontal_accuracy;          ///< horizontal RMS accuracy estimate in m
         float vertical_accuracy;            ///< vertical RMS accuracy estimate in m
-        bool have_vertical_velocity:1;      ///< does GPS give vertical velocity? Set to true only once available.
-        bool have_speed_accuracy:1;         ///< does GPS give speed accuracy? Set to true only once available.
-        bool have_horizontal_accuracy:1;    ///< does GPS give horizontal position accuracy? Set to true only once available.
-        bool have_vertical_accuracy:1;      ///< does GPS give vertical position accuracy? Set to true only once available.
+        bool have_vertical_velocity;      ///< does GPS give vertical velocity? Set to true only once available.
+        bool have_speed_accuracy;         ///< does GPS give speed accuracy? Set to true only once available.
+        bool have_horizontal_accuracy;    ///< does GPS give horizontal position accuracy? Set to true only once available.
+        bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
+        uint32_t uart_timestamp_ms;         ///< optional timestamp from set_uart_timestamp()
 
         // all the following fields must only all be filled by RTK capable backend drivers
         uint32_t rtk_time_week_ms;         ///< GPS Time of Week of last baseline in milliseconds
@@ -187,6 +183,9 @@ public:
 
     /// Query GPS status
     GPS_Status status(uint8_t instance) const {
+        if (_force_disable_gps && state[instance].status > NO_FIX) {
+            return NO_FIX;
+        }
         return state[instance].status;
     }
     GPS_Status status(void) const {
@@ -403,7 +402,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    void Write_DataFlash_Log_Startup_messages();
+    void Write_AP_Logger_Log_Startup_messages();
 
     // indicate which bit in LOG_BITMASK indicates gps logging enabled
     void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
@@ -415,6 +414,11 @@ public:
 
     // returns true if all GPS instances have passed all final arming checks/state changes
     bool prepare_for_arming(void);
+
+    // used to disable GPS for GPS failure testing in flight
+    void force_disable(bool disable) {
+        _force_disable_gps = disable;
+    }
 
 protected:
 
@@ -460,19 +464,19 @@ private:
         uint16_t delta_time_ms;
     };
     // Note allowance for an additional instance to contain blended data
-    GPS_timing timing[GPS_MAX_RECEIVERS+1];
-    GPS_State state[GPS_MAX_RECEIVERS+1];
+    GPS_timing timing[GPS_MAX_INSTANCES];
+    GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_RECEIVERS];
     AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
 
     /// primary GPS instance
-    uint8_t primary_instance:2;
+    uint8_t primary_instance;
 
     /// number of GPS instances present
-    uint8_t num_instances:2;
+    uint8_t num_instances;
 
     // which ports are locked
-    uint8_t locked_ports:2;
+    uint8_t locked_ports;
 
     // state of auto-detection process, per instance
     struct detect_state {
@@ -480,11 +484,9 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
-#if !HAL_MINIMIZE_FEATURES
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
-#endif // !HAL_MINIMIZE_FEATURES
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct SBP2_detect_state sbp2_detect_state;
@@ -516,8 +518,8 @@ private:
       in a RTCM data block
      */
     struct rtcm_buffer {
-        uint8_t fragments_received:4;
-        uint8_t sequence:5;
+        uint8_t fragments_received;
+        uint8_t sequence;
         uint8_t fragment_count;
         uint16_t total_length;
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
@@ -536,7 +538,7 @@ private:
     Vector2f _NE_pos_offset_m[GPS_MAX_RECEIVERS]; // Filtered North,East position offset from GPS instance to blended solution in _output_state.location (m)
     float _hgt_offset_cm[GPS_MAX_RECEIVERS]; // Filtered height offset from GPS instance relative to blended solution in _output_state.location (cm)
     Vector3f _blended_antenna_offset; // blended antenna offset
-    float _blended_lag_sec = 0.001f * GPS_MAX_RATE_MS; // blended receiver lag in seconds
+    float _blended_lag_sec; // blended receiver lag in seconds
     float _blend_weights[GPS_MAX_RECEIVERS]; // blend weight for each GPS. The blend weights must sum to 1.0 across all instances.
     uint32_t _last_time_updated[GPS_MAX_RECEIVERS]; // the last value of state.last_gps_time_ms read for that GPS instance - used to detect new data.
     float _omega_lpf; // cutoff frequency in rad/sec of LPF applied to position offsets
@@ -549,7 +551,7 @@ private:
     // calculate the blended state
     void calc_blended_state(void);
 
-    bool should_df_log() const;
+    bool should_log() const;
 
     // Auto configure types
     enum GPS_AUTO_CONFIG {
@@ -557,6 +559,8 @@ private:
         GPS_AUTO_CONFIG_ENABLE  = 1
     };
 
+    // used for flight testing with GPS loss
+    bool _force_disable_gps;
 };
 
 namespace AP {

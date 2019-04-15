@@ -21,6 +21,7 @@ public:
     // static detection function
     static AP_RangeFinder_Backend *detect(uint8_t bus,
                                           RangeFinder::RangeFinder_State &_state,
+                                          AP_RangeFinder_Params &_params,
                                           RangeFinder::RangeFinder_Type rftype);
 
     // update state
@@ -36,6 +37,7 @@ private:
     // constructor
     AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                   RangeFinder::RangeFinder_State &_state,
+								  AP_RangeFinder_Params &_params,
                                   RangeFinder::RangeFinder_Type rftype);
 
     // start a reading
@@ -49,6 +51,7 @@ private:
     uint8_t hw_version;
     uint8_t check_reg_counter;
     bool v2_hardware;
+    bool v3hp_hardware;
     uint16_t last_distance_cm;
     RangeFinder::RangeFinder_Type rftype;
     

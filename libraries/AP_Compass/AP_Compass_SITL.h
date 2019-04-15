@@ -9,13 +9,13 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Declination/AP_Declination.h>
 
-#define SITL_NUM_COMPASSES 2
+#define SITL_NUM_COMPASSES 3
 
 class AP_Compass_SITL : public AP_Compass_Backend {
 public:
-    AP_Compass_SITL(Compass &);
+    AP_Compass_SITL();
 
-    void read(void);
+    void read(void) override;
 
 private:
     uint8_t _compass_instance[SITL_NUM_COMPASSES];
@@ -32,12 +32,12 @@ private:
     VectorN<readings_compass,buffer_length> buffer;
 
     void _timer();
-    bool _has_sample;
     uint32_t _last_sample_time;
 
-    Vector3f _mag_accum;
-    uint32_t _accum_count;
-
-
+    void _setup_eliptical_correcion();
+    
+    Matrix3f _eliptical_corr;
+    Vector3f _last_dia;
+    Vector3f _last_odi;
 };
 #endif // CONFIG_HAL_BOARD

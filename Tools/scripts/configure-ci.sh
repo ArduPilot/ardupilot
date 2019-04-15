@@ -12,7 +12,7 @@ ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 RPI_ROOT="master"
 RPI_TARBALL="$RPI_ROOT.tar.gz"
 
-CCACHE_ROOT="ccache-3.3.4"
+CCACHE_ROOT="ccache-3.4.2"
 CCACHE_TARBALL="$CCACHE_ROOT.tar.bz2"
 
 mkdir -p $HOME/opt
@@ -20,14 +20,14 @@ pushd $HOME
 
 # PX4 toolchain
 dir=$ARM_ROOT
-if [ ! -d "$HOME/opt/$dir" ]; then
-  wget http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL
+if [ ! -d "$HOME/opt/$dir" -o ! -x "$HOME/opt/$dir/bin/arm-none-eabi-g++" ]; then
+  wget http://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL
   tar -xf $ARM_TARBALL -C opt
 fi
 
 # RPi/BBB toolchain
 dir="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
-if [ ! -d "$HOME/opt/$dir" ]; then
+if [ ! -d "$HOME/opt/$dir" -o ! -x "$HOME/opt/$dir/bin/arm-linux-gnueabihf-g++" ]; then
   wget http://firmware.ardupilot.org/Tools/Travis/NavIO/$RPI_TARBALL
   tar -xf $RPI_TARBALL -C opt $dir
 fi
@@ -35,8 +35,8 @@ fi
 # ccache
 dir=$CCACHE_ROOT
 if [ ! -d "$HOME/opt/$dir" ]; then
-  # if version 3 isn't there, try to remove older v2 folders from CI cache
-  rm -rf "$HOME/opt"/ccache-3.2*
+  # if version 3.4 isn't there, try to remove older v3.3 folders from CI cache
+  rm -rf "$HOME/opt"/ccache-3.3*
 
   wget https://www.samba.org/ftp/ccache/$CCACHE_TARBALL
   tar -xf $CCACHE_TARBALL
@@ -54,9 +54,9 @@ mkdir -p $HOME/bin
 # symlink to compiler versions
 ln -s /usr/bin/gcc-4.9 ~/bin/gcc
 ln -s /usr/bin/g++-4.9 ~/bin/g++
-ln -s /usr/bin/clang-3.7 ~/bin/clang
-ln -s /usr/bin/clang++-3.7 ~/bin/clang++
-ln -s /usr/bin/llvm-ar-3.7 ~/bin/llvm-ar
+ln -s /usr/bin/clang-7 ~/bin/clang
+ln -s /usr/bin/clang++-7 ~/bin/clang++
+ln -s /usr/bin/llvm-ar-7 ~/bin/llvm-ar
 
 mkdir -p $HOME/ccache
 
@@ -88,3 +88,5 @@ fi
 
 pip install --user -U argparse empy pyserial pexpect future lxml
 pip install --user -U mavproxy
+pip install --user -U intelhex
+pip install --user -U numpy

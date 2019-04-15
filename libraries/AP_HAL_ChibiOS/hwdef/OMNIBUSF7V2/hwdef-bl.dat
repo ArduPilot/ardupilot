@@ -1,0 +1,48 @@
+# hw definition file for processing by chibios_pins.py
+# for f745 bootloader
+
+# MCU class and specific type
+MCU STM32F7xx STM32F745xx
+
+# board ID for firmware load
+APJ_BOARD_ID 121
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+define STM32_LSECLK   32768U
+define STM32_LSEDRV   (3U << 3U)
+
+define STM32_PLLSRC     STM32_PLLSRC_HSE
+define STM32_PLLM_VALUE 8
+define STM32_PLLN_VALUE 432
+define STM32_PLLP_VALUE 2
+define STM32_PLLQ_VALUE 9
+
+FLASH_SIZE_KB 1024
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+define FLASH_BOOTLOADER_LOAD_KB 96
+
+# board voltage
+STM32_VDD 330U
+
+UART_ORDER OTG1
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PA2 LED_BOOTLOADER OUTPUT HIGH
+define HAL_LED_ON 0
+
+define HAL_USE_EMPTY_STORAGE
+
+define HAL_STORAGE_SIZE 16384
+define STORAGE_FLASH_PAGE 1
