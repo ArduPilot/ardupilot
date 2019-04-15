@@ -1243,7 +1243,7 @@ bool AC_PosControl::pre_arm_checks(const char *param_prefix,
         }
     }
 
-    // the z-control PID doesn't use FF, so P and I must be positive
+    // z-axis acceleration control PID doesn't use FF, so P and I must be positive
     if (!is_positive(get_accel_z_pid().kP())) {
         hal.util->snprintf(failure_msg, failure_msg_len, "%s_ACCZ_P must be > 0", param_prefix);
         return false;
