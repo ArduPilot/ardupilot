@@ -180,6 +180,26 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         Log_Write_Event(EVENT_AUTOTUNE_PILOT_TESTING);
         break;
     }
+     //Stabilize P Gains need to be less than 10 for autotune to be successful 
+    double stabilize_roll_p = attitude_control->get_angle_roll_p().kP();
+    double stabilize_pitch_p = attitude_control->get_angle_pitch_p().kP();
+    double stabilize_yaw_p = attitude_control->get_angle_yaw_p().kP();
+
+    gcs().send_text(MAV_SEVERITY_INFO, "Current stabilize roll Gain: %f", stabilize_roll_p);
+    gcs().send_text(MAV_SEVERITY_INFO, "Current stabilize pitch Gain: %f", stabilize_pitch_p );
+    gcs().send_text(MAV_SEVERITY_INFO, "Current stabilize yaw gain %f", stabilize_yaw_p );
+    if(stabilize_roll_p > 4.5f)
+    {
+        gcs().send_text(MAV_SEVERITY_INFO, "It is recommended ATC_ANG_RLL_P = 4.5" );
+    }
+    if(stabilize_pitch_p > 4.5f)
+    {
+        gcs().send_text(MAV_SEVERITY_INFO, "It is recommended ATC_ANG_PIT_P = 4.5" );
+    }
+    if(stabilize_yaw_p > 4.5f)
+    {
+        gcs().send_text(MAV_SEVERITY_INFO, "It is recommended ATC_ANG_YAW_P to = 4.5" );
+    }
 
     have_position = false;
 
