@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
+char keyword_alias[]     = "alias";
 char keyword_comment[]   = "--";
 char keyword_field[]     = "field";
 char keyword_include[]   = "include";
@@ -505,7 +506,8 @@ void handle_userdata(void) {
 
 struct singleton {
   struct singleton *next;
-  char *name;
+  char *name;  // name of the C++ singleton
+  char *alias; // (optional) used for scripting access
   struct method * methods;
 };
 
@@ -538,12 +540,28 @@ void handle_singleton(void) {
   if (type == NULL) {
     error(ERROR_SINGLETON, "Expected an access type for userdata %s", name);
   }
-  if (strcmp(type, keyword_method) != 0) {
-    error(ERROR_SINGLETON, "Singletons only support method access types (got %s)", type);
-  }
 
-  // method name
-  handle_method(TRACE_USERDATA, node->name, &(node->methods));
+  if (strcmp(type, keyword_alias) == 0) {
+    if (node->alias != NULL) {
+      error(ERROR_SINGLETON, "Alias of %s was already declared for %s", node->alias, node->name);
+    }
+    const char *alias = next_token();
+    if (alias == NULL) {
+      error(ERROR_SINGLETON, "Missing the name of the alias for %s", node->name);
+    }
+    node->alias = (char *)allocate(strlen(alias) + 1);
+    strcpy(node->alias, alias);
+
+    // ensure no more tokens on the line
+    if (next_token()) {
+      error(ERROR_HEADER, "Singleton contained an unexpected extra token: %s", state.token);
+    }
+    return;
+  } else if (strcmp(type, keyword_method) == 0) {
+    handle_method(TRACE_USERDATA, node->name, &(node->methods));
+  } else {
+    error(ERROR_SINGLETON, "Singletons only support methods or aliases (got %s)", type);
+  }
 
 }
 
@@ -841,6 +859,8 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
     arg = arg->next;
   }
 
+  const char *access_name = data->alias ? data->alias : data->name;
+
   fprintf(source, "int %s_%s(lua_State *L) {\n", data->name, method->name);
   fprintf(source, "    const int args = lua_gettop(L);\n");
   fprintf(source, "    if (args > %d) {\n", arg_count);
@@ -848,12 +868,12 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
   fprintf(source, "    } else if (args < %d) {\n", arg_count);
   fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
   fprintf(source, "    }\n\n");
-  fprintf(source, "    luaL_checkudata(L, 1, \"%s\");\n\n", data->name);
+  fprintf(source, "    luaL_checkudata(L, 1, \"%s\");\n\n", access_name);
 
   // fetch and check the singleton pointer
-  fprintf(source, "    %s *singleton = %s::get_singleton();", data->name, data->name);
+  fprintf(source, "    %s *singleton = %s::get_singleton();\n", data->name, data->name);
   fprintf(source, "    if (singleton == nullptr) {\n");
-  fprintf(source, "        return luaL_argerror(L, args, \"%s not supported on this firmware\");\n", data->name);
+  fprintf(source, "        return luaL_argerror(L, args, \"%s not supported on this firmware\");\n", access_name);
   fprintf(source, "    }\n\n");
 
   // extract the arguments
@@ -1016,7 +1036,7 @@ void emit_loaders(void) {
   fprintf(source, "} singleton_fun[] = {\n");
   struct singleton * single = parsed_singletons;
   while (single) {
-    fprintf(source, "    {\"%s\", %s_meta},\n", single->name, single->name);
+    fprintf(source, "    {\"%s\", %s_meta},\n", single->alias ? single->alias : single->name, single->name);
     single = single->next;
   }
   fprintf(source, "};\n\n");
@@ -1054,7 +1074,7 @@ void emit_sandbox(void) {
   struct singleton *single = parsed_singletons;
   fprintf(source, "const char *singletons[] = {\n");
   while (single) {
-    fprintf(source, "    \"%s\",\n", single->name);
+    fprintf(source, "    \"%s\",\n", single->alias ? single->alias : single->name);
     single = single->next;
   }
   fprintf(source, "};\n\n");
