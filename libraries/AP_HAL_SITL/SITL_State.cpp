@@ -207,6 +207,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             _fdm_input_step();
         } else {
             usleep(1000);
+            wait_time_usec = MAX(0U, wait_time_usec-1000);
         }
     }
 }
