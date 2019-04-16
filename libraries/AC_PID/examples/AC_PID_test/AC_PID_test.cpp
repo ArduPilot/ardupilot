@@ -27,7 +27,7 @@ class RC_Channel_PIDTest : public RC_Channel
 class RC_Channels_PIDTest : public RC_Channels
 {
 public:
-    RC_Channel *channel(uint8_t chan) {
+    RC_Channel *channel(uint8_t chan) override {
         return &obj_channels[chan];
     }
 
