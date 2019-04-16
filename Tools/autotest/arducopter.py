@@ -3301,6 +3301,21 @@ class AutoTestHeli(AutoTestCopter):
         if ex is not None:
             raise ex
 
+    def fly_spline_waypoint(self):
+        """ensure basic spline functionality works"""
+        self.load_mission("copter_spline_mission.txt")
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.progress("Raising rotor speed")
+        self.set_rc(8, 2000)
+        self.arm_vehicle()
+        self.wait_seconds(20)
+        self.change_mode("AUTO")
+        self.set_rc(3, 1500)
+        self.mav.motors_disarmed_wait()
+        self.progress("Lowering rotor speed")
+        self.set_rc(8, 1000)
+
     def set_rc_default(self):
         super(AutoTestCopter, self).set_rc_default()
         self.progress("Lowering rotor speed")
@@ -3315,6 +3330,10 @@ class AutoTestHeli(AutoTestCopter):
             ("PosHoldTakeOff",
              "Fly POSHOLD takeoff",
              self.fly_heli_poshold_takeoff),
+
+            ("SplineWaypoint",
+             "Fly Spline Waypoints",
+             self.fly_spline_waypoint),
 
             ("LogDownLoad",
              "Log download",
