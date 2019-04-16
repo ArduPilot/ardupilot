@@ -311,10 +311,6 @@ void RangeFinder::init(enum Rotation orientation_default)
             // present (although it may not be healthy)
             num_instances = i+1;
         }
-        // initialise pre-arm check variables
-        state[i].pre_arm_check = false;
-        state[i].pre_arm_distance_min = 9999;  // initialise to an arbitrary large value
-        state[i].pre_arm_distance_max = 0;
 
         // initialise status
         state[i].status = RangeFinder_NotConnected;
@@ -337,7 +333,6 @@ void RangeFinder::update(void)
                 continue;
             }
             drivers[i]->update();
-            drivers[i]->update_pre_arm_check();
         }
     }
 
@@ -629,22 +624,6 @@ uint8_t RangeFinder::range_valid_count_orient(enum Rotation orientation) const
         return 0;
     }
     return backend->range_valid_count();
-}
-
-/*
-  returns true if pre-arm checks have passed for all range finders
-  these checks involve the user lifting or rotating the vehicle so that sensor readings between
-  the min and 2m can be captured
- */
-bool RangeFinder::pre_arm_check() const
-{
-    for (uint8_t i=0; i<num_instances; i++) {
-        // if driver is valid but pre_arm_check is false, return false
-        if ((drivers[i] != nullptr) && (params[i].type != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
-            return false;
-        }
-    }
-    return true;
 }
 
 const Vector3f &RangeFinder::get_pos_offset_orient(enum Rotation orientation) const
