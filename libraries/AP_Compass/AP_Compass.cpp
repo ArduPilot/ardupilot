@@ -786,6 +786,13 @@ void Compass::_detect_backends(void)
         break;
 
     case AP_BoardConfig::VRX_BOARD_BRAIN51:
+        // external i2c bus
+        ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(1, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                                              true, ROTATION_ROLL_180));
+        // internal i2c bus
+        ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(0, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                                              false, ROTATION_YAW_270));
+        break;
     case AP_BoardConfig::VRX_BOARD_BRAIN52:
     case AP_BoardConfig::VRX_BOARD_BRAIN52E:
     case AP_BoardConfig::VRX_BOARD_CORE10:
