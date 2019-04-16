@@ -16,7 +16,7 @@ userdata Location method get_vector_from_origin_NEU boolean Vector3f
 include AP_AHRS/AP_AHRS.h
 
 singleton AP_AHRS alias ahrs
-singleton AP_AHRS method get_position boolean Location
+singleton AP_AHRS method get_position boolean Location'Null
 singleton AP_AHRS method get_home Location
 
 include AP_Math/AP_Math.h

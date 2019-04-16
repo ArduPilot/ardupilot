@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <assert.h>
 #include <readline/readline.h>
@@ -15,6 +16,9 @@ char keyword_read[]      = "read";
 char keyword_singleton[] = "singleton";
 char keyword_userdata[]  = "userdata";
 char keyword_write[]     = "write";
+
+// attributes (should include the leading ' )
+char keyword_attr_null[] = "'Null";
 
 // type keywords
 char keyword_boolean[]  = "boolean";
@@ -94,10 +98,15 @@ struct range_check {
   char *high;
 };
 
+enum type_flags {
+  TYPE_FLAGS_NULLABLE = (1U << 1),
+};
+
 struct type {
   struct range_check *range;
   enum field_type type;
   enum access_type access;
+  uint32_t flags;
   union {
     char *userdata_name;
   } data;
@@ -217,12 +226,9 @@ void handle_header(void) {
   }
 }
 
-struct userdata_field {
-  struct userdata_field * next;
-  char * name;
-  struct type type; // field type, points to a string
-  int line; // line declared on
-  unsigned int access_flags;
+enum userdata_type {
+  UD_USERDATA,
+  UD_SINGLETON,
 };
 
 struct argument {
@@ -236,13 +242,24 @@ struct method {
   int line; // line declared on
   struct type return_type;
   struct argument * arguments;
+  uint32_t flags; // filled out with TYPE_FLAGS
+};
+
+struct userdata_field {
+  struct userdata_field * next;
+  char * name;
+  struct type type; // field type, points to a string
+  int line; // line declared on
+  unsigned int access_flags;
 };
 
 struct userdata {
   struct userdata * next;
-  char * name;
+  char *name;  // name of the C++ singleton
+  char *alias; // (optional) used for scripting access
   struct userdata_field *fields;
   struct method *methods;
+  enum userdata_type ud_type;
 };
 
 static struct userdata *parsed_userdata = NULL;
@@ -325,8 +342,9 @@ unsigned int parse_access_flags(struct type * type) {
 #define FALSE 0
 
 enum type_restriction {
-  TYPE_REQUIRED,
-  TYPE_OPTIONAL,
+  TYPE_RESTRICTION_NONE         = 0,
+  TYPE_RESTRICTION_OPTIONAL     = (1U << 1),
+  TYPE_RESTRICTION_NOT_NULLABLE = (1U << 2),
 };
 
 enum range_check_type {
@@ -334,14 +352,14 @@ enum range_check_type {
   RANGE_CHECK_MANDATORY,
 };
 
-int parse_type(struct type *type, const enum type_restriction restrictions, enum range_check_type range_type) {
+int parse_type(struct type *type, const uint32_t restrictions, enum range_check_type range_type) {
   char *data_type = next_token();
 
   if (data_type == NULL) {
-    if (restrictions == TYPE_REQUIRED) {
-      error(ERROR_USERDATA, "Data type must be specified");
-    } else {
+    if (restrictions & TYPE_RESTRICTION_OPTIONAL) {
       return FALSE;
+    } else {
+      error(ERROR_USERDATA, "Data type must be specified");
     }
   }
 
@@ -350,6 +368,19 @@ int parse_type(struct type *type, const enum type_restriction restrictions, enum
     data_type++; // drop the reference character
   } else {
     type->access = ACCESS_VALUE;
+  }
+
+  char *attribute = strchr(data_type, '\'');
+  if (attribute != NULL) {
+    if (strcmp(attribute, keyword_attr_null) == 0) {
+      if (restrictions & TYPE_RESTRICTION_NOT_NULLABLE) {
+        error(ERROR_USERDATA, "%s is not nullable in this context", data_type);
+      }
+      type->flags |= TYPE_FLAGS_NULLABLE;
+    } else {
+      error(ERROR_USERDATA, "Unknown attribute: %s", attribute);
+    }
+    attribute[0] = 0;
   }
 
   if (strcmp(data_type, keyword_boolean) == 0) {
@@ -374,6 +405,26 @@ int parse_type(struct type *type, const enum type_restriction restrictions, enum
     // assume that this is a user data, we can't validate this until later though
     type->type = TYPE_USERDATA;
     string_copy(&(type->data.userdata_name), data_type);
+  }
+
+  // sanity check that only supported types are nullable
+  if (type->flags & TYPE_FLAGS_NULLABLE) {
+    // a switch is a very verbose way to do this, but forces users to consider new types added
+    switch (type->type) {
+      case TYPE_FLOAT:
+      case TYPE_INT8_T:
+      case TYPE_INT16_T:
+      case TYPE_INT32_T:
+      case TYPE_UINT8_T:
+      case TYPE_UINT16_T:
+      case TYPE_BOOLEAN:
+      case TYPE_STRING:
+      case TYPE_USERDATA:
+        break;
+      case TYPE_NONE:
+        error(ERROR_USERDATA, "%s types cannot be nullable", data_type);
+        break;
+    }
   }
 
   if (range_type != RANGE_CHECK_NONE) {
@@ -421,7 +472,7 @@ void handle_userdata_field(struct userdata *data) {
   field->line = state.line_num;
   string_copy(&(field->name), field_name);
 
-  parse_type(&(field->type), TYPE_REQUIRED, RANGE_CHECK_NONE);
+  parse_type(&(field->type), TYPE_RESTRICTION_NOT_NULLABLE, RANGE_CHECK_NONE);
   field->access_flags = parse_access_flags(&(field->type));
 }
 
@@ -449,13 +500,19 @@ void handle_method(enum trace_level traceType, char *parent_name, struct method 
   string_copy(&(method->name), name);
   method->line = state.line_num;
 
-  parse_type(&(method->return_type), TYPE_REQUIRED, RANGE_CHECK_NONE);
+  parse_type(&(method->return_type), TYPE_RESTRICTION_NONE, RANGE_CHECK_NONE);
 
   // iterate the arguments
   struct type arg_type = {};
-  while (parse_type(&arg_type, TYPE_OPTIONAL, RANGE_CHECK_MANDATORY)) {
+  while (parse_type(&arg_type, TYPE_RESTRICTION_OPTIONAL, RANGE_CHECK_MANDATORY)) {
     if (arg_type.type == TYPE_NONE) {
       error(ERROR_USERDATA, "Can't pass an empty argument to a method");
+    }
+    if ((method->return_type.type != TYPE_BOOLEAN) && (arg_type.flags & TYPE_FLAGS_NULLABLE)) {
+      error(ERROR_USERDATA, "Nullable arguments are only available on a boolean method");
+    }
+    if (arg_type.flags & TYPE_FLAGS_NULLABLE) {
+      method->flags |= TYPE_FLAGS_NULLABLE;
     }
     struct argument * arg = allocate(sizeof(struct argument));
     memcpy(&(arg->type), &arg_type, sizeof(struct type));
@@ -479,6 +536,7 @@ void handle_userdata(void) {
   if (node == NULL) {
     trace(TRACE_USERDATA, "Allocating new userdata for %s", name);
     node = (struct userdata *)allocate(sizeof(struct userdata));
+    node->ud_type = UD_USERDATA;
     node->name = (char *)allocate(strlen(name) + 1);
     strcpy(node->name, name);
     node->next = parsed_userdata;
@@ -504,14 +562,7 @@ void handle_userdata(void) {
 
 }
 
-struct singleton {
-  struct singleton *next;
-  char *name;  // name of the C++ singleton
-  char *alias; // (optional) used for scripting access
-  struct method * methods;
-};
-
-struct singleton *parsed_singletons = NULL;
+struct userdata *parsed_singletons = NULL;
 
 void handle_singleton(void) {
   trace(TRACE_SINGLETON, "Adding a singleton");
@@ -521,14 +572,15 @@ void handle_singleton(void) {
     error(ERROR_USERDATA, "Expected a name for the singleton");
   }
 
-  struct singleton *node = parsed_singletons;
+  struct userdata *node = parsed_singletons;
   while (node != NULL && strcmp(node->name, name)) {
     node = node->next;
   }
 
   if (node == NULL) {
     trace(TRACE_SINGLETON, "Allocating new singleton for %s", name);
-    node = (struct singleton *)allocate(sizeof(struct singleton));
+    node = (struct userdata *)allocate(sizeof(struct userdata));
+    node->ud_type = UD_SINGLETON;
     node->name = (char *)allocate(strlen(name) + 1);
     strcpy(node->name, name);
     node->next = parsed_singletons;
@@ -630,48 +682,89 @@ void emit_range_check(const struct range_check *range, const char * name, const 
           name);
 }
 
+#define NULLABLE_ARG_COUNT_BASE 5000
 void emit_checker(const struct type t, int arg_number, const char *indentation, const char *name) {
   assert(indentation != NULL);
 
-  // consider the arg numberto provide both the name, and the stack position of the variable
-  switch (t.type) {
-    case TYPE_BOOLEAN:
-      fprintf(source, "%sconst bool data_%d = static_cast<bool>(lua_toboolean(L, %d));\n", indentation, arg_number, arg_number);
-      break;
-    case TYPE_FLOAT:
-      fprintf(source, "%sconst float data_%d = static_cast<float>(luaL_checknumber(L, %d));\n", indentation, arg_number, arg_number);
-      break;
-    case TYPE_INT8_T:
-      fprintf(source, "%sconst int8_t data_%d = static_cast<int8_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
-      break;
-    case TYPE_INT16_T:
-      fprintf(source, "%sconst int16_t data_%d = static_cast<int16_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
-      break;
-    case TYPE_INT32_T:
-      fprintf(source, "%sconst int32_t data_%d = static_cast<int32_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
-      break;
-    case TYPE_UINT8_T:
-      fprintf(source, "%sconst uint8_t data_%d = static_cast<uint8_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
-      break;
-    case TYPE_UINT16_T:
-      fprintf(source, "%sconst uint16_t data_%d = static_cast<uint16_t>luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
-      break;
-    case TYPE_NONE:
-      return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
-    case TYPE_STRING:
-      fprintf(source, "%sconst char * data_%d = luaL_checkstring(L, %d);\n", indentation, arg_number, arg_number);
-      break;
-    case TYPE_USERDATA:
-      fprintf(source, "%s%s & data_%d = *check_%s(L, %d);\n", indentation, t.data.userdata_name, arg_number, t.data.userdata_name, arg_number);
-      break;
+  if (arg_number > NULLABLE_ARG_COUNT_BASE) {
+    error(ERROR_INTERNAL, "Can't handle more then %d arguments to a function", NULLABLE_ARG_COUNT_BASE);
   }
 
-  if (t.range != NULL) {
-    fprintf(source, "%sluaL_argcheck(L, ((data_%d >= %s) && (data_%d <= %s)), %d, \"%s out of range\");\n",
-            indentation,
-            arg_number, t.range->low,
-            arg_number, t.range->high,
-            arg_number, name);
+  if (t.flags & TYPE_FLAGS_NULLABLE) {
+    arg_number = arg_number + NULLABLE_ARG_COUNT_BASE;
+    switch (t.type) {
+      case TYPE_BOOLEAN:
+        fprintf(source, "%sbool data_%d = {};\n", indentation, arg_number);
+        break;
+      case TYPE_FLOAT:
+        fprintf(source, "%sfloat data_%d = {};\n", indentation, arg_number);
+        break;
+      case TYPE_INT8_T:
+        fprintf(source, "%sint8_t data_%d = {};\n", indentation, arg_number);
+        break;
+      case TYPE_INT16_T:
+        fprintf(source, "%sint16_t data_%d = {};\n", indentation, arg_number);
+        break;
+      case TYPE_INT32_T:
+        fprintf(source, "%sint32_t data_%d = {};\n", indentation, arg_number);
+        break;
+      case TYPE_UINT8_T:
+        fprintf(source, "%suint8_t data_%d = {};\n", indentation, arg_number);
+        break;
+      case TYPE_UINT16_T:
+        fprintf(source, "%suint16_t data_%d = {};\n", indentation, arg_number);
+        break;
+      case TYPE_NONE:
+        return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
+      case TYPE_STRING:
+        fprintf(source, "%schar * data_%d = {};\n", indentation, arg_number);
+        break;
+      case TYPE_USERDATA:
+        fprintf(source, "%s%s data_%d = {};\n", indentation, t.data.userdata_name, arg_number);
+        break;
+    }
+  } else {
+    // consider the arg numberto provide both the name, and the stack position of the variable
+    // FIXME: The order on the casts/range_check means that out of range data is impicitly wrapped, which is unsafe
+    switch (t.type) {
+      case TYPE_BOOLEAN:
+        fprintf(source, "%sconst bool data_%d = static_cast<bool>(lua_toboolean(L, %d));\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_FLOAT:
+        fprintf(source, "%sconst float data_%d = static_cast<float>(luaL_checknumber(L, %d));\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_INT8_T:
+        fprintf(source, "%sconst int8_t data_%d = static_cast<int8_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_INT16_T:
+        fprintf(source, "%sconst int16_t data_%d = static_cast<int16_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_INT32_T:
+        fprintf(source, "%sconst int32_t data_%d = static_cast<int32_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_UINT8_T:
+        fprintf(source, "%sconst uint8_t data_%d = static_cast<uint8_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_UINT16_T:
+        fprintf(source, "%sconst uint16_t data_%d = static_cast<uint16_t>luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_NONE:
+        return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
+      case TYPE_STRING:
+        fprintf(source, "%sconst char * data_%d = luaL_checkstring(L, %d);\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_USERDATA:
+        fprintf(source, "%s%s & data_%d = *check_%s(L, %d);\n", indentation, t.data.userdata_name, arg_number, t.data.userdata_name, arg_number);
+        break;
+    }
+
+    if (t.range != NULL) {
+      fprintf(source, "%sluaL_argcheck(L, ((data_%d >= %s) && (data_%d <= %s)), %d, \"%s out of range\");\n",
+              indentation,
+              arg_number, t.range->low,
+              arg_number, t.range->high,
+              arg_number, name);
+    }
   }
 }
 
@@ -739,123 +832,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   int arg_count = 1;
   struct argument *arg = method->arguments;
   while (arg != NULL) {
-    arg_count++;
-    arg = arg->next;
-  }
-
-  fprintf(source, "int %s_%s(lua_State *L) {\n", data->name, method->name);
-  fprintf(source, "    const int args = lua_gettop(L);\n");
-  fprintf(source, "    if (args > %d) {\n", arg_count);
-  fprintf(source, "        return luaL_argerror(L, args, \"too many arguments\");\n");
-  fprintf(source, "    } else if (args < %d) {\n", arg_count);
-  fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
-  fprintf(source, "    }\n\n");
-
-  // extract the userdata
-  fprintf(source, "    %s * ud = check_%s(L, 1);\n", data->name, data->name);
-
-  // extract the arguments
-  arg = method->arguments;
-  arg_count = 2;
-  while (arg != NULL) {
-    emit_checker(arg->type, arg_count, "    ", "argument");
-    arg = arg->next;
-    arg_count++;
-  }
-
-  // we have all the types checked, emit the call
-  switch (method->return_type.type) {
-    case TYPE_BOOLEAN:
-      fprintf(source, "    const bool data = ud->%s(\n", method->name);
-      break;
-    case TYPE_FLOAT:
-      fprintf(source, "    const float data = ud->%s(\n", method->name);
-      break;
-    case TYPE_INT8_T:
-      fprintf(source, "    const int8_t data = ud->%s(\n", method->name);
-      break;
-    case TYPE_INT16_T:
-      fprintf(source, "    const int16_t data = ud->%s(\n", method->name);
-      break;
-    case TYPE_INT32_T:
-      fprintf(source, "    const int32_t data = ud->%s(\n", method->name);
-      break;
-    case TYPE_UINT8_T:
-      fprintf(source, "    const uint8_t data = ud->%s(\n", method->name);
-      break;
-    case TYPE_UINT16_T:
-      fprintf(source, "    const uint16_t data = ud->%s(\n", method->name);
-      break;
-    case TYPE_STRING:
-      fprintf(source, "    const char * data = ud->%s(\n", method->name);
-      break;
-    case TYPE_USERDATA:
-      error(ERROR_USERDATA, "Userdata methods may not currently return a userdata object");
-      break;
-    case TYPE_NONE:
-      fprintf(source, "    ud->%s(\n", method->name);
-      break;
-  }
-
-  arg = method->arguments;
-  arg_count = 2;
-  while (arg != NULL) {
-    fprintf(source, "            data_%d", arg_count);
-    arg = arg->next;
-    if (arg != NULL) {
-            fprintf(source, ",\n");
+    if (!(arg->type.flags & TYPE_FLAGS_NULLABLE)) {
+      arg_count++;
     }
-    arg_count++;
-  }
-  fprintf(source, ");\n\n");
-
-  switch (method->return_type.type) {
-    case TYPE_BOOLEAN:
-      fprintf(source, "    lua_pushboolean(L, data);\n");
-      break;
-    case TYPE_FLOAT:
-      fprintf(source, "    lua_pushnumber(L, data);\n");
-      break;
-    case TYPE_INT8_T:
-    case TYPE_INT16_T:
-    case TYPE_INT32_T:
-    case TYPE_UINT8_T:
-    case TYPE_UINT16_T:
-      fprintf(source, "    lua_pushinteger(L, data);\n");
-      break;
-    case TYPE_STRING:
-      fprintf(source, "    lua_pushstring(L, data);\n");
-      break;
-    case TYPE_USERDATA:
-      error(ERROR_INTERNAL, "Can't return a userdata currently");
-      break;
-    case TYPE_NONE:
-      // no return value, so don't worry about pushing a value
-      break;
-  }
-
-  fprintf(source, "    return %d;\n", method->return_type.type != TYPE_NONE ? 1 : 0);
-
-  fprintf(source, "}\n\n");
-}
-
-void emit_userdata_methods(void) {
-  struct userdata * node = parsed_userdata;
-  while(node) {
-    struct method *method = node->methods;
-    while(method) {
-      emit_userdata_method(node, method);
-      method = method->next;
-    }
-    node = node->next;
-  }
-}
-
-void emit_singleton_method(const struct singleton *data, const struct method *method) {
-  int arg_count = 1;
-  struct argument *arg = method->arguments;
-  while (arg != NULL) {
-    arg_count++;
     arg = arg->next;
   }
 
@@ -870,59 +849,67 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
   fprintf(source, "    }\n\n");
   fprintf(source, "    luaL_checkudata(L, 1, \"%s\");\n\n", access_name);
 
-  // fetch and check the singleton pointer
-  fprintf(source, "    %s *singleton = %s::get_singleton();\n", data->name, data->name);
-  fprintf(source, "    if (singleton == nullptr) {\n");
-  fprintf(source, "        return luaL_argerror(L, args, \"%s not supported on this firmware\");\n", access_name);
-  fprintf(source, "    }\n\n");
+  switch (data->ud_type) {
+    case UD_USERDATA:
+      // extract the userdata
+      fprintf(source, "    %s * ud = check_%s(L, 1);\n", data->name, data->name);
+      break;
+    case UD_SINGLETON:
+      // fetch and check the singleton pointer
+      fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
+      fprintf(source, "    if (ud == nullptr) {\n");
+      fprintf(source, "        return luaL_argerror(L, args, \"%s not supported on this firmware\");\n", access_name);
+      fprintf(source, "    }\n\n");
+      break;
+  }
 
   // extract the arguments
   arg = method->arguments;
   arg_count = 2;
   while (arg != NULL) {
+    // emit_checker will emit a nullable argument for us
     emit_checker(arg->type, arg_count, "    ", "argument");
     arg = arg->next;
     arg_count++;
   }
 
-
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:
-      fprintf(source, "    const bool data = singleton->%s(\n", method->name);
+      fprintf(source, "    const bool data = ud->%s(\n", method->name);
       break;
     case TYPE_FLOAT:
-      fprintf(source, "    const float data = singleton->%s(\n", method->name);
+      fprintf(source, "    const float data = ud->%s(\n", method->name);
       break;
     case TYPE_INT8_T:
-      fprintf(source, "    const int8_t data = singleton->%s(\n", method->name);
+      fprintf(source, "    const int8_t data = ud->%s(\n", method->name);
       break;
     case TYPE_INT16_T:
-      fprintf(source, "    const int6_t data = singleton->%s(\n", method->name);
+      fprintf(source, "    const int6_t data = ud->%s(\n", method->name);
       break;
     case TYPE_INT32_T:
-      fprintf(source, "    const int32_t data = singleton->%s(\n", method->name);
+      fprintf(source, "    const int32_t data = ud->%s(\n", method->name);
       break;
     case TYPE_STRING:
-      fprintf(source, "    const char * data = singleton->%s(\n", method->name);
+      fprintf(source, "    const char * data = ud->%s(\n", method->name);
       break;
     case TYPE_UINT8_T:
-      fprintf(source, "    const uint8_t data = singleton->%s(\n", method->name);
+      fprintf(source, "    const uint8_t data = ud->%s(\n", method->name);
       break;
     case TYPE_UINT16_T:
-      fprintf(source, "    const uint6_t data = singleton->%s(\n", method->name);
+      fprintf(source, "    const uint6_t data = ud->%s(\n", method->name);
       break;
     case TYPE_USERDATA:
-      fprintf(source, "    const %s &data = singleton->%s(\n", method->return_type.data.userdata_name, method->name);
+      fprintf(source, "    const %s &data = ud->%s(\n", method->return_type.data.userdata_name, method->name);
       break;
     case TYPE_NONE:
-      fprintf(source, "    singleton->%s(\n", method->name);
+      fprintf(source, "    ud->%s(\n", method->name);
       break;
   }
 
   arg = method->arguments;
   arg_count = 2;
   while (arg != NULL) {
-    fprintf(source, "            data_%d", arg_count);
+    fprintf(source, "            data_%d", arg_count + ((arg->type.flags & TYPE_FLAGS_NULLABLE) ? NULLABLE_ARG_COUNT_BASE : 0));
     arg = arg->next;
     if (arg != NULL) {
             fprintf(source, ",\n");
@@ -932,9 +919,55 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
   fprintf(source, ");\n\n");
 
 
+  int return_count = 1; // number of arguments to return
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:
-      fprintf(source, "    lua_pushboolean(L, data);\n");
+      if (method->flags & TYPE_FLAGS_NULLABLE) {
+        fprintf(source, "    if (data) {\n");
+        // we need to emit out nullable arguments, iterate the args again, creating and copying objects, while keeping a new count
+        return_count = 0;
+        arg = method->arguments;
+        int arg_index = NULLABLE_ARG_COUNT_BASE + 2;
+        while (arg != NULL) {
+          if (arg->type.flags & TYPE_FLAGS_NULLABLE) {
+            return_count++;
+            switch (arg->type.type) {
+              case TYPE_BOOLEAN:
+                fprintf(source, "        lua_pushboolean(L, data_%d);\n", arg_index);
+                break;
+              case TYPE_FLOAT:
+                fprintf(source, "        lua_pushnumber(L, data_%d);\n", arg_index);
+                break;
+              case TYPE_INT8_T:
+              case TYPE_INT16_T:
+              case TYPE_INT32_T:
+              case TYPE_UINT8_T:
+              case TYPE_UINT16_T:
+                fprintf(source, "        lua_pushinteger(L, data_%d);\n", arg_index);
+                break;
+              case TYPE_STRING:
+                fprintf(source, "        lua_pushstring(L, data_%d);\n", arg_index);
+                break;
+              case TYPE_USERDATA:
+                // userdatas must allocate a new container to return
+                fprintf(source, "        new_%s(L);\n", arg->type.data.userdata_name);
+                fprintf(source, "        *check_%s(L, -1) = data_%d;\n", arg->type.data.userdata_name, arg_index);
+                break;
+              case TYPE_NONE:
+                error(ERROR_INTERNAL, "Attempted to emit a nullable argument of type none");
+                break;
+            }
+          }
+
+          arg_index++;
+          arg = arg->next;
+        }
+        fprintf(source, "    } else {\n");
+        fprintf(source, "        lua_pushnil(L);\n");
+        fprintf(source, "    }\n");
+      } else {
+        fprintf(source, "    lua_pushboolean(L, data);\n");
+      }
       break;
     case TYPE_FLOAT:
       fprintf(source, "    lua_pushnumber(L, data);\n");
@@ -956,20 +989,20 @@ void emit_singleton_method(const struct singleton *data, const struct method *me
       break;
     case TYPE_NONE:
       // no return value, so don't worry about pushing a value
+      return_count = 0;
       break;
   }
 
-  fprintf(source, "    return %d;\n", method->return_type.type != TYPE_NONE ? 1 : 0);
+  fprintf(source, "    return %d;\n", return_count);
 
   fprintf(source, "}\n\n");
 }
 
-void emit_singleton_methods(void) {
-  struct singleton * node = parsed_singletons;
+void emit_userdata_methods(struct userdata *node) {
   while(node) {
     struct method *method = node->methods;
     while(method) {
-      emit_singleton_method(node, method);
+      emit_userdata_method(node, method);
       method = method->next;
     }
     node = node->next;
@@ -1001,7 +1034,7 @@ void emit_userdata_metatables(void) {
 }
 
 void emit_singleton_metatables(void) {
-  struct singleton * node = parsed_singletons;
+  struct userdata * node = parsed_singletons;
   while(node) {
     fprintf(source, "const luaL_Reg %s_meta[] = {\n", node->name);
 
@@ -1034,7 +1067,7 @@ void emit_loaders(void) {
   fprintf(source, "    const char *name;\n");
   fprintf(source, "    const luaL_Reg *reg;\n");
   fprintf(source, "} singleton_fun[] = {\n");
-  struct singleton * single = parsed_singletons;
+  struct userdata * single = parsed_singletons;
   while (single) {
     fprintf(source, "    {\"%s\", %s_meta},\n", single->alias ? single->alias : single->name, single->name);
     single = single->next;
@@ -1071,7 +1104,7 @@ void emit_loaders(void) {
 }
 
 void emit_sandbox(void) {
-  struct singleton *single = parsed_singletons;
+  struct userdata *single = parsed_singletons;
   fprintf(source, "const char *singletons[] = {\n");
   while (single) {
     fprintf(source, "    \"%s\",\n", single->alias ? single->alias : single->name);
@@ -1186,11 +1219,11 @@ int main(int argc, char **argv) {
 
   emit_userdata_fields();
 
-  emit_userdata_methods();
+  emit_userdata_methods(parsed_userdata);
 
   emit_userdata_metatables();
 
-  emit_singleton_methods();
+  emit_userdata_methods(parsed_singletons);
 
   emit_singleton_metatables();
 
