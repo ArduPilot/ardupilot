@@ -42,7 +42,14 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 | GPIO1 | UART_RX |  AKA UART0_TX
 
 
-
+|ESP32|  RCOUT   |TYPICAL |
+| --- |   ---    | ---    | 
+|PIN33|SERVO-OUT1|AILERON |
+|PIN32|SERVO-OUT2|ELEVATOR|
+|PIN21|SERVO-OUT3|THROTTLE|
+|PIN22|SERVO-OUT4|RUDDER  |
+|PIN25|SERVO-OUT5|  ?     |
+|PIN27|SERVO-OUT6|  ?     |
 
 
 ### GY-91 connection
