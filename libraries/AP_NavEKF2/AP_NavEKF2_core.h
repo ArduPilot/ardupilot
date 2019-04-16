@@ -755,6 +755,7 @@ private:
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
     static const uint32_t OBS_BUFFER_LENGTH = 5;
+    static const uint32_t FLOW_BUFFER_LENGTH = 15;
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
