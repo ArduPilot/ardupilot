@@ -27,7 +27,7 @@ bool NavEKF3_core::healthy(void) const
     }
     // position and height innovations must be within limits when on-ground and in a static mode of operation
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
-    if (onGround && (PV_AidingMode == AID_NONE) && ((horizErrSq > 1.0f) || (fabsf(hgtInnovFiltState) > 1.0f))) {
+    if (onGround && ((horizErrSq > 1.0f) || (fabsf(hgtInnovFiltState) > 1.0f))) {
         return false;
     }
 
