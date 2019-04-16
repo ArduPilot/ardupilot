@@ -349,9 +349,9 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
 void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float euler_yaw_rate_cds, float euler_pitch_cd, float body_roll_cd)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_yaw_rate = radians(euler_yaw_rate_cds * 0.01f);
-    float euler_pitch = radians(euler_pitch_cd * 0.01f);
-    float body_roll = radians(body_roll_cd * 0.01f);
+    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
+    float euler_pitch = radians(constrain_float(euler_pitch_cd * 0.01f, -90.0f, 90.0f));
+    float body_roll   = radians(constrain_float(body_roll_cd   * 0.01f, -90.0f, 90.0f));
 
     // new heading
     _attitude_target_euler_angle.z = wrap_PI(_attitude_target_euler_angle.z + euler_yaw_rate * _dt);
@@ -368,10 +368,6 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float 
     Quaternion bf_yaw_Q;
     bf_yaw_Q.from_axis_angle(Vector3f(-cosf(euler_pitch), 0, 0), body_roll);
     _attitude_target_quat = _attitude_target_quat * bf_roll_Q * bf_yaw_Q;
-
-    // calculate the attitude target euler angles
-    _attitude_target_euler_angle.x = _attitude_target_quat.get_euler_roll();
-    _attitude_target_euler_angle.y = _attitude_target_quat.get_euler_pitch();
 
     // Set rate feedforward requests to zero
     _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
@@ -395,9 +391,9 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float 
 void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(float euler_yaw_rate_cds, float euler_pitch_cd, float body_roll_cd)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_yaw_rate = radians(euler_yaw_rate_cds * 0.01f);
-    float euler_pitch = radians(euler_pitch_cd * 0.01f);
-    float body_roll = radians(body_roll_cd * 0.01f);
+    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
+    float euler_pitch = radians(constrain_float(euler_pitch_cd * 0.01f, -90.0f, 90.0f));
+    float body_roll   = radians(constrain_float(body_roll_cd   * 0.01f, -90.0f, 90.0f));
 
     const float cpitch = cosf(euler_pitch);
     const float spitch = fabsf(sinf(euler_pitch));
@@ -418,10 +414,6 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(float 
     Quaternion bf_yaw_Q;
     bf_yaw_Q.from_axis_angle(Vector3f(cpitch, 0, 0), euler_yaw_rate);
     _attitude_target_quat = _attitude_target_quat * bf_roll_Q * bf_yaw_Q;
-
-    // calculate the attitude target euler angles
-    _attitude_target_euler_angle.x = _attitude_target_quat.get_euler_roll();
-    _attitude_target_euler_angle.y = _attitude_target_quat.get_euler_pitch();
 
     // Set rate feedforward requests to zero
     _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
@@ -551,9 +543,19 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
     float yaw_rate_rads = radians(yaw_rate_bf_cds * 0.01f);
 
     // Update attitude error
-    Vector3f gyro_latest = _ahrs.get_gyro_latest();
+    Vector3f attitude_error_vector;
+    _attitude_ang_error.to_axis_angle(attitude_error_vector);
+
     Quaternion attitude_ang_error_update_quat;
-    attitude_ang_error_update_quat.from_axis_angle(Vector3f((_attitude_target_ang_vel.x - gyro_latest.x) * _dt, (_attitude_target_ang_vel.y - gyro_latest.y) * _dt, (_attitude_target_ang_vel.z - gyro_latest.z) * _dt));
+    // limit the integrated error angle
+    float err_mag = attitude_error_vector.length();
+    if (err_mag > AC_ATTITUDE_THRUST_ERROR_ANGLE) {
+        attitude_error_vector *= AC_ATTITUDE_THRUST_ERROR_ANGLE / err_mag;
+        _attitude_ang_error.from_axis_angle(attitude_error_vector);
+    }
+
+    Vector3f gyro_latest = _ahrs.get_gyro_latest();
+    attitude_ang_error_update_quat.from_axis_angle(Vector3f((_attitude_target_ang_vel.x-gyro_latest.x) * _dt, (_attitude_target_ang_vel.y-gyro_latest.y) * _dt, (_attitude_target_ang_vel.z-gyro_latest.z) * _dt));
     _attitude_ang_error = attitude_ang_error_update_quat * _attitude_ang_error;
 
     // Compute acceleration-limited body frame rates
@@ -577,7 +579,6 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
     ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
 
     // Compute the angular velocity target from the integrated rate error
-    Vector3f attitude_error_vector;
     _attitude_ang_error.to_axis_angle(attitude_error_vector);
     _rate_target_ang_vel = update_ang_vel_target_from_att_error(attitude_error_vector);
     _rate_target_ang_vel += _attitude_target_ang_vel;
