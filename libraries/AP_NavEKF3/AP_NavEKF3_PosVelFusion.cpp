@@ -549,17 +549,6 @@ void NavEKF3_core::FuseVelPosNED()
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             // Fuse height data if healthy or timed out or in constant position mode
             if (hgtHealth || hgtTimeout || (PV_AidingMode == AID_NONE && onGround)) {
-                // Calculate a filtered value to be used by pre-flight health checks
-                // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
-                if (onGround) {
-                    float dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms)*1.0e-3f;
-                    const float hgtInnovFiltTC = 2.0f;
-                    float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
-                    hgtInnovFiltState += (innovVelPos[5]-hgtInnovFiltState)*alpha;
-                } else {
-                    hgtInnovFiltState = 0.0f;
-                }
-
                 // if timed out, reset the height
                 if (hgtTimeout) {
                     ResetHeight();
@@ -569,6 +558,21 @@ void NavEKF3_core::FuseVelPosNED()
                 hgtHealth = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;
             }
+
+            // We need to update hgtInnovFiltState even if hgt not healthy, since it is used for prearm checks.
+            // Calculate a filtered value to be used by pre-flight health checks
+            // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
+            if (onGround) {
+                float dtBaro_s = (imuSampleTime_ms - lastHgtPassTime_ms) * 1.0e-3f; // seconds
+                const float hgtInnovFiltTC_s = 2.0f;                                // seconds
+                float alpha = constrain_float(dtBaro_s / (dtBaro_s + hgtInnovFiltTC_s), 0.0f, 1.0f);
+                hgtInnovFiltState += (innovVelPos[5] - hgtInnovFiltState) * alpha;
+                hgtInnovFiltState = constrain_float(hgtInnovFiltState, -2.0f, 2.0f); // constrain so that it can't stay too big too long.
+            }
+            else {
+                hgtInnovFiltState = 0.0f;
+            }
+
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
