@@ -456,6 +456,7 @@ private:
     const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint16_t fusionTimeStep_ms = 10;         // The minimum time interval between covariance predictions and measurement fusions in msec
     const uint8_t sensorIntervalMin_ms = 50;       // The minimum allowed time between measurements from any non-IMU sensor (msec)
+    const uint8_t flowIntervalMin_ms = 20;         // The minimum allowed time between measurements from optical flow sensors (msec)
 
     struct {
         bool enabled:1;
