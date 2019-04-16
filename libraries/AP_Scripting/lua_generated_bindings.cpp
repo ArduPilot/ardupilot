@@ -190,6 +190,8 @@ int Location_get_vector_from_origin_NEU(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
+    luaL_checkudata(L, 1, "Location");
+
     Location * ud = check_Location(L, 1);
     Vector3f & data_2 = *check_Vector3f(L, 2);
     const bool data = ud->get_vector_from_origin_NEU(
@@ -206,6 +208,8 @@ int Location_offset(lua_State *L) {
     } else if (args < 3) {
         return luaL_argerror(L, args, "too few arguments");
     }
+
+    luaL_checkudata(L, 1, "Location");
 
     Location * ud = check_Location(L, 1);
     const float data_2 = static_cast<float>(luaL_checknumber(L, 2));
@@ -226,6 +230,8 @@ int Location_get_distance(lua_State *L) {
     } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
+
+    luaL_checkudata(L, 1, "Location");
 
     Location * ud = check_Location(L, 1);
     Location & data_2 = *check_Location(L, 2);
@@ -266,12 +272,12 @@ int RangeFinder_num_sensors(lua_State *L) {
 
     luaL_checkudata(L, 1, "rangefinder");
 
-    RangeFinder *singleton = RangeFinder::get_singleton();
-    if (singleton == nullptr) {
+    RangeFinder * ud = RangeFinder::get_singleton();
+    if (ud == nullptr) {
         return luaL_argerror(L, args, "rangefinder not supported on this firmware");
     }
 
-    const uint8_t data = singleton->num_sensors(
+    const uint8_t data = ud->num_sensors(
 );
 
     lua_pushinteger(L, data);
@@ -288,13 +294,13 @@ int AP_Notify_play_tune(lua_State *L) {
 
     luaL_checkudata(L, 1, "AP_Notify");
 
-    AP_Notify *singleton = AP_Notify::get_singleton();
-    if (singleton == nullptr) {
+    AP_Notify * ud = AP_Notify::get_singleton();
+    if (ud == nullptr) {
         return luaL_argerror(L, args, "AP_Notify not supported on this firmware");
     }
 
     const char * data_2 = luaL_checkstring(L, 2);
-    singleton->play_tune(
+    ud->play_tune(
             data_2);
 
     return 0;
@@ -310,12 +316,12 @@ int AP_AHRS_get_home(lua_State *L) {
 
     luaL_checkudata(L, 1, "ahrs");
 
-    AP_AHRS *singleton = AP_AHRS::get_singleton();
-    if (singleton == nullptr) {
+    AP_AHRS * ud = AP_AHRS::get_singleton();
+    if (ud == nullptr) {
         return luaL_argerror(L, args, "ahrs not supported on this firmware");
     }
 
-    const Location &data = singleton->get_home(
+    const Location &data = ud->get_home(
 );
 
     new_Location(L);
@@ -325,24 +331,29 @@ int AP_AHRS_get_home(lua_State *L) {
 
 int AP_AHRS_get_position(lua_State *L) {
     const int args = lua_gettop(L);
-    if (args > 2) {
+    if (args > 1) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 2) {
+    } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
     luaL_checkudata(L, 1, "ahrs");
 
-    AP_AHRS *singleton = AP_AHRS::get_singleton();
-    if (singleton == nullptr) {
+    AP_AHRS * ud = AP_AHRS::get_singleton();
+    if (ud == nullptr) {
         return luaL_argerror(L, args, "ahrs not supported on this firmware");
     }
 
-    Location & data_2 = *check_Location(L, 2);
-    const bool data = singleton->get_position(
-            data_2);
+    Location data_5002 = {};
+    const bool data = ud->get_position(
+            data_5002);
 
-    lua_pushboolean(L, data);
+    if (data) {
+        new_Location(L);
+        *check_Location(L, -1) = data_5002;
+    } else {
+    lua_pushnil(L);
+    }
     return 1;
 }
 
