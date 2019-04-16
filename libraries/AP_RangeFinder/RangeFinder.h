@@ -91,9 +91,6 @@ public:
         uint16_t voltage_mv;            // voltage in millivolts, if applicable, otherwise 0
         enum RangeFinder_Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
-        bool     pre_arm_check;         // true if sensor has passed pre-arm checks
-        uint16_t pre_arm_distance_min;  // min distance captured during pre-arm checks
-        uint16_t pre_arm_distance_max;  // max distance captured during pre-arm checks
         uint32_t last_reading_ms;       // system time of last successful update from sensor
 
         const struct AP_Param::GroupInfo *var_info;
@@ -153,13 +150,6 @@ public:
     void set_estimated_terrain_height(float height) {
         estimated_terrain_height = height;
     }
-
-    /*
-      returns true if pre-arm checks have passed for all range finders
-      these checks involve the user lifting or rotating the vehicle so that sensor readings between
-      the min and 2m can be captured
-     */
-    bool pre_arm_check() const;
 
     static RangeFinder *get_singleton(void) { return _singleton; }
 
