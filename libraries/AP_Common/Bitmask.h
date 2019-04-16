@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <AP_InternalError/AP_InternalError.h>
+
 template<uint16_t num_bits>
 class Bitmask {
 public:
@@ -41,6 +43,7 @@ public:
     void set(uint16_t bit) {
         // ignore an invalid bit number
         if (bit >= numbits) {
+            AP::internalerror().error(AP_InternalError::error_t::bitmask_range);
             return;
         }
         uint16_t word = bit/32;
@@ -75,6 +78,12 @@ public:
     bool get(uint16_t bit) const {
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (bit >= numbits) {
+            AP::internalerror().error(AP_InternalError::error_t::bitmask_range);
+            return false;
+        }
+#endif
         return (bits[word] & (1U << ofs)) != 0;
     }
 
