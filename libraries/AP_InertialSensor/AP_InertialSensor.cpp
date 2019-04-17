@@ -1464,6 +1464,10 @@ check_sample:
  */
 bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const
 {
+    if (i >= INS_MAX_INSTANCES) {
+        return false;
+    }
+
     if (_delta_angle_valid[i]) {
         delta_angle = _delta_angle[i];
         return true;
@@ -1481,6 +1485,10 @@ bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const
 */
 bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const
 {
+    if (i >= INS_MAX_INSTANCES) {
+        return false;
+    }
+
     if (_delta_velocity_valid[i]) {
         delta_velocity = _delta_velocity[i];
         return true;
@@ -1497,7 +1505,7 @@ bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity) 
 float AP_InertialSensor::get_delta_velocity_dt(uint8_t i) const
 {
     float ret;
-    if (_delta_velocity_valid[i]) {
+    if (i < INS_MAX_INSTANCES && _delta_velocity_valid[i]) {
         ret = _delta_velocity_dt[i];
     } else {
         ret = get_delta_time();
@@ -1512,7 +1520,7 @@ float AP_InertialSensor::get_delta_velocity_dt(uint8_t i) const
 float AP_InertialSensor::get_delta_angle_dt(uint8_t i) const
 {
     float ret;
-    if (_delta_angle_valid[i] && _delta_angle_dt[i] > 0) {
+    if (i < INS_MAX_INSTANCES && _delta_angle_valid[i] && _delta_angle_dt[i] > 0) {
         ret = _delta_angle_dt[i];
     } else {
         ret = get_delta_time();
