@@ -61,3 +61,11 @@ uint64_t millis64()
     //return hal;
 	//return 0;
 //}
+
+extern "C" int main(int argc, char *argv[]);
+
+extern "C" void app_main()
+{
+   main(0, nullptr);
+}
+

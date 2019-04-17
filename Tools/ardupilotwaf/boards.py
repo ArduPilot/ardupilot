@@ -353,6 +353,7 @@ class sitl(Board):
             ]
 
 class esp32(Board):
+    abstract = True
     toolchain = 'xtensa-esp32-elf'
     def configure_env(self, cfg, env):
         def expand_path(p):
@@ -361,8 +362,7 @@ class esp32(Board):
         super(esp32, self).configure_env(cfg, env)
         cfg.load('esp32')
         env.DEFINES.update(
-            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_DIY',
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32'
         )
         env.AP_LIBRARIES += [
             'AP_HAL_ESP32',
@@ -385,39 +385,19 @@ class esp32(Board):
         super(esp32, self).build(bld)
         bld.load('esp32')
 
-class esp32icarus(Board):
-    toolchain = 'xtensa-esp32-elf'
+class esp32diy(esp32):
     def configure_env(self, cfg, env):
-        def expand_path(p):
-            idf = os.environ['IDF_PATH']
-            return cfg.root.find_dir(idf+p).abspath()
-        super(esp32icarus, self).configure_env(cfg, env)
-
+        super(esp32diy, self).configure_env(cfg, env)
         env.DEFINES.update(
-            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_ICARUS',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_DIY'
         )
-        cfg.load('esp32')
-        env.AP_LIBRARIES += [
-            'AP_HAL_ESP32',
-        ]
-        # debug: - remove -Os and add -Og and -fno-inline
-        # normal add -Os and remove -Og and -fno-inline
-        env.CXXFLAGS += ['-mlongcalls',
-#                         '-Os',
-                         '-Og',
-                         '-fno-inline',
-                         '-ffunction-sections',
-                         '-fdata-sections',
-                         '-fno-exceptions',
-                         '-fno-rtti',
-                         '-nostdlib',
-                         '-fstrict-volatile-bitfields',
-                         '-D__IRAM__=__attribute__((section(".iram1")))']
-        env.AP_PROGRAM_AS_STLIB = True
-    def build(self, bld):
-        super(esp32icarus, self).build(bld)
-        bld.load('esp32')
+
+class esp32icarus(esp32):
+    def configure_env(self, cfg, env):
+        super(esp32icarus, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_ICARUS'
+        )
 
 class chibios(Board):
     abstract = True
