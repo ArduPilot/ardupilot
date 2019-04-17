@@ -57,6 +57,7 @@ static uint32_t servo_per_degree_init(uint32_t degree_of_rotation)
 void RCOutput::init()
 {
 	   printf("RCOutput::init()\n");
+	   
 
 	   	// configure all 6 GPIOs the same at the same time... as OUTPUTS
 		#define GPIO_BIT_MASK  ((1ULL<<GPIO_NUM_21) | (1ULL<<GPIO_NUM_22) | (1ULL<<GPIO_NUM_25) | (1ULL<<GPIO_NUM_27) | (1ULL<<GPIO_NUM_32) | (1ULL<<GPIO_NUM_33))

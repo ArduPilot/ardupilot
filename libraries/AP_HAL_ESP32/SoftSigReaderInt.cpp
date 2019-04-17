@@ -158,6 +158,8 @@ void SoftSigReaderInt::init()
 
 bool SoftSigReaderInt::read(uint32_t &widths0, uint32_t &widths1)
 {
+//printf("SoftSigReaderInt::read\n");
+
     if (sigbuf.available() >= 2) {
         pulse_t pulse;
         if (sigbuf.pop(pulse)) {

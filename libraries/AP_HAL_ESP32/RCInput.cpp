@@ -18,16 +18,6 @@
 #include <stdio.h>
 
 
-//#include "hal.h"
-//#include "hwdef/common/ppm.h"
-//#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
-
-// #if HAL_WITH_IO_MCU
-// #include <AP_BoardConfig/AP_BoardConfig.h>
-// #include <AP_IOMCU/AP_IOMCU.h>
-// extern AP_IOMCU iomcu;
-// #endif
-
 #include <AP_Math/AP_Math.h>
 
 #ifndef HAL_NO_UARTDRIVER
@@ -40,16 +30,9 @@ extern const AP_HAL::HAL& hal;
 void RCInput::init()
 {
    printf("RCInput::init()\n");
-// #if HAL_USE_ICU == TRUE
-//     //attach timer channel on which the signal will be received
-//     sig_reader.attach_capture_timer(&RCIN_ICU_TIMER, RCIN_ICU_CHANNEL, STM32_RCIN_DMA_STREAM, STM32_RCIN_DMA_CHANNEL);
-//     rcin_prot.init();
-// #endif
 
-//#if HAL_USE_EICU == TRUE
     sig_reader.init();
     rcin_prot.init();
-//#endif
 
     _init = true;
 }
@@ -66,16 +49,7 @@ bool RCInput::new_input()
 
     _last_read = _rcin_timestamp_last_signal;
     rcin_mutex.give();
-
-#if HAL_RCINPUT_WITH_AP_RADIO
-    if (!_radio_init) {
-        _radio_init = true;
-        radio = AP_Radio::instance();
-        if (radio) {
-            radio->init();
-        }
-    }
-#endif    
+  
     return valid;
 }
 
@@ -95,12 +69,7 @@ uint16_t RCInput::read(uint8_t channel)
     rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
     uint16_t v = _rc_values[channel];
     rcin_mutex.give();
-//#if HAL_RCINPUT_WITH_AP_RADIO
-//    if (radio && channel == 0) {
-//        // hook to allow for update of radio on main thread, for mavlink sends
-//        radio->update();
-//    }
-//#endif
+
     return v;
 }
 
@@ -128,39 +97,65 @@ void RCInput::_timer_tick(void)
         return;
     }
 
-   // #if HAL_USE_EICU == TRUE
         uint32_t width_s0, width_s1;
         while(sig_reader.read(width_s0, width_s1)) {
+            //printf("Z %d %d \n",width_s0 ,width_s1);
             rcin_prot.process_pulse(width_s0, width_s1);
+            
         }
-   // #endif
 
-    //#ifndef HAL_NO_UARTDRIVER
         const char *rc_protocol = nullptr;
-    //#endif
 
-    //#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
         if (rcin_prot.new_input()) {
             rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
             _rcin_timestamp_last_signal = AP_HAL::micros();
             _num_channels = rcin_prot.num_channels();
             _num_channels = MIN(_num_channels, RC_INPUT_MAX_CHANNELS);
-            for (uint8_t i=0; i<_num_channels; i++) {
-                _rc_values[i] = rcin_prot.read(i);
+            
+            // throw away channels that aren't totalling 8, corruption.
+            if ( _num_channels != 8 ) { 
+            	for (uint8_t i=0; i<_num_channels; i++) {
+                	rcin_prot.read(i);
+               }
             }
-            rcin_mutex.give();
-    //#ifndef HAL_NO_UARTDRIVER
-            rc_protocol = rcin_prot.protocol_name();
-    //#endif
-    }
-//#endif
+            // range check and throw ones outside range: 
 
-    //#ifndef HAL_NO_UARTDRIVER
+            // otherwise accept them
+            else { 
+            	int drop = 0;
+	        	for (uint8_t i=0; i<_num_channels; i++) {
+	        	
+	        		uint16_t tmpv = rcin_prot.read(i);
+	        		
+	        		if ( drop == 1 ) continue; 
+	        		
+	        		// skip out-of-range ones, just drop the entire rest of the frame and assume it'll be ok next frame.
+	        		if (( tmpv < 980 ) || ( tmpv > 2020 )) { drop=1; continue;}  
+	        		
+	        		// ignore things a long way off from the current value by about 90%
+	        		if ( abs ( _rc_values[i] - tmpv ) > 150 ) {  _rc_values[i] = (_rc_values[i]/10)*9 + tmpv/9; continue; } 
+	        		
+	        		// average last few values.., ie use about 30%
+					_rc_values[i] = (_rc_values[i]/3)*2 + tmpv/3;
+	        		
+	                //_rc_values[i] = tmpv;
+	                
+	                printf("RC %d ",_rc_values[i]);
+	            }
+	            printf("\n");
+	        }
+            
+            rcin_mutex.give();
+
+            rc_protocol = rcin_prot.protocol_name();
+
+    }
+
         if (rc_protocol && rc_protocol != last_protocol) {
             last_protocol = rc_protocol;
             gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
+            printf("RCInput: decoding %s\n", last_protocol);
         }
-    //#endif
 
     // note, we rely on the vehicle code checking new_input()
     // and a timeout for the last valid input to handle failsafe
@@ -174,4 +169,3 @@ bool RCInput::rc_bind(int dsmMode)
   // not impl
     return true;
 }
-//#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32

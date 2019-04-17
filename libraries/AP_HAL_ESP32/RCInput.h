@@ -25,6 +25,8 @@
 #include "SoftSigReaderInt.h"
 #include <AP_RCProtocol/AP_RCProtocol.h>
 
+#include <stdio.h>
+
 
 #ifndef RC_INPUT_MAX_CHANNELS
 #define RC_INPUT_MAX_CHANNELS 18
