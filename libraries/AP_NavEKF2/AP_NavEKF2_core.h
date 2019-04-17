@@ -751,6 +751,9 @@ private:
 
     // update timing statistics structure
     void updateTimingStatistics(void);
+
+    // change the imu_index and reset the imu bias state variances and covariances
+    void switchIMUs(uint8_t _new_imu_index);
     
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH

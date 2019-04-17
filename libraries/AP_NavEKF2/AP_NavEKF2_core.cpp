@@ -96,6 +96,25 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
 
     return true;
 }
+
+void NavEKF2_core::switchIMUs(uint8_t _new_imu_index)
+{
+    if (imu_index != _new_imu_index) {
+        imu_index = _new_imu_index;
+        zeroRows(P,9,15);
+        zeroCols(P,9,15);
+        // gyro biases
+        P[9][9] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
+        P[10][10] = P[9][9];
+        P[11][11] = P[9][9];
+        // gyro scale factor biases
+        P[12][12] = sq(1e-3);
+        P[13][13] = P[12][12];
+        P[14][14] = P[12][12];
+        // Z delta velocity bias
+        P[15][15] = sq(INIT_ACCEL_BIAS_UNCERTAINTY * dtEkfAvg);
+    }
+}
     
 
 /********************************************************
