@@ -740,7 +740,7 @@ void Copter::ModeAuto::wp_run()
     }
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         wp_nav->wp_and_spline_init();
         return;
@@ -770,7 +770,7 @@ void Copter::ModeAuto::wp_run()
 void Copter::ModeAuto::spline_run()
 {
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         wp_nav->wp_and_spline_init();
         return;
@@ -811,7 +811,7 @@ void Copter::ModeAuto::land_run()
 {
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         loiter_nav->init_target();
         return;
@@ -866,7 +866,7 @@ void Copter::ModeAuto::nav_guided_run()
 void Copter::ModeAuto::loiter_run()
 {
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         wp_nav->wp_and_spline_init();
         return;
@@ -893,7 +893,7 @@ void Copter::ModeAuto::loiter_run()
 void Copter::ModeAuto::loiter_to_alt_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
+    if (is_disarmed_or_landed() || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
         return;
     }

@@ -812,7 +812,7 @@ void Compass::_detect_backends(void)
         // we run the AK8963 only on the 2nd MPU9250, which leaves the
         // first MPU9250 to run without disturbance at high rate
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(1, ROTATION_YAW_270));
-        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe_ICM20948(0, ROTATION_ROLL_180_YAW_270));
+        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe_ICM20948(0, ROTATION_ROLL_180_YAW_90));
         break;
 
     case AP_BoardConfig::PX4_BOARD_FMUV5:

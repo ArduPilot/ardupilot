@@ -59,7 +59,7 @@ void Copter::ModeLand::gps_run()
     }
 
     // Land State Machine Determination
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
         loiter_nav->init_target();
     } else {
@@ -110,7 +110,7 @@ void Copter::ModeLand::nogps_run()
     }
 
     // Land State Machine Determination
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (is_disarmed_or_landed()) {
         make_safe_spool_down();
     } else {
         // set motors to full range

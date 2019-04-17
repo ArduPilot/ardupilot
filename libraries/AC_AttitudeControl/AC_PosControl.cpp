@@ -591,7 +591,7 @@ void AC_PosControl::run_z_controller()
     // Calculate Earth Frame Z acceleration
     z_accel_meas = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
 
-    // reset target altitude if this controller has just been engaged
+    // reset target acceleration if this controller has just been engaged
     if (_flags.reset_accel_to_throttle) {
         // Reset Filter
         _accel_error.z = 0;
@@ -1243,7 +1243,7 @@ bool AC_PosControl::pre_arm_checks(const char *param_prefix,
         }
     }
 
-    // the z-control PID doesn't use FF, so P and I must be positive
+    // z-axis acceleration control PID doesn't use FF, so P and I must be positive
     if (!is_positive(get_accel_z_pid().kP())) {
         hal.util->snprintf(failure_msg, failure_msg_len, "%s_ACCZ_P must be > 0", param_prefix);
         return false;

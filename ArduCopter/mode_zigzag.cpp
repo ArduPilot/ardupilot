@@ -38,7 +38,7 @@ void Copter::ModeZigZag::run()
     pos_control->set_max_accel_z(g.pilot_accel_z);
 
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
+    if (is_disarmed_or_landed() || !motors->get_interlock() ) {
         zero_throttle_and_relax_ac(copter.is_tradheli() && motors->get_interlock());
         return;
     }

@@ -58,6 +58,12 @@ public:
 
     bool get_system_id(char buf[40]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
+
+#ifdef ENABLE_HEAP
+    // heap functions, note that a heap once alloc'd cannot be dealloc'd
+    virtual void *allocate_heap_memory(size_t size) override;
+    virtual void *heap_realloc(void *h, void *ptr, size_t new_size) override;
+#endif // ENABLE_HEAP
     
     /*
      * Write a string as specified by @fmt to the file in @path. Note this
@@ -113,6 +119,18 @@ private:
     const char *custom_terrain_directory = nullptr;
     const char *custom_storage_directory = nullptr;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
+
+#ifdef ENABLE_HEAP
+    struct heap_allocation_header {
+        size_t allocation_size; // size of allocated block, not including this header
+    };
+
+    struct heap {
+      size_t max_heap_size;
+      size_t current_heap_usage;
+    };
+#endif // ENABLE_HEAP
+
 };
 
 }
