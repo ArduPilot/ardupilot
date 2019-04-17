@@ -669,19 +669,6 @@ void emit_userdata_declarations(void) {
   }
 }
 
-void emit_range_check(const struct range_check *range, const char * name, const char *internal_name, const char *indentation) {
-  if (range == NULL) {
-    error(ERROR_INTERNAL, "Internal Error: Attempted to emit a range check for %s but no range check information was found", name);
-  }
-  // FIXME: emit an implict range check on primitive int types to ensure that they are within a representable range
-  //        should be able to use MAX() around the call
-  fprintf(source, "%sluaL_argcheck(L, ((%s >= %s) && (%s <= %s)), 2, \"%s out of range\");\n",
-          indentation != NULL ? indentation : "",
-          internal_name, range->low,
-          internal_name, range->high,
-          name);
-}
-
 #define NULLABLE_ARG_COUNT_BASE 5000
 void emit_checker(const struct type t, int arg_number, const char *indentation, const char *name) {
   assert(indentation != NULL);
@@ -724,46 +711,113 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
         break;
     }
   } else {
-    // consider the arg numberto provide both the name, and the stack position of the variable
-    // FIXME: The order on the casts/range_check means that out of range data is impicitly wrapped, which is unsafe
+    // handle this in four stages
+    //   - figure out any relevant minimum values for range checking
+    //   - emit a non down casted version
+    //   - then run range checks
+    //   - then cast down as appropriate
+
+    // select minimums
+    char * forced_min;
+    char * forced_max;
     switch (t.type) {
-      case TYPE_BOOLEAN:
-        fprintf(source, "%sconst bool data_%d = static_cast<bool>(lua_toboolean(L, %d));\n", indentation, arg_number, arg_number);
-        break;
       case TYPE_FLOAT:
-        fprintf(source, "%sconst float data_%d = static_cast<float>(luaL_checknumber(L, %d));\n", indentation, arg_number, arg_number);
+        forced_min = "-INFINITY";
+        forced_max = "INFINITY";
         break;
       case TYPE_INT8_T:
-        fprintf(source, "%sconst int8_t data_%d = static_cast<int8_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        forced_min = "INT8_MIN";
+        forced_max = "INT8_MAX";
         break;
       case TYPE_INT16_T:
-        fprintf(source, "%sconst int16_t data_%d = static_cast<int16_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        forced_min = "INT16_MIN";
+        forced_max = "INT16_MAX";
         break;
       case TYPE_INT32_T:
-        fprintf(source, "%sconst int32_t data_%d = static_cast<int32_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        forced_min = "INT32_MIN";
+        forced_max = "INT32_MAX";
         break;
       case TYPE_UINT8_T:
-        fprintf(source, "%sconst uint8_t data_%d = static_cast<uint8_t>(luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        forced_min = "UINT8_MIN";
+        forced_max = "UINT8_MAX";
         break;
       case TYPE_UINT16_T:
-        fprintf(source, "%sconst uint16_t data_%d = static_cast<uint16_t>luaL_checkinteger(L, %d));\n", indentation, arg_number, arg_number);
+        forced_min = "UINT16_MIN";
+        forced_max = "UINT16_MAX";
         break;
       case TYPE_NONE:
         return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
+      case TYPE_STRING:
+      case TYPE_BOOLEAN:
+      case TYPE_USERDATA:
+        // these don't get range checked, so skip the raw_data phase
+        assert(t.range == NULL); // we should have caught this during the parse phase
+        break;
+    }
+
+    // non down cast
+    switch (t.type) {
+      case TYPE_FLOAT:
+        fprintf(source, "%sconst float raw_data_%d = luaL_checknumber(L, %d);\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_INT8_T:
+      case TYPE_INT16_T:
+      case TYPE_INT32_T:
+      case TYPE_UINT8_T:
+      case TYPE_UINT16_T:
+        fprintf(source, "%sconst int raw_data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_NONE:
+      case TYPE_STRING:
+      case TYPE_BOOLEAN:
+      case TYPE_USERDATA:
+        // these don't get range checked, so skip the raw_data phase
+        assert(t.range == NULL); // we should have caught this during the parse phase
+        break;
+    }
+
+    // range check
+    if (t.range != NULL) {
+      fprintf(source, "%sluaL_argcheck(L, ((raw_data_%d >= MAX(%s, %s)) && (raw_data_%d <= MIN(%s, %s))), %d, \"%s out of range\");\n",
+              indentation,
+              arg_number, t.range->low, forced_min,
+              arg_number, t.range->high, forced_max,
+              arg_number, name);
+    }
+
+    // down cast
+    switch (t.type) {
+      case TYPE_FLOAT:
+        // this is a trivial transformation, trust the compiler to resolve it for us
+        fprintf(source, "%sconst float data_%d = raw_data_%d;\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_INT8_T:
+        fprintf(source, "%sconst int8_t data_%d = static_cast<int8_t>(raw_data_%d);\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_INT16_T:
+        fprintf(source, "%sconst int16_t data_%d = static_cast<int16_t>(raw_data_%d);\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_INT32_T:
+        fprintf(source, "%sconst int32_t data_%d = raw_data_%d;\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_UINT8_T:
+        fprintf(source, "%sconst uint8_t data_%d = static_cast<uint8_t>(raw_data_%d);\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_UINT16_T:
+        fprintf(source, "%sconst uint16_t data_%d = static_cast<uint16_t>(raw_data_%d);\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_BOOLEAN:
+        fprintf(source, "%sconst bool data_%d = static_cast<bool>(lua_toboolean(L, %d));\n", indentation, arg_number, arg_number);
+        break;
       case TYPE_STRING:
         fprintf(source, "%sconst char * data_%d = luaL_checkstring(L, %d);\n", indentation, arg_number, arg_number);
         break;
       case TYPE_USERDATA:
         fprintf(source, "%s%s & data_%d = *check_%s(L, %d);\n", indentation, t.data.userdata_name, arg_number, t.data.userdata_name, arg_number);
         break;
-    }
-
-    if (t.range != NULL) {
-      fprintf(source, "%sluaL_argcheck(L, ((data_%d >= %s) && (data_%d <= %s)), %d, \"%s out of range\");\n",
-              indentation,
-              arg_number, t.range->low,
-              arg_number, t.range->high,
-              arg_number, name);
+      case TYPE_NONE:
+        // nothing to do, we've either already emitted a reasonable value, or returned
+        break;
     }
   }
 }

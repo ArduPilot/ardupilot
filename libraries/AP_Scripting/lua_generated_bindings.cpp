@@ -40,8 +40,9 @@ int Vector3f_z(lua_State *L) {
             lua_pushnumber(L, ud->z);
             return 1;
         case 2: {
-            const float data_2 = static_cast<float>(luaL_checknumber(L, 2));
-            luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "z out of range");
+            const float raw_data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "z out of range");
+            const float data_2 = raw_data_2;
             ud->z = data_2;
             return 0;
          }
@@ -57,8 +58,9 @@ int Vector3f_y(lua_State *L) {
             lua_pushnumber(L, ud->y);
             return 1;
         case 2: {
-            const float data_2 = static_cast<float>(luaL_checknumber(L, 2));
-            luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "y out of range");
+            const float raw_data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "y out of range");
+            const float data_2 = raw_data_2;
             ud->y = data_2;
             return 0;
          }
@@ -74,8 +76,9 @@ int Vector3f_x(lua_State *L) {
             lua_pushnumber(L, ud->x);
             return 1;
         case 2: {
-            const float data_2 = static_cast<float>(luaL_checknumber(L, 2));
-            luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "x out of range");
+            const float raw_data_2 = luaL_checknumber(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "x out of range");
+            const float data_2 = raw_data_2;
             ud->x = data_2;
             return 0;
          }
@@ -155,8 +158,9 @@ int Location_lng(lua_State *L) {
             lua_pushinteger(L, ud->lng);
             return 1;
         case 2: {
-            const int32_t data_2 = static_cast<int32_t>(luaL_checkinteger(L, 2));
-            luaL_argcheck(L, ((data_2 >= -1800000000) && (data_2 <= 1800000000)), 2, "lng out of range");
+            const int raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-1800000000, INT32_MIN)) && (raw_data_2 <= MIN(1800000000, INT32_MAX))), 2, "lng out of range");
+            const int32_t data_2 = raw_data_2;
             ud->lng = data_2;
             return 0;
          }
@@ -172,8 +176,9 @@ int Location_lat(lua_State *L) {
             lua_pushinteger(L, ud->lat);
             return 1;
         case 2: {
-            const int32_t data_2 = static_cast<int32_t>(luaL_checkinteger(L, 2));
-            luaL_argcheck(L, ((data_2 >= -900000000) && (data_2 <= 900000000)), 2, "lat out of range");
+            const int raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(-900000000, INT32_MIN)) && (raw_data_2 <= MIN(900000000, INT32_MAX))), 2, "lat out of range");
+            const int32_t data_2 = raw_data_2;
             ud->lat = data_2;
             return 0;
          }
@@ -212,10 +217,12 @@ int Location_offset(lua_State *L) {
     luaL_checkudata(L, 1, "Location");
 
     Location * ud = check_Location(L, 1);
-    const float data_2 = static_cast<float>(luaL_checknumber(L, 2));
-    luaL_argcheck(L, ((data_2 >= -FLT_MAX) && (data_2 <= FLT_MAX)), 2, "argument out of range");
-    const float data_3 = static_cast<float>(luaL_checknumber(L, 3));
-    luaL_argcheck(L, ((data_3 >= -FLT_MAX) && (data_3 <= FLT_MAX)), 3, "argument out of range");
+    const float raw_data_2 = luaL_checknumber(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "argument out of range");
+    const float data_2 = raw_data_2;
+    const float raw_data_3 = luaL_checknumber(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_3 <= MIN(FLT_MAX, INFINITY))), 3, "argument out of range");
+    const float data_3 = raw_data_3;
     ud->offset(
             data_2,
             data_3);
@@ -352,7 +359,7 @@ int AP_AHRS_get_position(lua_State *L) {
         new_Location(L);
         *check_Location(L, -1) = data_5002;
     } else {
-    lua_pushnil(L);
+        lua_pushnil(L);
     }
     return 1;
 }
