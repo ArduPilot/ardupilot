@@ -1206,8 +1206,7 @@ class AutoTest(ABC):
         self.progress("Changing mode to %s" % mode)
         self.mavproxy.send('mode %s\n' % mode)
         tstart = self.get_sim_time()
-        self.wait_heartbeat()
-        while self.mav.flightmode != mode:
+        while not self.mode_is(mode):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                     self.mav.flightmode, mode, custom_num))
@@ -1215,9 +1214,6 @@ class AutoTest(ABC):
                     self.get_sim_time_cached() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
             self.mavproxy.send('mode %s\n' % mode)
-            self.wait_heartbeat()
-        # self.progress("heartbeat mode %s Want: %s" % (
-        # self.mav.flightmode, mode))
         self.progress("Got mode %s" % mode)
 
     def do_get_autopilot_capabilities(self):
@@ -1632,7 +1628,12 @@ class AutoTest(ABC):
     def mode_is(self, mode, cached=False):
         if not cached:
             self.wait_heartbeat()
-        return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
+        try:
+            return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
+        except Exception as e:
+            pass
+        # assume this is a number....
+        return self.mav.messages['HEARTBEAT'].custom_mode == mode
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
@@ -1645,8 +1646,6 @@ class AutoTest(ABC):
             if (timeout is not None and
                     self.get_sim_time_cached() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
-        # self.progress("heartbeat mode %s Want: %s" % (
-        # self.mav.flightmode, mode))
         self.progress("Got mode %s" % mode)
 
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
