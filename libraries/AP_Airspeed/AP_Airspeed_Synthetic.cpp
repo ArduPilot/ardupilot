@@ -47,8 +47,21 @@ bool AP_Airspeed_Synthetic::get_differential_pressure(float &pressure)
     if (!ahrs.get_velocity_NED(gnd_speed)) {
         return false;
     }
+    float wind_direction_from=0, wind_speed_mps=0;
+
+    get_wind(wind_direction_from, wind_speed_mps);
+
+    // calculate wind vector
+    Vector3f wind(cosf(radians(wind_direction_from)), sinf(radians(wind_direction_from)), 0);
+    wind *= wind_speed_mps;
+
     set_use_zero_offset();
     Vector3f aspeed3d = gnd_speed / ahrs.get_EAS2TAS();
+
+    // add wind in ground frame
+    aspeed3d += wind;
+
+    // rotate to body frame
     const Matrix3f &rot = ahrs.get_rotation_body_to_ned();
     aspeed3d = rot.mul_transpose(aspeed3d);
     float airspeed = MAX(aspeed3d.x, 0);

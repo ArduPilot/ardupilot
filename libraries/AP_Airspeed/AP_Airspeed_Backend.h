@@ -70,6 +70,11 @@ protected:
     void set_offset(float ofs) {
         frontend.param[instance].offset.set(ofs);
     }
+
+    void get_wind(float &direction_from_deg, float &speed_mps) const {
+        direction_from_deg = frontend.param[instance].wind_direction_from;
+        speed_mps = frontend.param[instance].wind_speed_mps;
+    }
     
 private:
     AP_Airspeed &frontend;
