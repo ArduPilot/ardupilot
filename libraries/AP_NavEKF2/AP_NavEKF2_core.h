@@ -575,8 +575,8 @@ private:
     void CovarianceInit();
 
     // helper functions for readIMUData
-    bool readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt);
-    bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng_dt);
+    void readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt);
+    void readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng_dt);
 
     // helper functions for correcting IMU data
     void correctDeltaAngle(Vector3f &delAng, float delAngDT);
