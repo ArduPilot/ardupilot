@@ -217,7 +217,7 @@ void AP_ICEngine::update(void)
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }
-        } else if (idle_percent == 0) { // check if we should idle
+        } else if (idle_percent <= 0) { // check if we should idle
             // force ignition off when disarmed
             state = ICE_OFF;
         }
@@ -265,8 +265,11 @@ bool AP_ICEngine::throttle_override(uint8_t &percentage)
         return false;
     }
 
-    uint8_t current_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    if (idle_percent > current_throttle && state == ICE_RUNNING) {
+    if (state == ICE_RUNNING &&
+        idle_percent > 0 &&
+        idle_percent < 100 &&
+        (int16_t)idle_percent > SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))
+    {
         percentage = (uint8_t)idle_percent;
         return true;
     }
