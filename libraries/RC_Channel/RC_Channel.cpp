@@ -449,6 +449,8 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case AUX_FUNC::GRIPPER:
     case AUX_FUNC::SPRAYER:
     case AUX_FUNC::GPS_DISABLE:
+    case AUX_FUNC::KILL_IMU1:
+    case AUX_FUNC::KILL_IMU2:
         do_aux_function(ch_option, ch_flag);
         break;
     default:
@@ -716,6 +718,20 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             break;
         }
     }
+    case AUX_FUNC::KILL_IMU1:
+        if (ch_flag == HIGH) {
+            AP::ins().kill_imu(0, true);
+        } else {
+            AP::ins().kill_imu(0, false);
+        }
+        break;
+    case AUX_FUNC::KILL_IMU2:
+        if (ch_flag == HIGH) {
+            AP::ins().kill_imu(1, true);
+        } else {
+            AP::ins().kill_imu(1, false);
+        }
+        break;
    break;
 
     default:
