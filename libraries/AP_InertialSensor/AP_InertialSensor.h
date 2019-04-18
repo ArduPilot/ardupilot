@@ -274,6 +274,9 @@ public:
     // return time in microseconds of last update() call
     uint32_t get_last_update_usec(void) const { return _last_update_usec; }
 
+    // for killing an IMU for testing purposes
+    void kill_imu(uint8_t imu_idx, bool kill_it);
+
     enum IMU_SENSOR_TYPE {
         IMU_SENSOR_TYPE_ACCEL = 0,
         IMU_SENSOR_TYPE_GYRO = 1,
@@ -584,6 +587,8 @@ private:
     uint32_t _gyro_startup_error_count[INS_MAX_INSTANCES];
     bool _startup_error_counts_set;
     uint32_t _startup_ms;
+
+    uint8_t imu_kill_mask;
 };
 
 namespace AP {
