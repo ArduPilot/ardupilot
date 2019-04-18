@@ -1313,26 +1313,15 @@ void AP_InertialSensor::update(void)
             }
         }
 
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _gyro_error_count[i] > _gyro_startup_error_count[i] && have_zero_gyro_error_count) {
-                // we prefer not to use a gyro that has had errors
-                _gyro_healthy[i] = false;
-            }
-            if (_accel_healthy[i] && _accel_error_count[i] > _accel_startup_error_count[i] && have_zero_accel_error_count) {
-                // we prefer not to use a accel that has had errors
-                _accel_healthy[i] = false;
-            }
-        }
-
         // set primary to first healthy accel and gyro
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _use[i]) {
+            if (_gyro_healthy[i] && _use[i] && (_gyro_error_count[i] <= _gyro_startup_error_count[i] || !have_zero_gyro_error_count)) {
                 _primary_gyro = i;
                 break;
             }
         }
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _use[i]) {
+            if (_accel_healthy[i] && _use[i] && (_accel_error_count[i] >= _accel_startup_error_count[i] || !have_zero_accel_error_count)) {
                 _primary_accel = i;
                 break;
             }
