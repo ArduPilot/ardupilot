@@ -96,7 +96,7 @@ void Copter::ModeAltHold::run()
 #endif
 
         // adjust climb rate using rangefinder
-        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate);
+        target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);

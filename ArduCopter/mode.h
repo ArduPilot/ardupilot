@@ -197,9 +197,6 @@ protected:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_surface_tracking_climb_rate(int16_t target_rate);
-    bool get_surface_tracking_target_alt_cm(float &target_alt_cm) const;
-    void set_surface_tracking_target_alt_cm(float target_alt_cm);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_pilot_desired_throttle() const;
