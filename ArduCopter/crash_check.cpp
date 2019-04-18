@@ -154,7 +154,6 @@ void Copter::thrust_loss_check()
 void Copter::parachute_check()
 {
     static uint16_t control_loss_count; // number of iterations we have been out of control
-    static int32_t baro_alt_start;
 
     // exit immediately if parachute is not enabled
     if (!parachute.enabled()) {
@@ -187,6 +186,12 @@ void Copter::parachute_check()
         return;
     }
 
+    // ensure we are going down
+    if (is_positive(barometer.get_climb_rate())) {
+        control_loss_count = 0;
+        return;
+    }
+
     // ensure the first control_loss event is from above the min altitude
     if (control_loss_count == 0 && parachute.alt_min() != 0 && (current_loc.alt < (int32_t)parachute.alt_min() * 100)) {
         return;
@@ -204,21 +209,7 @@ void Copter::parachute_check()
     // increment counter
     if (control_loss_count < (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
         control_loss_count++;
-    }
-
-    // record baro alt if we have just started losing control
-    if (control_loss_count == 1) {
-        baro_alt_start = baro_alt;
-
-    // exit if baro altitude change indicates we are not falling
-    } else if (baro_alt >= baro_alt_start) {
-        control_loss_count = 0;
-        return;
-
-    // To-Do: add check that the vehicle is actually falling
-
-    // check if loss of control for at least 1 second
-    } else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
+    } else { // loss of control for at least 1 second
         // reset control loss counter
         control_loss_count = 0;
         AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_LOSS_OF_CONTROL);
