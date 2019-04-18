@@ -704,6 +704,12 @@ void NavEKF2::selectCoreIMUs(void) {
     const AP_InertialSensor &ins = AP::ins();
 
     for (uint8_t i=0; i<num_cores; i++) {
+        // If this core is not using its initial IMU and its initial IMU is healthy, switch it
+        if ((core[i].getGyroIndex() != core_initial_imu[i] || core[i].getAccelIndex() != core_initial_imu[i]) && ins.use_accel(core_initial_imu[i]) && ins.use_gyro(core_initial_imu[i])) {
+            core[i].switchGyros(core_initial_imu[i], gyroBiasGuess[core_initial_imu[i]], gyroScaleGuess[core_initial_imu[i]]);
+            core[i].switchAccels(core_initial_imu[i], accelZBiasGuess[core_initial_imu[i]]);
+        }
+
         if (!ins.use_gyro(core[i].getGyroIndex()) || !ins.use_accel(core[i].getAccelIndex())) {
             bool success = false;
 
