@@ -131,6 +131,9 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
  */
 void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &gyro)
 {
+    if ((1U<<instance) & _imu.imu_kill_mask) {
+        return;
+    }
     _imu._gyro[instance] = gyro;
     _imu._gyro_healthy[instance] = true;
 
@@ -144,6 +147,9 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
                                                             const Vector3f &gyro,
                                                             uint64_t sample_us)
 {
+    if ((1U<<instance) & _imu.imu_kill_mask) {
+        return;
+    }
     float dt;
 
     _update_sensor_rate(_imu._sample_gyro_count[instance], _imu._sample_gyro_start_us[instance],
@@ -255,6 +261,9 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
  */
 void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f &accel)
 {
+    if ((1U<<instance) & _imu.imu_kill_mask) {
+        return;
+    }
     _imu._accel[instance] = accel;
     _imu._accel_healthy[instance] = true;
 
@@ -288,6 +297,9 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
                                                              uint64_t sample_us,
                                                              bool fsync_set)
 {
+    if ((1U<<instance) & _imu.imu_kill_mask) {
+        return;
+    }
     float dt;
 
     _update_sensor_rate(_imu._sample_accel_count[instance], _imu._sample_accel_start_us[instance],
@@ -428,6 +440,9 @@ uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
  */
 void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float temperature)
 {
+    if ((1U<<instance) & _imu.imu_kill_mask) {
+        return;
+    }
     _imu._temperature[instance] = temperature;
 
     /* give the temperature to the control loop in order to keep it constant*/
@@ -443,6 +458,9 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
 {    
     WITH_SEMAPHORE(_sem);
 
+    if ((1U<<instance) & _imu.imu_kill_mask) {
+        return;
+    }
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
         _imu._new_gyro_data[instance] = false;
@@ -471,6 +489,9 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance)
 {    
     WITH_SEMAPHORE(_sem);
 
+    if ((1U<<instance) & _imu.imu_kill_mask) {
+        return;
+    }
     if (_imu._new_accel_data[instance]) {
         _publish_accel(instance, _imu._accel_filtered[instance]);
         _imu._new_accel_data[instance] = false;
