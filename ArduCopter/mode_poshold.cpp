@@ -234,7 +234,7 @@ void Copter::ModePosHold::run()
         // adjust climb rate using rangefinder
         if (copter.rangefinder_alt_ok()) {
             // if rangefinder is ok, use surface tracking
-            target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate);
+            target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate);
         }
 
         // get avoidance adjusted climb rate

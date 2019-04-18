@@ -125,7 +125,7 @@ void Copter::ModeZigZag::return_to_manual_control(bool maintain_target)
         const Vector3f wp_dest = wp_nav->get_wp_destination();
         loiter_nav->init_target(wp_dest);
         if (maintain_target && wp_nav->origin_and_destination_are_terrain_alt()) {
-            set_surface_tracking_target_alt_cm(wp_dest.z);
+            copter.set_surface_tracking_target_alt_cm(wp_dest.z);
         }
         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: manual control");
     }
@@ -200,7 +200,7 @@ void Copter::ModeZigZag::manual_control()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
 
     // adjust climb rate using rangefinder
-    target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate);
+    target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate);
 
     // get avoidance adjusted climb rate
     target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -283,7 +283,7 @@ bool Copter::ModeZigZag::calculate_next_dest(uint8_t dest_num, bool use_wpnav_al
         // if we have a downward facing range finder then use terrain altitude targets
         terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used();
         if (terrain_alt) {
-            if (!get_surface_tracking_target_alt_cm(next_dest.z)) {
+            if (!copter.get_surface_tracking_target_alt_cm(next_dest.z)) {
                 next_dest.z = copter.rangefinder_state.alt_cm_filt.get();
             }
         } else {
