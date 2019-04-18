@@ -176,7 +176,8 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             update_trig();
 
             // Use the primary EKF to select the primary gyro
-            const int8_t primary_imu = EKF2.getPrimaryCoreIMUIndex();
+            const int8_t primary_gyro = EKF2.getPrimaryCoreGyroIndex();
+            const int8_t primary_accel = EKF2.getPrimaryCoreAccelIndex();
 
             const AP_InertialSensor &_ins = AP::ins();
 
@@ -188,12 +189,12 @@ void AP_AHRS_NavEKF::update_EKF2(void)
 
             // calculate corrected gyro estimate for get_gyro()
             _gyro_estimate.zero();
-            if (primary_imu == -1) {
+            if (primary_gyro == -1) {
                 // the primary IMU is undefined so use an uncorrected default value from the INS library
                 _gyro_estimate = _ins.get_gyro();
             } else {
                 // use the same IMU as the primary EKF and correct for gyro drift
-                _gyro_estimate = _ins.get_gyro(primary_imu) + _gyro_drift;
+                _gyro_estimate = _ins.get_gyro(primary_gyro) + _gyro_drift;
             }
 
             // get z accel bias estimate from active EKF (this is usually for the primary IMU)
@@ -203,14 +204,14 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             // This EKF is currently using primary_imu, and abias applies to only that IMU
             for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
                 Vector3f accel = _ins.get_accel(i);
-                if (i == primary_imu) {
+                if (i == primary_accel) {
                     accel.z -= abias;
                 }
                 if (_ins.get_accel_health(i)) {
                     _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
                 }
             }
-            _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
+            _accel_ef_ekf_blended = _accel_ef_ekf[primary_accel>=0?primary_accel:_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF2.getFilterStatus(-1,filt_state);
             AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
@@ -1298,7 +1299,7 @@ void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) cons
         Vector3f accel_bias;
         if (type == EKF_TYPE2) {
             accel_bias.zero();
-            imu_idx = EKF2.getPrimaryCoreIMUIndex();
+            imu_idx = EKF2.getPrimaryCoreAccelIndex();
             EKF2.getAccelZBias(-1,accel_bias.z);
         } else if (type == EKF_TYPE3) {
             imu_idx = EKF3.getPrimaryCoreIMUIndex();
@@ -1721,14 +1722,14 @@ bool AP_AHRS_NavEKF::have_ekf_logging(void) const
     return false;
 }
 
-// get the index of the current primary IMU
-uint8_t AP_AHRS_NavEKF::get_primary_IMU_index() const
+// get the index of the current primary accelerometer sensor
+uint8_t AP_AHRS_NavEKF::get_primary_accel_index(void) const
 {
     int8_t imu = -1;
     switch (ekf_type()) {
     case 2:
         // let EKF2 choose primary IMU
-        imu = EKF2.getPrimaryCoreIMUIndex();
+        imu = EKF2.getPrimaryCoreAccelIndex();
         break;
     case 3:
         // let EKF2 choose primary IMU
@@ -1749,23 +1750,26 @@ const Vector3f &AP_AHRS_NavEKF::get_accel_ef() const
     return get_accel_ef(get_primary_accel_index());
 }
 
-
-// get the index of the current primary accelerometer sensor
-uint8_t AP_AHRS_NavEKF::get_primary_accel_index(void) const
-{
-    if (ekf_type() != 0) {
-        return get_primary_IMU_index();
-    }
-    return AP::ins().get_primary_accel();
-}
-
 // get the index of the current primary gyro sensor
 uint8_t AP_AHRS_NavEKF::get_primary_gyro_index(void) const
 {
-    if (ekf_type() != 0) {
-        return get_primary_IMU_index();
+    int8_t imu = -1;
+    switch (ekf_type()) {
+    case 2:
+        // let EKF2 choose primary IMU
+        imu = EKF2.getPrimaryCoreGyroIndex();
+        break;
+    case 3:
+        // let EKF2 choose primary IMU
+        imu = EKF3.getPrimaryCoreIMUIndex();
+        break;
+    default:
+        break;
     }
-    return AP::ins().get_primary_gyro();
+    if (imu == -1) {
+        imu = AP::ins().get_primary_gyro();
+    }
+    return imu;
 }
 
 
