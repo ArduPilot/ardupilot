@@ -179,15 +179,19 @@ void AP_InertialSensor_SITL::timer_update(void)
 #endif
     for (uint8_t i=0; i<INS_SITL_INSTANCES; i++) {
         if (now >= next_accel_sample[i]) {
-            generate_accel(i);
-            while (now >= next_accel_sample[i]) {
-                next_accel_sample[i] += 1000000UL / accel_sample_hz[i];
+            if (((1U<<i) & sitl->accel_fail_mask) == 0) {
+                generate_accel(i);
+                while (now >= next_accel_sample[i]) {
+                    next_accel_sample[i] += 1000000UL / accel_sample_hz[i];
+                }
             }
         }
         if (now >= next_gyro_sample[i]) {
-            generate_gyro(i);
-            while (now >= next_gyro_sample[i]) {
-                next_gyro_sample[i] += 1000000UL / gyro_sample_hz[i];
+            if (((1U<<i) & sitl->gyro_fail_mask) == 0) {
+                generate_gyro(i);
+                while (now >= next_gyro_sample[i]) {
+                    next_gyro_sample[i] += 1000000UL / gyro_sample_hz[i];
+                }
             }
         }
     }
