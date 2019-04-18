@@ -13,73 +13,21 @@ public:
     Mode(const Mode &other) = delete;
     Mode &operator=(const Mode&) = delete;
 
-    virtual const char *name() const = 0;
-    // returns a string for this flightmode, exactly 4 bytes
-    virtual const char *name4() const = 0;
-
+    // child classes should override these methods
     virtual bool init(bool ignore_checks) {
         return true;
     }
-
     virtual void run() = 0;
+    virtual bool requires_GPS() const = 0;
+    virtual bool has_manual_throttle() const = 0;
+    virtual bool allows_arming(bool from_gcs) const = 0;
+    virtual bool is_autopilot() const { return false; }
+    virtual bool has_user_takeoff(bool must_navigate) const { return false; }
+    virtual bool in_guided_mode() const { return false; }
 
-    // Navigation Yaw control
-    class AutoYaw {
-
-    public:
-
-        // yaw(): main product of AutoYaw; the heading:
-        float yaw();
-
-        // mode(): current method of determining desired yaw:
-        autopilot_yaw_mode mode() const { return (autopilot_yaw_mode)_mode; }
-        void set_mode_to_default(bool rtl);
-        void set_mode(autopilot_yaw_mode new_mode);
-        autopilot_yaw_mode default_mode(bool rtl) const;
-
-        // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds() const;
-        void set_rate(float new_rate_cds);
-
-        // set_roi(...): set a "look at" location:
-        void set_roi(const Location &roi_location);
-
-        void set_fixed_yaw(float angle_deg,
-                           float turn_rate_dps,
-                           int8_t direction,
-                           bool relative_angle);
-
-    private:
-
-        float look_ahead_yaw();
-        float roi_yaw();
-
-        // auto flight mode's yaw mode
-        uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
-
-        // Yaw will point at this location if mode is set to AUTO_YAW_ROI
-        Vector3f roi;
-
-        // bearing from current location to the ROI
-        float _roi_yaw;
-
-        // yaw used for YAW_FIXED yaw_mode
-        int32_t _fixed_yaw;
-
-        // Deg/s we should turn
-        int16_t _fixed_yaw_slewrate;
-
-        // heading when in yaw_look_ahead_yaw
-        float _look_ahead_yaw;
-
-        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
-        float _rate_cds;
-
-        // used to reduce update rate to 100hz:
-        uint8_t roi_yaw_counter;
-
-    };
-    static AutoYaw auto_yaw;
+    // return a string for this flightmode
+    virtual const char *name() const = 0;
+    virtual const char *name4() const = 0;
 
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
     virtual bool is_taking_off() const;
@@ -88,12 +36,6 @@ public:
     virtual bool landing_gear_should_be_deployed() const { return false; }
     virtual bool is_landing() const { return false; }
 
-    virtual bool has_manual_throttle() const = 0;
-    virtual bool requires_GPS() const = 0;
-    virtual bool allows_arming(bool from_gcs) const = 0;
-    virtual bool in_guided_mode() const { return false; }
-
-    virtual bool is_autopilot() const { return false; }
     virtual bool get_wp(Location &loc) { return false; };
     virtual int32_t wp_bearing() const { return 0; }
     virtual uint32_t wp_distance() const { return 0; }
@@ -114,8 +56,6 @@ public:
     }
 
 protected:
-
-    virtual bool has_user_takeoff(bool must_navigate) const { return false; }
 
     // navigation support functions
     virtual void run_autopilot() {}
@@ -199,6 +139,65 @@ protected:
     // altitude below which we do no navigation in auto takeoff
     static float auto_takeoff_no_nav_alt_cm;
 
+public:
+    // Navigation Yaw control
+    class AutoYaw {
+
+    public:
+
+        // yaw(): main product of AutoYaw; the heading:
+        float yaw();
+
+        // mode(): current method of determining desired yaw:
+        autopilot_yaw_mode mode() const { return (autopilot_yaw_mode)_mode; }
+        void set_mode_to_default(bool rtl);
+        void set_mode(autopilot_yaw_mode new_mode);
+        autopilot_yaw_mode default_mode(bool rtl) const;
+
+        // rate_cds(): desired yaw rate in centidegrees/second:
+        float rate_cds() const;
+        void set_rate(float new_rate_cds);
+
+        // set_roi(...): set a "look at" location:
+        void set_roi(const Location &roi_location);
+
+        void set_fixed_yaw(float angle_deg,
+                           float turn_rate_dps,
+                           int8_t direction,
+                           bool relative_angle);
+
+    private:
+
+        float look_ahead_yaw();
+        float roi_yaw();
+
+        // auto flight mode's yaw mode
+        uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
+
+        // Yaw will point at this location if mode is set to AUTO_YAW_ROI
+        Vector3f roi;
+
+        // bearing from current location to the ROI
+        float _roi_yaw;
+
+        // yaw used for YAW_FIXED yaw_mode
+        int32_t _fixed_yaw;
+
+        // Deg/s we should turn
+        int16_t _fixed_yaw_slewrate;
+
+        // heading when in yaw_look_ahead_yaw
+        float _look_ahead_yaw;
+
+        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
+        float _rate_cds;
+
+        // used to reduce update rate to 100hz:
+        uint8_t roi_yaw_counter;
+
+    };
+    static AutoYaw auto_yaw;
+
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
@@ -226,10 +225,10 @@ public:
 
     virtual void run() override;
 
-    bool is_autopilot() const override { return false; }
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
 
 protected:
 
@@ -302,10 +301,10 @@ public:
     bool init(bool ignore_checks) override;
     void run() override;
 
-    bool is_autopilot() const override { return true; }
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
 
     // Auto
@@ -491,12 +490,13 @@ public:
     using Copter::Mode::Mode;
 
     bool init(bool ignore_checks) override;
-
     void run() override;
+
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return false; }
+
     void save_tuning_gains();
     void stop();
 
@@ -732,8 +732,8 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return from_gcs; }
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return true; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool in_guided_mode() const override { return true; }
 
     void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
@@ -820,6 +820,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
+
     bool is_landing() const override { return true; };
     bool landing_gear_should_be_deployed() const override { return true; };
 
