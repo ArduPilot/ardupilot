@@ -196,13 +196,6 @@ void AP_Airspeed_SDP3X::_timer()
  */
 float AP_Airspeed_SDP3X::_correct_pressure(float press)
 {
-    float temperature;
-    AP_Baro *baro = AP_Baro::get_singleton();
-
-    if (baro == nullptr) {
-        return press;
-    }
-
     float sign = 1.0f;
     
     // fix for tube order
@@ -227,7 +220,17 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
         return 0.0f;
     }
 
-    get_temperature(temperature);
+    AP_Baro *baro = AP_Baro::get_singleton();
+
+    if (baro == nullptr) {
+        return press;
+    }
+
+    float temperature;
+    if (!get_temperature(temperature)) {
+        return press;
+    }
+
     float rho_air = baro->get_pressure() / (ISA_GAS_CONSTANT * (temperature + C_TO_KELVIN));
 
     /*
