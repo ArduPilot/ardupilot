@@ -98,14 +98,12 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _gyro_index, uint8_t _
     return true;
 }
 
-void NavEKF2_core::switchGyros(uint8_t _new_gyro_index)
+void NavEKF2_core::switchGyros(uint8_t _new_gyro_index, const Vector3f& gyro_bias_guess, const Vector3f& gyro_scale_guess)
 {
     if (gyro_index != _new_gyro_index) {
         // NOTE: theoretically, we should wait until we reach the end of the IMU buffer prior to resetting these
-        stateStruct.gyro_bias.zero();
-        stateStruct.gyro_scale.x = 1.0f;
-        stateStruct.gyro_scale.y = 1.0f;
-        stateStruct.gyro_scale.z = 1.0f;
+        stateStruct.gyro_bias = gyro_bias_guess * dtEkfAvg;
+        stateStruct.gyro_scale = gyro_scale_guess;
 
         zeroRows(P,9,14);
         zeroCols(P,9,14);
@@ -120,17 +118,22 @@ void NavEKF2_core::switchGyros(uint8_t _new_gyro_index)
         P[13][13] = P[12][12];
         P[14][14] = P[12][12];
 
-        gcs().send_text(MAV_SEVERITY_ERROR, "EKF2 %u (g%u a%u) switched to gyro %u", (unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index, _new_gyro_index);
+        static uint32_t last_msg_ms;
+        uint32_t tnow_ms = AP_HAL::millis();
+        if (tnow_ms-last_msg_ms > 100) {
+            gcs().send_text(MAV_SEVERITY_ERROR, "EKF2 %u (g%u a%u) switched to gyro %u", (unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index, _new_gyro_index);
+            last_msg_ms = tnow_ms;
+        }
 
         gyro_index = _new_gyro_index;
     }
 }
 
-void NavEKF2_core::switchAccels(uint8_t _new_accel_index)
+void NavEKF2_core::switchAccels(uint8_t _new_accel_index, float accel_z_bias_guess)
 {
     if (accel_index != _new_accel_index) {
         // NOTE: theoretically, we should wait until we reach the end of the IMU buffer prior to resetting these
-        stateStruct.accel_zbias = 0.0f;
+        stateStruct.accel_zbias = accel_z_bias_guess * dtEkfAvg;
 
         zeroRows(P,15,15);
         zeroCols(P,15,15);
@@ -138,7 +141,12 @@ void NavEKF2_core::switchAccels(uint8_t _new_accel_index)
         // Z delta velocity bias
         P[15][15] = sq(INIT_ACCEL_BIAS_UNCERTAINTY * dtEkfAvg);
 
-        gcs().send_text(MAV_SEVERITY_ERROR, "EKF2 %u (g%u a%u) switched to accel %u", (unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index, _new_accel_index);
+        static uint32_t last_msg_ms;
+        uint32_t tnow_ms = AP_HAL::millis();
+        if (tnow_ms-last_msg_ms > 100) {
+            gcs().send_text(MAV_SEVERITY_ERROR, "EKF2 %u (g%u a%u) switched to accel %u", (unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index, _new_accel_index);
+            last_msg_ms = tnow_ms;
+        }
 
         accel_index = _new_accel_index;
     }

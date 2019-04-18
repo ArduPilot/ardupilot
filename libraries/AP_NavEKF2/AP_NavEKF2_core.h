@@ -105,6 +105,9 @@ public:
     // return body axis gyro bias estimates in rad/sec
     void getGyroBias(Vector3f &gyroBias) const;
 
+    // return body axis gyro scale factor
+    void getGyroScale(Vector3f &gyroScale) const;
+
     // return body axis gyro scale factor error as a percentage
     void getGyroScaleErrorPercentage(Vector3f &gyroScale) const;
 
@@ -309,10 +312,10 @@ public:
     uint8_t getAccelIndex(void) const { return accel_index; }
 
     // change the gyro index and reset gyro bias and scale factor states and covariances
-    void switchGyros(uint8_t _new_gyro_index);
+    void switchGyros(uint8_t _new_gyro_index, const Vector3f& gyro_bias_guess, const Vector3f& gyro_scale_guess);
 
     // change the accel index and reset accel biasstates and covariances
-    void switchAccels(uint8_t _new_accel_index);
+    void switchAccels(uint8_t _new_accel_index, float accel_z_bias_guess);
 
     // get timing statistics structure
     void getTimingStatistics(struct ekf_timing &timing);

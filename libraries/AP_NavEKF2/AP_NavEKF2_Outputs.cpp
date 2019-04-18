@@ -131,6 +131,19 @@ void NavEKF2_core::getGyroBias(Vector3f &gyroBias) const
     gyroBias = stateStruct.gyro_bias / dtEkfAvg;
 }
 
+// return body axis gyro scale factor
+void NavEKF2_core::getGyroScale(Vector3f &gyroScale) const
+{
+    if (!statesInitialised) {
+        gyroScale.x = gyroScale.y = gyroScale.z = 1;
+        return;
+    }
+
+    gyroScale.x = stateStruct.gyro_scale.x;
+    gyroScale.y = stateStruct.gyro_scale.y;
+    gyroScale.z = stateStruct.gyro_scale.z;
+}
+
 // return body axis gyro scale factor error as a percentage
 void NavEKF2_core::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
 {

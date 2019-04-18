@@ -667,12 +667,19 @@ bool NavEKF2::InitialiseFilter(void)
                 if(!core[num_cores].setup_core(this, i, i, num_cores)) {
                     return false;
                 }
+                core_initial_imu[num_cores] = i;
                 num_cores++;
             }
         }
 
         // Set the primary initially to be the lowest index
         primary = 0;
+    }
+
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        gyroBiasGuess[i].zero();
+        gyroScaleGuess[i] = Vector3f(1,1,1);
+        accelZBiasGuess[i] = 0;
     }
 
     selectCoreIMUs();
@@ -703,8 +710,8 @@ void NavEKF2::selectCoreIMUs(void) {
             // Try to find a paired gyro and accel that are both healthy w/ INS_USE=1 and configured to be used in EK2_IMU_MASK
             for (uint8_t j=0; j<INS_MAX_INSTANCES; j++) {
                 if ((_imuMask & (1U<<j)) && ins.use_accel(j) && ins.use_gyro(j)) {
-                    core[i].switchGyros(j);
-                    core[i].switchAccels(j);
+                    core[i].switchGyros(j, gyroBiasGuess[j], gyroScaleGuess[j]);
+                    core[i].switchAccels(j, accelZBiasGuess[j]);
                     success = true;
                     break;
                 }
@@ -717,8 +724,8 @@ void NavEKF2::selectCoreIMUs(void) {
             // If that failed, try to find a paired gyro and accel that are both healthy w/ INS_USE=1
             for (uint8_t j=0; j<INS_MAX_INSTANCES; j++) {
                 if (ins.use_accel(j) && ins.use_gyro(j)) {
-                    core[i].switchGyros(j);
-                    core[i].switchAccels(j);
+                    core[i].switchGyros(j, gyroBiasGuess[j], gyroScaleGuess[j]);
+                    core[i].switchAccels(j, accelZBiasGuess[j]);
                     success = true;
                     break;
                 }
@@ -729,14 +736,12 @@ void NavEKF2::selectCoreIMUs(void) {
             }
 
             // If that failed, fall back on ins.get_primary_gyro and ins.get_primary_accel
-            core[i].switchGyros(ins.get_primary_gyro());
-            core[i].switchAccels(ins.get_primary_accel());
+            core[i].switchGyros(ins.get_primary_gyro(), gyroBiasGuess[ins.get_primary_gyro()], gyroScaleGuess[ins.get_primary_gyro()]);
+            core[i].switchAccels(ins.get_primary_accel(), accelZBiasGuess[ins.get_primary_accel()]);
 
             // TODO trigger a primary core change if this core was the primary core?
         }
     }
-
-    // TODO: do we want to switch back if the configured IMU becomes available again?
 }
 
 // Update Filter States - this should be called whenever new IMU data is available
@@ -765,6 +770,13 @@ void NavEKF2::UpdateFilter(void)
             statePredictEnabled[i] = true;
         }
         core[i].UpdateFilter(statePredictEnabled[i]);
+
+        // If this core is healthy and is using its original IMU, store its IMU bias estimates
+        if (core[i].healthy() && core[i].getGyroIndex() == core_initial_imu[i] && core[i].getAccelIndex() == core_initial_imu[i]) {
+            core[i].getGyroBias(gyroBiasGuess[core[i].getGyroIndex()]);
+            core[i].getGyroScale(gyroScaleGuess[core[i].getGyroIndex()]);
+            core[i].getAccelZBias(accelZBiasGuess[core[i].getAccelIndex()]);
+        }
     }
 
     // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score

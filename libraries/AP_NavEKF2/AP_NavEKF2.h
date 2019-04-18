@@ -30,6 +30,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 class NavEKF2_core;
 class AP_AHRS;
@@ -492,4 +493,9 @@ private:
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
+
+    uint8_t core_initial_imu[8];
+    Vector3f gyroBiasGuess[INS_MAX_INSTANCES];
+    float accelZBiasGuess[INS_MAX_INSTANCES];
+    Vector3f gyroScaleGuess[INS_MAX_INSTANCES];
 };
