@@ -3,19 +3,25 @@
 // this class is #included into the Copter:: namespace
 
 class Mode {
-    friend class Copter;
-    friend class AP_Arming_Copter;
-    friend class ToyMode;
-    friend class GCS_MAVLINK_Copter;
+
+public:
 
     // constructor
     Mode(void);
 
-public:
-
     // do not allow copying
     Mode(const Mode &other) = delete;
     Mode &operator=(const Mode&) = delete;
+
+    virtual const char *name() const = 0;
+    // returns a string for this flightmode, exactly 4 bytes
+    virtual const char *name4() const = 0;
+
+    virtual bool init(bool ignore_checks) {
+        return true;
+    }
+
+    virtual void run() = 0;
 
     // Navigation Yaw control
     class AutoYaw {
@@ -76,40 +82,43 @@ public:
     static AutoYaw auto_yaw;
 
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
+    virtual bool is_taking_off() const;
+    static void takeoff_stop() { takeoff.stop(); }
 
-protected:
+    virtual bool landing_gear_should_be_deployed() const { return false; }
+    virtual bool is_landing() const { return false; }
 
-    virtual bool init(bool ignore_checks) {
-        return true;
-    }
-    virtual void run() = 0;
+    virtual bool has_manual_throttle() const = 0;
+    virtual bool requires_GPS() const = 0;
+    virtual bool allows_arming(bool from_gcs) const = 0;
+    virtual bool in_guided_mode() const { return false; }
 
     virtual bool is_autopilot() const { return false; }
-    virtual bool requires_GPS() const = 0;
-    virtual bool has_manual_throttle() const = 0;
-    virtual bool allows_arming(bool from_gcs) const = 0;
-
-    virtual bool is_landing() const { return false; }
-    virtual bool landing_gear_should_be_deployed() const { return false; }
-
-    virtual const char *name() const = 0;
-
-    virtual bool has_user_takeoff(bool must_navigate) const { return false; }
-
-    // returns a string for this flightmode, exactly 4 bytes
-    virtual const char *name4() const = 0;
-
-    // navigation support functions
-    void update_navigation();
-    virtual void run_autopilot() {}
-    virtual uint32_t wp_distance() const { return 0; }
-    virtual int32_t wp_bearing() const { return 0; }
-    virtual float crosstrack_error() const { return 0.0f;}
     virtual bool get_wp(Location &loc) { return false; };
-    virtual bool in_guided_mode() const { return false; }
+    virtual int32_t wp_bearing() const { return 0; }
+    virtual uint32_t wp_distance() const { return 0; }
+    virtual float crosstrack_error() const { return 0.0f;}
+    void update_navigation();
+
+    int32_t get_alt_above_ground_cm(void);
 
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
+    float get_pilot_desired_yaw_rate(int16_t stick_angle);
+    float get_pilot_desired_throttle() const;
+
+    const Vector3f& get_desired_velocity() {
+        // note that position control isn't used in every mode, so
+        // this may return bogus data:
+        return pos_control->get_desired_velocity();
+    }
+
+protected:
+
+    virtual bool has_user_takeoff(bool must_navigate) const { return false; }
+
+    // navigation support functions
+    virtual void run_autopilot() {}
 
     // helper functions
     bool is_disarmed_or_landed() const;
@@ -119,7 +128,6 @@ protected:
 
     // functions to control landing
     // in modes that support landing
-    int32_t get_alt_above_ground_cm(void);
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
 
@@ -181,8 +189,6 @@ protected:
 
     static _TakeOff takeoff;
 
-    static void takeoff_stop() { takeoff.stop(); }
-
     virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
     // method shared by both Guided and Auto for takeoff.  This is
@@ -192,14 +198,11 @@ protected:
     void auto_takeoff_attitude_run(float target_yaw_rate);
     // altitude below which we do no navigation in auto takeoff
     static float auto_takeoff_no_nav_alt_cm;
-    virtual bool is_taking_off() const;
 
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_climb_rate(float throttle_control);
-    float get_pilot_desired_throttle() const;
     float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
