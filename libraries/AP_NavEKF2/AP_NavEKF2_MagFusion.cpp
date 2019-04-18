@@ -109,7 +109,7 @@ void NavEKF2_core::controlMagYawReset()
 
             // send initial alignment status to console
             if (!yawAlignComplete) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u ext nav yaw alignment complete",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) ext nav yaw alignment complete",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
             }
 
             // record the reset as complete and also record the in-flight reset as complete to stop further resets when height is gained
@@ -142,14 +142,14 @@ void NavEKF2_core::controlMagYawReset()
 
                 // send initial alignment status to console
                 if (!yawAlignComplete) {
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial yaw alignment complete",(unsigned)imu_index);
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) initial yaw alignment complete",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
                 }
 
                 // send in-flight yaw alignment status to console
                 if (finalResetRequest) {
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) in-flight yaw alignment complete",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
                 } else if (interimResetRequest) {
-                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
+                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 %u (g%u a%u) ground mag anomaly, yaw re-aligned",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
                 }
 
                 // update the yaw reset completed status
@@ -200,7 +200,7 @@ void NavEKF2_core::realignYawGPS()
             ResetPosition();
 
             // send yaw alignment information to console
-            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) yaw aligned to GPS velocity",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
 
             // zero the attitude covariances because the correlations will now be invalid
             zeroAttCovOnly();

@@ -664,7 +664,7 @@ bool NavEKF2::InitialiseFilter(void)
         num_cores = 0;
         for (uint8_t i=0; i<7; i++) {
             if (_imuMask & (1U<<i)) {
-                if(!core[num_cores].setup_core(this, i, num_cores)) {
+                if(!core[num_cores].setup_core(this, i, i, num_cores)) {
                     return false;
                 }
                 num_cores++;
@@ -674,6 +674,8 @@ bool NavEKF2::InitialiseFilter(void)
         // Set the primary initially to be the lowest index
         primary = 0;
     }
+
+    selectCoreIMUs();
 
     // initialise the cores. We return success only if all cores
     // initialise successfully
@@ -691,6 +693,52 @@ bool NavEKF2::InitialiseFilter(void)
     return ret;
 }
 
+void NavEKF2::selectCoreIMUs(void) {
+    const AP_InertialSensor &ins = AP::ins();
+
+    for (uint8_t i=0; i<num_cores; i++) {
+        if (!ins.use_gyro(core[i].getGyroIndex()) || !ins.use_accel(core[i].getAccelIndex())) {
+            bool success = false;
+
+            // Try to find a paired gyro and accel that are both healthy w/ INS_USE=1 and configured to be used in EK2_IMU_MASK
+            for (uint8_t j=0; j<INS_MAX_INSTANCES; j++) {
+                if ((_imuMask & (1U<<j)) && ins.use_accel(j) && ins.use_gyro(j)) {
+                    core[i].switchGyros(j);
+                    core[i].switchAccels(j);
+                    success = true;
+                    break;
+                }
+            }
+
+            if (success) {
+                continue;
+            }
+
+            // If that failed, try to find a paired gyro and accel that are both healthy w/ INS_USE=1
+            for (uint8_t j=0; j<INS_MAX_INSTANCES; j++) {
+                if (ins.use_accel(j) && ins.use_gyro(j)) {
+                    core[i].switchGyros(j);
+                    core[i].switchAccels(j);
+                    success = true;
+                    break;
+                }
+            }
+
+            if (success) {
+                continue;
+            }
+
+            // If that failed, fall back on ins.get_primary_gyro and ins.get_primary_accel
+            core[i].switchGyros(ins.get_primary_gyro());
+            core[i].switchAccels(ins.get_primary_accel());
+
+            // TODO trigger a primary core change if this core was the primary core?
+        }
+    }
+
+    // TODO: do we want to switch back if the configured IMU becomes available again?
+}
+
 // Update Filter States - this should be called whenever new IMU data is available
 void NavEKF2::UpdateFilter(void)
 {
@@ -698,9 +746,11 @@ void NavEKF2::UpdateFilter(void)
         return;
     }
 
-    imuSampleTime_us = AP_HAL::micros64();
-    
+    selectCoreIMUs();
+
     const AP_InertialSensor &ins = AP::ins();
+
+    imuSampleTime_us = AP_HAL::micros64();
 
     bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {
@@ -791,14 +841,24 @@ int8_t NavEKF2::getPrimaryCoreIndex(void) const
     return primary;
 }
 
-// returns the index of the IMU of the primary core
+// returns the index of the gyro of the primary core
 // return -1 if no primary core selected
-int8_t NavEKF2::getPrimaryCoreIMUIndex(void) const
+int8_t NavEKF2::getPrimaryCoreGyroIndex(void) const
 {
     if (!core) {
         return -1;
     }
-    return core[primary].getIMUIndex();
+    return core[primary].getGyroIndex();
+}
+
+// returns the index of the accel of the primary core
+// return -1 if no primary core selected
+int8_t NavEKF2::getPrimaryCoreAccelIndex(void) const
+{
+    if (!core) {
+        return -1;
+    }
+    return core[primary].getAccelIndex();
 }
 
 // Write the last calculated NE position relative to the reference point (m).

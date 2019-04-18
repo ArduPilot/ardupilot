@@ -42,10 +42,11 @@ NavEKF2_core::NavEKF2_core(void) :
 }
 
 // setup this core backend
-bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index)
+bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _gyro_index, uint8_t _accel_index, uint8_t _core_index)
 {
     frontend = _frontend;
-    imu_index = _imu_index;
+    gyro_index = _gyro_index;
+    accel_index = _accel_index;
     core_index = _core_index;
     _ahrs = frontend->_ahrs;
 
@@ -97,22 +98,49 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
     return true;
 }
 
-void NavEKF2_core::switchIMUs(uint8_t _new_imu_index)
+void NavEKF2_core::switchGyros(uint8_t _new_gyro_index)
 {
-    if (imu_index != _new_imu_index) {
-        imu_index = _new_imu_index;
-        zeroRows(P,9,15);
-        zeroCols(P,9,15);
+    if (gyro_index != _new_gyro_index) {
+        // NOTE: theoretically, we should wait until we reach the end of the IMU buffer prior to resetting these
+        stateStruct.gyro_bias.zero();
+        stateStruct.gyro_scale.x = 1.0f;
+        stateStruct.gyro_scale.y = 1.0f;
+        stateStruct.gyro_scale.z = 1.0f;
+
+        zeroRows(P,9,14);
+        zeroCols(P,9,14);
+
         // gyro biases
         P[9][9] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
         P[10][10] = P[9][9];
         P[11][11] = P[9][9];
+
         // gyro scale factor biases
         P[12][12] = sq(1e-3);
         P[13][13] = P[12][12];
         P[14][14] = P[12][12];
+
+        gcs().send_text(MAV_SEVERITY_ERROR, "EKF2 %u (g%u a%u) switched to gyro %u", (unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index, _new_gyro_index);
+
+        gyro_index = _new_gyro_index;
+    }
+}
+
+void NavEKF2_core::switchAccels(uint8_t _new_accel_index)
+{
+    if (accel_index != _new_accel_index) {
+        // NOTE: theoretically, we should wait until we reach the end of the IMU buffer prior to resetting these
+        stateStruct.accel_zbias = 0.0f;
+
+        zeroRows(P,15,15);
+        zeroCols(P,15,15);
+
         // Z delta velocity bias
         P[15][15] = sq(INIT_ACCEL_BIAS_UNCERTAINTY * dtEkfAvg);
+
+        gcs().send_text(MAV_SEVERITY_ERROR, "EKF2 %u (g%u a%u) switched to accel %u", (unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index, _new_accel_index);
+
+        accel_index = _new_accel_index;
     }
 }
     
@@ -410,7 +438,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     Vector3f initAccVec;
 
     // TODO we should average accel readings over several cycles
-    initAccVec = ins.get_accel(imu_index);
+    initAccVec = ins.get_accel(accel_index);
 
     // read the magnetometer data
     readMagData();
@@ -599,7 +627,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
         AP_HAL::millis() - last_filter_ok_ms > 5000 &&
         !hal.util->get_soft_armed()) {
         // we've been unhealthy for 5 seconds after being healthy, reset the filter
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u forced reset",(unsigned)imu_index);
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 %u (g%u a%u) forced reset",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
         last_filter_ok_ms = 0;
         statesInitialised = false;
         InitialiseFilterBootstrap();

@@ -64,7 +64,7 @@ public:
     NavEKF2_core(void);
 
     // setup this core backend
-    bool setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index);
+    bool setup_core(NavEKF2 *_frontend, uint8_t _gyro_index, uint8_t _accel_index, uint8_t _core_index);
     
     // Initialise the states from accelerometer and magnetometer data (if present)
     // This method can only be used when the vehicle is static
@@ -302,8 +302,17 @@ public:
     // publish output observer angular, velocity and position tracking error
     void getOutputTrackingError(Vector3f &error) const;
 
-    // get the IMU index
-    uint8_t getIMUIndex(void) const { return imu_index; }
+    // get the gyro index
+    uint8_t getGyroIndex(void) const { return gyro_index; }
+
+    // get the accel index
+    uint8_t getAccelIndex(void) const { return accel_index; }
+
+    // change the gyro index and reset gyro bias and scale factor states and covariances
+    void switchGyros(uint8_t _new_gyro_index);
+
+    // change the accel index and reset accel biasstates and covariances
+    void switchAccels(uint8_t _new_accel_index);
 
     // get timing statistics structure
     void getTimingStatistics(struct ekf_timing &timing);
@@ -325,7 +334,8 @@ public:
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF2 *frontend;
-    uint8_t imu_index;
+    uint8_t gyro_index;
+    uint8_t accel_index;
     uint8_t core_index;
     uint8_t imu_buffer_length;
 
@@ -751,9 +761,6 @@ private:
 
     // update timing statistics structure
     void updateTimingStatistics(void);
-
-    // change the imu_index and reset the imu bias state variances and covariances
-    void switchIMUs(uint8_t _new_imu_index);
     
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH

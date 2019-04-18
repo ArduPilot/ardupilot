@@ -265,7 +265,7 @@ void NavEKF2_core::setAidingMode()
         switch (PV_AidingMode) {
         case AID_NONE:
             // We have ceased aiding
-            gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u has stopped aiding",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 %u (g%u a%u) has stopped aiding",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
             posTimeout = true;
             velTimeout = true;            
@@ -284,7 +284,7 @@ void NavEKF2_core::setAidingMode()
 
         case AID_RELATIVE:
             // We have commenced aiding, but GPS usage has been prohibited so use optical flow only
-            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using optical flow",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) is using optical flow",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
             posTimeout = true;
             velTimeout = true;
             // Reset the last valid flow measurement time
@@ -299,20 +299,20 @@ void NavEKF2_core::setAidingMode()
             bool canUseExtNav = readyToUseExtNav();
             // We have commenced aiding and GPS usage is allowed
             if (canUseGPS) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using GPS",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) is using GPS",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
             }
             posTimeout = false;
             velTimeout = false;
             // We have commenced aiding and range beacon usage is allowed
             if (canUseRangeBeacon) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using range beacons",(unsigned)imu_index);
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffset);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) is using range beacons",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) initial pos NE = %3.1f,%3.1f (m)",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index,(double)receiverPos.x,(double)receiverPos.y);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) initial beacon pos D offset = %3.1f (m)",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index,(double)bcnPosOffset);
             }
             // We have commenced aiding and external nav usage is allowed
             if (canUseExtNav) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using external nav data",(unsigned)imu_index);
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) is using external nav data",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
                 // handle yaw reset as special case
                 extNavYawResetRequest = true;
                 controlMagYawReset();
@@ -345,7 +345,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
     tiltErrFilt = alpha*temp + (1.0f-alpha)*tiltErrFilt;
     if (tiltErrFilt < 0.005f && !tiltAlignComplete) {
         tiltAlignComplete = true;
-        gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u tilt alignment complete",(unsigned)imu_index);
+        gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) tilt alignment complete",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
     }
 
     // submit yaw and magnetic field reset requests depending on whether we have compass data
@@ -441,7 +441,7 @@ void NavEKF2_core::setOrigin()
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
-    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u Origin set to GPS",(unsigned)imu_index);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 %u (g%u a%u) Origin set to GPS",(unsigned)core_index, (unsigned)gyro_index, (unsigned)accel_index);
 }
 
 // record a yaw reset event

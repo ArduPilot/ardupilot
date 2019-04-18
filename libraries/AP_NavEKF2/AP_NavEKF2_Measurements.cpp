@@ -232,7 +232,7 @@ void NavEKF2_core::readMagData()
                 // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
                 if (_ahrs->get_compass()->use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
                     magSelectIndex = tempIndex;
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)gyro_index,magSelectIndex);
                     // reset the timeout flag and timer
                     magTimeout = false;
                     lastHealthyMagTime_ms = imuSampleTime_ms;
@@ -304,10 +304,10 @@ void NavEKF2_core::readIMUData()
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = AP_HAL::millis();
 
-    readDeltaVelocity(imu_index, imuDataNew.delVel, imuDataNew.delVelDT);
-    accelPosOffset = ins.get_imu_pos_offset(imu_index);
+    readDeltaVelocity(accel_index, imuDataNew.delVel, imuDataNew.delVelDT);
+    accelPosOffset = ins.get_imu_pos_offset(accel_index);
 
-    readDeltaAngle(imu_index, imuDataNew.delAng, imuDataNew.delAngDT);
+    readDeltaAngle(gyro_index, imuDataNew.delAng, imuDataNew.delAngDT);
 
     // Get current time stamp
     imuDataNew.time_ms = imuSampleTime_ms;
@@ -539,7 +539,7 @@ void NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng
 
     ins.get_delta_angle(ins_index,dAng);
     frontend->logging.log_imu = true;
-    dAng_dt = MAX(ins.get_delta_angle_dt(imu_index),1.0e-4f);
+    dAng_dt = MAX(ins.get_delta_angle_dt(ins_index),1.0e-4f);
     dAng_dt = MIN(dAng_dt,1.0e-1f);
 }
 

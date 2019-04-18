@@ -54,6 +54,9 @@ public:
     // Initialise the filter
     bool InitialiseFilter(void);
 
+    // Checks for cores with unhealthy IMUs and switches them to different IMUs
+    void selectCoreIMUs(void);
+
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
@@ -69,9 +72,13 @@ public:
     // return -1 if no primary core selected
     int8_t getPrimaryCoreIndex(void) const;
 
-    // returns the index of the IMU of the primary core
+    // returns the index of the gyro of the primary core
     // return -1 if no primary core selected
-    int8_t getPrimaryCoreIMUIndex(void) const;
+    int8_t getPrimaryCoreGyroIndex(void) const;
+
+    // returns the index of the accel of the primary core
+    // return -1 if no primary core selected
+    int8_t getPrimaryCoreAccelIndex(void) const;
     
     // Write the last calculated NE position relative to the reference point (m) for the specified instance.
     // An out of range instance (eg -1) returns data for the primary instance
