@@ -188,8 +188,8 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
         return;
     }
 
-    float althold_lean_angle_max = acosf(constrain_float(_throttle_in/(AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
-    _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max);
+    float althold_lean_angle_max = acosf(constrain_float(_throttle_in / (AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
+    _althold_lean_angle_max = _althold_lean_angle_max + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max);
 }
 
 void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
@@ -200,7 +200,7 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
     if (apply_angle_boost) {
         // Apply angle boost
         throttle_in = get_throttle_boosted(throttle_in);
-    }else{
+    } else {
         // Clear angle_boost for logging purposes
         _angle_boost = 0.0f;
     }
@@ -220,11 +220,11 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
     // inverted_factor reduces from 1 to 0 for tilt angles between 60 and 90 degrees
 
     float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
-    float inverted_factor = constrain_float(2.0f*cos_tilt, 0.0f, 1.0f);
-    float boost_factor = 1.0f/constrain_float(cos_tilt, 0.5f, 1.0f);
+    float inverted_factor = constrain_float(2.0f * cos_tilt, 0.0f, 1.0f);
+    float boost_factor = 1.0f / constrain_float(cos_tilt, 0.5f, 1.0f);
 
-    float throttle_out = throttle_in*inverted_factor*boost_factor;
-    _angle_boost = constrain_float(throttle_out - throttle_in,-1.0f,1.0f);
+    float throttle_out = throttle_in * inverted_factor * boost_factor;
+    _angle_boost = constrain_float(throttle_out - throttle_in, -1.0f, 1.0f);
     return throttle_out;
 }
 
@@ -233,7 +233,7 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
 float AC_AttitudeControl_Multi::get_throttle_avg_max(float throttle_in)
 {
     throttle_in = constrain_float(throttle_in, 0.0f, 1.0f);
-    return MAX(throttle_in, throttle_in*MAX(0.0f,1.0f-_throttle_rpy_mix)+_motors.get_throttle_hover()*_throttle_rpy_mix);
+    return MAX(throttle_in, throttle_in * MAX(0.0f, 1.0f - _throttle_rpy_mix) + _motors.get_throttle_hover() * _throttle_rpy_mix);
 }
 
 // update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
@@ -242,10 +242,10 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
     if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_rpy_mix += MIN(2.0f*_dt, _throttle_rpy_mix_desired-_throttle_rpy_mix);
+        _throttle_rpy_mix += MIN(2.0f * _dt, _throttle_rpy_mix_desired - _throttle_rpy_mix);
     } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_rpy_mix -= MIN(0.5f*_dt, _throttle_rpy_mix-_throttle_rpy_mix_desired);
+        _throttle_rpy_mix -= MIN(0.5f * _dt, _throttle_rpy_mix - _throttle_rpy_mix_desired);
     }
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
