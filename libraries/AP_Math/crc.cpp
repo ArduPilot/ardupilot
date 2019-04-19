@@ -225,7 +225,33 @@ static const uint16_t crc16tab[256] = {
 
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc)
 {
-    for (uint32_t i = 0; i < len; i++)
+    for (uint32_t i = 0; i < len; i++) {
         crc = (crc << 8) ^ crc16tab[((crc >> 8) ^ *buf++) & 0x00FF];
+    }
+    return crc;
+}
+
+/**
+ * Calculate Modbus CRC16 for array of bytes
+ * 
+ * @param [in] buf input buffer
+ * @param [in] len size of buffer
+ * @return CRC value
+ */
+uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len)
+{
+    uint16_t crc = 0xFFFF;
+    for (uint16_t pos = 0; pos < len; pos++) {
+        crc ^= (uint16_t) buf[pos]; // XOR byte into least sig. byte of crc
+        for (uint8_t i = 8; i != 0; i--) { // Loop over each bit
+            if ((crc & 0x0001) != 0) { // If the LSB is set
+                crc >>= 1; // Shift right and XOR 0xA001
+                crc ^= 0xA001;
+            } else {
+                // Else LSB is not set
+                crc >>= 1; // Just shift right
+            }
+        }
+    }
     return crc;
 }
