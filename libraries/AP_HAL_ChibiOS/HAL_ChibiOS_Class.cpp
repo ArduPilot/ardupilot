@@ -215,7 +215,7 @@ static THD_FUNCTION(main_loop,arg)
         static bool done_pause;
         if (!done_pause && AP_HAL::millis() > 20000) {
             done_pause = true;
-            while (AP_HAL::millis() < 22000) ;
+            while (AP_HAL::millis() < 22200) ;
         }
 #endif
 
