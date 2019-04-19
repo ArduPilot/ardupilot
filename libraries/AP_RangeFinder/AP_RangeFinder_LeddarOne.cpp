@@ -14,6 +14,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/crc.h>
 #include "AP_RangeFinder_LeddarOne.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -142,18 +143,7 @@ void AP_RangeFinder_LeddarOne::update(void)
 */
 bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck)
 {
-    uint16_t crc = 0xFFFF;
-
-    for (uint32_t i=0; i<aLength; i++) {
-        crc ^= aBuffer[i];
-        for (uint32_t j=0; j<8; j++) {
-            if (crc & 1) {
-                crc = (crc >> 1) ^ 0xA001;
-            } else {
-                crc >>= 1;
-            }
-        }
-    }
+    uint16_t crc = calc_crc_modbus(aBuffer, aLength);
 
     uint8_t lCRCLo = LOWBYTE(crc);
     uint8_t lCRCHi = HIGHBYTE(crc);
