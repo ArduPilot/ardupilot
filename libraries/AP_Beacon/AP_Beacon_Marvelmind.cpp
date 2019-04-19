@@ -19,7 +19,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-
+#include <AP_Math/crc.h>
 #include "AP_Beacon_Marvelmind.h"
 
 #define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID 0x0001
@@ -54,30 +54,6 @@ AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager
         hedge.positions_beacons.updated = false;
 
     }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Calculate Modbus CRC16 for array of bytes
-// buf: input buffer
-// len: size of buffer
-// returncode: CRC value
-//////////////////////////////////////////////////////////////////////////////
-uint16_t AP_Beacon_Marvelmind::calc_crc_modbus(uint8_t *buf, uint16_t len)
-{
-    uint16_t crc = 0xFFFF;
-    for (uint16_t pos = 0; pos < len; pos++) {
-        crc ^= (uint16_t) buf[pos]; // XOR byte into least sig. byte of crc
-        for (uint8_t i = 8; i != 0; i--) { // Loop over each bit
-            if ((crc & 0x0001) != 0) { // If the LSB is set
-                crc >>= 1; // Shift right and XOR 0xA001
-                crc ^= 0xA001;
-            } else {
-                // Else LSB is not set
-                crc >>= 1; // Just shift right
-            }
-        }
-    }
-    return crc;
 }
 
 void AP_Beacon_Marvelmind::process_position_datagram()
