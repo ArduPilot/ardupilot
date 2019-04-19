@@ -26,3 +26,6 @@ uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size);
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
+
+uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len);
+
