@@ -59,9 +59,9 @@ static bool watchdog_enabled;
  */
 void stm32_watchdog_init(void)
 {
-    // setup for 1s reset
+    // setup for 2s reset
     IWDGD.KR = 0x5555;
-    IWDGD.PR = 8;
+    IWDGD.PR = 16;
     IWDGD.RLR = 0xFFF;
     IWDGD.KR = 0xCCCC;
     watchdog_enabled = true;
