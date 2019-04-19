@@ -76,7 +76,7 @@ public:
 
     // get the roll acceleration limit in centidegrees/s/s or radians/s/s
     float get_accel_roll_max() const { return _accel_roll_max; }
-    float get_accel_roll_max_radss() const { return radians(_accel_roll_max*0.01f); }
+    float get_accel_roll_max_radss() const { return radians(_accel_roll_max * 0.01f); }
 
     // Sets the roll acceleration limit in centidegrees/s/s
     void set_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; }
@@ -86,7 +86,7 @@ public:
 
     // get the pitch acceleration limit in centidegrees/s/s or radians/s/s
     float get_accel_pitch_max() const { return _accel_pitch_max; }
-    float get_accel_pitch_max_radss() const { return radians(_accel_pitch_max*0.01f); }
+    float get_accel_pitch_max_radss() const { return radians(_accel_pitch_max * 0.01f); }
 
     // Sets the pitch acceleration limit in centidegrees/s/s
     void set_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; }
@@ -96,7 +96,7 @@ public:
 
     // get the yaw acceleration limit in centidegrees/s/s or radians/s/s
     float get_accel_yaw_max() const { return _accel_yaw_max; }
-    float get_accel_yaw_max_radss() const { return radians(_accel_yaw_max*0.01f); }
+    float get_accel_yaw_max_radss() const { return radians(_accel_yaw_max * 0.01f); }
 
     // Sets the yaw acceleration limit in centidegrees/s/s
     void set_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; }
@@ -117,7 +117,7 @@ public:
     void set_attitude_target_to_current_attitude() { _ahrs.get_quat_body_to_ned(_attitude_target_quat); }
 
     // Sets yaw target to vehicle heading
-    void set_yaw_target_to_current_heading() { shift_ef_yaw_target(degrees(_ahrs.yaw - _attitude_target_euler_angle.z)*100.0f); }
+    void set_yaw_target_to_current_heading() { shift_ef_yaw_target(degrees(_ahrs.yaw - _attitude_target_euler_angle.z) * 100.0f); }
 
     // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
     void shift_ef_yaw_target(float yaw_shift_cd);
@@ -175,19 +175,19 @@ public:
     // attitude controller's target attitude.
     // **NOTE** Using vector3f*deg(100) is more efficient than deg(vector3f)*100 or deg(vector3d*100) because it gives the
     // same result with the fewest multiplications. Even though it may look like a bug, it is intentional. See issue 4895.
-    Vector3f get_att_target_euler_cd() const { return _attitude_target_euler_angle*degrees(100.0f); }
+    Vector3f get_att_target_euler_cd() const { return _attitude_target_euler_angle * degrees(100.0f); }
 
     // Return the angle between the target thrust vector and the current thrust vector.
     float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
 
     // Set x-axis angular velocity in centidegrees/s
-    void rate_bf_roll_target(float rate_cds) { _rate_target_ang_vel.x = radians(rate_cds*0.01f); }
+    void rate_bf_roll_target(float rate_cds) { _rate_target_ang_vel.x = radians(rate_cds * 0.01f); }
 
     // Set y-axis angular velocity in centidegrees/s
-    void rate_bf_pitch_target(float rate_cds) { _rate_target_ang_vel.y = radians(rate_cds*0.01f); }
+    void rate_bf_pitch_target(float rate_cds) { _rate_target_ang_vel.y = radians(rate_cds * 0.01f); }
 
     // Set z-axis angular velocity in centidegrees/s
-    void rate_bf_yaw_target(float rate_cds) { _rate_target_ang_vel.z = radians(rate_cds*0.01f); }
+    void rate_bf_yaw_target(float rate_cds) { _rate_target_ang_vel.z = radians(rate_cds * 0.01f); }
 
     // Return roll rate step size in radians/s that results in maximum output after 4 time steps
     float max_rate_step_bf_roll();
@@ -199,13 +199,13 @@ public:
     float max_rate_step_bf_yaw();
 
     // Return roll step size in radians that results in maximum output after 4 time steps
-    float max_angle_step_bf_roll() { return max_rate_step_bf_roll()/_p_angle_roll.kP(); }
+    float max_angle_step_bf_roll() { return max_rate_step_bf_roll() / _p_angle_roll.kP(); }
 
     // Return pitch step size in radians that results in maximum output after 4 time steps
-    float max_angle_step_bf_pitch() { return max_rate_step_bf_pitch()/_p_angle_pitch.kP(); }
+    float max_angle_step_bf_pitch() { return max_rate_step_bf_pitch() / _p_angle_pitch.kP(); }
 
     // Return yaw step size in radians that results in maximum output after 4 time steps
-    float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw()/_p_angle_yaw.kP(); }
+    float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw() / _p_angle_yaw.kP(); }
 
     // Return angular velocity in radians used in the angular velocity controller
     Vector3f rate_bf_targets() const { return _rate_target_ang_vel; }
@@ -325,7 +325,7 @@ protected:
     virtual float get_roll_trim_rad() { return 0;}
 
     // Return the yaw slew rate limit in radians/s
-    float get_slew_yaw_rads() { return radians(_slew_yaw*0.01f); }
+    float get_slew_yaw_rads() { return radians(_slew_yaw * 0.01f); }
 
     // Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
     AP_Float            _slew_yaw;

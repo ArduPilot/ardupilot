@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Range: 500 18000
     // @Increment: 100
     // @User: Advanced
-    AP_GROUPINFO("SLEW_YAW",    2, AC_AttitudeControl, _slew_yaw, AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS),
+    AP_GROUPINFO("SLEW_YAW", 2, AC_AttitudeControl, _slew_yaw, AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS),
 
     // 3 was for ACCEL_RP_MAX
 
@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Values: 0:Disabled, 9000:VerySlow, 18000:Slow, 36000:Medium, 54000:Fast
     // @Increment: 1000
     // @User: Advanced
-    AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl, _accel_yaw_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS),
+    AP_GROUPINFO("ACCEL_Y_MAX", 4, AC_AttitudeControl, _accel_yaw_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS),
 
     // @Param: RATE_FF_ENAB
     // @DisplayName: Rate Feedforward Enable
@@ -201,8 +201,6 @@ void AC_AttitudeControl::reset_rate_controller_I_terms()
 //    corrected by first correcting the thrust vector until the angle between the target thrust vector measured
 //    trust vector drops below 2*AC_ATTITUDE_THRUST_ERROR_ANGLE. At this point the heading is also corrected.
 
-
-
 // Command a Quaternion attitude with feedforward and smoothing
 void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat)
 {
@@ -241,9 +239,9 @@ void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat)
 void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_roll_angle = radians(euler_roll_angle_cd*0.01f);
-    float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
-    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
+    float euler_roll_angle = radians(euler_roll_angle_cd * 0.01f);
+    float euler_pitch_angle = radians(euler_pitch_angle_cd * 0.01f);
+    float euler_yaw_rate = radians(euler_yaw_rate_cds * 0.01f);
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -258,8 +256,8 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
         // and an exponential decay specified by smoothing_gain at the end.
-        _attitude_target_euler_rate.x = input_shaping_angle(wrap_PI(euler_roll_angle-_attitude_target_euler_angle.x), _input_tc, euler_accel.x, _attitude_target_euler_rate.x, _dt);
-        _attitude_target_euler_rate.y = input_shaping_angle(wrap_PI(euler_pitch_angle-_attitude_target_euler_angle.y), _input_tc, euler_accel.y, _attitude_target_euler_rate.y, _dt);
+        _attitude_target_euler_rate.x = input_shaping_angle(wrap_PI(euler_roll_angle - _attitude_target_euler_angle.x), _input_tc, euler_accel.x, _attitude_target_euler_rate.x, _dt);
+        _attitude_target_euler_rate.y = input_shaping_angle(wrap_PI(euler_pitch_angle - _attitude_target_euler_angle.y), _input_tc, euler_accel.y, _attitude_target_euler_rate.y, _dt);
 
         // When yaw acceleration limiting is enabled, the yaw input shaper constrains angular acceleration about the yaw axis, slewing
         // the output rate towards the input rate.
@@ -275,7 +273,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
         // When feedforward is not enabled, the target euler angle is input into the target and the feedforward rate is zeroed.
         _attitude_target_euler_angle.x = euler_roll_angle;
         _attitude_target_euler_angle.y = euler_pitch_angle;
-        _attitude_target_euler_angle.z += euler_yaw_rate*_dt;
+        _attitude_target_euler_angle.z += euler_yaw_rate * _dt;
         // Compute quaternion target attitude
         _attitude_target_quat.from_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
@@ -292,9 +290,9 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
 void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_roll_angle = radians(euler_roll_angle_cd*0.01f);
-    float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
-    float euler_yaw_angle = radians(euler_yaw_angle_cd*0.01f);
+    float euler_roll_angle = radians(euler_roll_angle_cd * 0.01f);
+    float euler_pitch_angle = radians(euler_pitch_angle_cd * 0.01f);
+    float euler_yaw_angle = radians(euler_yaw_angle_cd * 0.01f);
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -309,9 +307,9 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
         // and an exponential decay specified by _input_tc at the end.
-        _attitude_target_euler_rate.x = input_shaping_angle(wrap_PI(euler_roll_angle-_attitude_target_euler_angle.x), _input_tc, euler_accel.x, _attitude_target_euler_rate.x, _dt);
-        _attitude_target_euler_rate.y = input_shaping_angle(wrap_PI(euler_pitch_angle-_attitude_target_euler_angle.y), _input_tc, euler_accel.y, _attitude_target_euler_rate.y, _dt);
-        _attitude_target_euler_rate.z = input_shaping_angle(wrap_PI(euler_yaw_angle-_attitude_target_euler_angle.z), _input_tc, euler_accel.z, _attitude_target_euler_rate.z, _dt);
+        _attitude_target_euler_rate.x = input_shaping_angle(wrap_PI(euler_roll_angle - _attitude_target_euler_angle.x), _input_tc, euler_accel.x, _attitude_target_euler_rate.x, _dt);
+        _attitude_target_euler_rate.y = input_shaping_angle(wrap_PI(euler_pitch_angle - _attitude_target_euler_angle.y), _input_tc, euler_accel.y, _attitude_target_euler_rate.y, _dt);
+        _attitude_target_euler_rate.z = input_shaping_angle(wrap_PI(euler_yaw_angle - _attitude_target_euler_angle.z), _input_tc, euler_accel.z, _attitude_target_euler_rate.z, _dt);
         if (slew_yaw) {
             _attitude_target_euler_rate.z = constrain_float(_attitude_target_euler_rate.z, -get_slew_yaw_rads(), get_slew_yaw_rads());
         }
@@ -328,7 +326,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
         _attitude_target_euler_angle.y = euler_pitch_angle;
         if (slew_yaw) {
             // Compute constrained angle error
-            float angle_error = constrain_float(wrap_PI(euler_yaw_angle-_attitude_target_euler_angle.z), -get_slew_yaw_rads()*_dt, get_slew_yaw_rads()*_dt);
+            float angle_error = constrain_float(wrap_PI(euler_yaw_angle - _attitude_target_euler_angle.z), -get_slew_yaw_rads() * _dt, get_slew_yaw_rads() * _dt);
             // Update attitude target from constrained angle error
             _attitude_target_euler_angle.z = wrap_PI(angle_error + _attitude_target_euler_angle.z);
         } else {
@@ -351,9 +349,9 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
 void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float euler_yaw_rate_cds, float euler_pitch_cd, float body_roll_cd)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
-    float euler_pitch = radians(euler_pitch_cd*0.01f);
-    float body_roll = radians(body_roll_cd*0.01f);
+    float euler_yaw_rate = radians(euler_yaw_rate_cds * 0.01f);
+    float euler_pitch = radians(euler_pitch_cd * 0.01f);
+    float body_roll = radians(body_roll_cd * 0.01f);
 
     // new heading
     _attitude_target_euler_angle.z = wrap_PI(_attitude_target_euler_angle.z + euler_yaw_rate * _dt);
@@ -397,9 +395,9 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float 
 void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(float euler_yaw_rate_cds, float euler_pitch_cd, float body_roll_cd)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
-    float euler_pitch = radians(euler_pitch_cd*0.01f);
-    float body_roll = radians(body_roll_cd*0.01f);
+    float euler_yaw_rate = radians(euler_yaw_rate_cds * 0.01f);
+    float euler_pitch = radians(euler_pitch_cd * 0.01f);
+    float body_roll = radians(body_roll_cd * 0.01f);
 
     const float cpitch = cosf(euler_pitch);
     const float spitch = fabsf(sinf(euler_pitch));
@@ -446,9 +444,9 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(float 
 void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float euler_roll_rate = radians(euler_roll_rate_cds*0.01f);
-    float euler_pitch_rate = radians(euler_pitch_rate_cds*0.01f);
-    float euler_yaw_rate = radians(euler_yaw_rate_cds*0.01f);
+    float euler_roll_rate = radians(euler_roll_rate_cds * 0.01f);
+    float euler_pitch_rate = radians(euler_pitch_rate_cds * 0.01f);
+    float euler_yaw_rate = radians(euler_yaw_rate_cds * 0.01f);
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -468,9 +466,9 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
     } else {
         // When feedforward is not enabled, the target euler angle is input into the target and the feedforward rate is zeroed.
         // Pitch angle is restricted to +- 85.0 degrees to avoid gimbal lock discontinuities.
-        _attitude_target_euler_angle.x = wrap_PI(_attitude_target_euler_angle.x + euler_roll_rate*_dt);
-        _attitude_target_euler_angle.y = constrain_float(_attitude_target_euler_angle.y + euler_pitch_rate*_dt, radians(-85.0f), radians(85.0f));
-        _attitude_target_euler_angle.z = wrap_2PI(_attitude_target_euler_angle.z + euler_yaw_rate*_dt);
+        _attitude_target_euler_angle.x = wrap_PI(_attitude_target_euler_angle.x + euler_roll_rate * _dt);
+        _attitude_target_euler_angle.y = constrain_float(_attitude_target_euler_angle.y + euler_pitch_rate * _dt, radians(-85.0f), radians(85.0f));
+        _attitude_target_euler_angle.z = wrap_2PI(_attitude_target_euler_angle.z + euler_yaw_rate * _dt);
 
         // Set rate feedforward requests to zero
         _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
@@ -488,9 +486,9 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float roll_rate_rads = radians(roll_rate_bf_cds*0.01f);
-    float pitch_rate_rads = radians(pitch_rate_bf_cds*0.01f);
-    float yaw_rate_rads = radians(yaw_rate_bf_cds*0.01f);
+    float roll_rate_rads = radians(roll_rate_bf_cds * 0.01f);
+    float pitch_rate_rads = radians(pitch_rate_bf_cds * 0.01f);
+    float yaw_rate_rads = radians(yaw_rate_bf_cds * 0.01f);
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -525,9 +523,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float roll_rate_rads = radians(roll_rate_bf_cds*0.01f);
-    float pitch_rate_rads = radians(pitch_rate_bf_cds*0.01f);
-    float yaw_rate_rads = radians(yaw_rate_bf_cds*0.01f);
+    float roll_rate_rads = radians(roll_rate_bf_cds * 0.01f);
+    float pitch_rate_rads = radians(pitch_rate_bf_cds * 0.01f);
+    float yaw_rate_rads = radians(yaw_rate_bf_cds * 0.01f);
 
     // Compute acceleration-limited body frame rates
     // When acceleration limiting is enabled, the input shaper constrains angular acceleration about the axis, slewing
@@ -548,14 +546,14 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, 
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
-    float roll_rate_rads = radians(roll_rate_bf_cds*0.01f);
-    float pitch_rate_rads = radians(pitch_rate_bf_cds*0.01f);
-    float yaw_rate_rads = radians(yaw_rate_bf_cds*0.01f);
+    float roll_rate_rads = radians(roll_rate_bf_cds * 0.01f);
+    float pitch_rate_rads = radians(pitch_rate_bf_cds * 0.01f);
+    float yaw_rate_rads = radians(yaw_rate_bf_cds * 0.01f);
 
     // Update attitude error
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
     Quaternion attitude_ang_error_update_quat;
-    attitude_ang_error_update_quat.from_axis_angle(Vector3f((_attitude_target_ang_vel.x-gyro_latest.x) * _dt, (_attitude_target_ang_vel.y-gyro_latest.y) * _dt, (_attitude_target_ang_vel.z-gyro_latest.z) * _dt));
+    attitude_ang_error_update_quat.from_axis_angle(Vector3f((_attitude_target_ang_vel.x - gyro_latest.x) * _dt, (_attitude_target_ang_vel.y - gyro_latest.y) * _dt, (_attitude_target_ang_vel.z - gyro_latest.z) * _dt));
     _attitude_ang_error = attitude_ang_error_update_quat * _attitude_ang_error;
 
     // Compute acceleration-limited body frame rates
@@ -570,7 +568,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
     _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);
 
     // Update the unused targets attitude based on current attitude to condition mode change
-    _attitude_target_quat = attitude_vehicle_quat*_attitude_ang_error;
+    _attitude_target_quat = attitude_vehicle_quat * _attitude_ang_error;
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
@@ -593,9 +591,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
 void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd)
 {
     // Convert from centidegrees on public interface to radians
-    float roll_step_rads = radians(roll_angle_step_bf_cd*0.01f);
-    float pitch_step_rads = radians(pitch_angle_step_bf_cd*0.01f);
-    float yaw_step_rads = radians(yaw_angle_step_bf_cd*0.01f);
+    float roll_step_rads = radians(roll_angle_step_bf_cd * 0.01f);
+    float pitch_step_rads = radians(pitch_angle_step_bf_cd * 0.01f);
+    float yaw_step_rads = radians(yaw_angle_step_bf_cd * 0.01f);
 
     // rotate attitude target by desired step
     Quaternion attitude_target_update_quat;
@@ -630,25 +628,25 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // Add feedforward term that attempts to ensure that roll and pitch errors rotate with the body frame rather than the reference frame.
     // todo: this should probably be a matrix that couples yaw as well.
-    _rate_target_ang_vel.x += constrain_float(attitude_error_vector.y, -M_PI/4, M_PI/4)  * _ahrs.get_gyro().z;
-    _rate_target_ang_vel.y += -constrain_float(attitude_error_vector.x, -M_PI/4, M_PI/4) * _ahrs.get_gyro().z;
+    _rate_target_ang_vel.x += constrain_float(attitude_error_vector.y, -M_PI / 4, M_PI / 4) * _ahrs.get_gyro().z;
+    _rate_target_ang_vel.y += -constrain_float(attitude_error_vector.x, -M_PI / 4, M_PI / 4) * _ahrs.get_gyro().z;
 
     ang_vel_limit(_rate_target_ang_vel, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
 
     // Add the angular velocity feedforward, rotated into vehicle frame
     Quaternion attitude_target_ang_vel_quat = Quaternion(0.0f, _attitude_target_ang_vel.x, _attitude_target_ang_vel.y, _attitude_target_ang_vel.z);
     Quaternion to_to_from_quat = attitude_vehicle_quat.inverse() * _attitude_target_quat;
-    Quaternion desired_ang_vel_quat = to_to_from_quat.inverse()*attitude_target_ang_vel_quat*to_to_from_quat;
+    Quaternion desired_ang_vel_quat = to_to_from_quat.inverse() * attitude_target_ang_vel_quat * to_to_from_quat;
 
     // Correct the thrust vector and smoothly add feedforward and yaw input
-    if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE*2.0f){
+    if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE * 2.0f) {
         _rate_target_ang_vel.z = _ahrs.get_gyro().z;
-    }else if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE){
-        float feedforward_scalar = (1.0f - (_thrust_error_angle-AC_ATTITUDE_THRUST_ERROR_ANGLE)/AC_ATTITUDE_THRUST_ERROR_ANGLE);
-        _rate_target_ang_vel.x += desired_ang_vel_quat.q2*feedforward_scalar;
-        _rate_target_ang_vel.y += desired_ang_vel_quat.q3*feedforward_scalar;
+    } else if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE) {
+        float feedforward_scalar = (1.0f - (_thrust_error_angle - AC_ATTITUDE_THRUST_ERROR_ANGLE) / AC_ATTITUDE_THRUST_ERROR_ANGLE);
+        _rate_target_ang_vel.x += desired_ang_vel_quat.q2 * feedforward_scalar;
+        _rate_target_ang_vel.y += desired_ang_vel_quat.q3 * feedforward_scalar;
         _rate_target_ang_vel.z += desired_ang_vel_quat.q4;
-        _rate_target_ang_vel.z = _ahrs.get_gyro().z*(1.0-feedforward_scalar) + _rate_target_ang_vel.z*feedforward_scalar;
+        _rate_target_ang_vel.z = _ahrs.get_gyro().z * (1.0 - feedforward_scalar) + _rate_target_ang_vel.z * feedforward_scalar;
     } else {
         _rate_target_ang_vel.x += desired_ang_vel_quat.q2;
         _rate_target_ang_vel.y += desired_ang_vel_quat.q3;
@@ -676,34 +674,34 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
 {
     Matrix3f att_to_rot_matrix; // rotation from the target body frame to the inertial frame.
     att_to_quat.rotation_matrix(att_to_rot_matrix);
-    Vector3f att_to_thrust_vec = att_to_rot_matrix*Vector3f(0.0f,0.0f,1.0f);
+    Vector3f att_to_thrust_vec = att_to_rot_matrix * Vector3f(0.0f, 0.0f, 1.0f);
 
     Matrix3f att_from_rot_matrix; // rotation from the current body frame to the inertial frame.
     att_from_quat.rotation_matrix(att_from_rot_matrix);
-    Vector3f att_from_thrust_vec = att_from_rot_matrix*Vector3f(0.0f,0.0f,1.0f);
+    Vector3f att_from_thrust_vec = att_from_rot_matrix * Vector3f(0.0f, 0.0f, 1.0f);
 
     // the cross product of the desired and target thrust vector defines the rotation vector
     Vector3f thrust_vec_cross = att_from_thrust_vec % att_to_thrust_vec;
 
     // the dot product is used to calculate the angle between the target and desired thrust vectors
-    thrust_vec_dot = acosf(constrain_float(att_from_thrust_vec * att_to_thrust_vec,-1.0f,1.0f));
+    thrust_vec_dot = acosf(constrain_float(att_from_thrust_vec * att_to_thrust_vec, -1.0f, 1.0f));
 
     // Normalize the thrust rotation vector
     float thrust_vector_length = thrust_vec_cross.length();
-    if(is_zero(thrust_vector_length) || is_zero(thrust_vec_dot)){
-        thrust_vec_cross = Vector3f(0,0,1);
+    if (is_zero(thrust_vector_length) || is_zero(thrust_vec_dot)) {
+        thrust_vec_cross = Vector3f(0, 0, 1);
         thrust_vec_dot = 0.0f;
-    }else{
+    } else {
         thrust_vec_cross /= thrust_vector_length;
     }
     Quaternion thrust_vec_correction_quat;
     thrust_vec_correction_quat.from_axis_angle(thrust_vec_cross, thrust_vec_dot);
 
     // Rotate thrust_vec_correction_quat to the att_from frame
-    thrust_vec_correction_quat = att_from_quat.inverse()*thrust_vec_correction_quat*att_from_quat;
+    thrust_vec_correction_quat = att_from_quat.inverse() * thrust_vec_correction_quat * att_from_quat;
 
     // calculate the remaining rotation required after thrust vector is rotated transformed to the att_from frame
-    Quaternion yaw_vec_correction_quat = thrust_vec_correction_quat.inverse()*att_from_quat.inverse()*att_to_quat;
+    Quaternion yaw_vec_correction_quat = thrust_vec_correction_quat.inverse() * att_from_quat.inverse() * att_to_quat;
 
     // calculate the angle error in x and y.
     Vector3f rotation;
@@ -720,10 +718,10 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
     // Limit Yaw Error based on maximum acceleration - Update to include output saturation and maximum error.
     // Currently the limit is based on the maximum acceleration using the linear part of the SQRT controller.
     // This should be updated to be based on an angle limit, saturation, or unlimited based on user defined parameters.
-    if(!is_zero(_p_angle_yaw.kP()) && fabsf(att_diff_angle.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP()){
-        att_diff_angle.z = constrain_float(wrap_PI(att_diff_angle.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP());
-        yaw_vec_correction_quat.from_axis_angle(Vector3f(0.0f,0.0f,att_diff_angle.z));
-        att_to_quat = att_from_quat*thrust_vec_correction_quat*yaw_vec_correction_quat;
+    if (!is_zero(_p_angle_yaw.kP()) && fabsf(att_diff_angle.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP()) {
+        att_diff_angle.z = constrain_float(wrap_PI(att_diff_angle.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP());
+        yaw_vec_correction_quat.from_axis_angle(Vector3f(0.0f, 0.0f, att_diff_angle.z));
+        att_to_quat = att_from_quat * thrust_vec_correction_quat * yaw_vec_correction_quat;
     }
 }
 
@@ -744,7 +742,7 @@ float AC_AttitudeControl::input_shaping_ang_vel(float target_ang_vel, float desi
     // Acceleration is limited directly to smooth the beginning of the curve.
     if (is_positive(accel_max)) {
         float delta_ang_vel = accel_max * dt;
-        return constrain_float(desired_ang_vel, target_ang_vel-delta_ang_vel, target_ang_vel+delta_ang_vel);
+        return constrain_float(desired_ang_vel, target_ang_vel - delta_ang_vel, target_ang_vel + delta_ang_vel);
     } else {
         return desired_ang_vel;
     }
@@ -759,15 +757,15 @@ void AC_AttitudeControl::input_shaping_rate_predictor(const Vector2f &error_angl
         target_ang_vel.x = input_shaping_angle(wrap_PI(error_angle.x), _input_tc, get_accel_roll_max_radss(), target_ang_vel.x, dt);
         target_ang_vel.y = input_shaping_angle(wrap_PI(error_angle.y), _input_tc, get_accel_pitch_max_radss(), target_ang_vel.y, dt);
     } else {
-        target_ang_vel.x =  _p_angle_roll.get_p(wrap_PI(error_angle.x));
-        target_ang_vel.y =  _p_angle_pitch.get_p(wrap_PI(error_angle.y));
+        target_ang_vel.x = _p_angle_roll.get_p(wrap_PI(error_angle.x));
+        target_ang_vel.y = _p_angle_pitch.get_p(wrap_PI(error_angle.y));
     }
     // Limit the angular velocity correction
     Vector3f ang_vel(target_ang_vel.x, target_ang_vel.y, 0.0f);
     ang_vel_limit(ang_vel, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), 0.0f);
 
-    target_ang_vel.x =  ang_vel.x;
-    target_ang_vel.y =  ang_vel.y;
+    target_ang_vel.x = ang_vel.x;
+    target_ang_vel.y = ang_vel.y;
 }
 
 // limits angular velocity
@@ -781,7 +779,7 @@ void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_m
             euler_rad.y = constrain_float(euler_rad.y, -ang_vel_pitch_max, ang_vel_pitch_max);
         }
     } else {
-        Vector2f thrust_vector_ang_vel(euler_rad.x/ang_vel_roll_max, euler_rad.y/ang_vel_pitch_max);
+        Vector2f thrust_vector_ang_vel(euler_rad.x / ang_vel_roll_max, euler_rad.y / ang_vel_pitch_max);
         float thrust_vector_length = thrust_vector_ang_vel.length();
         if (thrust_vector_length > 1.0f) {
             euler_rad.x = thrust_vector_ang_vel.x * ang_vel_roll_max / thrust_vector_length;
@@ -801,14 +799,14 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const 
     float sin_theta = constrain_float(fabsf(sinf(euler_rad.y)), 0.1f, 1.0f);
 
     Vector3f rot_accel;
-    if(is_zero(euler_accel.x) || is_zero(euler_accel.y) || is_zero(euler_accel.z) || is_negative(euler_accel.x) || is_negative(euler_accel.y) || is_negative(euler_accel.z)) {
+    if (is_zero(euler_accel.x) || is_zero(euler_accel.y) || is_zero(euler_accel.z) || is_negative(euler_accel.x) || is_negative(euler_accel.y) || is_negative(euler_accel.z)) {
         rot_accel.x = euler_accel.x;
         rot_accel.y = euler_accel.y;
         rot_accel.z = euler_accel.z;
     } else {
         rot_accel.x = euler_accel.x;
-        rot_accel.y = MIN(euler_accel.y/cos_phi, euler_accel.z/sin_phi);
-        rot_accel.z = MIN(MIN(euler_accel.x/sin_theta, euler_accel.y/sin_phi), euler_accel.z/cos_phi);
+        rot_accel.y = MIN(euler_accel.y / cos_phi, euler_accel.z / sin_phi);
+        rot_accel.z = MIN(MIN(euler_accel.x / sin_theta, euler_accel.y / sin_phi), euler_accel.z / cos_phi);
     }
     return rot_accel;
 }
@@ -816,10 +814,10 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const 
 // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
 void AC_AttitudeControl::shift_ef_yaw_target(float yaw_shift_cd)
 {
-    float yaw_shift = radians(yaw_shift_cd*0.01f);
+    float yaw_shift = radians(yaw_shift_cd * 0.01f);
     Quaternion _attitude_target_update_quat;
     _attitude_target_update_quat.from_axis_angle(Vector3f(0.0f, 0.0f, yaw_shift));
-    _attitude_target_quat = _attitude_target_update_quat*_attitude_target_quat;
+    _attitude_target_quat = _attitude_target_update_quat * _attitude_target_quat;
 }
 
 // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
@@ -845,7 +843,7 @@ void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const 
     float cos_phi = cosf(euler_rad.x);
 
     ang_vel_rads.x = euler_rate_rads.x - sin_theta * euler_rate_rads.z;
-    ang_vel_rads.y = cos_phi  * euler_rate_rads.y + sin_phi * cos_theta * euler_rate_rads.z;
+    ang_vel_rads.y = cos_phi * euler_rate_rads.y + sin_phi * cos_theta * euler_rate_rads.z;
     ang_vel_rads.z = -sin_phi * euler_rate_rads.y + cos_theta * cos_phi * euler_rate_rads.z;
 }
 
@@ -863,8 +861,8 @@ bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const 
         return false;
     }
 
-    euler_rate_rads.x = ang_vel_rads.x + sin_phi * (sin_theta/cos_theta) * ang_vel_rads.y + cos_phi * (sin_theta/cos_theta) * ang_vel_rads.z;
-    euler_rate_rads.y = cos_phi  * ang_vel_rads.y - sin_phi * ang_vel_rads.z;
+    euler_rate_rads.x = ang_vel_rads.x + sin_phi * (sin_theta / cos_theta) * ang_vel_rads.y + cos_phi * (sin_theta / cos_theta) * ang_vel_rads.z;
+    euler_rate_rads.y = cos_phi * ang_vel_rads.y - sin_phi * ang_vel_rads.z;
     euler_rate_rads.z = (sin_phi / cos_theta) * ang_vel_rads.y + (cos_phi / cos_theta) * ang_vel_rads.z;
     return true;
 }
@@ -875,24 +873,24 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
     Vector3f rate_target_ang_vel;
     // Compute the roll angular velocity demand from the roll angle error
     if (_use_sqrt_controller) {
-        rate_target_ang_vel.x = sqrt_controller(attitude_error_rot_vec_rad.x, _p_angle_roll.kP(), constrain_float(get_accel_roll_max_radss()/2.0f,  AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
-    }else{
+        rate_target_ang_vel.x = sqrt_controller(attitude_error_rot_vec_rad.x, _p_angle_roll.kP(), constrain_float(get_accel_roll_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
+    } else {
         rate_target_ang_vel.x = _p_angle_roll.kP() * attitude_error_rot_vec_rad.x;
     }
     // todo: Add Angular Velocity Limit
 
     // Compute the pitch angular velocity demand from the roll angle error
     if (_use_sqrt_controller) {
-        rate_target_ang_vel.y = sqrt_controller(attitude_error_rot_vec_rad.y, _p_angle_pitch.kP(), constrain_float(get_accel_pitch_max_radss()/2.0f,  AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
-    }else{
+        rate_target_ang_vel.y = sqrt_controller(attitude_error_rot_vec_rad.y, _p_angle_pitch.kP(), constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
+    } else {
         rate_target_ang_vel.y = _p_angle_pitch.kP() * attitude_error_rot_vec_rad.y;
     }
     // todo: Add Angular Velocity Limit
 
     // Compute the yaw angular velocity demand from the roll angle error
     if (_use_sqrt_controller) {
-        rate_target_ang_vel.z = sqrt_controller(attitude_error_rot_vec_rad.z, _p_angle_yaw.kP(), constrain_float(get_accel_yaw_max_radss()/2.0f,  AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS), _dt);
-    }else{
+        rate_target_ang_vel.z = sqrt_controller(attitude_error_rot_vec_rad.z, _p_angle_yaw.kP(), constrain_float(get_accel_yaw_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS), _dt);
+    } else {
         rate_target_ang_vel.z = _p_angle_yaw.kP() * attitude_error_rot_vec_rad.z;
     }
     // todo: Add Angular Velocity Limit
@@ -1002,30 +1000,30 @@ float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord
     float correction_rate;
     if (is_negative(second_ord_lim) || is_zero(second_ord_lim)) {
         // second order limit is zero or negative.
-        correction_rate = error*p;
+        correction_rate = error * p;
     } else if (is_zero(p)) {
         // P term is zero but we have a second order limit.
         if (is_positive(error)) {
-            correction_rate = safe_sqrt(2.0f*second_ord_lim*(error));
+            correction_rate = safe_sqrt(2.0f * second_ord_lim * (error));
         } else if (is_negative(error)) {
-            correction_rate = -safe_sqrt(2.0f*second_ord_lim*(-error));
+            correction_rate = -safe_sqrt(2.0f * second_ord_lim * (-error));
         } else {
             correction_rate = 0.0f;
         }
     } else {
         // Both the P and second order limit have been defined.
-        float linear_dist = second_ord_lim/sq(p);
+        float linear_dist = second_ord_lim / sq(p);
         if (error > linear_dist) {
-            correction_rate = safe_sqrt(2.0f*second_ord_lim*(error-(linear_dist/2.0f)));
+            correction_rate = safe_sqrt(2.0f * second_ord_lim * (error - (linear_dist / 2.0f)));
         } else if (error < -linear_dist) {
-            correction_rate = -safe_sqrt(2.0f*second_ord_lim*(-error-(linear_dist/2.0f)));
+            correction_rate = -safe_sqrt(2.0f * second_ord_lim * (-error - (linear_dist / 2.0f)));
         } else {
-            correction_rate = error*p;
+            correction_rate = error * p;
         }
     }
     if (!is_zero(dt)) {
         // this ensures we do not get small oscillations by over shooting the error correction in the last time step.
-        return constrain_float(correction_rate, -fabsf(error)/dt, fabsf(error)/dt);
+        return constrain_float(correction_rate, -fabsf(error) / dt, fabsf(error) / dt);
     } else {
         return correction_rate;
     }
@@ -1035,23 +1033,23 @@ float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord
 float AC_AttitudeControl::stopping_point(float first_ord_mag, float p, float second_ord_lim)
 {
     if (is_positive(second_ord_lim) && !is_zero(second_ord_lim) && is_zero(p)) {
-        return (first_ord_mag*first_ord_mag)/(2.0f*second_ord_lim);
+        return (first_ord_mag * first_ord_mag) / (2.0f * second_ord_lim);
     } else if ((is_negative(second_ord_lim) || is_zero(second_ord_lim)) && !is_zero(p)) {
-        return first_ord_mag/p;
+        return first_ord_mag / p;
     } else if ((is_negative(second_ord_lim) || is_zero(second_ord_lim)) && is_zero(p)) {
         return 0.0f;
     }
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
-    float linear_velocity = second_ord_lim/p;
+    float linear_velocity = second_ord_lim / p;
 
     if (fabsf(first_ord_mag) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
-        return first_ord_mag/p;
+        return first_ord_mag / p;
     } else {
-        float linear_dist = second_ord_lim/sq(p);
-        float overshoot = (linear_dist*0.5f) + sq(first_ord_mag)/(2.0f*second_ord_lim);
-        if (is_positive(first_ord_mag)){
+        float linear_dist = second_ord_lim / sq(p);
+        float overshoot = (linear_dist * 0.5f) + sq(first_ord_mag) / (2.0f * second_ord_lim);
+        if (is_positive(first_ord_mag)) {
             return overshoot;
         } else {
             return -overshoot;
@@ -1063,30 +1061,30 @@ float AC_AttitudeControl::stopping_point(float first_ord_mag, float p, float sec
 float AC_AttitudeControl::max_rate_step_bf_roll()
 {
     float alpha = get_rate_roll_pid().get_filt_alpha();
-    float alpha_remaining = 1-alpha;
+    float alpha_remaining = 1 - alpha;
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
-    return 2.0f*throttle_hover*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_roll_pid().kD())/_dt + get_rate_roll_pid().kP());
+    return 2.0f * throttle_hover * AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX / ((alpha_remaining * alpha_remaining * alpha_remaining * alpha * get_rate_roll_pid().kD()) / _dt + get_rate_roll_pid().kP());
 }
 
 // Return pitch rate step size in centidegrees/s that results in maximum output after 4 time steps
 float AC_AttitudeControl::max_rate_step_bf_pitch()
 {
     float alpha = get_rate_pitch_pid().get_filt_alpha();
-    float alpha_remaining = 1-alpha;
+    float alpha_remaining = 1 - alpha;
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
-    return 2.0f*throttle_hover*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_pitch_pid().kD())/_dt + get_rate_pitch_pid().kP());
+    return 2.0f * throttle_hover * AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX / ((alpha_remaining * alpha_remaining * alpha_remaining * alpha * get_rate_pitch_pid().kD()) / _dt + get_rate_pitch_pid().kP());
 }
 
 // Return yaw rate step size in centidegrees/s that results in maximum output after 4 time steps
 float AC_AttitudeControl::max_rate_step_bf_yaw()
 {
     float alpha = get_rate_yaw_pid().get_filt_alpha();
-    float alpha_remaining = 1-alpha;
+    float alpha_remaining = 1 - alpha;
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
-    return 2.0f*throttle_hover*AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_yaw_pid().kD())/_dt + get_rate_yaw_pid().kP());
+    return 2.0f * throttle_hover * AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX / ((alpha_remaining * alpha_remaining * alpha_remaining * alpha * get_rate_yaw_pid().kD()) / _dt + get_rate_yaw_pid().kP());
 }
 
 bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
