@@ -43,4 +43,5 @@ protected:
     float _tilt_right;  // -1..1
     float _thrust_left;  // 0..1
     float _thrust_right;  // 0..1
+    float _thrust_rear;  // 0..1
 };

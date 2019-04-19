@@ -53,6 +53,12 @@ void AP_MotorsTailsitter::init(motor_frame_class frame_class, motor_frame_type f
     SRV_Channels::set_aux_channel_default(SRV_Channel::k_tiltMotorLeft, CH_4);
     SRV_Channels::set_angle(SRV_Channel::k_tiltMotorLeft, SERVO_OUTPUT_RANGE);
 
+    // rear throttle defaults to servo output 5
+    SRV_Channels::set_aux_channel_default(SRV_Channel::k_motor4, CH_5);
+    if (SRV_Channels::find_channel(SRV_Channel::k_motor4, chan)) {
+        motor_enabled[chan] = true;
+    }
+
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_TAILSITTER);
 }
@@ -74,6 +80,7 @@ void AP_MotorsTailsitter::set_update_rate(uint16_t speed_hz)
 
     SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleLeft, speed_hz);
     SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleRight, speed_hz);
+    SRV_Channels::set_rc_frequency(SRV_Channel::k_motor4, speed_hz);
 }
 
 void AP_MotorsTailsitter::output_to_motors()
@@ -86,17 +93,20 @@ void AP_MotorsTailsitter::output_to_motors()
         case SHUT_DOWN:
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, get_pwm_output_min());
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, get_pwm_output_min());
+            SRV_Channels::set_output_pwm(SRV_Channel::k_motor4, get_pwm_output_min());
             break;
         case GROUND_IDLE:
             set_actuator_with_slew(_actuator[1], actuator_spin_up_to_ground_idle());
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, output_to_pwm(actuator_spin_up_to_ground_idle()));
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, output_to_pwm(actuator_spin_up_to_ground_idle()));
+            SRV_Channels::set_output_pwm(SRV_Channel::k_motor4, output_to_pwm(actuator_spin_up_to_ground_idle()));
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, output_to_pwm(thrust_to_actuator(_thrust_left)));
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, output_to_pwm(thrust_to_actuator(_thrust_right)));
+            SRV_Channels::set_output_pwm(SRV_Channel::k_motor4, output_to_pwm(thrust_to_actuator(_thrust_rear)));
             break;
     }
 
@@ -155,6 +165,9 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
     // calculate left and right throttle outputs
     _thrust_left  = throttle_thrust + roll_thrust*0.5f;
     _thrust_right = throttle_thrust - roll_thrust*0.5f;
+
+    // calculate rear motor output
+    _thrust_rear = constrain_float(-pitch_thrust, 0.0f, 1.0f);
 
     // if max thrust is more than one reduce average throttle
     thrust_max = MAX(_thrust_right,_thrust_left);
