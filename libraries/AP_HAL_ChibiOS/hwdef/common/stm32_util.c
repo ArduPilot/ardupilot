@@ -273,8 +273,6 @@ void set_rtc_backup1(uint32_t v)
     RTC->BKP1R = v;
 }
 
-#endif //NO_FASTBOOT
-
 /*
   enable peripheral power if needed This is done late to prevent
   problems with CTS causing SiK radios to stay in the bootloader. A
