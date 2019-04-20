@@ -41,6 +41,8 @@ void Plane::failsafe_check(void)
     if (in_failsafe && tnow - last_timestamp > 20000) {
         last_timestamp = tnow;
 
+        rc().read_input();
+
 #if ADVANCED_FAILSAFE == ENABLED
         if (in_calibration) {
             // tell the failsafe system that we are calibrating
