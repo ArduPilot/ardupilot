@@ -48,6 +48,16 @@ void stm32_set_backup_armed(bool armed);
   get the armed state in backup register from initial boot
 */
 bool stm32_get_boot_backup_armed(void);
+
+/*
+  set home state in backup
+ */
+void stm32_set_backup_home(int32_t lat, int32_t lon, int32_t alt_cm);
+
+/*
+  get home state from backup
+ */
+void stm32_get_backup_home(int32_t *lat, int32_t *lon, int32_t *alt_cm);
     
 #ifdef __cplusplus
 }
