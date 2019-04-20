@@ -28,7 +28,7 @@
 
 static ESP32::UARTDriver cons(0);
 static Empty::UARTDriver uartADriver;
-static Empty::UARTDriver uartBDriver;
+static ESP32::UARTDriver uartBDriver(1);
 static ESP32::WiFiDriver uartCDriver;
 static Empty::UARTDriver uartDDriver;
 static Empty::UARTDriver uartEDriver;
