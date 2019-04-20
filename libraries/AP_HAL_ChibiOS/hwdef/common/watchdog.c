@@ -63,7 +63,7 @@ void stm32_watchdog_init(void)
 {
     // setup for 2s reset
     IWDGD.KR = 0x5555;
-    IWDGD.PR = 16;
+    IWDGD.PR = 2; // div16
     IWDGD.RLR = 0xFFF;
     IWDGD.KR = 0xCCCC;
     watchdog_enabled = true;
