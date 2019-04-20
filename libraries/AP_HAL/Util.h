@@ -17,6 +17,9 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     virtual bool was_watchdog_reset() const { return false; }
 
+    // return true if safety was off and this was a watchdog reset
+    virtual bool was_watchdog_safety_off() const { return false; }
+    
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
     virtual const char *get_custom_storage_directory() const { return nullptr;  }
