@@ -74,6 +74,12 @@ public:
     // return true if vehicle was armed and this was a watchdog reset
     bool was_watchdog_armed() const override;
 
+    // backup home state for restore on watchdog reset
+    void set_backup_home_state(int32_t lat, int32_t lon, int32_t alt_cm) const override;
+
+    // backup home state for restore on watchdog reset
+    bool get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const override;
+    
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
