@@ -84,6 +84,10 @@ DataFlash_Class::DataFlash_Class(const AP_Int32 &log_bitmask)
 void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Preparing log system");
+    if (hal.util->was_watchdog_armed()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
+        _params.log_disarmed.set(1);
+    }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     validate_structures(structures, num_types);
     dump_structures(structures, num_types);
