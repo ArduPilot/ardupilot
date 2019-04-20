@@ -660,6 +660,11 @@ void AP_IOMCU_FW::safety_update(void)
     if (safety_button_counter == 10) {
         // safety has been pressed for 1 second, change state
         reg_status.flag_safety_off = !reg_status.flag_safety_off;
+        if (reg_status.flag_safety_off) {
+            hal.rcout->force_safety_off();
+        } else {
+            hal.rcout->force_safety_on();
+        }
     }
 
     led_counter = (led_counter+1) % 16;
