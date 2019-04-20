@@ -80,7 +80,7 @@ void ModeGuided::update()
                                                                             g2.motors.limit.steer_left,
                                                                             g2.motors.limit.steer_right,
                                                                             rover.G_Dt);
-                g2.motors.set_steering(steering_out * 4500.0f);
+                set_steering(steering_out * 4500.0f);
                 calc_throttle(_desired_speed, true, true);
             } else {
                 // we have reached the destination so stay here
