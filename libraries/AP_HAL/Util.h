@@ -22,6 +22,12 @@ public:
 
     // return true if this is a watchdog reset boot and we were armed
     virtual bool was_watchdog_armed() const { return false; }
+
+    // backup home state for restore on watchdog reset
+    virtual void set_backup_home_state(int32_t lat, int32_t lon, int32_t alt_cm) const {}
+
+    // backup home state for restore on watchdog reset
+    virtual bool get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const { return false; }
     
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
