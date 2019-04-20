@@ -28,7 +28,7 @@ void ModeSteering::update()
                                                                           g2.motors.limit.steer_left,
                                                                           g2.motors.limit.steer_right,
                                                                           rover.G_Dt);
-        g2.motors.set_steering(steering_out * 4500.0f);
+        set_steering(steering_out * 4500.0f);
     } else {
         // In steering mode we control lateral acceleration directly.
         // For regular steering vehicles we use the maximum lateral acceleration

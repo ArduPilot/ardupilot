@@ -511,7 +511,7 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
                                                                            g2.motors.limit.steer_left,
                                                                            g2.motors.limit.steer_right,
                                                                            rover.G_Dt);
-    g2.motors.set_steering(steering_out * 4500.0f);
+    set_steering(steering_out * 4500.0f);
 }
 
 // calculate steering output to drive towards desired heading
@@ -527,7 +527,7 @@ void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max_deg
                                                                          g2.motors.limit.steer_left,
                                                                          g2.motors.limit.steer_right,
                                                                          rover.G_Dt);
-    g2.motors.set_steering(steering_out * 4500.0f);
+    set_steering(steering_out * 4500.0f);
 }
 
 // calculate vehicle stopping point using current location, velocity and maximum acceleration
@@ -553,6 +553,11 @@ void Mode::calc_stopping_location(Location& stopping_loc)
     const Vector2f stopping_offset = velocity.normalized() * stopping_dist;
 
     stopping_loc.offset(stopping_offset.x, stopping_offset.y);
+}
+
+void Mode::set_steering(float steering_value)
+{
+    g2.motors.set_steering(steering_value);
 }
 
 Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
