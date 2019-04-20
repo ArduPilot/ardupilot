@@ -345,3 +345,19 @@ void Util::set_soft_armed(const bool b)
     AP_HAL::Util::set_soft_armed(b);
     stm32_set_backup_armed(b);
 }
+
+// backup home state for restore on watchdog reset
+void Util::set_backup_home_state(int32_t lat, int32_t lon, int32_t alt_cm) const
+{
+    stm32_set_backup_home(lat, lon, alt_cm);
+}
+
+// backup home state for restore on watchdog reset
+bool Util::get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const
+{
+    if (was_watchdog_reset()) {
+        stm32_get_backup_home(&lat, &lon, &alt_cm);
+        return true;
+    }
+    return false;
+}
