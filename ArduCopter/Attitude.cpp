@@ -122,7 +122,7 @@ float Copter::get_non_takeoff_throttle()
 // adjust_climb_rate - hold copter at the desired distance above the
 //      ground; returns climb rate (in cm/s) which should be passed to
 //      the position controller
-float Copter::SurfaceTracking::adjust_climb_rate(int16_t target_rate)
+float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
 {
 #if RANGEFINDER_ENABLED == ENABLED
     if (!copter.rangefinder_alt_ok()) {
@@ -184,7 +184,7 @@ float Copter::SurfaceTracking::adjust_climb_rate(int16_t target_rate)
     // return combined pilot climb rate + rate to correct rangefinder alt error
     return (target_rate + velocity_correction);
 #else
-    return (float)target_rate;
+    return target_rate;
 #endif
 }
 
