@@ -20,6 +20,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include "GPIO.h"
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
 
 #if HAL_USE_PWM == TRUE
 
@@ -1385,9 +1386,14 @@ AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)
 {
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
-        return iomcu.get_safety_switch_state();
+        safety_state = iomcu.get_safety_switch_state();
     }
 #endif
+    if (safety_state == AP_HAL::Util::SAFETY_ARMED) {
+        stm32_set_backup_safety_state(false);
+    } else if (safety_state == AP_HAL::Util::SAFETY_DISARMED) {
+        stm32_set_backup_safety_state(true);
+    }
     return safety_state;
 }
 

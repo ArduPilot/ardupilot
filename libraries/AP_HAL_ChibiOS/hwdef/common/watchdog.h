@@ -28,6 +28,22 @@ void stm32_watchdog_save_reason(void);
   clear reset reason code
  */
 void stm32_watchdog_clear_reason(void);
+
+/*
+  set the safety state in backup register
+ */
+void stm32_set_backup_safety_state(bool safety_on);
+
+/*
+  get the safety state in backup register
+  return true if safety is marked as safety on
+ */
+bool stm32_get_backup_safety_state(void);
+    
+/*
+  get the safety state in backup register from initial boot
+*/
+bool stm32_get_boot_backup_safety_state(void);
     
 #ifdef __cplusplus
 }
