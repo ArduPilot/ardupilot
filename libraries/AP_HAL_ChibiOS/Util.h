@@ -68,6 +68,11 @@ public:
 
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override { return stm32_was_watchdog_reset(); }
+
+    // return true if safety was off and this was a watchdog reset
+    bool was_watchdog_safety_off() const override {
+        return stm32_was_watchdog_reset() && stm32_get_boot_backup_safety_state() == false;
+    }
     
 private:
 #ifdef HAL_PWM_ALARM

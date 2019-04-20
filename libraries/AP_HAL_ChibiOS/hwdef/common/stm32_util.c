@@ -243,6 +243,27 @@ void set_fast_reboot(enum rtc_boot_magic v)
     set_rtc_backup0(v);
 }
 
+// get RTC backup register 1
+uint32_t get_rtc_backup1(void)
+{
+    return RTC->BKP1R;
+}
+
+// set RTC backup register 1
+void set_rtc_backup1(uint32_t v)
+{
+    if ((RCC->BDCR & RCC_BDCR_RTCEN) == 0) {
+        RCC->BDCR |= STM32_RTCSEL;
+        RCC->BDCR |= RCC_BDCR_RTCEN;
+    }
+#ifdef PWR_CR_DBP
+    PWR->CR |= PWR_CR_DBP;
+#else
+    PWR->CR1 |= PWR_CR1_DBP;
+#endif
+    RTC->BKP1R = v;
+}
+
 #endif //NO_FASTBOOT
 
 /*
