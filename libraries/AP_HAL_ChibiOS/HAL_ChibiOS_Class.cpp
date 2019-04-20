@@ -209,9 +209,11 @@ static void main_loop()
         stm32_watchdog_init();
     }
 
+#ifndef IOMCU_FW
     if (hal.util->was_watchdog_reset()) {
         AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
     }
+#endif
 
     while (true) {
         g_callbacks->loop();
