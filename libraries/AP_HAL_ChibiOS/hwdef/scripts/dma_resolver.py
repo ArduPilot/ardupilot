@@ -152,7 +152,7 @@ def generate_DMAMUX_map_mask(peripheral_list, channel_mask, noshare_list, dma_ex
         base = idx % 16
         for i in range(16):
             found = None
-            for ii in range(base,16) + range(0,base):
+            for ii in list(range(base,16)) + list(range(0,base)):
                 if (1<<ii) & available == 0:
                     continue
 
