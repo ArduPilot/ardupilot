@@ -20,7 +20,6 @@
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"
 #include <ch.h>
-#include "hwdef/common/watchdog.h"
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
@@ -67,13 +66,14 @@ public:
 #endif
 
     // return true if the reason for the reboot was a watchdog reset
-    bool was_watchdog_reset() const override { return stm32_was_watchdog_reset(); }
+    bool was_watchdog_reset() const override;
 
     // return true if safety was off and this was a watchdog reset
-    bool was_watchdog_safety_off() const override {
-        return stm32_was_watchdog_reset() && stm32_get_boot_backup_safety_state() == false;
-    }
-    
+    bool was_watchdog_safety_off() const override;
+
+    // return true if vehicle was armed and this was a watchdog reset
+    bool was_watchdog_armed() const override;
+
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
@@ -113,5 +113,7 @@ private:
 #ifdef ENABLE_HEAP
     static memory_heap_t scripting_heap;
 #endif // ENABLE_HEAP
+
+    void set_soft_armed(const bool b) override;
 
 };

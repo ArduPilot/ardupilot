@@ -54,7 +54,7 @@ typedef struct
 
 static bool was_watchdog_reset;
 static bool watchdog_enabled;
-static bool boot_safety_state;
+static uint32_t boot_backup1_state;
 
 /*
   setup the watchdog
@@ -87,7 +87,7 @@ void stm32_watchdog_save_reason(void)
 {
     if (WDG_RESET_STATUS & WDG_RESET_IS_IWDG) {
         was_watchdog_reset = true;
-        boot_safety_state = stm32_get_backup_safety_state();
+        boot_backup1_state = get_rtc_backup1();
     }
 }
 
@@ -97,6 +97,7 @@ void stm32_watchdog_save_reason(void)
 void stm32_watchdog_clear_reason(void)
 {
     WDG_RESET_STATUS = WDG_RESET_CLEAR;
+    set_rtc_backup1(0);
 }
 
 /*
@@ -107,6 +108,9 @@ bool stm32_was_watchdog_reset(void)
     return was_watchdog_reset;
 }
 
+#define WDG_SAFETY_BIT  0x01
+#define WDG_ARMED_BIT   0x02
+
 /*
   set the safety state in backup register
 
@@ -116,20 +120,10 @@ bool stm32_was_watchdog_reset(void)
 void stm32_set_backup_safety_state(bool safety_on)
 {
     uint32_t v = get_rtc_backup1();
-    uint32_t v2 = safety_on?(v|1):(v&~1);
+    uint32_t v2 = safety_on?(v | WDG_SAFETY_BIT):(v & ~WDG_SAFETY_BIT);
     if (v != v2) {
         set_rtc_backup1(v2);
     }
-}
-
-/*
-  get the safety state in backup register
-  return true if safety is marked as safety on
-*/
-bool stm32_get_backup_safety_state(void)
-{
-    uint32_t v = get_rtc_backup1();
-    return (v&1) != 0;
 }
 
 /*
@@ -137,5 +131,28 @@ bool stm32_get_backup_safety_state(void)
 */
 bool stm32_get_boot_backup_safety_state(void)
 {
-    return boot_safety_state;
+    return (boot_backup1_state & WDG_SAFETY_BIT) != 0;
+}
+
+/*
+  set the armed state in backup register
+
+  This is stored so that the armed state can be restored after a
+  watchdog reset
+ */
+void stm32_set_backup_armed(bool armed)
+{
+    uint32_t v = get_rtc_backup1();
+    uint32_t v2 = armed?(v | WDG_ARMED_BIT): (v & ~WDG_ARMED_BIT);
+    if (v != v2) {
+        set_rtc_backup1(v2);
+    }
+}
+
+/*
+  get the armed state in backup register from initial boot
+*/
+bool stm32_get_boot_backup_armed(void)
+{
+    return (boot_backup1_state & WDG_ARMED_BIT) != 0;
 }
