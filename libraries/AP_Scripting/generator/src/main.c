@@ -74,7 +74,7 @@ enum access_flags {
 };
 
 enum field_type {
-  TYPE_BOOLEAN,
+  TYPE_BOOLEAN = 0,
   TYPE_FLOAT,
   TYPE_INT8_T,
   TYPE_INT16_T,
@@ -85,6 +85,18 @@ enum field_type {
   TYPE_STRING,
   TYPE_USERDATA,
 };
+
+const char * type_labels[TYPE_USERDATA + 1] = { "bool",
+                                                "float",
+                                                "int8_t",
+                                                "int16_t",
+                                                "int32_t",
+                                                "uint8_t",
+                                                "uint16_t",
+                                                "void",
+                                                "string",
+                                                "userdata",
+                                              };
 
 enum access_type {
   ACCESS_VALUE = 0,
@@ -234,6 +246,8 @@ enum userdata_type {
 struct argument {
   struct argument * next;
   struct type type;
+  int line_num; // line read from
+  int token_num; // token number on the line
 };
 
 struct method {
@@ -427,7 +441,8 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
     }
   }
 
-  if (range_type != RANGE_CHECK_NONE) {
+  // add range checks, unless disabled or a nullable type
+  if (range_type != RANGE_CHECK_NONE && !(type->flags & TYPE_FLAGS_NULLABLE)) {
     switch (type->type) {
       case TYPE_FLOAT:
       case TYPE_INT8_T:
@@ -516,8 +531,20 @@ void handle_method(enum trace_level traceType, char *parent_name, struct method 
     }
     struct argument * arg = allocate(sizeof(struct argument));
     memcpy(&(arg->type), &arg_type, sizeof(struct type));
-    arg->next = method->arguments;
-    method->arguments = arg;
+    arg->line_num = state.line_num;
+    arg->token_num = state.token_num;
+    if (method->arguments == NULL) {
+      method->arguments = arg;
+    } else {
+      struct argument *tail = method->arguments;
+      while (tail->next != NULL) {
+        tail = tail->next;
+      }
+      tail->next = arg;
+    }
+
+    // reset the stack arg_type
+    memset(&arg_type, 0, sizeof(struct type));
   }
 }
 
@@ -738,11 +765,11 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
         forced_max = "INT32_MAX";
         break;
       case TYPE_UINT8_T:
-        forced_min = "UINT8_MIN";
+        forced_min = "0";
         forced_max = "UINT8_MAX";
         break;
       case TYPE_UINT16_T:
-        forced_min = "UINT16_MIN";
+        forced_min = "0";
         forced_max = "UINT16_MAX";
         break;
       case TYPE_NONE:
@@ -823,7 +850,7 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
 }
 
 void emit_userdata_field(const struct userdata *data, const struct userdata_field *field) {
-  fprintf(source, "int %s_%s(lua_State *L) {\n", data->name, field->name);
+  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->name, field->name);
   fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->name);
   fprintf(source, "    switch(lua_gettop(L)) {\n");
 
@@ -884,18 +911,26 @@ void emit_userdata_fields() {
 
 void emit_userdata_method(const struct userdata *data, const struct method *method) {
   int arg_count = 1;
+
+  const char *access_name = data->alias ? data->alias : data->name;
+
+  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->name, method->name);
+  // emit comments on expected arg/type
   struct argument *arg = method->arguments;
+  while (arg != NULL) {
+    fprintf(source, "    // %d %s %d : %d\n", arg_count++, arg->type.type == TYPE_USERDATA ? arg->type.data.userdata_name : type_labels[arg->type.type],
+                                      arg->line_num, arg->token_num);
+    arg = arg->next;
+  }
+  // sanity check number of args called with
+  fprintf(source, "    const int args = lua_gettop(L);\n");
+  arg = method->arguments;
   while (arg != NULL) {
     if (!(arg->type.flags & TYPE_FLAGS_NULLABLE)) {
       arg_count++;
     }
     arg = arg->next;
   }
-
-  const char *access_name = data->alias ? data->alias : data->name;
-
-  fprintf(source, "int %s_%s(lua_State *L) {\n", data->name, method->name);
-  fprintf(source, "    const int args = lua_gettop(L);\n");
   fprintf(source, "    if (args > %d) {\n", arg_count);
   fprintf(source, "        return luaL_argerror(L, args, \"too many arguments\");\n");
   fprintf(source, "    } else if (args < %d) {\n", arg_count);
@@ -950,7 +985,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       fprintf(source, "    const uint8_t data = ud->%s(\n", method->name);
       break;
     case TYPE_UINT16_T:
-      fprintf(source, "    const uint6_t data = ud->%s(\n", method->name);
+      fprintf(source, "    const uint16_t data = ud->%s(\n", method->name);
       break;
     case TYPE_USERDATA:
       fprintf(source, "    const %s &data = ud->%s(\n", method->return_type.data.userdata_name, method->name);
