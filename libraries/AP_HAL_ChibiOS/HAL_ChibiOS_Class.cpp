@@ -28,6 +28,7 @@
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #include <hwdef.h>
 
@@ -206,6 +207,10 @@ static void main_loop()
     // setup watchdog to reset if main loop stops
     if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();
+    }
+
+    if (hal.util->was_watchdog_reset()) {
+        AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
     }
 
     while (true) {
