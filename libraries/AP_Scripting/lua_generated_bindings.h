@@ -3,11 +3,14 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/Location.h>
 #include "lua/src/lua.hpp"
 #include <new>
 
+int new_Vector2f(lua_State *L);
+Vector2f * check_Vector2f(lua_State *L, int arg);
 int new_Vector3f(lua_State *L);
 Vector3f * check_Vector3f(lua_State *L, int arg);
 int new_Location(lua_State *L);
