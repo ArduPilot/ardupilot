@@ -35,7 +35,7 @@
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
-
+#include <AP_SerialManager/AP_SerialManager.h>
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -102,7 +102,7 @@ void AP_BoardConfig_CAN::init()
 {
     // Create all drivers that we need
     bool initret = true;
- #if !HAL_MINIMIZE_FEATURES
+#if !HAL_MINIMIZE_FEATURES
     reset_slcan_serial();
 #endif
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
@@ -187,7 +187,18 @@ void AP_BoardConfig_CAN::init()
         }
     }
 }
-
+#if !HAL_MINIMIZE_FEATURES
+AP_HAL::UARTDriver *AP_BoardConfig_CAN::get_slcan_serial()
+{
+    if (_slcan._ser_port != -1) {
+        return AP::serialmanager().get_serial_by_id(_slcan._ser_port);
+    }
+    if (AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0)->is_initialized()) {
+        return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
+    }
+    return nullptr;
+}
+#endif
 AP_BoardConfig_CAN& AP::can() {
     return *AP_BoardConfig_CAN::get_singleton();
 }
