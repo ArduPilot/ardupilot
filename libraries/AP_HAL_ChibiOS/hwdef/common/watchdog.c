@@ -41,6 +41,13 @@
 #error "Unsupported IWDG MCU config"
 #endif
 
+#define WDG_SAFETY_BIT  0x01
+#define WDG_ARMED_BIT   0x02
+
+#define BKP_IDX_FLAGS   0x01
+#define BKP_IDX_HOME    0x02
+
+
 typedef struct
 {
   __IO uint32_t KR;   /*!< IWDG Key register,       Address offset: 0x00 */
@@ -54,7 +61,7 @@ typedef struct
 
 static bool was_watchdog_reset;
 static bool watchdog_enabled;
-static uint32_t boot_backup1_state;
+static uint32_t boot_backup_state[5];
 
 /*
   setup the watchdog
@@ -87,7 +94,9 @@ void stm32_watchdog_save_reason(void)
 {
     if (WDG_RESET_STATUS & WDG_RESET_IS_IWDG) {
         was_watchdog_reset = true;
-        boot_backup1_state = get_rtc_backup1();
+        for (uint8_t i=0; i<sizeof(boot_backup_state)/sizeof(boot_backup_state[0]); i++) {
+            boot_backup_state[i] = get_rtc_backup(i);
+        }
     }
 }
 
@@ -97,7 +106,9 @@ void stm32_watchdog_save_reason(void)
 void stm32_watchdog_clear_reason(void)
 {
     WDG_RESET_STATUS = WDG_RESET_CLEAR;
-    set_rtc_backup1(0);
+    for (uint8_t i=1; i<sizeof(boot_backup_state)/sizeof(boot_backup_state[0]); i++) {
+        set_rtc_backup(i, 0);
+    }
 }
 
 /*
@@ -108,9 +119,6 @@ bool stm32_was_watchdog_reset(void)
     return was_watchdog_reset;
 }
 
-#define WDG_SAFETY_BIT  0x01
-#define WDG_ARMED_BIT   0x02
-
 /*
   set the safety state in backup register
 
@@ -119,10 +127,10 @@ bool stm32_was_watchdog_reset(void)
  */
 void stm32_set_backup_safety_state(bool safety_on)
 {
-    uint32_t v = get_rtc_backup1();
+    uint32_t v = get_rtc_backup(BKP_IDX_FLAGS);
     uint32_t v2 = safety_on?(v | WDG_SAFETY_BIT):(v & ~WDG_SAFETY_BIT);
     if (v != v2) {
-        set_rtc_backup1(v2);
+        set_rtc_backup(BKP_IDX_FLAGS, v2);
     }
 }
 
@@ -131,7 +139,7 @@ void stm32_set_backup_safety_state(bool safety_on)
 */
 bool stm32_get_boot_backup_safety_state(void)
 {
-    return (boot_backup1_state & WDG_SAFETY_BIT) != 0;
+    return (boot_backup_state[BKP_IDX_FLAGS] & WDG_SAFETY_BIT) != 0;
 }
 
 /*
@@ -142,10 +150,10 @@ bool stm32_get_boot_backup_safety_state(void)
  */
 void stm32_set_backup_armed(bool armed)
 {
-    uint32_t v = get_rtc_backup1();
+    uint32_t v = get_rtc_backup(BKP_IDX_FLAGS);
     uint32_t v2 = armed?(v | WDG_ARMED_BIT): (v & ~WDG_ARMED_BIT);
     if (v != v2) {
-        set_rtc_backup1(v2);
+        set_rtc_backup(BKP_IDX_FLAGS, v2);
     }
 }
 
@@ -154,5 +162,25 @@ void stm32_set_backup_armed(bool armed)
 */
 bool stm32_get_boot_backup_armed(void)
 {
-    return (boot_backup1_state & WDG_ARMED_BIT) != 0;
+    return (boot_backup_state[BKP_IDX_FLAGS] & WDG_ARMED_BIT) != 0;
+}
+
+/*
+  set home state in backup
+ */
+void stm32_set_backup_home(int32_t lat, int32_t lon, int32_t alt_cm)
+{
+    set_rtc_backup(BKP_IDX_HOME, (uint32_t)lat);
+    set_rtc_backup(BKP_IDX_HOME+1, (uint32_t)lon);
+    set_rtc_backup(BKP_IDX_HOME+2, (uint32_t)alt_cm);
+}
+
+/*
+  get home state from backup
+ */
+void stm32_get_backup_home(int32_t *lat, int32_t *lon, int32_t *alt_cm)
+{
+    *lat = (int32_t)boot_backup_state[BKP_IDX_HOME];
+    *lon = (int32_t)boot_backup_state[BKP_IDX_HOME+1];
+    *alt_cm = (int32_t)boot_backup_state[BKP_IDX_HOME+2];
 }
