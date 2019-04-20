@@ -73,6 +73,8 @@ public:
     // returns true if vehicle can be armed or disarmed from the transmitter in this mode
     virtual bool allows_arming_from_transmitter() { return !is_autopilot_mode(); }
 
+    bool allows_stick_mixing() const { return is_autopilot_mode(); }
+
     //
     // attributes for mavlink system status reporting
     //
