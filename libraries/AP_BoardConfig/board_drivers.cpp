@@ -18,6 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BoardConfig.h"
+#include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -28,7 +29,12 @@ extern const AP_HAL::HAL& hal;
 void AP_BoardConfig::board_init_safety()
 {
 #if HAL_HAVE_SAFETY_SWITCH
-    if (state.safety_enable.get() == 0) {
+    bool force_safety_off = (state.safety_enable.get() == 0);
+    if (!force_safety_off && hal.util->was_watchdog_safety_off()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Forcing safety off for watchdog\n");
+        force_safety_off = true;
+    }
+    if (force_safety_off) {
         hal.rcout->force_safety_off();
         hal.rcout->force_safety_no_wait();
         // wait until safety has been turned off
