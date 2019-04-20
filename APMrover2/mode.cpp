@@ -557,6 +557,10 @@ void Mode::calc_stopping_location(Location& stopping_loc)
 
 void Mode::set_steering(float steering_value)
 {
+    if (allows_stick_mixing() && g2.stick_mixing > 0) {
+        steering_value = channel_steer->stick_mixing((int16_t)steering_value);
+    }
+    steering_value = constrain_float(steering_value, -4500.0f, 4500.0f);
     g2.motors.set_steering(steering_value);
 }
 
