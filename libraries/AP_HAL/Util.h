@@ -11,7 +11,7 @@ public:
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
 
-    void set_soft_armed(const bool b) { soft_armed = b; }
+    virtual void set_soft_armed(const bool b) { soft_armed = b; }
     bool get_soft_armed() const { return soft_armed; }
 
     // return true if the reason for the reboot was a watchdog reset
@@ -19,6 +19,9 @@ public:
 
     // return true if safety was off and this was a watchdog reset
     virtual bool was_watchdog_safety_off() const { return false; }
+
+    // return true if this is a watchdog reset boot and we were armed
+    virtual bool was_watchdog_armed() const { return false; }
     
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
