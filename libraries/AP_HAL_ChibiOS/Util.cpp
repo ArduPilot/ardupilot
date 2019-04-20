@@ -21,6 +21,7 @@
 #include <ch.h>
 #include "RCOutput.h"
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
 #include "sdcard.h"
@@ -310,3 +311,30 @@ bool Util::fs_init(void)
     return sdcard_retry();
 }
 #endif
+
+// return true if the reason for the reboot was a watchdog reset
+bool Util::was_watchdog_reset() const
+{
+    return stm32_was_watchdog_reset();
+}
+
+// return true if safety was off and this was a watchdog reset
+bool Util::was_watchdog_safety_off() const
+{
+    return stm32_was_watchdog_reset() && stm32_get_boot_backup_safety_state() == false;
+}
+
+// return true if vehicle was armed and this was a watchdog reset
+bool Util::was_watchdog_armed() const
+{
+    return stm32_was_watchdog_reset() && stm32_get_boot_backup_armed() == true;
+}
+
+/*
+  change armed state
+ */
+void Util::set_soft_armed(const bool b)
+{
+    AP_HAL::Util::set_soft_armed(b);
+    stm32_set_backup_armed(b);
+}

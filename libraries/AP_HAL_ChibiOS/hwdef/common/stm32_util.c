@@ -264,7 +264,18 @@ void set_rtc_backup1(uint32_t v)
     RTC->BKP1R = v;
 }
 
-#endif //NO_FASTBOOT
+#else // NO_FASTBOOT
+
+// set RTC backup register 1
+void set_rtc_backup1(uint32_t v)
+{
+}
+
+uint32_t get_rtc_backup1(void)
+{
+    return 0;
+}
+#endif // NO_FASTBOOT
 
 /*
   enable peripheral power if needed This is done late to prevent
