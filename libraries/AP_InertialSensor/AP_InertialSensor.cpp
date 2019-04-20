@@ -1106,6 +1106,8 @@ AP_InertialSensor::_init_gyro()
     // cold start
     hal.console->printf("Init Gyro");
 
+    hal.scheduler->expect_delay_ms(60000);
+
     /*
       we do the gyro calibration with no board rotation. This avoids
       having to rotate readings during the calibration
@@ -1220,6 +1222,8 @@ AP_InertialSensor::_init_gyro()
 
     // stop flashing leds
     AP_Notify::flags.initialising = false;
+
+    hal.scheduler->expect_delay_ms(0);
 }
 
 // save parameters to eeprom
@@ -1681,11 +1685,13 @@ void AP_InertialSensor::acal_update()
         return;
     }
 
+    hal.scheduler->expect_delay_ms(20000);
     _acal->update();
 
     if (hal.util->get_soft_armed() && _acal->get_status() != ACCEL_CAL_NOT_STARTED) {
         _acal->cancel();
     }
+    hal.scheduler->expect_delay_ms(0);
 }
 
 /*
