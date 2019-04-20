@@ -344,6 +344,10 @@ uint16_t DataFlash_File::find_oldest_log()
 
 void DataFlash_File::Prep_MinSpace()
 {
+    if (hal.util->was_watchdog_reset()) {
+        // don't clear space if watchdog reset, it takes too long
+        return;
+    }
     const uint16_t first_log_to_remove = find_oldest_log();
     if (first_log_to_remove == 0) {
         // no files to remove
