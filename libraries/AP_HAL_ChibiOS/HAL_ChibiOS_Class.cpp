@@ -190,8 +190,7 @@ static THD_FUNCTION(main_loop,arg)
     chThdSetPriority(APM_MAIN_PRIORITY);
 
     // setup watchdog to reset if main loop stops
-    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
-    if (using_watchdog) {
+    if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();
     }
 
@@ -209,9 +208,7 @@ static THD_FUNCTION(main_loop,arg)
         if (!schedulerInstance.check_called_boost()) {
             hal.scheduler->delay_microseconds(250);
         }
-        if (using_watchdog) {
-            stm32_watchdog_pat();
-        }
+        stm32_watchdog_pat();
 
 #if 0
         // simple method to test watchdog functionality

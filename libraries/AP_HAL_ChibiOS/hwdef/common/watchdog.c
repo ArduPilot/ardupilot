@@ -51,6 +51,9 @@ typedef struct
 
 #define IWDGD (*(IWDG_Regs *)(IWDG_BASE))
 
+static bool was_watchdog_reset;
+static bool watchdog_enabled;
+
 /*
   setup the watchdog
  */
@@ -61,6 +64,7 @@ void stm32_watchdog_init(void)
     IWDGD.PR = 8;
     IWDGD.RLR = 0xFFF;
     IWDGD.KR = 0xCCCC;
+    watchdog_enabled = true;
 }
 
 /*
@@ -69,10 +73,10 @@ void stm32_watchdog_init(void)
  */
 void stm32_watchdog_pat(void)
 {
-    IWDGD.KR = 0xAAAA;
+    if (watchdog_enabled) {
+        IWDGD.KR = 0xAAAA;
+    }
 }
-
-static bool was_watchdog_reset;
 
 /*
   save reason code for reset
@@ -82,6 +86,13 @@ void stm32_watchdog_save_reason(void)
     if (WDG_RESET_STATUS & WDG_RESET_IS_IWDG) {
         was_watchdog_reset = true;
     }
+}
+
+/*
+  clear reason code for reset
+ */
+void stm32_watchdog_clear_reason(void)
+{
     WDG_RESET_STATUS = WDG_RESET_CLEAR;
 }
 
