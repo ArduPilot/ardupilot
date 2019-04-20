@@ -46,6 +46,23 @@ AP_AHRS_DCM::reset_gyro_drift(void)
     _omega_I_sum_time = 0;
 }
 
+
+/* if this was a watchdog reset then get home from backup registers */
+void AP_AHRS_DCM::load_watchdog_home()
+{
+    int32_t lat, lon, alt_cm;
+    if (hal.util->was_watchdog_reset() &&
+        hal.util->get_backup_home_state(lat, lon, alt_cm) &&
+        (lat != 0 || lon != 0)) {
+        _home.lat = lat;
+        _home.lng = lon;
+        _home.set_alt_cm(alt_cm, Location::AltFrame::ABSOLUTE);
+        _home_is_set = true;
+        _home_locked = true;
+        gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog home");
+    }
+}
+
 // run a full DCM update round
 void
 AP_AHRS_DCM::update(bool skip_ins_update)
@@ -57,6 +74,7 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 
     if (_last_startup_ms == 0) {
         _last_startup_ms = AP_HAL::millis();
+        load_watchdog_home();
     }
 
     if (!skip_ins_update) {
@@ -192,6 +210,9 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 
     }
 
+    if (_last_startup_ms == 0) {
+        load_watchdog_home();
+    }
     _last_startup_ms = AP_HAL::millis();
 }
 
@@ -1056,6 +1077,8 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     // send new home and ekf origin to GCS
     gcs().send_message(MSG_HOME);
     gcs().send_message(MSG_ORIGIN);
+
+    hal.util->set_backup_home_state(loc.lat, loc.lng, loc.alt);
 
     return true;
 }
