@@ -80,6 +80,12 @@ void malloc_init(void);
 iomode_t palReadLineMode(ioline_t line);
 #endif
 
+// get RTC backup register 1
+uint32_t get_rtc_backup1(void);
+
+// set RTC backup register 1
+void set_rtc_backup1(uint32_t v);
+    
 #ifdef __cplusplus
 }
 #endif
