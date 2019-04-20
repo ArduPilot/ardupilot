@@ -94,7 +94,8 @@ void stm32_watchdog_save_reason(void)
 {
     if (WDG_RESET_STATUS & WDG_RESET_IS_IWDG) {
         was_watchdog_reset = true;
-        for (uint8_t i=0; i<sizeof(boot_backup_state)/sizeof(boot_backup_state[0]); i++) {
+        uint8_t i;
+        for (i=0; i<sizeof(boot_backup_state)/sizeof(boot_backup_state[0]); i++) {
             boot_backup_state[i] = get_rtc_backup(i);
         }
     }
@@ -106,7 +107,8 @@ void stm32_watchdog_save_reason(void)
 void stm32_watchdog_clear_reason(void)
 {
     WDG_RESET_STATUS = WDG_RESET_CLEAR;
-    for (uint8_t i=1; i<sizeof(boot_backup_state)/sizeof(boot_backup_state[0]); i++) {
+    uint8_t i;
+    for (i=1; i<sizeof(boot_backup_state)/sizeof(boot_backup_state[0]); i++) {
         set_rtc_backup(i, 0);
     }
 }
