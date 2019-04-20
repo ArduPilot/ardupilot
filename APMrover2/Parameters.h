@@ -177,14 +177,14 @@ public:
         k_param_waypoint_overshoot,
 
         //
-        // 230: camera control
+        // camera control
         //
         k_param_camera,
         k_param_camera_mount,
         k_param_camera_mount2,          // unused
 
         //
-        // 240: PID Controllers
+        // 230: PID Controllers
         k_param_pidNavSteer = 230,
         k_param_pidServoSteer,  // unused
         k_param_pidSpeedThrottle_old,   // unused
