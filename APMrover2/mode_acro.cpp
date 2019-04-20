@@ -43,7 +43,7 @@ void ModeAcro::update()
                                                               rover.G_Dt);
     }
 
-    g2.motors.set_steering(steering_out * 4500.0f);
+    set_steering(steering_out * 4500.0f);
 }
 
 bool ModeAcro::requires_velocity() const
