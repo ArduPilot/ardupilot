@@ -329,22 +329,6 @@ public:
         return have_vertical_velocity(primary_instance);
     }
 
-    // return number of satellites used for RTK calculation
-    uint8_t rtk_num_sats(uint8_t instance) const {
-        return state[instance].rtk_num_sats;
-    }
-    uint8_t rtk_num_sats(void) const {
-        return rtk_num_sats(primary_instance);
-    }
-
-    // return age of last baseline correction in milliseconds
-    uint32_t rtk_age_ms(uint8_t instance) const {
-        return state[instance].rtk_age_ms;
-    }
-    uint32_t rtk_age_ms(void) const {
-        return rtk_age_ms(primary_instance);
-    }
-
     // the expected lag (in seconds) in the position and velocity readings from the gps
     // return true if the GPS hardware configuration is known or the lag parameter has been set manually
     bool get_lag(uint8_t instance, float &lag_sec) const;
