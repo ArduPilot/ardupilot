@@ -75,6 +75,10 @@
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
 
+#define AP_SERIALMANAGER_SLCAN_BAUD             115200
+#define AP_SERIALMANAGER_SLCAN_BUFSIZE_RX       128
+#define AP_SERIALMANAGER_SLCAN_BUFSIZE_TX       128
+
 class AP_SerialManager {
 public:
     AP_SerialManager();
@@ -107,6 +111,7 @@ public:
         SerialProtocol_Robotis = 19,
         SerialProtocol_NMEAOutput = 20,
         SerialProtocol_WindVane = 21,
+        SerialProtocol_SLCAN = 22,
     };
 
     // get singleton instance
