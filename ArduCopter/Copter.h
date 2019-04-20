@@ -289,7 +289,7 @@ private:
 
     class SurfaceTracking {
     public:
-        float adjust_climb_rate(int16_t target_rate);
+        float adjust_climb_rate(float target_rate);
         bool get_target_alt_cm(float &target_alt_cm) const;
         void set_target_alt_cm(float target_alt_cm);
         float logging_target_alt() const {
