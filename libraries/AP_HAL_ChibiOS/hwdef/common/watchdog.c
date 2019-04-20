@@ -4,6 +4,7 @@
 
 #include "hal.h"
 #include "watchdog.h"
+#include "stm32_util.h"
 
 #ifndef IWDG_BASE
 #if defined(STM32H7)
@@ -53,6 +54,7 @@ typedef struct
 
 static bool was_watchdog_reset;
 static bool watchdog_enabled;
+static bool boot_safety_state;
 
 /*
   setup the watchdog
@@ -85,6 +87,7 @@ void stm32_watchdog_save_reason(void)
 {
     if (WDG_RESET_STATUS & WDG_RESET_IS_IWDG) {
         was_watchdog_reset = true;
+        boot_safety_state = stm32_get_backup_safety_state();
     }
 }
 
@@ -104,3 +107,35 @@ bool stm32_was_watchdog_reset(void)
     return was_watchdog_reset;
 }
 
+/*
+  set the safety state in backup register
+
+  This is stored so that the safety state can be restored after a
+  watchdog reset
+ */
+void stm32_set_backup_safety_state(bool safety_on)
+{
+    uint32_t v = get_rtc_backup1();
+    uint32_t v2 = safety_on?(v|1):(v&~1);
+    if (v != v2) {
+        set_rtc_backup1(v2);
+    }
+}
+
+/*
+  get the safety state in backup register
+  return true if safety is marked as safety on
+*/
+bool stm32_get_backup_safety_state(void)
+{
+    uint32_t v = get_rtc_backup1();
+    return (v&1) != 0;
+}
+
+/*
+  get the safety state in backup register from initial boot
+*/
+bool stm32_get_boot_backup_safety_state(void)
+{
+    return boot_safety_state;
+}
