@@ -150,8 +150,8 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
 uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
 {
     uint32_t mask2 = 0;
-    for (uint8_t i=0; i<32; i++) {
-        uint32_t bit = 1UL<<i;
+    for (uint8_t i = 0; i < 32; i++) {
+        uint32_t bit = 1UL << i;
         if (mask & bit) {
             SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
             mask2 |= SRV_Channels::get_output_channel_mask(function);
@@ -166,7 +166,7 @@ uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
 void AP_Motors::add_motor_num(int8_t motor_num)
 {
     // ensure valid motor number is provided
-    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
+    if (motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS) {
         uint8_t chan;
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);

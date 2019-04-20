@@ -31,7 +31,7 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
     add_motor_num(AP_MOTORS_MOT_1);
     add_motor_num(AP_MOTORS_MOT_2);
     add_motor_num(AP_MOTORS_MOT_4);
-    
+
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
 
@@ -47,7 +47,7 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
         // don't set initialised_ok
         return;
     }
-    
+
     // allow mapping of motor7
     add_motor_num(AP_MOTORS_CH_TRI_YAW);
 
@@ -62,7 +62,7 @@ void AP_MotorsTri::set_frame_class_and_type(motor_frame_class frame_class, motor
 }
 
 // set update rate to motors - a value in hertz
-void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
+void AP_MotorsTri::set_update_rate(uint16_t speed_hz)
 {
     // record requested speed
     _speed_hz = speed_hz;
@@ -188,13 +188,13 @@ void AP_MotorsTri::output_armed_stabilizing()
     // set rpy_low and rpy_high to the lowest and highest values of the motors
 
     // record lowest roll pitch command
-    rpy_low = MIN(_thrust_right,_thrust_left);
-    rpy_high = MAX(_thrust_right,_thrust_left);
-    if (rpy_low > _thrust_rear){
+    rpy_low = MIN(_thrust_right, _thrust_left);
+    rpy_high = MAX(_thrust_right, _thrust_left);
+    if (rpy_low > _thrust_rear) {
         rpy_low = _thrust_rear;
     }
     // check to see if the rear motor will reach maximum thrust before the front two motors
-    if ((1.0f - rpy_high) > (pivot_thrust_max - _thrust_rear)){
+    if ((1.0f - rpy_high) > (pivot_thrust_max - _thrust_rear)) {
         thrust_max = pivot_thrust_max;
         rpy_high = _thrust_rear;
     }
@@ -210,41 +210,41 @@ void AP_MotorsTri::output_armed_stabilizing()
     //      We will choose #2 (a mix of pilot and hover throttle) only when the throttle is quite low.  We favor reducing throttle instead of better yaw control because the pilot has commanded it
 
     // check everything fits
-    throttle_thrust_best_rpy = MIN(0.5f*thrust_max - (rpy_low+rpy_high)/2.0, throttle_avg_max);
-    if(is_zero(rpy_low)){
+    throttle_thrust_best_rpy = MIN(0.5f * thrust_max - (rpy_low + rpy_high) / 2.0, throttle_avg_max);
+    if (is_zero(rpy_low)) {
         rpy_scale = 1.0f;
     } else {
-        rpy_scale = constrain_float(-throttle_thrust_best_rpy/rpy_low, 0.0f, 1.0f);
+        rpy_scale = constrain_float(-throttle_thrust_best_rpy / rpy_low, 0.0f, 1.0f);
     }
 
     // calculate how close the motors can come to the desired throttle
     thr_adj = throttle_thrust - throttle_thrust_best_rpy;
-    if(rpy_scale < 1.0f){
+    if (rpy_scale < 1.0f) {
         // Full range is being used by roll, pitch, and yaw.
         limit.roll_pitch = true;
-        if (thr_adj > 0.0f){
+        if (thr_adj > 0.0f) {
             limit.throttle_upper = true;
         }
         thr_adj = 0.0f;
-    }else{
-        if(thr_adj < -(throttle_thrust_best_rpy+rpy_low)){
+    } else {
+        if (thr_adj < -(throttle_thrust_best_rpy + rpy_low)) {
             // Throttle can't be reduced to desired value
-            thr_adj = -(throttle_thrust_best_rpy+rpy_low);
-        }else if(thr_adj > thrust_max - (throttle_thrust_best_rpy+rpy_high)){
+            thr_adj = -(throttle_thrust_best_rpy + rpy_low);
+        } else if (thr_adj > thrust_max - (throttle_thrust_best_rpy + rpy_high)) {
             // Throttle can't be increased to desired value
-            thr_adj = thrust_max - (throttle_thrust_best_rpy+rpy_high);
+            thr_adj = thrust_max - (throttle_thrust_best_rpy + rpy_high);
             limit.throttle_upper = true;
         }
     }
 
     // add scaled roll, pitch, constrained yaw and throttle for each motor
-    _thrust_right = throttle_thrust_best_rpy+thr_adj + rpy_scale*_thrust_right;
-    _thrust_left = throttle_thrust_best_rpy+thr_adj + rpy_scale*_thrust_left;
-    _thrust_rear = throttle_thrust_best_rpy+thr_adj + rpy_scale*_thrust_rear;
+    _thrust_right = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_right;
+    _thrust_left = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_left;
+    _thrust_rear = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_rear;
 
     // scale pivot thrust to account for pivot angle
     // we should not need to check for divide by zero as _pivot_angle is constrained to the 5deg ~ 80 deg range
-    _thrust_rear = _thrust_rear/cosf(_pivot_angle);
+    _thrust_rear = _thrust_rear / cosf(_pivot_angle);
 
     // constrain all outputs to 0.0f to 1.0f
     // test code should be run with these lines commented out as they should not do anything
@@ -296,10 +296,10 @@ int16_t AP_MotorsTri::calc_yaw_radio_output(float yaw_input, float yaw_input_max
         yaw_input = -yaw_input;
     }
 
-    if (yaw_input >= 0){
-        ret = (_yaw_servo->get_trim() + (yaw_input/yaw_input_max * (_yaw_servo->get_output_max() - _yaw_servo->get_trim())));
+    if (yaw_input >= 0) {
+        ret = (_yaw_servo->get_trim() + (yaw_input / yaw_input_max * (_yaw_servo->get_output_max() - _yaw_servo->get_trim())));
     } else {
-        ret = (_yaw_servo->get_trim() + (yaw_input/yaw_input_max * (_yaw_servo->get_trim() - _yaw_servo->get_output_min())));
+        ret = (_yaw_servo->get_trim() + (yaw_input / yaw_input_max * (_yaw_servo->get_trim() - _yaw_servo->get_output_min())));
     }
 
     return ret;
@@ -321,8 +321,8 @@ void AP_MotorsTri::thrust_compensation(void)
 
         // extract compensated thrust values
         _thrust_right = thrust[0];
-        _thrust_left  = thrust[1];
-        _thrust_rear  = thrust[3];
+        _thrust_left = thrust[1];
+        _thrust_rear = thrust[3];
     }
 }
 
@@ -347,7 +347,7 @@ float AP_MotorsTri::get_roll_factor(uint8_t i)
         case AP_MOTORS_MOT_1:
             ret = -1.0f;
             break;
-        // left motor
+            // left motor
         case AP_MOTORS_MOT_2:
             ret = 1.0f;
             break;
