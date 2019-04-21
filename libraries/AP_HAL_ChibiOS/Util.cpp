@@ -257,9 +257,7 @@ bool Util::flash_bootloader()
     hal.console->printf("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
     const uint8_t max_attempts = 10;
     for (uint8_t i=0; i<max_attempts; i++) {
-        void *context = hal.scheduler->disable_interrupts_save();
         bool ok = hal.flash->write(addr, fw, fw_size);
-        hal.scheduler->restore_interrupts(context);
         if (!ok) {
             hal.console->printf("Flash failed! (attempt=%u/%u)\n",
                                 i+1,
