@@ -269,7 +269,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
                                 (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
         }
     }
-    return ret;
+    return false;
 #else
     return false;
 #endif
