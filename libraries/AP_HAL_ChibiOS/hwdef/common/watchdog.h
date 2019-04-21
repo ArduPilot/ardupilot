@@ -58,6 +58,16 @@ void stm32_set_backup_home(int32_t lat, int32_t lon, int32_t alt_cm);
   get home state from backup
  */
 void stm32_get_backup_home(int32_t *lat, int32_t *lon, int32_t *alt_cm);
+
+/*
+  set attitude in backup
+ */
+void stm32_set_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd);
+
+/*
+  get attitude from backup
+ */
+void stm32_get_attitude(int32_t *roll_cd, int32_t *pitch_cd, int32_t *yaw_cd);
     
 #ifdef __cplusplus
 }
