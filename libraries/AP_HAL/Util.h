@@ -28,6 +28,12 @@ public:
 
     // backup home state for restore on watchdog reset
     virtual bool get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const { return false; }
+
+    // backup atttude for restore on watchdog reset
+    virtual void set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const {}
+
+    // get watchdog reset attitude
+    virtual bool get_backup_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd) const { return false; }
     
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
