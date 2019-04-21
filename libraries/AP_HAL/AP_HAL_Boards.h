@@ -107,6 +107,7 @@
 #define HAL_BARO_FBM320_I2C 18
 #define HAL_BARO_DPS280_I2C 19
 #define HAL_BARO_DPS280_SPI 20
+#define HAL_BARO_LPS22H_I2C 21
 
 /* Compass driver types */
 #define HAL_COMPASS_NONE                0
