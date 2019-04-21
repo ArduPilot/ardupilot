@@ -116,6 +116,21 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 
     // update AOA and SSA
     update_AOA_SSA();
+
+    backup_attitude();
+}
+
+/*
+  backup attitude to stm32 registers at 3Hz
+ */
+void AP_AHRS_DCM::backup_attitude(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - _last_backup_ms < 333) {
+        return;
+    }
+    _last_backup_ms = now;
+    hal.util->set_backup_attitude(roll_sensor, pitch_sensor, yaw_sensor);
 }
 
 // update the DCM matrix using only the gyros
@@ -175,7 +190,16 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     // if the caller wants us to try to recover to the current
     // attitude then calculate the dcm matrix from the current
     // roll/pitch/yaw values
-    if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
+    if (hal.util->was_watchdog_reset() &&
+        hal.util->get_backup_attitude(roll_sensor, pitch_sensor, yaw_sensor) &&
+        AP_HAL::millis() < 10000) {
+        roll = radians(roll_sensor*0.01f);
+        pitch = radians(pitch_sensor*0.01f);
+        yaw = radians(yaw_sensor*0.01f);
+        _dcm_matrix.from_euler(roll, pitch, yaw);
+        gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog attitude %d %d %d",
+                        roll_sensor/100, pitch_sensor/100, yaw_sensor/100);
+    } else if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
         _dcm_matrix.from_euler(roll, pitch, yaw);
     } else {
 
