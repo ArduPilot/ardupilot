@@ -46,7 +46,7 @@
 
 #define BKP_IDX_FLAGS   0x01
 #define BKP_IDX_HOME    0x02
-
+#define BKP_IDX_RPY     0x05
 
 typedef struct
 {
@@ -61,7 +61,7 @@ typedef struct
 
 static bool was_watchdog_reset;
 static bool watchdog_enabled;
-static uint32_t boot_backup_state[5];
+static uint32_t boot_backup_state[8];
 
 /*
   setup the watchdog
@@ -185,4 +185,24 @@ void stm32_get_backup_home(int32_t *lat, int32_t *lon, int32_t *alt_cm)
     *lat = (int32_t)boot_backup_state[BKP_IDX_HOME];
     *lon = (int32_t)boot_backup_state[BKP_IDX_HOME+1];
     *alt_cm = (int32_t)boot_backup_state[BKP_IDX_HOME+2];
+}
+
+/*
+  set attitude in backup
+ */
+void stm32_set_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd)
+{
+    set_rtc_backup(BKP_IDX_RPY, (uint32_t)roll_cd);
+    set_rtc_backup(BKP_IDX_RPY+1, (uint32_t)pitch_cd);
+    set_rtc_backup(BKP_IDX_RPY+2, (uint32_t)yaw_cd);
+}
+
+/*
+  get attitude from backup
+ */
+void stm32_get_attitude(int32_t *roll_cd, int32_t *pitch_cd, int32_t *yaw_cd)
+{
+    *roll_cd = (int32_t)boot_backup_state[BKP_IDX_RPY];
+    *pitch_cd = (int32_t)boot_backup_state[BKP_IDX_RPY+1];
+    *yaw_cd = (int32_t)boot_backup_state[BKP_IDX_RPY+2];
 }
