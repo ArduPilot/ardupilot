@@ -361,3 +361,19 @@ bool Util::get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) co
     }
     return false;
 }
+
+// backup atttude for restore on watchdog reset
+void Util::set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const
+{
+    stm32_set_attitude(roll_cd, pitch_cd, yaw_cd);
+}
+
+// get watchdog reset attitude
+bool Util::get_backup_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd) const
+{
+    if (was_watchdog_reset()) {
+        stm32_get_attitude(&roll_cd, &pitch_cd, &yaw_cd);
+        return true;
+    }
+    return false;
+}

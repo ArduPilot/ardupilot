@@ -79,6 +79,12 @@ public:
 
     // backup home state for restore on watchdog reset
     bool get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const override;
+
+    // backup atttude for restore on watchdog reset
+    void set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const override;
+
+    // get watchdog reset attitude
+    bool get_backup_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd) const override;
     
 private:
 #ifdef HAL_PWM_ALARM
