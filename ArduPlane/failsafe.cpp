@@ -39,6 +39,10 @@ void Plane::failsafe_check(void)
     }
 
     if (in_failsafe && tnow - last_timestamp > 20000) {
+
+        // ensure we have the latest RC inputs
+        rc().read_input();
+
         last_timestamp = tnow;
 
         rc().read_input();
