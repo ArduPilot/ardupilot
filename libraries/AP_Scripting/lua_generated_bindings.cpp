@@ -1,5 +1,6 @@
 // auto generated bindings, don't manually edit
 #include "lua_generated_bindings.h"
+#include <AP_Relay/AP_Relay.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Math/AP_Math.h>
@@ -549,6 +550,99 @@ const luaL_Reg Location_meta[] = {
     {"get_distance", Location_get_distance},
     {NULL, NULL}
 };
+
+static int AP_Relay_toggle(lua_State *L) {
+    // 1 uint8_t 107 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Relay * ud = AP_Relay::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "relay not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_RELAY_NUM_RELAYS, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    ud->toggle(
+            data_2);
+
+    return 0;
+}
+
+static int AP_Relay_enabled(lua_State *L) {
+    // 1 uint8_t 106 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Relay * ud = AP_Relay::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "relay not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_RELAY_NUM_RELAYS, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const bool data = ud->enabled(
+            data_2);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Relay_off(lua_State *L) {
+    // 1 uint8_t 105 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Relay * ud = AP_Relay::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "relay not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_RELAY_NUM_RELAYS, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    ud->off(
+            data_2);
+
+    return 0;
+}
+
+static int AP_Relay_on(lua_State *L) {
+    // 1 uint8_t 104 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Relay * ud = AP_Relay::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "relay not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_RELAY_NUM_RELAYS, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    ud->on(
+            data_2);
+
+    return 0;
+}
 
 static int RangeFinder_num_sensors(lua_State *L) {
     const int args = lua_gettop(L);
@@ -1573,6 +1667,14 @@ static int AP_AHRS_get_position(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg AP_Relay_meta[] = {
+    {"toggle", AP_Relay_toggle},
+    {"enabled", AP_Relay_enabled},
+    {"off", AP_Relay_off},
+    {"on", AP_Relay_on},
+    {NULL, NULL}
+};
+
 const luaL_Reg RangeFinder_meta[] = {
     {"num_sensors", RangeFinder_num_sensors},
     {NULL, NULL}
@@ -1653,6 +1755,7 @@ const struct singleton_fun {
     const char *name;
     const luaL_Reg *reg;
 } singleton_fun[] = {
+    {"relay", AP_Relay_meta},
     {"rangefinder", RangeFinder_meta},
     {"AP_Notify", AP_Notify_meta},
     {"notify", notify_meta},
@@ -1688,6 +1791,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "relay",
     "rangefinder",
     "AP_Notify",
     "notify",

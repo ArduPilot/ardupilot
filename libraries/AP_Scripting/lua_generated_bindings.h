@@ -1,5 +1,6 @@
 #pragma once
 // auto generated bindings, don't manually edit
+#include <AP_Relay/AP_Relay.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Math/AP_Math.h>
