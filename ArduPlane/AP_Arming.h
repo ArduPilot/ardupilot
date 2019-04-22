@@ -24,7 +24,8 @@ public:
     AP_Arming_Plane(const AP_Arming_Plane &other) = delete;
     AP_Arming_Plane &operator=(const AP_Arming_Plane&) = delete;
 
-    bool pre_arm_checks(bool report);
+    bool pre_arm_checks(bool report) override;
+    bool arm_checks(ArmingMethod method) override;
 
     ArmingRudder rudder_arming() const { return (ArmingRudder)rudder_arming_value.get(); }
 
@@ -32,7 +33,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-    bool ins_checks(bool report);
+    bool ins_checks(bool report) override;
 
     // parameters
     AP_Int8                 rudder_arming_value;
