@@ -17,6 +17,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -420,6 +421,9 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
         return false;
     }
     memcpy(regs, pkt.regs, count*2);
+    if (protocol_fail_count > 3) {
+        handle_repeated_failures();
+    }
     protocol_fail_count = 0;
     return true;
 }
@@ -484,6 +488,9 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
         debug("bad crc %02x should be %02x\n", got_crc, expected_crc);
         protocol_fail_count++;
         return false;
+    }
+    if (protocol_fail_count > 3) {
+        handle_repeated_failures();
     }
     protocol_fail_count = 0;
     return true;
@@ -786,7 +793,7 @@ void AP_IOMCU::set_safety_mask(uint16_t chmask)
  */
 bool AP_IOMCU::healthy(void)
 {
-    return crc_is_ok && protocol_fail_count == 0;
+    return crc_is_ok && protocol_fail_count == 0 && !detected_io_reset;
 }
 
 /*
@@ -882,6 +889,23 @@ const char *AP_IOMCU::get_rc_protocol(void)
         return nullptr;
     }
     return AP_RCProtocol::protocol_name_from_protocol((AP_RCProtocol::rcprotocol_t)rc_input.data);
+}
+
+/*
+  we have had a series of repeated protocol failures to the
+  IOMCU. This may indicate that the IOMCU has been reset (possibly due
+  to a watchdog).
+ */
+void AP_IOMCU::handle_repeated_failures(void)
+{
+    detected_io_reset = true;
+    AP::internalerror().error(AP_InternalError::error_t::iomcu_reset);
+    // we need to ensure the mixer data and the rates are sent over to
+    // the IOMCU
+    if (mixing.enabled) {
+        trigger_event(IOEVENT_MIXING);
+    }
+    trigger_event(IOEVENT_SET_RATES);
 }
 
 #endif // HAL_WITH_IO_MCU

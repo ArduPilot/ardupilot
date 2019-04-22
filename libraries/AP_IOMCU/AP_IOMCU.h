@@ -200,6 +200,7 @@ private:
     bool done_shutdown;
 
     bool crc_is_ok;
+    bool detected_io_reset;
     bool initialised;
     bool is_chibios_backend;
 
@@ -226,6 +227,7 @@ private:
     bool reboot();
 
     bool check_crc(void);
+    void handle_repeated_failures();
     
     enum {
         PROTO_NOP               = 0x00,
