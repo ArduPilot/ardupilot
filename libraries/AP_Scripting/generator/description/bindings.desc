@@ -13,6 +13,11 @@ userdata Location method get_distance float Location
 userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
 userdata Location method get_vector_from_origin_NEU boolean Vector3f
 
+#include AP_Arming/AP_Arming.h
+singleton AP_Arming alias arming
+singleton AP_Arming method is_armed boolean
+singleton AP_Arming method pre_arm_checks boolean boolean
+
 include AP_AHRS/AP_AHRS.h
 
 singleton AP_AHRS alias ahrs
@@ -94,5 +99,14 @@ singleton notify alias notify
 singleton AP_Notify method play_tune void string
 
 include AP_RangeFinder/AP_RangeFinder.h
+
 singleton RangeFinder alias rangefinder
 singleton RangeFinder method num_sensors uint8_t
+
+include AP_Relay/AP_Relay.h
+
+singleton AP_Relay alias relay
+singleton AP_Relay method on void uint8_t 0 AP_RELAY_NUM_RELAYS
+singleton AP_Relay method off void uint8_t 0 AP_RELAY_NUM_RELAYS
+singleton AP_Relay method enabled boolean uint8_t 0 AP_RELAY_NUM_RELAYS
+singleton AP_Relay method toggle void uint8_t 0 AP_RELAY_NUM_RELAYS
