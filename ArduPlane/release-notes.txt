@@ -1,3 +1,279 @@
+Release 3.9.8-beta1, 22nd April 2019
+------------------------------------
+
+This is a minor release with some important safety fixes. The fixes
+relate to two issues:
+
+ - implement hardware support to reset the CPU if a software or hardware
+   failure causes the main loop to stop running
+
+ - fixed a bug in the handling of a failure of the primary IMU in a
+   multi-IMU system
+
+The first fix relates to a flyaway that happened on a RadioLink
+mini-pix flight controller. The mini-pix suffered a major hardware
+failure that led to the main loop stopping. As the mini-pix does not
+have an IO co-processor this resulted in fixed control surface outputs
+and fixed motor output, which led to a flyaway. The plane was found,
+but we want to ensure that if this ever happens again that the motor
+will stop and that the pilot will regain control of the aircraft.
+
+The fix is to enable an option in the STM32 processor called
+"Independent Watchdog" (IWDG). The IWDG provides a mechanism to
+automatically reset the CPU on software or hardware failure resulting
+in the main loop stopping. When this happens the hardware also
+provides a mechanism for ArduPilot to know that it is booting after a
+watchdog reset, in which case it does the following:
+
+ - if the ChibiOS bootloader has been updated then it skips the normal
+   5 second delay in the bootloader
+
+ - it skips baromoter, gyro and airspeed calibration, allowing for
+   very fast boot
+
+ - the home position and attitude estimate of the vehicle is restored
+   to a point less than 0.3 seconds before the lockup
+
+ - the pilot regains full control, and if the pilot requests arming
+   then arming checks are automatically bypassed
+
+We have tested this on an aircraft with a deliberately induced full
+CPU lockup. The aircraft recovered and flew normally within 3 seconds
+of lockup, with the pilot having full control. This was with a board
+with no IOMCU. A board that does have an IOMCU (such as a Hex cube)
+would have had full manual control on FMU lockup without the changes
+in this new release. For those boards with IOMCU the advantage of the
+new release is that the pilot will regain the ability to use
+stabilised and auto modes (including RTL) after a full CPU lockup.
+
+The additional protections of the IWDG support only apply to the
+ChibiOS builds. The IWDG is not supported in NuttX builds.
+
+The second key fix in this release relates to IMU failure on multi-IMU
+systems. If the IMU that is associated with the currently active EKF
+lane failed then the fixed wing attitude controller would lose
+attitude control and the aircraft will crash unless the pilot takes
+manual control. This has been fixed to ensure that IMU failover
+operates correctly.
+
+Other changes in this release:
+
+ - added support for the CUAVv5Nano board
+
+ - added retries to flash storage of parameters
+
+ - fixed pullups on some fmuv3 based boards that lack hardware pullups
+   on sdcard data lines
+
+ - fixed fallback to microSD for parameter storage if a board with
+   FRAM storage has a failed FRAM device
+
+Happy flying!
+
+
+Release 3.9.7, 1st April 2019
+-----------------------------
+
+This is a minor release to fix a single important bug in speed/height
+handling. The bug was in the TECS (total energy control system) and
+could cause a sustained pitch down due to a transient glitch in
+airspeed demand resulting in a large negative pitch integrator.
+
+The log that found the bug was of a quadplane in CRUISE mode, and
+resulted in the aircraft forcing nose down for long enough to crash.
+
+The fix includes both protections for the pitch integrator and a fix
+for the cause of the transient in airspeed demand affecting the TECS
+demanded airspeed.
+
+Happy flying!
+
+
+Release 3.9.6, 4th March 2019
+-----------------------------
+
+This is a minor release with some important fixes for VTOL landings
+and EKF handling of compass switching.
+
+ - fixed throttle slew on dual-motor planes
+
+ - handle VTOL landings with incorrect height (or failed rangefinder)
+
+ - fixed EKF alt datum reset on barometer reset
+
+ - probe all I2C buses for rangefinders (fixes I2C lidar on boards
+   with more than 2 I2C buses)
+
+ - fixed lightware serial detection for newer lidars such as LW20
+
+ - fixed motor relax code on VTOL landing to prevent motors powering
+   up after touchdown
+
+ - fixed forward motor in quadplane landing transition to allow motors
+   when landing at a height lower than takeoff height
+
+ - fixed throttle mix handling for VTOL planes on descent
+
+ - use WP altitude for height of ground in VTOL landing, allowing for
+   good landings at heights well above or below takeoff height
+
+ - fixed EKF compass switching with 3 compasses
+
+ - fixed mini-pix UART order to match case markings
+
+ - added generated git hash to apj file
+
+ - fixed apj generation to not change based on time of build
+
+ - fixed thread creation to use any heap, fixing a bug on
+   MatekF405-Wing with a compass
+
+Happy flying!
+
+
+Release 3.9.5, 27th January 2019
+--------------------------------
+
+This is a minor update over the 3.9.4 release. This release includes
+the following changes:
+
+ - fixed orientation of 2nd IMU for OmnibusF7V2
+
+ - fixed LEDs on Pixhawk4 and Pixhawk4-mini
+
+ - fixed safety switch on Pixhawk4-mini
+
+ - improved robustness of microSD support under ChibiOS
+
+ - support insert of a microSD after boot but before logging starts
+   under ChibiOS
+
+ - added BRD_SD_SLOWDOWN parameter to allow microSD cards to be run at
+   a lower clock to improve reliability
+
+ - fixed VTOL takeoff in quadplanes to ignore latitude/longitude in
+   the mission item and always takeoff vertically
+
+ - added CubePurple (also known as PH2Slim) builds
+
+ - added DrotekP3Pro builds
+
+ - RC protocol decoding for SRXL, SUMD and ST24 extended to all boards
+   including pixracer and ChibiOS-only boards
+
+ - fixed CAN on Pixhawk4
+
+ - fixed EKF yaw reset in quadplanes
+
+ - fixed bug handling corruption of DSM RC protocols
+
+ - fixed internal amber LED on CubeBlack
+
+Happy flying!
+
+
+Release 3.9.4, 10th December 2018
+---------------------------------
+
+This is a minor update over the 3.9.3 release. Changes are:
+
+ - fixed a critical bug in SBUS handling on the Pixhawk4
+
+ - fixed bugs in benewake rangefinder driver
+
+ - added support for garmin LidarLite-V3HP
+
+ - improved error handling for TeraRanger Lidar
+
+ - fixed a bug in DSM handling for more than 7 channels on some boards
+
+ - fixed default voltage and current scaling for Pixhawk4 and PH4-mini
+
+Happy flying!
+
+Release 3.9.3, 10th November 2018
+---------------------------------
+
+The ArduPilot development team are delighted to announce the 3.9.3
+stable release of the ArduPilot plane code. This release includes a
+number of small but important fixes over 3.9.2:
+
+ - fixed error handling for corrupt RC input that could lead to a
+   crash in unusual circumstances
+
+ - fixed a race condition in IOMCU event startup that could lead to
+   the safety not being disabled on boot with BRD_SAFETYENABLE=0
+
+ - ensure surface speed scaling covers full range of configured
+   airspeeds
+
+ - added builds for new boards F35Lightning, omnibusf4v6, mRoX21-777
+
+ - updated GPIO numbers on AUX pins on all boards to be consistent
+   with docs
+
+ - updated KakuteF7 UARTs and buzzer
+
+ - added ESC sensor uart on OmnibusNanoV6
+
+ - fix for Benewake rangefinder at long ranges
+
+ - prevent attempts to erase dataflash logs while armed
+
+Many thanks to the people who tested this release!
+
+Happy flying!
+
+
+Release 3.9.3beta1, 6th November 2018
+-------------------------------------
+
+This is the first beta release for the 3.9.3 firmware. This release
+has the following changes over 3.9.2:
+
+ - fixed error handling for corrupt RC input that could lead to a
+   crash in unusual circumstances
+
+ - fixed a race condition in IOMCU event startup that could lead to
+   the safety not being disabled on boot with BRD_SAFETYENABLE=0
+
+ - ensure surface speed scaling covers full range of configured
+   airspeeds
+
+ - added builds for new boards F35Lightning, omnibusf4v6, mRoX21-777
+
+ - updated GPIO numbers on AUX pins on all boards to be consistent
+   with docs
+
+ - updated KakuteF7 UARTs and buzzer
+
+ - added ESC sensor uart on OmnibusNanoV6
+
+Happy flying!
+
+
+Release 3.9.2, 10th October 2018
+--------------------------------
+
+The ArduPilot development team are delighted to announce the 3.9.2
+stable release of the ArduPilot plane code. This release includes a
+number of small but important fixes over 3.9.1.
+
+The changes since the 3.9.2beta3 release are:
+
+ - fixed a DShot send bug that could lead to board lockup
+
+ - fixed RGB LED display on Pixracer under both NuttX and ChibiOS
+
+ - fixed safety switch option handling bug
+
+Thanks for the bug reports and testing by all users for the 3.9.2beta
+series!
+
+Happy flying!
+
+
+>>>>>>> a9d5581378... Plane: updated release notes for 3.9.8-beta1
 Release 3.9.2beta3, 20th September 2018
 ---------------------------------------
 
