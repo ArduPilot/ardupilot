@@ -12,6 +12,7 @@ char keyword_comment[]   = "--";
 char keyword_field[]     = "field";
 char keyword_include[]   = "include";
 char keyword_method[]    = "method";
+char keyword_operator[]  = "operator";
 char keyword_read[]      = "read";
 char keyword_singleton[] = "singleton";
 char keyword_userdata[]  = "userdata";
@@ -97,6 +98,14 @@ const char * type_labels[TYPE_USERDATA + 1] = { "bool",
                                                 "string",
                                                 "userdata",
                                               };
+
+enum operator_type {
+  OP_ADD  = (1U << 0),
+  OP_SUB  = (1U << 1),
+  OP_MUL  = (1U << 2),
+  OP_DIV  = (1U << 3),
+  OP_LAST
+};
 
 enum access_type {
   ACCESS_VALUE = 0,
@@ -274,6 +283,7 @@ struct userdata {
   struct userdata_field *fields;
   struct method *methods;
   enum userdata_type ud_type;
+  uint32_t operations; // bitset of enum operation_types
 };
 
 static struct userdata *parsed_userdata = NULL;
@@ -491,8 +501,8 @@ void handle_userdata_field(struct userdata *data) {
   field->access_flags = parse_access_flags(&(field->type));
 }
 
-void handle_method(enum trace_level traceType, char *parent_name, struct method **methods) {
-  trace(traceType, "Adding a method");
+void handle_method(char *parent_name, struct method **methods) {
+  trace(TRACE_USERDATA, "Adding a method");
 
   // find the field name
   char * name = next_token();
@@ -508,7 +518,7 @@ void handle_method(enum trace_level traceType, char *parent_name, struct method 
     error(ERROR_USERDATA, "Method %s already exsists for %s (declared on %d)", name, parent_name, method->line);
   }
 
-  trace(traceType, "Adding method %s", name);
+  trace(TRACE_USERDATA, "Adding method %s", name);
   method = allocate(sizeof(struct method));
   method->next = *methods;
   *methods = method;
@@ -548,6 +558,44 @@ void handle_method(enum trace_level traceType, char *parent_name, struct method 
   }
 }
 
+void handle_operator(struct userdata *data) {
+  trace(TRACE_USERDATA, "Adding a operator");
+
+  if (data->ud_type != UD_USERDATA) {
+    error(ERROR_USERDATA, "Operators are only allowed on userdata objects");
+  }
+
+  char *operator = next_token();
+  if (operator == NULL) {
+    error(ERROR_USERDATA, "Needed a symbol for the operator");
+  }
+
+  enum operator_type operation;
+  if (strcmp(operator, "+") == 0) {
+    operation = OP_ADD;
+  } else if (strcmp(operator, "-") == 0) {
+    operation = OP_SUB;
+  } else if (strcmp(operator, "*") == 0) {
+    operation = OP_MUL;
+  } else if (strcmp(operator, "/") == 0) {
+    operation = OP_DIV;
+  } else {
+    error(ERROR_USERDATA, "Unknown operation type: %s", operator);
+  }
+
+  if ((data->operations) & operation) {
+    error(ERROR_USERDATA, "Operation %s was already defined for %s", operator, data->name);
+  }
+
+  trace(TRACE_USERDATA, "Adding operation %d to %s", operation, data->name);
+
+  data->operations |= operation;
+
+  if (next_token() != NULL) {
+    error(ERROR_USERDATA, "Extra token on operation %s", operator);
+  }
+}
+
 void handle_userdata(void) {
   trace(TRACE_USERDATA, "Adding a userdata");
 
@@ -581,8 +629,10 @@ void handle_userdata(void) {
   // match type
   if (strcmp(type, keyword_field) == 0) {
     handle_userdata_field(node);
+  } else if (strcmp(type, keyword_operator) == 0) {
+    handle_operator(node);
   } else if (strcmp(type, keyword_method) == 0) {
-    handle_method(TRACE_USERDATA, node->name, &(node->methods));
+    handle_method(node->name, &(node->methods));
   } else {
     error(ERROR_USERDATA, "Unknown or unsupported type for userdata: %s", type);
   }
@@ -637,7 +687,7 @@ void handle_singleton(void) {
     }
     return;
   } else if (strcmp(type, keyword_method) == 0) {
-    handle_method(TRACE_USERDATA, node->name, &(node->methods));
+    handle_method(node->name, &(node->methods));
   } else {
     error(ERROR_SINGLETON, "Singletons only support methods or aliases (got %s)", type);
   }
@@ -925,6 +975,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   // sanity check number of args called with
   fprintf(source, "    const int args = lua_gettop(L);\n");
   arg = method->arguments;
+  arg_count = 1;
   while (arg != NULL) {
     if (!(arg->type.flags & TYPE_FLAGS_NULLABLE)) {
       arg_count++;
@@ -936,7 +987,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   fprintf(source, "    } else if (args < %d) {\n", arg_count);
   fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
   fprintf(source, "    }\n\n");
-  fprintf(source, "    luaL_checkudata(L, 1, \"%s\");\n\n", access_name);
 
   switch (data->ud_type) {
     case UD_USERDATA:
@@ -1087,12 +1137,86 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   fprintf(source, "}\n\n");
 }
 
+const char * get_name_for_operation(enum operator_type op) {
+  switch (op) {
+    case OP_ADD:
+      return "__add";
+    case OP_SUB:
+      return "__sub";
+    case OP_MUL:
+      return "__mul";
+      break;
+    case OP_DIV:
+      return "__div";
+      break;
+    case OP_LAST:
+      return NULL;
+  }
+  return NULL;
+}
+
+void emit_operators(struct userdata *data) {
+  trace(TRACE_USERDATA, "Emitting operators for %s", data->name);
+
+  assert(data->ud_type == UD_USERDATA);
+
+  for (uint32_t i = 1; i < OP_LAST; i = (i << 1)) {
+    const char * op_name = get_name_for_operation((data->operations) & i);
+    if (op_name == NULL) {
+      continue;
+    }
+
+    char op_sym;
+    switch ((data->operations) & i) {
+      case OP_ADD:
+        op_sym = '+';
+        break;
+      case OP_SUB:
+        op_sym = '-';
+        break;
+      case OP_MUL:
+        op_sym = '*';
+        break;
+      case OP_DIV:
+        op_sym = '/';
+        break;
+      case OP_LAST:
+        return;
+    }
+
+    fprintf(source, "static int %s_%s(lua_State *L) {\n", data->name, op_name);
+    // check number of arguments
+    fprintf(source, "    const int args = lua_gettop(L);\n");
+    fprintf(source, "    if (args > 2) {\n");
+    fprintf(source, "        return luaL_argerror(L, args, \"too many arguments\");\n");
+    fprintf(source, "    } else if (args < 2) {\n");
+    fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
+    fprintf(source, "    }\n\n");
+    // check the pointers
+    fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->name);
+    fprintf(source, "    %s *ud2 = check_%s(L, 2);\n", data->name, data->name);
+    // create a container for the result
+    fprintf(source, "    new_%s(L);\n", data->name);
+    fprintf(source, "    *check_%s(L, -1) = *ud %c *ud2;;\n", data->name, op_sym);
+    // return the first pointer
+    fprintf(source, "    return 1;\n");
+    fprintf(source, "}\n\n");
+
+  }
+}
+
 void emit_userdata_methods(struct userdata *node) {
   while(node) {
+    // methods
     struct method *method = node->methods;
     while(method) {
       emit_userdata_method(node, method);
       method = method->next;
+    }
+
+    // operators
+    if (node->operations) {
+      emit_operators(node);
     }
     node = node->next;
   }
@@ -1113,6 +1237,14 @@ void emit_userdata_metatables(void) {
     while(method) {
       fprintf(source, "    {\"%s\", %s_%s},\n", method->name, node->name, method->name);
       method = method->next;
+    }
+
+    for (uint32_t i = 1; i < OP_LAST; i = i << 1) {
+      const char * op_name = get_name_for_operation((node->operations) & i);
+      if (op_name == NULL) {
+        continue;
+      }
+      fprintf(source, "    {\"%s\", %s_%s},\n", op_name, node->name, op_name);
     }
 
     fprintf(source, "    {NULL, NULL}\n");

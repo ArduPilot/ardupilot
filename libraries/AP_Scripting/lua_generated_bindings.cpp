@@ -4,6 +4,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/Location.h>
 
@@ -245,8 +246,6 @@ static int Vector2f_is_zero(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "Vector2f");
-
     Vector2f * ud = check_Vector2f(L, 1);
     ud->is_zero(
 );
@@ -261,8 +260,6 @@ static int Vector2f_is_inf(lua_State *L) {
     } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "Vector2f");
 
     Vector2f * ud = check_Vector2f(L, 1);
     ud->is_inf(
@@ -279,8 +276,6 @@ static int Vector2f_is_nan(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "Vector2f");
-
     Vector2f * ud = check_Vector2f(L, 1);
     ud->is_nan(
 );
@@ -295,8 +290,6 @@ static int Vector2f_normalize(lua_State *L) {
     } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "Vector2f");
 
     Vector2f * ud = check_Vector2f(L, 1);
     ud->normalize(
@@ -313,13 +306,41 @@ static int Vector2f_length(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "Vector2f");
-
     Vector2f * ud = check_Vector2f(L, 1);
     const float data = ud->length(
 );
 
     lua_pushnumber(L, data);
+    return 1;
+}
+
+static int Vector2f___add(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    Vector2f *ud = check_Vector2f(L, 1);
+    Vector2f *ud2 = check_Vector2f(L, 2);
+    new_Vector2f(L);
+    *check_Vector2f(L, -1) = *ud + *ud2;;
+    return 1;
+}
+
+static int Vector2f___sub(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    Vector2f *ud = check_Vector2f(L, 1);
+    Vector2f *ud2 = check_Vector2f(L, 2);
+    new_Vector2f(L);
+    *check_Vector2f(L, -1) = *ud - *ud2;;
     return 1;
 }
 
@@ -330,8 +351,6 @@ static int Vector3f_is_zero(lua_State *L) {
     } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "Vector3f");
 
     Vector3f * ud = check_Vector3f(L, 1);
     ud->is_zero(
@@ -348,8 +367,6 @@ static int Vector3f_is_inf(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "Vector3f");
-
     Vector3f * ud = check_Vector3f(L, 1);
     ud->is_inf(
 );
@@ -364,8 +381,6 @@ static int Vector3f_is_nan(lua_State *L) {
     } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "Vector3f");
 
     Vector3f * ud = check_Vector3f(L, 1);
     ud->is_nan(
@@ -382,8 +397,6 @@ static int Vector3f_normalize(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "Vector3f");
-
     Vector3f * ud = check_Vector3f(L, 1);
     ud->normalize(
 );
@@ -399,8 +412,6 @@ static int Vector3f_length(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "Vector3f");
-
     Vector3f * ud = check_Vector3f(L, 1);
     const float data = ud->length(
 );
@@ -409,16 +420,44 @@ static int Vector3f_length(lua_State *L) {
     return 1;
 }
 
-static int Location_get_vector_from_origin_NEU(lua_State *L) {
-    // 1 Vector3f 14 : 6
+static int Vector3f___add(lua_State *L) {
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "Location");
+    Vector3f *ud = check_Vector3f(L, 1);
+    Vector3f *ud2 = check_Vector3f(L, 2);
+    new_Vector3f(L);
+    *check_Vector3f(L, -1) = *ud + *ud2;;
+    return 1;
+}
+
+static int Vector3f___sub(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    Vector3f *ud = check_Vector3f(L, 1);
+    Vector3f *ud2 = check_Vector3f(L, 2);
+    new_Vector3f(L);
+    *check_Vector3f(L, -1) = *ud - *ud2;;
+    return 1;
+}
+
+static int Location_get_vector_from_origin_NEU(lua_State *L) {
+    // 1 Vector3f 14 : 6
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
 
     Location * ud = check_Location(L, 1);
     Vector3f & data_2 = *check_Vector3f(L, 2);
@@ -433,13 +472,11 @@ static int Location_offset(lua_State *L) {
     // 1 float 13 : 8
     // 2 float 13 : 11
     const int args = lua_gettop(L);
-    if (args > 5) {
+    if (args > 3) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 5) {
+    } else if (args < 3) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "Location");
 
     Location * ud = check_Location(L, 1);
     const float raw_data_2 = luaL_checknumber(L, 2);
@@ -458,13 +495,11 @@ static int Location_offset(lua_State *L) {
 static int Location_get_distance(lua_State *L) {
     // 1 Location 12 : 6
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "Location");
 
     Location * ud = check_Location(L, 1);
     Location & data_2 = *check_Location(L, 2);
@@ -483,6 +518,8 @@ const luaL_Reg Vector2f_meta[] = {
     {"is_nan", Vector2f_is_nan},
     {"normalize", Vector2f_normalize},
     {"length", Vector2f_length},
+    {"__add", Vector2f___add},
+    {"__sub", Vector2f___sub},
     {NULL, NULL}
 };
 
@@ -495,6 +532,8 @@ const luaL_Reg Vector3f_meta[] = {
     {"is_nan", Vector3f_is_nan},
     {"normalize", Vector3f_normalize},
     {"length", Vector3f_length},
+    {"__add", Vector3f___add},
+    {"__sub", Vector3f___sub},
     {NULL, NULL}
 };
 
@@ -519,8 +558,6 @@ static int RangeFinder_num_sensors(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "rangefinder");
-
     RangeFinder * ud = RangeFinder::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "rangefinder not supported on this firmware");
@@ -534,15 +571,13 @@ static int RangeFinder_num_sensors(lua_State *L) {
 }
 
 static int AP_Notify_play_tune(lua_State *L) {
-    // 1 string 90 : 6
+    // 1 string 94 : 6
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "AP_Notify");
 
     AP_Notify * ud = AP_Notify::get_singleton();
     if (ud == nullptr) {
@@ -564,8 +599,6 @@ static int AP_GPS_first_unconfigured_gps(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "gps");
-
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "gps not supported on this firmware");
@@ -586,8 +619,6 @@ static int AP_GPS_all_configured(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "gps");
-
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "gps not supported on this firmware");
@@ -603,13 +634,11 @@ static int AP_GPS_all_configured(lua_State *L) {
 static int AP_GPS_get_antenna_offset(lua_State *L) {
     // 1 uint8_t 65 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -630,13 +659,11 @@ static int AP_GPS_get_antenna_offset(lua_State *L) {
 static int AP_GPS_have_vertical_velocity(lua_State *L) {
     // 1 uint8_t 64 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -656,13 +683,11 @@ static int AP_GPS_have_vertical_velocity(lua_State *L) {
 static int AP_GPS_get_vdop(lua_State *L) {
     // 1 uint8_t 63 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -682,13 +707,11 @@ static int AP_GPS_get_vdop(lua_State *L) {
 static int AP_GPS_get_hdop(lua_State *L) {
     // 1 uint8_t 62 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -708,13 +731,11 @@ static int AP_GPS_get_hdop(lua_State *L) {
 static int AP_GPS_num_sats(lua_State *L) {
     // 1 uint8_t 61 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -734,13 +755,11 @@ static int AP_GPS_num_sats(lua_State *L) {
 static int AP_GPS_ground_course(lua_State *L) {
     // 1 uint8_t 60 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -760,13 +779,11 @@ static int AP_GPS_ground_course(lua_State *L) {
 static int AP_GPS_ground_speed(lua_State *L) {
     // 1 uint8_t 59 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -786,13 +803,11 @@ static int AP_GPS_ground_speed(lua_State *L) {
 static int AP_GPS_velocity(lua_State *L) {
     // 1 uint8_t 58 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -814,13 +829,11 @@ static int AP_GPS_vertical_accuracy(lua_State *L) {
     // 1 uint8_t 57 : 8
     // 2 float 57 : 9
     const int args = lua_gettop(L);
-    if (args > 4) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 4) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -847,13 +860,11 @@ static int AP_GPS_horizontal_accuracy(lua_State *L) {
     // 1 uint8_t 56 : 8
     // 2 float 56 : 9
     const int args = lua_gettop(L);
-    if (args > 4) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 4) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -880,13 +891,11 @@ static int AP_GPS_speed_accuracy(lua_State *L) {
     // 1 uint8_t 55 : 8
     // 2 float 55 : 9
     const int args = lua_gettop(L);
-    if (args > 4) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 4) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -912,13 +921,11 @@ static int AP_GPS_speed_accuracy(lua_State *L) {
 static int AP_GPS_location(lua_State *L) {
     // 1 uint8_t 54 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -939,13 +946,11 @@ static int AP_GPS_location(lua_State *L) {
 static int AP_GPS_status(lua_State *L) {
     // 1 uint8_t 53 : 8
     const int args = lua_gettop(L);
-    if (args > 3) {
+    if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 3) {
+    } else if (args < 2) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "gps");
 
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
@@ -970,8 +975,6 @@ static int AP_GPS_primary_sensor(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "gps");
-
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "gps not supported on this firmware");
@@ -992,14 +995,347 @@ static int AP_GPS_num_sensors(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "gps");
-
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "gps not supported on this firmware");
     }
 
     const uint8_t data = ud->num_sensors(
+);
+
+    lua_pushinteger(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_get_temperature(lua_State *L) {
+    // 1 float 46 : 6
+    // 2 uint8_t 46 : 9
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    float data_5002 = {};
+    const int raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 3, "argument out of range");
+    const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
+    const bool data = ud->get_temperature(
+            data_5002,
+            data_3);
+
+    if (data) {
+        lua_pushnumber(L, data_5002);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int AP_BattMonitor_overpower_detected(lua_State *L) {
+    // 1 uint8_t 45 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const bool data = ud->overpower_detected(
+            data_2);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_has_failsafed(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 1) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 1) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const bool data = ud->has_failsafed(
+);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_pack_capacity_mah(lua_State *L) {
+    // 1 uint8_t 43 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const int32_t data = ud->pack_capacity_mah(
+            data_2);
+
+    lua_pushinteger(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_capacity_remaining_pct(lua_State *L) {
+    // 1 uint8_t 42 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const uint8_t data = ud->capacity_remaining_pct(
+            data_2);
+
+    lua_pushinteger(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_consumed_wh(lua_State *L) {
+    // 1 uint8_t 41 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const float data = ud->consumed_wh(
+            data_2);
+
+    lua_pushnumber(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_consumed_mah(lua_State *L) {
+    // 1 uint8_t 40 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const float data = ud->consumed_mah(
+            data_2);
+
+    lua_pushnumber(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_current_amps(lua_State *L) {
+    // 1 uint8_t 39 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const float data = ud->current_amps(
+            data_2);
+
+    lua_pushnumber(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_voltage_resting_estimate(lua_State *L) {
+    // 1 uint8_t 38 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const float data = ud->voltage_resting_estimate(
+            data_2);
+
+    lua_pushnumber(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_voltage(lua_State *L) {
+    // 1 uint8_t 37 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const float data = ud->voltage(
+            data_2);
+
+    lua_pushnumber(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_has_current(lua_State *L) {
+    // 1 uint8_t 36 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const bool data = ud->has_current(
+            data_2);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_has_consumed_energy(lua_State *L) {
+    // 1 uint8_t 35 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const bool data = ud->has_consumed_energy(
+            data_2);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_healthy(lua_State *L) {
+    // 1 uint8_t 34 : 8
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const int raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(AP_BATT_MONITOR_MAX_INSTANCES, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    const bool data = ud->healthy(
+            data_2);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_BattMonitor_num_instances(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 1) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 1) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "battery not supported on this firmware");
+    }
+
+    const uint8_t data = ud->num_instances(
 );
 
     lua_pushinteger(L, data);
@@ -1013,8 +1349,6 @@ static int AP_AHRS_prearm_healthy(lua_State *L) {
     } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "ahrs");
 
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
@@ -1036,8 +1370,6 @@ static int AP_AHRS_home_is_set(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "ahrs");
-
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "ahrs not supported on this firmware");
@@ -1053,13 +1385,11 @@ static int AP_AHRS_home_is_set(lua_State *L) {
 static int AP_AHRS_get_relative_position_NED_home(lua_State *L) {
     // 1 Vector3f 26 : 6
     const int args = lua_gettop(L);
-    if (args > 2) {
+    if (args > 1) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 2) {
+    } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "ahrs");
 
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
@@ -1082,13 +1412,11 @@ static int AP_AHRS_get_relative_position_NED_home(lua_State *L) {
 static int AP_AHRS_get_velocity_NED(lua_State *L) {
     // 1 Vector3f 25 : 6
     const int args = lua_gettop(L);
-    if (args > 2) {
+    if (args > 1) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 2) {
+    } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "ahrs");
 
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
@@ -1116,8 +1444,6 @@ static int AP_AHRS_groundspeed_vector(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "ahrs");
-
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "ahrs not supported on this firmware");
@@ -1139,8 +1465,6 @@ static int AP_AHRS_wind_estimate(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "ahrs");
-
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "ahrs not supported on this firmware");
@@ -1157,13 +1481,11 @@ static int AP_AHRS_wind_estimate(lua_State *L) {
 static int AP_AHRS_get_hagl(lua_State *L) {
     // 1 float 22 : 6
     const int args = lua_gettop(L);
-    if (args > 2) {
+    if (args > 1) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 2) {
+    } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "ahrs");
 
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
@@ -1190,8 +1512,6 @@ static int AP_AHRS_get_gyro(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "ahrs");
-
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "ahrs not supported on this firmware");
@@ -1213,8 +1533,6 @@ static int AP_AHRS_get_home(lua_State *L) {
         return luaL_argerror(L, args, "too few arguments");
     }
 
-    luaL_checkudata(L, 1, "ahrs");
-
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, args, "ahrs not supported on this firmware");
@@ -1231,13 +1549,11 @@ static int AP_AHRS_get_home(lua_State *L) {
 static int AP_AHRS_get_position(lua_State *L) {
     // 1 Location 19 : 6
     const int args = lua_gettop(L);
-    if (args > 2) {
+    if (args > 1) {
         return luaL_argerror(L, args, "too many arguments");
-    } else if (args < 2) {
+    } else if (args < 1) {
         return luaL_argerror(L, args, "too few arguments");
     }
-
-    luaL_checkudata(L, 1, "ahrs");
 
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
@@ -1292,6 +1608,24 @@ const luaL_Reg AP_GPS_meta[] = {
     {NULL, NULL}
 };
 
+const luaL_Reg AP_BattMonitor_meta[] = {
+    {"get_temperature", AP_BattMonitor_get_temperature},
+    {"overpower_detected", AP_BattMonitor_overpower_detected},
+    {"has_failsafed", AP_BattMonitor_has_failsafed},
+    {"pack_capacity_mah", AP_BattMonitor_pack_capacity_mah},
+    {"capacity_remaining_pct", AP_BattMonitor_capacity_remaining_pct},
+    {"consumed_wh", AP_BattMonitor_consumed_wh},
+    {"consumed_mah", AP_BattMonitor_consumed_mah},
+    {"current_amps", AP_BattMonitor_current_amps},
+    {"voltage_resting_estimate", AP_BattMonitor_voltage_resting_estimate},
+    {"voltage", AP_BattMonitor_voltage},
+    {"has_current", AP_BattMonitor_has_current},
+    {"has_consumed_energy", AP_BattMonitor_has_consumed_energy},
+    {"healthy", AP_BattMonitor_healthy},
+    {"num_instances", AP_BattMonitor_num_instances},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_AHRS_meta[] = {
     {"prearm_healthy", AP_AHRS_prearm_healthy},
     {"home_is_set", AP_AHRS_home_is_set},
@@ -1323,6 +1657,7 @@ const struct singleton_fun {
     {"AP_Notify", AP_Notify_meta},
     {"notify", notify_meta},
     {"gps", AP_GPS_meta},
+    {"battery", AP_BattMonitor_meta},
     {"ahrs", AP_AHRS_meta},
 };
 
@@ -1357,6 +1692,7 @@ const char *singletons[] = {
     "AP_Notify",
     "notify",
     "gps",
+    "battery",
     "ahrs",
 };
 
