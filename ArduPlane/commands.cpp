@@ -108,6 +108,9 @@ void Plane::set_guided_WP(void)
 */
 void Plane::update_home()
 {
+    if (hal.util->was_watchdog_armed()) {
+        return;
+    }
     if ((g2.home_reset_threshold == -1) ||
         ((g2.home_reset_threshold > 0) &&
          (fabsf(barometer.get_altitude()) > g2.home_reset_threshold))) {
@@ -131,6 +134,9 @@ void Plane::update_home()
 
 bool Plane::set_home_persistently(const Location &loc)
 {
+    if (hal.util->was_watchdog_armed()) {
+        return false;
+    }
     if (!AP::ahrs().set_home(loc)) {
         return false;
     }
