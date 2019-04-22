@@ -188,7 +188,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
 
             // calculate corrected gyro estimate for get_gyro()
             _gyro_estimate.zero();
-            if (primary_imu == -1) {
+            if (primary_imu == -1 || !_ins.get_gyro_health(primary_imu)) {
                 // the primary IMU is undefined so use an uncorrected default value from the INS library
                 _gyro_estimate = _ins.get_gyro();
             } else {
@@ -261,7 +261,7 @@ void AP_AHRS_NavEKF::update_EKF3(void)
 
             // calculate corrected gyro estimate for get_gyro()
             _gyro_estimate.zero();
-            if (primary_imu == -1) {
+            if (primary_imu == -1 || !_ins.get_gyro_health(primary_imu)) {
                 // the primary IMU is undefined so use an uncorrected default value from the INS library
                 _gyro_estimate = _ins.get_gyro();
             } else {
