@@ -159,10 +159,6 @@ void Copter::auto_takeoff_attitude_run(float target_yaw_rate)
         // we haven't reached the takeoff navigation altitude yet
         nav_roll = 0;
         nav_pitch = 0;
-#if FRAME_CONFIG == HELI_FRAME
-        // prevent hover roll starting till past specified altitude
-        hover_roll_trim_scalar_slew = 0;        
-#endif
         // tell the position controller that we have limited roll/pitch demand to prevent integrator buildup
         pos_control->set_limit_accel_xy();
     } else {
