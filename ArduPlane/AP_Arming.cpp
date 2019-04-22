@@ -19,6 +19,14 @@ const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
  */
 bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 {
+    if (hal.util->was_watchdog_armed()) {
+        // on watchdog reset bypass arming checks to allow for
+        // in-flight arming if we were armed before the reset. This
+        // allows a reset on a BVLOS flight to return home if the
+        // operator can command arming over telemetry
+        return true;
+    }
+
     // call parent class checks
     bool ret = AP_Arming::pre_arm_checks(display_failure);
 
@@ -116,4 +124,18 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
     }
 
     return true;
+}
+
+bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
+{
+    if (hal.util->was_watchdog_armed()) {
+        // on watchdog reset bypass arming checks to allow for
+        // in-flight arming if we were armed before the reset. This
+        // allows a reset on a BVLOS flight to return home if the
+        // operator can command arming over telemetry
+        gcs().send_text(MAV_SEVERITY_WARNING, "watchdog: Bypassing arming checks");
+        return true;
+    }
+    // call parent class checks
+    return AP_Arming::arm_checks(method);
 }
