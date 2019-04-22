@@ -1,5 +1,13 @@
 Rover Release Notes:
 --------------------------------
+Rover 3.5.1-rc1 22-Apr-2019
+Changes from 3.5.0
+1) WHEEL_DISTANCE mavlink messages sent to ground station and companion computers
+2) Bug fixes:
+    a) EKF compass switching fix for vehicles with 3 compasses
+    b) Guided's heading-and-speed controller no longer uses land based speed control
+    c) Pre-arm check fix that all required motors for the frame are configured
+--------------------------------
 Rover 3.5.0 06-Feb-2019
 Changes from 3.5.0-rc3
 1) Bug fixes and minor enhancements
