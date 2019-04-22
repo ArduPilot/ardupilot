@@ -76,6 +76,8 @@ userdata Vector3f method normalize void
 userdata Vector3f method is_nan void
 userdata Vector3f method is_inf void
 userdata Vector3f method is_zero void
+userdata Vector3f operator +
+userdata Vector3f operator -
 
 userdata Vector2f field x float read write -FLT_MAX FLT_MAX
 userdata Vector2f field y float read write -FLT_MAX FLT_MAX
@@ -84,6 +86,8 @@ userdata Vector2f method normalize void
 userdata Vector2f method is_nan void
 userdata Vector2f method is_inf void
 userdata Vector2f method is_zero void
+userdata Vector2f operator +
+userdata Vector2f operator -
 
 include AP_Notify/AP_Notify.h
 singleton notify alias notify
