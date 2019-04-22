@@ -204,15 +204,17 @@ static void main_loop()
      */
     chThdSetPriority(APM_MAIN_PRIORITY);
 
+#ifndef IOMCU_FW
     // setup watchdog to reset if main loop stops
     if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();
     }
 
-#ifndef IOMCU_FW
     if (hal.util->was_watchdog_reset()) {
         AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
     }
+#else
+    stm32_watchdog_init();
 #endif
 
     while (true) {
