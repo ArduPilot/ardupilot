@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.9-rc1 30-Apr-2019
+Changes from 3.6.8
+1) CX-OF flow sensor enabled on all boards
+2) CUAVv5 Nano board support added
+3) RangeFinders supported on all I2C ports
+4) Bug Fixes:
+    a) Acro mode leveling fix for when ACRO_TRAINER was 1
+    b) Tradheli collective position pre-arm check removed
+    c) Fallback to microSD for storage fixed
+------------------------------------------------------------------
 Copter 3.6.8 26-Apr-2019 / 3.6.8-rc1 24-Apr-2019
 Changes from 3.6.7
 1) Safety fixes
