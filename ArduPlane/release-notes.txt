@@ -1,3 +1,76 @@
+Release 3.9.8-beta1, 22nd April 2019
+------------------------------------
+
+This is a minor release with some important safety fixes. The fixes
+relate to two issues:
+
+ - implement hardware support to reset the CPU if a software or hardware
+   failure causes the main loop to stop running
+
+ - fixed a bug in the handling of a failure of the primary IMU in a
+   multi-IMU system
+
+The first fix relates to a flyaway that happened on a RadioLink
+mini-pix flight controller. The mini-pix suffered a major hardware
+failure that led to the main loop stopping. As the mini-pix does not
+have an IO co-processor this resulted in fixed control surface outputs
+and fixed motor output, which led to a flyaway. The plane was found,
+but we want to ensure that if this ever happens again that the motor
+will stop and that the pilot will regain control of the aircraft.
+
+The fix is to enable an option in the STM32 processor called
+"Independent Watchdog" (IWDG). The IWDG provides a mechanism to
+automatically reset the CPU on software or hardware failure resulting
+in the main loop stopping. When this happens the hardware also
+provides a mechanism for ArduPilot to know that it is booting after a
+watchdog reset, in which case it does the following:
+
+ - if the ChibiOS bootloader has been updated then it skips the normal
+   5 second delay in the bootloader
+
+ - it skips baromoter, gyro and airspeed calibration, allowing for
+   very fast boot
+
+ - the home position and attitude estimate of the vehicle is restored
+   to a point less than 0.3 seconds before the lockup
+
+ - the pilot regains full control, and if the pilot requests arming
+   then arming checks are automatically bypassed
+
+We have tested this on an aircraft with a deliberately induced full
+CPU lockup. The aircraft recovered and flew normally within 3 seconds
+of lockup, with the pilot having full control. This was with a board
+with no IOMCU. A board that does have an IOMCU (such as a Hex cube)
+would have had full manual control on FMU lockup without the changes
+in this new release. For those boards with IOMCU the advantage of the
+new release is that the pilot will regain the ability to use
+stabilised and auto modes (including RTL) after a full CPU lockup.
+
+The additional protections of the IWDG support only apply to the
+ChibiOS builds. The IWDG is not supported in NuttX builds.
+
+The second key fix in this release relates to IMU failure on multi-IMU
+systems. If the IMU that is associated with the currently active EKF
+lane failed then the fixed wing attitude controller would lose
+attitude control and the aircraft will crash unless the pilot takes
+manual control. This has been fixed to ensure that IMU failover
+operates correctly.
+
+Other changes in this release:
+
+ - added support for the CUAVv5Nano board
+
+ - added retries to flash storage of parameters
+
+ - fixed pullups on some fmuv3 based boards that lack hardware pullups
+   on sdcard data lines
+
+ - fixed fallback to microSD for parameter storage if a board with
+   FRAM storage has a failed FRAM device
+
+Happy flying!
+
+
 Release 3.9.7, 1st April 2019
 -----------------------------
 
