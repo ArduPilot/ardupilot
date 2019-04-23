@@ -155,14 +155,16 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 
 static bool check_ms5611(const char* devname) {
     auto dev = hal.spi->get_device(devname);
-    AP_HAL::Semaphore *dev_sem = dev->get_semaphore();
-    if (!dev || !dev_sem) {
+    if (!dev) {
 #if SPI_PROBE_DEBUG
         hal.console->printf("%s: no device\n", devname);
 #endif
         return false;
     }
-    if (!dev_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+
+    AP_HAL::Semaphore *dev_sem = dev->get_semaphore();
+
+    if (!dev_sem || !dev_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
