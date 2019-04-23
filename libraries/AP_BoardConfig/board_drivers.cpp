@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BoardConfig.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Baro/AP_Baro_MS5611.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -152,34 +153,6 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     return v == value;
 }
 
-/**
- * MS56XX crc4 method from datasheet for 16 bytes (8 short values)
- */
-static uint16_t crc4(uint16_t *data)
-{
-    uint16_t n_rem = 0;
-    uint8_t n_bit;
-
-    for (uint8_t cnt = 0; cnt < 16; cnt++) {
-        /* uneven bytes */
-        if (cnt & 1) {
-            n_rem ^= (uint8_t)((data[cnt >> 1]) & 0x00FF);
-        } else {
-            n_rem ^= (uint8_t)(data[cnt >> 1] >> 8);
-        }
-
-        for (n_bit = 8; n_bit > 0; n_bit--) {
-            if (n_rem & 0x8000) {
-                n_rem = (n_rem << 1) ^ 0x3000;
-            } else {
-                n_rem = (n_rem << 1);
-            }
-        }
-    }
-
-    return (n_rem >> 12) & 0xF;
-}
-
 static bool check_ms5611(const char* devname) {
     auto dev = hal.spi->get_device(devname);
     AP_HAL::Semaphore *dev_sem = dev->get_semaphore();
@@ -222,7 +195,7 @@ static bool check_ms5611(const char* devname) {
     uint16_t crc_read = prom[7]&0xf;
     prom[7] &= 0xff00;
 
-    if (crc_read != crc4(prom) || all_zero) {
+    if (crc_read != AP_Baro_MS56XX::crc4(prom) || all_zero) {
 #if SPI_PROBE_DEBUG
         hal.console->printf("%s: crc fail\n", devname);
 #endif
@@ -286,6 +259,27 @@ void AP_BoardConfig::validate_board_type(void)
 }
 
 
+void AP_BoardConfig::check_cubeblack(void)
+{
+#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
+    if (state.board_type != PX4_BOARD_PIXHAWK2) {
+        state.board_type.set(PX4_BOARD_PIXHAWK2);
+    }
+
+    bool success = true;
+    if (!spi_check_register("mpu9250", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
+    if (!spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
+    if (!spi_check_register("lsm9ds0_ext_g", LSMREG_WHOAMI, LSM_WHOAMI_L3GD20)) { success = false; }
+    if (!spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) { success = false; }
+    if (!check_ms5611("ms5611")) { success = false; }
+    if (!check_ms5611("ms5611_ext")) { success = false; }
+
+    if (!success) {
+        sensor_config_error("Failed to init CubeBlack - sensor mismatch");
+    }
+#endif
+}
+
 
 /*
   auto-detect board type
@@ -293,24 +287,8 @@ void AP_BoardConfig::validate_board_type(void)
 void AP_BoardConfig::board_autodetect(void)
 {
 #if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-    {
-        if (state.board_type != PX4_BOARD_PIXHAWK2) {
-            state.board_type.set(PX4_BOARD_PIXHAWK2);
-        }
-
-        bool success = true;
-        if (!spi_check_register("mpu9250", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
-        if (!spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
-        if (!spi_check_register("lsm9ds0_ext_g", LSMREG_WHOAMI, LSM_WHOAMI_L3GD20)) { success = false; }
-        if (!spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) { success = false; }
-        if (!check_ms5611("ms5611")) { success = false; }
-        if (!check_ms5611("ms5611_ext")) { success = false; }
-
-        if (!success) {
-            sensor_config_error("Failed to init CubeBlack - sensor mismatch");
-        }
-        return;
-    }
+    check_cubeblack();
+    return;
 #endif
 
     if (state.board_type != PX4_BOARD_AUTO) {
