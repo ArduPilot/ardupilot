@@ -909,14 +909,6 @@ private:
     void roll_controller_to_pilot_override();
     void pitch_controller_to_pilot_override();
 
-    // PosHold states
-    enum PosHoldModeState {
-        PosHold_MotorStopped,
-        PosHold_Takeoff,
-        PosHold_Flying,
-        PosHold_Landed
-    };
-
     // mission state enumeration
     enum poshold_rp_mode {
         POSHOLD_PILOT_OVERRIDE=0,            // pilot is controlling this axis (i.e. roll or pitch)
