@@ -2637,7 +2637,7 @@ switch value'''
                      0,
                      0,
                      0,
-                     timeout=2,
+                     timeout=4,
                      want_result=mavutil.mavlink.MAV_RESULT_FAILED)
         self.context_pop()
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -2648,7 +2648,7 @@ switch value'''
                      0,
                      0,
                      0,
-                     timeout=2,
+                     timeout=4,
                      want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
         self.disarm_vehicle()
 
