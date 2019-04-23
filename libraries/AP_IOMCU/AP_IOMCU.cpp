@@ -425,6 +425,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
         handle_repeated_failures();
     }
     protocol_fail_count = 0;
+    protocol_count++;
     return true;
 }
 
@@ -493,6 +494,7 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
         handle_repeated_failures();
     }
     protocol_fail_count = 0;
+    protocol_count++;
     return true;
 }
 
@@ -898,6 +900,11 @@ const char *AP_IOMCU::get_rc_protocol(void)
  */
 void AP_IOMCU::handle_repeated_failures(void)
 {
+    if (protocol_count < 100) {
+        // we're just starting up, ignore initial failures caused by
+        // initial sync with IOMCU
+        return;
+    }
     detected_io_reset = true;
     AP::internalerror().error(AP_InternalError::error_t::iomcu_reset);
     // we need to ensure the mixer data and the rates are sent over to
