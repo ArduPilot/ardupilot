@@ -153,7 +153,7 @@ bool AP_Baro_MS56XX::_init()
 /**
  * MS56XX crc4 method from datasheet for 16 bytes (8 short values)
  */
-static uint16_t crc4(uint16_t *data)
+uint16_t AP_Baro_MS56XX::crc4(uint16_t *data)
 {
     uint16_t n_rem = 0;
     uint8_t n_bit;
