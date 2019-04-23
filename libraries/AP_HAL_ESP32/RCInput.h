@@ -22,7 +22,8 @@
 #include "AP_HAL_ESP32.h"
 #include "Semaphores.h"
 
-#include "SoftSigReaderInt.h"
+//#include "SoftSigReaderInt.h"
+#include "SoftSigReaderRMT.h"
 #include <AP_RCProtocol/AP_RCProtocol.h>
 
 #include <stdio.h>
@@ -62,9 +63,8 @@ private:
     bool _init;
     const char *last_protocol;
 
-//#if HAL_USE_EICU == TRUE
-    ESP32::SoftSigReaderInt sig_reader;
+    //ESP32::SoftSigReaderInt sig_reader;
+    ESP32::SoftSigReaderRMT sig_reader;
     AP_RCProtocol rcin_prot;
-//#endif
 
 };

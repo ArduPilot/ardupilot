@@ -16,4 +16,5 @@ class GPIO;
 class DigitalSource;
 class Storage;
 class SoftSigReaderInt;
+class SoftSigReaderRMT;
 }  // namespace ESP32
