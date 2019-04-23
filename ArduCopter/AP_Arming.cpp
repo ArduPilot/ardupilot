@@ -20,7 +20,7 @@ bool AP_Arming_Copter::all_checks_passing(AP_Arming::Method method)
 {
     set_pre_arm_check(pre_arm_checks(true));
 
-    return copter.ap.pre_arm_check && arm_checks(true, method);
+    return copter.ap.pre_arm_check && arm_checks(method);
 }
 
 // perform pre-arm checks
@@ -439,13 +439,13 @@ bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm
 //  has side-effect that logging is started
-bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method)
+bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 {
     const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
 
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "AHRS not healthy");
+        check_failed(ARMING_CHECK_NONE, true, "AHRS not healthy");
         return false;
     }
 
@@ -453,7 +453,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method
     const Compass &_compass = AP::compass();
     // check compass health
     if (!_compass.healthy()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Compass not healthy");
+        check_failed(ARMING_CHECK_NONE, true, "Compass not healthy");
         return false;
     }
 #endif
@@ -462,19 +462,19 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method
 
     // always check if the current mode allows arming
     if (!copter.flightmode->allows_arming(method == AP_Arming::Method::MAVLINK)) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Mode not armable");
+        check_failed(ARMING_CHECK_NONE, true, "Mode not armable");
         return false;
     }
 
     // always check motors
-    if (!motor_checks(display_failure)) {
+    if (!motor_checks(true)) {
         return false;
     }
 
     // if we are using motor interlock switch and it's enabled, fail to arm
     // skip check in Throw mode which takes control of the motor interlock
     if (copter.ap.using_interlock && copter.ap.motor_interlock_switch) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Motor Interlock Enabled");
+        check_failed(ARMING_CHECK_NONE, true, "Motor Interlock Enabled");
         return false;
     }
 
@@ -496,7 +496,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method
     // check lean angle
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_INS)) {
         if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > copter.aparm.angle_max) {
-            check_failed(ARMING_CHECK_INS, display_failure, "Leaning");
+            check_failed(ARMING_CHECK_INS, true, "Leaning");
             return false;
         }
     }
@@ -505,7 +505,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method
 #if ADSB_ENABLED == ENABLE
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
         if (copter.failsafe.adsb) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "ADSB threat detected");
+            check_failed(ARMING_CHECK_PARAMETERS, true, "ADSB threat detected");
             return false;
         }
     }
@@ -520,7 +520,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method
         #endif
         // check throttle is not too low - must be above failsafe throttle
         if (copter.g.failsafe_throttle != FS_THR_DISABLED && copter.channel_throttle->get_radio_in() < copter.g.failsafe_throttle_value) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s below failsafe", rc_item);
+            check_failed(ARMING_CHECK_RC, true, "%s below failsafe", rc_item);
             return false;
         }
 
@@ -528,13 +528,13 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method
         if (!(method == AP_Arming::Method::MAVLINK && (control_mode == GUIDED || control_mode == GUIDED_NOGPS))) {
             // above top of deadband is too always high
             if (copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in()) > 0.0f) {
-                check_failed(ARMING_CHECK_RC, display_failure, "%s too high", rc_item);
+                check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
                 return false;
             }
             // in manual modes throttle must be at zero
             #if FRAME_CONFIG != HELI_FRAME
             if ((copter.flightmode->has_manual_throttle() || control_mode == DRIFT) && copter.channel_throttle->get_control_in() > 0) {
-                check_failed(ARMING_CHECK_RC, display_failure, "%s too high", rc_item);
+                check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
                 return false;
             }
             #endif
@@ -543,7 +543,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::Method method
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Safety Switch");
+        check_failed(ARMING_CHECK_NONE, true, "Safety Switch");
         return false;
     }
 
