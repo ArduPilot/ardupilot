@@ -11,6 +11,7 @@
 
 
 int new_Vector2f(lua_State *L) {
+    luaL_checkstack(L, 2, "Out of stack");
     Vector2f *ud = (Vector2f *)lua_newuserdata(L, sizeof(Vector2f));
     new (ud) Vector2f();
     luaL_getmetatable(L, "Vector2f");
@@ -19,6 +20,7 @@ int new_Vector2f(lua_State *L) {
 }
 
 int new_Vector3f(lua_State *L) {
+    luaL_checkstack(L, 2, "Out of stack");
     Vector3f *ud = (Vector3f *)lua_newuserdata(L, sizeof(Vector3f));
     new (ud) Vector3f();
     luaL_getmetatable(L, "Vector3f");
@@ -27,6 +29,7 @@ int new_Vector3f(lua_State *L) {
 }
 
 int new_Location(lua_State *L) {
+    luaL_checkstack(L, 2, "Out of stack");
     Location *ud = (Location *)lua_newuserdata(L, sizeof(Location));
     new (ud) Location();
     luaL_getmetatable(L, "Location");
@@ -1765,6 +1768,7 @@ const struct singleton_fun {
 };
 
 void load_generated_bindings(lua_State *L) {
+    luaL_checkstack(L, 5, "Out of stack");
     // userdata metatables
     for (uint32_t i = 0; i < ARRAY_SIZE(userdata_fun); i++) {
         luaL_newmetatable(L, userdata_fun[i].name);
