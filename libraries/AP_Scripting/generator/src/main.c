@@ -716,6 +716,7 @@ void emit_userdata_allocators(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
     fprintf(source, "int new_%s(lua_State *L) {\n", node->name);
+    fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
     fprintf(source, "    %s *ud = (%s *)lua_newuserdata(L, sizeof(%s));\n", node->name, node->name, node->name);
     fprintf(source, "    new (ud) %s();\n", node->name);
     fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->name);
@@ -1296,6 +1297,7 @@ void emit_loaders(void) {
   fprintf(source, "};\n\n");
 
   fprintf(source, "void load_generated_bindings(lua_State *L) {\n");
+  fprintf(source, "    luaL_checkstack(L, 5, \"Out of stack\");\n"); // this is more stack space then we need, but should never fail
   fprintf(source, "    // userdata metatables\n");
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(userdata_fun); i++) {\n");
   fprintf(source, "        luaL_newmetatable(L, userdata_fun[i].name);\n");

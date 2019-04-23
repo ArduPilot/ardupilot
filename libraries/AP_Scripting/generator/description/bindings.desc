@@ -13,11 +13,6 @@ userdata Location method get_distance float Location
 userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
 userdata Location method get_vector_from_origin_NEU boolean Vector3f
 
-#include AP_Arming/AP_Arming.h
-singleton AP_Arming alias arming
-singleton AP_Arming method is_armed boolean
-singleton AP_Arming method pre_arm_checks boolean boolean
-
 include AP_AHRS/AP_AHRS.h
 
 singleton AP_AHRS alias ahrs
