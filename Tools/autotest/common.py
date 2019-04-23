@@ -1625,9 +1625,9 @@ class AutoTest(ABC):
         raise WaitWaypointTimeout("Timed out waiting for waypoint %u of %u" %
                                   (wpnum_end, wpnum_end))
 
-    def mode_is(self, mode, cached=False):
+    def mode_is(self, mode, cached=False, drain_mav=True):
         if not cached:
-            self.wait_heartbeat()
+            self.wait_heartbeat(drain_mav=drain_mav)
         try:
             return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
         except Exception as e:
@@ -1639,7 +1639,7 @@ class AutoTest(ABC):
         """Wait for mode to change."""
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
-        while not self.mode_is(mode):
+        while not self.mode_is(mode, drain_mav=False):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                     self.mav.flightmode, mode, custom_num))
@@ -1676,9 +1676,10 @@ class AutoTest(ABC):
         if require_absolute:
             self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
 
-    def wait_heartbeat(self, *args, **x):
+    def wait_heartbeat(self, drain_mav=True, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout'''
-        self.drain_mav()
+        if drain_mav:
+            self.drain_mav()
         m = self.mav.wait_heartbeat(*args, **x)
         if m is None:
             raise AutoTestTimeoutException("Did not receive heartbeat")
