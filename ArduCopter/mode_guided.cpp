@@ -675,7 +675,7 @@ void Copter::ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const 
 void Copter::ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
 {
     if (use_yaw) {
-        auto_yaw.set_fixed_yaw(yaw_cd / 100.0f, 0.0f, 0, relative_angle);
+        auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
     } else if (use_yaw_rate) {
         auto_yaw.set_rate(yaw_rate_cds);
     }
