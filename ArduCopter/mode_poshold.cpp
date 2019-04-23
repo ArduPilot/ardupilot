@@ -45,12 +45,12 @@ bool Copter::ModePosHold::init(bool ignore_checks)
 
     if (ap.land_complete) {
         // if landed begin in loiter mode
-        roll_mode = POSHOLD_LOITER;
-        pitch_mode = POSHOLD_LOITER;
+        roll_mode = RPMode::LOITER;
+        pitch_mode = RPMode::LOITER;
     } else {
         // if not landed start in pilot override to avoid hard twitch
-        roll_mode = POSHOLD_PILOT_OVERRIDE;
-        pitch_mode = POSHOLD_PILOT_OVERRIDE;
+        roll_mode = RPMode::PILOT_OVERRIDE;
+        pitch_mode = RPMode::PILOT_OVERRIDE;
     }
 
     // initialise loiter
@@ -115,8 +115,8 @@ void Copter::ModePosHold::run()
         loiter_nav->update();
 
         // set poshold state to pilot override
-        roll_mode = POSHOLD_PILOT_OVERRIDE;
-        pitch_mode = POSHOLD_PILOT_OVERRIDE;
+        roll_mode = RPMode::PILOT_OVERRIDE;
+        pitch_mode = RPMode::PILOT_OVERRIDE;
         break;
 
     case AltHold_Takeoff:
@@ -145,8 +145,8 @@ void Copter::ModePosHold::run()
         pos_control->add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
 
         // set poshold state to pilot override
-        roll_mode = POSHOLD_PILOT_OVERRIDE;
-        pitch_mode = POSHOLD_PILOT_OVERRIDE;
+        roll_mode = RPMode::PILOT_OVERRIDE;
+        pitch_mode = RPMode::PILOT_OVERRIDE;
         break;
 
     case AltHold_Landed_Ground_Idle:
@@ -162,8 +162,8 @@ void Copter::ModePosHold::run()
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
 
         // set poshold state to pilot override
-        roll_mode = POSHOLD_PILOT_OVERRIDE;
-        pitch_mode = POSHOLD_PILOT_OVERRIDE;
+        roll_mode = RPMode::PILOT_OVERRIDE;
+        pitch_mode = RPMode::PILOT_OVERRIDE;
         break;
 
     case AltHold_Flying:
@@ -195,7 +195,7 @@ void Copter::ModePosHold::run()
     float vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
 
     // If not in LOITER, retrieve latest wind compensation lean angles related to current yaw
-    if (roll_mode != POSHOLD_LOITER || pitch_mode != POSHOLD_LOITER) {
+    if (roll_mode != RPMode::LOITER || pitch_mode != RPMode::LOITER) {
         get_wind_comp_lean_angles(wind_comp_roll, wind_comp_pitch);
     }
 
@@ -206,7 +206,7 @@ void Copter::ModePosHold::run()
     //      3. checking if the state (aka mode) should be changed and if 'yes' perform any required initialisation for the new state
     switch (roll_mode) {
 
-        case POSHOLD_PILOT_OVERRIDE:
+        case RPMode::PILOT_OVERRIDE:
             // update pilot desired roll angle using latest radio input
             //  this filters the input so that it returns to zero no faster than the brake-rate
             update_pilot_lean_angle(pilot_roll, target_roll);
@@ -214,7 +214,7 @@ void Copter::ModePosHold::run()
             // switch to BRAKE mode for next iteration if no pilot input
             if (is_zero(target_roll) && (fabsf(pilot_roll) < 2 * g.poshold_brake_rate)) {
                 // initialise BRAKE mode
-                roll_mode = POSHOLD_BRAKE;        // Set brake roll mode
+                roll_mode = RPMode::BRAKE;        // Set brake roll mode
                 brake_roll = 0;                  // initialise braking angle to zero
                 brake_angle_max_roll = 0;        // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
                 brake_timeout_roll = POSHOLD_BRAKE_TIME_ESTIMATE_MAX; // number of cycles the brake will be applied, updated during braking mode.
@@ -225,8 +225,8 @@ void Copter::ModePosHold::run()
             roll = pilot_roll + wind_comp_roll;
             break;
 
-        case POSHOLD_BRAKE:
-        case POSHOLD_BRAKE_READY_TO_LOITER:
+        case RPMode::BRAKE:
+        case RPMode::BRAKE_READY_TO_LOITER:
             // calculate brake_roll angle to counter-act velocity
             update_brake_angle_from_velocity(brake_roll, vel_right);
 
@@ -252,9 +252,9 @@ void Copter::ModePosHold::run()
                 brake_timeout_roll--;
             } else {
                 // indicate that we are ready to move to Loiter.
-                // Loiter will only actually be engaged once both roll_mode and pitch_mode are changed to POSHOLD_BRAKE_READY_TO_LOITER
+                // Loiter will only actually be engaged once both roll_mode and pitch_mode are changed to RPMode::BRAKE_READY_TO_LOITER
                 //  logic for engaging loiter is handled below the roll and pitch mode switch statements
-                roll_mode = POSHOLD_BRAKE_READY_TO_LOITER;
+                roll_mode = RPMode::BRAKE_READY_TO_LOITER;
             }
 
             // final lean angle is braking angle + wind compensation angle
@@ -267,12 +267,12 @@ void Copter::ModePosHold::run()
             }
             break;
 
-        case POSHOLD_BRAKE_TO_LOITER:
-        case POSHOLD_LOITER:
+        case RPMode::BRAKE_TO_LOITER:
+        case RPMode::LOITER:
             // these modes are combined roll-pitch modes and are handled below
             break;
 
-        case POSHOLD_CONTROLLER_TO_PILOT_OVERRIDE:
+        case RPMode::CONTROLLER_TO_PILOT_OVERRIDE:
             // update pilot desired roll angle using latest radio input
             //  this filters the input so that it returns to zero no faster than the brake-rate
             update_pilot_lean_angle(pilot_roll, target_roll);
@@ -282,7 +282,7 @@ void Copter::ModePosHold::run()
                 controller_to_pilot_timer_roll--;
             } else {
                 // when timer runs out switch to full pilot override for next iteration
-                roll_mode = POSHOLD_PILOT_OVERRIDE;
+                roll_mode = RPMode::PILOT_OVERRIDE;
             }
 
             // calculate controller_to_pilot mix ratio
@@ -300,7 +300,7 @@ void Copter::ModePosHold::run()
     //      3. checking if the state (aka mode) should be changed and if 'yes' perform any required initialisation for the new state
     switch (pitch_mode) {
 
-        case POSHOLD_PILOT_OVERRIDE:
+        case RPMode::PILOT_OVERRIDE:
             // update pilot desired pitch angle using latest radio input
             //  this filters the input so that it returns to zero no faster than the brake-rate
             update_pilot_lean_angle(pilot_pitch, target_pitch);
@@ -308,7 +308,7 @@ void Copter::ModePosHold::run()
             // switch to BRAKE mode for next iteration if no pilot input
             if (is_zero(target_pitch) && (fabsf(pilot_pitch) < 2 * g.poshold_brake_rate)) {
                 // initialise BRAKE mode
-                pitch_mode = POSHOLD_BRAKE;       // set brake pitch mode
+                pitch_mode = RPMode::BRAKE;       // set brake pitch mode
                 brake_pitch = 0;                 // initialise braking angle to zero
                 brake_angle_max_pitch = 0;       // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
                 brake_timeout_pitch = POSHOLD_BRAKE_TIME_ESTIMATE_MAX; // number of cycles the brake will be applied, updated during braking mode.
@@ -319,8 +319,8 @@ void Copter::ModePosHold::run()
             pitch = pilot_pitch + wind_comp_pitch;
             break;
 
-        case POSHOLD_BRAKE:
-        case POSHOLD_BRAKE_READY_TO_LOITER:
+        case RPMode::BRAKE:
+        case RPMode::BRAKE_READY_TO_LOITER:
             // calculate brake_pitch angle to counter-act velocity
             update_brake_angle_from_velocity(brake_pitch, -vel_fw);
 
@@ -346,9 +346,9 @@ void Copter::ModePosHold::run()
                 brake_timeout_pitch--;
             } else {
                 // indicate that we are ready to move to Loiter.
-                // Loiter will only actually be engaged once both pitch_mode and pitch_mode are changed to POSHOLD_BRAKE_READY_TO_LOITER
+                // Loiter will only actually be engaged once both pitch_mode and pitch_mode are changed to RPMode::BRAKE_READY_TO_LOITER
                 //  logic for engaging loiter is handled below the pitch and pitch mode switch statements
-                pitch_mode = POSHOLD_BRAKE_READY_TO_LOITER;
+                pitch_mode = RPMode::BRAKE_READY_TO_LOITER;
             }
 
             // final lean angle is braking angle + wind compensation angle
@@ -361,12 +361,12 @@ void Copter::ModePosHold::run()
             }
             break;
 
-        case POSHOLD_BRAKE_TO_LOITER:
-        case POSHOLD_LOITER:
+        case RPMode::BRAKE_TO_LOITER:
+        case RPMode::LOITER:
             // these modes are combined pitch-pitch modes and are handled below
             break;
 
-        case POSHOLD_CONTROLLER_TO_PILOT_OVERRIDE:
+        case RPMode::CONTROLLER_TO_PILOT_OVERRIDE:
             // update pilot desired pitch angle using latest radio input
             //  this filters the input so that it returns to zero no faster than the brake-rate
             update_pilot_lean_angle(pilot_pitch, target_pitch);
@@ -376,7 +376,7 @@ void Copter::ModePosHold::run()
                 controller_to_pilot_timer_pitch--;
             } else {
                 // when timer runs out switch to full pilot override for next iteration
-                pitch_mode = POSHOLD_PILOT_OVERRIDE;
+                pitch_mode = RPMode::PILOT_OVERRIDE;
             }
 
             // calculate controller_to_pilot mix ratio
@@ -388,13 +388,13 @@ void Copter::ModePosHold::run()
     }
 
     //
-    // Shared roll & pitch states (POSHOLD_BRAKE_TO_LOITER and POSHOLD_LOITER)
+    // Shared roll & pitch states (RPMode::BRAKE_TO_LOITER and RPMode::LOITER)
     //
 
     // switch into LOITER mode when both roll and pitch are ready
-    if (roll_mode == POSHOLD_BRAKE_READY_TO_LOITER && pitch_mode == POSHOLD_BRAKE_READY_TO_LOITER) {
-        roll_mode = POSHOLD_BRAKE_TO_LOITER;
-        pitch_mode = POSHOLD_BRAKE_TO_LOITER;
+    if (roll_mode == RPMode::BRAKE_READY_TO_LOITER && pitch_mode == RPMode::BRAKE_READY_TO_LOITER) {
+        roll_mode = RPMode::BRAKE_TO_LOITER;
+        pitch_mode = RPMode::BRAKE_TO_LOITER;
         brake_to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
         // init loiter controller
         loiter_nav->init_target(inertial_nav.get_position());
@@ -403,21 +403,21 @@ void Copter::ModePosHold::run()
     }
 
     // roll-mode is used as the combined roll+pitch mode when in BRAKE_TO_LOITER or LOITER modes
-    if (roll_mode == POSHOLD_BRAKE_TO_LOITER || roll_mode == POSHOLD_LOITER) {
+    if (roll_mode == RPMode::BRAKE_TO_LOITER || roll_mode == RPMode::LOITER) {
 
         // force pitch mode to be same as roll_mode just to keep it consistent (it's not actually used in these states)
         pitch_mode = roll_mode;
 
         // handle combined roll+pitch mode
         switch (roll_mode) {
-            case POSHOLD_BRAKE_TO_LOITER:
+            case RPMode::BRAKE_TO_LOITER:
                 // reduce brake_to_loiter timer
                 if (brake_to_loiter_timer > 0) {
                     brake_to_loiter_timer--;
                 } else {
                     // progress to full loiter on next iteration
-                    roll_mode = POSHOLD_LOITER;
-                    pitch_mode = POSHOLD_LOITER;
+                    roll_mode = RPMode::LOITER;
+                    pitch_mode = RPMode::LOITER;
                 }
 
                 // calculate percentage mix of loiter and brake control
@@ -442,7 +442,7 @@ void Copter::ModePosHold::run()
                         roll_controller_to_pilot_override();
                         // switch pitch-mode to brake (but ready to go back to loiter anytime)
                         // no need to reset brake_pitch here as wind comp has not been updated since last brake_pitch computation
-                        pitch_mode = POSHOLD_BRAKE_READY_TO_LOITER;
+                        pitch_mode = RPMode::BRAKE_READY_TO_LOITER;
                     }
                     // if pitch input switch to pilot override for pitch
                     if (!is_zero(target_pitch)) {
@@ -451,13 +451,13 @@ void Copter::ModePosHold::run()
                         if (is_zero(target_roll)) {
                             // switch roll-mode to brake (but ready to go back to loiter anytime)
                             // no need to reset brake_roll here as wind comp has not been updated since last brake_roll computation
-                            roll_mode = POSHOLD_BRAKE_READY_TO_LOITER;
+                            roll_mode = RPMode::BRAKE_READY_TO_LOITER;
                         }
                     }
                 }
                 break;
 
-            case POSHOLD_LOITER:
+            case RPMode::LOITER:
                 // run loiter controller
                 loiter_nav->update();
 
@@ -475,7 +475,7 @@ void Copter::ModePosHold::run()
                         // init transition to pilot override
                         roll_controller_to_pilot_override();
                         // switch pitch-mode to brake (but ready to go back to loiter anytime)
-                        pitch_mode = POSHOLD_BRAKE_READY_TO_LOITER;
+                        pitch_mode = RPMode::BRAKE_READY_TO_LOITER;
                         // reset brake_pitch because wind_comp is now different and should give the compensation of the whole previous loiter angle
                         brake_pitch = 0;
                     }
@@ -485,7 +485,7 @@ void Copter::ModePosHold::run()
                         pitch_controller_to_pilot_override();
                         // if roll not overriden switch roll-mode to brake (but be ready to go back to loiter any time)
                         if (is_zero(target_roll)) {
-                            roll_mode = POSHOLD_BRAKE_READY_TO_LOITER;
+                            roll_mode = RPMode::BRAKE_READY_TO_LOITER;
                             brake_roll = 0;
                         }
                             // if roll not overridden switch roll-mode to brake (but be ready to go back to loiter any time)
@@ -622,7 +622,7 @@ void Copter::ModePosHold::get_wind_comp_lean_angles(int16_t &roll_angle, int16_t
 // roll_controller_to_pilot_override - initialises transition from a controller submode (brake or loiter) to a pilot override on roll axis
 void Copter::ModePosHold::roll_controller_to_pilot_override()
 {
-    roll_mode = POSHOLD_CONTROLLER_TO_PILOT_OVERRIDE;
+    roll_mode = RPMode::CONTROLLER_TO_PILOT_OVERRIDE;
     controller_to_pilot_timer_roll = POSHOLD_CONTROLLER_TO_PILOT_MIX_TIMER;
     // initialise pilot_roll to 0, wind_comp will be updated to compensate and poshold_update_pilot_lean_angle function shall not smooth this transition at next iteration. so 0 is the right value
     pilot_roll = 0;
@@ -633,7 +633,7 @@ void Copter::ModePosHold::roll_controller_to_pilot_override()
 // pitch_controller_to_pilot_override - initialises transition from a controller submode (brake or loiter) to a pilot override on roll axis
 void Copter::ModePosHold::pitch_controller_to_pilot_override()
 {
-    pitch_mode = POSHOLD_CONTROLLER_TO_PILOT_OVERRIDE;
+    pitch_mode = RPMode::CONTROLLER_TO_PILOT_OVERRIDE;
     controller_to_pilot_timer_pitch = POSHOLD_CONTROLLER_TO_PILOT_MIX_TIMER;
     // initialise pilot_pitch to 0, wind_comp will be updated to compensate and update_pilot_lean_angle function shall not smooth this transition at next iteration. so 0 is the right value
     pilot_pitch = 0;
