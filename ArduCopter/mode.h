@@ -909,18 +909,18 @@ private:
     void roll_controller_to_pilot_override();
     void pitch_controller_to_pilot_override();
 
-    // mission state enumeration
-    enum poshold_rp_mode {
-        POSHOLD_PILOT_OVERRIDE=0,            // pilot is controlling this axis (i.e. roll or pitch)
-        POSHOLD_BRAKE,                       // this axis is braking towards zero
-        POSHOLD_BRAKE_READY_TO_LOITER,       // this axis has completed braking and is ready to enter loiter mode (both modes must be this value before moving to next stage)
-        POSHOLD_BRAKE_TO_LOITER,             // both vehicle's axis (roll and pitch) are transitioning from braking to loiter mode (braking and loiter controls are mixed)
-        POSHOLD_LOITER,                      // both vehicle axis are holding position
-        POSHOLD_CONTROLLER_TO_PILOT_OVERRIDE // pilot has input controls on this axis and this axis is transitioning to pilot override (other axis will transition to brake if no pilot input)
+    enum class RPMode {
+        PILOT_OVERRIDE=0,            // pilot is controlling this axis (i.e. roll or pitch)
+        BRAKE,                       // this axis is braking towards zero
+        BRAKE_READY_TO_LOITER,       // this axis has completed braking and is ready to enter loiter mode (both modes must be this value before moving to next stage)
+        BRAKE_TO_LOITER,             // both vehicle's axis (roll and pitch) are transitioning from braking to loiter mode (braking and loiter controls are mixed)
+        LOITER,                      // both vehicle axis are holding position
+        CONTROLLER_TO_PILOT_OVERRIDE // pilot has input controls on this axis and this axis is transitioning to pilot override (other axis will transition to brake if no pilot input)
     };
 
-    poshold_rp_mode roll_mode           : 3;    // roll mode: pilot override, brake or loiter
-    poshold_rp_mode pitch_mode          : 3;    // pitch mode: pilot override, brake or loiter
+    RPMode roll_mode;
+    RPMode pitch_mode;
+
     uint8_t braking_time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
     uint8_t braking_time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
 
