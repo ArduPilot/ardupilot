@@ -133,10 +133,10 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 #endif
         return false;
     }
-    dev->set_read_flag(read_flag);
     if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
+    dev->set_read_flag(read_flag);
     uint8_t v;
     if (!dev->read_registers(regnum, &v, 1)) {
 #if SPI_PROBE_DEBUG
