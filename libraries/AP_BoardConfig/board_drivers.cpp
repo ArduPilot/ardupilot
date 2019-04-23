@@ -152,6 +152,90 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     return v == value;
 }
 
+/**
+ * MS56XX crc4 method from datasheet for 16 bytes (8 short values)
+ */
+static uint16_t crc4(uint16_t *data)
+{
+    uint16_t n_rem = 0;
+    uint8_t n_bit;
+
+    for (uint8_t cnt = 0; cnt < 16; cnt++) {
+        /* uneven bytes */
+        if (cnt & 1) {
+            n_rem ^= (uint8_t)((data[cnt >> 1]) & 0x00FF);
+        } else {
+            n_rem ^= (uint8_t)(data[cnt >> 1] >> 8);
+        }
+
+        for (n_bit = 8; n_bit > 0; n_bit--) {
+            if (n_rem & 0x8000) {
+                n_rem = (n_rem << 1) ^ 0x3000;
+            } else {
+                n_rem = (n_rem << 1);
+            }
+        }
+    }
+
+    return (n_rem >> 12) & 0xF;
+}
+
+static bool check_ms5611(const char* devname) {
+    auto dev = hal.spi->get_device(devname);
+    AP_HAL::Semaphore *dev_sem = dev->get_semaphore();
+    if (!dev || !dev_sem) {
+#if SPI_PROBE_DEBUG
+        hal.console->printf("%s: no device\n", devname);
+#endif
+        return false;
+    }
+    if (!dev_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
+
+    static const uint8_t CMD_MS56XX_RESET = 0x1E;
+    static const uint8_t CMD_MS56XX_PROM = 0xA0;
+
+    dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
+    hal.scheduler->delay(4);
+
+    uint16_t prom[8];
+    bool all_zero = true;
+    for (uint8_t i = 0; i < 8; i++) {
+        const uint8_t reg = CMD_MS56XX_PROM + (i << 1);
+        uint8_t val[2];
+        if (!dev->transfer(&reg, 1, val, sizeof(val))) {
+            dev_sem->give();
+#if SPI_PROBE_DEBUG
+            hal.console->printf("%s: transfer fail\n", devname);
+#endif
+            return false;
+        }
+        prom[i] = (val[0] << 8) | val[1];
+
+        if (prom[i] != 0) {
+            all_zero = false;
+        }
+    }
+    dev_sem->give();
+
+    uint16_t crc_read = prom[7]&0xf;
+    prom[7] &= 0xff00;
+
+    if (crc_read != crc4(prom) || all_zero) {
+#if SPI_PROBE_DEBUG
+        hal.console->printf("%s: crc fail\n", devname);
+#endif
+        return false;
+    }
+
+#if SPI_PROBE_DEBUG
+    hal.console->printf("%s: found successfully\n", devname);
+#endif
+
+    return true;
+}
+
 #define MPUREG_WHOAMI 0x75
 #define MPU_WHOAMI_MPU60X0  0x68
 #define MPU_WHOAMI_MPU9250  0x71
@@ -160,9 +244,11 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 
 #define LSMREG_WHOAMI 0x0f
 #define LSM_WHOAMI_LSM303D 0x49
+#define LSM_WHOAMI_L3GD20 0xd4
 
 #define INV2REG_WHOAMI 0x00
 #define INV2_WHOAMI_ICM20948 0xEA
+
 /*
   validation of the board type
  */
@@ -199,11 +285,34 @@ void AP_BoardConfig::validate_board_type(void)
 #endif
 }
 
+
+
 /*
   auto-detect board type
  */
 void AP_BoardConfig::board_autodetect(void)
 {
+#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
+    {
+        if (state.board_type != PX4_BOARD_PIXHAWK2) {
+            state.board_type.set(PX4_BOARD_PIXHAWK2);
+        }
+
+        bool success = true;
+        if (!spi_check_register("mpu9250", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
+        if (!spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
+        if (!spi_check_register("lsm9ds0_ext_g", LSMREG_WHOAMI, LSM_WHOAMI_L3GD20)) { success = false; }
+        if (!spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) { success = false; }
+        if (!check_ms5611("ms5611")) { success = false; }
+        if (!check_ms5611("ms5611_ext")) { success = false; }
+
+        if (!success) {
+            sensor_config_error("Failed to init CubeBlack - sensor mismatch");
+        }
+        return;
+    }
+#endif
+
     if (state.board_type != PX4_BOARD_AUTO) {
         validate_board_type();
         // user has chosen a board type
