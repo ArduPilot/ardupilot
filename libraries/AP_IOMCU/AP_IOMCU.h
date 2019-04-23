@@ -205,6 +205,7 @@ private:
     bool is_chibios_backend;
 
     uint32_t protocol_fail_count;
+    uint32_t protocol_count;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
