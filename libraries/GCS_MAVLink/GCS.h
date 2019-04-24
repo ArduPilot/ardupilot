@@ -18,6 +18,7 @@
 #include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Rally/AP_Rally.h>
+#include "GCS_MAVFTP.h"
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
@@ -293,6 +294,9 @@ class GCS_MAVLINK
 {
 public:
     friend class GCS;
+#if HAL_WITH_MAVFTP
+    friend class GCS_MAVFTP;
+#endif
     GCS_MAVLINK();
     void        update_receive(uint32_t max_time_us=1000);
     void        update_send();
@@ -590,7 +594,7 @@ protected:
 
     void handle_device_op_read(mavlink_message_t *msg);
     void handle_device_op_write(mavlink_message_t *msg);
-
+ 
     void send_timesync();
     // returns the time a timesync message was most likely received:
     uint64_t timesync_receive_timestamp_ns() const;
@@ -860,7 +864,7 @@ private:
                                            const float pitch,
                                            const float yaw);
 
-    void lock_channel(mavlink_channel_t chan, bool lock);
+    static void lock_channel(mavlink_channel_t chan, bool lock_rx, bool lock_tx);
 
     /*
       correct an offboard timestamp in microseconds to a local time
@@ -911,6 +915,10 @@ private:
     } try_send_message_stats;
     uint16_t max_slowdown_ms;
 #endif
+
+#if HAL_WITH_MAVFTP
+    static GCS_MAVFTP _mavftp;
+#endif //#if HAL_WITH_MAVFTP
 
     uint32_t last_mavlink_stats_logged;
 };

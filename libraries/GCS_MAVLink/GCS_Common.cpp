@@ -70,7 +70,9 @@ uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
 // private channels are ones used for point-to-point protocols, and
 // don't get broadcasts or fwded packets
 uint8_t GCS_MAVLINK::mavlink_private = 0;
-
+#if HAL_WITH_MAVFTP
+GCS_MAVFTP GCS_MAVLINK::_mavftp;
+#endif
 GCS *GCS::_singleton = nullptr;
 
 GCS_MAVLINK::GCS_MAVLINK()
@@ -97,6 +99,9 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
     snprintf(_perf_update_name, sizeof(_perf_update_name), "GCS_Update_%u", chan);
     _perf_update = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _perf_update_name);
 
+#if HAL_WITH_MAVFTP
+    _mavftp.ftp_init();
+#endif
     initialised = true;
 }
 
@@ -3466,6 +3471,11 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
         handle_optical_flow(msg);
         break;
+#if HAL_WITH_MAVFTP
+    case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
+        _mavftp.handle_ftp_messages(chan, msg);
+        break;
+#endif
     }
 }
 
@@ -4940,6 +4950,9 @@ uint64_t GCS_MAVLINK::capabilities() const
     if (AP::rally()) {
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_RALLY;
     }
+#if HAL_WITH_MAVFTP
+    ret |= MAV_PROTOCOL_CAPABILITY_FTP;
+#endif
     return ret;
 }
 

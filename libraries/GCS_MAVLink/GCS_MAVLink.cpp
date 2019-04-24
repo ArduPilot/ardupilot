@@ -46,7 +46,7 @@ static HAL_Semaphore chan_locks[MAVLINK_COMM_NUM_BUFFERS];
 mavlink_system_t mavlink_system = {7,1};
 
 // mask of serial ports disabled to allow for SERIAL_CONTROL
-static uint8_t mavlink_locked_mask;
+static uint8_t mavlink_locked_mask_rx, mavlink_locked_mask_tx;
 
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
@@ -57,15 +57,21 @@ const AP_SerialManager *GCS_MAVLINK::serialmanager_p;
 /*
   lock a channel, preventing use by MAVLink
  */
-void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
+void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock_rx, bool lock_tx)
 {
-    if (!valid_channel(chan)) {
+    if (!valid_channel(_chan)) {
         return;
     }
-    if (lock) {
-        mavlink_locked_mask |= (1U<<(unsigned)_chan);
+    if (lock_rx) {
+        mavlink_locked_mask_rx |= (1U<<(unsigned)_chan);
     } else {
-        mavlink_locked_mask &= ~(1U<<(unsigned)_chan);
+        mavlink_locked_mask_rx &= ~(1U<<(unsigned)_chan);
+    }
+
+    if (lock_tx) {
+        mavlink_locked_mask_tx |= (1U<<(unsigned)_chan);
+    } else {
+        mavlink_locked_mask_tx &= ~(1U<<(unsigned)_chan);
     }
 }
 
@@ -104,7 +110,7 @@ uint16_t comm_get_txspace(mavlink_channel_t chan)
     if (!valid_channel(chan)) {
         return 0;
     }
-    if ((1U<<chan) & mavlink_locked_mask) {
+    if ((1U<<chan) & mavlink_locked_mask_tx) {
         return 0;
     }
 	int16_t ret = mavlink_comm_port[chan]->txspace();
@@ -123,7 +129,7 @@ uint16_t comm_get_available(mavlink_channel_t chan)
     if (!valid_channel(chan)) {
         return 0;
     }
-    if ((1U<<chan) & mavlink_locked_mask) {
+    if ((1U<<chan) & mavlink_locked_mask_rx) {
         return 0;
     }
     int16_t bytes = mavlink_comm_port[chan]->available();
