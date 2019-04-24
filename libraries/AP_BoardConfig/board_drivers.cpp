@@ -153,6 +153,7 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     return v == value;
 }
 
+#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
 static bool check_ms5611(const char* devname) {
     auto dev = hal.spi->get_device(devname);
     if (!dev) {
@@ -210,6 +211,7 @@ static bool check_ms5611(const char* devname) {
 
     return true;
 }
+#endif
 
 #define MPUREG_WHOAMI 0x75
 #define MPU_WHOAMI_MPU60X0  0x68
