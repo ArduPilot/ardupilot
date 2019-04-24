@@ -146,8 +146,7 @@ void SoaringController::get_target(Location &wp)
 
 bool SoaringController::suppress_throttle()
 {
-    float alt = 0;
-    get_altitude_wrt_home(&alt);
+    float alt = _vario.alt;
 
     if (_throttle_suppressed && (alt < alt_min)) {
         // Time to throttle up
@@ -191,25 +190,25 @@ bool SoaringController::check_cruise_criteria()
     return false;
 }
 
-bool SoaringController::check_init_thermal_criteria()
-{
-    if (soar_active && (AP_HAL::micros64() - _thermal_start_time_us) < ((unsigned)min_thermal_s * 1e6)) {
-        return true;
-    }
-
-    return false;
-
-}
-
 void SoaringController::init_thermalling()
 {
     // Calc filter matrices - so that changes to parameters can be updated by switching in and out of thermal mode
-    float r = powf(thermal_r, 2);
-    float cov_q1 = powf(thermal_q1, 2); // State covariance
-    float cov_q2 = powf(thermal_q2, 2); // State covariance
-    const float init_q[4] = {cov_q1, cov_q2, cov_q2, cov_q2};
+    float r      = powf(thermal_r,  2); // Measurement noise
+    float cov_q1 = powf(thermal_q1, 2); // Process noise for strength
+    float cov_q2 = powf(thermal_q2, 2); // Process noise for position and radius
+
+    const float init_q[4] = {cov_q1,
+                             cov_q2,
+                             cov_q2,
+                             cov_q2};
+
     const MatrixN<float,4> q{init_q};
-    const float init_p[4] = {INITIAL_STRENGTH_COVARIANCE, INITIAL_RADIUS_COVARIANCE, INITIAL_POSITION_COVARIANCE, INITIAL_POSITION_COVARIANCE};
+
+    const float init_p[4] = {INITIAL_STRENGTH_COVARIANCE,
+                             INITIAL_RADIUS_COVARIANCE,
+                             INITIAL_POSITION_COVARIANCE,
+                             INITIAL_POSITION_COVARIANCE};
+
     const MatrixN<float,4> p{init_p};
 
     Vector3f position;
@@ -223,12 +222,12 @@ void SoaringController::init_thermalling()
                               INITIAL_THERMAL_RADIUS,
                               position.x + thermal_distance_ahead * cosf(_ahrs.yaw),
                               position.y + thermal_distance_ahead * sinf(_ahrs.yaw)};
+
     const VectorN<float,4> xr{init_xr};
 
     // Also reset covariance matrix p so filter is not affected by previous data
     _ekf.reset(xr, p, q, r);
 
-    _prev_update_location = position;
     _prev_update_time = AP_HAL::micros64();
     _thermal_start_time_us = AP_HAL::micros64();
 }
@@ -242,62 +241,35 @@ void SoaringController::init_cruising()
     }
 }
 
-void SoaringController::get_wind_corrected_drift(Vector3f current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy)
-{
-    Vector3f diff = current_loc - _prev_update_location; // get distances from previous update
-    *dx = diff.x;
-    *dy = diff.y;
-
-    // Wind correction
-    *wind_drift_x = wind->x * (AP_HAL::micros64() - _prev_update_time) * 1e-6;
-    *wind_drift_y = wind->y * (AP_HAL::micros64() - _prev_update_time) * 1e-6;
-    *dx -= *wind_drift_x;
-    *dy -= *wind_drift_y;
-}
-
-void SoaringController::get_altitude_wrt_home(float *alt)
-{
-    _ahrs.get_relative_position_D_home(*alt);
-    *alt *= -1.0f;
-}
 void SoaringController::update_thermalling()
 {
+    float deltaT = (AP_HAL::micros64() - _prev_update_time) * 1e-6;
+
     Vector3f current_position;
 
     if (!_ahrs.get_relative_position_NED_home(current_position)) {
         return;
     }
 
-    float dx = 0;
-    float dy = 0;
-    float dx_w = 0;
-    float dy_w = 0;
-    Vector3f wind = _ahrs.wind_estimate();
-    get_wind_corrected_drift(current_position, &wind, &dx_w, &dy_w, &dx, &dy);
-
-    struct Location current_loc;
-    _ahrs.get_position(current_loc);
+    Vector3f wind_drift = _ahrs.wind_estimate()*deltaT;
 
     // write log - save the data.
-    AP::logger().Write("SOAR", "TimeUS,nettorate,dx,dy,x0,x1,x2,x3,lat,lng,alt,dx_w,dy_w", "QfffffffLLfff", 
+    AP::logger().Write("SOAR", "TimeUS,nettorate,x0,x1,x2,x3,north,east,alt,dx_w,dy_w", "Qffffffffff",
                                            AP_HAL::micros64(),
                                            (double)_vario.reading,
-                                           (double)dx,
-                                           (double)dy,
                                            (double)_ekf.X[0],
                                            (double)_ekf.X[1],
                                            (double)_ekf.X[2],
                                            (double)_ekf.X[3],
-                                           current_loc.lat,
-                                           current_loc.lng,
+                                           current_position.x,
+                                           current_position.y,
                                            (double)_vario.alt,
-                                           (double)dx_w,
-                                           (double)dy_w);
+                                           (double)wind_drift.x,
+                                           (double)wind_drift.y);
 
-    //log_data();
-    _ekf.update(_vario.reading, current_position.x, current_position.y, dx_w, dy_w);       // update the filter
+    // update the filter
+    _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
 
-    _prev_update_location = current_position;      // save for next time
     _prev_update_time = AP_HAL::micros64();
 }
 
