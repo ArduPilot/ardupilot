@@ -30,6 +30,7 @@ char keyword_int32_t[]  = "int32_t";
 char keyword_string[]   = "string";
 char keyword_uint8_t[]  = "uint8_t";
 char keyword_uint16_t[] = "uint16_t";
+char keyword_uint32_t[] = "uint32_t";
 char keyword_void[]     = "void";
 
 enum error_codes {
@@ -82,6 +83,7 @@ enum field_type {
   TYPE_INT32_T,
   TYPE_UINT8_T,
   TYPE_UINT16_T,
+  TYPE_UINT32_T,
   TYPE_NONE,
   TYPE_STRING,
   TYPE_USERDATA,
@@ -337,6 +339,7 @@ unsigned int parse_access_flags(struct type * type) {
         case TYPE_INT32_T:
         case TYPE_UINT8_T:
         case TYPE_UINT16_T:
+        case TYPE_UINT32_T:
           type->range = parse_range_check();
           break;
         case TYPE_USERDATA:
@@ -421,6 +424,8 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
     type->type = TYPE_UINT8_T;
   } else if (strcmp(data_type, keyword_uint16_t) == 0) {
     type->type = TYPE_UINT16_T;
+  } else if (strcmp(data_type, keyword_uint32_t) == 0) {
+    type->type = TYPE_UINT32_T;
   } else if (strcmp(data_type, keyword_string) == 0) {
     type->type = TYPE_STRING;
   } else if (strcmp(data_type, keyword_void) == 0) {
@@ -441,6 +446,7 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
       case TYPE_INT32_T:
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
+      case TYPE_UINT32_T:
       case TYPE_BOOLEAN:
       case TYPE_STRING:
       case TYPE_USERDATA:
@@ -460,6 +466,7 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
       case TYPE_INT32_T:
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
+      case TYPE_UINT32_T:
         type->range = parse_range_check();
         break;
       case TYPE_BOOLEAN:
@@ -780,6 +787,9 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
       case TYPE_UINT16_T:
         fprintf(source, "%suint16_t data_%d = {};\n", indentation, arg_number);
         break;
+      case TYPE_UINT32_T:
+        fprintf(source, "%suint32_t data_%d = {};\n", indentation, arg_number);
+        break;
       case TYPE_NONE:
         return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
       case TYPE_STRING:
@@ -824,6 +834,10 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
         forced_min = "0";
         forced_max = "UINT16_MAX";
         break;
+      case TYPE_UINT32_T:
+        forced_min = "0";
+        forced_max = "UINT16_MAX";
+        break;
       case TYPE_NONE:
         return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
       case TYPE_STRING:
@@ -844,7 +858,10 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
       case TYPE_INT32_T:
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
-        fprintf(source, "%sconst int raw_data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number);
+        fprintf(source, "%sconst lua_Integer raw_data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number);
+        break;
+      case TYPE_UINT32_T:
+        fprintf(source, "%sconst uint32_t raw_data_%d = coerce_to_uint32_t(L, %d);\n", indentation, arg_number, arg_number);
         break;
       case TYPE_NONE:
       case TYPE_STRING:
@@ -885,6 +902,9 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
       case TYPE_UINT16_T:
         fprintf(source, "%sconst uint16_t data_%d = static_cast<uint16_t>(raw_data_%d);\n", indentation, arg_number, arg_number);
         break;
+      case TYPE_UINT32_T:
+        fprintf(source, "%sconst uint32_t data_%d = static_cast<uint32_t>(raw_data_%d);\n", indentation, arg_number, arg_number);
+        break;
       case TYPE_BOOLEAN:
         fprintf(source, "%sconst bool data_%d = static_cast<bool>(lua_toboolean(L, %d));\n", indentation, arg_number, arg_number);
         break;
@@ -921,6 +941,10 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
         fprintf(source, "            lua_pushinteger(L, ud->%s);\n", field->name);
+        break;
+      case TYPE_UINT32_T:
+        fprintf(source, "            new_uint32_t(L);\n");
+        fprintf(source, "            *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = ud->%s;\n", field->name);
         break;
       case TYPE_NONE:
         error(ERROR_INTERNAL, "Can't access a NONE field");
@@ -1039,6 +1063,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case TYPE_UINT16_T:
       fprintf(source, "    const uint16_t data = ud->%s(\n", method->name);
       break;
+    case TYPE_UINT32_T:
+      fprintf(source, "    const uint32_t data = ud->%s(\n", method->name);
+      break;
     case TYPE_USERDATA:
       fprintf(source, "    const %s &data = ud->%s(\n", method->return_type.data.userdata_name, method->name);
       break;
@@ -1086,6 +1113,10 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
               case TYPE_UINT16_T:
                 fprintf(source, "        lua_pushinteger(L, data_%d);\n", arg_index);
                 break;
+              case TYPE_UINT32_T:
+                fprintf(source, "        new_uint32_t(L);\n");
+                fprintf(source, "        *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = data_%d;\n", arg_index);
+                break;
               case TYPE_STRING:
                 fprintf(source, "        lua_pushstring(L, data_%d);\n", arg_index);
                 break;
@@ -1119,6 +1150,10 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case TYPE_UINT8_T:
     case TYPE_UINT16_T:
       fprintf(source, "    lua_pushinteger(L, data);\n");
+      break;
+    case TYPE_UINT32_T:
+      fprintf(source, "        new_uint32_t(L);\n");
+      fprintf(source, "        *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = data;\n");
       break;
     case TYPE_STRING:
       fprintf(source, "    lua_pushstring(L, data);\n");
