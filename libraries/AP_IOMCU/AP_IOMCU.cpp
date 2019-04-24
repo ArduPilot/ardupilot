@@ -37,6 +37,10 @@ enum ioevents {
     IOEVENT_MIXING
 };
 
+// max number of consecutve protocol failures we accept before raising
+// an error
+#define IOMCU_MAX_REPEATED_FAILURES 20
+
 AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     uart(_uart)
 {}
@@ -299,6 +303,8 @@ void AP_IOMCU::read_status()
     uint16_t *r = (uint16_t *)&reg_status;
     read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r);
 
+    check_iomcu_reset();
+
     if (reg_status.flag_safety_off == 0) {
         // if the IOMCU is indicating that safety is on, then force a
         // re-check of the safety options. This copes with a IOMCU reset
@@ -421,7 +427,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
         return false;
     }
     memcpy(regs, pkt.regs, count*2);
-    if (protocol_fail_count > 3) {
+    if (protocol_fail_count > IOMCU_MAX_REPEATED_FAILURES) {
         handle_repeated_failures();
     }
     protocol_fail_count = 0;
@@ -490,7 +496,7 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
         protocol_fail_count++;
         return false;
     }
-    if (protocol_fail_count > 3) {
+    if (protocol_fail_count > IOMCU_MAX_REPEATED_FAILURES) {
         handle_repeated_failures();
     }
     protocol_fail_count = 0;
@@ -905,14 +911,35 @@ void AP_IOMCU::handle_repeated_failures(void)
         // initial sync with IOMCU
         return;
     }
+    AP::internalerror().error(AP_InternalError::error_t::iomcu_fail);
+}
+
+/*
+  check for IOMCU reset (possibly due to a watchdog).
+ */
+void AP_IOMCU::check_iomcu_reset(void)
+{
+    if (last_iocmu_timestamp_ms == 0) {
+        // initialisation
+        last_iocmu_timestamp_ms = reg_status.timestamp_ms;
+        return;
+    }
+    uint32_t dt_ms = reg_status.timestamp_ms - last_iocmu_timestamp_ms;
+    last_iocmu_timestamp_ms = reg_status.timestamp_ms;
+    if (dt_ms < 500) {
+        // all OK
+        return;
+    }
     detected_io_reset = true;
     AP::internalerror().error(AP_InternalError::error_t::iomcu_reset);
+    hal.console->printf("IOMCU reset\n");
     // we need to ensure the mixer data and the rates are sent over to
     // the IOMCU
     if (mixing.enabled) {
         trigger_event(IOEVENT_MIXING);
     }
     trigger_event(IOEVENT_SET_RATES);
+    trigger_event(IOEVENT_SET_DEFAULT_RATE);
 }
 
 #endif // HAL_WITH_IO_MCU
