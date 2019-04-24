@@ -46,6 +46,7 @@ public:
         constraining_nan            = (1U << 10),
         watchdog_reset              = (1U << 11),
         iomcu_reset                 = (1U << 12),
+        iomcu_fail                  = (1U << 13),
     };
 
     void error(const AP_InternalError::error_t error);
