@@ -5,7 +5,7 @@
 
 PROJECT_NAME:=arduplane
 CDIR:=$(dir $(lastword $(MAKEFILE_LIST)))
-BOARD = $(shell cat $(abspath $(CDIR)..)/board.txt)
+BOARD:=$(shell cat $(abspath $(CDIR)..)/board.txt)
 BUILD_DIR_BASE:=$(abspath $(CDIR)../../../../build/$(BOARD)/idf-plane)
 SDKCONFIG:=$(abspath $(CDIR)..)/sdkconfig
 SDKCONFIG_DEFAULTS:=$(abspath $(CDIR)..)/sdkconfig.defaults

@@ -207,7 +207,7 @@ void WiFiDriver::initialize_wifi()
     esp_event_loop_init(nullptr, nullptr);
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_wifi_init(&cfg);
-    esp_wifi_set_storage(WIFI_STORAGE_RAM);
+    esp_wifi_set_storage(WIFI_STORAGE_FLASH);
     wifi_config_t wifi_config;
     memset(&wifi_config, 0, sizeof(wifi_config));
     strcpy((char *)wifi_config.ap.ssid, "ardupilot");
