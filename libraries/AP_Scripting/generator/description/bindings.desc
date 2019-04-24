@@ -59,8 +59,12 @@ singleton AP_GPS method velocity Vector3f uint8_t 0 GPS_MAX_INSTANCES
 singleton AP_GPS method ground_speed float uint8_t 0 GPS_MAX_INSTANCES
 singleton AP_GPS method ground_course float uint8_t 0 GPS_MAX_INSTANCES
 singleton AP_GPS method num_sats uint8_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method time_week uint16_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method time_week_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
 singleton AP_GPS method get_hdop uint16_t uint8_t 0 GPS_MAX_INSTANCES
 singleton AP_GPS method get_vdop uint16_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method last_fix_time_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method last_message_time_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
 singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 GPS_MAX_INSTANCES
 singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 GPS_MAX_INSTANCES
 singleton AP_GPS method all_configured boolean
