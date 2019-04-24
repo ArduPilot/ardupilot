@@ -179,11 +179,14 @@ bool SoaringController::suppress_throttle()
 
 bool SoaringController::check_thermal_criteria()
 {
+    bool thermalling_allowed = soar_active_ch>0 ? RC_Channels::get_radio_in(soar_active_ch-1) >= 1700 : true;
+
     return (soar_active
             && ((AP_HAL::micros64() - _cruise_start_time_us) > ((unsigned)min_cruise_s * 1e6))
             && (_vario.filtered_reading - _vario.get_exp_thermalling_sink()) > thermal_vspeed
             && _vario.alt < alt_max
-            && _vario.alt > alt_min);
+            && _vario.alt > alt_min
+            && thermalling_allowed);
 }
 
 
@@ -348,8 +351,8 @@ bool SoaringController::is_active() const
         // no activation channel
         return true;
     }
-    // active when above 1700
-    return RC_Channels::get_radio_in(soar_active_ch-1) >= 1700;
+    // active when above 1400
+    return RC_Channels::get_radio_in(soar_active_ch-1) >= 1400;
 }
 
 void SoaringController::set_throttle_suppressed(bool suppressed)
