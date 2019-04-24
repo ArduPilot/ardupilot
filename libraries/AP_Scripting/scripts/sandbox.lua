@@ -9,6 +9,8 @@ function get_sandbox_env ()
           tostring = tostring,
           type = type,
           unpack = unpack,
+          io = { close = io.close, flush = io.flush, input = io.input, open = io.open, output = io.output,
+                 popen = io.popen, read = io.read, type = io.type, write = io.write},
           string = { byte = string.byte, char = string.char, find = string.find, 
                      format = string.format, gmatch = string.gmatch, gsub = string.gsub, 
                      len = string.len, lower = string.lower, match = string.match, 
