@@ -28,7 +28,7 @@ int lua_gcs_send_text(lua_State *L);
 int lua_gcs_send_text(lua_State *L) {
     check_arguments(L, 1, "send_text");
 
-    const char* str = lua_tostring(L, -1);
+    const char* str = luaL_checkstring(L, -1);
 
     gcs().send_text(MAV_SEVERITY_INFO, str);
     return 0;
