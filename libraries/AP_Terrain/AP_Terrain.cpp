@@ -35,6 +35,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_Terrain *AP_Terrain::singleton;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Param: ENABLE
@@ -62,6 +64,13 @@ AP_Terrain::AP_Terrain(const AP_Mission &_mission) :
     fd(-1)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (singleton != nullptr) {
+        AP_HAL::panic("Terrain must be singleton");
+    }
+#endif
+    singleton = this;
 }
 
 /*
