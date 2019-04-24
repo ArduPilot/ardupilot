@@ -2,6 +2,7 @@
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
 #include <AP_Relay/AP_Relay.h>
+#include <AP_Terrain/AP_Terrain.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Math/AP_Math.h>
@@ -559,7 +560,7 @@ const luaL_Reg Location_meta[] = {
 };
 
 static int AP_Relay_toggle(lua_State *L) {
-    // 1 uint8_t 111 : 8
+    // 1 uint8_t 121 : 8
     const int args = lua_gettop(L);
     if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
@@ -582,7 +583,7 @@ static int AP_Relay_toggle(lua_State *L) {
 }
 
 static int AP_Relay_enabled(lua_State *L) {
-    // 1 uint8_t 110 : 8
+    // 1 uint8_t 120 : 8
     const int args = lua_gettop(L);
     if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
@@ -606,7 +607,7 @@ static int AP_Relay_enabled(lua_State *L) {
 }
 
 static int AP_Relay_off(lua_State *L) {
-    // 1 uint8_t 109 : 8
+    // 1 uint8_t 119 : 8
     const int args = lua_gettop(L);
     if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
@@ -629,7 +630,7 @@ static int AP_Relay_off(lua_State *L) {
 }
 
 static int AP_Relay_on(lua_State *L) {
-    // 1 uint8_t 108 : 8
+    // 1 uint8_t 118 : 8
     const int args = lua_gettop(L);
     if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
@@ -649,6 +650,170 @@ static int AP_Relay_on(lua_State *L) {
             data_2);
 
     return 0;
+}
+
+static int AP_Terrain_height_above_terrain(lua_State *L) {
+    // 1 float 113 : 6
+    // 2 bool 113 : 7
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Terrain * ud = AP_Terrain::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "terrain not supported on this firmware");
+    }
+
+    float data_5002 = {};
+    const bool data_3 = static_cast<bool>(lua_toboolean(L, 3));
+    const bool data = ud->height_above_terrain(
+            data_5002,
+            data_3);
+
+    if (data) {
+        lua_pushnumber(L, data_5002);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int AP_Terrain_height_relative_home_equivalent(lua_State *L) {
+    // 1 float 112 : 8
+    // 2 float 112 : 9
+    // 3 bool 112 : 10
+    const int args = lua_gettop(L);
+    if (args > 3) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 3) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Terrain * ud = AP_Terrain::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "terrain not supported on this firmware");
+    }
+
+    const float raw_data_2 = luaL_checknumber(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "argument out of range");
+    const float data_2 = raw_data_2;
+    float data_5003 = {};
+    const bool data_4 = static_cast<bool>(lua_toboolean(L, 4));
+    const bool data = ud->height_relative_home_equivalent(
+            data_2,
+            data_5003,
+            data_4);
+
+    if (data) {
+        lua_pushnumber(L, data_5003);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int AP_Terrain_height_terrain_difference_home(lua_State *L) {
+    // 1 float 111 : 6
+    // 2 bool 111 : 7
+    const int args = lua_gettop(L);
+    if (args > 2) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 2) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Terrain * ud = AP_Terrain::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "terrain not supported on this firmware");
+    }
+
+    float data_5002 = {};
+    const bool data_3 = static_cast<bool>(lua_toboolean(L, 3));
+    const bool data = ud->height_terrain_difference_home(
+            data_5002,
+            data_3);
+
+    if (data) {
+        lua_pushnumber(L, data_5002);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int AP_Terrain_height_amsl(lua_State *L) {
+    // 1 Location 110 : 6
+    // 2 float 110 : 7
+    // 3 bool 110 : 8
+    const int args = lua_gettop(L);
+    if (args > 3) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 3) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Terrain * ud = AP_Terrain::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "terrain not supported on this firmware");
+    }
+
+    Location & data_2 = *check_Location(L, 2);
+    float data_5003 = {};
+    const bool data_4 = static_cast<bool>(lua_toboolean(L, 4));
+    const bool data = ud->height_amsl(
+            data_2,
+            data_5003,
+            data_4);
+
+    if (data) {
+        lua_pushnumber(L, data_5003);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int AP_Terrain_status(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 1) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 1) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Terrain * ud = AP_Terrain::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "terrain not supported on this firmware");
+    }
+
+    const uint8_t data = ud->status(
+);
+
+    lua_pushinteger(L, data);
+    return 1;
+}
+
+static int AP_Terrain_enabled(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args > 1) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 1) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Terrain * ud = AP_Terrain::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "terrain not supported on this firmware");
+    }
+
+    const bool data = ud->enabled(
+);
+
+    lua_pushboolean(L, data);
+    return 1;
 }
 
 static int RangeFinder_num_sensors(lua_State *L) {
@@ -1781,6 +1946,16 @@ const luaL_Reg AP_Relay_meta[] = {
     {NULL, NULL}
 };
 
+const luaL_Reg AP_Terrain_meta[] = {
+    {"height_above_terrain", AP_Terrain_height_above_terrain},
+    {"height_relative_home_equivalent", AP_Terrain_height_relative_home_equivalent},
+    {"height_terrain_difference_home", AP_Terrain_height_terrain_difference_home},
+    {"height_amsl", AP_Terrain_height_amsl},
+    {"status", AP_Terrain_status},
+    {"enabled", AP_Terrain_enabled},
+    {NULL, NULL}
+};
+
 const luaL_Reg RangeFinder_meta[] = {
     {"num_sensors", RangeFinder_num_sensors},
     {NULL, NULL}
@@ -1866,6 +2041,7 @@ const struct singleton_fun {
     const luaL_Reg *reg;
 } singleton_fun[] = {
     {"relay", AP_Relay_meta},
+    {"terrain", AP_Terrain_meta},
     {"rangefinder", RangeFinder_meta},
     {"AP_Notify", AP_Notify_meta},
     {"notify", notify_meta},
@@ -1905,6 +2081,7 @@ void load_generated_bindings(lua_State *L) {
 
 const char *singletons[] = {
     "relay",
+    "terrain",
     "rangefinder",
     "AP_Notify",
     "notify",
