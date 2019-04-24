@@ -1733,6 +1733,11 @@ dirent_t * readdir(DIR *dirp)
     len = strlen(fno.fname);
     strncpy(_de.d_name,fno.fname,len);
     _de.d_name[len] = 0;
+    if (fno.fattrib & AM_DIR) {
+        _de.d_type = DT_DIR;
+    } else {
+        _de.d_type = DT_REG;
+    }
     return( (dirent_t *) &_de);
 }
 
