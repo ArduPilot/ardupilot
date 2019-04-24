@@ -206,6 +206,7 @@ private:
 
     uint32_t protocol_fail_count;
     uint32_t protocol_count;
+    uint32_t last_iocmu_timestamp_ms;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
@@ -229,7 +230,8 @@ private:
 
     bool check_crc(void);
     void handle_repeated_failures();
-    
+    void check_iomcu_reset();
+
     enum {
         PROTO_NOP               = 0x00,
         PROTO_OK                = 0x10,
