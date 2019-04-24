@@ -82,6 +82,8 @@ public:
     AP_Terrain(const AP_Terrain &other) = delete;
     AP_Terrain &operator=(const AP_Terrain&) = delete;
 
+    static AP_Terrain *get_singleton(void) { return singleton; }
+
     enum TerrainStatus {
         TerrainStatusDisabled  = 0, // not enabled
         TerrainStatusUnhealthy = 1, // no terrain data for current location
@@ -413,5 +415,7 @@ private:
 
     // status
     enum TerrainStatus system_status = TerrainStatusDisabled;
+
+    static AP_Terrain *singleton;
 };
 #endif // AP_TERRAIN_AVAILABLE
