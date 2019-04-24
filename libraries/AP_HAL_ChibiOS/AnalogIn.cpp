@@ -370,10 +370,19 @@ void AnalogIn::update_power_flags(void)
     if (!palReadLine(HAL_GPIO_PIN_VDD_SERVO_VALID)) {
         flags |= MAV_POWER_STATUS_SERVO_VALID;
     }
+#elif defined(HAL_GPIO_PIN_VDD_BRICK2_VALID)
+    // some boards defined BRICK2 instead of servo valid
+    if (!palReadLine(HAL_GPIO_PIN_VDD_BRICK2_VALID)) {
+        flags |= MAV_POWER_STATUS_SERVO_VALID;
+    }
 #endif
-    
+
 #ifdef HAL_GPIO_PIN_VBUS
 	if (palReadLine(HAL_GPIO_PIN_VBUS)) {
+        flags |= MAV_POWER_STATUS_USB_CONNECTED;
+    }
+#elif defined(HAL_GPIO_PIN_nVBUS)
+    if (!palReadLine(HAL_GPIO_PIN_nVBUS)) {
         flags |= MAV_POWER_STATUS_USB_CONNECTED;
     }
 #endif
