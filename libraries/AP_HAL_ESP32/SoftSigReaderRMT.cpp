@@ -138,7 +138,12 @@ typedef struct rmt_item32_s {
 bool SoftSigReaderRMT::read(uint32_t &widths0, uint32_t &widths1)
 {
 
-printf("SoftSigReaderRMT::read\n");
+
+  static bool ret = true;
+
+  if ( ret == true )  return true;
+
+  printf("SoftSigReaderRMT::read\n");
 
     //while(rb) {
         size_t rx_size = 0;
