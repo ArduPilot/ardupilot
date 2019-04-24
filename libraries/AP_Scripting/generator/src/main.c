@@ -717,7 +717,8 @@ void emit_userdata_allocators(void) {
   while (node) {
     fprintf(source, "int new_%s(lua_State *L) {\n", node->name);
     fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
-    fprintf(source, "    %s *ud = (%s *)lua_newuserdata(L, sizeof(%s));\n", node->name, node->name, node->name);
+    fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
+    fprintf(source, "    memset(ud, 0, sizeof(%s));\n", node->name);
     fprintf(source, "    new (ud) %s();\n", node->name);
     fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->name);
     fprintf(source, "    lua_setmetatable(L, -2);\n");
@@ -1323,6 +1324,9 @@ void emit_loaders(void) {
   fprintf(source, "        lua_setglobal(L, singleton_fun[i].name);\n");
   fprintf(source, "    }\n");
 
+  fprintf(source, "\n");
+  fprintf(source, "    load_boxed_numerics(L);\n");
+
   fprintf(source, "}\n\n");
 }
 
@@ -1360,6 +1364,9 @@ void emit_sandbox(void) {
   fprintf(source, "        lua_pushcfunction(L, new_userdata[i].fun);\n");
   fprintf(source, "        lua_settable(L, -3);\n");
   fprintf(source, "    }\n");
+
+  fprintf(source, "\n");
+  fprintf(source, "    load_boxed_numerics_sandbox(L);\n");
 
   // load the userdata complex functions
   fprintf(source, "}\n");
@@ -1429,6 +1436,7 @@ int main(int argc, char **argv) {
   sanity_check_userdata();
 
   fprintf(source, "#include \"lua_generated_bindings.h\"\n");
+  fprintf(source, "#include \"lua_boxed_numerics.h\"\n");
 
   trace(TRACE_GENERAL, "Starting emission");
 

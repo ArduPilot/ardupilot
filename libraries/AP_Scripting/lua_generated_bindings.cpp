@@ -1,5 +1,6 @@
 // auto generated bindings, don't manually edit
 #include "lua_generated_bindings.h"
+#include "lua_boxed_numerics.h"
 #include <AP_Relay/AP_Relay.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Notify/AP_Notify.h>
@@ -12,7 +13,8 @@
 
 int new_Vector2f(lua_State *L) {
     luaL_checkstack(L, 2, "Out of stack");
-    Vector2f *ud = (Vector2f *)lua_newuserdata(L, sizeof(Vector2f));
+    void *ud = lua_newuserdata(L, sizeof(Vector2f));
+    memset(ud, 0, sizeof(Vector2f));
     new (ud) Vector2f();
     luaL_getmetatable(L, "Vector2f");
     lua_setmetatable(L, -2);
@@ -21,7 +23,8 @@ int new_Vector2f(lua_State *L) {
 
 int new_Vector3f(lua_State *L) {
     luaL_checkstack(L, 2, "Out of stack");
-    Vector3f *ud = (Vector3f *)lua_newuserdata(L, sizeof(Vector3f));
+    void *ud = lua_newuserdata(L, sizeof(Vector3f));
+    memset(ud, 0, sizeof(Vector3f));
     new (ud) Vector3f();
     luaL_getmetatable(L, "Vector3f");
     lua_setmetatable(L, -2);
@@ -30,7 +33,8 @@ int new_Vector3f(lua_State *L) {
 
 int new_Location(lua_State *L) {
     luaL_checkstack(L, 2, "Out of stack");
-    Location *ud = (Location *)lua_newuserdata(L, sizeof(Location));
+    void *ud = lua_newuserdata(L, sizeof(Location));
+    memset(ud, 0, sizeof(Location));
     new (ud) Location();
     luaL_getmetatable(L, "Location");
     lua_setmetatable(L, -2);
@@ -1792,6 +1796,8 @@ void load_generated_bindings(lua_State *L) {
         lua_setmetatable(L, -2);
         lua_setglobal(L, singleton_fun[i].name);
     }
+
+    load_boxed_numerics(L);
 }
 
 const char *singletons[] = {
@@ -1824,4 +1830,6 @@ void load_generated_sandbox(lua_State *L) {
         lua_pushcfunction(L, new_userdata[i].fun);
         lua_settable(L, -3);
     }
+
+    load_boxed_numerics_sandbox(L);
 }
