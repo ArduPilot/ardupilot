@@ -102,6 +102,16 @@ include AP_RangeFinder/AP_RangeFinder.h
 singleton RangeFinder alias rangefinder
 singleton RangeFinder method num_sensors uint8_t
 
+include AP_Terrain/AP_Terrain.h
+
+singleton AP_Terrain alias terrain
+singleton AP_Terrain method enabled boolean
+singleton AP_Terrain method status uint8_t
+singleton AP_Terrain method height_amsl boolean Location float'Null boolean
+singleton AP_Terrain method height_terrain_difference_home boolean float'Null boolean
+singleton AP_Terrain method height_relative_home_equivalent boolean float -FLT_MAX FLT_MAX float'Null boolean
+singleton AP_Terrain method height_above_terrain boolean float'Null boolean
+
 include AP_Relay/AP_Relay.h
 
 singleton AP_Relay alias relay
