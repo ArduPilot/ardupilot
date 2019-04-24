@@ -506,7 +506,7 @@ bool AP_IOMCU_FW::handle_code_write()
             break;
         case PAGE_REG_SETUP_SBUS_RATE:
             reg_setup.sbus_rate = rx_io_packet.regs[0];
-            sbus_interval_ms = MAX(1000U / reg_setup.sbus_rate,3);
+            sbus_interval_ms = MAX(1000U / reg_setup.sbus_rate, 3U);
             break;
         case PAGE_REG_SETUP_FEATURES:
             reg_setup.features = rx_io_packet.regs[0];
@@ -517,7 +517,7 @@ bool AP_IOMCU_FW::handle_code_write()
                                         P_SETUP_FEATURES_SBUS2_OUT);
 
                 // enable SBUS output at specified rate
-                sbus_interval_ms = MAX(1000U / reg_setup.sbus_rate,3);
+                sbus_interval_ms = MAX(1000U / reg_setup.sbus_rate, 3U);
 
                 // we need to release the JTAG reset pin to be used as a GPIO, otherwise we can't enable
                 // or disable SBUS out
