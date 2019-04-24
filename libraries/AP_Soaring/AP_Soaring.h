@@ -46,8 +46,6 @@ class SoaringController {
     bool _throttle_suppressed;
 
     float McCready(float alt);
-    void get_wind_corrected_drift(Vector3f current_loc, const Vector3f *wind, float *wind_drift_x, float *wind_drift_y, float *dx, float *dy);
-    void get_altitude_wrt_home(float *alt);
 
 protected:
     AP_Int8 soar_active;
@@ -83,7 +81,6 @@ public:
     bool suppress_throttle();
     bool check_thermal_criteria();
     LoiterStatus check_cruise_criteria();
-    bool check_init_thermal_criteria();
     void init_thermalling();
     void init_cruising();
     void update_thermalling();
