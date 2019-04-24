@@ -49,7 +49,7 @@ static Empty::UARTDriver uartDDriver;    // unused
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;
-static Empty::I2CDeviceManager i2cDeviceManager;
+static ESP32::I2CDeviceManager i2cDeviceManager;
 static ESP32::SPIDeviceManager spiDeviceManager;
 static Empty::AnalogIn analogIn;
 static ESP32::Storage storageDriver;

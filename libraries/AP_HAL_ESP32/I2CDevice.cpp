@@ -25,6 +25,21 @@ using namespace ESP32;
 #define HAL_I2C_INTERNAL_MASK 0
 #endif
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
+// pins 12 and 13 are shared with the "debug" header on buzz's blue board, so you cant debug and use i2c at the same time
+// without changing this.
+i2c_config_t i2c_bus_config[1] = {{
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = (gpio_num_t)12,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_io_num = (gpio_num_t)13,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        400000
+    }
+};
+
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
+
 i2c_config_t i2c_bus_config[1] = {{
         .mode = I2C_MODE_MASTER,
         .sda_io_num = (gpio_num_t)26,
@@ -35,10 +50,13 @@ i2c_config_t i2c_bus_config[1] = {{
     }
 };
 
+#endif
+
 I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(i2c_bus_config)];
 
 I2CDeviceManager::I2CDeviceManager(void)
 {
+	printf("%s\n",__PRETTY_FUNCTION__);
     for (uint8_t i=0; i<ARRAY_SIZE(i2c_bus_config); i++) {
         businfo[i].bus = i;
         i2c_param_config((i2c_port_t)i, &i2c_bus_config[i]);
@@ -52,6 +70,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     _address(address),
     bus(I2CDeviceManager::businfo[busnum])
 {
+	printf("%s\n",__PRETTY_FUNCTION__);
     set_device_bus(busnum);
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
