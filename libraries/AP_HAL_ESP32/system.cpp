@@ -63,6 +63,6 @@ extern "C" int main(int argc, char *argv[]);
 
 extern "C" void app_main()
 {
-   main(0, nullptr);
+    main(0, nullptr);
 }
 

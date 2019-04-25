@@ -16,7 +16,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "HAL_ESP32_Class.h"
 #include "Scheduler.h"
 #include "I2CDevice.h"
@@ -82,4 +81,3 @@ void AP_HAL::init()
 {
 }
 
-#endif

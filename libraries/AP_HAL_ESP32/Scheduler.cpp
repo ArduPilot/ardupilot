@@ -14,7 +14,9 @@
  */
 
 #include "AP_HAL_ESP32/Scheduler.h"
+#include "AP_HAL_ESP32/RCInput.h"
 #include "SdCard.h"
+#include "Profile.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -107,6 +109,7 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
 void Scheduler::reboot(bool hold_in_bootloader)
 {
     printf("Restarting now...\n");
+    hal.rcout->force_safety_on();
     unmount_sdcard();
     esp_restart();
 }
@@ -176,7 +179,7 @@ void Scheduler::_rcin_thread(void *arg)
         sched->delay_microseconds(20000);
     }
     while (true) {
-        sched->delay_microseconds(20000);
+        sched->delay_microseconds(3000);
         //((RCInput *)hal.rcin)->_timer_tick();
     }
 }
@@ -225,6 +228,7 @@ void Scheduler::_storage_thread(void* arg)
         sched->delay_microseconds(10000);
         // process any pending storage writes
         hal.storage->_timer_tick();
+        print_profile();
     }
 }
 

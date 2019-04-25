@@ -16,7 +16,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "HAL_ESP32_Namespace.h"
 
 #define ESP32_SCHEDULER_MAX_TIMER_PROCS 10
@@ -96,4 +95,3 @@ private:
     void _run_io();
     Semaphore _io_sem;
 };
-#endif
