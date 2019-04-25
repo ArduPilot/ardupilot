@@ -24,6 +24,7 @@
 #include <AP_Rally/AP_Rally.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -612,7 +613,7 @@ bool AP_Arming::servo_checks(bool report) const
         check_passed = false;
     }
 #endif
-    
+
     return check_passed;
 }
 
@@ -655,6 +656,11 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
     }
+    if (AP::internalerror().errors() != 0) {
+        check_failed(ARMING_CHECK_NONE, report, "Internal errors detected (0x%x)", AP::internalerror().errors());
+        return false;
+    }
+
     return true;
 }
 
