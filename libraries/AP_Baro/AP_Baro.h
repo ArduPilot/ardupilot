@@ -181,6 +181,11 @@ public:
     void set_log_baro_bit(uint32_t bit) { _log_baro_bit = bit; }
     bool should_log() const;
 
+    // allow threads to lock against baro update
+    HAL_Semaphore &get_semaphore(void) {
+        return _rsem;
+    }
+    
 private:
     // singleton
     static AP_Baro *_singleton;
@@ -246,6 +251,9 @@ private:
     void _probe_i2c_barometers(void);
     AP_Int8                            _filter_range;  // valid value range from mean value
     AP_Int32                           _baro_probe_ext;
+
+    // semaphore for API access from threads
+    HAL_Semaphore_Recursive            _rsem;
 };
 
 namespace AP {
