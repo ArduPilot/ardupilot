@@ -142,8 +142,8 @@ void AC_Circle::update()
         // update position controller target
         _pos_control.set_xy_target(target.x, target.y);
 
-        // heading is 180 deg from vehicles target position around circle
-        _yaw = wrap_PI(_angle-M_PI) * DEGX100;
+        // heading is from vehicle to center of circle
+        _yaw = get_bearing_cd(_inav.get_position(), _center);
     } else {
         // set target position to center
         Vector3f target;
