@@ -4428,10 +4428,17 @@ void GCS_MAVLINK::initialise_message_intervals_from_streamrates()
     for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {
         initialise_message_intervals_for_stream(all_stream_entries[i].stream_id);
     }
+    set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
 }
 
 bool GCS_MAVLINK::get_default_interval_for_ap_message(const ap_message id, uint16_t &interval) const
 {
+    if (id == MSG_HEARTBEAT) {
+        // handle heartbeat requests as a special case because heartbeat is not "streamed"
+        interval = 1000;
+        return true;
+    }
+
     // find which stream this ap_message is in
     for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {
         const GCS_MAVLINK::stream_entries &entries = all_stream_entries[i];
