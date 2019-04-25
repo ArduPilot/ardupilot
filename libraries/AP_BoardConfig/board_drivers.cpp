@@ -19,7 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BoardConfig.h"
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Baro/AP_Baro_MS5611.h>
+#include <AP_Math/crc.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -198,7 +198,7 @@ static bool check_ms5611(const char* devname) {
     uint16_t crc_read = prom[7]&0xf;
     prom[7] &= 0xff00;
 
-    if (crc_read != AP_Baro_MS56XX::crc4(prom) || all_zero) {
+    if (crc_read != crc_crc4(prom) || all_zero) {
 #if SPI_PROBE_DEBUG
         hal.console->printf("%s: crc fail\n", devname);
 #endif
