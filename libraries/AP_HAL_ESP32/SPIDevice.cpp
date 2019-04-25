@@ -83,6 +83,7 @@ spi_bus_config_t bus_config[3] = {
 SPIBus::SPIBus(uint8_t _bus):
     DeviceBus(Scheduler::SPI_PRIORITY), bus(_bus)
 {
+	printf("%s -> busnum:%d\n",__PRETTY_FUNCTION__,bus);
     spi_bus_initialize((spi_host_device_t)_bus, &bus_config[_bus], _bus);
 }
 
@@ -90,6 +91,7 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
 {
+	printf("%s -> busnum:%d device:%d\n",__PRETTY_FUNCTION__,bus.bus,_device_desc.device);
     set_device_bus(bus.bus);
     set_device_address(_device_desc.device);
     set_speed(AP_HAL::Device::SPEED_LOW);
