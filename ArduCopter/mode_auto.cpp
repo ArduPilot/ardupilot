@@ -573,12 +573,26 @@ bool Copter::ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
 
 uint32_t Copter::ModeAuto::wp_distance() const
 {
-    return wp_nav->get_wp_distance_to_destination();
+    switch (_mode) {
+    case Auto_Circle:
+        return copter.circle_nav->get_distance_to_target();
+    case Auto_WP:
+    case Auto_CircleMoveToEdge:
+    default:
+        return wp_nav->get_wp_distance_to_destination();
+    }
 }
 
 int32_t Copter::ModeAuto::wp_bearing() const
 {
-    return wp_nav->get_wp_bearing_to_destination();
+    switch (_mode) {
+    case Auto_Circle:
+        return copter.circle_nav->get_bearing_to_target();
+    case Auto_WP:
+    case Auto_CircleMoveToEdge:
+    default:
+        return wp_nav->get_wp_bearing_to_destination();
+    }
 }
 
 bool Copter::ModeAuto::get_wp(Location& destination)
