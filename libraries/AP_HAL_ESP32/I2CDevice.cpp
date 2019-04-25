@@ -27,12 +27,12 @@ using namespace ESP32;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
 // pins 12 and 13 are shared with the "debug" header on buzz's blue board, so you cant debug and use i2c at the same time
-// without changing this.
+// without changing this or disabling I2c and the SD pullup.
 i2c_config_t i2c_bus_config[1] = {{
         .mode = I2C_MODE_MASTER,
-        .sda_io_num = (gpio_num_t)12,
+        .sda_io_num = (gpio_num_t)13,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = (gpio_num_t)13,
+        .scl_io_num = (gpio_num_t)12,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         400000
     }
@@ -70,11 +70,13 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     _address(address),
     bus(I2CDeviceManager::businfo[busnum])
 {
-	printf("%s\n",__PRETTY_FUNCTION__);
+	//printf("%s -> busnum:%d address:%d\n",__PRETTY_FUNCTION__,busnum, address);
     set_device_bus(busnum);
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
+    printf("i2c device constructed %s\n", pname);
+
 }
 
 I2CDevice::~I2CDevice()
@@ -102,6 +104,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     i2c_master_stop(cmd);    
     bool result = (i2c_master_cmd_begin((i2c_port_t)bus.bus, cmd, portMAX_DELAY) == ESP_OK);
     i2c_cmd_link_delete(cmd);
+	//printf("%s -> transfer result:%s\n",__PRETTY_FUNCTION__,result?"success":"failed ");
     return result;
 }
 
