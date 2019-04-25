@@ -1,5 +1,5 @@
-Release 3.9.8-beta1, 22nd April 2019
-------------------------------------
+Release 3.9.8, 26th April 2019
+------------------------------
 
 This is a minor release with some important safety fixes. The fixes
 relate to two issues:
@@ -67,6 +67,11 @@ Other changes in this release:
 
  - fixed fallback to microSD for parameter storage if a board with
    FRAM storage has a failed FRAM device
+
+ - added a specific check for hw failure regarding the recent
+   CubeBlack safety bulletin
+
+ - fixed the power flags for brick2 on fmuv5
 
 Happy flying!
 
