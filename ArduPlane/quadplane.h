@@ -113,6 +113,7 @@ public:
     
     // create outputs for tailsitters
     void tailsitter_output(void);
+    void scale_control_surfaces(float& fw_aileron, float& fw_elevator, float& fw_rudder, float& aileron, float& elevator, float& rudder);
 
     // handle different tailsitter input types
     void tailsitter_check_input(void);
@@ -123,9 +124,9 @@ public:
     // check if we have completed transition to vtol
     bool tailsitter_transition_vtol_complete(void) const;
 
-    // account for surface speed scaling in hover
-    void tailsitter_speed_scaling(void);
-    
+    // calculate speed scaler of control surfaces in VTOL modes
+    float get_thr_att_gain_scaling(void);
+
     // user initiated takeoff for guided mode
     bool do_user_takeoff(float takeoff_altitude);
 
@@ -444,7 +445,13 @@ private:
         TAILSITTER_MASK_THROTTLE = 4,
         TAILSITTER_MASK_RUDDER   = 8,
     };
-    
+
+    enum tailsitter_gscl_mask {
+        TAILSITTER_GSCL_BOOST  = 1,
+        TAILSITTER_GSCL_ATT_THR = 2,
+        TAILSITTER_GSCL_INTERP = 4,
+    };
+
     // tailsitter control variables
     struct {
         AP_Int8 transition_angle;
@@ -455,9 +462,16 @@ private:
         AP_Float vectored_hover_gain;
         AP_Float vectored_hover_power;
         AP_Float throttle_scale_max;
+        AP_Float gain_scaling_min;
         AP_Float max_roll_angle;
         AP_Int16 motor_mask;
+        AP_Float scaling_speed_min;
+        AP_Float scaling_speed_max;
+        AP_Int8 gain_scaling_mask;
     } tailsitter;
+
+    // tailsitter speed scaler
+    float last_spd_scaler = 1.0f;
 
     // the attitude view of the VTOL attitude controller
     AP_AHRS_View *ahrs_view;
