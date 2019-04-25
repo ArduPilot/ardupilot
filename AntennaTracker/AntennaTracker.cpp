@@ -83,9 +83,6 @@ void Tracker::loop()
 
 void Tracker::one_second_loop()
 {
-    // send a heartbeat
-    gcs().send_message(MSG_HEARTBEAT);
-
     // make it possible to change orientation at runtime
     ahrs.update_orientation();
 
