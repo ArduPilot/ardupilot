@@ -254,9 +254,6 @@ void Rover::update_logging2(void)
  */
 void Rover::one_second_loop(void)
 {
-    // send a heartbeat
-    gcs().send_message(MSG_HEARTBEAT);
-
     // allow orientation change at runtime to aid config
     ahrs.update_orientation();
 
