@@ -137,9 +137,6 @@ bool AP_Arming::check_enabled(const enum AP_Arming::ArmingChecks check) const
     if (checks_to_perform & ARMING_CHECK_ALL) {
         return true;
     }
-    if (checks_to_perform & ARMING_CHECK_NONE) {
-        return false;
-    }
     return (checks_to_perform & check);
 }
 
