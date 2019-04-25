@@ -258,9 +258,6 @@ extern AP_IOMCU iomcu;
 
 void Plane::one_second_loop()
 {
-    // send a heartbeat
-    gcs().send_message(MSG_HEARTBEAT);
-
     // make it possible to change control channel ordering at runtime
     set_control_channels();
 
