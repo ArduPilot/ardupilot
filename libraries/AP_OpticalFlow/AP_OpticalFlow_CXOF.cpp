@@ -158,7 +158,6 @@ void AP_OpticalFlow_CXOF::update(void)
     }
 
     struct OpticalFlow::OpticalFlow_state state {};
-    state.device_id = 0x43; // 'C'
 
     // average surface quality scaled to be between 0 and 255
     state.surface_quality = (constrain_int16(qual_sum / count, 64, 78) - 64) * 255 / 14;

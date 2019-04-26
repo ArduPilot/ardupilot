@@ -53,7 +53,6 @@ void AP_OpticalFlow_Onboard::update()
     }
 
     struct OpticalFlow::OpticalFlow_state state;
-    state.device_id = OPTICALFLOW_ONBOARD_ID;
     state.surface_quality = data_frame.quality;
     if (data_frame.delta_time > 0) {
         const Vector2f flowScaler = _flowScaler();
