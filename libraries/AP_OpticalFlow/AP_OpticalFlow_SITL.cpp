@@ -66,7 +66,6 @@ void AP_OpticalFlow_SITL::update(void)
                       radians(_sitl->state.yawDeg));
 
 
-    state.device_id = 1;
     state.surface_quality = 51;
 
     // sensor position offset in body frame

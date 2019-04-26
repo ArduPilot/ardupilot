@@ -46,7 +46,6 @@ void AP_OpticalFlow_MAV::update(void)
 
     struct OpticalFlow::OpticalFlow_state state {};
 
-    state.device_id = sensor_id;
     state.surface_quality = quality_sum / count;
 
     // calculate dt

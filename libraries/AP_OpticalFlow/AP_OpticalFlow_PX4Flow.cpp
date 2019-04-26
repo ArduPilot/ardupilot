@@ -114,7 +114,6 @@ void AP_OpticalFlow_PX4Flow::timer(void)
         return;
     }
     struct OpticalFlow::OpticalFlow_state state {};
-    state.device_id = get_address();
 
     if (frame.integration_timespan > 0) {
         const Vector2f flowScaler = _flowScaler();
