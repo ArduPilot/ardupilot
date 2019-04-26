@@ -91,20 +91,21 @@ void SoftSigReaderRMT::init()
     rmt_rx.clk_div = RMT_CLK_DIV;
     rmt_rx.mem_block_num = 1;
     rmt_rx.rmt_mode = RMT_MODE_RX;
-    rmt_rx.rx_config.filter_en = true;
-    rmt_rx.rx_config.filter_ticks_thresh = 100;
-    rmt_rx.rx_config.idle_threshold = rmt_item32_tIMEOUT_US / 10 * (RMT_TICK_10_US);
+    rmt_rx.rx_config.filter_en = 0;
+    rmt_rx.rx_config.filter_ticks_thresh = 0;
+    rmt_rx.rx_config.idle_threshold =  0xFFFF; //rmt_item32_tIMEOUT_US / 10 * (RMT_TICK_10_US);
     rmt_config(&rmt_rx);
+
     rmt_driver_install(rmt_rx.channel, 1000, 0); // chan_num, buffer_size, flags
 
 
 	// do I need to sleep here at all ? 
 	
-    rmt_channel_t channel = RMT_RX_CHANNEL;
+    //rmt_channel_t channel = RMT_RX_CHANNEL;
     
     
     //get RMT RX ringbuffer
-    rmt_get_ringbuf_handle(channel, &rb);
+    rmt_get_ringbuf_handle(rmt_rx.channel, &rb);
     rmt_rx_start(channel, 1);
     
 }
