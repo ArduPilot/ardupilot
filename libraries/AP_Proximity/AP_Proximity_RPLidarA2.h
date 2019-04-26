@@ -73,7 +73,9 @@ private:
     void set_scan_mode();
 
     // send request for something from sensor
+#if 0  // Not used
     void send_request_for_health();
+#endif
     void parse_response_data();
     void parse_response_descriptor();
     void get_readings();

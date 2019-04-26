@@ -230,6 +230,7 @@ void AP_Proximity_RPLidarA2::set_scan_mode()
     _rp_state = rp_responding;
 }
 
+#if 0  // Not used
 // send request for sensor health
 void AP_Proximity_RPLidarA2::send_request_for_health()                                    //not called yet
 {
@@ -241,6 +242,7 @@ void AP_Proximity_RPLidarA2::send_request_for_health()                          
     _last_request_ms = AP_HAL::millis();
     _rp_state = rp_health;
 }
+#endif
 
 void AP_Proximity_RPLidarA2::get_readings()
 {
