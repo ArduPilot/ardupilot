@@ -76,14 +76,10 @@ public:
     // velocity - returns the velocity in m/s
     const Vector2f& bodyRate() const { return _state.bodyRate; }
 
-    // device_id - returns device id
-    uint8_t device_id() const { return _state.device_id; }
-
     // last_update() - returns system time of last sensor update
     uint32_t last_update() const { return _last_update_ms; }
 
     struct OpticalFlow_state {
-        uint8_t device_id;          // device id
         uint8_t  surface_quality;   // image quality (below TBD you can't trust the dx,dy values returned)
         Vector2f flowRate;          // optical flow angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
         Vector2f bodyRate;          // body inertial angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
