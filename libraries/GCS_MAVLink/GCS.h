@@ -966,12 +966,14 @@ public:
     void update_receive();
     virtual void setup_uarts();
 
-    bool out_of_time() const {
-        return _out_of_time;
+    // minimum amount of time (in microseconds) that must remain in
+    // the main scheduler loop before we are allowed to send any
+    // mavlink messages.  We want to prioritise the main flight
+    // control loop over communications
+    virtual uint16_t min_loop_time_remaining_for_message_send_us() const {
+        return 200;
     }
-    void set_out_of_time(bool val) {
-        _out_of_time = val;
-    }
+    bool out_of_time() const;
 
     // frsky backend
     AP_Frsky_Telem frsky;
@@ -1023,9 +1025,6 @@ private:
 
     // queue of outgoing statustext messages
     ObjectArray<statustext_t> _statustext_queue{_status_capacity};
-
-    // true if we are running short on time in our main loop
-    bool _out_of_time;
 
     // true if we have already allocated protocol objects:
     bool initialised_missionitemprotocol_objects;

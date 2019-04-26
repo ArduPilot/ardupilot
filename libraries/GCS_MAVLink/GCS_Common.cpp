@@ -1438,7 +1438,6 @@ void GCS_MAVLINK::update_send()
 #endif
 
     const uint32_t start = AP_HAL::millis();
-    gcs().set_out_of_time(false);
     while (AP_HAL::millis() - start < 5) { // spend a max of 5ms sending messages.  This should never trigger - out_of_time() should become true
         if (gcs().out_of_time()) {
             break;
