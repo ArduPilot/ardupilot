@@ -35,6 +35,7 @@
 #include "AP_RangeFinder_NMEA.h"
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake.h"
+#include "AP_RangeFinder_Benewake_TFMiniPlus.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
@@ -687,6 +688,14 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         for (int8_t i=3; i>=0; i--) {
             if (_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
                                                             hal.i2c_mgr->get_device(i, 0x29)))) {
+                break;
+            }
+        }
+        break;
+    case RangeFinder_TYPE_BenewakeTFminiPlus:
+        for (int8_t i=3; i>=0; i--) {
+            if (_add_backend(AP_RangeFinder_Benewake_TFMiniPlus::detect(state[instance],
+                                                                        hal.i2c_mgr->get_device(i, state[instance].address)))) {
                 break;
             }
         }
