@@ -251,20 +251,6 @@ bool GCS_Copter::vehicle_initialised() const {
 // try to send a message, return false if it wasn't sent
 bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 {
-#if HIL_MODE != HIL_MODE_SENSORS
-    // if we don't have at least 250 micros remaining before the main loop
-    // wants to fire then don't send a mavlink message. We want to
-    // prioritise the main flight control loop over communications
-
-    // the check for nullptr here doesn't just save a nullptr
-    // dereference; it means that we send messages out even if we're
-    // failing to detect a PX4 board type (see delay(3000) in px_drivers).
-    if (copter.motors != nullptr && copter.scheduler.time_available_usec() < 250 && copter.motors->armed()) {
-        gcs().set_out_of_time(true);
-        return false;
-    }
-#endif
-
     switch(id) {
 
     case MSG_TERRAIN:
