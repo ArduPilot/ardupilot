@@ -121,6 +121,7 @@ errout:
     return false;
 }
 
+#if 0  // Not used
 void AP_Compass_LSM9DS1::_dump_registers()
 {
     hal.console->printf("LSMDS1 registers\n");
@@ -133,6 +134,7 @@ void AP_Compass_LSM9DS1::_dump_registers()
     }
     hal.console->printf("\n");
 }
+#endif
 
 void AP_Compass_LSM9DS1::_update(void)
 {

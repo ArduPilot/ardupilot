@@ -43,7 +43,9 @@ private:
     void _make_factory_sensitivity_adjustment(Vector3f &field) const;
     void _make_adc_sensitivity_adjustment(Vector3f &field) const;
 
+#if 0  // Not used
     bool _reset();
+#endif
     bool _setup_mode();
     bool _check_id();
     bool _calibrate();

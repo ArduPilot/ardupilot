@@ -54,8 +54,9 @@ private:
     AP_Compass_QMC5883L(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                         bool force_external,
                         enum Rotation rotation);
-
+#if 0  // Not used
     void _dump_registers();
+#endif
     bool _check_whoami();
     void timer();
     bool init();

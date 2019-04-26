@@ -244,11 +244,12 @@ bool AP_Compass_AK8963::_setup_mode() {
     return _bus->register_write(AK8963_CNTL1, AK8963_CONTINUOUS_MODE2 | AK8963_16BIT_ADC);
 }
 
+#if 0  // Not used
 bool AP_Compass_AK8963::_reset()
 {
     return _bus->register_write(AK8963_CNTL2, AK8963_RESET);
 }
-
+#endif
 
 bool AP_Compass_AK8963::_calibrate()
 {

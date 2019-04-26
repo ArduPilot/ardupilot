@@ -203,6 +203,7 @@ void AP_Compass_QMC5883L::read()
     drain_accumulated_samples(_instance);
 }
 
+#if 0  // Not Used
 void AP_Compass_QMC5883L::_dump_registers()
 {
 	  printf("QMC5883L registers dump\n");
@@ -215,4 +216,4 @@ void AP_Compass_QMC5883L::_dump_registers()
 	        }
 	    }
 }
-
+#endif
