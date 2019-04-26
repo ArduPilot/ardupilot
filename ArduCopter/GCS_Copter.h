@@ -32,6 +32,16 @@ public:
     bool simple_input_active() const override;
     bool supersimple_input_active() const override;
 
+protected:
+
+    // minimum amount of time (in microseconds) that must remain in
+    // the main scheduler loop before we are allowed to send any
+    // mavlink messages.  We want to prioritise the main flight
+    // control loop over communications
+    uint16_t min_loop_time_remaining_for_message_send_us() const override {
+        return 250;
+    }
+
 private:
 
     GCS_MAVLINK_Copter _chan[MAVLINK_COMM_NUM_BUFFERS];
