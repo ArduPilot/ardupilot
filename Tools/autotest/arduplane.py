@@ -56,8 +56,11 @@ class AutoTestPlane(AutoTest):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
 
-    def takeoff(self):
-        """Takeoff get to 30m altitude."""
+    def takeoff(self, alt=150, alt_max=None, relative=True):
+        """Takeoff to altitude."""
+
+        if alt_max is None:
+            alt_max = alt + 30
 
         self.mavproxy.send('switch 4\n')
         self.wait_mode('FBWA')
@@ -85,9 +88,7 @@ class AutoTestPlane(AutoTest):
         self.set_rc(3, 2000)
 
         # gain a bit of altitude
-        self.wait_altitude(self.homeloc.alt+150,
-                           self.homeloc.alt+180,
-                           timeout=30)
+        self.wait_altitude(alt, alt_max, timeout=30, relative=relative)
 
         # level off
         self.set_rc(2, 1500)
@@ -774,6 +775,26 @@ class AutoTestPlane(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def test_parachute_sinkrate(self):
+        self.set_rc(9, 1000)
+        self.set_parameter("CHUTE_ENABLED", 1)
+        self.set_parameter("CHUTE_TYPE", 10)
+        self.set_parameter("SERVO9_FUNCTION", 27)
+        self.set_parameter("SIM_PARA_ENABLE", 1)
+        self.set_parameter("SIM_PARA_PIN", 9)
+
+        self.set_parameter("CHUTE_CRT_SINK", 9)
+
+        self.progress("Takeoff")
+        self.takeoff(alt=300)
+
+        self.progress("Diving")
+        self.set_rc(2, 2000)
+        self.mavproxy.expect("BANG")
+
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def run_subtest(self, desc, func):
         self.start_subtest(desc)
         func()
@@ -925,6 +946,8 @@ class AutoTestPlane(AutoTest):
              self.test_gripper_mission),
 
             ("Parachute", "Test Parachute", self.test_parachute),
+
+            ("ParachuteSinkRate", "Test Parachute (SinkRate triggering)", self.test_parachute_sinkrate),
 
             ("AIRSPEED_AUTOCAL", "Test AIRSPEED_AUTOCAL", self.airspeed_autocal),
 
