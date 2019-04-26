@@ -173,6 +173,7 @@ class Board:
             '-Werror=unused-variable',
             '-Wfatal-errors',
             '-Wno-trigraphs',
+            '-Wno-address-of-packed-member',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
