@@ -106,7 +106,7 @@ void SoftSigReaderRMT::init()
     
     //get RMT RX ringbuffer
     rmt_get_ringbuf_handle(rmt_rx.channel, &rb);
-    rmt_rx_start(channel, 1);
+    rmt_rx_start(rmt_rx.channel, 1);
     
 }
 
