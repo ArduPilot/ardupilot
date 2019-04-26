@@ -278,6 +278,7 @@ void AP_Logger_DataFlash::WriteEnable(void)
     dev->transfer(&b, 1, NULL, 0);
 }
 
+#if 0  // Not used
 void AP_Logger_DataFlash::flash_test()
 {
     for (uint8_t i=1; i<=20; i++) {
@@ -299,5 +300,6 @@ void AP_Logger_DataFlash::flash_test()
         }
     }
 }
+#endif
 
 #endif // HAL_LOGGING_DATAFLASH

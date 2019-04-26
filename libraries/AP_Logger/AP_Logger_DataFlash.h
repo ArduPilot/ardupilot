@@ -30,7 +30,9 @@ private:
     
     void              WriteEnable();
     bool              getSectorCount(void);
+#if 0  // Not used
     void              flash_test(void);
+#endif
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
     AP_HAL::Semaphore *dev_sem;
