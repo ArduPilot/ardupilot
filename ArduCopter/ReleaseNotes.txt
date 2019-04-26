@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.8-rc1 24-Apr-2019
+Copter 3.6.8 26-Apr-2019 / 3.6.8-rc1 24-Apr-2019
 Changes from 3.6.7
 1) Safety fixes
     a) Prevent loss of active IMU from causing loss of attitude control
