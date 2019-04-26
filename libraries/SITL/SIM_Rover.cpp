@@ -74,6 +74,7 @@ float SimRover::calc_yaw_rate(float steering, float speed)
     return rate;
 }
 
+#if 0  // Not used
 /*
   return lateral acceleration in m/s/s
 */
@@ -83,6 +84,7 @@ float SimRover::calc_lat_accel(float steering_angle, float speed)
     float accel = radians(yaw_rate) * speed;
     return accel;
 }
+#endif
 
 /*
   update the rover simulation by one time step

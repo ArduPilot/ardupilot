@@ -85,6 +85,7 @@ float Sailboat::get_yaw_rate(float steering, float speed) const
     return rate;
 }
 
+#if 0  // Not used
 // return lateral acceleration in m/s/s given a steering input (in the range -1 to +1) and speed in m/s
 float Sailboat::get_lat_accel(float steering, float speed) const
 {
@@ -92,6 +93,7 @@ float Sailboat::get_lat_accel(float steering, float speed) const
     float accel = radians(yaw_rate) * speed;
     return accel;
 }
+#endif
 
 /*
   update the sailboat simulation by one time step

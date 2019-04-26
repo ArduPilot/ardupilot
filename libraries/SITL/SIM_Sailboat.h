@@ -47,10 +47,10 @@ private:
 
     // return yaw rate in deg/sec given a steering input (in the range -1 to +1) and speed in m/s
     float get_yaw_rate(float steering, float speed) const;
-
+#if 0  // Not used
     // return lateral acceleration in m/s/s given a steering input (in the range -1 to +1) and speed in m/s
     float get_lat_accel(float steering, float speed) const;
-
+#endif
     float steering_angle_max;   // vehicle steering mechanism's max angle in degrees
     float turning_circle;       // vehicle minimum turning circle diameter in meters
 

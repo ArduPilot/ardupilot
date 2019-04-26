@@ -47,7 +47,9 @@ private:
 
     float turn_circle(float steering);
     float calc_yaw_rate(float steering, float speed);
+#if 0  // Not used
     float calc_lat_accel(float steering_angle, float speed);
+#endif
 };
 
 } // namespace SITL
