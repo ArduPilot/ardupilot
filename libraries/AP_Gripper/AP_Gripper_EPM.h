@@ -51,9 +51,9 @@ private:
     void        neutral();
 
     bool should_use_uavcan() const { return _uavcan_fd >= 0; }
-
+#if 0  // Not used
     struct UAVCANCommand make_uavcan_command(uint16_t command) const;
-
+#endif
     // UAVCAN driver fd
     int _uavcan_fd = -1;
 

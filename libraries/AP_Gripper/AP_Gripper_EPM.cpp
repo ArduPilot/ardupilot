@@ -117,6 +117,7 @@ void AP_Gripper_EPM::update_gripper()
     }
 }
 
+#if 0  // Not used
 UAVCANCommand AP_Gripper_EPM::make_uavcan_command(uint16_t command) const
 {
     UAVCANCommand cmd;
@@ -124,6 +125,7 @@ UAVCANCommand AP_Gripper_EPM::make_uavcan_command(uint16_t command) const
     cmd.command = command;
     return cmd;
 }
+#endif
 
 
 bool AP_Gripper_EPM::released() const
