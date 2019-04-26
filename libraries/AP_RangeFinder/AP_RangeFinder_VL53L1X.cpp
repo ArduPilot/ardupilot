@@ -467,6 +467,7 @@ uint16_t AP_RangeFinder_VL53L1X::read_register16(uint16_t reg)
     return be16toh(v);
 }
 
+#if 0  // Not used
 uint32_t AP_RangeFinder_VL53L1X::read_register32(uint16_t reg)
 {
     uint32_t v = 0;
@@ -474,6 +475,7 @@ uint32_t AP_RangeFinder_VL53L1X::read_register32(uint16_t reg)
     dev->transfer(b, 2, (uint8_t *)&v, 4);
     return be32toh(v);
 }
+#endif
 
 void AP_RangeFinder_VL53L1X::write_register(uint16_t reg, uint8_t value)
 {

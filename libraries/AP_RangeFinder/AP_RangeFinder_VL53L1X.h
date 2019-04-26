@@ -1276,7 +1276,9 @@ private:
 
     uint8_t read_register(uint16_t reg);
     uint16_t read_register16(uint16_t reg);
+#if 0  // Not used
     uint32_t read_register32(uint16_t reg);
+#endif
     void write_register(uint16_t reg, uint8_t value);
     void write_register16(uint16_t reg, uint16_t value);
     void write_register32(uint16_t reg, uint32_t value);
