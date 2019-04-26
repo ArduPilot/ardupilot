@@ -70,7 +70,8 @@ public:
         RangeFinder_TYPE_PLI2CV3HP = 21,
         RangeFinder_TYPE_PWM = 22,
         RangeFinder_TYPE_BLPing = 23,
-        RangeFinder_TYPE_UAVCAN = 24
+        RangeFinder_TYPE_UAVCAN = 24,
+        RangeFinder_TYPE_BenewakeTFminiPlus = 25,
     };
 
     enum RangeFinder_Function {

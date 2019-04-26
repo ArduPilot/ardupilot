@@ -35,6 +35,7 @@
 #include "AP_RangeFinder_NMEA.h"
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake.h"
+#include "AP_RangeFinder_Benewake_TFMiniPlus.h"
 #include "AP_RangeFinder_PWM.h"
 #include "AP_RangeFinder_BLPing.h"
 #include "AP_RangeFinder_UAVCAN.h"
@@ -413,6 +414,14 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
                     break;
                 }
             }
+        break;
+    case RangeFinder_TYPE_BenewakeTFminiPlus:
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_Benewake_TFMiniPlus::detect(state[instance], params[instance],
+                                                                        hal.i2c_mgr->get_device(i, params[instance].address)))) {
+                break;
+            }
+        }
         break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     case RangeFinder_TYPE_PX4_PWM:
