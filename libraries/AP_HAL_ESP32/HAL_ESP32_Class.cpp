@@ -18,6 +18,8 @@
 #include "AP_HAL_ESP32.h"
 #include "HAL_ESP32_Class.h"
 
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "HAL_ESP32_Class.h"
 #include "Scheduler.h"
 #include "I2CDevice.h"
@@ -95,3 +97,10 @@ void AP_HAL::init()
 {
 }
 
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_ESP32 hal_esp;
+    return hal_esp;
+}
+
+
+#endif
