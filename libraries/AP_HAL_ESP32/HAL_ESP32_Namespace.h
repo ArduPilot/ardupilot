@@ -17,4 +17,5 @@ class DigitalSource;
 class Storage;
 class SoftSigReaderInt;
 class SoftSigReaderRMT;
+class RmtSigReader;
 }  // namespace ESP32

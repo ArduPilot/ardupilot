@@ -236,6 +236,5 @@ SPIDeviceManager::get_device(const char *name)
         buses = busp;
     }
     return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*busp, desc));
-
 }
 

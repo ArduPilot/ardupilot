@@ -370,17 +370,18 @@ class esp32(Board):
         # debug: - remove -Os and add -Og and -fno-inline
         # normal add -Os and remove -Og and -fno-inline
         env.CXXFLAGS += ['-mlongcalls',
-#                         '-Os',
-                         '-Og',
-                         '-fno-inline',
+                         '-Os',
+                         '-g',
                          '-ffunction-sections',
                          '-fdata-sections',
                          '-fno-exceptions',
                          '-fno-rtti',
                          '-nostdlib',
-                         '-fstrict-volatile-bitfields',
-                         '-D__IRAM__=__attribute__((section(".iram1")))']
+                         '-fstrict-volatile-bitfields']
         env.AP_PROGRAM_AS_STLIB = True
+        if cfg.options.enable_profile:
+            env.CXXFLAGS += ['-pg',
+                             '-DENABLE_PROFILE=1']
     def build(self, bld):
         super(esp32, self).build(bld)
         bld.load('esp32')

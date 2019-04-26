@@ -133,6 +133,10 @@ submodules at specific revisions.
                  default=True,
                  help="Enable runtime scripting sanity checks")
 
+    g.add_option('--enable-profile', action='store_true',
+                 default=False,
+                 help="Enable profile instrumentation")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
