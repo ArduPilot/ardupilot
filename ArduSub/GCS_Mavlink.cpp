@@ -219,14 +219,6 @@ bool GCS_Sub::vehicle_initialised() const {
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 {
-    // if we don't have at least 250 micros remaining before the main loop
-    // wants to fire then don't send a mavlink message. We want to
-    // prioritise the main flight control loop over communications
-    if (sub.scheduler.time_available_usec() < 250 && sub.motors.armed()) {
-        gcs().set_out_of_time(true);
-        return false;
-    }
-
     switch (id) {
 
     case MSG_NAMED_FLOAT:
