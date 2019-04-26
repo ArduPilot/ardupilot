@@ -193,8 +193,9 @@ private:
     // ************************************************************************
     // Logging to AP_Logger
     // ************************************************************************
-
+#if 0  // Not used
     void logging_log_full_update();
+#endif
     void logging_ext_event();
     void logging_log_raw_sbp(uint16_t msg_type, uint16_t sender_id, uint8_t msg_len, uint8_t *msg_buff);
 

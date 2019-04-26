@@ -437,6 +437,7 @@ AP_GPS_SBP2::_detect(struct SBP2_detect_state &state, uint8_t data)
     return false;
 }
 
+#if 0  // Not used
 void
 AP_GPS_SBP2::logging_log_full_update()
 {
@@ -456,6 +457,7 @@ AP_GPS_SBP2::logging_log_full_update()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 };
+#endif
 
 void
 AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
