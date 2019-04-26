@@ -80,9 +80,9 @@ private:
     static AP_Radio_cypress *radio_singleton;
 
     void radio_init(void);
-    
+#if 0  // Not used    
     void dump_registers(uint8_t n);
-
+#endif
     void force_initial_state(void);
     void set_channel(uint8_t channel);
     uint8_t read_status_debounced(uint8_t adr);

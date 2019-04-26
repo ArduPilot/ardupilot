@@ -637,6 +637,7 @@ void AP_Radio_cypress::radio_init(void)
 #endif
 }
 
+#if 0  // Not used
 void AP_Radio_cypress::dump_registers(uint8_t n)
 {
     for (uint8_t i=0; i<n; i++) {
@@ -650,6 +651,7 @@ void AP_Radio_cypress::dump_registers(uint8_t n)
         printf("\n");
     }
 }
+#endif
 
 /*
   read one register value
