@@ -203,11 +203,13 @@ uint16_t AP_OpticalFlow_Pixart::reg_read16u(uint8_t reg)
     return low | (high<<8);
 }
 
+#if 0  // Not used
 // read from a 16 bit signed register
 int16_t AP_OpticalFlow_Pixart::reg_read16s(uint8_t reg)
 {
     return (int16_t)reg_read16u(reg);
 }
+#endif
 
 void AP_OpticalFlow_Pixart::srom_download(void)
 {

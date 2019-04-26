@@ -63,7 +63,9 @@ private:
     
     void reg_write(uint8_t reg, uint8_t value);
     uint8_t reg_read(uint8_t reg);
+#if 0  // Not used
     int16_t reg_read16s(uint8_t reg);
+#endif
     uint16_t reg_read16u(uint8_t reg);
 
     void srom_download(void);
