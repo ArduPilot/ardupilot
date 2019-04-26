@@ -3460,7 +3460,14 @@ class AutoTestHeli(AutoTestCopter):
         self.wait_seconds(20)
         self.change_mode("AUTO")
         self.set_rc(3, 1500)
-        self.mav.motors_disarmed_wait()
+        tstart = self.get_sim_time()
+        while True:
+            if not self.armed():
+                break
+            remaining = self.get_sim_time() - tstart
+            if remaining <= 0:
+                raise AutoTestTimeoutException("Vehicle did not disarm after mission")
+            self.delay_sim_time(1)
         self.progress("Lowering rotor speed")
         self.set_rc(8, 1000)
 
