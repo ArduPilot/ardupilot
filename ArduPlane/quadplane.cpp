@@ -771,7 +771,8 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
     check_attitude_relax();
 
-    if (in_vtol_mode() || is_tailsitter()) {
+    // tailsitter-only bodyframe roll control options
+    if (is_tailsitter()) {
         if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) {
             // Angle mode attitude control for pitch and body-frame roll, rate control for yaw.
             // this version interprets the first argument as yaw rate and the third as roll angle
@@ -781,16 +782,21 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
             attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(plane.nav_roll_cd,
                                                                                plane.nav_pitch_cd,
                                                                                yaw_rate_cds);
+            return;
         } else if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_P) {
             attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(plane.nav_roll_cd,
                                                                                plane.nav_pitch_cd,
                                                                                yaw_rate_cds);
-        } else {
-            // use euler angle attitude control
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                          plane.nav_pitch_cd,
-                                                                          yaw_rate_cds);
+            return;
         }
+    }
+
+    // normal control modes for VTOL and FW flight
+    if (in_vtol_mode() || is_tailsitter()) {
+        // use euler angle attitude control
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+                                                                      plane.nav_pitch_cd,
+                                                                      yaw_rate_cds);
     } else {
         // use the fixed wing desired rates
         float roll_rate = plane.rollController.get_pid_info().desired;
