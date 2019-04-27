@@ -153,6 +153,19 @@ bool SoftSigReaderRMT::read(uint32_t &widths0, uint32_t &widths1)
         //We just need to parse the value and return the spaces of ringbuffer.
         rmt_item32_t* item = (rmt_item32_t*) xRingbufferReceive(rb, &rx_size, 1000);
         
+        if(item)
+		{
+			for (unsigned int i = 0; i < rx_size>>2; i++)
+			{
+				printf("%d:%dus %d:%dus\n", (item+i)->level0, (item+i)->duration0, (item+i)->level1, (item+i)->duration1);
+			}
+			vRingbufferReturnItem(rb, (void*) item);
+		}
+		else
+		{
+			return false;
+		}
+
         static pulse_t pulse; // doesn't get zero'd
         
         // transition/s from 0->1

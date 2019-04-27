@@ -24,7 +24,7 @@ UARTDriver::UARTDriver(uint8_t serial_num)
 {
     _initialized = false;
     uart_num = (uart_port_t)serial_num; // hardware zero
-    if (serial_num == 0 ) { //typically console, used by both boars the same, on the same pins.
+    if (serial_num == 0 ) { //typically console, used by both boards the same, on the same pins.
     	rx_pin = 3;
     	tx_pin = 1;
     }
