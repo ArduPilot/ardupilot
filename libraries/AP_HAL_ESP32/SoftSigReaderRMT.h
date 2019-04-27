@@ -17,42 +17,12 @@
   */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include "HAL_ESP32_Namespace.h"
-
 #include <AP_HAL/utility/RingBuffer.h>
-#include <AP_HAL/AP_HAL_Boards.h>
-
 #include "AP_HAL_ESP32.h"
-
-#include <stdio.h>
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "esp_err.h"
-#include "esp_log.h"
 #include "driver/rmt.h"
-#include "driver/periph_ctrl.h"
-#include "soc/rmt_reg.h"
-
-#if HAL_USE_EICU == TRUE
-
-#define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
-#ifndef SOFTSIG_MAX_SIGNAL_TRANSITIONS
-#define SOFTSIG_MAX_SIGNAL_TRANSITIONS 128
-#endif
-
 
 class ESP32::SoftSigReaderRMT  {
 public:
-    SoftSigReaderRMT();
-    ~SoftSigReaderRMT();
-    /* Do not allow copies */
-    SoftSigReaderRMT(const SoftSigReaderRMT &other) = delete;
-    SoftSigReaderRMT &operator=(const SoftSigReaderRMT&) = delete;
-
     // get singleton
     static SoftSigReaderRMT *get_instance(void)
     {
@@ -62,20 +32,12 @@ public:
     void init();
     bool read(uint32_t &widths0, uint32_t &widths1);
 private:
-    // singleton
-    static SoftSigReaderRMT *_instance;
-    
     RingbufHandle_t rb = NULL;
+    static SoftSigReaderRMT *_instance;
 
-    static void _irq_handler(void * arg);
-    
-    typedef struct PACKED {
-        uint16_t w0;
-        uint16_t w1;
-    } pulse_t;
-    ObjectBuffer<pulse_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
     uint16_t last_value;
+    bool started = false;
+
 };
 
-#endif // HAL_USE_EICU
 

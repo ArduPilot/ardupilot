@@ -23,8 +23,8 @@
 #include "Semaphores.h"
 
 //#include "SoftSigReaderInt.h"
-//#include "SoftSigReaderRMT.h"
-#include "RmtSigReader.h"
+#include "SoftSigReaderRMT.h"
+//#include "RmtSigReader.h"
 #include <AP_RCProtocol/AP_RCProtocol.h>
 
 #include <stdio.h>
@@ -65,8 +65,8 @@ private:
     const char *last_protocol;
 
     //ESP32::SoftSigReaderInt sig_reader;
-    //ESP32::SoftSigReaderRMT sig_reader;
-    ESP32::RmtSigReader sig_reader;
+    ESP32::SoftSigReaderRMT sig_reader;
+    //ESP32::RmtSigReader sig_reader;
     AP_RCProtocol rcin_prot;
 
 };

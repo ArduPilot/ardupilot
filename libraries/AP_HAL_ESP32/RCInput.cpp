@@ -99,51 +99,61 @@ void RCInput::_timer_tick(void)
 
         uint32_t width_s0, width_s1;
         while(sig_reader.read(width_s0, width_s1)) {
-            //printf("Z %d %d \n",width_s0 ,width_s1);
+            //printf(" %d %d . ",width_s0 ,width_s1);
             rcin_prot.process_pulse(width_s0, width_s1);
             
         }
+        //printf("\n");
 
         const char *rc_protocol = nullptr;
 
         if (rcin_prot.new_input()) {
+        
+        //printf("new_input\n");
             rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
             _rcin_timestamp_last_signal = AP_HAL::micros();
             _num_channels = rcin_prot.num_channels();
             _num_channels = MIN(_num_channels, RC_INPUT_MAX_CHANNELS);
             
             // throw away channels that aren't totalling 8, corruption.
-            if ( _num_channels != 8 ) { 
-            	for (uint8_t i=0; i<_num_channels; i++) {
-                	rcin_prot.read(i);
-               }
-            }
+            //if ( _num_channels != 8 ) { 
+            //	for (uint8_t i=0; i<_num_channels; i++) {
+            //    	rcin_prot.read(i);
+            //   }
+            //   printf("not8\n");
+            //}
             // range check and throw ones outside range: 
 
             // otherwise accept them
-            else { 
-            	int drop = 0;
+            //else { 
+            //	int drop = 0;
+            
+            static unsigned int show_rc = 0;
+                   
+            
 	        	for (uint8_t i=0; i<_num_channels; i++) {
 	        	
 	        		uint16_t tmpv = rcin_prot.read(i);
 	        		
-	        		if ( drop == 1 ) continue; 
+	        		//if ( drop == 1 ) continue; 
 	        		
 	        		// skip out-of-range ones, just drop the entire rest of the frame and assume it'll be ok next frame.
-	        		if (( tmpv < 980 ) || ( tmpv > 2020 )) { drop=1; continue;}  
+	        		//if (( tmpv < 980 ) || ( tmpv > 2020 )) { drop=1; continue;}  
 	        		
 	        		// ignore things a long way off from the current value by about 90%
-	        		if ( abs ( _rc_values[i] - tmpv ) > 150 ) {  _rc_values[i] = (_rc_values[i]/10)*9 + tmpv/9; continue; } 
+	        		//if ( abs ( _rc_values[i] - tmpv ) > 150 ) {  _rc_values[i] = (_rc_values[i]/10)*9 + tmpv/9; continue; } 
 	        		
 	        		// average last few values.., ie use about 30%
-					_rc_values[i] = (_rc_values[i]/3)*2 + tmpv/3;
+					//_rc_values[i] = (_rc_values[i]/3)*2 + tmpv/3;
 	        		
-	                //_rc_values[i] = tmpv;
+	                _rc_values[i] = tmpv;
 	                
-	                printf("RC %d ",_rc_values[i]);
+	                if (show_rc == 0){ printf("RC %d  ",_rc_values[i]); }
 	            }
-	            printf("\n");
-	        }
+	            if (show_rc == 0){ printf("\n");}
+	        //}
+	        
+	        show_rc++; if ( show_rc > 200 ) show_rc = 0; // a few secs
             
             rcin_mutex.give();
 

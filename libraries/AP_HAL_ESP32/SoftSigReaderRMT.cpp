@@ -16,107 +16,59 @@
  *
  */
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+
 #include "SoftSigReaderRMT.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/gpio.h"
+using namespace ESP32;
 
-// future possible TODO - can we use the RMT peripheral on the esp32 to do this ? looks plausible. 
+#define RMT_CLK_DIV      10    /*!< RMT counter clock divider */
+#define RMT_TICK_US    (80000000/RMT_CLK_DIV/1000000)   /*!< RMT counter value for 10 us.(Source clock is APB clock) */
+#define PPM_IMEOUT_US  3500   /*!< RMT receiver timeout value(us) */
+
+
+// the RMT peripheral on the esp32 to do this ? looks plausible.
 // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/rmt.html
 // with an example here for both transmit and recieve of IR signals:
 // https://github.com/espressif/esp-idf/tree/2f8b6cfc7/examples/peripherals/rmt_nec_tx_rx
 
-
-//for now, we use GPIO interrupts,refer here:
-// https://github.com/espressif/esp-idf/blob/master/examples/peripherals/gpio/main/gpio_example_main.c
-
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
-
-using namespace ESP32;
 extern const AP_HAL::HAL& hal;
 
-#if HAL_USE_EICU == TRUE
-
-#define GPIO_INPUT_IO_0     (gpio_num_t)4
-#define GPIO_INPUT_PIN_SEL  ((1ULL<<GPIO_INPUT_IO_0))
-#define ESP_INTR_FLAG_DEFAULT 0
-
-
-// singleton instance
-SoftSigReaderRMT *SoftSigReaderRMT::_instance;
-
-SoftSigReaderRMT::SoftSigReaderRMT()
-{
-    _instance = this;
-    printf("SoftSigReaderRMT-constructed\n");
-}
-
-SoftSigReaderRMT::~SoftSigReaderRMT()
-{
-    
-    //remove isr handler for gpio number.
-    //gpio_isr_handler_remove(GPIO_INPUT_IO_0);
-    
-    rmt_rx_stop((rmt_channel_t)0 );
-
-    //vTaskDelete(NULL);
-
-}
 
 void SoftSigReaderRMT::init()
 {
 
 	printf("SoftSigReaderRMT::init\n");
 
-	//---------------------------------------
-	#define RMT_RX_CHANNEL    (rmt_channel_t)0     
-	/*!< RMT channel for receiver */ 
-	#define RMT_CLK_DIV      100   
-	 /*!< RMT counter clock divider */
-	#define rmt_item32_tIMEOUT_US  9500   
-	/*!< RMT receiver timeout value(us) */
-	#define RMT_TICK_10_US    (80000000/RMT_CLK_DIV/100000)  
-	 /*!< RMT counter value for 10 us.(Source clock is APB clock) */
-	
-	
-    rmt_config_t rmt_rx;
-    rmt_rx.channel = (rmt_channel_t)RMT_RX_CHANNEL;
-    rmt_rx.gpio_num = GPIO_INPUT_IO_0; /*!< GPIO number for receiver */
-    rmt_rx.clk_div = RMT_CLK_DIV;
-    rmt_rx.mem_block_num = 1;
-    rmt_rx.rmt_mode = RMT_MODE_RX;
-    rmt_rx.rx_config.filter_en = 0;
-    rmt_rx.rx_config.filter_ticks_thresh = 0;
-    rmt_rx.rx_config.idle_threshold =  0xFFFF; //rmt_item32_tIMEOUT_US / 10 * (RMT_TICK_10_US);
-    rmt_config(&rmt_rx);
+	printf("%s\n",__PRETTY_FUNCTION__);
 
-    rmt_driver_install(rmt_rx.channel, 1000, 0); // chan_num, buffer_size, flags
+	// in case the peripheral was left in a bad state, such as reporting full buffers, this can help clear it, and can be called repeatedly if need be.
+	periph_module_reset(PERIPH_RMT_MODULE);
 
 
-	// do I need to sleep here at all ? 
-	
-    //rmt_channel_t channel = RMT_RX_CHANNEL;
-    
-    
-    //get RMT RX ringbuffer
-    rmt_get_ringbuf_handle(rmt_rx.channel, &rb);
-    rmt_rx_start(rmt_rx.channel, 1);
-    
+    rmt_config_t config = {
+        .rmt_mode = RMT_MODE_RX,
+        .channel = RMT_CHANNEL_0,
+        .clk_div = RMT_CLK_DIV,
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
+        .gpio_num = (gpio_num_t)36,
+#endif
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
+        .gpio_num = (gpio_num_t)4,
+#endif
+        .mem_block_num = 1
+    };
+    config.rx_config.filter_en = true;
+    config.rx_config.filter_ticks_thresh = 100;
+    config.rx_config.idle_threshold = PPM_IMEOUT_US * (RMT_TICK_US);
+
+    rmt_config(&config);
+    rmt_driver_install(config.channel, 1000, 0);
+    rmt_get_ringbuf_handle(config.channel, &rb);
+
+    // we could start it here, but then we get RMT RX BUFFER FULL message will we start calling read()
+    //rmt_rx_start(config.channel, true);
 }
-
-#define RMT_RX_ACTIVE_LEVEL  1   /*!< the data is active hi */
-
-#define NEC_HEADER_HIGH_US    9000                         /*!< NEC protocol header: positive 9ms */
-#define NEC_HEADER_LOW_US     4500                         /*!< NEC protocol header: negative 4.5ms*/
-#define NEC_BIT_MARGIN         20                          /*!< NEC parse margin time */
-#define NEC_ITEM_DURATION(d)  ((d & 0x7fff)*10/RMT_TICK_10_US)  /*!< Parse duration time from memory register value */
-
 
 
 /* 
@@ -139,56 +91,61 @@ typedef struct rmt_item32_s {
 bool SoftSigReaderRMT::read(uint32_t &widths0, uint32_t &widths1)
 {
 
+//printf("%s\n",__PRETTY_FUNCTION__);
 
-  static bool ret = true;
+	// delayed start till the threads are initialised and we are ready to read() from it....
+	if (! started )  { rmt_rx_start(RMT_CHANNEL_0, true); started = true; }
 
-  if ( ret == true )  return true;
+		size_t rx_size = 0;
 
-  printf("SoftSigReaderRMT::read\n");
+		static uint32_t channeldata0[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; // don't hardcode this
+		static uint32_t channeldata1[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; // don't hardcode this
+		static int channelpointer = -1;
 
-    //while(rb) {
-        size_t rx_size = 0;
-        //try to receive data from ringbuffer.
-        //RMT driver will push all the data it receives to its ringbuffer.
-        //We just need to parse the value and return the spaces of ringbuffer.
-        rmt_item32_t* item = (rmt_item32_t*) xRingbufferReceive(rb, &rx_size, 1000);
-        
-        if(item)
-		{
-			for (unsigned int i = 0; i < rx_size>>2; i++)
-			{
-				printf("%d:%dus %d:%dus\n", (item+i)->level0, (item+i)->duration0, (item+i)->level1, (item+i)->duration1);
+		int channels;
+
+		// always give priority to handling the RMT queue first
+		rmt_item32_t* item = (rmt_item32_t*) xRingbufferReceive(rb, &rx_size, 0);
+
+		if(item) {
+
+			channels = (rx_size / 4) - 1;
+			//printf("PPM RX %d (%d) channels: ", channels, rx_size);
+			for (int i = 0; i < channels; i++){
+				//printf("%04d ", ((item+i)->duration1 + (item+i)->duration0) / RMT_TICK_US);
+				channeldata0[i] = ((item+i)->duration0)/RMT_TICK_US;
+				channeldata1[i] = ((item+i)->duration1)/RMT_TICK_US;
+				if ( channelpointer < 0 ) channelpointer = 0;
 			}
+			//printf("\n");
+
 			vRingbufferReturnItem(rb, (void*) item);
-		}
-		else
-		{
-			return false;
+			item = nullptr;
 		}
 
-        static pulse_t pulse; // doesn't get zero'd
-        
-        // transition/s from 0->1
-        if ( item->level0 == 0 && item->level1 != 0 ) { 
-			pulse.w0 = item->duration0;
-        } 
-        // transition/s from 1->0
-        if ( item->level0 == 1 && item->level1 != 1 ) { 
-        	pulse.w1  =  item->duration1;
-        }         
-        widths0 = uint16_t(pulse.w0 - last_value);
-        widths1 = uint16_t(pulse.w1 - pulse.w0);
-        last_value = pulse.w1;
-          
-        //after parsing the data, return spaces to ringbuffer.
-        vRingbufferReturnItem(rb, (void*) item);
-         
-    //}
-  printf("SoftSigReaderRMT::read-finished\n");
-  
-	return true;
+		// each time we are externally called as read() we'll give some return data to the caller.
+		if ( channelpointer >= 0 ) {
+			widths0 = uint16_t(channeldata0[channelpointer]);
+			widths1 = uint16_t(channeldata1[channelpointer]);
+
+			//printf("  hi low ch -> %d %d %d\n",width_high,width_low,channelpointer);
+			channelpointer++;
+
+			// in here, after the 8th channel, we're going to re-insert the "wide" pulse that is the idle pulse for ppmsum:
+			if ( channelpointer == 9 ) {
+				widths0 = 3000; // must together add up over 2700
+				widths1 =  1000;
+			}
+			if ( channelpointer > 9 ) {
+				channelpointer = 0;
+				return false;
+			}
+			return true;
+		}
+
+		return false;
+
 }
 
-#endif // HAL_USE_EICU
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_ESP32
