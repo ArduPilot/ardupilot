@@ -74,9 +74,6 @@ public:
     /* See AP_HAL::Device::set_speed() */
     bool set_speed(AP_HAL::Device::Speed speed) override;
 
-    // low level transfer function
-    void do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len);
-
     /* See AP_HAL::Device::transfer() */
     bool transfer(const uint8_t *send, uint32_t send_len,
                   uint8_t *recv, uint32_t recv_len) override;
@@ -127,6 +124,8 @@ private:
     static void *spi_thread(void *arg);
     static uint32_t derive_freq_flag_bus(uint8_t busid, uint32_t _frequency);
     uint32_t derive_freq_flag(uint32_t _frequency);
+    // low level transfer function
+    bool do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len);
 };
 
 class SPIDeviceManager : public AP_HAL::SPIDeviceManager {
