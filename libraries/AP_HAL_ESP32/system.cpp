@@ -15,6 +15,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_ESP32/HAL_ESP32_Class.h>
+#include "SdCard.h"
+
 #include <stdint.h>
 #include "esp_timer.h"
 
@@ -63,6 +65,7 @@ extern "C" int main(int argc, char *argv[]);
 
 extern "C" void app_main()
 {
+    mount_sdcard();
     main(0, nullptr);
 }
 

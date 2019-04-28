@@ -406,6 +406,10 @@ class esp32(Board):
                          '-fno-rtti',
                          '-nostdlib',
                          '-fstrict-volatile-bitfields']
+        env.INCLUDES += [
+                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath()
+            ]
+
         env.AP_PROGRAM_AS_STLIB = True
         if cfg.options.enable_profile:
             env.CXXFLAGS += ['-pg',

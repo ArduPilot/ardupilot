@@ -22,6 +22,9 @@ using namespace ESP32;
 
 void RCInput::init()
 {
+    if (_init) {
+        return;
+    }
     sig_reader.init();
     rcin_prot.init();
     _init = true;
@@ -81,7 +84,6 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-
     uint32_t width_s0, width_s1;
     while (sig_reader.read(width_s0, width_s1)) {
         rcin_prot.process_pulse(width_s0, width_s1);

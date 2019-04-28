@@ -23,7 +23,7 @@
 #include "esp_partition.h"
 
 #define STORAGE_SIZE HAL_STORAGE_SIZE
-#define STORAGE_SECTOR_SIZE (128*1024)
+#define STORAGE_SECTOR_SIZE (64*1024)
 
 #define STORAGE_LINE_SHIFT 3
 

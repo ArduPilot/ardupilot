@@ -19,11 +19,54 @@
 #include "SdCard.h"
 
 #include "esp_vfs_fat.h"
+#include "esp_ota_ops.h"
 #include "driver/sdmmc_host.h"
 #include <sys/stat.h>
+#include <sys/unistd.h>
 #include <sys/types.h>
 
 sdmmc_card_t* card = nullptr;
+
+const size_t buffer_size = 8*1024;
+const char* fw_name = "/SDCARD/APM/ardupilot.bin";
+
+void update_fw()
+{
+    FILE *f = fopen(fw_name, "r");
+    void *buffer = malloc(buffer_size);
+    esp_ota_handle_t update_handle = 0 ;
+    const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
+    size_t nread = 0;
+    if (f == nullptr || buffer == nullptr || update_partition == nullptr) {
+        goto done;
+    }
+    printf("updating firmware...\n");
+    if (esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &update_handle) != ESP_OK) {
+        goto done;
+    }
+    do {
+        nread = fread(buffer, 1, buffer_size, f);
+        if (nread > 0) {
+            if (esp_ota_write(update_handle, buffer, nread) != ESP_OK) {
+                goto done;
+            }
+        }
+    } while (nread > 0);
+done:
+    if (update_handle != 0) {
+        if (esp_ota_end(update_handle) == ESP_OK &&
+            esp_ota_set_boot_partition(update_partition) == ESP_OK) {
+            printf("firmware updated\n");
+        }
+    }
+    if (f != nullptr) {
+        fclose(f);
+    }
+    if (buffer != nullptr) {
+        free(buffer);
+    }
+    unlink(fw_name);
+}
 
 void mount_sdcard()
 {
@@ -42,6 +85,7 @@ void mount_sdcard()
     if (ret == ESP_OK) {
         mkdir("/SDCARD/APM", 0777);
         printf("sdcard is mounted\n");
+        update_fw();
     } else {
         printf("sdcard is not mounted\n");
     }

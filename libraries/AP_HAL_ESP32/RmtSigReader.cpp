@@ -54,8 +54,10 @@ bool RmtSigReader::read(uint32_t &width_high, uint32_t &width_low)
         return false;
     }
     bool buffer_empty = (current_item == item_size);
-    buffer_empty = buffer_empty || !add_item(item[current_item].duration0, item[current_item].level0);
-    buffer_empty = buffer_empty || !add_item(item[current_item].duration1, item[current_item].level1);
+    buffer_empty = buffer_empty ||
+                   !add_item(item[current_item].duration0, item[current_item].level0);
+    buffer_empty = buffer_empty ||
+                   !add_item(item[current_item].duration1, item[current_item].level1);
     current_item++;
     if (buffer_empty) {
         vRingbufferReturnItem(handle, (void*) item);
