@@ -3,7 +3,12 @@
 # this is based on the CubeBlack hwdef, with Solo's required parameter defaults
 # do not use this hwdef with any configuration other than a 3DR Solo with a stock or black cube running Copter 3.7.
 
-include ../CubeBlack/hwdef.dat
+include ../fmuv3/hwdef.dat
+
+env OPTIMIZE -O3
+
+SPIDEV icm20948_ext   SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
+SPIDEV icm20602_ext   SPI4 DEVID3  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
 
 # pull Solo's default parameters from /Tools/Frame_params
 # these are parameters the Solo requires for proper operation that are differnet from the 3.7 standard defaults.
