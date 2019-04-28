@@ -1096,7 +1096,9 @@ void AP_Param::save(bool force_save)
         // when we are disarmed then loop waiting for a slot to become
         // available. This guarantees completion for large parameter
         // set loads
+        hal.scheduler->expect_delay_ms(1);
         hal.scheduler->delay_microseconds(500);
+        hal.scheduler->expect_delay_ms(0);
     }
 }
 
@@ -1118,7 +1120,9 @@ void AP_Param::flush(void)
 {
     uint16_t counter = 200; // 2 seconds max
     while (counter-- && save_queue.available()) {
+        hal.scheduler->expect_delay_ms(10);
         hal.scheduler->delay(10);
+        hal.scheduler->expect_delay_ms(0);
     }
 }
 
@@ -1745,6 +1749,9 @@ void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_ta
     for (uint8_t i=0; i<table_size; i++) {
         convert_old_parameter(&conversion_table[i], 1.0f, flags);
     }
+    // we need to flush here to prevent a later set_default_by_name()
+    // causing a save to be done on a converted parameter
+    flush();
 }
 
 /*
