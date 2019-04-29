@@ -26,8 +26,7 @@ int check_arguments(lua_State *L, int expected_arguments, const char *fn_name) {
 
 // servo binding
 
-int lua_servo_set_output_pwm(lua_State *L);
-int lua_servo_set_output_pwm(lua_State *L) {
+static int lua_servo_set_output_pwm(lua_State *L) {
     check_arguments(L, 2, "set_output_pwm");
 
     const SRV_Channel::Aux_servo_function_t servo_function = (SRV_Channel::Aux_servo_function_t)luaL_checkinteger(L, -2);
@@ -44,7 +43,7 @@ int lua_servo_set_output_pwm(lua_State *L) {
 }
 
 // millis
-int lua_millis(lua_State *L) {
+static int lua_millis(lua_State *L) {
     check_arguments(L, 0, "millis");
 
     new_uint32_t(L);
