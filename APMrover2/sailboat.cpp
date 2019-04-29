@@ -67,7 +67,7 @@ float Rover::sailboat_get_VMG() const
     if (!g2.attitude_control.get_forward_speed(speed)) {
         return 0.0f;
     }
-    return (speed * cosf(wrap_PI(radians(nav_controller->target_bearing_cd()) - ahrs.yaw)));
+    return (speed * cosf(wrap_PI(radians(g2.wp_nav.wp_bearing_cd() * 0.01f) - ahrs.yaw)));
 }
 
 // handle user initiated tack while in acro mode
@@ -151,14 +151,14 @@ float Rover::sailboat_calc_heading(float desired_heading_cd)
 
     // trigger tack if cross track error larger than waypoint_overshoot parameter
     // this effectively defines a 'corridor' of width 2*waypoint_overshoot that the boat will stay within
-    if ((fabsf(rover.nav_controller->crosstrack_error()) >= g.waypoint_overshoot) && !is_zero(g.waypoint_overshoot) && !sailboat_tacking()) {
+    if ((fabsf(g2.wp_nav.crosstrack_error()) >= g2.wp_nav.get_overshoot()) && !is_zero(g2.wp_nav.get_overshoot()) && !sailboat_tacking()) {
         // make sure the new tack will reduce the cross track error
         // if were on starboard tack we are traveling towards the left hand boundary
-        if (is_positive(rover.nav_controller->crosstrack_error()) && (current_tack == TACK_STARBOARD)) {
+        if (is_positive(g2.wp_nav.crosstrack_error()) && (current_tack == TACK_STARBOARD)) {
             should_tack = true;
         }
         // if were on port tack we are traveling towards the right hand boundary
-        if (is_negative(rover.nav_controller->crosstrack_error()) && (current_tack == TACK_PORT)) {
+        if (is_negative(g2.wp_nav.crosstrack_error()) && (current_tack == TACK_PORT)) {
             should_tack = true;
         }
     }

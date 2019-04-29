@@ -165,7 +165,7 @@ float Mode::wp_bearing() const
     if (!is_autopilot_mode()) {
         return 0.0f;
     }
-    return rover.nav_controller->target_bearing_cd() * 0.01f;
+    return g2.wp_nav.wp_bearing_cd() * 0.01f;
 }
 
 // return short-term target heading in degrees (i.e. target heading back to line between waypoints)
@@ -174,7 +174,7 @@ float Mode::nav_bearing() const
     if (!is_autopilot_mode()) {
         return 0.0f;
     }
-    return rover.nav_controller->nav_bearing_cd() * 0.01f;
+    return g2.wp_nav.nav_bearing_cd() * 0.01f;
 }
 
 // return cross track error (i.e. vehicle's distance from the line between waypoints)
@@ -183,57 +183,17 @@ float Mode::crosstrack_error() const
     if (!is_autopilot_mode()) {
         return 0.0f;
     }
-    return rover.nav_controller->crosstrack_error();
+    return g2.wp_nav.crosstrack_error();
 }
 
 // set desired location
 void Mode::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
-    // set origin to last destination if waypoint controller active
-    if ((AP_HAL::millis() - last_steer_to_wp_ms < 100) && _reached_destination) {
-        _origin = _destination;
-    } else {
-        // otherwise use reasonable stopping point
-        calc_stopping_location(_origin);
-    }
-    _destination = destination;
+    g2.wp_nav.set_desired_location(destination, next_leg_bearing_cd);
 
     // initialise distance
-    _distance_to_destination = _origin.get_distance(_destination);
+    _distance_to_destination = g2.wp_nav.get_distance_to_destination();
     _reached_destination = false;
-
-    // set final desired speed
-    _desired_speed_final = 0.0f;
-    if (!is_equal(next_leg_bearing_cd, MODE_NEXT_HEADING_UNKNOWN)) {
-        const float curr_leg_bearing_cd = _origin.get_bearing_to(_destination);
-        const float turn_angle_cd = wrap_180_cd(next_leg_bearing_cd - curr_leg_bearing_cd);
-        if (fabsf(turn_angle_cd) < 10.0f) {
-            // if turning less than 0.1 degrees vehicle can continue at full speed
-            // we use 0.1 degrees instead of zero to avoid divide by zero in calcs below
-            _desired_speed_final = _desired_speed;
-        } else if (rover.use_pivot_steering_at_next_WP(turn_angle_cd)) {
-            // pivoting so we will stop
-            _desired_speed_final = 0.0f;
-        } else {
-            // calculate maximum speed that keeps overshoot within bounds
-            const float radius_m = fabsf(g.waypoint_overshoot / (cosf(radians(turn_angle_cd * 0.01f)) - 1.0f));
-            _desired_speed_final = MIN(_desired_speed, safe_sqrt(g.turn_max_g * GRAVITY_MSS * radius_m));
-        }
-    }
-}
-
-// set desired location as an offset from the EKF origin in NED frame
-bool Mode::set_desired_location_NED(const Vector3f& destination, float next_leg_bearing_cd)
-{
-    Location destination_ned;
-    // initialise destination to ekf origin
-    if (!ahrs.get_origin(destination_ned)) {
-        return false;
-    }
-    // apply offset
-    destination_ned.offset(destination.x, destination.y);
-    set_desired_location(destination_ned, next_leg_bearing_cd);
-    return true;
 }
 
 // set desired heading and speed
@@ -247,19 +207,17 @@ void Mode::set_desired_heading_and_speed(float yaw_angle_cd, float target_speed)
     _desired_speed = target_speed;
 }
 
-// get default speed for this mode (held in (CRUISE_SPEED, WP_SPEED or RTL_SPEED)
+// get default speed for this mode (held in (WP_SPEED or RTL_SPEED)
 float Mode::get_speed_default(bool rtl) const
 {
     if (rtl && is_positive(g2.rtl_speed)) {
         return g2.rtl_speed;
-    } else if (is_positive(g2.wp_speed)) {
-        return g2.wp_speed;
-    } else {
-        return g.speed_cruise;
     }
+
+    return g2.wp_nav.get_default_speed();
 }
 
-// restore desired speed to default from parameter values (CRUISE_SPEED or WP_SPEED)
+// restore desired speed to default from parameter values (WP_SPEED)
 void Mode::set_desired_speed_to_default(bool rtl)
 {
     _desired_speed = get_speed_default(rtl);
@@ -278,7 +236,7 @@ bool Mode::set_desired_speed(float speed)
 // execute the mission in reverse (i.e. backing up)
 void Mode::set_reversed(bool value)
 {
-    _reversed = value;
+    g2.wp_nav.set_reversed(value);
 }
 
 // handle tacking request (from auxiliary switch) in sailboats
@@ -415,81 +373,48 @@ float Mode::calc_speed_nudge(float target_speed, float cruise_speed, float cruis
     return target_speed + speed_nudge;
 }
 
-// calculated a reduced speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
-// should be called after calc_lateral_acceleration and before calc_throttle
-// relies on these internal members being updated: _yaw_error_cd, _distance_to_destination
-float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
+// high level call to navigate to waypoint
+// uses wp_nav to calculate turn rate and speed to drive along the path from origin to destination
+// this function updates _distance_to_destination and _yaw_error_cd
+void Mode::navigate_to_waypoint()
 {
-    // reduce speed to zero during pivot turns
-    if (rover.use_pivot_steering(_yaw_error_cd)) {
-        return 0.0f;
+    // update navigation controller
+    g2.wp_nav.update(rover.G_Dt);
+    _distance_to_destination = g2.wp_nav.get_distance_to_destination();
+
+    // pass speed to throttle controller
+    const float desired_speed = g2.wp_nav.get_speed();
+    calc_throttle(desired_speed, true, true);
+
+    float desired_heading_cd = g2.wp_nav.wp_bearing_cd();
+    _yaw_error_cd = wrap_180_cd(desired_heading_cd - ahrs.yaw_sensor);
+
+    if (rover.sailboat_use_indirect_route(desired_heading_cd)) {
+        // sailboats use heading controller when tacking upwind
+        desired_heading_cd = rover.sailboat_calc_heading(desired_heading_cd);
+        calc_steering_to_heading(desired_heading_cd, g2.wp_nav.get_pivot_rate());
+    } else {
+        // call turn rate steering controller
+        calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads(), desired_speed, g2.wp_nav.get_reversed());
     }
-
-    // reduce speed to limit overshoot from line between origin and destination
-    // calculate number of degrees vehicle must turn to face waypoint
-    const float heading_cd = is_negative(desired_speed) ? wrap_180_cd(ahrs.yaw_sensor + 18000) : ahrs.yaw_sensor;
-    const float wp_yaw_diff = wrap_180_cd(rover.nav_controller->target_bearing_cd() - heading_cd);
-    const float turn_angle_rad = fabsf(radians(wp_yaw_diff * 0.01f));
-
-    // calculate distance from vehicle to line + wp_overshoot
-    const float line_yaw_diff = wrap_180_cd(_origin.get_bearing_to(_destination) - heading_cd);
-    const float xtrack_error = rover.nav_controller->crosstrack_error();
-    const float dist_from_line = fabsf(xtrack_error);
-    const bool heading_away = is_positive(line_yaw_diff) == is_positive(xtrack_error);
-    const float wp_overshoot_adj = heading_away ? -dist_from_line : dist_from_line;
-
-    // calculate radius of circle that touches vehicle's current position and heading and target position and heading
-    float radius_m = 999.0f;
-    float radius_calc_denom = fabsf(1.0f - cosf(turn_angle_rad));
-    if (!is_zero(radius_calc_denom)) {
-        radius_m = MAX(0.0f, rover.g.waypoint_overshoot + wp_overshoot_adj) / radius_calc_denom;
-    }
-
-    // calculate and limit speed to allow vehicle to stay on circle
-    float overshoot_speed_max = safe_sqrt(g.turn_max_g * GRAVITY_MSS * MAX(g2.turn_radius, radius_m));
-    float speed_max = constrain_float(desired_speed, -overshoot_speed_max, overshoot_speed_max);
-
-    // limit speed based on distance to waypoint and max acceleration/deceleration
-    if (is_positive(_distance_to_destination) && is_positive(attitude_control.get_decel_max())) {
-        const float dist_speed_max = safe_sqrt(2.0f * _distance_to_destination * attitude_control.get_decel_max() + sq(_desired_speed_final));
-        speed_max = constrain_float(speed_max, -dist_speed_max, dist_speed_max);
-    }
-
-    // return minimum speed
-    return speed_max;
 }
 
-// calculate the lateral acceleration target to cause the vehicle to drive along the path from origin to destination
-// this function updates the _yaw_error_cd value
-void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed)
+// calculate steering output given a turn rate and speed
+void Mode::calc_steering_from_turn_rate(float turn_rate, float speed, bool reversed)
 {
-    // record system time of call
-    last_steer_to_wp_ms = AP_HAL::millis();
-
-    // Calculate the required turn of the wheels
-    // negative error = left turn
-    // positive error = right turn
-    rover.nav_controller->set_reverse(reversed);
-    rover.nav_controller->update_waypoint(origin, destination, g.waypoint_radius);
-    float desired_lat_accel = rover.nav_controller->lateral_acceleration();
-    float desired_heading = rover.nav_controller->target_bearing_cd();
-    if (reversed) {
-        desired_heading = wrap_360_cd(desired_heading + 18000);
-        desired_lat_accel *= -1.0f;
+    // add obstacle avoidance response to lateral acceleration target
+    // ToDo: replace this type of object avoidance with path planning
+    if (!reversed) {
+        const float lat_accel_adj = (rover.obstacle.turn_angle / 45.0f) * g.turn_max_g;
+        turn_rate += attitude_control.get_turn_rate_from_lat_accel(lat_accel_adj, speed);
     }
-    _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor);
 
-    if (rover.sailboat_use_indirect_route(desired_heading)) {
-        // sailboats use heading controller when tacking upwind
-        desired_heading = rover.sailboat_calc_heading(desired_heading);
-        calc_steering_to_heading(desired_heading, g2.pivot_turn_rate);
-    } else if (rover.use_pivot_steering(_yaw_error_cd)) {
-        // for pivot turns use heading controller
-        calc_steering_to_heading(desired_heading, g2.pivot_turn_rate);
-    } else {
-        // call lateral acceleration to steering controller
-        calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
-    }
+    // calculate and send final steering command to motor library
+    const float steering_out = attitude_control.get_steering_out_rate(turn_rate,
+                                                                      g2.motors.limit.steer_left,
+                                                                      g2.motors.limit.steer_right,
+                                                                      rover.G_Dt);
+    g2.motors.set_steering(steering_out * 4500.0f);
 }
 
 /*

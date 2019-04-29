@@ -29,7 +29,6 @@ Rover::Rover(void) :
     channel_lateral(nullptr),
     logger{g.log_bitmask},
     modes(&g.mode1),
-    nav_controller(&L1_controller),
     control_mode(&mode_initializing),
     G_Dt(0.02f)
 {
