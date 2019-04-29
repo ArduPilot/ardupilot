@@ -208,12 +208,21 @@ class ManifestGenerator():
             print("Error listing '%s'" % dir)
             return
         for platformdir in dlist:
-            some_dir = os.path.join(dir, platformdir)
-            try:
-                git_sha = self.git_sha_from_git_version(
-                    os.path.join(some_dir, "git-version.txt"))
-            except Exception:
+            if platformdir.startswith("."):
                 continue
+            some_dir = os.path.join(dir, platformdir)
+            if not os.path.isdir(some_dir):
+                continue
+            git_version_txt = os.path.join(some_dir, "git-version.txt")
+            if not os.path.exists(git_version_txt):
+                print("No file %s" % git_version_txt, file=sys.stderr)
+                continue
+            try:
+                git_sha = self.git_sha_from_git_version(git_version_txt)
+            except Exception as ex:
+                print("Failed to parse %s" % git_version_txt, ex, file=sys.stderr)
+                continue
+            #print(git_version_txt, git_sha)
             firmware_version_file = os.path.join(some_dir,
                                                  "firmware-version.txt")
             try:
@@ -221,10 +230,10 @@ class ManifestGenerator():
                 firmware_version = firmware_version.strip()
                 (version_numbers, release_type) = firmware_version.split("-")
             except ValueError:
-                # print("malformed firmware-version.txt at (%s)" %
-                #     (firmware_version_file,), file=sys.stderr)
+                print("malformed firmware-version.txt at (%s)" % (firmware_version_file,), file=sys.stderr)
                 firmware_version = None
-            except Exception:
+            except Exception as ex:
+                print("bad file %s" % firmware_version_file, file=sys.stderr)
                 # this exception is swallowed.... the current archive
                 # is incomplete.
                 firmware_version = None
@@ -243,11 +252,7 @@ class ManifestGenerator():
                 platform = platformdir  # e.g. apm2
 
             for file in os.listdir(some_dir):
-                if file == "git-version.txt":
-                    continue
-                if file == "firmware-version.txt":
-                    continue
-                if file == "files.html":
+                if file in ["git-version.txt", "firmware-version.txt", "files.html"]:
                     continue
                 if file.startswith("."):
                     continue
@@ -267,10 +272,13 @@ class ManifestGenerator():
 
                 if vehicletype not in firmware_data:
                     firmware_data[vehicletype] = dict()
+                    #print("Added vehicletype: ", vehicletype)
                 if file_platform not in firmware_data[vehicletype]:
                     firmware_data[vehicletype][file_platform] = dict()
+                    #print("Added file_platform: ", vehicletype, file_platform)
                 if git_sha not in firmware_data[vehicletype][file_platform]:
                     firmware_data[vehicletype][file_platform][git_sha] = dict()
+                    #print("Added git_sha: ", vehicletype, file_platform, releasetype, git_sha)
 
                 sha_dict = firmware_data[vehicletype][file_platform][git_sha]
                 if firmware_format not in sha_dict:
@@ -281,7 +289,7 @@ class ManifestGenerator():
                 firmware = sha_dict[firmware_format][frame]
 
                 # translate from supplied "release type" into both a
-                # "latest" flag andan actual release type.  Also sort
+                # "latest" flag and an actual release type.  Also sort
                 # out which filepath we should use:
                 firmware["latest"] = 0
                 if releasetype == "dev":
@@ -313,8 +321,7 @@ class ManifestGenerator():
             ret = []
             for value in xfirmwares.values():
                 o = self.xfirmwares_to_firmwares(value)
-                for oo in o:
-                    ret.append(oo)
+                ret.extend(o)
             return ret
         else:
             return [xfirmwares]
@@ -419,6 +426,7 @@ class ManifestGenerator():
 
             self.add_USB_IDs(some_json)
 
+            #print(some_json['url'])
             firmware_json.append(some_json)
 
         ret = {
