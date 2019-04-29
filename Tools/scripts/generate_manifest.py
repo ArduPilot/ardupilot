@@ -222,21 +222,27 @@ class ManifestGenerator():
             except Exception as ex:
                 print("Failed to parse %s" % git_version_txt, ex, file=sys.stderr)
                 continue
-            #print(git_version_txt, git_sha)
+
+            # we require a firmware-version.txt. These files have been added to
+            # old builds that didn't have them
             firmware_version_file = os.path.join(some_dir,
                                                  "firmware-version.txt")
+            if not os.path.exists(firmware_version_file):
+                print("Missing %s" % firmware_version_file, file=sys.stderr)
+                continue
+
             try:
                 firmware_version = open(firmware_version_file).read()
                 firmware_version = firmware_version.strip()
                 (version_numbers, release_type) = firmware_version.split("-")
             except ValueError:
                 print("malformed firmware-version.txt at (%s)" % (firmware_version_file,), file=sys.stderr)
-                firmware_version = None
+                continue
             except Exception as ex:
                 print("bad file %s" % firmware_version_file, file=sys.stderr)
                 # this exception is swallowed.... the current archive
                 # is incomplete.
-                firmware_version = None
+                continue
 
             m = platform_frame_regex.match(platformdir)
             if m is not None:
@@ -270,23 +276,7 @@ class ManifestGenerator():
 
                 firmware_format = "".join(file.split(".")[-1:])
 
-                if vehicletype not in firmware_data:
-                    firmware_data[vehicletype] = dict()
-                    #print("Added vehicletype: ", vehicletype)
-                if file_platform not in firmware_data[vehicletype]:
-                    firmware_data[vehicletype][file_platform] = dict()
-                    #print("Added file_platform: ", vehicletype, file_platform)
-                if git_sha not in firmware_data[vehicletype][file_platform]:
-                    firmware_data[vehicletype][file_platform][git_sha] = dict()
-                    #print("Added git_sha: ", vehicletype, file_platform, releasetype, git_sha)
-
-                sha_dict = firmware_data[vehicletype][file_platform][git_sha]
-                if firmware_format not in sha_dict:
-                    sha_dict[firmware_format] = dict()
-                if frame not in sha_dict[firmware_format]:
-                    sha_dict[firmware_format][frame] = Firmware()
-
-                firmware = sha_dict[firmware_format][frame]
+                firmware = Firmware()
 
                 # translate from supplied "release type" into both a
                 # "latest" flag and an actual release type.  Also sort
@@ -315,16 +305,7 @@ class ManifestGenerator():
                 firmware["format"] = firmware_format
                 firmware["firmware-version"] = firmware_version
 
-    def xfirmwares_to_firmwares(self, xfirmwares):
-        '''takes hash structure of firmwares, returns list of them'''
-        if isinstance(xfirmwares, dict):
-            ret = []
-            for value in xfirmwares.values():
-                o = self.xfirmwares_to_firmwares(value)
-                ret.extend(o)
-            return ret
-        else:
-            return [xfirmwares]
+                firmware_data.append(firmware)
 
     def valid_release_type(self, tag):
         '''check for valid release type'''
@@ -343,7 +324,7 @@ class ManifestGenerator():
         structure representing releases in that structure'''
         year_month_regex = re.compile("(?P<year>\d{4})-(?P<month>\d{2})")
 
-        xfirmwares = dict()
+        firmwares = []
 
         # used to listdir basedir here, but since this is also a web
         # document root, there's a lot of other stuff accumulated...
@@ -365,35 +346,22 @@ class ManifestGenerator():
                     # this is a dated directory e.g. binaries/Copter/2016-02
                     # we do not include dated directories in the manifest ATM:
                     continue
-                    year_month_path = os.path.join(basedir,
-                                                   vehicletype,
-                                                   firstlevel)
-                    for fulldate in os.listdir(year_month_path):
-                        if fulldate in ["files.html", ".makehtml"]:
-                            # generated file which should be ignored
-                            continue
-                        self.add_firmware_data_from_dir(
-                            os.path.join(year_month_path, fulldate),
-                            xfirmwares,
-                            vehicletype)
-                else:
-                    # assume this is a release directory such as
-                    # "beta", or the "latest" directory (treated as a
-                    # release and handled specially later)
-                    tag = firstlevel
-                    if not self.valid_release_type(tag):
-                        print("Unknown tag (%s) in directory (%s)" %
-                              (tag, os.path.join(vdir)), file=sys.stderr)
-                        continue
-                    tag_path = os.path.join(basedir, vehicletype, tag)
-                    if not os.path.isdir(tag_path):
-                        continue
-                    self.add_firmware_data_from_dir(tag_path,
-                                                    xfirmwares,
-                                                    vehicletype,
-                                                    releasetype=tag)
 
-        firmwares = self.xfirmwares_to_firmwares(xfirmwares)
+                # assume this is a release directory such as
+                # "beta", or the "latest" directory (treated as a
+                # release and handled specially later)
+                tag = firstlevel
+                if not self.valid_release_type(tag):
+                    print("Unknown tag (%s) in directory (%s)" %
+                          (tag, os.path.join(vdir)), file=sys.stderr)
+                    continue
+                tag_path = os.path.join(basedir, vehicletype, tag)
+                if not os.path.isdir(tag_path):
+                    continue
+                self.add_firmware_data_from_dir(tag_path,
+                                                firmwares,
+                                                vehicletype,
+                                                releasetype=tag)
 
         # convert from ardupilot-naming conventions to common JSON format:
         firmware_json = []
@@ -415,8 +383,12 @@ class ManifestGenerator():
                 "format": firmware["format"],
             })
             if firmware["firmware-version"]:
-                (major, minor, patch, release_type) = self.parse_fw_version(
-                    firmware["firmware-version"])
+                try:
+                    (major, minor, patch, release_type) = self.parse_fw_version(
+                        firmware["firmware-version"])
+                except Exception:
+                    print("Badly formed firmware-version.txt %s" % firmware["firmware-version"], file=sys.stderr)
+                    continue
                 some_json["mav-firmware-version"] = ".".join([major,
                                                               minor,
                                                               patch])
