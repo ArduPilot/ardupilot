@@ -1,11 +1,13 @@
 #include <AP_Common/AP_Common.h>
-#include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_Common/Location.h>
+#include <AP_HAL/HAL.h>
 
 #include "lua_bindings.h"
 
+#include "lua_boxed_numerics.h"
 #include "lua_generated_bindings.h"
+
+extern const AP_HAL::HAL& hal;
 
 int check_arguments(lua_State *L, int expected_arguments, const char *fn_name);
 int check_arguments(lua_State *L, int expected_arguments, const char *fn_name) {
@@ -21,24 +23,6 @@ int check_arguments(lua_State *L, int expected_arguments, const char *fn_name) {
     }
     return 0;
 }
-
-// GCS binding
-
-int lua_gcs_send_text(lua_State *L);
-int lua_gcs_send_text(lua_State *L) {
-    check_arguments(L, 1, "send_text");
-
-    const char* str = luaL_checkstring(L, -1);
-
-    gcs().send_text(MAV_SEVERITY_INFO, str);
-    return 0;
-}
-
-static const luaL_Reg gcs_functions[] =
-{
-    {"send_text", lua_gcs_send_text},
-    {NULL, NULL}
-};
 
 // servo binding
 
@@ -59,6 +43,16 @@ int lua_servo_set_output_pwm(lua_State *L) {
     return 0;
 }
 
+// millis
+int lua_millis(lua_State *L) {
+    check_arguments(L, 0, "millis");
+
+    new_uint32_t(L);
+    *check_uint32_t(L, -1) = AP_HAL::millis();
+
+    return 1;
+}
+
 static const luaL_Reg servo_functions[] =
 {
     {"set_output_pwm", lua_servo_set_output_pwm},
@@ -66,12 +60,12 @@ static const luaL_Reg servo_functions[] =
 };
 
 void load_lua_bindings(lua_State *L) {
-    luaL_newlib(L, gcs_functions);
-    lua_setglobal(L, "gcs");
-
     luaL_newlib(L, servo_functions);
     lua_setglobal(L, "servo");
 
     load_generated_bindings(L);
+
+    lua_pushcfunction(L, lua_millis);
+    lua_setglobal(L, "millis");
 }
 

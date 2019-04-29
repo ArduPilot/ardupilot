@@ -120,3 +120,7 @@ singleton AP_Relay method on void uint8_t 0 AP_RELAY_NUM_RELAYS
 singleton AP_Relay method off void uint8_t 0 AP_RELAY_NUM_RELAYS
 singleton AP_Relay method enabled boolean uint8_t 0 AP_RELAY_NUM_RELAYS
 singleton AP_Relay method toggle void uint8_t 0 AP_RELAY_NUM_RELAYS
+
+include GCS_MAVLink/GCS.h
+singleton GCS alias gcs
+singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG string

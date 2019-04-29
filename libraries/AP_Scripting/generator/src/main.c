@@ -20,6 +20,7 @@ char keyword_userdata[]  = "userdata";
 char keyword_write[]     = "write";
 
 // attributes (should include the leading ' )
+char keyword_attr_enum[] = "'enum";
 char keyword_attr_null[] = "'Null";
 
 // type keywords
@@ -87,6 +88,7 @@ enum field_type {
   TYPE_UINT32_T,
   TYPE_NONE,
   TYPE_STRING,
+  TYPE_ENUM,
   TYPE_USERDATA,
 };
 
@@ -99,6 +101,7 @@ const char * type_labels[TYPE_USERDATA + 1] = { "bool",
                                                 "uint16_t",
                                                 "void",
                                                 "string",
+                                                "enum",
                                                 "userdata",
                                               };
 
@@ -124,6 +127,7 @@ struct range_check {
 
 enum type_flags {
   TYPE_FLAGS_NULLABLE = (1U << 1),
+  TYPE_FLAGS_ENUM     = (1U << 2),
 };
 
 struct type {
@@ -133,6 +137,7 @@ struct type {
   uint32_t flags;
   union {
     char *userdata_name;
+    char *enum_name;
   } data;
 };
 
@@ -302,10 +307,10 @@ void string_copy(char **dest, const char * src) {
   strcpy(*dest, src);
 }
 
-struct range_check *parse_range_check(void) {
+struct range_check *parse_range_check(enum field_type type) {
   char * low = next_token();
   if (low == NULL) {
-    error(ERROR_USERDATA, "Missing low value for a range check");
+    error(ERROR_USERDATA, "Missing low value for a range check (type: %s)", type_labels[type]);
   }
 
   trace(TRACE_TOKENS, "Range check: Low: %s", low);
@@ -346,7 +351,8 @@ unsigned int parse_access_flags(struct type * type) {
         case TYPE_UINT8_T:
         case TYPE_UINT16_T:
         case TYPE_UINT32_T:
-          type->range = parse_range_check();
+        case TYPE_ENUM:
+          type->range = parse_range_check(type->type);
           break;
         case TYPE_USERDATA:
         case TYPE_BOOLEAN:
@@ -405,7 +411,9 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
 
   char *attribute = strchr(data_type, '\'');
   if (attribute != NULL) {
-    if (strcmp(attribute, keyword_attr_null) == 0) {
+    if (strcmp(attribute, keyword_attr_enum) == 0) {
+      type->flags |= TYPE_FLAGS_ENUM;
+    } else if (strcmp(attribute, keyword_attr_null) == 0) {
       if (restrictions & TYPE_RESTRICTION_NOT_NULLABLE) {
         error(ERROR_USERDATA, "%s is not nullable in this context", data_type);
       }
@@ -436,6 +444,9 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
     type->type = TYPE_STRING;
   } else if (strcmp(data_type, keyword_void) == 0) {
     type->type = TYPE_NONE;
+  } else if (type->flags & TYPE_FLAGS_ENUM) {
+    type->type = TYPE_ENUM;
+    string_copy(&(type->data.enum_name), data_type);
   } else {
     // assume that this is a user data, we can't validate this until later though
     type->type = TYPE_USERDATA;
@@ -455,6 +466,7 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
       case TYPE_UINT32_T:
       case TYPE_BOOLEAN:
       case TYPE_STRING:
+      case TYPE_ENUM:
       case TYPE_USERDATA:
         break;
       case TYPE_NONE:
@@ -473,7 +485,8 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
       case TYPE_UINT32_T:
-        type->range = parse_range_check();
+      case TYPE_ENUM:
+        type->range = parse_range_check(type->type);
         break;
       case TYPE_BOOLEAN:
       case TYPE_NONE:
@@ -802,6 +815,9 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
       case TYPE_STRING:
         fprintf(source, "%schar * data_%d = {};\n", indentation, arg_number);
         break;
+      case TYPE_ENUM:
+        fprintf(source, "%suint32_t data_%d = {};\n", indentation, arg_number);
+        break;
       case TYPE_USERDATA:
         fprintf(source, "%s%s data_%d = {};\n", indentation, t.data.userdata_name, arg_number);
         break;
@@ -829,6 +845,7 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
         forced_min = "INT16_MIN";
         forced_max = "INT16_MAX";
         break;
+      case TYPE_ENUM: // enums are assumed to only ever be within the int32_t space
       case TYPE_INT32_T:
         forced_min = "INT32_MIN";
         forced_max = "INT32_MAX";
@@ -865,6 +882,7 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
       case TYPE_INT32_T:
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
+      case TYPE_ENUM:
         fprintf(source, "%sconst lua_Integer raw_data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number);
         break;
       case TYPE_UINT32_T:
@@ -918,6 +936,9 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
       case TYPE_STRING:
         fprintf(source, "%sconst char * data_%d = luaL_checkstring(L, %d);\n", indentation, arg_number, arg_number);
         break;
+      case TYPE_ENUM:
+        fprintf(source, "%sconst %s data_%d = static_cast<%s>(raw_data_%d);\n", indentation, t.data.enum_name, arg_number, t.data.enum_name, arg_number);
+        break;
       case TYPE_USERDATA:
         fprintf(source, "%s%s & data_%d = *check_%s(L, %d);\n", indentation, t.data.userdata_name, arg_number, t.data.userdata_name, arg_number);
         break;
@@ -947,6 +968,7 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
       case TYPE_INT32_T:
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
+      case TYPE_ENUM:
         fprintf(source, "            lua_pushinteger(L, ud->%s);\n", field->name);
         break;
       case TYPE_UINT32_T:
@@ -1001,7 +1023,8 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   // emit comments on expected arg/type
   struct argument *arg = method->arguments;
   while (arg != NULL) {
-    fprintf(source, "    // %d %s %d : %d\n", arg_count++, arg->type.type == TYPE_USERDATA ? arg->type.data.userdata_name : type_labels[arg->type.type],
+    fprintf(source, "    // %d %s %d : %d\n", arg_count++, arg->type.type == TYPE_USERDATA ? arg->type.data.userdata_name :
+                                                                                             arg->type.type == TYPE_ENUM ? arg->type.data.enum_name : type_labels[arg->type.type],
                                       arg->line_num, arg->token_num);
     arg = arg->next;
   }
@@ -1077,6 +1100,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case TYPE_UINT32_T:
       fprintf(source, "    const uint32_t data = ud->%s(\n", method->name);
       break;
+    case TYPE_ENUM:
+      fprintf(source, "    const %s &data = ud->%s(\n", method->return_type.data.enum_name, method->name);
+      break;
     case TYPE_USERDATA:
       fprintf(source, "    const %s &data = ud->%s(\n", method->return_type.data.userdata_name, method->name);
       break;
@@ -1125,6 +1151,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
               case TYPE_INT32_T:
               case TYPE_UINT8_T:
               case TYPE_UINT16_T:
+              case TYPE_ENUM:
                 fprintf(source, "        lua_pushinteger(L, data_%d);\n", arg_index);
                 break;
               case TYPE_UINT32_T:
@@ -1163,6 +1190,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case TYPE_INT32_T:
     case TYPE_UINT8_T:
     case TYPE_UINT16_T:
+    case TYPE_ENUM:
       fprintf(source, "    lua_pushinteger(L, data);\n");
       break;
     case TYPE_UINT32_T:

@@ -30,7 +30,7 @@ function get_sandbox_env ()
                    codepoint = utf8.codepoint, len = utf8.len, offsets = utf8.offsets},
 
           -- ArduPilot specific
-          gcs = { send_text = gcs.send_text},
+          millis = millis,
           servo = { set_output_pwm = servo.set_output_pwm},
         }
 end
