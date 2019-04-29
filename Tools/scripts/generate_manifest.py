@@ -9,7 +9,7 @@ import re
 import fnmatch
 
 FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub"]
-RELEASE_TYPES = ["beta", "latest", "stable", "stable-*" ]
+RELEASE_TYPES = ["beta", "latest", "stable", "stable-*"]
 
 
 class Firmware():
@@ -92,7 +92,6 @@ class ManifestGenerator():
                 "filepath (%s) does not contain a git sha" % (filepath,))
         return m.group("sha")
 
-
     def add_USB_IDs_PX4(self, firmware):
         '''add USB IDs to a .px4 firmware'''
         url = firmware['url']
@@ -121,11 +120,11 @@ class ManifestGenerator():
         if not os.path.exists(apj_path):
             print("bad apj path %s" % apj_path, file=sys.stderr)
             return
-        apj_json = json.load(open(apj_path,'r'))
-        if not 'board_id' in apj_json:
+        apj_json = json.load(open(apj_path, 'r'))
+        if 'board_id' not in apj_json:
             print("no board_id in %s" % apj_path, file=sys.stderr)
             return
-        if not 'platform' in firmware:
+        if 'platform' not in firmware:
             print("no platform for %s" % apj_path, file=sys.stderr)
             return
         board_id = apj_json['board_id']
@@ -138,18 +137,18 @@ class ManifestGenerator():
 
         # map of vendor specific USB IDs
         USBID_MAP = {
-            'CubeBlack' : ['0x2DAE/0x1011'],
+            'CubeBlack': ['0x2DAE/0x1011'],
             'CubeOrange': ['0x2DAE/0x1016'],
             'CubePurple': ['0x2DAE/0x1005'],
             'CubeYellow': ['0x2DAE/0x1002'],
-            'Pixhawk4'  : ['0x3162/0x0047'],
-            'PH4-mini'  : ['0x3162/0x0049'],
-            'Pixhawk6'  : ['0x3162/0x004B'],
-            'VRBrain-v51':['0x27AC/0x1151'],
-            'VRBrain-v52':['0x27AC/0x1152'],
-            'VRBrain-v54':['0x27AC/0x1154'],
+            'Pixhawk4': ['0x3162/0x0047'],
+            'PH4-mini': ['0x3162/0x0049'],
+            'Pixhawk6': ['0x3162/0x004B'],
+            'VRBrain-v51': ['0x27AC/0x1151'],
+            'VRBrain-v52': ['0x27AC/0x1152'],
+            'VRBrain-v54': ['0x27AC/0x1154'],
             'VRCore-v10': ['0x27AC/0x1910'],
-            'VRUBrain-v51':['0x27AC/0x1351']
+            'VRUBrain-v51': ['0x27AC/0x1351']
         }
         if platform in USBID_MAP:
             firmware['USBID'] = USBID_MAP[platform]
@@ -182,8 +181,6 @@ class ManifestGenerator():
             firmware['bootloader_str'].append('MindPX BL FMU v2.x')
             firmware['USBID'].append('0x26AC/0x0030')
 
-            
-            
     def add_USB_IDs(self, firmware):
         '''add USB IDs to a firmware'''
         fmt = firmware['format']
@@ -193,8 +190,6 @@ class ManifestGenerator():
         if fmt == "apj":
             self.add_USB_IDs_ChibiOS(firmware)
             return
-
-
 
     def add_firmware_data_from_dir(self,
                                    dir,
@@ -217,7 +212,7 @@ class ManifestGenerator():
             try:
                 git_sha = self.git_sha_from_git_version(
                     os.path.join(some_dir, "git-version.txt"))
-            except Exception as e:
+            except Exception:
                 continue
             firmware_version_file = os.path.join(some_dir,
                                                  "firmware-version.txt")
@@ -225,11 +220,11 @@ class ManifestGenerator():
                 firmware_version = open(firmware_version_file).read()
                 firmware_version = firmware_version.strip()
                 (version_numbers, release_type) = firmware_version.split("-")
-            except ValueError as e:
+            except ValueError:
                 # print("malformed firmware-version.txt at (%s)" %
                 #     (firmware_version_file,), file=sys.stderr)
                 firmware_version = None
-            except Exception as e:
+            except Exception:
                 # this exception is swallowed.... the current archive
                 # is incomplete.
                 firmware_version = None
@@ -324,7 +319,7 @@ class ManifestGenerator():
         else:
             return [xfirmwares]
 
-    def check_release_type(self, tag):
+    def valid_release_type(self, tag):
         '''check for valid release type'''
         for r in RELEASE_TYPES:
             if fnmatch.fnmatch(tag, r):
@@ -370,7 +365,6 @@ class ManifestGenerator():
                         if fulldate in ["files.html", ".makehtml"]:
                             # generated file which should be ignored
                             continue
-                        print(fulldate, file=sys.stderr)
                         self.add_firmware_data_from_dir(
                             os.path.join(year_month_path, fulldate),
                             xfirmwares,
@@ -380,7 +374,7 @@ class ManifestGenerator():
                     # "beta", or the "latest" directory (treated as a
                     # release and handled specially later)
                     tag = firstlevel
-                    if not self.check_release_type(tag):
+                    if not self.valid_release_type(tag):
                         print("Unknown tag (%s) in directory (%s)" %
                               (tag, os.path.join(vdir)), file=sys.stderr)
                         continue
@@ -463,6 +457,6 @@ if __name__ == "__main__":
     if args.outfile is None:
         print(generator.json())
     else:
-        f = open(args.outfile,"w")
+        f = open(args.outfile, "w")
         f.write(generator.json())
         f.close()
