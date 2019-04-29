@@ -93,14 +93,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(speed_cruise,        "CRUISE_SPEED",    CRUISE_SPEED),
 
-    // @Param: PIVOT_TURN_ANGLE
-    // @DisplayName: Pivot turn angle
-    // @Description: Navigation angle threshold in degrees to switch to pivot steering when SKID_STEER_OUT is 1. This allows you to setup a skid steering rover to turn on the spot in auto mode when the angle it needs to turn it greater than this angle. An angle of zero means to disable pivot turning. Note that you will probably also want to set a low value for WP_RADIUS to get neat turns.
-    // @Units: deg
-    // @Range: 0 360
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(pivot_turn_angle,   "PIVOT_TURN_ANGLE",  60),
 
     // @Param: CRUISE_THROTTLE
     // @DisplayName: Base throttle percentage in auto
@@ -259,24 +251,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     GSCALAR(mode6,           "MODE6",         Mode::Number::MANUAL),
-
-    // @Param: WP_RADIUS
-    // @DisplayName: Waypoint radius
-    // @Description: The distance in meters from a waypoint when we consider the waypoint has been reached. This determines when the rover will turn along the next waypoint path.
-    // @Units: m
-    // @Range: 0 1000
-    // @Increment: 0.1
-    // @User: Standard
-    GSCALAR(waypoint_radius,        "WP_RADIUS",        2.0f),
-
-    // @Param: WP_OVERSHOOT
-    // @DisplayName: Waypoint overshoot maximum
-    // @Description: Waypoint overshoot maximum in meters.  The vehicle will attempt to stay within this many meters of the track as it completes one waypoint and moves to the next.
-    // @Units: m
-    // @Range: 0 10
-    // @Increment: 0.1
-    // @User: Standard
-    GSCALAR(waypoint_overshoot,     "WP_OVERSHOOT", 2.0f),
 
     // @Param: TURN_MAX_G
     // @DisplayName: Turning maximum G force
@@ -507,14 +481,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_SmartRTL/AP_SmartRTL.cpp
     AP_SUBGROUPINFO(smart_rtl, "SRTL_", 13, ParametersG2, AP_SmartRTL),
 
-    // @Param: WP_SPEED
-    // @DisplayName: Waypoint speed default
-    // @Description: Waypoint speed default.  If zero use CRUISE_SPEED.
-    // @Units: m/s
-    // @Range: 0 100
-    // @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("WP_SPEED", 14, ParametersG2, wp_speed, 0.0f),
+    // 14 was WP_SPEED and should not be re-used
 
     // @Param: RTL_SPEED
     // @DisplayName: Return-to-Launch speed default
@@ -544,14 +511,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     AP_SUBGROUPINFO(avoid, "AVOID_", 19, ParametersG2, AC_Avoid),
 
-    // @Param: PIVOT_TURN_RATE
-    // @DisplayName: Pivot turn rate
-    // @Description: Desired pivot turn rate in deg/s.
-    // @Units: deg/s
-    // @Range: 0 360
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("PIVOT_TURN_RATE", 20, ParametersG2, pivot_turn_rate, 90),
+    // 20 was PIVOT_TURN_RATE and should not be re-used
 
     // @Param: BAL_PITCH_MAX
     // @DisplayName: BalanceBot Maximum Pitch
@@ -708,6 +668,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("STICK_MIXING", 42, ParametersG2, stick_mixing, 0),
 
+    // @Group: WP_
+    // @Path: ../libraries/AR_WPNav/AR_WPNav.cpp
+    AP_SUBGROUPINFO(wp_nav, "WP_", 43, ParametersG2, AR_WPNav),
+
     AP_GROUPEND
 };
 
@@ -725,6 +689,46 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 // @Description: RC Channel to use for auxiliary functions including saving waypoints
 // @User: Advanced
 
+// @Param: PIVOT_TURN_ANGLE
+// @DisplayName: Pivot turn angle
+// @Description: Navigation angle threshold in degrees to switch to pivot steering when SKID_STEER_OUT is 1. This allows you to setup a skid steering rover to turn on the spot in auto mode when the angle it needs to turn it greater than this angle. An angle of zero means to disable pivot turning. Note that you will probably also want to set a low value for WP_RADIUS to get neat turns.
+// @Units: deg
+// @Range: 0 360
+// @Increment: 1
+// @User: Standard
+
+// @Param: WP_RADIUS
+// @DisplayName: Waypoint radius
+// @Description: The distance in meters from a waypoint when we consider the waypoint has been reached. This determines when the rover will turn along the next waypoint path.
+// @Units: m
+// @Range: 0 1000
+// @Increment: 0.1
+// @User: Standard
+
+// @Param: WP_OVERSHOOT
+// @DisplayName: Waypoint overshoot maximum
+// @Description: Waypoint overshoot maximum in meters.  The vehicle will attempt to stay within this many meters of the track as it completes one waypoint and moves to the next.
+// @Units: m
+// @Range: 0 10
+// @Increment: 0.1
+// @User: Standard
+
+// @Param: WP_SPEED
+// @DisplayName: Waypoint speed default
+// @Description: Waypoint speed default.  If zero use CRUISE_SPEED.
+// @Units: m/s
+// @Range: 0 100
+// @Increment: 0.1
+// @User: Standard
+
+// @Param: PIVOT_TURN_RATE
+// @DisplayName: Pivot turn rate
+// @Description: Desired pivot turn rate in deg/s.
+// @Units: deg/s
+// @Range: 0 360
+// @Increment: 1
+// @User: Standard
+
 ParametersG2::ParametersG2(void)
     :
 #if ADVANCED_FAILSAFE == ENABLED
@@ -739,7 +743,8 @@ ParametersG2::ParametersG2(void)
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
     follow(),
     windvane(),
-    airspeed()
+    airspeed(),
+    wp_nav(attitude_control, rover.L1_controller)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -772,6 +777,11 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_throttle_max_old,   0,      AP_PARAM_INT8,  "MOT_THR_MAX" },
 
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
+    { Parameters::k_param_pivot_turn_angle,   0,      AP_PARAM_INT16,  "WP_PIVOT_ANGLE" },
+    { Parameters::k_param_waypoint_radius,    0,      AP_PARAM_FLOAT,  "WP_RADIUS" },
+    { Parameters::k_param_waypoint_overshoot, 0,      AP_PARAM_FLOAT,  "WP_OVERSHOOT" },
+    { Parameters::k_param_g2,                20,      AP_PARAM_INT16,  "WP_PIVOT_RATE" },
+
 };
 
 void Rover::load_parameters(void)
@@ -812,7 +822,7 @@ void Rover::load_parameters(void)
         g2.crash_angle.set_default(0);
         g2.loit_type.set_default(1);
         g2.loit_radius.set_default(5);
-        g.waypoint_overshoot.set_default(10);
+        g2.wp_nav.set_default_overshoot(10);
     }
 
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
@@ -838,6 +848,18 @@ void Rover::load_parameters(void)
         if (ch7_opt_old_val < ARRAY_SIZE(ch7_opt_map)) {
             AP_Param::set_default_by_name(ch7_option_info.new_name, ch7_opt_map[ch7_opt_old_val]);
         }
+    }
+
+    // set AR_WPNav's WP_SPEED to be old WP_SPEED (if set) or CRUISE_SPEED (if set)
+    const AP_Param::ConversionInfo wp_speed_old_info = { Parameters::k_param_g2, 14, AP_PARAM_FLOAT, "WP_SPEED" };
+    const AP_Param::ConversionInfo cruise_speed_info = { Parameters::k_param_speed_cruise, 0, AP_PARAM_FLOAT, "WP_SPEED" };
+    AP_Float wp_speed_old;
+    if (AP_Param::find_old_parameter(&wp_speed_old_info, &wp_speed_old)) {
+        // old WP_SPEED parameter value was set so copy to new WP_SPEED
+        AP_Param::convert_old_parameter(&wp_speed_old_info, 1.0f);
+    } else {
+        // copy CRUISE_SPEED to new WP_SPEED
+        AP_Param::convert_old_parameter(&cruise_speed_info, 1.0f);
     }
 
     // configure safety switch to allow stopping the motors while armed

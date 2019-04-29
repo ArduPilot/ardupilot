@@ -65,6 +65,7 @@
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <APM_Control/AR_AttitudeControl.h>
+#include <AR_WPNav/AR_WPNav.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
@@ -198,9 +199,6 @@ private:
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
-    // selected navigation controller
-    AP_Navigation *nav_controller;
-
 #if AP_AHRS_NAVEKF_AVAILABLE
     OpticalFlow optflow;
 #endif
@@ -306,9 +304,6 @@ private:
 
     // flyforward timer
     uint32_t flyforward_start_ms;
-
-    // true if pivoting (set by use_pivot_steering)
-    bool pivot_steering_active;
 
     static const AP_Scheduler::Task scheduler_tasks[];
 
@@ -474,8 +469,6 @@ private:
     void rpm_update(void);
 
     // Steering.cpp
-    bool use_pivot_steering_at_next_WP(float yaw_error_cd);
-    bool use_pivot_steering(float yaw_error_cd);
     void set_servos(void);
 
     // system.cpp
