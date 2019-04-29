@@ -14,6 +14,14 @@ void GCS::get_sensor_status_flags(uint32_t &present,
     health = control_sensors_health;
 }
 
+MissionItemProtocol_Waypoints *GCS::_missionitemprotocol_waypoints;
+MissionItemProtocol_Rally *GCS::_missionitemprotocol_rally;
+
+const MAV_MISSION_TYPE GCS_MAVLINK::supported_mission_types[] = {
+    MAV_MISSION_TYPE_MISSION,
+    MAV_MISSION_TYPE_RALLY,
+};
+
 /*
   send a text message to all GCS
  */
