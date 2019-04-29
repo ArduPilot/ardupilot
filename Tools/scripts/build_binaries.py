@@ -16,7 +16,7 @@ import shutil
 import time
 import subprocess
 import sys
-import zlib, gzip
+import gzip
 
 # local imports
 import generate_manifest
@@ -134,7 +134,7 @@ is bob we will attempt to checkout bob-AVR'''
                 self.run_git_update_submodules()
                 self.run_git(["log", "-1"])
                 return True
-            except subprocess.CalledProcessError as e:
+            except subprocess.CalledProcessError:
                 self.progress("Checkout branch %s failed" % branch)
                 pass
 
@@ -158,10 +158,10 @@ is bob we will attempt to checkout bob-AVR'''
                         break
                 if idx != -1:
                     line = line[idx+len(needle):-1]
-                    line = line.replace("'","")
-                    line = line.replace(" ","")
+                    line = line.replace("'", "")
+                    line = line.replace(" ", "")
                     boards = line.split(",")
-                    return not board in boards
+                    return board not in boards
         except IOError as e:
             if e.errno != 2:
                 raise
@@ -358,7 +358,7 @@ is bob we will attempt to checkout bob-AVR'''
                 if os.path.exists(self.buildroot):
                     shutil.rmtree(self.buildroot)
 
-                self.remove_tmpdir();
+                self.remove_tmpdir()
 
                 self.progress("Configuring for %s in %s" %
                               (board, self.buildroot))
@@ -369,14 +369,14 @@ is bob we will attempt to checkout bob-AVR'''
                                 "clean"]
                     waf_opts.extend(self.board_options(board))
                     self.run_waf(waf_opts)
-                except subprocess.CalledProcessError as e:
+                except subprocess.CalledProcessError:
                     self.progress("waf configure failed")
                     continue
                 try:
                     target = os.path.join("bin",
                                           "".join([binaryname, framesuffix]))
                     self.run_waf(["build", "--targets", target])
-                except subprocess.CalledProcessError as e:
+                except subprocess.CalledProcessError:
                     msg = ("Failed build of %s %s%s %s" %
                            (vehicle, board, framesuffix, tag))
                     self.progress(msg)
@@ -412,7 +412,7 @@ is bob we will attempt to checkout bob-AVR'''
         board_list = self.run_program('BB-WAF', ['./waf', 'list_boards'])
         board_list = board_list.split(' ')
         self.checkout(vehicle, "latest")
-        if not 'px4-v2' in board_list:
+        if 'px4-v2' not in board_list:
             print("Skipping px4 builds")
             return
 
@@ -465,7 +465,7 @@ is bob we will attempt to checkout bob-AVR'''
                 try:
                     self.run_waf(["configure", "--board", px4_v,
                                   "--out", self.buildroot, "clean"])
-                except subprocess.CalledProcessError as e:
+                except subprocess.CalledProcessError:
                     self.progress("waf configure failed")
                     continue
                 try:
@@ -474,7 +474,7 @@ is bob we will attempt to checkout bob-AVR'''
                         "--targets",
                         os.path.join("bin",
                                      "".join([binaryname, framesuffix]))])
-                except subprocess.CalledProcessError as e:
+                except subprocess.CalledProcessError:
                     msg = ("Failed build of %s %s%s %s for %s" %
                            (vehicle, board, framesuffix, tag, v))
                     self.progress(msg)
@@ -620,7 +620,7 @@ is bob we will attempt to checkout bob-AVR'''
         new_json_filepath_gz = os.path.join(self.binaries,
                                             "manifest.json.gz.new")
         with gzip.open(new_json_filepath_gz, 'wb') as gf:
-            gz.write(content)
+            gf.write(content)
         json_filepath = os.path.join(self.binaries, "manifest.json")
         json_filepath_gz = os.path.join(self.binaries, "manifest.json.gz")
         shutil.move(new_json_filepath, json_filepath)
@@ -664,7 +664,7 @@ is bob we will attempt to checkout bob-AVR'''
         os.environ["TMPDIR"] = self.tmpdir
 
         print(self.tmpdir)
-        self.remove_tmpdir();
+        self.remove_tmpdir()
 
         self.progress("Building in %s" % self.tmpdir)
 
