@@ -1029,7 +1029,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     arg = arg->next;
   }
   // sanity check number of args called with
-  fprintf(source, "    const int args = lua_gettop(L);\n");
   arg = method->arguments;
   arg_count = 1;
   while (arg != NULL) {
@@ -1038,11 +1037,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     }
     arg = arg->next;
   }
-  fprintf(source, "    if (args > %d) {\n", arg_count);
-  fprintf(source, "        return luaL_argerror(L, args, \"too many arguments\");\n");
-  fprintf(source, "    } else if (args < %d) {\n", arg_count);
-  fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
-  fprintf(source, "    }\n\n");
+  fprintf(source, "    binding_argcheck(L, %d);\n", arg_count);
 
   switch (data->ud_type) {
     case UD_USERDATA:
@@ -1053,7 +1048,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       // fetch and check the singleton pointer
       fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
       fprintf(source, "    if (ud == nullptr) {\n");
-      fprintf(source, "        return luaL_argerror(L, args, \"%s not supported on this firmware\");\n", access_name);
+      fprintf(source, "        return luaL_argerror(L, %d, \"%s not supported on this firmware\");\n", arg_count, access_name);
       fprintf(source, "    }\n\n");
       break;
   }
@@ -1265,12 +1260,7 @@ void emit_operators(struct userdata *data) {
 
     fprintf(source, "static int %s_%s(lua_State *L) {\n", data->name, op_name);
     // check number of arguments
-    fprintf(source, "    const int args = lua_gettop(L);\n");
-    fprintf(source, "    if (args > 2) {\n");
-    fprintf(source, "        return luaL_argerror(L, args, \"too many arguments\");\n");
-    fprintf(source, "    } else if (args < 2) {\n");
-    fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
-    fprintf(source, "    }\n\n");
+    fprintf(source, "    binding_argcheck(L, 2);\n");
     // check the pointers
     fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->name);
     fprintf(source, "    %s *ud2 = check_%s(L, 2);\n", data->name, data->name);
@@ -1449,6 +1439,21 @@ void emit_sandbox(void) {
   fprintf(source, "}\n");
 }
 
+void emit_argcheck_helper(void) {
+  // tagging this with NOINLINE can save a large amount of flash
+  // but until we need it we will allow the compilier to choose to inline this for us
+  fprintf(source, "static int binding_argcheck(lua_State *L, int expected_arg_count) {\n");
+  fprintf(source, "    const int args = lua_gettop(L);\n");
+  fprintf(source, "    if (args > expected_arg_count) {\n");
+  fprintf(source, "        return luaL_argerror(L, args, \"too many arguments\");\n");
+  fprintf(source, "    } else if (args < expected_arg_count) {\n");
+  fprintf(source, "        return luaL_argerror(L, args, \"too few arguments\");\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "    return 0;\n");
+  fprintf(source, "}\n\n");
+}
+
+
 char * output_path = NULL;
 
 int main(int argc, char **argv) {
@@ -1520,6 +1525,8 @@ int main(int argc, char **argv) {
   emit_headers(source);
 
   fprintf(source, "\n\n");
+
+  emit_argcheck_helper();
 
   emit_userdata_allocators();
 
