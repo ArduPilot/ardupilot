@@ -105,9 +105,6 @@ public:
     //   next_leg_bearing_cd should be heading to the following waypoint (used to slow the vehicle in order to make the turn)
     virtual void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN);
 
-    // set desired location as offset from the EKF origin, return true on success
-    bool set_desired_location_NED(const Vector3f& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN);
-
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() const { return true; }
 
@@ -156,8 +153,11 @@ protected:
     // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
     void get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out);
 
-    // calculate steering output to drive along line from origin to destination waypoint
-    void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
+    // high level call to navigate to waypoint
+    void navigate_to_waypoint();
+
+    // calculate steering output given a turn rate and speed
+    void calc_steering_from_turn_rate(float turn_rate, float speed, bool reversed);
 
     // calculate steering angle given a desired lateral acceleration
     void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);
@@ -183,11 +183,6 @@ protected:
     //  return value is a new speed (in m/s) which up to the projected maximum speed based on the cruise speed and cruise throttle
     float calc_speed_nudge(float target_speed, float cruise_speed, float cruise_throttle);
 
-    // calculated a reduced speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
-    // should be called after calc_steering_to_waypoint and before calc_throttle
-    // relies on these internal members being updated: lateral_acceleration, _yaw_error_cd, _distance_to_destination
-    float calc_reduced_speed_for_turn_or_distance(float desired_speed);
-
     // calculate vehicle stopping location using current location, velocity and maximum acceleration
     void calc_stopping_location(Location& stopping_loc);
 
@@ -208,19 +203,13 @@ protected:
     class RC_Channel *&channel_lateral;
     class AR_AttitudeControl &attitude_control;
 
-
     // private members for waypoint navigation
-    Location _origin;           // origin Location (vehicle will travel from the origin to the destination)
-    Location _destination;      // destination Location when in Guided_WP
     float _distance_to_destination; // distance from vehicle to final destination in meters
     bool _reached_destination;  // true once the vehicle has reached the destination
     float _desired_yaw_cd;      // desired yaw in centi-degrees
     float _yaw_error_cd;        // error between desired yaw and actual yaw in centi-degrees
     float _desired_speed;       // desired speed in m/s
-    float _desired_speed_final; // desired speed in m/s when we reach the destination
     float _speed_error;         // ground speed error in m/s
-    uint32_t last_steer_to_wp_ms;   // system time of last call to calc_steering_to_waypoint
-    bool _reversed;             // execute the mission by backing up
 };
 
 
@@ -414,6 +403,7 @@ protected:
     bool have_attitude_target;  // true if we have a valid attitude target
     uint32_t _des_att_time_ms;  // system time last call to set_desired_attitude was made (used for timeout)
     float _desired_yaw_rate_cds;// target turn rate centi-degrees per second
+    bool sent_notification;     // used to send one time notification to ground station
 
     // limits
     struct {
@@ -457,8 +447,8 @@ public:
     bool is_autopilot_mode() const override { return true; }
 
     // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
-    float wp_bearing() const override { return _desired_yaw_cd; }
-    float nav_bearing() const override { return _desired_yaw_cd; }
+    float wp_bearing() const override { return _desired_yaw_cd * 0.01f; }
+    float nav_bearing() const override { return _desired_yaw_cd * 0.01f; }
     float crosstrack_error() const override { return 0.0f; }
 
     // return distance (in meters) to destination
@@ -467,6 +457,8 @@ public:
 protected:
 
     bool _enter() override;
+
+    Location _destination;      // target location to hold position around
 };
 
 class ModeManual : public Mode
@@ -507,11 +499,13 @@ public:
     bool is_autopilot_mode() const override { return true; }
 
     float get_distance_to_destination() const override { return _distance_to_destination; }
-    bool reached_destination() const override { return _reached_destination; }
+    bool reached_destination() const override;
 
 protected:
 
     bool _enter() override;
+
+    bool sent_notification; // used to send one time notification to ground station
 };
 
 class ModeSmartRTL : public Mode

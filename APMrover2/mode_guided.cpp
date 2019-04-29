@@ -3,12 +3,16 @@
 
 bool ModeGuided::_enter()
 {
-    // initialise waypoint speed
-    set_desired_speed_to_default();
-
     // set desired location to reasonable stopping point
-    calc_stopping_location(_destination);
-    set_desired_location(_destination);
+    if (!g2.wp_nav.set_desired_location_to_stopping_location()) {
+        return false;
+    }
+    _guided_mode = Guided_WP;
+
+    // initialise waypoint speed
+    g2.wp_nav.set_desired_speed_to_default();
+
+    sent_notification = false;
 
     return true;
 }
@@ -18,19 +22,17 @@ void ModeGuided::update()
     switch (_guided_mode) {
         case Guided_WP:
         {
-            _distance_to_destination = rover.current_loc.get_distance(_destination);
-            const bool near_wp = _distance_to_destination <= rover.g.waypoint_radius;
             // check if we've reached the destination
-            if (!_reached_destination && (near_wp || rover.current_loc.past_interval_finish_line(_origin, _destination))) {
-                _reached_destination = true;
-                rover.gcs().send_mission_item_reached_message(0);
-            }
-            // determine if we should keep navigating
-            if (!_reached_destination) {
-                // drive towards destination
-                calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, true);
+            if (!g2.wp_nav.reached_destination()) {
+                // update navigation controller
+                navigate_to_waypoint();
             } else {
+                // send notification
+                if (!sent_notification) {
+                    sent_notification = true;
+                    rover.gcs().send_mission_item_reached_message(0);
+                }
+
                 // we have reached the destination so stay here
                 if (rover.is_boat()) {
                     if (!start_loiter()) {
@@ -39,6 +41,8 @@ void ModeGuided::update()
                 } else {
                     stop_vehicle();
                 }
+                // update distance to destination
+                _distance_to_destination = rover.current_loc.get_distance(g2.wp_nav.get_destination());
             }
             break;
         }
@@ -110,10 +114,19 @@ void ModeGuided::update()
 // return distance (in meters) to destination
 float ModeGuided::get_distance_to_destination() const
 {
-    if (_guided_mode != Guided_WP || _reached_destination) {
+    switch (_guided_mode) {
+    case Guided_WP:
+        return _distance_to_destination;
+    case Guided_HeadingAndSpeed:
+    case Guided_TurnRateAndSpeed:
         return 0.0f;
+    case Guided_Loiter:
+        rover.mode_loiter.get_distance_to_destination();
+        break;
     }
-    return _distance_to_destination;
+
+    // we should never reach here but just in case, return 0
+    return 0.0f;
 }
 
 // return true if vehicle has reached or even passed destination
@@ -122,12 +135,10 @@ bool ModeGuided::reached_destination() const
     switch (_guided_mode) {
     case Guided_WP:
         return _reached_destination;
-        break;
     case Guided_HeadingAndSpeed:
     case Guided_TurnRateAndSpeed:
     case Guided_Loiter:
         return true;
-        break;
     }
 
     // we should never reach here but just in case, return true is the safer option
@@ -138,12 +149,12 @@ bool ModeGuided::reached_destination() const
 void ModeGuided::set_desired_location(const struct Location& destination,
                                       float next_leg_bearing_cd)
 {
-    // call parent
-    Mode::set_desired_location(destination, next_leg_bearing_cd);
+    if (g2.wp_nav.set_desired_location(destination, next_leg_bearing_cd)) {
 
-    // handle guided specific initialisation and logging
-    _guided_mode = ModeGuided::Guided_WP;
-    rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(_destination.lat, _destination.lng, 0), Vector3f(_desired_speed, 0.0f, 0.0f));
+        // handle guided specific initialisation and logging
+        _guided_mode = ModeGuided::Guided_WP;
+        rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(destination.lat, destination.lng, 0), Vector3f(g2.wp_nav.get_desired_speed(), 0.0f, 0.0f));
+    }
 }
 
 // set desired attitude
