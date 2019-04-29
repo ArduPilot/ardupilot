@@ -940,7 +940,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             except AutoTestTimeoutException as e:
                 success = True
                 pass
-            self.mav.srcSystem = old_srcSystem
+            self.mav.mav.srcSystem = old_srcSystem
             if not success:
                 raise NotAchievedException(
                     "Managed to arm with SYSID_ENFORCE set")
@@ -955,7 +955,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             except Exception as e:
                 comp_arm_exception = e
                 pass
-            self.mav.srcSystem = old_srcSystem
+            self.mav.mav.srcSystem = old_srcSystem
             if comp_arm_exception is not None:
                 raise comp_arm_exception
 
