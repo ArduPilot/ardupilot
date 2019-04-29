@@ -6,6 +6,10 @@ import sys
 import json
 import os
 import re
+import fnmatch
+
+FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub"]
+RELEASE_TYPES = ["beta", "latest", "stable", "stable-*" ]
 
 
 class Firmware():
@@ -73,7 +77,7 @@ class ManifestGenerator():
         '''returns True if dir looks like it is a build_binaries.py output
         directory'''
         for entry in os.listdir(dir):
-            if entry in {"AntennaTracker", "Copter", "Plane", "Rover", "Sub"}:
+            if entry in FIRMWARE_TYPES:
                 return True
         return False
 
@@ -87,6 +91,110 @@ class ManifestGenerator():
             raise Exception(
                 "filepath (%s) does not contain a git sha" % (filepath,))
         return m.group("sha")
+
+
+    def add_USB_IDs_PX4(self, firmware):
+        '''add USB IDs to a .px4 firmware'''
+        url = firmware['url']
+        suffix = url.split('-')[-1]
+        if suffix == "v1.px4":
+            firmware['USBID'] = ['0x26AC/0x0010']
+            firmware['board_id'] = 5
+            firmware['bootloader_str'] = ['PX4 BL FMU v1.x']
+        elif suffix in ["v2.px4", "v3.px4"]:
+            firmware['USBID'] = ['0x26AC/0x0011']
+            firmware['board_id'] = 9
+            firmware['bootloader_str'] = ['PX4 BL FMU v2.x']
+        elif suffix == "v4.px4":
+            firmware['USBID'] = ['0x26AC/0x0012']
+            firmware['board_id'] = 11
+            firmware['bootloader_str'] = ['PX4 BL FMU v4.x']
+        elif suffix == "v4pro.px4":
+            firmware['USBID'] = ['0x26AC/0x0013']
+            firmware['board_id'] = 13
+            firmware['bootloader_str'] = ['PX4 BL FMU v4.x PRO']
+
+    def add_USB_IDs_ChibiOS(self, firmware):
+        '''add USB IDs to a ChbiOS apj firmware'''
+        url = firmware['url'][len(self.baseurl)+1:]
+        apj_path = os.path.join(self.basedir, url)
+        if not os.path.exists(apj_path):
+            print("bad apj path %s" % apj_path, file=sys.stderr)
+            return
+        apj_json = json.load(open(apj_path,'r'))
+        if not 'board_id' in apj_json:
+            print("no board_id in %s" % apj_path, file=sys.stderr)
+            return
+        if not 'platform' in firmware:
+            print("no platform for %s" % apj_path, file=sys.stderr)
+            return
+        board_id = apj_json['board_id']
+        platform = firmware['platform']
+
+        # all ChibiOS builds can have platform as bootloader_str and board_id from
+        # hwdef.dat
+        firmware['board_id'] = board_id
+        firmware['bootloader_str'] = [platform+"-BL"]
+
+        # map of vendor specific USB IDs
+        USBID_MAP = {
+            'CubeBlack' : ['0x2DAE/0x1011'],
+            'CubeOrange': ['0x2DAE/0x1016'],
+            'CubePurple': ['0x2DAE/0x1005'],
+            'CubeYellow': ['0x2DAE/0x1002'],
+            'Pixhawk4'  : ['0x3162/0x0047'],
+            'PH4-mini'  : ['0x3162/0x0049'],
+            'Pixhawk6'  : ['0x3162/0x004B'],
+            'VRBrain-v51':['0x27AC/0x1151'],
+            'VRBrain-v52':['0x27AC/0x1152'],
+            'VRBrain-v54':['0x27AC/0x1154'],
+            'VRCore-v10': ['0x27AC/0x1910'],
+            'VRUBrain-v51':['0x27AC/0x1351']
+        }
+        if platform in USBID_MAP:
+            firmware['USBID'] = USBID_MAP[platform]
+        else:
+            # all others use a single USB VID/PID
+            firmware['USBID'] = ['0x0483/0x5740']
+
+        if board_id == 50:
+            # special case for FMUv5, they always get the px4 bootloader IDs as an option
+            firmware['bootloader_str'].append('PX4 BL FMU v5.x')
+            firmware['USBID'].append('0x26AC/0x0032')
+
+        if board_id == 9:
+            # special case for FMUv3, they always get the px4 bootloader IDs as an option
+            firmware['bootloader_str'].append('PX4 BL FMU v2.x')
+            firmware['USBID'].append('0x26AC/0x0011')
+
+        if board_id == 11:
+            # special case for FMUv4, they always get the px4 bootloader IDs as an option
+            firmware['bootloader_str'].append('PX4 BL FMU v4.x')
+            firmware['USBID'].append('0x26AC/0x0012')
+
+        if board_id == 13:
+            # special case for FMUv4pro, they always get the px4 bootloader IDs as an option
+            firmware['bootloader_str'].append('PX4 BL FMU v4.x PRO')
+            firmware['USBID'].append('0x26AC/0x0013')
+
+        if board_id == 88:
+            # special case for MindPX-v2 boards
+            firmware['bootloader_str'].append('MindPX BL FMU v2.x')
+            firmware['USBID'].append('0x26AC/0x0030')
+
+            
+            
+    def add_USB_IDs(self, firmware):
+        '''add USB IDs to a firmware'''
+        fmt = firmware['format']
+        if fmt == "px4":
+            self.add_USB_IDs_PX4(firmware)
+            return
+        if fmt == "apj":
+            self.add_USB_IDs_ChibiOS(firmware)
+            return
+
+
 
     def add_firmware_data_from_dir(self,
                                    dir,
@@ -145,6 +253,8 @@ class ManifestGenerator():
                 if file == "firmware-version.txt":
                     continue
                 if file == "files.html":
+                    continue
+                if file.startswith("."):
                     continue
 
                 m = variant_firmware_regex.match(file)
@@ -214,11 +324,12 @@ class ManifestGenerator():
         else:
             return [xfirmwares]
 
-    known_release_types = {
-        "beta": 1,
-        "latest": 1,
-        "stable": 1
-    }
+    def check_release_type(self, tag):
+        '''check for valid release type'''
+        for r in RELEASE_TYPES:
+            if fnmatch.fnmatch(tag, r):
+                return True
+        return False
 
     def parse_fw_version(self, version):
         (version_numbers, release_type) = version.split("-")
@@ -234,15 +345,17 @@ class ManifestGenerator():
 
         # used to listdir basedir here, but since this is also a web
         # document root, there's a lot of other stuff accumulated...
-        vehicletypes = ['AntennaTracker', 'Copter', 'Plane', 'Rover', 'Sub']
+        vehicletypes = FIRMWARE_TYPES
         for vehicletype in vehicletypes:
             try:
-                vdir = os.listdir(os.path.join(basedir, vehicletype))
+                # the sort means we prefer 'stable' to 'stable-x.y.z' when they
+                # both contain the same contents
+                vdir = sorted(os.listdir(os.path.join(basedir, vehicletype)), reverse=True)
             except OSError as e:
                 if e.errno == 2:
                     continue
             for firstlevel in vdir:
-                if firstlevel == "files.html":
+                if firstlevel == "files.html" or firstlevel.startswith("."):
                     # generated file which should be ignored
                     continue
                 # skip any non-directories (e.g. "files.html"):
@@ -257,6 +370,7 @@ class ManifestGenerator():
                         if fulldate in ["files.html", ".makehtml"]:
                             # generated file which should be ignored
                             continue
+                        print(fulldate, file=sys.stderr)
                         self.add_firmware_data_from_dir(
                             os.path.join(year_month_path, fulldate),
                             xfirmwares,
@@ -266,9 +380,10 @@ class ManifestGenerator():
                     # "beta", or the "latest" directory (treated as a
                     # release and handled specially later)
                     tag = firstlevel
-                    if tag not in self.known_release_types:
+                    if not self.check_release_type(tag):
                         print("Unknown tag (%s) in directory (%s)" %
                               (tag, os.path.join(vdir)), file=sys.stderr)
+                        continue
                     tag_path = os.path.join(basedir, vehicletype, tag)
                     if not os.path.isdir(tag_path):
                         continue
@@ -308,6 +423,8 @@ class ManifestGenerator():
                 some_json["mav-firmware-version-minor"] = minor
                 some_json["mav-firmware-version-patch"] = patch
 
+            self.add_USB_IDs(some_json)
+
             firmware_json.append(some_json)
 
         ret = {
@@ -329,13 +446,23 @@ class ManifestGenerator():
 
 def usage():
     return '''Usage:
-generate-manifest.py basedir baseurl'''
+generate-manifest.py basedir'''
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print(usage())
-        sys.exit(1)
+    import argparse
+    parser = argparse.ArgumentParser(description='generate manifest.json')
 
-    generator = ManifestGenerator(sys.argv[1], sys.argv[2])
-    print(generator.json())
+    parser.add_argument('--outfile', type=str, default=None, help='output file, default stdout')
+    parser.add_argument('--baseurl', type=str, default="http://firmware.ardupilot.org", help='base binaries directory')
+    parser.add_argument('basedir', type=str, default="-", help='base binaries directory')
+
+    args = parser.parse_args()
+
+    generator = ManifestGenerator(args.basedir, args.baseurl)
+    if args.outfile is None:
+        print(generator.json())
+    else:
+        f = open(args.outfile,"w")
+        f.write(generator.json())
+        f.close()
