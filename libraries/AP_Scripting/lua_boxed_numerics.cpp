@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "lua_boxed_numerics.h"
 
+
 extern const AP_HAL::HAL& hal;
 
 int new_uint32_t(lua_State *L) {
@@ -16,7 +17,7 @@ uint32_t * check_uint32_t(lua_State *L, int arg) {
     return static_cast<uint32_t *>(data);
 }
 
-uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
+static uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
     { // userdata
         const uint32_t * ud = static_cast<uint32_t *>(luaL_testudata(L, arg, "uint32_t"));
         if (ud != nullptr) {

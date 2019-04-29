@@ -845,7 +845,6 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
         forced_min = "INT16_MIN";
         forced_max = "INT16_MAX";
         break;
-      case TYPE_ENUM: // enums are assumed to only ever be within the int32_t space
       case TYPE_INT32_T:
         forced_min = "INT32_MIN";
         forced_max = "INT32_MAX";
@@ -861,6 +860,9 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
       case TYPE_UINT32_T:
         forced_min = "0";
         forced_max = "UINT16_MAX";
+        break;
+      case TYPE_ENUM:
+        forced_min = forced_max = NULL;
         break;
       case TYPE_NONE:
         return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
@@ -899,11 +901,19 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
 
     // range check
     if (t.range != NULL) {
-      fprintf(source, "%sluaL_argcheck(L, ((raw_data_%d >= MAX(%s, %s)) && (raw_data_%d <= MIN(%s, %s))), %d, \"%s out of range\");\n",
-              indentation,
-              arg_number, t.range->low, forced_min,
-              arg_number, t.range->high, forced_max,
-              arg_number, name);
+      if ((forced_min != NULL) && (forced_max != NULL)) {
+        fprintf(source, "%sluaL_argcheck(L, ((raw_data_%d >= MAX(%s, %s)) && (raw_data_%d <= MIN(%s, %s))), %d, \"%s out of range\");\n",
+                indentation,
+                arg_number, t.range->low, forced_min,
+                arg_number, t.range->high, forced_max,
+                arg_number, name);
+       } else {
+        fprintf(source, "%sluaL_argcheck(L, ((raw_data_%d >= %s) && (raw_data_%d <= %s)), %d, \"%s out of range\");\n",
+                indentation,
+                arg_number, t.range->low,
+                arg_number, t.range->high,
+                arg_number, name);
+       }
     }
 
     // down cast
