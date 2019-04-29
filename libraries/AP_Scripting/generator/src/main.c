@@ -14,6 +14,7 @@ char keyword_include[]   = "include";
 char keyword_method[]    = "method";
 char keyword_operator[]  = "operator";
 char keyword_read[]      = "read";
+char keyword_semaphore[] = "semaphore";
 char keyword_singleton[] = "singleton";
 char keyword_userdata[]  = "userdata";
 char keyword_write[]     = "write";
@@ -278,6 +279,10 @@ struct userdata_field {
   unsigned int access_flags;
 };
 
+enum userdata_flags {
+  UD_FLAG_SEMAPHORE = (1U << 0),
+};
+
 struct userdata {
   struct userdata * next;
   char *name;  // name of the C++ singleton
@@ -286,6 +291,7 @@ struct userdata {
   struct method *methods;
   enum userdata_type ud_type;
   uint32_t operations; // bitset of enum operation_types
+  int flags; // flags from the userdata_flags enum
 };
 
 static struct userdata *parsed_userdata = NULL;
@@ -688,17 +694,18 @@ void handle_singleton(void) {
     node->alias = (char *)allocate(strlen(alias) + 1);
     strcpy(node->alias, alias);
 
-    // ensure no more tokens on the line
-    if (next_token()) {
-      error(ERROR_HEADER, "Singleton contained an unexpected extra token: %s", state.token);
-    }
-    return;
+  } else if (strcmp(type, keyword_semaphore) == 0) {
+    node->flags |= UD_FLAG_SEMAPHORE;
   } else if (strcmp(type, keyword_method) == 0) {
     handle_method(node->name, &(node->methods));
   } else {
-    error(ERROR_SINGLETON, "Singletons only support methods or aliases (got %s)", type);
+    error(ERROR_SINGLETON, "Singletons only support aliases, methods or semaphore keyowrds (got %s)", type);
   }
 
+  // ensure no more tokens on the line
+  if (next_token()) {
+    error(ERROR_HEADER, "Singleton contained an unexpected extra token: %s", state.token);
+  }
 }
 
 void sanity_check_userdata(void) {
@@ -1038,6 +1045,10 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     arg_count++;
   }
 
+  if (data->flags & UD_FLAG_SEMAPHORE) {
+    fprintf(source, "    ud->get_semaphore().take_blocking();\n");
+  }
+
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:
       fprintf(source, "    const bool data = ud->%s(\n", method->name);
@@ -1084,8 +1095,11 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     }
     arg_count++;
   }
-  fprintf(source, ");\n\n");
+  fprintf(source, "%s);\n\n", arg_count == 2 ? "        " : "");
 
+  if (data->flags & UD_FLAG_SEMAPHORE) {
+    fprintf(source, "    ud->get_semaphore().give();\n");
+  }
 
   int return_count = 1; // number of arguments to return
   switch (method->return_type.type) {
