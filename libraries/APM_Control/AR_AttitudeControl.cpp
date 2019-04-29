@@ -143,7 +143,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_ACC_MAX
     // @DisplayName: Steering control angular acceleration maximum
-    // @Description: Steering control angular acceleartion maximum (in deg/s/s).  0 to disable acceleration limiting
+    // @Description: Steering control angular acceleration maximum (in deg/s/s).  0 to disable acceleration limiting
     // @Range: 0 1000
     // @Increment: 0.1
     // @Units: deg/s/s
