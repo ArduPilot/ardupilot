@@ -16,7 +16,7 @@ import shutil
 import time
 import subprocess
 import sys
-import zlib
+import zlib, gzip
 
 # local imports
 import generate_manifest
@@ -617,10 +617,10 @@ is bob we will attempt to checkout bob-AVR'''
         self.write_string_to_filepath(content, new_json_filepath)
         # provide a pre-compressed manifest.  For reference, a 7M manifest
         # "gzip -9"s to 300k in 1 second, "xz -e"s to 80k in 26 seconds
-        compressed = zlib.compress(content, 9)
         new_json_filepath_gz = os.path.join(self.binaries,
                                             "manifest.json.gz.new")
-        self.write_string_to_filepath(compressed, new_json_filepath_gz)
+        with gzip.open(new_json_filepath_gz, 'wb') as gf:
+            gz.write(content)
         json_filepath = os.path.join(self.binaries, "manifest.json")
         json_filepath_gz = os.path.join(self.binaries, "manifest.json.gz")
         shutil.move(new_json_filepath, json_filepath)
