@@ -1,5 +1,6 @@
 #pragma once
 // auto generated bindings, don't manually edit
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>

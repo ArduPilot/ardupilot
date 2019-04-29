@@ -1,6 +1,7 @@
 // auto generated bindings, don't manually edit
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -559,6 +560,32 @@ const luaL_Reg Location_meta[] = {
     {NULL, NULL}
 };
 
+static int GCS_send_text(lua_State *L) {
+    // 1 MAV_SEVERITY 126 : 8
+    // 2 enum 126 : 9
+    const int args = lua_gettop(L);
+    if (args > 3) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 3) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    GCS * ud = GCS::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, args, "gcs not supported on this firmware");
+    }
+
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(MAV_SEVERITY_EMERGENCY, INT32_MIN)) && (raw_data_2 <= MIN(MAV_SEVERITY_DEBUG, INT32_MAX))), 2, "argument out of range");
+    const MAV_SEVERITY data_2 = static_cast<MAV_SEVERITY>(raw_data_2);
+    const char * data_3 = luaL_checkstring(L, 3);
+    ud->send_text(
+            data_2,
+            data_3);
+
+    return 0;
+}
+
 static int AP_Relay_toggle(lua_State *L) {
     // 1 uint8_t 122 : 8
     const int args = lua_gettop(L);
@@ -837,7 +864,7 @@ static int RangeFinder_num_sensors(lua_State *L) {
 }
 
 static int AP_Notify_play_tune(lua_State *L) {
-    // 1 userdata 99 : 6
+    // 1 enum 99 : 6
     const int args = lua_gettop(L);
     if (args > 2) {
         return luaL_argerror(L, args, "too many arguments");
@@ -1958,6 +1985,11 @@ static int AP_AHRS_get_position(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg GCS_meta[] = {
+    {"send_text", GCS_send_text},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_Relay_meta[] = {
     {"toggle", AP_Relay_toggle},
     {"enabled", AP_Relay_enabled},
@@ -2060,6 +2092,7 @@ const struct singleton_fun {
     const char *name;
     const luaL_Reg *reg;
 } singleton_fun[] = {
+    {"gcs", GCS_meta},
     {"relay", AP_Relay_meta},
     {"terrain", AP_Terrain_meta},
     {"rangefinder", RangeFinder_meta},
@@ -2100,6 +2133,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "gcs",
     "relay",
     "terrain",
     "rangefinder",
