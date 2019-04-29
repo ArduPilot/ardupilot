@@ -478,7 +478,7 @@ static int GCS_send_text(lua_State *L) {
     }
 
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= MAX(MAV_SEVERITY_EMERGENCY, INT32_MIN)) && (raw_data_2 <= MIN(MAV_SEVERITY_DEBUG, INT32_MAX))), 2, "argument out of range");
+    luaL_argcheck(L, ((raw_data_2 >= MAV_SEVERITY_EMERGENCY) && (raw_data_2 <= MAV_SEVERITY_DEBUG)), 2, "argument out of range");
     const MAV_SEVERITY data_2 = static_cast<MAV_SEVERITY>(raw_data_2);
     const char * data_3 = luaL_checkstring(L, 3);
     ud->send_text(
