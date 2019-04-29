@@ -179,19 +179,71 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
  * @brief Send the next pending waypoint, called from deferred message
  * handling code
  */
-void
-GCS_MAVLINK::queued_mission_request_send()
+void MissionItemProtocol::queued_request_send()
 {
-    if (initialised &&
-        waypoint_receiving &&
-        waypoint_request_i <= waypoint_request_last) {
-        mavlink_msg_mission_request_send(
-            chan,
-            waypoint_dest_sysid,
-            waypoint_dest_compid,
-            waypoint_request_i,
-            MAV_MISSION_TYPE_MISSION);
+    if (!receiving) {
+        return;
     }
+    if (request_i > request_last) {
+        return;
+    }
+    if (link == nullptr) {
+        AP::internalerror().error(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
+        return;
+    }
+    mavlink_msg_mission_request_send(
+        link->get_chan(),
+        dest_sysid,
+        dest_compid,
+        request_i,
+        mission_type());
+    timelast_request_ms = AP_HAL::millis();
+}
+
+void MissionItemProtocol::update()
+{
+    if (!receiving) {
+        // we don't need to do anything unless we're sending requests
+        return;
+    }
+    if (link == nullptr) {
+        AP::internalerror().error(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
+        return;
+    }
+    // stop waypoint receiving if timeout
+    const uint32_t tnow = AP_HAL::millis();
+    if (tnow - timelast_receive_ms > upload_timeout_ms) {
+        receiving = false;
+        timeout();
+        link = nullptr;
+        return;
+    }
+    // resend request if we haven't gotten one:
+    const uint32_t wp_recv_timeout_ms = 1000U + (link->get_stream_slowdown_ms()*20);
+    if (tnow - timelast_request_ms > wp_recv_timeout_ms) {
+        timelast_request_ms = tnow;
+        link->send_message(next_item_ap_message_id());
+    }
+}
+
+void MissionItemProtocol::send_mission_ack(const mavlink_message_t &msg,
+                                           MAV_MISSION_RESULT result) const
+{
+    if (link == nullptr) {
+        AP::internalerror().error(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
+        return;
+    }
+    send_mission_ack(*link, msg, result);
+}
+void MissionItemProtocol::send_mission_ack(const GCS_MAVLINK &_link,
+                                           const mavlink_message_t &msg,
+                                           MAV_MISSION_RESULT result) const
+{
+    mavlink_msg_mission_ack_send(_link.get_chan(),
+                                 msg.sysid,
+                                 msg.compid,
+                                 result,
+                                 mission_type());
 }
 
 void GCS_MAVLINK::send_meminfo(void)
@@ -439,44 +491,135 @@ void GCS_MAVLINK::send_ahrs3()
 #endif
 }
 
-/*
-  handle a MISSION_REQUEST_LIST mavlink packet
- */
-void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg)
+MissionItemProtocol *GCS::get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const
+{
+    switch (mission_type) {
+    case MAV_MISSION_TYPE_MISSION:
+        return _missionitemprotocol_waypoints;
+    case MAV_MISSION_TYPE_RALLY:
+        return _missionitemprotocol_rally;
+    default:
+        return nullptr;
+    }
+}
+
+// handle a request for the number of items we have stored for a mission type:
+void GCS_MAVLINK::handle_mission_request_list(const mavlink_message_t *msg)
 {
     // decode
     mavlink_mission_request_list_t packet;
     mavlink_msg_mission_request_list_decode(msg, &packet);
 
-    // reply with number of commands in the mission.  The GCS will then request each command separately
-    mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands(),
-                                   MAV_MISSION_TYPE_MISSION);
+    MissionItemProtocol *prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
+    if (prot == nullptr) {
+        mavlink_msg_mission_ack_send(chan,
+                                     msg->sysid,
+                                     msg->compid,
+                                     MAV_MISSION_UNSUPPORTED,
+                                     packet.mission_type);
+        return;
+    }
 
-    // set variables to help handle the expected sending of commands to the GCS
-    waypoint_receiving = false;             // record that we are sending commands (i.e. not receiving)
+    prot->handle_mission_request_list(*this, packet, *msg);
+}
+
+void MissionItemProtocol::handle_mission_request_list(
+    const GCS_MAVLINK &_link,
+    const mavlink_mission_request_list_t &packet,
+    const mavlink_message_t &msg)
+{
+    if (receiving) {
+        // someone is uploading a mission; reject fetching of points
+        // until done or timeout
+        send_mission_ack(_link, msg, MAV_MISSION_DENIED);
+        return;
+    }
+
+    // reply with number of commands in the mission.  The GCS will
+    // then request each command separately
+    mavlink_msg_mission_count_send(_link.get_chan(),
+                                   msg.sysid,
+                                   msg.compid,
+                                   item_count(),
+                                   mission_type());
+}
+
+void MissionItemProtocol::handle_mission_request_int(const GCS_MAVLINK &_link,
+                                                     const mavlink_mission_request_int_t &packet,
+                                                     const mavlink_message_t &msg)
+{
+    if (receiving) {
+        // someone is uploading a mission; reject fetching of points
+        // until done or timeout
+        send_mission_ack(_link, msg, MAV_MISSION_DENIED);
+        return;
+    }
+
+    mavlink_mission_item_int_t ret_packet{};
+
+    ret_packet.target_system = msg.sysid;
+    ret_packet.target_component = msg.compid;
+    ret_packet.seq = packet.seq;
+    ret_packet.mission_type = packet.mission_type;
+
+    const MAV_MISSION_RESULT result_code = get_item(_link, msg, packet, ret_packet);
+
+    if (result_code != MAV_MISSION_ACCEPTED) {
+        // send failure message
+        send_mission_ack(_link, msg, result_code);
+        return;
+    }
+
+    // we already have a filled structure, use it in place of _send:
+    _mav_finalize_message_chan_send(_link.get_chan(),
+                                    MAVLINK_MSG_ID_MISSION_ITEM_INT,
+                                    (const char *)&ret_packet,
+                                    MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
+                                    MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN,
+                                    MAVLINK_MSG_ID_MISSION_ITEM_INT_CRC);
 }
 
 /*
   handle a MISSION_REQUEST mavlink packet
  */
-void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_request_int(mavlink_message_t *msg)
 {
-    AP_Mission::Mission_Command cmd;
-
-    if (msg->msgid == MAVLINK_MSG_ID_MISSION_REQUEST_INT) {  
         // decode
         mavlink_mission_request_int_t packet;
         mavlink_msg_mission_request_int_decode(msg, &packet);
 
+        MissionItemProtocol *prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
+        if (prot == nullptr) {
+            return;
+        }
+        prot->handle_mission_request_int(*this, packet, *msg);
+}
+
+MAV_MISSION_RESULT MissionItemProtocol_Waypoints::get_item(const GCS_MAVLINK &_link,
+                                                           const mavlink_message_t &msg,
+                                                           const mavlink_mission_request_int_t &packet,
+                                                           mavlink_mission_item_int_t &ret_packet)
+{
+    if (packet.seq != 0 && // always allow HOME to be read
+        packet.seq >= mission.num_commands()) {
+        // try to educate the GCS on the actual size of the mission:
+        mavlink_msg_mission_count_send(_link.get_chan(),
+                                       msg.sysid,
+                                       msg.compid,
+                                       mission.num_commands(),
+                                       MAV_MISSION_TYPE_MISSION);
+        return MAV_MISSION_ERROR;
+    }
+
+    AP_Mission::Mission_Command cmd;
+
         // retrieve mission from eeprom
         if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
-            goto mission_item_send_failed;
+            return MAV_MISSION_ERROR;
         }
 
-        mavlink_mission_item_int_t ret_packet;
-        memset(&ret_packet, 0, sizeof(ret_packet));
         if (!AP_Mission::mission_cmd_to_mavlink_int(cmd, ret_packet)) {
-            goto mission_item_send_failed;
+            return MAV_MISSION_ERROR;
         }
 
         // set packet's current field to 1 if this is the command being executed
@@ -489,80 +632,59 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
         // set auto continue to 1
         ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
 
-        /*
-          avoid the _send() function to save memory, as it avoids
-          the stack usage of the _send() function by using the already
-          declared ret_packet above
-         */
-        ret_packet.target_system = msg->sysid;
-        ret_packet.target_component = msg->compid;
-        ret_packet.seq = packet.seq;
         ret_packet.command = cmd.id;
 
-        _mav_finalize_message_chan_send(chan, 
-                                        MAVLINK_MSG_ID_MISSION_ITEM_INT,
-                                        (const char *)&ret_packet,
-                                        MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
-                                        MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN,
-                                        MAVLINK_MSG_ID_MISSION_ITEM_INT_CRC);
-    } else {
+        return MAV_MISSION_ACCEPTED;
+}
+
+void GCS_MAVLINK::handle_mission_request(mavlink_message_t *msg)
+{
         // decode
         mavlink_mission_request_t packet;
         mavlink_msg_mission_request_decode(msg, &packet);
 
-        if (packet.seq != 0 && // always allow HOME to be read
-            packet.seq >= mission.num_commands()) {
-            // try to educate the GCS on the actual size of the mission:
-            mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands(),
-                                           MAV_MISSION_TYPE_MISSION);
-            goto mission_item_send_failed;
+        MissionItemProtocol *prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
+        if (prot == nullptr) {
+            return;
         }
+        prot->handle_mission_request(*this, packet, *msg);
+}
 
-        // retrieve mission from eeprom
-        if (!mission.read_cmd_from_storage(packet.seq, cmd)) {
-            goto mission_item_send_failed;
-        }
+void MissionItemProtocol::convert_MISSION_REQUEST_to_MISSION_REQUEST_INT(const mavlink_mission_request_t &request, mavlink_mission_request_int_t &request_int)
+{
+    request_int.target_system = request.target_system;
+    request_int.target_component = request.target_component;
+    request_int.seq = request.seq;
+    request_int.mission_type = request.mission_type;
+}
 
-        mavlink_mission_item_t ret_packet;
-        memset(&ret_packet, 0, sizeof(ret_packet));
-        if (!AP_Mission::mission_cmd_to_mavlink(cmd, ret_packet)) {
-            goto mission_item_send_failed;
-        }
-            
-        // set packet's current field to 1 if this is the command being executed
-        if (cmd.id == (uint16_t)mission.get_current_nav_cmd().index) {
-            ret_packet.current = 1;
-        } else {
-            ret_packet.current = 0;
-        }
+void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
+                                                 const mavlink_mission_request_t &packet,
+                                                 const mavlink_message_t &msg
+)
+{
+    mavlink_mission_request_int_t request_int;
+    convert_MISSION_REQUEST_to_MISSION_REQUEST_INT(packet, request_int);
 
-        // set auto continue to 1
-        ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
-
-        /*
-          avoid the _send() function to save memory, as it avoids
-          the stack usage of the _send() function by using the already
-          declared ret_packet above
-         */
-        ret_packet.target_system = msg->sysid;
-        ret_packet.target_component = msg->compid;
-        ret_packet.seq = packet.seq;
-        ret_packet.command = cmd.id;
-
-        _mav_finalize_message_chan_send(chan, 
-                                        MAVLINK_MSG_ID_MISSION_ITEM,
-                                        (const char *)&ret_packet,
-                                        MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
-                                        MAVLINK_MSG_ID_MISSION_ITEM_LEN,
-                                        MAVLINK_MSG_ID_MISSION_ITEM_CRC);
+    mavlink_mission_item_int_t item_int{};
+    MAV_MISSION_RESULT ret = get_item(_link, msg, request_int, item_int);
+    if (ret != MAV_MISSION_ACCEPTED) {
+        return;
     }
 
-    return;
+    mavlink_mission_item_t ret_packet{};
+    ret = AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(item_int, ret_packet);
+    if (ret != MAV_MISSION_ACCEPTED) {
+        return;
+    }
 
-mission_item_send_failed:
-    // send failure message
-    mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR,
-                                 MAV_MISSION_TYPE_MISSION);
+    // we already have a filled structure, use it in place of _send:
+    _mav_finalize_message_chan_send(_link.get_chan(),
+                                    MAVLINK_MSG_ID_MISSION_ITEM,
+                                    (const char *)&ret_packet,
+                                    MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
+                                    MAVLINK_MSG_ID_MISSION_ITEM_LEN,
+                                    MAVLINK_MSG_ID_MISSION_ITEM_CRC);
 }
 
 /*
@@ -583,81 +705,164 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, mavlink_messag
 /*
   handle a MISSION_COUNT mavlink packet
  */
-void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_count(const mavlink_message_t *msg)
 {
     // decode
     mavlink_mission_count_t packet;
     mavlink_msg_mission_count_decode(msg, &packet);
 
-    // start waypoint receiving
-    if (packet.count > mission.num_commands_max()) {
-        // send NAK
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_NO_SPACE,
-                                     MAV_MISSION_TYPE_MISSION);
+    MissionItemProtocol *prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
+    if (prot == nullptr) {
+        mavlink_msg_mission_ack_send(chan,
+                                     msg->sysid,
+                                     msg->compid,
+                                     MAV_MISSION_UNSUPPORTED,
+                                     packet.mission_type);
         return;
     }
 
+    prot->handle_mission_count(*this, packet, *msg);
+}
+
+void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
+                                             const mavlink_message_t &msg,
+                                             const int16_t _request_first,
+                                             const int16_t _request_last)
+{
+    // set variables to help handle the expected receiving of commands from the GCS
+    timelast_receive_ms = AP_HAL::millis();    // set time we last received commands to now
+    receiving = true;              // record that we expect to receive commands
+    request_i = _request_first;                 // reset the next expected command number to zero
+    request_last = _request_last;         // record how many commands we expect to receive
+
+    dest_sysid = msg.sysid;       // record system id of GCS who wants to upload the mission
+    dest_compid = msg.compid;     // record component id of GCS who wants to upload the mission
+
+    link = &_link;
+
+    timelast_request_ms = AP_HAL::millis();
+    link->send_message(next_item_ap_message_id());
+}
+
+void MissionItemProtocol::handle_mission_count(
+    GCS_MAVLINK &_link,
+    const mavlink_mission_count_t &packet,
+    const mavlink_message_t &msg)
+{
+    if (receiving) {
+        // someone is already uploading a mission.  If we are
+        // receiving from someone then we will allow them to restart -
+        // otherwise we deny.
+        if (msg.sysid != dest_sysid || msg.compid != dest_compid) {
+            // reject another upload until
+            send_mission_ack(_link, msg, MAV_MISSION_DENIED);
+            return;
+        }
+    }
+
+    if (packet.count > max_items()) {
+        send_mission_ack(_link, msg, MAV_MISSION_NO_SPACE);
+        return;
+    }
+
+    truncate(packet);
+
+    if (packet.count == 0) {
+        // no requests to send...
+        send_mission_ack(_link, msg, MAV_MISSION_ACCEPTED);
+        complete(_link);
+        return;
+    }
+
+    // start waypoint receiving
+    init_send_requests(_link, msg, 0, packet.count-1);
+}
+
+void MissionItemProtocol_Waypoints::truncate(const mavlink_mission_count_t &packet)
+{
     // new mission arriving, truncate mission to be the same length
     mission.truncate(packet.count);
-
-    // set variables to help handle the expected receiving of commands from the GCS
-    waypoint_timelast_receive = AP_HAL::millis();    // set time we last received commands to now
-    waypoint_receiving = true;              // record that we expect to receive commands
-    waypoint_request_i = 0;                 // reset the next expected command number to zero
-    waypoint_request_last = packet.count;   // record how many commands we expect to receive
-    waypoint_timelast_request = 0;          // set time we last requested commands to zero
-
-    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who wants to upload the mission
-    waypoint_dest_compid = msg->compid;     // record component id of GCS who wants to upload the mission
 }
 
 /*
   handle a MISSION_CLEAR_ALL mavlink packet
  */
-void GCS_MAVLINK::handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_clear_all(const mavlink_message_t *msg)
 {
     // decode
     mavlink_mission_clear_all_t packet;
     mavlink_msg_mission_clear_all_decode(msg, &packet);
 
-    // clear all waypoints
-    if (mission.clear()) {
-        // send ack
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ACCEPTED,
-                                     MAV_MISSION_TYPE_MISSION);
-    }else{
-        // send nack
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR,
-                                     MAV_MISSION_TYPE_MISSION);
+    const MAV_MISSION_TYPE mission_type = (MAV_MISSION_TYPE)packet.mission_type;
+    MissionItemProtocol *prot = gcs().get_prot_for_mission_type(mission_type);
+    if (prot == nullptr) {
+        send_mission_ack(*msg, mission_type, MAV_MISSION_UNSUPPORTED);
+        return;
     }
+
+    prot->handle_mission_clear_all(*this, *msg);
 }
 
-/*
-  handle a MISSION_WRITE_PARTIAL_LIST mavlink packet
- */
-void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg)
+bool MissionItemProtocol_Waypoints::clear_all_items()
+{
+    return mission.clear();
+}
+
+bool MissionItemProtocol_Rally::clear_all_items()
+{
+    rally.truncate(0);
+    return true;
+}
+
+void MissionItemProtocol::handle_mission_clear_all(const GCS_MAVLINK &_link,
+                                                   const mavlink_message_t &msg)
+{
+    bool success = true;
+    success = success && !receiving;
+    success = success && clear_all_items();
+    send_mission_ack(_link, msg, success ? MAV_MISSION_ACCEPTED : MAV_MISSION_ERROR);
+}
+
+bool GCS_MAVLINK::requesting_mission_items() const
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(supported_mission_types); i++) {
+        MissionItemProtocol *prot = gcs().get_prot_for_mission_type(supported_mission_types[i]);
+        if (prot && prot->receiving && prot->active_link_is(this)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void GCS_MAVLINK::handle_mission_write_partial_list(const mavlink_message_t *msg)
 {
     // decode
     mavlink_mission_write_partial_list_t packet;
     mavlink_msg_mission_write_partial_list_decode(msg, &packet);
 
+    MissionItemProtocol *use_prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
+    if (use_prot == nullptr) {
+        send_mission_ack(*msg, (MAV_MISSION_TYPE)packet.mission_type, MAV_MISSION_UNSUPPORTED);
+        return;
+    }
+    use_prot->handle_mission_write_partial_list(*this, *msg, packet);
+}
+
+void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
+                                                            const mavlink_message_t &msg,
+                                                            const mavlink_mission_write_partial_list_t &packet)
+{
+
     // start waypoint receiving
-    if ((unsigned)packet.start_index > mission.num_commands() ||
-        (unsigned)packet.end_index > mission.num_commands() ||
+    if ((unsigned)packet.start_index > item_count() ||
+        (unsigned)packet.end_index > item_count() ||
         packet.end_index < packet.start_index) {
-        send_text(MAV_SEVERITY_WARNING,"Flight plan update rejected"); // FIXME: Remove this anytime after 2020-01-22
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_INVALID_SEQUENCE, MAV_MISSION_TYPE_MISSION);
+        gcs().send_text(MAV_SEVERITY_WARNING,"Flight plan update rejected"); // FIXME: Remove this anytime after 2020-01-22
+        send_mission_ack(_link, msg, MAV_MISSION_ERROR);
         return;
     }
 
-    waypoint_timelast_receive = AP_HAL::millis();
-    waypoint_timelast_request = 0;
-    waypoint_receiving   = true;
-    waypoint_request_i   = packet.start_index;
-    waypoint_request_last= packet.end_index;
-
-    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who wants to partially update the mission
-    waypoint_dest_compid = msg->compid;     // record component id of GCS who wants to partially update the mission
+    init_send_requests(_link, msg, packet.start_index, packet.end_index);
 }
 
 
@@ -749,140 +954,176 @@ uint16_t GCS::sys_status_errors1()
   handle an incoming mission item
   return true if this is the last mission item, otherwise false
  */
-bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &mission)
+void GCS_MAVLINK::handle_mission_item(const mavlink_message_t *msg)
 {
-    MAV_MISSION_RESULT result = MAV_MISSION_ACCEPTED;
-    struct AP_Mission::Mission_Command cmd = {};
-    bool mission_is_complete = false;
-    uint16_t seq=0;
-    uint16_t current = 0;
-    
+    // TODO: rename packet to mission_item_int
+    mavlink_mission_item_int_t packet;
     if (msg->msgid == MAVLINK_MSG_ID_MISSION_ITEM) {      
-        mavlink_mission_item_t packet;    
-        mavlink_msg_mission_item_decode(msg, &packet);
-        
-        // convert mavlink packet to mission command
-        result = AP_Mission::mavlink_to_mission_cmd(packet, cmd);
-        if (result != MAV_MISSION_ACCEPTED) {
-            goto mission_ack;
+        mavlink_mission_item_t mission_item;
+        mavlink_msg_mission_item_decode(msg, &mission_item);
+        MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, packet);
+        if (ret != MAV_MISSION_ACCEPTED) {
+            const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)packet.mission_type;
+            send_mission_ack(*msg, type, ret);
+            return;
         }
-        
-        seq = packet.seq;
-        current = packet.current;
     } else {
-        mavlink_mission_item_int_t packet;
         mavlink_msg_mission_item_int_decode(msg, &packet);
-        
-        // convert mavlink packet to mission command
-        result = AP_Mission::mavlink_int_to_mission_cmd(packet, cmd);
+    }
+    const uint8_t current = packet.current;
+    const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)packet.mission_type;
+
+    if (type == MAV_MISSION_TYPE_MISSION && (current == 2 || current == 3)) {
+        struct AP_Mission::Mission_Command cmd = {};
+        MAV_MISSION_RESULT result = AP_Mission::mavlink_int_to_mission_cmd(packet, cmd);
         if (result != MAV_MISSION_ACCEPTED) {
-            goto mission_ack;
+            //decode failed
+            send_mission_ack(*msg, MAV_MISSION_TYPE_MISSION, result);
+            return;
         }
-        
-        seq = packet.seq;
-        current = packet.current;
+        // guided or change-alt
+        if (current == 2) {
+            // current = 2 is a flag to tell us this is a "guided mode"
+            // waypoint and not for the mission
+            result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
+                      : MAV_MISSION_ERROR) ;
+        } else if (current == 3) {
+            //current = 3 is a flag to tell us this is a alt change only
+            // add home alt if needed
+            handle_change_alt_request(cmd);
+
+            // verify we recevied the command
+            result = MAV_MISSION_ACCEPTED;
+        }
+        send_mission_ack(*msg, MAV_MISSION_TYPE_MISSION, result);
+        return;
     }
 
-    if (current == 2) {                                               
-        // current = 2 is a flag to tell us this is a "guided mode"
-        // waypoint and not for the mission
-        result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
-                                             : MAV_MISSION_ERROR) ;
-
-        // verify we received the command
-        goto mission_ack;
+    // not a guided-mode reqest
+    MissionItemProtocol *prot = gcs().get_prot_for_mission_type(type);
+    if (prot == nullptr) {
+        send_mission_ack(*msg, type, MAV_MISSION_UNSUPPORTED);
+        return;
     }
 
-    if (current == 3) {
-        //current = 3 is a flag to tell us this is a alt change only
-        // add home alt if needed
-        handle_change_alt_request(cmd);
-
-        // verify we recevied the command
-        result = MAV_MISSION_ACCEPTED;
-        goto mission_ack;
+    if (!prot->receiving) {
+        send_mission_ack(*msg, type, MAV_MISSION_ERROR);
+        return;
     }
 
-    // Check if receiving waypoints (mission upload expected)
-    if (!waypoint_receiving) {
-        result = MAV_MISSION_ERROR;
-        goto mission_ack;
-    }
+    prot->handle_mission_item(*msg, packet);
+}
 
-    // check if this is the requested waypoint
-    if (seq != waypoint_request_i) {
-        result = MAV_MISSION_INVALID_SEQUENCE;
-        goto mission_ack;
+MAV_MISSION_RESULT MissionItemProtocol_Waypoints::replace_item(const mavlink_mission_item_int_t &mission_item_int)
+{
+    AP_Mission::Mission_Command cmd;
+
+    const MAV_MISSION_RESULT res = AP_Mission::mavlink_int_to_mission_cmd(mission_item_int, cmd);
+    if (res != MAV_MISSION_ACCEPTED) {
+        return res;
     }
 
     // sanity check for DO_JUMP command
     if (cmd.id == MAV_CMD_DO_JUMP) {
-        if ((cmd.content.jump.target >= mission.num_commands() && cmd.content.jump.target >= waypoint_request_last) || cmd.content.jump.target == 0) {
-            result = MAV_MISSION_ERROR;
-            goto mission_ack;
+        if ((cmd.content.jump.target >= item_count() && cmd.content.jump.target > request_last) || cmd.content.jump.target == 0) {
+            return MAV_MISSION_ERROR;
         }
     }
-    
-    // if command index is within the existing list, replace the command
-    if (seq < mission.num_commands()) {
-        if (mission.replace_cmd(seq,cmd)) {
-            result = MAV_MISSION_ACCEPTED;
-        }else{
-            result = MAV_MISSION_ERROR;
-            goto mission_ack;
+    if (!mission.replace_cmd(cmd.index, cmd)) {
+        return MAV_MISSION_ERROR;
+    }
+    return MAV_MISSION_ACCEPTED;
+}
+
+MAV_MISSION_RESULT MissionItemProtocol_Waypoints::append_item(const mavlink_mission_item_int_t &mission_item_int)
+{
+    // sanity check for DO_JUMP command
+    AP_Mission::Mission_Command cmd;
+
+    const MAV_MISSION_RESULT res = AP_Mission::mavlink_int_to_mission_cmd(mission_item_int, cmd);
+    if (res != MAV_MISSION_ACCEPTED) {
+        return res;
+    }
+
+    if (cmd.id == MAV_CMD_DO_JUMP) {
+        if ((cmd.content.jump.target >= item_count() && cmd.content.jump.target > request_last) || cmd.content.jump.target == 0) {
+            return MAV_MISSION_ERROR;
         }
-        // if command is at the end of command list, add the command
-    } else if (seq == mission.num_commands()) {
-        if (mission.add_cmd(cmd)) {
-            result = MAV_MISSION_ACCEPTED;
-        }else{
-            result = MAV_MISSION_ERROR;
-            goto mission_ack;
-        }
-        // if beyond the end of the command list, return an error
+    }
+
+    if (!mission.add_cmd(cmd)) {
+        return MAV_MISSION_ERROR;
+    }
+    return MAV_MISSION_ACCEPTED;
+}
+
+void MissionItemProtocol_Waypoints::complete(const GCS_MAVLINK &_link)
+{
+    _link.send_text(MAV_SEVERITY_INFO, "Flight plan received");
+    AP::logger().Write_EntireMission();
+}
+void MissionItemProtocol_Waypoints::timeout()
+{
+    link->send_text(MAV_SEVERITY_WARNING, "Mission upload timeout");
+}
+
+void MissionItemProtocol::handle_mission_item(const mavlink_message_t &msg, const mavlink_mission_item_int_t &cmd)
+{
+    if (link == nullptr) {
+        AP::internalerror().error(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
+        return;
+    }
+
+    // check if this is the requested waypoint
+    if (cmd.seq != request_i) {
+        send_mission_ack(msg, MAV_MISSION_INVALID_SEQUENCE);
+        return;
+    }
+    // make sure the item is coming from the system that initiated the upload
+    if (msg.sysid != dest_sysid) {
+        send_mission_ack(msg, MAV_MISSION_DENIED);
+        return;
+    }
+    if (msg.compid != dest_compid) {
+        send_mission_ack(msg, MAV_MISSION_DENIED);
+        return;
+    }
+
+    const uint16_t _item_count = item_count();
+
+    MAV_MISSION_RESULT result;
+    if (cmd.seq < _item_count) {
+        // command index is within the existing list, replace the command
+        result = replace_item(cmd);
+    } else if (cmd.seq == _item_count) {
+        // command is at the end of command list, add the command
+        result = append_item(cmd);
     } else {
+        // beyond the end of the command list, return an error
         result = MAV_MISSION_ERROR;
-        goto mission_ack;
     }
-    
+    if (result != MAV_MISSION_ACCEPTED) {
+        send_mission_ack(msg, result);
+        return;
+    }
+
     // update waypoint receiving state machine
-    waypoint_timelast_receive = AP_HAL::millis();
-    waypoint_request_i++;
-    
-    if (waypoint_request_i >= waypoint_request_last) {
-        mavlink_msg_mission_ack_send(
-                chan,
-                msg->sysid,
-                msg->compid,
-                MAV_MISSION_ACCEPTED,
-                MAV_MISSION_TYPE_MISSION);
-        
-        send_text(MAV_SEVERITY_INFO,"Flight plan received");
-        waypoint_receiving = false;
-        mission_is_complete = true;
-        // XXX ignores waypoint radius for individual waypoints, can
-        // only set WP_RADIUS parameter
-    } else {
-        waypoint_timelast_request = AP_HAL::millis();
-        // if we have enough space, then send the next WP request immediately
-        if (HAVE_PAYLOAD_SPACE(chan, MISSION_REQUEST)) {
-            queued_mission_request_send();
-        } else {
-            send_message(MSG_NEXT_MISSION_REQUEST);
-        }
+    timelast_receive_ms = AP_HAL::millis();
+    request_i++;
+
+    if (request_i > request_last) {
+        send_mission_ack(msg, MAV_MISSION_ACCEPTED);
+        complete(*link);
+        receiving = false;
+        link = nullptr;
+        return;
     }
-    return mission_is_complete;
-
-mission_ack:
-    // we are rejecting the mission/waypoint
-    mavlink_msg_mission_ack_send(
-            chan,
-            msg->sysid,
-            msg->compid,
-            result,
-            MAV_MISSION_TYPE_MISSION);
-
-    return mission_is_complete;
+    // if we have enough space, then send the next WP request immediately
+    if (HAVE_PAYLOAD_SPACE(link->get_chan(), MISSION_REQUEST)) {
+        queued_request_send();
+    } else {
+        link->send_message(next_item_ap_message_id());
+    }
 }
 
 ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) const
@@ -1013,7 +1254,7 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         // we are sending parameters, penalize streams:
         interval_ms *= 4;
     }
-    if (waypoint_receiving) {
+    if (requesting_mission_items()) {
         // we are sending requests for waypoints, penalize streams:
         interval_ms *= 4;
     }
@@ -1611,19 +1852,6 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     }
 #endif
 
-    if (waypoint_receiving) {
-        const uint32_t wp_recv_time = 1000U + stream_slowdown_ms;
-
-        // stop waypoint receiving if timeout
-        if (tnow - waypoint_timelast_receive > wp_recv_time+waypoint_receive_timeout) {
-            waypoint_receiving = false;
-            gcs().send_text(MAV_SEVERITY_WARNING, "Mission upload timeout");
-        } else if (tnow - waypoint_timelast_request > wp_recv_time) {
-            waypoint_timelast_request = tnow;
-            send_message(MSG_NEXT_MISSION_REQUEST);
-        }
-    }
-
     hal.util->perf_end(_perf_update);    
 }
 
@@ -1993,6 +2221,24 @@ void GCS::send_message(enum ap_message id)
 
 void GCS::update_send()
 {
+    if (!initialised_missionitemprotocol_objects) {
+        initialised_missionitemprotocol_objects = true;
+        // once-only initialisation of MissionItemProtocol objects:
+        AP_Mission *mission = AP::mission();
+        if (mission != nullptr) {
+            _missionitemprotocol_waypoints = new MissionItemProtocol_Waypoints(*mission);
+        }
+        AP_Rally *rally = AP::rally();
+        if (rally != nullptr) {
+            _missionitemprotocol_rally = new MissionItemProtocol_Rally(*rally);
+        }
+    }
+    if (_missionitemprotocol_waypoints != nullptr) {
+        _missionitemprotocol_waypoints->update();
+    }
+    if (_missionitemprotocol_rally != nullptr) {
+        _missionitemprotocol_rally->update();
+    }
     for (uint8_t i=0; i<num_gcs(); i++) {
         if (chan(i).initialised) {
             chan(i).update_send();
@@ -3229,27 +3475,23 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     switch (msg->msgid) {
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST: // MAV ID: 38
     {
-        handle_mission_write_partial_list(*_mission, msg);
+        handle_mission_write_partial_list(msg);
         break;
     }
 
     // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
-    {
-        if (handle_mission_item(msg, *_mission)) {
-            AP::logger().Write_EntireMission();
-        }
+        handle_mission_item(msg);
         break;
-    }
 
     // read an individual command from EEPROM and send it to the GCS
     case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
-    case MAVLINK_MSG_ID_MISSION_REQUEST:     // MAV ID: 40, 51
-    {
-        handle_mission_request(*_mission, msg);
+        handle_mission_request_int(msg);
         break;
-    }
+    case MAVLINK_MSG_ID_MISSION_REQUEST:
+        handle_mission_request(msg);
+        break;
 
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
     {
@@ -3260,7 +3502,7 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     // GCS request the full list of commands, we return just the number and leave the GCS to then request each command individually
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:       // MAV ID: 43
     {
-        handle_mission_request_list(*_mission, msg);
+        handle_mission_request_list(msg);
         break;
     }
 
@@ -3268,13 +3510,13 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     //  individual commands will then be sent from the GCS using the MAVLINK_MSG_ID_MISSION_ITEM message
     case MAVLINK_MSG_ID_MISSION_COUNT:          // MAV ID: 44
     {
-        handle_mission_count(*_mission, msg);
+        handle_mission_count(msg);
         break;
     }
 
     case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:      // MAV ID: 45
     {
-        handle_mission_clear_all(*_mission, msg);
+        handle_mission_clear_all(msg);
         break;
     }
 
@@ -3890,6 +4132,14 @@ bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)
     return ret;
 }
 
+void GCS::try_send_queued_message_for_type(MAV_MISSION_TYPE type) {
+    MissionItemProtocol *prot = get_prot_for_mission_type(type);
+    if (prot == nullptr) {
+        return;
+    }
+    prot->queued_request_send();
+}
+
 bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
 {
     AP_Mission *mission = AP::mission();
@@ -3909,9 +4159,14 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
         ret = true;
         break;
-    case MSG_NEXT_MISSION_REQUEST:
+    case MSG_NEXT_MISSION_REQUEST_WAYPOINTS:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        queued_mission_request_send();
+        gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_MISSION);
+        ret = true;
+        break;
+    case MSG_NEXT_MISSION_REQUEST_RALLY:
+        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
+        gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_RALLY);
         ret = true;
         break;
     default:
@@ -4140,7 +4395,8 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_CURRENT_WAYPOINT:
     case MSG_MISSION_ITEM_REACHED:
-    case MSG_NEXT_MISSION_REQUEST:
+    case MSG_NEXT_MISSION_REQUEST_WAYPOINTS:
+    case MSG_NEXT_MISSION_REQUEST_RALLY:
         ret = try_send_mission_message(id);
         break;
 
@@ -4645,6 +4901,9 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION;
     }
 
+    if (AP::rally()) {
+        ret |= MAV_PROTOCOL_CAPABILITY_MISSION_RALLY;
+    }
     return ret;
 }
 
