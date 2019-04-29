@@ -415,11 +415,14 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
 {
     FGNetFDM fdm;
     check_stdout();
-    while (sock_fgfdm.recv(&fdm, sizeof(fdm), 100) != sizeof(fdm)) {
-        send_servos(input);
-        check_stdout();
-    }
-    fdm.ByteSwap();
+
+    do {
+        while (sock_fgfdm.recv(&fdm, sizeof(fdm), 100) != sizeof(fdm)) {
+            send_servos(input);
+            check_stdout();
+        }
+        fdm.ByteSwap();
+    } while (fdm.cur_time == time_now_us);
 
     accel_body = Vector3f(fdm.A_X_pilot, fdm.A_Y_pilot, fdm.A_Z_pilot) * FEET_TO_METERS;
 
@@ -443,8 +446,7 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     rpm1 = fdm.rpm[0];
     rpm2 = fdm.rpm[1];
     
-    // assume 1kHz for now
-    time_now_us += 1e6/rate_hz;
+    time_now_us = fdm.cur_time;
 }
 
 void JSBSim::drain_control_socket()
