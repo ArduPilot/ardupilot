@@ -651,9 +651,9 @@ bool AP_Logger::logging_started(void) {
     return false;
 }
 
-void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
+void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         FOR_EACH_BACKEND(remote_log_block_status_msg(link.get_chan(), msg));
         break;

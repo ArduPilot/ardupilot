@@ -222,8 +222,8 @@ void AP_Logger_MAVLink::stop_logging()
     }
 }
 
-void AP_Logger_MAVLink::handle_ack(mavlink_channel_t chan,
-                                   mavlink_message_t* msg,
+void AP_Logger_MAVLink::handle_ack(const mavlink_channel_t chan,
+                                   const mavlink_message_t &msg,
                                    uint32_t seqno)
 {
     if (!_initialised) {
@@ -245,8 +245,8 @@ void AP_Logger_MAVLink::handle_ack(mavlink_channel_t chan,
             // }
             stats_init();
             _sending_to_client = true;
-            _target_system_id = msg->sysid;
-            _target_component_id = msg->compid;
+            _target_system_id = msg.sysid;
+            _target_component_id = msg.compid;
             _chan = chan;
             _next_seq_num = 0;
             start_new_log_reset_variables();
@@ -268,11 +268,11 @@ void AP_Logger_MAVLink::handle_ack(mavlink_channel_t chan,
     }
 }
 
-void AP_Logger_MAVLink::remote_log_block_status_msg(mavlink_channel_t chan,
-                                                    mavlink_message_t* msg)
+void AP_Logger_MAVLink::remote_log_block_status_msg(const mavlink_channel_t chan,
+                                                    const mavlink_message_t& msg)
 {
     mavlink_remote_log_block_status_t packet;
-    mavlink_msg_remote_log_block_status_decode(msg, &packet);
+    mavlink_msg_remote_log_block_status_decode(&msg, &packet);
     if (!semaphore.take_nonblocking()) {
         return;
     }
