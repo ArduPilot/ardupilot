@@ -11,3 +11,10 @@ void ModeQAutotune::update()
     plane.mode_qstabilize.update();
 }
 
+void ModeQAutotune::_exit()
+{
+#if QAUTOTUNE_ENABLED
+    plane.quadplane.qautotune.stop();
+#endif
+}
+
