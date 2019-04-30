@@ -780,7 +780,7 @@ void AP_RangeFinder_VL53L0X::update(void)
 void AP_RangeFinder_VL53L0X::timer(void)
 {
     uint16_t range_mm;
-    if (get_reading(range_mm) && range_mm < 8000) {
+    if (get_reading(range_mm) && range_mm <= 2000) {
         sum_mm += range_mm;
         counter++;
     }
