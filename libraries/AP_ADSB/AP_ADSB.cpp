@@ -384,7 +384,7 @@ bool AP_ADSB::find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const
  * Update the vehicle list. If the vehicle is already in the
  * list then it will update it, otherwise it will be added.
  */
-void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
+void AP_ADSB::handle_vehicle(const mavlink_message_t &packet)
 {
     if (in_state.vehicle_list == nullptr) {
         // We are only null when disabled. Updating is inhibited.
@@ -393,7 +393,7 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
 
     uint16_t index = in_state.list_size + 1; // initialize with invalid index
     adsb_vehicle_t vehicle {};
-    mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
+    mavlink_msg_adsb_vehicle_decode(&packet, &vehicle.info);
     const Location vehicle_loc = AP_ADSB::get_location(vehicle);
     const bool my_loc_is_zero = _my_loc.is_zero();
     const float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
@@ -691,10 +691,10 @@ uint8_t AP_ADSB::get_encoded_callsign_null_char()
  * This allows a GCS to send cfg info through the autopilot to the ADSB hardware.
  * This is done indirectly by reading and storing the packet and then another mechanism sends it out periodically
  */
-void AP_ADSB::handle_out_cfg(const mavlink_message_t* msg)
+void AP_ADSB::handle_out_cfg(const mavlink_message_t &msg)
 {
     mavlink_uavionix_adsb_out_cfg_t packet {};
-    mavlink_msg_uavionix_adsb_out_cfg_decode(msg, &packet);
+    mavlink_msg_uavionix_adsb_out_cfg_decode(&msg, &packet);
 
     out_state.cfg.was_set_externally = true;
 
@@ -759,10 +759,10 @@ void AP_ADSB::send_configure(const mavlink_channel_t chan)
  * we determine which channel is on so we don't have to send out_state to all channels
  */
 
-void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavlink_message_t* msg)
+void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     mavlink_uavionix_adsb_transceiver_health_report_t packet {};
-    mavlink_msg_uavionix_adsb_transceiver_health_report_decode(msg, &packet);
+    mavlink_msg_uavionix_adsb_transceiver_health_report_decode(&msg, &packet);
 
     if (out_state.chan != chan) {
         gcs().send_text(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
@@ -852,9 +852,9 @@ bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
     return samples.pop_front(vehicle);
 }
 
-void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg)
+void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_ADSB_VEHICLE:
         handle_vehicle(msg);
         break;
