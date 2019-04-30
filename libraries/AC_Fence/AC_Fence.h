@@ -110,7 +110,7 @@ public:
     bool boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points) const;
 
     /// handler for polygon fence messages with GCS
-    void handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg);
+    void handle_msg(GCS_MAVLINK &link, const mavlink_message_t &msg);
 
     /// return system time of last update to the boundary (allows external detection of boundary changes)
     uint32_t get_boundary_update_ms() const { return _boundary_update_ms; }

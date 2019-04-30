@@ -485,18 +485,13 @@ bool AC_Fence::boundary_breached(const Vector2f& location, uint16_t num_points, 
 }
 
 /// handler for polygon fence messages with GCS
-void AC_Fence::handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
+void AC_Fence::handle_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
-    // exit immediately if null message
-    if (msg == nullptr) {
-        return;
-    }
-
-    switch (msg->msgid) {
+    switch (msg.msgid) {
         // receive a fence point from GCS and store in EEPROM
         case MAVLINK_MSG_ID_FENCE_POINT: {
             mavlink_fence_point_t packet;
-            mavlink_msg_fence_point_decode(msg, &packet);
+            mavlink_msg_fence_point_decode(&msg, &packet);
             if (!check_latlng(packet.lat,packet.lng)) {
                 link.send_text(MAV_SEVERITY_WARNING, "Invalid fence point, lat or lng too large");
             } else {
@@ -516,11 +511,11 @@ void AC_Fence::handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
         // send a fence point to GCS
         case MAVLINK_MSG_ID_FENCE_FETCH_POINT: {
             mavlink_fence_fetch_point_t packet;
-            mavlink_msg_fence_fetch_point_decode(msg, &packet);
+            mavlink_msg_fence_fetch_point_decode(&msg, &packet);
             // attempt to retrieve from eeprom
             Vector2l point;
             if (_poly_loader.load_point_from_eeprom(packet.idx, point)) {
-                mavlink_msg_fence_point_send(link.get_chan(), msg->sysid, msg->compid, packet.idx, _total, point.x*1.0e-7f, point.y*1.0e-7f);
+                mavlink_msg_fence_point_send(link.get_chan(), msg.sysid, msg.compid, packet.idx, _total, point.x*1.0e-7f, point.y*1.0e-7f);
             } else {
                 link.send_text(MAV_SEVERITY_WARNING, "Bad fence point");
             }
