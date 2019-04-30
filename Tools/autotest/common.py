@@ -2076,21 +2076,28 @@ class AutoTest(ABC):
 
     def test_dataflash_over_mavlink(self):
         self.context_push()
-        self.set_parameter("LOG_BACKEND_TYPE", 3)
-        self.reboot_sitl()
-        self.wait_ready_to_arm()
-        self.mavproxy.send('arm throttle\n')
-        self.mavproxy.expect('PreArm: Logging failed')
-        self.mavproxy.send("module load dataflash_logger\n")
-        self.mavproxy.send("dataflash_logger set verbose 1\n")
-        self.mavproxy.expect('logging started')
-        self.mavproxy.send("dataflash_logger set verbose 0\n")
-        self.delay_sim_time(1)
-        self.drain_mav() # hopefully draining COMMAND_ACK from that failed arm
-        self.arm_vehicle()
-        self.disarm_vehicle()
+        ex = None
+        try:
+            self.set_parameter("LOG_BACKEND_TYPE", 3)
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.mavproxy.send('arm throttle\n')
+            self.mavproxy.expect('PreArm: Logging failed')
+            self.mavproxy.send("module load dataflash_logger\n")
+            self.mavproxy.send("dataflash_logger set verbose 1\n")
+            self.mavproxy.expect('logging started')
+            self.mavproxy.send("dataflash_logger set verbose 0\n")
+            self.delay_sim_time(1)
+            self.drain_mav() # hopefully draining COMMAND_ACK from that failed arm
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        except Exception as e:
+            self.progress("Exception (%s) caught" % str(e))
+            ex = e
         self.context_pop()
         self.reboot_sitl()
+        if ex is not None:
+            raise ex
 
     def test_arm_feature(self):
         """Common feature to test."""
