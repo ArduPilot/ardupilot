@@ -741,7 +741,7 @@ AP_InertialSensor::detect_backends(void)
                                                       ROTATION_ROLL_180_YAW_90,
                                                       ROTATION_ROLL_180_YAW_90));
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_YAW_270));
-        // new cubes have ICM20602, ICM20648, ICM20649
+        // new cubes have ICM20602, ICM20948, ICM20649
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20602_ext"), ROTATION_ROLL_180_YAW_270));
         ADD_BACKEND(AP_InertialSensor_Invensensev2::probe(*this, hal.spi->get_device("icm20948_ext"), ROTATION_PITCH_180));
         ADD_BACKEND(AP_InertialSensor_Invensensev2::probe(*this, hal.spi->get_device("icm20948"), ROTATION_YAW_270));
@@ -878,8 +878,6 @@ AP_InertialSensor::detect_backends(void)
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
-
-    _enable_mask.set(found_mask);
 
     if (_backend_count == 0) {
         AP_BoardConfig::sensor_config_error("INS: unable to initialise driver");
@@ -1117,6 +1115,8 @@ AP_InertialSensor::_init_gyro()
     // cold start
     hal.console->printf("Init Gyro");
 
+    hal.scheduler->expect_delay_ms(60000);
+
     /*
       we do the gyro calibration with no board rotation. This avoids
       having to rotate readings during the calibration
@@ -1231,6 +1231,8 @@ AP_InertialSensor::_init_gyro()
 
     // stop flashing leds
     AP_Notify::flags.initialising = false;
+
+    hal.scheduler->expect_delay_ms(0);
 }
 
 // save parameters to eeprom
@@ -1695,11 +1697,13 @@ void AP_InertialSensor::acal_update()
         return;
     }
 
+    hal.scheduler->expect_delay_ms(20000);
     _acal->update();
 
     if (hal.util->get_soft_armed() && _acal->get_status() != ACCEL_CAL_NOT_STARTED) {
         _acal->cancel();
     }
+    hal.scheduler->expect_delay_ms(0);
 }
 
 /*
@@ -1996,6 +2000,17 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
     AP_Notify::flags.initialising = false;
 
     return result;
+}
+
+/*
+  see if gyro calibration should be performed
+ */
+AP_InertialSensor::Gyro_Calibration_Timing AP_InertialSensor::gyro_calibration_timing()
+{
+    if (hal.util->was_watchdog_reset()) {
+        return GYRO_CAL_NEVER;
+    }
+    return (Gyro_Calibration_Timing)_gyro_cal_timing.get();
 }
 
 

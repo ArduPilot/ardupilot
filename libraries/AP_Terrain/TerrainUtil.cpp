@@ -79,7 +79,7 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
     ref.lng = info.lon_degrees*10*1000*1000L;
 
     // find offset from reference
-    Vector2f offset = location_diff(ref, loc);
+    const Vector2f offset = ref.get_distance_NE(loc);
 
     // get indices in terms of grid_spacing elements
     uint32_t idx_x = offset.x / grid_spacing;

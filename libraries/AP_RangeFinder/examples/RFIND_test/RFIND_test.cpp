@@ -11,7 +11,7 @@ void loop();
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_SerialManager serial_manager;
-static RangeFinder sonar{serial_manager, ROTATION_PITCH_270};
+static RangeFinder sonar{serial_manager};
 
 void setup()
 {
@@ -25,7 +25,7 @@ void setup()
 
     // initialise sensor, delaying to make debug easier
     hal.scheduler->delay(2000);
-    sonar.init();
+    sonar.init(ROTATION_PITCH_270);
     hal.console->printf("RangeFinder: %d devices detected\n", sonar.num_sensors());
 }
 

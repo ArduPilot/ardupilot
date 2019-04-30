@@ -35,6 +35,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_DEFAULT        1
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -60,6 +61,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_DEFAULT        1
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -82,9 +84,10 @@
 #define MAG_CAL_DEFAULT         0
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
-#define FLOW_M_NSE_DEFAULT      0.25f
-#define FLOW_I_GATE_DEFAULT     300
+#define FLOW_M_NSE_DEFAULT      0.15f
+#define FLOW_I_GATE_DEFAULT     500
 #define CHECK_SCALER_DEFAULT    150
+#define FLOW_USE_DEFAULT        2
 
 #else
 // build type not specified, use copter defaults
@@ -110,6 +113,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_DEFAULT        1
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -485,7 +489,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: TERR_GRAD
     // @DisplayName: Maximum terrain gradient
-    // @Description: Specifies the maximum gradient of the terrain below the vehicle when it is using range finder as a height reference
+    // @Description: Specifies the maximum gradient of the terrain below the vehicle assumed when it is fusing range finder or optical flow to estimate terrain height.
     // @Range: 0 0.2
     // @Increment: 0.01
     // @User: Advanced
@@ -552,6 +556,14 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: ms
     // @RebootRequired: True
     AP_GROUPINFO("EXTNAV_DELAY", 50, NavEKF2, _extnavDelay_ms, 10),
+
+    // @Param: FLOW_USE
+    // @DisplayName: Optical flow use bitmask
+    // @Description: Controls if the optical flow data is fused into the 24-state navigation estimator OR the 1-state terrain height estimator.
+    // @User: Advanced
+    // @Values: 0:None,1:Navigation,2:Terrain
+    // @RebootRequired: True
+    AP_GROUPINFO("FLOW_USE", 51, NavEKF2, _flowUse, FLOW_USE_DEFAULT),
 
     AP_GROUPEND
 };
@@ -754,6 +766,19 @@ bool NavEKF2::healthy(void) const
         return false;
     }
     return core[primary].healthy();
+}
+
+bool NavEKF2::all_cores_healthy(void) const
+{
+    if (!core) {
+        return false;
+    }
+    for (uint8_t i = 0; i < num_cores; i++) {
+        if (!core[i].healthy()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // returns the index of the primary core
@@ -1042,6 +1067,17 @@ void NavEKF2::getRotationBodyToNED(Matrix3f &mat) const
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
+void NavEKF2::getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        Matrix3f mat;
+        core[instance].getRotationBodyToNED(mat);
+        quat.from_rotation_matrix(mat);
+    }
+}
+
+// return the quaternions defining the rotation from NED to XYZ (autopilot) axes
 void NavEKF2::getQuaternion(int8_t instance, Quaternion &quat) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
@@ -1338,7 +1374,13 @@ const char *NavEKF2::prearm_failure_reason(void) const
     if (!core) {
         return nullptr;
     }
-    return core[primary].prearm_failure_reason();
+    for (uint8_t i = 0; i < num_cores; i++) {
+        const char * failure = core[i].prearm_failure_reason();
+        if (failure != nullptr) {
+            return failure;
+        }
+    }
+    return nullptr;
 }
 
 // Returns the amount of vertical position change due to the last reset or core switch in metres

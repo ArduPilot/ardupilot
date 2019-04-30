@@ -1,6 +1,7 @@
 #include "AP_Mission.h"
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Camera/AP_Camera.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>

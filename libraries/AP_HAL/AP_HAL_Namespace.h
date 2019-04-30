@@ -34,6 +34,7 @@ namespace AP_HAL {
     class CAN;
 
     class Util;
+    class Flash;
 
     /* Utility Classes */
     class Print;

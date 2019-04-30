@@ -133,10 +133,6 @@ public:
     int32_t pack_capacity_mah(uint8_t instance) const;
     int32_t pack_capacity_mah() const { return pack_capacity_mah(AP_BATT_PRIMARY_INSTANCE); }
  
-    /// returns the failsafe state of the battery
-    BatteryFailsafe check_failsafe(const uint8_t instance);
-    void check_failsafes(void); // checks all batteries failsafes
-
     /// returns true if a battery failsafe has ever been triggered
     bool has_failsafed(void) const { return _has_triggered_failsafe; };
 
@@ -146,9 +142,6 @@ public:
     /// get_type - returns battery monitor type
     enum AP_BattMonitor_Params::BattMonitor_Type get_type() const { return get_type(AP_BATT_PRIMARY_INSTANCE); }
     enum AP_BattMonitor_Params::BattMonitor_Type get_type(uint8_t instance) const { return _params[instance].type(); }
-
-    /// set_monitoring - sets the monitor type (used for example sketch only)
-    void set_monitoring(uint8_t instance, uint8_t mon) { _params[instance]._type.set(mon); }
 
     /// true when (voltage * current) > watt_max
     bool overpower_detected() const;
@@ -190,6 +183,10 @@ private:
     uint8_t     _num_instances;                                     /// number of monitors
 
     void convert_params(void);
+
+    /// returns the failsafe state of the battery
+    BatteryFailsafe check_failsafe(const uint8_t instance);
+    void check_failsafes(void); // checks all batteries failsafes
 
     battery_failsafe_handler_fn_t _battery_failsafe_handler_fn;
     const int8_t *_failsafe_priorities; // array of failsafe priorities, sorted highest to lowest priority, -1 indicates no more entries

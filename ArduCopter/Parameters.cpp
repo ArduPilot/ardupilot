@@ -68,14 +68,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Increment: 10
     GSCALAR(pilot_takeoff_alt,  "PILOT_TKOFF_ALT",  PILOT_TKOFF_ALT_DEFAULT),
 
-    // @Param: PILOT_TKOFF_DZ
-    // @DisplayName: Takeoff trigger deadzone
-    // @Description: Offset from mid stick at which takeoff is triggered
-    // @User: Standard
-    // @Range: 0 500
-    // @Increment: 10
-    GSCALAR(takeoff_trigger_dz, "PILOT_TKOFF_DZ", THR_DZ_DEFAULT),
-
     // @Param: PILOT_THR_BHV
     // @DisplayName: Throttle stick behavior
     // @Description: Bitmask containing various throttle stick options. TX with sprung throttle can set PILOT_THR_BHV to "1" so motor feedback when landed starts from mid-stick instead of bottom of stick.
@@ -101,8 +93,8 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Roll,2:Pitch,4:Yaw
-    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+    // @Values: 0:None,1:Roll,2:Pitch,4:Yaw,8:AccelZ
+    // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:AccelZ
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
 #if MODE_RTL_ENABLED == ENABLED
@@ -184,13 +176,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 100 900
     // @User: Advanced
     GSCALAR(gps_hdop_good, "GPS_HDOP_GOOD", GPS_HDOP_GOOD_DEFAULT),
-
-    // @Param: MAG_ENABLE
-    // @DisplayName: Compass enable/disable
-    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    GSCALAR(compass_enabled,        "MAG_ENABLE",   MAGNETOMETER),
 
     // @Param: SUPER_SIMPLE
     // @DisplayName: Super Simple Mode
@@ -343,20 +328,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,56:Rate Yaw Filter,55:Motor Yaw Headroom,14:AltHold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,45:RC Feel,13:Heli Ext Gyro,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF,57:Winch
     GSCALAR(radio_tuning, "TUNE",                   0),
-
-    // @Param: TUNE_LOW
-    // @DisplayName: Tuning minimum
-    // @Description: The minimum value that will be applied to the parameter currently being tuned with the transmitter's channel 6 knob
-    // @User: Standard
-    // @Range: 0 32767
-    GSCALAR(radio_tuning_low, "TUNE_LOW",           0),
-
-    // @Param: TUNE_HIGH
-    // @DisplayName: Tuning maximum
-    // @Description: The maximum value that will be applied to the parameter currently being tuned with the transmitter's channel 6 knob
-    // @User: Standard
-    // @Range: 0 32767
-    GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
 
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X, V, etc)
@@ -934,11 +905,23 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
     AP_SUBGROUPINFO(scripting, "SCR_", 30, ParametersG2, AP_Scripting),
 #endif
-    
+
+    // @Param: TUNE_MIN
+    // @DisplayName: Tuning minimum
+    // @Description: Minimum value that the parameter currently being tuned with the transmitter's channel 6 knob will be set to
+    // @User: Standard
+    AP_GROUPINFO("TUNE_MIN", 31, ParametersG2, tuning_min, 0),
+
+    // @Param: TUNE_MAX
+    // @DisplayName: Tuning maximum
+    // @Description: Maximum value that the parameter currently being tuned with the transmitter's channel 6 knob will be set to
+    // @User: Standard
+    AP_GROUPINFO("TUNE_MAX", 32, ParametersG2, tuning_max, 0),
+
     AP_GROUPEND
 };
 
-// These CHx_OPT param descriptions are here so that users of beta Mission Planner (which uses the master branch as its source of descriptions)
+// These param descriptions are here so that users of beta Mission Planner (which uses the master branch as its source of descriptions)
 // can get them.  These lines can be removed once Copter-3.7.0-beta testing begins or we improve the source of descriptions for GCSs.
 //
 // @Param: CH7_OPT
@@ -976,6 +959,18 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 // @Description: Select which function is performed when CH12 is above 1800 pwm
 // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl
 // @User: Standard
+
+// @Param: TUNE_LOW
+// @DisplayName: Tuning minimum
+// @Description: The minimum value that will be applied to the parameter currently being tuned with the transmitter's channel 6 knob
+// @User: Standard
+// @Range: 0 32767
+
+// @Param: TUNE_HIGH
+// @DisplayName: Tuning maximum
+// @Description: The maximum value that will be applied to the parameter currently being tuned with the transmitter's channel 6 knob
+// @User: Standard
+// @Range: 0 32767
 
 /*
   constructor for g2 object
@@ -1040,6 +1035,8 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::Parameters::k_param_ch10_option_old,   0,      AP_PARAM_INT8,  "RC10_OPTION" },
     { Parameters::Parameters::k_param_ch11_option_old,   0,      AP_PARAM_INT8,  "RC11_OPTION" },
     { Parameters::Parameters::k_param_ch12_option_old,   0,      AP_PARAM_INT8,  "RC12_OPTION" },
+
+    { Parameters::k_param_compass_enabled_deprecated,    0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
 };
 
 void Copter::load_parameters(void)

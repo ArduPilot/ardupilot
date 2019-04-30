@@ -30,7 +30,7 @@ protected:
     bool pre_arm_ekf_attitude_check();
     bool pre_arm_terrain_check(bool display_failure);
     bool pre_arm_proximity_check(bool display_failure);
-    bool arm_checks(bool display_failure, AP_Arming::Method method);
+    bool arm_checks(AP_Arming::Method method) override;
 
     // NOTE! the following check functions *DO* call into AP_Arming:
     bool ins_checks(bool display_failure) override;

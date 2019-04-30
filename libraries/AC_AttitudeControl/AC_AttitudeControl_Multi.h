@@ -11,7 +11,7 @@
   # define AC_ATC_MULTI_RATE_RP_P           0.135f
 #endif
 #ifndef AC_ATC_MULTI_RATE_RP_I
-  # define AC_ATC_MULTI_RATE_RP_I           0.090f
+  # define AC_ATC_MULTI_RATE_RP_I           0.135f
 #endif
 #ifndef AC_ATC_MULTI_RATE_RP_D
   # define AC_ATC_MULTI_RATE_RP_D           0.0036f
@@ -70,7 +70,7 @@ public:
     float get_throttle_mix(void) const override { return _throttle_rpy_mix; }
 
     // are we producing min throttle?
-    bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
+    bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f * _thr_mix_min); }
 
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run() override;

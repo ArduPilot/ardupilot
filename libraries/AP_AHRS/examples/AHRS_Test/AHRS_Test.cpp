@@ -24,7 +24,7 @@ static AP_SerialManager serial_manager;
 
 class DummyVehicle {
 public:
-    RangeFinder sonar{serial_manager, ROTATION_PITCH_270};
+    RangeFinder sonar{serial_manager};
     NavEKF2 EKF2{&ahrs, sonar};
     NavEKF3 EKF3{&ahrs, sonar};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3,

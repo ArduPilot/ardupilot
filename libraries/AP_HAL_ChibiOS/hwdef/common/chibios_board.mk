@@ -120,8 +120,9 @@ CSRC += $(HWDEF)/common/stubs.c \
 	   $(HWDEF)/common/flash.c \
 	   $(HWDEF)/common/malloc.c \
 	   $(HWDEF)/common/hrt.c \
-	   $(HWDEF)/common/stm32_util.c \
-	   $(HWDEF)/common/bouncebuffer.c
+       $(HWDEF)/common/stm32_util.c \
+       $(HWDEF)/common/bouncebuffer.c \
+       $(HWDEF)/common/watchdog.c
 
 ifeq ($(USE_FATFS),yes)
 CSRC += $(HWDEF)/common/posix.c

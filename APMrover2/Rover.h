@@ -174,7 +174,7 @@ private:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
-    RangeFinder rangefinder{serial_manager, ROTATION_NONE};
+    RangeFinder rangefinder{serial_manager};
     AP_Button button;
 
     // flight modes convenience array
@@ -461,10 +461,8 @@ private:
     float sailboat_calc_heading(float desired_heading_cd);
 
     // sensors.cpp
-    void init_compass(void);
     void init_compass_location(void);
     void update_compass(void);
-    void compass_cal_update(void);
     void compass_save(void);
     void init_beacon();
     void init_visual_odom();

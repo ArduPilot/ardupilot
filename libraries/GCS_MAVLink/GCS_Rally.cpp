@@ -16,6 +16,7 @@
  */
 
 #include "GCS.h"
+#include <AP_Rally/AP_Rally.h>
 
 void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
 {
@@ -77,11 +78,10 @@ void GCS_MAVLINK::handle_rally_fetch_point(mavlink_message_t *msg)
         return;
     }
 
-    mavlink_msg_rally_point_send_buf(msg,
-                                     chan, msg->sysid, msg->compid, packet.idx,
-                                     r->get_rally_total(), rally_point.lat, rally_point.lng,
-                                     rally_point.alt, rally_point.break_alt, rally_point.land_dir,
-                                     rally_point.flags);
+    mavlink_msg_rally_point_send(chan, msg->sysid, msg->compid, packet.idx,
+                                 r->get_rally_total(), rally_point.lat, rally_point.lng,
+                                 rally_point.alt, rally_point.break_alt, rally_point.land_dir,
+                                 rally_point.flags);
 }
 
 void GCS_MAVLINK::handle_common_rally_message(mavlink_message_t *msg)

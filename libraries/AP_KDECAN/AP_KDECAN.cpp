@@ -34,6 +34,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Motors/AP_Motors.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include "AP_KDECAN.h"
 

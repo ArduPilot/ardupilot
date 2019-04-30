@@ -1,6 +1,6 @@
 # Pixhawk4 Flight Controller
 
-The Pixhawk4 flight controller is sold by [Holybro](http://www.holybro.com/product/55)
+The Pixhawk4 flight controller is sold by [Holybro](http://www.holybro.com/product/pixhawk-4)
 
 ## Features
 

@@ -39,11 +39,11 @@ void Copter::Log_Write_Control_Tuning()
         target_climb_rate_cms = pos_control->get_vel_target_z();
     }
 
-    float _target_rangefinder_alt;
-    if (target_rangefinder_alt_used) {
-        _target_rangefinder_alt = target_rangefinder_alt * 0.01f; // cm->m
+    float surface_tracking_target_alt;
+    if (surface_tracking.valid_for_logging) {
+        surface_tracking_target_alt = surface_tracking.target_alt_cm * 0.01f; // cm->m
     } else {
-        _target_rangefinder_alt = logger.quiet_nan();
+        surface_tracking_target_alt = logger.quiet_nan();
     }
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
@@ -55,7 +55,7 @@ void Copter::Log_Write_Control_Tuning()
         desired_alt         : des_alt_m,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
-        desired_rangefinder_alt : _target_rangefinder_alt,
+        desired_rangefinder_alt : surface_tracking_target_alt,
         rangefinder_alt     : rangefinder_state.alt_cm,
         terr_alt            : terr_alt,
         target_climb_rate   : target_climb_rate_cms,
@@ -234,21 +234,19 @@ struct PACKED log_ParameterTuning {
     uint64_t time_us;
     uint8_t  parameter;     // parameter we are tuning, e.g. 39 is CH6_CIRCLE_RATE
     float    tuning_value;  // normalized value used inside tuning() function
-    int16_t  control_in;    // raw tune input value
-    int16_t  tuning_low;    // tuning low end value
-    int16_t  tuning_high;   // tuning high end value
+    float    tuning_min;    // tuning minimum value
+    float    tuning_max;    // tuning maximum value
 };
 
-void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high)
+void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max)
 {
     struct log_ParameterTuning pkt_tune = {
         LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
         time_us        : AP_HAL::micros64(),
         parameter      : param,
         tuning_value   : tuning_val,
-        control_in     : control_in,
-        tuning_low     : tune_low,
-        tuning_high    : tune_high
+        tuning_min     : tune_min,
+        tuning_max     : tune_max
     };
 
     logger.WriteBlock(&pkt_tune, sizeof(pkt_tune));
@@ -388,7 +386,7 @@ void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_tar
 const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
-      "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi", "s-----", "F-----" },
+      "PTUN", "QBfff",         "TimeUS,Param,TunVal,TunMin,TunMax", "s----", "F----" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qffffffefcfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00B0BBBB" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
@@ -443,7 +441,7 @@ void Copter::Log_Write_Data(uint8_t id, uint32_t value) {}
 void Copter::Log_Write_Data(uint8_t id, int16_t value) {}
 void Copter::Log_Write_Data(uint8_t id, uint16_t value) {}
 void Copter::Log_Write_Data(uint8_t id, float value) {}
-void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
+void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
 void Copter::Log_Sensor_Health() {}
 void Copter::Log_Write_Precland() {}
 void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}

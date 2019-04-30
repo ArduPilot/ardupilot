@@ -125,8 +125,7 @@ struct PACKED page_reg_status {
     uint16_t flag_rc_sumd_srxl:1;
 
     uint16_t alarms;
-    uint16_t vbatt;
-    uint16_t ibatt;
+    uint32_t timestamp_ms;
     uint16_t vservo;
     uint16_t vrssi;
     uint16_t prssi;

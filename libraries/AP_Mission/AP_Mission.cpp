@@ -278,6 +278,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
 
 bool AP_Mission::start_command(const Mission_Command& cmd)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
     switch (cmd.id) {
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
@@ -380,7 +381,7 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
     if (cmd.id == MAV_CMD_NAV_SET_YAW_SPEED) {
         return (_nav_cmd.content.set_yaw_speed.angle_deg * 100);
     }
-    return get_bearing_cd(_nav_cmd.content.location, cmd.content.location);
+    return _nav_cmd.content.location.get_bearing_to(cmd.content.location);
 }
 
 // set_current_cmd - jumps to command specified by index
@@ -1721,6 +1722,7 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd)
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
         if (_jump_tracking[i].index == cmd.index) {
             _jump_tracking[i].num_times_run++;
+            gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
             return;
         }else if(_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
             // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
@@ -1856,6 +1858,8 @@ const char *AP_Mission::Mission_Command::type() const {
     switch(id) {
     case MAV_CMD_NAV_WAYPOINT:
         return "WP";
+    case MAV_CMD_NAV_SPLINE_WAYPOINT:
+        return "SplineWP";
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return "RTL";
     case MAV_CMD_NAV_LOITER_UNLIM:
@@ -1864,6 +1868,10 @@ const char *AP_Mission::Mission_Command::type() const {
         return "LoitTime";
     case MAV_CMD_NAV_GUIDED_ENABLE:
         return "GuidedEnable";
+    case MAV_CMD_NAV_LOITER_TURNS:
+        return "LoitTurns";
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+        return "LoitAltitude";
     case MAV_CMD_NAV_SET_YAW_SPEED:
         return "SetYawSpd";
     case MAV_CMD_CONDITION_DELAY:
@@ -1896,7 +1904,45 @@ const char *AP_Mission::Mission_Command::type() const {
         return "SetReverse";
     case MAV_CMD_DO_GUIDED_LIMITS:
         return "GuidedLimits";
+    case MAV_CMD_NAV_TAKEOFF:
+        return "Takeoff";
+    case MAV_CMD_NAV_LAND:
+        return "Land";
+    case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
+        return "ContinueAndChangeAlt";
+    case MAV_CMD_NAV_ALTITUDE_WAIT:
+        return "AltitudeWait";
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        return "VTOLTakeoff";
+    case MAV_CMD_NAV_VTOL_LAND:
+        return "VTOLLand";
+    case MAV_CMD_DO_INVERTED_FLIGHT:
+        return "InvertedFlight";
+    case MAV_CMD_DO_FENCE_ENABLE:
+        return "FenceEnable";
+    case MAV_CMD_DO_AUTOTUNE_ENABLE:
+        return "AutoTuneEnable";
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        return "VTOLTransition";
+    case MAV_CMD_DO_ENGINE_CONTROL:
+        return "EngineControl";
+    case MAV_CMD_CONDITION_YAW:
+        return "CondYaw";
+    case MAV_CMD_DO_LAND_START:
+        return "LandStart";
+    case MAV_CMD_NAV_DELAY:
+        return "Delay";
+    case MAV_CMD_DO_GRIPPER:
+        return "Gripper";
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
+        return "PayloadPlace";
+    case MAV_CMD_DO_PARACHUTE:
+        return "Parachute";
+
     default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Mission command with ID %u has no string", id);
+#endif
         return "?";
     }
 }

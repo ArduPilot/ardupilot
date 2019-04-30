@@ -210,6 +210,8 @@ static OpticalFlow_Onboard opticalFlow;
 static Empty::OpticalFlow opticalFlow;
 #endif
 
+static Empty::Flash flashDriver;
+
 HAL_Linux::HAL_Linux() :
     AP_HAL::HAL(
         &uartADriver,
@@ -230,6 +232,7 @@ HAL_Linux::HAL_Linux() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlow,
+        &flashDriver,
         nullptr)
 {}
 

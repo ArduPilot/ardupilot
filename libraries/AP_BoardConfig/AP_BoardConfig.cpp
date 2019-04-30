@@ -68,6 +68,14 @@
 #define BOARD_CONFIG_BOARD_VOLTAGE_MIN 4.3f
 #endif
 
+#ifndef HAL_BRD_OPTIONS_DEFAULT
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG
+#else
+#define HAL_BRD_OPTIONS_DEFAULT 0
+#endif
+#endif
+
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::_singleton;
 
@@ -220,7 +228,23 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SD_SLOWDOWN",  17,     AP_BoardConfig, _sdcard_slowdown,  0),
 #endif
-    
+
+#ifdef HAL_GPIO_PWM_VOLT_PIN
+    // @Param: PWM_VOLT_SEL
+    // @DisplayName: Set PWM Out Voltage
+    // @Description: This sets the voltage max for PWM output pulses. 0 for 3.3V and 1 for 5V output.
+    // @Values: 0:3.3V,1:5V
+    // @User: Advanced
+    AP_GROUPINFO("PWM_VOLT_SEL", 18, AP_BoardConfig, _pwm_volt_sel, 0),
+#endif
+
+    // @Param: OPTIONS
+    // @DisplayName: Board options
+    // @Description: Board specific option flags
+    // @Bitmask: 0:Enable hardware watchdog
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 19, AP_BoardConfig, _options, HAL_BRD_OPTIONS_DEFAULT),
+
     AP_GROUPEND
 };
 

@@ -44,7 +44,7 @@ void ModeAuto::update()
             _distance_to_destination = rover.current_loc.get_distance(_destination);
             const bool near_wp = _distance_to_destination <= rover.g.waypoint_radius;
             // check if we've reached the destination
-            if (!_reached_destination && (near_wp || location_passed_point(rover.current_loc, _origin, _destination))) {
+            if (!_reached_destination && (near_wp || rover.current_loc.past_interval_finish_line(_origin, _destination))) {
                 // trigger reached
                 _reached_destination = true;
             }
@@ -251,7 +251,7 @@ void ModeAuto::start_guided(const Location& loc)
         // sanity check target location
         if ((loc.lat != 0) || (loc.lng != 0)) {
             guided_target.loc = loc;
-            location_sanitize(rover.current_loc, guided_target.loc);
+            guided_target.loc.sanitize(rover.current_loc);
             guided_target.valid = true;
         } else {
             guided_target.valid = false;
@@ -291,9 +291,6 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     if (rover.should_log(MASK_LOG_CMD)) {
         rover.logger.Write_Mission_Cmd(mission, cmd);
     }
-
-    gcs().send_text(MAV_SEVERITY_INFO, "Executing %s(ID=%i)",
-                    cmd.type(), cmd.id);
 
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
@@ -499,7 +496,7 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
 
     // retrieve and sanitize target location
     Location cmdloc = cmd.content.location;
-    location_sanitize(rover.current_loc, cmdloc);
+    cmdloc.sanitize(rover.current_loc);
     set_desired_location(cmdloc, next_leg_bearing_cd);
 }
 

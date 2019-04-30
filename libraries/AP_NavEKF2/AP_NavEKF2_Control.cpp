@@ -170,7 +170,7 @@ void NavEKF2_core::setAidingMode()
         bool canUseExtNav = readyToUseExtNav();
         if(canUseGPS || canUseRangeBeacon || canUseExtNav) {
             PV_AidingMode = AID_ABSOLUTE;
-        } else if (optFlowDataPresent() && filterIsStable) {
+        } else if (optFlowDataPresent() && (frontend->_flowUse == FLOW_USE_NAV) && filterIsStable) {
             PV_AidingMode = AID_RELATIVE;
         }
         }

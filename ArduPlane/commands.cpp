@@ -50,7 +50,7 @@ void Plane::set_next_WP(const struct Location &loc)
     // past the waypoint when we start on a leg, then use the current
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
-    if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+    if (current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "Resetting previous waypoint");
         prev_WP_loc = current_loc;
     }
@@ -108,6 +108,9 @@ void Plane::set_guided_WP(void)
 */
 void Plane::update_home()
 {
+    if (hal.util->was_watchdog_armed()) {
+        return;
+    }
     if ((g2.home_reset_threshold == -1) ||
         ((g2.home_reset_threshold > 0) &&
          (fabsf(barometer.get_altitude()) > g2.home_reset_threshold))) {
@@ -131,6 +134,9 @@ void Plane::update_home()
 
 bool Plane::set_home_persistently(const Location &loc)
 {
+    if (hal.util->was_watchdog_armed()) {
+        return false;
+    }
     if (!AP::ahrs().set_home(loc)) {
         return false;
     }

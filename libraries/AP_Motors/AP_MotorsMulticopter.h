@@ -68,7 +68,7 @@ public:
     float               get_throttle_thrust_max() const { return _throttle_thrust_max; }
 
     // return true if spool up is complete
-    bool spool_up_complete() const { return _spool_mode == THROTTLE_UNLIMITED; }
+    bool spool_up_complete() const { return _spool_state == SpoolState::THROTTLE_UNLIMITED; }
 
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward

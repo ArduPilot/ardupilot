@@ -139,6 +139,9 @@ public:
     // handle a PLAY_TUNE message
     static void handle_play_tune(mavlink_message_t* msg);
 
+    // play a tune string
+    static void play_tune(const char *tune);
+
     bool buzzer_enabled() const { return _buzzer_enable; }
 
     // set flight mode string
@@ -179,4 +182,8 @@ private:
 
     static NotifyDevice* _devices[];
     static uint8_t _num_devices;
+};
+
+namespace AP {
+    AP_Notify &notify();
 };

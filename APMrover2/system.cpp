@@ -6,6 +6,7 @@ The init_ardupilot function processes everything we need for an in - air restart
 *****************************************************************************/
 
 #include "Rover.h"
+#include <AP_Common/AP_FWVersion.h>
 
 static void mavlink_delay_cb_static()
 {
@@ -89,10 +90,11 @@ void Rover::init_ardupilot()
 #endif
 
     // initialise compass
-    init_compass();
+    AP::compass().set_log_bit(MASK_LOG_COMPASS);
+    AP::compass().init();
 
     // initialise rangefinder
-    rangefinder.init();
+    rangefinder.init(ROTATION_NONE);
 
     // init proximity sensor
     init_proximity();
@@ -283,6 +285,7 @@ void Rover::startup_INS_ground(void)
 // update notify with mode change
 void Rover::notify_mode(const Mode *mode)
 {
+    AP_Notify::flags.autopilot_mode = mode->is_autopilot_mode();
     notify.flags.flight_mode = mode->mode_number();
     notify.set_flight_mode_str(mode->name4());
 }

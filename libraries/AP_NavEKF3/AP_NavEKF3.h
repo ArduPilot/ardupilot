@@ -59,6 +59,8 @@ public:
     
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
+    // Check that all cores are started and healthy
+    bool all_cores_healthy(void) const;
 
     // returns the index of the primary core
     // return -1 if no primary core selected
@@ -179,6 +181,9 @@ public:
     void getRotationBodyToNED(Matrix3f &mat) const;
 
     // return the quaternions defining the rotation from NED to XYZ (body) axes
+    void getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const;
+
+    // return the quaternions defining the rotation from NED to XYZ (autopilot) axes
     void getQuaternion(int8_t instance, Quaternion &quat) const;
 
     // return the innovations for the specified instance
@@ -416,7 +421,12 @@ private:
     AP_Float _visOdmVelErrMax;      // Observation 1-STD velocity error assumed for visual odometry sensor at lowest reported quality (m/s)
     AP_Float _visOdmVelErrMin;      // Observation 1-STD velocity error assumed for visual odometry sensor at highest reported quality (m/s)
     AP_Float _wencOdmVelErr;        // Observation 1-STD velocity error assumed for wheel odometry sensor (m/s)
+    AP_Int8  _flowUse;              // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
 
+// Possible values for _flowUse
+#define FLOW_USE_NONE    0
+#define FLOW_USE_NAV     1
+#define FLOW_USE_TERRAIN 2
 
     // Tuning parameters
     const float gpsNEVelVarAccScale = 0.05f;       // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration

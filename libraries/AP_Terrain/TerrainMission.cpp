@@ -82,7 +82,7 @@ void AP_Terrain::update_mission_data(void)
         // spacings away at 45, 135, 225 and 315 degrees, and the
         // point itself
         if (next_mission_pos != 4) {
-            location_update(cmd.content.location, 45+90*next_mission_pos, grid_spacing.get() * 10);
+            cmd.content.location.offset_bearing(45+90*next_mission_pos, grid_spacing.get() * 10);
         }
 
         // we have a mission command to check

@@ -13,7 +13,7 @@ import pexpect
 import fnmatch
 import operator
 
-from pymavlink import mavwp, mavutil
+from pymavlink import mavwp, mavutil, DFReader
 from pysim import util, vehicleinfo
 
 # a list of pexpect objects to read while waiting for
@@ -998,7 +998,7 @@ class AutoTest(ABC):
             return True
         return False
 
-    def set_parameter(self, name, value, add_to_context=True, epsilon=0.00001):
+    def set_parameter(self, name, value, add_to_context=True, epsilon=0.0002):
         """Set parameters from vehicle."""
         self.progress("Setting %s to %f" % (name, value))
         old_value = self.get_parameter(name, retry=2)
@@ -1007,7 +1007,7 @@ class AutoTest(ABC):
             returned_value = self.get_parameter(name)
             delta = float(value) - returned_value
             if abs(delta) < epsilon:
-                # yes, exactly equal.
+                # yes, near-enough-to-equal.
                 if add_to_context:
                     self.context_get().parameters.append((name, old_value))
                 if self.should_fetch_all_for_parameter_change(name.upper()) and value != 0:
@@ -1025,7 +1025,7 @@ class AutoTest(ABC):
                 return float(self.mavproxy.match.group(1))
             except pexpect.TIMEOUT:
                 pass
-        raise NotAchievedException("Failed to retrieve parameter")
+        raise NotAchievedException("Failed to retrieve parameter (%s)" % name)
 
     def context_get(self):
         """Get Saved parameters."""
@@ -1152,14 +1152,39 @@ class AutoTest(ABC):
         return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
     @staticmethod
+    def get_latlon_attr(loc, attrs):
+        '''return any found latitude attribute from loc'''
+        latattrs = "lat", "latitude"
+        ret = None
+        for attr in attrs:
+            if hasattr(loc, attr):
+                ret = getattr(loc, attr)
+                break
+        if ret is None:
+            raise ValueError("None of %s in loc" % str(attrs))
+        return ret
+
+    @staticmethod
+    def get_lat_attr(loc):
+        '''return any found latitude attribute from loc'''
+        return AutoTest.get_latlon_attr(loc, ["lat", "latitude"])
+
+    @staticmethod
+    def get_lon_attr(loc):
+        '''return any found latitude attribute from loc'''
+        return AutoTest.get_latlon_attr(loc, ["lng", "lon", "longitude"])
+
+    @staticmethod
     def get_distance_int(loc1, loc2):
         """Get ground distance between two locations in the normal "int" form
         - lat/lon multiplied by 1e7"""
-        dlat = loc2.lat - loc1.lat
-        try:
-            dlong = loc2.lng - loc1.lng
-        except AttributeError:
-            dlong = loc2.lon - loc1.lon
+        loc1_lat = AutoTest.get_lat_attr(loc1)
+        loc2_lat = AutoTest.get_lat_attr(loc2)
+        loc1_lon = AutoTest.get_lon_attr(loc1)
+        loc2_lon = AutoTest.get_lon_attr(loc2)
+
+        dlat = loc2_lat - loc1_lat
+        dlong = loc2_lon - loc1_lon
 
         dlat /= 10000000.0
         dlong /= 10000000.0
@@ -1181,8 +1206,7 @@ class AutoTest(ABC):
         self.progress("Changing mode to %s" % mode)
         self.mavproxy.send('mode %s\n' % mode)
         tstart = self.get_sim_time()
-        self.wait_heartbeat()
-        while self.mav.flightmode != mode:
+        while not self.mode_is(mode):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                     self.mav.flightmode, mode, custom_num))
@@ -1190,9 +1214,6 @@ class AutoTest(ABC):
                     self.get_sim_time_cached() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
             self.mavproxy.send('mode %s\n' % mode)
-            self.wait_heartbeat()
-        # self.progress("heartbeat mode %s Want: %s" % (
-        # self.mav.flightmode, mode))
         self.progress("Got mode %s" % mode)
 
     def do_get_autopilot_capabilities(self):
@@ -1607,7 +1628,12 @@ class AutoTest(ABC):
     def mode_is(self, mode, cached=False):
         if not cached:
             self.wait_heartbeat()
-        return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
+        try:
+            return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
+        except Exception as e:
+            pass
+        # assume this is a number....
+        return self.mav.messages['HEARTBEAT'].custom_mode == mode
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
@@ -1620,8 +1646,6 @@ class AutoTest(ABC):
             if (timeout is not None and
                     self.get_sim_time_cached() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
-        # self.progress("heartbeat mode %s Want: %s" % (
-        # self.mav.flightmode, mode))
         self.progress("Got mode %s" % mode)
 
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
@@ -1757,6 +1781,9 @@ class AutoTest(ABC):
             fmt = "%" + str(longest) + "s: %.2fs"
             self.progress(fmt % (desc, time))
 
+    def send_statustext(self, text):
+        self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, bytes(text))
+
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
         test_output_filename = self.buildlogs_path("%s-%s.txt" %
@@ -1764,6 +1791,7 @@ class AutoTest(ABC):
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile)
 
         prettyname = "%s (%s)" % (name, desc)
+        self.send_statustext(prettyname)
         self.start_test(prettyname)
 
         self.context_push()
@@ -1829,6 +1857,20 @@ class AutoTest(ABC):
     def defaults_filepath(self):
         return None
 
+    def start_mavproxy(self):
+        self.progress("Starting MAVProxy")
+        self.mavproxy = util.start_MAVProxy_SITL(
+            self.vehicleinfo_key(),
+            logfile=self.mavproxy_logfile,
+            options=self.mavproxy_options())
+        self.mavproxy.expect('Telemetry log: (\S+)\r\n')
+        self.logfile = self.mavproxy.match.group(1)
+        self.progress("LOGFILE %s" % self.logfile)
+        self.try_symlink_tlog()
+
+        self.progress("Waiting for Parameters")
+        self.mavproxy.expect('Received [0-9]+ parameters')
+
     def init(self):
         """Initilialize autotest feature."""
         self.check_test_syntax(test_file=self.test_filepath())
@@ -1851,18 +1893,8 @@ class AutoTest(ABC):
                                     vicon=self.uses_vicon(),
                                     wipe=True,
                                     )
-        self.progress("Starting MAVProxy")
-        self.mavproxy = util.start_MAVProxy_SITL(
-            self.vehicleinfo_key(),
-            logfile=self.mavproxy_logfile,
-            options=self.mavproxy_options())
-        self.mavproxy.expect('Telemetry log: (\S+)\r\n')
-        self.logfile = self.mavproxy.match.group(1)
-        self.progress("LOGFILE %s" % self.logfile)
-        self.try_symlink_tlog()
 
-        self.progress("Waiting for Parameters")
-        self.mavproxy.expect('Received [0-9]+ parameters')
+        self.start_mavproxy()
 
         self.progress("Starting MAVLink connection")
         self.get_mavlink_connection_going()
@@ -1911,11 +1943,9 @@ class AutoTest(ABC):
         m = self.mav.messages.get("HOME_POSITION", None)
         if use_cached_home is False or m is None:
             m = self.poll_home_position(quiet=True)
-        loc = mavutil.location(m.latitude * 1.0e-7,
-                               m.longitude * 1.0e-7,
-                               m.altitude * 1.0e-3,
-                               0)
-        return self.get_distance(loc, self.mav.location())
+        here = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                   blocking=True)
+        return self.get_distance_int(m, here)
 
     def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
         tstart = self.get_sim_time()
@@ -2011,7 +2041,7 @@ class AutoTest(ABC):
                          )
         home = self.poll_home_position()
         self.progress("home: %s" % str(home))
-        if self.distance_to_home() > 1:
+        if self.distance_to_home(use_cached_home=True) > 1:
             raise NotAchievedException("Setting home to current location did not work")
 
         self.progress("Setting home elsewhere again")
@@ -2046,31 +2076,40 @@ class AutoTest(ABC):
 
     def test_dataflash_over_mavlink(self):
         self.context_push()
-        self.set_parameter("LOG_BACKEND_TYPE", 3)
-        self.reboot_sitl()
-        self.wait_ready_to_arm()
-        self.mavproxy.send('arm throttle\n')
-        self.mavproxy.expect('PreArm: Logging failed')
-        self.mavproxy.send("module load dataflash_logger\n")
-        self.mavproxy.send("dataflash_logger set verbose 1\n")
-        self.mavproxy.expect('logging started')
-        self.mavproxy.send("dataflash_logger set verbose 0\n")
-        self.delay_sim_time(1)
-        self.drain_mav() # hopefully draining COMMAND_ACK from that failed arm
-        self.arm_vehicle()
-        self.disarm_vehicle()
+        ex = None
+        try:
+            self.set_parameter("LOG_BACKEND_TYPE", 3)
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.mavproxy.send('arm throttle\n')
+            self.mavproxy.expect('PreArm: Logging failed')
+            self.mavproxy.send("module load dataflash_logger\n")
+            self.mavproxy.send("dataflash_logger set verbose 1\n")
+            self.mavproxy.expect('logging started')
+            self.mavproxy.send("dataflash_logger set verbose 0\n")
+            self.delay_sim_time(1)
+            self.drain_mav() # hopefully draining COMMAND_ACK from that failed arm
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        except Exception as e:
+            self.progress("Exception (%s) caught" % str(e))
+            ex = e
         self.context_pop()
         self.reboot_sitl()
+        if ex is not None:
+            raise ex
 
     def test_arm_feature(self):
         """Common feature to test."""
         # TEST ARMING/DISARM
-        self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
-        interlock_channel = 8  # Plane got flighmode_ch on channel 8
-        if not self.is_heli():  # heli don't need interlock option
-            interlock_channel = 9
-            self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
-        self.set_rc(interlock_channel, 1000)
+        if not self.is_sub() and not self.is_tracker():
+            self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
+        if self.is_copter():
+            interlock_channel = 8  # Plane got flighmode_ch on channel 8
+            if not self.is_heli():  # heli don't need interlock option
+                interlock_channel = 9
+                self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
+            self.set_rc(interlock_channel, 1000)
         self.zero_throttle()
         # Disable auto disarm for next tests
         # Rover and Sub don't have auto disarm
@@ -2506,6 +2545,26 @@ switch value'''
         (name, desc, func) = test
         self.progress("##### %s is skipped: %s" % (name, reason))
         self.skip_list.append((test, reason))
+
+    def last_onboard_log(self):
+        '''return number of last onboard log'''
+        self.mavproxy.send("log list\n")
+        self.mavproxy.expect("lastLog ([0-9]+)")
+        return int(self.mavproxy.match.group(1))
+
+    def current_onboard_log_filepath(self):
+        '''return filepath to currently open dataflash log'''
+        return os.path.join("logs/%08u.BIN" % self.last_onboard_log())
+
+    def dfreader_for_current_onboard_log(self):
+        return DFReader.DFReader_binary(self.current_onboard_log_filepath(),
+                                        zero_time_base=True);
+
+    def current_onboard_log_contains_message(self, messagetype):
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type=messagetype)
+        print("m=%s" % str(m))
+        return m is not None
 
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""

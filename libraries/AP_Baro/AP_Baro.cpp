@@ -44,6 +44,8 @@
 #include "AP_Baro_UAVCAN.h"
 #endif
 
+#include <AP_Logger/AP_Logger.h>
+
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
 #ifndef HAL_BARO_FILTER_DEFAULT
@@ -181,6 +183,10 @@ AP_Baro::AP_Baro()
 // the altitude() or climb_rate() interfaces can be used
 void AP_Baro::calibrate(bool save)
 {
+    if (hal.util->was_watchdog_reset()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Baro: skipping calibration");
+        return;
+    }
     gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
 
     // reset the altitude offset when we calibrate. The altitude

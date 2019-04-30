@@ -81,7 +81,7 @@ void AP_BattMonitor_FuelFlow::read()
         _state.last_time_micros = now_us;
         return;
     }
-    float dt = (now_us - _state.last_time_micros) * 1.0e-6;
+    float dt = (now_us - _state.last_time_micros) * 1.0e-6f;
 
     if (dt < 1 && irq_state.pulse_count == 0) {
         // we allow for up to 1 second with no pulses to cope with low
@@ -101,13 +101,13 @@ void AP_BattMonitor_FuelFlow::read()
       this driver assumes that BATTx_AMP_PERVLT is set to give the
       number of millilitres per pulse.
      */
-    float irq_dt = state.total_us * 1.0e-6;
+    float irq_dt = state.total_us * 1.0e-6f;
     float litres, litres_pec_sec;
     if (state.pulse_count == 0) {
         litres = 0;
         litres_pec_sec = 0;
     } else {
-        litres = state.pulse_count * _params._curr_amp_per_volt * 0.001;
+        litres = state.pulse_count * _params._curr_amp_per_volt * 0.001f;
         litres_pec_sec = litres / irq_dt;
     }
 

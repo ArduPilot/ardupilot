@@ -401,7 +401,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_MIN
     // @DisplayName: Minimum Throttle
-    // @Description: Minimum throttle percentage used in automatic throttle modes. Negative values allow reverse thrust if hardware supports it.
+    // @Description: Minimum throttle percentage used in all modes except manual, provided THR_PASS_STAB is not set. Negative values allow reverse thrust if hardware supports it.
     // @Units: %
     // @Range: -100 100
     // @Increment: 1
@@ -582,7 +582,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
     // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
     // @User: Advanced
-    GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
+    GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
 
     // @Param: LIM_ROLL_CD
     // @DisplayName: Maximum Bank Angle
@@ -759,13 +759,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: cm
     // @User: User
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
-
-    // @Param: MAG_ENABLE
-    // @DisplayName: Enable Compass
-    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    GSCALAR(compass_enabled,        "MAG_ENABLE",     1),
 
     // @Param: FLAP_IN_CHANNEL
     // @DisplayName: Flap input channel
@@ -1041,9 +1034,11 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SITL),
 #endif
 
+#if ADVANCED_FAILSAFE == ENABLED
     // @Group: AFS_
     // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
     GOBJECT(afs,  "AFS_", AP_AdvancedFailsafe),
+#endif
 
 #if OPTFLOW == ENABLED
     // @Group: FLOW
@@ -1196,20 +1191,22 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #endif
 
     // @Param: DSPOILER_CROW_W1
-    // @DisplayName: Differential spoiler crow flaps inner weight
-    // @Description: This is amount of deflection applied to the two inner surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 25.
+    // @DisplayName: Differential spoiler crow flaps outer weight
+    // @Description: This is amount of deflection applied to the two outer surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 25.
     // @Range: 0 100
+    // @Units: %
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("DSPOILER_CROW_W1", 17, ParametersG2, crow_flap_weight1, 0),
+    AP_GROUPINFO("DSPOILER_CROW_W1", 17, ParametersG2, crow_flap_weight_outer, 0),
 
     // @Param: DSPOILER_CROW_W2
-    // @DisplayName: Differential spoiler crow flaps outer weight
-    // @Description: This is amount of deflection applied to the two outer  surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 45.
+    // @DisplayName: Differential spoiler crow flaps inner weight
+    // @Description: This is amount of deflection applied to the two inner surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 45.
     // @Range: 0 100
+    // @Units: %
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("DSPOILER_CROW_W2", 18, ParametersG2, crow_flap_weight2, 0),
+    AP_GROUPINFO("DSPOILER_CROW_W2", 18, ParametersG2, crow_flap_weight_inner, 0),
 
     // @Param: TKOFF_TIMEOUT
     // @DisplayName: Takeoff timeout
@@ -1219,7 +1216,24 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: s
     // @User: User
     AP_GROUPINFO("TKOFF_TIMEOUT", 19, ParametersG2, takeoff_timeout, 0),
-    
+
+    // @Param: DSPOILER_OPTS
+    // @DisplayName: Differential spoiler and crow flaps options
+    // @Description: Differential spoiler and crow flaps options
+    // @Values: 0: none, 1: D spoilers have pitch input, 2: use both control surfaces on each wing for roll, 4: Progressive crow, flaps only first (0-50% flap in) then crow flaps (50 - 100% flap in)
+    // @Bitmask: 0:pitch control, 1:full span, 2:Progressive crow
+    // @User: Advanced
+    AP_GROUPINFO("DSPOILER_OPTS", 20, ParametersG2, crow_flap_options, 3),
+
+    // @Param: DSPOILER_AILMTCH
+    // @DisplayName: Differential spoiler aileron matching
+    // @Description: This scales down the inner flaps so less than full downwards range can be used for differential spoiler and full span ailerons, 100 is use full range, upwards travel is unaffected
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("DSPOILER_AILMTCH", 21, ParametersG2, crow_flap_aileron_matching, 100),
+
     AP_GROUPEND
 };
 
@@ -1287,6 +1301,8 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_fs_batt_mah,        0,      AP_PARAM_FLOAT, "BATT_LOW_MAH" },
 
     { Parameters::k_param_arming,             3,      AP_PARAM_INT8,  "ARMING_RUDDER" },
+
+    { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
 };
 
 void Plane::load_parameters(void)

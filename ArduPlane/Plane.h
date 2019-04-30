@@ -104,8 +104,13 @@
 // Configuration
 #include "config.h"
 
+#if ADVANCED_FAILSAFE == ENABLED
+#include "afs_plane.h"
+#endif
+
 // Local modules
 #include "defines.h"
+#include "mode.h"
 
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
@@ -119,25 +124,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
-
-/*
-  a plane specific AP_AdvancedFailsafe class
- */
-class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
-{
-public:
-    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps);
-
-    // called to set all outputs to termination state
-    void terminate_vehicle(void);
-    
-protected:
-    // setup failsafe values for if FMU firmware stops running
-    void setup_IO_failsafe(void);
-
-    // return the AFS mapped control mode
-    enum control_mode afs_mode(void);
-};
 
 /*
   main APM:Plane class
@@ -156,6 +142,30 @@ public:
     friend class GCS_Plane;
     friend class RC_Channel_Plane;
     friend class RC_Channels_Plane;
+
+    friend class Mode;
+    friend class ModeCircle;
+    friend class ModeStabilize;
+    friend class ModeTraining;
+    friend class ModeAcro;
+    friend class ModeFBWA;
+    friend class ModeFBWB;
+    friend class ModeCruise;
+    friend class ModeAutoTune;
+    friend class ModeAuto;
+    friend class ModeRTL;
+    friend class ModeLoiter;
+    friend class ModeAvoidADSB;
+    friend class ModeGuided;
+    friend class ModeInitializing;
+    friend class ModeManual;
+    friend class ModeQStabilize;
+    friend class ModeQHover;
+    friend class ModeQLoiter;
+    friend class ModeQLand;
+    friend class ModeQRTL;
+    friend class ModeQAcro;
+    friend class ModeQAutotune;
 
     Plane(void);
 
@@ -212,7 +222,7 @@ private:
 
     AP_InertialSensor ins;
 
-    RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder{serial_manager};
 
     AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 
@@ -299,11 +309,34 @@ private:
     AP_OSD osd;
 #endif
     
+    ModeCircle mode_circle;
+    ModeStabilize mode_stabilize;
+    ModeTraining mode_training;
+    ModeAcro mode_acro;
+    ModeFBWA mode_fbwa;
+    ModeFBWB mode_fbwb;
+    ModeCruise mode_cruise;
+    ModeAutoTune mode_autotune;
+    ModeAuto mode_auto;
+    ModeRTL mode_rtl;
+    ModeLoiter mode_loiter;
+    ModeAvoidADSB mode_avoidADSB;
+    ModeGuided mode_guided;
+    ModeInitializing mode_initializing;
+    ModeManual mode_manual;
+    ModeQStabilize mode_qstabilize;
+    ModeQHover mode_qhover;
+    ModeQLoiter mode_qloiter;
+    ModeQLand mode_qland;
+    ModeQRTL mode_qrtl;
+    ModeQAcro mode_qacro;
+    ModeQAutotune mode_qautotune;
+
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
-    enum FlightMode control_mode = INITIALISING;
+    Mode *control_mode = &mode_initializing;
     mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
-    enum FlightMode previous_mode = INITIALISING;
+    Mode *previous_mode = &mode_initializing;
     mode_reason_t previous_mode_reason = MODE_REASON_UNKNOWN;
 
     // time of last mode change
@@ -329,7 +362,7 @@ private:
         bool adsb:1;
 
         // saved flight mode
-        enum FlightMode saved_mode;
+        enum Mode::Number saved_mode_number;
 
         // A tracking variable for type of failsafe active
         // Used for failsafe based on loss of RC signal or GCS signal
@@ -640,7 +673,9 @@ private:
     AP_Avoidance_Plane avoidance_adsb{ahrs, adsb};
 
     // Outback Challenge Failsafe Support
+#if ADVANCED_FAILSAFE == ENABLED
     AP_AdvancedFailsafe_Plane afs {mission, gps};
+#endif
 
     /*
       meta data to support counting the number of circles in a loiter
@@ -904,13 +939,12 @@ private:
     void rpm_update(void);
     void init_ardupilot();
     void startup_ground(void);
-    enum FlightMode get_previous_mode();
-    void set_mode(enum FlightMode mode, mode_reason_t reason);
-    void exit_mode(enum FlightMode mode);
+    bool set_mode(Mode& new_mode, const mode_reason_t reason);
+    bool set_mode_by_number(const Mode::Number new_mode_number, const mode_reason_t reason);
+    Mode *mode_from_mode_num(const enum Mode::Number num);
     void check_long_failsafe();
     void check_short_failsafe();
     void startup_INS_ground(void);
-    void update_notify();
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
     void change_arm_state(void);
@@ -929,8 +963,9 @@ private:
     void update_GPS_10Hz(void);
     void update_compass(void);
     void update_alt(void);
+#if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
-    void compass_cal_update();
+#endif
     void update_optical_flow(void);
     void one_second_loop(void);
     void airspeed_ratio_update(void);
@@ -938,7 +973,7 @@ private:
     void update_logging1(void);
     void update_logging2(void);
     void avoidance_adsb_update(void);
-    void update_flight_mode(void);
+    void update_control_mode(void);
     void stabilize();
     void set_servos_idle(void);
     void set_servos();
@@ -957,7 +992,6 @@ private:
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
     bool in_preLaunch_flight_stage(void);
-    void handle_auto_mode(void);
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
@@ -1007,7 +1041,7 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void notify_flight_mode(enum FlightMode mode);
+    void notify_mode(const Mode& mode);
     void log_init();
     void parachute_check();
 #if PARACHUTE == ENABLED
@@ -1040,11 +1074,13 @@ private:
         Failsafe_Action_Land      = 2,
         Failsafe_Action_Terminate = 3,
         Failsafe_Action_QLand     = 4,
+        Failsafe_Action_Parachute = 5
     };
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
+                                                      Failsafe_Action_Parachute,
                                                       Failsafe_Action_QLand,
                                                       Failsafe_Action_Land,
                                                       Failsafe_Action_RTL,

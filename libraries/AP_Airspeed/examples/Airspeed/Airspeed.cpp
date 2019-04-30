@@ -29,7 +29,10 @@ void loop();
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 float temperature;
+
+// create airspeed object
 AP_Airspeed airspeed;
+
 static AP_BoardConfig board_config;
 
 namespace {
@@ -45,28 +48,38 @@ void set_object_value(const void *object_pointer,
 }
 }
 
+// to be called only once on boot for initializing objects
 void setup()
 {
     hal.console->printf("ArduPilot Airspeed library test\n");
 
+    // set airspeed pin to 65, enable and use to true
     set_object_value(&airspeed, airspeed.var_info, "PIN", 65);
     set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);
     set_object_value(&airspeed, airspeed.var_info, "USE", 1);
 
     board_config.init();
 
+    // initialize airspeed
     airspeed.init();
+
     airspeed.calibrate(false);
 }
 
+// loop
 void loop(void)
 {
     static uint32_t timer;
+
+    // run read() and get_temperature() in 10Hz
     if ((AP_HAL::millis() - timer) > 100) {
+
+        // current system time in milliseconds
         timer = AP_HAL::millis();
         airspeed.update(false);
         airspeed.get_temperature(temperature);
 
+        // print temperature and airspeed to console
         hal.console->printf("airspeed %5.2f temperature %6.2f healthy = %u\n",
                             (double)airspeed.get_airspeed(), (double)temperature, airspeed.healthy());
     }

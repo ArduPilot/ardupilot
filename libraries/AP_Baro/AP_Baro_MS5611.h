@@ -39,7 +39,7 @@ public:
     };
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type = BARO_MS5611);
-    
+
 private:
     /*
      * Update @accum and @count with the new sample in @val, taking into
