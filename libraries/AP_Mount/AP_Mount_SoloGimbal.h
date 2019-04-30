@@ -39,9 +39,9 @@ public:
     void send_mount_status(mavlink_channel_t chan) override;
 
     // handle a GIMBAL_REPORT message
-    void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg) override;
-    void handle_gimbal_torque_report(mavlink_channel_t chan, const mavlink_message_t *msg);
-    void handle_param_value(const mavlink_message_t *msg) override;
+    void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) override;
+    void handle_gimbal_torque_report(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void handle_param_value(const mavlink_message_t &msg) override;
 
     // send a GIMBAL_REPORT message to the GCS
     void send_gimbal_report(mavlink_channel_t chan) override;

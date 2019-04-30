@@ -181,10 +181,10 @@ void SoloGimbal_Parameters::update()
     }
 }
 
-void SoloGimbal_Parameters::handle_param_value(const mavlink_message_t *msg)
+void SoloGimbal_Parameters::handle_param_value(const mavlink_message_t &msg)
 {
     mavlink_param_value_t packet;
-    mavlink_msg_param_value_decode(msg, &packet);
+    mavlink_msg_param_value_decode(&msg, &packet);
 
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {

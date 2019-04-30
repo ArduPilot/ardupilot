@@ -41,10 +41,10 @@ gimbal_mode_t SoloGimbal::get_mode()
     }
 }
 
-void SoloGimbal::receive_feedback(mavlink_channel_t chan, const mavlink_message_t *msg)
+void SoloGimbal::receive_feedback(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     mavlink_gimbal_report_t report_msg;
-    mavlink_msg_gimbal_report_decode(msg, &report_msg);
+    mavlink_msg_gimbal_report_decode(&msg, &report_msg);
     uint32_t tnow_ms = AP_HAL::millis();
     _last_report_msg_ms = tnow_ms;
 
