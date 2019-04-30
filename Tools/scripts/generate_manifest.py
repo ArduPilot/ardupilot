@@ -7,6 +7,7 @@ import json
 import os
 import re
 import fnmatch
+import gen_stable
 
 FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub"]
 RELEASE_TYPES = ["beta", "latest", "stable", "stable-*"]
@@ -432,6 +433,9 @@ if __name__ == "__main__":
     parser.add_argument('basedir', type=str, default="-", help='base binaries directory')
 
     args = parser.parse_args()
+
+    # ensure all stable directories are created
+    gen_stable.make_all_stable(args.basedir)
 
     generator = ManifestGenerator(args.basedir, args.baseurl)
     if args.outfile is None:
