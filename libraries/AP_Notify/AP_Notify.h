@@ -135,10 +135,10 @@ public:
     void update(void);
 
     // handle a LED_CONTROL message
-    static void handle_led_control(mavlink_message_t* msg);
+    static void handle_led_control(const mavlink_message_t &msg);
 
     // handle a PLAY_TUNE message
-    static void handle_play_tune(mavlink_message_t* msg);
+    static void handle_play_tune(const mavlink_message_t &msg);
 
     // play a tune string
     static void play_tune(const char *tune);
