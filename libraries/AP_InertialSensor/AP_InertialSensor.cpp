@@ -1848,6 +1848,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
+    hal.scheduler->expect_delay_ms(20000);
     // record we are calibrating
     _calibrating = true;
 
@@ -1986,6 +1987,8 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
 
     // stop flashing leds
     AP_Notify::flags.initialising = false;
+
+    hal.scheduler->expect_delay_ms(0);
 
     return result;
 }
