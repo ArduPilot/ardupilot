@@ -99,6 +99,12 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::init()
         goto fail;
     }
 
+    if (val[5] * 10000 + val[4] * 100 + val[3] < 10706) {
+        hal.console->printf(DRIVER ": minimum required FW version 1.7.6, but version %u.%u.%u found\n",
+                            val[5], val[4], val[3]);
+        goto fail;
+    }
+
     hal.console->printf(DRIVER ": found fw version %u.%u.%u\n",
                         val[5], val[4], val[3]);
 
@@ -143,12 +149,12 @@ void AP_RangeFinder_Benewake_TFMiniPlus::update()
     }
 }
 
-bool AP_RangeFinder_Benewake_TFMiniPlus::process_raw_measure(be16_t distance_raw, be16_t strength_raw,
-                                                    uint16_t &output_distance_cm)
+bool AP_RangeFinder_Benewake_TFMiniPlus::process_raw_measure(le16_t distance_raw, le16_t strength_raw,
+                                                             uint16_t &output_distance_cm)
 {
-    uint16_t strength = be16toh(strength_raw);
+    uint16_t strength = le16toh(strength_raw);
 
-    output_distance_cm = be16toh(distance_raw);
+    output_distance_cm = le16toh(distance_raw);
 
     if (strength < 100 || strength == 0xFFFF) {
         return false;
@@ -176,15 +182,14 @@ void AP_RangeFinder_Benewake_TFMiniPlus::timer()
     uint8_t CMD_READ_MEASUREMENT[] = { 0x5A, 0x05, 0x00, 0x07, 0x66 };
     union {
         struct PACKED {
-            uint8_t header;
-            uint8_t len;
-            be16_t distance;
-            be16_t strength;
-            uint8_t reserved1;
-            le16_t timestamp;
+            uint8_t header1;
+            uint8_t header2;
+            le16_t distance;
+            le16_t strength;
+            le32_t timestamp;
             uint8_t checksum;
         } val;
-        uint8_t arr[10];
+        uint8_t arr[11];
     } u;
     bool ret;
     uint16_t distance;
@@ -194,7 +199,7 @@ void AP_RangeFinder_Benewake_TFMiniPlus::timer()
         return;
     }
 
-    if (u.val.header != 0x5a || u.val.len != 0x0a || !check_checksum(u.arr, sizeof(u)))
+    if (u.val.header1 != 0x59 || u.val.header2 != 0x59 || !check_checksum(u.arr, sizeof(u)))
         return;
 
     if (process_raw_measure(u.val.distance, u.val.strength, distance)) {
