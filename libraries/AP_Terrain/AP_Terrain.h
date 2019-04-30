@@ -103,9 +103,9 @@ public:
 
     // handle terrain data and reports from GCS
     void send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate);
-    void handle_data(mavlink_channel_t chan, mavlink_message_t *msg);
-    void handle_terrain_check(mavlink_channel_t chan, mavlink_message_t *msg);
-    void handle_terrain_data(mavlink_message_t *msg);
+    void handle_data(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void handle_terrain_data(const mavlink_message_t &msg);
 
     /*
       find the terrain height in meters above sea level for a location
