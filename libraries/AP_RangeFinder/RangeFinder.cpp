@@ -541,7 +541,7 @@ RangeFinder::RangeFinder_Status RangeFinder::status_orient(enum Rotation orienta
     return backend->status();
 }
 
-void RangeFinder::handle_msg(mavlink_message_t *msg)
+void RangeFinder::handle_msg(const mavlink_message_t &msg)
 {
     uint8_t i;
     for (i=0; i<num_instances; i++) {
