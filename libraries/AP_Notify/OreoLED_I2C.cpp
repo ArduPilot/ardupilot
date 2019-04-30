@@ -544,11 +544,11 @@ void OreoLED_I2C::send_sync(void)
 
 
 // Handle an LED_CONTROL mavlink message
-void OreoLED_I2C::handle_led_control(mavlink_message_t *msg)
+void OreoLED_I2C::handle_led_control(const mavlink_message_t &msg)
 {
     // decode mavlink message
     mavlink_led_control_t packet;
-    mavlink_msg_led_control_decode(msg, &packet);
+    mavlink_msg_led_control_decode(&msg, &packet);
 
     // exit immediately if instance is invalid
     if (packet.instance >= OREOLED_NUM_LEDS && packet.instance != OREOLED_INSTANCE_ALL) {

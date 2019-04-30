@@ -202,7 +202,7 @@ void RGBLed::update()
 /*
   handle LED control, only used when LED_OVERRIDE=1
 */
-void RGBLed::handle_led_control(mavlink_message_t *msg)
+void RGBLed::handle_led_control(const mavlink_message_t &msg)
 {
     if (rgb_source() != mavlink) {
         // ignore LED_CONTROL commands if not in LED_OVERRIDE mode
@@ -211,7 +211,7 @@ void RGBLed::handle_led_control(mavlink_message_t *msg)
 
     // decode mavlink message
     mavlink_led_control_t packet;
-    mavlink_msg_led_control_decode(msg, &packet);
+    mavlink_msg_led_control_decode(&msg, &packet);
 
     _led_override.start_ms = AP_HAL::millis();
     

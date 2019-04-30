@@ -331,7 +331,7 @@ void AP_Notify::update(void)
 }
 
 // handle a LED_CONTROL message
-void AP_Notify::handle_led_control(mavlink_message_t *msg)
+void AP_Notify::handle_led_control(const mavlink_message_t &msg)
 {
     for (uint8_t i = 0; i < _num_devices; i++) {
         if (_devices[i] != nullptr) {
@@ -341,7 +341,7 @@ void AP_Notify::handle_led_control(mavlink_message_t *msg)
 }
 
 // handle a PLAY_TUNE message
-void AP_Notify::handle_play_tune(mavlink_message_t *msg)
+void AP_Notify::handle_play_tune(const mavlink_message_t &msg)
 {
     for (uint8_t i = 0; i < _num_devices; i++) {
         if (_devices[i] != nullptr) {
