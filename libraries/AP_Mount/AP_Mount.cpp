@@ -598,28 +598,28 @@ MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
 }
 
 /// Change the configuration of the mount
-void AP_Mount::handle_mount_configure(const mavlink_message_t *msg)
+void AP_Mount::handle_mount_configure(const mavlink_message_t &msg)
 {
     if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
         return;
     }
 
     mavlink_mount_configure_t packet;
-    mavlink_msg_mount_configure_decode(msg, &packet);
+    mavlink_msg_mount_configure_decode(&msg, &packet);
 
     // send message to backend
     _backends[_primary]->handle_mount_configure(packet);
 }
 
 /// Control the mount (depends on the previously set mount configuration)
-void AP_Mount::handle_mount_control(const mavlink_message_t *msg)
+void AP_Mount::handle_mount_control(const mavlink_message_t &msg)
 {
     if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
         return;
     }
 
     mavlink_mount_control_t packet;
-    mavlink_msg_mount_control_decode(msg, &packet);
+    mavlink_msg_mount_control_decode(&msg, &packet);
 
     // send message to backend
     _backends[_primary]->handle_mount_control(packet);
@@ -646,7 +646,7 @@ void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_lo
 }
 
 // pass a GIMBAL_REPORT message to the backend
-void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg)
+void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
@@ -655,9 +655,9 @@ void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_messag
     }
 }
 
-void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t *msg)
+void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
         handle_gimbal_report(chan, msg);
         break;
@@ -676,7 +676,7 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t *m
 }
 
 // handle PARAM_VALUE
-void AP_Mount::handle_param_value(const mavlink_message_t *msg)
+void AP_Mount::handle_param_value(const mavlink_message_t &msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {

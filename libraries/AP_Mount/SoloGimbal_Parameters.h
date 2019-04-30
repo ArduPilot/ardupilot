@@ -53,7 +53,7 @@ public:
     void set_param(gmb_param_t param, float value);
 
     void update();
-    void handle_param_value(const mavlink_message_t *msg);
+    void handle_param_value(const mavlink_message_t &msg);
 
     Vector3f get_accel_bias();
     Vector3f get_accel_gain();
