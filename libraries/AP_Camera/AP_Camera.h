@@ -41,7 +41,7 @@ public:
     }
 
     // MAVLink methods
-    void            control_msg(const mavlink_message_t* msg);
+    void            control_msg(const mavlink_message_t &msg);
     void            send_feedback(mavlink_channel_t chan);
 
     // Command processing

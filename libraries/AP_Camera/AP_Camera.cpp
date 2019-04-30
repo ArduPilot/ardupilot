@@ -198,10 +198,10 @@ AP_Camera::trigger_pic_cleanup()
 
 /// decode deprecated MavLink message that controls camera.
 void
-AP_Camera::control_msg(const mavlink_message_t* msg)
+AP_Camera::control_msg(const mavlink_message_t &msg)
 {
     __mavlink_digicam_control_t packet;
-    mavlink_msg_digicam_control_decode(msg, &packet);
+    mavlink_msg_digicam_control_decode(&msg, &packet);
 
     control(packet.session, packet.zoom_pos, packet.zoom_step, packet.focus_lock, packet.shot, packet.command_id);
 }
@@ -228,7 +228,7 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
 
     // send to all components
-    GCS_MAVLINK::send_to_components(&msg);
+    GCS_MAVLINK::send_to_components(msg);
 
     if (_type == AP_Camera::CAMERA_TYPE_BMMCC) {
         // Set a trigger for the additional functions that are flip controlled (so far just ISO and Record Start / Stop use this method, will add others if required)
@@ -277,7 +277,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
     mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
 
     // send to all components
-    GCS_MAVLINK::send_to_components(&msg);
+    GCS_MAVLINK::send_to_components(msg);
 }
 
 /*
@@ -440,7 +440,7 @@ void AP_Camera::take_picture()
     mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
 
     // forward to all components
-    GCS_MAVLINK::send_to_components(&msg);
+    GCS_MAVLINK::send_to_components(msg);
 }
 
 /*
