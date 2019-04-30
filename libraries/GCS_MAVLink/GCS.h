@@ -121,8 +121,8 @@ public:
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
-    void        send_text(MAV_SEVERITY severity, const char *fmt, ...);
-    void        send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
+    void        send_text(MAV_SEVERITY severity, const char *fmt, ...) const;
+    void        send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list) const;
     void        queued_param_send();
     void        queued_mission_request_send();
     // packetReceived is called on any successful decode of a mavlink message
