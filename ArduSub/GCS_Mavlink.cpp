@@ -516,13 +516,13 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
 
 
 
-void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
+void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_HEARTBEAT: {    // MAV ID: 0
         // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
-        if (msg->sysid != sub.g.sysid_my_gcs) {
+        if (msg.sysid != sub.g.sysid_my_gcs) {
             break;
         }
         sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
@@ -530,11 +530,11 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     }
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
-        if (msg->sysid != sub.g.sysid_my_gcs) {
+        if (msg.sysid != sub.g.sysid_my_gcs) {
             break;    // Only accept control from our gcs
         }
         mavlink_manual_control_t packet;
-        mavlink_msg_manual_control_decode(msg, &packet);
+        mavlink_msg_manual_control_decode(&msg, &packet);
 
         if (packet.target != sub.g.sysid_this_mav) {
             break; // only accept control aimed at us
@@ -552,7 +552,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET: { // MAV ID: 82
         // decode packet
         mavlink_set_attitude_target_t packet;
-        mavlink_msg_set_attitude_target_decode(msg, &packet);
+        mavlink_msg_set_attitude_target_decode(&msg, &packet);
 
         // ensure type_mask specifies to use attitude
         // the thrust can be used from the altitude hold
@@ -584,7 +584,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED: {   // MAV ID: 84
         // decode packet
         mavlink_set_position_target_local_ned_t packet;
-        mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
+        mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((sub.control_mode != GUIDED) && !(sub.control_mode == AUTO && sub.auto_mode == Auto_NavGuided)) {
@@ -657,7 +657,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT: {  // MAV ID: 86
         // decode packet
         mavlink_set_position_target_global_int_t packet;
-        mavlink_msg_set_position_target_global_int_decode(msg, &packet);
+        mavlink_msg_set_position_target_global_int_decode(&msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((sub.control_mode != GUIDED) && !(sub.control_mode == AUTO && sub.auto_mode == Auto_NavGuided)) {
@@ -723,7 +723,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_HOME_POSITION: {
         mavlink_set_home_position_t packet;
-        mavlink_msg_set_home_position_decode(msg, &packet);
+        mavlink_msg_set_home_position_decode(&msg, &packet);
         if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
             if (!sub.set_home_to_current_location(true)) {
                 // ignore this failure
@@ -748,7 +748,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SYS_STATUS: {
         uint32_t MAV_SENSOR_WATER = 0x20000000;
         mavlink_sys_status_t packet;
-        mavlink_msg_sys_status_decode(msg, &packet);
+        mavlink_msg_sys_status_decode(&msg, &packet);
         if ((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER)) {
             sub.leak_detector.set_detect();
         }
@@ -778,7 +778,7 @@ uint64_t GCS_MAVLINK_Sub::capabilities() const
 }
 
 // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t *msg)
+void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t &msg)
 {
     sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
     GCS_MAVLINK::handle_rc_channels_override(msg);
