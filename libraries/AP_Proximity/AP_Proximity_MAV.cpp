@@ -57,11 +57,11 @@ bool AP_Proximity_MAV::get_upward_distance(float &distance) const
 }
 
 // handle mavlink DISTANCE_SENSOR messages
-void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
+void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 {
-    if (msg->msgid == MAVLINK_MSG_ID_DISTANCE_SENSOR) {
+    if (msg.msgid == MAVLINK_MSG_ID_DISTANCE_SENSOR) {
         mavlink_distance_sensor_t packet;
-        mavlink_msg_distance_sensor_decode(msg, &packet);
+        mavlink_msg_distance_sensor_decode(&msg, &packet);
 
         // store distance to appropriate sector based on orientation field
         if (packet.orientation <= MAV_SENSOR_ROTATION_YAW_315) {
@@ -83,9 +83,9 @@ void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
         return;
     }
 
-    if (msg->msgid == MAVLINK_MSG_ID_OBSTACLE_DISTANCE) {
+    if (msg.msgid == MAVLINK_MSG_ID_OBSTACLE_DISTANCE) {
         mavlink_obstacle_distance_t packet;
-        mavlink_msg_obstacle_distance_decode(msg, &packet);
+        mavlink_msg_obstacle_distance_decode(&msg, &packet);
 
         // check increment (message's sector width)
         float increment;

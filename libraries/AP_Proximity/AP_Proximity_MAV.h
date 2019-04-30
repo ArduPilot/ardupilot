@@ -21,7 +21,7 @@ public:
     bool get_upward_distance(float &distance) const override;
 
     // handle mavlink DISTANCE_SENSOR messages
-    void handle_msg(mavlink_message_t *msg) override;
+    void handle_msg(const mavlink_message_t &msg) override;
 
 private:
 
