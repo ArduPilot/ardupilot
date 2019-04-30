@@ -930,9 +930,9 @@ void ToyMode::blink_update(void)
 }
 
 // handle a mavlink message
-void ToyMode::handle_message(mavlink_message_t *msg)
+void ToyMode::handle_message(const mavlink_message_t &msg)
 {
-    if (msg->msgid != MAVLINK_MSG_ID_NAMED_VALUE_INT) {
+    if (msg.msgid != MAVLINK_MSG_ID_NAMED_VALUE_INT) {
         return;
     }
     mavlink_named_value_int_t m;
