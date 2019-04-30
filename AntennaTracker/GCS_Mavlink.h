@@ -34,9 +34,9 @@ protected:
 
 private:
 
-    void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;
+    void packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg) override;
     void mavlink_check_target(const mavlink_message_t &msg);
-    void handleMessage(mavlink_message_t * msg) override;
+    void handleMessage(const mavlink_message_t &msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
     void send_global_position_int() override;
