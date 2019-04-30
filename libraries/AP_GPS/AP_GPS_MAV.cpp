@@ -39,13 +39,13 @@ bool AP_GPS_MAV::read(void)
 
 // handles an incoming mavlink message (HIL_GPS) and sets
 // corresponding gps data appropriately;
-void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
+void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
 
         case MAVLINK_MSG_ID_GPS_INPUT: {
             mavlink_gps_input_t packet;
-            mavlink_msg_gps_input_decode(msg, &packet);
+            mavlink_msg_gps_input_decode(&msg, &packet);
 
             bool have_alt    = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_ALT) == 0);
             bool have_hdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HDOP) == 0);
@@ -111,7 +111,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
 
         case MAVLINK_MSG_ID_HIL_GPS: {
             mavlink_hil_gps_t packet;
-            mavlink_msg_hil_gps_decode(msg, &packet);
+            mavlink_msg_hil_gps_decode(&msg, &packet);
 
             state.time_week = 0;
             state.time_week_ms  = packet.time_usec/1000;

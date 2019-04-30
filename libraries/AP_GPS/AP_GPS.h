@@ -169,7 +169,7 @@ public:
     void update(void);
 
     // Pass mavlink data to message handlers (for MAV type)
-    void handle_msg(const mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t &msg);
 
     // Accessor functions
 
@@ -538,8 +538,8 @@ private:
     } *rtcm_buffer;
 
     // re-assemble GPS_RTCM_DATA message
-    void handle_gps_rtcm_data(const mavlink_message_t *msg);
-    void handle_gps_inject(const mavlink_message_t *msg);
+    void handle_gps_rtcm_data(const mavlink_message_t &msg);
+    void handle_gps_inject(const mavlink_message_t &msg);
 
     //Inject a packet of raw binary to a GPS
     void inject_data(uint8_t *data, uint16_t len);
