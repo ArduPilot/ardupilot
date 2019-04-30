@@ -16,19 +16,6 @@ public:
     // Constructor
     RC_Channel(void);
 
-    // used to get min/max/trim limit value based on _reverse
-    enum LimitValue {
-        RC_CHANNEL_LIMIT_TRIM,
-        RC_CHANNEL_LIMIT_MIN,
-        RC_CHANNEL_LIMIT_MAX
-    };
-
-    enum InputIgnore {
-        RC_IGNORE_RECEIVER  = (1 << 0), // RC receiver modules
-        RC_IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
-        RC_IGNORE_FAILSAFE  = (1 << 2), // ignore RC failsafe bits
-    };
-
     enum ChannelType {
         RC_CHANNEL_TYPE_ANGLE = 0,
         RC_CHANNEL_TYPE_RANGE = 1,
@@ -111,7 +98,7 @@ public:
     void read_aux();
 
     // Aux Switch enumeration
-    enum aux_func {
+    enum class AUX_FUNC {
         DO_NOTHING =           0, // aux switch disabled
         FLIP =                 2, // flip
         SIMPLE_MODE =          3, // change to simple mode
@@ -176,10 +163,16 @@ public:
         GPS_DISABLE  =        65, // disable GPS for testing
         RELAY5 =              66, // Relay5 pin on/off
         RELAY6 =              67, // Relay6 pin on/off
+        STABILIZE =           68, // stabilize mode
+        POSHOLD   =           69, // poshold mode
+        ALTHOLD   =           70, // althold mode
+        FLOWHOLD  =           71, // flowhold mode
+        CIRCLE    =           72, // circle mode
+        DRIFT     =           73  // drift mode
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
-    typedef enum aux_func aux_func_t;
+    typedef enum AUX_FUNC aux_func_t;
 
 protected:
 
@@ -206,6 +199,7 @@ protected:
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
         // no action by default (e.g. Tracker, Sub, who do their own thing)
     };
+
 
 private:
 
@@ -342,18 +336,41 @@ public:
     }
 
     // should we ignore RC failsafe bits from receivers?
-    static bool ignore_rc_failsafe(void) {
-        return options && ((*options) & RC_Channel::RC_IGNORE_FAILSAFE) != 0;
+    bool ignore_rc_failsafe(void) const {
+        return get_singleton() != nullptr && (_options & uint32_t(Option::IGNORE_FAILSAFE));
     }
-    
+
+    bool ignore_overrides() const {
+        return _options & uint32_t(Option::IGNORE_OVERRIDES);
+    }
+
+    bool ignore_receiver() const {
+        return _options & uint32_t(Option::IGNORE_RECEIVER);
+    }
+
+    float override_timeout_ms() const {
+        return _override_timeout.get() * 1e3f;
+    }
+
+protected:
+
+    enum class Option {
+        IGNORE_RECEIVER  = (1 << 0), // RC receiver modules
+        IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
+        IGNORE_FAILSAFE  = (1 << 2), // ignore RC failsafe bits
+    };
+
+    void new_override_received() {
+        has_new_overrides = true;
+    }
+
 private:
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;
 
-    static bool has_new_overrides;
-    static AP_Float *override_timeout;
-    static AP_Int32 *options;
+    bool has_new_overrides;
+
     AP_Float _override_timeout;
     AP_Int32  _options;
 

@@ -105,6 +105,7 @@ class BinaryFormat(ctypes.LittleEndianStructure):
     MSG = 128
     SIZE = 0
     FIELD_FORMAT = {
+        'a': ctypes.c_int16 * 32,
         'b': ctypes.c_int8,
         'B': ctypes.c_uint8,
         'h': ctypes.c_int16,

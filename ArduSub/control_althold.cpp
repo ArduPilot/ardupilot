@@ -37,15 +37,16 @@ void Sub::althold_run()
     pos_control.set_max_accel_z(g.pilot_accel_z);
 
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         last_pilot_heading = ahrs.yaw_sensor;
         return;
     }
 
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // get pilot desired lean angles
     float target_roll, target_pitch;

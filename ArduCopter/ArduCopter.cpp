@@ -305,15 +305,11 @@ void Copter::update_batt_compass(void)
     // read battery before compass because it may be used for motor interference compensation
     battery.read();
 
-    if(g.compass_enabled) {
+    if(AP::compass().enabled()) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle(motors->get_throttle());
         compass.set_voltage(battery.voltage());
         compass.read();
-        // log compass information
-        if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            logger.Write_Compass();
-        }
     }
 }
 
@@ -341,7 +337,7 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCIN)) {
         logger.Write_RCIN();
         if (rssi.enabled()) {
-            logger.Write_RSSI(rssi);
+            logger.Write_RSSI();
         }
     }
     if (should_log(MASK_LOG_RCOUT)) {

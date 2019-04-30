@@ -115,7 +115,7 @@ int Storage::_storage_create(const char *dpath)
 
     // take up all needed space
     if (ftruncate(fd, sizeof(_buffer)) == -1) {
-        fprintf(stderr, "Failed to set file size to %u kB (%m)\n",
+        fprintf(stderr, "Failed to set file size to %lu kB (%m)\n",
                 sizeof(_buffer) / 1024);
         goto fail;
     }

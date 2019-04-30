@@ -43,6 +43,11 @@ public:
         logger_bad_current_block    = (1U <<  7),
         logger_blockcount_mismatch  = (1U <<  8),
         logger_dequeue_failure      = (1U <<  9),
+        constraining_nan            = (1U << 10),
+        watchdog_reset              = (1U << 11),
+        iomcu_reset                 = (1U << 12),
+        iomcu_fail                  = (1U << 13),
+        spi_fail                    = (1U << 14),
     };
 
     void error(const AP_InternalError::error_t error);

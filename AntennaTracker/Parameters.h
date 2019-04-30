@@ -48,7 +48,7 @@ public:
         k_param_serial0_baud,       // deprecated
         k_param_serial1_baud,       // deprecated
         k_param_imu,
-        k_param_compass_enabled,
+        k_param_compass_enabled_deprecated,
         k_param_compass,
         k_param_ahrs,  // AHRS group
         k_param_barometer,
@@ -129,8 +129,6 @@ public:
     AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
     AP_Int16 sysid_target;
-
-    AP_Int8 compass_enabled;
 
     AP_Float yaw_slew_time;
     AP_Float pitch_slew_time;

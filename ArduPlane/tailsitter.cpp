@@ -131,7 +131,10 @@ void QuadPlane::tailsitter_output(void)
         int32_t pitch_error_cd = (plane.nav_pitch_cd - ahrs_view->pitch_sensor) * 0.5;
         float extra_pitch = constrain_float(pitch_error_cd, -SERVO_MAX, SERVO_MAX) / SERVO_MAX;
         float extra_sign = extra_pitch > 0?1:-1;
-        float extra_elevator = extra_sign * powf(fabsf(extra_pitch), tailsitter.vectored_hover_power) * SERVO_MAX;
+        float extra_elevator = 0;
+        if (!is_zero(extra_pitch)) {
+            extra_elevator = extra_sign * powf(fabsf(extra_pitch), tailsitter.vectored_hover_power) * SERVO_MAX;
+        }
         tilt_left  = extra_elevator + tilt_left * tailsitter.vectored_hover_gain;
         tilt_right = extra_elevator + tilt_right * tailsitter.vectored_hover_gain;
         if (fabsf(tilt_left) >= SERVO_MAX || fabsf(tilt_right) >= SERVO_MAX) {

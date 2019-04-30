@@ -117,6 +117,47 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
         0.0f); // yaw_rate
 }
 
+void GCS_MAVLINK_Copter::send_position_target_local_ned()
+{
+    if (!copter.flightmode->in_guided_mode()) {
+        return;
+    }
+    
+    const GuidedMode guided_mode = copter.mode_guided.mode();
+    Vector3f target_pos;
+    Vector3f target_vel;
+    uint16_t type_mask;
+
+    if (guided_mode == Guided_WP) {
+        type_mask = 0x0FF8; // ignore everything except position
+        target_pos = copter.wp_nav->get_wp_destination() * 0.01f; // convert to metres
+    } else if (guided_mode == Guided_Velocity) {
+        type_mask = 0x0FC7; // ignore everything except velocity
+        target_vel = copter.flightmode->get_desired_velocity() * 0.01f; // convert to m/s
+    } else {
+        type_mask = 0x0FC0; // ignore everything except position & velocity
+        target_pos = copter.wp_nav->get_wp_destination() * 0.01f;
+        target_vel = copter.flightmode->get_desired_velocity() * 0.01f;
+    }
+
+    mavlink_msg_position_target_local_ned_send(
+        chan,
+        AP_HAL::millis(), // time boot ms
+        MAV_FRAME_LOCAL_NED, 
+        type_mask,
+        target_pos.x, // x in metres
+        target_pos.y, // y in metres
+        -target_pos.z, // z in metres NED frame
+        target_vel.x, // vx in m/s
+        target_vel.y, // vy in m/s
+        -target_vel.z, // vz in m/s NED frame
+        0.0f, // afx
+        0.0f, // afy
+        0.0f, // afz
+        0.0f, // yaw
+        0.0f); // yaw_rate
+}
+
 void GCS_MAVLINK_Copter::send_nav_controller_output() const
 {
     if (!copter.ap.initialised) {
@@ -160,37 +201,38 @@ void GCS_MAVLINK_Copter::send_pid_tuning()
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
-        AC_PID &pid = copter.attitude_control->get_rate_roll_pid(); // dummy ref
+        const AP_Logger::PID_Info *pid_info = nullptr;
         float achieved;
         switch (axes[i]) {
         case PID_TUNING_ROLL:
-            pid = copter.attitude_control->get_rate_roll_pid();
+            pid_info = &copter.attitude_control->get_rate_roll_pid().get_pid_info();
             achieved = degrees(gyro.x);
             break;
         case PID_TUNING_PITCH:
-            pid = copter.attitude_control->get_rate_pitch_pid();
+            pid_info = &copter.attitude_control->get_rate_pitch_pid().get_pid_info();
             achieved = degrees(gyro.y);
             break;
         case PID_TUNING_YAW:
-            pid = copter.attitude_control->get_rate_yaw_pid();
+            pid_info = &copter.attitude_control->get_rate_yaw_pid().get_pid_info();
             achieved = degrees(gyro.z);
             break;
         case PID_TUNING_ACCZ:
-            pid = copter.pos_control->get_accel_z_pid();
+            pid_info = &copter.pos_control->get_accel_z_pid().get_pid_info();
             achieved = -(AP::ahrs().get_accel_ef_blended().z + GRAVITY_MSS);
             break;
         default:
             continue;
         }
-        const AP_Logger::PID_Info &pid_info = pid.get_pid_info();
-        mavlink_msg_pid_tuning_send(chan,
-                                    axes[i],
-                                    pid_info.desired*0.01f,
-                                    achieved,
-                                    pid_info.FF*0.01f,
-                                    pid_info.P*0.01f,
-                                    pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+        if (pid_info != nullptr) {
+            mavlink_msg_pid_tuning_send(chan,
+                                        axes[i],
+                                        pid_info->desired*0.01f,
+                                        achieved,
+                                        pid_info->FF*0.01f,
+                                        pid_info->P*0.01f,
+                                        pid_info->I*0.01f,
+                                        pid_info->D*0.01f);
+        }
     }
 }
 
@@ -512,7 +554,7 @@ MAV_RESULT GCS_MAVLINK_Copter::_handle_command_preflight_calibration(const mavli
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_do_set_roi(const Location &roi_loc)
 {
-    if (!check_latlng(roi_loc)) {
+    if (!roi_loc.check_latlng()) {
         return MAV_RESULT_FAILED;
     }
     copter.flightmode->auto_yaw.set_roi(roi_loc);
@@ -552,7 +594,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
     case MAV_CMD_DO_MOUNT_CONTROL:
         if(!copter.camera_mount.has_pan_control()) {
             copter.flightmode->auto_yaw.set_fixed_yaw(
-                (float)packet.param3 / 100.0f,
+                (float)packet.param3 * 0.01f,
                 0.0f,
                 0,0);
         }
@@ -836,7 +878,7 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t* msg)
         if(!copter.camera_mount.has_pan_control()) {
             // if the mount doesn't do pan control then yaw the entire vehicle instead:
             copter.flightmode->auto_yaw.set_fixed_yaw(
-                mavlink_msg_mount_control_get_input_c(msg)/100.0f,
+                mavlink_msg_mount_control_get_input_c(msg) * 0.01f,
                 0.0f,
                 0,
                 0);
@@ -1295,7 +1337,7 @@ float GCS_MAVLINK_Copter::vfr_hud_alt() const
     if (copter.g2.dev_options.get() & DevOptionVFR_HUDRelativeAlt) {
         // compatibility option for older mavlink-aware devices that
         // assume Copter returns a relative altitude in VFR_HUD.alt
-        return copter.current_loc.alt / 100.0f;
+        return copter.current_loc.alt * 0.01f;
     }
     return GCS_MAVLINK::vfr_hud_alt();
 }

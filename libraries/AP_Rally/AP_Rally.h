@@ -18,8 +18,6 @@
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 
-#define AP_RALLY_WP_SIZE        15  // eeprom size of rally points
-
 struct PACKED RallyLocation {
     int32_t lat;        //Latitude * 10^7
     int32_t lng;        //Longitude * 10^7
@@ -44,8 +42,16 @@ public:
     // data handling
     bool get_rally_point_with_index(uint8_t i, RallyLocation &ret) const;
     bool set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc);
-    uint8_t get_rally_total() const { return _rally_point_total_count; }
-    uint8_t get_rally_max(void) const { return _storage.size() / AP_RALLY_WP_SIZE; }
+    uint8_t get_rally_total() const {
+        return (uint8_t)_rally_point_total_count;
+    }
+    uint8_t get_rally_max(void) const {
+        const uint16_t ret = _storage.size() / uint16_t(sizeof(RallyLocation));
+        if (ret > 255) {
+            return 255;
+        }
+        return (uint8_t)ret;
+    }
 
     float get_rally_limit_km() const { return _rally_limit_km; }
 

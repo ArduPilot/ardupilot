@@ -61,7 +61,7 @@ public:
     // some arming checks have side-effects, or require some form of state
     // change to have occurred, and thus should not be done as pre-arm
     // checks.  Those go here:
-    bool arm_checks(AP_Arming::Method method);
+    virtual bool arm_checks(AP_Arming::Method method);
 
     // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;

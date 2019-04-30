@@ -377,13 +377,10 @@ void Copter::ModeGuided::takeoff_run()
 
 void Copter::Mode::auto_takeoff_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        // initialise wpnav targets
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed) {
+        make_safe_spool_down();
         wp_nav->shift_wp_origin_to_current_pos();
-        zero_throttle_and_relax_ac();
-        // clear i term when we're taking off
-        set_throttle_takeoff();
         return;
     }
 
@@ -394,20 +391,15 @@ void Copter::Mode::auto_takeoff_run()
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters stay in landed state until rotor speed runup has finished
-    if (motors->rotor_runup_complete()) {
+    // aircraft stays in landed state until rotor speed runup has finished
+    if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         set_land_complete(false);
     } else {
-        // initialise wpnav targets
         wp_nav->shift_wp_origin_to_current_pos();
     }
-#else
-    set_land_complete(false);
-#endif
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
@@ -423,12 +415,6 @@ void Copter::Mode::auto_takeoff_run()
 // called from guided_run
 void Copter::ModeGuided::pos_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
-        zero_throttle_and_relax_ac();
-        return;
-    }
-
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
@@ -439,8 +425,14 @@ void Copter::ModeGuided::pos_control_run()
         }
     }
 
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_spool_down();
+        return;
+    }
+
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
@@ -465,14 +457,6 @@ void Copter::ModeGuided::pos_control_run()
 // called from guided_run
 void Copter::ModeGuided::vel_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
-        // initialise velocity controller
-        pos_control->init_vel_controller_xyz();
-        zero_throttle_and_relax_ac();
-        return;
-    }
-
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
@@ -483,8 +467,14 @@ void Copter::ModeGuided::vel_control_run()
         }
     }
 
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_spool_down();
+        return;
+    }
+
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
     uint32_t tnow = millis();
@@ -519,15 +509,6 @@ void Copter::ModeGuided::vel_control_run()
 // called from guided_run
 void Copter::ModeGuided::posvel_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
-        // set target position and velocity to current position and velocity
-        pos_control->set_pos_target(inertial_nav.get_position());
-        pos_control->set_desired_velocity(Vector3f(0,0,0));
-        zero_throttle_and_relax_ac();
-        return;
-    }
-
     // process pilot's yaw input
     float target_yaw_rate = 0;
 
@@ -539,8 +520,14 @@ void Copter::ModeGuided::posvel_control_run()
         }
     }
 
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_spool_down();
+        return;
+    }
+
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
     uint32_t tnow = millis();
@@ -587,16 +574,6 @@ void Copter::ModeGuided::posvel_control_run()
 // called from guided_run
 void Copter::ModeGuided::angle_control_run()
 {
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || (ap.land_complete && guided_angle_state.climb_rate_cms <= 0.0f)) {
-#if FRAME_CONFIG == HELI_FRAME
-        attitude_control->set_yaw_target_to_current_heading();
-#endif
-        zero_throttle_and_relax_ac();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        return;
-    }
-
     // constrain desired lean angles
     float roll_in = guided_angle_state.roll_cd;
     float pitch_in = guided_angle_state.pitch_cd;
@@ -627,8 +604,26 @@ void Copter::ModeGuided::angle_control_run()
         yaw_rate_in = 0.0f;
     }
 
+    // if not armed set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || (ap.land_complete && (guided_angle_state.climb_rate_cms <= 0.0f))) {
+        make_safe_spool_down();
+        return;
+    }
+
+    // TODO: use get_alt_hold_state
+    // landed with positive desired climb rate, takeoff
+    if (ap.land_complete && (guided_angle_state.climb_rate_cms > 0.0f)) {
+        zero_throttle_and_relax_ac();
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+            set_land_complete(false);
+            set_throttle_takeoff();
+        }
+        return;
+    }
+
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // call attitude controller
     if (guided_angle_state.use_yaw_rate) {
@@ -680,7 +675,7 @@ void Copter::ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const 
 void Copter::ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
 {
     if (use_yaw) {
-        auto_yaw.set_fixed_yaw(yaw_cd / 100.0f, 0.0f, 0, relative_angle);
+        auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
     } else if (use_yaw_rate) {
         auto_yaw.set_rate(yaw_rate_cds);
     }

@@ -4,11 +4,6 @@
 void GCS_Plane::update_vehicle_sensor_status_flags(void)
 {
     // first what sensors/controllers we have
-    if (plane.g.compass_enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
-
     const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed && airspeed->enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
@@ -50,43 +45,43 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
 
     bool rate_controlled = false;
     bool attitude_stabilized = false;
-    switch (plane.control_mode) {
-    case MANUAL:
+    switch (plane.control_mode->mode_number()) {
+    case Mode::Number::MANUAL:
         break;
 
-    case ACRO:
-    case QACRO:
+    case Mode::Number::ACRO:
+    case Mode::Number::QACRO:
         rate_controlled = true;
         break;
 
-    case STABILIZE:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case QSTABILIZE:
-    case QHOVER:
-    case QLAND:
-    case QLOITER:
-    case QAUTOTUNE:
-    case FLY_BY_WIRE_B:
-    case CRUISE:
+    case Mode::Number::STABILIZE:
+    case Mode::Number::FLY_BY_WIRE_A:
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::QSTABILIZE:
+    case Mode::Number::QHOVER:
+    case Mode::Number::QLAND:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QAUTOTUNE:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CRUISE:
         rate_controlled = true;
         attitude_stabilized = true;
         break;
 
-    case TRAINING:
+    case Mode::Number::TRAINING:
         if (!plane.training_manual_roll || !plane.training_manual_pitch) {
             rate_controlled = true;
             attitude_stabilized = true;
         }
         break;
 
-    case AUTO:
-    case RTL:
-    case LOITER:
-    case AVOID_ADSB:
-    case GUIDED:
-    case CIRCLE:
-    case QRTL:
+    case Mode::Number::AUTO:
+    case Mode::Number::RTL:
+    case Mode::Number::LOITER:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::CIRCLE:
+    case Mode::Number::QRTL:
         rate_controlled = true;
         attitude_stabilized = true;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION;
@@ -97,7 +92,7 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
 
-    case INITIALISING:
+    case Mode::Number::INITIALISING:
         break;
     }
 
@@ -110,12 +105,6 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION;
     }
 
-    AP_AHRS &ahrs = AP::ahrs();
-
-    const Compass &compass = AP::compass();
-    if (plane.g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
     if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.is_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }

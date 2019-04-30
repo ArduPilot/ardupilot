@@ -290,12 +290,22 @@ class generic_pin(object):
         v = 'FLOATING'
         if self.is_CS():
             v = "PULLUP"
+        # generate pullups for UARTs
         if (self.type.startswith('USART') or
             self.type.startswith('UART')) and (
             (self.label.endswith('_TX') or
              self.label.endswith('_RX') or
              self.label.endswith('_CTS') or
              self.label.endswith('_RTS'))):
+                v = "PULLUP"
+        # generate pullups for SDIO and SDMMC
+        if (self.type.startswith('SDIO') or
+            self.type.startswith('SDMMC')) and (
+            (self.label.endswith('_D0') or
+             self.label.endswith('_D1') or
+             self.label.endswith('_D2') or
+             self.label.endswith('_D3') or
+             self.label.endswith('_CMD'))):
                 v = "PULLUP"
         for e in self.extra:
             if e in values:

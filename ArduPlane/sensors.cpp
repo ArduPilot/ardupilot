@@ -39,15 +39,6 @@ void Plane::read_rangefinder(void)
 }
 
 /*
-  calibrate compass
-*/
-void Plane::compass_cal_update() {
-    if (!hal.util->get_soft_armed()) {
-        compass.compass_cal_update();
-    }
-}
-
-/*
     Accel calibration
 */
 void Plane::accel_cal_update() {

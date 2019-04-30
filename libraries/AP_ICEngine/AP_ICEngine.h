@@ -89,6 +89,9 @@ private:
     // throttle percentage for engine start
     AP_Int8 start_percent;
 
+    // throttle percentage for engine idle
+    AP_Int8 idle_percent;
+
     // height when we enter ICE_START_HEIGHT_DELAY
     float initial_height;
 

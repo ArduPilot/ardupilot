@@ -409,28 +409,31 @@ void AP_TECS::_update_speed_demand(void)
     // calculate velocity rate limits based on physical performance limits
     // provision to use a different rate limit if bad descent or underspeed condition exists
     // Use 50% of maximum energy rate to allow margin for total energy contgroller
-    float velRateMax = 0.5f * _STEdot_max / _TAS_state;
-    float velRateMin = 0.5f * _STEdot_min / _TAS_state;
+    const float velRateMax = 0.5f * _STEdot_max / _TAS_state;
+    const float velRateMin = 0.5f * _STEdot_min / _TAS_state;
+    const float TAS_dem_previous = _TAS_dem_adj;
+
+    // assume fixed 10Hz call rate
+    const float dt = 0.1;
 
     // Apply rate limit
-    if ((_TAS_dem - _TAS_dem_adj) > (velRateMax * 0.1f))
+    if ((_TAS_dem - TAS_dem_previous) > (velRateMax * dt))
     {
-        _TAS_dem_adj = _TAS_dem_adj + velRateMax * 0.1f;
+        _TAS_dem_adj = TAS_dem_previous + velRateMax * dt;
         _TAS_rate_dem = velRateMax;
     }
-    else if ((_TAS_dem - _TAS_dem_adj) < (velRateMin * 0.1f))
+    else if ((_TAS_dem - TAS_dem_previous) < (velRateMin * dt))
     {
-        _TAS_dem_adj = _TAS_dem_adj + velRateMin * 0.1f;
+        _TAS_dem_adj = TAS_dem_previous + velRateMin * dt;
         _TAS_rate_dem = velRateMin;
     }
     else
     {
+        _TAS_rate_dem = (_TAS_dem - TAS_dem_previous) / dt;
         _TAS_dem_adj = _TAS_dem;
-        _TAS_rate_dem = (_TAS_dem - _TAS_dem_last) / 0.1f;
     }
     // Constrain speed demand again to protect against bad values on initialisation.
     _TAS_dem_adj = constrain_float(_TAS_dem_adj, _TASmin, _TASmax);
-    _TAS_dem_last = _TAS_dem;
 }
 
 void AP_TECS::_update_height_demand(void)
@@ -858,6 +861,15 @@ void AP_TECS::_update_pitch(void)
     // causing massive integrator changes. See Issue#4066
     integSEB_delta = constrain_float(integSEB_delta, -integSEB_range*0.1f, integSEB_range*0.1f);
 
+    // prevent the constraint on pitch integrator _integSEB_state from
+    // itself injecting step changes in the variable. We only want the
+    // constraint to prevent large changes due to integSEB_delta, not
+    // to cause step changes due to a change in the constrain
+    // limits. Large steps in _integSEB_state can cause long term
+    // pitch changes
+    integSEB_min = MIN(integSEB_min, _integSEB_state);
+    integSEB_max = MAX(integSEB_max, _integSEB_state);
+
     // integrate
     _integSEB_state = constrain_float(_integSEB_state + integSEB_delta, integSEB_min, integSEB_max);
 
@@ -899,7 +911,6 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _hgt_dem_adj       = _hgt_dem_adj_last;
         _hgt_dem_prev      = _hgt_dem_adj_last;
         _hgt_dem_in_old    = _hgt_dem_adj_last;
-        _TAS_dem_last      = _TAS_dem;
         _TAS_dem_adj       = _TAS_dem;
         _flags.underspeed        = false;
         _flags.badDescent        = false;
@@ -913,7 +924,6 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _hgt_dem_adj_last  = hgt_afe;
         _hgt_dem_adj       = _hgt_dem_adj_last;
         _hgt_dem_prev      = _hgt_dem_adj_last;
-        _TAS_dem_last      = _TAS_dem;
         _TAS_dem_adj       = _TAS_dem;
         _flags.underspeed        = false;
         _flags.badDescent  = false;

@@ -400,7 +400,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         mission_filepath = os.path.join("ArduRover-Missions", "rtl.txt")
         self.load_mission(mission_filepath)
         self.change_mode("AUTO")
-        self.mavproxy.expect('Executing RTL')
+        self.mavproxy.expect('Mission: 3 RTL')
 
         self.drain_mav();
 
@@ -940,7 +940,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             except AutoTestTimeoutException as e:
                 success = True
                 pass
-            self.mav.srcSystem = old_srcSystem
+            self.mav.mav.srcSystem = old_srcSystem
             if not success:
                 raise NotAchievedException(
                     "Managed to arm with SYSID_ENFORCE set")
@@ -955,7 +955,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             except Exception as e:
                 comp_arm_exception = e
                 pass
-            self.mav.srcSystem = old_srcSystem
+            self.mav.mav.srcSystem = old_srcSystem
             if comp_arm_exception is not None:
                 raise comp_arm_exception
 
@@ -965,6 +965,44 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         if ex is not None:
             raise ex
+
+    def drain_mav_seconds(self, seconds):
+        tstart = self.get_sim_time_cached()
+        while self.get_sim_time_cached() - tstart < seconds:
+            self.drain_mav();
+            self.delay_sim_time(0.5)
+
+    def test_button(self):
+        self.set_parameter("SIM_PIN_MASK", 0)
+        self.set_parameter("BTN_ENABLE", 1)
+        btn = 2
+        pin = 3
+        self.set_parameter("BTN_PIN%u" % btn, pin)
+        self.drain_mav()
+        m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("m: %s" % str(m))
+        if m is None:
+            raise NotAchievedException("Did not get BUTTON_CHANGE event")
+        mask = 1<<btn
+        if m.state & mask:
+            raise NotAchievedException("Bit incorrectly set in mask (got=%u dontwant=%u)" % (m.state, mask))
+        # SITL instantly reverts the pin to its old value
+        m2 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("m2: %s" % str(m2))
+        if m2 is None:
+            raise NotAchievedException("Did not get repeat message")
+        # wait for messages to stop coming:
+        self.drain_mav_seconds(15)
+
+        self.set_parameter("SIM_PIN_MASK", 0)
+        m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("m3: %s" % str(m3))
+        if m3 is None:
+            raise NotAchievedException("Did not get new message")
+        if m.last_change_ms == m3.last_change_ms:
+            raise NotAchievedException("last_change_ms same as first message")
+        if m3.state != 0:
+            raise NotAchievedException("Didn't get expected mask back in message (mask=0 state=%u" % (m3.state))
 
     def test_rally_points(self):
         self.reboot_sitl() # to ensure starting point is as expected
@@ -986,6 +1024,53 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                0)
         self.wait_location(loc, accuracy=accuracy)
         self.disarm_vehicle()
+
+    def test_gcs_fence(self):
+        self.progress("Testing FENCE_POINT protocol")
+        self.set_parameter("FENCE_TOTAL", 1)
+        target_system = 1
+        target_component = 1
+
+        lat = 1.2345
+        lng = 5.4321
+        self.mav.mav.fence_point_send(target_system,
+                                      target_component,
+                                      0,
+                                      1,
+                                      lat,
+                                      lng)
+        self.progress("Requesting fence return point")
+        self.mav.mav.fence_fetch_point_send(target_system,
+                                            target_component,
+                                            0)
+        m = self.mav.recv_match(type="FENCE_POINT", blocking=True, timeout=1)
+        print("m: %s" % str(m))
+        if m is None:
+            raise NotAchievedException("Did not get fence return point back")
+        if abs(m.lat - lat) > 0.000001:
+            raise NotAchievedException("Did not get correct lat in fencepoint: got=%f want=%f" % (m.lat, lat))
+        if abs(m.lng - lng) > 0.000001:
+            raise NotAchievedException("Did not get correct lng in fencepoint: got=%f want=%f" % (m.lng, lng))
+
+        self.progress("Now testing a different value")
+        lat = 2.345
+        lng = 4.321
+        self.mav.mav.fence_point_send(target_system,
+                                      target_component,
+                                      0,
+                                      1,
+                                      lat,
+                                      lng)
+        self.progress("Requesting fence return point")
+        self.mav.mav.fence_fetch_point_send(target_system,
+                                            target_component,
+                                            0)
+        m = self.mav.recv_match(type="FENCE_POINT", blocking=True, timeout=1)
+        print("m: %s" % str(m))
+        if abs(m.lat - lat) > 0.000001:
+            raise NotAchievedException("Did not get correct lat in fencepoint: got=%f want=%f" % (m.lat, lat))
+        if abs(m.lng - lng) > 0.000001:
+            raise NotAchievedException("Did not get correct lng in fencepoint: got=%f want=%f" % (m.lng, lng))
 
     def test_offboard(self, timeout=90):
         self.load_mission("rover-guided-mission.txt")
@@ -1134,6 +1219,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Test enforcement of SYSID_MYGCS",
              self.test_sysid_enforce),
 
+            ("Button",
+             "Test Buttons",
+             self.test_button),
+
             ("Rally",
              "Test Rally Points",
              self.test_rally_points),
@@ -1141,6 +1230,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("Offboard",
              "Test Offboard Control",
              self.test_offboard),
+
+            ("GCSFence",
+             "Upload and download of fence",
+             self.test_gcs_fence),
 
             ("DataFlashOverMAVLink",
              "Test DataFlash over MAVLink",

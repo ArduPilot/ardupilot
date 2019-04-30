@@ -56,8 +56,11 @@ class AutoTestPlane(AutoTest):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
 
-    def takeoff(self):
-        """Takeoff get to 30m altitude."""
+    def takeoff(self, alt=150, alt_max=None, relative=True):
+        """Takeoff to altitude."""
+
+        if alt_max is None:
+            alt_max = alt + 30
 
         self.mavproxy.send('switch 4\n')
         self.wait_mode('FBWA')
@@ -85,9 +88,7 @@ class AutoTestPlane(AutoTest):
         self.set_rc(3, 2000)
 
         # gain a bit of altitude
-        self.wait_altitude(self.homeloc.alt+150,
-                           self.homeloc.alt+180,
-                           timeout=30)
+        self.wait_altitude(alt, alt_max, timeout=30, relative=relative)
 
         # level off
         self.set_rc(2, 1500)
@@ -774,6 +775,26 @@ class AutoTestPlane(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def test_parachute_sinkrate(self):
+        self.set_rc(9, 1000)
+        self.set_parameter("CHUTE_ENABLED", 1)
+        self.set_parameter("CHUTE_TYPE", 10)
+        self.set_parameter("SERVO9_FUNCTION", 27)
+        self.set_parameter("SIM_PARA_ENABLE", 1)
+        self.set_parameter("SIM_PARA_PIN", 9)
+
+        self.set_parameter("CHUTE_CRT_SINK", 9)
+
+        self.progress("Takeoff")
+        self.takeoff(alt=300)
+
+        self.progress("Diving")
+        self.set_rc(2, 2000)
+        self.mavproxy.expect("BANG")
+
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def run_subtest(self, desc, func):
         self.start_subtest(desc)
         func()
@@ -833,6 +854,59 @@ class AutoTestPlane(AutoTest):
                                 timeout=5)
         self.mav.motors_disarmed_wait()
 
+    def test_rangefinder(self):
+        ex = None
+        self.context_push()
+        self.progress("Making sure we don't ordinarily get RANGEFINDER")
+        try:
+            m = self.mav.recv_match(type='RANGEFINDER',
+                                    blocking=True,
+                                    timeout=5)
+        except Exception as e:
+            print("Caught exception %s" % str(e))
+
+        if m is not None:
+            raise NotAchievedException("Received unexpected RANGEFINDER msg")
+
+        try:
+            self.set_parameter("RNGFND1_TYPE", 1)
+            self.set_parameter("RNGFND1_MIN_CM", 0)
+            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_PIN", 0)
+            self.set_parameter("RNGFND1_SCALING", 12.12)
+
+            self.reboot_sitl()
+
+            '''ensure rangefinder gives height-above-ground'''
+            self.load_mission("plane-gripper-mission.txt") # borrow this
+            self.mavproxy.send("wp set 1\n")
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            home = self.poll_home_position()
+            self.wait_altitude(10, 1000, timeout=30, relative=True)
+            rf = self.mav.recv_match(type="RANGEFINDER", timeout=1, blocking=True)
+            if rf is None:
+                raise NotAchievedException("Did not receive rangefinder message")
+            gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
+            if gpi is None:
+                raise NotAchievedException("Did not receive GLOBAL_POSITION_INT message")
+            if abs(rf.distance - gpi.relative_alt/1000.0) > 3:
+                raise NotAchievedException("rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" % (rf.distance, gpi.relative_alt/1000.0))
+            self.mavproxy.expect("Auto disarmed")
+
+            self.progress("Ensure RFND messages in log")
+            if not self.current_onboard_log_contains_message("RFND"):
+                raise NotAchievedException("No RFND messages in log")
+
+        except Exception as e:
+            self.progress("Exception caught: %s" % str(e))
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def rc_defaults(self):
         ret = super(AutoTestPlane, self).rc_defaults()
         ret[3] = 1000
@@ -873,7 +947,13 @@ class AutoTestPlane(AutoTest):
 
             ("Parachute", "Test Parachute", self.test_parachute),
 
+            ("ParachuteSinkRate", "Test Parachute (SinkRate triggering)", self.test_parachute_sinkrate),
+
             ("AIRSPEED_AUTOCAL", "Test AIRSPEED_AUTOCAL", self.airspeed_autocal),
+
+            ("RangeFinder",
+             "Test RangeFinder Basic Functionality",
+             self.test_rangefinder),
 
             ("LogDownLoad",
              "Log download",

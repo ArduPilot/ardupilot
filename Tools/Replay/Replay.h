@@ -60,7 +60,7 @@ public:
     AP_GPS gps;
     Compass compass;
     AP_SerialManager serial_manager;
-    RangeFinder rng{serial_manager, ROTATION_PITCH_270};
+    RangeFinder rng{serial_manager};
     NavEKF2 EKF2{&ahrs, rng};
     NavEKF3 EKF3{&ahrs, rng};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3};

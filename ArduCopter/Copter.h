@@ -77,6 +77,7 @@
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
 #include <AC_AutoTune/AC_AutoTune.h>
+#include <AP_Common/AP_FWVersion.h>
 
 // Configuration
 #include "defines.h"
@@ -236,7 +237,7 @@ private:
     Compass compass;
     AP_InertialSensor ins;
 
-    RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder{serial_manager};
     struct {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
@@ -245,6 +246,12 @@ private:
         LowPassFilterFloat alt_cm_filt; // altitude filter
         int8_t glitch_count;
     } rangefinder_state = { false, false, 0, 0 };
+
+    struct {
+        float target_alt_cm;        // desired altitude in cm above the ground
+        uint32_t last_update_ms;    // system time of last update to target_alt_cm
+        bool valid_for_logging;     // true if target_alt_cm is valid for logging
+    } surface_tracking;
 
 #if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
@@ -401,8 +408,6 @@ private:
 #endif
 
     // Altitude
-    float target_rangefinder_alt;   // desired altitude in cm above the ground
-    bool target_rangefinder_alt_used; // true if mode is using target_rangefinder_alt
     int32_t baro_alt;            // barometer altitude in cm above home
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
@@ -537,8 +542,7 @@ private:
     // Tradheli flags
     typedef struct {
         uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
-        uint8_t init_targets_on_arming  : 1;    // 1   // true if we have been disarmed, and need to reset rate controller targets when we arm
-        uint8_t inverted_flight         : 1;    // 2   // true for inverted flight mode
+        uint8_t inverted_flight         : 1;    // 1   // true for inverted flight mode
     } heli_flags_t;
     heli_flags_t heli_flags;
 
@@ -617,7 +621,9 @@ private:
     void set_throttle_takeoff();
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_non_takeoff_throttle();
-    float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
+    float get_surface_tracking_climb_rate(int16_t target_rate);
+    bool get_surface_tracking_target_alt_cm(float &target_alt_cm) const;
+    void set_surface_tracking_target_alt_cm(float target_alt_cm);
     float get_avoidance_adjusted_climbrate(float target_rate);
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
@@ -660,6 +666,7 @@ private:
     void esc_calibration_passthrough();
     void esc_calibration_auto();
     void esc_calibration_notify();
+    void esc_calibration_setup();
 
     // events.cpp
     void failsafe_radio_on_event();
@@ -721,7 +728,7 @@ private:
     void Log_Write_Data(uint8_t id, int16_t value);
     void Log_Write_Data(uint8_t id, uint16_t value);
     void Log_Write_Data(uint8_t id, float value);
-    void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
+    void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
     void Log_Sensor_Health();
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);
@@ -786,7 +793,6 @@ private:
     void read_rangefinder(void);
     bool rangefinder_alt_ok();
     void rpm_update();
-    void init_compass();
     void init_compass_location();
     void init_optflow();
     void update_optical_flow(void);

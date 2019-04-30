@@ -5,6 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Common/AP_FWVersion.h>
 
 void setup();
 void loop();
@@ -44,7 +45,7 @@ protected:
 
 private:
 
-    void handleMessage(mavlink_message_t * msg) { }
+    void handleMessage(mavlink_message_t * msg) override { }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return false ; }
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override { }
     bool try_send_message(enum ap_message id) override { return false; }
@@ -53,7 +54,7 @@ private:
 
 
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-static GCS_MAVLINK_routing gcs_link[MAVLINK_COMM_NUM_BUFFERS];
+static GCS_MAVLINK_routing gcs_link[num_gcs];
 
 extern mavlink_system_t mavlink_system;
 

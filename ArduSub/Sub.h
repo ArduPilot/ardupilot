@@ -76,6 +76,7 @@
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_TemperatureSensor/TSYS01.h>
+#include <AP_Common/AP_FWVersion.h>
 
 // Local modules
 #include "defines.h"
@@ -177,7 +178,7 @@ private:
     Compass compass;
     AP_InertialSensor ins;
 
-    RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder{serial_manager};
     struct {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
@@ -454,7 +455,6 @@ private:
     static const struct LogStructure log_structure[];
 
     void init_compass_location();
-    void compass_cal_update(void);
     void fast_loop();
     void fifty_hz_loop();
     void update_batt_compass(void);
@@ -607,7 +607,6 @@ private:
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok(void);
-    void init_compass();
 #if OPTFLOW == ENABLED
     void init_optflow();
 #endif

@@ -10,21 +10,42 @@
 
 void Copter::ModeAcro::run()
 {
+    // convert the input to the desired body frame rate
     float target_roll, target_pitch, target_yaw;
+    get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
 
-    // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || ap.throttle_zero || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        return;
+    if (!motors->armed()) {
+        // Motors should be Stopped
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+    } else if (ap.throttle_zero) {
+        // Attempting to Land
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    } else {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
 
-    // clear landing flag
-    set_land_complete(false);
-
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // convert the input to the desired body frame rate
-    get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
+    switch (motors->get_spool_state()) {
+    case AP_Motors::SpoolState::SHUT_DOWN:
+        // Motors Stopped
+        attitude_control->set_attitude_target_to_current_attitude();
+        attitude_control->reset_rate_controller_I_terms();
+        break;
+    case AP_Motors::SpoolState::GROUND_IDLE:
+        // Landed
+        attitude_control->set_attitude_target_to_current_attitude();
+        attitude_control->reset_rate_controller_I_terms();
+        break;
+    case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
+        // clear landing flag above zero throttle
+        if (!motors->limit.throttle_lower) {
+            set_land_complete(false);
+        }
+        break;
+    case AP_Motors::SpoolState::SPOOLING_UP:
+    case AP_Motors::SpoolState::SPOOLING_DOWN:
+        // do nothing
+        break;
+    }
 
     // run attitude controller
     attitude_control->input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);

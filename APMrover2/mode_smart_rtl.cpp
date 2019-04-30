@@ -60,7 +60,7 @@ void ModeSmartRTL::update()
             }
             // check if we've reached the next point
             _distance_to_destination = rover.current_loc.get_distance(_destination);
-            if (_distance_to_destination <= rover.g.waypoint_radius || location_passed_point(rover.current_loc, _origin, _destination)) {
+            if (_distance_to_destination <= rover.g.waypoint_radius || rover.current_loc.past_interval_finish_line(_origin, _destination)) {
                 _load_point = true;
             }
             // continue driving towards destination

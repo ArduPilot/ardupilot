@@ -42,6 +42,9 @@ void Tracker::init_tracker()
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.pre_arm_gps_check = true;
 
+    // initialise battery
+    battery.init();
+
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.init();
@@ -60,7 +63,8 @@ void Tracker::init_tracker()
 #endif // ENABLE_SCRIPTING
 
     // initialise compass
-    init_compass();
+    AP::compass().set_log_bit(MASK_LOG_COMPASS);
+    AP::compass().init();
 
     // GPS Initialization
     gps.set_log_gps_bit(MASK_LOG_GPS);

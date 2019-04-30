@@ -15,6 +15,7 @@
 
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
+#include <AP_Logger/AP_Logger.h>
 
 #define GPS_BACKEND_DEBUGGING 0
 

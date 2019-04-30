@@ -28,6 +28,8 @@
 #include "DataFlashFileReader.h"
 #include "Replay.h"
 
+#include <AP_Camera/AP_Camera.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif

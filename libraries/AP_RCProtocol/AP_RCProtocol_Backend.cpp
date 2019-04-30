@@ -56,7 +56,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     _num_channels = num_values;
     rc_frame_count++;
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
-    if (RC_Channels::ignore_rc_failsafe()) {
+    if (rc().ignore_rc_failsafe()) {
         in_failsafe = false;
     }
 #endif

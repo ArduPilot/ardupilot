@@ -85,6 +85,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "sitl-scripting" ]; then
+        echo "Building scripting"
+        $waf configure --enable-scripting
+        $waf clean
+        $waf all
+        continue
+    fi
+
     if [ "$t" == "revo-bootloader" ]; then
         echo "Building revo bootloader"
         $waf configure --board revo-mini --bootloader
@@ -102,13 +110,21 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "stm32h7" ]; then
-        echo "Building Pixhawk4Pro"
-        $waf configure --board Pixhawk4Pro
+        echo "Building Pixhawk6"
+        $waf configure --board Pixhawk6
         $waf clean
         $waf copter
         continue
     fi
 
+    if [ "$t" == "fmuv2-plane" ]; then
+        echo "Building fmuv2 plane"
+        $waf configure --board fmuv2
+        $waf clean
+        $waf plane
+        continue
+    fi
+    
     if [ "$t" == "iofirmware" ]; then
         echo "Building iofirmware"
         $waf configure --board iomcu

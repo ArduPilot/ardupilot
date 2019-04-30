@@ -5,6 +5,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
