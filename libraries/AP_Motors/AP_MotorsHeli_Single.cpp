@@ -365,8 +365,8 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < (_land_collective_min*0.001f)) {
-        collective_out = (_land_collective_min*0.001f);
+    if (_heliflags.landing_collective && collective_out < _collective_mid_pct) {
+        collective_out = _collective_mid_pct;
         limit.throttle_lower = true;
     }
 
