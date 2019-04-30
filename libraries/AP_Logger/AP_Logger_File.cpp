@@ -217,7 +217,7 @@ int64_t AP_Logger_File::disk_space()
         return -1;
     }
     return (((int64_t)_stats.f_blocks) * _stats.f_bsize);
-#elif HAL_OS_FATFS_IO 
+#elif HAL_OS_FATFS_IO
     return fs_gettotal();
 #else
     // return fake disk space size

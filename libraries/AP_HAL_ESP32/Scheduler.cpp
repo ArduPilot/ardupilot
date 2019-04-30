@@ -136,8 +136,6 @@ void Scheduler::_timer_thread(void *arg)
     while (true) {
         sched->delay_microseconds(1000);
         sched->_run_timers();
-        // process any pending RC output requests
-        //hal.rcout->timer_tick();
         //analog in
         //((AnalogIn *)hal.analogin)->_timer_tick();
     }
@@ -177,7 +175,6 @@ void Scheduler::_rcin_thread(void *arg)
     while (!_initialized) {
         sched->delay_microseconds(20000);
     }
-    hal.rcin->init();
     while (true) {
         sched->delay_microseconds(3000);
         ((RCInput *)hal.rcin)->_timer_tick();

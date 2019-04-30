@@ -21,11 +21,14 @@
 
 using namespace ESP32;
 
-int outputs_pins[] = {9, 10, 27, 13, 22, 21};
+gpio_num_t outputs_pins[] = HAL_ESP32_RCOUT;
 
 void RCOutput::init()
 {
     _max_channels = MIN((size_t)LEDC_CHANNEL_MAX, ARRAY_SIZE(outputs_pins));
+    for (int i=0; i < LEDC_CHANNEL_MAX; i++) {
+        _channel_timers[i] = LEDC_TIMER_MAX;
+    }
     int timer = get_timer(50);
     for (int i=0; i<_max_channels; i++) {
         ledc_channel_config_t config = {
@@ -44,9 +47,10 @@ void RCOutput::init()
 
 uint16_t RCOutput::get_timer(uint16_t freq)
 {
-    for (uint16_t timer = 0; timer < LEDC_TIMER_MAX; ++timer) {
-        if (ledc_get_freq(LEDC_HIGH_SPEED_MODE, (ledc_timer_t)timer) == freq) {
-            return timer;
+    for (uint16_t ch = 0; ch < LEDC_CHANNEL_MAX; ch++) {
+        if (_channel_timers[ch] != LEDC_TIMER_MAX
+            && ledc_get_freq(LEDC_HIGH_SPEED_MODE, _channel_timers[ch]) == freq) {
+            return _channel_timers[ch];
         }
     }
     uint16_t timer = find_free_timer();
@@ -160,7 +164,6 @@ void RCOutput::write_int(uint8_t ch, uint16_t period_us)
 {
     uint32_t freq = ledc_get_freq(LEDC_HIGH_SPEED_MODE, _channel_timers[ch]);
     uint32_t duty = (uint64_t(period_us) * freq * (1<< duty_resolution))/1000000;
-    ledc_set_duty_and_update(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)ch, duty, 0);
+    ledc_set_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)ch, duty);
+    ledc_update_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)ch);
 }
-
-

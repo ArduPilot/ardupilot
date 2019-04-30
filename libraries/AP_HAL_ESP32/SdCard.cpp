@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#ifdef HAL_ESP32_SDCARD
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
@@ -97,3 +97,15 @@ void unmount_sdcard()
         esp_vfs_fat_sdmmc_unmount();
     }
 }
+#else
+
+void mount_sdcard()
+{
+}
+
+void unmount_sdcard()
+{
+}
+
+#endif
+

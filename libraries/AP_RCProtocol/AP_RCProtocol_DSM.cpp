@@ -402,7 +402,7 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
     case DSM_DECODE_STATE_DESYNC:
 
         /* we are de-synced and only interested in the frame marker */
-        if ((frame_time_ms - last_rx_time_ms) >= 5) {
+        if ((frame_time_ms - last_rx_time_ms) >= 2) {
             dsm_decode_state = DSM_DECODE_STATE_SYNC;
             byte_input.ofs = 0;
             byte_input.buf[byte_input.ofs++] = b;

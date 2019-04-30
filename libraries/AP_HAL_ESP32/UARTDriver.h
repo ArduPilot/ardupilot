@@ -22,6 +22,11 @@
 
 #include "driver/uart.h"
 
+struct UARTDesc {
+    uart_port_t port;
+    gpio_num_t rx;
+    gpio_num_t tx;
+};
 
 class ESP32::UARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -53,9 +58,5 @@ private:
     void read_data();
     void write_data();
 
-    //hw configuration
-    uart_port_t uart_num;
-    uint8_t rx_pin;
-    uint8_t tx_pin;
-
+    uint8_t uart_num;
 };

@@ -81,6 +81,7 @@ class Board:
             '-Wformat',
             '-Wpointer-arith',
             '-Wcast-align',
+            '-Wundef',
             '-Wno-missing-field-initializers',
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
@@ -150,6 +151,7 @@ class Board:
             '-Wformat',
             '-Wpointer-arith',
             '-Wcast-align',
+            '-Wundef',
             '-Wno-unused-parameter',
             '-Wno-missing-field-initializers',
             '-Wno-reorder',
@@ -159,6 +161,7 @@ class Board:
             '-Werror=format-security',
             '-Werror=enum-compare',
             '-Werror=array-bounds',
+            '-Werror=uninitialized',
             '-Werror=init-self',
             '-Werror=narrowing',
             '-Werror=return-type',
@@ -405,11 +408,13 @@ class esp32(Board):
                          '-fno-exceptions',
                          '-fno-rtti',
                          '-nostdlib',
-                         '-fstrict-volatile-bitfields']
+                         '-fstrict-volatile-bitfields',
+                         '-DCYGWIN_BUILD']
+        env.CXXFLAGS.remove('-Wundef')
+        env.CXXFLAGS.remove('-Werror=shadow')
         env.INCLUDES += [
-                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath()
+                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
             ]
-
         env.AP_PROGRAM_AS_STLIB = True
         if cfg.options.enable_profile:
             env.CXXFLAGS += ['-pg',

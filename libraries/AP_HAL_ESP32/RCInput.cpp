@@ -25,8 +25,10 @@ void RCInput::init()
     if (_init) {
         return;
     }
+#ifdef HAL_ESP32_RCIN
     sig_reader.init();
     rcin_prot.init();
+#endif
     _init = true;
 }
 
@@ -84,6 +86,7 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
+#ifdef HAL_ESP32_RCIN
     uint32_t width_s0, width_s1;
     while (sig_reader.read(width_s0, width_s1)) {
         rcin_prot.process_pulse(width_s0, width_s1);
@@ -106,4 +109,5 @@ void RCInput::_timer_tick(void)
         last_protocol = rc_protocol;
         gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
     }
+#endif
 }

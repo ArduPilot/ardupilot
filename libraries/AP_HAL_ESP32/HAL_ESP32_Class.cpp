@@ -27,11 +27,20 @@
 #include "Storage.h"
 #include "Util.h"
 
-static ESP32::UARTDriver cons(0);
+#ifdef HAL_ESP32_NO_MAVLINK_0
 static Empty::UARTDriver uartADriver;
+static ESP32::UARTDriver cons(0);
+#else
+static ESP32::UARTDriver uartADriver(0);
+#define cons uartADriver
+#endif
 static ESP32::UARTDriver uartBDriver(1);
+#ifdef HAL_ESP32_WIFI
 static ESP32::WiFiDriver uartCDriver;
-static Empty::UARTDriver uartDDriver;
+#else
+static Empty::UARTDriver uartCDriver;
+#endif
+static ESP32::UARTDriver uartDDriver(2);
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;
@@ -41,10 +50,11 @@ static Empty::AnalogIn analogIn;
 static ESP32::Storage storageDriver;
 static Empty::GPIO gpioDriver;
 static ESP32::RCInput rcinDriver;
-static Empty::RCOutput rcoutDriver;
+static ESP32::RCOutput rcoutDriver;
 static ESP32::Scheduler schedulerInstance;
 static ESP32::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
+static Empty::Flash flashDriver;
 
 extern const AP_HAL::HAL& hal;
 
@@ -68,6 +78,7 @@ HAL_ESP32::HAL_ESP32() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlowDriver,
+        &flashDriver,
         nullptr
     )
 {}

@@ -27,92 +27,49 @@ using namespace ESP32;
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
-
-ESP32::SPIDesc SPIDeviceManager::device_table[] = {
-    {
-        .name = "MPU9250",
-        .device = 1,
-        .bus = 2,
-        .cs_gpio = 5,
-        .mode = 0,
-        .lowspeed = 2 * MHZ,
-        .highspeed = 8 * MHZ,
-
-    },
-    {
-        .name = "BMP280",
-        .device = 2,
-        .bus = 2,
-        .cs_gpio = 26,
-        .mode = 3,
-        .lowspeed =  1 * MHZ,
-        .highspeed = 1 * MHZ,
-    }
-};
-
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
-
-ESP32::SPIDesc SPIDeviceManager::device_table[] = {
-    {
-        .name = "MPU6000",
-        .device = 1,
-        .bus = 2,
-        .cs_gpio = 5,
-        .mode = 0,
-        .lowspeed = 1 * MHZ,
-        .highspeed = 6 * MHZ,
-    }
-};
-
-#endif
-
-//two available spi buses : 1 and 2, device 0 is connected to internal flash
-spi_bus_config_t bus_config[3] = {
-    {},
-    {},
-    {
-        .mosi_io_num = 23,
-        .miso_io_num = 19,
-        .sclk_io_num = 18,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1
-    },
-};
+SPIDeviceDesc device_desc[] = {HAL_ESP32_SPI_DEVICES};
+SPIBusDesc bus_desc[] = {HAL_ESP32_SPI_BUSES};
 
 SPIBus::SPIBus(uint8_t _bus):
     DeviceBus(Scheduler::SPI_PRIORITY), bus(_bus)
 {
-    spi_bus_initialize((spi_host_device_t)_bus, &bus_config[_bus], _bus);
+    spi_bus_config_t config = {
+        .mosi_io_num = bus_desc[_bus].mosi,
+        .miso_io_num = bus_desc[_bus].miso,
+        .sclk_io_num = bus_desc[_bus].sclk,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1
+    };
+    spi_bus_initialize(bus_desc[_bus].host, &config, bus_desc[_bus].dma_ch);
 }
 
-SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
+SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
 {
     set_device_bus(bus.bus);
     set_device_address(_device_desc.device);
     set_speed(AP_HAL::Device::SPEED_LOW);
-    gpio_pad_select_gpio((gpio_num_t)device_desc.cs_gpio);
-    gpio_set_direction((gpio_num_t)device_desc.cs_gpio, GPIO_MODE_OUTPUT);
-    gpio_set_level((gpio_num_t)device_desc.cs_gpio, 1);
+    gpio_pad_select_gpio(device_desc.cs);
+    gpio_set_direction(device_desc.cs, GPIO_MODE_OUTPUT);
+    gpio_set_level(device_desc.cs, 1);
 
     spi_device_interface_config_t cfg_low;
     memset(&cfg_low, 0, sizeof(cfg_low));
     cfg_low.mode = _device_desc.mode;
-    cfg_low.clock_speed_hz = _device_desc.lowspeed;
+    cfg_low.clock_speed_hz = _device_desc.lspeed;
     cfg_low.spics_io_num = -1;
     cfg_low.queue_size = 5;
-    spi_bus_add_device((spi_host_device_t)bus.bus, &cfg_low, &low_speed_dev_handle);
+    spi_bus_add_device(bus_desc[_bus.bus].host, &cfg_low, &low_speed_dev_handle);
 
-    if (_device_desc.highspeed != _device_desc.lowspeed) {
+    if (_device_desc.hspeed != _device_desc.lspeed) {
         spi_device_interface_config_t cfg_high;
         memset(&cfg_high, 0, sizeof(cfg_high));
         cfg_high.mode = _device_desc.mode;
-        cfg_high.clock_speed_hz = _device_desc.highspeed;
+        cfg_high.clock_speed_hz = _device_desc.hspeed;
         cfg_high.spics_io_num = -1;
         cfg_high.queue_size = 5;
-        spi_bus_add_device((spi_host_device_t)bus.bus, &cfg_high, &high_speed_dev_handle);
+        spi_bus_add_device(bus_desc[_bus.bus].host, &cfg_high, &high_speed_dev_handle);
     }
 
 
@@ -180,9 +137,9 @@ void SPIDevice::acquire_bus(bool accuire)
 {
     if (accuire) {
         spi_device_acquire_bus(current_handle(), portMAX_DELAY);
-        gpio_set_level((gpio_num_t)device_desc.cs_gpio, 0);
+        gpio_set_level(device_desc.cs, 0);
     } else {
-        gpio_set_level((gpio_num_t)device_desc.cs_gpio, 1);
+        gpio_set_level(device_desc.cs, 1);
         spi_device_release_bus(current_handle());
     }
 }
@@ -206,15 +163,15 @@ AP_HAL::OwnPtr<AP_HAL::SPIDevice>
 SPIDeviceManager::get_device(const char *name)
 {
     uint8_t i;
-    for (i = 0; i<ARRAY_SIZE(device_table); i++) {
-        if (strcmp(device_table[i].name, name) == 0) {
+    for (i = 0; i<ARRAY_SIZE(device_desc); i++) {
+        if (strcmp(device_desc[i].name, name) == 0) {
             break;
         }
     }
-    if (i == ARRAY_SIZE(device_table)) {
+    if (i == ARRAY_SIZE(device_desc)) {
         return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
     }
-    SPIDesc &desc = device_table[i];
+    SPIDeviceDesc &desc = device_desc[i];
 
     // find the bus
     SPIBus *busp;

@@ -39,10 +39,10 @@ public:
     void read(uint16_t *period_us, uint8_t len) override;
     void cork(void) override;
     void push(void) override;
-    void set_default_rate(uint16_t freq_hz) override;
+    void set_default_rate(uint16_t freq_hz);
 
 private:
-    const int duty_resolution = LEDC_TIMER_12_BIT;
+    const int duty_resolution = LEDC_TIMER_14_BIT;
 
     void write_int(uint8_t ch, uint16_t period_us);
     uint16_t get_timer(uint16_t freq);
@@ -55,6 +55,5 @@ private:
 
     uint16_t _max_channels;
     ledc_timer_t _channel_timers[LEDC_CHANNEL_MAX];
-
 };
 

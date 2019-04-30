@@ -1,4 +1,7 @@
+#include <AP_HAL/HAL.h>
 #include "RmtSigReader.h"
+
+#ifdef HAL_ESP32_RCIN
 
 using namespace ESP32;
 
@@ -8,7 +11,7 @@ void RmtSigReader::init()
         .rmt_mode = RMT_MODE_RX,
         .channel = RMT_CHANNEL_0,
         .clk_div = 80,   //80MHZ APB clock to the 1MHZ target frequency
-        .gpio_num = (gpio_num_t)36,
+        .gpio_num = HAL_ESP32_RCIN,
         .mem_block_num = 2 //each block could store 64 pulses
     };
     config.rx_config.filter_en = true;
@@ -71,3 +74,4 @@ bool RmtSigReader::read(uint32_t &width_high, uint32_t &width_low)
     }
     return false;
 }
+#endif
