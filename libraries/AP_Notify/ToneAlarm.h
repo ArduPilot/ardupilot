@@ -33,7 +33,7 @@ public:
     void update() override;
 
     // handle a PLAY_TUNE message
-    void handle_play_tune(mavlink_message_t *msg) override;
+    void handle_play_tune(const mavlink_message_t &msg) override;
 
     // play_tune - play tone specified by the provided string of notes
     void play_tune(const char *tune) override;

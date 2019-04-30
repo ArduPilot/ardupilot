@@ -402,12 +402,12 @@ void AP_ToneAlarm::update()
 /*
  *  handle a PLAY_TUNE message
  */
-void AP_ToneAlarm::handle_play_tune(mavlink_message_t *msg)
+void AP_ToneAlarm::handle_play_tune(const mavlink_message_t &msg)
 {
     // decode mavlink message
     mavlink_play_tune_t packet;
 
-    mavlink_msg_play_tune_decode(msg, &packet);
+    mavlink_msg_play_tune_decode(&msg, &packet);
 
     WITH_SEMAPHORE(_sem);
 

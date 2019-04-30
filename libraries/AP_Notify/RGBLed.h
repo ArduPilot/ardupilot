@@ -37,7 +37,7 @@ public:
     virtual void update() override;
 
     // handle LED control, only used when LED_OVERRIDE=1
-    virtual void handle_led_control(mavlink_message_t *msg) override;
+    virtual void handle_led_control(const mavlink_message_t &msg) override;
     
 protected:
     // methods implemented in hardware specific classes
