@@ -353,13 +353,13 @@ bool AP_AccelCal::client_active(uint8_t client_num)
     return (bool)_clients[client_num]->_acal_get_calibrator(0);
 }
 
-void AP_AccelCal::handleMessage(const mavlink_message_t* msg)
+void AP_AccelCal::handleMessage(const mavlink_message_t &msg)
 {
     if (!_waiting_for_mavlink_ack) {
         return;
     }
     _waiting_for_mavlink_ack = false;
-    if (msg->msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
+    if (msg.msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
         _start_collect_sample = true;
     }
 }
