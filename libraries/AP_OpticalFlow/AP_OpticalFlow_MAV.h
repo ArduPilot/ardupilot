@@ -16,7 +16,7 @@ public:
     void update(void) override;
 
     // get update from mavlink
-    void handle_msg(const mavlink_message_t *msg) override;
+    void handle_msg(const mavlink_message_t &msg) override;
 
     // detect if the sensor is available
     static AP_OpticalFlow_MAV *detect(OpticalFlow &_frontend);
