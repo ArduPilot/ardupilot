@@ -466,7 +466,7 @@ void AP_BattMonitor::checkPoweringOff(void)
             cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
             cmd_msg.param1 = i+1;
             mavlink_msg_command_long_encode(mavlink_system.sysid, MAV_COMP_ID_ALL, &msg, &cmd_msg);
-            GCS_MAVLINK::send_to_components(&msg);
+            GCS_MAVLINK::send_to_components(msg);
             gcs().send_text(MAV_SEVERITY_WARNING, "Vehicle %d battery %d is powering off", mavlink_system.sysid, i+1);
 
             // only send this once
