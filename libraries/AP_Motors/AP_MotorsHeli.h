@@ -20,9 +20,6 @@
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
 
-// swash min while landed or landing (as a number from 0 ~ 1000
-#define AP_MOTORS_HELI_LAND_COLLECTIVE_MIN      0
-
 // default main rotor speed (ch8 out) as a number from 0 ~ 1000
 #define AP_MOTORS_HELI_RSC_SETPOINT             700
 
@@ -217,7 +214,6 @@ protected:
     AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
     AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach setpoint
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
-    AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _rsc_critical;              // Rotor speed below which flight is not possible
     AP_Int16        _rsc_idle_output;           // Rotor control output while at idle
     AP_Int16        _rsc_slewrate;              // throttle slew rate (percentage per second)
