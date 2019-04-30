@@ -26,7 +26,7 @@ public:
     void throttle_adjust(float &throttle_control);
 
     // handle mavlink message
-    void handle_message(mavlink_message_t *msg);
+    void handle_message(const mavlink_message_t &msg);
 
     void load_test_run(void);
     
