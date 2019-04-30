@@ -119,7 +119,7 @@ public:
     void update(void);
 
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t &msg);
 
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
