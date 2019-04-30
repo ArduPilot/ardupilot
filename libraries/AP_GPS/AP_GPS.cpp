@@ -781,10 +781,10 @@ void AP_GPS::update(void)
 
 }
 
-void AP_GPS::handle_gps_inject(const mavlink_message_t *msg)
+void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
 {
     mavlink_gps_inject_data_t packet;
-    mavlink_msg_gps_inject_data_decode(msg, &packet);
+    mavlink_msg_gps_inject_data_decode(&msg, &packet);
     //TODO: check target
 
     inject_data(packet.data, packet.len);
@@ -793,9 +793,9 @@ void AP_GPS::handle_gps_inject(const mavlink_message_t *msg)
 /*
   pass along a mavlink message (for MAV type)
  */
-void AP_GPS::handle_msg(const mavlink_message_t *msg)
+void AP_GPS::handle_msg(const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
         // pass data to de-fragmenter
         handle_gps_rtcm_data(msg);
@@ -1029,10 +1029,10 @@ bool AP_GPS::blend_health_check() const
 /*
    re-assemble GPS_RTCM_DATA message
  */
-void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
+void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t &msg)
 {
     mavlink_gps_rtcm_data_t packet;
-    mavlink_msg_gps_rtcm_data_decode(msg, &packet);
+    mavlink_msg_gps_rtcm_data_decode(&msg, &packet);
 
     if (packet.len > MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN) {
         // invalid packet
