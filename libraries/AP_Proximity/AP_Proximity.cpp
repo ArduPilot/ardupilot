@@ -269,7 +269,7 @@ AP_Proximity::Proximity_Status AP_Proximity::get_status() const
 }
 
 // handle mavlink DISTANCE_SENSOR messages
-void AP_Proximity::handle_msg(mavlink_message_t *msg)
+void AP_Proximity::handle_msg(const mavlink_message_t &msg)
 {
     for (uint8_t i=0; i<num_instances; i++) {
         if ((drivers[i] != nullptr) && (_type[i] != Proximity_Type_None)) {

@@ -43,7 +43,7 @@ public:
     virtual bool get_upward_distance(float &distance) const { return false; }
 
     // handle mavlink DISTANCE_SENSOR messages
-    virtual void handle_msg(mavlink_message_t *msg) {}
+    virtual void handle_msg(const mavlink_message_t &msg) {}
 
     // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
     // returns true on successful read and places distance in distance

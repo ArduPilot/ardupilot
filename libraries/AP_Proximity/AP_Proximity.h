@@ -128,7 +128,7 @@ public:
     float distance_min() const;
 
     // handle mavlink DISTANCE_SENSOR messages
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t &msg);
 
     // The Proximity_State structure is filled in by the backend driver
     struct Proximity_State {
