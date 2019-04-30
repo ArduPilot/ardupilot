@@ -230,7 +230,7 @@ bool Util::flash_bootloader()
     uint32_t fw_size;
     const char *fw_name = "bootloader.bin";
 
-    hal.scheduler->expect_delay_ms(5000);
+    hal.scheduler->expect_delay_ms(11000);
 
     uint8_t *fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
