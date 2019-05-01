@@ -433,7 +433,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
         {
             // New home at wp index 0. Ask for it
             waypoint_receiving = true;
-            send_message(MSG_NEXT_MISSION_REQUEST);
+            send_message(MSG_NEXT_MISSION_REQUEST_WAYPOINTS);
         }
         break;
     }
