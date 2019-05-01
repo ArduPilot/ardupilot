@@ -79,6 +79,9 @@ public:
     // get actual lateral acceleration in m/s/s.  returns true on success.  For reporting purposes only
     bool get_lat_accel(float &lat_accel) const;
 
+    // calculate the turn rate in rad/sec given a lateral acceleration (in m/s/s) and speed (in m/s)
+    float get_turn_rate_from_lat_accel(float lat_accel, float speed) const;
+
     //
     // throttle / speed controller
     //
