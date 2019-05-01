@@ -179,6 +179,8 @@ class Board:
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
 
+                '-Werror=address-of-packed-member',
+
                 '-Werror=inconsistent-missing-override',
                 '-Werror=overloaded-virtual',
 
