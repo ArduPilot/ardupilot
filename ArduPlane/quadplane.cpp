@@ -633,7 +633,7 @@ bool QuadPlane::setup(void)
         motors = new AP_MotorsMatrixTS(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsMatrixTS::var_info;
     }
-    
+
     const static char *strUnableToAllocate = "Unable to allocate";
     if (!motors) {
         hal.console->printf("%s motors\n", strUnableToAllocate);
@@ -690,10 +690,14 @@ bool QuadPlane::setup(void)
 
     transition_state = TRANSITION_DONE;
 
-    if (tilt.tilt_mask != 0 && tilt.tilt_type == TILT_TYPE_VECTORED_YAW) {
-        // setup tilt servos for vectored yaw
-        SRV_Channels::set_range(SRV_Channel::k_tiltMotorLeft,  1000);
-        SRV_Channels::set_range(SRV_Channel::k_tiltMotorRight, 1000);
+    if (tilt.tilt_mask != 0) {
+        // setup tilt compensation
+        motors->set_thrust_compensation_callback(FUNCTOR_BIND_MEMBER(&QuadPlane::tilt_compensate, void, float *, uint8_t));
+        if (tilt.tilt_type == TILT_TYPE_VECTORED_YAW) {
+            // setup tilt servos for vectored yaw
+            SRV_Channels::set_range(SRV_Channel::k_tiltMotorLeft,  1000);
+            SRV_Channels::set_range(SRV_Channel::k_tiltMotorRight, 1000);
+        }
     }
 
     
