@@ -502,7 +502,11 @@ bool Plane::disarm_motors(void)
     
 #if QAUTOTUNE_ENABLED
     //save qautotune gains if enabled and success
-    quadplane.qautotune.save_tuning_gains();
+    if (control_mode == &mode_qautotune) {
+        quadplane.qautotune.save_tuning_gains();
+    } else {
+        quadplane.qautotune.reset();
+    }
 #endif
 
     return true;
