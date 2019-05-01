@@ -18,14 +18,21 @@
  *       Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
  */
 
-#include <AP_Compass/AP_Compass.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Compass/AP_Compass.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_BoardConfig board_config;
 
+class DummyVehicle {
+public:
+    AP_AHRS_DCM ahrs;  // Need since https://github.com/ArduPilot/ardupilot/pull/10890
+};
+
+static DummyVehicle vehicle;
 // create compass object
 static Compass compass;
 
@@ -37,7 +44,7 @@ static void setup()
     hal.console->printf("Compass library test\n");
 
     board_config.init();
-
+    vehicle.ahrs.init();
     compass.init();
     hal.console->printf("init done - %u compasses detected\n", compass.get_count());
 
