@@ -1784,6 +1784,15 @@ class AutoTest(ABC):
     def send_statustext(self, text):
         self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, bytes(text))
 
+    def get_exception_stacktrace(self, e):
+        if sys.version_info[0] >= 3:
+            ret = "%s\n" % e
+            ret += ''.join(traceback.format_exception(etype=type(e),
+                                                      value=e,
+                                                      tb=e.__traceback__))
+            return ret
+        return traceback.format_exc(e)
+
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
         test_output_filename = self.buildlogs_path("%s-%s.txt" %
@@ -1807,12 +1816,7 @@ class AutoTest(ABC):
             test_function()
         except Exception as e:
             self.test_timings[desc] = time.time() - start_time
-            try:
-                stacktrace = traceback.format_exc(e)
-            except Exception:
-                # seems to be broken under Python3:
-                stacktrace = "stacktrace unavailable"
-            self.progress("Exception caught: %s" % stacktrace)
+            self.progress("Exception caught: %s" % self.get_exception_stacktrace(e))
             self.context_pop()
             self.progress('FAILED: "%s": %s (see %s)' %
                           (prettyname, repr(e), test_output_filename))
