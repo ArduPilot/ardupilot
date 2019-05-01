@@ -115,6 +115,16 @@
 #include <SITL/SITL.h>
 #endif
 
+#define INTERVAL_PRINT(fmt, interval, ...) \
+    do { \
+        static uint32_t last_interval_print_ms; \
+        uint32_t current_interval_print_ms = AP_HAL::millis(); \
+        if ((current_interval_print_ms-last_interval_print_ms) >= interval) { \
+            last_interval_print_ms = current_interval_print_ms; \
+            hal.console->printf(fmt, __VA_ARGS__); \
+        } \
+    } while(0)
+
 /*
   main APM:Plane class
  */
