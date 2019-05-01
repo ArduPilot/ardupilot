@@ -6,6 +6,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 void setup();
 void loop();
