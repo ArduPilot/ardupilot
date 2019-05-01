@@ -71,6 +71,8 @@ public:
     void       set_override(const uint16_t v, const uint32_t timestamp_us);
     bool       has_override() const;
 
+    int16_t    stick_mixing(const int16_t servo_in);
+
     // get control input with zero deadzone
     int16_t    get_control_in_zero_dz(void) const;
 
