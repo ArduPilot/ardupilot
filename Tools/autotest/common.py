@@ -1782,7 +1782,9 @@ class AutoTest(ABC):
             self.progress(fmt % (desc, time))
 
     def send_statustext(self, text):
-        self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, bytes(text))
+        if sys.version_info.major >= 3 and not isinstance(text, bytes):
+            text = bytes(text, "ascii")
+        self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text)
 
     def get_exception_stacktrace(self, e):
         if sys.version_info[0] >= 3:
