@@ -304,6 +304,12 @@ void AP_AHRS::reset_gyro_drift(void)
 
 void AP_AHRS::update(bool skip_ins_update)
 {
+    // periodically checks to see if we should update the AHRS
+    // orientation (e.g. based on the AHRS_ORIENTATION parameter)
+    // allow for runtime change of orientation
+    // this makes initial config easier
+    update_orientation();
+
     if (!skip_ins_update) {
         // tell the IMU to grab some data
         AP::ins().update();
