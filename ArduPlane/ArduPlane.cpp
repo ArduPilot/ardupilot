@@ -296,8 +296,6 @@ void Plane::one_second_loop()
     iomcu.setup_mixing(&rcmap, g.override_channel.get(), g.mixing_gain, g2.manual_rc_mask);
 #endif
 
-    // make it possible to change orientation at runtime
-    ahrs.update_orientation();
 #if HAL_ADSB_ENABLED
     adsb.set_stall_speed_cm(aparm.airspeed_min * 100); // convert m/s to cm/s
     adsb.set_max_speed(aparm.airspeed_max);
