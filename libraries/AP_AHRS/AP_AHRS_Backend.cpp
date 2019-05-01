@@ -66,10 +66,25 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     }
 }
 
-// Set the board mounting orientation, may be called while disarmed
+// Set the board mounting orientation from AHRS_ORIENTATION parameter
 void AP_AHRS::update_orientation()
 {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_orientation_update_ms < 1000) {
+        // only update once/second
+        return;
+    }
+
+    // never update while armed - unless we've never updated
+    // (e.g. mid-air reboot or ARMING_REQUIRED=NO on Plane):
+    if (hal.util->get_soft_armed() && last_orientation_update_ms != 0) {
+        return;
+    }
+
+    last_orientation_update_ms = now_ms;
+
     const enum Rotation orientation = (enum Rotation)_board_orientation.get();
+
     AP::ins().set_board_orientation(orientation);
     AP::compass().set_board_orientation(orientation);
 }
