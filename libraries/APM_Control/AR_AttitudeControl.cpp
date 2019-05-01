@@ -292,17 +292,7 @@ float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool m
         return 0.0f;
     }
 
-    // enforce minimum speed to stop oscillations when first starting to move
-    if (fabsf(speed) < AR_ATTCONTROL_STEER_SPEED_MIN) {
-        if (is_negative(speed)) {
-            speed = -AR_ATTCONTROL_STEER_SPEED_MIN;
-        } else {
-            speed = AR_ATTCONTROL_STEER_SPEED_MIN;
-        }
-    }
-
-    // Calculate the desired steering rate given desired_accel and speed
-    const float desired_rate = desired_accel / speed;
+    const float desired_rate = get_turn_rate_from_lat_accel(desired_accel, speed);
 
     return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right, dt);
 }
@@ -415,6 +405,21 @@ bool AR_AttitudeControl::get_lat_accel(float &lat_accel) const
     }
     lat_accel = speed * _ahrs.get_yaw_rate_earth();
     return true;
+}
+
+// calculate the turn rate in rad/sec given a lateral acceleration (in m/s/s) and speed (in m/s)
+float AR_AttitudeControl::get_turn_rate_from_lat_accel(float lat_accel, float speed) const
+{
+    // enforce minimum speed to stop oscillations when first starting to move
+    if (fabsf(speed) < AR_ATTCONTROL_STEER_SPEED_MIN) {
+        if (is_negative(speed)) {
+            speed = -AR_ATTCONTROL_STEER_SPEED_MIN;
+        } else {
+            speed = AR_ATTCONTROL_STEER_SPEED_MIN;
+        }
+    }
+
+    return lat_accel / speed;
 }
 
 // return a throttle output from -1 to +1 given a desired speed in m/s (use negative speeds to travel backwards)
