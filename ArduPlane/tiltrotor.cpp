@@ -44,9 +44,6 @@ void QuadPlane::tiltrotor_slew(float newtilt)
 
     // translate to 0..1000 range and output
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, 1000 * tilt.current_tilt);
-
-    // setup tilt compensation
-    motors->set_thrust_compensation_callback(FUNCTOR_BIND_MEMBER(&QuadPlane::tilt_compensate, void, float *, uint8_t));
 }
 
 /*
@@ -137,17 +134,16 @@ void QuadPlane::tiltrotor_continuous_update(void)
  */
 void QuadPlane::tiltrotor_binary_slew(bool forward)
 {
+    // The servo output is binary, not slew rate limited
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, forward?1000:0);
 
+    // rate limiting current_tilt has the effect of delaying throttle in tiltrotor_binary_update
     float max_change = tilt_max_change(!forward);
     if (forward) {
         tilt.current_tilt = constrain_float(tilt.current_tilt+max_change, 0, 1);
     } else {
         tilt.current_tilt = constrain_float(tilt.current_tilt-max_change, 0, 1);
     }
-
-    // setup tilt compensation
-    motors->set_thrust_compensation_callback(FUNCTOR_BIND_MEMBER(&QuadPlane::tilt_compensate, void, float *, uint8_t));
 }
 
 /*
