@@ -75,6 +75,7 @@ enum Rotation : uint8_t {
     ///////////////////////////////////////////////////////////////////////
     ROTATION_MAX,
     ROTATION_CUSTOM              = 100,
+    ROTATION_INVALID             = 101,
 };
 /*
 Here are the same values in a form sutable for a @Values attribute in
