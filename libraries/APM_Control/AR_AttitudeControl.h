@@ -136,11 +136,11 @@ public:
     // get minimum stopping distance (in meters) given a speed (in m/s)
     float get_stopping_distance(float speed) const;
 
-    // parameter var table
-    static const struct AP_Param::GroupInfo var_info[];
-
     // relax I terms of throttle and steering controllers
     void relax_I();
+
+    // parameter var table
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
