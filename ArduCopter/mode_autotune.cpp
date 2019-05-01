@@ -173,4 +173,9 @@ void Copter::ModeAutoTune::stop()
     copter.autotune.stop();
 }
 
+void Copter::ModeAutoTune::reset()
+{
+    copter.autotune.reset();
+}
+
 #endif  // AUTOTUNE_ENABLED == ENABLED
