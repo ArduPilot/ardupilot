@@ -499,6 +499,7 @@ public:
 
     void save_tuning_gains();
     void stop();
+    void reset();
 
 protected:
 
