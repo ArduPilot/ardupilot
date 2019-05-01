@@ -37,6 +37,12 @@ public:
     // stop tune, reverting gains
     void stop();
 
+    // reset Autotune so that gains are not saved again and autotune can be run again.
+    void reset() {
+        mode = UNINITIALISED;
+        axes_completed = 0;
+    }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
