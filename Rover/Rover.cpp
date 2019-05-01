@@ -410,9 +410,6 @@ void Rover::update_logging2(void)
  */
 void Rover::one_second_loop(void)
 {
-    // allow orientation change at runtime to aid config
-    ahrs.update_orientation();
-
     set_control_channels();
 
     // cope with changes to aux functions
