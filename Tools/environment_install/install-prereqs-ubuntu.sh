@@ -15,6 +15,12 @@ SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setupto
 ASSUME_YES=false
 QUIET=false
 
+IS_WINDOWS_10_WSL=false
+if uname -r | grep Microsoft; then
+	IS_WINDOWS_10_WSL=true
+	echo "Windows Subsystem for Linux (WSL) detected!"
+fi
+
 MACHINE_TYPE=$(uname -m)
 if [ ${MACHINE_TYPE} == 'x86_64' ]; then
     PX4_PKGS+=" libc6-i386"
@@ -24,7 +30,13 @@ fi
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
-ARM_ROOT="gcc-arm-none-eabi-6-2017-q2-update"
+if $IS_WINDOWS_10_WSL; then
+	ARM_ROOT="gcc-arm-none-eabi"
+else
+	ARM_ROOT="gcc-arm-none-eabi-6-2017-q2-update"
+fi
+
+
 ARM_TARBALL="$ARM_ROOT-linux.tar.bz2"
 ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
 
@@ -82,7 +94,11 @@ sudo usermod -a -G dialout $USER
 if dpkg-query -l "modemmanager"; then
     $APT_GET remove modemmanager
 fi
+
 $APT_GET update
+if $IS_WINDOWS_10_WSL; then
+	$APT_GET upgrade
+fi
 
 if apt-cache search python-wxgtk3.0 | grep wx; then
     SITL_PKGS+=" python-wxgtk3.0 libtool-bin"
@@ -130,6 +146,29 @@ grep -Fxq "$exportline2" ~/.profile 2>/dev/null || {
         echo "Skipping adding $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to PATH."
     fi
 }
+
+if $IS_WINDOWS_10_WSL; then
+	#add windowing support
+	WSL_profile1="export DISPLAY=:0.0"
+	WSL_profile2="export LIBGL_ALWAYS_INDIRECT=1"
+	if ! grep -Fx "$WSL_profile1" ~/.profile; then
+        echo $WSL_profile1 >> ~/.profile
+        eval $WSL_profile1
+	fi
+	if ! grep -Fx "$WSL_profile2" ~/.profile; then
+        echo $WSL_profile2 >> ~/.profile
+        eval $WSL_profile2
+	
+	#remove an incorrect eabi from path if WSL added it to path
+	WSL_wrong_eabi_path="export PATH=/opt/gcc-arm-none-eabi-4_9-2015q3/bin:\$PATH"
+	if grep "$WSL_wrong_eabi_path" ~/.profile && ! grep -Fx "#$WSL_wrong_eabi_path" ~/.profile; then
+		#if wrong path is found and not commented out then comment it out
+		sed -i -e "s+$WSL_wrong_eabi_path+#$WSL_wrong_eabi_path+" ~/.profile
+	fi
+fi
+
+
+
 
 apt-cache search arm-none-eabi
 
