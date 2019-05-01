@@ -2992,7 +2992,7 @@ class AutoTestCopter(AutoTest):
             self.loiter_to_ne(start.x + 5, start.y - 10, start.z + 10)
 
         except Exception as e:
-            self.progress("Exception caught: %s" % traceback.format_exc(e))
+            self.progress("Exception caught: %s" % self.get_exception_stacktrace(e))
             ex = e
 
         self.context_pop()
