@@ -1215,9 +1215,7 @@ void AC_AutoTune::save_tuning_gains()
     update_gcs(AUTOTUNE_MESSAGE_SAVED_GAINS);
     Log_Write_Event(EVENT_AUTOTUNE_SAVEDGAINS);
 
-    // reset Autotune so that gains are not saved again and autotune can be run again.
-    mode = UNINITIALISED;
-    axes_completed = 0;
+    reset();
 }
 
 // update_gcs - send message to ground station
