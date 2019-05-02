@@ -1108,6 +1108,10 @@ bool AP_Logger_File::logging_failed() const
         // Good.
         return true;
     }
+    uint32_t tnow = AP_HAL::millis();
+    if (logging_started() && logging_enabled() && tnow - _last_write_ms > 30000) {
+        return true;
+    }
 
     return false;
 }
