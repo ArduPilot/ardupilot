@@ -24,11 +24,9 @@
 #include "RCInput_Navio2.h"
 #include "RCInput_PRU.h"
 #include "RCInput_RPI.h"
-#include "RCInput_SBUS.h"
 #include "RCInput_SoloLink.h"
 #include "RCInput_UART.h"
 #include "RCInput_UDP.h"
-#include "RCInput_115200.h"
 #include "RCInput_Multi.h"
 #include "RCInput_ZYNQ.h"
 #include "RCInput_RCProtocol.h"
@@ -138,7 +136,7 @@ static RCInput_PRU rcinDriver;
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
 static RCInput_AioPRU rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
-static RCInput_Multi rcinDriver{2, new RCInput_AioPRU, new RCInput_115200("/dev/ttyO4")};
+static RCInput_Multi rcinDriver{2, new RCInput_AioPRU, new RCInput_RCProtocol(NULL, "/dev/ttyO4")};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
@@ -158,7 +156,7 @@ static RCInput_SoloLink rcinDriver;
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
 static RCInput_Navio2 rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
-static RCInput_SBUS rcinDriver;
+static RCInput_RCProtocol rcinDriver{"/dev/ttyPS0", NULL};
 #else
 static RCInput rcinDriver;
 #endif
