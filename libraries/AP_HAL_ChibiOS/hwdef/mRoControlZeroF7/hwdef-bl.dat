@@ -8,8 +8,6 @@ MCU STM32F7xx STM32F777xx
 USB_VENDOR 0x0483 # ST
 USB_PRODUCT 0x5740
 USB_STRING_MANUFACTURER "mRo"
-USB_STRING_PRODUCT "Control Zero F7"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -31,8 +29,7 @@ FLASH_SIZE_KB 2048
 FLASH_RESERVE_START_KB 0
 
 # the location where the bootloader will put the firmware
-# the F777 has 128k sectors
-define FLASH_BOOTLOADER_LOAD_KB 128
+define FLASH_BOOTLOADER_LOAD_KB 96
 
 PB11 LED_BOOTLOADER OUTPUT
 PB3 LED_ACTIVITY OUTPUT
@@ -53,12 +50,6 @@ PA12 OTG_FS_DP OTG1
 
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
-
-# no reserved flash for bootloader
-FLASH_RESERVE_START_KB 0
-
-# start on 4th sector (1st sector for bootloader, 2 for extra storage)
-define FLASH_BOOTLOADER_LOAD_KB 96
 
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
