@@ -29,6 +29,7 @@
  */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
 
 #include "include/mavlink/v2.0/ardupilotmega/version.h"
 
