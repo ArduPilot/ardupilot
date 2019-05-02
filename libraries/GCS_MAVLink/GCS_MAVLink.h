@@ -29,7 +29,10 @@
  */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
+
+#if defined(__GNUC__) && __GNUC__ >= 9
 #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
 
 #include "include/mavlink/v2.0/ardupilotmega/version.h"
 
