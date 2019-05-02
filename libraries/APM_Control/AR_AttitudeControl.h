@@ -65,6 +65,10 @@ public:
     // return value is normally in range -1.0 to +1.0 but can be higher or lower
     float get_steering_out_heading(float heading_rad, float rate_max_rads, bool motor_limit_left, bool motor_limit_right, float dt);
 
+    // return a desired turn-rate given a desired heading in radians
+    // normally the results are later passed into get_steering_out_rate
+    float get_turn_rate_from_heading(float heading_rad, float rate_max_rads) const;
+
     // return a steering servo output given a desired yaw rate in radians/sec.
     // positive yaw is to the right
     // return value is normally in range -1.0 to +1.0 but can be higher or lower
