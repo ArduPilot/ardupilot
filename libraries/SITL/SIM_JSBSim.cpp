@@ -198,9 +198,11 @@ bool JSBSim::start_JSBSim(void)
         }
         char *logdirective;
         char *script;
+        char *nice;
 
         asprintf(&logdirective, "--logdirectivefile=%s", jsbsim_fgout);
         asprintf(&script, "--script=%s", jsbsim_script);
+        asprintf(&nice, "--nice=%.8f", 10*1e-9);
 
         if (chdir(autotest_dir) != 0) {
             perror(autotest_dir);
@@ -209,10 +211,9 @@ bool JSBSim::start_JSBSim(void)
 
         int ret = execlp("JSBSim",
                          "JSBSim",
-                         "--realtime",
                          "--suspend",
-                         "--nice",
                          "--simulation-rate=1000",
+                         nice,
                          logdirective,
                          script,
                          nullptr);
