@@ -851,22 +851,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         plane.set_mode(plane.mode_auto, MODE_REASON_GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
-    case MAV_CMD_COMPONENT_ARM_DISARM:
-        if (is_equal(packet.param1,1.0f)) {
-            // run pre_arm_checks and arm_checks and display failures
-            const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value);
-            if (plane.arm_motors(AP_Arming::Method::MAVLINK, do_arming_checks)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-            return MAV_RESULT_FAILED;
-        } else if (is_zero(packet.param1))  {
-            if (plane.disarm_motors()) {
-                return MAV_RESULT_ACCEPTED;
-            }
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_UNSUPPORTED;
-
     case MAV_CMD_DO_LAND_START:
         // attempt to switch to next DO_LAND_START command in the mission
         if (plane.mission.jump_to_landing_sequence()) {

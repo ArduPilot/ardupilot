@@ -146,7 +146,7 @@ void Plane::rudder_arm_disarm_check()
                 }
 			} else {
 				//time to arm!
-				arm_motors(AP_Arming::Method::RUDDER);
+				arming.arm(AP_Arming::Method::RUDDER);
 				rudder_arm_timer = 0;
 			}
 		} else {
@@ -165,7 +165,7 @@ void Plane::rudder_arm_disarm_check()
                 }
 			} else {
 				//time to disarm!
-				disarm_motors();
+				arming.disarm();
 				rudder_arm_timer = 0;
 			}
 		} else {
