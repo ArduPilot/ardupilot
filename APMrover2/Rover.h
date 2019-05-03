@@ -406,7 +406,6 @@ private:
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
     // Log.cpp
-    void Log_Write_Arm_Disarm();
     void Log_Write_Attitude();
     void Log_Write_Depth();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
@@ -462,9 +461,6 @@ private:
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
-    void change_arm_state(void);
-    bool arm_motors(AP_Arming::Method method);
-    bool disarm_motors(void);
     bool is_boat() const;
 
     enum Failsafe_Action {
@@ -492,7 +488,6 @@ private:
 public:
     void mavlink_delay_cb();
     void failsafe_check();
-    void update_soft_armed();
     // Motor test
     void motor_test_output();
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value);

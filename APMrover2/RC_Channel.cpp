@@ -134,15 +134,6 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
         }
         break;
 
-    // arm or disarm the motors
-    case AUX_FUNC::ARMDISARM:
-        if (ch_flag == HIGH) {
-            rover.arm_motors(AP_Arming::Method::RUDDER);
-        } else if (ch_flag == LOW) {
-            rover.disarm_motors();
-        }
-        break;
-
     // set mode to Manual
     case AUX_FUNC::MANUAL:
         do_aux_function_change_mode(rover.mode_manual, ch_flag);

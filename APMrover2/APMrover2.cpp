@@ -141,17 +141,17 @@ void Rover::loop()
     G_Dt = scheduler.get_last_loop_time_s();
 }
 
-void Rover::update_soft_armed()
+void AP_Arming_Rover::update_soft_armed()
 {
-    hal.util->set_soft_armed(arming.is_armed() &&
+    hal.util->set_soft_armed(is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-    logger.set_vehicle_armed(hal.util->get_soft_armed());
+    AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
 }
 
 // update AHRS system
 void Rover::ahrs_update()
 {
-    update_soft_armed();
+    arming.update_soft_armed();
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
