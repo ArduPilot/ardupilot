@@ -614,23 +614,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_FAILED;
 
-    case MAV_CMD_COMPONENT_ARM_DISARM:
-        if (is_equal(packet.param1, 1.0f)) {
-            // run pre_arm_checks and arm_checks and display failures
-            if (rover.arm_motors(AP_Arming::Method::MAVLINK)) {
-                return MAV_RESULT_ACCEPTED;
-            } else {
-                return MAV_RESULT_FAILED;
-            }
-        } else if (is_zero(packet.param1))  {
-            if (rover.disarm_motors()) {
-                return MAV_RESULT_ACCEPTED;
-            } else {
-                return MAV_RESULT_FAILED;
-            }
-        }
-        return MAV_RESULT_UNSUPPORTED;
-
     case MAV_CMD_DO_CHANGE_SPEED:
         // param1 : unused
         // param2 : new speed in m/s

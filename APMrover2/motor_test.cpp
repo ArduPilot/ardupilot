@@ -126,7 +126,7 @@ MAV_RESULT Rover::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor
 
             // arm motors
             if (!arming.is_armed()) {
-                arm_motors(AP_Arming::Method::MOTORTEST);
+                arming.arm(AP_Arming::Method::MOTORTEST);
             }
 
             // disable failsafes
@@ -161,7 +161,7 @@ void Rover::motor_test_stop()
     }
 
     // disarm motors
-    disarm_motors();
+    AP::arming().disarm();
 
     // reset timeout
     motor_test_start_ms = 0;

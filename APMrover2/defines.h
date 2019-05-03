@@ -26,7 +26,6 @@
 #define LOG_NTUN_MSG            0x02
 #define LOG_STARTUP_MSG         0x06
 #define LOG_RANGEFINDER_MSG     0x07
-#define LOG_ARM_DISARM_MSG      0x08
 #define LOG_STEERING_MSG        0x0D
 #define LOG_GUIDEDTARGET_MSG    0x0E
 
@@ -48,7 +47,7 @@
 #define MASK_LOG_CAMERA         (1<<12)
 #define MASK_LOG_STEERING       (1<<13)
 #define MASK_LOG_RC             (1<<14)
-#define MASK_LOG_ARM_DISARM     (1<<15)
+// #define MASK_LOG_ARM_DISARM     (1<<15)
 #define MASK_LOG_IMU_RAW        (1UL<<19)
 
 // for mavlink SET_POSITION_TARGET messages

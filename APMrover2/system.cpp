@@ -317,7 +317,7 @@ bool Rover::should_log(uint32_t mask)
 /*
   update AHRS soft arm state and log as needed
  */
-void Rover::change_arm_state(void)
+void AP_Arming_Rover::change_arm_state(void)
 {
     Log_Write_Arm_Disarm();
     update_soft_armed();
@@ -326,15 +326,15 @@ void Rover::change_arm_state(void)
 /*
   arm motors
  */
-bool Rover::arm_motors(AP_Arming::Method method)
+bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
 {
-    if (!arming.arm(method)) {
+    if (!AP_Arming::arm(method, do_arming_checks)) {
         AP_Notify::events.arming_failed = true;
         return false;
     }
 
     // Set the SmartRTL home location. If activated, SmartRTL will ultimately try to land at this point
-    g2.smart_rtl.set_home(true);
+    rover.g2.smart_rtl.set_home(true);
 
     // initialize simple mode heading
     rover.mode_simple.init_heading();
@@ -343,20 +343,21 @@ bool Rover::arm_motors(AP_Arming::Method method)
     rover.g2.windvane.record_home_heading();
 
     change_arm_state();
+
     return true;
 }
 
 /*
   disarm motors
  */
-bool Rover::disarm_motors(void)
+bool AP_Arming_Rover::disarm(void)
 {
-    if (!arming.disarm()) {
+    if (!AP_Arming::disarm()) {
         return false;
     }
-    if (control_mode != &mode_auto) {
+    if (rover.control_mode != &rover.mode_auto) {
         // reset the mission on disarm if we are not in auto
-        mode_auto.mission.reset();
+        rover.mode_auto.mission.reset();
     }
 
     // only log if disarming was successful
