@@ -456,21 +456,18 @@ int8_t Plane::throttle_percentage(void)
 }
 
 /*
-  update AHRS soft arm state and log as needed
- */
-void Plane::change_arm_state(void)
+  update HAL soft arm state and log as needed
+*/
+void AP_Arming_Plane::change_arm_state(void)
 {
-    Log_Arm_Disarm();
+    Log_Write_Arm_Disarm();
     update_soft_armed();
-    quadplane.set_armed(hal.util->get_soft_armed());
+    plane.quadplane.set_armed(hal.util->get_soft_armed());
 }
 
-/*
-  arm motors
- */
-bool Plane::arm_motors(const AP_Arming::Method method, const bool do_arming_checks)
+bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_checks)
 {
-    if (!arming.arm(method, do_arming_checks)) {
+    if (!AP_Arming::arm(method, do_arming_checks)) {
         return false;
     }
 
@@ -481,18 +478,18 @@ bool Plane::arm_motors(const AP_Arming::Method method, const bool do_arming_chec
 /*
   disarm motors
  */
-bool Plane::disarm_motors(void)
+bool AP_Arming_Plane::disarm(void)
 {
-    if (!arming.disarm()) {
+    if (!AP_Arming::disarm()) {
         return false;
     }
-    if (control_mode != &mode_auto) {
+    if (plane.control_mode != &plane.mode_auto) {
         // reset the mission on disarm if we are not in auto
-        mission.reset();
+        plane.mission.reset();
     }
 
     // suppress the throttle in auto-throttle modes
-    throttle_suppressed = auto_throttle_mode;
+    plane.throttle_suppressed = plane.auto_throttle_mode;
     
     //only log if disarming was successful
     change_arm_state();
@@ -502,10 +499,10 @@ bool Plane::disarm_motors(void)
     
 #if QAUTOTUNE_ENABLED
     //save qautotune gains if enabled and success
-    if (control_mode == &mode_qautotune) {
-        quadplane.qautotune.save_tuning_gains();
+    if (plane.control_mode == &plane.mode_qautotune) {
+        plane.quadplane.qautotune.save_tuning_gains();
     } else {
-        quadplane.qautotune.reset();
+        plane.quadplane.qautotune.reset();
     }
 #endif
 

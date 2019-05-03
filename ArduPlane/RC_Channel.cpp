@@ -58,20 +58,6 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
-    case AUX_FUNC::ARMDISARM:
-        // arm or disarm the vehicle
-        switch (ch_flag) {
-        case HIGH:
-            plane.arm_motors(AP_Arming::Method::AUXSWITCH, true);
-            break;
-        case MIDDLE:
-            // nothing
-            break;
-        case LOW:
-            plane.disarm_motors();
-            break;
-        }
-        break;
     case AUX_FUNC::INVERTED:
         plane.inverted_flight = (ch_flag == HIGH);
         break;

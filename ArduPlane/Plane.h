@@ -829,7 +829,6 @@ private:
     void Log_Write_Nav_Tuning();
     void Log_Write_Status();
     void Log_Write_Sonar();
-    void Log_Arm_Disarm();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AOA_SSA();
@@ -947,9 +946,6 @@ private:
     void startup_INS_ground(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
-    void change_arm_state(void);
-    bool disarm_motors(void);
-    bool arm_motors(AP_Arming::Method method, bool do_arming_checks=true);
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
     void takeoff_calc_pitch(void);
@@ -1052,7 +1048,6 @@ private:
     void publish_osd_info();
 #endif
     void accel_cal_update(void);
-    void update_soft_armed();
 #if SOARING_ENABLED == ENABLED
     void update_soaring();
 #endif

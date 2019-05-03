@@ -117,7 +117,6 @@ enum log_messages {
     TYPE_GROUNDSTART_MSG,
     LOG_RC_MSG,
     LOG_SONAR_MSG,
-    LOG_ARM_DISARM_MSG,
     LOG_STATUS_MSG,
     LOG_QTUN_MSG,
     LOG_PARAMTUNE_MSG,
@@ -145,7 +144,7 @@ enum log_messages {
 #define MASK_LOG_CAMERA                 (1<<12)
 #define MASK_LOG_RC                     (1<<13)
 #define MASK_LOG_SONAR                  (1<<14)
-#define MASK_LOG_ARM_DISARM             (1<<15)
+// #define MASK_LOG_ARM_DISARM             (1<<15)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 
 // altitude control algorithms
