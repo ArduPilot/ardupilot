@@ -95,7 +95,13 @@ float PID::get_pid(float error, float scaler)
 
     // Compute integral component if time has elapsed
     if ((fabsf(_ki) > 0) && (dt > 0)) {
-        _integrator             += (error * _ki) * scaler * delta_time;
+        if (_integrator_freeze_duration_ms == 0) {
+            _integrator += (error * _ki) * scaler * delta_time;
+            _integrator_last_ms = tnow;
+        } else if (tnow - _integrator_last_ms >= _integrator_freeze_duration_ms) {
+            _integrator_freeze_duration_ms = 0;
+        }
+
         if (_integrator < -_imax) {
             _integrator = -_imax;
         } else if (_integrator > _imax) {
@@ -113,6 +119,7 @@ void
 PID::reset_I()
 {
     _integrator = 0;
+    _integrator_freeze_duration_ms = 0;
 	// we use NAN (Not A Number) to indicate that the last 
 	// derivative value is not valid
     _last_derivative = NAN;

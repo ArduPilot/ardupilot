@@ -95,6 +95,9 @@ public:
     float        get_integrator() const {
         return _integrator;
     }
+    void        freeze_integrator(const uint32_t duration_ms)   {
+        _integrator_freeze_duration_ms = duration_ms;
+    }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -110,6 +113,8 @@ private:
     float           _last_error;///< last error for derivative
     float           _last_derivative;///< last derivative for low-pass filter
     uint32_t        _last_t;///< last time get_pid() was called in millis
+    uint32_t        _integrator_last_ms;///< timestamp of last integrator re-calculation
+    uint32_t        _integrator_freeze_duration_ms;///< duration of how long we will freeze integrator re-calculations
 
     float           _get_pid(float error, uint16_t dt, float scaler);
 
