@@ -609,7 +609,14 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("GSF_RST_MAX", 57, NavEKF2, _gsfResetMaxCount, 2),
-    
+
+    // @Param: AFFINITY
+    // @DisplayName: EKF2 Sensor Addinity Options
+    // @Description: These options control the affinity between sensor instances and EKF cores
+    // @User: Advanced
+    // @Bitmask: 0:EnableGPSAffinity,1:EnableBaroAffinity,2:EnableCompassAffinity,3:EnableAirspeedAffinity
+    AP_GROUPINFO("AFFINITY", 58, NavEKF2, _affinity, 0),
+
     AP_GROUPEND
 };
 
@@ -799,8 +806,8 @@ void NavEKF2::UpdateFilter(void)
         for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
 
             if (coreIndex != primary) {
-                // an alternative core is available for selection only if healthy and if states have been updated on this time step
-                bool altCoreAvailable = core[coreIndex].healthy() && statePredictEnabled[coreIndex];
+                // an alternative core is available for selection only if healthy
+                bool altCoreAvailable = core[coreIndex].healthy();
 
                 // If the primary core is unhealthy and another core is available, then switch now
                 // If the primary core is still healthy,then switching is optional and will only be done if

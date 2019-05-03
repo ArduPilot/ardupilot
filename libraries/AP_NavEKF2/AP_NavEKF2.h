@@ -446,6 +446,7 @@ private:
     AP_Int8 _gsfUseMask;            // mask controlling which EKF2 instances will use EKF-GSF yaw estimator data to assit with yaw resets
     AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF2 is allowed to reset it's yaw to the EKF-GSF estimate
+    AP_Int32 _affinity;             // bitmask of sensor affinity options
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
