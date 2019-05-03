@@ -61,11 +61,8 @@ void AP_IOMCU::init(void)
     uart.set_blocking_writes(false);
     uart.set_unbuffered_writes(true);
 
-    // check IO firmware CRC
-    hal.scheduler->delay(2000);
-    
     AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
-    if (!boardconfig || boardconfig->io_enabled() == 1) {
+    if ((!boardconfig || boardconfig->io_enabled() == 1) && !hal.util->was_watchdog_reset()) {
         check_crc();
     } else {
         crc_is_ok = true;
