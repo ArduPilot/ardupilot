@@ -55,7 +55,7 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
     }
 
     // record successful initialisation if what we setup was the desired frame_class
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_TRI);
+    set_initialised_ok(frame_class == MOTOR_FRAME_TRI);
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
@@ -68,7 +68,7 @@ void AP_MotorsTri::set_frame_class_and_type(motor_frame_class frame_class, motor
         _pitch_reversed = false;
     }
 
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_TRI) && SRV_Channels::function_assigned(SRV_Channel::k_motor7);
+    set_initialised_ok((frame_class == MOTOR_FRAME_TRI) && SRV_Channels::function_assigned(SRV_Channel::k_motor7));
 }
 
 // set update rate to motors - a value in hertz
