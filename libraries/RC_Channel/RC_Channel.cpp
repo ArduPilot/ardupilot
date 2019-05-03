@@ -35,6 +35,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_Arming/AP_Arming.h>
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
@@ -677,6 +678,21 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
 
     case AUX_FUNC::LOST_VEHICLE_SOUND:
         do_aux_function_lost_vehicle_sound(ch_flag);
+        break;
+
+    case AUX_FUNC::ARMDISARM:
+        // arm or disarm the vehicle
+        switch (ch_flag) {
+        case HIGH:
+            AP::arming().arm(AP_Arming::Method::AUXSWITCH, true);
+            break;
+        case MIDDLE:
+            // nothing
+            break;
+        case LOW:
+            AP::arming().disarm();
+            break;
+        }
         break;
 
     case AUX_FUNC::COMPASS_LEARN:
