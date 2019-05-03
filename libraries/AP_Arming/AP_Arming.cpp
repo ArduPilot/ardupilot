@@ -900,6 +900,17 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
     return ret;
 }
 
+void AP_Arming::Log_Write_Arm_Disarm()
+{
+    struct log_Arm_Disarm pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
+        time_us                 : AP_HAL::micros64(),
+        arm_state               : is_armed(),
+        arm_checks              : get_enabled_checks()
+    };
+    AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
 AP_Arming *AP_Arming::_singleton = nullptr;
 
 /*

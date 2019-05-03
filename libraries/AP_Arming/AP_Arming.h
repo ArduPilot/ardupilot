@@ -51,7 +51,7 @@ public:
     // these functions should not be used by Copter which holds the armed state in the motors library
     Required arming_required();
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
-    bool disarm();
+    virtual bool disarm();
     bool is_armed();
 
     // get bitmask of enabled checks
@@ -132,6 +132,8 @@ protected:
     MAV_SEVERITY check_severity(const enum AP_Arming::ArmingChecks check) const;
     // handle the case where a check fails
     void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const;
+
+    void Log_Write_Arm_Disarm();
 
 private:
 
