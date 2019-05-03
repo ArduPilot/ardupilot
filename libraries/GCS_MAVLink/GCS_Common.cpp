@@ -16,6 +16,7 @@
  */
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Arming/AP_Arming.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
@@ -3960,6 +3961,24 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_DO_FLIGHTTERMINATION:
         result = handle_flight_termination(packet);
         break;
+
+    case MAV_CMD_COMPONENT_ARM_DISARM:
+        if (is_equal(packet.param1,1.0f)) {
+            // run pre_arm_checks and arm_checks and display failures
+            const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value);
+            if (AP::arming().arm(AP_Arming::Method::MAVLINK, do_arming_checks)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+            return MAV_RESULT_FAILED;
+        }
+        if (is_zero(packet.param1))  {
+            if (AP::arming().disarm()) {
+                return MAV_RESULT_ACCEPTED;
+            }
+            return MAV_RESULT_FAILED;
+        }
+
+        return MAV_RESULT_UNSUPPORTED;
 
     default:
         result = MAV_RESULT_UNSUPPORTED;
