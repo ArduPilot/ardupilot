@@ -129,17 +129,17 @@ void Plane::loop()
     G_Dt = scheduler.get_loop_period_s();
 }
 
-void Plane::update_soft_armed()
+void AP_Arming_Plane::update_soft_armed()
 {
-    hal.util->set_soft_armed(arming.is_armed() &&
+    hal.util->set_soft_armed(is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-    logger.set_vehicle_armed(hal.util->get_soft_armed());
+    AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
 }
 
 // update AHRS system
 void Plane::ahrs_update()
 {
-    update_soft_armed();
+    arming.update_soft_armed();
 
 #if HIL_SUPPORT
     if (g.hil_mode == 1) {
@@ -668,7 +668,7 @@ void Plane::disarm_if_autoland_complete()
         arming.is_armed()) {
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {
-            if (disarm_motors()) {
+            if (arming.disarm()) {
                 gcs().send_text(MAV_SEVERITY_INFO,"Auto disarmed");
             }
         }
