@@ -558,7 +558,25 @@ void Mode::calc_stopping_location(Location& stopping_loc)
 void Mode::set_steering(float steering_value)
 {
     if (allows_stick_mixing() && g2.stick_mixing > 0) {
-        steering_value = channel_steer->stick_mixing((int16_t)steering_value);
+        const int16_t steering_input = (int16_t)steering_value;
+        const int16_t steering_output = channel_steer->stick_mixing(steering_input);
+
+        if (abs(steering_input - steering_output) > 100) {
+            // since stick mixing directly overrides the servo/motor outputs, this will fool the PID integrators into
+            // thinking that it's steering offcourse and the integrator will start to wind up to get you back on coarse.
+            // The result will be the user will have to push harder and harder to override movement and then when
+            // the pilot relaxes the integrator will be so wound-up that it will overshoot and have to re-learn
+            // what no pilot mixing feels like. This will look like sloppy steering while it re-earns. So, lets
+            // freeze the integrator learning for a moment while we're actively mixing pilot sticks by so
+            // whatever pre-learned integrator will stay as-is for a moment
+            const uint32_t integrator_freeze_duration_ms = 1000;
+            g2.attitude_control.get_steering_rate_pid().freeze_integrator(integrator_freeze_duration_ms);
+            g2.attitude_control.get_throttle_speed_pid().freeze_integrator(integrator_freeze_duration_ms);
+            g2.attitude_control.get_pitch_to_throttle_pid().freeze_integrator(integrator_freeze_duration_ms);
+            g2.attitude_control.get_sailboat_heel_pid().freeze_integrator(integrator_freeze_duration_ms);
+
+            steering_value = steering_output;
+        }
     }
     steering_value = constrain_float(steering_value, -4500.0f, 4500.0f);
     g2.motors.set_steering(steering_value);
