@@ -75,6 +75,7 @@ public:
 
     float       get_integrator() const { return _integrator; }
     void        set_integrator(float i) { _integrator = i; }
+    void        freeze_integrator(const uint32_t duration_ms) { _integrator_freeze_duration_ms = duration_ms; }
 
     // set the desired and actual rates (for logging purposes)
     void        set_desired_rate(float desired) { _pid_info.desired = desired; }
@@ -105,6 +106,8 @@ protected:
     float           _integrator;            // integrator value
     float           _input;                 // last input for derivative
     float           _derivative;            // last derivative for low-pass filter
+    uint32_t        _integrator_last_ms;    // timestamp of last integrator re-calculation
+    uint32_t        _integrator_freeze_duration_ms; // duration of how long we will freeze integrator re-calculations
 
     AP_Logger::PID_Info        _pid_info;
 };

@@ -141,7 +141,14 @@ float AC_PID::get_p()
 float AC_PID::get_i()
 {
     if(!is_zero(_ki) && !is_zero(_dt)) {
-        _integrator += ((float)_input * _ki) * _dt;
+
+        if (_integrator_freeze_duration_ms == 0) {
+            _integrator += ((float)_input * _ki) * _dt;
+            _integrator_last_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis() - _integrator_last_ms >= _integrator_freeze_duration_ms) {
+            _integrator_freeze_duration_ms = 0;
+        }
+
         if (_integrator < -_imax) {
             _integrator = -_imax;
         } else if (_integrator > _imax) {
@@ -180,6 +187,7 @@ float AC_PID::get_pid()
 void AC_PID::reset_I()
 {
     _integrator = 0;
+    _integrator_freeze_duration_ms = 0;
 }
 
 void AC_PID::load_gains()
