@@ -419,6 +419,7 @@ SPIDEV external0m1    SPI4 DEVID5  MPU_EXT_CS   MODE1  2*MHZ  2*MHZ
 SPIDEV external0m2    SPI4 DEVID5  MPU_EXT_CS   MODE2  2*MHZ  2*MHZ
 SPIDEV external0m3    SPI4 DEVID5  MPU_EXT_CS   MODE3  2*MHZ  2*MHZ
 SPIDEV pixartPC15     SPI4 DEVID13 ACCEL_EXT_CS MODE3  2*MHZ  2*MHZ
+SPIDEV osd            SPI4 DEVID6  MPU_EXT_CS   MODE0 10*MHZ 10*MHZ
 
 # Now some commented out SPI device names which can be used by
 # developers to test that the clock calculations are right for a
@@ -500,3 +501,9 @@ DMA_PRIORITY USART6*
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
 ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
+
+define OSD_ENABLED ENABLED
+define HAL_OSD_TYPE_DEFAULT 0
+
+#font for the osd
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
