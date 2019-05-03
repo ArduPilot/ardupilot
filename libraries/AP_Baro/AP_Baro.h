@@ -55,6 +55,9 @@ public:
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
 
+    // get primary sensor
+    uint8_t get_primary(void) const { return _primary; }
+
     // pressure in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure(void) const { return get_pressure(_primary); }
     float get_pressure(uint8_t instance) const { return sensors[instance].pressure; }
