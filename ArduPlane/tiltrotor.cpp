@@ -43,7 +43,7 @@ void QuadPlane::tiltrotor_slew(float newtilt)
     tilt.current_tilt = constrain_float(newtilt, tilt.current_tilt-max_change, tilt.current_tilt+max_change);
 
     // translate to 0..1000 range and output
-    SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, 1000 * tilt.current_tilt);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, 1000 * tilt_get_biased_tilt());
 
     // setup tilt compensation
     motors->set_thrust_compensation_callback(FUNCTOR_BIND_MEMBER(&QuadPlane::tilt_compensate, void, float *, uint8_t));
@@ -68,7 +68,7 @@ void QuadPlane::tiltrotor_continuous_update(void)
         max_change = tilt_max_change(false);
         
         float new_throttle = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01, 0, 1);
-        if (tilt.current_tilt < 1) {
+        if (tilt_get_biased_tilt() < 1) {
             tilt.current_throttle = constrain_float(new_throttle,
                                                     tilt.current_throttle-max_change,
                                                     tilt.current_throttle+max_change);
@@ -139,6 +139,8 @@ void QuadPlane::tiltrotor_binary_slew(bool forward)
 {
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, forward?1000:0);
 
+    // rate limiting current_tilt has the effect of delaying throttle in tiltrotor_binary_update
+    // The rate used here is (tilt.max_rate_down_dps > 0) ? tilt.max_rate_down_dps, tilt.max_rate_up_dps
     float max_change = tilt_max_change(!forward);
     if (forward) {
         tilt.current_tilt = constrain_float(tilt.current_tilt+max_change, 0, 1);
@@ -164,7 +166,7 @@ void QuadPlane::tiltrotor_binary_update(void)
         tiltrotor_binary_slew(true);
 
         float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
-        if (tilt.current_tilt >= 1) {
+        if (tilt_get_biased_tilt() >= 1) {
             uint8_t mask = is_zero(new_throttle)?0:(uint8_t)tilt.tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
             motors->output_motor_mask(new_throttle, mask, plane.rudder_dt);
@@ -172,6 +174,21 @@ void QuadPlane::tiltrotor_binary_update(void)
     } else {
         tiltrotor_binary_slew(false);
     }
+}
+
+float QuadPlane::tilt_get_biased_tilt(void)
+{
+    // check for manual bias input
+    RC_Channel *bias_ch = RC_Channels::rc_channel(tilt.bias_chan-1);
+
+    // don't apply bias if no channel assigned or in RC failsafe
+    if (bias_ch == nullptr || plane.failsafe.rc_failsafe || plane.failsafe.throttle_counter != 0) {
+        return tilt.current_tilt;
+    }
+    // convert channel input from [-1,1] to [0,1]
+    float bias_in = (1.0f + bias_ch->norm_input()) / 2;
+    float des_bias = constrain_float(bias_in, 0, 1);
+    return constrain_float(des_bias + tilt.current_tilt, 0, 1);
 }
 
 
@@ -227,10 +244,10 @@ void QuadPlane::tiltrotor_update(void)
 void QuadPlane::tilt_compensate_down(float *thrust, uint8_t num_motors)
 {
     float inv_tilt_factor;
-    if (tilt.current_tilt > 0.98f) {
+    if (tilt_get_biased_tilt() > 0.98f) {
         inv_tilt_factor = 1.0 / cosf(radians(0.98f*90));
     } else {
-        inv_tilt_factor = 1.0 / cosf(radians(tilt.current_tilt*90));
+        inv_tilt_factor = 1.0 / cosf(radians(tilt_get_biased_tilt()*90));
     }
 
     // when we got past Q_TILT_MAX we gang the tilted motors together
@@ -239,7 +256,7 @@ void QuadPlane::tilt_compensate_down(float *thrust, uint8_t num_motors)
     // control while angled over. This greatly improves the stability
     // of the last phase of transitions
     float tilt_threshold = (tilt.max_angle_deg/90.0f);
-    bool equal_thrust = (tilt.current_tilt > tilt_threshold);
+    bool equal_thrust = (tilt_get_biased_tilt() > tilt_threshold);
 
     float tilt_total = 0;
     uint8_t tilt_count = 0;
@@ -282,7 +299,7 @@ void QuadPlane::tilt_compensate_down(float *thrust, uint8_t num_motors)
  */
 void QuadPlane::tilt_compensate_up(float *thrust, uint8_t num_motors)
 {
-    float tilt_factor = cosf(radians(tilt.current_tilt*90));
+    float tilt_factor = cosf(radians(tilt_get_biased_tilt()*90));
 
     // when we got past Q_TILT_MAX we gang the tilted motors together
     // to generate equal thrust. This makes them act as a single pitch
@@ -290,7 +307,7 @@ void QuadPlane::tilt_compensate_up(float *thrust, uint8_t num_motors)
     // control while angled over. This greatly improves the stability
     // of the last phase of transitions
     float tilt_threshold = (tilt.max_angle_deg/90.0f);
-    bool equal_thrust = (tilt.current_tilt > tilt_threshold);
+    bool equal_thrust = (tilt_get_biased_tilt() > tilt_threshold);
 
     float tilt_total = 0;
     uint8_t tilt_count = 0;
@@ -322,7 +339,7 @@ void QuadPlane::tilt_compensate_up(float *thrust, uint8_t num_motors)
  */
 void QuadPlane::tilt_compensate(float *thrust, uint8_t num_motors)
 {
-    if (tilt.current_tilt <= 0) {
+    if (tilt_get_biased_tilt() <= 0) {
         // the motors are not tilted, no compensation needed
         return;
     }
@@ -342,7 +359,7 @@ bool QuadPlane::tiltrotor_fully_fwd(void)
     if (tilt.tilt_mask <= 0) {
         return false;
     }
-    return (tilt.current_tilt >= 1);
+    return (tilt_get_biased_tilt() >= 1);
 }
 
 /*
@@ -356,10 +373,10 @@ void QuadPlane::tiltrotor_vectored_yaw(void)
     float zero_out = tilt.tilt_yaw_angle / total_angle;
 
     // calculate the basic tilt amount from current_tilt
-    float base_output = zero_out + (tilt.current_tilt * (1 - zero_out));
+    float base_output = zero_out + (tilt_get_biased_tilt() * (1 - zero_out));
     
     float tilt_threshold = (tilt.max_angle_deg/90.0f);
-    bool no_yaw = (tilt.current_tilt > tilt_threshold);
+    bool no_yaw = (tilt_get_biased_tilt() > tilt_threshold);
     if (no_yaw) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * base_output);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * base_output);
