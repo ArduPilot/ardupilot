@@ -1869,9 +1869,12 @@ void QuadPlane::control_run(void)
     switch (plane.control_mode->mode_number()) {
     case Mode::Number::QACRO:
         control_qacro();
-        // QACRO uses only the multicopter controller
-        // so skip the Plane attitude control calls below
+        if (!is_tailsitter()) {
+            // also stabilize using fixed wing surfaces
+            plane.stabilize_acro(plane.get_speed_scaler());
+        }
         return;
+        break;
     case Mode::Number::QSTABILIZE:
         control_stabilize();
         break;
