@@ -35,7 +35,7 @@ void Rover::failsafe_check()
         // To-Do: log error
         if (arming.is_armed()) {
             // disarm motors
-            disarm_motors();
+            arming.disarm();
         }
     }
 }
@@ -135,7 +135,7 @@ void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
                 snprintf(battery_type_str, 17, "%s battery", type_str);
                 g2.afs.gcs_terminate(true, battery_type_str);
 #else
-                disarm_motors();
+                arming.disarm();
 #endif // ADVANCED_FAILSAFE == ENABLED
                 break;
         }

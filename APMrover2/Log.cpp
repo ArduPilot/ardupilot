@@ -4,24 +4,6 @@
 
 #if LOGGING_ENABLED == ENABLED
 
-struct PACKED log_Arm_Disarm {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  arm_state;
-    uint16_t arm_checks;
-};
-
-void Rover::Log_Write_Arm_Disarm()
-{
-    struct log_Arm_Disarm pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
-        time_us                 : AP_HAL::micros64(),
-        arm_state               : arming.is_armed(),
-        arm_checks              : arming.get_enabled_checks()
-    };
-    logger.WriteBlock(&pkt, sizeof(pkt));
-}
-
 // Write an attitude packet
 void Rover::Log_Write_Attitude()
 {
@@ -310,8 +292,6 @@ const LogStructure Rover::log_structure[] = {
       "NTUN", "QfHHHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smdddm", "F0BBB0" },
     { LOG_RANGEFINDER_MSG, sizeof(log_Rangefinder),
       "RGFD", "QfHHHbHCb",  "TimeUS,LatAcc,R1Dist,R2Dist,DCnt,TAng,TTim,Spd,Thr", "somm-hsm-", "F0BB-0CB-" },
-    { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
-      "ARM", "QBH", "TimeUS,ArmState,ArmChecks", "s--", "F--" },
     { LOG_STEERING_MSG, sizeof(log_Steering),
       "STER", "Qhfffff",   "TimeUS,SteerIn,SteerOut,DesLatAcc,LatAcc,DesTurnRate,TurnRate", "s--ookk", "F--0000" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
@@ -326,7 +306,6 @@ void Rover::log_init(void)
 #else  // LOGGING_ENABLED
 
 // dummy functions
-void Rover::Log_Write_Arm_Disarm() {}
 void Rover::Log_Write_Attitude() {}
 void Rover::Log_Write_Depth() {}
 void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}

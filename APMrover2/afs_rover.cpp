@@ -18,7 +18,7 @@ AP_AdvancedFailsafe_Rover::AP_AdvancedFailsafe_Rover(AP_Mission &_mission, const
 void AP_AdvancedFailsafe_Rover::terminate_vehicle(void)
 {
     // disarm as well
-    rover.disarm_motors();
+    AP::arming().disarm();
 
     // Set to HOLD mode
     rover.set_mode(rover.mode_hold, MODE_REASON_CRASH_FAILSAFE);
