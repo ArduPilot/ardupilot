@@ -974,8 +974,6 @@ struct PACKED log_Rate {
     float   accel_out;
 };
 
-// #if SBP_HW_LOGGING
-
 struct PACKED log_SbpLLH {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1121,7 +1119,12 @@ struct PACKED log_DSTL {
     float D;
 };
 
-// #endif // SBP_HW_LOGGING
+struct PACKED log_Arm_Disarm {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  arm_state;
+    uint16_t arm_checks;
+};
 
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
@@ -1504,7 +1507,6 @@ Format characters in the format string for binary log messages
       "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }
 
 
-// #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
       "SBPH", "QIII", "TimeUS,CrcError,LastInject,IARhyp", "s---", "F---" }, \
@@ -1516,10 +1518,10 @@ Format characters in the format string for binary log messages
       "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
       "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }, \
+    { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm), \
+      "ARM", "QBH", "TimeUS,ArmState,ArmChecks", "s--", "F--" }, \
     { LOG_ERROR_MSG, sizeof(log_Error), \
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }
-
-// #endif
 
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES, LOG_SBP_STRUCTURES
 
@@ -1678,6 +1680,7 @@ enum LogMessages : uint8_t {
     LOG_MAV_MSG,
     LOG_ERROR_MSG,
     LOG_ADSB_MSG,
+    LOG_ARM_DISARM_MSG,
 
     _LOG_LAST_MSG_
 };
