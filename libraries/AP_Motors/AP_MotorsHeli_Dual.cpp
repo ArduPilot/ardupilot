@@ -223,7 +223,7 @@ void AP_MotorsHeli_Dual::set_update_rate( uint16_t speed_hz )
 // init_outputs
 bool AP_MotorsHeli_Dual::init_outputs()
 {
-    if (!_flags.initialised_ok) {
+    if (!initialised_ok()) {
         // make sure 6 output channels are mapped
         for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
             add_motor_num(CH_1+i);
@@ -258,7 +258,7 @@ bool AP_MotorsHeli_Dual::init_outputs()
         reset_swash_servo(SRV_Channels::get_motor_function(7));
     }
 
-    _flags.initialised_ok = true;
+    set_initialised_ok(true);
 
     return true;
 }
@@ -335,7 +335,7 @@ void AP_MotorsHeli_Dual::calculate_armed_scalars()
         gcs().send_text(MAV_SEVERITY_CRITICAL, "RSC control mode change failed");
     }
     // saves rsc mode parameter when disarmed if it had been reset while armed
-    if (_heliflags.save_rsc_mode && !_flags.armed) {
+    if (_heliflags.save_rsc_mode && !armed()) {
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
@@ -606,7 +606,7 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
 
 void AP_MotorsHeli_Dual::output_to_motors()
 {
-    if (!_flags.initialised_ok) {
+    if (!initialised_ok()) {
         return;
     }
     // actually move the servos.  PWM is sent based on nominal 1500 center.  servo output shifts center based on trim value.

@@ -883,7 +883,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
     // normalise factors to magnitude 0.5
     normalise_rpy_factors();
 
-    _flags.initialised_ok = success;
+    set_initialised_ok(success);
 }
 
 // normalizes the roll, pitch and yaw factors so maximum magnitude is 0.5
