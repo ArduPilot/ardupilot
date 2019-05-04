@@ -83,7 +83,7 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
         }
         retry_attempt++;
         if (!success) {
-            hal.scheduler->delay(10);
+            hal.scheduler->delay(1000);
         }
     }
     return success;
