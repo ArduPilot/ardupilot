@@ -15,7 +15,7 @@ void ModeAcro::update()
         float desired_speed;
         // convert pilot stick input into desired steering and speed
         get_pilot_desired_steering_and_speed(desired_steering, desired_speed);
-        calc_throttle(desired_speed, false, true);
+        calc_throttle(desired_speed, true);
     }
 
     float steering_out;
