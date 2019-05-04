@@ -360,6 +360,22 @@ bool Util::get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) co
     return false;
 }
 
+// backup last mission nav wp index for restore on watchdog reset
+void Util::set_backup_prev_nav_cmd_state(uint32_t index) const
+{
+    stm32_set_prev_nav_cmd(index);
+}
+
+// backup last mission nav wp index for restore on watchdog reset
+bool Util::get_backup_prev_nav_cmd_state(uint32_t &index) const
+{
+    if (was_watchdog_reset()) {
+        stm32_get_prev_nav_cmd(&index);
+        return true;
+    }
+    return false;
+}
+
 // backup atttude for restore on watchdog reset
 void Util::set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const
 {

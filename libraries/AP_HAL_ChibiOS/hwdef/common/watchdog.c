@@ -45,8 +45,9 @@
 #define WDG_ARMED_BIT   0x02
 
 #define BKP_IDX_FLAGS   0x01
-#define BKP_IDX_HOME    0x02
-#define BKP_IDX_RPY     0x05
+#define BKP_IDX_HOME    0x02 //0x03 0x04 resrved for HOME
+#define BKP_IDX_RPY     0x05 //0x06 0x07 reserved for RPY
+#define BKP_IDX_NAVWP   0x08
 
 typedef struct
 {
@@ -185,6 +186,22 @@ void stm32_get_backup_home(int32_t *lat, int32_t *lon, int32_t *alt_cm)
     *lat = (int32_t)boot_backup_state[BKP_IDX_HOME];
     *lon = (int32_t)boot_backup_state[BKP_IDX_HOME+1];
     *alt_cm = (int32_t)boot_backup_state[BKP_IDX_HOME+2];
+}
+
+/*
+  set last nav wp index
+ */
+void stm32_set_prev_nav_cmd(uint32_t index)
+{
+    set_rtc_backup(BKP_IDX_NAVWP, index);
+}
+
+/*
+  get last nav wp index
+ */
+void stm32_get_prev_nav_cmd(uint32_t *index)
+{
+    *index = boot_backup_state[BKP_IDX_NAVWP];
 }
 
 /*

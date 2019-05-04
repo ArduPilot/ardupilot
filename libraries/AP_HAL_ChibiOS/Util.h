@@ -80,6 +80,12 @@ public:
     // backup home state for restore on watchdog reset
     bool get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const override;
 
+    // backup last mission nav wp index for restore on watchdog reset
+    void set_backup_prev_nav_cmd_state(uint32_t index) const override;
+
+    // backup last mission nav wp index for restore on watchdog reset
+    bool get_backup_prev_nav_cmd_state(uint32_t &index) const override;
+
     // backup atttude for restore on watchdog reset
     void set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const override;
 
