@@ -448,13 +448,12 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     }
 
     // if not called recently, reset input filter and desired speed to actual speed (used for accel limiting)
-    const uint32_t now = AP_HAL::millis();
     if (!speed_control_active()) {
         _throttle_speed_pid.reset_filter();
         _throttle_speed_pid.reset_I();
         _desired_speed = speed;
     }
-    _speed_last_ms = now;
+    _speed_last_ms = AP_HAL::millis();
 
     // acceleration limit desired speed
     _desired_speed = get_desired_speed_accel_limited(desired_speed, dt);
@@ -721,9 +720,8 @@ float AR_AttitudeControl::get_desired_speed() const
 float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed, float dt) const
 {
     // return input value if no recent calls to speed controller
-	// apply no limiting when ATC_ACCEL_MAX is set to zero
-    const uint32_t now = AP_HAL::millis();
-    if ((_speed_last_ms == 0) || ((now - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS) || !is_positive(_throttle_accel_max)) {
+    // apply no limiting when ATC_ACCEL_MAX is set to zero
+    if (!speed_control_active() || !is_positive(_throttle_accel_max)) {
         return desired_speed;
     }
 
