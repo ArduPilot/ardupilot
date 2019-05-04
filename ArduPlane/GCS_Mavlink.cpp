@@ -44,6 +44,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::CIRCLE:
+    case Mode::Number::TAKEOFF:
     case Mode::Number::QRTL:
         _base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
                      MAV_MODE_FLAG_STABILIZE_ENABLED;
