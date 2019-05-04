@@ -1869,11 +1869,6 @@ void QuadPlane::control_run(void)
     switch (plane.control_mode->mode_number()) {
     case Mode::Number::QACRO:
         control_qacro();
-        if (!is_tailsitter()) {
-            // also stabilize using fixed wing surfaces
-            plane.stabilize_acro(plane.get_speed_scaler());
-        }
-        return;
         break;
     case Mode::Number::QSTABILIZE:
         control_stabilize();
@@ -1896,10 +1891,15 @@ void QuadPlane::control_run(void)
     default:
         break;
     }
+
     // we also stabilize using fixed wing surfaces
     float speed_scaler = plane.get_speed_scaler();
-    plane.stabilize_roll(speed_scaler);
-    plane.stabilize_pitch(speed_scaler);
+    if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
+        plane.stabilize_acro(speed_scaler);
+    } else {
+        plane.stabilize_roll(speed_scaler);
+        plane.stabilize_pitch(speed_scaler);
+    }
 }
 
 /*
