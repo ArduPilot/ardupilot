@@ -11,9 +11,6 @@ bool ModeFollow::_enter()
     // initialise waypoint speed
     set_desired_speed_to_default();
 
-    // initialise heading to current heading
-    _desired_yaw_cd = ahrs.yaw_sensor;
-
     return true;
 }
 
@@ -64,10 +61,10 @@ void ModeFollow::update()
     }
 
     // calculate vehicle heading
-    _desired_yaw_cd = wrap_180_cd(atan2f(desired_velocity_ne.y, desired_velocity_ne.x) * DEGX100);
+    const float desired_yaw_cd = wrap_180_cd(atan2f(desired_velocity_ne.y, desired_velocity_ne.x) * DEGX100);
 
     // run steering and throttle controllers
-    calc_steering_to_heading(_desired_yaw_cd);
+    calc_steering_to_heading(desired_yaw_cd);
     calc_throttle(desired_speed, true);
 }
 
