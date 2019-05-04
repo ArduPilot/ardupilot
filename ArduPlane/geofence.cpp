@@ -280,6 +280,52 @@ bool Plane::geofence_check_maxalt(void)
     return (adjusted_altitude_cm() > (g.fence_maxalt*100.0f) + home.alt);
 }
 
+/*
+  pre-arm check for being inside the fence
+ */
+bool Plane::geofence_prearm_check(void)
+{
+    if (!geofence_enabled()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "PreArm: Fence not enabled");
+        return false;
+    }
+
+    /* allocate the geo-fence state if need be */
+    if (geofence_state == nullptr || !geofence_state->boundary_uptodate) {
+        geofence_load();
+        if (!geofence_enabled()) {
+            // may have been disabled by load
+            gcs().send_text(MAV_SEVERITY_WARNING, "PreArm: Fence load failed");
+            return false;
+        }
+    }
+
+    if (geofence_state->floor_enabled && g.fence_minalt != 0) {
+        // can't use minalt with prearm check
+        gcs().send_text(MAV_SEVERITY_WARNING, "PreArm: Fence floor enabled");
+        return false;
+    }
+    if (geofence_check_maxalt()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "PreArm: maxalt breached");
+        return false;
+    }
+    struct Location loc;
+    if (!ahrs.get_position(loc)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "PreArm: no position available");
+        // must have position
+        return false;
+    }
+    Vector2l location;
+    location.x = loc.lat;
+    location.y = loc.lng;
+    bool outside = Polygon_outside(location, &geofence_state->boundary[1], geofence_state->num_points-1);
+    if (outside) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "PreArm: outside fence");
+        return false;
+    }
+    return true;
+}
+
 
 /*
  *  check if we have breached the geo-fence
