@@ -494,9 +494,9 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
 
     // get heading to following waypoint (auto mode reduces speed to allow corning without large overshoot)
     // in case of non-zero loiter duration, we provide heading-unknown to signal we should stop at the point
-    float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN;
+    float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN;
     if (!always_stop_at_destination && loiter_duration == 0) {
-        next_leg_bearing_cd = mission.get_next_ground_course_cd(MODE_NEXT_HEADING_UNKNOWN);
+        next_leg_bearing_cd = mission.get_next_ground_course_cd(AR_WPNAV_HEADING_UNKNOWN);
     }
 
     // retrieve and sanitize target location
