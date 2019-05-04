@@ -5,10 +5,9 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AR_WPNav/AR_WPNav.h>
 
 #include "defines.h"
-
-#define MODE_NEXT_HEADING_UNKNOWN   99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
 
 // pre-define ModeRTL so Auto can appear higher in this file
 class ModeRTL;
@@ -104,9 +103,9 @@ public:
     // return distance (in meters) to destination
     virtual float get_distance_to_destination() const { return 0.0f; }
 
-    // set desired location and speed (used in RTL, Guided, Auto)
+    // set desired location (used in Guided, Auto)
     //   next_leg_bearing_cd should be heading to the following waypoint (used to slow the vehicle in order to make the turn)
-    virtual void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN);
+    virtual void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN);
 
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() const { return true; }
@@ -252,8 +251,8 @@ public:
     // return distance (in meters) to destination
     float get_distance_to_destination() const override;
 
-    // set desired location, heading and speed
-    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN) override;
+    // set desired location
+    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) override;
     bool reached_destination() const override;
 
     // heading and speed control
@@ -367,7 +366,7 @@ public:
     bool reached_destination() const override;
 
     // set desired location, heading and speed
-    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN) override;
+    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) override;
     void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
 
     // set desired heading-delta, turn-rate and speed
