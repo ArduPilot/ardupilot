@@ -94,6 +94,9 @@ public:
     virtual float nav_bearing() const;
     virtual float crosstrack_error() const;
 
+    // get speed error in m/s, not currently supported
+    float speed_error() const { return 0.0f; }
+
     //
     // navigation methods
     //
@@ -110,9 +113,6 @@ public:
 
     // set desired heading and speed - supported in Auto and Guided modes
     virtual void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed);
-
-    // get speed error in m/s, returns zero for modes that do not control speed
-    float speed_error() const { return _speed_error; }
 
     // get default speed for this mode (held in CRUISE_SPEED, WP_SPEED or RTL_SPEED)
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
@@ -208,7 +208,6 @@ protected:
     float _desired_yaw_cd;      // desired yaw in centi-degrees
     float _yaw_error_cd;        // error between desired yaw and actual yaw in centi-degrees
     float _desired_speed;       // desired speed in m/s
-    float _speed_error;         // ground speed error in m/s
 };
 
 
