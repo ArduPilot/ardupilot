@@ -319,12 +319,14 @@ void Plane::crash_detection_update(void)
 /*
  * return true if we are in a pre-launch phase of an auto-launch, typically used in bungee launches
  */
-bool Plane::in_preLaunch_flight_stage(void) {
+bool Plane::in_preLaunch_flight_stage(void)
+{
+    if (control_mode == &mode_takeoff && throttle_suppressed) {
+        return true;
+    }
     return (control_mode == &mode_auto &&
             throttle_suppressed &&
             flight_stage == AP_Vehicle::FixedWing::FLIGHT_NORMAL &&
             mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF &&
             !quadplane.is_vtol_takeoff(mission.get_current_nav_cmd().id));
 }
-
-
