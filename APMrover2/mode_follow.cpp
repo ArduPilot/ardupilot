@@ -13,7 +13,6 @@ bool ModeFollow::_enter()
 
     // initialise heading to current heading
     _desired_yaw_cd = ahrs.yaw_sensor;
-    _yaw_error_cd = 0.0f;
 
     return true;
 }
