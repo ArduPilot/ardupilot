@@ -92,7 +92,7 @@ void Sub::failsafe_sensors_check()
         // This should always succeed
         if (!set_mode(MANUAL, MODE_REASON_BAD_DEPTH)) {
             // We should never get here
-            init_disarm_motors();
+            arming.disarm();
         }
     }
 }
@@ -146,7 +146,7 @@ void Sub::failsafe_ekf_check()
     }
 
     if (g.fs_ekf_action == FS_EKF_ACTION_DISARM) {
-        init_disarm_motors();
+        arming.disarm();
     }
 }
 
@@ -160,7 +160,7 @@ void Sub::handle_battery_failsafe(const char* type_str, const int8_t action)
             set_mode(SURFACE, MODE_REASON_BATTERY_FAILSAFE);
             break;
         case Failsafe_Action_Disarm:
-            init_disarm_motors();
+            arming.disarm();
             break;
         case Failsafe_Action_Warn:
         case Failsafe_Action_None:
@@ -194,7 +194,7 @@ void Sub::failsafe_pilot_input_check()
     set_neutral_controls();
 
     if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
-        init_disarm_motors();
+        arming.disarm();
     }
 #endif
 }
@@ -345,14 +345,14 @@ void Sub::failsafe_gcs_check()
 
     // handle failsafe action
     if (g.failsafe_gcs == FS_GCS_DISARM) {
-        init_disarm_motors();
+        arming.disarm();
     } else if (g.failsafe_gcs == FS_GCS_HOLD && motors.armed()) {
         if (!set_mode(ALT_HOLD, MODE_REASON_GCS_FAILSAFE)) {
-            init_disarm_motors();
+            arming.disarm();
         }
     } else if (g.failsafe_gcs == FS_GCS_SURFACE && motors.armed()) {
         if (!set_mode(SURFACE, MODE_REASON_GCS_FAILSAFE)) {
-            init_disarm_motors();
+            arming.disarm();
         }
     }
 }
@@ -411,7 +411,7 @@ void Sub::failsafe_crash_check()
 
     // disarm motors
     if (g.fs_crash_check == FS_CRASH_DISARM) {
-        init_disarm_motors();
+        arming.disarm();
     }
 }
 
@@ -490,6 +490,6 @@ void Sub::failsafe_terrain_act()
 
     case FS_TERRAIN_DISARM:
     default:
-        init_disarm_motors();
+        arming.disarm();
     }
 }

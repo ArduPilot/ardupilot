@@ -511,22 +511,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
         }
         return MAV_RESULT_FAILED;
 
-    case MAV_CMD_COMPONENT_ARM_DISARM:
-        if (is_equal(packet.param1,1.0f)) {
-            // attempt to arm and return success or failure
-            if (sub.init_arm_motors(AP_Arming::Method::MAVLINK)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-        } else if (is_zero(packet.param1))  {
-            // force disarming by setting param2 = 21196 is deprecated
-            // see COMMAND_LONG DO_FLIGHTTERMINATION
-            sub.init_disarm_motors();
-            return MAV_RESULT_ACCEPTED;
-        } else {
-            return MAV_RESULT_UNSUPPORTED;
-        }
-        return MAV_RESULT_FAILED;
-
     case MAV_CMD_DO_MOTOR_TEST:
         // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
         // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
@@ -850,7 +834,7 @@ void Sub::mavlink_delay_cb()
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long_t &packet) {
     if (packet.param1 > 0.5f) {
-        sub.init_disarm_motors();
+        sub.arming.disarm();
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;

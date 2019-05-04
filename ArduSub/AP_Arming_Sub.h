@@ -14,6 +14,9 @@ public:
     bool rc_calibration_checks(bool display_failure) override;
     bool pre_arm_checks(bool display_failure) override;
 
+    bool disarm() override;
+    bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
+
 protected:
     bool ins_checks(bool display_failure) override;
 };
