@@ -57,6 +57,10 @@ void AP_Mission::init()
     	clear();	
     }
 
+    if (!_last_change_time_ms) {
+        load_watchdog_nav_cmd_idx();
+    }
+
     _last_change_time_ms = AP_HAL::millis();
 }
 
@@ -180,6 +184,7 @@ void AP_Mission::reset()
     _prev_nav_cmd_index    = AP_MISSION_CMD_INDEX_NONE;
     _prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
     _prev_nav_cmd_id       = AP_MISSION_CMD_ID_NONE;
+    save_watchdog_prev_nav_cmd_idx();
     init_jump_tracking();
 }
 
@@ -218,6 +223,9 @@ void AP_Mission::truncate(uint16_t index)
 ///     should be called at 10hz or higher
 void AP_Mission::update()
 {
+    if (!_last_change_time_ms) {
+        load_watchdog_nav_cmd_idx();
+    }
     // exit immediately if not running or no mission commands
     if (_flags.state != MISSION_RUNNING || _cmd_total == 0) {
         return;
@@ -405,6 +413,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
         _prev_nav_cmd_id    = AP_MISSION_CMD_ID_NONE;
         _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
         _prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
+        save_watchdog_prev_nav_cmd_idx();
         // reset the jump tracking to zero
         init_jump_tracking();
         if (index == 0) {
@@ -686,6 +695,38 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
         return MAV_MISSION_INVALID_PARAM4;
     }
     return MAV_MISSION_ACCEPTED;
+}
+
+void AP_Mission::save_watchdog_prev_nav_cmd_idx()
+{
+    //save both uint16_t index & mission state at uint32_t space
+    uint32_t index{0};
+    index = static_cast<uint16_t>(_flags.state);
+    index <<= 16;
+    index |= _prev_nav_cmd_index;
+    hal.util->set_backup_prev_nav_cmd_state(index);
+}
+
+//Restore last nav cmd and set current cmd after watchdog reset
+void AP_Mission::load_watchdog_nav_cmd_idx()
+{
+    uint32_t index{0};
+    if (hal.util->was_watchdog_reset() &&
+        hal.util->get_backup_prev_nav_cmd_state(index) &&
+        index != 0) {
+        _prev_nav_cmd_index |= index;
+        uint16_t saved_state{0};
+        saved_state |= index >> 16;
+        _flags.state = static_cast<mission_state>(saved_state);
+        Mission_Command cmd;
+        if (read_cmd_from_storage(_prev_nav_cmd_index, cmd)) {
+            _prev_nav_cmd_id = cmd.id;
+            set_current_cmd(_prev_nav_cmd_index+1);
+        } else {
+            _prev_nav_cmd_id    = AP_MISSION_CMD_ID_NONE;
+            _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
+        }
+    }
 }
 
 // mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
@@ -1502,6 +1543,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             // save previous nav command index
             _prev_nav_cmd_id = _nav_cmd.id;
             _prev_nav_cmd_index = _nav_cmd.index;
+            save_watchdog_prev_nav_cmd_idx();
             // save separate previous nav command index if it contains lat,long,alt
             if (!(cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
                 _prev_nav_cmd_wp_index = _nav_cmd.index;
