@@ -64,7 +64,7 @@ void ModeAuto::update()
             if (!_reached_heading) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
-                calc_throttle(_desired_speed, true, true);
+                calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
                 // check if we have reached within 5 degrees of target
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {
@@ -98,14 +98,14 @@ void ModeAuto::update()
     }
 }
 
-void ModeAuto::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled)
+void ModeAuto::calc_throttle(float target_speed, bool avoidance_enabled)
 {
     // If not autostarting set the throttle to minimum
     if (!check_trigger()) {
         stop_vehicle();
         return;
     }
-    Mode::calc_throttle(target_speed, nudge_allowed, avoidance_enabled);
+    Mode::calc_throttle(target_speed, avoidance_enabled);
 }
 
 // return distance (in meters) to destination

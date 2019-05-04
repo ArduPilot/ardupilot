@@ -57,7 +57,7 @@ void ModeGuided::update()
             if (have_attitude_target) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
-                calc_throttle(_desired_speed, true, true);
+                calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
             } else {
                 // we have reached the destination so stay here
                 if (rover.is_boat()) {
@@ -85,7 +85,7 @@ void ModeGuided::update()
                                                                             g2.motors.limit.steer_right,
                                                                             rover.G_Dt);
                 set_steering(steering_out * 4500.0f);
-                calc_throttle(_desired_speed, true, true);
+                calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
             } else {
                 // we have reached the destination so stay here
                 if (rover.is_boat()) {
