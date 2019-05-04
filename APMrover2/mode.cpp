@@ -369,7 +369,7 @@ float Mode::calc_speed_nudge(float target_speed, bool reversed)
 
 // high level call to navigate to waypoint
 // uses wp_nav to calculate turn rate and speed to drive along the path from origin to destination
-// this function updates _distance_to_destination and _yaw_error_cd
+// this function updates _distance_to_destination
 void Mode::navigate_to_waypoint()
 {
     // update navigation controller
@@ -382,8 +382,6 @@ void Mode::navigate_to_waypoint()
     calc_throttle(desired_speed, true);
 
     float desired_heading_cd = g2.wp_nav.wp_bearing_cd();
-    _yaw_error_cd = wrap_180_cd(desired_heading_cd - ahrs.yaw_sensor);
-
     if (rover.sailboat_use_indirect_route(desired_heading_cd)) {
         // sailboats use heading controller when tacking upwind
         desired_heading_cd = rover.sailboat_calc_heading(desired_heading_cd);
@@ -438,9 +436,6 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 // rate_max is a maximum turn rate in deg/s.  set to zero to use default turn rate limits
 void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max_degs)
 {
-    // calculate yaw error so it can be used for reporting and slowing the vehicle
-    _yaw_error_cd = wrap_180_cd(desired_heading_cd - ahrs.yaw_sensor);
-
     // call heading controller
     const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f),
                                                                          radians(rate_max_degs),

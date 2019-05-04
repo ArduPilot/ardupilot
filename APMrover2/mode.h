@@ -206,7 +206,6 @@ protected:
     float _distance_to_destination; // distance from vehicle to final destination in meters
     bool _reached_destination;  // true once the vehicle has reached the destination
     float _desired_yaw_cd;      // desired yaw in centi-degrees
-    float _yaw_error_cd;        // error between desired yaw and actual yaw in centi-degrees
     float _desired_speed;       // desired speed in m/s
 };
 
