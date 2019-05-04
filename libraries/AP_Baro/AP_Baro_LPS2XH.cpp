@@ -159,8 +159,13 @@ bool AP_Baro_LPS2XH::_init()
     	CallTime = 40 * AP_USEC_PER_MSEC;
     }
     if(_lps2xh_type == BARO_LPS22H){
-    	_dev->write_register(LPS22H_CTRL_REG1,LPS22H_CTRL_REG1_ODR_75HZ|LPS22H_CTRL_REG1_BDU|LPS22H_CTRL_REG1_EN_LPFP|LPS22H_CTRL_REG1_LPFP_CFG);
-		_dev->write_register(LPS22H_CTRL_REG2,0x18);
+        _dev->write_register(LPS22H_CTRL_REG1, 0x00); // turn off for config
+        _dev->write_register(LPS22H_CTRL_REG1, LPS22H_CTRL_REG1_ODR_75HZ|LPS22H_CTRL_REG1_BDU|LPS22H_CTRL_REG1_EN_LPFP|LPS22H_CTRL_REG1_LPFP_CFG);
+        if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+            _dev->write_register(LPS22H_CTRL_REG2, 0x18);  // disable i2c
+        } else {
+            _dev->write_register(LPS22H_CTRL_REG2, 0x10);
+        }
 
 		// request 75Hz update
         CallTime = 1000000/75;
