@@ -60,7 +60,7 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
     uint8_t retry_attempt = 0;
 
     while (!success && retry_attempt < PX4FLOW_INIT_RETRIES) {
-        for (uint8_t bus = 0; bus < 3; bus++) {
+        FOREACH_I2C_EXTERNAL(bus) {
     #ifdef HAL_OPTFLOW_PX4FLOW_I2C_BUS
             // only one bus from HAL
             if (bus != HAL_OPTFLOW_PX4FLOW_I2C_BUS) {
