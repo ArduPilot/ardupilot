@@ -55,6 +55,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
         break;
 
     case Mode::Number::CIRCLE:
+    case Mode::Number::TAKEOFF:
     case Mode::Number::RTL:
     case Mode::Number::QLAND:
     case Mode::Number::QRTL:
@@ -123,6 +124,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     case Mode::Number::RTL:
     case Mode::Number::QLAND:
     case Mode::Number::QRTL:
+    case Mode::Number::TAKEOFF:
     case Mode::Number::INITIALISING:
         break;
     }

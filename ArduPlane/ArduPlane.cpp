@@ -491,6 +491,7 @@ void Plane::update_navigation()
     case Mode::Number::LOITER:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
+    case Mode::Number::TAKEOFF:
         update_loiter(radius);
         break;
 
@@ -617,7 +618,7 @@ void Plane::update_flight_stage(void)
             } else {
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
             }
-        } else {
+        } else if (control_mode != &mode_takeoff) {
             // If not in AUTO then assume normal operation for normal TECS operation.
             // This prevents TECS from being stuck in the wrong stage if you switch from
             // AUTO to, say, FBWB during a landing, an aborted landing or takeoff.
