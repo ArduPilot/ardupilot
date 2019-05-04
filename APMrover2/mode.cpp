@@ -248,13 +248,8 @@ void Mode::handle_tack_request()
     }
 }
 
-void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled)
+void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
 {
-    // add in speed nudging
-    if (nudge_allowed) {
-        target_speed = calc_speed_nudge(target_speed, g.speed_cruise, g.throttle_cruise * 0.01f);
-    }
-
     // get acceleration limited target speed
     target_speed = attitude_control.get_desired_speed_accel_limited(target_speed, rover.G_Dt);
 
@@ -334,9 +329,8 @@ float Mode::calc_speed_max(float cruise_speed, float cruise_throttle) const
 
 // calculate pilot input to nudge speed up or down
 //  target_speed should be in meters/sec
-//  cruise_speed is vehicle's cruising speed, cruise_throttle is the throttle (from -1 to +1) that achieves the cruising speed
-//  return value is a new speed (in m/s) which up to the projected maximum speed based on the cruise speed and cruise throttle
-float Mode::calc_speed_nudge(float target_speed, float cruise_speed, float cruise_throttle)
+//  reversed should be true if the vehicle is intentionally backing up which allows the pilot to increase the backing up speed by pulling the throttle stick down
+float Mode::calc_speed_nudge(float target_speed, bool reversed)
 {
     // return immediately during RC/GCS failsafe
     if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
@@ -346,18 +340,18 @@ float Mode::calc_speed_nudge(float target_speed, float cruise_speed, float cruis
     // return immediately if pilot is not attempting to nudge speed
     // pilot can nudge up speed if throttle (in range -100 to +100) is above 50% of center in direction of travel
     const int16_t pilot_throttle = constrain_int16(rover.channel_throttle->get_control_in(), -100, 100);
-    if (((pilot_throttle <= 50) && (target_speed >= 0.0f)) ||
-        ((pilot_throttle >= -50) && (target_speed <= 0.0f))) {
+    if (((pilot_throttle <= 50) && !reversed) ||
+        ((pilot_throttle >= -50) && reversed)) {
         return target_speed;
     }
 
     // sanity checks
-    if (cruise_throttle > 1.0f || cruise_throttle < 0.05f) {
+    if (g.throttle_cruise > 100 || g.throttle_cruise < 5) {
         return target_speed;
     }
 
     // project vehicle's maximum speed
-    const float vehicle_speed_max = calc_speed_max(cruise_speed, cruise_throttle);
+    const float vehicle_speed_max = calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
 
     // return unadjusted target if already over vehicle's projected maximum speed
     if (fabsf(target_speed) >= vehicle_speed_max) {
@@ -382,9 +376,10 @@ void Mode::navigate_to_waypoint()
     g2.wp_nav.update(rover.G_Dt);
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
 
-    // pass speed to throttle controller
-    const float desired_speed = g2.wp_nav.get_speed();
-    calc_throttle(desired_speed, true, true);
+    // pass speed to throttle controller after applying nudge from pilot
+    float desired_speed = g2.wp_nav.get_speed();
+    desired_speed = calc_speed_nudge(desired_speed, g2.wp_nav.get_reversed());
+    calc_throttle(desired_speed, true);
 
     float desired_heading_cd = g2.wp_nav.wp_bearing_cd();
     _yaw_error_cd = wrap_180_cd(desired_heading_cd - ahrs.yaw_sensor);

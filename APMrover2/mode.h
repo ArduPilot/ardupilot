@@ -168,7 +168,7 @@ protected:
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
-    virtual void calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled);
+    virtual void calc_throttle(float target_speed, bool avoidance_enabled);
 
     // performs a controlled stop. returns true once vehicle has stopped
     bool stop_vehicle();
@@ -179,9 +179,8 @@ protected:
 
     // calculate pilot input to nudge speed up or down
     //  target_speed should be in meters/sec
-    //  cruise_speed is vehicle's cruising speed, cruise_throttle is the throttle (from -1 to +1) that achieves the cruising speed
-    //  return value is a new speed (in m/s) which up to the projected maximum speed based on the cruise speed and cruise throttle
-    float calc_speed_nudge(float target_speed, float cruise_speed, float cruise_throttle);
+    //  reversed should be true if the vehicle is intentionally backing up which allows the pilot to increase the backing up speed by pulling the throttle stick down
+    float calc_speed_nudge(float target_speed, bool reversed);
 
     // calculate vehicle stopping location using current location, velocity and maximum acceleration
     void calc_stopping_location(Location& stopping_loc);
@@ -244,7 +243,7 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled) override;
+    void calc_throttle(float target_speed, bool avoidance_enabled) override;
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
