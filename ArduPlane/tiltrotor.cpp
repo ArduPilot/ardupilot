@@ -111,6 +111,7 @@ void QuadPlane::tiltrotor_continuous_update(void)
     */
     if (plane.control_mode == &plane.mode_qstabilize ||
         plane.control_mode == &plane.mode_qhover ||
+        plane.control_mode == &plane.mode_qacro ||
         plane.control_mode == &plane.mode_qautotune) {
         tiltrotor_slew(0);
         return;
@@ -374,17 +375,13 @@ void QuadPlane::tiltrotor_vectored_yaw(void)
 
     // calculate the basic tilt amount from current_tilt
     float base_output = zero_out + (tilt_get_biased_tilt() * (1 - zero_out));
-    
-    float tilt_threshold = (tilt.max_angle_deg/90.0f);
-    bool no_yaw = (tilt_get_biased_tilt() > tilt_threshold);
-    if (no_yaw) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * base_output);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * base_output);
-    } else {
-        float yaw_out = motors->get_yaw();
-        float yaw_range = zero_out;
 
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * (base_output + yaw_out * yaw_range));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * (base_output - yaw_out * yaw_range));
+    float tilt_threshold = (tilt.max_angle_deg/90.0f);
+    float yaw_range = zero_out;
+    float yaw_out = 0.0f;
+    if (tilt_get_biased_tilt() < tilt_threshold) {
+        yaw_out = motors->get_yaw() * yaw_range;
     }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * (base_output + yaw_out));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * (base_output - yaw_out));
 }
