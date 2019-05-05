@@ -28,6 +28,7 @@ public:
     bool take(uint32_t timeout_ms);
     bool take_nonblocking();
     void take_blocking();
+    bool check_owner();
 protected:
     void*  handle;
 };

@@ -27,7 +27,10 @@ using namespace ESP32;
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)
 
+extern const AP_HAL::HAL& hal;
+
 SPIDeviceDesc device_desc[] = {HAL_ESP32_SPI_DEVICES};
+
 SPIBusDesc bus_desc[] = {HAL_ESP32_SPI_BUSES};
 
 SPIBus::SPIBus(uint8_t _bus):
@@ -102,8 +105,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
 {
     if (!send || !recv) {
         // simplest cases
-        transfer_fullduplex(send, recv, recv_len?recv_len:send_len);
-        return true;
+        return transfer_fullduplex(send, recv, recv_len?recv_len:send_len);
     }
     uint8_t buf[send_len+recv_len];
     if (send_len > 0) {
@@ -112,15 +114,19 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     if (recv_len > 0) {
         memset(&buf[send_len], 0, recv_len);
     }
-    transfer_fullduplex(buf, buf, send_len+recv_len);
+    bool result = transfer_fullduplex(buf, buf, send_len+recv_len);
     if (recv_len > 0) {
         memcpy(recv, &buf[send_len], recv_len);
     }
-    return true;
+    return result;
 }
 
 bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t len)
 {
+    if (!bus.semaphore.check_owner()) {
+        hal.console->printf("SPI: not owner of 0x%x\n", (unsigned)get_bus_id());
+        return false;
+    }
     acquire_bus(true);
     spi_transaction_t t;
     memset(&t, 0, sizeof(t));

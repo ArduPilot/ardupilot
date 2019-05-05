@@ -17,6 +17,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "freertos/task.h"
 
 using namespace ESP32;
 
@@ -43,6 +44,11 @@ void Semaphore::take_blocking()
 bool Semaphore::take_nonblocking()
 {
     return xSemaphoreTake(handle, 0);
+}
+
+bool Semaphore::check_owner()
+{
+    return xSemaphoreGetMutexHolder(handle) == xTaskGetCurrentTaskHandle();
 }
 
 Semaphore_Recursive::Semaphore_Recursive()

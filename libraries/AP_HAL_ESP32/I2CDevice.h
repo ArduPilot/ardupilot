@@ -40,6 +40,7 @@ class I2CBus : public  DeviceBus {
 public:
     I2CBus():DeviceBus(Scheduler::I2C_PRIORITY) {};
     i2c_port_t port;
+    uint32_t bus_clock;
 };
 
 class I2CDevice : public AP_HAL::I2CDevice {

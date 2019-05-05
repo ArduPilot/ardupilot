@@ -23,6 +23,8 @@ using namespace ESP32;
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)
 
+extern const AP_HAL::HAL& hal;
+
 I2CBusDesc i2c_bus_desc[] = { HAL_ESP32_I2C_BUSES };
 
 I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(i2c_bus_desc)];
@@ -40,14 +42,15 @@ I2CDeviceManager::I2CDeviceManager(void)
         };
         i2c_port_t p = i2c_bus_desc[i].port;
         businfo[i].port = p;
+        businfo[i].bus_clock = i2c_bus_desc[i].speed;
         i2c_param_config(p, &i2c_bus_config);
-        i2c_driver_install(p, I2C_MODE_MASTER, 0, 0, 0);
+        i2c_driver_install(p, I2C_MODE_MASTER, 0, 0, ESP_INTR_FLAG_IRAM);
         i2c_filter_enable(p, 7);
     }
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
-    _retries(2),
+    _retries(3),
     _address(address),
     bus(I2CDeviceManager::businfo[busnum])
 {
@@ -65,6 +68,10 @@ I2CDevice::~I2CDevice()
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+    if (!bus.semaphore.check_owner()) {
+        hal.console->printf("I2C: not owner of 0x%x\n", (unsigned)get_bus_id());
+        return false;
+    }
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     if (send_len != 0 && send != nullptr) {
         //tx with optional rx (after tx)
@@ -80,7 +87,15 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         i2c_master_read(cmd, (uint8_t *)recv, recv_len, I2C_MASTER_LAST_NACK);
     }
     i2c_master_stop(cmd);
-    bool result = (i2c_master_cmd_begin(bus.port, cmd, portMAX_DELAY) == ESP_OK);
+    bool result = false;
+    TickType_t timeout = 1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock / portTICK_PERIOD_MS;
+    for (int i = 0; !result && i < _retries; i++) {
+        result = (i2c_master_cmd_begin(bus.port, cmd, timeout) == ESP_OK);
+        if (!result) {
+            i2c_reset_tx_fifo(bus.port);
+            i2c_reset_rx_fifo(bus.port);
+        }
+    }
     i2c_cmd_link_delete(cmd);
     return result;
 }

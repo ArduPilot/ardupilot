@@ -12,7 +12,6 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifdef HAL_ESP32_SDCARD
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
@@ -24,6 +23,8 @@
 #include <sys/stat.h>
 #include <sys/unistd.h>
 #include <sys/types.h>
+
+#ifdef HAL_ESP32_SDCARD
 
 sdmmc_card_t* card = nullptr;
 
@@ -79,7 +80,7 @@ void mount_sdcard()
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
         .max_files = 5,
-        .allocation_unit_size = 4 * 1024
+        .allocation_unit_size = 16 * 1024
     };
     esp_err_t ret = esp_vfs_fat_sdmmc_mount("/SDCARD", &host, &slot_config, &mount_config, &card);
     if (ret == ESP_OK) {
