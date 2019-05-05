@@ -71,20 +71,20 @@ from sys import platform as _platform
 is_WSL = bool("Microsoft" in platform.uname()[2])
 
 # default list of port names to look for autopilots
-default_ports = [ '/dev/serial/by-id/usb-Ardu*',
-                  '/dev/serial/by-id/usb-3D*',
-                  '/dev/serial/by-id/usb-APM*',
-                  '/dev/serial/by-id/usb-Radio*',
-                  '/dev/serial/by-id/usb-*_3DR_*',
-                  '/dev/serial/by-id/usb-Hex_Technology_Limited*',
-                  '/dev/serial/by-id/usb-Hex_ProfiCNC*',
-                  '/dev/serial/by-id/usb-Holybro*',
-                  '/dev/serial/by-id/usb-mRo*',
-                  '/dev/tty.usbmodem*']
+default_ports = ['/dev/serial/by-id/usb-Ardu*',
+                 '/dev/serial/by-id/usb-3D*',
+                 '/dev/serial/by-id/usb-APM*',
+                 '/dev/serial/by-id/usb-Radio*',
+                 '/dev/serial/by-id/usb-*_3DR_*',
+                 '/dev/serial/by-id/usb-Hex_Technology_Limited*',
+                 '/dev/serial/by-id/usb-Hex_ProfiCNC*',
+                 '/dev/serial/by-id/usb-Holybro*',
+                 '/dev/serial/by-id/usb-mRo*',
+                 '/dev/tty.usbmodem*']
 
 if "cygwin" in _platform or is_WSL:
-    default_ports += [ '/dev/ttyS*' ]
-    
+    default_ports += ['/dev/ttyS*']
+
 # Detect python version
 if sys.version_info[0] < 3:
     runningPython3 = False
@@ -94,6 +94,7 @@ else:
 # dictionary of bootloader {boardID: (firmware boardID, boardname), ...}
 # designating firmware builds compatible with multiple boardIDs
 compatible_IDs = {33: (9, 'AUAVX2.1')}
+
 
 class firmware(object):
     '''Loads a firmware file'''
@@ -281,7 +282,6 @@ class uploader(object):
                 break
 
     def __send(self, c):
-        # print("send " + binascii.hexlify(c))
         self.port.write(c)
 
     def __recv(self, count=1):
@@ -447,6 +447,22 @@ class uploader(object):
         self.__getSync()
         return True
 
+    # read multiple bytes from flash
+    def __read_multi(self, length):
+
+        if runningPython3:
+            clength = length.to_bytes(1, byteorder='big')
+        else:
+            clength = chr(length)
+
+        self.__send(uploader.READ_MULTI)
+        self.__send(clength)
+        self.__send(uploader.EOC)
+        self.port.flush()
+        ret = self.__recv(length)
+        self.__getSync()
+        return ret
+    
     # send the reboot command
     def __reboot(self):
         self.__send(uploader.REBOOT +
@@ -477,6 +493,30 @@ class uploader(object):
                 self.__drawProgressBar(label, uploadProgress, len(groups))
         self.__drawProgressBar(label, 100, 100)
 
+    # download code
+    def __download(self, label, fw):
+        print("\n", end='')
+        f = open(fw, 'wb')
+
+        downloadProgress = 0
+        readsize = uploader.READ_MULTI_MAX
+        total = 0
+        while True:
+            n = min(self.fw_maxsize - total, readsize)
+            bb = self.__read_multi(n)
+            f.write(bb)
+
+            total += len(bb)
+            # Print download progress (throttled, so it does not delay download progress)
+            downloadProgress += 1
+            if downloadProgress % 256 == 0:
+                self.__drawProgressBar(label, total, self.fw_maxsize)
+            if len(bb) < readsize:
+                break
+        f.close()
+        self.__drawProgressBar(label, total, self.fw_maxsize)
+        print("\nReceived %u bytes to %s" % (total, fw))
+        
     # verify code
     def __verify_v2(self, label, fw):
         print("\n", end='')
@@ -652,7 +692,7 @@ class uploader(object):
             self.__send(uploader.NSH_REBOOT)
             self.port.flush()
             self.port.baudrate = self.baudrate_bootloader
-        except:
+        except Exception:
             try:
                 self.port.flush()
                 self.port.baudrate = self.baudrate_bootloader
@@ -661,6 +701,17 @@ class uploader(object):
 
         return True
 
+    # upload the firmware
+    def download(self, fw):
+        if self.baudrate_bootloader_flash != self.baudrate_bootloader:
+            print("Setting baudrate to %u" % self.baudrate_bootloader_flash)
+            self.__setbaud(self.baudrate_bootloader_flash)
+            self.port.baudrate = self.baudrate_bootloader_flash
+            self.__sync()
+
+        self.__download("Download", fw)
+        self.port.close()
+    
 def ports_to_try(args):
     portlist = []
     if args.port is None:
@@ -742,6 +793,7 @@ def main():
     parser.add_argument('--target-component', type=int, action="store", help="Component ID to update")
     parser.add_argument('--source-system', type=int, action="store", help="Source system to send reboot mavlink packets from", default=255)
     parser.add_argument('--source-component', type=int, action="store", help="Source component to send reboot mavlink packets from", default=0)
+    parser.add_argument('--download', action='store_true', default=False, help='download firmware from board')
     parser.add_argument('firmware', action="store", help="Firmware file to be uploaded")
     args = parser.parse_args()
 
@@ -749,9 +801,10 @@ def main():
     modemmanager_check()
 
     # Load the firmware file
-    fw = firmware(args.firmware)
-    print("Loaded firmware for %x,%x, size: %d bytes, waiting for the bootloader..." % (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size')))
-    print("If the board does not respond within 1-2 seconds, unplug and re-plug the USB connector.")
+    if not args.download:
+        fw = firmware(args.firmware)
+        print("Loaded firmware for %x,%x, size: %d bytes, waiting for the bootloader..." % (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size')))
+        print("If the board does not respond within 1-2 seconds, unplug and re-plug the USB connector.")
 
     baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
 
@@ -789,7 +842,10 @@ def main():
 
                 try:
                     # ok, we have a bootloader, try flashing it
-                    up.upload(fw, force=args.force, boot_delay=args.boot_delay)
+                    if args.download:
+                        up.download(args.firmware)
+                    else:
+                        up.upload(fw, force=args.force, boot_delay=args.boot_delay)
 
                 except RuntimeError as ex:
                     # print the error
