@@ -942,9 +942,11 @@ bootloader(unsigned timeout)
         // we got a good command on this port, lock to the port
         lock_bl_port();
         
-        // we got a command worth syncing, so kill the timeout because
-        // we are probably talking to the uploader
-        timeout = 0;
+        // once we get both a valid sync and valid get_device then kill
+        // the timeout
+        if (done_sync && done_get_device) {
+            timeout = 0;
+        }
 
         // send the sync response for this command
         sync_response();
