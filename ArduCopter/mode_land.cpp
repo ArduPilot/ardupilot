@@ -55,7 +55,7 @@ void Copter::ModeLand::gps_run()
 {
     // disarm when the landing detector says we've landed
     if (ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
-        copter.init_disarm_motors();
+        copter.arming.disarm();
     }
 
     // Land State Machine Determination
@@ -109,7 +109,7 @@ void Copter::ModeLand::nogps_run()
 
     // disarm when the landing detector says we've landed
     if (ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
-        copter.init_disarm_motors();
+        copter.arming.disarm();
     }
 
     // Land State Machine Determination

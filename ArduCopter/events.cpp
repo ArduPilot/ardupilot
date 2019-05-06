@@ -12,7 +12,7 @@ void Copter::failsafe_radio_on_event()
     }
 
     if (should_disarm_on_failsafe()) {
-        init_disarm_motors();
+        arming.disarm();
     } else {
         if (control_mode == AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
             // continue mission
@@ -55,7 +55,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 
     // failsafe check
     if (should_disarm_on_failsafe()) {
-        init_disarm_motors();
+        arming.disarm();
     } else {
         switch ((Failsafe_Action)action) {
             case Failsafe_Action_None:
@@ -78,7 +78,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
                 snprintf(battery_type_str, 17, "%s battery", type_str);
                 g2.afs.gcs_terminate(true, battery_type_str);
 #else
-                init_disarm_motors();
+                arming.disarm();
 #endif
         }
     }
@@ -122,7 +122,7 @@ void Copter::failsafe_gcs_check()
     RC_Channels::clear_overrides();
 
     if (should_disarm_on_failsafe()) {
-        init_disarm_motors();
+        arming.disarm();
     } else {
         if (control_mode == AUTO && g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
             // continue mission
@@ -190,7 +190,7 @@ void Copter::failsafe_terrain_on_event()
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {
-        init_disarm_motors();
+        arming.disarm();
 #if MODE_RTL_ENABLED == ENABLED
     } else if (control_mode == RTL) {
         mode_rtl.restart_without_terrain();

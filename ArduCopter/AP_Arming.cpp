@@ -12,20 +12,19 @@ void AP_Arming_Copter::update(void)
         pre_arm_display_counter = 0;
     }
 
-    set_pre_arm_check(pre_arm_checks(display_fail));
+    pre_arm_checks(display_fail);
 }
 
-// performs pre-arm checks and arming checks
-bool AP_Arming_Copter::all_checks_passing(AP_Arming::Method method)
+bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 {
-    set_pre_arm_check(pre_arm_checks(true));
-
-    return copter.ap.pre_arm_check && arm_checks(method);
+    const bool passed = run_pre_arm_checks(display_failure);
+    set_pre_arm_check(passed);
+    return passed;
 }
 
 // perform pre-arm checks
 //  return true if the checks pass successfully
-bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
+bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
 {
     // exit immediately if already armed
     if (copter.motors->armed()) {
