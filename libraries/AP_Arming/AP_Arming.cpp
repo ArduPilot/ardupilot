@@ -797,14 +797,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         return false;
     }
 
-    //are arming checks disabled?
-    if (!do_arming_checks || checks_to_perform == ARMING_CHECK_NONE) {
-        armed = true;
-        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
-        return true;
-    }
-
-    if (pre_arm_checks(true) && arm_checks(method)) {
+    if (!do_arming_checks || (pre_arm_checks(true) && arm_checks(method))) {
         armed = true;
 
         gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
