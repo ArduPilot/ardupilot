@@ -92,6 +92,7 @@ public:
     virtual float wp_bearing() const;
     virtual float nav_bearing() const;
     virtual float crosstrack_error() const;
+    virtual float get_desired_lat_accel() const;
 
     // get speed error in m/s, not currently supported
     float speed_error() const { return 0.0f; }
@@ -554,6 +555,13 @@ public:
     // steering requires velocity but not position
     bool requires_position() const override { return false; }
     bool requires_velocity() const override { return true; }
+
+    // return desired lateral acceleration
+    float get_desired_lat_accel() const override { return _desired_lat_accel; }
+
+private:
+
+    float _desired_lat_accel;   // desired lateral acceleration calculated from pilot steering input
 };
 
 class ModeInitializing : public Mode
