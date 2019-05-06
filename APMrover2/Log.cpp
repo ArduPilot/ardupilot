@@ -206,7 +206,7 @@ void Rover::Log_Write_Steering()
         time_us        : AP_HAL::micros64(),
         steering_in        : channel_steer->get_control_in(),
         steering_out       : g2.motors.get_steering(),
-        desired_lat_accel  : g2.attitude_control.get_desired_lat_accel(),
+        desired_lat_accel  : control_mode->get_desired_lat_accel(),
         lat_accel          : lat_accel,
         desired_turn_rate  : degrees(g2.attitude_control.get_desired_turn_rate()),
         turn_rate          : degrees(ahrs.get_yaw_rate_earth())

@@ -186,6 +186,15 @@ float Mode::crosstrack_error() const
     return g2.wp_nav.crosstrack_error();
 }
 
+// return desired lateral acceleration
+float Mode::get_desired_lat_accel() const
+{
+    if (!is_autopilot_mode()) {
+        return 0.0f;
+    }
+    return g2.wp_nav.get_lat_accel();
+}
+
 // set desired location
 void Mode::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
