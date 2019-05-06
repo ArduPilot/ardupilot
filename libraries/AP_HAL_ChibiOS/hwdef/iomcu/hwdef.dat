@@ -57,7 +57,7 @@ PB1 TIM3_CH4 TIM3 PWM(8) GPIO(108)
 PC14 IO_HW_DETECT1 INPUT PULLDOWN 
 PC15 IO_HW_DETECT2 INPUT PULLUP   
 
-PB14 HEATER OUTPUT OPENDRAIN GPIO(0)
+PB14 HEATER INPUT PULLUP GPIO(0)
 
 # safety button and LED. These do not use the same names
 # as those for FMU-only boards as we want to handle them specially
