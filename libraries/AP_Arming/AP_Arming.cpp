@@ -796,8 +796,6 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     if (!do_arming_checks || (pre_arm_checks(true) && arm_checks(method))) {
         armed = true;
 
-        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
-
         //TODO: Log motor arming
         //Can't do this from this class until there is a unified logging library
 
@@ -815,8 +813,6 @@ bool AP_Arming::disarm()
         return false;
     }
     armed = false;
-
-    gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
 #if HAL_HAVE_SAFETY_SWITCH
     AP_BoardConfig *board_cfg = AP_BoardConfig::get_singleton();
