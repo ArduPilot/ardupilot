@@ -81,6 +81,10 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
 bool AP_Arming_Rover::pre_arm_checks(bool report)
 {
+    //are arming checks disabled?
+    if (checks_to_perform == ARMING_CHECK_NONE) {
+        return true;
+    }
     if (SRV_Channels::get_emergency_stop()) {
         check_failed(ARMING_CHECK_NONE, report, "Motors Emergency Stopped");
         return false;
@@ -90,6 +94,15 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
             & rover.g2.motors.pre_arm_check(report)
             & fence_checks(report)
             & proximity_check(report));
+}
+
+bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
+{
+    //are arming checks disabled?
+    if (checks_to_perform == ARMING_CHECK_NONE) {
+        return true;
+    }
+    return AP_Arming::arm_checks(method);
 }
 
 // check nothing is too close to vehicle
