@@ -472,6 +472,9 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
     }
 
     change_arm_state();
+
+    gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+
     return true;
 }
 
@@ -505,6 +508,8 @@ bool AP_Arming_Plane::disarm(void)
         plane.quadplane.qautotune.reset();
     }
 #endif
+
+    gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
     return true;
 }
