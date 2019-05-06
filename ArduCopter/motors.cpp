@@ -45,7 +45,7 @@ void Copter::arm_motors_check()
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors->armed()) {
             // reset arming counter if arming fail
-            if (!init_arm_motors(AP_Arming::Method::RUDDER)) {
+            if (!arming.arm(AP_Arming::Method::RUDDER)) {
                 arming_counter = 0;
             }
         }
@@ -71,7 +71,7 @@ void Copter::arm_motors_check()
 
         // disarm the motors
         if (arming_counter == DISARM_DELAY && motors->armed()) {
-            init_disarm_motors();
+            arming.disarm();
         }
 
     // Yaw is centered so reset arming counter
@@ -124,14 +124,12 @@ void Copter::auto_disarm_check()
 
     // disarm once timer expires
     if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms) {
-        init_disarm_motors();
+        arming.disarm();
         auto_disarm_begin = tnow_ms;
     }
 }
 
-// init_arm_motors - performs arming process including initialisation of barometer and gyros
-//  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Copter::init_arm_motors(const AP_Arming::Method method, const bool do_arming_checks)
+bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_checks)
 {
     static bool in_arm_motors = false;
 
@@ -142,13 +140,12 @@ bool Copter::init_arm_motors(const AP_Arming::Method method, const bool do_armin
     in_arm_motors = true;
 
     // return true if already armed
-    if (motors->armed()) {
+    if (copter.motors->armed()) {
         in_arm_motors = false;
         return true;
     }
 
-    // run pre-arm-checks and display failures
-    if (do_arming_checks && !arming.all_checks_passing(method)) {
+    if (!AP_Arming::arm(method, do_arming_checks)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;
@@ -158,13 +155,13 @@ bool Copter::init_arm_motors(const AP_Arming::Method method, const bool do_armin
     AP::logger().set_vehicle_armed(true);
 
     // disable cpu failsafe because initialising everything takes a while
-    failsafe_disable();
+    copter.failsafe_disable();
 
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
     // call notify update a few times to ensure the message gets out
     for (uint8_t i=0; i<=10; i++) {
-        notify.update();
+        AP::notify().update();
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -173,31 +170,33 @@ bool Copter::init_arm_motors(const AP_Arming::Method method, const bool do_armin
 
     // Remember Orientation
     // --------------------
-    init_simple_bearing();
+    copter.init_simple_bearing();
 
-    initial_armed_bearing = ahrs.yaw_sensor;
+    AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+
+    copter.initial_armed_bearing = ahrs.yaw_sensor;
 
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.resetHeightDatum();
-        Log_Write_Event(DATA_EKF_ALT_RESET);
+        AP::logger().Write_Event(DATA_EKF_ALT_RESET);
 
         // we have reset height, so arming height is zero
-        arming_altitude_m = 0;        
+        copter.arming_altitude_m = 0;
     } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
-        if (!set_home_to_current_location(false)) {
+        if (!copter.set_home_to_current_location(false)) {
             // ignore failure
         }
 
         // remember the height when we armed
-        arming_altitude_m = inertial_nav.get_altitude() * 0.01;
+        copter.arming_altitude_m = copter.inertial_nav.get_altitude() * 0.01;
     }
-    update_super_simple_bearing(false);
+    copter.update_super_simple_bearing(false);
 
     // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
 #if MODE_SMARTRTL_ENABLED == ENABLED
-    g2.smart_rtl.set_home(position_ok());
+    copter.g2.smart_rtl.set_home(copter.position_ok());
 #endif
 
     // enable gps velocity based centrefugal force compensation
@@ -206,55 +205,62 @@ bool Copter::init_arm_motors(const AP_Arming::Method method, const bool do_armin
 
 #if SPRAYER_ENABLED == ENABLED
     // turn off sprayer's test if on
-    sprayer.test_pump(false);
+    copter.sprayer.test_pump(false);
 #endif
 
     // enable output to motors
-    enable_motor_output();
+    copter.enable_motor_output();
 
     // finally actually arm the motors
-    motors->armed(true);
+    copter.motors->armed(true);
 
-    Log_Write_Event(DATA_ARMED);
+    AP::logger().Write_Event(DATA_ARMED);
 
     // log flight mode in case it was changed while vehicle was disarmed
-    logger.Write_Mode(control_mode, control_mode_reason);
+    AP::logger().Write_Mode(copter.control_mode, copter.control_mode_reason);
 
     // re-enable failsafe
-    failsafe_enable();
+    copter.failsafe_enable();
 
     // perf monitor ignores delay due to arming
-    scheduler.perf_info.ignore_this_loop();
+    AP::scheduler().perf_info.ignore_this_loop();
 
     // flag exiting this function
     in_arm_motors = false;
 
     // Log time stamp of arming event
-    arm_time_ms = millis();
+    copter.arm_time_ms = millis();
 
     // Start the arming delay
-    ap.in_arming_delay = true;
+    copter.ap.in_arming_delay = true;
 
     // assumed armed without a arming, switch. Overridden in switches.cpp
-    ap.armed_with_switch = false;
-    
+    copter.ap.armed_with_switch = false;
+
     // return success
     return true;
 }
 
-// init_disarm_motors - disarm motors
-void Copter::init_disarm_motors()
+// arming.disarm - disarm motors
+bool AP_Arming_Copter::disarm()
 {
     // return immediately if we are already disarmed
-    if (!motors->armed()) {
-        return;
+    if (!copter.motors->armed()) {
+        return true;
+    }
+
+    if (!AP_Arming::disarm()) {
+        return false;
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
     gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
+    AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+
     // save compass offsets learned by the EKF if enabled
+    Compass &compass = AP::compass();
     if (ahrs.use_compass() && compass.get_learn_type() == Compass::LEARN_EKF) {
         for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
             Vector3f magOffsets;
@@ -266,25 +272,25 @@ void Copter::init_disarm_motors()
 
 #if AUTOTUNE_ENABLED == ENABLED
     // save auto tuned parameters
-    if (control_mode == AUTOTUNE) {;
-        mode_autotune.save_tuning_gains();
+    if (copter.flightmode == &copter.mode_autotune) {
+        copter.mode_autotune.save_tuning_gains();
     } else {
-        mode_autotune.reset();
+        copter.mode_autotune.reset();
     }
 #endif
 
     // we are not in the air
-    set_land_complete(true);
-    set_land_complete_maybe(true);
+    copter.set_land_complete(true);
+    copter.set_land_complete_maybe(true);
 
-    Log_Write_Event(DATA_DISARMED);
+    AP::logger().Write_Event(DATA_DISARMED);
 
     // send disarm command to motors
-    motors->armed(false);
+    copter.motors->armed(false);
 
 #if MODE_AUTO_ENABLED == ENABLED
     // reset the mission
-    mode_auto.mission.reset();
+    copter.mode_auto.mission.reset();
 #endif
 
     AP::logger().set_vehicle_armed(false);
@@ -293,7 +299,9 @@ void Copter::init_disarm_motors()
     ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
 
-    ap.in_arming_delay = false;
+    copter.ap.in_arming_delay = false;
+
+    return true;
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
