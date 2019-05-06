@@ -789,10 +789,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
 //returns true if arming occurred successfully
 bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 {
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    // Copter should never use this function
-    return false;
-#else
     if (armed) { //already armed
         return false;
     }
@@ -810,16 +806,11 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     }
 
     return armed;
-#endif
 }
 
 //returns true if disarming occurred successfully
 bool AP_Arming::disarm() 
 {
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    // Copter should never use this function
-    return false;
-#else
     if (!armed) { // already disarmed
         return false;
     }
@@ -839,7 +830,6 @@ bool AP_Arming::disarm()
     //Can't do this from this class until there is a unified logging library.
 
     return true;
-#endif
 }
 
 AP_Arming::Required AP_Arming::arming_required() 
