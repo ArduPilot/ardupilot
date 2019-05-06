@@ -573,6 +573,8 @@ def write_mcu_config(f):
         'FLASH_RESERVE_START_KB', default=16, type=int)
     f.write('\n// location of loaded firmware\n')
     f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % (0x08000000 + flash_reserve_start*1024))
+    if args.bootloader:
+        f.write('#define FLASH_BOOTLOADER_LOAD_KB %u\n' % get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
     f.write('\n')
 
     ram_map = get_mcu_config('RAM_MAP', True)
@@ -657,7 +659,11 @@ def write_ldscript(fname):
     ram_map = get_mcu_config('RAM_MAP', True)
 
     flash_base = 0x08000000 + flash_reserve_start * 1024
-    flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
+
+    if not args.bootloader:
+        flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
+    else:
+        flash_length = get_config('FLASH_BOOTLOADER_LOAD_KB', type=int)
 
     print("Generating ldscript.ld")
     f = open(fname, 'w')
