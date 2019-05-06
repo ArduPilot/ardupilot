@@ -171,6 +171,15 @@ void AP_IOMCU_FW::init()
         has_heater = true;
     }
 
+    //Set Heater PWM Polarity, 0 for Active Low and 1 for Active High
+    heater_pwm_polarity = !palReadLine(HAL_GPIO_PIN_HEATER);
+    //Set Heater pin mode
+    if (heater_pwm_polarity) {
+        palSetLineMode(HAL_GPIO_PIN_HEATER, PAL_MODE_OUTPUT_PUSHPULL);
+    } else {
+        palSetLineMode(HAL_GPIO_PIN_HEATER, PAL_MODE_OUTPUT_OPENDRAIN);
+    }
+
     adc_init();
     rcin_serial_init();
 
@@ -284,10 +293,11 @@ void AP_IOMCU_FW::heater_update()
         }
     } else if (reg_setup.heater_duty_cycle == 0 || (now - last_heater_ms > 3000UL)) {
         // turn off the heater
-        HEATER_SET(0);
+        HEATER_SET(!heater_pwm_polarity);
     } else {
         uint8_t cycle = ((now / 10UL) % 100U);
-        HEATER_SET(!(cycle >= reg_setup.heater_duty_cycle));
+        //Turn off heater when cycle is greater than specified duty cycle
+        HEATER_SET((cycle >= reg_setup.heater_duty_cycle) ? !heater_pwm_polarity : heater_pwm_polarity);
     }
 }
 
