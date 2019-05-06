@@ -19,6 +19,10 @@ const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
  */
 bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 {
+    //are arming checks disabled?
+    if (checks_to_perform == ARMING_CHECK_NONE) {
+        return true;
+    }
     if (hal.util->was_watchdog_armed()) {
         // on watchdog reset bypass arming checks to allow for
         // in-flight arming if we were armed before the reset. This
@@ -128,6 +132,11 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
 
 bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 {
+    //are arming checks disabled?
+    if (checks_to_perform == ARMING_CHECK_NONE) {
+        return true;
+    }
+
     if (hal.util->was_watchdog_armed()) {
         // on watchdog reset bypass arming checks to allow for
         // in-flight arming if we were armed before the reset. This
