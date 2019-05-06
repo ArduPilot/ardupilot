@@ -14,6 +14,8 @@ public:
     AP_Arming(const AP_Arming &other) = delete;
     AP_Arming &operator=(const AP_Arming&) = delete;
 
+    static AP_Arming *get_singleton();
+
     enum ArmingChecks {
         ARMING_CHECK_NONE       = 0x0000,
         ARMING_CHECK_ALL        = 0x0001,
@@ -133,6 +135,8 @@ protected:
 
 private:
 
+    static AP_Arming *_singleton;
+
     bool ins_accels_consistent(const AP_InertialSensor &ins);
     bool ins_gyros_consistent(const AP_InertialSensor &ins);
 
@@ -145,4 +149,8 @@ private:
         MIS_ITEM_CHECK_RALLY         = (1 << 5),
         MIS_ITEM_CHECK_MAX
     };
+};
+
+namespace AP {
+    AP_Arming &arming();
 };

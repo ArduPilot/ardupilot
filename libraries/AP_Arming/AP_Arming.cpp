@@ -115,6 +115,11 @@ extern AP_IOMCU iomcu;
 
 AP_Arming::AP_Arming()
 {
+    if (_singleton) {
+        AP_HAL::panic("Too many AP_Arming instances");
+    }
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -894,3 +899,22 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
     }
     return ret;
 }
+
+AP_Arming *AP_Arming::_singleton = nullptr;
+
+/*
+ * Get the AP_InertialSensor singleton
+ */
+AP_Arming *AP_Arming::get_singleton()
+{
+    return AP_Arming::_singleton;
+}
+
+namespace AP {
+
+AP_Arming &arming()
+{
+    return *AP_Arming::get_singleton();
+}
+
+};
