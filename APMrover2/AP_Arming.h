@@ -17,6 +17,7 @@ public:
     AP_Arming_Rover &operator=(const AP_Arming_Rover&) = delete;
 
     bool pre_arm_checks(bool report) override;
+    bool arm_checks(AP_Arming::Method method) override;
     bool pre_arm_rc_checks(const bool display_failure);
     bool gps_checks(bool display_failure) override;
 
