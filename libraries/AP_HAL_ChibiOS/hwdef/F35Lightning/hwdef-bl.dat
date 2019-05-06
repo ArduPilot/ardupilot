@@ -17,7 +17,7 @@ FLASH_RESERVE_START_KB 0
 FLASH_SIZE_KB 1024
 
 # the location where the bootloader will put the firmware
-define FLASH_BOOTLOADER_LOAD_KB 64
+FLASH_BOOTLOADER_LOAD_KB 64
 
 define HAL_STORAGE_SIZE 15360
 define STORAGE_FLASH_PAGE 1
