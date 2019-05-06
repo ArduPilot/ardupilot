@@ -117,7 +117,7 @@ void Copter::set_land_complete(bool b)
     const bool mode_disarms_on_land = flightmode->allows_arming(false) && !flightmode->has_manual_throttle();
 
     if (ap.land_complete && motors->armed() && disarm_on_land_configured && mode_disarms_on_land) {
-        init_disarm_motors();
+        arming.disarm();
     }
 }
 

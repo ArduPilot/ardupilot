@@ -537,7 +537,7 @@ void Copter::ModeAuto::exit_mission()
         }
     } else {
         // if we've landed it's safe to disarm
-        copter.init_disarm_motors();
+        copter.arming.disarm();
     }
 }
 
