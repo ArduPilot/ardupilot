@@ -20,7 +20,7 @@ FLASH_RESERVE_START_KB 0
 
 # the location where the bootloader will put the firmware
 # the H743 has 128k sectors
-define FLASH_BOOTLOADER_LOAD_KB 128
+FLASH_BOOTLOADER_LOAD_KB 128
 
 # board voltage
 STM32_VDD 330U
