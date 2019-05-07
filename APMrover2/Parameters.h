@@ -368,13 +368,6 @@ public:
     // Simple mode types
     AP_Int8 simple_type;
 
-    // sailboat parameters
-    AP_Float sail_angle_min;
-    AP_Float sail_angle_max;
-    AP_Float sail_angle_ideal;
-    AP_Float sail_heel_angle_max;
-    AP_Float sail_no_go;
-
     // windvane
     AP_WindVane windvane;
 
@@ -396,6 +389,9 @@ public:
 
     // waypoint navigation
     AR_WPNav wp_nav;
+
+    // Sailboat functions
+    Sailboat sailboat;
 };
 
 extern const AP_Param::Info var_info[];
