@@ -161,7 +161,7 @@ public:
 
     // return true if watchdog enabled
     static bool watchdog_enabled(void) {
-        return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:false;
+        return instance?(instance->_options & BOARD_OPTION_WATCHDOG)!=0:false;
     }
 
 private:
