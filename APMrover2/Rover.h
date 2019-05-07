@@ -93,6 +93,7 @@
 #include "AP_MotorsUGV.h"
 #include "mode.h"
 #include "AP_Arming.h"
+#include "sailboat.h"
 // Configuration
 #include "config.h"
 #include "defines.h"
@@ -131,6 +132,8 @@ public:
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
+
+    friend class Sailboat;
 
     Rover(void);
 
@@ -347,18 +350,6 @@ private:
     } cruise_learn_t;
     cruise_learn_t cruise_learn;
 
-    // sailboat variables
-    enum Sailboat_Tack {
-        TACK_PORT,
-        TACK_STARBOARD
-    };
-    struct {
-        bool tacking;                   // true when sailboat is in the process of tacking to a new heading
-        float tack_heading_rad;         // target heading in radians while tacking in either acro or autonomous modes
-        uint32_t auto_tack_request_ms;  // system time user requested tack in autonomous modes
-        uint32_t auto_tack_start_ms;    // system time when tack was started in autonomous mode
-    } sailboat;
-
 private:
 
     // APMrover2.cpp
@@ -444,17 +435,6 @@ private:
     void radio_failsafe_check(uint16_t pwm);
     bool trim_radio();
 
-    // sailboat.cpp
-    void sailboat_update_mainsail(float desired_speed);
-    float sailboat_get_VMG() const;
-    void sailboat_handle_tack_request_acro();
-    float sailboat_get_tack_heading_rad() const;
-    void sailboat_handle_tack_request_auto();
-    void sailboat_clear_tack();
-    bool sailboat_tacking() const;
-    bool sailboat_use_indirect_route(float desired_heading_cd) const;
-    float sailboat_calc_heading(float desired_heading_cd);
-
     // sensors.cpp
     void init_compass_location(void);
     void update_compass(void);
@@ -525,6 +505,9 @@ public:
 
     // Simple mode
     float simple_sin_yaw;
+
+    // sailboat enabled
+    bool get_sailboat_enable() { return g2.sailboat.enabled(); }
 };
 
 extern const AP_HAL::HAL& hal;
