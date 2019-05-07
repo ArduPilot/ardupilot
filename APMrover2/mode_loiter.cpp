@@ -25,7 +25,7 @@ void ModeLoiter::update()
     // if within loiter radius slew desired speed towards zero and use existing desired heading
     if (_distance_to_destination <= g2.loit_radius) {
         // sailboats do not stop
-        const float desired_speed_within_radius = g2.motors.has_sail() ? 0.1f : 0.0f;
+        const float desired_speed_within_radius = rover.g2.sailboat.enabled() ? 0.1f : 0.0f;
         _desired_speed = attitude_control.get_desired_speed_accel_limited(desired_speed_within_radius, rover.G_Dt);
     } else {
         // P controller with hard-coded gain to convert distance to desired speed
