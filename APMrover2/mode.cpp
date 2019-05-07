@@ -45,7 +45,7 @@ bool Mode::enter()
         set_reversed(false);
 
         // clear sailboat tacking flags
-        rover.sailboat_clear_tack();
+        rover.g2.sailboat.clear_tack();
     }
 
     return ret;
@@ -257,7 +257,7 @@ void Mode::handle_tack_request()
 {
     // autopilot modes handle tacking
     if (is_autopilot_mode()) {
-        rover.sailboat_handle_tack_request_auto();
+        rover.g2.sailboat.handle_tack_request_auto();
     }
 }
 
@@ -288,7 +288,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
     }
 
     // update mainsail position if present
-    rover.sailboat_update_mainsail(target_speed);
+    rover.g2.sailboat.update_mainsail(target_speed);
 
     // send to motor
     g2.motors.set_throttle(throttle_out);
@@ -395,9 +395,9 @@ void Mode::navigate_to_waypoint()
     calc_throttle(desired_speed, true);
 
     float desired_heading_cd = g2.wp_nav.wp_bearing_cd();
-    if (rover.sailboat_use_indirect_route(desired_heading_cd)) {
+    if (g2.sailboat.use_indirect_route(desired_heading_cd)) {
         // sailboats use heading controller when tacking upwind
-        desired_heading_cd = rover.sailboat_calc_heading(desired_heading_cd);
+        desired_heading_cd = g2.sailboat.calc_heading(desired_heading_cd);
         calc_steering_to_heading(desired_heading_cd, g2.wp_nav.get_pivot_rate());
     } else {
         // call turn rate steering controller

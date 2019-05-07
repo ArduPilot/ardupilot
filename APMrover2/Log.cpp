@@ -46,7 +46,7 @@ void Rover::Log_Write_Attitude()
     }
 
     // log heel to sail control for sailboats
-    if (g2.motors.has_sail()) {
+    if (rover.g2.sailboat.enabled()) {
         logger.Write_PID(LOG_PIDR_MSG, g2.attitude_control.get_sailboat_heel_pid().get_pid_info());
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -141,7 +141,7 @@ void Rover::Log_Write_Nav_Tuning()
 void Rover::Log_Write_Sail()
 {
     // only log sail if present
-    if (!g2.motors.has_sail()) {
+    if (!rover.g2.sailboat.enabled()) {
         return;
     }
 
@@ -164,7 +164,7 @@ void Rover::Log_Write_Sail()
                         (double)wind_speed_true,
                         (double)wind_speed_apparent,
                         (double)g2.motors.get_mainsail(),
-                        (double)sailboat_get_VMG());
+                        (double)g2.sailboat.get_VMG());
 }
 
 struct PACKED log_Steering {
