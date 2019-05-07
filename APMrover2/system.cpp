@@ -75,6 +75,8 @@ void Rover::init_ardupilot()
 
     g2.windvane.init();
 
+    rover.g2.sailboat.init();
+
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
