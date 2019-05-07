@@ -497,6 +497,9 @@ void Scheduler::expect_delay_ms(uint32_t ms)
     } else {
         expect_delay_start = AP_HAL::millis();
         expect_delay_length = ms;
+
+        // also put our priority below timer thread if we are boosted
+        boost_end();
     }
 }
 
