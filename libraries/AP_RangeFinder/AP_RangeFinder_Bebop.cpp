@@ -62,8 +62,8 @@ static const uint16_t waveform_mode1[32] = {
     1675, 1540, 1492, 1374, 1292
 };
 
-AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_state),
+AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend(_state, _params),
     _thread(new Linux::Thread(FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Bebop::_loop, void)))
 {
     _init();

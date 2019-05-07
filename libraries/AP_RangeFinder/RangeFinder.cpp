@@ -458,7 +458,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
     case RangeFinder_TYPE_BEBOP:
         if (AP_RangeFinder_Bebop::detect()) {
-            drivers[instance] = new AP_RangeFinder_Bebop(state[instance]);
+            drivers[instance] = new AP_RangeFinder_Bebop(state[instance], params[instance]);
         }
         break;
 #endif
