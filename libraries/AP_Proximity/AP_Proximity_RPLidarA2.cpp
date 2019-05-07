@@ -31,33 +31,73 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <GCS_MAVLink/GCS.h>
 
-#define RP_DEBUG_LEVEL 0
 
+
+// Debug settings
+#define RP_DEBUG_LEVEL          0       /* Choose level of verbosity (0 to disable everything)*/
+#define RP_DEBUG_ADD_TIMESTAMP  0       /* Choose to append timestamp to the debug message (useful but adds more time)*/
+#define RP_DEBUG_GCS_ENABLED    1       /* Enable debugging to GCS */
+#define RP_DEBUG_UART_ENABLED   1       /* Enable debugging to UART console */
+
+// Debug macros
 #if RP_DEBUG_LEVEL
-  #include <GCS_MAVLink/GCS.h>
-  #define Debug(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+    #define DST_GCS       0x01
+    #define DST_UART      0x02
+    #define LVL_DISABLED  0
+    #define LVL_1         1
+    #define LVL_2         2
+    #define LVL_3         3
+
+    #define Debug(level, dest, fmt, args ...) do { if ((level <= RP_DEBUG_LEVEL)&&(level > 0)) {dbg_gcs(fmt, ## args); dbg_uart(fmt, ## args);} } while (0);
+    #if RP_DEBUG_GCS_ENABLED
+        #if RP_DEBUG_ADD_TIMESTAMP
+            #define dbg_gcs(fmt, args ...) gcs().send_text(MAV_SEVERITY_INFO, "%dms A2: " fmt, AP_HAL::millis(), ## args);
+        #else
+            #define dbg_gcs(fmt, args ...) gcs().send_text(MAV_SEVERITY_INFO, "A2: " fmt, ## args);
+        #endif
+    #else
+        #define dbg_gcs(fmt, args ...)
+    #endif
+    #if RP_DEBUG_UART_ENABLED
+        #if RP_DEBUG_ADD_TIMESTAMP
+            #define dbg_uart(fmt, args ...)  printf( "%dms A2: " fmt "\n", AP_HAL::millis(), ## args);
+        #else
+            #define dbg_uart(fmt, args ...)     printf( "A2: " fmt "\n", ## args);
+        #endif
+    #else
+        #define dbg_uart(fmt, args ...)
+    #endif
 #else
-  #define Debug(level, fmt, args ...)
+    #define Debug(level, dest, fmt, args ...)
 #endif
 
+
+// Operational settings
+//-----------------------------------------
 #define COMM_ACTIVITY_TIMEOUT_MS        200
-#define RESET_RPA2_WAIT_MS              8
+#define RESET_RPA2_WAIT_MS              20
 #define RESYNC_TIMEOUT                  5000
+#define RESET_TIMEOUT                   1000
+#define MIN_SCAN_QUALITY                10
+#define RX_BUFFER_SIZE                  1024
 
 // Commands
 //-----------------------------------------
+#define RPLIDAR_PREAMBLE               0xA5
 
 // Commands without payload and response
-#define RPLIDAR_PREAMBLE               0xA5
 #define RPLIDAR_CMD_STOP               0x25
-#define RPLIDAR_CMD_SCAN               0x20
-#define RPLIDAR_CMD_FORCE_SCAN         0x21
-#define RPLIDAR_CMD_RESET              0x40
+#define RPLIDAR_CMD_RESET              0x40     // Be aware of an undocumented device information message that comes afterwards
 
 // Commands without payload but have response
+#define RPLIDAR_CMD_SCAN               0x20
+#define RPLIDAR_CMD_FORCE_SCAN         0x21
+
 #define RPLIDAR_CMD_GET_DEVICE_INFO    0x50
 #define RPLIDAR_CMD_GET_DEVICE_HEALTH  0x52
+#define RPLIDAR_CMD_GET_DEVICE_RATE    0x59
 
 // Commands with payload and have response
 #define RPLIDAR_CMD_EXPRESS_SCAN       0x82
@@ -76,7 +116,7 @@ AP_Proximity_RPLidarA2::AP_Proximity_RPLidarA2(AP_Proximity &_frontend,
 {
     _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
     if (_uart != nullptr) {
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
+        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0), RX_BUFFER_SIZE, 256);
     }
     _cnt = 0 ;
     _sync_error = 0 ;
@@ -96,6 +136,11 @@ void AP_Proximity_RPLidarA2::update(void)
         return;
     }
 
+    // read parameters
+    if (_forward_direction != frontend.get_yaw_correction(state.instance)) {
+        Debug(LVL_1,DST_GCS|DST_UART, "new forward direction received (%d io %d)", frontend.get_yaw_correction(state.instance), _forward_direction);
+        _forward_direction = frontend.get_yaw_correction(state.instance);
+    }
     // initialise sensor if necessary
     if (!_initialised) {
         _initialised = initialise();    //returns true if everything initialized properly
@@ -109,9 +154,10 @@ void AP_Proximity_RPLidarA2::update(void)
     // check for timeout and set health status
     if ((_last_distance_received_ms == 0) || (AP_HAL::millis() - _last_distance_received_ms > COMM_ACTIVITY_TIMEOUT_MS)) {
         set_status(AP_Proximity::Proximity_NoData);
-        Debug(1, "LIDAR NO DATA");
+        Debug(LVL_3,DST_GCS, "no data");
     } else {
         set_status(AP_Proximity::Proximity_Good);
+        Debug(LVL_3,DST_GCS, "data ok");
     }
 }
 
@@ -127,6 +173,7 @@ float AP_Proximity_RPLidarA2::distance_min() const
     return 0.20f;  //20cm min range RPLIDAR2
 }
 
+// initialise sensor (returns true if sensor is succesfully initialised)
 bool AP_Proximity_RPLidarA2::initialise()
 {
     // initialise sectors
@@ -134,28 +181,15 @@ bool AP_Proximity_RPLidarA2::initialise()
         init_sectors();
         return false;
     }
+
+    // reset the device
     if (!_initialised) {
-        reset_rplidar();            // set to a known state
-        Debug(1, "LIDAR initialised");
-        return true;
+        send_request_for_reset();            // set to a known state
     }
+
+    Debug(LVL_1,DST_GCS|DST_UART, "RPLidar initialized. Max range: %f", distance_max());
 
     return true;
-}
-
-void AP_Proximity_RPLidarA2::reset_rplidar()
-{
-    if (_uart == nullptr) {
-        return;
-    }
-    uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
-    _uart->write(tx_buffer, 2);
-    _resetted = true;   ///< be aware of extra 63 bytes coming after reset containing FW information
-    Debug(1, "LIDAR reset");
-    // To-Do: ensure delay of 8m after sending reset request
-    _last_reset_ms =  AP_HAL::millis();
-    _rp_state = rp_resetted;
-
 }
 
 // initialise sector angles using user defined ignore areas, left same as SF40C
@@ -217,8 +251,21 @@ void AP_Proximity_RPLidarA2::init_sectors()
     _sector_initialised = true;
 }
 
+void AP_Proximity_RPLidarA2::send_request_for_reset()
+{
+    if (_uart == nullptr) {
+        return;
+    }
+    uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
+    _uart->write(tx_buffer, 2);
+    Debug(LVL_1,DST_GCS, "sent reset request");
+    _reset = true;           // Lock the lidar for the time of reseting
+    _last_request_ms =  AP_HAL::millis();
+    _rp_state = rp_reset;
+}
+
 // set Lidar into SCAN mode
-void AP_Proximity_RPLidarA2::set_scan_mode()
+void AP_Proximity_RPLidarA2::send_request_for_scan()
 {
     if (_uart == nullptr) {
         return;
@@ -226,12 +273,25 @@ void AP_Proximity_RPLidarA2::set_scan_mode()
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_SCAN};
     _uart->write(tx_buffer, 2);
     _last_request_ms = AP_HAL::millis();
-    Debug(1, "LIDAR SCAN MODE ACTIVATED");
+    Debug(LVL_1,DST_GCS|DST_UART, "sent scan request");
+    _rp_state = rp_responding;
+}
+
+// set Lidar into FORCE SCAN mode (scanning independently of the real speed)
+void AP_Proximity_RPLidarA2::send_request_for_force_scan()
+{
+    if (_uart == nullptr) {
+        return;
+    }
+    uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_FORCE_SCAN};
+    _uart->write(tx_buffer, 2);
+    _last_request_ms = AP_HAL::millis();
+    Debug(LVL_1,DST_GCS|DST_UART, "sent force scan request");
     _rp_state = rp_responding;
 }
 
 // send request for sensor health
-void AP_Proximity_RPLidarA2::send_request_for_health()                                    //not called yet
+void AP_Proximity_RPLidarA2::send_request_for_health()
 {
     if (_uart == nullptr) {
         return;
@@ -239,7 +299,21 @@ void AP_Proximity_RPLidarA2::send_request_for_health()                          
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_GET_DEVICE_HEALTH};
     _uart->write(tx_buffer, 2);
     _last_request_ms = AP_HAL::millis();
-    _rp_state = rp_health;
+    Debug(LVL_1,DST_GCS|DST_UART, "sent health request");
+    _rp_state = rp_responding;
+}
+
+// send request for sensor sampling rate
+void AP_Proximity_RPLidarA2::send_request_for_rate()
+{
+    if (_uart == nullptr) {
+        return;
+    }
+    uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_GET_DEVICE_RATE};
+    _uart->write(tx_buffer, 2);
+    _last_request_ms = AP_HAL::millis();
+    Debug(LVL_1,DST_GCS|DST_UART, "sent rate request");
+    _rp_state = rp_responding;
 }
 
 void AP_Proximity_RPLidarA2::get_readings()
@@ -247,98 +321,113 @@ void AP_Proximity_RPLidarA2::get_readings()
     if (_uart == nullptr) {
         return;
     }
-    Debug(2, "             CURRENT STATE: %d ", _rp_state);
+
+    static uint8_t sync_buff[2] = {0};
+
     uint32_t nbytes = _uart->available();
 
-    while (nbytes-- > 0) {
+    Debug(LVL_3,DST_GCS, "current state: %d ", _rp_state);
+    Debug(LVL_3,DST_GCS, "nbytes: %d", nbytes);
+    if(nbytes == RX_BUFFER_SIZE) {
+        Debug(LVL_1,DST_GCS|DST_UART, "UART BUFF FULL (%d)!", nbytes);
+    }
 
+    /* After reset: wait for the welcome message to finish and take the next action.
+     * The message is not documented anywhere and its length varies in different RP models,
+     * thus we don't want to base on its content and use a predefined time instead.
+     * The time is counted since receiving the first character of a welcome message. */
+    if (_rp_state == rp_reset)
+    {
+        // Do if the welcome message is being transmitted
+        if (_information_data == true) {
+            // Wait at least 10ms for the welcome message to finish
+            if (AP_HAL::millis() - _last_distance_received_ms > 10) {
+                Debug(LVL_1,DST_GCS|DST_UART, "reset finished");
+                _information_data = false;
+                // Check health of the lidar after reset before proceeding
+                send_request_for_health();
+            }
+        } else {
+            // Or reset again after timeout
+            if (AP_HAL::millis() - _last_request_ms > RESET_TIMEOUT) {
+                Debug(LVL_1,DST_UART, "rp_reset timeout! (%d - %d ms)", AP_HAL::millis(),_last_request_ms);
+                send_request_for_reset();
+            }
+        }
+    }
+
+    while (nbytes-- > 0) {
         uint8_t c = _uart->read();
-        Debug(2, "UART READ %x <%c>", c, c); //show HEX values
 
         STATE:
         switch(_rp_state){
 
-            case rp_resetted:
-                Debug(3, "                  BYTE_COUNT %d", _byte_count);
-                if ((c == 0x52 || _information_data) && _byte_count < 62) {
-                    if (c == 0x52) {
-                        _information_data = true;
-                    }
-                    _rp_systeminfo[_byte_count] = c;
-                    Debug(3, "_rp_systeminfo[%d]=%x",_byte_count,_rp_systeminfo[_byte_count]);
-                    _byte_count++;
-                    break;
-                } else {
-
-                    if (_information_data) {
-                        Debug(1, "GOT RPLIDAR INFORMATION");
-                        _information_data = false;
-                        _byte_count = 0;
-                        set_scan_mode();
-                        break;
-                    }
-
-                    if (_cnt>5) {
-                        _rp_state = rp_unknown;
-                        _cnt=0;
-                        break;
-                    }
-                    _cnt++;
-                    break;
+            case rp_reset:
+                // Register the time of a welcome message (wait at least one call to this function to make sure there's no outdated data in the buffer)
+                if (AP_HAL::millis() - _last_request_ms > RESET_RPA2_WAIT_MS && _information_data == false) {
+                    Debug(LVL_1,DST_GCS|DST_UART, "welcome msg start");
+                    _information_data = true;
+                    _last_distance_received_ms = AP_HAL::millis();
                 }
                 break;
 
             case rp_responding:
-                Debug(2, "RESPONDING");
+                Debug(LVL_3,DST_GCS, "state: RESPONDING (%x)", c);
                 if (c == RPLIDAR_PREAMBLE || _descriptor_data) {
+                    Debug(LVL_3,DST_GCS, "_descriptor[%d] = %x", _byte_count, c);
                     _descriptor_data = true;
                     _descriptor[_byte_count] = c;
                     _byte_count++;
-                    // descriptor packet has 7 byte in total
+                    // descriptor packet has 7 bytes in total
                     if (_byte_count == sizeof(_descriptor)) {
-                        Debug(2,"LIDAR DESCRIPTOR CATCHED");
+                        Debug(LVL_3,DST_GCS,"descriptor catched");
                         _response_type = ResponseType_Descriptor;
                         // identify the payload data after the descriptor
                         parse_response_descriptor();
                         _byte_count = 0;
+                        _descriptor_data = false;
                     }
                 } else {
+                    Debug(LVL_1,DST_UART, "invalid preamble (%x)", c);
                     _rp_state = rp_unknown;
                 }
                 break;
 
             case rp_measurements:
                 if (_sync_error) {
-                    // out of 5-byte sync mask -> catch new revolution
-                    Debug(1, "       OUT OF SYNC");
-                    // on first revolution bit 1 = 1, bit 2 = 0 of the first byte
-                    if ((c & 0x03) == 0x01) {
+                    // out of 5-byte sync mask -> catch a new revolution:
+                    // - bit 0 = 1 and bit 1 = 0 of the correct data response that starts a new scan
+                    // - bit 0 = 1 of the second byte (checkbit) to confirm it's not a coincidence
+                    sync_buff[0] = sync_buff[1];
+                    sync_buff[1] = c;
+                    if (((sync_buff[0] & 0x03) == 0x01) && ((sync_buff[1] & 0x01) == 0x01)) {
+                        Debug(LVL_1,DST_UART|DST_GCS, "resynced! (%02x %02x)", sync_buff[1], sync_buff[0]);
+                        // Accept the correct bytes and continue to normal operation
                         _sync_error = 0;
-                        Debug(1, "                  RESYNC");
+                        payload[0] = sync_buff[0];
+                        _byte_count = 1;
+                        sync_buff[0] = 0;
+                        sync_buff[1] = 0;
                     } else {
+                        // Search on until valid bytes are received or timeout elapses
                         if (AP_HAL::millis() - _last_distance_received_ms > RESYNC_TIMEOUT) {
-                            reset_rplidar();
+                            send_request_for_reset();
                         }
                         break;
                     }
                 }
-                Debug(3, "READ PAYLOAD");
+                Debug(LVL_3,DST_GCS, "%02x", c);
                 payload[_byte_count] = c;
                 _byte_count++;
 
                 if (_byte_count == _payload_length) {
-                    Debug(2, "LIDAR MEASUREMENT CATCHED");
+                    Debug(LVL_3,DST_GCS, "measurement catched");
                     parse_response_data();
                     _byte_count = 0;
                 }
                 break;
 
-            case rp_health:
-                Debug(1, "state: HEALTH");
-                break;
-
             case rp_unknown:
-                Debug(1, "state: UNKNOWN");
                 if (c == RPLIDAR_PREAMBLE) {
                     _rp_state = rp_responding;
                     goto STATE;
@@ -346,14 +435,14 @@ void AP_Proximity_RPLidarA2::get_readings()
                 }
                 _cnt++;
                 if (_cnt>10) {
-                    reset_rplidar();
-                    _rp_state = rp_resetted;
+                    Debug(LVL_1,DST_UART, "state: UNKNOWN");
+                    send_request_for_reset();
                     _cnt=0;
                 }
                 break;
 
             default:
-                Debug(1, "UNKNOWN LIDAR STATE");
+                Debug(LVL_1,DST_GCS|DST_UART, "invalid state");
                 break;
         }
     }
@@ -369,21 +458,29 @@ void AP_Proximity_RPLidarA2::parse_response_descriptor()
             _payload_length = sizeof(payload.sensor_scan);
             static_assert(sizeof(payload.sensor_scan) == 5, "Unexpected payload.sensor_scan data structure size");
             _response_type = ResponseType_SCAN;
-            Debug(2, "Measurement response detected");
+            Debug(LVL_3,DST_GCS, "Measurement response detected");
             _last_distance_received_ms = AP_HAL::millis();
             _rp_state = rp_measurements;
         }
         if (_descriptor[2] == 0x03 && _descriptor[3] == 0x00 && _descriptor[4] == 0x00 && _descriptor[5] == 0x00 && _descriptor[6] == 0x06) {
-            // payload is health data
+            // payload is HEALTH data
             _payload_length = sizeof(payload.sensor_health);
             static_assert(sizeof(payload.sensor_health) == 3, "Unexpected payload.sensor_health data structure size");
-            _response_type = ResponseType_Health;
+            _response_type = ResponseType_HEALTH;
             _last_distance_received_ms = AP_HAL::millis();
-            _rp_state= rp_health;
+            _rp_state= rp_measurements;
+        }
+        if (_descriptor[2] == 0x04 && _descriptor[3] == 0x00 && _descriptor[4] == 0x00 && _descriptor[5] == 0x00 && _descriptor[6] == 0x15) {
+            // payload is SAMPLE RATE data
+            _payload_length = sizeof(payload.sensor_health);
+            static_assert(sizeof(payload.sensor_rate) == 4, "Unexpected payload.sensor_rate data structure size");
+            _response_type = ResponseType_RATE;
+            _last_distance_received_ms = AP_HAL::millis();
+            _rp_state= rp_measurements;
         }
         return;
     }
-    Debug(1, "Invalid response descriptor");
+    Debug(LVL_1,DST_UART, "Invalid response descriptor (%x %x)", _descriptor[0], _descriptor[1]);
     _rp_state = rp_unknown;
 }
 
@@ -391,57 +488,75 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 {
     switch (_response_type){
         case ResponseType_SCAN:
-            Debug(2, "UART %02x %02x%02x %02x%02x", payload[0], payload[2], payload[1], payload[4], payload[3]); //show HEX values
+            Debug(LVL_3,DST_GCS, "%02x %02x %02x %02x %02x", payload[0], payload[1], payload[2], payload[3], payload[4]); //show HEX values
+
             // check if valid SCAN packet: a valid packet starts with startbits which are complementary plus a checkbit in byte+1
             if ((payload.sensor_scan.startbit == !payload.sensor_scan.not_startbit) && payload.sensor_scan.checkbit) {
-                const float angle_deg = payload.sensor_scan.angle_q6/64.0f;
-                const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
-#if RP_DEBUG_LEVEL >= 2
-                const float quality = payload.sensor_scan.quality;
-                Debug(2, "                                       D%02.2f A%03.1f Q%02d", distance_m, angle_deg, quality);
-#endif
-                _last_distance_received_ms = AP_HAL::millis();
-                uint8_t sector;
-                if (convert_angle_to_sector(angle_deg, sector)) {
-                    if (distance_m > distance_min()) {
-                        if (_last_sector == sector) {
-                            if (_distance_m_last > distance_m) {
+                if (payload.sensor_scan.quality > MIN_SCAN_QUALITY) {
+                    const float angle_deg = wrap_360(payload.sensor_scan.angle_q6/64.0f - (float)_forward_direction);
+                    const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
+                    _last_distance_received_ms = AP_HAL::millis();
+                    uint8_t sector;
+                    if (convert_angle_to_sector(angle_deg, sector)) {
+                        if (distance_m > distance_min()) {
+                            if (_last_sector == sector) {
+                                if (_distance_m_last > distance_m) {
+                                    _distance_m_last = distance_m;
+                                    _angle_deg_last  = angle_deg;
+                                }
+                            } else {
+                                // a new sector started, the previous one can be updated now
+                                Debug(LVL_3,DST_GCS, "D%2.1f A%3.1f", _distance_m_last, _angle_deg_last);
+                                _angle[_last_sector] = _angle_deg_last;
+                                _distance[_last_sector] = _distance_m_last;
+                                _distance_valid[_last_sector] = true;
+                                // update boundary used for avoidance
+                                update_boundary_for_sector(_last_sector);
+                                // initialize the new sector
+                                _last_sector     = sector;
                                 _distance_m_last = distance_m;
                                 _angle_deg_last  = angle_deg;
                             }
                         } else {
-                            // a new sector started, the previous one can be updated now
-                            _angle[_last_sector] = _angle_deg_last;
-                            _distance[_last_sector] = _distance_m_last;
-                            _distance_valid[_last_sector] = true;
-                            // update boundary used for avoidance
-                            update_boundary_for_sector(_last_sector);
-                            // initialize the new sector
-                            _last_sector     = sector;
-                            _distance_m_last = distance_m;
-                            _angle_deg_last  = angle_deg;
+                            _distance_valid[sector] = false;
                         }
-                    } else {
-                        _distance_valid[sector] = false;
                     }
+                } else {
+                    Debug(LVL_3,DST_GCS, "low Q (%d)!", payload.sensor_scan.quality);
                 }
             } else {
                 // not valid payload packet
-                Debug(1, "Invalid Payload");
+                Debug(LVL_1,DST_UART, "invalid payload! (%02x)", payload[0]);
+                Debug(LVL_3,DST_GCS, "invalid payload! (%02x %02x %02x %02x %02x)", payload[0], payload[1], payload[2], payload[3], payload[4]);
                 _sync_error++;
             }
             break;
 
-        case ResponseType_Health:
-            // health issue if status is "3" ->HW error
-            if (payload.sensor_health.status == 3) {
-                Debug(1, "LIDAR Error");
+        case ResponseType_HEALTH:
+            Debug(LVL_1,DST_GCS|DST_UART, "health status: %d", payload.sensor_health.status);
+            if (payload.sensor_health.error_code > 0) {
+                // Reset lidar on error
+                send_request_for_reset();
+                Debug(LVL_1,DST_GCS|DST_UART, " error code: %d", payload.sensor_health.error_code);
+            } else {
+                // Start scanning if no error occurred
+                send_request_for_scan();
+            }
+            break;
+
+        case ResponseType_RATE:
+            // calculate and print the sampling rate in [kHz]
+            if (payload.sensor_rate.t_standard > 0) {
+                Debug(LVL_1,DST_GCS|DST_UART, "STANDARD SCAN sampling rate: %d", 1000/payload.sensor_rate.t_standard);
+            }
+            if (payload.sensor_rate.t_express > 0) {
+                Debug(LVL_1,DST_GCS|DST_UART, "EXPRESS SCAN sampling rate: %d", 1000/payload.sensor_rate.t_express);
             }
             break;
 
         default:
             // no valid payload packets recognized: return payload data=0
-            Debug(1, "Unknown LIDAR packet");
+            Debug(LVL_1,DST_GCS, "Unknown LIDAR packet");
             break;
     }
 }

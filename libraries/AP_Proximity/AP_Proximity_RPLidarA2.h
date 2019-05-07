@@ -54,30 +54,36 @@ public:
 private:
     enum rp_state {
             rp_unknown = 0,
-            rp_resetted,
+            rp_reset,
             rp_responding,
             rp_measurements,
-            rp_health
+            rp_health,
+            rp_rate
         };
 
     enum ResponseType {
         ResponseType_Descriptor = 0,
         ResponseType_SCAN,
         ResponseType_EXPRESS,
-        ResponseType_Health
+        ResponseType_HEALTH,
+        ResponseType_RATE
     };
 
     // initialise sensor (returns true if sensor is successfully initialised)
     bool initialise();
     void init_sectors();
-    void set_scan_mode();
 
     // send request for something from sensor
+    void send_request_for_reset();
+    void send_request_for_force_scan();
+    void send_request_for_scan();
     void send_request_for_health();
-    void parse_response_data();
-    void parse_response_descriptor();
+    void send_request_for_rate();
+
+    // process the response
     void get_readings();
-    void reset_rplidar();
+    void parse_response_descriptor();
+    void parse_response_data();
 
     // reply related variables
     AP_HAL::UARTDriver *_uart;
@@ -85,7 +91,7 @@ private:
     char _rp_systeminfo[63];
     bool _descriptor_data;
     bool _information_data;
-    bool _resetted;
+    bool _reset;
     bool _initialised;
     bool _sector_initialised;
 
@@ -100,9 +106,9 @@ private:
     uint8_t   _last_sector;                   ///< last sector requested
     uint32_t  _last_request_ms;               ///< system time of last request
     uint32_t  _last_distance_received_ms;     ///< system time of last distance measurement received from sensor
-    uint32_t  _last_reset_ms;
 
     // sector related variables
+    int16_t _forward_direction;
     float _angle_deg_last;
     float _distance_m_last;
 
@@ -120,9 +126,15 @@ private:
         uint16_t error_code;                  ///< the related error code
     };
 
+    struct PACKED _sensor_rate {
+        uint16_t t_standard;                  ///< The time used when RPLIDAR takes a single laser ranging in uS (valid for SCAN mode)
+        uint16_t t_express;                   ///< The time used when RPLIDAR takes a single laser ranging in uS (valid for EXPRESS_SCAN mode)
+    };
+
     union PACKED {
         DEFINE_BYTE_ARRAY_METHODS
         _sensor_scan sensor_scan;
         _sensor_health sensor_health;
+        _sensor_rate sensor_rate;
     } payload;
 };
