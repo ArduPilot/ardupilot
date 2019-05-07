@@ -546,8 +546,9 @@ uint8_t AP_InertialSensor_Invensensev2::_register_read(uint16_t reg)
 
 void AP_InertialSensor_Invensensev2::_register_write(uint16_t reg, uint8_t val, bool checked)
 {
+    (void)checked;
     _select_bank(GET_BANK(reg));
-    _dev->write_register(GET_REG(reg), val, checked);
+    _dev->write_register(GET_REG(reg), val, false);
 }
 
 void AP_InertialSensor_Invensensev2::_select_bank(uint8_t bank)
@@ -639,9 +640,8 @@ bool AP_InertialSensor_Invensensev2::_hardware_init(void)
         return false;
     }
 
-    // setup for register checking. We check much less often on I2C
-    // where the cost of the checks is higher
-    _dev->setup_checked_registers(7, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
+    // disabled setup of checked registers as it can't cope with bank switching
+    // _dev->setup_checked_registers(7, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
     
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
