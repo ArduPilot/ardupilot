@@ -3,8 +3,6 @@
 #include "AP_HAL_Linux.h"
 #include <AP_HAL/AP_HAL.h>
 
-#include "GPIO.h"
-
 namespace Linux {
 
 class DigitalSource_Sysfs : public AP_HAL::DigitalSource {
