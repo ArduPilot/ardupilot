@@ -797,12 +797,35 @@ void Copter::ModeAuto::wp_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
+#if FRAME_CONFIG == HELI_FRAME
+    if (wp_nav->use_l1_navigation()) {
+        copter.failsafe_terrain_set_status(wp_nav->update_l1_wpnav());
+    } else {
+        // run waypoint controller
+        copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    }
+#else
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+#endif
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
 
+#if FRAME_CONFIG == HELI_FRAME
+    if (wp_nav->use_l1_navigation()) {
+        target_yaw_rate += wp_nav->get_yaw_rate();
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_l1_roll(), wp_nav->get_l1_pitch(), target_yaw_rate);
+    } else {
+        if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+            // roll & pitch from waypoint controller, yaw rate from pilot
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
+        } else {
+            // roll, pitch from waypoint controller, yaw heading from auto_heading()
+            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
+        }
+    }
+#else
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
@@ -811,6 +834,7 @@ void Copter::ModeAuto::wp_run()
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
     }
+#endif
 }
 
 // auto_spline_run - runs the auto spline controller
@@ -1551,7 +1575,10 @@ bool Copter::ModeAuto::verify_land()
     switch (land_state) {
         case LandStateType_FlyToLocation:
             // check if we've reached the location
-            if (copter.wp_nav->reached_wp_destination()) {
+#if FRAME_CONFIG == HELI_FRAME
+            if (wp_nav->use_l1_navigation()) {
+            if (copter.wp_nav->reached_l1_destination()) {
+
                 // get destination so we can use it for loiter target
                 Vector3f dest = copter.wp_nav->get_wp_destination();
 
@@ -1561,6 +1588,32 @@ bool Copter::ModeAuto::verify_land()
                 // advance to next state
                 land_state = LandStateType_Descending;
             }
+            } else {
+            if (copter.wp_nav->reached_wp_destination()) {
+
+                // get destination so we can use it for loiter target
+                Vector3f dest = copter.wp_nav->get_wp_destination();
+
+                // initialise landing controller
+                land_start(dest);
+
+                // advance to next state
+                land_state = LandStateType_Descending;
+            }
+            }
+#else
+            if (copter.wp_nav->reached_wp_destination()) {
+
+                // get destination so we can use it for loiter target
+                Vector3f dest = copter.wp_nav->get_wp_destination();
+
+                // initialise landing controller
+                land_start(dest);
+
+                // advance to next state
+                land_state = LandStateType_Descending;
+            }
+#endif
             break;
 
         case LandStateType_Descending:
@@ -1808,10 +1861,21 @@ bool Copter::ModeAuto::verify_yaw()
 // verify_nav_wp - check if we have reached the next way point
 bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
+
+#if FRAME_CONFIG == HELI_FRAME
+    if (wp_nav->use_l1_navigation()) {
+        // check if we have reached the waypoint
+        if ( !copter.wp_nav->reached_l1_destination() ) {
+            return false;
+        } 
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        return true;
+    } else {
+#endif
     // check if we have reached the waypoint
     if ( !copter.wp_nav->reached_wp_destination() ) {
         return false;
-    }
+    } 
 
     // start timer if necessary
     if (loiter_time == 0) {
@@ -1833,6 +1897,9 @@ bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     } else {
         return false;
     }
+#if FRAME_CONFIG == HELI_FRAME
+    }
+#endif
 }
 
 // verify_circle - check if we have circled the point enough
