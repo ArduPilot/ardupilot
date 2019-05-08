@@ -44,8 +44,16 @@
 #include "UARTDriver.h"
 #include "Util.h"
 #include "Util_RPI.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_IMX
+#include "RCOutput_Imx_IOMCU.h"
+#include "AnalogIn_Imx_IOMCU.h"
+#endif
 
 using namespace Linux;
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_IMX
+static Imx_IOMCU mcu;
+#endif
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
@@ -92,6 +100,8 @@ static AnalogIn_IIO analogIn;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
 static AnalogIn_Navio2 analogIn;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_IMX
+static AnalogIn_Imx_IOMCU analogIn(&mcu);
 #else
 static Empty::AnalogIn analogIn;
 #endif
@@ -122,6 +132,8 @@ static GPIO_Sysfs gpioDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
+static GPIO_Sysfs gpioDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_IMX
 static GPIO_Sysfs gpioDriver;
 #else
 static Empty::GPIO gpioDriver;
@@ -157,6 +169,8 @@ static RCInput_SoloLink rcinDriver;
 static RCInput_Navio2 rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
 static RCInput_RCProtocol rcinDriver{"/dev/ttyPS0", NULL};
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_IMX
+static RCInput_RCProtocol rcinDriver{"/dev/ttymxc4", NULL};
 #else
 static RCInput rcinDriver;
 #endif
@@ -197,6 +211,8 @@ static ap::RCOutput_Tap rcoutDriver;
 static RCOutput_Sysfs rcoutDriver(0, 0, 15);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
 static RCOutput_Sysfs rcoutDriver(0, 0, 8);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_IMX
+static RCOutput_Imx_IOMCU rcoutDriver(&mcu);
 #else
 static Empty::RCOutput rcoutDriver;
 #endif
@@ -264,6 +280,10 @@ void _usage(void)
 
 void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_IMX
+    mcu.init("/dev/ttyACM0");
+#endif
+
 #if AP_MODULE_SUPPORTED
     const char *module_path = AP_MODULE_DEFAULT_DIRECTORY;
 #endif
