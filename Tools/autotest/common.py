@@ -2334,8 +2334,9 @@ class AutoTest(ABC):
                     "long SET_MESSAGE_INTERVAL %u %d\n" %
                     (mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
                      self.rate_to_interval_us(want_rate)))
+                self.drain_mav()
                 rate = round(self.get_message_rate("CAMERA_FEEDBACK", 20))
-                self.progress("Want=%f got=%f" % (want_rate, rate))
+                self.progress("Want=%u got=%u" % (want_rate, rate))
                 if rate != want_rate:
                     raise NotAchievedException("Did not get expected rate")
 
@@ -2355,6 +2356,8 @@ class AutoTest(ABC):
             if abs(rate - want_rate) > 2:
                 raise NotAchievedException("Did not get expected rate")
 
+            self.drain_mav()
+
             self.progress("Resetting CAMERA_FEEDBACK rate to zero")
             self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
 
@@ -2372,6 +2375,8 @@ class AutoTest(ABC):
             self.mavproxy.send("set streamrate %u\n" % sr)
 
         except Exception as e:
+            self.progress("Caught exception %s" %
+                          self.get_exception_stacktrace(e))
             # tell MAVProxy to start stuffing around with the rates:
             sr = self.sitl_streamrate()
             self.mavproxy.send("set streamrate %u\n" % sr)
