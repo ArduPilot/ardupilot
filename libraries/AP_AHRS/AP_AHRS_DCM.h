@@ -195,7 +195,4 @@ private:
 
     // time when DCM was last reset
     uint32_t _last_startup_ms;
-
-    // time when DCM was last backed up to stm32 backup registers
-    uint32_t _last_backup_ms;
 };

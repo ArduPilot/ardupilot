@@ -50,13 +50,11 @@ AP_AHRS_DCM::reset_gyro_drift(void)
 /* if this was a watchdog reset then get home from backup registers */
 void AP_AHRS_DCM::load_watchdog_home()
 {
-    int32_t lat, lon, alt_cm;
-    if (hal.util->was_watchdog_reset() &&
-        hal.util->get_backup_home_state(lat, lon, alt_cm) &&
-        (lat != 0 || lon != 0)) {
-        _home.lat = lat;
-        _home.lng = lon;
-        _home.set_alt_cm(alt_cm, Location::AltFrame::ABSOLUTE);
+    AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+    if (hal.util->was_watchdog_reset() && (pd.home_lat != 0 || pd.home_lon != 0)) {
+        _home.lat = pd.home_lat;
+        _home.lng = pd.home_lon;
+        _home.set_alt_cm(pd.home_alt_cm, Location::AltFrame::ABSOLUTE);
         _home_is_set = true;
         _home_locked = true;
         gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog home");
@@ -121,16 +119,14 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 }
 
 /*
-  backup attitude to stm32 registers at 3Hz
+  backup attitude to persistent_data for use in watchdog reset
  */
 void AP_AHRS_DCM::backup_attitude(void)
 {
-    uint32_t now = AP_HAL::millis();
-    if (now - _last_backup_ms < 333) {
-        return;
-    }
-    _last_backup_ms = now;
-    hal.util->set_backup_attitude(roll_sensor, pitch_sensor, yaw_sensor);
+    AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+    pd.roll_rad = roll;
+    pd.pitch_rad = pitch;
+    pd.yaw_rad = yaw;
 }
 
 // update the DCM matrix using only the gyros
@@ -190,15 +186,14 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     // if the caller wants us to try to recover to the current
     // attitude then calculate the dcm matrix from the current
     // roll/pitch/yaw values
-    if (hal.util->was_watchdog_reset() &&
-        hal.util->get_backup_attitude(roll_sensor, pitch_sensor, yaw_sensor) &&
-        AP_HAL::millis() < 10000) {
-        roll = radians(roll_sensor*0.01f);
-        pitch = radians(pitch_sensor*0.01f);
-        yaw = radians(yaw_sensor*0.01f);
+    if (hal.util->was_watchdog_reset() && AP_HAL::millis() < 10000) {
+        AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        roll = pd.roll_rad;
+        pitch = pd.pitch_rad;
+        yaw = pd.yaw_rad;
         _dcm_matrix.from_euler(roll, pitch, yaw);
-        gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog attitude %d %d %d",
-                        roll_sensor/100, pitch_sensor/100, yaw_sensor/100);
+        gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog attitude %.0f %.0f %.0f",
+                        degrees(roll), degrees(pitch), degrees(yaw));
     } else if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
         _dcm_matrix.from_euler(roll, pitch, yaw);
     } else {
@@ -1102,7 +1097,10 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     gcs().send_message(MSG_HOME);
     gcs().send_message(MSG_ORIGIN);
 
-    hal.util->set_backup_home_state(loc.lat, loc.lng, loc.alt);
+    AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+    pd.home_lat = loc.lat;
+    pd.home_lon = loc.lng;
+    pd.home_alt_cm = loc.alt;
 
     return true;
 }
