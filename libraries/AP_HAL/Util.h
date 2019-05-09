@@ -55,6 +55,7 @@ public:
         bool armed; // true if vehicle was armed
         enum safety_state safety_state;
         uint16_t waypoint_num;
+        int8_t scheduler_task;
     };
     struct PersistentData persistent_data;
 
