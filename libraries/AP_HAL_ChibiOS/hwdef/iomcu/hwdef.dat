@@ -120,6 +120,7 @@ define PORT_INT_REQUIRED_STACK 64
 # avoid timer and RCIN threads to save memory
 define HAL_NO_TIMER_THREAD
 define HAL_NO_RCIN_THREAD
+define HAL_NO_MONITOR_THREAD
 
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
