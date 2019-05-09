@@ -54,6 +54,8 @@ public:
         int32_t home_lat, home_lon, home_alt_cm; // home position
         bool armed; // true if vehicle was armed
         enum safety_state safety_state;
+        uint32_t internal_errors;
+        uint32_t internal_error_count;
         uint16_t waypoint_num;
         int8_t scheduler_task;
     };
