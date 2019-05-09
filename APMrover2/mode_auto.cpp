@@ -11,11 +11,13 @@ bool ModeAuto::_enter()
         return false;
     }
 
+    // init location target
+    if (!g2.wp_nav.set_desired_location(rover.current_loc)) {
+        return false;
+    }
+
     // initialise waypoint speed
     g2.wp_nav.set_desired_speed_to_default();
-
-    // init location target
-    g2.wp_nav.set_desired_location(rover.current_loc);
 
     // other initialisation
     auto_triggered = false;
@@ -130,12 +132,16 @@ float ModeAuto::get_distance_to_destination() const
 }
 
 // set desired location to drive to
-void ModeAuto::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
+bool ModeAuto::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
     // call parent
-    Mode::set_desired_location(destination, next_leg_bearing_cd);
+    if (!Mode::set_desired_location(destination, next_leg_bearing_cd)) {
+        return false;
+    }
 
     _submode = Auto_WP;
+
+    return true;
 }
 
 // return true if vehicle has reached or even passed destination
@@ -299,8 +305,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
-        do_nav_wp(cmd, false);
-        break;
+        return do_nav_wp(cmd, false);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         do_RTL();
@@ -308,8 +313,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_LOITER_UNLIM:  // Loiter indefinitely
     case MAV_CMD_NAV_LOITER_TIME:   // Loiter for specified time
-        do_nav_wp(cmd, true);
-        break;
+        return do_nav_wp(cmd, true);
 
     case MAV_CMD_NAV_GUIDED_ENABLE: // accept navigation commands from external nav computer
         do_nav_guided_enable(cmd);
@@ -481,17 +485,8 @@ void ModeAuto::do_RTL(void)
     start_RTL();
 }
 
-void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination)
+bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination)
 {
-    // just starting so we haven't previously reached the waypoint
-    previously_reached_wp = false;
-
-    // this will be used to remember the time in millis after we reach or pass the WP.
-    loiter_start_time = 0;
-
-    // this is the delay, stored in seconds
-    loiter_duration = cmd.p1;
-
     // get heading to following waypoint (auto mode reduces speed to allow corning without large overshoot)
     // in case of non-zero loiter duration, we provide heading-unknown to signal we should stop at the point
     float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN;
@@ -502,7 +497,20 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     // retrieve and sanitize target location
     Location cmdloc = cmd.content.location;
     cmdloc.sanitize(rover.current_loc);
-    set_desired_location(cmdloc, next_leg_bearing_cd);
+    if (!set_desired_location(cmdloc, next_leg_bearing_cd)) {
+        return false;
+    }
+
+    // just starting so we haven't previously reached the waypoint
+    previously_reached_wp = false;
+
+    // this will be used to remember the time in millis after we reach or pass the WP.
+    loiter_start_time = 0;
+
+    // this is the delay, stored in seconds
+    loiter_duration = cmd.p1;
+
+    return true;
 }
 
 // start guided within auto to allow external navigation system to control vehicle

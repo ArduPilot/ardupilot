@@ -106,7 +106,7 @@ public:
 
     // set desired location (used in Guided, Auto)
     //   next_leg_bearing_cd should be heading to the following waypoint (used to slow the vehicle in order to make the turn)
-    virtual void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN);
+    virtual bool set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) WARN_IF_UNUSED;
 
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() const { return true; }
@@ -253,7 +253,7 @@ public:
     float get_distance_to_destination() const override;
 
     // set desired location
-    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) override;
+    bool set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) override WARN_IF_UNUSED;
     bool reached_destination() const override;
 
     // heading and speed control
@@ -294,7 +294,7 @@ private:
 
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void do_RTL(void);
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
+    bool do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
@@ -367,7 +367,7 @@ public:
     bool reached_destination() const override;
 
     // set desired location, heading and speed
-    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) override;
+    bool set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) override WARN_IF_UNUSED;
     void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
 
     // set desired heading-delta, turn-rate and speed

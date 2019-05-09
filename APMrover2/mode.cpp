@@ -196,13 +196,17 @@ float Mode::get_desired_lat_accel() const
 }
 
 // set desired location
-void Mode::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
+bool Mode::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
-    g2.wp_nav.set_desired_location(destination, next_leg_bearing_cd);
+    if (!g2.wp_nav.set_desired_location(destination, next_leg_bearing_cd)) {
+        return false;
+    }
 
     // initialise distance
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
     _reached_destination = false;
+
+    return true;
 }
 
 // set desired heading and speed
