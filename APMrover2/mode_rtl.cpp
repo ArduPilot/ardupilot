@@ -35,7 +35,7 @@ bool ModeRTL::_enter()
 void ModeRTL::update()
 {
     // determine if we should keep navigating
-    if (!g2.wp_nav.reached_destination() || rover.is_boat()) {
+    if (!g2.wp_nav.reached_destination()) {
         // update navigation controller
         navigate_to_waypoint();
     } else {
@@ -45,8 +45,13 @@ void ModeRTL::update()
             gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
         }
 
-        // we've reached destination so stop
-        stop_vehicle();
+        // we have reached the destination
+        // boats keep navigating, rovers stop
+        if (rover.is_boat()) {
+            navigate_to_waypoint();
+        } else {
+            stop_vehicle();
+        }
 
         // update distance to destination
         _distance_to_destination = rover.current_loc.get_distance(g2.wp_nav.get_destination());
