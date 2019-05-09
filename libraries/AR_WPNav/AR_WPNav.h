@@ -1,11 +1,10 @@
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <APM_Control/AR_AttitudeControl.h>
 #include <AP_Navigation/AP_Navigation.h>
 
-#define AR_WPNAV_HEADING_UNKNOWN    99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
+const float AR_WPNAV_HEADING_UNKNOWN = 99999.0f; // used to indicate to set_desired_location method that next leg's heading is unknown
 
 class AR_WPNav {
 public:
