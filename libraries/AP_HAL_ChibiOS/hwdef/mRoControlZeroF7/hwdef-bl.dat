@@ -1,0 +1,60 @@
+# hw definition file for processing by chibios_hwdef.py
+# for F777 bootloader
+
+# MCU class and specific type
+MCU STM32F7xx STM32F777xx
+
+# USB setup
+USB_VENDOR 0x0483 # ST
+USB_PRODUCT 0x5740
+USB_STRING_MANUFACTURER "mRo"
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+define STM32_LSECLK 32768U
+define STM32_LSEDRV (3U << 3U)
+define STM32_PLLSRC STM32_PLLSRC_HSE
+define STM32_PLLM_VALUE 24
+define STM32_PLLN_VALUE 432
+define STM32_PLLP_VALUE 2
+define STM32_PLLQ_VALUE 9
+
+# board ID for firmware load
+APJ_BOARD_ID 141
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 96
+
+PB11 LED_BOOTLOADER OUTPUT
+
+# define all 3 to make LED output White.
+PB1 LED_ACTIVITY OUTPUT
+PB3 LED_ACTIVITY2 OUTPUT
+# PB11 LED_ACTIVITY3 OUTPUT
+
+define HAL_LED_ON 0
+
+# board voltage
+STM32_VDD 330U
+
+# order of UARTs (and USB)
+UART_ORDER OTG1 UART7
+
+# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
