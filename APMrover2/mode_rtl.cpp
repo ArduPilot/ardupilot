@@ -8,20 +8,24 @@ bool ModeRTL::_enter()
         return false;
     }
 
+    // set target to the closest rally point or home
+#if AP_RALLY == ENABLED
+    if (!g2.wp_nav.set_desired_location(g2.rally.calc_best_rally_or_home_location(rover.current_loc, ahrs.get_home().alt))) {
+        return false;
+    }
+#else
+    // set destination
+    if (!g2.wp_nav.set_desired_location(rover.home)) {
+        return false;
+    }
+#endif
+
     // initialise waypoint speed
     if (is_positive(g2.rtl_speed)) {
         g2.wp_nav.set_desired_speed(g2.rtl_speed);
     } else {
         g2.wp_nav.set_desired_speed_to_default();
     }
-
-    // set target to the closest rally point or home
-#if AP_RALLY == ENABLED
-    g2.wp_nav.set_desired_location(g2.rally.calc_best_rally_or_home_location(rover.current_loc, ahrs.get_home().alt));
-#else
-    // set destination
-    g2.wp_nav.set_desired_location(rover.home);
-#endif
 
     sent_notification = false;
 
