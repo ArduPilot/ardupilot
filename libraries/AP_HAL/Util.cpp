@@ -91,3 +91,10 @@ void AP_HAL::Util::set_hw_rtc(uint64_t time_utc_usec)
 #endif
 }
 
+void AP_HAL::Util::set_soft_armed(const bool b)
+{
+    soft_armed = b;
+    if (!was_watchdog_reset()) {
+        persistent_data.armed = b;
+    }
+}
