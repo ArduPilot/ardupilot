@@ -30,44 +30,14 @@ void stm32_watchdog_save_reason(void);
 void stm32_watchdog_clear_reason(void);
 
 /*
-  set the safety state in backup register
+  save persistent watchdog data
  */
-void stm32_set_backup_safety_state(bool safety_on);
+void stm32_watchdog_save(const uint32_t *data, uint32_t nwords);
 
 /*
-  get the safety state in backup register from initial boot
-*/
-bool stm32_get_boot_backup_safety_state(void);
-
-/*
-  set the armed state in backup register
+  load persistent watchdog data
  */
-void stm32_set_backup_armed(bool armed);
-
-/*
-  get the armed state in backup register from initial boot
-*/
-bool stm32_get_boot_backup_armed(void);
-
-/*
-  set home state in backup
- */
-void stm32_set_backup_home(int32_t lat, int32_t lon, int32_t alt_cm);
-
-/*
-  get home state from backup
- */
-void stm32_get_backup_home(int32_t *lat, int32_t *lon, int32_t *alt_cm);
-
-/*
-  set attitude in backup
- */
-void stm32_set_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd);
-
-/*
-  get attitude from backup
- */
-void stm32_get_attitude(int32_t *roll_cd, int32_t *pitch_cd, int32_t *yaw_cd);
+void stm32_watchdog_load(uint32_t *data, uint32_t nwords);
     
 #ifdef __cplusplus
 }
