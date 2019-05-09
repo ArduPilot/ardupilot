@@ -29,7 +29,9 @@
 #include "hwdef/common/watchdog.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_InternalError/AP_InternalError.h>
+#ifndef HAL_BOOTLOADER_BUILD
 #include <AP_Logger/AP_Logger.h>
+#endif
 
 #include <hwdef.h>
 
@@ -201,7 +203,9 @@ static void main_loop()
 
     g_callbacks->setup();
 
-#ifndef IOMCU_FW
+#ifdef IOMCU_FW
+    stm32_watchdog_init();
+#elif !defined(HAL_BOOTLOADER_BUILD)
     // setup watchdog to reset if main loop stops
     if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();
@@ -216,9 +220,8 @@ static void main_loop()
                            pd.internal_errors,
                            pd.internal_error_count);
     }
-#else
-    stm32_watchdog_init();
 #endif
+
     schedulerInstance.watchdog_pat();
 
     hal.scheduler->system_initialized();
