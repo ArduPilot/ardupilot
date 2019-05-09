@@ -68,24 +68,6 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
 
-    // return true if safety was off and this was a watchdog reset
-    bool was_watchdog_safety_off() const override;
-
-    // return true if vehicle was armed and this was a watchdog reset
-    bool was_watchdog_armed() const override;
-
-    // backup home state for restore on watchdog reset
-    void set_backup_home_state(int32_t lat, int32_t lon, int32_t alt_cm) const override;
-
-    // backup home state for restore on watchdog reset
-    bool get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const override;
-
-    // backup atttude for restore on watchdog reset
-    void set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const override;
-
-    // get watchdog reset attitude
-    bool get_backup_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd) const override;
-    
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
@@ -126,6 +108,7 @@ private:
     static memory_heap_t scripting_heap;
 #endif // ENABLE_HEAP
 
-    void set_soft_armed(const bool b) override;
-
+    // stm32F4 and F7 have 20 total RTC backup registers. We use the first one for boot type
+    // flags, so 19 available for persistent data
+    static_assert(sizeof(persistent_data) <= 19*4, "watchdog persistent data too large");
 };
