@@ -777,9 +777,9 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_throttle_max_old,   0,      AP_PARAM_INT8,  "MOT_THR_MAX" },
 
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
-    { Parameters::k_param_pivot_turn_angle,   0,      AP_PARAM_INT16,  "WP_PIVOT_ANGLE" },
-    { Parameters::k_param_waypoint_radius,    0,      AP_PARAM_FLOAT,  "WP_RADIUS" },
-    { Parameters::k_param_waypoint_overshoot, 0,      AP_PARAM_FLOAT,  "WP_OVERSHOOT" },
+    { Parameters::k_param_pivot_turn_angle_old,   0,  AP_PARAM_INT16,  "WP_PIVOT_ANGLE" },
+    { Parameters::k_param_waypoint_radius_old,    0,  AP_PARAM_FLOAT,  "WP_RADIUS" },
+    { Parameters::k_param_waypoint_overshoot_old, 0,  AP_PARAM_FLOAT,  "WP_OVERSHOOT" },
     { Parameters::k_param_g2,                20,      AP_PARAM_INT16,  "WP_PIVOT_RATE" },
 
 };
