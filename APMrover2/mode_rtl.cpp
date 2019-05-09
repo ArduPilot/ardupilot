@@ -15,7 +15,7 @@ bool ModeRTL::_enter()
     }
 #else
     // set destination
-    if (!g2.wp_nav.set_desired_location(rover.home)) {
+    if (!g2.wp_nav.set_desired_location(ahrs.get_home())) {
         return false;
     }
 #endif
