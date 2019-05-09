@@ -4,6 +4,8 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <signal.h>
+#include <stdio.h>
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -20,6 +22,7 @@
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 using namespace HALSITL;
 
@@ -74,6 +77,43 @@ HAL_SITL::HAL_SITL() :
 
 static char *new_argv[100];
 
+/*
+  save watchdog data
+ */
+static void watchdog_save(const uint32_t *data, uint32_t nwords)
+{
+    int fd = ::open("persistent.dat", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (fd != -1) {
+        ::write(fd, data, nwords*4);
+        ::close(fd);
+    }
+}
+
+/*
+  load watchdog data
+ */
+static bool watchdog_load(uint32_t *data, uint32_t nwords)
+{
+    int fd = ::open("persistent.dat", O_RDONLY, 0644);
+    bool ret = false;
+    if (fd != -1) {
+        ret = (::read(fd, data, nwords*4) == nwords*4);
+        ::close(fd);
+    }
+    return ret;
+}
+
+/*
+  implement watchdoh reset via SIGALRM
+ */
+static void sig_alrm(int signum)
+{
+    static char env[] = "SITL_WATCHDOG_RESET=1";
+    putenv(env);
+    printf("GOT SIGALRM\n");
+    execv(new_argv[0], new_argv);
+}
+
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
@@ -88,15 +128,14 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     // spi->init();
     analogin->init();
 
-    callbacks->setup();
-    scheduler->system_initialized();
-
-    while (!HALSITL::Scheduler::_should_reboot) {
-        callbacks->loop();
-        HALSITL::Scheduler::_run_io_procs();
+    if (getenv("SITL_WATCHDOG_RESET")) {
+        AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
+        if (watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4)) {
+            uartA->printf("Loaded watchdog data");
+        }
     }
 
-    // form a new argv, removing problem parameters
+    // form a new argv, removing problem parameters. The is used for reboot
     uint8_t new_argv_offset = 0;
     for (uint8_t i=0; i<ARRAY_SIZE(new_argv) && i<argc; i++) {
         if (!strcmp(argv[i], "-w")) {
@@ -105,6 +144,35 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         }
         new_argv[new_argv_offset++] = argv[i];
     }
+    
+    callbacks->setup();
+    scheduler->system_initialized();
+
+    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+    if (using_watchdog) {
+        signal(SIGALRM, sig_alrm);
+        alarm(2);
+    }
+
+    uint32_t last_watchdog_save = AP_HAL::millis();
+
+    while (!HALSITL::Scheduler::_should_reboot) {
+        callbacks->loop();
+        HALSITL::Scheduler::_run_io_procs();
+
+        uint32_t now = AP_HAL::millis();
+        if (now - last_watchdog_save >= 100 && using_watchdog) {
+            // save persistent data every 100ms
+            last_watchdog_save = now;
+            watchdog_save((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
+        }
+
+        if (using_watchdog) {
+            // note that this only works for a speedup of 1
+            alarm(2);
+        }
+    }
+
     execv(new_argv[0], new_argv);
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }
