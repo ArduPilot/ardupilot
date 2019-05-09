@@ -29,6 +29,7 @@
 #include "hwdef/common/watchdog.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include <hwdef.h>
 
@@ -191,23 +192,14 @@ static void main_loop()
      */
     hal_chibios_set_priority(APM_STARTUP_PRIORITY);
 
-    schedulerInstance.hal_initialized();
-
     if (stm32_was_watchdog_reset()) {
         // load saved watchdog data
         stm32_watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
     }
 
-    g_callbacks->setup();
-    hal.scheduler->system_initialized();
+    schedulerInstance.hal_initialized();
 
-    thread_running = true;
-    chRegSetThreadName(SKETCHNAME);
-    
-    /*
-      switch to high priority for main loop
-     */
-    chThdSetPriority(APM_MAIN_PRIORITY);
+    g_callbacks->setup();
 
 #ifndef IOMCU_FW
     // setup watchdog to reset if main loop stops
@@ -217,12 +209,27 @@ static void main_loop()
 
     if (hal.util->was_watchdog_reset()) {
         AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
+        AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        AP::logger().Write("WDOG", "TimeUS,Task,IErr,IErrCnt", "QbII",
+                           AP_HAL::micros64(),
+                           pd.scheduler_task,
+                           pd.internal_errors,
+                           pd.internal_error_count);
     }
 #else
     stm32_watchdog_init();
 #endif
+    schedulerInstance.watchdog_pat();
 
-    uint32_t last_watchdog_save = AP_HAL::millis();
+    hal.scheduler->system_initialized();
+
+    thread_running = true;
+    chRegSetThreadName(SKETCHNAME);
+    
+    /*
+      switch to high priority for main loop
+     */
+    chThdSetPriority(APM_MAIN_PRIORITY);
 
     while (true) {
         g_callbacks->loop();
@@ -240,15 +247,7 @@ static void main_loop()
             hal.scheduler->delay_microseconds(50);
         }
 #endif
-        stm32_watchdog_pat();
-
-        uint32_t now = AP_HAL::millis();
-        if (now - last_watchdog_save >= 100) {
-            // save persistent data every 100ms
-            last_watchdog_save = now;
-            stm32_watchdog_save((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
-        }
-
+        schedulerInstance.watchdog_pat();
     }
     thread_running = false;
 }
