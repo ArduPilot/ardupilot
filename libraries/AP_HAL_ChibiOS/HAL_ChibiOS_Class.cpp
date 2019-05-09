@@ -193,6 +193,11 @@ static void main_loop()
 
     schedulerInstance.hal_initialized();
 
+    if (stm32_was_watchdog_reset()) {
+        // load saved watchdog data
+        stm32_watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
+    }
+
     g_callbacks->setup();
     hal.scheduler->system_initialized();
 
@@ -217,6 +222,8 @@ static void main_loop()
     stm32_watchdog_init();
 #endif
 
+    uint32_t last_watchdog_save = AP_HAL::millis();
+
     while (true) {
         g_callbacks->loop();
 
@@ -235,14 +242,12 @@ static void main_loop()
 #endif
         stm32_watchdog_pat();
 
-#if 0
-        // simple method to test watchdog functionality
-        static bool done_pause;
-        if (!done_pause && AP_HAL::millis() > 20000) {
-            done_pause = true;
-            while (AP_HAL::millis() < 22200) ;
+        uint32_t now = AP_HAL::millis();
+        if (now - last_watchdog_save >= 100) {
+            // save persistent data every 100ms
+            last_watchdog_save = now;
+            stm32_watchdog_save((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
         }
-#endif
 
     }
     thread_running = false;

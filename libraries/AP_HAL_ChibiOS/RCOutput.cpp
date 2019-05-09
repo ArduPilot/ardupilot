@@ -1389,10 +1389,8 @@ AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)
         safety_state = iomcu.get_safety_switch_state();
     }
 #endif
-    if (safety_state == AP_HAL::Util::SAFETY_ARMED) {
-        stm32_set_backup_safety_state(false);
-    } else if (safety_state == AP_HAL::Util::SAFETY_DISARMED) {
-        stm32_set_backup_safety_state(true);
+    if (!hal.util->was_watchdog_reset()) {
+        hal.util->persistent_data.safety_state = safety_state;
     }
     return safety_state;
 }
