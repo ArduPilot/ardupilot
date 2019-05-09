@@ -1,4 +1,11 @@
 # setup correct defaults for battery monitoring for cube power brick
+# default to correct parameters for IMU redundancy 
+# default to ADSB-in on Serial 5
+# disable inflight reboot till more testing is completed
+ADSB_ENABLE 1
+AVD_ENABLE 1
+AVD_F_ACTION 2
+AVD_W_ACTION 1
 BATT2_CURR_PIN 14
 BATT2_VOLT_PIN 13
 BATT_AMP_PERVLT 39.877
@@ -9,6 +16,8 @@ BRD_OPTIONS 0
 BRD_TYPE 3
 EK2_IMU_MASK 7
 EK3_IMU_MASK 7
-INS_USE == 1
-INS_USE2 == 1
-INS_USE3 == 1
+INS_USE 1
+INS_USE2 1
+INS_USE3 1
+SERIAL5_BAUD 57
+SERIAL5_PROTOCOL 1
