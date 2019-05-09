@@ -220,7 +220,7 @@ void Mode::set_desired_heading_and_speed(float yaw_angle_cd, float target_speed)
     _desired_speed = target_speed;
 }
 
-// get default speed for this mode (held in (WP_SPEED or RTL_SPEED)
+// get default speed for this mode (held in WP_SPEED or RTL_SPEED)
 float Mode::get_speed_default(bool rtl) const
 {
     if (rtl && is_positive(g2.rtl_speed)) {

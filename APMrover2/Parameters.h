@@ -36,7 +36,7 @@ public:
         k_param_scheduler,
         k_param_relay,
         k_param_BoardConfig,
-        k_param_pivot_turn_angle,  // unused
+        k_param_pivot_turn_angle_old,   // unused
         k_param_rc_13_old,  // unused
         k_param_rc_14_old,  // unused
 
@@ -173,8 +173,8 @@ public:
         //
         k_param_command_total = 220,    // unused
         k_param_command_index,          // unused
-        k_param_waypoint_radius,        // unused
-        k_param_waypoint_overshoot,     // unused
+        k_param_waypoint_radius_old,    // unused
+        k_param_waypoint_overshoot_old, // unused
 
         //
         // camera control
@@ -324,7 +324,7 @@ public:
     // Safe RTL library
     AP_SmartRTL smart_rtl;
 
-    // default speeds for rtl
+    // default speed for rtl
     AP_Float rtl_speed;
 
     // frame class for vehicle
