@@ -3009,22 +3009,31 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t *msg)
     mavlink_rc_channels_override_t packet;
     mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-    RC_Channels::set_override(0, packet.chan1_raw, tnow);
-    RC_Channels::set_override(1, packet.chan2_raw, tnow);
-    RC_Channels::set_override(2, packet.chan3_raw, tnow);
-    RC_Channels::set_override(3, packet.chan4_raw, tnow);
-    RC_Channels::set_override(4, packet.chan5_raw, tnow);
-    RC_Channels::set_override(5, packet.chan6_raw, tnow);
-    RC_Channels::set_override(6, packet.chan7_raw, tnow);
-    RC_Channels::set_override(7, packet.chan8_raw, tnow);
-    RC_Channels::set_override(8, packet.chan9_raw, tnow);
-    RC_Channels::set_override(9, packet.chan10_raw, tnow);
-    RC_Channels::set_override(10, packet.chan11_raw, tnow);
-    RC_Channels::set_override(11, packet.chan12_raw, tnow);
-    RC_Channels::set_override(12, packet.chan13_raw, tnow);
-    RC_Channels::set_override(13, packet.chan14_raw, tnow);
-    RC_Channels::set_override(14, packet.chan15_raw, tnow);
-    RC_Channels::set_override(15, packet.chan16_raw, tnow);
+    const uint16_t override_data[] = {
+        packet.chan1_raw,
+        packet.chan2_raw,
+        packet.chan3_raw,
+        packet.chan4_raw,
+        packet.chan5_raw,
+        packet.chan6_raw,
+        packet.chan7_raw,
+        packet.chan8_raw,
+        packet.chan9_raw,
+        packet.chan10_raw,
+        packet.chan11_raw,
+        packet.chan12_raw,
+        packet.chan13_raw,
+        packet.chan14_raw,
+        packet.chan15_raw,
+        packet.chan16_raw
+    };
+
+    for (uint8_t i=0; i<ARRAY_SIZE(override_data); i++) {
+        // Per MAVLink spec a value of UINT16_MAX means to ignore this field.
+        if (override_data[i] != UINT16_MAX) {
+            RC_Channels::set_override(i, override_data[i], tnow);
+        }
+    }
 }
 
 // allow override of RC channel values for HIL or for complete GCS
