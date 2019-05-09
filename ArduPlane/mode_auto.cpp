@@ -15,6 +15,14 @@ bool ModeAuto::_enter()
     // start or resume the mission, based on MIS_AUTORESET
     plane.mission.start_or_resume();
 
+    if (hal.util->was_watchdog_armed()) {
+        if (hal.util->persistent_data.waypoint_num != 0) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Watchdog: resume WP %u", hal.util->persistent_data.waypoint_num);
+            plane.mission.set_current_cmd(hal.util->persistent_data.waypoint_num);
+            hal.util->persistent_data.waypoint_num = 0;
+        }
+    }
+
 #if SOARING_ENABLED == ENABLED
     plane.g2.soaring_controller.init_cruising();
 #endif
