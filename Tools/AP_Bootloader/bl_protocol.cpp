@@ -490,6 +490,14 @@ bootloader(unsigned timeout)
         // Wait for a command byte
         led_off(LED_ACTIVITY);
 
+#if defined(GPIO_PIN_LED_ACTIVITY2)
+        led_off(GPIO_PIN_LED_ACTIVITY2);
+#endif
+
+#if defined(GPIO_PIN_LED_ACTIVITY3)
+        led_off(GPIO_PIN_LED_ACTIVITY3);
+#endif
+
         do {
             /* if we have a timeout and the timer has expired, return now */
             if (timeout && !timer[TIMER_BL_WAIT]) {
@@ -502,6 +510,14 @@ bootloader(unsigned timeout)
         } while (c < 0);
 
         led_on(LED_ACTIVITY);
+
+#if defined(GPIO_PIN_LED_ACTIVITY2)
+        led_off(GPIO_PIN_LED_ACTIVITY2);
+#endif
+
+#if defined(GPIO_PIN_LED_ACTIVITY3)
+        led_off(GPIO_PIN_LED_ACTIVITY3);
+#endif
 
         // handle the command byte
         switch (c) {
