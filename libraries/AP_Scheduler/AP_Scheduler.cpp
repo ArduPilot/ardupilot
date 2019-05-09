@@ -39,8 +39,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-int8_t AP_Scheduler::current_task = -1;
-
 const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
@@ -163,7 +161,7 @@ void AP_Scheduler::run(uint32_t time_available)
 
         // run it
         _task_time_started = now;
-        current_task = i;
+        hal.util->persistent_data.scheduler_task = i;
         if (_debug > 1 && _perf_counters && _perf_counters[i]) {
             hal.util->perf_begin(_perf_counters[i]);
         }
@@ -171,7 +169,7 @@ void AP_Scheduler::run(uint32_t time_available)
         if (_debug > 1 && _perf_counters && _perf_counters[i]) {
             hal.util->perf_end(_perf_counters[i]);
         }
-        current_task = -1;
+        hal.util->persistent_data.scheduler_task = -1;
 
         // record the tick counter when we ran. This drives
         // when we next run the event
@@ -248,7 +246,9 @@ void AP_Scheduler::loop()
     // Execute the fast loop
     // ---------------------
     if (_fastloop_fn) {
+        hal.util->persistent_data.scheduler_task = -2;
         _fastloop_fn();
+        hal.util->persistent_data.scheduler_task = -1;
     }
 
     // tell the scheduler one tick has passed

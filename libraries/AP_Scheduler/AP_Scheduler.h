@@ -142,9 +142,6 @@ public:
     
     static const struct AP_Param::GroupInfo var_info[];
 
-    // current running task, or -1 if none. Used to debug stuck tasks
-    static int8_t current_task;
-
     // loop performance monitoring:
     AP::PerfInfo perf_info;
 
