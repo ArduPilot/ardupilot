@@ -38,13 +38,13 @@ public:
 
     // set desired location
     // next_leg_bearing_cd should be heading to the following waypoint (used to slow the vehicle in order to make the turn)
-    bool set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN);
+    bool set_desired_location(const struct Location& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN)  WARN_IF_UNUSED;
 
     // set desired location to a reasonable stopping point, return true on success
-    bool set_desired_location_to_stopping_location();
+    bool set_desired_location_to_stopping_location()  WARN_IF_UNUSED;
 
     // set desired location as offset from the EKF origin, return true on success
-    bool set_desired_location_NED(const Vector3f& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN);
+    bool set_desired_location_NED(const Vector3f& destination, float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN) WARN_IF_UNUSED;
 
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     bool reached_destination() const { return _reached_destination; }
@@ -94,7 +94,7 @@ private:
 
     // calculate stopping location using current position and attitude controller provided maximum deceleration
     // returns true on success, false on failure
-    bool get_stopping_location(Location& stopping_loc);
+    bool get_stopping_location(Location& stopping_loc) WARN_IF_UNUSED;
 
     // returns true if vehicle should pivot turn at next waypoint
     bool use_pivot_steering_at_next_WP(float yaw_error_cd) const;

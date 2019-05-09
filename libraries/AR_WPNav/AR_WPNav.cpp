@@ -179,8 +179,7 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f& destination, float next_
 
     // apply offset
     destination_ned.offset(destination.x, destination.y);
-    set_desired_location(destination_ned, next_leg_bearing_cd);
-    return true;
+    return set_desired_location(destination_ned, next_leg_bearing_cd);
 }
 
 // calculate vehicle stopping point using current location, velocity and maximum acceleration
