@@ -64,8 +64,8 @@ void Rover::cruise_learn_complete()
 void Rover::log_write_cruise_learn()
 {
     AP::logger().Write("CRSE", "TimeUS,State,Speed,Throttle", "Qbff",
-                                            AP_HAL::micros64,
-                                            cruise_learn.learn_start_ms > 0,
-                                            cruise_learn.speed_filt.get(),
-                                            cruise_learn.throttle_filt.get());
+                       AP_HAL::micros64(),
+                       cruise_learn.learn_start_ms > 0,
+                       cruise_learn.speed_filt.get(),
+                       cruise_learn.throttle_filt.get());
 }
