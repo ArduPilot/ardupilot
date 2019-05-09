@@ -48,6 +48,7 @@ public:
         iomcu_reset                 = (1U << 12),
         iomcu_fail                  = (1U << 13),
         spi_fail                    = (1U << 14),
+        main_loop_stuck             = (1U << 15),
     };
 
     void error(const AP_InternalError::error_t error);
