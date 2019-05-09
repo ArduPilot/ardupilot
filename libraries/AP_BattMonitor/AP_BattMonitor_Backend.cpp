@@ -35,7 +35,7 @@ uint8_t AP_BattMonitor_Backend::capacity_remaining_pct() const
 {
     float mah_remaining = _params._pack_capacity - _state.consumed_mah;
     if ( _params._pack_capacity > 10 ) { // a very very small battery
-        return (100 * (mah_remaining) / _params._pack_capacity);
+        return MIN(MAX((100 * (mah_remaining) / _params._pack_capacity), 0), UINT8_MAX);
     } else {
         return 0;
     }
