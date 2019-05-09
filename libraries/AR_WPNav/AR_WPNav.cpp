@@ -219,7 +219,7 @@ bool AR_WPNav::use_pivot_steering_at_next_WP(float yaw_error_cd) const
         return false;
     }
 
-    // if error is larger than pivot_turn_angle then use pivot steering at next WP
+    // if error is larger than _pivot_angle then use pivot steering at next WP
     if (fabsf(yaw_error_cd) * 0.01f > _pivot_angle) {
         return true;
     }
@@ -239,7 +239,7 @@ bool AR_WPNav::use_pivot_steering(float yaw_error_cd)
     // calc bearing error
     const float yaw_error = fabsf(yaw_error_cd) * 0.01f;
 
-    // if error is larger than pivot_turn_angle start pivot steering
+    // if error is larger than _pivot_angle start pivot steering
     if (yaw_error > _pivot_angle) {
         _pivot_active = true;
         return true;
@@ -295,15 +295,14 @@ void AR_WPNav::update_steering(const Location& current_loc, float current_speed)
         _nav_controller.update_waypoint((_reached_destination ? current_loc : _origin), _destination, _radius);
 
         // retrieve lateral acceleration, heading back towards line and crosstrack error
-        float desired_lat_accel = constrain_float(_nav_controller.lateral_acceleration(), -_turn_max_mss, _turn_max_mss);
+        _desired_lat_accel = constrain_float(_nav_controller.lateral_acceleration(), -_turn_max_mss, _turn_max_mss);
         _desired_heading_cd = wrap_360_cd(_nav_controller.nav_bearing_cd());
         if (_reversed) {
-            desired_lat_accel *= -1.0f;
+            _desired_lat_accel *= -1.0f;
             _desired_heading_cd = wrap_360_cd(_desired_heading_cd + 18000);
         }
         _cross_track_error = _nav_controller.crosstrack_error();
-        _desired_lat_accel = desired_lat_accel;
-        _desired_turn_rate_rads = _atc.get_turn_rate_from_lat_accel(desired_lat_accel, current_speed);
+        _desired_turn_rate_rads = _atc.get_turn_rate_from_lat_accel(_desired_lat_accel, current_speed);
     }
 }
 
