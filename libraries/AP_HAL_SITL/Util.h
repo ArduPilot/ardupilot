@@ -46,6 +46,9 @@ public:
     }
 #endif
 
+    // return true if the reason for the reboot was a watchdog reset
+    bool was_watchdog_reset() const override { return getenv("SITL_WATCHDOG_RESET") != nullptr; }
+    
 private:
     SITL_State *sitlState;
 
