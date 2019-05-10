@@ -7,7 +7,7 @@
  */
 
 // loiter_init - initialise loiter controller
-bool Copter::ModeLoiter::init(bool ignore_checks)
+bool ModeLoiter::init(bool ignore_checks)
 {
     if (!copter.failsafe.radio) {
         float target_roll, target_pitch;
@@ -35,12 +35,12 @@ bool Copter::ModeLoiter::init(bool ignore_checks)
 }
 
 #if PRECISION_LANDING == ENABLED
-bool Copter::ModeLoiter::do_precision_loiter()
+bool ModeLoiter::do_precision_loiter()
 {
     if (!_precision_loiter_enabled) {
         return false;
     }
-    if (ap.land_complete_maybe) {
+    if (copter.ap.land_complete_maybe) {
         return false;        // don't move on the ground
     }
     // if the pilot *really* wants to move the vehicle, let them....
@@ -53,7 +53,7 @@ bool Copter::ModeLoiter::do_precision_loiter()
     return true;
 }
 
-void Copter::ModeLoiter::precision_loiter_xy()
+void ModeLoiter::precision_loiter_xy()
 {
     loiter_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
@@ -72,7 +72,7 @@ void Copter::ModeLoiter::precision_loiter_xy()
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
-void Copter::ModeLoiter::run()
+void ModeLoiter::run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate = 0.0f;
@@ -106,7 +106,7 @@ void Copter::ModeLoiter::run()
     }
 
     // relax loiter target if we might be landed
-    if (ap.land_complete_maybe) {
+    if (copter.ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();
     }
 
@@ -194,12 +194,12 @@ void Copter::ModeLoiter::run()
     }
 }
 
-uint32_t Copter::ModeLoiter::wp_distance() const
+uint32_t ModeLoiter::wp_distance() const
 {
     return loiter_nav->get_distance_to_target();
 }
 
-int32_t Copter::ModeLoiter::wp_bearing() const
+int32_t ModeLoiter::wp_bearing() const
 {
     return loiter_nav->get_bearing_to_target();
 }

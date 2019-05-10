@@ -119,7 +119,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(update_throttle_hover,100,     90),
 #if MODE_SMARTRTL_ENABLED == ENABLED
-    SCHED_TASK_CLASS(Copter::ModeSmartRTL, &copter.mode_smartrtl,       save_position,    3, 100),
+    SCHED_TASK_CLASS(ModeSmartRTL, &copter.mode_smartrtl,       save_position,    3, 100),
 #endif
 #if SPRAYER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AC_Sprayer,           &copter.sprayer,             update,           3,  90),

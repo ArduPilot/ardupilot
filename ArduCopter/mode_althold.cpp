@@ -6,7 +6,7 @@
  */
 
 // althold_init - initialise althold controller
-bool Copter::ModeAltHold::init(bool ignore_checks)
+bool ModeAltHold::init(bool ignore_checks)
 {
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
@@ -19,7 +19,7 @@ bool Copter::ModeAltHold::init(bool ignore_checks)
 
 // althold_run - runs the althold controller
 // should be called at 100hz or more
-void Copter::ModeAltHold::run()
+void ModeAltHold::run()
 {
     float takeoff_climb_rate = 0.0f;
 
