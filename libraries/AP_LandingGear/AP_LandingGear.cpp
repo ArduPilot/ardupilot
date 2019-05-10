@@ -18,7 +18,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @Values: 0:WaitForPilotInput, 1:Retract, 2:Deploy
     // @User: Standard
     AP_GROUPINFO("STARTUP", 2, AP_LandingGear, _startup_behaviour, (uint8_t)AP_LandingGear::LandingGear_Startup_WaitForPilotInput),
-    
+
     // @Param: DEPLOY_PIN
     // @DisplayName: Chassis deployment feedback pin
     // @Description: Pin number to use for detection of gear deployment. If set to -1 feedback is disabled.
@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @Values: 0:Low,1:High
     // @User: Standard
     AP_GROUPINFO("DEPLOY_POL", 4, AP_LandingGear, _pin_deployed_polarity, 0),
-    
+
     // @Param: WOW_PIN
     // @DisplayName: Weight on wheels feedback pin
     // @Description: Pin number to use for feedback of weight on wheels condition. If set to -1 feedback is disabled.
@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RETRACT_ALT", 8, AP_LandingGear, _retract_alt, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -81,14 +81,14 @@ void AP_LandingGear::init()
         hal.gpio->write(_pin_deployed, !_pin_deployed_polarity);
         log_wow_state(wow_state_current);
     }
-    
+
     if (_pin_weight_on_wheels != -1) {
         hal.gpio->pinMode(_pin_weight_on_wheels, HAL_GPIO_INPUT);
         // set pullup/pulldown to default to flying state
         hal.gpio->write(_pin_weight_on_wheels, !_pin_weight_on_wheels_polarity);
         log_wow_state(wow_state_current);
     }
-    
+
     switch ((enum LandingGearStartupBehaviour)_startup_behaviour.get()) {
         default:
         case LandingGear_Startup_WaitForPilotInput:
@@ -186,19 +186,19 @@ void AP_LandingGear::update(float height_above_ground_m)
         wow_state_current = LG_WOW_UNKNOWN;
     } else {
         LG_WOW_State wow_state_new = hal.gpio->read(_pin_weight_on_wheels) == _pin_weight_on_wheels_polarity ? LG_WOW : LG_NO_WOW;
-        
+
         if (wow_state_new != wow_state_current) {
             // we changed states, lets note the time.
             last_wow_event_ms = AP_HAL::millis();
             log_wow_state(wow_state_new);
         }
-        
+
         wow_state_current = wow_state_new;
     }
-    
+
     if (_pin_deployed == -1) {
         last_gear_event_ms = 0;
-        
+
         // If there was no pilot input and state is still unknown - leave it as it is
         if (gear_state_current != LG_UNKNOWN) {
             gear_state_current = (_deployed == true ? LG_DEPLOYED : LG_RETRACTED);
@@ -211,14 +211,14 @@ void AP_LandingGear::update(float height_above_ground_m)
         } else {
             gear_state_new = (deployed() == false ? LG_RETRACTED : LG_RETRACTING);
         }
-        
+
         if (gear_state_new != gear_state_current) {
             // we changed states, lets note the time.
             last_gear_event_ms = AP_HAL::millis();
             
             log_wow_state(wow_state_current);
         }
-        
+
         gear_state_current = gear_state_new;
     }
 
@@ -261,7 +261,7 @@ bool AP_LandingGear::check_before_land(void)
     if (get_state() == LG_UNKNOWN) {
         return true;
     }
-    
+
     // If the landing gear was not used - return true, otherwise - check for deployed
     return (get_state() == LG_DEPLOYED);
 }
