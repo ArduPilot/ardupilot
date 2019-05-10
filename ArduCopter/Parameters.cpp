@@ -742,7 +742,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Used by THROW mode. Specifies whether Copter is thrown upward or dropped.
     // @Values: 0:Upward Throw,1:Drop
     // @User: Standard
-    AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, Copter::ModeThrow::ThrowType_Upward),
+    AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, ModeThrow::ThrowType_Upward),
 #endif
 
     // @Param: GND_EFFECT_COMP
@@ -882,7 +882,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     // @Group: FHLD
     // @Path: mode_flowhold.cpp
-    AP_SUBGROUPPTR(mode_flowhold_ptr, "FHLD", 26, ParametersG2, Copter::ModeFlowHold),
+    AP_SUBGROUPPTR(mode_flowhold_ptr, "FHLD", 26, ParametersG2, ModeFlowHold),
 #endif
 
 #if MODE_FOLLOW_ENABLED == ENABLED
@@ -898,7 +898,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #if AUTOTUNE_ENABLED == ENABLED
     // @Group: AUTOTUNE_
     // @Path: ../libraries/AC_AutoTune/AC_AutoTune.cpp
-    AP_SUBGROUPPTR(autotune_ptr, "AUTOTUNE_",  29, ParametersG2, Copter::AutoTune),
+    AP_SUBGROUPPTR(autotune_ptr, "AUTOTUNE_",  29, ParametersG2, AutoTune),
 #endif
 
 #ifdef ENABLE_SCRIPTING

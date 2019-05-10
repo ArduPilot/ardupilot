@@ -7,7 +7,7 @@
  */
 
 // brake_init - initialise brake controller
-bool Copter::ModeBrake::init(bool ignore_checks)
+bool ModeBrake::init(bool ignore_checks)
 {
     // set target to current position
     wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
@@ -29,7 +29,7 @@ bool Copter::ModeBrake::init(bool ignore_checks)
 
 // brake_run - runs the brake controller
 // should be called at 100hz or more
-void Copter::ModeBrake::run()
+void ModeBrake::run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
@@ -42,7 +42,7 @@ void Copter::ModeBrake::run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // relax stop target if we might be landed
-    if (ap.land_complete_maybe) {
+    if (copter.ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();
     }
 
@@ -54,7 +54,7 @@ void Copter::ModeBrake::run()
 
     // update altitude target and call position controller
     // protects heli's from inflight motor interlock disable
-    if (motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::GROUND_IDLE && !ap.land_complete) {
+    if (motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::GROUND_IDLE && !copter.ap.land_complete) {
         pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
     } else {
         pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
@@ -68,7 +68,7 @@ void Copter::ModeBrake::run()
     }
 }
 
-void Copter::ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
+void ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
 {
     _timeout_start = millis();
     _timeout_ms = timeout_ms;

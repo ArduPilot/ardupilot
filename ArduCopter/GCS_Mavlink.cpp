@@ -164,7 +164,7 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
         return;
     }
     const Vector3f &targets = copter.attitude_control->get_att_target_euler_cd();
-    const Copter::Mode *flightmode = copter.flightmode;
+    const Mode *flightmode = copter.flightmode;
     mavlink_msg_nav_controller_output_send(
         chan,
         targets.x * 1.0e-2f,

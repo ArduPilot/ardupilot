@@ -8,7 +8,7 @@
   without rangefinder
  */
 
-const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
+const AP_Param::GroupInfo ModeFlowHold::var_info[] = {
     // @Param: _XY_P
     // @DisplayName: FlowHold P gain
     // @Description: FlowHold (horizontal) P gain.
@@ -37,14 +37,14 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
-    AP_SUBGROUPINFO(flow_pi_xy, "_XY_",  1, Copter::ModeFlowHold, AC_PI_2D),
+    AP_SUBGROUPINFO(flow_pi_xy, "_XY_",  1, ModeFlowHold, AC_PI_2D),
 
     // @Param: _FLOW_MAX
     // @DisplayName: FlowHold Flow Rate Max
     // @Description: Controls maximum apparent flow rate in flowhold
     // @Range: 0.1 2.5
     // @User: Standard
-    AP_GROUPINFO("_FLOW_MAX", 2, Copter::ModeFlowHold, flow_max, 0.6),
+    AP_GROUPINFO("_FLOW_MAX", 2, ModeFlowHold, flow_max, 0.6),
 
     // @Param: _FILT_HZ
     // @DisplayName: FlowHold Filter Frequency
@@ -52,14 +52,14 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @Range: 1 100
     // @Units: Hz
     // @User: Standard
-    AP_GROUPINFO("_FILT_HZ", 3, Copter::ModeFlowHold, flow_filter_hz, 5),
+    AP_GROUPINFO("_FILT_HZ", 3, ModeFlowHold, flow_filter_hz, 5),
 
     // @Param: _QUAL_MIN
     // @DisplayName: FlowHold Flow quality minimum
     // @Description: Minimum flow quality to use flow position hold
     // @Range: 0 255
     // @User: Standard
-    AP_GROUPINFO("_QUAL_MIN", 4, Copter::ModeFlowHold, flow_min_quality, 10),
+    AP_GROUPINFO("_QUAL_MIN", 4, ModeFlowHold, flow_min_quality, 10),
 
     // 5 was FLOW_SPEED
 
@@ -69,12 +69,12 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @Range: 1 30
     // @User: Standard
     // @Units: deg/s
-    AP_GROUPINFO("_BRAKE_RATE", 6, Copter::ModeFlowHold, brake_rate_dps, 8),
+    AP_GROUPINFO("_BRAKE_RATE", 6, ModeFlowHold, brake_rate_dps, 8),
 
     AP_GROUPEND
 };
 
-Copter::ModeFlowHold::ModeFlowHold(void) : Mode()
+ModeFlowHold::ModeFlowHold(void) : Mode()
 {
     AP_Param::setup_object_defaults(this, var_info);            
 }
@@ -82,7 +82,7 @@ Copter::ModeFlowHold::ModeFlowHold(void) : Mode()
 #define CONTROL_FLOWHOLD_EARTH_FRAME 0
 
 // flowhold_init - initialise flowhold controller
-bool Copter::ModeFlowHold::init(bool ignore_checks)
+bool ModeFlowHold::init(bool ignore_checks)
 {
     if (!copter.optflow.enabled() || !copter.optflow.healthy()) {
         return false;
@@ -116,7 +116,7 @@ bool Copter::ModeFlowHold::init(bool ignore_checks)
 /*
   calculate desired attitude from flow sensor. Called when flow sensor is healthy
  */
-void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
+void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
 {
     uint32_t now = AP_HAL::millis();
 
@@ -215,7 +215,7 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
 
 // flowhold_run - runs the flowhold controller
 // should be called at 100hz or more
-void Copter::ModeFlowHold::run()
+void ModeFlowHold::run()
 {
     float takeoff_climb_rate = 0.0f;
 
@@ -342,7 +342,7 @@ void Copter::ModeFlowHold::run()
 /*
   update height estimate using integrated accelerometer ratio with optical flow
  */
-void Copter::ModeFlowHold::update_height_estimate(void)
+void ModeFlowHold::update_height_estimate(void)
 {
     float ins_height = copter.inertial_nav.get_altitude() * 0.01;
 
