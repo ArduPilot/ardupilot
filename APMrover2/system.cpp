@@ -144,6 +144,9 @@ void Rover::init_ardupilot()
     // initialize SmartRTL
     g2.smart_rtl.init();
 
+    // initialise object avoidance
+    g2.oa.init();
+
     startup_ground();
 
     Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
