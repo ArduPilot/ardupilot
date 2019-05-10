@@ -633,6 +633,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: sailboat.cpp
     AP_SUBGROUPINFO(sailboat, "SAIL_", 44, ParametersG2, Sailboat),
 
+    // @Group: OA_
+    // @Path: ../libraries/AC_Avoidance/AP_OAPathPlanner.cpp
+    AP_SUBGROUPINFO(oa, "OA_", 45, ParametersG2, AP_OAPathPlanner),
+
     AP_GROUPEND
 };
 

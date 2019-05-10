@@ -92,7 +92,8 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     return (AP_Arming::pre_arm_checks(report)
             & rover.g2.motors.pre_arm_check(report)
-            & fence_checks(report));
+            & fence_checks(report)
+            & oa_check(report));
 }
 
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
@@ -165,4 +166,21 @@ bool AP_Arming_Rover::disarm(void)
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
     return true;
+}
+
+// check object avoidance has initialised correctly
+bool AP_Arming_Rover::oa_check(bool report)
+{
+    char failure_msg[50];
+    if (rover.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
+        return true;
+    }
+
+    // display failure
+    if (strlen(failure_msg) == 0) {
+        check_failed(ARMING_CHECK_NONE, report, "Check Object Avoidance");
+    } else {
+        check_failed(ARMING_CHECK_NONE, report, failure_msg);
+    }
+    return false;
 }
