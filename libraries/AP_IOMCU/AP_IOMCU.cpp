@@ -17,7 +17,6 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
-#include <AP_InternalError/AP_InternalError.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -61,8 +60,8 @@ void AP_IOMCU::init(void)
     uart.set_blocking_writes(false);
     uart.set_unbuffered_writes(true);
 
-    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
-    if ((!boardconfig || boardconfig->io_enabled() == 1) && !hal.util->was_watchdog_reset()) {
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    if (!boardconfig || boardconfig->io_enabled() == 1) {
         check_crc();
     } else {
         crc_is_ok = true;
@@ -100,7 +99,7 @@ void AP_IOMCU::thread_main(void)
     trigger_event(IOEVENT_INIT);
     
     while (!do_shutdown) {
-        eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(10));
+        eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(10));
 
         // check for pending IO events
         if (mask & EVENT_MASK(IOEVENT_SEND_PWM_OUT)) {
@@ -308,7 +307,7 @@ void AP_IOMCU::read_status()
         last_safety_options = 0xFFFF;
 
         // also check if the safety should be definately off.
-        AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
+        AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
         if (!boardconfig) {
             return;
         }
@@ -668,7 +667,7 @@ void AP_IOMCU::set_brushed_mode(void)
 // handling of BRD_SAFETYOPTION parameter
 void AP_IOMCU::update_safety_options(void)
 {
-    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
     if (!boardconfig) {
         return;
     }
@@ -866,7 +865,7 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
         MIX_UPDATE(mixing.rc_reversed[i], c->get_reverse());
 
         // cope with reversible throttle
-        if (i == 2 && c->get_type() == RC_Channel::RC_CHANNEL_TYPE_ANGLE) {
+        if (i == 2 && c->get_type() == RC_CHANNEL_TYPE_ANGLE) {
             MIX_UPDATE(mixing.throttle_is_angle, 1);
         } else {
             MIX_UPDATE(mixing.throttle_is_angle, 0);
@@ -908,7 +907,6 @@ void AP_IOMCU::handle_repeated_failures(void)
         // initial sync with IOMCU
         return;
     }
-    AP::internalerror().error(AP_InternalError::error_t::iomcu_fail);
 }
 
 /*
@@ -928,7 +926,6 @@ void AP_IOMCU::check_iomcu_reset(void)
         return;
     }
     detected_io_reset = true;
-    AP::internalerror().error(AP_InternalError::error_t::iomcu_reset);
     hal.console->printf("IOMCU reset\n");
     // we need to ensure the mixer data and the rates are sent over to
     // the IOMCU
