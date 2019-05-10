@@ -18,6 +18,9 @@
 
 #define BLPING_TIMEOUT_MS       500     // sensor timeout after 0.5 sec
 #define BLPING_INIT_RATE_MS     1000    // initialise sensor at no more than 1hz
+#define BLPING_MIN_UPDATE_TIME_MS 100   // minimal time between sensor requests, 100ms is the time necessary for the
+                                        // sensor to update the position in a 70M range ({2*70[m]}/1500[m/s] ≃ 0.094s).
+
 #define BLPING_FRAME_HEADER1    0x42    // header first byte ('B')
 #define BLPING_FRAME_HEADER2    0x52    // header second byte ('R')
 
@@ -77,6 +80,11 @@ void AP_RangeFinder_BLPing::update(void)
     }
 
     const uint32_t now = AP_HAL::millis();
+
+    // Limit time between update requests
+    if (now - state.last_reading_ms < BLPING_MIN_UPDATE_TIME_MS) {
+        return;
+    }
 
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
