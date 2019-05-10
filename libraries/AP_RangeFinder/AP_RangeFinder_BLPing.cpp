@@ -13,9 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <GCS_MAVLink/GCS.h>
 #include "AP_RangeFinder_BLPing.h"
 
 #define BLPING_TIMEOUT_MS       500     // sensor timeout after 0.5 sec
