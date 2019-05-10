@@ -392,6 +392,9 @@ public:
 
     // Sailboat functions
     Sailboat sailboat;
+
+    // object avoidance path planning
+    AP_OAPathPlanner oa;
 };
 
 extern const AP_Param::Info var_info[];
