@@ -133,7 +133,9 @@ bool JSBSim::create_templates(void)
         AP_HAL::panic("Unable to create jsbsim fgout script %s", jsbsim_fgout);
     }
     fprintf(f, "<?xml version=\"1.0\"?>\n"
-            "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"UDP\" rate=\"%f\"/>\n",
+            "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"UDP\" rate=\"%f\">\n"
+            "  <time type=\"simulation\" resolution=\"1e-6\"/>\n"
+            "</output>",
             fdm_port, rate_hz);
     fclose(f);
 
