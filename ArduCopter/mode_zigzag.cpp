@@ -9,7 +9,7 @@
 #define ZIGZAG_WP_RADIUS_CM 300
 
 // initialise zigzag controller
-bool Copter::ModeZigZag::init(bool ignore_checks)
+bool ModeZigZag::init(bool ignore_checks)
 {
     // initialize's loiter position and velocity on xy-axes from current pos and velocity
     loiter_nav->clear_pilot_desired_acceleration();
@@ -31,7 +31,7 @@ bool Copter::ModeZigZag::init(bool ignore_checks)
 
 // run the zigzag controller
 // should be called at 100hz or more
-void Copter::ModeZigZag::run()
+void ModeZigZag::run()
 {
     // initialize vertical speed and acceleration's range
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
@@ -62,7 +62,7 @@ void Copter::ModeZigZag::run()
 }
 
 // save current position as A (dest_num = 0) or B (dest_num = 1).  If both A and B have been saved move to the one specified
-void Copter::ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
+void ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
 {
     // sanity check
     if (dest_num > 1) {
@@ -117,7 +117,7 @@ void Copter::ModeZigZag::save_or_move_to_destination(uint8_t dest_num)
 }
 
 // return manual control to the pilot
-void Copter::ModeZigZag::return_to_manual_control(bool maintain_target)
+void ModeZigZag::return_to_manual_control(bool maintain_target)
 {
     if (stage == AUTO) {
         stage = MANUAL_REGAIN;
@@ -132,7 +132,7 @@ void Copter::ModeZigZag::return_to_manual_control(bool maintain_target)
 }
 
 // fly the vehicle to closest point on line perpendicular to dest_A or dest_B
-void Copter::ModeZigZag::auto_control()
+void ModeZigZag::auto_control()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -161,7 +161,7 @@ void Copter::ModeZigZag::auto_control()
 }
 
 // manual_control - process manual control
-void Copter::ModeZigZag::manual_control()
+void ModeZigZag::manual_control()
 {
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
@@ -213,7 +213,7 @@ void Copter::ModeZigZag::manual_control()
 }
 
 // return true if vehicle is within a small area around the destination
-bool Copter::ModeZigZag::reached_destination()
+bool ModeZigZag::reached_destination()
 {
     // check if wp_nav believes it has reached the destination
     if (!wp_nav->reached_wp_destination()) {
@@ -236,7 +236,7 @@ bool Copter::ModeZigZag::reached_destination()
 // calculate next destination according to vector A-B and current position
 // use_wpnav_alt should be true if waypoint controller's altitude target should be used, false for position control or current altitude target
 // terrain_alt is returned as true if the next_dest should be considered a terrain alt
-bool Copter::ModeZigZag::calculate_next_dest(uint8_t dest_num, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const
+bool ModeZigZag::calculate_next_dest(uint8_t dest_num, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const
 {
     // sanity check dest_num
     if (dest_num > 1) {

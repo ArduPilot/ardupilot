@@ -2,6 +2,16 @@
 
 #include <AP_Common/AP_Common.h>
 
+#if GRIPPER_ENABLED == ENABLED
+ # include <AP_Gripper/AP_Gripper.h>
+#endif
+#if MODE_FOLLOW_ENABLED == ENABLED
+ # include <AP_Follow/AP_Follow.h>
+#endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+ # include <AP_VisualOdom/AP_VisualOdom.h>
+#endif
+
 // Global parameter class.
 //
 class Parameters {

@@ -8,7 +8,7 @@
  */
 
 // heli_acro_init - initialise acro controller
-bool Copter::ModeAcro_Heli::init(bool ignore_checks)
+bool ModeAcro_Heli::init(bool ignore_checks)
 {
     // if heli is equipped with a flybar, then tell the attitude controller to pass through controls directly to servos
     attitude_control->use_flybar_passthrough(motors->has_flybar(), motors->supports_yaw_passthrough());
@@ -24,7 +24,7 @@ bool Copter::ModeAcro_Heli::init(bool ignore_checks)
 
 // heli_acro_run - runs the acro controller
 // should be called at 100hz or more
-void Copter::ModeAcro_Heli::run()
+void ModeAcro_Heli::run()
 {
     float target_roll, target_pitch, target_yaw;
     float pilot_throttle_scaled;
@@ -73,7 +73,7 @@ void Copter::ModeAcro_Heli::run()
         // only mimic flybar response when trainer mode is disabled
         if (g.acro_trainer == ACRO_TRAINER_DISABLED) {
             // while landed always leak off target attitude to current attitude
-            if (ap.land_complete) {
+            if (copter.ap.land_complete) {
                 virtual_flybar(target_roll, target_pitch, target_yaw, 3.0f, 3.0f);
             // while flying use acro balance parameters for leak rate
             } else {
@@ -123,7 +123,7 @@ void Copter::ModeAcro_Heli::run()
 
 
 // virtual_flybar - acts like a flybar by leaking target atttitude back to current attitude
-void Copter::ModeAcro_Heli::virtual_flybar( float &roll_out, float &pitch_out, float &yaw_out, float pitch_leak, float roll_leak)
+void ModeAcro_Heli::virtual_flybar( float &roll_out, float &pitch_out, float &yaw_out, float pitch_leak, float roll_leak)
 {
     Vector3f rate_ef_level, rate_bf_level;
 

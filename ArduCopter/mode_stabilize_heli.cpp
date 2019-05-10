@@ -6,7 +6,7 @@
  */
 
 // stabilize_init - initialise stabilize controller
-bool Copter::ModeStabilize_Heli::init(bool ignore_checks)
+bool ModeStabilize_Heli::init(bool ignore_checks)
 {
     // set stab collective true to use stabilize scaled collective pitch range
     copter.input_manager.set_use_stab_col(true);
@@ -16,7 +16,7 @@ bool Copter::ModeStabilize_Heli::init(bool ignore_checks)
 
 // stabilize_run - runs the main stabilize controller
 // should be called at 100hz or more
-void Copter::ModeStabilize_Heli::run()
+void ModeStabilize_Heli::run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;
