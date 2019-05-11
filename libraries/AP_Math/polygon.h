@@ -24,3 +24,21 @@ bool        Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n
 template <typename T>
 bool        Polygon_complete(const Vector2<T> *V, unsigned n);
 
+/*
+  determine if the polygon of N verticies defined by points V is
+  intersected by a line from point p1 to point p2
+ */
+bool Polygon_intersects(const Vector2f *V, unsigned N, const Vector2f &p1, const Vector2f &p2);
+
+
+/*
+  return the closest distance that a line from p1 to p2 comes to an
+  edge of closed polygon V, defined by N points
+ */
+float Polygon_closest_distance_line(const Vector2f *V, unsigned N, const Vector2f &p1, const Vector2f &p2);
+
+/*
+  return the closest distance that a point p comes to an edge of
+  closed polygon V, defined by N points
+ */
+float Polygon_closest_distance_point(const Vector2f *V, unsigned N, const Vector2f &p);
