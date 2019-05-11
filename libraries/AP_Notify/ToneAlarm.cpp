@@ -18,7 +18,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Common/Semaphore.h>
 
 #include "ToneAlarm.h"
 #include "AP_Notify.h"
