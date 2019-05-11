@@ -121,3 +121,19 @@ private:
     bool _in_delay_callback : 1;
 
 };
+
+/*
+  helper macro and class to make using expect_delay_ms() safer and easier
+ */
+class ExpectDelay {
+public:
+    ExpectDelay(const AP_HAL::HAL &hal, uint32_t ms);
+    ~ExpectDelay();
+
+private:
+    const AP_HAL::HAL &_hal;
+};
+
+#define EXPECT_DELAY(hal, ms) DELAY_JOIN( hal, ms, __COUNTER__ )
+#define DELAY_JOIN( hal, ms, counter) _DO_DELAY_JOIN( hal, ms, counter )
+#define _DO_DELAY_JOIN( hal, ms, counter ) ExpectDelay _getdelay ## counter(hal, ms)
