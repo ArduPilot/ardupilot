@@ -139,7 +139,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         }
     }
 
-    // form a new argv, removing problem parameters. The is used for reboot
+    // form a new argv, removing problem parameters. This is used for reboot
     uint8_t new_argv_offset = 0;
     for (uint8_t i=0; i<ARRAY_SIZE(new_argv) && i<argc; i++) {
         if (!strcmp(argv[i], "-w")) {
