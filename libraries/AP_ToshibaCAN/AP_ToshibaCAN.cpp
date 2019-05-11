@@ -21,7 +21,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_Common/Semaphore.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <SRV_Channel/SRV_Channel.h>
