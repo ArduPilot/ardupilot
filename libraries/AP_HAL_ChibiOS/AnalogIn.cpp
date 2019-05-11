@@ -17,7 +17,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "ch.h"
 #include "hal.h"
-#include <AP_Common/Semaphore.h>
 
 #if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 

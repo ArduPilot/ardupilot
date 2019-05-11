@@ -18,7 +18,6 @@
 #include "sdcard.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
