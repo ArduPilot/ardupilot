@@ -20,7 +20,6 @@
 #include "AP_Compass_UAVCAN.h"
 
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
-#include <AP_Common/Semaphore.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 #include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
