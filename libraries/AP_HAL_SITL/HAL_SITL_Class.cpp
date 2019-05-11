@@ -85,7 +85,7 @@ static bool watchdog_save(const uint32_t *data, uint32_t nwords)
     int fd = ::open("persistent.dat", O_WRONLY|O_CREAT|O_TRUNC, 0644);
     bool ret = false;
     if (fd != -1) {
-        if (::write(fd, data, nwords*4) == nwords*4) {
+        if (::write(fd, data, nwords*4) == (ssize_t)(nwords*4)) {
             ret = true;
         }
         ::close(fd);
@@ -101,7 +101,7 @@ static bool watchdog_load(uint32_t *data, uint32_t nwords)
     int fd = ::open("persistent.dat", O_RDONLY, 0644);
     bool ret = false;
     if (fd != -1) {
-        ret = (::read(fd, data, nwords*4) == nwords*4);
+        ret = (::read(fd, data, nwords*4) == (ssize_t)(nwords*4));
         ::close(fd);
     }
     return ret;
