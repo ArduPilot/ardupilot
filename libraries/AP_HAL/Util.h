@@ -58,6 +58,9 @@ public:
         uint32_t internal_error_count;
         uint16_t waypoint_num;
         int8_t scheduler_task;
+        uint16_t last_mavlink_msgid;
+        uint16_t last_mavlink_cmd;
+        uint16_t semaphore_line;
     };
     struct PersistentData persistent_data;
 
