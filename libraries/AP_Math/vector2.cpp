@@ -140,6 +140,12 @@ float Vector2<T>::angle(const Vector2<T> &v2) const
     return acosf(cosv);
 }
 
+template <typename T>
+float Vector2<T>::angle(void) const
+{
+    return M_PI_2 + atan2f(-x, y);
+}
+
 // find the intersection between two line segments
 // returns true if they intersect, false if they do not
 // the point of intersection is returned in the intersection argument
@@ -255,6 +261,7 @@ template bool Vector2<float>::operator !=(const Vector2<float> &v) const;
 template bool Vector2<float>::is_nan(void) const;
 template bool Vector2<float>::is_inf(void) const;
 template float Vector2<float>::angle(const Vector2<float> &v) const;
+template float Vector2<float>::angle(void) const;
 template bool Vector2<float>::segment_intersection(const Vector2<float>& seg1_start, const Vector2<float>& seg1_end, const Vector2<float>& seg2_start, const Vector2<float>& seg2_end, Vector2<float>& intersection);
 template bool Vector2<float>::circle_segment_intersection(const Vector2<float>& seg_start, const Vector2<float>& seg_end, const Vector2<float>& circle_center, float radius, Vector2<float>& intersection);
 
