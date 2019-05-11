@@ -16,7 +16,6 @@
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Common/Semaphore.h>
 
 #include "AP_InertialSensor_BMI088.h"
 
