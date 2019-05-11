@@ -27,7 +27,6 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_ADSB/AP_ADSB.h>
-#include <AP_Common/Semaphore.h>
 
 // F_RCVRY possible parameter values
 #define AP_AVOIDANCE_RECOVERY_REMAIN_IN_AVOID_ADSB                  0
