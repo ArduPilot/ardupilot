@@ -540,10 +540,24 @@ void Scheduler::expect_delay_ms(uint32_t ms)
         return;
     }
     if (ms == 0) {
-        expect_delay_start = 0;
+        if (expect_delay_nesting > 0) {
+            expect_delay_nesting--;
+        }
+        if (expect_delay_nesting == 0) {
+            expect_delay_start = 0;
+        }
     } else {
-        expect_delay_start = AP_HAL::millis();
+        uint32_t now = AP_HAL::millis();
+        if (expect_delay_start != 0) {
+            // we already have a delay running, possibly extend it
+            uint32_t done = now - expect_delay_start;
+            if (expect_delay_length > done) {
+                ms = MAX(ms, expect_delay_length - done);
+            }
+        }
+        expect_delay_start = now;
         expect_delay_length = ms;
+        expect_delay_nesting++;
 
         // also put our priority below timer thread if we are boosted
         boost_end();
