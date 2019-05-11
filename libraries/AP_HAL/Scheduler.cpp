@@ -1,4 +1,5 @@
 #include "Scheduler.h"
+#include "AP_HAL.h"
 
 using namespace AP_HAL;
 
@@ -21,4 +22,14 @@ void Scheduler::call_delay_cb()
     _in_delay_callback = true;
     _delay_cb();
     _in_delay_callback = false;
+}
+
+ExpectDelay::ExpectDelay(const AP_HAL::HAL &hal, uint32_t ms) : _hal(hal)
+{
+    _hal.scheduler->expect_delay_ms(ms);
+}
+
+ExpectDelay::~ExpectDelay()
+{
+    _hal.scheduler->expect_delay_ms(0);
 }
