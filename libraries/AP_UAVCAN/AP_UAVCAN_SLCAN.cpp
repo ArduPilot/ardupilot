@@ -23,7 +23,6 @@
 
 #include "AP_UAVCAN_SLCAN.h"
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_Common/Semaphore.h>
 
 #include <AP_HAL_ChibiOS/CANSerialRouter.h>
 
