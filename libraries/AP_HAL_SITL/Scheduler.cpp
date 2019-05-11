@@ -10,7 +10,6 @@
 #else
 #include <malloc.h>
 #endif
-#include <AP_Common/Semaphore.h>
 
 using namespace HALSITL;
 
