@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AP_Baro.h"
-#include <AP_Common/Semaphore.h>
 
 class AP_Baro_Backend
 {
