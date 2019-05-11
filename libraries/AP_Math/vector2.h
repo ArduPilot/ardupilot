@@ -98,6 +98,9 @@ struct Vector2
     // returns 0 if the vectors are parallel, and M_PI if they are antiparallel
     float angle(const Vector2<T> &v2) const;
 
+    // computes the angle of this vector in radians, from -Pi to Pi
+    float angle(void) const;
+
     // check if any elements are NAN
     bool is_nan(void) const;
 
