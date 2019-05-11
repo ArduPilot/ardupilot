@@ -781,7 +781,7 @@ bool CompassCalibrator::calculate_orientation(void)
     }
 
     // this function is very slow
-    hal.scheduler->expect_delay_ms(1000);
+    EXPECT_DELAY(hal, 1000);
 
     float variance[ROTATION_MAX] {};
 
@@ -849,8 +849,6 @@ bool CompassCalibrator::calculate_orientation(void)
         gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) new orientation: %u was %u %.1f", _compass_idx, besti, _orientation, (double)_orientation_confidence);
     }
 
-    hal.scheduler->expect_delay_ms(0);
-    
     if (!pass) {
         set_status(COMPASS_CAL_BAD_ORIENTATION);
         return false;
