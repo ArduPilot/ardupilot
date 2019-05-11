@@ -7,7 +7,6 @@
 
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_Common/Semaphore.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
