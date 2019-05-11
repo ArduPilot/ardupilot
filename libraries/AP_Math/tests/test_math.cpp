@@ -8,6 +8,8 @@
 
 #include <AP_Math/AP_Math.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 #define SQRT_2 1.4142135623730951f
 
 TEST(VectorTest, Rotations)
