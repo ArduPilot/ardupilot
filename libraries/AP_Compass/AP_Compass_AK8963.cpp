@@ -17,7 +17,6 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Common/Semaphore.h>
 
 #include "AP_Compass_AK8963.h"
 #include <AP_InertialSensor/AP_InertialSensor_Invensense.h>
