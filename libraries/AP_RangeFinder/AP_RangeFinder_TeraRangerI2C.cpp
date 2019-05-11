@@ -20,7 +20,6 @@
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
-#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
