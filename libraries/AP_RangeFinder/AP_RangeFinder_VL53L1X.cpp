@@ -25,7 +25,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <stdio.h>
-#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
