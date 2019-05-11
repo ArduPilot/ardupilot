@@ -29,7 +29,6 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Common/Semaphore.h>
 #include <AP_Common/Location.h>
 
 class OpticalFlow;
