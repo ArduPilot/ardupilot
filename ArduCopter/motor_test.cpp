@@ -62,7 +62,7 @@ void Copter::motor_test_output()
                 if (motor_test_throttle_value <= 100) {
                     int16_t pwm_min = motors->get_pwm_output_min();
                     int16_t pwm_max = motors->get_pwm_output_max();
-                    pwm = pwm_min + (pwm_max - pwm_min) * (float)motor_test_throttle_value/100.0f;
+                    pwm = pwm_min + (pwm_max - pwm_min) * (float)motor_test_throttle_value*0.01f;
                 }
 #endif
                 break;

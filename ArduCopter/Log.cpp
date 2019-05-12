@@ -35,7 +35,7 @@ void Copter::Log_Write_Control_Tuning()
     float des_alt_m = 0.0f;
     int16_t target_climb_rate_cms = 0;
     if (!flightmode->has_manual_throttle()) {
-        des_alt_m = pos_control->get_alt_target() / 100.0f;
+        des_alt_m = pos_control->get_alt_target() * 0.01f;
         target_climb_rate_cms = pos_control->get_vel_target_z();
     }
 
@@ -53,7 +53,7 @@ void Copter::Log_Write_Control_Tuning()
         throttle_out        : motors->get_throttle(),
         throttle_hover      : motors->get_throttle_hover(),
         desired_alt         : des_alt_m,
-        inav_alt            : inertial_nav.get_altitude() / 100.0f,
+        inav_alt            : inertial_nav.get_altitude() * 0.01f,
         baro_alt            : baro_alt,
         desired_rangefinder_alt : surface_tracking_target_alt,
         rangefinder_alt     : rangefinder_state.alt_cm,

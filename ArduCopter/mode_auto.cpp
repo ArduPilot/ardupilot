@@ -1359,7 +1359,7 @@ void Copter::ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         // absolute delay to utc time
         nav_delay_time_max = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max*0.001f));
 }
 
 /********************************************************************************/
@@ -1717,7 +1717,7 @@ bool Copter::ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd
     }
 
     // check if loiter timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((millis() - loiter_time) * 0.001f) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -1798,7 +1798,7 @@ bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((millis() - loiter_time) * 0.001f) >= loiter_time_max) {
 		if (loiter_time_max == 0) {
 			// play a tone
 			AP_Notify::events.waypoint_complete = 1;
@@ -1856,7 +1856,7 @@ bool Copter::ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((millis() - loiter_time) * 0.001f) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }

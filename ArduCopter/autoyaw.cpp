@@ -119,7 +119,7 @@ void Copter::Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_dps, 
         // default to regular auto slew rate
         _fixed_yaw_slewrate = AUTO_YAW_SLEW_RATE;
     } else {
-        const int32_t turn_rate = (wrap_180_cd(_fixed_yaw - curr_yaw_target) / 100) / turn_rate_dps;
+        const int32_t turn_rate = (wrap_180_cd(_fixed_yaw - curr_yaw_target) * 0.01f) / turn_rate_dps;
         _fixed_yaw_slewrate = constrain_int32(turn_rate, 1, 360);    // deg / sec
     }
 
