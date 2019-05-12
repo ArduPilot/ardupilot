@@ -21,7 +21,7 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
         float aspd = 0;
         float roll = _ahrs.roll;
         if (!_ahrs.airspeed_estimate(&aspd)) {
-            aspd = _aparm.airspeed_cruise_cm / 100.0f;
+            aspd = _aparm.airspeed_cruise_cm * 0.01f;
         }
         _aspd_filt = ASPD_FILT * aspd + (1 - ASPD_FILT) * _aspd_filt;
         float total_E = alt + 0.5f *_aspd_filt * _aspd_filt / GRAVITY_MSS;                                                  // Work out total energy
