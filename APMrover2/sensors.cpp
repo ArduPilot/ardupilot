@@ -74,7 +74,7 @@ void Rover::update_wheel_encoder()
     // send delta time (time between this wheel encoder time and previous wheel encoder time)
     // in case where wheel hasn't moved, count = 0 (cap the delta time at 50ms - or system time)
     //     use system clock of last update instead of time of last ping
-    const float system_dt = (now - wheel_encoder_last_ekf_update_ms) / 1000.0f;
+    const float system_dt = (now - wheel_encoder_last_ekf_update_ms) * 0.001f;
     for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
         // calculate angular change (in radians)
         const float curr_angle_rad = g2.wheel_encoder.get_delta_angle(i);
@@ -95,7 +95,7 @@ void Rover::update_wheel_encoder()
             delta_time = system_dt;
             wheel_encoder_last_update_ms[i] = wheel_encoder_last_ekf_update_ms;
         } else {
-            delta_time = sensor_diff_ms / 1000.0f;
+            delta_time = sensor_diff_ms * 0.001f;
             wheel_encoder_last_update_ms[i] = latest_sensor_update_ms;
         }
 

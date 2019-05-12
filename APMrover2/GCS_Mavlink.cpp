@@ -97,11 +97,11 @@ void Rover::send_servo_out(mavlink_channel_t chan)
 {
     float motor1, motor3;
     if (g2.motors.have_skid_steering()) {
-        motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) / 1000.0f);
-        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);
+        motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) * 0.001f);
+        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) * 0.001f);
     } else {
         motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_steering) / 4500.0f);
-        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f);
+        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
     }
     mavlink_msg_rc_channels_scaled_send(
         chan,
@@ -966,12 +966,12 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             Location loc;
             loc.lat = packet.lat;
             loc.lng = packet.lon;
-            loc.alt = packet.alt/10;
+            loc.alt = packet.alt*0.1f;
             Vector3f vel(packet.vx, packet.vy, packet.vz);
             vel *= 0.01f;
 
             gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
-                       packet.time_usec/1000,
+                       packet.time_usec*0.001f,
                        loc, vel, 10, 0);
 
             // rad/sec
@@ -982,9 +982,9 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
             // m/s/s
             Vector3f accels;
-            accels.x = packet.xacc * (GRAVITY_MSS/1000.0f);
-            accels.y = packet.yacc * (GRAVITY_MSS/1000.0f);
-            accels.z = packet.zacc * (GRAVITY_MSS/1000.0f);
+            accels.x = packet.xacc * (GRAVITY_MSS*0.001f);
+            accels.y = packet.yacc * (GRAVITY_MSS*0.001f);
+            accels.z = packet.zacc * (GRAVITY_MSS*0.001f);
 
             ins.set_gyro(0, gyros);
 

@@ -572,7 +572,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if (loiter_duration == 0) {
         return true;
     } else {
-        return (((millis() - loiter_start_time) / 1000) >= loiter_duration);
+        return (((millis() - loiter_start_time) * 0.001f) >= loiter_duration);
     }
 }
 

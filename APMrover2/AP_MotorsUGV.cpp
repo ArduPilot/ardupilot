@@ -648,7 +648,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 
     // skid steering mixer
     float steering_scaled = steering / 4500.0f; // steering scaled -1 to +1
-    float throttle_scaled = throttle / 100.0f;  // throttle scaled -1 to +1
+    float throttle_scaled = throttle * 0.01f;  // throttle scaled -1 to +1
 
     // apply constraints
     steering_scaled = constrain_float(steering_scaled, -1.0f, 1.0f);
@@ -686,9 +686,9 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
         steering = constrain_float(steering, -4500.0f, 4500.0f);
 
         // scale throttle, steering and lateral inputs to -1 to 1
-        const float scaled_throttle = throttle / 100.0f;
+        const float scaled_throttle = throttle * 0.01f;
         const float scaled_steering = steering / 4500.0f;
-        const float scaled_lateral = lateral / 100.0f;
+        const float scaled_lateral = lateral * 0.01f;
 
         float thr_str_ltr_out;
         float thr_str_ltr_max = 1;
@@ -830,9 +830,9 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
     // scale using throttle_min
     if (_throttle_min > 0) {
         if (is_negative(throttle)) {
-            throttle = -_throttle_min + (throttle * ((100.0f - _throttle_min) / 100.0f));
+            throttle = -_throttle_min + (throttle * ((100.0f - _throttle_min) * 0.01f));
         } else {
-            throttle = _throttle_min + (throttle * ((100.0f - _throttle_min) / 100.0f));
+            throttle = _throttle_min + (throttle * ((100.0f - _throttle_min) * 0.01f));
         }
     }
 
@@ -843,7 +843,7 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
 
     // calculate scaler
     const float sign = (throttle < 0.0f) ? -1.0f : 1.0f;
-    const float throttle_pct = constrain_float(throttle, -100.0f, 100.0f) / 100.0f;
+    const float throttle_pct = constrain_float(throttle, -100.0f, 100.0f) * 0.01f;
     return 100.0f * sign * ((_thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - _thrust_curve_expo) * (1.0f - _thrust_curve_expo) + 4.0f * _thrust_curve_expo * fabsf(throttle_pct))) / (2.0f * _thrust_curve_expo);
 }
 
