@@ -120,7 +120,7 @@ void AP_Proximity_TeraRangerTower::update_sector_data(int16_t angle_deg, uint16_
     uint8_t sector;
     if (convert_angle_to_sector(angle_deg, sector)) {
         _angle[sector] = angle_deg;
-        _distance[sector] = ((float) distance_cm) / 1000;
+        _distance[sector] = ((float) distance_cm) * 0.001f;
         _distance_valid[sector] = distance_cm != 0xffff;
         _last_distance_received_ms = AP_HAL::millis();
         // update boundary used for avoidance

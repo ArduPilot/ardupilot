@@ -172,7 +172,7 @@ void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint
     uint8_t sector;
     if (convert_angle_to_sector(angle_deg, sector)) {
         _angle[sector] = angle_deg;
-        _distance[sector] = ((float) distance_cm) / 1000;
+        _distance[sector] = ((float) distance_cm) * 0.001f;
 
         //check for target too far, target too close and sensor not connected
         _distance_valid[sector] = distance_cm != 0xffff && distance_cm != 0x0000 && distance_cm != 0x0001;

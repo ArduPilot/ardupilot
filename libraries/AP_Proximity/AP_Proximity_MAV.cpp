@@ -67,9 +67,9 @@ void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
         if (packet.orientation <= MAV_SENSOR_ROTATION_YAW_315) {
             uint8_t sector = packet.orientation;
             _angle[sector] = sector * 45;
-            _distance[sector] = packet.current_distance / 100.0f;
-            _distance_min = packet.min_distance / 100.0f;
-            _distance_max = packet.max_distance / 100.0f;
+            _distance[sector] = packet.current_distance * 0.01f;
+            _distance_min = packet.min_distance * 0.01f;
+            _distance_max = packet.max_distance * 0.01f;
             _distance_valid[sector] = (_distance[sector] >= _distance_min) && (_distance[sector] <= _distance_max);
             _last_update_ms = AP_HAL::millis();
             update_boundary_for_sector(sector);
@@ -77,7 +77,7 @@ void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
 
         // store upward distance
         if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_90) {
-            _distance_upward = packet.current_distance / 100.0f;
+            _distance_upward = packet.current_distance * 0.01f;
             _last_upward_update_ms = AP_HAL::millis();
         }
         return;
@@ -97,8 +97,8 @@ void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
         const uint8_t total_distances = MIN(360.0f / increment, 72);
 
         // set distance min and max
-        _distance_min = packet.min_distance / 100.0f;
-        _distance_max = packet.max_distance / 100.0f;
+        _distance_min = packet.min_distance * 0.01f;
+        _distance_max = packet.max_distance * 0.01f;
         _last_update_ms = AP_HAL::millis();
 
         // get user configured yaw correction from front end
