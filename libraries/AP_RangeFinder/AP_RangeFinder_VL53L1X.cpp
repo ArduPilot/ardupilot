@@ -333,7 +333,7 @@ bool AP_RangeFinder_VL53L1X::getMeasurementTimingBudget(uint32_t &budget)
 bool AP_RangeFinder_VL53L1X::startContinuous(uint32_t period_ms)
 {
     // fix for actual measurement period shorter than set
-    uint32_t adjusted_period_ms = period_ms + (period_ms * 64 / 1000);
+    uint32_t adjusted_period_ms = period_ms + (period_ms * 64 * 0.001f);
 
     // from VL53L1_set_inter_measurement_period_ms()
     return write_register32(SYSTEM__INTERMEASUREMENT_PERIOD, adjusted_period_ms * osc_calibrate_val) &&

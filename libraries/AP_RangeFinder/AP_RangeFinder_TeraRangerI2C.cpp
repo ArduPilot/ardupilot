@@ -152,7 +152,7 @@ bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, ui
       // Unable to measure
       return false;
   } else {
-    output_distance_cm = raw_distance/10; // Conversion to centimeters
+    output_distance_cm = raw_distance*0.1f; // Conversion to centimeters
     return true;
   }
 }
