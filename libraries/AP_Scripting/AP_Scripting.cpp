@@ -68,7 +68,8 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Scripting::AP_Scripting() {
+AP_Scripting::AP_Scripting() 
+{
     AP_Param::setup_object_defaults(this, var_info);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -79,7 +80,8 @@ AP_Scripting::AP_Scripting() {
     _singleton = this;
 }
 
-bool AP_Scripting::init(void) {
+bool AP_Scripting::init(void)
+{
     if (!_enable) {
         return true;
     }
@@ -93,7 +95,8 @@ bool AP_Scripting::init(void) {
     return true;
 }
 
-void AP_Scripting::thread(void) {
+void AP_Scripting::thread(void)
+{
     lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_level);
     if (lua == nullptr) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to allocate scripting memory");
@@ -107,7 +110,8 @@ void AP_Scripting::thread(void) {
 
 AP_Scripting *AP_Scripting::_singleton = nullptr;
 
-namespace AP {
+namespace AP
+{
     AP_Scripting *scripting() {
         return AP_Scripting::get_singleton();
     }

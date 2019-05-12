@@ -47,7 +47,8 @@ lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, co
     _heap = hal.util->allocate_heap_memory(heap_size);
 }
 
-void lua_scripts::hook(lua_State *L, lua_Debug *ar) {
+void lua_scripts::hook(lua_State *L, lua_Debug *ar)
+{
     lua_scripts::overtime = true;
 
     // we need to aggressively bail out as we are over time
@@ -57,14 +58,16 @@ void lua_scripts::hook(lua_State *L, lua_Debug *ar) {
     luaL_error(L, "Exceeded CPU time");
 }
 
-int lua_scripts::atpanic(lua_State *L) {
+int lua_scripts::atpanic(lua_State *L)
+{
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Panic: %s", lua_tostring(L, -1));
     hal.console->printf("Lua: Panic: %s\n", lua_tostring(L, -1));
     longjmp(panic_jmp, 1);
     return 0;
 }
 
-lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename) {
+lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
+{
     if (int error = luaL_loadfile(L, filename)) {
         switch (error) {
             case LUA_ERRSYNTAX:
@@ -111,7 +114,8 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     return new_script;
 }
 
-void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
+void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname)
+{
     if (dirname == nullptr) {
         return;
     }
@@ -155,7 +159,8 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
     closedir(d);
 }
 
-void lua_scripts::run_next_script(lua_State *L) {
+void lua_scripts::run_next_script(lua_State *L)
+{
     if (scripts == nullptr) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         AP_HAL::panic("Lua: Attempted to run a script without any scripts queued");
@@ -236,7 +241,8 @@ void lua_scripts::run_next_script(lua_State *L) {
      }
 }
 
-void lua_scripts::remove_script(lua_State *L, script_info *script) {
+void lua_scripts::remove_script(lua_State *L, script_info *script)
+{
     if (script == nullptr) {
         return;
     }
@@ -263,7 +269,8 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
     hal.util->heap_realloc(_heap, script, 0);
 }
 
-void lua_scripts::reschedule_script(script_info *script) {
+void lua_scripts::reschedule_script(script_info *script)
+{
     if (script == nullptr) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
        AP_HAL::panic("Lua: Attempted to schedule a null pointer");
@@ -300,12 +307,14 @@ void lua_scripts::reschedule_script(script_info *script) {
 
 void *lua_scripts::_heap;
 
-void *lua_scripts::alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
+void *lua_scripts::alloc(void *ud, void *ptr, size_t osize, size_t nsize)
+{
     (void)ud; (void)osize;  /* not used */
     return hal.util->heap_realloc(_heap, ptr, nsize);
 }
 
-void lua_scripts::run(void) {
+void lua_scripts::run(void)
+{
     if (_heap == nullptr) {
         gcs().send_text(MAV_SEVERITY_INFO, "Lua: Unable to allocate a heap");
         return;

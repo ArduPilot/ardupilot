@@ -13,7 +13,7 @@ OBJS = $(patsubst %,$(OBJ_DIR)/%,$(_OBJS))
 
 .PHONY: all
 all: directories $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) -o $(OUT)
+	$(CC) $(OBJS) -o $(OUT) $(LDFLAGS)
 	cp $(OUT) .
 
 run: all

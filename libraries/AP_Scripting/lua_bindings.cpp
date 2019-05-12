@@ -9,8 +9,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-int check_arguments(lua_State *L, int expected_arguments, const char *fn_name);
-int check_arguments(lua_State *L, int expected_arguments, const char *fn_name) {
+int check_arguments(lua_State *L, int expected_arguments, const char *fn_name)
+{
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
     if (expected_arguments < 0) {
        AP_HAL::panic("Lua: Attempted to check for negative arguments");
@@ -25,8 +25,8 @@ int check_arguments(lua_State *L, int expected_arguments, const char *fn_name) {
 }
 
 // servo binding
-
-static int lua_servo_set_output_pwm(lua_State *L) {
+static int lua_servo_set_output_pwm(lua_State *L)
+{
     check_arguments(L, 2, "set_output_pwm");
 
     const SRV_Channel::Aux_servo_function_t servo_function = (SRV_Channel::Aux_servo_function_t)luaL_checkinteger(L, -2);
@@ -43,7 +43,8 @@ static int lua_servo_set_output_pwm(lua_State *L) {
 }
 
 // millis
-static int lua_millis(lua_State *L) {
+static int lua_millis(lua_State *L)
+{
     check_arguments(L, 0, "millis");
 
     new_uint32_t(L);
@@ -58,7 +59,8 @@ static const luaL_Reg servo_functions[] =
     {NULL, NULL}
 };
 
-void load_lua_bindings(lua_State *L) {
+void load_lua_bindings(lua_State *L)
+{
     luaL_newlib(L, servo_functions);
     lua_setglobal(L, "servo");
 
@@ -67,4 +69,3 @@ void load_lua_bindings(lua_State *L) {
     lua_pushcfunction(L, lua_millis);
     lua_setglobal(L, "millis");
 }
-

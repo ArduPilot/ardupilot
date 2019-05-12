@@ -742,7 +742,7 @@ void emit_headers(FILE *f) {
 void emit_userdata_allocators(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
-    fprintf(source, "int new_%s(lua_State *L) {\n", node->name);
+    fprintf(source, "int new_%s(lua_State *L)\n{\n", node->name);
     fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
     fprintf(source, "    memset(ud, 0, sizeof(%s));\n", node->name);
@@ -758,7 +758,7 @@ void emit_userdata_allocators(void) {
 void emit_userdata_checkers(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
-    fprintf(source, "%s * check_%s(lua_State *L, int arg) {\n", node->name, node->name);
+    fprintf(source, "%s * check_%s(lua_State *L, int arg)\n{\n", node->name, node->name);
     fprintf(source, "    void *data = luaL_checkudata(L, arg, \"%s\");\n", node->name);
     fprintf(source, "    return (%s *)data;\n", node->name);
     fprintf(source, "}\n\n");
@@ -960,7 +960,7 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
 }
 
 void emit_userdata_field(const struct userdata *data, const struct userdata_field *field) {
-  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->name, field->name);
+  fprintf(source, "static int %s_%s(lua_State *L)\n{\n", data->name, field->name);
   fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->name);
   fprintf(source, "    switch(lua_gettop(L)) {\n");
 
@@ -1029,7 +1029,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   const char *access_name = data->alias ? data->alias : data->name;
 
-  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->name, method->name);
+  fprintf(source, "static int %s_%s(lua_State *L)\n{\n", data->name, method->name);
   // emit comments on expected arg/type
   struct argument *arg = method->arguments;
   while (arg != NULL) {
@@ -1268,7 +1268,7 @@ void emit_operators(struct userdata *data) {
         return;
     }
 
-    fprintf(source, "static int %s_%s(lua_State *L) {\n", data->name, op_name);
+    fprintf(source, "static int %s_%s(lua_State *L)\n{\n", data->name, op_name);
     // check number of arguments
     fprintf(source, "    binding_argcheck(L, 2);\n");
     // check the pointers
@@ -1374,7 +1374,7 @@ void emit_loaders(void) {
   }
   fprintf(source, "};\n\n");
 
-  fprintf(source, "void load_generated_bindings(lua_State *L) {\n");
+  fprintf(source, "void load_generated_bindings(lua_State *L)\n{\n");
   fprintf(source, "    luaL_checkstack(L, 5, \"Out of stack\");\n"); // this is more stack space then we need, but should never fail
   fprintf(source, "    // userdata metatables\n");
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(userdata_fun); i++) {\n");
@@ -1427,7 +1427,7 @@ void emit_sandbox(void) {
   }
   fprintf(source, "};\n\n");
 
-  fprintf(source, "void load_generated_sandbox(lua_State *L) {\n");
+  fprintf(source, "void load_generated_sandbox(lua_State *L)\n{\n");
   // load the singletons
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singletons); i++) {\n");
   fprintf(source, "        lua_pushstring(L, singletons[i]);\n");
@@ -1452,7 +1452,7 @@ void emit_sandbox(void) {
 void emit_argcheck_helper(void) {
   // tagging this with NOINLINE can save a large amount of flash
   // but until we need it we will allow the compilier to choose to inline this for us
-  fprintf(source, "static int binding_argcheck(lua_State *L, int expected_arg_count) {\n");
+  fprintf(source, "static int binding_argcheck(lua_State *L, int expected_arg_count)\n{\n");
   fprintf(source, "    const int args = lua_gettop(L);\n");
   fprintf(source, "    if (args > expected_arg_count) {\n");
   fprintf(source, "        return luaL_argerror(L, args, \"too many arguments\");\n");
