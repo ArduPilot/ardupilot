@@ -1382,7 +1382,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;        
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:
-        packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (m->cm)
+        packet.param1 = cmd.p1*0.01f; // copy max-descend parameter (m->cm)
         break;
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
@@ -1408,7 +1408,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.x = cmd.content.location.lat;
         packet.y = cmd.content.location.lng;
 
-        packet.z = cmd.content.location.alt / 100.0f;   // cmd alt in cm to m
+        packet.z = cmd.content.location.alt * 0.01f;   // cmd alt in cm to m
         if (cmd.content.location.relative_alt) {
             packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
         }else{
