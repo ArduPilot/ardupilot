@@ -77,7 +77,7 @@ void AP_Stats::update_flighttime()
 {
     if (_flying_ms) {
         const uint32_t now = AP_HAL::millis();
-        const uint32_t delta = (now - _flying_ms)/1000;
+        const uint32_t delta = (now - _flying_ms)*0.001f;
         flttime += delta;
         _flying_ms += delta*1000;
     }
@@ -86,7 +86,7 @@ void AP_Stats::update_flighttime()
 void AP_Stats::update_runtime()
 {
     const uint32_t now = AP_HAL::millis();
-    const uint32_t delta = (now - _last_runtime_ms)/1000;
+    const uint32_t delta = (now - _last_runtime_ms)*0.001f;
     runtime += delta;
     _last_runtime_ms += delta*1000;
 }
