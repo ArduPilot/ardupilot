@@ -93,13 +93,13 @@ void SimRover::update(const struct sitl_input &input)
 
     // if in skid steering mode the steering and throttle values are used for motor1 and motor2
     if (skid_steering) {
-        float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-        float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+        float motor1 = 2*((input.servos[0]-1000)*0.001f - 0.5f);
+        float motor2 = 2*((input.servos[2]-1000)*0.001f - 0.5f);
         steering = motor1 - motor2;
         throttle = 0.5*(motor1 + motor2);
     } else {
-        steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-        throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+        steering = 2*((input.servos[0]-1000)*0.001f - 0.5f);
+        throttle = 2*((input.servos[2]-1000)*0.001f - 0.5f);
     }
 
     // how much time has passed?

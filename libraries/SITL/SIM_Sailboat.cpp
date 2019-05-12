@@ -102,10 +102,10 @@ void Sailboat::update(const struct sitl_input &input)
     update_wind(input);
 
     // in sailboats the steering controls the rudder, the throttle controls the main sail position
-    float steering = 2*((input.servos[STEERING_SERVO_CH]-1000)/1000.0f - 0.5f);
+    float steering = 2*((input.servos[STEERING_SERVO_CH]-1000)*0.001f - 0.5f);
 
     // calculate mainsail angle from servo output 4, 0 to 90 degrees
-    float mainsail_angle_bf = constrain_float((input.servos[MAINSAIL_SERVO_CH]-1000)/1000.0f * 90.0f, 0.0f, 90.0f);
+    float mainsail_angle_bf = constrain_float((input.servos[MAINSAIL_SERVO_CH]-1000)*0.001f * 90.0f, 0.0f, 90.0f);
 
     // calculate apparent wind in earth-frame (this is the direction the wind is coming from)
     // Note than the SITL wind direction is defined as the direction the wind is travelling to

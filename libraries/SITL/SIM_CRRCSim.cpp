@@ -46,11 +46,11 @@ CRRCSim::CRRCSim(const char *home_str, const char *frame_str) :
 */
 void CRRCSim::send_servos_heli(const struct sitl_input &input)
 {
-    float swash1 = (input.servos[0]-1000) / 1000.0f;
-    float swash2 = (input.servos[1]-1000) / 1000.0f;
-    float swash3 = (input.servos[2]-1000) / 1000.0f;
-    float tail_rotor = (input.servos[3]-1000) / 1000.0f;
-    float rsc = (input.servos[7]-1000) / 1000.0f;
+    float swash1 = (input.servos[0]-1000) * 0.001f;
+    float swash2 = (input.servos[1]-1000) * 0.001f;
+    float swash3 = (input.servos[2]-1000) * 0.001f;
+    float tail_rotor = (input.servos[3]-1000) * 0.001f;
+    float rsc = (input.servos[7]-1000) * 0.001f;
 
     float col_pitch = (swash1+swash2+swash3)/3.0 - 0.5f;
     float roll_rate = (swash1 - swash2)/2;
@@ -72,10 +72,10 @@ void CRRCSim::send_servos_heli(const struct sitl_input &input)
 */
 void CRRCSim::send_servos_fixed_wing(const struct sitl_input &input)
 {
-    float roll_rate  = ((input.servos[0]-1000)/1000.0) - 0.5;
-    float pitch_rate = ((input.servos[1]-1000)/1000.0) - 0.5;
-    float yaw_rate   = ((input.servos[3]-1000)/1000.0) - 0.5;
-    float throttle   = ((input.servos[2]-1000)/1000.0);
+    float roll_rate  = ((input.servos[0]-1000)*0.001f) - 0.5;
+    float pitch_rate = ((input.servos[1]-1000)*0.001f) - 0.5;
+    float yaw_rate   = ((input.servos[3]-1000)*0.001f) - 0.5;
+    float throttle   = ((input.servos[2]-1000)*0.001f);
 
     servo_packet pkt;
     pkt.roll_rate  = constrain_float(roll_rate, -0.5, 0.5);

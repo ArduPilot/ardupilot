@@ -344,8 +344,8 @@ bool Morse::sensors_receive(void)
  */
 void Morse::output_rover(const struct sitl_input &input)
 {
-    float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-    float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+    float motor1 = 2*((input.servos[0]-1000)*0.001f - 0.5f);
+    float motor2 = 2*((input.servos[2]-1000)*0.001f - 0.5f);
     const float steer_rate_max_dps = 60;
     const float max_speed = 2;
 
@@ -369,7 +369,7 @@ void Morse::output_quad(const struct sitl_input &input)
     const float max_thrust = 1500;
     float motors[4];
     for (uint8_t i=0; i<4; i++) {
-        motors[i] = constrain_float(((input.servos[i]-1000)/1000.0f) * max_thrust, 0, max_thrust);
+        motors[i] = constrain_float(((input.servos[i]-1000)*0.001f) * max_thrust, 0, max_thrust);
     }
     const float &m_right = motors[0];
     const float &m_left  = motors[1];

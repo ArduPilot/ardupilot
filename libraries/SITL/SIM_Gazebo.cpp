@@ -67,7 +67,7 @@ void Gazebo::send_servos(const struct sitl_input &input)
     // 16 because struct sitl_input.servos is 16 large in SIM_Aircraft.h
     for (unsigned i = 0; i < 16; ++i)
     {
-      pkt.motor_speed[i] = (input.servos[i]-1000) / 1000.0f;
+      pkt.motor_speed[i] = (input.servos[i]-1000) * 0.001f;
     }
     socket_sitl.sendto(&pkt, sizeof(pkt), _gazebo_address, _gazebo_port);
 }

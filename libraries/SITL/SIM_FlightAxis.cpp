@@ -284,7 +284,7 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
     // maximum number of servos to send is 12 with new FlightAxis
     float scaled_servos[12];
     for (uint8_t i=0; i<ARRAY_SIZE(scaled_servos); i++) {
-        scaled_servos[i] = (input.servos[i] - 1000) / 1000.0f;
+        scaled_servos[i] = (input.servos[i] - 1000) * 0.001f;
     }
 
     if (rev4_servos) {

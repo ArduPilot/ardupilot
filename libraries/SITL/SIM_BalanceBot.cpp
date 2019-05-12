@@ -70,8 +70,8 @@ void BalanceBot::update(const struct sitl_input &input)
     const float v_max = 12.0f; //max input voltage(V)
 
     // balance bot uses skid steering
-    const float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-    const float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+    const float motor1 = 2*((input.servos[0]-1000)*0.001f - 0.5f);
+    const float motor2 = 2*((input.servos[2]-1000)*0.001f - 0.5f);
     const float steering = motor1 - motor2;
     const float throttle = 0.5 * (motor1 + motor2);
 

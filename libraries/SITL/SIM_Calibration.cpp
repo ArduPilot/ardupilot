@@ -68,9 +68,9 @@ void SITL::Calibration::_stop_control(const struct sitl_input &input,
 void SITL::Calibration::_attitude_control(const struct sitl_input &input,
                                           Vector3f& rot_accel)
 {
-    float desired_roll = -M_PI + 2 * M_PI * (input.servos[5] - 1000) / 1000.f;
-    float desired_pitch = -M_PI + 2 * M_PI * (input.servos[6] - 1000) / 1000.f;
-    float desired_yaw = -M_PI + 2 * M_PI * (input.servos[7] - 1000) / 1000.f;
+    float desired_roll = -M_PI + 2 * M_PI * (input.servos[5] - 1000) * 0.001f;
+    float desired_pitch = -M_PI + 2 * M_PI * (input.servos[6] - 1000) * 0.001f;
+    float desired_yaw = -M_PI + 2 * M_PI * (input.servos[7] - 1000) * 0.001f;
 
     _attitude_set(desired_roll, desired_pitch, desired_yaw, rot_accel);
 }

@@ -58,7 +58,7 @@ void Helicopter::update(const struct sitl_input &input)
     // get wind vector setup
     update_wind(input);
 
-    float rsc = constrain_float((input.servos[7]-1000) / 1000.0f, 0, 1);
+    float rsc = constrain_float((input.servos[7]-1000) * 0.001f, 0, 1);
     // ignition only for gas helis
     bool ignition_enabled = gas_heli?(input.servos[5] > 1500):true;
 
@@ -70,9 +70,9 @@ void Helicopter::update(const struct sitl_input &input)
     float lateral_x_thrust = 0;
     float lateral_y_thrust = 0;
 
-    float swash1 = (input.servos[0]-1000) / 1000.0f;
-    float swash2 = (input.servos[1]-1000) / 1000.0f;
-    float swash3 = (input.servos[2]-1000) / 1000.0f;
+    float swash1 = (input.servos[0]-1000) * 0.001f;
+    float swash2 = (input.servos[1]-1000) * 0.001f;
+    float swash3 = (input.servos[2]-1000) * 0.001f;
 
     if (!ignition_enabled) {
         rsc = 0;
@@ -83,7 +83,7 @@ void Helicopter::update(const struct sitl_input &input)
     case HELI_FRAME_CONVENTIONAL: {
         // simulate a traditional helicopter
 
-        float tail_rotor = (input.servos[3]-1000) / 1000.0f;
+        float tail_rotor = (input.servos[3]-1000) * 0.001f;
 
         thrust = (rsc/rsc_setpoint) * (swash1+swash2+swash3) / 3.0f;
         torque_effect_accel = (rsc_scale+thrust) * rotor_rot_accel;
@@ -99,9 +99,9 @@ void Helicopter::update(const struct sitl_input &input)
     case HELI_FRAME_DUAL: {
         // simulate a tandem helicopter
 
-        float swash4 = (input.servos[3]-1000) / 1000.0f;
-        float swash5 = (input.servos[4]-1000) / 1000.0f;
-        float swash6 = (input.servos[5]-1000) / 1000.0f;
+        float swash4 = (input.servos[3]-1000) * 0.001f;
+        float swash5 = (input.servos[4]-1000) * 0.001f;
+        float swash6 = (input.servos[5]-1000) * 0.001f;
 
         thrust = (rsc / rsc_setpoint) * (swash1+swash2+swash3+swash4+swash5+swash6) / 6.0f;
         torque_effect_accel = (rsc_scale + rsc / rsc_setpoint) * rotor_rot_accel * ((swash1+swash2+swash3) - (swash4+swash5+swash6));
@@ -115,8 +115,8 @@ void Helicopter::update(const struct sitl_input &input)
     case HELI_FRAME_COMPOUND: {
         // simulate a compound helicopter
 
-        float right_rotor = (input.servos[3]-1000) / 1000.0f;
-        float left_rotor = (input.servos[4]-1000) / 1000.0f;
+        float right_rotor = (input.servos[3]-1000) * 0.001f;
+        float left_rotor = (input.servos[4]-1000) * 0.001f;
 
         thrust = (rsc/rsc_setpoint) * (swash1+swash2+swash3) / 3.0f;
         torque_effect_accel = (rsc_scale+thrust) * rotor_rot_accel;

@@ -726,7 +726,7 @@ float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx
  */
 float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx)
 {
-    const float v = (input.servos[idx] - 1000)/1000.0f;
+    const float v = (input.servos[idx] - 1000)*0.001f;
     return filtered_idx(v, idx);
 }
 
