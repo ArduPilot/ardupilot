@@ -44,7 +44,7 @@ Location::Location(const Vector3f &ekf_offset_neu)
     if (AP::ahrs().get_origin(ekf_origin)) {
         lat = ekf_origin.lat;
         lng = ekf_origin.lng;
-        offset(ekf_offset_neu.x / 100.0f, ekf_offset_neu.y / 100.0f);
+        offset(ekf_offset_neu.x * 0.01f, ekf_offset_neu.y * 0.01f);
     }
 }
 
