@@ -268,9 +268,9 @@ void AP_Avoidance::get_adsb_samples()
                    MAV_COLLISION_SRC_ADSB,
                    src_id,
                    loc,
-                   vehicle.info.heading/100.0f,
-                   vehicle.info.hor_velocity/100.0f,
-                   -vehicle.info.ver_velocity/1000.0f); // convert mm-up to m-down
+                   vehicle.info.heading*0.01f,
+                   vehicle.info.hor_velocity*0.01f,
+                   -vehicle.info.ver_velocity*0.001f); // convert mm-up to m-down
     }
 }
 
@@ -320,11 +320,11 @@ float closest_approach_z(const Location &my_loc,
     }
 
     debug("   time_horizon: (%d)", time_horizon);
-    debug("   delta pos: (%f) metres", delta_pos_d/100.0f);
+    debug("   delta pos: (%f) metres", delta_pos_d*0.01f);
     debug("   delta vel: (%f) m/s", delta_vel_d);
-    debug("   closest: (%f) metres", ret/100.0f);
+    debug("   closest: (%f) metres", ret*0.01f);
 
-    return ret/100.0f;
+    return ret*0.01f;
 }
 
 void AP_Avoidance::update_threat_level(const Location &my_loc,
@@ -338,11 +338,11 @@ void AP_Avoidance::update_threat_level(const Location &my_loc,
     obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_NONE;
 
     const uint32_t obstacle_age = AP_HAL::millis() - obstacle.timestamp_ms;
-    float closest_xy = closest_approach_xy(my_loc, my_vel, obstacle_loc, obstacle_vel, _fail_time_horizon + obstacle_age/1000);
+    float closest_xy = closest_approach_xy(my_loc, my_vel, obstacle_loc, obstacle_vel, _fail_time_horizon + obstacle_age*0.001f);
     if (closest_xy < _fail_distance_xy) {
         obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_HIGH;
     } else {
-        closest_xy = closest_approach_xy(my_loc, my_vel, obstacle_loc, obstacle_vel, _warn_time_horizon + obstacle_age/1000);
+        closest_xy = closest_approach_xy(my_loc, my_vel, obstacle_loc, obstacle_vel, _warn_time_horizon + obstacle_age*0.001f);
         if (closest_xy < _warn_distance_xy) {
             obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_LOW;
         }
@@ -350,12 +350,12 @@ void AP_Avoidance::update_threat_level(const Location &my_loc,
 
     // check for vertical separation; our threat level is the minimum
     // of vertical and horizontal threat levels
-    float closest_z = closest_approach_z(my_loc, my_vel, obstacle_loc, obstacle_vel, _warn_time_horizon + obstacle_age/1000);
+    float closest_z = closest_approach_z(my_loc, my_vel, obstacle_loc, obstacle_vel, _warn_time_horizon + obstacle_age*0.001f);
     if (obstacle.threat_level != MAV_COLLISION_THREAT_LEVEL_NONE) {
         if (closest_z > _warn_distance_z) {
             obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_NONE;
         } else {
-            closest_z = closest_approach_z(my_loc, my_vel, obstacle_loc, obstacle_vel, _fail_time_horizon + obstacle_age/1000);
+            closest_z = closest_approach_z(my_loc, my_vel, obstacle_loc, obstacle_vel, _fail_time_horizon + obstacle_age*0.001f);
             if (closest_z > _fail_distance_z) {
                 obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_LOW;
             }
@@ -578,9 +578,9 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
     loc.lng = packet.lon;
     loc.alt = packet.alt / 10; // mm -> cm
     loc.relative_alt = false;
-    Vector3f vel = Vector3f(packet.vx/100.0f, // cm to m
-                            packet.vy/100.0f,
-                            packet.vz/100.0f);
+    Vector3f vel = Vector3f(packet.vx*0.01f, // cm to m
+                            packet.vy*0.01f,
+                            packet.vz*0.01f);
     add_obstacle(AP_HAL::millis(),
                  MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT,
                  msg.sysid,
@@ -633,7 +633,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
 Vector3f AP_Avoidance::perpendicular_xyz(const Location &p1, const Vector3f &v1, const Location &p2)
 {
     const Vector2f delta_p_2d = p1.get_distance_NE(p2);
-    Vector3f delta_p_xyz = Vector3f(delta_p_2d[0],delta_p_2d[1],(p2.alt-p1.alt)/100.0f); //check this line
+    Vector3f delta_p_xyz = Vector3f(delta_p_2d[0],delta_p_2d[1],(p2.alt-p1.alt)*0.01f); //check this line
     Vector3f v1_xyz = Vector3f(v1[0], v1[1], -v1[2]);
     Vector3f ret = Vector3f::perpendicular(delta_p_xyz, v1_xyz);
     return ret;
