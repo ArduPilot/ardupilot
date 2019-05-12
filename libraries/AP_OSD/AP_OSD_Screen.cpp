@@ -648,7 +648,7 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
-    uint16_t yaw = ahrs.yaw_sensor / 100;
+    uint16_t yaw = ahrs.yaw_sensor * 0.01f;
     backend->write(x, y, false, "%3d%c", yaw, SYM_DEGR);
 }
 
@@ -811,7 +811,7 @@ void AP_OSD_Screen::draw_gps_longitude(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
-    uint16_t roll = abs(ahrs.roll_sensor) / 100;
+    uint16_t roll = abs(ahrs.roll_sensor) * 0.01f;
     char r;
     if (ahrs.roll_sensor > 50) {
         r = SYM_ROLLR;
@@ -826,7 +826,7 @@ void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
-    uint16_t pitch = abs(ahrs.pitch_sensor) / 100;
+    uint16_t pitch = abs(ahrs.pitch_sensor) * 0.01f;
     char p;
     if (ahrs.pitch_sensor > 50) {
         p = SYM_PTCHUP;
@@ -849,7 +849,7 @@ void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
-    float hdp = gps.get_hdop() / 100.0f;
+    float hdp = gps.get_hdop() * 0.01f;
     backend->write(x, y, false, "%c%c%3.2f", SYM_HDOP_L, SYM_HDOP_R, (double)hdp);
 }
 
@@ -967,7 +967,7 @@ void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    float ah = battery.consumed_mah(1) / 1000;
+    float ah = battery.consumed_mah(1) * 0.001f;
     if (battery.consumed_mah(1) <= 9999) {
         backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(1), SYM_MAH);
     } else {
