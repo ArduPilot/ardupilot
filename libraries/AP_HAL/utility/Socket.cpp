@@ -176,7 +176,7 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
-    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_sec = timeout_ms * 0.001f;
     tv.tv_usec = (timeout_ms % 1000) * 1000UL;
 
     if (select(fd+1, &fds, nullptr, nullptr, &tv) != 1) {
@@ -197,7 +197,7 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
-    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_sec = timeout_ms * 0.001f;
     tv.tv_usec = (timeout_ms % 1000) * 1000UL;
 
     if (select(fd+1, nullptr, &fds, nullptr, &tv) != 1) {
