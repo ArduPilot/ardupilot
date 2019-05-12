@@ -110,9 +110,9 @@ uint16_t AP_IOMCU_FW::mix_output_range(uint8_t channel, int16_t value) const
 int16_t AP_IOMCU_FW::mix_elevon_vtail(int16_t angle1, int16_t angle2, bool first_output) const
 {
     if (first_output) {
-        return (angle2 - angle1) * mixing.mixing_gain / 1000;
+        return (angle2 - angle1) * mixing.mixing_gain * 0.001f;
     }
-    return (angle1 + angle2) * mixing.mixing_gain / 1000;
+    return (angle1 + angle2) * mixing.mixing_gain * 0.001f;
 }
 
 /*
