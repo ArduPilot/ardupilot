@@ -407,6 +407,7 @@ void RCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
     _request_period_us[ch] = period_us;
 
     if (!_corking) {
+        cork();
         push();
     }
 }
