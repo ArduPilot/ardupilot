@@ -64,20 +64,20 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     // calculate stabilize collective value which scales pilot input to reduced collective range
     // code implements a 3-segment curve with knee points at 40% and 60% throttle input
     if (control_in < 400){
-        slope_low = _heli_stab_col_min / 1000.0f;
-        slope_high = _heli_stab_col_low / 1000.0f;
+        slope_low = _heli_stab_col_min * 0.001f;
+        slope_high = _heli_stab_col_low * 0.001f;
         slope_range = 0.4f;
-        slope_run = control_in / 1000.0f;
+        slope_run = control_in * 0.001f;
     } else if(control_in <600){
-        slope_low = _heli_stab_col_low / 1000.0f;
-        slope_high = _heli_stab_col_high / 1000.0f;
+        slope_low = _heli_stab_col_low * 0.001f;
+        slope_high = _heli_stab_col_high * 0.001f;
         slope_range = 0.2f;
-        slope_run = (control_in - 400) / 1000.0f;
+        slope_run = (control_in - 400) * 0.001f;
     } else {
-        slope_low = _heli_stab_col_high / 1000.0f;
-        slope_high = _heli_stab_col_max / 1000.0f;
+        slope_low = _heli_stab_col_high * 0.001f;
+        slope_high = _heli_stab_col_max * 0.001f;
         slope_range = 0.4f;
-        slope_run = (control_in - 600) / 1000.0f;
+        slope_run = (control_in - 600) * 0.001f;
     }    
 
     scalar = (slope_high - slope_low)/slope_range;
@@ -92,7 +92,7 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     }
 
     if (_acro_col_expo <= 0.0f) {
-        acro_col_out = control_in / 1000.0f;
+        acro_col_out = control_in * 0.001f;
     } else {
         // expo variables
         float col_in, col_in3, col_out;
