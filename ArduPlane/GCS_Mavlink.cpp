@@ -225,7 +225,7 @@ void Plane::send_servo_out(mavlink_channel_t chan)
         0, // port 0
         10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) / 4500.0f),
         10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) / 4500.0f),
-        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f),
+        10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f),
         10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / 4500.0f),
         0,
         0,
@@ -1121,7 +1121,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         last_hil_state = packet;
 
         // set gps hil sensor
-        const Location loc{packet.lat, packet.lon, packet.alt/10, Location::AltFrame::ABSOLUTE};
+        const Location loc{packet.lat, packet.lon, (int32_t)(packet.alt*0.1f), Location::AltFrame::ABSOLUTE};
         Vector3f vel(packet.vx, packet.vy, packet.vz);
         vel *= 0.01f;
 
@@ -1129,7 +1129,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         plane.airspeed.setHIL(sq(vel.length()) / 2.0f + 2013);
 
         plane.gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
-                         packet.time_usec/1000,
+                         packet.time_usec*0.001f,
                          loc, vel, 10, 0);
 
         // rad/sec
