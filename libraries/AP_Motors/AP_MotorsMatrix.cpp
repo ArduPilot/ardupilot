@@ -227,7 +227,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // calculate the maximum yaw control that can be used
     // todo: make _yaw_headroom 0 to 1
-    yaw_allowed = (float)_yaw_headroom / 1000.0f;
+    yaw_allowed = (float)_yaw_headroom * 0.001f;
     yaw_allowed = _thrust_boost_ratio*0.5f + (1.0f - _thrust_boost_ratio) * yaw_allowed;
     yaw_allowed = MAX(MIN(throttle_thrust_best_rpy+rp_low, 1.0f - (throttle_thrust_best_rpy + rp_high)), yaw_allowed);
     if (fabsf(yaw_thrust) > yaw_allowed) {
