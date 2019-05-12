@@ -30,7 +30,7 @@ void AP_Winch_Servo::update()
 
     // calculate dt since last iteration
     uint32_t now = AP_HAL::millis();
-    float dt = (now - last_update_ms) / 1000.0f;
+    float dt = (now - last_update_ms) * 0.001f;
     if (dt > 1.0f) {
         dt = 0.0f;
     }
