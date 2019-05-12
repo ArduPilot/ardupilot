@@ -482,7 +482,7 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         // absolute delay to utc time
         nav_delay_time_max = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max*0.001f));
 }
 
 #if NAV_GUIDED == ENABLED
@@ -517,7 +517,7 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if timer has run out
-    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((AP_HAL::millis() - loiter_time) * 0.001f) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -585,7 +585,7 @@ bool Sub::verify_loiter_time()
     }
 
     // check if loiter timer has run out
-    return (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max);
+    return (((AP_HAL::millis() - loiter_time) * 0.001f) >= loiter_time_max);
 }
 
 // verify_circle - check if we have circled the point enough
@@ -632,7 +632,7 @@ bool Sub::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if timer has run out
-    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((AP_HAL::millis() - loiter_time) * 0.001f) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
