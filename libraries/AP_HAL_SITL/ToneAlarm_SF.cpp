@@ -30,7 +30,7 @@ void ToneAlarm_SF::set_buzzer_tone(float frequency, float volume, float duration
     tone.dEndFrequency = frequency;
     tone.dAmplitude = 1;
 
-    envelope.dSustainTime = duration_ms/1000.0f;
+    envelope.dSustainTime = duration_ms*0.001f;
 
     Synth::generate(&soundBuffer, envelope, tone, 20000, 44100);
     demoSound.setBuffer(soundBuffer);

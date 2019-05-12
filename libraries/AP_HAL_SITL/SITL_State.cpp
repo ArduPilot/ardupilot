@@ -467,7 +467,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     }
     
     if (_vehicle == ArduPlane) {
-        motors_on = ((input.servos[2] - 1000) / 1000.0f) > 0;
+        motors_on = ((input.servos[2] - 1000) * 0.001f) > 0;
     } else if (_vehicle == APMrover2) {
         input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
         input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
@@ -480,7 +480,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
             if (input.servos[i] > 2000) input.servos[i] = 2000;
             if (input.servos[i] < 1000) input.servos[i] = 1000;
             // update motor_on flag
-            if ((input.servos[i]-1000)/1000.0f > 0) {
+            if ((input.servos[i]-1000)*0.001f > 0) {
                 motors_on = true;
             }
         }
@@ -512,7 +512,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
                 if (_vehicle == APMrover2) {
                     throttle = motors_on ? (input.servos[2] - 1500) / 500.0f : 0;
                 } else {
-                    throttle = motors_on ? (input.servos[2] - 1000) / 1000.0f : 0;
+                    throttle = motors_on ? (input.servos[2] - 1000) * 0.001f : 0;
                 }
                 // lose 0.7V at full throttle
                 voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
