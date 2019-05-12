@@ -198,7 +198,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
         yaw = radians(yaw_sensor*0.01f);
         _dcm_matrix.from_euler(roll, pitch, yaw);
         gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog attitude %d %d %d",
-                        roll_sensor/100, pitch_sensor/100, yaw_sensor/100);
+                        roll_sensor*0.01f, pitch_sensor*0.01f, yaw_sensor*0.01f);
     } else if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
         _dcm_matrix.from_euler(roll, pitch, yaw);
     } else {
