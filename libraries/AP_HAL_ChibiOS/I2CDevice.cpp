@@ -162,7 +162,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
             bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         }
 #endif
-        hal.console->printf("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
+        hal.console->printf("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock*0.001f));
     }
 }
 
@@ -247,7 +247,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
-        uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*MAX(send_len, recv_len))/1000);
+        uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*MAX(send_len, recv_len))*0.001f);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
 
         // we get the lock and start the bus inside the retry loop to
