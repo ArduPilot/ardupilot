@@ -75,7 +75,7 @@ float AnalogSource_Navio2::voltage_average()
     /* Avoid overriding NULL char at the end of the string */
     buffer[sizeof(buffer) - 1] = '\0';
 
-    _value = atoi(buffer) / 1000.0f;
+    _value = atoi(buffer) * 0.001f;
 
     return _value;
 }

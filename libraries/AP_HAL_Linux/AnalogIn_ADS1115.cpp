@@ -82,7 +82,7 @@ void AnalogIn_ADS1115::_update()
             AnalogSource_ADS1115 *source = _channels[j];
 
             if (source != nullptr && reports[i].id == source->_pin) {
-                source->_value = reports[i].data / 1000;
+                source->_value = reports[i].data * 0.001f;
             }
         }
     }
