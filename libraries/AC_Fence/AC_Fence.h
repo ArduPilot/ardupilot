@@ -99,7 +99,11 @@ public:
     /// polygon related methods
     ///
 
+    /// returns true if polygon fence is valid (i.e. has at least 3 sides)
+    bool is_polygon_valid() const { return _boundary_valid; }
+
     /// returns pointer to array of polygon points and num_points is filled in with the total number
+    /// points are offsets from EKF origin in NE frame
     Vector2f* get_boundary_points(uint16_t& num_points) const;
 
     /// returns true if we've breached the polygon boundary.  simple passthrough to underlying _poly_loader object
