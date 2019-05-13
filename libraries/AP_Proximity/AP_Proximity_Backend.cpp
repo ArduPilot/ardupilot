@@ -172,6 +172,7 @@ void AP_Proximity_Backend::init_boundary()
         _sector_edge_vector[sector].y = sinf(angle_rad) * 100.0f;
         _boundary_point[sector] = _sector_edge_vector[sector] * PROXIMITY_BOUNDARY_DIST_DEFAULT;
     }
+    frontend.locations_update();
 }
 
 // update boundary points used for object avoidance based on a single sector's distance changing
@@ -226,6 +227,7 @@ void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
     if (!_distance_valid[prev_sector_ccw]) {
         _boundary_point[prev_sector_ccw] = _sector_edge_vector[prev_sector_ccw] * shortest_distance;
     }
+    frontend.locations_update();
 }
 
 // set status and update valid count

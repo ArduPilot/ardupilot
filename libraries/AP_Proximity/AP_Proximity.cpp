@@ -22,6 +22,7 @@
 #include "AP_Proximity_MAV.h"
 #include "AP_Proximity_SITL.h"
 #include "AP_Proximity_MorseSITL.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -376,6 +377,78 @@ const Vector2f* AP_Proximity::get_boundary_points(uint8_t instance, uint16_t& nu
 const Vector2f* AP_Proximity::get_boundary_points(uint16_t& num_points) const
 {
     return get_boundary_points(primary_instance, num_points);
+}
+
+const AP_Proximity::Proximity_Location* AP_Proximity::get_locations(uint16_t& location_count) const
+{
+    if (_location_count == 0) {
+        return nullptr;
+    }
+
+    location_count = _location_count;
+    return _locations;
+}
+
+// copy location points around vehicle into a buffer owned by the caller
+// caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
+// num_copied is updated with the number of locations copied into the buffer
+// returns true on success, false on failure (should only happen if there is a semaphore conflict)
+bool AP_Proximity::copy_locations(Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied)
+{
+    // sanity check buffer
+    if (buff == nullptr) {
+        num_copied = 0;
+        return false;
+    }
+
+    WITH_SEMAPHORE(_rsem);
+
+    // copy locations into caller's buffer
+    num_copied = MIN(_location_count, buff_size);
+    for (uint16_t i=0; i<num_copied; i++) {
+        buff[i] = _locations[i];
+    }
+
+    return true;
+}
+
+void AP_Proximity::locations_update()
+{
+    // exit immediately if primary sensor is disabled
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return;
+    }
+
+    WITH_SEMAPHORE(_rsem);
+
+    // get number of objects, return early if none
+    uint8_t num_objects = get_object_count();
+    if (num_objects == 0) {
+        _location_count = 0;
+        return;
+    }
+
+    // get vehicle location and heading in degrees
+    Location my_loc;
+    if (!AP::ahrs().get_position(my_loc)) {
+        return;
+    }
+    const float veh_bearing = AP::ahrs().yaw_sensor * 0.01f;
+
+    // convert offset from vehicle position to earth frame location
+    const uint32_t now_ms = AP_HAL::millis();
+    _location_count = 0;
+    for (uint8_t i=0; i<num_objects; i++) {
+        float ang_deg, dist_m;
+        if (get_object_angle_and_distance(i, ang_deg, dist_m)) {
+            Location temp_loc = my_loc;
+            temp_loc.offset_bearing(wrap_180(veh_bearing + ang_deg), dist_m);
+            _locations[_location_count].loc = temp_loc;
+            _locations[_location_count].radius_m = 1;
+            _locations[_location_count].last_update_ms = now_ms;
+            _location_count++;
+        }
+    }
 }
 
 // get distance and angle to closest object (used for pre-arm check)
