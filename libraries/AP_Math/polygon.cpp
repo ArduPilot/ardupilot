@@ -128,11 +128,12 @@ template bool Polygon_complete<float>(const Vector2f *V, unsigned n);
 /*
   determine if the polygon of N verticies defined by points V is
   intersected by a line from point p1 to point p2
+  intersection argument returns the intersection closest to p1
  */
-bool Polygon_intersects(const Vector2f *V, unsigned N, const Vector2f &p1, const Vector2f &p2)
+bool Polygon_intersects(const Vector2f *V, unsigned N, const Vector2f &p1, const Vector2f &p2, Vector2f &intersection)
 {
+    float intersect_dist_sq = FLT_MAX;
     for (uint8_t i=0; i<N-1; i++) {
-        Vector2f tmp;
         const Vector2f &v1 = V[i];
         const Vector2f &v2 = V[i+1];
         // optimisations for common cases
@@ -148,21 +149,28 @@ bool Polygon_intersects(const Vector2f *V, unsigned N, const Vector2f &p1, const
         if (v1.y < p1.y && v2.y < p1.y && v1.y < p2.y && v2.y < p2.y) {
             continue;
         }
-        if (Vector2f::segment_intersection(v1,v2,p1,p2,tmp)) {
-            return true;
+        Vector2f intersect_tmp;
+        if (Vector2f::segment_intersection(v1,v2,p1,p2,intersect_tmp)) {
+            float dist_sq = sq(intersect_tmp.x - p1.x) + sq(intersect_tmp.y - p1.y);
+            if (dist_sq < intersect_dist_sq) {
+                intersect_dist_sq = dist_sq;
+                intersection = intersect_tmp;
+            }
         }
     }
-    return false;
+    return (intersect_dist_sq < FLT_MAX);
 }
 
 /*
   return the closest distance that a line from p1 to p2 comes to an
   edge of closed polygon V, defined by N points
+  negative numbers indicate the line cross into the polygon with the negative size being the distance from p2 to the intersection point closest to p1
  */
 float Polygon_closest_distance_line(const Vector2f *V, unsigned N, const Vector2f &p1, const Vector2f &p2)
 {
-    if (Polygon_intersects(V,N,p1,p2)) {
-        return 0;
+    Vector2f intersection;
+    if (Polygon_intersects(V,N,p1,p2,intersection)) {
+        return -sqrtf(sq(intersection.x - p2.x) + sq(intersection.y - p2.y));
     }
     float closest_sq = FLT_MAX;
     for (uint8_t i=0; i<N-1; i++) {
