@@ -38,4 +38,5 @@ private:
     uint32_t ready_high;
     uint32_t ready_low;
     bool pulse_ready;
+    bool initialized;
 };

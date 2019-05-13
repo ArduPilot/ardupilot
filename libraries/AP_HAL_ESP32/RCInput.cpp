@@ -26,7 +26,6 @@ void RCInput::init()
         return;
     }
 #ifdef HAL_ESP32_RCIN
-    sig_reader.init();
     rcin_prot.init();
 #endif
     _init = true;
