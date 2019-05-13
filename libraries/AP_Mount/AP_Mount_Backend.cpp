@@ -98,7 +98,7 @@ void AP_Mount_Backend::update_targets_from_rc()
 
     // if joystick_speed is defined then pilot input defines a rate of change of the angle
     if (_frontend._joystick_speed) {
-        // allow pilot position input to come directly from an RC_Channel
+        // allow pilot rate input to come directly from an RC_Channel
         rate_input_rad(_angle_ef_target_rad.x,
                        roll_ch,
                        _state._roll_angle_min,
@@ -112,7 +112,7 @@ void AP_Mount_Backend::update_targets_from_rc()
                        _state._pan_angle_min,
                        _state._pan_angle_max);
     } else {
-        // allow pilot rate input to come directly from an RC_Channel
+        // allow pilot position input to come directly from an RC_Channel
         if ((roll_ch != nullptr) && (roll_ch->get_radio_in() != 0)) {
             _angle_ef_target_rad.x = angle_input_rad(roll_ch, _state._roll_angle_min, _state._roll_angle_max);
         }
