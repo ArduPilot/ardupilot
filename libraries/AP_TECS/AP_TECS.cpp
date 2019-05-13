@@ -1132,6 +1132,25 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _update_pitch();
 
     // log to AP_Logger
+    // @LoggerMessage: TECS
+    // @Vehicles: Plane
+    // @Description: Information about the Total Energy Control System
+    // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+    // @Field: h: height estimate (UP) currently in use by TECS
+    // @Field: dh: current climb rate ("delta-height")
+    // @Field: hdem: height TECS is currently trying to achieve
+    // @Field: dhdem: climb rate TECS is currently trying to achieve
+    // @Field: spdem: True AirSpeed TECS is currently trying to achieve
+    // @Field: sp: current estimated True AirSpeed
+    // @Field: dsp: x-axis acceleration estimate ("delta-speed")
+    // @Field: ith: throttle integrator value
+    // @Field: iph: Specific Energy Balance integrator value
+    // @Field: th: throttle output
+    // @Field: ph: pitch output
+    // @Field: dspdem: demanded acceleration output ("delta-speed demand")
+    // @Field: w: current TECS prioritisation of height vs speed (0==100% height,2==100% speed, 1==50%height+50%speed
+    // @Field: f: flags
+    // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd
     AP::logger().Write(
         "TECS",
         "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f",
@@ -1153,6 +1172,14 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         (double)_TAS_rate_dem,
         (double)logging.SKE_weighting,
         _flags_byte);
+    // @LoggerMessage: TEC2
+    // @Vehicles: Plane
+    // @Description: Additional Information about the Total Energy Control System
+    // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+    // @Field: KErr: difference between estimated kinetic energy and desired kinetic energy
+    // @Field: PErr: difference between estimated potential energy and desired potential energy
+    // @Field: EDelta: current error in speed/balance weighting
+    // @Field: LF: aerodynamic load factor
     AP::logger().Write("TEC2", "TimeUS,pmax,pmin,KErr,PErr,EDelta,LF",
                        "s------",
                        "F------",
