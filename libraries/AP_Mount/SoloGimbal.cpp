@@ -130,7 +130,7 @@ void SoloGimbal::send_controls(mavlink_channel_t chan)
                 }
                 if (HAVE_PAYLOAD_SPACE(chan, GIMBAL_CONTROL)) {
                     mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
-                                                    _ang_vel_dem_rads.x, _ang_vel_dem_rads.y, _ang_vel_dem_rads.z);
+                                                    _ang_vel_dem_rads.x, (_ang_vel_dem_rads.y)*0.25, _ang_vel_dem_rads.z);
                 }
                 break;
             }
