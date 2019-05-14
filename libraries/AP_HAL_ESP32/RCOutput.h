@@ -55,5 +55,6 @@ private:
 
     uint16_t _max_channels;
     ledc_timer_t _channel_timers[LEDC_CHANNEL_MAX];
+    bool _initialized;
 };
 

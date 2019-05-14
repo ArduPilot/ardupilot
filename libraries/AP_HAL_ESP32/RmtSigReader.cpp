@@ -48,11 +48,6 @@ bool RmtSigReader::add_item(uint32_t duration, bool level)
 
 bool RmtSigReader::read(uint32_t &width_high, uint32_t &width_low)
 {
-    if (!initialized) {
-        init();
-        initialized = true;
-        return false;
-    }
     if (item == nullptr) {
         item = (rmt_item32_t*) xRingbufferReceive(handle, &item_size, 0);
         item_size /= 4;

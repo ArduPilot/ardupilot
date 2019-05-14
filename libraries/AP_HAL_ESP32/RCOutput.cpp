@@ -43,6 +43,7 @@ void RCOutput::init()
         ledc_channel_config(&config);
         _channel_timers[i] = (ledc_timer_t)timer;
     }
+    _initialized = true;
 }
 
 uint16_t RCOutput::get_timer(uint16_t freq)
@@ -82,6 +83,9 @@ uint16_t RCOutput::find_free_timer()
 
 void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
+    if (!_initialized) {
+        return;
+    }
     for (uint8_t i = 0; i < _max_channels; i++) {
         if (chmask & 1 << i) {
             int timer = get_timer(freq_hz);
@@ -93,11 +97,17 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 
 void RCOutput::set_default_rate(uint16_t freq_hz)
 {
+    if (!_initialized) {
+        return;
+    }
     ledc_set_freq(LEDC_HIGH_SPEED_MODE, LEDC_TIMER_0, freq_hz);
 }
 
 uint16_t RCOutput::get_freq(uint8_t ch)
 {
+    if (!_initialized) {
+        return 50;
+    }
     return ledc_get_freq(LEDC_HIGH_SPEED_MODE, _channel_timers[ch]);
 }
 
@@ -125,7 +135,7 @@ void RCOutput::write(uint8_t ch, uint16_t period_us)
 
 uint16_t RCOutput::read(uint8_t ch)
 {
-    if (ch >= _max_channels) {
+    if (ch >= _max_channels || !_initialized) {
         return 1000;
     }
     uint32_t freq = ledc_get_freq(LEDC_HIGH_SPEED_MODE, _channel_timers[ch]);
@@ -162,6 +172,9 @@ void RCOutput::push(void)
 
 void RCOutput::write_int(uint8_t ch, uint16_t period_us)
 {
+    if (!_initialized) {
+        return;
+    }
     uint32_t freq = ledc_get_freq(LEDC_HIGH_SPEED_MODE, _channel_timers[ch]);
     uint32_t duty = (uint64_t(period_us) * freq * (1<< duty_resolution))/1000000;
     ledc_set_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)ch, duty);

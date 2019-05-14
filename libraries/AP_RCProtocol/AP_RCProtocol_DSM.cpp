@@ -410,7 +410,7 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
         break;
 
     case DSM_DECODE_STATE_SYNC: {
-        if ((frame_time_ms - last_rx_time_ms) >= 5 && byte_input.ofs > 0) {
+        if ((frame_time_ms - last_rx_time_ms) >= 2 && byte_input.ofs > 0) {
             byte_input.ofs = 0;
             dsm_decode_state = DSM_DECODE_STATE_DESYNC;
             break;
