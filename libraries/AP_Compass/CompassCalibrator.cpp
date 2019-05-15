@@ -781,7 +781,7 @@ bool CompassCalibrator::calculate_orientation(void)
     }
 
     // this function is very slow
-    EXPECT_DELAY(hal, 1000);
+    EXPECT_DELAY_MS(1000);
 
     float variance[ROTATION_MAX] {};
 
