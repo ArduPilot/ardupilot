@@ -2,8 +2,6 @@
 
 #if HAL_WITH_UAVCAN
 
-#include <AP_Common/Semaphore.h>
-
 #include "AP_OpticalFlow_HereFlow.h"
 
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
