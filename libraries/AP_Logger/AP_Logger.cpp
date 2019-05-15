@@ -733,7 +733,25 @@ void AP_Logger::Write(const char *name, const char *labels, const char *units, c
     va_end(arg_list);
 }
 
-void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list)
+void AP_Logger::WriteCritical(const char *name, const char *labels, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, nullptr, nullptr, fmt, arg_list, true);
+    va_end(arg_list);
+}
+
+void AP_Logger::WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, units, mults, fmt, arg_list, true);
+    va_end(arg_list);
+}
+
+void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical)
 {
     struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt);
     if (f == nullptr) {
@@ -752,7 +770,7 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
         }
         va_list arg_copy;
         va_copy(arg_copy, arg_list);
-        backends[i]->Write(f->msg_type, arg_copy);
+        backends[i]->Write(f->msg_type, arg_copy, is_critical);
         va_end(arg_copy);
     }
 }
