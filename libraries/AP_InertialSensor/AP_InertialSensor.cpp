@@ -1122,7 +1122,7 @@ AP_InertialSensor::_init_gyro()
     // cold start
     hal.console->printf("Init Gyro");
 
-    EXPECT_DELAY(hal, 60000);
+    EXPECT_DELAY_MS(60000);
 
     /*
       we do the gyro calibration with no board rotation. This avoids
@@ -1702,7 +1702,7 @@ void AP_InertialSensor::acal_update()
         return;
     }
 
-    EXPECT_DELAY(hal, 20000);
+    EXPECT_DELAY_MS(20000);
     _acal->update();
 
     if (hal.util->get_soft_armed() && _acal->get_status() != ACCEL_CAL_NOT_STARTED) {
@@ -1864,7 +1864,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
-    EXPECT_DELAY(hal, 20000);
+    EXPECT_DELAY_MS(20000);
     // record we are calibrating
     _calibrating = true;
 
