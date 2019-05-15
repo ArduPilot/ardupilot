@@ -4,7 +4,6 @@
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#include <AP_Common/Semaphore.h>
 
 class MeasurementCb;
 
