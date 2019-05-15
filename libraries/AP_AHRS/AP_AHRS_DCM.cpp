@@ -50,7 +50,7 @@ AP_AHRS_DCM::reset_gyro_drift(void)
 /* if this was a watchdog reset then get home from backup registers */
 void AP_AHRS_DCM::load_watchdog_home()
 {
-    AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+    const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
     if (hal.util->was_watchdog_reset() && (pd.home_lat != 0 || pd.home_lon != 0)) {
         _home.lat = pd.home_lat;
         _home.lng = pd.home_lon;
@@ -187,7 +187,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     // attitude then calculate the dcm matrix from the current
     // roll/pitch/yaw values
     if (hal.util->was_watchdog_reset() && AP_HAL::millis() < 10000) {
-        AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
         roll = pd.roll_rad;
         pitch = pd.pitch_rad;
         yaw = pd.yaw_rad;
