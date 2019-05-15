@@ -1248,7 +1248,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def rc_defaults(self):
         ret = super(AutoTestRover, self).rc_defaults()
-        ret[3] = 1000
+        ret[3] = 1500
         ret[8] = 1800
         return ret;
 
