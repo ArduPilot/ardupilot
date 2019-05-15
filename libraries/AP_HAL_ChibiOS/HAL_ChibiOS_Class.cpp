@@ -213,7 +213,7 @@ static void main_loop()
 
     if (hal.util->was_watchdog_reset()) {
         AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
-        AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
         AP::logger().Write("WDOG", "TimeUS,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine", "QbIIHHH",
                            AP_HAL::micros64(),
                            pd.scheduler_task,

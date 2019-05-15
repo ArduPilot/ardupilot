@@ -350,7 +350,7 @@ void Scheduler::_monitor_thread(void *arg)
         if (loop_delay >= 200) {
             // the main loop has been stuck for at least
             // 200ms. Starting logging the main loop state
-            AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+            const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
             AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine", "QIbIIHHH",
                                AP_HAL::micros64(),
                                loop_delay,
