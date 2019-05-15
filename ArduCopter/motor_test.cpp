@@ -25,7 +25,7 @@ void Copter::motor_test_output()
         return;
     }
 
-    EXPECT_DELAY(hal, 2000);
+    EXPECT_DELAY_MS(2000);
 
     // check for test timeout
     uint32_t now = AP_HAL::millis();
@@ -148,7 +148,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
             // start test
             ap.motor_test = true;
 
-            EXPECT_DELAY(hal, 3000);
+            EXPECT_DELAY_MS(3000);
             // enable and arm motors
             if (!motors->armed()) {
                 init_rc_out();
