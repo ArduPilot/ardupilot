@@ -30,7 +30,7 @@ void ModeLoiter::update()
     } else {
         // P controller with hard-coded gain to convert distance to desired speed
         // To-Do: make gain configurable or calculate from attitude controller's maximum accelearation
-        _desired_speed = MIN((_distance_to_destination - g2.loit_radius) * 0.5f, g.speed_cruise);
+        _desired_speed = MIN((_distance_to_destination - g2.loit_radius) * 0.5f, g2.wp_nav.get_default_speed());
 
         // calculate bearing to destination
         _desired_yaw_cd = rover.current_loc.get_bearing_to(_destination);
