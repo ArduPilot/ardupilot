@@ -88,11 +88,29 @@ void AP_LoggerTest::setup(void)
     hal.console->printf("Average write time %.1f usec/byte\n", 
                        (double)total_micros/((double)i*sizeof(struct log_Test)));
 
+    uint64_t now = AP_HAL::micros64();
+    hal.console->printf("Testing Write\n");
+    logger.Write("MARY",
+                 "TimeUS,GoodValue",
+                 "sm",
+                 "F0",
+                 "Qf",
+                 now,
+                 -1.5673);
+    hal.console->printf("Testing WriteCritical\n");
+    logger.WriteCritical("BOB",
+                         "TimeUS,GreatValue",
+                         "sm",
+                         "F0",
+                         "Qf",
+                         now,
+                         17.3);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     logger.flush();
 #endif
 
-    hal.scheduler->delay(100);
+    logger.set_vehicle_armed(false);
 }
 
 void AP_LoggerTest::loop(void)
