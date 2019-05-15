@@ -127,13 +127,10 @@ private:
  */
 class ExpectDelay {
 public:
-    ExpectDelay(const AP_HAL::HAL &hal, uint32_t ms);
+    ExpectDelay(uint32_t ms);
     ~ExpectDelay();
-
-private:
-    const AP_HAL::HAL &_hal;
 };
 
-#define EXPECT_DELAY(hal, ms) DELAY_JOIN( hal, ms, __COUNTER__ )
-#define DELAY_JOIN( hal, ms, counter) _DO_DELAY_JOIN( hal, ms, counter )
-#define _DO_DELAY_JOIN( hal, ms, counter ) ExpectDelay _getdelay ## counter(hal, ms)
+#define EXPECT_DELAY_MS(ms) DELAY_JOIN( ms, __COUNTER__ )
+#define DELAY_JOIN( ms, counter) _DO_DELAY_JOIN( ms, counter )
+#define _DO_DELAY_JOIN( ms, counter ) ExpectDelay _getdelay ## counter(ms)
