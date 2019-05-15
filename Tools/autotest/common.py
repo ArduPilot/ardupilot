@@ -442,6 +442,21 @@ class AutoTest(ABC):
                 continue
             util.pexpect_drain(p)
 
+    def drain_mav_unparsed(self):
+        count = 0
+        tstart = time.time()
+        while True:
+            this = self.mav.recv(1000000)
+            if len(this) == 0:
+                break
+            count += len(this)
+        tdelta = time.time() - tstart
+        if tdelta == 0:
+            rate = "instantly"
+        else:
+            rate = "%f/s" % (count/float(tdelta),)
+        self.progress("Drained %u bytes from mav (%s).  These were unparsed." % (count, rate))
+
     def drain_mav(self, mav=None):
         if mav is None:
             mav = self.mav
@@ -519,6 +534,7 @@ class AutoTest(ABC):
         self.mavproxy.send("set shownoise 0\n")
         self.mavproxy.send("log download latest %s\n" % filename)
         self.mavproxy.expect("Finished downloading", timeout=timeout)
+        self.drain_mav_unparsed()
         self.wait_heartbeat()
         self.wait_heartbeat()
         if upload_logs and os.getenv("AUTOTEST_UPLOAD"):
