@@ -157,6 +157,10 @@ public:
     uint8_t get_buzz_pin() const  { return _buzzer_pin; }
     uint8_t get_buzz_level() const  { return _buzzer_level; }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    HAL_Semaphore sf_window_mutex;
+#endif
+
 private:
 
     static AP_Notify *_singleton;

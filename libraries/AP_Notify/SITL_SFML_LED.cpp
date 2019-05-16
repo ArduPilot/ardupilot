@@ -15,6 +15,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Notify/AP_Notify.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -33,28 +34,38 @@ SITL_SFML_LED::SITL_SFML_LED():
 
 void SITL_SFML_LED::update_thread(void)
 {
-    sf::RenderWindow *w = new sf::RenderWindow(sf::VideoMode(width, height), "LED");
+    sf::RenderWindow *w;
+    {
+        WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+        w = new sf::RenderWindow(sf::VideoMode(width, height), "LED");
+    }
+
     if (!w) {
         AP_HAL::panic("Unable to create RGBLed window");
     }
 
-    while (w->isOpen()) {
-        sf::Event event;
-        while (w->pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                w->close();
+    while (true) {
+        {
+            WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+            sf::Event event;
+            while (w->pollEvent(event)) {
+                if (event.type == sf::Event::Closed) {
+                    w->close();
+                    break;
+                }
+            }
+            if (!w->isOpen()) {
+                break;
+            }
+            const uint32_t colour = red<<16 | green<<8 | blue;
+            if (colour != last_colour) {
+                last_colour = colour;
+
+                w->clear(sf::Color(red, green, blue, 255));
+                w->display();
             }
         }
-        uint32_t colour = red<<16 | green<<8 | blue;
-        if (colour == last_colour) {
-            usleep(10000);
-            continue;
-        }
-        last_colour = colour;
-
-        w->clear(sf::Color(red, green, blue, 255));
-
-        w->display();
+        usleep(10000);
     }
 }
 
