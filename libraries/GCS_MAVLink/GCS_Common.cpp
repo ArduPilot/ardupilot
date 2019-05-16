@@ -1514,6 +1514,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             parsed_packet = true;
             gcs_alternative_active[chan] = false;
             alternative.last_mavlink_ms = now_ms;
+            hal.util->persistent_data.last_mavlink_msgid = 0;
         }
 
         if (parsed_packet || i % 100 == 0) {
@@ -3744,6 +3745,8 @@ void GCS_MAVLINK::handle_command_long(mavlink_message_t *msg)
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result);
+
+    hal.util->persistent_data.last_mavlink_cmd = 0;
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
@@ -3863,6 +3866,8 @@ void GCS_MAVLINK::handle_command_int(mavlink_message_t *msg)
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result);
+
+    hal.util->persistent_data.last_mavlink_cmd = 0;
 }
 
 bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)
