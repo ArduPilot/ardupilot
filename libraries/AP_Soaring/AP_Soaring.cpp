@@ -128,7 +128,7 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
     _ahrs(ahrs),
     _spdHgt(spdHgt),
     _vario(ahrs,parms),
-    _loiter_rad(parms.loiter_radius),
+    _aparm(parms),
     _throttle_suppressed(true)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -187,7 +187,7 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
         gcs().send_text(MAV_SEVERITY_ALERT, "Reached lower altitude, beginning cruise. Alt = %f2", (double)alt);
         return ALT_TOO_LOW;
     } else if ((AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6)) {
-        const float thermalability = (_ekf.X[0]*expf(-powf(_loiter_rad / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK;
+        const float thermalability = (_ekf.X[0]*expf(-powf(_aparm.loiter_radius / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK;
         const float mcCreadyAlt = McCready(alt);
         if (thermalability < mcCreadyAlt) {
             gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak, recommend quitting: W %f2 R %f2 th %f2 alt %f2 Mc %f2", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)alt, (double)mcCreadyAlt);
