@@ -30,6 +30,7 @@ class SoaringController {
     AP_AHRS &_ahrs;
     AP_SpdHgtControl &_spdHgt;
     Variometer _vario;
+    const AP_Vehicle::FixedWing &_aparm;
 
     // store aircraft location at last update
     struct Location _prev_update_location;
@@ -43,7 +44,6 @@ class SoaringController {
     // store time of last update
     unsigned long _prev_update_time;
 
-    float _loiter_rad;
     bool _throttle_suppressed;
 
     float McCready(float alt);

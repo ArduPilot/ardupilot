@@ -132,7 +132,7 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
     _ahrs(ahrs),
     _spdHgt(spdHgt),
     _vario(ahrs,parms),
-    _loiter_rad(parms.loiter_radius),
+    _aparm(parms),
     _throttle_suppressed(true)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -177,7 +177,7 @@ bool SoaringController::check_thermal_criteria()
 
 bool SoaringController::check_cruise_criteria()
 {
-    float thermalability = (_ekf.X[0]*expf(-powf(_loiter_rad / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK;
+    float thermalability = (_ekf.X[0]*expf(-powf(_aparm.loiter_radius / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK;
     float alt = _vario.alt;
 
     if (soar_active && (AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6) && thermalability < McCready(alt)) {
