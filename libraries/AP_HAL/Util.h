@@ -61,6 +61,8 @@ public:
         uint16_t last_mavlink_msgid;
         uint16_t last_mavlink_cmd;
         uint16_t semaphore_line;
+        uint32_t spi_count;
+        uint32_t i2c_count;
     };
     struct PersistentData persistent_data;
 
