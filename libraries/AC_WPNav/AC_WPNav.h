@@ -241,6 +241,9 @@ protected:
     /// get_slow_down_speed - returns target speed of target point based on distance from the destination (in cm)
     float get_slow_down_speed(float dist_from_dest_cm, float accel_cmss);
     
+    /// wp_speed_update - calculates how to change speed when changes are requested
+    void wp_speed_update(float dt);
+
     /// spline protected functions
 
     /// update_spline_solution - recalculates hermite_spline_solution grid
@@ -283,6 +286,7 @@ protected:
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call
     uint8_t     _wp_step;               // used to decide which portion of wpnav controller to run during this iteration
+    float       _wp_desired_speed_cms;  // desired wp speed in cm/sec
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination

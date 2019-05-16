@@ -102,6 +102,9 @@ bool AC_WPNav_Heli::update_l1_wpnav()
         ret = false;
     }
 
+    // wp_speed_update - update _pos_control.set_max_speed_xy if speed change has been requested
+    wp_speed_update(dt);
+
     // run plane waypoint controller
     AP_Mission::Mission_Command cmd;
     cmd = _mission.get_current_nav_cmd();
