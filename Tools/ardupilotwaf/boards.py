@@ -357,11 +357,16 @@ class sitl(Board):
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
                 cfg.fatal("Failed to find SFML libraries")
+
+        if cfg.options.sitl_osd:
             env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=ENABLED','-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
             import fnmatch
             for f in os.listdir('libraries/AP_OSD/fonts'):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
+        if cfg.options.sitl_rgbled:
+            env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
 
         if cfg.options.enable_sfml_audio:
             if not cfg.check_SFML_Audio(env):
