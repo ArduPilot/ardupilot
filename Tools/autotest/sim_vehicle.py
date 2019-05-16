@@ -294,6 +294,11 @@ def do_build_waf(opts, frame_options):
 
     if opts.OSD:
         cmd_configure.append("--enable-sfml")
+        cmd_configure.append("--sitl-osd")
+
+    if opts.rgbled:
+        cmd_configure.append("--enable-sfml")
+        cmd_configure.append("--sitl-rgbled")
 
     if opts.tonealarm:
         cmd_configure.append("--enable-sfml-audio")
@@ -906,6 +911,11 @@ group_sim.add_option("", "--tonealarm",
                      dest='tonealarm',
                      default=False,
                      help="Enable SITL ToneAlarm")
+group_sim.add_option("", "--rgbled",
+                     action='store_true',
+                     dest='rgbled',
+                     default=False,
+                     help="Enable SITL RGBLed")
 group_sim.add_option("", "--add-param-file",
                      type='string',
                      default=None,
