@@ -351,7 +351,7 @@ void Scheduler::_monitor_thread(void *arg)
             // the main loop has been stuck for at least
             // 200ms. Starting logging the main loop state
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
-            AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine", "QIbIIHHH",
+            AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIIHHHII",
                                AP_HAL::micros64(),
                                loop_delay,
                                pd.scheduler_task,
@@ -359,7 +359,9 @@ void Scheduler::_monitor_thread(void *arg)
                                pd.internal_error_count,
                                pd.last_mavlink_msgid,
                                pd.last_mavlink_cmd,
-                               pd.semaphore_line);
+                               pd.semaphore_line,
+                               pd.spi_count,
+                               pd.i2c_count);
         }
         if (loop_delay >= 500) {
             // at 500ms we declare an internal error
