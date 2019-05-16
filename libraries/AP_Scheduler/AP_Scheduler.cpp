@@ -232,7 +232,9 @@ float AP_Scheduler::load_average()
 void AP_Scheduler::loop()
 {
     // wait for an INS sample
+    hal.util->persistent_data.scheduler_task = -3;
     AP::ins().wait_for_sample();
+    hal.util->persistent_data.scheduler_task = -1;
 
     const uint32_t sample_time_us = AP_HAL::micros();
     
