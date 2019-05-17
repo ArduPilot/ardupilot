@@ -27,7 +27,7 @@
 void setup();
 void loop();
 
-const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();                       // Declaring HAL reference
 
 static AP_BoardConfig board_config;
 
