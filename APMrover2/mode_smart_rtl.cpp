@@ -86,6 +86,26 @@ void ModeSmartRTL::update()
     }
 }
 
+// get desired location
+bool ModeSmartRTL::get_desired_location(Location& destination) const
+{
+    switch (smart_rtl_state) {
+    case SmartRTL_WaitForPathCleanup:
+        return false;
+    case SmartRTL_PathFollow:
+        if (g2.wp_nav.is_destination_valid()) {
+            destination = g2.wp_nav.get_destination();
+            return true;
+        }
+        return false;
+    case SmartRTL_StopAtHome:
+    case SmartRTL_Failure:
+        return false;
+    }
+    // should never reach here but just in case
+    return false;
+}
+
 // save current position for use by the smart_rtl flight mode
 void ModeSmartRTL::save_position()
 {

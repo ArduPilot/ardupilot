@@ -145,6 +145,29 @@ bool ModeGuided::reached_destination() const
     return true;
 }
 
+// get desired location
+bool ModeGuided::get_desired_location(Location& destination) const
+{
+    switch (_guided_mode) {
+    case Guided_WP:
+        if (g2.wp_nav.is_destination_valid()) {
+            destination = g2.wp_nav.get_destination();
+            return true;
+        }
+        return false;
+    case Guided_HeadingAndSpeed:
+    case Guided_TurnRateAndSpeed:
+        // not supported in these submodes
+        return false;
+    case Guided_Loiter:
+        // get destination from loiter
+        return rover.mode_loiter.get_desired_location(destination);
+    }
+
+    // should never get here but just in case
+    return false;
+}
+
 // set desired location
 bool ModeGuided::set_desired_location(const struct Location& destination,
                                       float next_leg_bearing_cd)

@@ -58,6 +58,16 @@ void ModeRTL::update()
     }
 }
 
+// get desired location
+bool ModeRTL::get_desired_location(Location& destination) const
+{
+    if (g2.wp_nav.is_destination_valid()) {
+        destination = g2.wp_nav.get_destination();
+        return true;
+    }
+    return false;
+}
+
 bool ModeRTL::reached_destination() const
 {
     return g2.wp_nav.reached_destination();
