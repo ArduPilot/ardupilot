@@ -104,6 +104,13 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
 
+    // @Param: BARO2GPS
+    // @DisplayName: Compare Baro Alt to GPS altitude
+    // @Description: Strict barometer validation by comparing BARO-based Altimeter to GPS altitude
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("BARO2GPS",     8,     AP_Arming, _baro2gps, 0),
+
     // index 4 was VOLT_MIN, moved to AP_BattMonitor
     AP_GROUPEND
 };
@@ -168,9 +175,24 @@ bool AP_Arming::barometer_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BARO)) {
-        if (!AP::baro().all_healthy()) {
+        const AP_Baro &baro = AP::baro();
+        if (!baro.all_healthy()) {
             check_failed(ARMING_CHECK_BARO, report, "Barometer not healthy");
             return false;
+        }
+        if (_baro2gps == 1 && checks_to_perform & ARMING_CHECK_GPS) {
+            const AP_GPS &gps = AP::gps();
+            if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.get_vdop() < 201 && gps.num_sats() > 8) {
+                float baro_altasl = baro.get_altitude_difference(101325.0f, baro.get_pressure());
+                float gps_alt = gps.location().alt*0.01f;
+                if (fabsf(baro_altasl - gps_alt) > 1200.0f) {
+                    check_failed(ARMING_CHECK_BARO, report, "Barometer alt error");
+                    return false;
+                }
+            } else {
+                check_failed(ARMING_CHECK_BARO, report, "Barometer alt waiting for GPS alt fix");
+                return false;
+            }
         }
     }
 
