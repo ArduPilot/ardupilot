@@ -72,7 +72,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: Auto mode trigger pin
     // @Description: pin number to use to enable the throttle in auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will enable the motor to run. If the switch is released while in AUTO then the motor will stop again. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.
     // @Values: -1:Disabled,0:APM TriggerPin0,1:APM TriggerPin1,2:APM TriggerPin2,3:APM TriggerPin3,4:APM TriggerPin4,5:APM TriggerPin5,6:APM TriggerPin6,7:APM TriggerPin7,8:APM TriggerPin8,50:Pixhawk TriggerPin50,51:Pixhawk TriggerPin51,52:Pixhawk TriggerPin52,53:Pixhawk TriggerPin53,54:Pixhawk TriggerPin54,55:Pixhawk TriggerPin55
-    // @User: standard
+    // @User: Standard
     GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),
 
     // @Param: AUTO_KICKSTART
@@ -81,7 +81,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Units: m/s/s
     // @Range: 0 20
     // @Increment: 0.1
-    // @User: standard
+    // @User: Standard
     GSCALAR(auto_kickstart,          "AUTO_KICKSTART", 0.0f),
 
     // @Param: CRUISE_SPEED
