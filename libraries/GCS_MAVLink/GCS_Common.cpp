@@ -4654,15 +4654,18 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
     if (c == nullptr) {
         return;
     }
-    int16_t override_value = 0;
-    if (value_in != INT16_MAX) {
-        const int16_t radio_min = c->get_radio_min();
-        const int16_t radio_max = c->get_radio_max();
-        if (reversed) {
-            value_in *= -1;
-        }
-        override_value = radio_min + (radio_max - radio_min) * (value_in + offset) / scaler;
+
+    if (value_in == INT16_MAX) {
+        return;
     }
+
+    const int16_t radio_min = c->get_radio_min();
+    const int16_t radio_max = c->get_radio_max();
+    if (reversed) {
+        value_in *= -1;
+    }
+
+    const int16_t override_value = radio_min + (radio_max - radio_min) * (value_in + offset) / scaler;
     c->set_override(override_value, tnow);
 }
 
