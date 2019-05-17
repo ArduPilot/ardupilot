@@ -294,6 +294,7 @@ public:
         void periodic();
 
         bool doing_sensor_rate_logging() const { return _doing_sensor_rate_logging; }
+        bool doing_post_filter_logging() const { return _doing_post_filter_logging; }
 
         // class level parameters
         static const struct AP_Param::GroupInfo var_info[];
@@ -320,6 +321,7 @@ public:
 
         enum batch_opt_t {
             BATCH_OPT_SENSOR_RATE = (1<<0),
+            BATCH_OPT_POST_FILTER = (1<<1),
         };
 
         void rotate_to_next_sensor();
@@ -333,6 +335,7 @@ public:
         bool initialised : 1;
         bool isbh_sent : 1;
         bool _doing_sensor_rate_logging : 1;
+        bool _doing_post_filter_logging : 1;
         uint8_t instance : 3; // instance we are sending data for
         AP_InertialSensor::IMU_SENSOR_TYPE type : 1;
         uint16_t isb_seqnum;
@@ -402,7 +405,8 @@ private:
     bool _new_gyro_data[INS_MAX_INSTANCES];
 
     // optional notch filter on gyro
-    NotchFilterVector3fParam _notch_filter;
+    NotchFilterParams _notch_filter;
+    NotchFilterVector3f _gyro_notch_filter[INS_MAX_INSTANCES];
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
