@@ -835,14 +835,14 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     //are arming checks disabled?
     if (!do_arming_checks || checks_to_perform == ARMING_CHECK_NONE) {
         armed = true;
-        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed without checks");
         return true;
     }
 
     if (pre_arm_checks(true) && arm_checks(method)) {
         armed = true;
 
-        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed checks succeeded");
 
         //TODO: Log motor arming
         //Can't do this from this class until there is a unified logging library
