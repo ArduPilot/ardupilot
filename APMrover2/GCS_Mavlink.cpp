@@ -73,6 +73,30 @@ MAV_STATE GCS_MAVLINK_Rover::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
+void GCS_MAVLINK_Rover::send_position_target_global_int()
+{
+    Location target;
+    if (!rover.control_mode->get_desired_location(target)) {
+        return;
+    }
+    mavlink_msg_position_target_global_int_send(
+        chan,
+        AP_HAL::millis(), // time_boot_ms
+        MAV_FRAME_GLOBAL_INT, // targets are always global altitude
+        0xFFF8, // ignore everything except the x/y/z components
+        target.lat, // latitude as 1e7
+        target.lng, // longitude as 1e7
+        target.alt * 0.01f, // altitude is sent as a float
+        0.0f, // vx
+        0.0f, // vy
+        0.0f, // vz
+        0.0f, // afx
+        0.0f, // afy
+        0.0f, // afz
+        0.0f, // yaw
+        0.0f); // yaw_rate
+}
+
 void GCS_MAVLINK_Rover::send_nav_controller_output() const
 {
     if (!rover.control_mode->is_autopilot_mode()) {
@@ -438,6 +462,7 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_GPS2_RTK,
     MSG_NAV_CONTROLLER_OUTPUT,
     MSG_FENCE_STATUS,
+    MSG_POSITION_TARGET_GLOBAL_INT,
 };
 static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
