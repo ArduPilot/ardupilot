@@ -131,6 +131,31 @@ float ModeAuto::get_distance_to_destination() const
     return 0.0f;
 }
 
+// get desired location
+bool ModeAuto::get_desired_location(Location& destination) const
+{
+    switch (_submode) {
+    case Auto_WP:
+        if (g2.wp_nav.is_destination_valid()) {
+            destination = g2.wp_nav.get_destination();
+            return true;
+        }
+        return false;
+    case Auto_HeadingAndSpeed:
+        // no desired location for this submode
+        return false;
+    case Auto_RTL:
+        return rover.mode_rtl.get_desired_location(destination);
+    case Auto_Loiter:
+        return rover.mode_loiter.get_desired_location(destination);
+    case Auto_Guided:
+        return rover.mode_guided.get_desired_location(destination);\
+    }
+
+    // we should never reach here but just in case
+    return false;
+}
+
 // set desired location to drive to
 bool ModeAuto::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
