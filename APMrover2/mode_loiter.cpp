@@ -52,3 +52,10 @@ void ModeLoiter::update()
     calc_steering_to_heading(_desired_yaw_cd);
     calc_throttle(_desired_speed, true);
 }
+
+// get desired location
+bool ModeLoiter::get_desired_location(Location& destination) const
+{
+    destination = _destination;
+    return true;
+}
