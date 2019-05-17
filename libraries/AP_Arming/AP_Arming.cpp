@@ -111,6 +111,14 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BARO2GPS",     8,     AP_Arming, _baro2gps, 0),
 
+    // @Param: ARSPD_MAX
+    // @DisplayName: Maximum valid PreArm airspeed
+    // @Description: Maximum airspeed value to pass airspeed arming check. Set 0 to disable checking.
+    // @Range: 0.1 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("ARSPD_MAX",    9,     AP_Arming, _arspd_max, 0, AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_ROVER),
+
     // index 4 was VOLT_MIN, moved to AP_BattMonitor
     AP_GROUPEND
 };
@@ -209,9 +217,19 @@ bool AP_Arming::airspeed_checks(bool report)
             return true;
         }
         for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-            if (airspeed->enabled(i) && airspeed->use(i) && !airspeed->healthy(i)) {
-                check_failed(ARMING_CHECK_AIRSPEED, report, "Airspeed %d not healthy", i + 1);
-                return false;
+            if (airspeed->enabled(i) && airspeed->use(i)) {
+                if (!airspeed->healthy(i)) {
+                    check_failed(ARMING_CHECK_AIRSPEED, report, "Airspeed %d not healthy", i + 1);
+                    return false;
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+                } else if (_arspd_max >= 0.1f && airspeed->get_airspeed() > _arspd_max) {
+                    check_failed(ARMING_CHECK_AIRSPEED, report, "Airspeed %d is %.2f m/s over maximum", i + 1, airspeed->get_airspeed());
+                    return false;
+                } else if (airspeed->get_airspeed() < 0.01f) {
+                    check_failed(ARMING_CHECK_AIRSPEED, report, "Airspeed %d low; wrong TYPE/PIN or blocked", i + 1);
+                    return false;
+#endif
+                }
             }
         }
     }

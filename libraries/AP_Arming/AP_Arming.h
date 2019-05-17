@@ -86,6 +86,7 @@ protected:
     AP_Int8                 _rudder_arming;
     AP_Int32                 _required_mission_items;
     AP_Int8                 _baro2gps;
+    AP_Float                _arspd_max;
 
     // internal members
     bool                    armed;
