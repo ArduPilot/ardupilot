@@ -431,6 +431,7 @@ private:
         float current_tilt;
         float current_throttle;
         bool motors_active:1;
+        RC_Channel *rc_bias_ch;
     } tilt;
 
     enum tailsitter_input {

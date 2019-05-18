@@ -448,6 +448,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @DisplayName: Tilt bias channel
     // @Description: RC channel for manual forward bias of motor tilt.
     // @Range 0 16
+    // @RebootRequired: True
     AP_GROUPINFO("TILT_BIAS_CH", 14, QuadPlane, tilt.bias_chan, 0),
 
     AP_GROUPEND
@@ -704,6 +705,10 @@ bool QuadPlane::setup(void)
             // setup tilt servos for vectored yaw
             SRV_Channels::set_range(SRV_Channel::k_tiltMotorLeft,  1000);
             SRV_Channels::set_range(SRV_Channel::k_tiltMotorRight, 1000);
+        }
+
+        if (tilt.bias_chan > 0) {
+            tilt.rc_bias_ch = RC_Channels::rc_channel(tilt.bias_chan-1);
         }
     }
 
