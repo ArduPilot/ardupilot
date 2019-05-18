@@ -315,6 +315,10 @@ private:
     // manual throttle curve expo strength
     AP_Float throttle_expo;
 
+    // manual speed bias input
+    AP_Int8  spd_bias_chan;
+    RC_Channel *rc_bias_ch;
+
     // QACRO mode max roll/pitch/yaw rates
     AP_Float acro_roll_rate;
     AP_Float acro_pitch_rate;

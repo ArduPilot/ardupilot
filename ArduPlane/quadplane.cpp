@@ -443,6 +443,14 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("ACRO_YAW_RATE", 13, QuadPlane, acro_yaw_rate, 90),
+
+    // @Param: SPD_BIAS_CH
+    // @DisplayName: Speed bias channel
+    // @Description: RC channel for manual forward bias of airspeed.
+    // @Range 0 16
+    // @RebootRequired: True
+    AP_GROUPINFO("SPD_BIAS_CH", 14, QuadPlane, spd_bias_chan, 0),
+
     AP_GROUPEND
 };
 
@@ -602,6 +610,10 @@ bool QuadPlane::setup(void)
         frame_class.set(AP_Motors::MOTOR_FRAME_QUAD);
         setup_default_channels(4);
         break;
+    }
+
+    if (spd_bias_chan > 0) {
+        rc_bias_ch = RC_Channels::rc_channel(spd_bias_chan-1);
     }
 
     if (tailsitter.motor_mask == 0) {
@@ -2637,7 +2649,6 @@ void QuadPlane::Log_Write_QControl_Tuning()
     pos_control->write_log();
 }
 
-
 /*
   calculate the forward throttle percentage. The forward throttle can
   be used to assist with position hold and with landing approach. It
@@ -2647,18 +2658,25 @@ void QuadPlane::Log_Write_QControl_Tuning()
 int8_t QuadPlane::forward_throttle_pct(void)
 {
     /*
-      in non-VTOL modes or modes without a velocity controller. We
-      don't use it in QHOVER or QSTABILIZE as they are the primary
-      recovery modes for a quadplane and need to be as simple as
-      possible. They will drift with the wind
+      in non-VTOL modes or modes without a velocity controller.
     */
     if (!in_vtol_mode() ||
         !motors->armed() ||
         vel_forward.gain <= 0 ||
-        plane.control_mode == &plane.mode_qstabilize ||
-        plane.control_mode == &plane.mode_qhover ||
         plane.control_mode == &plane.mode_qautotune ||
         motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::GROUND_IDLE) {
+        return 0;
+    }
+
+    /*
+      Unless an RC channel is assigned for manual speed control,
+      we don't use forward throttle in QHOVER or QSTABILIZE as they are the primary
+      recovery modes for a quadplane and need to be as simple as
+      possible. They will drift with the wind
+     */
+    if (rc_bias_ch == nullptr &&
+        (plane.control_mode == &plane.mode_qstabilize ||
+         plane.control_mode == &plane.mode_qhover)) {
         return 0;
     }
 
@@ -2682,10 +2700,16 @@ int8_t QuadPlane::forward_throttle_pct(void)
         vel_forward.integrator = 0;
         return 0;
     }
-    Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
 
-    // find component of velocity error in fwd body frame direction
-    float fwd_vel_error = vel_error_body * Vector3f(1,0,0);
+    // get component of velocity error in fwd body frame direction
+    Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
+    float fwd_vel_error = vel_error_body.x;
+
+    // add in manual speed bias unless in a position controlled mode
+    if (plane.control_mode != &plane.mode_qloiter && rc_bias_ch != nullptr) {
+        float speed_bias = constrain_float((1.0f + rc_bias_ch->norm_input()) / 2, 0, 1);
+        fwd_vel_error += speed_bias * MAX(plane.aparm.airspeed_max, 5);
+    }
 
     // scale forward velocity error by maximum airspeed
     fwd_vel_error /= MAX(plane.aparm.airspeed_max, 5);
