@@ -443,6 +443,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("ACRO_YAW_RATE", 13, QuadPlane, acro_yaw_rate, 90),
+
+    // @Param: TILT_BIAS_CH
+    // @DisplayName: Tilt bias channel
+    // @Description: RC channel for manual forward bias of motor tilt.
+    // @Range 0 16
+    AP_GROUPINFO("TILT_BIAS_CH", 14, QuadPlane, tilt.bias_chan, 0),
+
     AP_GROUPEND
 };
 

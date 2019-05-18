@@ -426,6 +426,7 @@ private:
         AP_Int16 max_rate_down_dps;
         AP_Int8  max_angle_deg;
         AP_Int8  tilt_type;
+        AP_Int8  bias_chan;
         AP_Float tilt_yaw_angle;
         float current_tilt;
         float current_throttle;
