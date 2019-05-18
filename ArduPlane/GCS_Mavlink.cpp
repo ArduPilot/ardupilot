@@ -24,6 +24,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::TRAINING:
     case Mode::Number::ACRO:
     case Mode::Number::QACRO:
+    case Mode::Number::QACRO_FTHR:
         _base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case Mode::Number::STABILIZE:
@@ -31,6 +32,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::AUTOTUNE:
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::QSTABILIZE:
+    case Mode::Number::QSTAB_FTHR:
     case Mode::Number::QHOVER:
     case Mode::Number::QLOITER:
     case Mode::Number::QLAND:

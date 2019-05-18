@@ -67,6 +67,12 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::QACRO:
         ret = &mode_qacro;
         break;
+    case Mode::Number::QACRO_FTHR:
+        ret = &mode_qafthr;
+        break;
+    case Mode::Number::QSTAB_FTHR:
+        ret = &mode_qsfthr;
+        break;
     case Mode::Number::QAUTOTUNE:
         ret = &mode_qautotune;
         break;

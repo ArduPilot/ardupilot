@@ -38,6 +38,8 @@ public:
         QRTL          = 21,
         QAUTOTUNE     = 22,
         QACRO         = 23,
+        QACRO_FTHR    = 24,
+        QSTAB_FTHR    = 25,
     };
 
     // Constructor
@@ -420,6 +422,8 @@ class ModeQAcro : public Mode
 {
 public:
 
+    friend class ModeQAFTHR;
+
     Number mode_number() const override { return Number::QACRO; }
     const char *name() const override { return "QACO"; }
     const char *name4() const override { return "QACRO"; }
@@ -477,6 +481,42 @@ protected:
 
     bool takeoff_started;
     Location start_loc;
+
+    bool _enter() override;
+};
+
+class ModeQAFTHR : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::QACRO_FTHR; }
+    const char *name() const override { return "QACRO_FTHR"; }
+    const char *name4() const override { return "QAFT"; }
+
+    bool is_vtol_mode() const override { return true; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+protected:
+
+    bool _enter() override;
+};
+
+class ModeQSFTHR : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::QSTAB_FTHR; }
+    const char *name() const override { return "QSTAB_FTHR"; }
+    const char *name4() const override { return "QSFT"; }
+
+    bool is_vtol_mode() const override { return true; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+protected:
 
     bool _enter() override;
 };

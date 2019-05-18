@@ -484,6 +484,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("TAILSIT_GSCMIN", 18, QuadPlane, tailsitter.gain_scaling_min, 0.4),
 
+    // @Param: FWD_THR_MIX
+    // @DisplayName: Throttle to VTOL forward throttle mix
+    // @Description: Amount of forward throttle applied when above hover throttle.
+    // @Range 0 1
+    // @RebootRequired: False
+    AP_GROUPINFO("FWD_THR_MIX", 19, QuadPlane, fwd_thr_mix, 0.5),
+
     AP_GROUPEND
 };
 
@@ -650,6 +657,9 @@ bool QuadPlane::setup(void)
         setup_default_channels(4);
         break;
     }
+
+    // rc_fwd_thr_ch will be null if no channel is assigned
+    rc_fwd_thr_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
 
     if (tailsitter.motor_mask == 0) {
         // this is a normal quadplane
@@ -1184,6 +1194,12 @@ bool QuadPlane::is_flying_vtol(void) const
         return true;
     }
     if (plane.control_mode == &plane.mode_qacro) {
+        return true;
+    }
+    if (plane.control_mode == &plane.mode_qafthr) {
+        return true;
+    }
+    if (plane.control_mode == &plane.mode_qsfthr) {
         return true;
     }
     if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
@@ -1999,9 +2015,11 @@ void QuadPlane::control_run(void)
 
     switch (plane.control_mode->mode_number()) {
     case Mode::Number::QACRO:
+    case Mode::Number::QACRO_FTHR:
         control_qacro();
         break;
     case Mode::Number::QSTABILIZE:
+    case Mode::Number::QSTAB_FTHR:
         control_stabilize();
         break;
     case Mode::Number::QHOVER:
@@ -2025,7 +2043,8 @@ void QuadPlane::control_run(void)
 
     // we also stabilize using fixed wing surfaces
     float speed_scaler = plane.get_speed_scaler();
-    if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
+    if (plane.control_mode->mode_number() == Mode::Number::QACRO ||
+        plane.control_mode->mode_number() == Mode::Number::QACRO_FTHR) {
         plane.stabilize_acro(speed_scaler);
     } else {
         plane.stabilize_roll(speed_scaler);
@@ -2050,6 +2069,7 @@ bool QuadPlane::init_mode(void)
 
     switch (plane.control_mode->mode_number()) {
     case Mode::Number::QSTABILIZE:
+    case Mode::Number::QSTAB_FTHR:
         init_stabilize();
         break;
     case Mode::Number::QHOVER:
@@ -2072,6 +2092,7 @@ bool QuadPlane::init_mode(void)
         return qautotune.init();
 #endif
     case Mode::Number::QACRO:
+    case Mode::Number::QACRO_FTHR:
         init_qacro();
         break;
     default:
@@ -2164,6 +2185,8 @@ bool QuadPlane::in_vtol_mode(void) const
             plane.control_mode == &plane.mode_qland ||
             plane.control_mode == &plane.mode_qrtl ||
             plane.control_mode == &plane.mode_qacro ||
+            plane.control_mode == &plane.mode_qafthr ||
+            plane.control_mode == &plane.mode_qsfthr ||
             plane.control_mode == &plane.mode_qautotune ||
             ((plane.control_mode == &plane.mode_guided || plane.control_mode == &plane.mode_avoidADSB) && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
@@ -2824,24 +2847,57 @@ void QuadPlane::Log_Write_QControl_Tuning()
   reduces the need for down pitch which reduces load on the vertical
   lift motors.
  */
-int8_t QuadPlane::forward_throttle_pct(void)
+int8_t QuadPlane::forward_throttle_pct(bool tiltrotor)
 {
+    // allow tiltrotor motors to tilt in response to forward throttle when disarmed
+    if (!tiltrotor) {
+        // disable forward motor if not in a VTOL mode
+        if (!in_vtol_mode()) {
+            return 0;
+        }
+        // disable forward motor if disarmed or spooled down
+        if (!motors->armed() ||
+            motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::GROUND_IDLE) {
+            return 0;
+        }
+    }
     /*
-      in non-VTOL modes or modes without a velocity controller. We
-      don't use it in QHOVER or QSTABILIZE as they are the primary
-      recovery modes for a quadplane and need to be as simple as
-      possible. They will drift with the wind
+      In QxFTHR modes, mix throttle to fwd throttle.
     */
-    if (!in_vtol_mode() ||
-        !motors->armed() ||
-        vel_forward.gain <= 0 ||
-        plane.control_mode == &plane.mode_qstabilize ||
-        plane.control_mode == &plane.mode_qhover ||
-        plane.control_mode == &plane.mode_qautotune ||
-        motors->get_desired_spool_state() < AP_Motors::DesiredSpoolState::GROUND_IDLE) {
+    if (plane.control_mode == &plane.mode_qafthr ||
+        plane.control_mode == &plane.mode_qsfthr) {
+
+        float offset = 0;
+        if (rc_fwd_thr_ch != nullptr) {
+            // set tilt zero offset from rc_fwd_thr_ch
+            offset = 0.25f * rc_fwd_thr_ch->norm_input();
+        }
+
+        float fwd_thr = 0;
+        if (!is_zero(fwd_thr_mix)) {
+            // calculate mix proportional to throttle above hover
+            // *** this relies on hover thrust being at center stick  ***
+            // get scaled throttle input and normalize to [0,1]
+            float thr = plane.channel_throttle->get_control_in();
+            thr /= plane.channel_throttle->get_range();
+
+            // set forward throttle to thr_max * mix
+            fwd_thr = constrain_float(fwd_thr_mix * 2 * (thr - 0.5f + offset), 0, 1);
+        }
+        return 100.0f * fwd_thr;
+    }
+
+    /*
+      in qautotune mode or modes without a velocity controller
+    */
+    if (vel_forward.gain <= 0 ||
+        plane.control_mode == &plane.mode_qautotune) {
         return 0;
     }
 
+    /*
+      in modes with a velocity controller
+    */
     float deltat = (AP_HAL::millis() - vel_forward.last_ms) * 0.001f;
     if (deltat > 1 || deltat < 0) {
         vel_forward.integrator = 0;
@@ -2862,10 +2918,10 @@ int8_t QuadPlane::forward_throttle_pct(void)
         vel_forward.integrator = 0;
         return 0;
     }
+    // get component of velocity error in fwd body frame direction
     Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
 
-    // find component of velocity error in fwd body frame direction
-    float fwd_vel_error = vel_error_body * Vector3f(1,0,0);
+    float fwd_vel_error = vel_error_body.x;
 
     // scale forward velocity error by maximum airspeed
     fwd_vel_error /= MAX(plane.aparm.airspeed_max, 5);
