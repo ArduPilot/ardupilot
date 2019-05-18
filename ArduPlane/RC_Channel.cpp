@@ -72,6 +72,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::MANUAL:
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
+    case AUX_FUNC::FWD_THR:
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
@@ -89,7 +90,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
         // handle in parent class
         RC_Channel::init_aux_function(ch_option, ch_flag);
         break;
-}
+    }
 }
 
 // do_aux_function - implement the function invoked by auxillary switches
@@ -135,6 +136,9 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
 
     case AUX_FUNC::FLAP:
         break; // flap input label, nothing to do
+
+    case AUX_FUNC::FWD_THR:
+        break;
 
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);

@@ -92,26 +92,45 @@ void QuadPlane::tiltrotor_continuous_update(void)
     tilt.current_throttle = constrain_float(motors_throttle,
                                             tilt.current_throttle-max_change,
                                             tilt.current_throttle+max_change);
-    
+
     /*
       we are in a VTOL mode. We need to work out how much tilt is
-      needed. There are 3 strategies we will use:
+      needed. There are 4 strategies we will use:
 
-      1) in QSTABILIZE or QHOVER the angle will be set to zero. This
-         enables these modes to be used as a safe recovery mode.
+      1a) In QAUTOTUNE mode the angle will be set to zero.
+      1b) In QACRO, QSTABILIZE and QHOVER modes with rc_fwd_thr_ch null, the angle will be set to zero.
 
-      2) in fixed wing assisted flight or velocity controlled modes we
+      2) In QACRO, QSTABILIZE and QHOVER modes with rc_fwd_thr_ch assigned to a valid RC channel:
+           The forward throttle is determined by RC input.
+
+      3) In fixed wing assisted flight or velocity controlled modes we
          will set the angle based on the demanded forward throttle,
          with a maximum tilt given by Q_TILT_MAX. This relies on
-         Q_VFWD_GAIN being set
+         Q_VFWD_GAIN being set.
 
-      3) if we are in TRANSITION_TIMER mode then we are transitioning
+      4) if we are in TRANSITION_TIMER mode then we are transitioning
          to forward flight and should put the rotors all the way forward
     */
-    if (plane.control_mode == &plane.mode_qstabilize ||
-        plane.control_mode == &plane.mode_qhover ||
-        plane.control_mode == &plane.mode_qautotune) {
+
+    if (plane.control_mode == &plane.mode_qautotune) {
+        // case 1a
         tiltrotor_slew(0);
+        return;
+    }
+
+    // if not transitioning to fixed wing and in QACRO, QSTABILIZE or QHOVER mode
+    if (!assisted_flight &&
+        (plane.control_mode == &plane.mode_qacro ||
+         plane.control_mode == &plane.mode_qstabilize ||
+         plane.control_mode == &plane.mode_qhover)) {
+        if (rc_fwd_thr_ch == nullptr) {
+            // case 1b
+            tiltrotor_slew(0);
+        } else {
+            // case 2) manual control of forward throttle
+            float settilt = .01f * forward_throttle_pct(true);
+            tiltrotor_slew(settilt);
+        }
         return;
     }
 
@@ -140,6 +159,7 @@ void QuadPlane::tiltrotor_binary_slew(bool forward)
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, forward?1000:0);
 
     // rate limiting current_tilt has the effect of delaying throttle in tiltrotor_binary_update
+    // The rate used here is (tilt.max_rate_down_dps > 0) ? tilt.max_rate_down_dps, tilt.max_rate_up_dps
     float max_change = tilt_max_change(!forward);
     if (forward) {
         tilt.current_tilt = constrain_float(tilt.current_tilt+max_change, 0, 1);
