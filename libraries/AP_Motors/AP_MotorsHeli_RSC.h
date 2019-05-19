@@ -153,9 +153,9 @@ private:
     float           calculate_desired_throttle(float collective_in);
 };
 
-class RSCThrCrvInt16Param {
+class RSCThrCrvParam {
 public:
-    RSCThrCrvInt16Param(void);
+    RSCThrCrvParam(void);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -174,9 +174,9 @@ private:
 
 };
 
-class RSCGovFloatParam {
+class RSCGovParam {
 public:
-    RSCGovFloatParam(void);
+    RSCGovParam(void);
 
     static const struct AP_Param::GroupInfo var_info[];
 
