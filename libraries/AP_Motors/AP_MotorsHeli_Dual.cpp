@@ -207,7 +207,7 @@ void AP_MotorsHeli_Dual::set_desired_rotor_speed(float desired_speed)
 }
 
 // set_rotor_rpm - used for governor with speed sensor
-void AP_MotorsHeli_Dual::set_rpm(int16_t rotor_rpm)
+void AP_MotorsHeli_Dual::set_rpm(float rotor_rpm)
 {
     _rotor.set_rotor_rpm(rotor_rpm);
 }
