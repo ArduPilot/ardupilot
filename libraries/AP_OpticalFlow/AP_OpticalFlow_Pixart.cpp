@@ -21,7 +21,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Math/edc.h>
+#include <AP_Math/crc.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <utility>
 #include "OpticalFlow.h"
