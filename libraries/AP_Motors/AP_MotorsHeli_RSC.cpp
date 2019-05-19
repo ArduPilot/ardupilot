@@ -20,14 +20,14 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo RSCThrCrvInt16Param::var_info[] = {
+const AP_Param::GroupInfo RSCThrCrvParam::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable settings for RSC Setpoint
     // @Description: Automatically set when RSC Setpoint mode is selected. Should not be set manually.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, RSCThrCrvInt16Param, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, RSCThrCrvParam, enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: 000
     // @DisplayName: Throttle Servo Position in percent for 0 percent collective
@@ -35,7 +35,7 @@ const AP_Param::GroupInfo RSCThrCrvInt16Param::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("000", 2, RSCThrCrvInt16Param, thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
+    AP_GROUPINFO("000", 2, RSCThrCrvParam, thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
 
     // @Param: 025
     // @DisplayName: Throttle Servo Position in percent for 25 percent collective
@@ -43,7 +43,7 @@ const AP_Param::GroupInfo RSCThrCrvInt16Param::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("025", 3, RSCThrCrvInt16Param, thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
+    AP_GROUPINFO("025", 3, RSCThrCrvParam, thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
 
     // @Param: 050
     // @DisplayName: Throttle Servo Position in percent for 50 percent collective
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo RSCThrCrvInt16Param::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("050", 4, RSCThrCrvInt16Param, thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
+    AP_GROUPINFO("050", 4, RSCThrCrvParam, thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
 
     // @Param: 075
     // @DisplayName: Throttle Servo Position in percent for 75 percent collective
@@ -59,7 +59,7 @@ const AP_Param::GroupInfo RSCThrCrvInt16Param::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("075", 5, RSCThrCrvInt16Param, thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
+    AP_GROUPINFO("075", 5, RSCThrCrvParam, thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
 
     // @Param: 100
     // @DisplayName: Throttle Servo Position in percent for 100 percent collective
@@ -67,19 +67,19 @@ const AP_Param::GroupInfo RSCThrCrvInt16Param::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("100", 6, RSCThrCrvInt16Param, thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
+    AP_GROUPINFO("100", 6, RSCThrCrvParam, thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
 
     AP_GROUPEND
 };
 
-const AP_Param::GroupInfo RSCGovFloatParam::var_info[] = {
+const AP_Param::GroupInfo RSCGovParam::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable settings for RSC Governor
     // @Description: Automatically set when RSC Governor mode is selected. Should not be set manually.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, RSCGovFloatParam, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, RSCGovParam, enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: SETPNT
     // @DisplayName: Governor RPM Reference Setting
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo RSCGovFloatParam::var_info[] = {
     // @Range: 800 3500
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("SETPNT", 2, RSCGovFloatParam, reference, AP_MOTORS_HELI_RSC_GOVERNOR_SETPNT_DEFAULT),
+    AP_GROUPINFO("SETPNT", 2, RSCGovParam, reference, AP_MOTORS_HELI_RSC_GOVERNOR_SETPNT_DEFAULT),
 
     // @Param: DISGAG
     // @DisplayName: Throttle Percentage for Governor Disengage
@@ -95,7 +95,7 @@ const AP_Param::GroupInfo RSCGovFloatParam::var_info[] = {
     // @Range: 0 50
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("DISGAG", 3, RSCGovFloatParam, disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT),
+    AP_GROUPINFO("DISGAG", 3, RSCGovParam, disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT),
 
     // @Param: DROOP
     // @DisplayName: Governor Droop Response Setting
@@ -103,7 +103,7 @@ const AP_Param::GroupInfo RSCGovFloatParam::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("DROOP", 4, RSCGovFloatParam, droop_response, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
+    AP_GROUPINFO("DROOP", 4, RSCGovParam, droop_response, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
 
     // @Param: THRCURVE
     // @DisplayName: Governor Throttle Curve Gain
@@ -111,7 +111,7 @@ const AP_Param::GroupInfo RSCGovFloatParam::var_info[] = {
     // @Range: 50 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("THRCURVE", 5, RSCGovFloatParam, thrcurve, AP_MOTORS_HELI_RSC_GOVERNOR_THRCURVE_DEFAULT),
+    AP_GROUPINFO("THRCURVE", 5, RSCGovParam, thrcurve, AP_MOTORS_HELI_RSC_GOVERNOR_THRCURVE_DEFAULT),
     
     // @Param: RANGE
     // @DisplayName: Governor Operational Range
@@ -119,17 +119,17 @@ const AP_Param::GroupInfo RSCGovFloatParam::var_info[] = {
     // @Range: 50 200
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("RANGE", 6, RSCGovFloatParam, range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
+    AP_GROUPINFO("RANGE", 6, RSCGovParam, range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
 
     AP_GROUPEND
 };
 
-RSCThrCrvInt16Param::RSCThrCrvInt16Param(void)
+RSCThrCrvParam::RSCThrCrvParam(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-RSCGovFloatParam::RSCGovFloatParam(void)
+RSCGovParam::RSCGovParam(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

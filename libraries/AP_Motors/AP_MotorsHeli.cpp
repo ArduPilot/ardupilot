@@ -157,11 +157,11 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Group: RSC_CRV_
     // @Path: AP_MotorsHeli_RSC.cpp
-    AP_SUBGROUPINFO(_rsc_thrcrv, "RSC_CRV_", 27, AP_MotorsHeli, RSCThrCrvInt16Param),
+    AP_SUBGROUPINFO(_rsc_thrcrv, "RSC_CRV_", 27, AP_MotorsHeli, RSCThrCrvParam),
 
     // @Group: RSC_GOV_
     // @Path: AP_MotorsHeli_RSC.cpp
-    AP_SUBGROUPINFO(_rsc_gov, "RSC_GOV_", 28, AP_MotorsHeli, RSCGovFloatParam),
+    AP_SUBGROUPINFO(_rsc_gov, "RSC_GOV_", 28, AP_MotorsHeli, RSCGovParam),
 
     AP_GROUPEND
 };
