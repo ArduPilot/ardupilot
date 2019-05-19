@@ -37,6 +37,7 @@ public:
         return new Sailboat(home_str, frame_str);
     }
 
+    bool on_ground() const override {return true;};
 private:
 
     // calculate the lift and drag as values from 0 to 1 given an apparent wind speed in m/s and angle-of-attack in degrees
@@ -60,6 +61,13 @@ private:
     const float drag_curve[18] = {0.10f, 0.10f, 0.20f, 0.40f, 0.80f, 1.20f, 1.50f, 1.70f, 1.90f, 1.95f,  1.90f,  1.70f,  1.50f,  1.20f,  0.80f,  0.40f,  0.20f,  0.10f};
 
     const float mass = 2.0f;
+
+    // simulate basic waves / swell
+    void update_wave(float delta_time);
+    Vector3f wave_gyro; // rad/s
+    float wave_heave; // m/s/s
+    float wave_phase; // rads
+
 };
 
 } // namespace SITL
