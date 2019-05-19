@@ -154,8 +154,8 @@ protected:
         SERVO_CONTROL_MODE_MANUAL_OSCILLATE,
     };
 
-    RSCThrCrvInt16Param   _rsc_thrcrv;
-    RSCGovFloatParam      _rsc_gov;
+    RSCThrCrvParam   _rsc_thrcrv;
+    RSCGovParam      _rsc_gov;
 
     // output - sends commands to the motors
     void output_armed_stabilizing() override;
