@@ -84,7 +84,7 @@ public:
     float       get_rotor_speed() const;
     
     // set_rotor_rpm - when speed sensor is available for governor
-    void        set_rotor_rpm(int16_t rotor_rpm) {_rotor_rpm = (float)rotor_rpm; }
+    void        set_rotor_rpm(float rotor_rpm) {_rotor_rpm = (float)rotor_rpm; }
     
     // get_governor_output
     float       get_governor_output() const { return _governor_output; }

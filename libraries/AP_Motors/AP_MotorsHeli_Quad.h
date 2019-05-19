@@ -40,7 +40,7 @@ public:
     void output_to_motors() override;
 
     // set_rpm - for rotor speed governor
-    void set_rpm(int16_t rotor_rpm) override;
+    void set_rpm(float rotor_rpm) override;
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(float desired_speed) override;
