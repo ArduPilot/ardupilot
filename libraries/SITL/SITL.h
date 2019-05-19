@@ -255,6 +255,14 @@ public:
 
     AP_Int8 gnd_behav;
 
+    struct {
+        AP_Int8 enable;     // 0: disabled, 1: roll and pitch, 2: roll, pitch and heave
+        AP_Float length;    // m
+        AP_Float amp;       // m
+        AP_Float direction; // deg (direction wave is coming from)
+        AP_Float speed;     // m/s
+    } wave;
+
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);
