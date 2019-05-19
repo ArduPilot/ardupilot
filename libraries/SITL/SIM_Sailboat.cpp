@@ -26,10 +26,16 @@
 #include <string.h>
 #include <stdio.h>
 
+extern const AP_HAL::HAL& hal;
+
 namespace SITL {
 
 #define STEERING_SERVO_CH   0   // steering controlled by servo output 1
 #define MAINSAIL_SERVO_CH   3   // main sail controlled by servo output 4
+
+    // very roughly sort of a stability factors for waves
+#define WAVE_ANGLE_GAIN 1
+#define WAVE_HEAVE_GAIN 1
 
 Sailboat::Sailboat(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
@@ -94,6 +100,61 @@ float Sailboat::get_lat_accel(float steering, float speed) const
     return accel;
 }
 
+// simulate basic waves / swell
+void Sailboat::update_wave(float delta_time)
+{
+    const float wave_heading = sitl->wave.direction;
+    const float wave_speed = sitl->wave.speed;
+    const float wave_lenght = sitl->wave.length;
+    const float wave_amp = sitl->wave.amp;
+
+    // apply rate propositional to error between boat angle and water angle
+    // this gives a 'stability' effect
+    float r, p, y;
+    dcm.to_euler(&r, &p, &y); 
+
+    // if not armed don't do waves, to allow gyro init
+    if (sitl->wave.enable == 0 || !hal.util->get_soft_armed() || is_zero(wave_amp) ) { 
+        wave_gyro = Vector3f(-r,-p,0.0f) * WAVE_ANGLE_GAIN;
+        wave_heave = -velocity_ef.z * WAVE_HEAVE_GAIN;
+        wave_phase = 0.0f;
+        return;
+    }
+
+    // calculate the sailboat speed in the direction of the wave
+    const float boat_speed = velocity_ef.x * sinf(radians(wave_heading)) + velocity_ef.y * cosf(radians(wave_heading));
+
+    // update the wave phase
+    const float aprarent_wave_distance = (wave_speed - boat_speed) * delta_time;
+    const float apparent_wave_phase_change = (aprarent_wave_distance / wave_lenght) * M_2PI;
+
+    wave_phase += apparent_wave_phase_change;
+    wave_phase = wrap_2PI(wave_phase);
+
+    // calculate the angles at this phase on the wave
+    // use basic sine wave, dy/dx of sine = cosine
+    // atan( cosine ) = wave angle
+    const float wave_slope = (wave_amp * 0.5f) * (M_2PI / wave_lenght) * cosf(wave_phase);
+    const float wave_angle = atanf(wave_slope);
+
+    // convert wave angle to vehicle frame
+    const float heading_dif = wave_heading - y;
+    float angle_error_x = (sinf(heading_dif) * wave_angle) - r;
+    float angle_error_y = (cosf(heading_dif) * wave_angle) - p;
+
+    // apply gain
+    wave_gyro.x = angle_error_x * WAVE_ANGLE_GAIN;
+    wave_gyro.y = angle_error_y * WAVE_ANGLE_GAIN;
+    wave_gyro.z = 0.0f;
+
+    // calculate wave height (NED)
+    if (sitl->wave.enable == 2) {
+        wave_heave = (wave_slope - velocity_ef.z) * WAVE_HEAVE_GAIN;
+    } else {
+        wave_heave = 0.0f;
+    }
+}
+
 /*
   update the sailboat simulation by one time step
  */
@@ -145,7 +206,7 @@ void Sailboat::update(const struct sitl_input &input)
     // yaw rate in degrees/s
     float yaw_rate = get_yaw_rate(steering, speed);
 
-    gyro = Vector3f(0,0,radians(yaw_rate));
+    gyro = Vector3f(0,0,radians(yaw_rate)) + wave_gyro;
 
     // update attitude
     dcm.rotate(gyro * delta_time);
@@ -165,10 +226,15 @@ void Sailboat::update(const struct sitl_input &input)
     accel_body.y += radians(yaw_rate) * speed;
 
     // now in earth frame
-    Vector3f accel_earth = dcm * accel_body;
+    // remove roll and pitch effects from waves
+    float r, p, y;
+    dcm.to_euler(&r, &p, &y);
+    Matrix3f temp_dcm;
+    temp_dcm.from_euler(0.0f, 0.0f, y);
+    Vector3f accel_earth = temp_dcm * accel_body;
 
     // we are on the ground, so our vertical accel is zero
-    accel_earth.z = 0;
+    accel_earth.z = 0 + wave_heave;
 
     // work out acceleration as seen by the accelerometers. It sees the kinematic
     // acceleration (ie. real movement), plus gravity
@@ -186,6 +252,10 @@ void Sailboat::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    // update wave calculations
+    update_wave(delta_time);
+
 }
 
 } // namespace SITL
