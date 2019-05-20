@@ -16,6 +16,7 @@
 /*
   control of internal combustion engines (starter, ignition and choke)
  */
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RPM/AP_RPM.h>
