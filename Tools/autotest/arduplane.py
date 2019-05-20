@@ -502,6 +502,94 @@ class AutoTestPlane(AutoTest):
         self.mavproxy.expect("Auto disarmed")
         self.progress("Mission OK")
 
+    def fly_do_change_speed(self):
+        # the following lines ensure we revert these parameter values
+        # - DO_CHANGE_AIRSPEED is a permanent vehicle change!
+        self.set_parameter("TRIM_ARSPD_CM", self.get_parameter("TRIM_ARSPD_CM"))
+        self.set_parameter("MIN_GNDSPD_CM", self.get_parameter("MIN_GNDSPD_CM"))
+
+        self.progress("Takeoff")
+        self.takeoff(alt=100)
+        self.set_rc(3, 1500)
+        # ensure we know what the airspeed is:
+        self.progress("Entering guided and flying somewhere constant")
+        self.change_mode("GUIDED")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            0,
+            0,
+            0,
+            0,
+            12345, # lat*1e7
+            12345, # lon*1e7
+            100    # alt
+        )
+        self.delay_sim_time(10)
+        self.progress("Ensuring initial speed is known and relatively constant")
+        initial_speed = 21.5;
+        timeout = 10
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                break
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            self.progress("GroundSpeed: %f want=%f" %
+                          (m.groundspeed, initial_speed))
+            if abs(initial_speed - m.groundspeed) > 1:
+                raise NotAchievedException("Initial speed not as expected (want=%f got=%f" % (initial_speed, m.groundspeed))
+
+        self.progress("Setting groundspeed")
+        new_target_groundspeed = initial_speed + 5
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            1, # groundspeed
+            new_target_groundspeed,
+            -1, # throttle / no change
+            0, # absolute values
+            0,
+            0,
+            0)
+        self.wait_groundspeed(new_target_groundspeed-0.5, new_target_groundspeed+0.5, timeout=40)
+        self.progress("Adding some wind, ensuring groundspeed holds")
+        self.set_parameter("SIM_WIND_SPD", 5)
+        self.delay_sim_time(5)
+        self.wait_groundspeed(new_target_groundspeed-0.5, new_target_groundspeed+0.5, timeout=40)
+        self.set_parameter("SIM_WIND_SPD", 0)
+
+        self.progress("Setting airspeed")
+        new_target_airspeed = initial_speed + 5
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            0, # airspeed
+            new_target_airspeed,
+            -1, # throttle / no change
+            0, # absolute values
+            0,
+            0,
+            0)
+        self.wait_groundspeed(new_target_airspeed-0.5, new_target_airspeed+0.5)
+        self.progress("Adding some wind, hoping groundspeed increases/decreases")
+        self.set_parameter("SIM_WIND_SPD", 5)
+        self.set_parameter("SIM_WIND_DIR", 270)
+        self.delay_sim_time(5)
+        timeout = 10
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not achieve groundspeed delta")
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            delta = abs(m.airspeed - m.groundspeed)
+            want_delta = 4
+            self.progress("groundspeed and airspeed should be different (have=%f want=%f)" % (delta, want_delta))
+            if delta > want_delta:
+                break
+        filename = os.path.join(testdir, "flaps.txt")
+        self.progress("Using %s to fly home" % filename)
+        self.load_mission(filename)
+        self.change_mode("AUTO")
+        self.mavproxy.send('wp set 7\n')
+        self.mav.motors_disarmed_wait()
+
     def fly_flaps(self):
         """Test flaps functionality."""
         filename = os.path.join(testdir, "flaps.txt")
@@ -936,6 +1024,8 @@ class AutoTestPlane(AutoTest):
              self.test_throttle_failsafe),
 
             ("TestFlaps", "Flaps", self.fly_flaps),
+
+            ("DO_CHANGE_SPEED", "Test mavlink DO_CHANGE_SPEED command", self.fly_do_change_speed),
 
             ("MainFlight",
              "Lots of things in one flight",
