@@ -1,6 +1,7 @@
 /*
   implement a file store for embedded firmware images
  */
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
