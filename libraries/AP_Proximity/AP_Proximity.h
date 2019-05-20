@@ -22,7 +22,6 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
 #define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
-#define PROXIMITY_YAW_CORRECTION_DEFAULT    22  // default correction for sensor error in yaw
 #define PROXIMITY_MAX_IGNORE                6   // up to six areas can be ignored
 #define PROXIMITY_MAX_DIRECTION 8
 #define PROXIMITY_SENSOR_ID_START 10
