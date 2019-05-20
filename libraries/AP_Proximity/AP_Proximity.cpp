@@ -50,7 +50,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Units: deg
     // @Range: -180 180
     // @User: Standard
-    AP_GROUPINFO("_YAW_CORR", 3, AP_Proximity, _yaw_correction[0], PROXIMITY_YAW_CORRECTION_DEFAULT),
+    AP_GROUPINFO("_YAW_CORR", 3, AP_Proximity, _yaw_correction[0], 0),
 
     // @Param: _IGN_ANG1
     // @DisplayName: Proximity sensor ignore angle 1
@@ -170,7 +170,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Units: deg
     // @Range: -180 180
     // @User: Standard
-    AP_GROUPINFO("2_YAW_CORR", 18, AP_Proximity, _yaw_correction[1], PROXIMITY_YAW_CORRECTION_DEFAULT),
+    AP_GROUPINFO("2_YAW_CORR", 18, AP_Proximity, _yaw_correction[1], 0),
 #endif
 
     AP_GROUPEND
