@@ -29,6 +29,7 @@
 #include <SITL/SIM_Submarine.h>
 #include <SITL/SIM_SilentWings.h>
 #include <SITL/SIM_Morse.h>
+#include <SITL/SIM_AirSim.h>
 
 #include <signal.h>
 #include <stdio.h>
@@ -130,6 +131,7 @@ static const struct {
     { "vectored",           Submarine::create },
     { "silentwings",        SilentWings::create },
     { "morse",              Morse::create },
+    { "airsim",             AirSim::create},
 };
 
 void SITL_State::_set_signal_handlers(void) const
