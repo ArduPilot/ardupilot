@@ -25,6 +25,7 @@
 extern const AP_HAL::HAL& hal;
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include "RC_Channel.h"
 
@@ -136,13 +137,18 @@ void RC_Channels::read_aux_all()
         // exit immediately when no RC input
         return;
     }
+    bool need_log = false;
 
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         RC_Channel *c = channel(i);
         if (c == nullptr) {
             continue;
         }
-        c->read_aux();
+        need_log |= c->read_aux();
+    }
+    if (need_log) {
+        // guarantee that we log when a switch changes
+        AP::logger().Write_RCIN();
     }
 }
 

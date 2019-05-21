@@ -475,22 +475,25 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     }
 }
 
-void RC_Channel::read_aux()
+/*
+  read an aux channel. Return true if a switch has changed
+ */
+bool RC_Channel::read_aux()
 {
     const aux_func_t _option = (aux_func_t)option.get();
     if (_option == AUX_FUNC::DO_NOTHING) {
         // may wish to add special cases for other "AUXSW" things
         // here e.g. RCMAP_ROLL etc once they become options
-        return;
+        return false;
     }
     aux_switch_pos_t new_position;
     if (!read_3pos_switch(new_position)) {
-        return;
+        return false;
     }
     const aux_switch_pos_t old_position = old_switch_position();
     if (new_position == old_position) {
         debounce.count = 0;
-        return;
+        return false;
     }
     if (debounce.new_position != new_position) {
         debounce.new_position = new_position;
@@ -499,12 +502,13 @@ void RC_Channel::read_aux()
     // a value of 2 means we need 3 values in a row with the same
     // value to activate
     if (debounce.count++ < 2) {
-        return;
+        return false;
     }
 
     // debounced; undertake the action:
     do_aux_function(_option, new_position);
     set_old_switch_position(new_position);
+    return true;
 }
 
 
