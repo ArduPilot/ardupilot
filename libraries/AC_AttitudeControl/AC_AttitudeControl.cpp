@@ -362,7 +362,7 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float 
     error_quat.to_axis_angle(att_error);
 
     // limit yaw error
-    if (fabsf(att_error.z) < AC_ATTITUDE_THRUST_ERROR_ANGLE) {
+    if (fabsf(att_error.z) < 2*AC_ATTITUDE_THRUST_ERROR_ANGLE) {
         // update heading
         _attitude_target_euler_angle.z = wrap_PI(_attitude_target_euler_angle.z + euler_yaw_rate * _dt);
     }
@@ -423,7 +423,7 @@ void AC_AttitudeControl::input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(float 
     error_quat.to_axis_angle(att_error);
 
     // limit yaw error
-    if (fabsf(att_error.z) < AC_ATTITUDE_THRUST_ERROR_ANGLE) {
+    if (fabsf(att_error.z) < 2*AC_ATTITUDE_THRUST_ERROR_ANGLE) {
         // update heading
         float yaw_rate = euler_yaw_rate * spitch + body_roll * cpitch;
         _attitude_target_euler_angle.z = wrap_PI(_attitude_target_euler_angle.z + yaw_rate * _dt);
