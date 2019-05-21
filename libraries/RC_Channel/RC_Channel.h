@@ -97,7 +97,7 @@ public:
 
     // auxillary switch support:
     void init_aux();
-    void read_aux();
+    bool read_aux();
 
     // Aux Switch enumeration
     enum class AUX_FUNC {
