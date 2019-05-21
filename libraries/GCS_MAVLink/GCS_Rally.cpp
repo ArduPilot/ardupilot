@@ -183,3 +183,9 @@ void MissionItemProtocol_Rally::complete(const GCS_MAVLINK &_link)
     _link.send_text(MAV_SEVERITY_INFO, "Rally points received");
     AP::logger().Write_Rally();
 }
+
+bool MissionItemProtocol_Rally::clear_all_items()
+{
+    rally.truncate(0);
+    return true;
+}
