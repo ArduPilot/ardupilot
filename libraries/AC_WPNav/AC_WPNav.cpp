@@ -262,13 +262,15 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     _track_length_xy = safe_sqrt(sq(pos_delta.x)+sq(pos_delta.y));  // get horizontal track length (used to decide if we should update yaw)
 
     // calculate each axis' percentage of the total distance to the destination
-    if (is_zero(_track_length)) {
+    if (_track_length <= WPNAV_WP_RADIUS_MIN) {
         // avoid possible divide by zero
         _pos_delta_unit.x = 0;
         _pos_delta_unit.y = 0;
         _pos_delta_unit.z = 0;
-    }else{
-        _pos_delta_unit = pos_delta/_track_length;
+        _track_length = 0.0f;
+        _track_length_xy = 0.0f;
+    } else {
+        _pos_delta_unit = pos_delta / _track_length;
     }
 
     // calculate leash lengths
