@@ -161,3 +161,7 @@ private:
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);  
 };
+
+namespace AP {
+    AP_Proximity *proximity();
+};

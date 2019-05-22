@@ -465,3 +465,12 @@ bool AP_Proximity::sensor_failed() const
 }
 
 AP_Proximity *AP_Proximity::_singleton;
+
+namespace AP {
+
+AP_Proximity *proximity()
+{
+    return AP_Proximity::get_singleton();
+}
+
+}
