@@ -822,7 +822,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
 
         AP_Mission::Mission_Command cmd;
-        if (AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd) == MAV_MISSION_ACCEPTED) {
+        if (MissionItemProtocol_Waypoints::convert_COMMAND_LONG_to_Mission_Command(packet, cmd) == MAV_MISSION_ACCEPTED) {
             plane.do_change_speed(cmd);
             return MAV_RESULT_ACCEPTED;
         }
