@@ -944,12 +944,6 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, bool log_radio)
     }
 }
 
-uint16_t GCS::sys_status_errors1()
-{
-    const uint32_t errors = AP::internalerror().errors();
-    return errors & 0xffff;
-}
-
 /*
   handle an incoming mission item
   return true if this is the last mission item, otherwise false
@@ -4225,6 +4219,10 @@ void GCS_MAVLINK::send_sys_status()
 
     gcs().get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health);
 
+    const uint32_t errors = AP::internalerror().errors();
+    const uint16_t errors1 = errors & 0xffff;
+    const uint16_t errors2 = (errors>>16) & 0xffff;
+
     mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
@@ -4236,8 +4234,8 @@ void GCS_MAVLINK::send_sys_status()
         battery_remaining,      // in %
         0,  // comm drops %,
         0,  // comm drops in pkts,
-        gcs().sys_status_errors1(),
-        0,  // errors2
+        errors1,
+        errors2,
         0,  // errors3
         0); // errors4
 }
