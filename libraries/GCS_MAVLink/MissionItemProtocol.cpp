@@ -153,7 +153,7 @@ void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
     }
 
     mavlink_mission_item_t ret_packet{};
-    ret = AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(item_int, ret_packet);
+    ret = GCS_MAVLINK::convert_MISSION_ITEM_INT_to_MISSION_ITEM(item_int, ret_packet);
     if (ret != MAV_MISSION_ACCEPTED) {
         return;
     }

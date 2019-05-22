@@ -657,7 +657,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t *msg)
     if (msg->msgid == MAVLINK_MSG_ID_MISSION_ITEM) {      
         mavlink_mission_item_t mission_item;
         mavlink_msg_mission_item_decode(msg, &mission_item);
-        MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, packet);
+        MAV_MISSION_RESULT ret = convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, packet);
         if (ret != MAV_MISSION_ACCEPTED) {
             const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)packet.mission_type;
             send_mission_ack(*msg, type, ret);
@@ -671,7 +671,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t *msg)
 
     if (type == MAV_MISSION_TYPE_MISSION && (current == 2 || current == 3)) {
         struct AP_Mission::Mission_Command cmd = {};
-        MAV_MISSION_RESULT result = AP_Mission::mavlink_int_to_mission_cmd(packet, cmd);
+        MAV_MISSION_RESULT result = MissionItemProtocol_Waypoints::convert_MISSION_ITEM_INT_to_Mission_Command(packet, cmd);
         if (result != MAV_MISSION_ACCEPTED) {
             //decode failed
             send_mission_ack(*msg, MAV_MISSION_TYPE_MISSION, result);
@@ -4507,6 +4507,97 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
         override_value = radio_min + (radio_max - radio_min) * (value_in + offset) / scaler;
     }
     c->set_override(override_value, tnow);
+}
+
+MAV_MISSION_RESULT GCS_MAVLINK::convert_MISSION_ITEM_to_MISSION_ITEM_INT(
+    const mavlink_mission_item_t &item,
+    mavlink_mission_item_int_t &item_int)
+{
+    item_int.param1 = item.param1;
+    item_int.param2 = item.param2;
+    item_int.param3 = item.param3;
+    item_int.param4 = item.param4;
+    item_int.z = item.z;
+    item_int.seq = item.seq;
+    item_int.command = item.command;
+    item_int.target_system = item.target_system;
+    item_int.target_component = item.target_component;
+    item_int.frame = item.frame;
+    item_int.current = item.current;
+    item_int.autocontinue = item.autocontinue;
+    item_int.mission_type = item.mission_type;
+
+    /*
+      the strategy for handling both ITEM and ITEM_INT
+      is to pass the lat/lng in ITEM_INT straight through, and
+      for ITEM multiply by 1e7 here. We need an exception for
+      any commands which use the x and y fields not as
+      latitude/longitude.
+     */
+    switch (item.command) {
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        item_int.x = item.x;
+        item_int.y = item.y;
+        break;
+
+    default:
+        // all other commands use x and y as lat/lon. We need to
+        // multiply by 1e7 to convert to int32_t
+        if (!check_lat(item.x)) {
+            return MAV_MISSION_INVALID_PARAM5_X;
+        }
+        if (!check_lng(item.y)) {
+            return MAV_MISSION_INVALID_PARAM6_Y;
+        }
+        item_int.x = item.x * 1.0e7f;
+        item_int.y = item.y * 1.0e7f;
+        break;
+    }
+
+    return MAV_MISSION_ACCEPTED;
+}
+
+MAV_MISSION_RESULT GCS_MAVLINK::convert_MISSION_ITEM_INT_to_MISSION_ITEM(
+    const mavlink_mission_item_int_t &item_int,
+    mavlink_mission_item_t &item)
+{
+    item.param1 = item_int.param1;
+    item.param2 = item_int.param2;
+    item.param3 = item_int.param3;
+    item.param4 = item_int.param4;
+    item.z = item_int.z;
+    item.seq = item_int.seq;
+    item.command = item_int.command;
+    item.target_system = item_int.target_system;
+    item.target_component = item_int.target_component;
+    item.frame = item_int.frame;
+    item.current = item_int.current;
+    item.autocontinue = item_int.autocontinue;
+    item.mission_type = item_int.mission_type;
+
+    switch (item_int.command) {
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        item.x = item_int.x;
+        item.y = item_int.y;
+        break;
+
+    default:
+        // all other commands use x and y as lat/lon. We need to
+        // multiply by 1e-7 to convert to float
+        item.x = item_int.x * 1.0e-7f;
+        item.y = item_int.y * 1.0e-7f;
+        if (!check_lat(item.x)) {
+            return MAV_MISSION_INVALID_PARAM5_X;
+        }
+        if (!check_lng(item.y)) {
+            return MAV_MISSION_INVALID_PARAM6_Y;
+        }
+        break;
+    }
+
+    return MAV_MISSION_ACCEPTED;
 }
 
 GCS &gcs()

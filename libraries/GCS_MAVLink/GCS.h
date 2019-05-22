@@ -212,8 +212,10 @@ private:
     virtual void complete(const GCS_MAVLINK &_link) {};
     virtual void timeout() {};
 
-    void convert_MISSION_REQUEST_to_MISSION_REQUEST_INT(const mavlink_mission_request_t &request,
-                                                        mavlink_mission_request_int_t &request_int);
+    static void convert_MISSION_REQUEST_to_MISSION_REQUEST_INT(
+        const mavlink_mission_request_t &request,
+        mavlink_mission_request_int_t &request_int);
+
 };
 
 class MissionItemProtocol_Waypoints : public MissionItemProtocol {
@@ -225,6 +227,18 @@ public:
 
     void complete(const GCS_MAVLINK &_link) override;
     void timeout() override;
+
+    static bool convert_Mission_Command_to_MISSION_ITEM_INT(
+        const AP_Mission::Mission_Command&,
+        mavlink_mission_item_int_t&);
+
+    static MAV_MISSION_RESULT convert_COMMAND_LONG_to_Mission_Command(
+        const mavlink_command_long_t&,
+        AP_Mission::Mission_Command&);
+
+    static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_Mission_Command(
+        const mavlink_mission_item_int_t&,
+        AP_Mission::Mission_Command&);
 
 protected:
 
@@ -247,6 +261,9 @@ private:
                                 const mavlink_message_t &msg,
                                 const mavlink_mission_request_int_t &packet,
                                 mavlink_mission_item_int_t &ret_packet) override WARN_IF_UNUSED;
+
+    static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
+
 };
 
 class MissionItemProtocol_Rally : public MissionItemProtocol {
@@ -482,6 +499,14 @@ public:
 
     virtual uint64_t capabilities() const;
     uint8_t get_stream_slowdown_ms() const { return stream_slowdown_ms; }
+
+    static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_MISSION_ITEM(
+        const mavlink_mission_item_int_t &mission_item_int,
+        mavlink_mission_item_t &mission_item) WARN_IF_UNUSED;
+
+    static MAV_MISSION_RESULT convert_MISSION_ITEM_to_MISSION_ITEM_INT(
+        const mavlink_mission_item_t &mission_item,
+        mavlink_mission_item_int_t &mission_item_int) WARN_IF_UNUSED;
 
 protected:
 
@@ -895,6 +920,7 @@ private:
 #endif
 
     uint32_t last_mavlink_stats_logged;
+
 };
 
 /// @class GCS
