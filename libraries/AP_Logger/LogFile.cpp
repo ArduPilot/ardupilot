@@ -5,6 +5,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Motors/AP_Motors.h>
@@ -394,8 +395,8 @@ void AP_Logger::Write_Vibration()
 bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
                                               const AP_Mission::Mission_Command &cmd)
 {
-    mavlink_mission_item_int_t mav_cmd = {};
-    AP_Mission::mission_cmd_to_mavlink_int(cmd,mav_cmd);
+    mavlink_mission_item_int_t mav_cmd;
+    MissionItemProtocol_Waypoints::convert_Mission_Command_to_MISSION_ITEM_INT(cmd,mav_cmd);
     struct log_Cmd pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
         time_us         : AP_HAL::micros64(),
