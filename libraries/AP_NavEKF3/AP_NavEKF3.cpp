@@ -837,6 +837,16 @@ int8_t NavEKF3::getPrimaryCoreIMUIndex(void) const
     return core[primary].getIMUIndex();
 }
 
+// returns the index of the IMU of the core instance
+// return -1 if invalid core selected
+int8_t NavEKF3::getCoreIMUIndex(uint8_t i) const
+{
+    if (!core || i >= num_cores) {
+        return -1;
+    }
+    return core[i].getIMUIndex();
+}
+
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
