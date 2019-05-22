@@ -104,6 +104,19 @@ TEST(Polygon, outside_long)
     }
 }
 
+TEST(Polygon, outside_long_closed_equal_to_unclosed)
+{
+    // uint8_t count = 0;
+    for (const struct PB_long &pb : points_boundaries_long) {
+        // ::fprintf(stderr, "count=%u\n", count++);
+        Vector2l v[4];
+        memcpy(v, pb.boundary, sizeof(pb.boundary));
+        v[3] = v[0]; // close it
+        EXPECT_EQ(Polygon_outside(pb.point, v, 3),
+                  Polygon_outside(pb.point, v, 4));
+    }
+}
+
 
 #define TEST_POLYGON_POINTS(POLYGON, TEST_POINTS)                       \
     do {                                                                \

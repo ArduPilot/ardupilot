@@ -37,9 +37,21 @@
 template <typename T>
 bool Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n)
 {
+    const bool complete = Polygon_complete(V, n);
+    if (complete) {
+        // the last point is the same as the first point; treat as if
+        // the last point wasn't passed in
+        n--;
+    }
+
     unsigned i, j;
+    // step through each edge pair-wise looking for crossings:
     bool outside = true;
-    for (i = 0, j = n-1; i < n; j = i++) {
+    for (i=0; i<n; i++) {
+        j = i+1;
+        if (j >= n) {
+            j = 0;
+        }
         if ((V[i].y > P.y) == (V[j].y > P.y)) {
             continue;
         }
