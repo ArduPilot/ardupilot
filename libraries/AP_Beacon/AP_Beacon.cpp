@@ -75,6 +75,12 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
 AP_Beacon::AP_Beacon(AP_SerialManager &_serial_manager) :
     serial_manager(_serial_manager)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Fence must be singleton");
+    }
+#endif
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -375,4 +381,17 @@ const Vector2f* AP_Beacon::get_boundary_points(uint16_t& num_points) const
 bool AP_Beacon::device_ready(void) const
 {
     return ((_driver != nullptr) && (_type != AP_BeaconType_None));
+}
+
+
+// singleton instance
+AP_Beacon *AP_Beacon::_singleton;
+
+namespace AP {
+
+AP_Beacon *beacon()
+{
+    return AP_Beacon::get_singleton();
+}
+
 }
