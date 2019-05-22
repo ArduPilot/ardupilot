@@ -362,7 +362,6 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
     }
 
     // get polygon boundary
-    // Note: first point in list is the return-point (which copter does not use)
     uint16_t num_points;
     const Vector2f* boundary = _fence.get_boundary_points(num_points);
 
@@ -453,13 +452,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         position_xy = position_xy * 100.0f;  // m to cm
     }
 
-    AC_Fence *fence = AP::fence();
-    if (fence == nullptr) {
-        return;
-    }
-    AC_Fence &_fence = *fence;
-
-    if (_fence.boundary_breached(position_xy, num_points, boundary)) {
+    if (Polygon_outside(position_xy, boundary, num_points)) {
         return;
     }
 
