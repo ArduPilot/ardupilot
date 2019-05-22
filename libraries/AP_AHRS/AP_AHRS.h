@@ -242,6 +242,9 @@ public:
     // return the current estimate of the gyro drift
     virtual const Vector3f &get_gyro_drift(void) const = 0;
 
+    // return the current estimated bias for IMU instance
+    virtual const Vector3f get_gyro_bias(uint8_t i) const { return Vector3f(0.0f, 0.0f, 0.0f); }
+
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
     virtual void reset_gyro_drift(void) = 0;

@@ -69,6 +69,36 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
     return _gyro_drift;
 }
 
+// return the current estimated bias for IMU instance
+const Vector3f AP_AHRS_NavEKF::get_gyro_bias(uint8_t i) const
+{
+    Vector3f gyro_bias;
+    gyro_bias.zero();
+    if (!active_EKF_type()) {
+        return gyro_bias;
+    }
+    int8_t imu_index = -1;
+    if (_ekf2_started) {
+        for (uint8_t core = 0; core < EKF2.activeCores(); core++) {
+            imu_index = EKF2.getCoreIMUIndex(core);
+            if (imu_index != -1 && i == imu_index) {
+                EKF2.getGyroBias(core, gyro_bias);
+                return gyro_bias;
+            }
+        }
+    }
+    if (_ekf3_started) {
+        for (uint8_t core = 0; core < EKF3.activeCores(); core++) {
+            imu_index = EKF3.getCoreIMUIndex(core);
+            if (imu_index != -1 && i == imu_index) {
+                EKF3.getGyroBias(core, gyro_bias);
+                return gyro_bias;
+            }
+        }
+    }
+    return gyro_bias;
+}
+
 // reset the current gyro drift estimate
 //  should be called if gyro offsets are recalculated
 void AP_AHRS_NavEKF::reset_gyro_drift(void)

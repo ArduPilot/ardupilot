@@ -58,6 +58,9 @@ public:
     // return the current drift correction integrator value
     const Vector3f &get_gyro_drift(void) const override;
 
+    // return the current estimated bias for IMU instance
+    const Vector3f get_gyro_bias(uint8_t i) const override;
+
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override;
