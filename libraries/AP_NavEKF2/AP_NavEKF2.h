@@ -72,7 +72,11 @@ public:
     // returns the index of the IMU of the primary core
     // return -1 if no primary core selected
     int8_t getPrimaryCoreIMUIndex(void) const;
-    
+
+    // returns the index of the IMU of the core instance
+    // return -1 if invalid core selected
+    int8_t getCoreIMUIndex(uint8_t i) const;
+
     // Write the last calculated NE position relative to the reference point (m) for the specified instance.
     // An out of range instance (eg -1) returns data for the primary instance
     // If a calculated solution is not available, use the best available data and return false
