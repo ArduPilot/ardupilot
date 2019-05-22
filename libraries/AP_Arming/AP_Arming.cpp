@@ -265,15 +265,15 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
         return true;
     }
 
-    const Vector3f &prime_gyro_vec = ins.get_gyro();
+    Vector3f prime_gyro_vec = ins.get_gyro_corrected();
     const uint32_t now = AP_HAL::millis();
     for(uint8_t i=0; i<gyro_count; i++) {
         if (!ins.use_gyro(i)) {
             continue;
         }
         // get next gyro vector
-        const Vector3f &gyro_vec = ins.get_gyro(i);
-        const Vector3f vec_diff = gyro_vec - prime_gyro_vec;
+        Vector3f gyro_vec = ins.get_gyro_corrected(i);
+        Vector3f vec_diff = gyro_vec - prime_gyro_vec;
         // allow for up to 5 degrees/s difference. Pass if it has
         // been OK in last 10 seconds
         if (vec_diff.length() <= radians(5)) {
