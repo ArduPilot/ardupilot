@@ -472,11 +472,7 @@ private:
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
-# if BEACON_ENABLED == ENABLED
-    AC_Avoid avoid{ahrs, fence, g2.proximity, &g2.beacon};
-# else
-    AC_Avoid avoid{ahrs, fence, g2.proximity};
-# endif
+    AC_Avoid avoid;
 #endif
 
     // Rally library
