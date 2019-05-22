@@ -1,5 +1,10 @@
 #include "AC_Avoid.h"
 
+#include <AP_AHRS/AP_AHRS.h>     // AHRS library
+#include <AC_Fence/AC_Fence.h>         // Failsafe fence library
+#include <AP_Proximity/AP_Proximity.h>
+#include <AP_Beacon/AP_Beacon.h>
+
 #if APM_BUILD_TYPE(APM_BUILD_APMrover2)
  # define AP_AVOID_BEHAVE_DEFAULT AC_Avoid::BehaviourType::BEHAVIOR_STOP
 #else
@@ -51,11 +56,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 };
 
 /// Constructor
-AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon)
-    : _ahrs(ahrs),
-      _fence(fence),
-      _proximity(proximity),
-      _beacon(beacon)
+AC_Avoid::AC_Avoid()
 {
     _singleton = this;
 
@@ -135,13 +136,16 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     bool limit_alt = false;
     float alt_diff = 0.0f;   // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
 
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     // calculate distance below fence
-    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && (_fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+    AC_Fence *fence = AP::fence();
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence && (fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
         // calculate distance from vehicle to safe altitude
         float veh_alt;
         _ahrs.get_relative_position_D_home(veh_alt);
         // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
-        alt_diff = _fence.get_safe_alt_max() + veh_alt;
+        alt_diff = fence->get_safe_alt_max() + veh_alt;
         limit_alt = true;
     }
 
@@ -161,7 +165,8 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 
     // get distance from proximity sensor
     float proximity_alt_diff;
-    if (_proximity.get_upward_distance(proximity_alt_diff)) {
+    AP_Proximity *proximity = AP::proximity();
+    if (proximity && proximity->get_upward_distance(proximity_alt_diff)) {
         proximity_alt_diff -= _margin;
         if (!limit_alt || proximity_alt_diff < alt_diff) {
             alt_diff = proximity_alt_diff;
@@ -267,6 +272,13 @@ float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance_cm, flo
  */
 void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
 {
+    AC_Fence *fence = AP::fence();
+    if (fence == nullptr) {
+        return;
+    }
+
+    AC_Fence &_fence = *fence;
+
     // exit if circular fence is not enabled
     if ((_fence.get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) == 0) {
         return;
@@ -276,6 +288,8 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     if ((_fence.get_breaches() & AC_FENCE_TYPE_CIRCLE) != 0) {
         return;
     }
+
+    const AP_AHRS &_ahrs = AP::ahrs();
 
     // get position as a 2D offset from ahrs home
     Vector2f position_xy;
@@ -325,6 +339,13 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
  */
 void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
 {
+    AC_Fence *fence = AP::fence();
+    if (fence == nullptr) {
+        return;
+    }
+
+    AC_Fence &_fence = *fence;
+
     // exit if the polygon fence is not enabled
     if ((_fence.get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
         return;
@@ -354,6 +375,8 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
  */
 void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
 {
+    AP_Beacon *_beacon = AP::beacon();
+
     // exit if the beacon is not present
     if (_beacon == nullptr) {
         return;
@@ -372,7 +395,11 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
     }
 
     // adjust velocity using beacon
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, boundary, num_points, true, _fence.get_margin(), dt);
+    float margin = 0;
+    if (AP::fence()) {
+        margin = AP::fence()->get_margin();
+    }
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, boundary, num_points, true, margin, dt);
 }
 
 /*
@@ -381,6 +408,13 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
 void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt)
 {
     // exit immediately if proximity sensor is not present
+    AP_Proximity *proximity = AP::proximity();
+    if (!proximity) {
+        return;
+    }
+
+    AP_Proximity &_proximity = *proximity;
+
     if (_proximity.get_status() != AP_Proximity::Proximity_Good) {
         return;
     }
@@ -406,6 +440,8 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         return;
     }
 
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     // do not adjust velocity if vehicle is outside the polygon fence
     Vector2f position_xy;
     if (earth_frame) {
@@ -416,6 +452,12 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         }
         position_xy = position_xy * 100.0f;  // m to cm
     }
+
+    AC_Fence *fence = AP::fence();
+    if (fence == nullptr) {
+        return;
+    }
+    AC_Fence &_fence = *fence;
 
     if (_fence.boundary_breached(position_xy, num_points, boundary)) {
         return;
@@ -535,6 +577,12 @@ float AC_Avoid::distance_to_lean_pct(float dist_m)
 // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
 void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
 {
+    AP_Proximity *proximity = AP::proximity();
+    if (proximity == nullptr) {
+        return;
+    }
+    AP_Proximity &_proximity = *proximity;
+
     // exit immediately if proximity sensor is not present
     if (_proximity.get_status() != AP_Proximity::Proximity_Good) {
         return;
