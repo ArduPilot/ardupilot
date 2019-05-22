@@ -439,23 +439,6 @@ public:
     ///     home is taken directly from ahrs
     void write_home_to_storage();
 
-    static MAV_MISSION_RESULT convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &mission_item,
-                                                                       mavlink_mission_item_int_t &mission_item_int) WARN_IF_UNUSED;
-    static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_MISSION_ITEM(const mavlink_mission_item_int_t &mission_item_int,
-                                                                       mavlink_mission_item_t &mission_item) WARN_IF_UNUSED;
-
-    // mavlink_int_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
-    //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
-    static MAV_MISSION_RESULT mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd);
-
-    // mavlink_cmd_long_to_mission_cmd - converts a mavlink cmd long to an AP_Mission::Mission_Command object which can be stored to eeprom
-    // return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
-    static MAV_MISSION_RESULT mavlink_cmd_long_to_mission_cmd(const mavlink_command_long_t& packet, AP_Mission::Mission_Command& cmd);
-
-    // mission_cmd_to_mavlink_int - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
-    //  return true on success, false on failure
-    static bool mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet);
-
     // return the last time the mission changed in milliseconds
     uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
 
@@ -484,12 +467,12 @@ public:
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+    static bool stored_in_location(uint16_t id);
+
 private:
     static AP_Mission *_singleton;
 
     static StorageAccess _storage;
-
-    static bool stored_in_location(uint16_t id);
 
     struct Mission_Flags {
         mission_state state;
@@ -550,8 +533,6 @@ private:
     void check_eeprom_version();
 
     /// sanity checks that the masked fields are not NaN's or infinite
-    static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
-
     // parameters
     AP_Int16                _cmd_total;  // total number of commands in the mission
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
