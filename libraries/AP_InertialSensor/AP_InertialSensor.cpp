@@ -2018,6 +2018,17 @@ AP_InertialSensor::Gyro_Calibration_Timing AP_InertialSensor::gyro_calibration_t
     return (Gyro_Calibration_Timing)_gyro_cal_timing.get();
 }
 
+/*
+    Get corrected gyro data, with corrections from biases learnt by EKF
+*/
+const Vector3f AP_InertialSensor::get_gyro_corrected(uint8_t i) const
+{
+    if (i >= INS_MAX_INSTANCES) {
+        return Vector3f(0.0f, 0.0f, 0.0f);
+    }
+    return (_gyro[i] - AP::ahrs().get_gyro_bias(i));
+}
+
 
 namespace AP {
 

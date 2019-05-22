@@ -97,7 +97,9 @@ public:
     ///
     const Vector3f     &get_gyro(uint8_t i) const { return _gyro[i]; }
     const Vector3f     &get_gyro(void) const { return get_gyro(_primary_gyro); }
-
+    const Vector3f     get_gyro_corrected(uint8_t i) const;
+    const Vector3f     get_gyro_corrected(void) const { return get_gyro_corrected(_primary_gyro); }
+    
     // set gyro offsets in radians/sec
     const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
     const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_primary_gyro); }
