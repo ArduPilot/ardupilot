@@ -700,6 +700,8 @@ bool AP_BLHeli::BL_ConnectEx(void)
     case 0x3306:
     case 0x3406:
     case 0x3506:
+    case 0x2B06:
+    case 0x4706:
         blheli.interface_mode[blheli.chan] = imARM_BLB;
         debug("Interface type imARM_BLB");
         break;
@@ -734,7 +736,7 @@ bool AP_BLHeli::BL_PageErase(void)
         if (!BL_SendBuf(sCMD, 2)) {
             return false;
         }
-        return BL_GetACK(1000) == brSUCCESS;
+        return BL_GetACK(3000) == brSUCCESS;
     }
     return false;
 }
