@@ -34,6 +34,14 @@ void AC_AttitudeControl::control_monitor_update(void)
 
     const AP_Logger::PID_Info &iyaw   = get_rate_yaw_pid().get_pid_info();
     control_monitor_filter_pid(iyaw.P + iyaw.D + iyaw.FF,  _control_monitor.rms_yaw);
+
+    // Pre-fiter sample
+    const Vector3f sample(get_rate_roll_pid().get_raw_derivative(), get_rate_pitch_pid().get_raw_derivative(), get_rate_yaw_pid().get_raw_derivative());
+    batchsampler.sample(AC_AttitudeControl::DTERM_PRE_FILTER_CONTROL_POINT, AP_HAL::micros64(), sample);
+
+    // Post-filter sample
+    const Vector3f sample2(get_rate_roll_pid().get_derivative(), get_rate_pitch_pid().get_derivative(), get_rate_yaw_pid().get_derivative());
+    batchsampler.sample(AC_AttitudeControl::DTERM_POST_FILTER_CONTROL_POINT, AP_HAL::micros64(), sample2);
 }
 
 /*

@@ -144,6 +144,10 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("INPUT_TC", 20, AC_AttitudeControl, _input_tc, AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT),
 
+    // @Group: LOG_
+    // @Path: ../AC_AttitudeControl/DTermBatchSampler.cpp
+    AP_SUBGROUPINFO(batchsampler, "LOG_",  21, AC_AttitudeControl, AC_AttitudeControl::DTermBatchSampler),
+
     AP_GROUPEND
 };
 
@@ -1180,4 +1184,9 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
         }
     }
     return true;
+}
+
+void AC_AttitudeControl::periodic()
+{
+    batchsampler.periodic();
 }
