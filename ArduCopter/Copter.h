@@ -624,6 +624,7 @@ private:
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn();
+    void flush_dterm_update_logs();
 
 #if ADSB_ENABLED == ENABLED
     // avoidance_adsb.cpp

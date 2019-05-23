@@ -244,3 +244,9 @@ uint16_t Copter::get_pilot_speed_dn()
         return abs(g2.pilot_speed_dn);
     }
 }
+
+// Flush the logging of dterm updates to the log
+void Copter::flush_dterm_update_logs()
+{
+    attitude_control->periodic();
+}
