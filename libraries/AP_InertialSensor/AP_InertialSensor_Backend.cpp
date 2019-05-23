@@ -208,7 +208,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(gyro);
         // apply the notch filter
         if (_gyro_notch_enabled()) {
-            _imu._gyro_filtered[instance] = _imu._gyro_notch_filter[instance].apply(gyro);
+            _imu._gyro_filtered[instance] = _imu._gyro_notch_filter[instance].apply(_imu._gyro_filtered[instance]);
         }
         if (_imu._gyro_filtered[instance].is_nan() || _imu._gyro_filtered[instance].is_inf()) {
             _imu._gyro_filter[instance].reset();
