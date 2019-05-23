@@ -277,6 +277,7 @@ public:
     enum IMU_SENSOR_TYPE {
         IMU_SENSOR_TYPE_ACCEL = 0,
         IMU_SENSOR_TYPE_GYRO = 1,
+        DTERM_CONTROL_POINT = 2
     };
 
     class BatchSampler {
@@ -337,7 +338,7 @@ public:
         bool _doing_sensor_rate_logging : 1;
         bool _doing_post_filter_logging : 1;
         uint8_t instance : 3; // instance we are sending data for
-        AP_InertialSensor::IMU_SENSOR_TYPE type : 1;
+        AP_InertialSensor::IMU_SENSOR_TYPE type : 2;
         uint16_t isb_seqnum;
         int16_t *data_x;
         int16_t *data_y;
