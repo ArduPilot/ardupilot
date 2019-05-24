@@ -100,7 +100,7 @@ public:
     ///
 
     /// returns pointer to array of polygon points and num_points is filled in with the total number
-    Vector2f* get_polygon_points(uint16_t& num_points) const;
+    Vector2f* get_boundary_points(uint16_t& num_points) const;
 
     /// returns true if we've breached the polygon boundary.  simple passthrough to underlying _poly_loader object
     bool boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points) const;
