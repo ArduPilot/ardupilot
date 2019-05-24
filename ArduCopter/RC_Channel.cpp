@@ -479,6 +479,22 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 #endif
             break;
 
+        case AUX_FUNC::KILL_ALL:
+            copter.motkill.kill_all = (ch_flag == HIGH);
+            break;
+        case AUX_FUNC::KILL_MOT1:
+            copter.motkill.kill_mot[0] = (ch_flag == HIGH);
+            break;
+        case AUX_FUNC::KILL_MOT2:
+            copter.motkill.kill_mot[1] = (ch_flag == HIGH);
+            break;
+        case AUX_FUNC::KILL_MOT3:
+            copter.motkill.kill_mot[2] = (ch_flag == HIGH);
+            break;
+        case AUX_FUNC::KILL_MOT4:
+            copter.motkill.kill_mot[3] = (ch_flag == HIGH);
+            break;
+
 #ifdef USERHOOK_AUXSWITCH
         case AUX_FUNC::USER_FUNC1:
             copter.userhook_auxSwitch1(ch_flag);

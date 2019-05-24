@@ -647,6 +647,10 @@ private:
                   "_failsafe_priorities is missing the sentinel");
 
 
+    struct {
+        bool kill_all;
+        bool kill_mot[4];
+    } motkill;
 
     // AP_State.cpp
     void set_auto_armed(bool b);

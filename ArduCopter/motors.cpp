@@ -176,6 +176,13 @@ void Copter::motors_output()
         motors->output();
     }
 
+    // implement motor kill for parachute testing
+    for (uint8_t i=0; i<4; i++) {
+        if (motkill.kill_all || motkill.kill_mot[i]) {
+            hal.rcout->write(i, 1000);
+        }
+    }
+
     // push all channels
     SRV_Channels::push();
 }
