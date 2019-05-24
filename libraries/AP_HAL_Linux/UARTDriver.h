@@ -45,7 +45,7 @@ public:
         return _device->get_flow_control();
     }
 
-    virtual void configure_parity(uint8_t v);
+    void configure_parity(uint8_t v) override;
 
     virtual void set_flow_control(enum flow_control flow_control_setting) override
    {
