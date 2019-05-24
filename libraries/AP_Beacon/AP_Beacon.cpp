@@ -295,8 +295,10 @@ void AP_Beacon::update_boundary_points()
             }
             // if duplicate is found, remove all boundary points before the duplicate because they are inner points
             if (dup_found) {
-                uint8_t num_pts = curr_boundary_idx - dup_idx + 1;
-                if (num_pts > AP_BEACON_MINIMUM_FENCE_BEACONS) {
+                // note that the closing/duplicate point is not
+                // included in the boundary points.
+                const uint8_t num_pts = curr_boundary_idx - dup_idx;
+                if (num_pts >= AP_BEACON_MINIMUM_FENCE_BEACONS) { // we consider three points to be a polygon
                     // success, copy boundary points to boundary array and convert meters to cm
                     for (uint8_t j = 0; j < num_pts; j++) {
                         boundary[j] = boundary_points[j+dup_idx] * 100.0f;
