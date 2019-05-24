@@ -93,6 +93,7 @@ bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Dist
     for (uint8_t i=0; i<_num_sectors; i++) {
         if (_distance_valid[i]) {
             valid_distances = true;
+            break;
         }
     }
     if (!valid_distances) {
@@ -102,11 +103,10 @@ bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Dist
     // initialise orientations and directions
     //  see MAV_SENSOR_ORIENTATION for orientations (0 = forward, 1 = 45 degree clockwise from north, etc)
     //  distances initialised to maximum distances
-    bool dist_set[PROXIMITY_MAX_DIRECTION];
+    bool dist_set[PROXIMITY_MAX_DIRECTION]{};
     for (uint8_t i=0; i<PROXIMITY_MAX_DIRECTION; i++) {
         prx_dist_array.orientation[i] = i;
         prx_dist_array.distance[i] = distance_max();
-        dist_set[i] = false;
     }
 
     // cycle through all sectors filling in distances
