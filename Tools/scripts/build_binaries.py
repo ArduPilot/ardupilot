@@ -19,7 +19,7 @@ import sys
 import gzip
 
 # local imports
-import generate_manifest
+import generate_manifest, gen_stable
 
 
 class build_binaries(object):
@@ -627,6 +627,11 @@ is bob we will attempt to checkout bob-AVR'''
         shutil.move(new_json_filepath, json_filepath)
         shutil.move(new_json_filepath_gz, json_filepath_gz)
         self.progress("Manifest generation successful")
+
+        self.progress("Generating stable releases")
+        gen_stable.make_all_stable(self.binaries)
+        self.progress("Generate stable releases done")
+
 
     def validate(self):
         '''run pre-run validation checks'''
