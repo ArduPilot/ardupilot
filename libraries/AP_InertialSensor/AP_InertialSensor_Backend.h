@@ -224,10 +224,10 @@ protected:
     int16_t _id = -1;
 
     // return the default filter frequency in Hz for the sample rate
-    uint8_t _accel_filter_cutoff(void) const { return _imu._accel_filter_cutoff; }
+    uint16_t _accel_filter_cutoff(void) const { return _imu._accel_filter_cutoff; }
 
     // return the default filter frequency in Hz for the sample rate
-    uint8_t _gyro_filter_cutoff(void) const { return _imu._gyro_filter_cutoff; }
+    uint16_t _gyro_filter_cutoff(void) const { return _imu._gyro_filter_cutoff; }
 
     // return the requested sample rate in Hz
     uint16_t get_sample_rate_hz(void) const;
@@ -236,7 +236,7 @@ protected:
     uint16_t _gyro_notch_center_freq_hz(void) const { return _imu._notch_filter.center_freq_hz(); }
 
     // return the notch filter bandwidth in Hz for the sample rate
-    uint8_t _gyro_notch_bandwidth_hz(void) const { return _imu._notch_filter.bandwidth_hz(); }
+    uint16_t _gyro_notch_bandwidth_hz(void) const { return _imu._notch_filter.bandwidth_hz(); }
 
     // return the notch filter attenuation in dB for the sample rate
     float _gyro_notch_attenuation_dB(void) const { return _imu._notch_filter.attenuation_dB(); }
@@ -250,10 +250,10 @@ protected:
     void update_accel(uint8_t instance);
 
     // support for updating filter at runtime
-    uint8_t _last_accel_filter_hz[INS_MAX_INSTANCES];
-    uint8_t _last_gyro_filter_hz[INS_MAX_INSTANCES];
+    uint16_t _last_accel_filter_hz[INS_MAX_INSTANCES];
+    uint16_t _last_gyro_filter_hz[INS_MAX_INSTANCES];
     uint16_t _last_notch_center_freq_hz[INS_MAX_INSTANCES];
-    uint8_t _last_notch_bandwidth_hz[INS_MAX_INSTANCES];
+    uint16_t _last_notch_bandwidth_hz[INS_MAX_INSTANCES];
     float _last_notch_attenuation_dB[INS_MAX_INSTANCES];
 
     void set_gyro_orientation(uint8_t instance, enum Rotation rotation) {
