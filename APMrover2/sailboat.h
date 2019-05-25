@@ -24,7 +24,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // enabled
-    bool enabled() const { return enable != 0;}
+    bool sail_enabled() const { return enable != 0;}
+    bool nav_enabled() const { return enable >= 2;}
 
     // constructor
     Sailboat();
@@ -33,7 +34,7 @@ public:
     void init();
 
     // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
-    void  update_mainsail(float desired_speed);
+    float update_sail_control(float desired_speed, float throttle_out);
 
     // Velocity Made Good, this is the speed we are traveling towards the desired destination
     float get_VMG() const;

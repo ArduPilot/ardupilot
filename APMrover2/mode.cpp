@@ -287,8 +287,8 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
         rover.balancebot_pitch_control(throttle_out);
     }
 
-    // update mainsail position if present
-    rover.g2.sailboat.update_mainsail(target_speed);
+    // update sail controller
+    throttle_out = rover.g2.sailboat.update_sail_control(target_speed, throttle_out);
 
     // send to motor
     g2.motors.set_throttle(throttle_out);

@@ -24,9 +24,14 @@ void ModeLoiter::update()
 
     // if within loiter radius slew desired speed towards zero and use existing desired heading
     if (_distance_to_destination <= g2.loit_radius) {
-        // sailboats do not stop
-        const float desired_speed_within_radius = rover.g2.sailboat.enabled() ? 0.1f : 0.0f;
+        // sailboats should not stop
+        const float desired_speed_within_radius = rover.g2.sailboat.nav_enabled() ? 0.1f : 0.0f;
         _desired_speed = attitude_control.get_desired_speed_accel_limited(desired_speed_within_radius, rover.G_Dt);
+
+        // if we have a sail but not trying to use it then point into the wind
+        if (!rover.g2.sailboat.nav_enabled() && rover.g2.sailboat.sail_enabled()) {
+            _desired_yaw_cd = degrees(g2.windvane.get_absolute_wind_direction_rad()) * 100.0f;
+        }
     } else {
         // P controller with hard-coded gain to convert distance to desired speed
         // To-Do: make gain configurable or calculate from attitude controller's maximum accelearation

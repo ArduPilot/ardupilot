@@ -25,7 +25,7 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Enable Sailboat
     // @Description: This enables Sailboat functionality
-    // @Values: 0:Disable,1:Enable
+    // @Values: 0:Disable,1:Enable sail assist only,2:Enable,3:Enable with speed controller
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 1, Sailboat, enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -90,8 +90,11 @@ Sailboat::Sailboat()
 void Sailboat::init()
 {
     // sailboat defaults
-    if (enabled()) {
+    if (sail_enabled()) {
         rover.g2.crash_angle.set_default(0);
+    }
+
+    if (nav_enabled()) {
         rover.g2.loit_type.set_default(1);
         rover.g2.loit_radius.set_default(5);
         rover.g2.wp_nav.set_default_overshoot(10);
@@ -99,16 +102,16 @@ void Sailboat::init()
 }
 
 // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
-void Sailboat::update_mainsail(float desired_speed)
+float Sailboat::update_sail_control(float desired_speed, float throttle_out)
 {
-    if (!enabled()) {
-        return;
+    if (!sail_enabled()) {
+        return throttle_out;
     }
 
     // relax sail if desired speed is zero
     if (!is_positive(desired_speed)) {
         rover.g2.motors.set_mainsail(100.0f);
-        return;
+        return throttle_out;
     }
 
     // + is wind over starboard side, - is wind over port side, but as the sails are sheeted the same on each side it makes no difference so take abs
@@ -127,8 +130,18 @@ void Sailboat::update_mainsail(float desired_speed)
     // use PID controller to sheet out
     const float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(sail_heel_angle_max), rover.G_Dt) * 100.0f;
 
-    mainsail = constrain_float((mainsail+pid_offset), 0.0f ,100.0f);
+    // See if we should sheet out to slow down
+    float speed_offset = 0.0f;
+    if (!is_positive(throttle_out) && enable == 3) {
+        speed_offset = throttle_out;
+        // never try to reverse against the sail
+        throttle_out = 0.0f;
+    }
+
+    mainsail = constrain_float((mainsail + pid_offset + speed_offset), 0.0f ,100.0f);
     rover.g2.motors.set_mainsail(mainsail);
+
+    return throttle_out;
 }
 
 // Velocity Made Good, this is the speed we are traveling towards the desired destination
@@ -180,14 +193,14 @@ void Sailboat::clear_tack()
 // returns true if boat is currently tacking
 bool Sailboat::tacking() const
 {
-    return enabled() && currently_tacking;
+    return nav_enabled() && currently_tacking;
 }
 
 // returns true if sailboat should take a indirect navigation route to go upwind
 // desired_heading should be in centi-degrees
 bool Sailboat::use_indirect_route(float desired_heading_cd) const
 {
-    if (!enabled()) {
+    if (!nav_enabled()) {
         return false;
     }
 
@@ -202,7 +215,7 @@ bool Sailboat::use_indirect_route(float desired_heading_cd) const
 // this function assumes the caller has already checked sailboat_use_indirect_route(desired_heading_cd) returned true
 float Sailboat::calc_heading(float desired_heading_cd)
 {
-    if (!enabled()) {
+    if (!nav_enabled()) {
         return desired_heading_cd;
     }
 
