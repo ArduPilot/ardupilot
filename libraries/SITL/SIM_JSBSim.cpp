@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  simulator connector for ardupilot version of JSBSim
+  simulator connector for JSBSim
 */
 
 #include "SIM_JSBSim.h"
