@@ -75,8 +75,6 @@ void Rover::init_ardupilot()
 
     g2.windvane.init(serial_manager);
 
-    rover.g2.sailboat.init();
-
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
@@ -154,6 +152,8 @@ void Rover::init_ardupilot()
 
     // initialise rc channels
     rc().init();
+
+    rover.g2.sailboat.init();
 
     // disable safety if requested
     BoardConfig.init_safety();
