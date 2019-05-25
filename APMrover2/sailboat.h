@@ -24,7 +24,10 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // enabled
-    bool enabled() const { return enable != 0;}
+    bool sail_enabled() const { return enable > 0;}
+
+    // true if sailboat navigation (aka tacking) is enabled
+    bool nav_enabled() const;
 
     // constructor
     Sailboat();
@@ -32,8 +35,15 @@ public:
     // setup
     void init();
 
-    // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
-    void  update_mainsail(float desired_speed);
+    // initialise rc input (channel_mainsail)
+    void init_rc_in();
+
+    // decode pilot mainsail input and return in steer_out and throttle_out arguments
+    // mainsail_out is in the range 0 to 100, defaults to 100 (fully relaxed) if no input configured
+    void get_pilot_desired_mainsail(float &mainsail_out);
+
+    // calculate throttle and mainsail angle required to attain desired speed (in m/s)
+    void get_throttle_and_mainsail_out(float desired_speed, float &throttle_out, float &mainsail_out);
 
     // Velocity Made Good, this is the speed we are traveling towards the desired destination
     float get_VMG() const;
@@ -59,7 +69,17 @@ public:
     // calculate the heading to sail on if we cant go upwind
     float calc_heading(float desired_heading_cd);
 
+    // throttle state used with throttle enum
+    enum Sailboat_Throttle {
+        NEVER        = 0,
+        ASSIST       = 1,
+        FORCE_MOTOR  = 2
+    } throttle_state;
+
 private:
+
+    // Check if we should assist with throttle
+    bool throttle_assist() const;
 
     // parameters
     AP_Int8 enable;
@@ -68,14 +88,17 @@ private:
     AP_Float sail_angle_ideal;
     AP_Float sail_heel_angle_max;
     AP_Float sail_no_go;
+    AP_Float sail_assist_windspeed;
 
     enum Sailboat_Tack {
         TACK_PORT,
         TACK_STARBOARD
     };
 
+    RC_Channel *channel_mainsail;   // rc input channel for controlling mainsail
     bool currently_tacking;         // true when sailboat is in the process of tacking to a new heading
     float tack_heading_rad;         // target heading in radians while tacking in either acro or autonomous modes
     uint32_t auto_tack_request_ms;  // system time user requested tack in autonomous modes
     uint32_t auto_tack_start_ms;    // system time when tack was started in autonomous mode
+    bool tack_assist;               // true if we should use some throttle to assist tack
 };
