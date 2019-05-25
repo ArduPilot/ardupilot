@@ -206,10 +206,10 @@ public:
     void set_hil_mode(void) { _hil_mode = true; }
 
     // get the gyro filter rate in Hz
-    uint8_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
+    uint16_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
 
     // get the accel filter rate in Hz
-    uint8_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
+    uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
@@ -466,8 +466,8 @@ private:
     float _temperature[INS_MAX_INSTANCES];
 
     // filtering frequency (0 means default)
-    AP_Int8     _accel_filter_cutoff;
-    AP_Int8     _gyro_filter_cutoff;
+    AP_Int16    _accel_filter_cutoff;
+    AP_Int16    _gyro_filter_cutoff;
     AP_Int8     _gyro_cal_timing;
 
     // use for attitude, velocity, position estimates
