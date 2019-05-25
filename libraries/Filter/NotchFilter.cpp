@@ -75,7 +75,7 @@ const AP_Param::GroupInfo NotchFilterParams::var_info[] = {
     // @Param: FREQ
     // @DisplayName: Frequency
     // @Description: Notch center frequency in Hz
-    // @Range: 10 200
+    // @Range: 10 400
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("FREQ", 2, NotchFilterParams, _center_freq_hz, 80),
@@ -83,7 +83,7 @@ const AP_Param::GroupInfo NotchFilterParams::var_info[] = {
     // @Param: BW
     // @DisplayName: Bandwidth
     // @Description: Notch bandwidth in Hz
-    // @Range: 5 50
+    // @Range: 5 100
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("BW", 3, NotchFilterParams, _bandwidth_hz, 20),

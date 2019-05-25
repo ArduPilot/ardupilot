@@ -49,14 +49,14 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     uint16_t center_freq_hz(void) const { return _center_freq_hz; }
-    uint8_t bandwidth_hz(void) const { return _bandwidth_hz; }
+    uint16_t bandwidth_hz(void) const { return _bandwidth_hz; }
     float attenuation_dB(void) const { return _attenuation_dB; }
     uint8_t enabled(void) const { return _enable; }
     
 private:
     AP_Int8 _enable;
     AP_Int16 _center_freq_hz;
-    AP_Int8 _bandwidth_hz;
+    AP_Int16 _bandwidth_hz;
     AP_Float _attenuation_dB;
 };
 
