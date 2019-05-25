@@ -486,9 +486,6 @@ public:
 
     // Simple mode
     float simple_sin_yaw;
-
-    // sailboat enabled
-    bool get_sailboat_enable() { return g2.sailboat.enabled(); }
 };
 
 extern const AP_HAL::HAL& hal;
