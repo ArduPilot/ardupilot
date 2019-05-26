@@ -7,8 +7,10 @@
 
 template <class T>
 DigitalBiquadFilter<T>::DigitalBiquadFilter() {
-  _delay_element_1 = T();
-  _delay_element_2 = T();
+  _delay_sample_1 = T();
+  _delay_sample_2 = T();
+  _delay_output_1 = T();
+  _delay_output_2 = T();
 }
 
 template <class T>
@@ -17,20 +19,23 @@ T DigitalBiquadFilter<T>::apply(const T &sample, const struct biquad_params &par
         return sample;
     }
 
-    T delay_element_0 = sample - _delay_element_1 * params.a1 - _delay_element_2 * params.a2;
-    T output = delay_element_0 * params.b0 + _delay_element_1 * params.b1 + _delay_element_2 * params.b2;
+    T output = sample * params.b0 + _delay_sample_1 * params.b1 + _delay_sample_2 * params.b2 - _delay_output_1 * params.a1 - _delay_output_2 * params.a2;
 
-    _delay_element_2 = _delay_element_1;
-    _delay_element_1 = delay_element_0;
+    _delay_sample_2 = _delay_sample_1;
+    _delay_sample_1 = sample;
+
+    _delay_output_2 = _delay_output_1;
+    _delay_output_1 = output;
 
     return output;
 }
 
 template <class T>
 void DigitalBiquadFilter<T>::reset() { 
-    _delay_element_1 = _delay_element_2 = T();
+    _delay_sample_1 = _delay_sample_2 = T();
 }
 
+// compute biquad params for a LPF (ref: http://shepazu.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html)
 template <class T>
 void DigitalBiquadFilter<T>::compute_params(float sample_freq, float cutoff_freq, biquad_params &ret) {
     ret.cutoff_freq = cutoff_freq;
@@ -40,15 +45,19 @@ void DigitalBiquadFilter<T>::compute_params(float sample_freq, float cutoff_freq
         return;
     }
 
-    float fr = sample_freq/cutoff_freq;
-    float ohm = tanf(M_PI/fr);
-    float c = 1.0f+2.0f*cosf(M_PI/4.0f)*ohm + ohm*ohm;
+    float Q = 1 / sqrtf(2);
+    float omega = 2 * M_PI * cutoff_freq / sample_freq;
+    float sn = sinf(omega);
+    float cs = cosf(omega);
+    float alpha = sn / (2 * Q);
 
-    ret.b0 = ohm*ohm/c;
-    ret.b1 = 2.0f*ret.b0;
+    float a0 = 1 + alpha;
+
+    ret.b0 = ((1 - cs) / 2) /a0;
+    ret.b1 = (1 - cs) / a0;
     ret.b2 = ret.b0;
-    ret.a1 = 2.0f*(ohm*ohm-1.0f)/c;
-    ret.a2 = (1.0f-2.0f*cosf(M_PI/4.0f)*ohm+ohm*ohm)/c;
+	ret.a1 = (-2 * cs) / a0;
+	ret.a2 = (1 - alpha) / a0;
 }
 
 

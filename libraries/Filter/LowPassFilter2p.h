@@ -19,9 +19,10 @@
 #include <inttypes.h>
 
 
+
 /// @file   LowPassFilter2p.h
 /// @brief  A class to implement a second order low pass filter
-/// @authors: Leonard Hall <LeonardTHall@gmail.com>, template implmentation: Daniel Frenzel <dgdanielf@gmail.com>
+/// @authors: Leonard Hall <LeonardTHall@gmail.com>, Guglielmo Cassinelli <gdguglie@gmail.com>, template implmentation: Daniel Frenzel <dgdanielf@gmail.com>
 template <class T>
 class DigitalBiquadFilter {
 public:
@@ -42,8 +43,10 @@ public:
     static void compute_params(float sample_freq, float cutoff_freq, biquad_params &ret);
     
 private:
-    T _delay_element_1;
-    T _delay_element_2;
+    T _delay_sample_1;
+    T _delay_sample_2;
+    T _delay_output_1;
+    T _delay_output_2;
 };
 
 template <class T>
