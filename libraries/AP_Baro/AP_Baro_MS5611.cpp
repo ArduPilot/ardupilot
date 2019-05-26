@@ -342,6 +342,7 @@ void AP_Baro_MS56XX::update()
     }
 }
 
+static bool first_calc{true};
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS56XX::_calculate_5611()
 {
@@ -374,6 +375,17 @@ void AP_Baro_MS56XX::_calculate_5611()
 
     float pressure = (_D1*SENS/2097152 - OFF)/32768;
     float temperature = (TEMP + 2000) * 0.01f;
+
+    if (first_calc) {
+        first_calc = false;
+        if (pressure < 51000 && temperature > 0) {
+            hal.console->printf("TEMP5611=%f, Press=%f\n", temperature, pressure);
+            hal.console->printf("Switching to MS5607\n");
+            _ms56xx_type = BARO_MS5607;
+            _calculate_5607();
+            return;
+        }
+    }
     _copy_to_frontend(_instance, pressure, temperature);
 }
 
