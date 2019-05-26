@@ -47,7 +47,8 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     _dt(dt),
     _integrator(0.0f),
     _input(0.0f),
-    _derivative(0.0f)
+    _derivative(0.0f),
+    _raw_derivative(0.0f)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
@@ -96,6 +97,7 @@ void AC_PID::set_input_filter_all(float input)
         _flags._reset_filter = false;
         _input = input;
         _derivative = 0.0f;
+        _raw_derivative = 0.0f;
     }
 
     // update filter and calculate derivative
@@ -103,6 +105,7 @@ void AC_PID::set_input_filter_all(float input)
     _input = _input + input_filt_change;
     if (_dt > 0.0f) {
         _derivative = input_filt_change / _dt;
+        _raw_derivative = (input - _input) / _dt;
     }
 }
 
@@ -121,12 +124,13 @@ void AC_PID::set_input_filter_d(float input)
         _flags._reset_filter = false;
         _input = input;
         _derivative = 0.0f;
+        _raw_derivative = 0.0f;
     }
 
     // update filter and calculate derivative
     if (_dt > 0.0f) {
-        float derivative = (input - _input) / _dt;
-        _derivative = _derivative + get_filt_alpha() * (derivative-_derivative);
+        _raw_derivative = (input - _input) / _dt;
+        _derivative = _derivative + get_filt_alpha() * (_raw_derivative -_derivative);
     }
 
     _input = input;
