@@ -222,6 +222,8 @@ public:
     AP_Float temp_tconst;
     AP_Float temp_baro_factor;
     
+    AP_Int8 thermal_scenario;
+
     // differential pressure sensor tube order
     AP_Int8 arspd_signflip;
 

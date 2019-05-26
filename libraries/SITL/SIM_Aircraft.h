@@ -246,6 +246,9 @@ protected:
     void add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel);
     void add_twist_forces(Vector3f &rot_accel);
 
+    // get local thermal updraft
+    float get_local_updraft(Vector3f currentPos);
+
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;

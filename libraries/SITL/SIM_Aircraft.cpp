@@ -596,6 +596,8 @@ void Aircraft::update_wind(const struct sitl_input &input)
                        sinf(radians(input.wind.direction))*cosf(radians(input.wind.dir_z)), 
                        sinf(radians(input.wind.dir_z))) * input.wind.speed;
 
+    wind_ef.z += get_local_updraft(position);
+
     const float wind_turb = input.wind.turbulence * 10.0f;  // scale input.wind.turbulence to match standard deviation when using iir_coef=0.98
     const float iir_coef = 0.98f;  // filtering high frequencies from turbulence
 
@@ -803,6 +805,56 @@ void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
         sitl->shove.start_ms = 0;
         sitl->shove.t = 0;
     }
+}
+
+float Aircraft::get_local_updraft(Vector3f currentPos)
+{
+    int scenario = sitl->thermal_scenario;
+
+    #define MAX_THERMALS 10
+
+    float thermals_w[MAX_THERMALS];
+    float thermals_r[MAX_THERMALS];
+    float thermals_x[MAX_THERMALS];
+    float thermals_y[MAX_THERMALS];
+
+    int n_thermals = 0;
+
+    switch (scenario) {
+        case 1:
+            n_thermals = 1;
+            thermals_w[0] =  2.0;
+            thermals_r[0] =  80.0;
+            thermals_x[0] = -180.0;
+            thermals_y[0] = -260.0;
+            break;
+        case 2:
+            n_thermals = 1;
+            thermals_w[0] =  4.0;
+            thermals_r[0] =  30.0;
+            thermals_x[0] = -180.0;
+            thermals_y[0] = -260.0;
+            break;
+        case 3:
+            n_thermals = 1;
+            thermals_w[0] =  2.0;
+            thermals_r[0] =  30.0;
+            thermals_x[0] = -180.0;
+            thermals_y[0] = -260.0;
+            break;
+    }
+
+    int iThermal;
+    float w = 0.0f;
+    float r2;
+    for (iThermal=0;iThermal<n_thermals;iThermal++) {
+        Vector3f thermalPos(thermals_x[iThermal],thermals_y[iThermal],0);
+        Vector3f relVec = currentPos - thermalPos;
+        r2 = relVec.x*relVec.x + relVec.y*relVec.y;
+        w += thermals_w[iThermal]*exp(-r2/(thermals_r[iThermal]*thermals_r[iThermal]));
+    }
+
+    return w;
 }
 
 void Aircraft::add_twist_forces(Vector3f &rot_accel)
