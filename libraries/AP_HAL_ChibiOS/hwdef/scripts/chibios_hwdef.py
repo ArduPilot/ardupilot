@@ -463,6 +463,8 @@ def get_config(name, column=0, required=True, default=None, type=None, spaces=Fa
             error("missing required value %s in hwdef.dat" % name)
         return default
     if len(config[name]) < column + 1:
+        if not required:
+            return None
         error("missing required value %s in hwdef.dat (column %u)" % (name,
                                                                       column))
     if spaces:
@@ -883,7 +885,8 @@ def get_extra_bylabel(label, name, default=None):
 
 def write_UART_config(f):
     '''write UART config defines'''
-    get_config('UART_ORDER')
+    if get_config('UART_ORDER', required=False) is None:
+        return
     uart_list = config['UART_ORDER']
     f.write('\n// UART configuration\n')
 
@@ -986,7 +989,8 @@ def write_UART_config(f):
 
 def write_UART_config_bootloader(f):
     '''write UART config defines'''
-    get_config('UART_ORDER')
+    if get_config('UART_ORDER', required=False) is None:
+        return
     uart_list = config['UART_ORDER']
     f.write('\n// UART configuration\n')
     devlist = []
