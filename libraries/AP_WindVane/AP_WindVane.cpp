@@ -179,6 +179,12 @@ bool AP_WindVane::enabled() const
     return _direction_type != WINDVANE_NONE;
 }
 
+// return true if wind speed is enabled
+bool AP_WindVane::wind_speed_enabled() const
+{
+    return (_speed_sensor_type != WINDSPEED_NONE);
+}
+
 // Initialize the Wind Vane object and prepare it for use
 void AP_WindVane::init(const AP_SerialManager& serial_manager)
 {
