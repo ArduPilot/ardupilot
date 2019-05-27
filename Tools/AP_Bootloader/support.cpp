@@ -10,10 +10,15 @@
 #include <AP_HAL_ChibiOS/hwdef/common/flash.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include "support.h"
+#include "mcu_f1.h"
 #include "mcu_f4.h"
 #include "mcu_f7.h"
 #include "mcu_h7.h"
 
+// optional uprintf() code for debug
+// #define BOOTLOADER_DEBUG SD1
+
+#if defined(BOOTLOADER_DEV_LIST)
 static BaseChannel *uarts[] = { BOOTLOADER_DEV_LIST };
 #if HAL_USE_SERIAL == TRUE
 static SerialConfig sercfg;
@@ -24,10 +29,6 @@ static uint8_t last_uart;
 #ifndef BOOTLOADER_BAUDRATE
 #define BOOTLOADER_BAUDRATE 115200
 #endif
-
-// optional uprintf() code for debug
-// #define BOOTLOADER_DEBUG SD7
-
 
 // #pragma GCC optimize("O0")
 
@@ -65,6 +66,7 @@ void cout(uint8_t *data, uint32_t len)
 {
     chnWriteTimeout(uarts[last_uart], data, len, chTimeMS2I(100));
 }
+#endif // BOOTLOADER_DEV_LIST
 
 static uint32_t flash_base_page;
 static uint8_t num_pages;
@@ -262,11 +264,12 @@ void uprintf(const char *fmt, ...)
 #ifdef BOOTLOADER_DEBUG
     va_list ap;
     static bool initialised;
+    static SerialConfig debug_sercfg;
     char umsg[200];
     if (!initialised) {
         initialised = true;
-        sercfg.speed = 57600;
-        sdStart(&BOOTLOADER_DEBUG, &sercfg);
+        debug_sercfg.speed = 57600;
+        sdStart(&BOOTLOADER_DEBUG, &debug_sercfg);
     }
     va_start(ap, fmt);
     uint32_t n = vsnprintf(umsg, sizeof(umsg), fmt, ap);
@@ -342,6 +345,7 @@ void *memset(void *s, int c, size_t n)
     return s;
 }
 
+#if defined(BOOTLOADER_DEV_LIST)
 void lock_bl_port(void)
 {
     locked_uart = last_uart;
@@ -394,3 +398,4 @@ void port_setbaud(uint32_t baudrate)
     sdStart((SerialDriver *)uarts[last_uart], &sercfg);
 #endif
 }
+#endif // BOOTLOADER_DEV_LIST
