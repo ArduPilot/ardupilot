@@ -34,6 +34,8 @@
 #define STORAGE_NUM_AREAS 10
 #elif HAL_STORAGE_SIZE >= 4096
 #define STORAGE_NUM_AREAS 4
+#elif HAL_STORAGE_SIZE > 0
+#define STORAGE_NUM_AREAS 1
 #else
 #error "Unsupported storage size"
 #endif
