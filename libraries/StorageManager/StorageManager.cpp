@@ -30,6 +30,15 @@ extern const AP_HAL::HAL& hal;
   compatibility with older firmwares
  */
 
+#if STORAGE_NUM_AREAS == 1
+/*
+  layout for peripherals
+ */
+const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_AREAS] = {
+    { StorageParam,   0,     HAL_STORAGE_SIZE}
+};
+
+#else
 /*
   layout for fixed wing and rovers
   On PX4v1 this gives 309 waypoints, 30 rally points and 52 fence points
@@ -60,7 +69,6 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
 #endif
 };
 
-
 /*
   layout for copter.
   On PX4v1 this gives 303 waypoints, 26 rally points and 38 fence points
@@ -90,6 +98,7 @@ const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREA
     { StorageMission, 10028,  6228}, // leave 128 byte gap for expansion
 #endif
 };
+#endif // STORAGE_NUM_AREAS == 1
 
 // setup default layout
 const StorageManager::StorageArea *StorageManager::layout = layout_default;
