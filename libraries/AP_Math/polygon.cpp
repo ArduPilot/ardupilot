@@ -59,16 +59,32 @@ bool Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n)
                 outside = !outside;
             } else if (m1 < m2) {
                 continue;
-            } else if ( dx1 * (int64_t)dy2 > dx2 * (int64_t)dy1 ) {
-                outside = !outside;
+            } else {
+                if (std::is_floating_point<T>::value) {
+                    if ( dx1 * dy2 > dx2 * dy1 ) {
+                        outside = !outside;
+                    }
+                } else {
+                    if ( dx1 * (int64_t)dy2 > dx2 * (int64_t)dy1 ) {
+                        outside = !outside;
+                    }
+                }
             }
         } else {
             if (m1 < m2) {
                 outside = !outside;
             } else if (m1 > m2) {
                 continue;
-            } else if ( dx1 * (int64_t)dy2 < dx2 * (int64_t)dy1 ) {
-                outside = !outside;
+            } else {
+                if (std::is_floating_point<T>::value) {
+                    if ( dx1 * dy2 < dx2 * dy1 ) {
+                        outside = !outside;
+                    }
+                } else {
+                    if ( dx1 * (int64_t)dy2 < dx2 * (int64_t)dy1 ) {
+                        outside = !outside;
+                    }
+                }
             }
         }
     }
