@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.9-rc1/rc2 30-Apr-2019
+Copter 3.6.9 27-May-2019 / 3.6.9-rc1/rc2 30-Apr-2019
 Changes from 3.6.8
 1) CX-OF flow sensor enabled on all boards
 2) CUAVv5 Nano board support added
@@ -12,6 +12,8 @@ Changes from 3.6.8
     b) Tradheli collective position pre-arm check removed
     c) Fallback to microSD for storage fixed
     d) GPS blending memory access fix that could lead to unhealthy GPS
+    e) fixed POWR flags for 2nd power module on fmuv3 boards
+7) bootloader binary update for many boards
 ------------------------------------------------------------------
 Copter 3.6.8 26-Apr-2019 / 3.6.8-rc1 24-Apr-2019
 Changes from 3.6.7
