@@ -25,7 +25,10 @@ public:
 
     // enabled
     bool sail_enabled() const { return enable != 0;}
-    bool nav_enabled() const { return enable >= 2;}
+
+    // Should we use sailboat navigation?
+    // currently this is just for tracking upwind
+    bool nav_enabled();
 
     // constructor
     Sailboat();
@@ -34,6 +37,7 @@ public:
     void init();
 
     // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
+    // we return the throttle to ouput, this may be zeroed if the sail controller does not request throttle
     float update_sail_control(float desired_speed, float throttle_out);
 
     // Velocity Made Good, this is the speed we are traveling towards the desired destination
@@ -43,7 +47,7 @@ public:
     void  handle_tack_request_acro();
 
     // return target heading in radians when tacking (only used in acro)
-    float get_tack_heading_rad() const;
+    float get_tack_heading_rad();
 
     // handle user initiated tack while in autonomous modes (Auto, Guided, RTL, SmartRTL, etc)
     void  handle_tack_request_auto();
@@ -52,13 +56,29 @@ public:
     void  clear_tack();
 
     // returns true if boat is currently tacking
-    bool  tacking() const;
+    bool  tacking();
 
     // returns true if sailboat should take a indirect navigation route to go upwind
-    bool  use_indirect_route(float desired_heading_cd) const;
+    bool  use_indirect_route(float desired_heading_cd);
 
     // calculate the heading to sail on if we cant go upwind
     float calc_heading(float desired_heading_cd);
+
+    // return sailboat loiter radius
+    float get_loiter_radius() const {return loit_radius;}
+
+    // set sailboat mainsail from throttle position
+    void update_manual_sail(float desired_throttle);
+
+    // check aux throttle at arming
+    bool aux_throttle_pre_arm_check();
+
+    enum Sailboat_Throttle {
+        NEVER        = 0,
+        ASSIST       = 1,
+        FORCE_MOTOR  = 2
+    };
+    enum Sailboat_Throttle throttle_state_t; // throttle state used with throttle enum
 
 private:
 
@@ -69,14 +89,27 @@ private:
     AP_Float sail_angle_ideal;
     AP_Float sail_heel_angle_max;
     AP_Float sail_no_go;
+    AP_Float max_cross_track;
+    AP_Float loit_radius;
+    AP_Float sail_assist_windspeed;
 
     enum Sailboat_Tack {
         TACK_PORT,
         TACK_STARBOARD
     };
+    Sailboat_Tack current_tack;  // the tack the nav controller in calc_heading thinks we are on
+
+    enum options {
+        AUX_THROTTLE       = (1 << 0),
+        AUX_THROTTLE_LIMIT = (1 << 1)
+    };
 
     bool currently_tacking;         // true when sailboat is in the process of tacking to a new heading
     float tack_heading_rad;         // target heading in radians while tacking in either acro or autonomous modes
-    uint32_t auto_tack_request_ms;  // system time user requested tack in autonomous modes
+    uint32_t tack_request_ms;       // system time user requested tack
     uint32_t auto_tack_start_ms;    // system time when tack was started in autonomous mode
+    bool tack_assist;               // true if we should use some throttle to assist tack
+
+    // Check if we should assist with throttle
+    bool throttle_assist();
 };
