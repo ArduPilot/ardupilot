@@ -97,6 +97,11 @@ bool AP_Compass_RM3100::init()
         return false;
     }
 
+    if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+        // read has high bit set for SPI
+        dev->set_read_flag(0x80);
+    }
+
     // high retries for init
     dev->set_retries(10);
 
