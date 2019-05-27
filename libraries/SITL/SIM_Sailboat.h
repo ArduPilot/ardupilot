@@ -62,6 +62,8 @@ private:
 
     const float mass = 2.0f;
 
+    Vector3f velocity_ef_water; // m/s
+
     // simulate basic waves / swell
     void update_wave(float delta_time);
     Vector3f wave_gyro; // rad/s
