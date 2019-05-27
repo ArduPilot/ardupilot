@@ -28,6 +28,8 @@
 // on F76x we only consider first half of DTCM memory as DMA safe, 2nd half is used as fast memory for EKF
 // on F74x we only have 64k of DTCM
 #define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & ((0xFFFFFFFF & ~(64*1024U-1)) | 1U)) == 0x20000000)
+#elif defined(STM32F1)
+#define IS_DMA_SAFE(addr) true
 #else
 // this checks an address is in main memory and 16 bit aligned
 #define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & 0xF0000001) == 0x20000000)

@@ -25,6 +25,10 @@
 #include "Util.h"
 #include "hwdef/common/stm32_util.h"
 
+#ifndef HAL_DEVICE_THREAD_STACK
+#define HAL_DEVICE_THREAD_STACK 1024
+#endif
+
 using namespace ChibiOS;
 
 static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
@@ -114,7 +118,7 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
             break;
         }
 
-        thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(1024),
+        thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(HAL_DEVICE_THREAD_STACK),
                                          name,
                                          thread_priority,           /* Initial priority.    */
                                          DeviceBus::bus_thread,    /* Thread function.     */

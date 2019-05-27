@@ -121,6 +121,7 @@ __wrap_sscanf (const char *buf, const char *fmt, ...)
     return (count);
 }
 
+#if defined(HAL_OS_FATFS_IO) && HAL_OS_FATFS_IO
 static char *
 _getbase(char *p, int *basep)
 {
@@ -214,7 +215,6 @@ static int16_t atob(uint32_t *vp, char *p, int base)
 }
 
 
-#if defined(HAL_OS_FATFS_IO) && HAL_OS_FATFS_IO
 /*
  *  vsscanf(buf,fmt,ap)
  */
