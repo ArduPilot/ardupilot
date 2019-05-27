@@ -263,6 +263,11 @@ public:
         AP_Float speed;     // m/s
     } wave;
 
+    struct {
+        AP_Float direction; // deg (direction tide is coming from)
+        AP_Float speed;     // m/s
+    } tide;
+
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);

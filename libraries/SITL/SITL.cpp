@@ -170,12 +170,14 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 
     AP_GROUPINFO("GPS_HDG",     43, SITL,  gps_hdg_enabled, 0),
 
-    // sailboat wave simulation parameters
+    // sailboat wave and tide simulation parameters
     AP_GROUPINFO("WAVE_ENABLE", 44, SITL,  wave.enable, 0.0f),
     AP_GROUPINFO("WAVE_LENGTH", 45, SITL,  wave.length, 10.0f),
     AP_GROUPINFO("WAVE_AMP",    46, SITL,  wave.amp, 0.5f),
     AP_GROUPINFO("WAVE_DIR",    47, SITL,  wave.direction, 0.0f),
     AP_GROUPINFO("WAVE_SPEED",  48, SITL,  wave.speed, 0.5f),
+    AP_GROUPINFO("TIDE_DIR",    49, SITL,  tide.direction, 0.0f),
+    AP_GROUPINFO("TIDE_SPEED",  50, SITL,  tide.speed, 0.0f),
 
     AP_GROUPEND
 
