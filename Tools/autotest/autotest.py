@@ -24,6 +24,7 @@ import ardusub
 import antennatracker
 import quadplane
 import balancebot
+import soaring
 
 import examples
 from pysim import util
@@ -259,6 +260,7 @@ __bin_names = {
     "ArduSub": "ardusub",
     "balancebot": "ardurover",
     "BalanceBot": "ardurover",
+    "Soaring": "arduplane",
 }
 
 
@@ -309,6 +311,7 @@ tester_class_map = {
     "fly.CopterAVC": arducopter.AutoTestHeli,
     "dive.ArduSub": ardusub.AutoTestSub,
     "test.AntennaTracker": antennatracker.AutoTestTracker,
+    "fly.Soaring": soaring.AutoTestSoaring,
 }
 
 def run_specific_test(step, *args, **kwargs):
@@ -756,6 +759,7 @@ if __name__ == "__main__":
         'defaults.ArduPlane',
         'fly.ArduPlane',
         'fly.QuadPlane',
+        'fly.Soaring',
 
         'build.APMrover2',
         'defaults.APMrover2',
