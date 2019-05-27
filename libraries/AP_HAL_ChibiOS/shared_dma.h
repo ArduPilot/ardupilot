@@ -18,8 +18,6 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if STM32_DMA_ADVANCED
-
 #define SHARED_DMA_MAX_STREAM_ID (8*2)
 
 // DMA stream ID for stream_id2 when only one is needed
@@ -106,6 +104,6 @@ private:
         Shared_DMA *obj;
     } locks[SHARED_DMA_MAX_STREAM_ID+1];
 };
-#endif //#if STM32_DMA_ADVANCED
+
 
 

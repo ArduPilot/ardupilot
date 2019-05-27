@@ -57,7 +57,8 @@ uint32_t get_fattime(void);
 enum rtc_boot_magic {
     RTC_BOOT_OFF  = 0,
     RTC_BOOT_HOLD = 0xb0070001,
-    RTC_BOOT_FAST = 0xb0070002
+    RTC_BOOT_FAST = 0xb0070002,
+    RTC_BOOT_CANBL = 0xb0080000 // ORd with 8 bit local node ID
 };
     
 // see if RTC registers is setup for a fast reboot

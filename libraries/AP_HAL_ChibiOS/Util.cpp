@@ -224,7 +224,7 @@ uint64_t Util::get_hw_rtc() const
     return stm32_get_utc_usec();
 }
 
-#ifndef HAL_NO_FLASH_SUPPORT
+#if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
 bool Util::flash_bootloader()
 {
@@ -272,7 +272,7 @@ bool Util::flash_bootloader()
     free(fw);
     return false;
 }
-#endif //#ifndef HAL_NO_FLASH_SUPPORT
+#endif // !HAL_NO_FLASH_SUPPORT && !HAL_NO_ROMFS_SUPPORT
 
 /*
   display system identifer - board type and serial number
