@@ -25,6 +25,12 @@
 #include <AP_InertialSensor/AP_InertialSensor_Invensensev2.h>
 #include <GCS_MAVLink/GCS.h>
 
+#ifdef HAL_NO_GCS
+#define GCS_SEND_TEXT(severity, format, args...)
+#else
+#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+#endif
+
 #define REG_COMPANY_ID      0x00
 #define REG_DEVICE_ID       0x01
 #define REG_ST1             0x10
@@ -152,7 +158,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2
     if (dev->read_registers(REG_COMPANY_ID, (uint8_t *)&whoami, 2)) {
         // a device is replying on the AK09916 I2C address, don't
         // load the ICM20948
-        gcs().send_text(MAV_SEVERITY_INFO, "ICM20948: AK09916 bus conflict\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ICM20948: AK09916 bus conflict\n");
         goto fail;
     }
 
@@ -191,32 +197,32 @@ bool AP_Compass_AK09916::init()
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
     if (!bus_sem || !_bus->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Unable to get bus semaphore\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Unable to get bus semaphore\n");
         return false;
     }
 
     if (!_bus->configure()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Could not configure the bus\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Could not configure the bus\n");
         goto fail;
     }
 
     if (!_reset()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Reset Failed\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Reset Failed\n");
         goto fail;
     }
 
     if (!_check_id()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Wrong id\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Wrong id\n");
         goto fail;
     }
 
     if (!_setup_mode()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Could not setup mode\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Could not setup mode\n");
         goto fail;
     }
 
     if (!_bus->start_measurements()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"AK09916: Could not start measurements\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Could not start measurements\n");
         goto fail;
     }
 
