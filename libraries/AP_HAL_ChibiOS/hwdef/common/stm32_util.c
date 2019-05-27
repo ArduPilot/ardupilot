@@ -215,13 +215,19 @@ uint32_t get_fattime()
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 {
     while (n--) {
+#if defined(STM32F1)
+        __IO uint32_t *dr = (__IO uint32_t *)&BKP->DR1;
+        *v++ = (dr[n/2]&0xFFFF) | (dr[n/2+1]<<16);
+#else
         *v++ = ((__IO uint32_t *)&RTC->BKP0R)[idx++];
+#endif
     }
 }
 
 // set n RTC backup registers starting at given idx
 void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 {
+#if !defined(STM32F1)
     if ((RCC->BDCR & RCC_BDCR_RTCEN) == 0) {
         RCC->BDCR |= STM32_RTCSEL;
         RCC->BDCR |= RCC_BDCR_RTCEN;
@@ -231,8 +237,15 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 #else
     PWR->CR1 |= PWR_CR1_DBP;
 #endif
+#endif
     while (n--) {
+#if defined(STM32F1)
+        __IO uint32_t *dr = (__IO uint32_t *)&BKP->DR1;
+        dr[n/2] =   (*v) & 0xFFFF;
+        dr[n/2+1] = (*v) >> 16;
+#else
         ((__IO uint32_t *)&RTC->BKP0R)[idx++] = *v++;
+#endif
     }
 }
 

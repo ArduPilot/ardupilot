@@ -37,7 +37,7 @@
 // include generated config
 #include "hwdef.h"
 
-#ifdef STM32F100_MCUCONF
+#if defined(STM32F1)
 #include "stm32f1_mcuconf.h"
 #elif defined(STM32F4) || defined(STM32F7)
 #include "stm32f47_mcuconf.h"

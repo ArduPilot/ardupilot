@@ -111,7 +111,7 @@ def setup_mcu_type_defaults():
     lib = get_mcu_lib(mcu_type)
     if hasattr(lib, 'pincount'):
         pincount = lib.pincount
-    if mcu_series == "STM32F100":
+    if mcu_series.startswith("STM32F1"):
         vtypes = f1_vtypes
     else:
         vtypes = f4f7_vtypes
@@ -190,7 +190,7 @@ class generic_pin(object):
             self.sig_dir = 'OUTPUT'
         else:
             self.sig_dir = 'INPUT'
-        if mcu_series == "STM32F100" and self.label is not None:
+        if mcu_series.startswith("STM32F1") and self.label is not None:
             self.f1_pin_setup()
 
         # check that labels and pin types are consistent
@@ -210,6 +210,8 @@ class generic_pin(object):
                     self.sig_dir = 'INPUT'
                     self.extra.append('FLOATING')
                 elif self.label.endswith(tuple(f1_output_sigs)):
+                    self.sig_dir = 'OUTPUT'
+                elif l == 'I2C':
                     self.sig_dir = 'OUTPUT'
                 else:
                     error("Unknown signal type %s:%s for %s!" % (self.portpin, self.label, mcu_type))
@@ -335,7 +337,7 @@ class generic_pin(object):
 
     def get_ODR(self):
         '''return one of LOW, HIGH'''
-        if mcu_series == "STM32F100":
+        if mcu_series.startswith("STM32F1"):
             return self.get_ODR_F1()
         values = ['LOW', 'HIGH']
         v = 'HIGH'
@@ -400,7 +402,7 @@ class generic_pin(object):
 
     def get_CR(self):
         '''return CR FLAGS'''
-        if mcu_series == "STM32F100":
+        if mcu_series.startswith("STM32F1"):
             return self.get_CR_F1()
         if self.sig_dir != "INPUT":
             speed_values = ['SPEED_LOW', 'SPEED_MEDIUM', 'SPEED_HIGH']
@@ -547,7 +549,7 @@ def write_mcu_config(f):
         f.write('#define HAL_USE_SERIAL_USB TRUE\n')
     if 'OTG2' in bytype:
         f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
-    if have_type_prefix('CAN'):
+    if have_type_prefix('CAN') and not mcu_series.startswith("STM32F1"):
         enable_can(f)
 
     if get_config('PROCESS_STACK', required=False):
@@ -564,6 +566,11 @@ def write_mcu_config(f):
         env_vars['IOMCU_FW'] = get_config('IOMCU_FW')
     else:
         env_vars['IOMCU_FW'] = 0
+
+    if get_config('PERIPH_FW', required=False):
+        env_vars['PERIPH_FW'] = get_config('PERIPH_FW')
+    else:
+        env_vars['PERIPH_FW'] = 0
 
     # write any custom STM32 defines
     for d in alllines:
@@ -600,7 +607,7 @@ def write_mcu_config(f):
     lib = get_mcu_lib(mcu_type)
     build_info = lib.build
 
-    if mcu_series == "STM32F100":
+    if mcu_series.startswith("STM32F1"):
         cortex = "cortex-m3"        
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex]
         build_info['MCU'] = cortex
@@ -945,8 +952,11 @@ def write_UART_config(f):
             f.write(
                 "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, false, "
                 % (dev, n))
-            f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s, " %
-                    (dev, dev, rts_line))
+            if mcu_series.startswith("STM32F1"):
+                f.write("%s, " % rts_line)
+            else:
+                f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s, " %
+                        (dev, dev, rts_line))
 
             # add inversion pins, if any
             f.write("%d, " % get_gpio_bylabel(dev + "_RXINV"))
@@ -1006,10 +1016,15 @@ def write_I2C_config(f):
     '''write I2C config defines'''
     if not have_type_prefix('I2C'):
         print("No I2C peripherals")
-        f.write('#define HAL_USE_I2C FALSE\n')
+        f.write('''
+#ifndef HAL_USE_I2C
+#define HAL_USE_I2C FALSE
+#endif
+''')
         return
     if not 'I2C_ORDER' in config:
-        error("Missing I2C_ORDER config")
+        print("Missing I2C_ORDER config")
+        return
     i2c_list = config['I2C_ORDER']
     f.write('// I2C configuration\n')
     if len(i2c_list) == 0:
@@ -1398,7 +1413,7 @@ def write_hwdef_header(outfilename):
     if len(romfs) > 0:
         f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_H 1\n')
 
-    if mcu_series == 'STM32F100':
+    if mcu_series.startswith('STM32F1'):
         f.write('''
 /*
  * I/O ports initial setup, this configuration is established soon after reset

@@ -55,7 +55,7 @@ static Empty::UARTDriver uartGDriver;
 static Empty::UARTDriver uartHDriver;
 #endif
 
-#if HAL_USE_I2C == TRUE
+#if HAL_USE_I2C == TRUE && defined(HAL_I2C_DEVICE_LIST)
 static ChibiOS::I2CDeviceManager i2cDeviceManager;
 #else
 static Empty::I2CDeviceManager i2cDeviceManager;
@@ -176,9 +176,7 @@ static void main_loop()
     ChibiOS::I2CBus::clear_all();
 #endif
 
-#if STM32_DMA_ADVANCED
     ChibiOS::Shared_DMA::init();
-#endif
     peripheral_power_enable();
         
     hal.uartA->begin(115200);
@@ -217,6 +215,7 @@ static void main_loop()
         stm32_watchdog_init();
     }
 
+#ifndef HAL_NO_LOGGING
     if (hal.util->was_watchdog_reset()) {
         AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
         const AP_HAL::Util::PersistentData &pd = last_persistent_data;
@@ -234,6 +233,7 @@ static void main_loop()
                                    pd.fault_thd_prio,
                                    pd.fault_icsr);
     }
+#endif
 #endif
 
     schedulerInstance.watchdog_pat();
