@@ -54,8 +54,25 @@ bool FlashTest::flash_write(uint8_t sector, uint32_t offset, const uint8_t *data
                       (unsigned)length);
     }
     uint8_t *b = &flash[sector][offset];
-    for (uint16_t i=0; i<length; i++) {
-        b[i] &= data[i];
+    if ((offset & 1) || (length & 1)) {
+        AP_HAL::panic("FATAL: invalid write at %u:%u len=%u\n",
+                      sector, offset, length);
+    }
+    const uint16_t *data16 = (const uint16_t *)data;
+    uint16_t *b16 = (uint16_t *)&b[0];
+    uint16_t len16 = length/2;
+    for (uint16_t i=0; i<len16; i++) {
+        if (data16[i] & !b16[i]) {
+            AP_HAL::panic("FATAL: invalid write16 at %u:%u 0x%04x 0x%04x\n",
+                          sector, offset+i, b[i], data[i]);
+        }
+#if !AP_FLASHSTORAGE_MULTI_WRITE
+        if (data16[i] != b16[i] && data16[i] != 0xFFFF && b16[i] != 0xFFFF) {
+            AP_HAL::panic("FATAL: invalid write16 at %u:%u 0x%04x 0x%04x\n",
+                          sector, offset+i, b[i], data[i]);
+        }
+#endif
+        b16[i] &= data16[i];
     }
     return true;
 }
