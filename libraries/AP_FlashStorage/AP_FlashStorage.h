@@ -39,6 +39,16 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#if defined(STM32F1)
+/*
+  the STM32F1 can't change individual bits from 1 to 0 unless all bits in
+  the 16 bit word are 1
+ */
+#define AP_FLASHSTORAGE_MULTI_WRITE 0
+#else
+#define AP_FLASHSTORAGE_MULTI_WRITE 1
+#endif
+
 /*
   The StorageManager holds the layout of non-volatile storeage
  */
@@ -99,19 +109,34 @@ private:
     bool write_error;
 
     // 24 bit signature
+#if AP_FLASHSTORAGE_MULTI_WRITE
     static const uint32_t signature = 0x51685B;
+#else
+    static const uint32_t signature = 0x51;
+#endif
 
     // 8 bit sector states
     enum SectorState {
+#if AP_FLASHSTORAGE_MULTI_WRITE
         SECTOR_STATE_AVAILABLE = 0xFF,
         SECTOR_STATE_IN_USE    = 0xFE,
         SECTOR_STATE_FULL      = 0xFC
+#else
+        SECTOR_STATE_AVAILABLE = 0xFFFFFFFF,
+        SECTOR_STATE_IN_USE    = 0xFFFFFFF1,
+        SECTOR_STATE_FULL      = 0xFFF2FFF1,
+#endif
     };
 
     // header in first word of each sector
     struct sector_header {
+#if AP_FLASHSTORAGE_MULTI_WRITE
         uint32_t state:8;
         uint32_t signature:24;
+#else
+        uint32_t state:32;
+        uint32_t signature:16;
+#endif
     };
 
 
