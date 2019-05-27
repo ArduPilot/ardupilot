@@ -45,6 +45,10 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     case AUX_FUNC::LOITER:
     case AUX_FUNC::FOLLOW:
     case AUX_FUNC::SAILBOAT_TACK:
+    case AUX_FUNC::MAINSAIL:
+        break;
+    case AUX_FUNC::SAILBOAT_MOTOR_3POS:
+        do_aux_function_sailboat_motor_3pos(ch_flag);
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -92,6 +96,21 @@ void RC_Channel_Rover::add_waypoint_for_current_loc()
     // save command
     if (rover.mode_auto.mission.add_cmd(cmd)) {
         hal.console->printf("Added waypoint %u", (unsigned)rover.mode_auto.mission.num_commands());
+    }
+}
+
+void RC_Channel_Rover::do_aux_function_sailboat_motor_3pos(const aux_switch_pos_t ch_flag)
+{
+    switch(ch_flag) {
+    case HIGH:
+        rover.g2.sailboat.throttle_state = rover.g2.sailboat.Sailboat_Throttle::FORCE_MOTOR;
+        break;
+    case MIDDLE:
+        rover.g2.sailboat.throttle_state = rover.g2.sailboat.Sailboat_Throttle::ASSIST;
+        break;
+    case LOW:
+        rover.g2.sailboat.throttle_state = rover.g2.sailboat.Sailboat_Throttle::NEVER;
+        break;
     }
 }
 
@@ -193,6 +212,15 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
     case AUX_FUNC::SAILBOAT_TACK:
         // any switch movement interpreted as request to tack
         rover.control_mode->handle_tack_request();
+        break;
+
+    // sailboat motor state 3pos
+    case AUX_FUNC::SAILBOAT_MOTOR_3POS:
+        do_aux_function_sailboat_motor_3pos(ch_flag);
+        break;
+
+    // mainsail input, nothing to do
+    case AUX_FUNC::MAINSAIL:
         break;
 
     default:
