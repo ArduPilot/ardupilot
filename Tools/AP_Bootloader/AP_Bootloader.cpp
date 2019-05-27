@@ -30,6 +30,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include "support.h"
 #include "bl_protocol.h"
+#include "can.h"
 
 extern "C" {
     int main(void);
@@ -53,6 +54,7 @@ int main(void)
     bool try_boot = false;
     uint32_t timeout = HAL_BOOTLOADER_TIMEOUT;
 
+#ifndef NO_FASTBOOT
     enum rtc_boot_magic m = check_fast_reboot();
     if (stm32_was_watchdog_reset()) {
         try_boot = true;
@@ -63,22 +65,55 @@ int main(void)
         try_boot = true;
         timeout = 0;
     }
+#if HAL_USE_CAN == TRUE
+    else if ((m & 0xFFFFFF00) == RTC_BOOT_CANBL) {
+        try_boot = false;
+        timeout = 10000;
+        can_set_node_id(m & 0xFF);
+    }
+#endif
     
     // if we fail to boot properly we want to pause in bootloader to give
     // a chance to load new app code
     set_fast_reboot(RTC_BOOT_OFF);
+#endif
+
+#ifdef HAL_GPIO_PIN_STAY_IN_BOOTLOADER
+    // optional "stay in bootloader" pin
+    if (palReadLine(HAL_GPIO_PIN_STAY_IN_BOOTLOADER) == 0) {
+        try_boot = false;
+        timeout = 10000;
+    }
+#endif
 
     if (try_boot) {
         jump_to_app();
     }
 
+#if defined(BOOTLOADER_DEV_LIST)
     init_uarts();
+#endif
+#if HAL_USE_CAN == TRUE
+    can_start();
+#endif
     flash_init();
-    
+
+#if defined(BOOTLOADER_DEV_LIST)
     while (true) {
         bootloader(timeout);
         jump_to_app();
     }
+#else
+    // CAN only
+    while (true) {
+        uint32_t t0 = AP_HAL::millis();
+        while (AP_HAL::millis() - t0 <= timeout) {
+            can_update();
+            chThdSleep(chTimeMS2I(1));
+        }
+        jump_to_app();
+    }
+#endif
 }
 
 

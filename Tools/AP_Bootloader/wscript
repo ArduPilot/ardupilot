@@ -2,8 +2,24 @@
 # encoding: utf-8
 
 def build(bld):
-    if bld.env.BOOTLOADER:
-        bld.ap_program(
-            use='ap',
-            program_groups='bootloader'
-            )
+    if not bld.env.BOOTLOADER:
+        return
+
+    # build external libcanard library
+    bld.stlib(source='../../modules/libcanard/canard.c',
+              target='libcanard')
+
+    bld.ap_program(
+        use=['ap','libcanard'],
+        program_groups='bootloader',
+        includes=[bld.env.SRCROOT + '/modules/libcanard',
+                  bld.env.BUILDROOT + '/modules/libcanard/dsdlc_generated']
+        )
+
+    bld(
+        # build libcanard headers
+        source=bld.path.ant_glob("modules/uavcan/dsdl/**/*.uavcan libraries/AP_UAVCAN/dsdl/**/*.uavcan"),
+        rule="python3 ../../modules/libcanard/dsdl_compiler/libcanard_dsdlc --header_only --outdir ${BUILDROOT}/modules/libcanard/dsdlc_generated ../../modules/uavcan/dsdl/uavcan",
+        group='dynamic_sources',
+    )
+        

@@ -47,6 +47,7 @@
 
 #include "bl_protocol.h"
 #include "support.h"
+#include "can.h"
 
 // #pragma GCC optimize("O0")
 
@@ -498,7 +499,11 @@ bootloader(unsigned timeout)
 
             /* try to get a byte from the host */
             c = cin(0);
-
+#if HAL_USE_CAN == TRUE
+            if (c < 0) {
+                can_update();
+            }
+#endif
         } while (c < 0);
 
         led_on(LED_ACTIVITY);
