@@ -481,6 +481,9 @@ class chibios(Board):
             '-fno-rtti',
             '-fno-threadsafe-statics',
         ]
+        env.CFLAGS += [
+            '-std=c11'
+        ]
 
         if Utils.unversioned_sys_platform() == 'cygwin':
             env.CXXFLAGS += ['-DCYGWIN_BUILD']
