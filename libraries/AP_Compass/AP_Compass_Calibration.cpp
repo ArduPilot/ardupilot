@@ -6,6 +6,8 @@
 
 extern AP_HAL::HAL& hal;
 
+#if COMPASS_CAL_ENABLED
+
 void
 Compass::cal_update()
 {
@@ -368,3 +370,5 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
     
     return result;
 }
+
+#endif // COMPASS_CAL_ENABLED

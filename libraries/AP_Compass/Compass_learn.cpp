@@ -10,6 +10,8 @@
 
 #include <stdio.h>
 
+#if COMPASS_LEARN_ENABLED
+
 extern const AP_HAL::HAL &hal;
 
 // constructor
@@ -229,3 +231,6 @@ void CompassLearn::process_sample(const struct sample &s)
     worst_error = worstv;
     best_yaw_deg = wrap_360(degrees(s.attitude.z) + besti * (360/num_sectors));
 }
+
+#endif // COMPASS_LEARN_ENABLED
+
