@@ -435,9 +435,11 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OFFS_MAX", 31, Compass, _offset_max, AP_COMPASS_OFFSETS_MAX_DEFAULT),
 
+#if COMPASS_MOT_ENABLED
     // @Group: PMOT
     // @Path: Compass_PerMotor.cpp
     AP_SUBGROUPINFO(_per_motor, "PMOT", 32, Compass, Compass_PerMotor),
+#endif
 
     // @Param: TYPEMASK
     // @DisplayName: Compass disable driver type mask
@@ -533,13 +535,19 @@ void Compass::init()
     // check that we are actually working before passing the compass
     // through to ARHS to use.
     if (!read()) {
+#ifndef HAL_BUILD_AP_PERIPH
         _enabled = false;
         hal.console->printf("Compass initialisation failed\n");
+#endif
+#ifndef HAL_NO_LOGGING
         AP::logger().Write_Error(LogErrorSubsystem::COMPASS, LogErrorCode::FAILED_TO_INITIALISE);
+#endif
         return;
     }
 
+#ifndef HAL_BUILD_AP_PERIPH
     AP::ahrs().set_compass(this);
+#endif
 }
 
 //  Register a new compass instance
@@ -966,9 +974,11 @@ void Compass::_detect_backends(void)
 bool
 Compass::read(void)
 {
+#ifndef HAL_BUILD_AP_PERIPH
     if (!_initial_location_set) {
         try_set_initial_location();
     }
+#endif
     for (uint8_t i=0; i< _backend_count; i++) {
         // call read on each of the backend. This call updates field[i]
         _backends[i]->read();
@@ -977,6 +987,7 @@ Compass::read(void)
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
         _state[i].healthy = (time - _state[i].last_update_ms < 500);
     }
+#if COMPASS_LEARN_ENABLED
     if (_learn == LEARN_INFLIGHT && !learn_allocated) {
         learn_allocated = true;
         learn = new CompassLearn(*this);
@@ -989,6 +1000,9 @@ Compass::read(void)
         AP::logger().Write_Compass();
     }
     return ret;
+#else
+    return healthy();
+#endif
 }
 
 uint8_t
