@@ -146,6 +146,9 @@ public:
     // relax I terms of throttle and steering controllers
     void relax_I();
 
+    // relax throttle I term
+    void relax_throttle() {_throttle_speed_pid.reset_I();}
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
