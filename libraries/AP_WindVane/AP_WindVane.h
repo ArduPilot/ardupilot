@@ -43,6 +43,9 @@ public:
     // return true if wind vane is enabled
     bool enabled() const;
 
+    // return true if wind speed is enabled
+    bool wind_speed_enabled() const;
+
     // Initialize the Wind Vane object and prepare it for use
     void init(const AP_SerialManager& serial_manager);
 
