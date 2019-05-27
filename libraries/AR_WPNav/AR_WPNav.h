@@ -51,6 +51,9 @@ public:
     // return distance (in meters) to destination
     float get_distance_to_destination() const { return _distance_to_destination; }
 
+    // return true if destination is valid
+    bool is_destination_valid() const { return _orig_and_dest_valid; }
+
     // get current destination. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     const Location &get_destination() { return _destination; }
 
