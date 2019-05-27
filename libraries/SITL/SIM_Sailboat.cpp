@@ -198,7 +198,7 @@ void Sailboat::update(const struct sitl_input &input)
     float delta_time = frame_time_us * 1.0e-6f;
 
     // speed in m/s in body frame
-    Vector3f velocity_body = dcm.transposed() * velocity_ef;
+    Vector3f velocity_body = dcm.transposed() * velocity_ef_water;
 
     // speed along x axis, +ve is forward
     float speed = velocity_body.x;
@@ -240,8 +240,17 @@ void Sailboat::update(const struct sitl_input &input)
     // acceleration (ie. real movement), plus gravity
     accel_body = dcm.transposed() * (accel_earth + Vector3f(0, 0, -GRAVITY_MSS));
 
+    // tide calcs
+    Vector3f tide_velocity_ef;
+     if (hal.util->get_soft_armed() && !is_zero(sitl->tide.speed) ) {
+        tide_velocity_ef.x = -cosf(radians(sitl->tide.direction)) * sitl->tide.speed;
+        tide_velocity_ef.y = -sinf(radians(sitl->tide.direction)) * sitl->tide.speed;
+        tide_velocity_ef.z = 0.0f;
+     }
+
     // new velocity vector
-    velocity_ef += accel_earth * delta_time;
+    velocity_ef_water += accel_earth * delta_time;
+    velocity_ef = velocity_ef_water + tide_velocity_ef;
 
     // new position vector
     position += velocity_ef * delta_time;
