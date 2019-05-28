@@ -21,17 +21,17 @@ public:
     AC_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff = 0);
 
     // set_dt - set time step in seconds
-    void        set_dt(float dt);
+    virtual void        set_dt(float dt);
 
     // set_input_filter_all - set input to PID controller
     //  input is filtered before the PID controllers are run
     //  this should be called before any other calls to get_p, get_i or get_d
-    void        set_input_filter_all(float input);
+    virtual void        set_input_filter_all(float input);
 
     // set_input_filter_d - set input to PID controller
     //  only input to the D portion of the controller is filtered
     //  this should be called before any other calls to get_p, get_i or get_d
-    void        set_input_filter_d(float input);
+    virtual void        set_input_filter_d(float input);
 
     // get_pid - get results from pid controller
     float       get_pid();
@@ -48,10 +48,10 @@ public:
     void        reset_filter() { _flags._reset_filter = true; }
 
     // load gain from eeprom
-    void        load_gains();
+    virtual void        load_gains();
 
     // save gain to eeprom
-    void        save_gains();
+    virtual void        save_gains();
 
     /// operator function call for easy initialisation
     void operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt, float ffval = 0);
@@ -70,7 +70,7 @@ public:
     void        kI(const float v) { _ki.set(v); }
     void        kD(const float v) { _kd.set(v); }
     void        imax(const float v) { _imax.set(fabsf(v)); }
-    void        filt_hz(const float v);
+    virtual void    filt_hz(const float v);
     void        ff(const float v) { _ff.set(v); }
 
     float       get_integrator() const { return _integrator; }
