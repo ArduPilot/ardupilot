@@ -5,6 +5,7 @@
 
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsMulticopter.h>
+#include <AC_PID/AC_PID_Filtered.h>
 
 // default rate controller PID gains
 #ifndef AC_ATC_MULTI_RATE_RP_P
@@ -90,9 +91,9 @@ protected:
     float get_throttle_avg_max(float throttle_in);
 
     AP_MotorsMulticopter& _motors_multi;
-    AC_PID                _pid_rate_roll;
-    AC_PID                _pid_rate_pitch;
-    AC_PID                _pid_rate_yaw;
+    AC_PID_Filtered       _pid_rate_roll;
+    AC_PID_Filtered       _pid_rate_pitch;
+    AC_PID_Filtered       _pid_rate_yaw;
 
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)

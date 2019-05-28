@@ -50,7 +50,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
-    AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 1, AC_AttitudeControl_Multi, AC_PID),
+    AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 1, AC_AttitudeControl_Multi, AC_PID_Filtered),
 
     // @Param: RAT_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
@@ -95,7 +95,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
-    AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 2, AC_AttitudeControl_Multi, AC_PID),
+    AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 2, AC_AttitudeControl_Multi, AC_PID_Filtered),
 
     // @Param: RAT_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
@@ -140,7 +140,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
-    AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Multi, AC_PID),
+    AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Multi, AC_PID_Filtered),
 
     // @Param: THR_MIX_MIN
     // @DisplayName: Throttle Mix Minimum
