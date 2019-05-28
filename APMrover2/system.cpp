@@ -73,7 +73,7 @@ void Rover::init_ardupilot()
 
     g2.airspeed.init();
 
-    g2.windvane.init();
+    g2.windvane.init(serial_manager);
 
     rover.g2.sailboat.init();
 
