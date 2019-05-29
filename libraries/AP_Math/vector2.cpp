@@ -29,9 +29,8 @@ float Vector2<T>::length_squared() const
 template <typename T>
 float Vector2<T>::length(void) const
 {
-	return norm(x, y);
+    return norm(x, y);
 }
-
 
 // dot product
 template <typename T>
