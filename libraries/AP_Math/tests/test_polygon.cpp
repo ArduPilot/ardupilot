@@ -1,7 +1,7 @@
 #include <AP_gtest.h>
 #include <AP_Common/AP_Common.h>
 
-#include <AP_Math/polygon.h>
+#include <AP_Math/AP_Math.h>
 
 struct PB {
     Vector2f point;
@@ -53,6 +53,72 @@ TEST(Polygon, outside)
     }
 }
 
+struct SquareBoundary {
+    Vector2f point;
+    Vector2f boundary[4];
+    bool outside;
+};
+static const SquareBoundary square_boundaries[] = {
+    { {1.0f,1.0f}, {{0.0f,0.0f}, {0.0f,10.0f}, {10.0, 10.0}, {10.0f,0.0f}}, false },
+    { {9.0f,9.0f}, {{0.0f,0.0f}, {0.0f,10.0f}, {10.0, 10.0}, {10.0f,0.0f}}, false },
+    { {1.0f,9.0f}, {{0.0f,0.0f}, {0.0f,10.0f}, {10.0, 10.0}, {10.0f,0.0f}}, false },
+    { {9.0f,1.0f}, {{0.0f,0.0f}, {0.0f,10.0f}, {10.0, 10.0}, {10.0f,0.0f}}, false },
+
+};
+
+TEST(Polygon, square_boundaries)
+{
+    // uint8_t count = 0;
+    for (const auto &pb : square_boundaries) {
+        // ::fprintf(stderr, "count=%u\n", count++);
+        Vector2f v[5];
+        memcpy(v, pb.boundary, sizeof(pb.boundary));
+        v[4] = v[0]; // close it
+        EXPECT_EQ(pb.outside, Polygon_outside(pb.point, v, 5));
+    }
+}
+
+TEST(Polygon, circle_outside_triangle)
+{
+    const Vector2f triangle[] = {{0.0f,0.0f}, {1.0f,0.0f}, {0.0f,1.0f}};
+    Vector2f triangle_closed[4];
+    memcpy(triangle_closed, triangle, sizeof(triangle));
+    triangle_closed[3] = triangle_closed[0];
+    const float radius = 0.8f;
+    for (uint16_t i=0; i<360; i++) {
+        const float x = radius * sin(radians(i)) + 0.5f;
+        const float y = radius * cos(radians(i)) + 0.5f;
+        EXPECT_EQ(true, Polygon_outside(Vector2f{x,y}, triangle_closed, 4));
+    }
+}
+
+TEST(Polygon, circle_inside_triangle)
+{
+    const Vector2f triangle[] = {{0.0f,0.0f}, {1.0f,0.0f}, {0.0f,1.0f}};
+    Vector2f triangle_closed[4];
+    memcpy(triangle_closed, triangle, sizeof(triangle));
+    triangle_closed[3] = triangle_closed[0];
+    const float radius = 0.2f;
+    for (uint16_t i=0; i<360; i++) {
+        const float x = radius * sin(radians(i)) + 0.2f;
+        const float y = radius * cos(radians(i)) + 0.2f;
+        EXPECT_EQ(false, Polygon_outside(Vector2f{x,y}, triangle_closed, 4));
+    }
+}
+
+TEST(Polygon, circle_outside_square)
+{
+    const Vector2f square[] = {{0.0f,0.0f}, {0.0f,10.0f}, {10.0, 10.0}, {10.0f,0.0f}};
+    Vector2f square_closed[5];
+    memcpy(square_closed, square, sizeof(square));
+    square_closed[4] = square_closed[0];
+    const float radius = 8.0f;
+    for (uint16_t i=0; i<360; i++) {
+        const float x = radius * sin(radians(i)) + 5.0f;
+        const float y = radius * cos(radians(i)) + 5.0f;
+        EXPECT_EQ(true, Polygon_outside(Vector2f{x,y}, square_closed, 4));
+    }
+}
 
 struct PB_long {
     Vector2l point;
