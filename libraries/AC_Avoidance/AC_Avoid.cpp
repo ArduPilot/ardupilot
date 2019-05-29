@@ -464,8 +464,11 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     const float speed = safe_vel.length();
     const Vector2f stopping_point_plus_margin = position_xy + safe_vel*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, speed))/speed);
 
-    uint16_t i, j;
-    for (i = 0, j = num_points-1; i < num_points; j = i++) {
+    for (uint16_t i=0; i<num_points; i++) {
+        uint16_t j = i+1;
+        if (j >= num_points) {
+            j = 0;
+        }
         // end points of current edge
         Vector2f start = boundary[j];
         Vector2f end = boundary[i];
