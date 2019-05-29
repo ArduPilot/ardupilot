@@ -3190,6 +3190,26 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_fence_avoidance_test(self):
+        self.context_push()
+        ex = None
+        try:
+            avoid_filepath = os.path.join(self.mission_directory(),
+                                          "copter-avoidance-fence.txt")
+            self.mavproxy.send("fence load %s\n" % avoid_filepath)
+            self.mavproxy.expect("Loaded 5 geo-fence")
+            self.set_parameter("FENCE_ENABLE", 1)
+            self.check_avoidance_corners()
+        except Exception as e:
+            self.progress("Caught exception: %s" % str(e))
+            ex = e
+        self.context_pop()
+        self.mavproxy.send("fence clear\n")
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
@@ -3260,6 +3280,10 @@ class AutoTestCopter(AutoTest):
             ("AC_Avoidance_Proximity",
              "Test proximity avoidance slide behaviour",
              self.fly_proximity_avoidance_test),
+
+            ("AC_Avoidance_Fence",
+             "Test fence avoidance slide behaviour",
+             self.fly_fence_avoidance_test),
 
             ("HorizontalFence",
              "Test horizontal fence",
