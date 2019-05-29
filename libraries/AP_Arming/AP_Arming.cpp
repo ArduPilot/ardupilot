@@ -104,6 +104,21 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
 
+    // @Param: BARO2GPS
+    // @DisplayName: Compare Baro Alt to GPS altitude
+    // @Description: Strict barometer validation by comparing BARO-based Altimeter to GPS altitude
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("BARO2GPS",     8,     AP_Arming, _baro2gps, 0),
+
+    // @Param: ARSPD_MAX
+    // @DisplayName: Maximum valid PreArm airspeed
+    // @Description: Maximum airspeed value to pass airspeed arming check. Set 0 to disable checking.
+    // @Range: 0.1 20
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("ARSPD_MAX",    9,     AP_Arming, _arspd_max, 0, AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_ROVER),
+
     // index 4 was VOLT_MIN, moved to AP_BattMonitor
     AP_GROUPEND
 };
@@ -168,9 +183,24 @@ bool AP_Arming::barometer_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BARO)) {
-        if (!AP::baro().all_healthy()) {
+        const AP_Baro &baro = AP::baro();
+        if (!baro.all_healthy()) {
             check_failed(ARMING_CHECK_BARO, report, "Barometer not healthy");
             return false;
+        }
+        if (_baro2gps == 1 && checks_to_perform & ARMING_CHECK_GPS) {
+            const AP_GPS &gps = AP::gps();
+            if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.get_vdop() < 201 && gps.num_sats() > 8) {
+                float baro_altasl = baro.get_altitude_difference(101325.0f, baro.get_pressure());
+                float gps_alt = gps.location().alt*0.01f;
+                if (fabsf(baro_altasl - gps_alt) > 1200.0f) {
+                    check_failed(ARMING_CHECK_BARO, report, "Barometer alt error");
+                    return false;
+                }
+            } else {
+                check_failed(ARMING_CHECK_BARO, report, "Barometer alt waiting for GPS alt fix");
+                return false;
+            }
         }
     }
 
@@ -187,9 +217,19 @@ bool AP_Arming::airspeed_checks(bool report)
             return true;
         }
         for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-            if (airspeed->enabled(i) && airspeed->use(i) && !airspeed->healthy(i)) {
-                check_failed(ARMING_CHECK_AIRSPEED, report, "Airspeed %d not healthy", i + 1);
-                return false;
+            if (airspeed->enabled(i) && airspeed->use(i)) {
+                if (!airspeed->healthy(i)) {
+                    check_failed(ARMING_CHECK_AIRSPEED, report, "Airspeed %d not healthy", i + 1);
+                    return false;
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+                } else if (_arspd_max >= 0.1f && airspeed->get_airspeed() > _arspd_max) {
+                    check_failed(ARMING_CHECK_AIRSPEED, report, "Airspeed %d is %.2f m/s over maximum", i + 1, airspeed->get_airspeed());
+                    return false;
+                } else if (airspeed->get_airspeed() < 0.01f) {
+                    check_failed(ARMING_CHECK_AIRSPEED, report, "Airspeed %d low; wrong TYPE/PIN or blocked", i + 1);
+                    return false;
+#endif
+                }
             }
         }
     }
@@ -795,14 +835,14 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     //are arming checks disabled?
     if (!do_arming_checks || checks_to_perform == ARMING_CHECK_NONE) {
         armed = true;
-        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed without checks");
         return true;
     }
 
     if (pre_arm_checks(true) && arm_checks(method)) {
         armed = true;
 
-        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+        gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed checks succeeded");
 
         //TODO: Log motor arming
         //Can't do this from this class until there is a unified logging library
