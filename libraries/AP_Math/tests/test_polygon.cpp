@@ -75,6 +75,8 @@ TEST(Polygon, square_boundaries)
         memcpy(v, pb.boundary, sizeof(pb.boundary));
         v[4] = v[0]; // close it
         EXPECT_EQ(pb.outside, Polygon_outside(pb.point, v, 5));
+        EXPECT_EQ(Polygon_outside(pb.point, v, 4),
+                  Polygon_outside(pb.point, v, 5));
     }
 }
 
@@ -89,6 +91,8 @@ TEST(Polygon, circle_outside_triangle)
         const float x = radius * sin(radians(i)) + 0.5f;
         const float y = radius * cos(radians(i)) + 0.5f;
         EXPECT_EQ(true, Polygon_outside(Vector2f{x,y}, triangle_closed, 4));
+        EXPECT_EQ(Polygon_outside(Vector2f{x,y}, triangle_closed, 3),
+                  Polygon_outside(Vector2f{x,y}, triangle_closed, 4));
     }
 }
 
@@ -103,6 +107,8 @@ TEST(Polygon, circle_inside_triangle)
         const float x = radius * sin(radians(i)) + 0.2f;
         const float y = radius * cos(radians(i)) + 0.2f;
         EXPECT_EQ(false, Polygon_outside(Vector2f{x,y}, triangle_closed, 4));
+        EXPECT_EQ(Polygon_outside(Vector2f{x,y}, triangle_closed, 3),
+                  Polygon_outside(Vector2f{x,y}, triangle_closed, 4));
     }
 }
 
@@ -117,6 +123,8 @@ TEST(Polygon, circle_outside_square)
         const float x = radius * sin(radians(i)) + 5.0f;
         const float y = radius * cos(radians(i)) + 5.0f;
         EXPECT_EQ(true, Polygon_outside(Vector2f{x,y}, square_closed, 4));
+        EXPECT_EQ(Polygon_outside(Vector2f{x,y}, square_closed, 3),
+                  Polygon_outside(Vector2f{x,y}, square_closed, 4));
     }
 }
 
