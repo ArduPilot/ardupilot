@@ -767,7 +767,18 @@ def write_SPI_config(f):
 def parse_spi_device(dev):
     '''parse a SPI:xxx device item'''
     a = dev.split(':')
+    if len(a) != 2:
+        error("Bad SPI device: %s" % dev)
     return 'hal.spi->get_device("%s")' % a[1]
+
+def parse_i2c_device(dev):
+    '''parse a I2C:xxx:xxx device item'''
+    a = dev.split(':')
+    if len(a) != 3:
+        error("Bad I2C device: %s" % dev)
+    busnum = int(a[1])
+    busaddr = int(a[2],base=0)
+    return 'hal.i2c_mgr->get_device(%u,0x%02x)' % (busnum, busaddr)
 
 def write_IMU_config(f):
     '''write IMU config defines'''
@@ -826,10 +837,12 @@ def write_BARO_config(f):
                 dev[i] = parse_spi_device(dev[i])
             elif dev[i].startswith("I2C:"):
                 dev[i] = parse_i2c_device(dev[i])
+                if dev[i].startswith('hal.i2c_mgr'):
+                    dev[i] = 'std::move(%s)' % dev[i]
         n = len(devlist)+1
         devlist.append('HAL_BARO_PROBE%u' % n)
         f.write(
-            '#define HAL_BARO_PROBE%u ADD_BACKEND(AP_Baro_%s::%s(*this, std::move(%s)))\n'
+            '#define HAL_BARO_PROBE%u ADD_BACKEND(AP_Baro_%s::%s(*this,%s))\n'
             % (n, driver, probe, ','.join(dev[1:])))
     f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
     
