@@ -93,13 +93,11 @@ void Copter::auto_disarm_check()
         return;
     }
 
-#if FRAME_CONFIG == HELI_FRAME
     // if the rotor is still spinning, don't initiate auto disarm
-    if (motors->rotor_speed_above_critical()) {
+    if (motors->get_spool_state() > AP_Motors::SpoolState::GROUND_IDLE) {
         auto_disarm_begin = tnow_ms;
         return;
     }
-#endif
 
     // always allow auto disarm if using interlock switch or motors are Emergency Stopped
     if ((ap.using_interlock && !motors->get_interlock()) || SRV_Channels::get_emergency_stop()) {
@@ -268,7 +266,11 @@ void Copter::init_disarm_motors()
 
 #if AUTOTUNE_ENABLED == ENABLED
     // save auto tuned parameters
-    mode_autotune.save_tuning_gains();
+    if (control_mode == AUTOTUNE) {;
+        mode_autotune.save_tuning_gains();
+    } else {
+        mode_autotune.reset();
+    }
 #endif
 
     // we are not in the air
@@ -351,7 +353,7 @@ void Copter::lost_vehicle_check()
     static uint8_t soundalarm_counter;
 
     // disable if aux switch is setup to vehicle alarm as the two could interfere
-    if (rc().find_channel_for_option(RC_Channel::aux_func::LOST_VEHICLE_SOUND)) {
+    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::LOST_VEHICLE_SOUND)) {
         return;
     }
 

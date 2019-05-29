@@ -75,7 +75,7 @@ void Copter::set_throttle_takeoff()
 float Copter::get_pilot_desired_climb_rate(float throttle_control)
 {
     // throttle failsafe check
-    if( failsafe.radio ) {
+    if (failsafe.radio) {
         return 0.0f;
     }
 
@@ -86,7 +86,7 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
         g2.toy_mode.throttle_adjust(throttle_control);
     }
 #endif
-    
+
     float desired_rate = 0.0f;
     float mid_stick = get_throttle_mid();
     float deadband_top = mid_stick + g.throttle_deadzone;
@@ -102,10 +102,10 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
     if (throttle_control < deadband_bottom) {
         // below the deadband
         desired_rate = get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
-    }else if (throttle_control > deadband_top) {
+    } else if (throttle_control > deadband_top) {
         // above the deadband
         desired_rate = g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
-    }else{
+    } else {
         // must be in the deadband
         desired_rate = 0.0f;
     }
@@ -121,7 +121,7 @@ float Copter::get_non_takeoff_throttle()
 
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
 //      returns climb rate (in cm/s) which should be passed to the position controller
-float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
+float Copter::get_surface_tracking_climb_rate(int16_t target_rate)
 {
 #if RANGEFINDER_ENABLED == ENABLED
     if (!copter.rangefinder_alt_ok()) {
@@ -129,24 +129,24 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
         return target_rate;
     }
 
-    static uint32_t last_call_ms = 0;
+    const float current_alt = inertial_nav.get_altitude();
+    const float current_alt_target = pos_control->get_alt_target();
     float distance_error;
     float velocity_correction;
-    float current_alt = inertial_nav.get_altitude();
 
     uint32_t now = millis();
 
-    target_rangefinder_alt_used = true;
+    surface_tracking.valid_for_logging = true;
 
     // reset target altitude if this controller has just been engaged
-    if (now - last_call_ms > RANGEFINDER_TIMEOUT_MS) {
-        target_rangefinder_alt = rangefinder_state.alt_cm + current_alt_target - current_alt;
+    if (now - surface_tracking.last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
+        surface_tracking.target_alt_cm = rangefinder_state.alt_cm + current_alt_target - current_alt;
     }
-    last_call_ms = now;
+    surface_tracking.last_update_ms = now;
 
     // adjust rangefinder target alt if motors have not hit their limits
     if ((target_rate<0 && !motors->limit.throttle_lower) || (target_rate>0 && !motors->limit.throttle_upper)) {
-        target_rangefinder_alt += target_rate * dt;
+        surface_tracking.target_alt_cm += target_rate * G_Dt;
     }
 
     /*
@@ -157,7 +157,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
       row. When that happens we reset the target altitude to the new
       reading
      */
-    int32_t glitch_cm = rangefinder_state.alt_cm - target_rangefinder_alt;
+    int32_t glitch_cm = rangefinder_state.alt_cm - surface_tracking.target_alt_cm;
     if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
         rangefinder_state.glitch_count = MAX(rangefinder_state.glitch_count+1,1);
     } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
@@ -167,7 +167,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
     }
     if (abs(rangefinder_state.glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
         // shift to the new rangefinder reading
-        target_rangefinder_alt = rangefinder_state.alt_cm;
+        surface_tracking.target_alt_cm = rangefinder_state.alt_cm;
         rangefinder_state.glitch_count = 0;
     }
     if (rangefinder_state.glitch_count != 0) {
@@ -176,15 +176,34 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
     }
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
-    distance_error = (target_rangefinder_alt - rangefinder_state.alt_cm) - (current_alt_target - current_alt);
+    distance_error = (surface_tracking.target_alt_cm - rangefinder_state.alt_cm) - (current_alt_target - current_alt);
     velocity_correction = distance_error * g.rangefinder_gain;
-    velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
+    velocity_correction = constrain_float(velocity_correction, -SURFACE_TRACKING_VELZ_MAX, SURFACE_TRACKING_VELZ_MAX);
 
     // return combined pilot climb rate + rate to correct rangefinder alt error
     return (target_rate + velocity_correction);
 #else
     return (float)target_rate;
 #endif
+}
+
+// get surfacing tracking alt
+// returns true if there is a valid target
+bool Copter::get_surface_tracking_target_alt_cm(float &target_alt_cm) const
+{
+    // check target has been updated recently
+    if (AP_HAL::millis() - surface_tracking.last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
+        return false;
+    }
+    target_alt_cm = surface_tracking.target_alt_cm;
+    return true;
+}
+
+// set surface tracking target altitude
+void Copter::set_surface_tracking_target_alt_cm(float target_alt_cm)
+{
+    surface_tracking.target_alt_cm = target_alt_cm;
+    surface_tracking.last_update_ms = AP_HAL::millis();
 }
 
 // get target climb rate reduced to avoid obstacles and altitude fence

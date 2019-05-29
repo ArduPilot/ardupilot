@@ -780,6 +780,9 @@ bool CompassCalibrator::calculate_orientation(void)
         return true;
     }
 
+    // this function is very slow
+    EXPECT_DELAY_MS(1000);
+
     float variance[ROTATION_MAX] {};
 
     for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {

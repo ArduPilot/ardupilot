@@ -59,6 +59,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Beacon/AP_Beacon.h>
+#include <AP_Common/AP_FWVersion.h>
 
 // Configuration
 #include "config.h"
@@ -112,7 +113,7 @@ private:
 
     AP_InertialSensor ins;
 
-    RangeFinder rng{serial_manager, ROTATION_NONE};
+    RangeFinder rng{serial_manager};
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -246,7 +247,6 @@ private:
     void compass_save();
     void init_compass_location();
     void update_compass(void);
-    void compass_cal_update();
     void accel_cal_update(void);
     void update_GPS(void);
     void handle_battery_failsafe(const char* type_str, const int8_t action);

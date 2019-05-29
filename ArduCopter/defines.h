@@ -160,6 +160,7 @@ enum GuidedMode {
 
 // RTL states
 enum RTLState {
+    RTL_Starting,
     RTL_InitialClimb,
     RTL_ReturnHome,
     RTL_LoiterAtHome,
@@ -174,40 +175,6 @@ enum SmartRTLState {
     SmartRTL_PreLandPosition,
     SmartRTL_Descend,
     SmartRTL_Land
-};
-
-// Alt_Hold states
-enum AltHoldModeState {
-    AltHold_MotorStopped,
-    AltHold_Takeoff,
-    AltHold_Flying,
-    AltHold_Landed
-};
-
-// Loiter states
-enum LoiterModeState {
-    Loiter_MotorStopped,
-    Loiter_Takeoff,
-    Loiter_Flying,
-    Loiter_Landed
-};
-
-// Sport states
-enum SportModeState {
-    Sport_MotorStopped,
-    Sport_Takeoff,
-    Sport_Flying,
-    Sport_Landed
-};
-
-// Flip states
-enum FlipState {
-    Flip_Start,
-    Flip_Roll,
-    Flip_Pitch_A,
-    Flip_Pitch_B,
-    Flip_Recover,
-    Flip_Abandon
 };
 
 enum LandStateType {

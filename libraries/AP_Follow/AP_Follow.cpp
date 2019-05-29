@@ -19,6 +19,7 @@
 #include <stdio.h>
 
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -78,7 +79,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
     // @Param: _OFS_Y
     // @DisplayName: Follow offsets in meters east/right
-    // @Description: Follow offsets in meters east/right.  If positive, this vehicle fly to the right or east of lead vehicle.  Depends on FOLL_OFS_TYPE
+    // @Description: Follow offsets in meters east/right.  If positive, this vehicle will fly to the right or east of lead vehicle.  Depends on FOLL_OFS_TYPE
     // @Range: -100 100
     // @Units: m
     // @Increment: 1
@@ -86,7 +87,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
     // @Param: _OFS_Z
     // @DisplayName: Follow offsets in meters down
-    // @Description: Follow offsets in meters down.  If positive, this vehicle fly below the lead vehicle
+    // @Description: Follow offsets in meters down.  If positive, this vehicle will fly below the lead vehicle
     // @Range: -100 100
     // @Units: m
     // @Increment: 1
@@ -184,7 +185,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     }
 
     // calculate difference
-    const Vector3f dist_vec = location_3d_diff_NED(current_loc, target_loc);
+    const Vector3f dist_vec = current_loc.get_distance_NED(target_loc);
 
     // fail if too far
     if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {

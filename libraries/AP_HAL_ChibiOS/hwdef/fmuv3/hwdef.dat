@@ -213,10 +213,11 @@ PA5 SPI1_SCK SPI1
 PA6 SPI1_MISO SPI1
 PA7 SPI1_MOSI SPI1
 
-# This defines an output pin which will default to output LOW. It is a
-# pin that enables peripheral power on this board.
-
-PA8 VDD_5V_PERIPH_EN OUTPUT LOW
+# This defines an output pin which will default to output HIGH. It is
+# a pin that enables peripheral power on this board. It starts in the
+# off state, then is pulled low to enable peripherals in
+# peripheral_power_enable()
+PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
 
 # This is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN.
@@ -365,8 +366,9 @@ PE6 SPI4_MOSI SPI4
 
 # This is the pin to enable the sensors rail. It can be used to power
 # cycle sensors to recover them in case there are problems with power on
-# timing affecting sensor stability. We pull it high by default.
-PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
+# timing affecting sensor stability. We pull it LOW on startup, which
+# means sensors off, then it is pulled HIGH in peripheral_power_enable()
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
 
 # UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
 PE7 UART7_RX UART7

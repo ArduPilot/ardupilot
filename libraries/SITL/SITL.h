@@ -231,6 +231,10 @@ public:
     // vibration frequencies in Hz on each axis
     AP_Vector3f vibe_freq;
 
+    // gyro and accel fail masks
+    AP_Int8 gyro_fail_mask;
+    AP_Int8 accel_fail_mask;
+
     struct {
         AP_Float x;
         AP_Float y;
@@ -239,6 +243,17 @@ public:
 
         uint32_t start_ms;
     } shove;
+
+    struct {
+        AP_Float x;
+        AP_Float y;
+        AP_Float z;
+        AP_Int32 t;
+
+        uint32_t start_ms;
+    } twist;
+
+    AP_Int8 gnd_behav;
 
     uint16_t irlock_port;
 

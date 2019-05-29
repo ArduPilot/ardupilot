@@ -156,6 +156,17 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // optical flow sensor measurement noise in rad/sec
     AP_GROUPINFO("FLOW_RND",   34, SITL,  flow_noise,  0.05f),
 
+    // accel and gyro fail masks
+    AP_GROUPINFO("GYR_FAIL_MSK",   35, SITL,  gyro_fail_mask,  0),
+    AP_GROUPINFO("ACC_FAIL_MSK",   36, SITL,  accel_fail_mask,  0),
+
+    AP_GROUPINFO("TWIST_X",     37, SITL,  twist.x, 0),
+    AP_GROUPINFO("TWIST_Y",     38, SITL,  twist.y, 0),
+    AP_GROUPINFO("TWIST_Z",     39, SITL,  twist.z, 0),
+    AP_GROUPINFO("TWIST_TIME",  40, SITL,  twist.t, 0),
+
+    AP_GROUPINFO("GND_BEHAV",   41, SITL,  gnd_behav, -1),
+
     AP_GROUPEND
 };
     

@@ -16,7 +16,6 @@
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Common/Semaphore.h>
 
 #include "AP_InertialSensor_BMI088.h"
 
@@ -146,6 +145,44 @@ bool AP_InertialSensor_BMI088::write_accel_register(uint8_t reg, uint8_t v)
     return false;
 }
 
+static const struct {
+    uint8_t reg;
+    uint8_t value;
+} accel_config[] = {
+    { REGA_CONF, 0xAC },
+    // setup 24g range
+    { REGA_RANGE, 0x03 },
+    // disable low-power mode
+    { REGA_PWR_CONF, 0 },
+    { REGA_PWR_CTRL, 0x04 },
+    // setup FIFO for streaming X,Y,Z
+    { REGA_FIFO_CONFIG0, 0x00 },
+    { REGA_FIFO_CONFIG1, 0x50 },
+};
+
+bool AP_InertialSensor_BMI088::setup_accel_config(void)
+{
+    if (done_accel_config) {
+        return true;
+    }
+    accel_config_count++;
+    for (uint8_t i=0; i<ARRAY_SIZE(accel_config); i++) {
+        uint8_t v;
+        if (!read_accel_registers(accel_config[i].reg, &v, 1)) {
+            return false;
+        }
+        if (v == accel_config[i].value) {
+            continue;
+        }
+        if (!write_accel_register(accel_config[i].reg, accel_config[i].value)) {
+            return false;
+        }
+    }
+    done_accel_config = true;
+    hal.console->printf("BMI088: accel config OK (%u tries)\n", (unsigned)accel_config_count);
+    return true;
+}
+
 /*
   probe and initialise accelerometer
  */
@@ -162,30 +199,8 @@ bool AP_InertialSensor_BMI088::accel_init()
         return false;
     }
 
-    // setup normal mode for DLPF, with 1600Hz ODR
-    if (!write_accel_register(REGA_CONF, 0xAC)) {
-        return false;
-    }
-        
-    // setup 24g range
-    if (!write_accel_register(REGA_RANGE, 0x03)) {
-        return false;
-    }
-        
-    // disable low-power mode
-    if (!write_accel_register(REGA_PWR_CONF, 0)) {
-        return false;
-    }
-    if (!write_accel_register(REGA_PWR_CTRL, 0x04)) {
-        return false;
-    }
-        
-    // setup FIFO for streaming X,Y,Z
-    if (!write_accel_register(REGA_FIFO_CONFIG0, 0x00)) {
-        return false;
-    }
-    if (!write_accel_register(REGA_FIFO_CONFIG1, 0x50)) {
-        return false;
+    if (!setup_accel_config()) {
+        hal.console->printf("BMI088: delaying accel config\n");
     }
 
     hal.console->printf("BMI088: found accel\n");
@@ -255,6 +270,9 @@ bool AP_InertialSensor_BMI088::init()
  */
 void AP_InertialSensor_BMI088::read_fifo_accel(void)
 {
+    if (!setup_accel_config()) {
+        return;
+    }
     uint8_t len[2];
     if (!read_accel_registers(REGA_FIFO_LEN0, len, 2)) {
         _inc_accel_error_count(accel_instance);
@@ -333,7 +351,7 @@ void AP_InertialSensor_BMI088::read_fifo_accel(void)
         } else {
             uint16_t temp_uint11 = (tbuf[0]<<3) | (tbuf[1]>>5);
             int16_t temp_int11 = temp_uint11>1023?temp_uint11-2048:temp_uint11;
-            float temp_degc = temp_int11 * 0.125 + 23;
+            float temp_degc = temp_int11 * 0.125f + 23;
             _publish_temperature(accel_instance, temp_degc);
         }
     }
@@ -365,7 +383,7 @@ void AP_InertialSensor_BMI088::read_fifo_gyro(void)
     }
 
     // data is 16 bits with 2000dps range
-    const float scale = radians(2000.0) / 32767.0;
+    const float scale = radians(2000.0f) / 32767.0f;
     for (uint8_t i = 0; i < num_frames; i++) {
         const uint8_t *d = &data[i*6];
         int16_t xyz[3] {

@@ -44,4 +44,5 @@ private:
     MAV_MODE base_mode() const override;
     MAV_STATE system_status() const override;
 
+    bool waypoint_receiving;
 };

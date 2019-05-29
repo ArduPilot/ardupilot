@@ -116,6 +116,10 @@ void Sailboat::update(const struct sitl_input &input)
 
     const float wind_apparent_dir_bf = wrap_180(wind_apparent_dir_ef - degrees(AP::ahrs().yaw));
 
+    // set RPM and airspeed from wind speed, allows to test RPM and Airspeed wind vane back end in SITL
+    rpm1 = wind_apparent_speed;
+    airspeed_pitot = wind_apparent_speed;
+
     // calculate angle-of-attack from wind to mainsail
     float aoa_deg = MAX(fabsf(wind_apparent_dir_bf) - mainsail_angle_bf, 0);
 

@@ -20,7 +20,7 @@ STM32_ST_USE_TIMER 5
 FLASH_SIZE_KB 2048
 
 # location of application code
-define FLASH_BOOTLOADER_LOAD_KB 16
+FLASH_BOOTLOADER_LOAD_KB 16
 
 # bootloader loads at start of flash
 FLASH_RESERVE_START_KB 0
@@ -85,3 +85,7 @@ define HAL_STORAGE_SIZE 16384
 # define CH_DBG_ENABLE_CHECKS TRUE
 # define CH_DBG_SYSTEM_STATE_CHECK TRUE
 # define CH_DBG_ENABLE_STACK_CHECK TRUE
+
+# disable peripheral and sensor power in the bootloader
+PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW

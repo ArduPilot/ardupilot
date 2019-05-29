@@ -103,7 +103,7 @@ bool JSBSim::create_templates(void)
 "       interface on TCP 5124 -->\n"
 "  <input port=\"%u\"/>\n"
 "\n"
-"  <run start=\"0\" end=\"10000000\" dt=\"0.001\">\n"
+"  <run start=\"0\" end=\"10000000\" dt=\"%.6f\">\n"
 "    <property value=\"0\"> simulation/notify-time-trigger </property>\n"
 "\n"
 "    <event name=\"start engine\">\n"
@@ -124,7 +124,8 @@ bool JSBSim::create_templates(void)
             jsbsim_model,
             jsbsim_model,
             jsbsim_model,
-            control_port);
+            control_port,
+            1.0/rate_hz);
     fclose(f);
 
     f = fopen(jsbsim_fgout, "w");
@@ -132,8 +133,10 @@ bool JSBSim::create_templates(void)
         AP_HAL::panic("Unable to create jsbsim fgout script %s", jsbsim_fgout);
     }
     fprintf(f, "<?xml version=\"1.0\"?>\n"
-            "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"UDP\" rate=\"1000\"/>\n",
-            fdm_port);
+            "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"UDP\" rate=\"%f\">\n"
+            "  <time type=\"simulation\" resolution=\"1e-6\"/>\n"
+            "</output>",
+            fdm_port, rate_hz);
     fclose(f);
 
     char *jsbsim_reset;
@@ -198,9 +201,13 @@ bool JSBSim::start_JSBSim(void)
         }
         char *logdirective;
         char *script;
+        char *nice;
+        char *rate;
 
         asprintf(&logdirective, "--logdirectivefile=%s", jsbsim_fgout);
         asprintf(&script, "--script=%s", jsbsim_script);
+        asprintf(&nice, "--nice=%.8f", 10*1e-9);
+        asprintf(&rate, "--simulation-rate=%f", rate_hz);
 
         if (chdir(autotest_dir) != 0) {
             perror(autotest_dir);
@@ -209,10 +216,9 @@ bool JSBSim::start_JSBSim(void)
 
         int ret = execlp("JSBSim",
                          "JSBSim",
-                         "--realtime",
                          "--suspend",
-                         "--nice",
-                         "--simulation-rate=1000",
+                         rate,
+                         nice,
                          logdirective,
                          script,
                          nullptr);
@@ -409,11 +415,14 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
 {
     FGNetFDM fdm;
     check_stdout();
-    while (sock_fgfdm.recv(&fdm, sizeof(fdm), 100) != sizeof(fdm)) {
-        send_servos(input);
-        check_stdout();
-    }
-    fdm.ByteSwap();
+
+    do {
+        while (sock_fgfdm.recv(&fdm, sizeof(fdm), 100) != sizeof(fdm)) {
+            send_servos(input);
+            check_stdout();
+        }
+        fdm.ByteSwap();
+    } while (fdm.cur_time == time_now_us);
 
     accel_body = Vector3f(fdm.A_X_pilot, fdm.A_Y_pilot, fdm.A_Z_pilot) * FEET_TO_METERS;
 
@@ -437,8 +446,7 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     rpm1 = fdm.rpm[0];
     rpm2 = fdm.rpm[1];
     
-    // assume 1kHz for now
-    time_now_us += 1000;
+    time_now_us = fdm.cur_time;
 }
 
 void JSBSim::drain_control_socket()
@@ -467,7 +475,7 @@ void JSBSim::update(const struct sitl_input &input)
     }
     send_servos(input);
     recv_fdm(input);
-    adjust_frame_time(1000);
+    adjust_frame_time(rate_hz);
     sync_frame_time();
     drain_control_socket();
 }

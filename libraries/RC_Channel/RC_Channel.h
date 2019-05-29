@@ -71,6 +71,8 @@ public:
     void       set_override(const uint16_t v, const uint32_t timestamp_us);
     bool       has_override() const;
 
+    int16_t    stick_mixing(const int16_t servo_in);
+
     // get control input with zero deadzone
     int16_t    get_control_in_zero_dz(void) const;
 
@@ -95,10 +97,10 @@ public:
 
     // auxillary switch support:
     void init_aux();
-    void read_aux();
+    bool read_aux();
 
     // Aux Switch enumeration
-    enum aux_func {
+    enum class AUX_FUNC {
         DO_NOTHING =           0, // aux switch disabled
         FLIP =                 2, // flip
         SIMPLE_MODE =          3, // change to simple mode
@@ -163,10 +165,16 @@ public:
         GPS_DISABLE  =        65, // disable GPS for testing
         RELAY5 =              66, // Relay5 pin on/off
         RELAY6 =              67, // Relay6 pin on/off
+        STABILIZE =           68, // stabilize mode
+        POSHOLD   =           69, // poshold mode
+        ALTHOLD   =           70, // althold mode
+        FLOWHOLD  =           71, // flowhold mode
+        CIRCLE    =           72, // circle mode
+        DRIFT     =           73  // drift mode
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
-    typedef enum aux_func aux_func_t;
+    typedef enum AUX_FUNC aux_func_t;
 
 protected:
 
@@ -331,7 +339,7 @@ public:
 
     // should we ignore RC failsafe bits from receivers?
     bool ignore_rc_failsafe(void) const {
-        return _options & uint32_t(Option::IGNORE_FAILSAFE);
+        return get_singleton() != nullptr && (_options & uint32_t(Option::IGNORE_FAILSAFE));
     }
 
     bool ignore_overrides() const {

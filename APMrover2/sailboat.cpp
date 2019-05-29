@@ -20,95 +20,174 @@ To Do List
  - add option to do proper tacks, ie tacking on flat spot in the waves, or only try once at a certain speed, or some better method than just changing the desired heading suddenly
 */
 
-// update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
-void Rover::sailboat_update_mainsail(float desired_speed)
+const AP_Param::GroupInfo Sailboat::var_info[] = {
+
+    // @Param: ENABLE
+    // @DisplayName: Enable Sailboat
+    // @Description: This enables Sailboat functionality
+    // @Values: 0:Disable,1:Enable
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO_FLAGS("ENABLE", 1, Sailboat, enable, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: ANGLE_MIN
+    // @DisplayName: Sail min angle
+    // @Description: Mainsheet tight, angle between centerline and boom
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ANGLE_MIN", 2, Sailboat, sail_angle_min, 0),
+
+    // @Param: ANGLE_MAX
+    // @DisplayName: Sail max angle
+    // @Description: Mainsheet loose, angle between centerline and boom
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ANGLE_MAX", 3, Sailboat, sail_angle_max, 90),
+
+    // @Param: ANGLE_IDEAL
+    // @DisplayName: Sail ideal angle
+    // @Description: Ideal angle between sail and apparent wind
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ANGLE_IDEAL", 4, Sailboat, sail_angle_ideal, 25),
+
+    // @Param: HEEL_MAX
+    // @DisplayName: Sailing maximum heel angle
+    // @Description: When in auto sail trim modes the heel will be limited to this value using PID control
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("HEEL_MAX", 5, Sailboat, sail_heel_angle_max, 15),
+
+    // @Param: SAIL_NO_GO_ANGLE
+    // @DisplayName: Sailing no go zone angle
+    // @Description: The typical closest angle to the wind the vehicle will sail at. the vehicle will sail at this angle when going upwind
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("NO_GO_ANGLE", 6, Sailboat, sail_no_go, 45),
+
+    AP_GROUPEND
+};
+
+
+/*
+  constructor
+ */
+Sailboat::Sailboat()
 {
-    if (!g2.motors.has_sail()) {
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
+void Sailboat::init()
+{
+    // sailboat defaults
+    if (enabled()) {
+        rover.g2.crash_angle.set_default(0);
+        rover.g2.loit_type.set_default(1);
+        rover.g2.loit_radius.set_default(5);
+        rover.g2.wp_nav.set_default_overshoot(10);
+    }
+}
+
+// update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
+void Sailboat::update_mainsail(float desired_speed)
+{
+    if (!enabled()) {
         return;
     }
 
     // relax sail if desired speed is zero
     if (!is_positive(desired_speed)) {
-        g2.motors.set_mainsail(100.0f);
+        rover.g2.motors.set_mainsail(100.0f);
         return;
     }
 
     // + is wind over starboard side, - is wind over port side, but as the sails are sheeted the same on each side it makes no difference so take abs
-    float wind_dir_apparent = fabsf(g2.windvane.get_apparent_wind_direction_rad());
+    float wind_dir_apparent = fabsf(rover.g2.windvane.get_apparent_wind_direction_rad());
     wind_dir_apparent = degrees(wind_dir_apparent);
 
     // set the main sail to the ideal angle to the wind
-    float mainsail_angle = wind_dir_apparent - g2.sail_angle_ideal;
+    float mainsail_angle = wind_dir_apparent -sail_angle_ideal;
 
     // make sure between allowable range
-    mainsail_angle = constrain_float(mainsail_angle, g2.sail_angle_min, g2.sail_angle_max);
+    mainsail_angle = constrain_float(mainsail_angle,sail_angle_min, sail_angle_max);
 
     // linear interpolate mainsail value (0 to 100) from wind angle mainsail_angle
-    float mainsail = linear_interpolate(0.0f, 100.0f, mainsail_angle, g2.sail_angle_min, g2.sail_angle_max);
+    float mainsail = linear_interpolate(0.0f, 100.0f, mainsail_angle,sail_angle_min,sail_angle_max);
 
     // use PID controller to sheet out
-    const float pid_offset = g2.attitude_control.get_sail_out_from_heel(radians(g2.sail_heel_angle_max), G_Dt) * 100.0f;
+    const float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(sail_heel_angle_max), rover.G_Dt) * 100.0f;
 
     mainsail = constrain_float((mainsail+pid_offset), 0.0f ,100.0f);
-    g2.motors.set_mainsail(mainsail);
+    rover.g2.motors.set_mainsail(mainsail);
 }
 
 // Velocity Made Good, this is the speed we are traveling towards the desired destination
 // only for logging at this stage
 // https://en.wikipedia.org/wiki/Velocity_made_good
-float Rover::sailboat_get_VMG() const
+float Sailboat::get_VMG() const
 {
     // return 0 if not heading towards waypoint
-    if (!control_mode->is_autopilot_mode()) {
+    if (!rover.control_mode->is_autopilot_mode()) {
         return 0.0f;
     }
 
     float speed;
-    if (!g2.attitude_control.get_forward_speed(speed)) {
+    if (!rover.g2.attitude_control.get_forward_speed(speed)) {
         return 0.0f;
     }
-    return (speed * cosf(wrap_PI(radians(nav_controller->target_bearing_cd()) - ahrs.yaw)));
+
+    return (speed * cosf(wrap_PI(radians(rover.g2.wp_nav.wp_bearing_cd() * 0.01f) - rover.ahrs.yaw)));
 }
 
 // handle user initiated tack while in acro mode
-void Rover::sailboat_handle_tack_request_acro()
+void Sailboat::handle_tack_request_acro()
 {
     // set tacking heading target to the current angle relative to the true wind but on the new tack
-    sailboat.tacking = true;
-    sailboat.tack_heading_rad = wrap_2PI(ahrs.yaw + 2.0f * wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - ahrs.yaw)));
+    currently_tacking = true;
+    tack_heading_rad = wrap_2PI(rover.ahrs.yaw + 2.0f * wrap_PI((rover.g2.windvane.get_absolute_wind_direction_rad() - rover.ahrs.yaw)));
 }
 
 // return target heading in radians when tacking (only used in acro)
-float Rover::sailboat_get_tack_heading_rad() const
+float Sailboat::get_tack_heading_rad() const
 {
-    return sailboat.tack_heading_rad;
+    return tack_heading_rad;
 }
 
 // handle user initiated tack while in autonomous modes (Auto, Guided, RTL, SmartRTL, etc)
-void Rover::sailboat_handle_tack_request_auto()
+void Sailboat::handle_tack_request_auto()
 {
     // record time of request for tack.  This will be processed asynchronously by sailboat_calc_heading
-    sailboat.auto_tack_request_ms = AP_HAL::millis();
+    auto_tack_request_ms = AP_HAL::millis();
 }
 
 // clear tacking state variables
-void Rover::sailboat_clear_tack()
+void Sailboat::clear_tack()
 {
-    sailboat.tacking = false;
-    sailboat.auto_tack_request_ms = 0;
+    currently_tacking = false;
+    auto_tack_request_ms = 0;
 }
 
 // returns true if boat is currently tacking
-bool Rover::sailboat_tacking() const
+bool Sailboat::tacking() const
 {
-    return sailboat.tacking;
+    return enabled() && currently_tacking;
 }
 
 // returns true if sailboat should take a indirect navigation route to go upwind
 // desired_heading should be in centi-degrees
-bool Rover::sailboat_use_indirect_route(float desired_heading_cd) const
+bool Sailboat::use_indirect_route(float desired_heading_cd) const
 {
-    if (!g2.motors.has_sail()) {
+    if (!enabled()) {
         return false;
     }
 
@@ -116,14 +195,14 @@ bool Rover::sailboat_use_indirect_route(float desired_heading_cd) const
     const float desired_heading_rad = radians(desired_heading_cd * 0.01f);
 
     // check if desired heading is in the no go zone, if it is we can't go direct
-    return fabsf(wrap_PI(g2.windvane.get_absolute_wind_direction_rad() - desired_heading_rad)) <= radians(g2.sail_no_go);
+    return fabsf(wrap_PI(rover.g2.windvane.get_absolute_wind_direction_rad() - desired_heading_rad)) <= radians(sail_no_go);
 }
 
 // if we can't sail on the desired heading then we should pick the best heading that we can sail on
 // this function assumes the caller has already checked sailboat_use_indirect_route(desired_heading_cd) returned true
-float Rover::sailboat_calc_heading(float desired_heading_cd)
+float Sailboat::calc_heading(float desired_heading_cd)
 {
-    if (!g2.motors.has_sail()) {
+    if (!enabled()) {
         return desired_heading_cd;
     }
 
@@ -131,19 +210,19 @@ float Rover::sailboat_calc_heading(float desired_heading_cd)
 
     // check for user requested tack
     uint32_t now = AP_HAL::millis();
-    if (sailboat.auto_tack_request_ms != 0) {
+    if (auto_tack_request_ms != 0) {
         // set should_tack flag is user requested tack within last 0.5 sec
-        should_tack = ((now - sailboat.auto_tack_request_ms) < 500);
-        sailboat.auto_tack_request_ms = 0;
+        should_tack = ((now - auto_tack_request_ms) < 500);
+        auto_tack_request_ms = 0;
     }
 
     // calculate left and right no go headings looking upwind
-    const float left_no_go_heading_rad = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() + radians(g2.sail_no_go));
-    const float right_no_go_heading_rad = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() - radians(g2.sail_no_go));
+    const float left_no_go_heading_rad = wrap_2PI(rover.g2.windvane.get_absolute_wind_direction_rad() + radians(sail_no_go));
+    const float right_no_go_heading_rad = wrap_2PI(rover.g2.windvane.get_absolute_wind_direction_rad() - radians(sail_no_go));
 
     // calculate current tack, Port if heading is left of no-go, STBD if right of no-go
     Sailboat_Tack current_tack;
-    if (is_negative(g2.windvane.get_apparent_wind_direction_rad())) {
+    if (is_negative(rover.g2.windvane.get_apparent_wind_direction_rad())) {
         current_tack = TACK_PORT;
     } else {
         current_tack = TACK_STARBOARD;
@@ -151,14 +230,15 @@ float Rover::sailboat_calc_heading(float desired_heading_cd)
 
     // trigger tack if cross track error larger than waypoint_overshoot parameter
     // this effectively defines a 'corridor' of width 2*waypoint_overshoot that the boat will stay within
-    if ((fabsf(rover.nav_controller->crosstrack_error()) >= g.waypoint_overshoot) && !is_zero(g.waypoint_overshoot) && !sailboat_tacking()) {
+    const float cross_track_error = rover.g2.wp_nav.crosstrack_error();
+    if ((fabsf(cross_track_error) >= rover.g2.wp_nav.get_overshoot()) && !is_zero(rover.g2.wp_nav.get_overshoot()) && !currently_tacking) {
         // make sure the new tack will reduce the cross track error
         // if were on starboard tack we are traveling towards the left hand boundary
-        if (is_positive(rover.nav_controller->crosstrack_error()) && (current_tack == TACK_STARBOARD)) {
+        if (is_positive(cross_track_error) && (current_tack == TACK_STARBOARD)) {
             should_tack = true;
         }
         // if were on port tack we are traveling towards the right hand boundary
-        if (is_negative(rover.nav_controller->crosstrack_error()) && (current_tack == TACK_PORT)) {
+        if (is_negative(cross_track_error) && (current_tack == TACK_PORT)) {
             should_tack = true;
         }
     }
@@ -169,28 +249,28 @@ float Rover::sailboat_calc_heading(float desired_heading_cd)
         // calculate target heading for the new tack
         switch (current_tack) {
             case TACK_PORT:
-                sailboat.tack_heading_rad = right_no_go_heading_rad;
+                tack_heading_rad = right_no_go_heading_rad;
                 break;
             case TACK_STARBOARD:
-                sailboat.tack_heading_rad = left_no_go_heading_rad;
+                tack_heading_rad = left_no_go_heading_rad;
                 break;
         }
-        sailboat.tacking = true;
-        sailboat.auto_tack_start_ms = AP_HAL::millis();
+        currently_tacking = true;
+        auto_tack_start_ms = AP_HAL::millis();
     }
 
     // if we are tacking we maintain the target heading until the tack completes or times out
-    if (sailboat.tacking) {
+    if (currently_tacking) {
         // check if we have reached target
-        if (fabsf(wrap_PI(sailboat.tack_heading_rad - ahrs.yaw)) <= radians(SAILBOAT_TACKING_ACCURACY_DEG)) {
-            sailboat_clear_tack();
-        } else if ((now - sailboat.auto_tack_start_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS) {
+        if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.yaw)) <= radians(SAILBOAT_TACKING_ACCURACY_DEG)) {
+            clear_tack();
+        } else if ((now - auto_tack_start_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS) {
             // tack has taken too long
             gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: Tacking timed out");
-            sailboat_clear_tack();
+            clear_tack();
         }
         // return tack target heading
-        return degrees(sailboat.tack_heading_rad) * 100.0f;
+        return degrees(tack_heading_rad) * 100.0f;
     }
 
     // return closest possible heading to wind

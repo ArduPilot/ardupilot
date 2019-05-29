@@ -279,7 +279,9 @@ int16_t AP_Logger_Block::get_log_data(uint16_t log_num, uint16_t page, uint32_t 
     WITH_SEMAPHORE(sem);
     if (offset == 0) {
         uint8_t header[3];
-        get_log_data_raw(log_num, page, 0, 3, header);
+        if (get_log_data_raw(log_num, page, 0, 3, header) == -1) {
+            return -1;
+        }
         adding_fmt_headers = (header[0] != HEAD_BYTE1 || header[1] != HEAD_BYTE2 || header[2] != LOG_FORMAT_MSG);
     }
     uint16_t ret = 0;
@@ -307,7 +309,11 @@ int16_t AP_Logger_Block::get_log_data(uint16_t log_num, uint16_t page, uint32_t 
     }
 
     if (len > 0) {
-        ret += get_log_data_raw(log_num, page, offset, len, data);
+        const int16_t bytes = get_log_data_raw(log_num, page, offset, len, data);
+        if (bytes == -1) {
+            return ret == 0 ? -1 : ret;
+        }
+        ret += bytes;
     }
 
     return ret;

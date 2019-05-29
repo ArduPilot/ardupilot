@@ -290,12 +290,22 @@ class generic_pin(object):
         v = 'FLOATING'
         if self.is_CS():
             v = "PULLUP"
+        # generate pullups for UARTs
         if (self.type.startswith('USART') or
             self.type.startswith('UART')) and (
             (self.label.endswith('_TX') or
              self.label.endswith('_RX') or
              self.label.endswith('_CTS') or
              self.label.endswith('_RTS'))):
+                v = "PULLUP"
+        # generate pullups for SDIO and SDMMC
+        if (self.type.startswith('SDIO') or
+            self.type.startswith('SDMMC')) and (
+            (self.label.endswith('_D0') or
+             self.label.endswith('_D1') or
+             self.label.endswith('_D2') or
+             self.label.endswith('_D3') or
+             self.label.endswith('_CMD'))):
                 v = "PULLUP"
         for e in self.extra:
             if e in values:
@@ -563,6 +573,8 @@ def write_mcu_config(f):
         'FLASH_RESERVE_START_KB', default=16, type=int)
     f.write('\n// location of loaded firmware\n')
     f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % (0x08000000 + flash_reserve_start*1024))
+    if args.bootloader:
+        f.write('#define FLASH_BOOTLOADER_LOAD_KB %u\n' % get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
     f.write('\n')
 
     ram_map = get_mcu_config('RAM_MAP', True)
@@ -647,7 +659,11 @@ def write_ldscript(fname):
     ram_map = get_mcu_config('RAM_MAP', True)
 
     flash_base = 0x08000000 + flash_reserve_start * 1024
-    flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
+
+    if not args.bootloader:
+        flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
+    else:
+        flash_length = get_config('FLASH_BOOTLOADER_LOAD_KB', type=int)
 
     print("Generating ldscript.ld")
     f = open(fname, 'w')

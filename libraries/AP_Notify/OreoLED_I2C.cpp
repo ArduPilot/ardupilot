@@ -19,7 +19,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
-#include <AP_Common/Semaphore.h>
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "OreoLED_I2C.h"

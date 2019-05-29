@@ -25,7 +25,7 @@ FLASH_SIZE_KB 1024
 FLASH_RESERVE_START_KB 0
 
 # the location where the bootloader will put the firmware
-define FLASH_BOOTLOADER_LOAD_KB 96
+FLASH_BOOTLOADER_LOAD_KB 96
 
 # board voltage
 STM32_VDD 330U

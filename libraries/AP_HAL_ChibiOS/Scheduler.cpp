@@ -26,6 +26,7 @@
 #include <AP_HAL_ChibiOS/RCOutput.h>
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/CAN.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #if CH_CFG_USE_DYNAMIC == TRUE
 
@@ -33,6 +34,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
 #include "shared_dma.h"
 #include "sdcard.h"
 
@@ -56,6 +58,10 @@ THD_WORKING_AREA(_io_thread_wa, IO_THD_WA_SIZE);
 #ifndef HAL_USE_EMPTY_STORAGE
 THD_WORKING_AREA(_storage_thread_wa, STORAGE_THD_WA_SIZE);
 #endif
+#ifndef HAL_NO_MONITOR_THREAD
+THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
+#endif
+
 Scheduler::Scheduler()
 {
 }
@@ -64,6 +70,15 @@ void Scheduler::init()
 {
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
+
+#ifndef HAL_NO_MONITOR_THREAD
+    // setup the monitor thread - this is used to detect software lockups
+    _monitor_thread_ctx = chThdCreateStatic(_monitor_thread_wa,
+                     sizeof(_monitor_thread_wa),
+                     APM_MONITOR_PRIORITY,        /* Initial priority.    */
+                     _monitor_thread,             /* Thread function.     */
+                     this);                     /* Thread parameter.    */
+#endif
 
 #ifndef HAL_NO_TIMER_THREAD
     // setup the timer thread - this will call tasks at 1kHz
@@ -305,6 +320,53 @@ void Scheduler::_timer_thread(void *arg)
 
         // process any pending RC output requests
         hal.rcout->timer_tick();
+
+        if (sched->expect_delay_start != 0) {
+            uint32_t now = AP_HAL::millis();
+            if (now - sched->expect_delay_start <= sched->expect_delay_length) {
+                sched->watchdog_pat();
+            }
+        }
+    }
+}
+
+void Scheduler::_monitor_thread(void *arg)
+{
+    Scheduler *sched = (Scheduler *)arg;
+    chRegSetThreadName("apm_monitor");
+
+    while (!sched->_initialized) {
+        sched->delay(100);
+    }
+    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+
+    while (true) {
+        sched->delay(100);
+        if (using_watchdog) {
+            stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+        }
+        uint32_t now = AP_HAL::millis();
+        uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
+        if (loop_delay >= 200) {
+            // the main loop has been stuck for at least
+            // 200ms. Starting logging the main loop state
+            const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+            AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIIHHHII",
+                               AP_HAL::micros64(),
+                               loop_delay,
+                               pd.scheduler_task,
+                               pd.internal_errors,
+                               pd.internal_error_count,
+                               pd.last_mavlink_msgid,
+                               pd.last_mavlink_cmd,
+                               pd.semaphore_line,
+                               pd.spi_count,
+                               pd.i2c_count);
+        }
+        if (loop_delay >= 500) {
+            // at 500ms we declare an internal error
+            AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck);
+        }
     }
 }
 
@@ -381,11 +443,6 @@ void Scheduler::_storage_thread(void* arg)
         // process any pending storage writes
         hal.storage->_timer_tick();
     }
-}
-
-bool Scheduler::in_main_thread() const
-{
-    return get_main_thread() == chThdGetSelfX();
 }
 
 void Scheduler::system_initialized()
@@ -470,6 +527,50 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         return false;
     }
     return true;
+}
+
+/*
+  inform the scheduler that we are calling an operation from the
+  main thread that may take an extended amount of time. This can
+  be used to prevent watchdog reset during expected long delays
+  A value of zero cancels the previous expected delay
+*/
+void Scheduler::expect_delay_ms(uint32_t ms)
+{
+    if (!in_main_thread()) {
+        // only for main thread
+        return;
+    }
+    if (ms == 0) {
+        if (expect_delay_nesting > 0) {
+            expect_delay_nesting--;
+        }
+        if (expect_delay_nesting == 0) {
+            expect_delay_start = 0;
+        }
+    } else {
+        uint32_t now = AP_HAL::millis();
+        if (expect_delay_start != 0) {
+            // we already have a delay running, possibly extend it
+            uint32_t done = now - expect_delay_start;
+            if (expect_delay_length > done) {
+                ms = MAX(ms, expect_delay_length - done);
+            }
+        }
+        expect_delay_start = now;
+        expect_delay_length = ms;
+        expect_delay_nesting++;
+
+        // also put our priority below timer thread if we are boosted
+        boost_end();
+    }
+}
+
+// pat the watchdog
+void Scheduler::watchdog_pat(void)
+{
+    stm32_watchdog_pat();
+    last_watchdog_pat_ms = AP_HAL::millis();
 }
 
 #endif // CH_CFG_USE_DYNAMIC

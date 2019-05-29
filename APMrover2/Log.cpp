@@ -46,7 +46,7 @@ void Rover::Log_Write_Attitude()
     }
 
     // log heel to sail control for sailboats
-    if (g2.motors.has_sail()) {
+    if (rover.g2.sailboat.enabled()) {
         logger.Write_PID(LOG_PIDR_MSG, g2.attitude_control.get_sailboat_heel_pid().get_pid_info());
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -130,10 +130,10 @@ void Rover::Log_Write_Nav_Tuning()
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_us             : AP_HAL::micros64(),
         wp_distance         : control_mode->get_distance_to_destination(),
-        wp_bearing_cd       : (uint16_t)wrap_360_cd(nav_controller->target_bearing_cd()),
-        nav_bearing_cd      : (uint16_t)wrap_360_cd(nav_controller->nav_bearing_cd()),
+        wp_bearing_cd       : (uint16_t)wrap_360_cd(control_mode->wp_bearing() * 100),
+        nav_bearing_cd      : (uint16_t)wrap_360_cd(control_mode->nav_bearing() * 100),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
-        xtrack_error        : nav_controller->crosstrack_error()
+        xtrack_error        : control_mode->crosstrack_error()
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -141,7 +141,7 @@ void Rover::Log_Write_Nav_Tuning()
 void Rover::Log_Write_Sail()
 {
     // only log sail if present
-    if (!g2.motors.has_sail()) {
+    if (!rover.g2.sailboat.enabled()) {
         return;
     }
 
@@ -164,7 +164,7 @@ void Rover::Log_Write_Sail()
                         (double)wind_speed_true,
                         (double)wind_speed_apparent,
                         (double)g2.motors.get_mainsail(),
-                        (double)sailboat_get_VMG());
+                        (double)g2.sailboat.get_VMG());
 }
 
 struct PACKED log_Steering {
@@ -206,7 +206,7 @@ void Rover::Log_Write_Steering()
         time_us        : AP_HAL::micros64(),
         steering_in        : channel_steer->get_control_in(),
         steering_out       : g2.motors.get_steering(),
-        desired_lat_accel  : g2.attitude_control.get_desired_lat_accel(),
+        desired_lat_accel  : control_mode->get_desired_lat_accel(),
         lat_accel          : lat_accel,
         desired_turn_rate  : degrees(g2.attitude_control.get_desired_turn_rate()),
         turn_rate          : degrees(ahrs.get_yaw_rate_earth())
@@ -284,7 +284,7 @@ void Rover::Log_Write_RC(void)
     logger.Write_RCIN();
     logger.Write_RCOUT();
     if (rssi.enabled()) {
-        logger.Write_RSSI(rssi);
+        logger.Write_RSSI();
     }
 }
 

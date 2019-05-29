@@ -223,6 +223,9 @@ void AP_Mission::update()
         return;
     }
 
+    // save persistent waypoint_num for watchdog restore
+    hal.util->persistent_data.waypoint_num = _nav_cmd.index;
+
     // check if we have an active nav command
     if (!_flags.nav_cmd_loaded || _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
         // advance in mission if no active nav command
@@ -381,7 +384,7 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
     if (cmd.id == MAV_CMD_NAV_SET_YAW_SPEED) {
         return (_nav_cmd.content.set_yaw_speed.angle_deg * 100);
     }
-    return get_bearing_cd(_nav_cmd.content.location, cmd.content.location);
+    return _nav_cmd.content.location.get_bearing_to(cmd.content.location);
 }
 
 // set_current_cmd - jumps to command specified by index
@@ -688,7 +691,7 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
     return MAV_MISSION_ACCEPTED;
 }
 
-// mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
+// mavlink_int_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
 //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
 MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd)
 {
@@ -1015,11 +1018,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     return MAV_MISSION_ACCEPTED;
 }
 
-// converts a mission_item to mission_item_int and returns a mission_command
-MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd)
+MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &packet,
+                                                                        mavlink_mission_item_int_t &mav_cmd)
 {
-    mavlink_mission_item_int_t mav_cmd = {};
-
+    // TODO: rename mav_cmd to mission_item_int
+    // TODO: rename packet to mission_item
     mav_cmd.param1 = packet.param1;
     mav_cmd.param2 = packet.param2;
     mav_cmd.param3 = packet.param3;
@@ -1032,6 +1035,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
     mav_cmd.frame = packet.frame;
     mav_cmd.current = packet.current;
     mav_cmd.autocontinue = packet.autocontinue;
+    mav_cmd.mission_type = packet.mission_type;
     
     /*
       the strategy for handling both MISSION_ITEM and MISSION_ITEM_INT
@@ -1060,62 +1064,56 @@ MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item
         mav_cmd.y = packet.y * 1.0e7f;
         break;
     }
-    
-    MAV_MISSION_RESULT ans = mavlink_int_to_mission_cmd(mav_cmd, cmd);
-    
-    return ans;
+
+    return MAV_MISSION_ACCEPTED;
 }
 
-// converts a Mission_Command to mission_item_int and returns a mission_item
-bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet)
+MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const mavlink_mission_item_int_t &item_int,
+                                                                        mavlink_mission_item_t &item)
 {
-    mavlink_mission_item_int_t mav_cmd = {};
-    
-    bool ans = mission_cmd_to_mavlink_int(cmd, (mavlink_mission_item_int_t&)mav_cmd);
-    
-    packet.param1 = mav_cmd.param1;
-    packet.param2 = mav_cmd.param2;
-    packet.param3 = mav_cmd.param3;
-    packet.param4 = mav_cmd.param4;
-    packet.z = mav_cmd.z;
-    packet.seq = mav_cmd.seq;
-    packet.command = mav_cmd.command;
-    packet.target_system = mav_cmd.target_system;
-    packet.target_component = mav_cmd.target_component;
-    packet.frame = mav_cmd.frame;
-    packet.current = mav_cmd.current;
-    packet.autocontinue = mav_cmd.autocontinue;
+    item.param1 = item_int.param1;
+    item.param2 = item_int.param2;
+    item.param3 = item_int.param3;
+    item.param4 = item_int.param4;
+    item.z = item_int.z;
+    item.seq = item_int.seq;
+    item.command = item_int.command;
+    item.target_system = item_int.target_system;
+    item.target_component = item_int.target_component;
+    item.frame = item_int.frame;
+    item.current = item_int.current;
+    item.autocontinue = item_int.autocontinue;
+    item.mission_type = item_int.mission_type;
 
-    /*
-      the strategy for handling both MISSION_ITEM and MISSION_ITEM_INT
-      is to pass the lat/lng in MISSION_ITEM_INT straight through, and
-      for MISSION_ITEM multiply by 1e-7 here. We need an exception for
-      any commands which use the x and y fields not as
-      latitude/longitude.
-     */
-    switch (packet.command) {
+    switch (item_int.command) {
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
-        packet.x = mav_cmd.x;
-        packet.y = mav_cmd.y;
+        item.x = item_int.x;
+        item.y = item_int.y;
         break;
 
     default:
         // all other commands use x and y as lat/lon. We need to
-        // multiply by 1e-7 to convert to int32_t
-        packet.x = mav_cmd.x * 1.0e-7f;
-        packet.y = mav_cmd.y * 1.0e-7f;
+        // multiply by 1e-7 to convert to float
+        item.x = item_int.x * 1.0e-7f;
+        item.y = item_int.y * 1.0e-7f;
+        if (!check_lat(item.x)) {
+            return MAV_MISSION_INVALID_PARAM5_X;
+        }
+        if (!check_lng(item.y)) {
+            return MAV_MISSION_INVALID_PARAM6_Y;
+        }
         break;
     }
-    
-    return ans;
+
+    return MAV_MISSION_ACCEPTED;
 }
 
 // mavlink_cmd_long_to_mission_cmd - converts a mavlink cmd long to an AP_Mission::Mission_Command object which can be stored to eeprom
 // return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
 MAV_MISSION_RESULT AP_Mission::mavlink_cmd_long_to_mission_cmd(const mavlink_command_long_t& packet, AP_Mission::Mission_Command& cmd) 
 {
-    mavlink_mission_item_t miss_item = {0};
+    mavlink_mission_item_int_t miss_item = {0};
  
     miss_item.param1 = packet.param1;
     miss_item.param2 = packet.param2;
@@ -1126,10 +1124,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_cmd_long_to_mission_cmd(const mavlink_com
     miss_item.target_system = packet.target_system;
     miss_item.target_component = packet.target_component;
 
-    return mavlink_to_mission_cmd(miss_item, cmd);
+    return mavlink_int_to_mission_cmd(miss_item, cmd);
 }
 
-// mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
+// mission_cmd_to_mavlink_int - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
 //  return true on success, false on failure
 bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet)
 {
@@ -1722,6 +1720,7 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd)
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
         if (_jump_tracking[i].index == cmd.index) {
             _jump_tracking[i].num_times_run++;
+            gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
             return;
         }else if(_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
             // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
@@ -1857,6 +1856,8 @@ const char *AP_Mission::Mission_Command::type() const {
     switch(id) {
     case MAV_CMD_NAV_WAYPOINT:
         return "WP";
+    case MAV_CMD_NAV_SPLINE_WAYPOINT:
+        return "SplineWP";
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return "RTL";
     case MAV_CMD_NAV_LOITER_UNLIM:

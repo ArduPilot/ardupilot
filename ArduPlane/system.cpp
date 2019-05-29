@@ -1,4 +1,5 @@
 #include "Plane.h"
+#include <AP_Common/AP_FWVersion.h>
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -86,7 +87,8 @@ void Plane::init_ardupilot()
     barometer.init();
 
     // initialise rangefinder
-    rangefinder.init();
+    rangefinder.set_log_rfnd_bit(MASK_LOG_SONAR);
+    rangefinder.init(ROTATION_PITCH_270);
 
     // initialise battery monitoring
     battery.init();
@@ -107,6 +109,7 @@ void Plane::init_ardupilot()
     // initialise airspeed sensor
     airspeed.init();
 
+    AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
 #if OPTFLOW == ENABLED
@@ -243,10 +246,10 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
     }
 
 #if !QAUTOTUNE_ENABLED
-    if (&new_mode == plane.mode_qautotune) {
+    if (&new_mode == &plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
-        set_mode(plane.mode_qhover);
-        return;
+        set_mode(plane.mode_qhover, MODE_REASON_UNAVAILABLE);
+        return false;
     }
 #endif
 
@@ -392,7 +395,8 @@ void Plane::startup_INS_ground(void)
 
     if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
         gcs().send_text(MAV_SEVERITY_ALERT, "Beginning INS calibration. Do not move plane");
-        hal.scheduler->delay(100);
+    } else {
+        gcs().send_text(MAV_SEVERITY_ALERT, "Skipping INS calibration");
     }
 
     ahrs.init();
@@ -415,13 +419,6 @@ void Plane::startup_INS_ground(void)
     } else {
         gcs().send_text(MAV_SEVERITY_WARNING,"No airspeed");
     }
-}
-
-// updates the status of the notify objects
-// should be called at 50hz
-void Plane::update_notify()
-{
-    notify.update();
 }
 
 // sets notify object flight mode information
@@ -505,7 +502,11 @@ bool Plane::disarm_motors(void)
     
 #if QAUTOTUNE_ENABLED
     //save qautotune gains if enabled and success
-    quadplane.qautotune.save_tuning_gains();
+    if (control_mode == &mode_qautotune) {
+        quadplane.qautotune.save_tuning_gains();
+    } else {
+        quadplane.qautotune.reset();
+    }
 #endif
 
     return true;

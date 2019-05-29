@@ -197,51 +197,91 @@ void Plane::dspoiler_update(void)
     if (!SRV_Channels::function_assigned(SRV_Channel::k_dspoilerLeft1)) {
         return;
     }
-    float elevon_left = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_left);
-    float elevon_right = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_right);
-    float rudder_rate = g.dspoiler_rud_rate * 0.01f;
-    float rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * rudder_rate;
-    float dspoiler1_left = elevon_left;
-    float dspoiler2_left = elevon_left;
-    float dspoiler1_right = elevon_right;
-    float dspoiler2_right = elevon_right;
+
+    const int8_t bitmask = g2.crow_flap_options.get();
+    const bool flying_wing       = bitmask & CrowFlapOptions::FLYINGWING;
+    const bool full_span_aileron = bitmask & CrowFlapOptions::FULLSPAN;
+    const bool progresive_crow   = bitmask & CrowFlapOptions::PROGRESSIVE_CROW;
+
+    // if flying wing use elevons else use ailerons
+    float elevon_left;
+    float elevon_right;
+    if (flying_wing) {
+        elevon_left = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_left);
+        elevon_right = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_right);
+    } else {
+        const float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+        elevon_left = -aileron;
+        elevon_right = aileron;
+    }
+
+    const float rudder_rate = g.dspoiler_rud_rate * 0.01f;
+    const float rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * rudder_rate;
+    float dspoiler_outer_left = elevon_left;
+    float dspoiler_outer_right = elevon_right;
+
+    float dspoiler_inner_left = 0;
+    float dspoiler_inner_right = 0;
+
+    // full span ailerons / elevons
+    if (full_span_aileron) {
+        dspoiler_inner_left = elevon_left;
+        dspoiler_inner_right = elevon_right;
+    }
 
     if (rudder > 0) {
         // apply rudder to right wing
-        dspoiler1_right = constrain_float(elevon_right + rudder, -4500, 4500);
-        dspoiler2_right = constrain_float(elevon_right - rudder, -4500, 4500);
+        dspoiler_outer_right = constrain_float(dspoiler_outer_right + rudder, -4500, 4500);
+        dspoiler_inner_right = constrain_float(dspoiler_inner_right - rudder, -4500, 4500);
     } else {
         // apply rudder to left wing
-        dspoiler1_left = constrain_float(elevon_left - rudder, -4500, 4500);
-        dspoiler2_left = constrain_float(elevon_left + rudder, -4500, 4500);
+        dspoiler_outer_left = constrain_float(dspoiler_outer_left - rudder, -4500, 4500);
+        dspoiler_inner_left = constrain_float(dspoiler_inner_left + rudder, -4500, 4500);
     }
 
-    const int16_t weight1 = g2.crow_flap_weight1.get();
-    const int16_t weight2 = g2.crow_flap_weight2.get();
-    if (weight1 > 0 || weight2 > 0) {
+    // limit flap throw used for aileron
+    const int8_t aileron_matching = g2.crow_flap_aileron_matching.get();
+    if (aileron_matching < 100) {
+        // only do matching if it will make a difference
+        const float aileron_matching_scaled = aileron_matching * 0.01;
+        if (is_negative(dspoiler_inner_left)) {
+            dspoiler_inner_left *= aileron_matching_scaled;
+        }
+        if (is_negative(dspoiler_inner_right)) {
+            dspoiler_inner_right *= aileron_matching_scaled;
+        }
+    }
+
+    const int16_t weight_outer = g2.crow_flap_weight_outer.get();
+    const int16_t weight_inner = g2.crow_flap_weight_inner.get();
+    if (weight_outer > 0 || weight_inner > 0) {
         /*
           apply crow flaps by apply the same split of the differential
           spoilers to both wings. Get flap percentage from k_flap_auto, which is set
           in set_servos_flaps() as the maximum of manual and auto flap control
          */
-        int16_t flap_percent = SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto);
-
-        // scale flaps so when weights are 100 they give full up or down
-        const float flap_scaled = ((float)flap_percent) * 0.45;
+        const int16_t flap_percent = SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto);
 
         if (flap_percent > 0) {
-            //apply crow brakes to both wings using flap percentage
-            dspoiler1_left  = constrain_float(dspoiler1_left  + flap_scaled * weight1, -4500, 4500);
-            dspoiler2_left  = constrain_float(dspoiler2_left  - flap_scaled * weight2, -4500, 4500);
-            dspoiler1_right = constrain_float(dspoiler1_right + flap_scaled * weight1, -4500, 4500);
-            dspoiler2_right = constrain_float(dspoiler2_right - flap_scaled * weight2, -4500, 4500);
+            float inner_flap_scaled = (float)flap_percent;
+            float outer_flap_scaled = (float)flap_percent;
+            if (progresive_crow) {
+                // apply 0 - full inner from 0 to 50% flap then add in outer above 50%
+                inner_flap_scaled = constrain_float(inner_flap_scaled * 2, 0,100);
+                outer_flap_scaled = constrain_float(outer_flap_scaled - 50, 0,50) * 2;
+            }
+            // scale flaps so when weights are 100 they give full up or down
+            dspoiler_outer_left  = constrain_float(dspoiler_outer_left  + outer_flap_scaled * weight_outer * 0.45, -4500, 4500);
+            dspoiler_inner_left  = constrain_float(dspoiler_inner_left  - inner_flap_scaled * weight_inner * 0.45, -4500, 4500);
+            dspoiler_outer_right = constrain_float(dspoiler_outer_right + outer_flap_scaled * weight_outer * 0.45, -4500, 4500);
+            dspoiler_inner_right = constrain_float(dspoiler_inner_right - inner_flap_scaled * weight_inner * 0.45, -4500, 4500);
         }
     }
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft1, dspoiler1_left);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft2, dspoiler2_left);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight1, dspoiler1_right);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight2, dspoiler2_right);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft1, dspoiler_outer_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft2, dspoiler_inner_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight1, dspoiler_outer_right);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight2, dspoiler_inner_right);
 }
 
 /*
@@ -402,9 +442,10 @@ void Plane::set_servos_controlled(void)
         } else if (g.throttle_passthru_stabilize) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         } else {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
+                                            constrain_int16(get_throttle_input(true), min_throttle, max_throttle));
         }
     } else if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
                guided_throttle_passthru) {
@@ -569,10 +610,12 @@ void Plane::servos_twin_engine_mix(void)
     float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
     rudder_dt = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
 
+#if ADVANCED_FAILSAFE == ENABLED
     if (afs.should_crash_vehicle()) {
         // when in AFS failsafe force rudder input for differential thrust to zero
         rudder_dt = 0;
     }
+#endif
 
     float throttle_left, throttle_right;
 
@@ -626,10 +669,12 @@ void Plane::set_servos(void)
     // this is to allow the failsafe module to deliberately crash 
     // the plane. Only used in extreme circumstances to meet the
     // OBC rules
+#if ADVANCED_FAILSAFE == ENABLED
     if (afs.should_crash_vehicle()) {
         afs.terminate_vehicle();
         return;
     }
+#endif
 
     // do any transition updates for quadplane
     quadplane.update();    
@@ -705,9 +750,10 @@ void Plane::set_servos(void)
 
         case AP_Arming::Required::YES_MIN_PWM:
         default:
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0);
+            int8_t min_throttle = MAX(aparm.throttle_min.get(),0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, min_throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, min_throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, min_throttle);
             break;
         }
     }

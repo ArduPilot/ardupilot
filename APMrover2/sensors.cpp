@@ -23,17 +23,6 @@ void Rover::update_compass(void)
 {
     if (AP::compass().enabled() && compass.read()) {
         ahrs.set_compass(&compass);
-        // update offsets
-        if (should_log(MASK_LOG_COMPASS)) {
-            logger.Write_Compass();
-        }
-    }
-}
-
-// Calibrate compass
-void Rover::compass_cal_update() {
-    if (!hal.util->get_soft_armed()) {
-        compass.compass_cal_update();
     }
 }
 

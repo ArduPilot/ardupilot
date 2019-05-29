@@ -126,7 +126,7 @@ public:
     // get the time-allowed-per-loop in seconds
     float get_loop_period_s() {
         if (is_zero(_loop_period_s)) {
-            _loop_period_s = 1.0 / _loop_rate_hz;
+            _loop_period_s = 1.0f / _loop_rate_hz;
         }
         return _loop_period_s;
     }
@@ -141,9 +141,6 @@ public:
     }
     
     static const struct AP_Param::GroupInfo var_info[];
-
-    // current running task, or -1 if none. Used to debug stuck tasks
-    static int8_t current_task;
 
     // loop performance monitoring:
     AP::PerfInfo perf_info;

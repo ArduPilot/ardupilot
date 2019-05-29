@@ -16,32 +16,12 @@
      Test for AP_GPS_AUTO
 */
 
-#include <stdlib.h>
-
-#include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Logger/AP_Logger.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Baro/AP_Baro.h>
-#include <Filter/Filter.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Declination/AP_Declination.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Mission/AP_Mission.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/AP_BoardLED.h>
-#include <AP_Scheduler/AP_Scheduler.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 void setup();
@@ -53,6 +33,13 @@ static AP_BoardConfig board_config;
 
 // create board led object
 AP_BoardLED board_led;
+
+// create fake gcs object
+GCS_Dummy _gcs;
+
+const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
+        AP_GROUPEND
+};
 
 // This example uses GPS system. Create it.
 static AP_GPS gps;

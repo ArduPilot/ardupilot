@@ -46,6 +46,21 @@ AP_AHRS_DCM::reset_gyro_drift(void)
     _omega_I_sum_time = 0;
 }
 
+
+/* if this was a watchdog reset then get home from backup registers */
+void AP_AHRS_DCM::load_watchdog_home()
+{
+    const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+    if (hal.util->was_watchdog_reset() && (pd.home_lat != 0 || pd.home_lon != 0)) {
+        _home.lat = pd.home_lat;
+        _home.lng = pd.home_lon;
+        _home.set_alt_cm(pd.home_alt_cm, Location::AltFrame::ABSOLUTE);
+        _home_is_set = true;
+        _home_locked = true;
+        gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog home");
+    }
+}
+
 // run a full DCM update round
 void
 AP_AHRS_DCM::update(bool skip_ins_update)
@@ -57,6 +72,7 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 
     if (_last_startup_ms == 0) {
         _last_startup_ms = AP_HAL::millis();
+        load_watchdog_home();
     }
 
     if (!skip_ins_update) {
@@ -98,6 +114,19 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 
     // update AOA and SSA
     update_AOA_SSA();
+
+    backup_attitude();
+}
+
+/*
+  backup attitude to persistent_data for use in watchdog reset
+ */
+void AP_AHRS_DCM::backup_attitude(void)
+{
+    AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+    pd.roll_rad = roll;
+    pd.pitch_rad = pitch;
+    pd.yaw_rad = yaw;
 }
 
 // update the DCM matrix using only the gyros
@@ -157,7 +186,15 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     // if the caller wants us to try to recover to the current
     // attitude then calculate the dcm matrix from the current
     // roll/pitch/yaw values
-    if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
+    if (hal.util->was_watchdog_reset() && AP_HAL::millis() < 10000) {
+        const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        roll = pd.roll_rad;
+        pitch = pd.pitch_rad;
+        yaw = pd.yaw_rad;
+        _dcm_matrix.from_euler(roll, pitch, yaw);
+        gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog attitude %.0f %.0f %.0f",
+                        degrees(roll), degrees(pitch), degrees(yaw));
+    } else if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
         _dcm_matrix.from_euler(roll, pitch, yaw);
     } else {
 
@@ -192,6 +229,9 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 
     }
 
+    if (_last_startup_ms == 0) {
+        load_watchdog_home();
+    }
     _last_startup_ms = AP_HAL::millis();
 }
 
@@ -989,7 +1029,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     if (_flags.fly_forward && _have_position) {
         float gps_delay_sec = 0;
         _gps.get_lag(gps_delay_sec);
-        location_update(loc, _gps.ground_course_cd() * 0.01f, _gps.ground_speed() * gps_delay_sec);
+        loc.offset_bearing(_gps.ground_course_cd() * 0.01f, _gps.ground_speed() * gps_delay_sec);
     }
     return _have_position;
 }
@@ -1037,7 +1077,7 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
         return false;
     }
-    if (!check_latlng(loc)) {
+    if (!loc.check_latlng()) {
         return false;
     }
     // home must always be global frame at the moment as .alt is
@@ -1056,6 +1096,11 @@ bool AP_AHRS_DCM::set_home(const Location &loc)
     // send new home and ekf origin to GCS
     gcs().send_message(MSG_HOME);
     gcs().send_message(MSG_ORIGIN);
+
+    AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+    pd.home_lat = loc.lat;
+    pd.home_lon = loc.lng;
+    pd.home_alt_cm = loc.alt;
 
     return true;
 }

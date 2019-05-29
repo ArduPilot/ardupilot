@@ -79,9 +79,6 @@ public:
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
     bool have_vectored_thrust() const { return is_positive(_vector_throttle_base); }
 
-    // true if the vehicle has a mainsail
-    bool has_sail() const;
-
     // output to motors and steering servos
     // ground_speed should be the vehicle's speed over the surface in m/s
     // dt should be expected time between calls to this function
@@ -143,6 +140,9 @@ protected:
 
     // output for sailboat's mainsail in the range of 0 to 100
     void output_mainsail();
+
+    // true if the vehicle has a mainsail
+    bool has_sail() const;
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);

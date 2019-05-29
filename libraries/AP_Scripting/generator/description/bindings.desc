@@ -1,0 +1,126 @@
+-- Location stuff (this is a commented line)
+
+include AP_Common/Location.h
+
+userdata Location field lat int32_t read write -900000000 900000000
+userdata Location field lng int32_t read write -1800000000 1800000000
+userdata Location field relative_alt boolean read write
+userdata Location field terrain_alt boolean read write
+userdata Location field origin_alt boolean read write
+userdata Location field loiter_xtrack boolean read write
+
+userdata Location method get_distance float Location
+userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
+userdata Location method get_vector_from_origin_NEU boolean Vector3f
+
+include AP_AHRS/AP_AHRS.h
+
+singleton AP_AHRS alias ahrs
+singleton AP_AHRS semaphore
+singleton AP_AHRS method get_position boolean Location'Null
+singleton AP_AHRS method get_home Location
+singleton AP_AHRS method get_gyro Vector3f
+singleton AP_AHRS method get_hagl boolean float'Null
+singleton AP_AHRS method wind_estimate Vector3f
+singleton AP_AHRS method groundspeed_vector Vector2f
+singleton AP_AHRS method get_velocity_NED boolean Vector3f'Null
+singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
+singleton AP_AHRS method home_is_set boolean
+singleton AP_AHRS method prearm_healthy boolean
+
+include AP_BattMonitor/AP_BattMonitor.h
+
+singleton AP_BattMonitor alias battery
+singleton AP_BattMonitor method num_instances uint8_t
+singleton AP_BattMonitor method healthy boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method has_consumed_energy boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method has_current boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method voltage float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method voltage_resting_estimate float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method current_amps float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method consumed_mah float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method consumed_wh float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method capacity_remaining_pct uint8_t uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method pack_capacity_mah int32_t uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method has_failsafed boolean
+singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+
+include AP_GPS/AP_GPS.h
+
+singleton AP_GPS alias gps
+singleton AP_GPS method num_sensors uint8_t
+singleton AP_GPS method primary_sensor uint8_t
+singleton AP_GPS method status uint8_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method location Location uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method speed_accuracy boolean uint8_t 0 GPS_MAX_INSTANCES float'Null
+singleton AP_GPS method horizontal_accuracy boolean uint8_t 0 GPS_MAX_INSTANCES float'Null
+singleton AP_GPS method vertical_accuracy boolean uint8_t 0 GPS_MAX_INSTANCES float'Null
+singleton AP_GPS method velocity Vector3f uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method ground_speed float uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method ground_course float uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method num_sats uint8_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method time_week uint16_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method time_week_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method get_hdop uint16_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method get_vdop uint16_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method last_fix_time_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method last_message_time_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method all_configured boolean
+singleton AP_GPS method first_unconfigured_gps uint8_t
+
+include AP_Math/AP_Math.h
+
+userdata Vector3f field x float read write -FLT_MAX FLT_MAX
+userdata Vector3f field y float read write -FLT_MAX FLT_MAX
+userdata Vector3f field z float read write -FLT_MAX FLT_MAX
+userdata Vector3f method length float
+userdata Vector3f method normalize void
+userdata Vector3f method is_nan void
+userdata Vector3f method is_inf void
+userdata Vector3f method is_zero void
+userdata Vector3f operator +
+userdata Vector3f operator -
+
+userdata Vector2f field x float read write -FLT_MAX FLT_MAX
+userdata Vector2f field y float read write -FLT_MAX FLT_MAX
+userdata Vector2f method length float
+userdata Vector2f method normalize void
+userdata Vector2f method is_nan void
+userdata Vector2f method is_inf void
+userdata Vector2f method is_zero void
+userdata Vector2f operator +
+userdata Vector2f operator -
+
+include AP_Notify/AP_Notify.h
+singleton notify alias notify
+singleton AP_Notify method play_tune void string
+
+include AP_RangeFinder/AP_RangeFinder.h
+
+singleton RangeFinder alias rangefinder
+singleton RangeFinder method num_sensors uint8_t
+
+include AP_Terrain/AP_Terrain.h
+
+singleton AP_Terrain alias terrain
+singleton AP_Terrain method enabled boolean
+singleton AP_Terrain method status uint8_t
+singleton AP_Terrain method height_amsl boolean Location float'Null boolean
+singleton AP_Terrain method height_terrain_difference_home boolean float'Null boolean
+singleton AP_Terrain method height_relative_home_equivalent boolean float -FLT_MAX FLT_MAX float'Null boolean
+singleton AP_Terrain method height_above_terrain boolean float'Null boolean
+
+include AP_Relay/AP_Relay.h
+
+singleton AP_Relay alias relay
+singleton AP_Relay method on void uint8_t 0 AP_RELAY_NUM_RELAYS
+singleton AP_Relay method off void uint8_t 0 AP_RELAY_NUM_RELAYS
+singleton AP_Relay method enabled boolean uint8_t 0 AP_RELAY_NUM_RELAYS
+singleton AP_Relay method toggle void uint8_t 0 AP_RELAY_NUM_RELAYS
+
+include GCS_MAVLink/GCS.h
+singleton GCS alias gcs
+singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG string

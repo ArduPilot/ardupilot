@@ -98,12 +98,20 @@ const AP_Param::GroupInfo AP_Relay::var_info[] = {
     AP_GROUPEND
 };
 
+AP_Relay *AP_Relay::singleton;
 
 extern const AP_HAL::HAL& hal;
 
 AP_Relay::AP_Relay(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (singleton != nullptr) {
+        AP_HAL::panic("AP_Relay must be singleton");
+    }
+#endif
+    singleton = this;
 }
 
 

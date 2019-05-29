@@ -7,8 +7,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Terrain/AP_Terrain.h>
 
-extern const AP_HAL::HAL& hal;
-
 AP_Terrain *Location::_terrain = nullptr;
 
 /// constructors
@@ -104,6 +102,11 @@ Location::AltFrame Location::get_alt_frame() const
 /// get altitude in desired frame
 bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (lat == 0 && lng == 0) {
+        AP_HAL::panic("Should not be called on invalid location");
+    }
+#endif
     Location::AltFrame frame = get_alt_frame();
 
     // shortcut if desired and underlying frame are the same
@@ -220,6 +223,25 @@ float Location::get_distance(const struct Location &loc2) const
     return norm(dlat, dlng) * LOCATION_SCALING_FACTOR;
 }
 
+
+/*
+  return the distance in meters in North/East plane as a N/E vector
+  from loc1 to loc2
+ */
+Vector2f Location::get_distance_NE(const Location &loc2) const
+{
+    return Vector2f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale());
+}
+
+// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
+Vector3f Location::get_distance_NED(const Location &loc2) const
+{
+    return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    (loc2.lng - lng) * LOCATION_SCALING_FACTOR * longitude_scale(),
+                    (alt - loc2.alt) * 0.01f);
+}
+
 // extrapolate latitude/longitude given distances (in meters) north and east
 void Location::offset(float ofs_north, float ofs_east)
 {
@@ -230,6 +252,20 @@ void Location::offset(float ofs_north, float ofs_east)
         lat += dlat;
         lng += dlng;
     }
+}
+
+/*
+ *  extrapolate latitude/longitude given bearing and distance
+ * Note that this function is accurate to about 1mm at a distance of
+ * 100m. This function has the advantage that it works in relative
+ * positions, so it keeps the accuracy even when dealing with small
+ * distances and floating point numbers
+ */
+void Location::offset_bearing(float bearing, float distance)
+{
+    const float ofs_north = cosf(radians(bearing)) * distance;
+    const float ofs_east  = sinf(radians(bearing)) * distance;
+    offset(ofs_north, ofs_east);
 }
 
 float Location::longitude_scale() const
@@ -259,7 +295,7 @@ bool Location::sanitize(const Location &defaultLoc)
     }
 
     // limit lat/lng to appropriate ranges
-    if (!check_latlng(lat, lng)) {
+    if (!check_latlng()) {
         lat = defaultLoc.lat;
         lng = defaultLoc.lng;
         has_changed = true;
@@ -270,3 +306,58 @@ bool Location::sanitize(const Location &defaultLoc)
 
 // make sure we know what size the Location object is:
 assert_storage_size<Location, 16> _assert_storage_size_Location;
+
+
+// return bearing in centi-degrees from location to loc2
+int32_t Location::get_bearing_to(const struct Location &loc2) const
+{
+    const int32_t off_x = loc2.lng - lng;
+    const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale();
+    int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
+    if (bearing < 0) {
+        bearing += 36000;
+    }
+    return bearing;
+}
+
+/*
+  return true if lat and lng match. Ignores altitude and options
+ */
+bool Location::same_latlon_as(const Location &loc2) const
+{
+    return (lat == loc2.lat) && (lng == loc2.lng);
+}
+
+// return true when lat and lng are within range
+bool Location::check_latlng() const
+{
+    return check_lat(lat) && check_lng(lng);
+}
+
+// see if location is past a line perpendicular to
+// the line between point1 and point2 and passing through point2.
+// If point1 is our previous waypoint and point2 is our target waypoint
+// then this function returns true if we have flown past
+// the target waypoint
+bool Location::past_interval_finish_line(const Location &point1, const Location &point2) const
+{
+    return this->line_path_proportion(point1, point2) >= 1.0f;
+}
+
+/*
+  return the proportion we are along the path from point1 to
+  point2, along a line parallel to point1<->point2.
+
+  This will be more than 1 if we have passed point2
+ */
+float Location::line_path_proportion(const Location &point1, const Location &point2) const
+{
+    const Vector2f vec1 = point1.get_distance_NE(point2);
+    const Vector2f vec2 = point1.get_distance_NE(*this);
+    const float dsquared = sq(vec1.x) + sq(vec1.y);
+    if (dsquared < 0.001f) {
+        // the two points are very close together
+        return 1.0f;
+    }
+    return (vec1 * vec2) / dsquared;
+}

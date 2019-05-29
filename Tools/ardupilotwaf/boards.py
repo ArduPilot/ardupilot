@@ -167,8 +167,8 @@ class Board:
             '-Werror=return-type',
             '-Werror=switch',
             '-Werror=sign-compare',
+            '-Werror=type-limits',
             '-Werror=unused-result',
-            '-Werror=return-type',
             '-Werror=shadow',
             '-Werror=unused-variable',
             '-Wfatal-errors',
@@ -179,8 +179,24 @@ class Board:
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
 
+                '-Werror=address-of-packed-member',
+
                 '-Werror=inconsistent-missing-override',
                 '-Werror=overloaded-virtual',
+
+                # catch conversion issues:
+                '-Werror=bitfield-enum-conversion',
+                '-Werror=bool-conversion',
+                '-Werror=constant-conversion',
+                '-Werror=enum-conversion',
+                '-Werror=int-conversion',
+                '-Werror=literal-conversion',
+                '-Werror=non-literal-null-conversion',
+                '-Werror=null-conversion',
+                '-Werror=objc-literal-conversion',
+#                '-Werror=shorten-64-to-32',  # ARRAY_SIZE() creates this all over the place as the caller typically takes a uint32_t not a size_t
+                '-Werror=string-conversion',
+                #    '-Werror=sign-conversion', # can't use as we assign into AP_Int8 from uint8_ts
 
                 '-Wno-gnu-designator',
                 '-Wno-mismatched-tags',
@@ -341,11 +357,16 @@ class sitl(Board):
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
                 cfg.fatal("Failed to find SFML libraries")
+
+        if cfg.options.sitl_osd:
             env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=ENABLED','-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
             import fnmatch
             for f in os.listdir('libraries/AP_OSD/fonts'):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
+        if cfg.options.sitl_rgbled:
+            env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
 
         if cfg.options.enable_sfml_audio:
             if not cfg.check_SFML_Audio(env):

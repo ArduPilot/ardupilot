@@ -22,6 +22,7 @@
 
 #define CHIBIOS_SCHEDULER_MAX_TIMER_PROCS 8
 
+#define APM_MONITOR_PRIORITY    183
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      181
 #define APM_RCIN_PRIORITY       177
@@ -68,6 +69,9 @@
 #define STORAGE_THD_WA_SIZE 2048
 #endif
 
+#ifndef MONITOR_THD_WA_SIZE
+#define MONITOR_THD_WA_SIZE 512
+#endif
 
 /* Scheduler implementation: */
 class ChibiOS::Scheduler : public AP_HAL::Scheduler {
@@ -86,12 +90,21 @@ public:
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us) override;
     void     reboot(bool hold_in_bootloader) override;
 
-    bool     in_main_thread() const override;
+    bool     in_main_thread() const override { return get_main_thread() == chThdGetSelfX(); }
+
     void     system_initialized() override;
     void     hal_initialized() { _hal_initialized = true; }
 
     bool     check_called_boost(void);
 
+    /*
+      inform the scheduler that we are calling an operation from the
+      main thread that may take an extended amount of time. This can
+      be used to prevent watchdog reset during expected long delays
+      A value of zero cancels the previous expected delay
+     */
+    void     expect_delay_ms(uint32_t ms) override;
+    
     /*
       disable interrupts and return a context that can be used to
       restore the interrupt state. This can be used to protect
@@ -109,13 +122,18 @@ public:
      */
     bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
 
+    // pat the watchdog
+    void watchdog_pat(void);
+
 private:
     bool _initialized;
     volatile bool _hal_initialized;
     AP_HAL::Proc _failsafe;
     bool _called_boost;
     bool _priority_boosted;
-
+    uint32_t expect_delay_start;
+    uint32_t expect_delay_length;
+    uint32_t expect_delay_nesting;
 
     AP_HAL::MemberProc _timer_proc[CHIBIOS_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
@@ -124,11 +142,13 @@ private:
     AP_HAL::MemberProc _io_proc[CHIBIOS_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
+    uint32_t last_watchdog_pat_ms;
 
     thread_t* _timer_thread_ctx;
     thread_t* _rcin_thread_ctx;
     thread_t* _io_thread_ctx;
     thread_t* _storage_thread_ctx;
+    thread_t* _monitor_thread_ctx;
 
 #if CH_CFG_USE_SEMAPHORES == TRUE
     binary_semaphore_t _timer_semaphore;
@@ -139,6 +159,7 @@ private:
     static void _io_thread(void *arg);
     static void _storage_thread(void *arg);
     static void _uart_thread(void *arg);
+    static void _monitor_thread(void *arg);
 
     void _run_timers();
     void _run_io(void);

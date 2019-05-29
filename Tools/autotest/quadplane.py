@@ -7,9 +7,12 @@ import pexpect
 from pymavlink import mavutil
 
 from common import AutoTest
+from common import AutoTestTimeoutException
+
 from pysim import util
 from pysim import vehicleinfo
 import operator
+
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -41,7 +44,12 @@ class AutoTestQuadPlane(AutoTest):
     def defaults_filepath(self):
         vinfo = vehicleinfo.VehicleInfo()
         defaults_file = vinfo.options["ArduPlane"]["frames"][self.frame]["default_params_filename"]
-        return os.path.join(testdir, defaults_file)
+        if isinstance(defaults_file, str):
+            defaults_file = [defaults_file]
+        defaults_list = []
+        for d in defaults_file:
+            defaults_list.append(os.path.join(testdir, d))
+        return ','.join(defaults_list)
 
     def is_plane(self):
         return True
@@ -128,12 +136,17 @@ class AutoTestQuadPlane(AutoTest):
                 continue
             self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
             if "AutoTune: Success" in m.text:
-                self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
-                # near enough for now:
-                self.change_mode("QLAND")
-                self.mavproxy.expect("AutoTune: Saved gains for Roll Pitch Yaw")
-                self.mav.motors_disarmed_wait()
-                return
+                break
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.set_rc(3, 1200)
+        self.wait_altitude(-5, 1, relative=True, timeout=30)
+        while self.get_sim_time_cached() < deadline:
+            self.mavproxy.send('disarm\n')
+            try:
+                self.wait_text("AutoTune: Saved gains for Roll Pitch Yaw", timeout=0.5)
+            except AutoTestTimeoutException as e:
+                continue
+            break
         self.mav.motors_disarmed_wait()
 
     def test_pid_tuning(self):

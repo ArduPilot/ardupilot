@@ -119,6 +119,8 @@ private:
     void            euler_angles(void);
     bool            have_gps(void) const;
     bool            use_fast_gains(void) const;
+    void            load_watchdog_home();
+    void            backup_attitude(void);
 
     // primary representation of attitude of board used for all inertial calculations
     Matrix3f _dcm_matrix;

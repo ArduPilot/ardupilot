@@ -11,8 +11,19 @@ public:
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
 
-    void set_soft_armed(const bool b) { soft_armed = b; }
+    void set_soft_armed(const bool b);
     bool get_soft_armed() const { return soft_armed; }
+
+    // return true if the reason for the reboot was a watchdog reset
+    virtual bool was_watchdog_reset() const { return false; }
+
+    // return true if safety was off and this was a watchdog reset
+    bool was_watchdog_safety_off() const {
+        return was_watchdog_reset() && persistent_data.safety_state == SAFETY_ARMED;
+    }
+
+    // return true if this is a watchdog reset boot and we were armed
+    bool was_watchdog_armed() const { return was_watchdog_reset() && persistent_data.armed; }
 
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
@@ -31,6 +42,29 @@ public:
     enum safety_state {
         SAFETY_NONE, SAFETY_DISARMED, SAFETY_ARMED
     };
+
+    /*
+      persistent data structure. This data is restored on boot if
+      there has been a watchdog reset.  The data in this structure
+      should only be read if was_watchdog_reset() is true
+      Note that on STM32 this structure is limited to 76 bytes
+     */
+    struct PersistentData {
+        float roll_rad, pitch_rad, yaw_rad; // attitude
+        int32_t home_lat, home_lon, home_alt_cm; // home position
+        bool armed; // true if vehicle was armed
+        enum safety_state safety_state;
+        uint32_t internal_errors;
+        uint32_t internal_error_count;
+        uint16_t waypoint_num;
+        int8_t scheduler_task;
+        uint16_t last_mavlink_msgid;
+        uint16_t last_mavlink_cmd;
+        uint16_t semaphore_line;
+        uint32_t spi_count;
+        uint32_t i2c_count;
+    };
+    struct PersistentData persistent_data;
 
     /*
       return state of safety switch, if applicable

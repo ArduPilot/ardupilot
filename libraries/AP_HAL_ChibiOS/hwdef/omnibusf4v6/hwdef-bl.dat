@@ -24,7 +24,7 @@ PA8 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 0
 
 # the location where the bootloader will put the firmware
-define FLASH_BOOTLOADER_LOAD_KB 64
+FLASH_BOOTLOADER_LOAD_KB 64
 
 # board voltage
 STM32_VDD 330U

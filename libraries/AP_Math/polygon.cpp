@@ -20,7 +20,7 @@
 
 /*
  *  The point in polygon algorithm is based on:
- *  http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+ *  https://wrf.ecse.rpi.edu//Research/Short_Notes/pnpoly.html
  */
 
 
@@ -37,16 +37,28 @@
 template <typename T>
 bool Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n)
 {
+    const bool complete = Polygon_complete(V, n);
+    if (complete) {
+        // the last point is the same as the first point; treat as if
+        // the last point wasn't passed in
+        n--;
+    }
+
     unsigned i, j;
+    // step through each edge pair-wise looking for crossings:
     bool outside = true;
-    for (i = 0, j = n-1; i < n; j = i++) {
+    for (i=0; i<n; i++) {
+        j = i+1;
+        if (j >= n) {
+            j = 0;
+        }
         if ((V[i].y > P.y) == (V[j].y > P.y)) {
             continue;
         }
-        const int32_t dx1 = P.x - V[i].x;
-        const int32_t dx2 = V[j].x - V[i].x;
-        const int32_t dy1 = P.y - V[i].y;
-        const int32_t dy2 = V[j].y - V[i].y;
+        const T dx1 = P.x - V[i].x;
+        const T dx2 = V[j].x - V[i].x;
+        const T dy1 = P.y - V[i].y;
+        const T dy2 = V[j].y - V[i].y;
         const int8_t dx1s = (dx1 < 0) ? -1 : 1;
         const int8_t dx2s = (dx2 < 0) ? -1 : 1;
         const int8_t dy1s = (dy1 < 0) ? -1 : 1;
@@ -59,16 +71,32 @@ bool Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n)
                 outside = !outside;
             } else if (m1 < m2) {
                 continue;
-            } else if ( dx1 * (int64_t)dy2 > dx2 * (int64_t)dy1 ) {
-                outside = !outside;
+            } else {
+                if (std::is_floating_point<T>::value) {
+                    if ( dx1 * dy2 > dx2 * dy1 ) {
+                        outside = !outside;
+                    }
+                } else {
+                    if ( dx1 * (int64_t)dy2 > dx2 * (int64_t)dy1 ) {
+                        outside = !outside;
+                    }
+                }
             }
         } else {
             if (m1 < m2) {
                 outside = !outside;
             } else if (m1 > m2) {
                 continue;
-            } else if ( dx1 * (int64_t)dy2 < dx2 * (int64_t)dy1 ) {
-                outside = !outside;
+            } else {
+                if (std::is_floating_point<T>::value) {
+                    if ( dx1 * dy2 < dx2 * dy1 ) {
+                        outside = !outside;
+                    }
+                } else {
+                    if ( dx1 * (int64_t)dy2 < dx2 * (int64_t)dy1 ) {
+                        outside = !outside;
+                    }
+                }
             }
         }
     }

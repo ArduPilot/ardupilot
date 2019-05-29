@@ -210,14 +210,17 @@ uint32_t get_fattime()
 }
 
 #if !defined(NO_FASTBOOT)
-// get RTC backup register 0
-static uint32_t get_rtc_backup0(void)
+
+// get RTC backup registers starting at given idx
+void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 {
-	return RTC->BKP0R;
+    while (n--) {
+        *v++ = ((__IO uint32_t *)&RTC->BKP0R)[idx++];
+    }
 }
 
-// set RTC backup register 0
-static void set_rtc_backup0(uint32_t v)
+// set n RTC backup registers starting at given idx
+void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 {
     if ((RCC->BDCR & RCC_BDCR_RTCEN) == 0) {
         RCC->BDCR |= STM32_RTCSEL;
@@ -228,22 +231,39 @@ static void set_rtc_backup0(uint32_t v)
 #else
     PWR->CR1 |= PWR_CR1_DBP;
 #endif
-    RTC->BKP0R = v;
+    while (n--) {
+        ((__IO uint32_t *)&RTC->BKP0R)[idx++] = *v++;
+    }
 }
 
 // see if RTC registers is setup for a fast reboot
 enum rtc_boot_magic check_fast_reboot(void)
 {
-    return (enum rtc_boot_magic)get_rtc_backup0();
+    uint32_t v;
+    get_rtc_backup(0, &v, 1);
+    return (enum rtc_boot_magic)v;
 }
 
 // set RTC register for a fast reboot
 void set_fast_reboot(enum rtc_boot_magic v)
 {
-    set_rtc_backup0(v);
+    uint32_t vv = (uint32_t)v;
+    set_rtc_backup(0, &vv, 1);
 }
 
-#endif //NO_FASTBOOT
+#else // NO_FASTBOOT
+
+// set n RTC backup registers starting at given idx
+void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
+{
+}
+
+// get RTC backup registers starting at given idx
+void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
+{
+    return 0;
+}
+#endif // NO_FASTBOOT
 
 /*
   enable peripheral power if needed This is done late to prevent
@@ -279,6 +299,10 @@ void peripheral_power_enable(void)
     // others need it active high
     palWriteLine(HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN, 1);
 #endif
+    for (i=0; i<20; i++) {
+        // give 20ms for sensors to settle
+        chThdSleep(chTimeMS2I(1));
+    }
 #endif
 }
 

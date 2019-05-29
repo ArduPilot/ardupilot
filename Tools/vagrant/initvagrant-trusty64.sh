@@ -8,7 +8,7 @@ set -u
 
 echo "Initial setup of SITL-vagrant instance."
 
-/vagrant/Tools/scripts/install-prereqs-ubuntu.sh -y
+/vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
 
 # extra packages we desire on the VM but aren't prereqs for AP compilation:
 sudo apt-get install -y valgrind gdb

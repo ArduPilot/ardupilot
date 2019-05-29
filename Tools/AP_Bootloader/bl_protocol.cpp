@@ -92,6 +92,7 @@
 #define PROTO_GET_DEVICE			0x22    // get device ID bytes
 #define PROTO_CHIP_ERASE			0x23    // erase program area and reset program address
 #define PROTO_PROG_MULTI			0x27    // write bytes at program address and increment
+#define PROTO_READ_MULTI			0x28    // read bytes at address and increment
 #define PROTO_GET_CRC				0x29	// compute & return a CRC
 #define PROTO_GET_OTP				0x2a	// read a byte from OTP at the given address
 #define PROTO_GET_SN				0x2b    // read a word from UDID area ( Serial)  at the given address
@@ -289,8 +290,6 @@ failure_response(void)
     cout(data, sizeof(data));
 }
 
-static volatile unsigned cin_count;
-
 /**
  * Function to wait for EOC
  *
@@ -458,6 +457,7 @@ bootloader(unsigned timeout)
 #endif
 
     uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
+    uint32_t	read_address = 0;
     uint32_t	first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
     bool done_get_device = false;
@@ -541,6 +541,9 @@ bootloader(unsigned timeout)
             if (!wait_for_eoc(2)) {
                 goto cmd_bad;
             }
+
+            // reset read pointer
+            read_address = 0;
 
             switch (arg) {
             case PROTO_DEVICE_BL_REV: {
@@ -842,6 +845,30 @@ bootloader(unsigned timeout)
         break;
 #endif
 
+        case PROTO_READ_MULTI: {
+            arg = cin(50);
+            if (arg < 0) {
+                goto cmd_bad;
+            }
+            if (arg % 4) {
+                goto cmd_bad;
+            }
+            if ((read_address + arg) > board_info.fw_size) {
+                goto cmd_bad;
+            }
+            // expect EOC
+            if (!wait_for_eoc(2)) {
+                goto cmd_bad;
+            }
+            arg /= 4;
+
+            while (arg-- > 0) {
+                cout_word(flash_func_read_word(read_address));
+                read_address += 4;
+            }
+            break;
+        }
+
         // finalise programming and boot the system
         //
         // command:			BOOT/EOC
@@ -915,9 +942,11 @@ bootloader(unsigned timeout)
         // we got a good command on this port, lock to the port
         lock_bl_port();
         
-        // we got a command worth syncing, so kill the timeout because
-        // we are probably talking to the uploader
-        timeout = 0;
+        // once we get both a valid sync and valid get_device then kill
+        // the timeout
+        if (done_sync && done_get_device) {
+            timeout = 0;
+        }
 
         // send the sync response for this command
         sync_response();

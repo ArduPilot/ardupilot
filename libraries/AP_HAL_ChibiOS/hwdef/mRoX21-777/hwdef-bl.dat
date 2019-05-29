@@ -70,7 +70,7 @@ PA14 JTCK-SWCLK SWD
 FLASH_RESERVE_START_KB 0
 
 # start on 4th sector (1st sector for bootloader, 2 for extra storage)
-define FLASH_BOOTLOADER_LOAD_KB 96
+FLASH_BOOTLOADER_LOAD_KB 96
 
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384

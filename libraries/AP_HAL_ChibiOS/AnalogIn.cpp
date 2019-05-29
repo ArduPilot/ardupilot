@@ -17,7 +17,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "ch.h"
 #include "hal.h"
-#include <AP_Common/Semaphore.h>
 
 #if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 
@@ -370,10 +369,19 @@ void AnalogIn::update_power_flags(void)
     if (!palReadLine(HAL_GPIO_PIN_VDD_SERVO_VALID)) {
         flags |= MAV_POWER_STATUS_SERVO_VALID;
     }
+#elif defined(HAL_GPIO_PIN_VDD_BRICK2_VALID)
+    // some boards defined BRICK2 instead of servo valid
+    if (!palReadLine(HAL_GPIO_PIN_VDD_BRICK2_VALID)) {
+        flags |= MAV_POWER_STATUS_SERVO_VALID;
+    }
 #endif
-    
+
 #ifdef HAL_GPIO_PIN_VBUS
 	if (palReadLine(HAL_GPIO_PIN_VBUS)) {
+        flags |= MAV_POWER_STATUS_USB_CONNECTED;
+    }
+#elif defined(HAL_GPIO_PIN_nVBUS)
+    if (!palReadLine(HAL_GPIO_PIN_nVBUS)) {
         flags |= MAV_POWER_STATUS_USB_CONNECTED;
     }
 #endif

@@ -64,7 +64,10 @@ public:
      */
     bool fs_init(void) override;
 #endif
-    
+
+    // return true if the reason for the reboot was a watchdog reset
+    bool was_watchdog_reset() const override;
+
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
@@ -105,4 +108,7 @@ private:
     static memory_heap_t scripting_heap;
 #endif // ENABLE_HEAP
 
+    // stm32F4 and F7 have 20 total RTC backup registers. We use the first one for boot type
+    // flags, so 19 available for persistent data
+    static_assert(sizeof(persistent_data) <= 19*4, "watchdog persistent data too large");
 };

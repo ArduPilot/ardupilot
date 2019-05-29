@@ -103,6 +103,9 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     // limit to be no longer than the IMU buffer (we can't process data faster than the EKF prediction rate)
     obs_buffer_length = MIN(obs_buffer_length,imu_buffer_length);
 
+    // calculate buffer size for optical flow data
+    const uint8_t flow_buffer_length = MIN((ekf_delay_ms / _frontend->flowIntervalMin_ms) + 1, imu_buffer_length);
+
     if(!storedGPS.init(obs_buffer_length)) {
         return false;
     }
@@ -115,7 +118,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedTAS.init(obs_buffer_length)) {
         return false;
     }
-    if(!storedOF.init(obs_buffer_length)) {
+    if (!storedOF.init(flow_buffer_length)) {
         return false;
     }
     if(!storedBodyOdm.init(obs_buffer_length)) {
@@ -138,7 +141,12 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u buffers, IMU=%u , OBS=%u , dt=%6.4f",(unsigned)imu_index,(unsigned)imu_buffer_length,(unsigned)obs_buffer_length,(double)dtEkfAvg);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u buffers, IMU=%u, OBS=%u, OF=%u, dt=%6.4f",
+                    (unsigned)imu_index,
+                    (unsigned)imu_buffer_length,
+                    (unsigned)obs_buffer_length,
+                    (unsigned)flow_buffer_length,
+                    (double)dtEkfAvg);
     return true;
 }
     
@@ -401,6 +409,9 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
 {
     // If we are a plane and don't have GPS lock then don't initialise
     if (assume_zero_sideslip() && AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        hal.util->snprintf(prearm_fail_string,
+                    sizeof(prearm_fail_string),
+                    "EKF3 init failure: No GPS lock");
         statesInitialised = false;
         return false;
     }

@@ -87,6 +87,7 @@ void AP_Logger_File::Init()
         _log_directory = custom_dir;
     }
 
+    EXPECT_DELAY_MS(3000);
     ret = stat(_log_directory, &st);
     if (ret == -1) {
         ret = mkdir(_log_directory, 0777);
@@ -122,6 +123,7 @@ void AP_Logger_File::Init()
 bool AP_Logger_File::file_exists(const char *filename) const
 {
     struct stat st;
+    EXPECT_DELAY_MS(3000);
     if (stat(filename, &st) == -1) {
         // hopefully errno==ENOENT.  If some error occurs it is
         // probably better to assume this file exists.
@@ -254,6 +256,7 @@ uint16_t AP_Logger_File::find_oldest_log()
     // We could count up to find_last_log(), but if people start
     // relying on the min_avail_space_percent feature we could end up
     // doing a *lot* of asprintf()s and stat()s
+    EXPECT_DELAY_MS(3000);
     DIR *d = opendir(_log_directory);
     if (d == nullptr) {
         // SD card may have died?  On linux someone may have rm-rf-d
@@ -261,7 +264,9 @@ uint16_t AP_Logger_File::find_oldest_log()
     }
 
     // we only remove files which look like xxx.BIN
+    EXPECT_DELAY_MS(3000);
     for (struct dirent *de=readdir(d); de; de=readdir(d)) {
+        EXPECT_DELAY_MS(3000);
         uint8_t length = strlen(de->d_name);
         if (length < 5) {
             // not long enough for \d+[.]BIN
@@ -303,6 +308,10 @@ uint16_t AP_Logger_File::find_oldest_log()
 
 void AP_Logger_File::Prep_MinSpace()
 {
+    if (hal.util->was_watchdog_reset()) {
+        // don't clear space if watchdog reset, it takes too long
+        return;
+    }
     const uint16_t first_log_to_remove = find_oldest_log();
     if (first_log_to_remove == 0) {
         // no files to remove
@@ -335,6 +344,7 @@ void AP_Logger_File::Prep_MinSpace()
         if (file_exists(filename_to_remove)) {
             hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
+            EXPECT_DELAY_MS(2000);
             if (unlink(filename_to_remove) == -1) {
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
@@ -461,6 +471,7 @@ void AP_Logger_File::EraseAll()
         if (fname == nullptr) {
             break;
         }
+        EXPECT_DELAY_MS(3000);
         unlink(fname);
         free(fname);
     }
@@ -559,6 +570,7 @@ uint16_t AP_Logger_File::find_last_log()
     if (fname == nullptr) {
         return ret;
     }
+    EXPECT_DELAY_MS(3000);
     int fd = open(fname, O_RDONLY|O_CLOEXEC);
     free(fname);
     if (fd != -1) {
@@ -592,6 +604,7 @@ uint32_t AP_Logger_File::_get_log_size(const uint16_t log_num)
         write_fd_semaphore.give();
     }
     struct stat st;
+    EXPECT_DELAY_MS(3000);
     if (::stat(fname, &st) != 0) {
         printf("Unable to fetch Log File Size: %s\n", strerror(errno));
         free(fname);
@@ -621,6 +634,7 @@ uint32_t AP_Logger_File::_get_log_time(const uint16_t log_num)
         write_fd_semaphore.give();
     }
     struct stat st;
+    EXPECT_DELAY_MS(3000);
     if (::stat(fname, &st) != 0) {
         free(fname);
         return 0;
@@ -693,6 +707,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
             return -1;
         }
         stop_logging();
+        EXPECT_DELAY_MS(3000);
         _read_fd = ::open(fname, O_RDONLY|O_CLOEXEC);
         if (_read_fd == -1) {
             _open_error = true;
@@ -869,6 +884,7 @@ uint16_t AP_Logger_File::start_new_log(void)
         write_fd_semaphore.give();
         return 0xFFFF;
     }
+    EXPECT_DELAY_MS(3000);
 #if HAL_OS_POSIX_IO
     _write_fd = ::open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
 #else
@@ -898,6 +914,7 @@ uint16_t AP_Logger_File::start_new_log(void)
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write
+    EXPECT_DELAY_MS(3000);
 #if HAL_OS_POSIX_IO
     int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
 #else

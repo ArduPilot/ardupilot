@@ -64,5 +64,4 @@ bool Plane::parachute_manual_release()
 #endif
     return true;    
 }
-
 #endif

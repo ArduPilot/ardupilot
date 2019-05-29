@@ -282,7 +282,7 @@ float closest_approach_xy(const Location &my_loc,
 {
 
     Vector2f delta_vel_ne = Vector2f(obstacle_vel[0] - my_vel[0], obstacle_vel[1] - my_vel[1]);
-    Vector2f delta_pos_ne = location_diff(obstacle_loc, my_loc);
+    const Vector2f delta_pos_ne = obstacle_loc.get_distance_NE(my_loc);
 
     Vector2f line_segment_ne = delta_vel_ne * time_horizon;
 
@@ -607,7 +607,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
     // perpendicular to that velocity may mean we do weird things.
     // Instead, we will fly directly away from them
     if (obstacle->_velocity.length() < _low_velocity_threshold) {
-        const Vector2f delta_pos_xy =  location_diff(obstacle->_location, my_abs_pos);
+        const Vector2f delta_pos_xy =  obstacle->_location.get_distance_NE(my_abs_pos);
         const float delta_pos_z = my_abs_pos.alt - obstacle->_location.alt;
         Vector3f delta_pos_xyz = Vector3f(delta_pos_xy.x, delta_pos_xy.y, delta_pos_z);
         // avoid div by zero
@@ -632,7 +632,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
 // v1 is NED
 Vector3f AP_Avoidance::perpendicular_xyz(const Location &p1, const Vector3f &v1, const Location &p2)
 {
-    Vector2f delta_p_2d = location_diff(p1, p2);
+    const Vector2f delta_p_2d = p1.get_distance_NE(p2);
     Vector3f delta_p_xyz = Vector3f(delta_p_2d[0],delta_p_2d[1],(p2.alt-p1.alt)/100.0f); //check this line
     Vector3f v1_xyz = Vector3f(v1[0], v1[1], -v1[2]);
     Vector3f ret = Vector3f::perpendicular(delta_p_xyz, v1_xyz);
@@ -643,7 +643,7 @@ Vector3f AP_Avoidance::perpendicular_xyz(const Location &p1, const Vector3f &v1,
 // v1 is NED
 Vector2f AP_Avoidance::perpendicular_xy(const Location &p1, const Vector3f &v1, const Location &p2)
 {
-    Vector2f delta_p = location_diff(p1, p2);
+    const Vector2f delta_p = p1.get_distance_NE(p2);
     Vector2f delta_p_n = Vector2f(delta_p[0],delta_p[1]);
     Vector2f v1n(v1[0],v1[1]);
     Vector2f ret_xy = Vector2f::perpendicular(delta_p_n, v1n);

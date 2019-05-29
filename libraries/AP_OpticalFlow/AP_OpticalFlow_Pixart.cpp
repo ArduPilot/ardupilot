@@ -21,7 +21,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Math/edc.h>
+#include <AP_Math/crc.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <utility>
 #include "OpticalFlow.h"
@@ -330,7 +330,6 @@ void AP_OpticalFlow_Pixart::update(void)
     last_update_ms = now;
 
     struct OpticalFlow::OpticalFlow_state state;
-    state.device_id = 1;
     state.surface_quality = burst.squal;
 
     if (integral.sum_us > 0) {

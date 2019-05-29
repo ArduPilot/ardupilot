@@ -39,8 +39,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-int8_t AP_Scheduler::current_task = -1;
-
 const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
@@ -163,7 +161,7 @@ void AP_Scheduler::run(uint32_t time_available)
 
         // run it
         _task_time_started = now;
-        current_task = i;
+        hal.util->persistent_data.scheduler_task = i;
         if (_debug > 1 && _perf_counters && _perf_counters[i]) {
             hal.util->perf_begin(_perf_counters[i]);
         }
@@ -171,7 +169,7 @@ void AP_Scheduler::run(uint32_t time_available)
         if (_debug > 1 && _perf_counters && _perf_counters[i]) {
             hal.util->perf_end(_perf_counters[i]);
         }
-        current_task = -1;
+        hal.util->persistent_data.scheduler_task = -1;
 
         // record the tick counter when we ran. This drives
         // when we next run the event
@@ -234,7 +232,9 @@ float AP_Scheduler::load_average()
 void AP_Scheduler::loop()
 {
     // wait for an INS sample
+    hal.util->persistent_data.scheduler_task = -3;
     AP::ins().wait_for_sample();
+    hal.util->persistent_data.scheduler_task = -1;
 
     const uint32_t sample_time_us = AP_HAL::micros();
     
@@ -248,7 +248,9 @@ void AP_Scheduler::loop()
     // Execute the fast loop
     // ---------------------
     if (_fastloop_fn) {
+        hal.util->persistent_data.scheduler_task = -2;
         _fastloop_fn();
+        hal.util->persistent_data.scheduler_task = -1;
     }
 
     // tell the scheduler one tick has passed
@@ -290,6 +292,7 @@ void AP_Scheduler::update_logging()
 // Write a performance monitoring packet
 void AP_Scheduler::Log_Write_Performance()
 {
+    const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us          : AP_HAL::micros64(),
@@ -298,7 +301,9 @@ void AP_Scheduler::Log_Write_Performance()
         max_time         : perf_info.get_max_time(),
         mem_avail        : hal.util->available_memory(),
         load             : (uint16_t)(load_average() * 1000),
-        internal_errors  : AP::internalerror().errors()
+        internal_errors  : AP::internalerror().errors(),
+        spi_count        : pd.spi_count,
+        i2c_count        : pd.i2c_count,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }

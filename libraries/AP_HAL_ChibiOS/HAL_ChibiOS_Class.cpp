@@ -26,6 +26,12 @@
 #include "sdcard.h"
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_InternalError/AP_InternalError.h>
+#ifndef HAL_BOOTLOADER_BUILD
+#include <AP_Logger/AP_Logger.h>
+#endif
 
 #include <hwdef.h>
 
@@ -83,6 +89,12 @@ static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
+#ifndef HAL_NO_FLASH_SUPPORT
+static ChibiOS::Flash flashDriver;
+#else
+static Empty::Flash flashDriver;
+#endif
+
 
 #if HAL_WITH_IO_MCU
 HAL_UART_IO_DRIVER;
@@ -110,6 +122,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlowDriver,
+        &flashDriver,
         nullptr
         )
 {}
@@ -181,9 +194,39 @@ static void main_loop()
      */
     hal_chibios_set_priority(APM_STARTUP_PRIORITY);
 
+    if (stm32_was_watchdog_reset()) {
+        // load saved watchdog data
+        stm32_watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
+    }
+
     schedulerInstance.hal_initialized();
 
     g_callbacks->setup();
+
+#ifdef IOMCU_FW
+    stm32_watchdog_init();
+#elif !defined(HAL_BOOTLOADER_BUILD)
+    // setup watchdog to reset if main loop stops
+    if (AP_BoardConfig::watchdog_enabled()) {
+        stm32_watchdog_init();
+    }
+
+    if (hal.util->was_watchdog_reset()) {
+        AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
+        const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine", "QbIIHHH",
+                                   AP_HAL::micros64(),
+                                   pd.scheduler_task,
+                                   pd.internal_errors,
+                                   pd.internal_error_count,
+                                   pd.last_mavlink_msgid,
+                                   pd.last_mavlink_cmd,
+                                   pd.semaphore_line);
+    }
+#endif
+
+    schedulerInstance.watchdog_pat();
+
     hal.scheduler->system_initialized();
 
     thread_running = true;
@@ -210,6 +253,7 @@ static void main_loop()
             hal.scheduler->delay_microseconds(50);
         }
 #endif
+        schedulerInstance.watchdog_pat();
     }
     thread_running = false;
 }

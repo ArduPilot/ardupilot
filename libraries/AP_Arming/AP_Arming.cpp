@@ -24,6 +24,7 @@
 #include <AP_Rally/AP_Rally.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -35,6 +36,8 @@
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
 #endif
+
+#include <AP_Logger/AP_Logger.h>
 
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
@@ -134,9 +137,6 @@ bool AP_Arming::check_enabled(const enum AP_Arming::ArmingChecks check) const
 {
     if (checks_to_perform & ARMING_CHECK_ALL) {
         return true;
-    }
-    if (checks_to_perform & ARMING_CHECK_NONE) {
-        return false;
     }
     return (checks_to_perform & check);
 }
@@ -432,7 +432,7 @@ bool AP_Arming::gps_checks(bool report)
         const Location gps_loc = gps.location();
         Location ahrs_loc;
         if (AP::ahrs().get_position(ahrs_loc)) {
-            const float distance = location_diff(gps_loc, ahrs_loc).length();
+            const float distance = gps_loc.get_distance(ahrs_loc);
             if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
                 check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ by %4.1fm", (double)distance);
                 return false;
@@ -613,7 +613,7 @@ bool AP_Arming::servo_checks(bool report) const
         check_passed = false;
     }
 #endif
-    
+
     return check_passed;
 }
 
@@ -656,6 +656,11 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
     }
+    if (AP::internalerror().errors() != 0) {
+        check_failed(ARMING_CHECK_NONE, report, "Internal errors detected (0x%x)", AP::internalerror().errors());
+        return false;
+    }
+
     return true;
 }
 

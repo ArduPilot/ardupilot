@@ -18,7 +18,6 @@
 #include "sdcard.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -93,6 +92,7 @@ bool sdcard_init()
     device = AP_HAL::get_HAL().spi->get_device("sdcard");
     if (!device) {
         printf("No sdcard SPI device found\n");
+        sdcard_running = false;
         return false;
     }
     device->set_slowdown(sd_slowdown);
@@ -126,8 +126,8 @@ bool sdcard_init()
         mkdir("/APM", 0777);
         return true;
     }
-    sdcard_running = false;
 #endif
+    sdcard_running = false;
 #endif
     return false;
 }
@@ -156,13 +156,15 @@ void sdcard_stop(void)
 #endif
 }
 
-void sdcard_retry(void)
+bool sdcard_retry(void)
 {
 #ifdef USE_POSIX
     if (!sdcard_running) {
         sdcard_init();
     }
+    return sdcard_running;
 #endif
+    return false;
 }
 
 #if HAL_USE_MMC_SPI

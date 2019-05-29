@@ -111,6 +111,11 @@ def build_binaries():
     copy_gm = util.reltopdir('./generate_manifest.py')
     shutil.copy2(orig_gm, copy_gm)
 
+    # and gen_stable.py
+    orig_gs = util.reltopdir('Tools/scripts/gen_stable.py')
+    copy_gs = util.reltopdir('./gen_stable.py')
+    shutil.copy2(orig_gs, copy_gs)
+    
     if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
         print("Failed build_binaries.py")
         return False
@@ -383,7 +388,8 @@ def run_step(step):
 
     # handle "fly.ArduCopter" etc:
     if step in tester_class_map:
-        return tester_class_map[step](binary, **fly_opts).autotest()
+        t = tester_class_map[step](binary, **fly_opts)
+        return (t.autotest(), t)
 
     specific_test_to_run = find_specific_test_to_run(step)
     if specific_test_to_run is not None:
@@ -580,13 +586,18 @@ def run_tests(steps):
 
     passed = True
     failed = []
+    failed_testinstances = dict()
     for step in steps:
         util.pexpect_close_all()
 
         t1 = time.time()
         print(">>>> RUNNING STEP: %s at %s" % (step, time.asctime()))
         try:
-            if run_step(step):
+            success = run_step(step)
+            testinstance = None
+            if type(success) == tuple:
+                (success, testinstance) = success
+            if success:
                 results.add(step, '<span class="passed-text">PASSED</span>',
                             time.time() - t1)
                 print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
@@ -595,6 +606,10 @@ def run_tests(steps):
                 print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
                 passed = False
                 failed.append(step)
+                if testinstance is not None:
+                    if failed_testinstances.get(step) is None:
+                        failed_testinstances[step] = []
+                    failed_testinstances[step].append(testinstance)
                 results.add(step, '<span class="failed-text">FAILED</span>',
                             time.time() - t1)
         except Exception as msg:
@@ -608,6 +623,16 @@ def run_tests(steps):
                         time.time() - t1)
             check_logs(step)
     if not passed:
+        keys = failed_testinstances.keys()
+        if len(keys):
+            print("Failure Summary:")
+        for key in keys:
+            print("  %s:" % key)
+            for testinstance in failed_testinstances[key]:
+                for failure in testinstance.fail_list:
+                    (desc, exception, debug_filename) = failure
+                    print("    %s (%s) (see %s)" % (desc, exception, debug_filename))
+
         print("FAILED %u tests: %s" % (len(failed), failed))
 
     util.pexpect_close_all()

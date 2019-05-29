@@ -87,8 +87,11 @@ class embedded_defaults(object):
     def find(self):
         '''find defaults in firmware'''
         # these are the magic headers from AP_Param.cpp
-        magic_str = "PARMDEF"
+        magic_str = "PARMDEF".encode('ascii')
         param_magic = [ 0x55, 0x37, 0xf4, 0xa0, 0x38, 0x5d, 0x48, 0x5b ]
+        def u_ord(c):
+	        return ord(c) if sys.version_info.major < 3 else c
+
         while True:
             i = self.firmware[self.offset:].find(magic_str)
             if i == -1:
@@ -96,7 +99,7 @@ class embedded_defaults(object):
                 return None
             matched = True
             for j in range(len(param_magic)):
-                if ord(self.firmware[self.offset+i+j+8]) != param_magic[j]:
+                if u_ord(self.firmware[self.offset+i+j+8]) != param_magic[j]:
                     matched = False
                     break
             if not matched:
@@ -121,7 +124,7 @@ class embedded_defaults(object):
             sys.exit(1)
         new_fw = self.firmware[:self.offset+18]
         new_fw += struct.pack("<H", length)
-        new_fw += contents
+        new_fw += contents.encode('ascii')
         new_fw += self.firmware[self.offset+20+length:]
         self.firmware = new_fw
         self.length = len(contents)

@@ -13,6 +13,7 @@ def build(bld):
             'AP_L1_Control',
             'AP_Mount',
             'AP_Navigation',
+            'AR_WPNav',
             'AP_RCMapper',
             'AC_PID',
             'AP_Stats',

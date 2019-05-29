@@ -21,6 +21,33 @@ protected:
     }
 
 private:
+    enum DeviceError : uint8_t
+    {
+        NOUPDATE                    = 0,
+        VCSELCONTINUITYTESTFAILURE  = 1,
+        VCSELWATCHDOGTESTFAILURE    = 2,
+        NOVHVVALUEFOUND             = 3,
+        MSRCNOTARGET                = 4,
+        RANGEPHASECHECK             = 5,
+        SIGMATHRESHOLDCHECK         = 6,
+        PHASECONSISTENCY            = 7,
+        MINCLIP                     = 8,
+        RANGECOMPLETE               = 9,
+        ALGOUNDERFLOW               = 10,
+        ALGOOVERFLOW                = 11,
+        RANGEIGNORETHRESHOLD        = 12,
+        USERROICLIP                 = 13,
+        REFSPADCHARNOTENOUGHDPADS   = 14,
+        REFSPADCHARMORETHANTARGET   = 15,
+        REFSPADCHARLESSTHANTARGET   = 16,
+        MULTCLIPFAIL                = 17,
+        GPHSTREAMCOUNT0READY        = 18,
+        RANGECOMPLETE_NO_WRAP_CHECK = 19,
+        EVENTCONSISTENCY            = 20,
+        MINSIGNALEVENTCHECK         = 21,
+        RANGECOMPLETE_MERGED_PULSE  = 22,
+    };
+
     // register addresses from API vl53l1x_register_map.h
     enum regAddr : uint16_t
     {
@@ -1247,21 +1274,20 @@ private:
     uint32_t counter;
     bool calibrated;
 
-    uint8_t read_register(uint16_t reg);
-    uint16_t read_register16(uint16_t reg);
-    uint32_t read_register32(uint16_t reg);
-    void write_register(uint16_t reg, uint8_t value);
-    void write_register16(uint16_t reg, uint16_t value);
-    void write_register32(uint16_t reg, uint32_t value);
+    bool read_register(uint16_t reg, uint8_t &value) WARN_IF_UNUSED;
+    bool read_register16(uint16_t reg, uint16_t &value) WARN_IF_UNUSED;
+    bool write_register(uint16_t reg, uint8_t value) WARN_IF_UNUSED;
+    bool write_register16(uint16_t reg, uint16_t value) WARN_IF_UNUSED;
+    bool write_register32(uint16_t reg, uint32_t value) WARN_IF_UNUSED;
     bool dataReady(void);
-    bool setDistanceMode(DistanceMode distance_mode);
-    bool setMeasurementTimingBudget(uint32_t budget_us);
-    uint32_t getMeasurementTimingBudget();
-    void startContinuous(uint32_t period_ms);
+    bool setDistanceMode(DistanceMode distance_mode) WARN_IF_UNUSED;
+    bool setMeasurementTimingBudget(uint32_t budget_us) WARN_IF_UNUSED;
+    bool getMeasurementTimingBudget(uint32_t &budget) WARN_IF_UNUSED;
+    bool startContinuous(uint32_t period_ms) WARN_IF_UNUSED;
     uint32_t decodeTimeout(uint16_t reg_val);
     uint16_t encodeTimeout(uint32_t timeout_mclks);
     uint32_t timeoutMclksToMicroseconds(uint32_t timeout_mclks, uint32_t macro_period_us);
     uint32_t timeoutMicrosecondsToMclks(uint32_t timeout_us, uint32_t macro_period_us);
     uint32_t calcMacroPeriod(uint8_t vcsel_period);
-    void setupManualCalibration(void);
+    bool setupManualCalibration(void);
 };

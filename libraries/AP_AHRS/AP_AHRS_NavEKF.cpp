@@ -130,6 +130,11 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         // update optional alternative attitude view
         _view->update(skip_ins_update);
     }
+
+#if !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
+    // update NMEA output
+    update_nmea_out();
+#endif
 }
 
 void AP_AHRS_NavEKF::update_DCM(bool skip_ins_update)
@@ -188,7 +193,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
 
             // calculate corrected gyro estimate for get_gyro()
             _gyro_estimate.zero();
-            if (primary_imu == -1) {
+            if (primary_imu == -1 || !_ins.get_gyro_health(primary_imu)) {
                 // the primary IMU is undefined so use an uncorrected default value from the INS library
                 _gyro_estimate = _ins.get_gyro();
             } else {
@@ -261,7 +266,7 @@ void AP_AHRS_NavEKF::update_EKF3(void)
 
             // calculate corrected gyro estimate for get_gyro()
             _gyro_estimate.zero();
-            if (primary_imu == -1) {
+            if (primary_imu == -1 || !_ins.get_gyro_health(primary_imu)) {
                 // the primary IMU is undefined so use an uncorrected default value from the INS library
                 _gyro_estimate = _ins.get_gyro();
             } else {
@@ -811,7 +816,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
         }
         Location loc;
         get_position(loc);
-        const Vector2f diff2d = location_diff(get_home(), loc);
+        const Vector2f diff2d = get_home().get_distance_NE(loc);
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         vec = Vector3f(diff2d.x, diff2d.y,
                        -(fdm.altitude - get_home().alt*0.01f));
@@ -832,7 +837,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_home(Vector3f &vec) const
         return false;
     }
 
-    const Vector3f offset = location_3d_diff_NED(originLLH, _home);
+    const Vector3f offset = originLLH.get_distance_NED(_home);
 
     vec.x = originNED.x - offset.x;
     vec.y = originNED.y - offset.y;
@@ -863,7 +868,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_origin(Vector2f &posNE) const
     case EKF_TYPE_SITL: {
         Location loc;
         get_position(loc);
-        posNE = location_diff(get_home(), loc);
+        posNE = get_home().get_distance_NE(loc);
         return true;
     }
 #endif
@@ -881,7 +886,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_home(Vector2f &posNE) const
         return false;
     }
 
-    const Vector2f offset = location_diff(originLLH, _home);
+    const Vector2f offset = originLLH.get_distance_NE(_home);
 
     posNE.x = originNE.x - offset.x;
     posNE.y = originNE.y - offset.y;
@@ -1114,6 +1119,33 @@ bool AP_AHRS_NavEKF::healthy(void) const
     return AP_AHRS_DCM::healthy();
 }
 
+bool AP_AHRS_NavEKF::prearm_healthy(void) const
+{
+    bool prearm_health = false;
+    switch (ekf_type()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+#endif
+    case EKF_TYPE_NONE:
+        prearm_health = true;
+        break;
+
+    case EKF_TYPE2:
+    default:
+        if (_ekf2_started && EKF2.all_cores_healthy()) {
+            prearm_health = true;
+        }
+        break;
+
+    case EKF_TYPE3:
+        if (_ekf3_started && EKF3.all_cores_healthy()) {
+            prearm_health = true;
+        }
+        break;
+    }
+   return prearm_health && healthy();
+}
+
 void AP_AHRS_NavEKF::set_ekf_use(bool setting)
 {
     _ekf_type.set(setting?1:0);
@@ -1317,7 +1349,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
 {
     // get primary attitude source's attitude as quaternion
     Quaternion primary_quat;
-    primary_quat.from_euler(roll, pitch, yaw);
+    get_quat_body_to_ned(primary_quat);
     // only check yaw if compasses are being used
     bool check_yaw = _compass && _compass->use_for_yaw();
 
@@ -1360,7 +1392,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     // check primary vs dcm
     Quaternion dcm_quat;
     Vector3f angle_diff;
-    dcm_quat.from_euler(_dcm_attitude.x, _dcm_attitude.y, _dcm_attitude.z);
+    dcm_quat.from_rotation_matrix(get_DCM_rotation_body_to_ned());
     primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
     float diff = safe_sqrt(sq(angle_diff.x)+sq(angle_diff.y));
     if (diff > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {

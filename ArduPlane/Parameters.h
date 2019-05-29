@@ -532,6 +532,9 @@ public:
     // dual motor tailsitter rudder to differential thrust scaling: 0-100%
     AP_Int8 rudd_dt_gain;
 
+    // QACRO mode max yaw rate in deg/sec
+    AP_Int16 acro_yaw_rate;
+
     // mask of channels to do manual pass-thru for
     AP_Int32 manual_rc_mask;
 
@@ -557,8 +560,10 @@ public:
 #endif
 
     // crow flaps weighting
-    AP_Int8 crow_flap_weight1;
-    AP_Int8 crow_flap_weight2;
+    AP_Int8 crow_flap_weight_outer;
+    AP_Int8 crow_flap_weight_inner;
+    AP_Int8 crow_flap_options;
+    AP_Int8 crow_flap_aileron_matching;
 };
 
 extern const AP_Param::Info var_info[];

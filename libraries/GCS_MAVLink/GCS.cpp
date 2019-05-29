@@ -1,4 +1,5 @@
 #include "GCS.h"
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -12,6 +13,14 @@ void GCS::get_sensor_status_flags(uint32_t &present,
     enabled = control_sensors_enabled;
     health = control_sensors_health;
 }
+
+MissionItemProtocol_Waypoints *GCS::_missionitemprotocol_waypoints;
+MissionItemProtocol_Rally *GCS::_missionitemprotocol_rally;
+
+const MAV_MISSION_TYPE GCS_MAVLINK::supported_mission_types[] = {
+    MAV_MISSION_TYPE_MISSION,
+    MAV_MISSION_TYPE_RALLY,
+};
 
 /*
   send a text message to all GCS
@@ -85,6 +94,15 @@ void GCS::update_sensor_status_flags()
         if (!ahrs.have_inertial_nav() || ins.accel_calibrated_ok_all()) {
             control_sensors_health |= MAV_SYS_STATUS_AHRS;
         }
+    }
+
+    const Compass &compass = AP::compass();
+    if (AP::compass().enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_MAG;
+    }
+    if (compass.enabled() && compass.healthy() && ahrs.use_compass()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
 
     const AP_Baro &barometer = AP::baro();

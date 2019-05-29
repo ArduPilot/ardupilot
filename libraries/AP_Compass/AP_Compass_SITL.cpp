@@ -1,7 +1,6 @@
 #include "AP_Compass_SITL.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Common/Semaphore.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 extern const AP_HAL::HAL& hal;

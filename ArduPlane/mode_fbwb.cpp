@@ -7,8 +7,10 @@ bool ModeFBWB::_enter()
     plane.auto_throttle_mode = true;
     plane.auto_navigation_mode = false;
 
+#if SOARING_ENABLED == ENABLED
     // for ArduSoar soaring_controller
     plane.g2.soaring_controller.init_cruising();
+#endif
 
     plane.set_target_altitude_current();
 

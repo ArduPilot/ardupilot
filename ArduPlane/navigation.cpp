@@ -87,8 +87,7 @@ void Plane::navigate()
     // waypoint distance from plane
     // ----------------------------
     auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
-    auto_state.wp_proportion = location_path_proportion(current_loc, 
-                                                        prev_WP_loc, next_WP_loc);
+    auto_state.wp_proportion = current_loc.line_path_proportion(prev_WP_loc, next_WP_loc);
     SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
 
     // update total loiter angle
@@ -283,9 +282,7 @@ void Plane::update_cruise()
     if (cruise_state.locked_heading) {
         next_WP_loc = prev_WP_loc;
         // always look 1km ahead
-        location_update(next_WP_loc,
-                        cruise_state.locked_heading_cd*0.01f, 
-                        prev_WP_loc.get_distance(current_loc) + 1000);
+        next_WP_loc.offset_bearing(cruise_state.locked_heading_cd*0.01f, prev_WP_loc.get_distance(current_loc) + 1000);
         nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
     }
 }
@@ -344,7 +341,7 @@ void Plane::setup_turn_angle(void)
         auto_state.next_turn_angle = 90.0f;
     } else {
         // get the heading of the current leg
-        int32_t ground_course_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
+        int32_t ground_course_cd = prev_WP_loc.get_bearing_to(next_WP_loc);
 
         // work out the angle we need to turn through
         auto_state.next_turn_angle = wrap_180_cd(next_ground_course_cd - ground_course_cd) * 0.01f;

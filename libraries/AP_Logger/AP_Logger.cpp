@@ -92,6 +92,10 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
 void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Preparing log system");
+    if (hal.util->was_watchdog_armed()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
+        _params.log_disarmed.set(1);
+    }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     validate_structures(structures, num_types);
     dump_structures(structures, num_types);
@@ -699,6 +703,11 @@ void AP_Logger::Write_RallyPoint(uint8_t total,
     FOR_EACH_BACKEND(Write_RallyPoint(total, sequence, rally_point));
 }
 
+void AP_Logger::Write_Rally()
+{
+    FOR_EACH_BACKEND(Write_Rally());
+}
+
 uint32_t AP_Logger::num_dropped() const
 {
     if (_next_backend == 0) {
@@ -729,7 +738,25 @@ void AP_Logger::Write(const char *name, const char *labels, const char *units, c
     va_end(arg_list);
 }
 
-void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list)
+void AP_Logger::WriteCritical(const char *name, const char *labels, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, nullptr, nullptr, fmt, arg_list, true);
+    va_end(arg_list);
+}
+
+void AP_Logger::WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, units, mults, fmt, arg_list, true);
+    va_end(arg_list);
+}
+
+void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical)
 {
     struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt);
     if (f == nullptr) {
@@ -748,7 +775,7 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
         }
         va_list arg_copy;
         va_copy(arg_copy, arg_list);
-        backends[i]->Write(f->msg_type, arg_copy);
+        backends[i]->Write(f->msg_type, arg_copy, is_critical);
         va_end(arg_copy);
     }
 }

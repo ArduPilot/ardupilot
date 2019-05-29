@@ -63,6 +63,7 @@ enum mode_reason_t {
     MODE_REASON_SOARING_IN_THERMAL,
     MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED,
     MODE_REASON_VTOL_FAILED_TRANSITION,
+    MODE_REASON_UNAVAILABLE,
 };
 
 // type of stick mixing enabled
@@ -182,3 +183,10 @@ enum FlightOptions {
     DISABLE_TOFF_ATTITUDE_CHK = (1 << 2),
     CRUISE_TRIM_AIRSPEED = (1 << 3),
 };
+
+enum CrowFlapOptions {
+    FLYINGWING       = (1 << 0),
+    FULLSPAN         = (1 << 1),
+    PROGRESSIVE_CROW = (1 << 2),
+}; 
+

@@ -85,7 +85,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300),
     SCHED_TASK(one_second_loop,         1,   1500),
     SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,           update,      3,  90),
-    SCHED_TASK(compass_cal_update,     50,    200),
+    SCHED_TASK_CLASS(Compass,          &rover.compass,              cal_update, 50, 200),
     SCHED_TASK(compass_save,           0.1,   200),
     SCHED_TASK(accel_cal_update,       10,    200),
 #if LOGGING_ENABLED == ENABLED
@@ -254,9 +254,6 @@ void Rover::update_logging2(void)
  */
 void Rover::one_second_loop(void)
 {
-    // send a heartbeat
-    gcs().send_message(MSG_HEARTBEAT);
-
     // allow orientation change at runtime to aid config
     ahrs.update_orientation();
 
@@ -291,6 +288,9 @@ void Rover::one_second_loop(void)
     // need to set "likely flying" when armed to allow for compass
     // learning to run
     ahrs.set_likely_flying(hal.util->get_soft_armed());
+
+    // send latest param values to wp_nav
+    g2.wp_nav.set_turn_params(g.turn_max_g, g2.turn_radius, g2.motors.have_skid_steering());
 }
 
 void Rover::update_GPS(void)
