@@ -134,7 +134,7 @@ struct Vector2
     float length_squared() const;
 
     // gets the length of this vector
-    float           length(void) const;
+    float length(void) const;
 
     // normalizes this vector
     void    normalize()
