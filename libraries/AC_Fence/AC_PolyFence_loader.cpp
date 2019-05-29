@@ -53,13 +53,12 @@ bool AC_PolyFence_loader::save_point_to_eeprom(uint16_t i, const Vector2l& point
     return true;
 }
 
-// validate array of boundary points (expressed as either floats or long ints)
+// validate array of boundary points
 //   returns true if boundary is valid
-template <typename T>
-bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2<T>* points) const
+bool AC_PolyFence_loader::calculate_boundary_valid() const
 {
     // exit immediate if no points
-    if (points == nullptr) {
+    if (_boundary == nullptr) {
         return false;
     }
 
@@ -67,30 +66,61 @@ bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2<T>* 
     uint8_t start_num = 1;
 
     // a boundary requires at least 4 point (a triangle and last point equals first)
-    if (num_points < start_num + 4) {
+    if (_boundary_num_points < start_num + 4) {
         return false;
     }
 
     // point 1 and last point must be the same.  Note: 0th point is reserved as the return point
-    if (!Polygon_complete(&points[start_num], num_points-start_num)) {
+    if (!Polygon_complete(&_boundary[start_num], _boundary_num_points-start_num)) {
         return false;
     }
 
     // check return point is within the fence
-    if (Polygon_outside(points[0], &points[1], num_points-start_num)) {
+    if (Polygon_outside(_boundary[0], &_boundary[1], _boundary_num_points-start_num)) {
         return false;
     }
 
     return true;
 }
 
-// check if a location (expressed as either floats or long ints) is within the boundary
-//   returns true if location is outside the boundary
-template <typename T>
-bool AC_PolyFence_loader::boundary_breached(const Vector2<T>& location, uint16_t num_points, const Vector2<T>* points) const
+bool AC_PolyFence_loader::breached()
 {
+    // check if vehicle is outside the polygon fence
+    Vector2f position;
+    if (!AP::ahrs().get_relative_position_NE_origin(position)) {
+        // we have no idea where we are; can't breach the fence
+        return false;
+    }
+
+    position = position * 100.0f;  // m to cm
+    return breached(position);
+}
+
+bool AC_PolyFence_loader::breached(const Location& loc)
+{
+    Vector2f posNE;
+    if (!loc.get_vector_xy_from_origin_NE(posNE)) {
+        // not breached if we don't now where we are
+        return false;
+    }
+    return breached(posNE);
+}
+
+//   returns true if location is outside the boundary
+bool AC_PolyFence_loader::breached(const Vector2f& location)
+{
+    // check consistency of number of points
+    if (_boundary_num_points != _total) {
+        // Fence is currently not completely loaded.  Can't breach it?!
+        load_from_eeprom();
+        return false;
+    }
     // exit immediate if no points
-    if (points == nullptr) {
+    if (_boundary == nullptr) {
+        return false;
+    }
+    if (!_valid) {
+        // fence isn't valid - can't breach it?!
         return false;
     }
 
@@ -98,13 +128,5 @@ bool AC_PolyFence_loader::boundary_breached(const Vector2<T>& location, uint16_t
     uint8_t start_num = 1;
 
     // check location is within the fence
-    return Polygon_outside(location, &points[start_num], num_points-start_num);
+    return Polygon_outside(location, &_boundary[start_num], _boundary_num_points-start_num);
 }
-
-// declare type specific methods
-template bool AC_PolyFence_loader::boundary_valid<int32_t>(uint16_t num_points, const Vector2l* points) const;
-template bool AC_PolyFence_loader::boundary_valid<float>(uint16_t num_points, const Vector2f* points) const;
-template bool AC_PolyFence_loader::boundary_breached<int32_t>(const Vector2l& location, uint16_t num_points,
-                                                              const Vector2l* points) const;
-template bool AC_PolyFence_loader::boundary_breached<float>(const Vector2f& location, uint16_t num_points,
-                                                            const Vector2f* points) const;
