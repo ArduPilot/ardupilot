@@ -112,6 +112,55 @@ TEST(Polygon, circle_inside_triangle)
     }
 }
 
+TEST(Polygon, complex)
+{
+    const Vector2f poly[] = {
+        {0.0f,0.0f},
+        {0.0f,10.0f},
+        {5.0, 10.0f},
+        {5.0f,5.0f},
+        {3.0f,5.0f},
+        {3.0f,6.0f},
+        {4.0f,6.0f},
+        {4.0f,9.0f},
+        {4.0f,9.0f},
+        {1.0f,9.0f},
+        {1.0f,6.0f},
+        {2.0f,6.0f},
+        {2.0f,5.0f},
+        {1.0f,5.0f},
+        {1.0f,0.0f},
+    };
+    const Vector2f inside_points[] = {
+        {0.1f, 0.1f},
+        {4.5f, 9.5f},
+        {0.5f, 9.5f},
+    };
+    const Vector2f outside_points[] = {
+        {3.0f, 8.0f},
+        {5.5f, 10.0f},
+        {2.0f, 2.0f},
+        {2.5f, 5.5f},
+        {1.5f, 6.5f},
+    };
+
+    Vector2f closed_poly[sizeof(poly) + sizeof(Vector2f)];
+    memcpy(closed_poly, poly, sizeof(poly));
+    const uint16_t n = ARRAY_SIZE(closed_poly);
+    closed_poly[n-1] = closed_poly[0];
+
+    for (const auto &point : inside_points) {
+        EXPECT_EQ(false, Polygon_outside(point, closed_poly, n));
+        EXPECT_EQ(Polygon_outside(point, closed_poly, n-1),
+                  Polygon_outside(point, closed_poly, n));
+    }
+    for (const auto &point : outside_points) {
+        EXPECT_EQ(true, Polygon_outside(point, closed_poly, n));
+        EXPECT_EQ(Polygon_outside(point, closed_poly, n-1),
+                  Polygon_outside(point, closed_poly, n));
+    }
+}
+
 TEST(Polygon, circle_outside_square)
 {
     const Vector2f square[] = {{0.0f,0.0f}, {0.0f,10.0f}, {10.0, 10.0}, {10.0f,0.0f}};
