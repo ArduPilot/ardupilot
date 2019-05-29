@@ -356,11 +356,6 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
         return;
     }
 
-    // exit immediately if no desired velocity
-    if (desired_vel_cms.is_zero()) {
-        return;
-    }
-
     // get polygon boundary
     uint16_t num_points;
     const Vector2f* boundary = _fence.get_boundary_points(num_points);
@@ -378,11 +373,6 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
 
     // exit if the beacon is not present
     if (_beacon == nullptr) {
-        return;
-    }
-
-    // exit immediately if no desired velocity
-    if (desired_vel_cms.is_zero()) {
         return;
     }
 
@@ -418,11 +408,6 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &d
         return;
     }
 
-    // exit immediately if no desired velocity
-    if (desired_vel_cms.is_zero()) {
-        return;
-    }
-
     // get boundary from proximity sensor
     uint16_t num_points;
     const Vector2f *boundary = _proximity.get_boundary_points(num_points);
@@ -436,6 +421,11 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
 {
     // exit if there are no points
     if (boundary == nullptr || num_points == 0) {
+        return;
+    }
+
+    // exit immediately if no desired velocity
+    if (desired_vel_cms.is_zero()) {
         return;
     }
 
