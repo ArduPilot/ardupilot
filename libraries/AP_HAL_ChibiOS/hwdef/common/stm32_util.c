@@ -219,14 +219,14 @@ uint32_t get_fattime()
     return fattime;
 }
 
-// get RTC backup register 0
-static uint32_t get_rtc_backup0(void)
+// get RTC backup register
+uint32_t get_rtc_backup(uint8_t n)
 {
-	return RTC->BKP0R;
+    return ((__IO uint32_t *)&RTC->BKP0R)[n];
 }
 
 // set RTC backup register 0
-static void set_rtc_backup0(uint32_t v)
+void set_rtc_backup(uint8_t n, uint32_t v)
 {
     if ((RCC->BDCR & RCC_BDCR_RTCEN) == 0) {
         RCC->BDCR |= STM32_RTCSEL;
@@ -237,19 +237,19 @@ static void set_rtc_backup0(uint32_t v)
 #else
     PWR->CR1 |= PWR_CR1_DBP;
 #endif
-    RTC->BKP0R = v;
+    ((__IO uint32_t *)&RTC->BKP0R)[n] = v;
 }
 
 // see if RTC registers is setup for a fast reboot
 enum rtc_boot_magic check_fast_reboot(void)
 {
-    return (enum rtc_boot_magic)get_rtc_backup0();
+    return (enum rtc_boot_magic)get_rtc_backup(0);
 }
 
 // set RTC register for a fast reboot
 void set_fast_reboot(enum rtc_boot_magic v)
 {
-    set_rtc_backup0(v);
+    set_rtc_backup(0, v);
 }
 
 /*

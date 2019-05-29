@@ -147,6 +147,7 @@ bool Copter::read_3pos_switch(uint8_t chan, uint8_t &ret) const
             if (debounce_aux_switch(chan, flag) && flag != switch_position) { \
                 flag = switch_position;                             \
                 do_aux_switch_function(option, flag);               \
+                need_log = true;                                    \
             }                                                       \
         }                                                           \
     } while (false)
@@ -160,6 +161,7 @@ void Copter::read_aux_switches()
     if (failsafe.radio || failsafe.radio_counter != 0) {
         return;
     }
+    bool need_log = false;
 
     read_aux_switch(CH_7, aux_con.CH7_flag, g.ch7_option);
     read_aux_switch(CH_8, aux_con.CH8_flag, g.ch8_option);
@@ -167,6 +169,9 @@ void Copter::read_aux_switches()
     read_aux_switch(CH_10, aux_con.CH10_flag, g.ch10_option);
     read_aux_switch(CH_11, aux_con.CH11_flag, g.ch11_option);
     read_aux_switch(CH_12, aux_con.CH12_flag, g.ch12_option);
+    if (need_log) {
+        DataFlash.Log_Write_RCIN();
+    }
 }
 
 #undef read_aux_switch

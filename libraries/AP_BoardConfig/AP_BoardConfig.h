@@ -155,6 +155,15 @@ public:
     }
 #endif
 
+    enum board_options {
+        BOARD_OPTION_WATCHDOG = (1 << 0),
+    };
+
+    // return true if watchdog enabled
+    static bool watchdog_enabled(void) {
+        return instance?(instance->_options & BOARD_OPTION_WATCHDOG)!=0:false;
+    }
+
 private:
     static AP_BoardConfig *instance;
     
@@ -191,6 +200,7 @@ private:
     void board_setup_drivers(void);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     void validate_board_type(void);
+    void check_cubeblack(void);
     void board_autodetect(void);
 
 #endif // AP_FEATURE_BOARD_DETECT
@@ -225,4 +235,6 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     AP_Int8 _sdcard_slowdown;
 #endif
+
+    AP_Int32 _options;
 };
