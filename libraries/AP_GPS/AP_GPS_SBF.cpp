@@ -399,6 +399,10 @@ void AP_GPS_SBF::unmount_disk (void) const {
 
 bool AP_GPS_SBF::prepare_for_arming(void) {
     bool is_logging = true; // assume that its logging until proven otherwise
+    if (state.time_week == 0 && state.time_week_ms == 0) {
+        gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: Waiting for GPS time", state.instance + 1);
+        return false;
+    }
     if (gps._raw_data) {
         if (!(RxState & SBF_DISK_MOUNTED)){
             is_logging = false;
