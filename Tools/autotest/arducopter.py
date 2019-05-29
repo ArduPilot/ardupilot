@@ -3206,6 +3206,44 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.mavproxy.send("fence clear\n")
         self.disarm_vehicle(force=True)
+        if ex is not None:
+            raise ex
+
+    def fly_beacon_avoidance_test(self):
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("BCN_TYPE", 10)
+            self.set_parameter("BCN_LATITUDE", int(SITL_START_LOCATION.lat))
+            self.set_parameter("BCN_LONGITUDE", int(SITL_START_LOCATION.lng))
+            self.set_parameter("BCN_ORIENT_YAW", 45)
+            self.set_parameter("AVOID_ENABLE", 4)
+            self.reboot_sitl()
+
+            self.takeoff(10, mode="LOITER")
+            self.set_rc(2, 1400)
+            west_loc = mavutil.location(-35.362919, 149.165055, 0, 0)
+            self.wait_location(west_loc, accuracy=7)
+            self.reach_heading_manual(0)
+            north_loc = mavutil.location(-35.362881, 149.165103, 0, 0)
+            self.wait_location(north_loc, accuracy=7)
+            self.set_rc(2, 1500)
+            self.set_rc(1, 1600)
+            east_loc = mavutil.location(-35.362986, 149.165227, 0, 0)
+            self.wait_location(east_loc, accuracy=7)
+            self.set_rc(1, 1500)
+            self.set_rc(2, 1600)
+            south_loc = mavutil.location(-35.363025, 149.165182, 0, 0)
+            self.wait_location(south_loc, accuracy=7)
+            self.set_rc(2, 1500)
+            self.do_RTL()
+
+        except Exception as e:
+            self.progress("Caught exception: %s" % str(e))
+            ex = e
+        self.context_pop()
+        self.mavproxy.send("fence clear\n")
+        self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex is not None:
             raise ex
@@ -3284,6 +3322,10 @@ class AutoTestCopter(AutoTest):
             ("AC_Avoidance_Fence",
              "Test fence avoidance slide behaviour",
              self.fly_fence_avoidance_test),
+
+            ("AC_Avoidance_Beacon",
+             "Test beacon avoidance slide behaviour",
+             self.fly_beacon_avoidance_test),
 
             ("HorizontalFence",
              "Test horizontal fence",
