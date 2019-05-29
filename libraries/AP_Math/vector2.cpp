@@ -300,6 +300,35 @@ Vector2<T> Vector2<T>::perpendicular(const Vector2<T> &pos_delta, const Vector2<
     return perpendicular2;
 }
 
+/*
+ * Returns the point closest to p on the line segment (v,w).
+ *
+ * Comments and implementation taken from
+ * http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+ */
+template <typename T>
+Vector2<T> Vector2<T>::closest_point(const Vector2<T> &p, const Vector2<T> &v, const Vector2<T> &w)
+{
+    // length squared of line segment
+    const float l2 = (v - w).length_squared();
+    if (l2 < FLT_EPSILON) {
+        // v == w case
+        return v;
+    }
+    // Consider the line extending the segment, parameterized as v + t (w - v).
+    // We find projection of point p onto the line.
+    // It falls where t = [(p-v) . (w-v)] / |w-v|^2
+    // We clamp t from [0,1] to handle points outside the segment vw.
+    const float t = ((p - v) * (w - v)) / l2;
+    if (t <= 0) {
+        return v;
+    } else if (t >= 1) {
+        return w;
+    } else {
+        return v + (w - v)*t;
+    }
+}
+
 // only define for float
 template float Vector2<float>::length_squared(void) const;
 template float Vector2<float>::length(void) const;
@@ -324,6 +353,7 @@ template float Vector2<float>::angle(const Vector2<float> &v) const;
 template float Vector2<float>::angle(void) const;
 template bool Vector2<float>::segment_intersection(const Vector2<float>& seg1_start, const Vector2<float>& seg1_end, const Vector2<float>& seg2_start, const Vector2<float>& seg2_end, Vector2<float>& intersection);
 template bool Vector2<float>::circle_segment_intersection(const Vector2<float>& seg_start, const Vector2<float>& seg_end, const Vector2<float>& circle_center, float radius, Vector2<float>& intersection);
+template Vector2<float> Vector2<float>::closest_point(const Vector2<float> &p, const Vector2<float> &v, const Vector2<float> &w);
 
 template bool Vector2<long>::operator ==(const Vector2<long> &v) const;
 

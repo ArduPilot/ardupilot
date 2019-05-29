@@ -161,27 +161,7 @@ struct Vector2
      * Comments and implementation taken from
      * http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
      */
-    static Vector2<T> closest_point(const Vector2<T> &p, const Vector2<T> &v, const Vector2<T> &w)
-    {
-        // length squared of line segment
-        const float l2 = (v - w).length_squared();
-        if (l2 < FLT_EPSILON) {
-            // v == w case
-            return v;
-        }
-        // Consider the line extending the segment, parameterized as v + t (w - v).
-        // We find projection of point p onto the line.
-        // It falls where t = [(p-v) . (w-v)] / |w-v|^2
-        // We clamp t from [0,1] to handle points outside the segment vw.
-        const float t = ((p - v) * (w - v)) / l2;
-        if (t <= 0) {
-            return v;
-        } else if (t >= 1) {
-            return w;
-        } else {
-            return v + (w - v)*t;
-        }
-    }
+    static Vector2<T> closest_point(const Vector2<T> &p, const Vector2<T> &v, const Vector2<T> &w);
 
     // w defines a line segment from the origin
     // p is a point
