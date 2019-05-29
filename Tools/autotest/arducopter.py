@@ -3140,6 +3140,56 @@ class AutoTestCopter(AutoTest):
             0) # button mask
         self.do_RTL()
 
+    def check_avoidance_corners(self):
+            self.takeoff(10, mode="LOITER")
+            self.set_rc(2, 1400)
+            west_loc = mavutil.location(-35.363007,
+	                                    149.164911,
+                                        0,
+                                        0)
+            self.wait_location(west_loc, accuracy=6)
+            north_loc = mavutil.location(-35.362908,
+                                         149.165051,
+                                         0,
+                                         0)
+            self.reach_heading_manual(0);
+            self.wait_location(north_loc, accuracy=6)
+            self.reach_heading_manual(90);
+            east_loc = mavutil.location(-35.363013,
+                                        149.165194,
+                                        0,
+                                        0)
+            self.wait_location(east_loc, accuracy=6)
+            self.reach_heading_manual(225);
+            self.wait_location(west_loc, accuracy=6)
+            self.set_rc(2, 1500)
+            self.do_RTL()
+
+    def fly_proximity_avoidance_test(self):
+        self.context_push()
+        ex = None
+        try:
+            avoid_filepath = os.path.join(self.mission_directory(),
+                                          "copter-avoidance-fence.txt")
+            self.mavproxy.send("fence load %s\n" % avoid_filepath)
+            self.mavproxy.expect("Loaded 5 geo-fence")
+            self.set_parameter("FENCE_ENABLE", 0)
+            self.set_parameter("PRX_TYPE", 10)
+            self.set_parameter("RC10_OPTION", 40) # proximity-enable
+            self.reboot_sitl()
+            self.progress("Enabling proximity")
+            self.set_rc(10, 2000)
+            self.check_avoidance_corners()
+        except Exception as e:
+            self.progress("Caught exception: %s" % str(e))
+            ex = e
+        self.context_pop()
+        self.mavproxy.send("fence clear\n")
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
@@ -3206,6 +3256,10 @@ class AutoTestCopter(AutoTest):
             ("StabilityPatch",
              "Fly stability patch",
              lambda: self.fly_stability_patch(30)),
+
+            ("AC_Avoidance_Proximity",
+             "Test proximity avoidance slide behaviour",
+             self.fly_proximity_avoidance_test),
 
             ("HorizontalFence",
              "Test horizontal fence",
