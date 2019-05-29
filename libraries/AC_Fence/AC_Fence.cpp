@@ -116,7 +116,7 @@ bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
         return true;
     }
 
-    if (!_boundary_valid) {
+    if (!_poly_loader.valid()) {
         fail_msg = "Polygon boundary invalid";
         return false;
     }
@@ -258,27 +258,9 @@ bool AC_Fence::polygon_fence_is_breached()
         return false;
     }
 
-    // check consistency of number of points
-    if (_boundary_num_points != _total) {
-        // Fence is currently not completely loaded.  Can't breach it?!
-        load_polygon_from_eeprom();
-        return false;
-    }
-    if (!_boundary_valid) {
-        // fence isn't valid - can't breach it?!
-        return false;
-    }
-
-    // check if vehicle is outside the polygon fence
-    Vector2f position;
-    if (!AP::ahrs().get_relative_position_NE_origin(position)) {
-        // we have no idea where we are; can't breach the fence
-        return false;
-    }
-
-    position = position * 100.0f;  // m to cm
-    return _poly_loader.boundary_breached(position, _boundary_num_points, _boundary);
+    return _poly_loader.breached();
 }
+
 
 bool AC_Fence::check_fence_circle()
 {
@@ -385,13 +367,9 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
     }
 
     // polygon fence check
-    if ((get_enabled_fences() & AC_FENCE_TYPE_POLYGON) && _boundary_num_points > 0) {
-        // check ekf has a good location
-        Vector2f posNE;
-        if (loc.get_vector_xy_from_origin_NE(posNE)) {
-            if (_poly_loader.boundary_breached(posNE, _boundary_num_points, _boundary)) {
-                return false;
-            }
+    if ((get_enabled_fences() & AC_FENCE_TYPE_POLYGON)) {
+        if (_poly_loader.breached(loc)) {
+            return false;
         }
     }
 
@@ -449,17 +427,17 @@ void AC_Fence::manual_recovery_start()
 }
 
 /// returns pointer to array of polygon points and num_points is filled in with the total number
-Vector2f* AC_Fence::get_boundary_points(uint16_t& num_points) const
+Vector2f* AC_PolyFence_loader::get_boundary_points(uint16_t& num_points) const
 {
     // return array minus the first point which holds the return location
     if (_boundary == nullptr) {
         return nullptr;
     }
-    if (!_boundary_valid) {
+    if (!valid()) {
         return nullptr;
     }
     // minus one for return point, minus one for closing point
-    // (_boundary_valid is not true unless we have a closing point AND
+    // (polygon().valid() is not true unless we have a closing point AND
     // we have a minumum number of points)
     if (_boundary_num_points < 2) {
         return nullptr;
@@ -468,14 +446,8 @@ Vector2f* AC_Fence::get_boundary_points(uint16_t& num_points) const
     return &_boundary[1];
 }
 
-/// returns true if we've breached the polygon boundary.  simple passthrough to underlying _poly_loader object
-bool AC_Fence::boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points) const
-{
-    return _poly_loader.boundary_breached(location, num_points, points);
-}
-
 /// handler for polygon fence messages with GCS
-void AC_Fence::handle_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
+void AC_PolyFence_loader::handle_msg(GCS_MAVLINK &link, const mavlink_message_t& msg)
 {
     switch (msg.msgid) {
         // receive a fence point from GCS and store in EEPROM
@@ -488,7 +460,7 @@ void AC_Fence::handle_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
                 Vector2l point;
                 point.x = packet.lat*1.0e7f;
                 point.y = packet.lng*1.0e7f;
-                if (!_poly_loader.save_point_to_eeprom(packet.idx, point)) {
+                if (!save_point_to_eeprom(packet.idx, point)) {
                     link.send_text(MAV_SEVERITY_WARNING, "Failed to save polygon point, too many points?");
                 } else {
                     // trigger reload of points
@@ -504,7 +476,7 @@ void AC_Fence::handle_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
             mavlink_msg_fence_fetch_point_decode(&msg, &packet);
             // attempt to retrieve from eeprom
             Vector2l point;
-            if (_poly_loader.load_point_from_eeprom(packet.idx, point)) {
+            if (load_point_from_eeprom(packet.idx, point)) {
                 mavlink_msg_fence_point_send(link.get_chan(), msg.sysid, msg.compid, packet.idx, _total, point.x*1.0e-7f, point.y*1.0e-7f);
             } else {
                 link.send_text(MAV_SEVERITY_WARNING, "Bad fence point");
@@ -519,12 +491,12 @@ void AC_Fence::handle_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
 }
 
 /// load polygon points stored in eeprom into boundary array and perform validation
-bool AC_Fence::load_polygon_from_eeprom()
+bool AC_PolyFence_loader::load_from_eeprom()
 {
     // check if we need to create array
-    if (!_boundary_create_attempted) {
-        _boundary = (Vector2f *)_poly_loader.create_point_array(sizeof(Vector2f));
-        _boundary_create_attempted = true;
+    if (!_create_attempted) {
+        _boundary = (Vector2f *)create_point_array(sizeof(Vector2f));
+        _create_attempted = true;
     }
 
     // exit if we could not allocate RAM for the boundary
@@ -543,13 +515,13 @@ bool AC_Fence::load_polygon_from_eeprom()
     }
 
     // sanity check total
-    _total = constrain_int16(_total, 0, _poly_loader.max_points());
+    _total = constrain_int16(_total, 0, max_points());
 
     // load each point from eeprom
     Vector2l temp_latlon;
     for (uint16_t index=0; index<_total; index++) {
         // load boundary point as lat/lon point
-        if (!_poly_loader.load_point_from_eeprom(index, temp_latlon)) {
+        if (!load_point_from_eeprom(index, temp_latlon)) {
             return false;
         }
         // move into location structure and convert to offset from ekf origin
@@ -558,10 +530,10 @@ bool AC_Fence::load_polygon_from_eeprom()
         _boundary[index] = ekf_origin.get_distance_NE(temp_loc) * 100.0f;
     }
     _boundary_num_points = _total;
-    _boundary_update_ms = AP_HAL::millis();
+    _update_ms = AP_HAL::millis();
 
     // update validity of polygon
-    _boundary_valid = _poly_loader.boundary_valid(_boundary_num_points, _boundary);
+    _valid = calculate_boundary_valid();
 
     return true;
 }
@@ -593,7 +565,7 @@ bool AC_Fence::sys_status_failed() const
         return true;
     }
     if (_enabled_fences & AC_FENCE_TYPE_POLYGON) {
-        if (!_boundary_valid) {
+        if (!_poly_loader.valid()) {
             return true;
         }
     }
