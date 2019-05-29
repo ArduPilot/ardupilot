@@ -248,9 +248,63 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     return false;
 }
 
+// normalizes this vector
+template <typename T>
+void Vector2<T>::normalize()
+{
+    *this /= length();
+}
+
+// returns the normalized vector
+template <typename T>
+Vector2<T> Vector2<T>::normalized() const
+{
+    return *this/length();
+}
+
+// reflects this vector about n
+template <typename T>
+void Vector2<T>::reflect(const Vector2<T> &n)
+{
+    const Vector2<T> orig(*this);
+    project(n);
+    *this = *this*2 - orig;
+}
+
+// projects this vector onto v
+template <typename T>
+void Vector2<T>::project(const Vector2<T> &v)
+{
+    *this= v * (*this * v)/(v*v);
+}
+
+// returns this vector projected onto v
+template <typename T>
+Vector2<T> Vector2<T>::projected(const Vector2<T> &v)
+{
+    return v * (*this * v)/(v*v);
+}
+
+// given a position pos_delta and a velocity v1 produce a vector
+// perpendicular to v1 maximising distance from p1
+template <typename T>
+Vector2<T> Vector2<T>::perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1)
+{
+    const Vector2<T> perpendicular1 = Vector2<T>(-v1[1], v1[0]);
+    const Vector2<T> perpendicular2 = Vector2<T>(v1[1], -v1[0]);
+    const T d1 = perpendicular1 * pos_delta;
+    const T d2 = perpendicular2 * pos_delta;
+    if (d1 > d2) {
+        return perpendicular1;
+    }
+    return perpendicular2;
+}
+
 // only define for float
 template float Vector2<float>::length_squared(void) const;
 template float Vector2<float>::length(void) const;
+template Vector2<float> Vector2<float>::normalized() const;
+template void Vector2<float>::normalize();
 template float Vector2<float>::operator *(const Vector2<float> &v) const;
 template float Vector2<float>::operator %(const Vector2<float> &v) const;
 template Vector2<float> &Vector2<float>::operator *=(const float num);
