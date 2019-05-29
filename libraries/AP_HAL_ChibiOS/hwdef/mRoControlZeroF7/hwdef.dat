@@ -3,11 +3,6 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F777xx
 
-# We set a specific HAL_BOARD_SUBTYPE, allowing for custom config in
-# drivers. For this to be used the subtype needs to be added to
-# AP_HAL/AP_HAL_Boards.h as well.
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_MROCONTROLZEROF7
-
 # board ID for firmware load
 APJ_BOARD_ID 141
 
@@ -66,8 +61,6 @@ define HAL_GPIO_SPEKTRUM_RC 71
 
 # Order of I2C buses
 I2C_ORDER I2C1
-
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
 # OEM Only
 # I2C_ORDER I2C1, I2C2, I2C3
@@ -278,5 +271,14 @@ DMA_PRIORITY SDMMC*
 #DMA_NOSHARE SPI1* *
 #DMA_NOSHARE SPI5* *
 
+# 3 IMUs
+IMU Invensensev2 SPI:icm20948 ROTATION_ROLL_180_YAW_90
+IMU Invensense   SPI:icm20608 ROTATION_ROLL_180_YAW_90
+IMU BMI088       SPI:bmi088_a SPI:bmi088_g ROTATION_NONE
 
-define HAL_BARO_DEFAULT HAL_BARO_DPS280_SPI
+# 1 baro
+BARO DPS280      SPI:dps280
+
+# 1 compass
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
