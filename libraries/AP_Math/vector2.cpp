@@ -329,6 +329,27 @@ Vector2<T> Vector2<T>::closest_point(const Vector2<T> &p, const Vector2<T> &v, c
     }
 }
 
+// w defines a line segment from the origin
+// p is a point
+// returns the square of the closest distance between the radial and the point
+template <typename T>
+float Vector2<T>::closest_distance_between_radial_and_point_squared(const Vector2<T> &w,
+                                                                   const Vector2<T> &p)
+{
+    const Vector2<T> closest = closest_point(p, w);
+    return (closest - p).length_squared();
+}
+
+// w defines a line segment from the origin
+// p is a point
+// returns the closest distance between the radial and the point
+template <typename T>
+float Vector2<T>::closest_distance_between_radial_and_point(const Vector2<T> &w,
+                                                            const Vector2<T> &p)
+{
+    return sqrtf(closest_distance_between_radial_and_point_squared(w,p));
+}
+
 // only define for float
 template float Vector2<float>::length_squared(void) const;
 template float Vector2<float>::length(void) const;
@@ -354,6 +375,8 @@ template float Vector2<float>::angle(void) const;
 template bool Vector2<float>::segment_intersection(const Vector2<float>& seg1_start, const Vector2<float>& seg1_end, const Vector2<float>& seg2_start, const Vector2<float>& seg2_end, Vector2<float>& intersection);
 template bool Vector2<float>::circle_segment_intersection(const Vector2<float>& seg_start, const Vector2<float>& seg_end, const Vector2<float>& circle_center, float radius, Vector2<float>& intersection);
 template Vector2<float> Vector2<float>::closest_point(const Vector2<float> &p, const Vector2<float> &v, const Vector2<float> &w);
+template float Vector2<float>::closest_distance_between_radial_and_point_squared(const Vector2<float> &w, const Vector2<float> &p);
+template float Vector2<float>::closest_distance_between_radial_and_point(const Vector2<float> &w, const Vector2<float> &p);
 
 template bool Vector2<long>::operator ==(const Vector2<long> &v) const;
 
