@@ -353,6 +353,45 @@ Vector2<T> Vector2<T>::closest_point(const Vector2<T> &p, const Vector2<T> &w)
     }
 }
 
+// closest distance between a line segment and a point
+// https://stackoverflow.com/questions/2824478/shortest-distance-between-two-line-segments
+template <typename T>
+float Vector2<T>::closest_distance_between_line_and_point_squared(const Vector2<T> &w1,
+                                                                  const Vector2<T> &w2,
+                                                                  const Vector2<T> &p)
+{
+    return closest_distance_between_radial_and_point_squared(w2-w1, p-w1);
+}
+
+// w1 and w2 define a line segment
+// p is a point
+// returns the closest distance between the line segment and the point
+template <typename T>
+float Vector2<T>::closest_distance_between_line_and_point(const Vector2<T> &w1,
+                                                          const Vector2<T> &w2,
+                                                          const Vector2<T> &p)
+{
+    return sqrtf(closest_distance_between_line_and_point_squared(w1, w2, p));
+}
+
+// a1->a2 and b2->v2 define two line segments
+// returns the square of the closest distance between the two line segments
+// see https://stackoverflow.com/questions/2824478/shortest-distance-between-two-line-segments
+template <typename T>
+float Vector2<T>::closest_distance_between_lines_squared(const Vector2<T> &a1,
+                                                         const Vector2<T> &a2,
+                                                         const Vector2<T> &b1,
+                                                         const Vector2<T> &b2)
+{
+    const float dist1 = Vector2<T>::closest_distance_between_line_and_point_squared(b1,b2,a1);
+    const float dist2 = Vector2<T>::closest_distance_between_line_and_point_squared(b1,b2,a2);
+    const float dist3 = Vector2<T>::closest_distance_between_line_and_point_squared(a1,a2,b1);
+    const float dist4 = Vector2<T>::closest_distance_between_line_and_point_squared(a1,a2,b2);
+    const float m1 = MIN(dist1,dist2);
+    const float m2 = MIN(dist3,dist4);
+    return MIN(m1,m2);
+}
+
 // w defines a line segment from the origin
 // p is a point
 // returns the square of the closest distance between the radial and the point
@@ -401,6 +440,9 @@ template bool Vector2<float>::circle_segment_intersection(const Vector2<float>& 
 template Vector2<float> Vector2<float>::closest_point(const Vector2<float> &p, const Vector2<float> &v, const Vector2<float> &w);
 template float Vector2<float>::closest_distance_between_radial_and_point_squared(const Vector2<float> &w, const Vector2<float> &p);
 template float Vector2<float>::closest_distance_between_radial_and_point(const Vector2<float> &w, const Vector2<float> &p);
+template float Vector2<float>::closest_distance_between_line_and_point(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
+template float Vector2<float>::closest_distance_between_line_and_point_squared(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
+template float Vector2<float>::closest_distance_between_lines_squared(const Vector2<float> &a1,const Vector2<float> &a2,const Vector2<float> &b1,const Vector2<float> &b2);
 
 template bool Vector2<long>::operator ==(const Vector2<long> &v) const;
 

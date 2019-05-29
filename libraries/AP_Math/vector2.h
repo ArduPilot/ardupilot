@@ -170,6 +170,27 @@ struct Vector2
      */
     static Vector2<T> closest_point(const Vector2<T> &p, const Vector2<T> &w);
 
+    // w1 and w2 define a line segment
+    // p is a point
+    // returns the square of the closest distance between the line segment and the point
+    static float closest_distance_between_line_and_point_squared(const Vector2<T> &w1,
+                                                                 const Vector2<T> &w2,
+                                                                 const Vector2<T> &p);
+
+    // w1 and w2 define a line segment
+    // p is a point
+    // returns the closest distance between the line segment and the point
+    static float closest_distance_between_line_and_point(const Vector2<T> &w1,
+                                                         const Vector2<T> &w2,
+                                                         const Vector2<T> &p);
+
+    // a1->a2 and b2->v2 define two line segments
+    // returns the square of the closest distance between the two line segments
+    static float closest_distance_between_lines_squared(const Vector2<T> &a1,
+                                                        const Vector2<T> &a2,
+                                                        const Vector2<T> &b1,
+                                                        const Vector2<T> &b2);
+
     // w defines a line segment from the origin
     // p is a point
     // returns the square of the closest distance between the radial and the point
