@@ -21,6 +21,12 @@
 #include "AP_Math.h"
 
 template <typename T>
+float Vector2<T>::length_squared() const
+{
+    return (float)(x*x + y*y);
+}
+
+template <typename T>
 float Vector2<T>::length(void) const
 {
 	return norm(x, y);
@@ -244,6 +250,7 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
 }
 
 // only define for float
+template float Vector2<float>::length_squared(void) const;
 template float Vector2<float>::length(void) const;
 template float Vector2<float>::operator *(const Vector2<float> &v) const;
 template float Vector2<float>::operator %(const Vector2<float> &v) const;
