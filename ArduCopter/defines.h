@@ -254,6 +254,7 @@ enum LoggingParameters {
 #define FS_GCS_ENABLED_CONTINUE_MISSION        2
 #define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL  3
 #define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND 4
+#define FS_GCS_ENABLED_LOITER                  5
 
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe

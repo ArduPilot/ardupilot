@@ -130,6 +130,8 @@ void Copter::failsafe_gcs_check()
             set_mode_SmartRTL_or_RTL(MODE_REASON_GCS_FAILSAFE);
         } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND) {
             set_mode_SmartRTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
+        } else if (g.failsafe_gcs == FS_GCS_ENABLED_LOITER) {
+            set_mode_loiter_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
         } else { // g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL
             set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
         }
@@ -257,6 +259,20 @@ void Copter::set_mode_SmartRTL_or_RTL(mode_reason_t reason)
         gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
         set_mode_RTL_or_land_with_pause(reason);
     } else {
+        AP_Notify::events.failsafe_mode_change = 1;
+    }
+}
+
+// set_mode_loiter_or_land_with_pause - sets mode to LOITER if possible or LAND with 4 second delay before descent starts
+//  this is always called from a failsafe so we trigger notification to pilot
+void Copter::set_mode_loiter_or_land_with_pause(mode_reason_t reason)
+{
+    // attempt to switch to RTL, if this fails then switch to Land
+    if (!set_mode(LOITER, reason)) {
+        // set mode to land will trigger mode change notification to pilot
+        set_mode_land_with_pause(reason);
+    } else {
+        // alert pilot to mode change
         AP_Notify::events.failsafe_mode_change = 1;
     }
 }

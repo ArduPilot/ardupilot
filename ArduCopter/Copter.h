@@ -677,6 +677,7 @@ private:
     void set_mode_RTL_or_land_with_pause(mode_reason_t reason);
     void set_mode_SmartRTL_or_RTL(mode_reason_t reason);
     void set_mode_SmartRTL_or_land_with_pause(mode_reason_t reason);
+    void set_mode_loiter_or_land_with_pause(mode_reason_t reason);
     bool should_disarm_on_failsafe();
 
     // failsafe.cpp
