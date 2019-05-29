@@ -314,62 +314,6 @@ bool Rover::should_log(uint32_t mask)
     return logger.should_log(mask);
 }
 
-/*
-  update AHRS soft arm state and log as needed
- */
-void AP_Arming_Rover::change_arm_state(void)
-{
-    Log_Write_Arm_Disarm();
-    update_soft_armed();
-}
-
-/*
-  arm motors
- */
-bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
-{
-    if (!AP_Arming::arm(method, do_arming_checks)) {
-        AP_Notify::events.arming_failed = true;
-        return false;
-    }
-
-    // Set the SmartRTL home location. If activated, SmartRTL will ultimately try to land at this point
-    rover.g2.smart_rtl.set_home(true);
-
-    // initialize simple mode heading
-    rover.mode_simple.init_heading();
-
-    // save home heading for use in sail vehicles
-    rover.g2.windvane.record_home_heading();
-
-    change_arm_state();
-
-    gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
-
-    return true;
-}
-
-/*
-  disarm motors
- */
-bool AP_Arming_Rover::disarm(void)
-{
-    if (!AP_Arming::disarm()) {
-        return false;
-    }
-    if (rover.control_mode != &rover.mode_auto) {
-        // reset the mission on disarm if we are not in auto
-        rover.mode_auto.mission.reset();
-    }
-
-    // only log if disarming was successful
-    change_arm_state();
-
-    gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
-
-    return true;
-}
-
 // returns true if vehicle is a boat
 // this affects whether the vehicle tries to maintain position after reaching waypoints
 bool Rover::is_boat() const
