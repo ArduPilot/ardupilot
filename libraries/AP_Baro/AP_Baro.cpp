@@ -464,7 +464,10 @@ void AP_Baro::init(void)
     }
 #endif
 
-#if AP_FEATURE_BOARD_DETECT
+#if defined(HAL_BARO_PROBE_LIST)
+    // probe list from BARO lines in hwdef.dat
+    HAL_BARO_PROBE_LIST;
+#elif AP_FEATURE_BOARD_DETECT
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:
 #ifdef HAL_BARO_MS5611_I2C_BUS
@@ -488,11 +491,6 @@ void AP_Baro::init(void)
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_PIXRACER:
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME))));
         break;
 
     case AP_BoardConfig::PX4_BOARD_MINDPXV2:
