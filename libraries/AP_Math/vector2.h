@@ -163,6 +163,13 @@ struct Vector2
      */
     static Vector2<T> closest_point(const Vector2<T> &p, const Vector2<T> &v, const Vector2<T> &w);
 
+    /*
+     * Returns the point closest to p on the line segment (0,w).
+     *
+     * this is a simplification of closest point with a general segment, with v=(0,0)
+     */
+    static Vector2<T> closest_point(const Vector2<T> &p, const Vector2<T> &w);
+
     // w defines a line segment from the origin
     // p is a point
     // returns the square of the closest distance between the radial and the point
