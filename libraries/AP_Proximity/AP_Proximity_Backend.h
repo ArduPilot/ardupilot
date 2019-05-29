@@ -64,6 +64,12 @@ public:
     // get distances in 8 directions. used for sending distances to ground station
     bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 
+    // copy location points around vehicle into a buffer owned by the caller
+    // caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
+    // num_copied is updated with the number of locations copied into the buffer
+    // returns true on success, false on failure which should only happen if buff is nullptr
+    bool copy_locations(AP_Proximity::Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied);
+
 protected:
 
     // set status and update valid_count
@@ -86,6 +92,9 @@ protected:
     bool get_ignore_area(uint8_t index, uint16_t &angle_deg, uint8_t &width_deg) const;
     bool get_next_ignore_start_or_end(uint8_t start_or_end, int16_t start_angle, int16_t &ignore_start) const;
 
+    // earth frame objects
+    void update_locations();
+
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
 
@@ -102,4 +111,9 @@ protected:
     // fence boundary
     Vector2f _sector_edge_vector[PROXIMITY_SECTORS_MAX];    // vector for right-edge of each sector, used to speed up calculation of boundary
     Vector2f _boundary_point[PROXIMITY_SECTORS_MAX];        // bounding polygon around the vehicle calculated conservatively for object avoidance
+
+    // earth frame locations (i.e. detected obstacles stored as lat/lon points)
+    uint16_t _location_count;                               // number of locations held in _locations buffer
+    AP_Proximity::Proximity_Location _locations[PROXIMITY_SECTORS_MAX];   // buffer of locations
+    HAL_Semaphore_Recursive _rsem;                          // semaphore for access to _locations and _location_count
 };
