@@ -137,50 +137,23 @@ struct Vector2
     float length(void) const;
 
     // normalizes this vector
-    void    normalize()
-    {
-        *this/=length();
-    }
+    void normalize();
 
     // returns the normalized vector
-    Vector2<T>  normalized() const
-    {
-        return *this/length();
-    }
+    Vector2<T> normalized() const;
 
     // reflects this vector about n
-    void    reflect(const Vector2<T> &n)
-    {
-        const Vector2<T>        orig(*this);
-        project(n);
-        *this= *this*2 - orig;
-    }
+    void reflect(const Vector2<T> &n);
 
     // projects this vector onto v
-    void    project(const Vector2<T> &v)
-    {
-        *this= v * (*this * v)/(v*v);
-    }
+    void project(const Vector2<T> &v);
 
     // returns this vector projected onto v
-    Vector2<T>  projected(const Vector2<T> &v)
-    {
-        return v * (*this * v)/(v*v);
-    }
+    Vector2<T> projected(const Vector2<T> &v);
 
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1
-    static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1)
-    {
-        const Vector2<T> perpendicular1 = Vector2<T>(-v1[1], v1[0]);
-        const Vector2<T> perpendicular2 = Vector2<T>(v1[1], -v1[0]);
-        const T d1 = perpendicular1 * pos_delta;
-        const T d2 = perpendicular2 * pos_delta;
-        if (d1 > d2) {
-            return perpendicular1;
-        }
-        return perpendicular2;
-    }
+    static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1);
 
     /*
      * Returns the point closest to p on the line segment (v,w).
