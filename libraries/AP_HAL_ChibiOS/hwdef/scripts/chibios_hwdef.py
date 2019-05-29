@@ -74,6 +74,11 @@ env_vars = {}
 # build flags for ChibiOS makefiles
 build_flags = []
 
+# sensor lists
+imu_list = []
+compass_list = []
+baro_list = []
+
 mcu_type = None
 
 
@@ -759,7 +764,75 @@ def write_SPI_config(f):
     f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
     write_SPI_table(f)
 
+def parse_spi_device(dev):
+    '''parse a SPI:xxx device item'''
+    a = dev.split(':')
+    return 'hal.spi->get_device("%s")' % a[1]
 
+def write_IMU_config(f):
+    '''write IMU config defines'''
+    global imu_list
+    devlist = []
+    for dev in imu_list:
+        driver = dev[0]
+        for i in range(1,len(dev)):
+            if dev[i].startswith("SPI:"):
+                dev[i] = parse_spi_device(dev[i])
+            elif dev[i].startswith("I2C:"):
+                dev[i] = parse_i2c_device(dev[i])
+        n = len(devlist)+1
+        devlist.append('HAL_INS_PROBE%u' % n)
+        f.write(
+            '#define HAL_INS_PROBE%u ADD_BACKEND(AP_InertialSensor_%s::probe(*this,%s))\n'
+            % (n, driver, ','.join(dev[1:])))
+    f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+def write_MAG_config(f):
+    '''write IMU config defines'''
+    global compass_list
+    devlist = []
+    for dev in compass_list:
+        driver = dev[0]
+        probe = 'probe'
+        a = driver.split(':')
+        driver = a[0]
+        if len(a) > 1 and a[1].startswith('probe'):
+            probe = a[1]
+        for i in range(1,len(dev)):
+            if dev[i].startswith("SPI:"):
+                dev[i] = parse_spi_device(dev[i])
+            elif dev[i].startswith("I2C:"):
+                dev[i] = parse_i2c_device(dev[i])
+        n = len(devlist)+1
+        devlist.append('HAL_MAG_PROBE%u' % n)
+        f.write(
+            '#define HAL_MAG_PROBE%u ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s))\n'
+            % (n, driver, driver, probe, ','.join(dev[1:])))
+    f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
+
+def write_BARO_config(f):
+    '''write barometer config defines'''
+    global baro_list
+    devlist = []
+    for dev in baro_list:
+        driver = dev[0]
+        probe = 'probe'
+        a = driver.split(':')
+        driver = a[0]
+        if len(a) > 1 and a[1].startswith('probe'):
+            probe = a[1]
+        for i in range(1,len(dev)):
+            if dev[i].startswith("SPI:"):
+                dev[i] = parse_spi_device(dev[i])
+            elif dev[i].startswith("I2C:"):
+                dev[i] = parse_i2c_device(dev[i])
+        n = len(devlist)+1
+        devlist.append('HAL_BARO_PROBE%u' % n)
+        f.write(
+            '#define HAL_BARO_PROBE%u ADD_BACKEND(AP_Baro_%s::%s(*this, std::move(%s)))\n'
+            % (n, driver, probe, ','.join(dev[1:])))
+    f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
+    
 def get_gpio_bylabel(label):
     '''get GPIO(n) setting on a pin label, or -1'''
     p = bylabel.get(label)
@@ -1247,6 +1320,9 @@ def write_hwdef_header(outfilename):
     write_SPI_config(f)
     write_ADC_config(f)
     write_GPIO_config(f)
+    write_IMU_config(f)
+    write_MAG_config(f)
+    write_BARO_config(f)
 
     write_peripheral_enable(f)
     setup_apj_IDs()
@@ -1419,7 +1495,7 @@ def romfs_wildcard(pattern):
     
 def process_line(line):
     '''process one line of pin definition file'''
-    global allpins
+    global allpins, imu_list, compass_list, baro_list
     a = shlex.split(line)
     # keep all config lines for later use
     alllines.append(line)
@@ -1457,6 +1533,12 @@ def process_line(line):
             p.af = af
     if a[0] == 'SPIDEV':
         spidev.append(a[1:])
+    if a[0] == 'IMU':
+        imu_list.append(a[1:])
+    if a[0] == 'COMPASS':
+        compass_list.append(a[1:])
+    if a[0] == 'BARO':
+        baro_list.append(a[1:])
     if a[0] == 'ROMFS':
         romfs_add(a[1],a[2])
     if a[0] == 'ROMFS_WILDCARD':
@@ -1480,6 +1562,12 @@ def process_line(line):
                 continue
             newpins.append(pin)
         allpins = newpins
+        if a[1] == 'IMU':
+            imu_list = []
+        if a[1] == 'COMPASS':
+            compass_list = []
+        if a[1] == 'BARO':
+            baro_list = []
     if a[0] == 'env':
         print("Adding environment %s" % ' '.join(a[1:]))
         if len(a[1:]) < 2:
