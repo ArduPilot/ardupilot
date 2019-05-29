@@ -329,6 +329,30 @@ Vector2<T> Vector2<T>::closest_point(const Vector2<T> &p, const Vector2<T> &v, c
     }
 }
 
+/*
+ * Returns the point closest to p on the line segment (0,w).
+ *
+ * this is a simplification of closest point with a general segment, with v=(0,0)
+ */
+template <typename T>
+Vector2<T> Vector2<T>::closest_point(const Vector2<T> &p, const Vector2<T> &w)
+{
+    // length squared of line segment
+    const float l2 = w.length_squared();
+    if (l2 < FLT_EPSILON) {
+        // v == w case
+        return w;
+    }
+    const float t = (p * w) / l2;
+    if (t <= 0) {
+        return Vector2<T>(0,0);
+    } else if (t >= 1) {
+        return w;
+    } else {
+        return w*t;
+    }
+}
+
 // w defines a line segment from the origin
 // p is a point
 // returns the square of the closest distance between the radial and the point
