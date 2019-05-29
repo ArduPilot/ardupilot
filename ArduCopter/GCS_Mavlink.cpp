@@ -980,6 +980,19 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+            if (is_equal(packet.param1, 42.0f) &&
+                is_equal(packet.param2, 24.0f) &&
+                is_equal(packet.param3, 71.0f) &&
+                is_equal(packet.param4, 93.0f)) {
+                // this is a magic sequence to force the main loop to
+                // lockup. This is for testing the stm32 watchdog
+                // functionality
+                while (true) {
+                    send_text(MAV_SEVERITY_WARNING,"entering lockup");
+                    hal.scheduler->delay(250);
+                }
+            }
+
             if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
                 AP_Notify::flags.firmware_update = 1;
                 copter.notify.update();

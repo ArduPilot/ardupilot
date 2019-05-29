@@ -22,6 +22,7 @@
  */
 #include "AP_AHRS.h"
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -45,6 +46,24 @@ AP_AHRS_DCM::reset_gyro_drift(void)
     _omega_I_sum_time = 0;
 }
 
+
+/* if this was a watchdog reset then get home from backup registers */
+void AP_AHRS_DCM::load_watchdog_home()
+{
+    int32_t lat, lon, alt_cm;
+    if (hal.util->was_watchdog_reset() &&
+        hal.util->get_backup_home_state(lat, lon, alt_cm) &&
+        (lat != 0 || lon != 0)) {
+        _home.lat = lat;
+        _home.lng = lon;
+        _home.alt = alt_cm;
+        _home.options = 0;
+        _home_is_set = true;
+        _home_locked = true;
+        gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog home");
+    }
+}
+
 // run a full DCM update round
 void
 AP_AHRS_DCM::update(bool skip_ins_update)
@@ -53,6 +72,7 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 
     if (_last_startup_ms == 0) {
         _last_startup_ms = AP_HAL::millis();
+        load_watchdog_home();
     }
 
     if (!skip_ins_update) {
@@ -94,6 +114,21 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 
     // update AOA and SSA
     update_AOA_SSA();
+
+    backup_attitude();
+}
+
+/*
+  backup attitude to stm32 registers at 3Hz
+ */
+void AP_AHRS_DCM::backup_attitude(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - _last_backup_ms < 333) {
+        return;
+    }
+    _last_backup_ms = now;
+    hal.util->set_backup_attitude(roll_sensor, pitch_sensor, yaw_sensor);
 }
 
 // update the DCM matrix using only the gyros
@@ -150,7 +185,16 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     // if the caller wants us to try to recover to the current
     // attitude then calculate the dcm matrix from the current
     // roll/pitch/yaw values
-    if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
+    if (hal.util->was_watchdog_reset() &&
+        hal.util->get_backup_attitude(roll_sensor, pitch_sensor, yaw_sensor) &&
+        AP_HAL::millis() < 10000) {
+        roll = radians(roll_sensor*0.01f);
+        pitch = radians(pitch_sensor*0.01f);
+        yaw = radians(yaw_sensor*0.01f);
+        _dcm_matrix.from_euler(roll, pitch, yaw);
+        gcs().send_text(MAV_SEVERITY_INFO, "Restored watchdog attitude %d %d %d",
+                        roll_sensor/100, pitch_sensor/100, yaw_sensor/100);
+    } else if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
         _dcm_matrix.from_euler(roll, pitch, yaw);
     } else {
 
@@ -185,6 +229,9 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 
     }
 
+    if (_last_startup_ms == 0) {
+        load_watchdog_home();
+    }
     _last_startup_ms = AP_HAL::millis();
 }
 
@@ -1018,6 +1065,7 @@ void AP_AHRS_DCM::set_home(const Location &loc)
     _home = loc;
     _home.options = 0;
     _home_is_set = true;
+    hal.util->set_backup_home_state(loc.lat, loc.lng, loc.alt);
 }
 
 //  a relative ground position to home in meters, Down

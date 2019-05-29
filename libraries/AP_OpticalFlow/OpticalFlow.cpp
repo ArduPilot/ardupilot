@@ -103,9 +103,6 @@ void OpticalFlow::init(void)
         if (backend == nullptr) {
             backend = AP_OpticalFlow_PX4Flow::detect(*this);
         }
-        if (backend == nullptr) {
-            backend = AP_OpticalFlow_CXOF::detect(*this);
-        }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
         backend = new AP_OpticalFlow_SITL(*this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
@@ -115,6 +112,9 @@ void OpticalFlow::init(void)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #endif
+        if (backend == nullptr) {
+            backend = AP_OpticalFlow_CXOF::detect(*this);
+        }
     }
 
     if (backend != nullptr) {
