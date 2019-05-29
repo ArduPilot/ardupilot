@@ -64,6 +64,10 @@ void Copter::fence_check()
                             set_mode(LAND, MODE_REASON_FENCE_BREACH);
                         }
                         break;
+                    case AC_FENCE_ACTION_LOITER:
+                        if (!set_mode(LOITER, MODE_REASON_FENCE_BREACH)) {
+                            set_mode(LAND, MODE_REASON_FENCE_BREACH);
+                        }
                     }
                 }
             }
