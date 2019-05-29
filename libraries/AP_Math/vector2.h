@@ -131,10 +131,7 @@ struct Vector2
     }
 
     // gets the length of this vector squared
-    T   length_squared() const
-    {
-        return (T)(*this * *this);
-    }
+    float length_squared() const;
 
     // gets the length of this vector
     float           length(void) const;
