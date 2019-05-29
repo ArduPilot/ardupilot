@@ -93,6 +93,9 @@ PA12 CAN_TX CAN
 define HAL_USE_CAN TRUE
 define STM32_CAN_USE_CAN1 TRUE
 
+# start with a fixed node ID so the board is usable without DNA
+define HAL_CAN_DEFAULT_NODE_ID 117
+
 define HAL_USE_I2C TRUE
 define STM32_I2C_USE_I2C1 TRUE
 
