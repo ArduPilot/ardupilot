@@ -219,3 +219,19 @@ define HAL_SERIAL5_BAUD 921600
 # 6 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 6
 
+
+# two IMUs
+IMU Invensense SPI:icm20608 ROTATION_ROLL_180_YAW_90
+IMU Invensense SPI:mpu9250 ROTATION_ROLL_180_YAW_90
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# 2 compasses. R15 has LIS3MDL instead of HMC5843
+COMPASS HMC5843 SPI:hmc5843 false ROTATION_PITCH_180
+COMPASS LIS3MDL SPI:lis3mdl false ROTATION_NONE
+COMPASS AK8963:probe_mpu9250 0 ROTATION_ROLL_180_YAW_90
+
+# also probe all types of external I2C compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+# one barometer
+BARO MS56XX SPI:ms5611_int
