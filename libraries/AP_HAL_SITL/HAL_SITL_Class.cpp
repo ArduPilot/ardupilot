@@ -35,6 +35,7 @@ static GPIO sitlGPIO(&sitlState);
 static Empty::I2CDeviceManager i2c_mgr_instance;
 static Empty::SPIDeviceManager emptySPI;
 static Empty::OpticalFlow emptyOpticalFlow;
+static Empty::Flash emptyFlash;
 
 static UARTDriver sitlUart0Driver(0, &sitlState);
 static UARTDriver sitlUart1Driver(1, &sitlState);
@@ -66,6 +67,7 @@ HAL_SITL::HAL_SITL() :
         &sitlScheduler,     /* scheduler */
         &utilInstance,      /* util */
         &emptyOpticalFlow, /* onboard optical flow */
+        &emptyFlash, /* flash driver */
         nullptr),           /* CAN */
     _sitl_state(&sitlState)
 {}

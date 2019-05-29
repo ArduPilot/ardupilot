@@ -26,6 +26,8 @@
 #include "sdcard.h"
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include <hwdef.h>
 
@@ -83,6 +85,12 @@ static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
+#ifndef HAL_NO_FLASH_SUPPORT
+static ChibiOS::Flash flashDriver;
+#else
+static Empty::Flash flashDriver;
+#endif
+
 
 #if HAL_WITH_IO_MCU
 HAL_UART_IO_DRIVER;
@@ -110,6 +118,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlowDriver,
+        &flashDriver,
         nullptr
         )
 {}
@@ -187,6 +196,11 @@ static THD_FUNCTION(main_loop,arg)
      */
     chThdSetPriority(APM_MAIN_PRIORITY);
 
+    // setup watchdog to reset if main loop stops
+    if (AP_BoardConfig::watchdog_enabled()) {
+        stm32_watchdog_init();
+    }
+
     while (true) {
         g_callbacks->loop();
 
@@ -201,6 +215,17 @@ static THD_FUNCTION(main_loop,arg)
         if (!schedulerInstance.check_called_boost()) {
             hal.scheduler->delay_microseconds(250);
         }
+        stm32_watchdog_pat();
+
+#if 0
+        // simple method to test watchdog functionality
+        static bool done_pause;
+        if (!done_pause && AP_HAL::millis() > 20000) {
+            done_pause = true;
+            while (AP_HAL::millis() < 22200) ;
+        }
+#endif
+
     }
     thread_running = false;
 }

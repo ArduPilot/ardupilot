@@ -95,6 +95,7 @@ bool sdcard_init()
     device = AP_HAL::get_HAL().spi->get_device("sdcard");
     if (!device) {
         printf("No sdcard SPI device found\n");
+        sdcard_running = false;
         sem.give();
         return false;
     }
@@ -131,8 +132,8 @@ bool sdcard_init()
         sem.give();
         return true;
     }
-    sdcard_running = false;
 #endif
+    sdcard_running = false;
     sem.give();
 #endif
     return false;
@@ -162,13 +163,15 @@ void sdcard_stop(void)
 #endif
 }
 
-void sdcard_retry(void)
+bool sdcard_retry(void)
 {
 #ifdef USE_POSIX
     if (!sdcard_running) {
         sdcard_init();
     }
+    return sdcard_running;
 #endif
+    return false;
 }
 
 #if HAL_USE_MMC_SPI

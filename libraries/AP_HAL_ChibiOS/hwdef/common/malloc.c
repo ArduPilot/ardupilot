@@ -207,4 +207,35 @@ size_t mem_available(void)
     return totalp;
 }
 
+/*
+  allocate a thread on any available heap
+ */
+thread_t *thread_create_alloc(size_t size,
+                              const char *name, tprio_t prio,
+                              tfunc_t pf, void *arg)
+{
+    thread_t *ret;
+    // first try default heap
+    ret = chThdCreateFromHeap(NULL, size, name, prio, pf, arg);
+    if (ret != NULL) {
+        return ret;
+    }
+
+#if defined(CCM_RAM_SIZE_KB)
+    ret = chThdCreateFromHeap(&ccm_heap, size, name, prio, pf, arg);
+    if (ret != NULL) {
+        return ret;
+    }
+#endif
+
+#if defined(DTCM_RAM_SIZE_KB)
+    ret = chThdCreateFromHeap(&dtcm_heap, size, name, prio, pf, arg);
+    if (ret != NULL) {
+        return ret;
+    }
+#endif
+    
+    return NULL;
+}
+
 #endif // CH_CFG_USE_HEAP

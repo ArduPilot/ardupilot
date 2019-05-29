@@ -19,4 +19,5 @@ namespace Empty {
     class Storage;
     class UARTDriver;
     class Util;
+    class Flash;
 }
