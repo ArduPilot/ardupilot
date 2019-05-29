@@ -148,3 +148,70 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
     // call parent class checks
     return AP_Arming::arm_checks(method);
 }
+
+/*
+  update HAL soft arm state and log as needed
+*/
+void AP_Arming_Plane::change_arm_state(void)
+{
+    Log_Write_Arm_Disarm();
+    update_soft_armed();
+    plane.quadplane.set_armed(hal.util->get_soft_armed());
+}
+
+bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_checks)
+{
+    if (!AP_Arming::arm(method, do_arming_checks)) {
+        return false;
+    }
+
+    change_arm_state();
+
+    gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+
+    return true;
+}
+
+/*
+  disarm motors
+ */
+bool AP_Arming_Plane::disarm(void)
+{
+    if (!AP_Arming::disarm()) {
+        return false;
+    }
+    if (plane.control_mode != &plane.mode_auto) {
+        // reset the mission on disarm if we are not in auto
+        plane.mission.reset();
+    }
+
+    // suppress the throttle in auto-throttle modes
+    plane.throttle_suppressed = plane.auto_throttle_mode;
+
+    //only log if disarming was successful
+    change_arm_state();
+
+    // reload target airspeed which could have been modified by a mission
+    plane.aparm.airspeed_cruise_cm.load();
+
+#if QAUTOTUNE_ENABLED
+    //save qautotune gains if enabled and success
+    if (plane.control_mode == &plane.mode_qautotune) {
+        plane.quadplane.qautotune.save_tuning_gains();
+    } else {
+        plane.quadplane.qautotune.reset();
+    }
+#endif
+
+    gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
+
+    return true;
+}
+
+void AP_Arming_Plane::update_soft_armed()
+{
+    hal.util->set_soft_armed(is_armed() &&
+                             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
+}
+
