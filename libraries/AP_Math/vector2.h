@@ -165,14 +165,15 @@ struct Vector2
 
     // w defines a line segment from the origin
     // p is a point
+    // returns the square of the closest distance between the radial and the point
+    static float closest_distance_between_radial_and_point_squared(const Vector2<T> &w,
+                                                                   const Vector2<T> &p);
+
+    // w defines a line segment from the origin
+    // p is a point
     // returns the closest distance between the radial and the point
     static float closest_distance_between_radial_and_point(const Vector2<T> &w,
-                                                           const Vector2<T> &p)
-    {
-        const Vector2<T> closest = closest_point(p, Vector2<T>(0,0), w);
-        const Vector2<T> delta = closest - p;
-        return delta.length();
-    }
+                                                           const Vector2<T> &p);
 
     // find the intersection between two line segments
     // returns true if they intersect, false if they do not
