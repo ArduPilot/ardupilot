@@ -92,8 +92,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     return (AP_Arming::pre_arm_checks(report)
             & rover.g2.motors.pre_arm_check(report)
-            & fence_checks(report)
-            & proximity_check(report));
+            & fence_checks(report));
 }
 
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
@@ -103,23 +102,6 @@ bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
         return true;
     }
     return AP_Arming::arm_checks(method);
-}
-
-// check nothing is too close to vehicle
-bool AP_Arming_Rover::proximity_check(bool report)
-{
-    // return true immediately if no sensor present
-    if (rover.g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
-        return true;
-    }
-
-    // return false if proximity sensor unhealthy
-    if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
-        check_failed(ARMING_CHECK_NONE, report, "check proximity sensor");
-        return false;
-    }
-
-    return true;
 }
 
 void AP_Arming_Rover::update_soft_armed()
