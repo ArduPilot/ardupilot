@@ -796,7 +796,8 @@ def write_IMU_config(f):
         f.write(
             '#define HAL_INS_PROBE%u ADD_BACKEND(AP_InertialSensor_%s::probe(*this,%s))\n'
             % (n, driver, ','.join(dev[1:])))
-    f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
+    if len(devlist) > 0:
+        f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
 def write_MAG_config(f):
     '''write IMU config defines'''
@@ -819,7 +820,8 @@ def write_MAG_config(f):
         f.write(
             '#define HAL_MAG_PROBE%u ADD_BACKEND(DRIVER_%s, AP_Compass_%s::%s(%s))\n'
             % (n, driver, driver, probe, ','.join(dev[1:])))
-    f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
+    if len(devlist) > 0:
+        f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
 def write_BARO_config(f):
     '''write barometer config defines'''
@@ -844,7 +846,8 @@ def write_BARO_config(f):
         f.write(
             '#define HAL_BARO_PROBE%u ADD_BACKEND(AP_Baro_%s::%s(*this,%s))\n'
             % (n, driver, probe, ','.join(dev[1:])))
-    f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
+    if len(devlist) > 0:
+        f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
     
 def get_gpio_bylabel(label):
     '''get GPIO(n) setting on a pin label, or -1'''
