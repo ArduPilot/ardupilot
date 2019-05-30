@@ -112,10 +112,6 @@ void Sub::althold_run()
         if (ap.at_bottom) {
             pos_control.relax_alt_hold_controllers(); // clear velocity and position targets
             pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
-        } else if (rangefinder_alt_ok()) {
-            // if rangefinder is ok, use surface tracking
-            float target_climb_rate = get_surface_tracking_climb_rate(0, pos_control.get_alt_target(), G_Dt);
-            pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         }
 
         // Detects a zero derivative
