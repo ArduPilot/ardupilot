@@ -412,7 +412,7 @@ class ManifestGenerator():
             version_type = self.releasetype_map(firmware["release-type"])
             some_json = dict({
                 "mav-autopilot": "ARDUPILOTMEGA",
-                # "vehicletype": firmware["vehicletype"],
+                "vehicletype": firmware["vehicletype"],
                 "platform": firmware["platform"],
                 "git-sha": firmware["git_sha"],
                 "url": url,
