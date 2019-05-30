@@ -326,7 +326,8 @@ is bob we will attempt to checkout bob-AVR'''
                       (vehicle, tag, os.getcwd()))
 
         for board in boards:
-            self.progress("Building board: %s" % board)
+            now = datetime.datetime.now()
+            self.progress("Building board: %s at %s" % (board, str(now)))
             for frame in frames:
                 if frame is not None:
                     self.progress("Considering frame %s for board %s" %
