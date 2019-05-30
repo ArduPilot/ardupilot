@@ -1,6 +1,10 @@
 language: cpp
 sudo: false
 
+git:
+  depth: 10
+  quiet: true
+
 dist: xenial
 addons:
   apt:
@@ -26,7 +30,7 @@ addons:
       - llvm-7
 
 cache:
-  ccache: false
+  ccache: true
   directories:
     - $HOME/opt
 
