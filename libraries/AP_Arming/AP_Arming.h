@@ -122,7 +122,9 @@ protected:
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
-    
+
+    virtual bool proximity_checks(bool report) const;
+
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4]) const;
 
