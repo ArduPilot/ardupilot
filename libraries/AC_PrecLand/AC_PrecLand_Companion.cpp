@@ -48,6 +48,10 @@ void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg)
     __mavlink_landing_target_t packet;
     mavlink_msg_landing_target_decode(msg, &packet);
 
+    if (packet.frame == 20) { //this msg maybe send by other drones for reporting back to GCS, ignore it. TODO: add this to MAVLink protocol as MAV_FRAME_REPORT
+        return;
+    }
+
     _timestamp_us = packet.time_usec;
     _distance_to_target = packet.distance;
 
