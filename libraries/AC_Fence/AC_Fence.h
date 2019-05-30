@@ -142,7 +142,7 @@ private:
     bool pre_arm_check_alt(const char* &fail_msg) const;
 
     /// load polygon points stored in eeprom into boundary array and perform validation.  returns true if load successfully completed
-    bool load_polygon_from_eeprom(bool force_reload = false);
+    bool load_polygon_from_eeprom();
 
     // returns true if we have breached the fence:
     bool polygon_fence_is_breached();
@@ -182,7 +182,6 @@ private:
     Vector2f        *_boundary = nullptr;           // array of boundary points.  Note: point 0 is the return point
     uint8_t         _boundary_num_points = 0;       // number of points in the boundary array (should equal _total parameter after load has completed)
     bool            _boundary_create_attempted = false; // true if we have attempted to create the boundary array
-    bool            _boundary_loaded = false;       // true if boundary array has been loaded from eeprom
     bool            _boundary_valid = false;        // true if boundary forms a closed polygon
 };
 

@@ -261,7 +261,6 @@ bool AC_Fence::polygon_fence_is_breached()
     // check consistency of number of points
     if (_boundary_num_points != _total) {
         // Fence is currently not completely loaded.  Can't breach it?!
-        _boundary_loaded = false;
         load_polygon_from_eeprom();
         return false;
     }
@@ -535,13 +534,8 @@ void AC_Fence::handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
 }
 
 /// load polygon points stored in eeprom into boundary array and perform validation
-bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
+bool AC_Fence::load_polygon_from_eeprom()
 {
-    // exit immediately if already loaded
-    if (_boundary_loaded && !force_reload) {
-        return true;
-    }
-
     // check if we need to create array
     if (!_boundary_create_attempted) {
         _boundary = (Vector2f *)_poly_loader.create_point_array(sizeof(Vector2f));
@@ -579,7 +573,6 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
         _boundary[index] = ekf_origin.get_distance_NE(temp_loc) * 100.0f;
     }
     _boundary_num_points = _total;
-    _boundary_loaded = true;
 
     // update validity of polygon
     _boundary_valid = _poly_loader.boundary_valid(_boundary_num_points, _boundary);
