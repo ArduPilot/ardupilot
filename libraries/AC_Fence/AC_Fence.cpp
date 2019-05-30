@@ -573,6 +573,7 @@ bool AC_Fence::load_polygon_from_eeprom()
         _boundary[index] = ekf_origin.get_distance_NE(temp_loc) * 100.0f;
     }
     _boundary_num_points = _total;
+    _boundary_update_ms = AP_HAL::millis();
 
     // update validity of polygon
     _boundary_valid = _poly_loader.boundary_valid(_boundary_num_points, _boundary);
