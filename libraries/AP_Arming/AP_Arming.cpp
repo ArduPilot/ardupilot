@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AP_Proximity/AP_Proximity.h>
 #include <AP_Rally/AP_Rally.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AC_Fence/AC_Fence.h>
@@ -669,6 +670,28 @@ bool AP_Arming::system_checks(bool report)
     return true;
 }
 
+
+// check nothing is too close to vehicle
+bool AP_Arming::proximity_checks(bool report) const
+{
+    const AP_Proximity *proximity = AP::proximity();
+    // return true immediately if no sensor present
+    if (proximity == nullptr) {
+        return true;
+    }
+    if (proximity->get_status() == AP_Proximity::Proximity_NotConnected) {
+        return true;
+    }
+
+    // return false if proximity sensor unhealthy
+    if (proximity->get_status() < AP_Proximity::Proximity_Good) {
+        check_failed(ARMING_CHECK_NONE, report, "check proximity sensor");
+        return false;
+    }
+
+    return true;
+}
+
 bool AP_Arming::can_checks(bool report)
 {
 #if HAL_WITH_UAVCAN
@@ -752,7 +775,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  servo_checks(report)
         &  board_voltage_checks(report)
         &  system_checks(report)
-        &  can_checks(report);
+        &  can_checks(report)
+        &  proximity_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
