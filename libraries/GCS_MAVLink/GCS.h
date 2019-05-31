@@ -504,6 +504,8 @@ protected:
 
     MAV_RESULT handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet);
 
+    // default empty handling of LANDING_TARGET
+    virtual void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) { }
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);
     virtual void send_global_position_int();
@@ -802,6 +804,7 @@ private:
                                                      const uint8_t reset_counter,
                                                      const uint16_t payload_size);
     void handle_vision_speed_estimate(const mavlink_message_t &msg);
+    void handle_landing_target(const mavlink_message_t &msg);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
