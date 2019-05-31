@@ -575,6 +575,10 @@ public:
 
     // min initial climb in RTL
     AP_Int16        rtl_climb_min;
+
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand precland;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

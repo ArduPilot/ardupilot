@@ -1238,6 +1238,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(guidedHeading, "GUIDED_", 28, ParametersG2, AC_PID),
 #endif // OFFBOARD_GUIDED == ENABLED
 
+#if PRECISION_LANDING == ENABLED
+    // @Group: PLND_
+    // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
+    AP_SUBGROUPINFO(precland, "PLND_", 29, ParametersG2, AC_PrecLand),
+#endif
+
     AP_GROUPEND
 };
 
