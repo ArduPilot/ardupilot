@@ -84,6 +84,10 @@ void AC_WPNav_Heli::set_L1_wp_origin_and_destination(const Location_Class& desti
     }
     _next_WP_loc = destination;
 
+//    int32_t temp_alt;
+//    destination.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, temp_alt);
+//    _pos_control.set_alt_target(temp_alt);
+
     _reached_l1_destination = false;
 
 }
@@ -114,7 +118,7 @@ bool AC_WPNav_Heli::update_l1_wpnav()
     Location_Class curr_loc = _inav.get_position();
     float speed_forward = _ahrs.groundspeed_vector().x*_ahrs.cos_yaw() + _ahrs.groundspeed_vector().y*_ahrs.sin_yaw();
     float dist = 100.0f * get_distance(curr_loc, _next_WP_loc);
-    float stop_distance = 0.5f * sq(speed_forward * 100.0f) / _wp_accel_cmss;
+    float stop_distance = 0.6f * sq(speed_forward * 100.0f) / _wp_accel_cmss;
 
     switch (cmd.id) {
 
@@ -178,7 +182,20 @@ bool AC_WPNav_Heli::advance_l1_wp_target_along_track(float dt)
         if (location_passed_point(curr_loc, _prev_WP_loc, flex_next_WP_loc)) {
             _reached_l1_destination = true;
         }
-        
+
+    int32_t temp_alt;
+    int32_t wp_alt;
+    int32_t prev_wp_alt;
+    _next_WP_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, wp_alt);
+    _prev_WP_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, prev_wp_alt);
+    float dist_to_wp = _prev_WP_loc.get_distance(curr_loc);
+    float dist_btwn_wp = _prev_WP_loc.get_distance(_next_WP_loc);
+
+    temp_alt = (wp_alt - prev_wp_alt) * dist_to_wp / dist_btwn_wp + prev_wp_alt;
+
+
+    _pos_control.set_alt_target(temp_alt);
+
         return true;
 }
 
