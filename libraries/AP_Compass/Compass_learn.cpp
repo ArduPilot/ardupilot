@@ -42,17 +42,8 @@ void CompassLearn::update(void)
         // remember primary mag
         primary_mag = compass.get_primary();
 
-        // setup the expected earth field at this location
-        float declination_deg=0, inclination_deg=0, intensity_gauss=0;
-        AP_Declination::get_mag_field_ef(loc.lat*1.0e-7f, loc.lng*1.0e-7f, intensity_gauss, declination_deg, inclination_deg);
-
-        // create earth field
-        mag_ef = Vector3f(intensity_gauss*1000, 0.0, 0.0);
-        Matrix3f R;
-
-        R.from_euler(0.0f, -ToRad(inclination_deg), ToRad(declination_deg));
-        mag_ef = R * mag_ef;
-
+        // setup the expected earth field in mGauss at this location
+        mag_ef = AP_Declination::get_earth_field_ga(loc) * 1000;
         have_earth_field = true;
 
         // form eliptical correction matrix and invert it. This is
@@ -71,8 +62,9 @@ void CompassLearn::update(void)
         }
 
         // set initial error to field intensity
+        float intensity = mag_ef.length();
         for (uint16_t i=0; i<num_sectors; i++) {
-            errors[i] = intensity_gauss*1000;
+            errors[i] = intensity;
         }
         
         gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: have earth field");
