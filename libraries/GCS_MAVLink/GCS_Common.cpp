@@ -416,6 +416,10 @@ void GCS_MAVLINK::send_proximity() const
             if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
                 return;
             }
+            // don't send if distance is not set
+            if (!dist_array.dist_set[i]) {
+                continue;
+            }
             mavlink_msg_distance_sensor_send(
                     chan,
                     AP_HAL::millis(),                               // time since system boot

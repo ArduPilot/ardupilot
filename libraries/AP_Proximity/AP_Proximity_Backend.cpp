@@ -103,7 +103,6 @@ bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Dist
     // initialise orientations and directions
     //  see MAV_SENSOR_ORIENTATION for orientations (0 = forward, 1 = 45 degree clockwise from north, etc)
     //  distances initialised to maximum distances
-    bool dist_set[PROXIMITY_MAX_DIRECTION]{};
     for (uint8_t i=0; i<PROXIMITY_MAX_DIRECTION; i++) {
         prx_dist_array.orientation[i] = i;
         prx_dist_array.distance[i] = distance_max();
@@ -116,17 +115,17 @@ bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Dist
             int16_t orientation = static_cast<int16_t>(_angle[i] * (PROXIMITY_MAX_DIRECTION / 360.0f));
             if ((orientation >= 0) && (orientation < PROXIMITY_MAX_DIRECTION) && (_distance[i] < prx_dist_array.distance[orientation])) {
                 prx_dist_array.distance[orientation] = _distance[i];
-                dist_set[orientation] = true;
+                prx_dist_array.dist_set[orientation] = true;
             }
         }
     }
 
     // fill in missing orientations with average of adjacent orientations if necessary and possible
     for (uint8_t i=0; i<PROXIMITY_MAX_DIRECTION; i++) {
-        if (!dist_set[i]) {
+        if (!prx_dist_array.dist_set[i]) {
             uint8_t orient_before = (i==0) ? (PROXIMITY_MAX_DIRECTION - 1) : (i-1);
             uint8_t orient_after = (i==(PROXIMITY_MAX_DIRECTION - 1)) ? 0 : (i+1);
-            if (dist_set[orient_before] && dist_set[orient_after]) {
+            if (prx_dist_array.dist_set[orient_before] && prx_dist_array.dist_set[orient_after]) {
                 prx_dist_array.distance[i] = (prx_dist_array.distance[orient_before] + prx_dist_array.distance[orient_after]) / 2.0f;
             }
         }
