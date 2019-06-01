@@ -640,9 +640,6 @@ void Plane::update_flight_stage(void)
     } else {
         set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
     }
-
-    // tell AHRS the airspeed to true airspeed ratio
-    airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
 
 
