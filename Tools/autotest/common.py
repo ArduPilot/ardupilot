@@ -13,6 +13,8 @@ import pexpect
 import fnmatch
 import operator
 
+from MAVProxy.modules.lib import mp_util
+
 from pymavlink import mavwp, mavutil, DFReader
 from pysim import util, vehicleinfo
 
@@ -1171,15 +1173,34 @@ class AutoTest(ABC):
     # UTILITIES
     #################################################
     @staticmethod
+    def longitude_scale(lat):
+        ret = math.cos(lat * (math.radians(1)));
+        print("scale=%f" % ret)
+        return ret
+
+    @staticmethod
     def get_distance(loc1, loc2):
         """Get ground distance between two locations."""
+        return AutoTest.get_distance_accurate(loc1, loc2)
         dlat = loc2.lat - loc1.lat
         try:
             dlong = loc2.lng - loc1.lng
         except AttributeError:
             dlong = loc2.lon - loc1.lon
 
-        return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+        return math.sqrt((dlat*dlat) + (dlong*dlong)*AutoTest.longitude_scale(loc2.lat)) * 1.113195e5
+
+    @staticmethod
+    def get_distance_accurate(loc1, loc2):
+        """Get ground distance between two locations."""
+        try:
+            lon1 = loc1.lng
+            lon2 = loc2.lng
+        except AttributeError:
+            lon1 = loc1.lon
+            lon2 = loc2.lon
+
+        return mp_util.gps_distance(loc1.lat, lon1, loc2.lat, lon2)
 
     @staticmethod
     def get_latlon_attr(loc, attrs):
@@ -1983,6 +2004,10 @@ class AutoTest(ABC):
         here = self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                    blocking=True)
         return self.get_distance_int(m, here)
+
+    def home_position_as_mav_location(self):
+        m = self.poll_home_position()
+        return mavutil.location(m.latitude*1.0e-7, m.longitude*1.0e-7, m.altitude*1.0e-3, 0)
 
     def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
         tstart = self.get_sim_time()
