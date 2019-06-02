@@ -277,7 +277,7 @@ void AC_PrecLand::send_landing_target(mavlink_channel_t chan)
         chan,
         time_usec, // sensor/measurement timestamp in microseconds, either from epoch or since boot
         0, // TODO: Target ID
-        MAV_FRAME_BODY_NED, // frame
+        20, // indicate this message is sent from a drone for reporting back to GCS. TODO: add this to MAVLink protocol as MAV_FRAME_REPOR
         _angle_x, // angle_x,
         _angle_y, // angle_y,
         _dist, // distance to target, measured from rangefinder or sensor message
