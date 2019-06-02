@@ -33,12 +33,34 @@ AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonit
 /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
 uint8_t AP_BattMonitor_Backend::capacity_remaining_pct() const
 {
-    float mah_remaining = _params._pack_capacity - _state.consumed_mah;
-    if ( _params._pack_capacity > 10 ) { // a very very small battery
-        return MIN(MAX((100 * (mah_remaining) / _params._pack_capacity), 0), UINT8_MAX);
-    } else {
-        return 0;
+    float percent = 0;
+
+    if (has_current()) {
+        const float mah_remaining = _params._pack_capacity - _state.consumed_mah;
+        if ( _params._pack_capacity > 10 ) { // a very very small battery
+            percent = (100 * (mah_remaining) / _params._pack_capacity);
+        }
+
+    } else if (_params._voltage_full > 0 && _params._voltage_empty > 0) {
+        // well, we have no current but we at least know what the "full" and "empty" voltages are.
+        // Not nearly as good as a real current sensor but we can do the next best thing to create a percent
+        // NOTE: full can be less than empty which allows for an inverted analog sensor.
+
+        // TODO: take into account the non-linear voltage drop of a battery like the Beebop LUT
+        // https://www.richtek.com/battery-management/img/battery-discharge.png
+        const float diff = _params._voltage_full - _params._voltage_empty;
+        if (!is_zero(diff)) {
+            percent = (100.0f * (_state.voltage - _params._voltage_empty)) / diff;
+        }
     }
+
+    // do some bounds checking to sanity check the values and reject it if we're out of bounds.
+    // It's important to ensure we are ALWAYS within bounds so params should be set accordingly
+    if (percent > 110) {
+        percent = 0;
+    }
+
+    return (uint8_t)MIN(MAX(percent, 0), 100);
 }
 
 // update battery resistance estimate
@@ -213,5 +235,17 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
         low_capacity = true;
     } else {
         low_capacity = false;
+    }
+
+
+    // check if the voltage direction is inverted such as an analog fuel sensor (potentiometer) that gets higher when empty (reversed polarity)
+    // if low is higher than critical, then we know the directions are flipped
+    if (voltage_used > 0 &&
+        _params._low_voltage > 0 &&
+        _params._critical_voltage > 0 &&
+        _params._low_voltage > _params._critical_voltage) // note: low > crit
+    {
+        low_voltage = !low_voltage;
+        critical_voltage = !critical_voltage;
     }
 }
