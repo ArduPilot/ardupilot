@@ -6,7 +6,6 @@ Mode::Mode() :
     g(rover.g),
     g2(rover.g2),
     channel_steer(rover.channel_steer),
-    channel_throttle(rover.channel_throttle),
     channel_lateral(rover.channel_lateral),
     attitude_control(rover.g2.attitude_control)
 { }
@@ -70,7 +69,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out)
         case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
         default: {
             // by default regular and skid-steering vehicles reverse their rotation direction when backing up
-            throttle_out = rover.channel_throttle->get_control_in();
+            throttle_out = rover.get_throttle_control_in();
             const float steering_dir = is_negative(throttle_out) ? -1 : 1;
             steering_out = steering_dir * rover.channel_steer->get_control_in();
             break;
@@ -82,7 +81,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out)
             // steering = left-paddle - right-paddle
             // throttle = average(left-paddle, right-paddle)
             const float left_paddle = rover.channel_steer->norm_input();
-            const float right_paddle = rover.channel_throttle->norm_input();
+            const float right_paddle = rover.get_throttle_norm_input(true);
 
             throttle_out = 0.5f * (left_paddle + right_paddle) * 100.0f;
             steering_out = (left_paddle - right_paddle) * 0.5f * 4500.0f;
@@ -90,7 +89,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out)
         }
 
         case PILOT_STEER_TYPE_DIR_UNCHANGED_WHEN_REVERSING: {
-            throttle_out = rover.channel_throttle->get_control_in();
+            throttle_out = rover.get_throttle_control_in();
             steering_out = rover.channel_steer->get_control_in();
             break;
         }
@@ -149,7 +148,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
 {
     // get steering and throttle in the -1 to +1 range
     const float desired_steering = constrain_float(rover.channel_steer->norm_input_dz(), -1.0f, 1.0f);
-    const float desired_throttle = constrain_float(rover.channel_throttle->norm_input_dz(), -1.0f, 1.0f);
+    const float desired_throttle = constrain_float(rover.get_throttle_norm_input(), -1.0f, 1.0f);
 
     // calculate angle of input stick vector
     heading_out = wrap_360_cd(atan2f(desired_steering, desired_throttle) * DEGX100);
@@ -352,7 +351,7 @@ float Mode::calc_speed_nudge(float target_speed, bool reversed)
 
     // return immediately if pilot is not attempting to nudge speed
     // pilot can nudge up speed if throttle (in range -100 to +100) is above 50% of center in direction of travel
-    const int16_t pilot_throttle = constrain_int16(rover.channel_throttle->get_control_in(), -100, 100);
+    const int16_t pilot_throttle = constrain_int16(rover.get_throttle_control_in(), -100, 100);
     if (((pilot_throttle <= 50) && !reversed) ||
         ((pilot_throttle >= -50) && reversed)) {
         return target_speed;
