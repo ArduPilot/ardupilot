@@ -19,7 +19,7 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     float    throttle_pct;              // throttle as a percentage 0.0 ~ 1.0
     float    throttle_pct_max = 0.0f;   // maximum throttle reached (as a percentage 0~1.0)
     float    current_amps_max = 0.0f;   // maximum current reached
-    float    interference_pct[COMPASS_MAX_INSTANCES];       // interference as a percentage of total mag field (for reporting purposes only)
+    float    interference_pct[COMPASS_MAX_INSTANCES]{};       // interference as a percentage of total mag field (for reporting purposes only)
     uint32_t last_run_time;
     uint32_t last_send_time;
     bool     updated = false;           // have we updated the compensation vector at least once
@@ -31,11 +31,6 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         return MAV_RESULT_TEMPORARILY_REJECTED;
     } else {
         ap.compass_mot = true;
-    }
-
-    // initialise output
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        interference_pct[i] = 0.0f;
     }
 
     GCS_MAVLINK_Copter &gcs_chan = gcs().chan(chan-MAVLINK_COMM_0);

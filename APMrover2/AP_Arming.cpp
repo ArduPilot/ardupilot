@@ -42,6 +42,11 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Rover::gps_checks(bool display_failure)
 {
+    if (!rover.control_mode->requires_position() && !rover.control_mode->requires_velocity()) {
+        // we don't care!
+        return true;
+    }
+
     const AP_AHRS &ahrs = AP::ahrs();
 
     // always check if inertial nav has started and is ready
@@ -52,11 +57,6 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         }
         check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
         return false;
-    }
-
-    if (!rover.control_mode->requires_position() && !rover.control_mode->requires_velocity()) {
-        // we don't care!
-        return true;
     }
 
     // check for ekf failsafe
