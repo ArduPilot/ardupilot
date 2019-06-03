@@ -1442,6 +1442,22 @@ void NavEKF2_core::ConstrainVariances()
     for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // wind velocity
 }
 
+// constrain states using WMM tables and specified limit
+void NavEKF2_core::MagTableConstrain(void)
+{
+    // constrain to error from table earth field
+    float limit_ga = frontend->_mag_ef_limit * 0.001f;
+    stateStruct.earth_magfield.x = constrain_float(stateStruct.earth_magfield.x,
+                                                   table_earth_field_ga.x-limit_ga,
+                                                   table_earth_field_ga.x+limit_ga);
+    stateStruct.earth_magfield.y = constrain_float(stateStruct.earth_magfield.y,
+                                                   table_earth_field_ga.y-limit_ga,
+                                                   table_earth_field_ga.y+limit_ga);
+    stateStruct.earth_magfield.z = constrain_float(stateStruct.earth_magfield.z,
+                                                   table_earth_field_ga.z-limit_ga,
+                                                   table_earth_field_ga.z+limit_ga);
+}
+
 // constrain states to prevent ill-conditioning
 void NavEKF2_core::ConstrainStates()
 {
@@ -1465,17 +1481,8 @@ void NavEKF2_core::ConstrainStates()
         // constrain to +/-1Ga
         for (uint8_t i=16; i<=18; i++) statesArray[i] = constrain_float(statesArray[i],-1.0f,1.0f);
     } else {
-        // constrain to error from table earth field
-        float limit_ga = frontend->_mag_ef_limit * 0.001f;
-        stateStruct.earth_magfield.x = constrain_float(stateStruct.earth_magfield.x,
-                                                       table_earth_field_ga.x-limit_ga,
-                                                       table_earth_field_ga.x+limit_ga);
-        stateStruct.earth_magfield.y = constrain_float(stateStruct.earth_magfield.y,
-                                                       table_earth_field_ga.y-limit_ga,
-                                                       table_earth_field_ga.y+limit_ga);
-        stateStruct.earth_magfield.z = constrain_float(stateStruct.earth_magfield.z,
-                                                       table_earth_field_ga.z-limit_ga,
-                                                       table_earth_field_ga.z+limit_ga);
+        // use table constrain
+        MagTableConstrain();
     }
 
     // body magnetic field limit
@@ -1546,7 +1553,11 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         // don't do this if the earth field has already been learned
         if (!magFieldLearned) {
             initQuat.rotation_matrix(Tbn);
-            stateStruct.earth_magfield = Tbn * magDataDelayed.mag;
+            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+                stateStruct.earth_magfield = table_earth_field_ga;
+            } else {
+                stateStruct.earth_magfield = Tbn * magDataDelayed.mag;
+            }
 
             // set the NE earth magnetic field states using the published declination
             // and set the corresponding variances and covariances
