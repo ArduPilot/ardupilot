@@ -17,8 +17,10 @@ void AP_InternalError::error(const AP_InternalError::error_t e) {
     }
 #endif
     internal_errors |= uint32_t(e);
+    total_error_count++;
+
     hal.util->persistent_data.internal_errors = internal_errors;
-    hal.util->persistent_data.internal_error_count++;
+    hal.util->persistent_data.internal_error_count = total_error_count;
 }
 
 
