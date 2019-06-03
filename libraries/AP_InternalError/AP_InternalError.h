@@ -54,6 +54,7 @@ public:
     };
 
     void error(const AP_InternalError::error_t error);
+    uint32_t count() const { return total_error_count; }
 
     // internal_errors - return mask of internal errors seen
     uint32_t errors() const {
@@ -64,6 +65,8 @@ private:
 
     // bitmask holding errors from internal_error_t
     uint32_t internal_errors;
+
+    uint32_t total_error_count;
 };
 
 namespace AP {
