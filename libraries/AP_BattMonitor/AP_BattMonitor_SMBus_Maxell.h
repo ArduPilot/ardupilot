@@ -10,6 +10,12 @@ class AP_BattMonitor_SMBus_Maxell : public AP_BattMonitor_SMBus
 {
 public:
 
+    // static detection function
+    static AP_BattMonitor_Backend *detect(AP_BattMonitor &mon,
+                                          AP_BattMonitor::BattMonitor_State &mon_state,
+                                          AP_BattMonitor_Params &params,
+                                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+
     // Constructor
     AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon,
                              AP_BattMonitor::BattMonitor_State &mon_state,
