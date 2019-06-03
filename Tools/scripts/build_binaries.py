@@ -343,8 +343,6 @@ is bob we will attempt to checkout bob-AVR'''
                     self.progress(msg)
                     self.error_strings.append(msg)
                     continue
-                if self.skip_board_waf(board):
-                    continue
 
                 self.progress("Building %s %s %s binaries %s" %
                               (vehicle, tag, board, frame))
@@ -362,6 +360,9 @@ is bob we will attempt to checkout bob-AVR'''
                 # builds we will not be running
                 self.run_git_update_submodules()
 
+                if self.skip_board_waf(board):
+                    continue
+                
                 if os.path.exists(self.buildroot):
                     shutil.rmtree(self.buildroot)
 
