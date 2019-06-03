@@ -46,7 +46,17 @@ void SRV_Channel::output_ch(void)
             if (SRV_Channels::passthrough_disabled()) {
                 output_pwm = c->get_radio_trim();
             } else {
-                output_pwm = c->get_radio_in();
+                const int16_t radio_in = c->get_radio_in();
+                if (!ign_small_rcin_changes) {
+                    output_pwm = radio_in;
+                    previous_radio_in = radio_in;
+                } else {
+                    // check if rc input value has changed by more than the deadzone
+                    if (abs(radio_in - previous_radio_in) > c->get_dead_zone()) {
+                        output_pwm = radio_in;
+                        ign_small_rcin_changes = false;
+                    }
+                }
             }
         }
     }
