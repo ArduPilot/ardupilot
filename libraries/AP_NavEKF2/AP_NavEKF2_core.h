@@ -494,6 +494,9 @@ private:
     // constrain states
     void ConstrainStates();
 
+    // constrain earth field using WMM tables
+    void MagTableConstrain(void);
+
     // fuse selected position, velocity and height measurements
     void FuseVelPosNED();
 
