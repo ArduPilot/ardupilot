@@ -54,6 +54,7 @@ public:
         gcs_offset                  = (1U << 18),
         i2c_isr                     = (1U << 19),
         flow_of_control             = (1U << 20), // for generic we-should-never-get-here situations
+        fpe                         = (1U << 21),
     };
 
     void error(const AP_InternalError::error_t error);
