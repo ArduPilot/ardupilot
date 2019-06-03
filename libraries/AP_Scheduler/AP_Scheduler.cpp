@@ -302,6 +302,7 @@ void AP_Scheduler::Log_Write_Performance()
         mem_avail        : hal.util->available_memory(),
         load             : (uint16_t)(load_average() * 1000),
         internal_errors  : AP::internalerror().errors(),
+        internal_error_count : AP::internalerror().count(),
         spi_count        : pd.spi_count,
         i2c_count        : pd.i2c_count,
     };
