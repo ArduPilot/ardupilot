@@ -217,7 +217,10 @@ public:
     bool function_configured(void) const {
         return function.configured();
     }
-    
+
+    // set the flag
+    void set_do_set_servo(bool b);
+
 private:
     AP_Int16 servo_min;
     AP_Int16 servo_max;
@@ -268,6 +271,12 @@ private:
     // mask of channels where we have a output_pwm value. Cleared when a
     // scaled value is written. 
     static servo_mask_t have_pwm_mask;
+
+    // a previous output_pwm value for pass-thru
+    uint16_t previous_pwm;
+
+    // specify that DO_SET_SERVO has been used
+    bool use_do_set_servo:1;
 };
 
 /*

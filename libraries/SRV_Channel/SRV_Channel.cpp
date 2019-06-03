@@ -203,3 +203,8 @@ bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
             (function >= SRV_Channel::k_boost_throttle && function <= SRV_Channel::k_motor12) ||
             function == k_engine_run_enable);
 }
+
+void SRV_Channel::set_do_set_servo(bool b)
+{
+    use_do_set_servo = b;
+}
