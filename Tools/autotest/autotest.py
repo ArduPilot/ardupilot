@@ -733,8 +733,8 @@ if __name__ == "__main__":
 
     steps = [
         'prerequisites',
-        'build.All',
         'build.Binaries',
+        'build.All',
         'build.Parameters',
 
         'build.unit_tests',
