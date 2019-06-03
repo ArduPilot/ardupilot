@@ -727,6 +727,11 @@ void NavEKF2_core::FuseMagnetometer()
             statesArray[j] = statesArray[j] - Kfusion[j] * innovMag[obsIndex];
         }
 
+        // add table constraint here for faster convergence
+        if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+            MagTableConstrain();
+        }
+
         // the first 3 states represent the angular misalignment vector. This is
         // is used to correct the estimated quaternion on the current time step
         stateStruct.quat.rotate(stateStruct.angErr);
