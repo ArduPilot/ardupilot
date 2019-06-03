@@ -46,7 +46,7 @@ void AP_RCProtocol_IBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
 }
 
 // decode a full IBUS frame
-bool AP_RCProtocol_IBUS::ibus_decode(const uint8_t frame[32], uint16_t *values, uint16_t *nvalues, uint16_t max_values)
+bool AP_RCProtocol_IBUS::ibus_decode(const uint8_t *frame, uint16_t *values, uint16_t *nvalues, uint16_t max_values)
 {
     int i;
     /* check frame boundary markers to avoid out-of-sync cases */

@@ -30,14 +30,14 @@ public:
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
     void _process_byte(uint8_t byte);
-    bool ibus_decode(const uint8_t frame[32], uint16_t *values, uint16_t *nvalues, uint16_t max_values);
+    bool ibus_decode(const uint8_t *frame, uint16_t *values, uint16_t *nvalues, uint16_t max_values);
 
     bool inverted;
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
     uint32_t saved_width;
 
     struct {
-        uint8_t buf[32];
+        uint8_t buf[IBUS_FRAME_SIZE];
         uint8_t ofs;
     } byte_input;
 };
