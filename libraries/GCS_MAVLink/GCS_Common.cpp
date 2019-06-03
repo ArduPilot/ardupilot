@@ -4257,6 +4257,7 @@ void GCS_MAVLINK::send_sys_status()
     const uint32_t errors = AP::internalerror().errors();
     const uint16_t errors1 = errors & 0xffff;
     const uint16_t errors2 = (errors>>16) & 0xffff;
+    const uint16_t errors4 = AP::internalerror().count() & 0xffff;
 
     mavlink_msg_sys_status_send(
         chan,
@@ -4272,7 +4273,7 @@ void GCS_MAVLINK::send_sys_status()
         errors1,
         errors2,
         0,  // errors3
-        0); // errors4
+        errors4); // errors4
 }
 
 void GCS_MAVLINK::send_extended_sys_state() const
