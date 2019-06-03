@@ -245,7 +245,7 @@ private:
         uint32_t last_healthy_ms;
         LowPassFilterFloat alt_cm_filt; // altitude filter
         int8_t glitch_count;
-    } rangefinder_state = { false, false, 0, 0 };
+    } rangefinder_state;
 
     struct {
         float target_alt_cm;        // desired altitude in cm above the ground
