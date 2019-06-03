@@ -1523,7 +1523,7 @@ void GCS_MAVLINK::update_send()
     // between the last pass through here
     mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status != nullptr) {
-        send_packet_count += (status->current_tx_seq - last_tx_seq);
+        send_packet_count += uint8_t(status->current_tx_seq - last_tx_seq);
         last_tx_seq = status->current_tx_seq;
     }
 }
