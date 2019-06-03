@@ -19,9 +19,7 @@
  */
 
 #include "AP_RCProtocol_IBUS.h"
-
-#define IBUS_FRAME_SIZE		32
-#define IBUS_INPUT_CHANNELS	14
+#include <AP_Math/AP_Math.h>
 
 // constructor
 AP_RCProtocol_IBUS::AP_RCProtocol_IBUS(AP_RCProtocol &_frontend, bool _inverted) :
@@ -42,14 +40,7 @@ void AP_RCProtocol_IBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
         saved_width = width_s1;
     }
     uint8_t b;
-    // uint16_t values[6] = {1500, 1500, 1500, 1500, 1500, 1500};
-    //     add_input(6, values, false);
-    //     #if HAL_OS_POSIX_IO
-    //     #error 1
-    //     #endif
     if (ss.process_pulse(w0, w1, b)) {
-        //uint16_t values[6] = {1000, 1000, 1000, 1000, 1000, 1000};
-        //add_input(6, values, false);
         _process_byte(b);
     }
 }
@@ -65,17 +56,16 @@ bool AP_RCProtocol_IBUS::ibus_decode(const uint8_t frame[32], uint16_t *values, 
     if ((frame[1] != 0x40)) {
         return false;
     }
-    uint16_t checksum = (frame[31] << 8) | frame[30];
+    uint16_t checksum = (frame[IBUS_FRAME_SIZE - 1] << 8) | frame[IBUS_FRAME_SIZE - 2];
     uint16_t calcsum = 0xFFFF;
-    for(i = 0; i < 30; i++) calcsum -= frame[i];
+    for(i = 0; i < (IBUS_FRAME_SIZE - 2); i++) {
+        calcsum -= frame[i];
+    }
     if(checksum != calcsum) {
-        uint16_t values1[IBUS_INPUT_CHANNELS] = {1000, 1400, 1000, 1000, 1000, 1000};
-        add_input(6, values1, false);
        return false;
     }
 
-    *nvalues = max_values;
-    if(*nvalues > 14) *nvalues = 14;
+    *nvalues = MIN(max_values, IBUS_INPUT_CHANNELS);
 
     for(i = 0; i < *nvalues; i++) {
         values[i] = (frame[2 + 2 * i + 1] << 8) | frame[2 + 2 * i];
@@ -97,23 +87,14 @@ void AP_RCProtocol_IBUS::_process_byte(uint8_t b)
         byte_input.ofs = 0;
         return;
     }
-    // if (byte_input.ofs == 32 && byte_input.buf[1] == 0x20 && byte_input.buf[2] == 0x40) {
-    //     memcpy(byte_input.buf, byte_input.buf + 1, 31);
-    // }
-    // if (byte_input.ofs == 0 && !have_frame_gap) {
-    //     // must have a frame gap before the start of a new SBUS frame
-    //     return;
-    // }
 
     byte_input.buf[byte_input.ofs++] = b;
 
     if (byte_input.ofs == sizeof(byte_input.buf)) {
         uint16_t values[IBUS_INPUT_CHANNELS];
         uint16_t num_values=IBUS_INPUT_CHANNELS;
-        bool ibus_failsafe = false;
-        //bool sbus_frame_drop = false;
         if(ibus_decode(byte_input.buf, values, &num_values, IBUS_INPUT_CHANNELS)) {
-            add_input(num_values, values, ibus_failsafe);
+            add_input(num_values, values, false);
         }
         byte_input.ofs = 0;
     }
@@ -122,9 +103,5 @@ void AP_RCProtocol_IBUS::_process_byte(uint8_t b)
 // support byte input
 void AP_RCProtocol_IBUS::process_byte(uint8_t b, uint32_t baudrate)
 {
-    //if (baudrate != 100000) {
-    //    return;
-    //}
-    
     _process_byte(b);
 }

@@ -20,6 +20,9 @@
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
+#define IBUS_FRAME_SIZE		32
+#define IBUS_INPUT_CHANNELS	14
+
 class AP_RCProtocol_IBUS : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_IBUS(AP_RCProtocol &_frontend, bool inverted);
