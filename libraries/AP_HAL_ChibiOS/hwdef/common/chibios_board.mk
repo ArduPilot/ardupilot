@@ -124,6 +124,7 @@ CSRC += $(HWDEF)/common/stubs.c \
 	   $(HWDEF)/common/hrt.c \
        $(HWDEF)/common/stm32_util.c \
        $(HWDEF)/common/bouncebuffer.c \
+       $(HWDEF)/common/fpe.c \
        $(HWDEF)/common/watchdog.c
 
 #	   $(TESTSRC) \

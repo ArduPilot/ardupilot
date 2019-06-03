@@ -27,6 +27,7 @@
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
+#include "hwdef/common/fpe.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_InternalError/AP_InternalError.h>
 #ifndef HAL_BOOTLOADER_BUILD
@@ -265,6 +266,11 @@ static void main_loop()
         }
 #endif
         schedulerInstance.watchdog_pat();
+#if !defined(HAL_BOOTLOADER_BUILD) && !defined(IOMCU_FW)
+        if (stm32_fpe_flags() != 0) {
+            AP::internalerror().error(AP_InternalError::error_t::fpe);
+        }
+#endif
     }
     thread_running = false;
 }
