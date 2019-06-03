@@ -22,6 +22,7 @@
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_ST24.h"
+#include "AP_RCProtocol_IBUS.h"
 
 // singleton
 AP_RCProtocol *AP_RCProtocol::_singleton;
@@ -35,6 +36,7 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
+    backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this, false);
 }
 
 AP_RCProtocol::~AP_RCProtocol()
@@ -216,6 +218,8 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "SRXL";
     case ST24:
         return "ST24";
+    case IBUS:
+        return "IBUS";
     case NONE:
         break;
     }

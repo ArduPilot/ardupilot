@@ -74,6 +74,7 @@ void AP_IOMCU_FW::rcin_serial_init(void)
     // SBUS.
     rcprotocol->disable_for_pulses(AP_RCProtocol::SBUS);
     rcprotocol->disable_for_pulses(AP_RCProtocol::SBUS_NI);
+    rcprotocol->disable_for_pulses(AP_RCProtocol::IBUS);
 }
 
 static struct {
