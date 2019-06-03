@@ -396,6 +396,11 @@ void AP_Logger::validate_structures(const struct LogStructure *logstructures, co
     Debug("Validating structures");
     bool passed = true;
 
+    for (uint16_t i=0; i<num_types; i++) {
+        const struct LogStructure *logstructure = &logstructures[i];
+        passed = validate_structure(logstructure, i) && passed;
+    }
+
     // ensure units are unique:
     for (uint16_t i=0; i<ARRAY_SIZE(log_Units); i++) {
         const struct UnitStructure &a = log_Units[i];
