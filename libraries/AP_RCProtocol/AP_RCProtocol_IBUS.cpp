@@ -66,7 +66,6 @@ bool AP_RCProtocol_IBUS::ibus_decode(const uint8_t *frame, uint16_t *values, uin
     }
 
     *nvalues = MIN(max_values, IBUS_INPUT_CHANNELS);
-
     for(i = 0; i < *nvalues; i++) {
         values[i] = (frame[2 + 2 * i + 1] << 8) | frame[2 + 2 * i];
     }
