@@ -543,6 +543,8 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
     if (stopped) {
         // update last time we thought we were stopped
         _stop_last_ms = now;
+        // set last time speed controller was run so accelerations are limited
+        _speed_last_ms = now;
         return 0.0f;
     }
 
