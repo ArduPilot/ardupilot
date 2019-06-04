@@ -499,7 +499,7 @@ private:
 #if FRAME_CONFIG == HELI_FRAME
     #define AC_WPNav_t AC_WPNav_Heli
 #else
-    #define AC_WPNav_t AC_WPNav_Multi
+    #define AC_WPNav_t AC_WPNav
 #endif
     AC_WPNav_t *wp_nav;
     AC_Loiter *loiter_nav;
