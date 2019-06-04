@@ -676,7 +676,7 @@ void NavEKF2_core::readAirSpdData()
     if (aspeed &&
             aspeed->use() &&
             aspeed->last_update_ms() != timeTasReceived_ms) {
-        tasDataNew.tas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
+        tasDataNew.tas = aspeed->get_airspeed() * AP::ahrs().get_EAS2TAS();
         timeTasReceived_ms = aspeed->last_update_ms();
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
 
