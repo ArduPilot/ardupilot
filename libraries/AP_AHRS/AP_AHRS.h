@@ -299,10 +299,7 @@ public:
 
     // get apparent to true airspeed ratio
     float get_EAS2TAS(void) const {
-        if (_airspeed) {
-            return _airspeed->get_EAS2TAS();
-        }
-        return 1.0f;
+        return AP::baro().get_EAS2TAS();
     }
 
     // return true if airspeed comes from an airspeed sensor, as
