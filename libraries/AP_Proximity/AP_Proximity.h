@@ -158,7 +158,6 @@ private:
     AP_Int8 _ignore_width_deg[PROXIMITY_MAX_IGNORE];    // width of beam (in degrees) that should be ignored
 
     void detect_instance(uint8_t instance);
-    void update_instance(uint8_t instance);  
 };
 
 namespace AP {
