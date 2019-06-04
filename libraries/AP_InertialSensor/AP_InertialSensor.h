@@ -208,6 +208,9 @@ public:
     // get the gyro filter rate in Hz
     uint16_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
 
+    // get the second gyro filter rate in Hz
+    uint16_t get_gyro_filter2_hz(void) const { return _gyro_filter2_cutoff; }
+
     // get the accel filter rate in Hz
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
@@ -398,7 +401,8 @@ private:
 
     // Low Pass filters for gyro and accel
     LowPassFilter2pVector3f _accel_filter[INS_MAX_INSTANCES];
-    LowPassFilter2pVector3f _gyro_filter[INS_MAX_INSTANCES];
+    LowPassFilterVector3f _gyro_filter[INS_MAX_INSTANCES];
+    LowPassFilterVector3f _gyro_filter2[INS_MAX_INSTANCES];
     Vector3f _accel_filtered[INS_MAX_INSTANCES];
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
     bool _new_accel_data[INS_MAX_INSTANCES];
@@ -468,6 +472,7 @@ private:
     // filtering frequency (0 means default)
     AP_Int16    _accel_filter_cutoff;
     AP_Int16    _gyro_filter_cutoff;
+    AP_Int16    _gyro_filter2_cutoff;
     AP_Int8     _gyro_cal_timing;
 
     // use for attitude, velocity, position estimates

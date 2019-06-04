@@ -204,8 +204,10 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._last_delta_angle[instance] = delta_angle;
         _imu._last_raw_gyro[instance] = gyro;
 
-        // apply the low pass filter
-        _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(gyro);
+        // apply the low pass filters
+        _imu._gyro_filtered[instance] = _imu._gyro_filter2[instance].apply(gyro);
+        _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(_imu._gyro_filtered[instance]);
+
         // apply the notch filter
         if (_gyro_notch_enabled()) {
             _imu._gyro_filtered[instance] = _imu._gyro_notch_filter[instance].apply(_imu._gyro_filtered[instance]);
@@ -452,6 +454,14 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
     if (_last_gyro_filter_hz[instance] != _gyro_filter_cutoff()) {
         _imu._gyro_filter[instance].set_cutoff_frequency(_gyro_raw_sample_rate(instance), _gyro_filter_cutoff());
         _last_gyro_filter_hz[instance] = _gyro_filter_cutoff();
+        if (!_gyro_filter2_cutoff()) {
+            _imu._gyro_filter2[instance].set_cutoff_frequency(_gyro_raw_sample_rate(instance), _gyro_filter_cutoff());
+            _last_gyro_filter2_hz[instance] = _gyro_filter_cutoff();
+        }
+    }
+    if (_gyro_filter2_cutoff() && _last_gyro_filter2_hz[instance] != _gyro_filter2_cutoff()) {
+        _imu._gyro_filter2[instance].set_cutoff_frequency(_gyro_raw_sample_rate(instance), _gyro_filter2_cutoff());
+        _last_gyro_filter2_hz[instance] = _gyro_filter2_cutoff();
     }
     // possily update the notch filter parameters
     if (_last_notch_center_freq_hz[instance] != _gyro_notch_center_freq_hz() ||

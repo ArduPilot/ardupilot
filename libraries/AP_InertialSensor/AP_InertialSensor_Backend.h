@@ -229,6 +229,9 @@ protected:
     // return the default filter frequency in Hz for the sample rate
     uint16_t _gyro_filter_cutoff(void) const { return _imu._gyro_filter_cutoff; }
 
+    // return the default filter frequency in Hz for the sample rate
+    uint16_t _gyro_filter2_cutoff(void) const { return _imu._gyro_filter2_cutoff; }
+
     // return the requested sample rate in Hz
     uint16_t get_sample_rate_hz(void) const;
 
@@ -252,6 +255,7 @@ protected:
     // support for updating filter at runtime
     uint16_t _last_accel_filter_hz[INS_MAX_INSTANCES];
     uint16_t _last_gyro_filter_hz[INS_MAX_INSTANCES];
+    uint16_t _last_gyro_filter2_hz[INS_MAX_INSTANCES];
     uint16_t _last_notch_center_freq_hz[INS_MAX_INSTANCES];
     uint16_t _last_notch_bandwidth_hz[INS_MAX_INSTANCES];
     float _last_notch_attenuation_dB[INS_MAX_INSTANCES];

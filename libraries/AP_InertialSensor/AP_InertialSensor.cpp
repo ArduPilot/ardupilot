@@ -453,6 +453,14 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
 
+    // @Param: GYRO_FILTER2
+    // @DisplayName: Second Gyro filter cutoff frequency
+    // @Description: Filter cutoff frequency for gyroscopes. This can be set to a lower value to try to cope with very high vibration levels in aircraft. This option takes effect on the next reboot. A value of zero means track the value of GYRO_FILTER
+    // @Units: Hz
+    // @Range: 0 256
+    // @User: Advanced
+    AP_GROUPINFO("GYRO_FILTER2", 41, AP_InertialSensor, _gyro_filter2_cutoff,  0),
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
