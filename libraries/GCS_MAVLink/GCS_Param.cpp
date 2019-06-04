@@ -268,11 +268,23 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     key[AP_MAX_NAME_SIZE] = 0;
 
     // find existing param so we can get the old value
-    vp = AP_Param::find(key, &var_type);
+    uint16_t parameter_flags = 0;
+    vp = AP_Param::find(key, &var_type, &parameter_flags);
     if (vp == nullptr) {
         return;
     }
+
     float old_value = vp->cast_to_float(var_type);
+
+    if (parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
+        // echo back the incorrect value so that we fulfull the
+        // parameter state machine requirements:
+        send_parameter_value(key, var_type, packet.param_value);
+        // and then announce what the correct value is:
+        send_parameter_value(key, var_type, old_value);
+        return;
+    }
 
     // set the value
     vp->set_float(packet.param_value, var_type);
@@ -293,6 +305,20 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     if (logger != nullptr) {
         logger->Write_Parameter(key, vp->cast_to_float(var_type));
     }
+}
+
+void GCS_MAVLINK::send_parameter_value(const char *param_name, ap_var_type param_type, float param_value)
+{
+    if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+        return;
+    }
+    mavlink_msg_param_value_send(
+        chan,
+        param_name,
+        param_value,
+        mav_param_type(param_type),
+        AP_Param::count_parameters(),
+        -1);
 }
 
 /*
