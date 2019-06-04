@@ -83,6 +83,7 @@
 #define AP_PARAM_FRAME_SUB          (1<<3)
 #define AP_PARAM_FRAME_TRICOPTER    (1<<4)
 #define AP_PARAM_FRAME_HELI         (1<<5)
+#define AP_PARAM_FRAME_NONE         (1<<6) // should not be visible to the user
 
 // a variant of offsetof() to work around C++ restrictions.
 // this can only be used when the offset of a variable in a object
