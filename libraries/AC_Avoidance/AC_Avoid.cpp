@@ -304,25 +304,39 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     const float fence_radius = _fence.get_radius() * 100.0f;
     // get the margin to the fence in cm
     const float margin_cm = _fence.get_margin() * 100.0f;
-
-    if (!is_zero(speed) && position_xy.length() <= fence_radius) {
-        // Currently inside circular fence
-        Vector2f stopping_point = position_xy + desired_vel_cms*(get_stopping_distance(kP, accel_cmss, speed)/speed);
-        float stopping_point_length = stopping_point.length();
-        if (stopping_point_length > fence_radius - margin_cm) {
-            // Unsafe desired velocity - will not be able to stop before fence breach
-            if ((AC_Avoid::BehaviourType)_behavior.get() == BEHAVIOR_SLIDE) {
+    // get vehicle distance from home
+    const float dist_from_home = position_xy.length();
+    if (!is_zero(speed) && (dist_from_home <= fence_radius)) {
+        // vehicle is inside the circular fence
+        if ((AC_Avoid::BehaviourType)_behavior.get() == BEHAVIOR_SLIDE) {
+            // implement sliding behaviour
+            const Vector2f stopping_point = position_xy + desired_vel_cms*(get_stopping_distance(kP, accel_cmss, speed)/speed);
+            const float stopping_point_dist_from_home = stopping_point.length();
+            if (stopping_point_dist_from_home > fence_radius - margin_cm) {
+                // unsafe desired velocity - will not be able to stop before reaching margin from fence
                 // Project stopping point radially onto fence boundary
                 // Adjusted velocity will point towards this projected point at a safe speed
-                const Vector2f target = stopping_point * ((fence_radius - margin_cm) / stopping_point_length);
+                const Vector2f target = stopping_point * ((fence_radius - margin_cm) / stopping_point_dist_from_home);
                 const Vector2f target_direction = target - position_xy;
                 const float distance_to_target = target_direction.length();
                 const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                 desired_vel_cms = target_direction * (MIN(speed,max_speed) / distance_to_target);
+            }
+        } else {
+            // implement stopping behaviour
+            const Vector2f stopping_point_plus_margin = position_xy + desired_vel_cms*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, speed))/speed);
+            const float stopping_point_plus_margin_dist_from_home = stopping_point_plus_margin.length();
+            if (dist_from_home >= fence_radius - margin_cm) {
+                // if vehicle has already breached margin around fence
+                // if stopping point is even further from home (i.e. in wrong direction) then adjust speed to zero
+                // otherwise user is backing away from fence so do not apply limits
+                if (stopping_point_plus_margin_dist_from_home >= dist_from_home) {
+                    desired_vel_cms.zero();
+                }
             } else {
                 // shorten vector without adjusting its direction
                 Vector2f intersection;
-                if (Vector2f::circle_segment_intersection(position_xy, stopping_point, Vector2f(0.0f,0.0f), fence_radius, intersection)) {
+                if (Vector2f::circle_segment_intersection(position_xy, stopping_point_plus_margin, Vector2f(0.0f,0.0f), fence_radius - margin_cm, intersection)) {
                     const float distance_to_target = MAX((intersection - position_xy).length() - margin_cm, 0.0f);
                     const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                     if (max_speed < speed) {
