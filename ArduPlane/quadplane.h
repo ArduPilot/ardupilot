@@ -319,6 +319,9 @@ private:
     AP_Float acro_roll_rate;
     AP_Float acro_pitch_rate;
     AP_Float acro_yaw_rate;
+    
+    // QLOITER mode max reverse speed
+    AP_Float loit_rev_aspd;
 
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;

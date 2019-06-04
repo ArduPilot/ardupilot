@@ -443,6 +443,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("ACRO_YAW_RATE", 13, QuadPlane, acro_yaw_rate, 90),
+
+    // @Param: LOIT_REV_ASPD
+    // @DisplayName: QLOITER max reverse airspeed
+    // @Description: maximum reverse airspeed in m/sec. Disabled if < 0.1 m/sec.
+    // @Units: m/s
+    // @Range: 0 5
+    // @Increment: .1
+    // @User: Standard
+    AP_GROUPINFO("LOIT_REV_ASPD", 14, QuadPlane, loit_rev_aspd, 0),
     AP_GROUPEND
 };
 
@@ -1175,10 +1184,42 @@ void QuadPlane::control_loiter()
                                                plane.channel_pitch->get_control_in(),
                                                plane.G_Dt);
 
+    // apply reverse airspeed limit if enabled (loit_rev_aspd > 0)
+    if (loit_rev_aspd >= 0.1f) {
+        Vector3f vel_ned;
+        float airspeed;
+        if (ahrs.airspeed_estimate(&airspeed) &&
+            plane.ahrs.get_velocity_NED(vel_ned)) {
+            Vector3f vel_body = ahrs.get_rotation_body_to_ned().transposed() * vel_ned;
+
+            // handle negative effective airspeed
+            airspeed = AP_Airspeed::get_singleton()->get_filtered_IAS();
+            float airspeed_eff = vel_body.x + airspeed;
+            float despitch = plane.channel_pitch->get_control_in();
+            if ((airspeed_eff < 0.0f) && (despitch > 0.0f)) {
+                // ramp pitch down to zero as reverse speed increases
+                despitch *= constrain_float((1.0f + (airspeed_eff / loit_rev_aspd)), 0.0f, 1.0f);
+                loiter_nav->set_pilot_desired_acceleration(plane.channel_roll->get_control_in(),
+                                                           despitch,
+                                                           plane.G_Dt);
+            }
+            // log limiting at 50Hz
+            static uint32_t last_limp = now;
+            if ((now - last_limp) >= 20) {
+                last_limp = now;
+                AP::logger().Write("LIMP", "TimeUS,dpitch,lpitch,effs,", "Qifff",
+                                   AP_HAL::micros64(),
+                                   plane.channel_pitch->get_control_in(),
+                                   despitch,
+                                   airspeed_eff);
+            }
+        }
+    }
+
     // run loiter controller
     loiter_nav->update();
 
-    // nav roll and pitch are controller by loiter controller
+    // nav roll and pitch are controlled by loiter controller
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();
 
@@ -1192,8 +1233,7 @@ void QuadPlane::control_loiter()
             pos_control->set_limit_accel_xy();            
         }
     }
-    
-    
+
     // call attitude controller with conservative smoothing gain of 4.0f
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                   plane.nav_pitch_cd,
