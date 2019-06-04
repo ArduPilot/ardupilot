@@ -1077,11 +1077,11 @@ class AutoTest(ABC):
             return True
         return False
 
-    def set_parameter(self, name, value, add_to_context=True, epsilon=0.0002):
+    def set_parameter(self, name, value, add_to_context=True, epsilon=0.0002, retries=10):
         """Set parameters from vehicle."""
         self.progress("Setting %s to %f" % (name, value))
         old_value = self.get_parameter(name, retry=2)
-        for i in range(1, 10):
+        for i in range(1, retries+2):
             self.mavproxy.send("param set %s %s\n" % (name, str(value)))
             returned_value = self.get_parameter(name)
             delta = float(value) - returned_value
@@ -3070,6 +3070,20 @@ switch value'''
 
         return True
 
+    def test_parameters(self):
+        '''general small tests for parameter system'''
+        self.start_subtest("Ensure GCS is not be able to set MIS_TOTAL")
+        old_mt = self.get_parameter("MIS_TOTAL")
+        ex = None
+        try:
+            self.set_parameter("MIS_TOTAL", 17, retries=0)
+        except ValueError as e:
+            ex = e
+        if ex is None:
+            raise NotAchievedException("Set parameter when I shouldn't have")
+        if old_mt != self.get_parameter("MIS_TOTAL"):
+            raise NotAchievedException("Total has changed")
+
     def disabled_tests(self):
         return {}
 
@@ -3126,6 +3140,10 @@ switch value'''
             ("SensorConfigErrorLoop",
              "Test Sensor Config Error Loop",
              self.test_sensor_config_error_loop),
+
+            ("Parameters",
+             "Test Parameter Set/Get",
+             self.test_parameters),
         ]
 
     def post_tests_announcements(self):
