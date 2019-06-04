@@ -1,5 +1,7 @@
 #pragma once
 
+// if you add any new types, units or multipliers, please update README.md
+
 /*
 Format characters in the format string for binary log messages
   a   : int16_t[32]
