@@ -114,7 +114,7 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size, uint8_t instance)
                 continue;
             }
         }
-        if (instance == 0 && gps_state.gps_fd != 0) {
+        if (instance == 0 && !_sitl->gps_disable && gps_state.gps_fd != 0) {
             write(gps_state.gps_fd, p, 1);
         }
         if (instance == 1 && _sitl->gps2_enable) {
@@ -315,8 +315,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pos.vertical_accuracy = 2000;
 
     status.time = time_week_ms;
-    status.fix_type = d->have_lock?3:0;
-    status.fix_status = d->have_lock?1:0;
+    status.fix_type = d->fix_type;
+    status.fix_status = d->fix_type > GPS_FIX_TYPE_NO_FIX ? 1 : 0;
     status.differential_status = 0;
     status.res = 0;
     status.time_to_first_fix = 0;
@@ -336,9 +336,9 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     velned.heading_accuracy = 4;
 
     memset(&sol, 0, sizeof(sol));
-    sol.fix_type = d->have_lock?3:0;
+    sol.fix_type = d->fix_type;
     sol.fix_status = 221;
-    sol.satellites = d->have_lock?_sitl->gps_numsats:3;
+    sol.satellites = d->num_sat;
     sol.time = time_week_ms;
     sol.week = time_week;
 
@@ -361,10 +361,10 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pvt.valid = 0; // invalid utc date
     pvt.t_acc = 0; 
     pvt.nano = 0; 
-    pvt.fix_type = d->have_lock? 0x3 : 0;
+    pvt.fix_type = d->fix_type;
     pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
     pvt.flags2 =0; 
-    pvt.num_sv = d->have_lock?_sitl->gps_numsats:3; 
+    pvt.num_sv = d->num_sat;
     pvt.lon = d->longitude * 1.0e7;
     pvt.lat  = d->latitude * 1.0e7;
     pvt.height = d->altitude * 1000.0f;
@@ -458,8 +458,8 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d, uint8_t instance)
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 1000000.0f;
     }
-    p.satellites    = d->have_lock?_sitl->gps_numsats:3;
-    p.fix_type      = d->have_lock?3:1;
+    p.satellites    = d->num_sat;
+    p.fix_type      = d->fix_type;
 
     // the spec is not very clear, but the time field seems to be
     // milliseconds since the start of the day in UTC time,
@@ -513,8 +513,8 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d, uint8_t instance)
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 100.0f;
     }
-    p.satellites    = d->have_lock?_sitl->gps_numsats:3;
-    p.fix_type      = d->have_lock?3:1;
+    p.satellites    = d->num_sat;
+    p.fix_type      = d->fix_type;
 
     // the spec is not very clear, but the time field seems to be
     // milliseconds since the start of the day in UTC time,
@@ -571,8 +571,8 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d, uint8_t instance)
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 100.0f;
     }
-    p.satellites    = d->have_lock?_sitl->gps_numsats:3;
-    p.fix_type      = d->have_lock?3:1;
+    p.satellites    = d->num_sat;
+    p.fix_type      = d->fix_type;
 
     // the spec is not very clear, but the time field seems to be
     // milliseconds since the start of the day in UTC time,
@@ -670,8 +670,8 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
                      tstring,
                      lat_string,
                      lng_string,
-                     d->have_lock?1:0,
-                     d->have_lock?_sitl->gps_numsats:3,
+                     d->fix_type > GPS_FIX_TYPE_NO_FIX ? 1 : 0,
+                     d->num_sat,
                      2.0,
                      d->altitude);
     float speed_knots = norm(d->speedN, d->speedE) * M_PER_SEC_TO_KNOTS;
@@ -681,7 +681,7 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
     }
     _gps_nmea_printf(instance, "$GPRMC,%s,%c,%s,%s,%.2f,%.2f,%s,,",
                      tstring,
-                     d->have_lock?'A':'V',
+                     d->fix_type > GPS_FIX_TYPE_NO_FIX ? 'A' : 'V',
                      lat_string,
                      lng_string,
                      speed_knots,
@@ -777,7 +777,7 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, uint8_t instance)
     t.flags = 0;
     _sbp_send_message(SBP_GPS_TIME_MSGTYPE, 0x2222, sizeof(t), (uint8_t*)&t, instance);
 
-    if (!d->have_lock) {
+    if (d->fix_type <= GPS_FIX_TYPE_NO_FIX ) {
         return;
     }
 
@@ -894,7 +894,7 @@ void SITL_State::_update_gps_sbp2(const struct gps_data *d, uint8_t instance)
     t.flags = 1;
     _sbp_send_message(SBP_GPS_TIME_MSGTYPE, 0x2222, sizeof(t), (uint8_t*)&t, instance);
 
-    if (!d->have_lock) {
+    if (d->fix_type <= GPS_FIX_TYPE_NO_FIX ) {
         return;
     }
 
@@ -1155,7 +1155,6 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 {
     struct gps_data d;
     char c;
-
     // simulate delayed lock times
     if (AP_HAL::millis() < _sitl->gps_lock_time*1000UL) {
         have_lock = false;
@@ -1172,7 +1171,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
             _gps_basestation_data.speedN = speedN;
             _gps_basestation_data.speedE = speedE;
             _gps_basestation_data.speedD = speedD;
-            _gps_basestation_data.have_lock = have_lock;
+            _gps_basestation_data.fix_type = (GPS_FIX_TYPE)_sitl->gps_fix.get();
             _gps_has_basestation_position = true;
         }
     }
@@ -1197,12 +1196,22 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     d.longitude = longitude;
     // add an altitude error controlled by a slow sine wave
     d.altitude = altitude + _sitl->gps_noise * sinf(AP_HAL::millis() * 0.0005f);
+    if (!_sitl->gps_disable) {
+        if (have_lock) {
+            d.fix_type = (GPS_FIX_TYPE)_sitl->gps_fix.get();
+        } else {
+            d.fix_type = GPS_FIX_TYPE_NO_FIX;
+        }
+        d.num_sat = _sitl->gps_numsats;
+    } else {
+        d.fix_type = GPS_FIX_TYPE_NO_GPS;
+        d.num_sat = 0;
+    }
 
     // Add offet to c.g. velocity to get velocity at antenna
     d.speedN = speedN;
     d.speedE = speedE;
     d.speedD = speedD;
-    d.have_lock = have_lock;
 
     // correct the latitude, longitude, hiehgt and NED velocity for the offset between
     // the vehicle c.g. and GPs antenna
@@ -1262,6 +1271,18 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     }
     // Creating GPS2 data by coping GPS data
     gps_data d2 = d;
+
+    if (_sitl->gps2_enable) {
+        if (have_lock) {
+            d2.fix_type = (GPS_FIX_TYPE)_sitl->gps2_fix.get();
+        } else {
+            d2.fix_type = GPS_FIX_TYPE_NO_FIX;
+        }
+        d2.num_sat = _sitl->gps2_numsats;
+    } else {
+        d2.fix_type = GPS_FIX_TYPE_NO_GPS;
+        d2.num_sat = 0;
+    }
 
     // Applying GPS glitch
     // Using first gps glitch

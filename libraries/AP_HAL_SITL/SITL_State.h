@@ -102,7 +102,8 @@ private:
         double speedN;
         double speedE;
         double speedD;
-        bool have_lock;
+        GPS_FIX_TYPE fix_type;
+        uint8_t num_sat;
     };
 
 #define MAX_GPS_DELAY 100

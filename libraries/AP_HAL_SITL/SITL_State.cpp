@@ -179,8 +179,7 @@ void SITL_State::_fdm_input_step(void)
     if (_sitl != nullptr) {
         _update_gps(_sitl->state.latitude, _sitl->state.longitude,
                     _sitl->state.altitude,
-                    _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
-                    !_sitl->gps_disable);
+                    _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD, true);
         _update_airspeed(_sitl->state.airspeed);
         _update_rangefinder(_sitl->state.range);
 
