@@ -156,8 +156,11 @@ public:
     AP_Int8  gps_delay;   // delay in samples
     AP_Int8  gps_type;    // see enum GPSType
     AP_Int8  gps2_type;   // see enum GPSType
+    AP_Int8  gps_fix;     // fix type
+    AP_Int8  gps2_fix;    // fix type
     AP_Float gps_byteloss;// byte loss as a percent
     AP_Int8  gps_numsats; // number of visible satellites
+    AP_Int8  gps2_numsats; // number of visible satellites
     AP_Vector3f gps_glitch;  // glitch offsets in lat, lon and altitude
     AP_Vector3f gps2_glitch; // glitch offsets in lat, lon and altitude for 2nd GPS
     AP_Int8  gps_hertz;   // GPS update rate in Hz

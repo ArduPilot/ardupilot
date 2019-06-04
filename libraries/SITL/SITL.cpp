@@ -166,7 +166,9 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("TWIST_TIME",  40, SITL,  twist.t, 0),
 
     AP_GROUPINFO("GND_BEHAV",   41, SITL,  gnd_behav, -1),
-
+    AP_GROUPINFO("GPS_FIX", 42, SITL,  gps_fix, GPS_FIX_TYPE_3D_FIX),
+    AP_GROUPINFO("GPS2_FIX", 43, SITL,  gps2_fix, GPS_FIX_TYPE_3D_FIX),
+    AP_GROUPINFO("GPS2_NUMSAT", 44, SITL,  gps2_numsats, 10),
     AP_GROUPEND
 };
     
