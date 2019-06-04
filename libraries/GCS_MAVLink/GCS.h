@@ -116,6 +116,10 @@ public:
     virtual uint8_t sysid_my_gcs() const = 0;
     virtual bool sysid_enforce() const { return false; }
 
+    void send_parameter_value(const char *param_name,
+                              ap_var_type param_type,
+                              float param_value);
+
     // NOTE! The streams enum below and the
     // set of AP_Int16 stream rates _must_ be
     // kept in the same order
