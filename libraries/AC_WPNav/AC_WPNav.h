@@ -106,6 +106,10 @@ public:
     // coordinates
     bool get_wp_destination(Location& destination) const;
 
+    // returns object avoidance adjusted destination which is always the same as get_wp_destination
+    // having this function unifies the AC_WPNav_OA and AC_WPNav interfaces making vehicle code simpler
+    virtual bool get_oa_wp_destination(Location& destination) const { return get_wp_destination(destination); }
+
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
     bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false);
@@ -116,7 +120,7 @@ public:
     /// set_wp_origin_and_destination - set origin and destination waypoints using position vectors (distance from ekf origin in cm)
     ///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if these are alt-above-ekf-origin)
     ///     returns false on failure (likely caused by missing terrain data)
-    bool set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt = false);
+    virtual bool set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt = false);
 
     /// shift_wp_origin_to_current_pos - shifts the origin and destination so the origin starts at the current position
     ///     used to reset the position just before takeoff
@@ -129,13 +133,13 @@ public:
     void get_wp_stopping_point(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
-    float get_wp_distance_to_destination() const;
+    virtual float get_wp_distance_to_destination() const;
 
     /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
-    int32_t get_wp_bearing_to_destination() const;
+    virtual int32_t get_wp_bearing_to_destination() const;
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
-    bool reached_wp_destination() const { return _flags.reached_destination; }
+    virtual bool reached_wp_destination() const { return _flags.reached_destination; }
 
     // reached_wp_destination_xy - true if within RADIUS_CM of waypoint in x/y
     bool reached_wp_destination_xy() const {
@@ -146,7 +150,7 @@ public:
     void set_fast_waypoint(bool fast) { _flags.fast_waypoint = fast; }
 
     /// update_wpnav - run the wp controller - should be called at 100hz or higher
-    bool update_wpnav();
+    virtual bool update_wpnav();
 
     // check_wp_leash_length - check recalc_wp_leash flag and calls calculate_wp_leash_length() if necessary
     //  should be called after _pos_control.update_xy_controller which may have changed the position controller leash lengths
