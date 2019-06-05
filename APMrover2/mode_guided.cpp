@@ -121,8 +121,7 @@ float ModeGuided::get_distance_to_destination() const
     case Guided_TurnRateAndSpeed:
         return 0.0f;
     case Guided_Loiter:
-        rover.mode_loiter.get_distance_to_destination();
-        break;
+        return rover.mode_loiter.get_distance_to_destination();
     }
 
     // we should never reach here but just in case, return 0
