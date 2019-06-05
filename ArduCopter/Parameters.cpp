@@ -926,6 +926,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TUNE_MAX", 32, ParametersG2, tuning_max, 0),
 
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
+    // @Group: OA_
+    // @Path: ../libraries/AC_Avoidance/AP_OAPathPlanner.cpp
+    AP_SUBGROUPINFO(oa, "OA_", 33, ParametersG2, AP_OAPathPlanner),
+#endif
+
     AP_GROUPEND
 };
 

@@ -149,6 +149,23 @@ void ModeSmartRTL::save_position()
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
 
+bool ModeSmartRTL::get_wp(Location& destination)
+{
+    // provide target in states which use wp_nav
+    switch (smart_rtl_state) {
+    case SmartRTL_WaitForPathCleanup:
+    case SmartRTL_PathFollow:
+    case SmartRTL_PreLandPosition:
+    case SmartRTL_Descend:
+        return wp_nav->get_wp_destination(destination);
+    case SmartRTL_Land:
+        return false;
+    }
+
+    // we should never get here but just in case
+    return false;
+}
+
 uint32_t ModeSmartRTL::wp_distance() const
 {
     return wp_nav->get_wp_distance_to_destination();

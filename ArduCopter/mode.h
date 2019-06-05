@@ -36,10 +36,12 @@ public:
     virtual bool landing_gear_should_be_deployed() const { return false; }
     virtual bool is_landing() const { return false; }
 
+    // functions for reporting to GCS
     virtual bool get_wp(Location &loc) { return false; };
     virtual int32_t wp_bearing() const { return 0; }
     virtual uint32_t wp_distance() const { return 0; }
     virtual float crosstrack_error() const { return 0.0f;}
+
     void update_navigation();
 
     int32_t get_alt_above_ground_cm(void);
@@ -978,6 +980,9 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
 
+    // for reporting to GCS
+    bool get_wp(Location &loc) override;
+
     RTLState state() { return _state; }
 
     // this should probably not be exposed
@@ -993,6 +998,7 @@ protected:
     const char *name() const override { return "RTL"; }
     const char *name4() const override { return "RTL "; }
 
+    // for reporting to GCS
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
@@ -1056,6 +1062,8 @@ protected:
     const char *name() const override { return "SMARTRTL"; }
     const char *name4() const override { return "SRTL"; }
 
+    // for reporting to GCS
+    bool get_wp(Location &loc) override;
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
@@ -1233,9 +1241,11 @@ protected:
 
     const char *name() const override { return "FOLLOW"; }
     const char *name4() const override { return "FOLL"; }
+
+    // for reporting to GCS
+    bool get_wp(Location &loc) override;
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
-    bool get_wp(Location &loc) override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };

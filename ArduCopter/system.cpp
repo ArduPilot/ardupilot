@@ -148,6 +148,10 @@ void Copter::init_ardupilot()
     wp_nav->set_terrain(&terrain);
 #endif
 
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
+    g2.oa.init();
+#endif
+
     attitude_control->parameter_sanity_check();
     pos_control->set_dt(scheduler.get_loop_period_s());
 
@@ -549,7 +553,11 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
 
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
+    wp_nav = new AC_WPNav_OA(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+#else
     wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+#endif
     if (wp_nav == nullptr) {
         AP_HAL::panic("Unable to allocate WPNav");
     }

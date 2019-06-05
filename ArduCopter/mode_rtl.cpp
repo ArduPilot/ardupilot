@@ -496,6 +496,24 @@ void ModeRTL::compute_return_target()
     rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt);
 }
 
+bool ModeRTL::get_wp(Location& destination)
+{
+    // provide target in states which use wp_nav
+    switch (_state) {
+    case RTL_Starting:
+    case RTL_InitialClimb:
+    case RTL_ReturnHome:
+    case RTL_LoiterAtHome:
+    case RTL_FinalDescent:
+        return wp_nav->get_oa_wp_destination(destination);
+    case RTL_Land:
+        return false;
+    }
+
+    // we should never get here but just in case
+    return false;
+}
+
 uint32_t ModeRTL::wp_distance() const
 {
     return wp_nav->get_wp_distance_to_destination();
