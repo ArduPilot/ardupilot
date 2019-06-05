@@ -662,13 +662,13 @@ class AutoTest(ABC):
             t2 = self.get_sim_time_cached()
             if t2 - tstart > 10:
                 raise AutoTestTimeoutException("Failed to do waypoint thing")
-            self.mavproxy.send('wp load %s\n' % path)
-            self.mavproxy.expect('Loaded ([0-9]+) waypoints from')
-            load_count = self.mavproxy.match.group(1)
             # the following hack is to get around MAVProxy statustext deduping:
             while time.time() - self.last_wp_load < 3:
                 self.progress("Waiting for MAVProxy de-dupe timer to expire")
                 time.sleep(1)
+            self.mavproxy.send('wp load %s\n' % path)
+            self.mavproxy.expect('Loaded ([0-9]+) waypoints from')
+            load_count = self.mavproxy.match.group(1)
             self.last_wp_load = time.time()
             self.mavproxy.expect("Flight plan received")
             self.mavproxy.send('wp list\n')
