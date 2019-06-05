@@ -28,6 +28,8 @@
 #include "AP_Compass.h"
 #include "Compass_learn.h"
 
+#include "AP_Compass_ULTRA96.h"
+
 extern AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -925,6 +927,8 @@ void Compass::_detect_backends(void)
                                                            true, HAL_COMPASS_QMC5883L_ORIENTATION_EXTERNAL));
     ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
                                                            false, HAL_COMPASS_QMC5883L_ORIENTATION_INTERNAL));
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ULTRA96
+    ADD_BACKEND(DRIVER_ULTRA96, new AP_Compass_ULTRA96());
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)));
     ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(0));
