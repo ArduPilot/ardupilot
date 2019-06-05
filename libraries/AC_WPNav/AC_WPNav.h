@@ -9,6 +9,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude control library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AC_Avoidance/AC_Avoid.h>                 // Stop at fence library
+#include <AC_Avoidance/AP_OAPathPlanner.h>
 
 // maximum velocities and accelerations
 #define WPNAV_ACCELERATION              100.0f      // defines the default velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
@@ -106,6 +107,10 @@ public:
     // coordinates
     bool get_wp_destination(Location& destination);
 
+    // returns object avoidance adjusted wp location using location class
+    // returns false if unable to convert from target vector to global coordinates
+    bool get_oa_wp_destination(Location& destination);
+
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
     bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false);
@@ -129,13 +134,15 @@ public:
     void get_wp_stopping_point(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
+    /// always returns distance to final destination (i.e. does not use oa adjusted destination)
     float get_wp_distance_to_destination() const;
 
     /// get_bearing_to_destination - get bearing to next waypoint in centi-degrees
+    /// always returns bearing to final destination (i.e. does not use oa adjusted destination)
     int32_t get_wp_bearing_to_destination() const;
 
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
-    bool reached_wp_destination() const { return _flags.reached_destination; }
+    bool reached_wp_destination() const { return _flags.reached_destination && (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED); }
 
     // reached_wp_destination_xy - true if within RADIUS_CM of waypoint in x/y
     bool reached_wp_destination_xy() const {
@@ -312,4 +319,10 @@ protected:
     AP_Int8     _rangefinder_use;
     bool        _rangefinder_healthy;
     float       _rangefinder_alt_cm;
+
+    // oa path planning variables
+    AP_OAPathPlanner::OA_RetState _oa_state;    // state of object avoidance, if OA_SUCCESS we use _oa_destination to avoid obstacles
+    Vector3f    _origin_oabak;          // backup of _origin so it can be restored when oa completes
+    Vector3f    _destination_oabak;     // backup of _destination so it can be restored when oa completes
+    Location    _oa_destination;        // intermediate destination during avoidance
 };

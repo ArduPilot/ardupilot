@@ -183,6 +183,20 @@ bool AC_WPNav::get_wp_destination(Location& destination) {
     return true;
 }
 
+// returns object avoidance adjusted wp location using location class
+// returns false if unable to convert from target vector to global coordinates
+bool AC_WPNav::get_oa_wp_destination(Location& destination)
+{
+    // if oa inactive return unadjusted location
+    if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
+        return get_wp_destination(destination);
+    }
+
+    // return latest destination provided by oa path planner
+    destination = _oa_destination;
+    return true;
+}
+
 /// set_wp_destination waypoint using position vector (distance from home in cm)
 ///     terrain_alt should be true if destination.z is a desired altitude above terrain
 bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
@@ -268,6 +282,9 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     // get speed along track (note: we convert vertical speed into horizontal speed equivalent)
     float speed_along_track = curr_vel.x * _pos_delta_unit.x + curr_vel.y * _pos_delta_unit.y + curr_vel.z * _pos_delta_unit.z;
     _limited_speed_xy_cms = constrain_float(speed_along_track, 0, _pos_control.get_max_speed_xy());
+
+    // reset object avoidance state
+    _oa_state = AP_OAPathPlanner::OA_NOT_REQUIRED;
 
     return true;
 }
@@ -467,17 +484,20 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 }
 
 /// get_wp_distance_to_destination - get horizontal distance to destination in cm
+/// always returns distance to final destination (i.e. does not use oa adjusted destination)
 float AC_WPNav::get_wp_distance_to_destination() const
 {
     // get current location
     const Vector3f &curr = _inav.get_position();
-    return norm(_destination.x-curr.x,_destination.y-curr.y);
+    const Vector3f &dest = (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) ? _destination : _destination_oabak;
+    return norm(dest.x-curr.x, dest.y-curr.y);
 }
 
 /// get_wp_bearing_to_destination - get bearing to next waypoint in centi-degrees
+/// always returns bearing to final destination (i.e. does not use oa adjusted destination)
 int32_t AC_WPNav::get_wp_bearing_to_destination() const
 {
-    return get_bearing_cd(_inav.get_position(), _destination);
+    return get_bearing_cd(_inav.get_position(), ((_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) ? _destination : _destination_oabak));
 }
 
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
@@ -492,6 +512,64 @@ bool AC_WPNav::update_wpnav()
     // out of auto mode. This makes it easier to tune auto flight
     _pos_control.set_max_accel_xy(_wp_accel_cmss);
     _pos_control.set_max_accel_z(_wp_accel_z_cmss);
+
+    // run path planning around obstacles
+    AP_OAPathPlanner *oa_ptr = AP_OAPathPlanner::get_singleton();
+    Location current_loc;
+    if ((oa_ptr != nullptr) && AP::ahrs().get_position(current_loc)) {
+
+        // backup _origin and _destination when not doing oa
+        if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
+            _origin_oabak = _origin;
+            _destination_oabak = _destination;
+        }
+
+        // convert origin and destination to Locations and pass into oa
+        const Location origin_loc(_origin_oabak);
+        const Location destination_loc(_destination_oabak);
+        Location oa_origin_new, oa_destination_new;
+        const AP_OAPathPlanner::OA_RetState oa_retstate = oa_ptr->mission_avoidance(current_loc, origin_loc, destination_loc, oa_origin_new, oa_destination_new);
+        switch (oa_retstate) {
+        case AP_OAPathPlanner::OA_NOT_REQUIRED:
+            if (_oa_state != oa_retstate) {
+                // object avoidance has become inactive so reset target to original destination
+                set_wp_destination(_destination_oabak, _terrain_alt);
+                _oa_state = oa_retstate;
+            }
+            break;
+        case AP_OAPathPlanner::OA_PROCESSING:
+        case AP_OAPathPlanner::OA_ERROR:
+            // during processing or in case of error stop the vehicle
+            // by setting the oa_destination to a stopping point
+            if ((_oa_state != AP_OAPathPlanner::OA_PROCESSING) && (_oa_state != AP_OAPathPlanner::OA_ERROR)) {
+                // calculate stopping point
+                Vector3f stopping_point;
+                get_wp_stopping_point(stopping_point);
+                _oa_destination = Location(stopping_point);
+                if (set_wp_destination(stopping_point, false)) {
+                    _oa_state = oa_retstate;
+                }
+            }
+            break;
+        case AP_OAPathPlanner::OA_SUCCESS:
+            // if oa destination has become active or destination has changed update wpnav
+            if ((_oa_state != AP_OAPathPlanner::OA_SUCCESS) || !oa_destination_new.same_latlon_as(_oa_destination)) {
+                _oa_destination = oa_destination_new;
+                // convert Location to offset from EKF origin
+                Vector3f dest_NEU;
+                if (_oa_destination.get_vector_from_origin_NEU(dest_NEU)) {
+                    // use original destination's altitude target
+                    // ToDo: use altitude based on destination's distance along line to original destination
+                    //       and limited so that climb rate never changes direction as direction changes
+                    dest_NEU.z = _destination.z;
+                    if (set_wp_destination(dest_NEU, _terrain_alt)) {
+                        _oa_state = oa_retstate;
+                    }
+                }
+            }
+            break;
+        }
+    }
 
     // advance the target if necessary
     if (!advance_wp_target_along_track(dt)) {
