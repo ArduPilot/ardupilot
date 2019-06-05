@@ -71,7 +71,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case AUX_FUNC::PARACHUTE_ENABLE:
     case AUX_FUNC::PARACHUTE_3POS:      // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
     case AUX_FUNC::RETRACT_MOUNT:
-    case AUX_FUNC::MISSION_RESET:
     case AUX_FUNC::ATTCON_FEEDFWD:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
     case AUX_FUNC::MOTOR_INTERLOCK:
@@ -225,14 +224,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                     // log event
                     copter.Log_Write_Event(DATA_SAVEWP_ADD_WP);
                 }
-            }
-#endif
-            break;
-
-        case AUX_FUNC::MISSION_RESET:
-#if MODE_AUTO_ENABLED == ENABLED
-            if (ch_flag == HIGH) {
-                copter.mode_auto.mission.reset();
             }
 #endif
             break;
