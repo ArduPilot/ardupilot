@@ -7,6 +7,7 @@ bool ModeLoiter::_enter()
     plane.auto_throttle_mode = true;
     plane.auto_navigation_mode = true;
     plane.do_loiter_at_location();
+    plane.loiter_angle_reset();
 
 #if SOARING_ENABLED == ENABLED
     if (plane.g2.soaring_controller.is_active() && plane.g2.soaring_controller.suppress_throttle()) {
@@ -25,7 +26,7 @@ void ModeLoiter::update()
     plane.calc_throttle();
 }
 
-bool ModeLoiter::headingLinedUp(const bool init, const Location loiterCenterLoc, const Location targetLoc)
+bool ModeLoiter::headingLinedUp(const Location loiterCenterLoc, const Location targetLoc)
 {
     const uint16_t loiterRadius = abs(plane.aparm.loiter_radius);
     if (loiterCenterLoc.get_distance(targetLoc) < loiterRadius + loiterRadius*0.05) {
@@ -43,10 +44,6 @@ bool ModeLoiter::headingLinedUp(const bool init, const Location loiterCenterLoc,
     const int32_t heading_cd = plane.gps.ground_course_cd();
 
     const int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
-
-    if (init) {
-        plane.loiter.sum_cd = 0;
-    }
 
     /*
       Check to see if the the plane is heading toward the land
