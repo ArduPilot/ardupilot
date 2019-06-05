@@ -680,7 +680,10 @@ is bob we will attempt to checkout bob-AVR'''
         origin_env_path = os.environ.get("PATH")
         os.environ["PATH"] = ':'.join([prefix_bin_dirpath, origin_env_path,
                                        "/bin", "/usr/bin"])
-        self.tmpdir = os.path.join(os.getcwd(), 'build.tmp.binaries')
+        if 'BUILD_BINARIES_PATH' in os.environ:
+            self.tmpdir = os.environ['BUILD_BINARIES_PATH']
+        else:
+            self.tmpdir = os.path.join(os.getcwd(), 'build.tmp.binaries')
         os.environ["TMPDIR"] = self.tmpdir
 
         print(self.tmpdir)

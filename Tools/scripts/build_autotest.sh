@@ -118,6 +118,9 @@ killall -9 JSBSim || /bin/true
 # raise core limit
 ulimit -c 10000000
 
+# build in home dir, as on faster storage
+export BUILD_BINARIES_PATH=$HOME/build/tmp
+
 timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
 
 (cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin *.BIN *.elf "history/$hdate/")
