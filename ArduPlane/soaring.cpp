@@ -55,7 +55,6 @@ void Plane::update_soaring() {
         if (g2.soaring_controller.check_thermal_criteria()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_loiter.name());
             set_mode(mode_loiter, MODE_REASON_SOARING_THERMAL_DETECTED);
-           // headingLinedUp(true, next_WP_loc, targetLoc)
         }
         break;
 
@@ -80,7 +79,7 @@ void Plane::update_soaring() {
             switch (loiterStatus) {
                 case SoaringController::LoiterStatus::ALT_TOO_HIGH: {
                     const bool homeIsSet = AP::ahrs().home_is_set();
-                    const bool headingLinedupToHome = homeIsSet && plane.mode_loiter.headingLinedUp(false, next_WP_loc, AP::ahrs().get_home());
+                    const bool headingLinedupToHome = homeIsSet && plane.mode_loiter.headingLinedUp(next_WP_loc, AP::ahrs().get_home());
                     if (!homeIsSet || headingLinedupToHome) {
                         gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooHigh, mode_fbwb.name());
                         set_mode(mode_fbwb, MODE_REASON_SOARING_ALT_TOO_HIGH);
@@ -138,7 +137,7 @@ void Plane::update_soaring() {
                     //Get the lat/lon of next Nav waypoint after this one:
                     AP_Mission::Mission_Command next_nav_cmd;
                     const bool nextWpisValid = mission.get_next_nav_cmd(mission.get_current_nav_index() + 1, next_nav_cmd);
-                    const bool headingLinedupToWP = nextWpisValid && plane.mode_loiter.headingLinedUp(false, next_WP_loc, next_nav_cmd.content.location);
+                    const bool headingLinedupToWP = nextWpisValid && plane.mode_loiter.headingLinedUp(next_WP_loc, next_nav_cmd.content.location);
                     if (!nextWpisValid || headingLinedupToWP) {
                         gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_auto.name());
                         set_mode(mode_auto, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);

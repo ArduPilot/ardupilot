@@ -1070,5 +1070,9 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 
-    return plane.mode_loiter.headingLinedUp(init, next_WP_loc, next_nav_cmd.content.location);
+    if (init) {
+        plane.loiter.sum_cd = 0;
+    }
+
+    return plane.mode_loiter.headingLinedUp(next_WP_loc, next_nav_cmd.content.location);
 }
