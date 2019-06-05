@@ -446,6 +446,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     switch(ch_option) {
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
     case AUX_FUNC::AVOID_PROXIMITY:
+    case AUX_FUNC::MISSION_RESET:
         do_aux_function(ch_option, ch_flag);
         break;
     // the following functions do not need to be initialised:
@@ -633,6 +634,18 @@ void RC_Channel::do_aux_function_rc_override_enable(const aux_switch_pos_t ch_fl
     }
 }
 
+void RC_Channel::do_aux_function_mission_reset(const aux_switch_pos_t ch_flag)
+{
+    if (ch_flag != HIGH) {
+        return;
+    }
+    AP_Mission *mission = AP::mission();
+    if (mission == nullptr) {
+        return;
+    }
+    mission->reset();
+}
+
 void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
@@ -673,6 +686,9 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         break;
     case AUX_FUNC::CLEAR_WP:
         do_aux_function_clear_wp(ch_flag);
+        break;
+    case AUX_FUNC::MISSION_RESET:
+        do_aux_function_mission_reset(ch_flag);
         break;
 
     case AUX_FUNC::SPRAYER:
