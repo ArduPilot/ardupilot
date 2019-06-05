@@ -596,6 +596,11 @@ public:
 
     AP_Float tuning_min;
     AP_Float tuning_max;
+
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
+    // object avoidance path planning
+    AP_OAPathPlanner oa;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

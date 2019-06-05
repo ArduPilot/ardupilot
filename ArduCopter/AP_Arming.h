@@ -45,6 +45,7 @@ protected:
     bool parameter_checks(bool display_failure);
     bool motor_checks(bool display_failure);
     bool pilot_throttle_checks(bool display_failure);
+    bool oa_checks(bool display_failure);
 
     void set_pre_arm_check(bool b);
 
