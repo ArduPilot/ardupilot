@@ -107,25 +107,7 @@ popd
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%m")
 
-for d in ArduPlane ArduCopter APMrover2 AntennaTracker; do
-    pushd APM/$d
-    rm -rf ../../buildlogs/$d.build
-    (date && TMPDIR=../../buildlogs make) > ../../buildlogs/$d.txt 2>&1
-    status=$?
-    if [ $status != 0 ]; then
-	report $d $oldhash $newhash
-    fi
-    popd
-    APM/Tools/scripts/frame_sizes.py buildlogs/$d.build > buildlogs/$d.framesizes.txt
-    (
-	avr-size buildlogs/$d.build/$d.elf 
-	avr-nm --size-sort --print-size -C buildlogs/$d.build/$d.elf 
-    ) > buildlogs/$d.sizes.txt
-done
-
 mkdir -p "buildlogs/history/$hdate"
-(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin *.BIN *.elf "history/$hdate/")
-echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 (cd APM && Tools/scripts/build_parameters.sh)
 
@@ -137,6 +119,9 @@ killall -9 JSBSim || /bin/true
 ulimit -c 10000000
 
 timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
+
+(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin *.BIN *.elf "history/$hdate/")
+echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 ) >> build.log 2>&1
 
