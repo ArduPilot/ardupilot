@@ -43,6 +43,9 @@ void Plane::update_soaring() {
     }
 
     switch (control_mode->mode_number()) {
+    default:
+        // nothing to do
+        break;
     case Mode::Number::AUTO:
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::CRUISE:
@@ -50,50 +53,102 @@ void Plane::update_soaring() {
         g2.soaring_controller.update_cruising();
 
         if (g2.soaring_controller.check_thermal_criteria()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering loiter");
+            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_loiter.name());
             set_mode(mode_loiter, MODE_REASON_SOARING_THERMAL_DETECTED);
+           // headingLinedUp(true, next_WP_loc, targetLoc)
         }
         break;
 
-    case Mode::Number::LOITER:
+    case Mode::Number::LOITER: {
         // Update thermal estimate and check for switch back to AUTO
         g2.soaring_controller.update_thermalling();  // Update estimate
 
-        if (g2.soaring_controller.check_cruise_criteria()) {
-            // Exit as soon as thermal state estimate deteriorates
-            switch (previous_mode->mode_number()) {
-            case Mode::Number::FLY_BY_WIRE_B:
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, entering RTL");
-                set_mode(mode_rtl, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                break;
+        const SoaringController::LoiterStatus loiterStatus = g2.soaring_controller.check_cruise_criteria();
 
-            case Mode::Number::CRUISE: {
-                // return to cruise with old ground course
-                CruiseState cruise = cruise_state;
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring CRUISE");
-                set_mode(mode_cruise, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                cruise_state = cruise;
-                set_target_altitude_current();
-                break;
-            }
-
-            case Mode::Number::AUTO:
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring AUTO");
-                set_mode(mode_auto, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                break;
-
-            default:
-                break;
-            }
-        } else {
-            // still in thermal - need to update the wp location
-            g2.soaring_controller.get_target(next_WP_loc);
+        if (loiterStatus == SoaringController::LoiterStatus::THERMAL_GOOD_TO_KEEP_LOITERING ||
+            loiterStatus == SoaringController::LoiterStatus::SOARING_DISABLED) {
+            break;
         }
+
+        const char* strTooHigh = "Soaring: Too high, restoring ";
+        const char* strTooLow =  "Soaring: Too high, restoring ";
+        const char* strTooWeak = "Soaring: Thermal ended, restoring ";
+
+        // Exit as soon as thermal state estimate deteriorates
+        switch (previous_mode->mode_number()) {
+        case Mode::Number::FLY_BY_WIRE_B: {
+            switch (loiterStatus) {
+                case SoaringController::LoiterStatus::ALT_TOO_HIGH:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooHigh, mode_fbwb.name());
+                    set_mode(mode_fbwb, MODE_REASON_SOARING_ALT_TOO_HIGH);
+                    break;
+                default:
+                case SoaringController::LoiterStatus::ALT_TOO_LOW:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooLow, mode_rtl.name());
+                    set_mode(mode_rtl, MODE_REASON_SOARING_ALT_TOO_LOW);
+                    break;
+                case SoaringController::LoiterStatus::THERMAL_WEAK:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_fbwb.name());
+                    set_mode(mode_fbwb, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
+                    break;
+            } // switch louterStatus
+                break;
+
+        case Mode::Number::CRUISE: {
+            // return to cruise with old ground course
+            const CruiseState cruise = cruise_state;
+            switch (loiterStatus) {
+                case SoaringController::LoiterStatus::ALT_TOO_HIGH:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooHigh, mode_cruise.name());
+                    set_mode(mode_cruise, MODE_REASON_SOARING_ALT_TOO_HIGH);
+                    break;
+                default:
+                case SoaringController::LoiterStatus::ALT_TOO_LOW:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooLow, mode_rtl.name());
+                    set_mode(mode_rtl, MODE_REASON_SOARING_ALT_TOO_LOW);
+                    break;
+                case SoaringController::LoiterStatus::THERMAL_WEAK:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_cruise.name());
+                    set_mode(mode_cruise, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
+                    break;
+            } // switch loiterStatus
+            cruise_state = cruise;
+            set_target_altitude_current();
+            break;
+            }
+
+        case Mode::Number::AUTO:
+            switch (loiterStatus) {
+                case SoaringController::LoiterStatus::ALT_TOO_HIGH:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooHigh, mode_auto.name());
+                    set_mode(mode_auto, MODE_REASON_SOARING_ALT_TOO_HIGH);
+                    break;
+                default:
+                case SoaringController::LoiterStatus::ALT_TOO_LOW:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooLow, mode_auto.name());
+                    set_mode(mode_auto, MODE_REASON_SOARING_ALT_TOO_LOW);
+                    break;
+                case SoaringController::LoiterStatus::THERMAL_WEAK:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_auto.name());
+                    set_mode(mode_auto, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
+                    break;
+            } // switch loiterStatus
+            break;
+
+        default:
+            break;
+        } // switch previous_mode
         break;
-    default:
-        // nothing to do
-        break;
+        } // loiter case
+    }} // switch control_mode
+
+
+    if (control_mode == &mode_loiter) {
+        // still in thermal - need to update the wp location
+        g2.soaring_controller.get_target(next_WP_loc);
+
     }
+
 }
 
 #endif // SOARING_ENABLED
