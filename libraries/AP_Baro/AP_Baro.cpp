@@ -29,7 +29,9 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
+///
+#include "AP_Baro_ULTRA96.h"
+///
 #include "AP_Baro_SITL.h"
 #include "AP_Baro_BMP085.h"
 #include "AP_Baro_BMP280.h"
@@ -597,6 +599,8 @@ void AP_Baro::init(void)
 #elif HAL_BARO_DEFAULT == HAL_BARO_LPS22H_I2C
     ADD_BACKEND(AP_Baro_LPS2XH::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_LPS22H_I2C_BUS, HAL_BARO_LPS22H_I2C_ADDR))));
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ULTRA96
+    ADD_BACKEND(new AP_Baro_ULTRA96(*this));
 #endif
 
     // can optionally have baro on I2C too
