@@ -97,6 +97,10 @@
 #if AC_AVOID_ENABLED == ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
+ #include <AC_WPNav/AC_WPNav_OA.h>
+ #include <AC_Avoidance/AP_OAPathPlanner.h>
+#endif
 #if SPRAYER_ENABLED == ENABLED
  # include <AC_Sprayer/AC_Sprayer.h>
 #endif

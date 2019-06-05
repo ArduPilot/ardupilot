@@ -607,7 +607,9 @@ bool ModeAuto::get_wp(Location& destination)
     case Auto_NavGuided:
         return copter.mode_guided.get_wp(destination);
     case Auto_WP:
-        return wp_nav->get_wp_destination(destination);
+        return wp_nav->get_oa_wp_destination(destination);
+    case Auto_RTL:
+        return copter.mode_rtl.get_wp(destination);
     default:
         return false;
     }

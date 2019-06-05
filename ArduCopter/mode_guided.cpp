@@ -209,7 +209,7 @@ bool ModeGuided::get_wp(Location& destination)
     if (guided_mode != Guided_WP) {
         return false;
     }
-    return wp_nav->get_wp_destination(destination);
+    return wp_nav->get_oa_wp_destination(destination);
 }
 
 // sets guided mode's target from a Location object
