@@ -33,6 +33,7 @@
 #include "UAVCAN_RGB_LED.h"
 #include <stdio.h>
 #include "AP_BoardLED2.h"
+#include "AnyLED_I2C.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -316,6 +317,10 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new Buzzer());
 #endif // Noise makers
 
+    // Always try and add AnyLED I2C backend
+    FOREACH_I2C_EXTERNAL(b) {
+        ADD_BACKEND(new AnyLED_I2C(b));
+    }
 }
 
 // initialisation
