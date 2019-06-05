@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <AP_Common/Location.h>
 
 class Mode
 {
@@ -168,6 +169,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    bool headingLinedUp(const bool init, const Location loiterCenterLoc, const Location targetLoc);
 
 protected:
 
