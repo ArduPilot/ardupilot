@@ -175,20 +175,31 @@ bool SoaringController::check_thermal_criteria()
             && _vario.alt > alt_min);
 }
 
-bool SoaringController::check_cruise_criteria()
-{
-    float thermalability = (_ekf.X[0]*expf(-powf(_loiter_rad / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK;
-    float alt = _vario.alt;
 
-    if (soar_active && (AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6) && thermalability < McCready(alt)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak, recommend quitting: W %f R %f th %f alt %f Mc %f", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)alt, (double)McCready(alt));
-        return true;
-    } else if (soar_active && (alt>alt_max || alt<alt_min)) {
-        gcs().send_text(MAV_SEVERITY_ALERT, "Out of allowable altitude range, beginning cruise. Alt = %f", (double)alt);
-        return true;
+SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
+{
+    if (!soar_active) {
+        return SOARING_DISABLED;
     }
 
-    return false;
+    const float alt = _vario.alt;
+
+    if (alt > alt_max) {
+        gcs().send_text(MAV_SEVERITY_ALERT, "Reached upper altitude, beginning cruise. Alt = %f2", (double)alt);
+        return ALT_TOO_HIGH;
+    } else if (alt < alt_min) {
+        gcs().send_text(MAV_SEVERITY_ALERT, "Reached lower altitude, beginning cruise. Alt = %f2", (double)alt);
+        return ALT_TOO_LOW;
+    } else if ((AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6)) {
+        const float thermalability = (_ekf.X[0]*expf(-powf(_loiter_rad / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK;
+        const float mcCreadyAlt = McCready(alt);
+        if (thermalability < mcCreadyAlt) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak, recommend quitting: W %f2 R %f2 th %f2 alt %f2 Mc %f2", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)alt, (double)mcCreadyAlt);
+            return THERMAL_WEAK;
+        }
+    }
+
+    return THERMAL_GOOD_TO_KEEP_LOITERING;
 }
 
 bool SoaringController::check_init_thermal_criteria()

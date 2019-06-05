@@ -70,12 +70,20 @@ protected:
 public:
     SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
 
+    enum LoiterStatus {
+        SOARING_DISABLED,
+        ALT_TOO_HIGH,
+        ALT_TOO_LOW,
+        THERMAL_WEAK,
+        THERMAL_GOOD_TO_KEEP_LOITERING,
+    };
+
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
     void get_target(Location & wp);
     bool suppress_throttle();
     bool check_thermal_criteria();
-    bool check_cruise_criteria();
+    LoiterStatus check_cruise_criteria();
     bool check_init_thermal_criteria();
     void init_thermalling();
     void init_cruising();
