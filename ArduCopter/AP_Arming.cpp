@@ -55,7 +55,8 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     return fence_checks(display_failure)
         & parameter_checks(display_failure)
         & motor_checks(display_failure)
-        & pilot_throttle_checks(display_failure) &
+        & pilot_throttle_checks(display_failure)
+        & oa_checks(display_failure) &
         AP_Arming::pre_arm_checks(display_failure);
 }
 
@@ -261,6 +262,25 @@ bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
     }
 
     return true;
+}
+
+bool AP_Arming_Copter::oa_checks(bool display_failure)
+{
+#ifdef AC_AVOID_ENABLED
+    char failure_msg[50];
+    if (copter.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
+        return true;
+    }
+    // display failure
+    if (strlen(failure_msg) == 0) {
+        check_failed(ARMING_CHECK_NONE, display_failure, "Check Object Avoidance");
+    } else {
+        check_failed(ARMING_CHECK_NONE, display_failure, failure_msg);
+    }
+    return false;
+#else
+    return true;
+#endif
 }
 
 bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)

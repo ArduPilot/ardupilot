@@ -96,6 +96,7 @@
 #endif
 #if AC_AVOID_ENABLED == ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
+ #include <AC_Avoidance/AP_OAPathPlanner.h>
 #endif
 #if SPRAYER_ENABLED == ENABLED
  # include <AC_Sprayer/AC_Sprayer.h>

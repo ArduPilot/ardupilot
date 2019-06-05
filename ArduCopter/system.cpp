@@ -149,6 +149,10 @@ void Copter::init_ardupilot()
     wp_nav->set_terrain(&terrain);
 #endif
 
+#if AC_AVOID_ENABLED == ENABLED
+    g2.oa.init();
+#endif
+
     attitude_control->parameter_sanity_check();
     pos_control->set_dt(scheduler.get_loop_period_s());
 
