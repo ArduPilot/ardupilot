@@ -23,7 +23,7 @@
 #include "AP_InertialSensor_BMI055.h"
 #include "AP_InertialSensor_BMI088.h"
 #include "AP_InertialSensor_Invensensev2.h"
-
+#include "AP_InertialSensor_ULTRA96.h"
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
 #ifdef INS_TIMING_DEBUG
@@ -873,6 +873,8 @@ AP_InertialSensor::detect_backends(void)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_OMNIBUSF7V2
     ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("mpu6000"), ROTATION_NONE));
     ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("mpu6500"), ROTATION_YAW_90));
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ULTRA96
+    ADD_BACKEND(new AP_InertialSensor_ULTRA96(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_NONE
     // no INS device
 #else
