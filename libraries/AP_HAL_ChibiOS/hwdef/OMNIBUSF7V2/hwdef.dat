@@ -136,3 +136,6 @@ define HAL_BARO_DEFAULT HAL_BARO_BMP280_SPI
 define OSD_ENABLED ENABLED
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# we are low on flash on this board
+define HAL_MINIMIZE_FEATURES 1
