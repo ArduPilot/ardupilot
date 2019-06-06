@@ -38,7 +38,7 @@ public:
         logger_logwrite_missingfmt  = (1U <<  2),
         logger_too_many_deletions   = (1U <<  3),
         logger_bad_getfilename      = (1U <<  4),
-        logger_stopping_without_sem = (1U <<  5),
+        unused1                     = (1U <<  5), // was logger_stopping_without_sem
         logger_flushing_without_sem = (1U <<  6),
         logger_bad_current_block    = (1U <<  7),
         logger_blockcount_mismatch  = (1U <<  8),
