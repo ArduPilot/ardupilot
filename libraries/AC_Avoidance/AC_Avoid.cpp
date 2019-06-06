@@ -15,9 +15,9 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Avoidance control enable/disable
-    // @Description: Enabled/disable stopping at fence
-    // @Values: 0:None,1:StopAtFence,2:UseProximitySensor,3:StopAtFence and UseProximitySensor,4:StopAtBeaconFence,7:All
-    // @Bitmask: 0:StopAtFence,1:UseProximitySensor,2:StopAtBeaconFence
+    // @Description: Enabled/disable avoidance input sources
+    // @Values: 0:None,1:UseFence,2:UseProximitySensor,3:UseFence and UseProximitySensor,4:UseBeaconFence,7:All
+    // @Bitmask: 0:UseFence,1:UseProximitySensor,2:UseBeaconFence
     // @User: Standard
     AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_DEFAULT),
 
