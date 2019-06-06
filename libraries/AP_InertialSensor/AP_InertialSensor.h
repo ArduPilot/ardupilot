@@ -260,7 +260,8 @@ public:
     bool is_still();
 
     // return true if harmonic notch enabled
-    bool gyro_harmonic_notch_enabled(void) const { return _harmonic_notch_filter.enabled(); }
+    bool gyro_harmonic_notch_enabled(void) const { return _harmonic_notch_filter.gyro_enabled(); }
+    bool accel_harmonic_notch_enabled(void) const { return _harmonic_notch_filter.accel_enabled(); }
 
     /*
       HIL set functions. The minimum for HIL is set_accel() and
@@ -448,13 +449,15 @@ private:
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];
 
-    // optional notch filter on gyro
+    // optional notch filter on gyro and accel
     NotchFilterParams _notch_filter;
     NotchFilterVector3f _gyro_notch_filter[INS_MAX_INSTANCES];
+    NotchFilterVector3f _accel_notch_filter[INS_MAX_INSTANCES];
 
-    // optional harmonic notch filter on gyro
+    // optional harmonic notch filter on gyro and accel
     HarmonicNotchFilterParams _harmonic_notch_filter;
     HarmonicNotchFilterVector3f _gyro_harmonic_notch_filter[INS_MAX_INSTANCES];
+    HarmonicNotchFilterVector3f _accel_harmonic_notch_filter[INS_MAX_INSTANCES];
     // the current center frequency for the notch
     float _calculated_harmonic_notch_freq_hz;
 

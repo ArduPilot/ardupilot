@@ -100,8 +100,8 @@ const AP_Param::GroupInfo NotchFilterParams::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable
-    // @Description: Enable notch filter
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: Bitmask to enable notch filter on gyroscope and accelerometer.
+    // @Values: 0:Disabled,1:Enabled on gyroscope,2:Enabled on accelerometer,3:Enabled on gyroscope and accelerometer
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE", 1, NotchFilterParams, _enable, 0, AP_PARAM_FLAG_ENABLE),
 

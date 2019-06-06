@@ -56,7 +56,8 @@ public:
     float center_freq_hz(void) const { return _center_freq_hz; }
     float bandwidth_hz(void) const { return _bandwidth_hz; }
     float attenuation_dB(void) const { return _attenuation_dB; }
-    uint8_t enabled(void) const { return _enable; }
+    bool gyro_enabled(void) const { return (_enable & 1U) != 0; }
+    bool accel_enabled(void) const { return (_enable & 1U << 1) != 0; }
     
 protected:
     AP_Int8 _enable;

@@ -243,7 +243,7 @@ void Copter::startup_INS_ground()
 // update the harmonic notch filter center frequency dynamically
 void Copter::update_dynamic_notch()
 {
-    if (!ins.gyro_harmonic_notch_enabled()) {
+    if (!ins.gyro_harmonic_notch_enabled() && !ins.accel_harmonic_notch_enabled()) {
         return;
     }
     const float ref_freq = ins.get_gyro_harmonic_notch_center_freq_hz();

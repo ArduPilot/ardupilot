@@ -25,7 +25,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Harmonic Notch Filter enable
     // @Description: Harmonic Notch Filter enable
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled,2:Enabled on accelerometer,3:Enabled on gyroscope and accelerometer
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE", 1, HarmonicNotchFilterParams, _enable, 0, AP_PARAM_FLAG_ENABLE),
 

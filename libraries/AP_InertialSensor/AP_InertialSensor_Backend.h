@@ -237,26 +237,29 @@ protected:
     uint16_t get_sample_rate_hz(void) const;
 
     // return the notch filter center in Hz for the sample rate
-    float _gyro_notch_center_freq_hz(void) const { return _imu._notch_filter.center_freq_hz(); }
+    uint16_t _notch_center_freq_hz(void) const { return _imu._notch_filter.center_freq_hz(); }
 
     // return the notch filter bandwidth in Hz for the sample rate
-    float _gyro_notch_bandwidth_hz(void) const { return _imu._notch_filter.bandwidth_hz(); }
+    uint16_t _notch_bandwidth_hz(void) const { return _imu._notch_filter.bandwidth_hz(); }
 
     // return the notch filter attenuation in dB for the sample rate
-    float _gyro_notch_attenuation_dB(void) const { return _imu._notch_filter.attenuation_dB(); }
+    float _notch_attenuation_dB(void) const { return _imu._notch_filter.attenuation_dB(); }
 
-    bool _gyro_notch_enabled(void) const { return _imu._notch_filter.enabled(); }
+    bool _gyro_notch_enabled(void) const { return _imu._notch_filter.gyro_enabled(); }
+	bool _accel_notch_enabled(void) const { return _imu._notch_filter.accel_enabled(); }
 
     // return the harmonic notch filter center in Hz for the sample rate
-    float gyro_harmonic_notch_center_freq_hz() const { return _imu._calculated_harmonic_notch_freq_hz; }
+    float harmonic_notch_center_freq_hz() const { return _imu._calculated_harmonic_notch_freq_hz; }
 
     // return the harmonic notch filter bandwidth in Hz for the sample rate
-    float gyro_harmonic_notch_bandwidth_hz(void) const { return _imu._harmonic_notch_filter.bandwidth_hz(); }
+    float harmonic_notch_bandwidth_hz(void) const { return _imu._harmonic_notch_filter.bandwidth_hz(); }
 
     // return the harmonic notch filter attenuation in dB for the sample rate
-    float gyro_harmonic_notch_attenuation_dB(void) const { return _imu._harmonic_notch_filter.attenuation_dB(); }
+    float harmonic_notch_attenuation_dB(void) const { return _imu._harmonic_notch_filter.attenuation_dB(); }
 
-    bool gyro_harmonic_notch_enabled(void) const { return _imu._harmonic_notch_filter.enabled(); }
+    bool gyro_harmonic_notch_enabled(void) const { return _imu._harmonic_notch_filter.gyro_enabled(); }
+    bool accel_harmonic_notch_enabled(void) const { return _imu._harmonic_notch_filter.accel_enabled(); }
+
 
     // common gyro update function for all backends
     void update_gyro(uint8_t instance);
@@ -267,9 +270,14 @@ protected:
     // support for updating filter at runtime
     uint16_t _last_accel_filter_hz;
     uint16_t _last_gyro_filter_hz;
-    float _last_notch_center_freq_hz;
-    float _last_notch_bandwidth_hz;
-    float _last_notch_attenuation_dB;
+    //gyro notch
+    float _last_gyro_notch_center_freq_hz;
+    float _last_gyro_notch_bandwidth_hz;
+    float _last_gyro_notch_attenuation_dB;
+    //accel notch
+    float _last_accel_notch_center_freq_hz;
+	float _last_accel_notch_bandwidth_hz;
+	float _last_accel_notch_attenuation_dB;
 
     // support for updating harmonic filter at runtime
     float _last_harmonic_notch_center_freq_hz;
