@@ -57,16 +57,6 @@ public:
     // return true if range finder may be used for terrain following
     bool rangefinder_used() const { return _rangefinder_use && _rangefinder_healthy; }
 
-    ///
-    /// brake controller
-    ///
-    /// init_brake_target - initialize's position and feed-forward velocity from current pos and velocity
-    void init_brake_target(float accel_cmss);
-    ///
-    /// update_brake - run the brake controller - should be called at 400hz
-    void update_brake();
-
-    ///
     /// waypoint controller
     ///
 

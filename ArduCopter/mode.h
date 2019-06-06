@@ -525,6 +525,10 @@ public:
     bool is_autopilot() const override { return false; }
 
     void timeout_to_loiter_ms(uint32_t timeout_ms);
+    // init_brake_target - initialize's position and feed-forward velocity from current pos and velocity
+    void init_brake_target(float accel_cmss);
+    // update_brake - run the brake controller - should be called at 400hz
+    void update_brake();
 
 protected:
 

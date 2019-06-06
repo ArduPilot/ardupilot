@@ -6,11 +6,41 @@
  * Init and run calls for brake flight mode
  */
 
+// init_brake_target - initializes stop position from current position and velocity
+    void Copter::ModeBrake::init_brake_target(float accel_cmss)
+{
+    const Vector3f& curr_vel = inertial_nav.get_velocity();
+    Vector3f stopping_point;
+
+    // initialise position controller
+    pos_control->set_desired_velocity_xy(0.0f,0.0f);
+    pos_control->set_desired_accel_xy(0.0f,0.0f);
+    pos_control->init_xy_controller();
+    // initialis-> pos controller speed->and acceleration
+    pos_control->set_max_speed_xy(curr_vel.length());
+    pos_control->set_max_accel_xy(accel_cmss);
+    pos_control->calc_leash_length_xy();
+
+    // set target position
+    pos_control->get_stopping_point_xy(stopping_point);
+    pos_control->set_xy_target(stopping_point.x, stopping_point.y);
+}
+
+
+// update_brake - run the stop controller - gets called at 400hz
+void Copter::ModeBrake::update_brake()
+{
+    // send adjusted feed forward velocity back to position controller
+    pos_control->set_desired_velocity_xy(0.0f, 0.0f);
+    pos_control->update_xy_controller();
+}
+
+
 // brake_init - initialise brake controller
 bool Copter::ModeBrake::init(bool ignore_checks)
 {
     // set target to current position
-    wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
+    init_brake_target(BRAKE_MODE_DECEL_RATE);
 
     // initialize vertical speed and acceleration
     pos_control->set_max_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
@@ -27,6 +57,8 @@ bool Copter::ModeBrake::init(bool ignore_checks)
     return true;
 }
 
+
+
 // brake_run - runs the brake controller
 // should be called at 100hz or more
 void Copter::ModeBrake::run()
@@ -34,7 +66,7 @@ void Copter::ModeBrake::run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
-        wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
+        init_brake_target(BRAKE_MODE_DECEL_RATE);
         return;
     }
 
@@ -47,7 +79,7 @@ void Copter::ModeBrake::run()
     }
 
     // run brake controller
-    wp_nav->update_brake();
+    update_brake();
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
