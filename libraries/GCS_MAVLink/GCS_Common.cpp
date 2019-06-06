@@ -1659,6 +1659,12 @@ void GCS_MAVLINK::send_message(enum ap_message id)
 {
     if (id == MSG_HEARTBEAT) {
         save_signing_timestamp(false);
+        // update the mask of all streaming channels
+        if (is_streaming()) {
+            GCS_MAVLINK::chan_is_streaming |= (1U<<chan-MAVLINK_COMM_0);
+        } else {
+            GCS_MAVLINK::chan_is_streaming &= ~(1U<<chan-MAVLINK_COMM_0);
+        }
     }
 
     pushed_ap_message_ids.set(id);
