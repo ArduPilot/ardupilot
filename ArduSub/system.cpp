@@ -118,11 +118,6 @@ void Sub::init_ardupilot()
     wp_nav.set_terrain(&terrain);
 #endif
 
-#if AVOIDANCE_ENABLED == ENABLED
-    wp_nav.set_avoidance(&avoid);
-    loiter_nav.set_avoidance(&avoid);
-#endif
-
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
