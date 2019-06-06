@@ -1044,7 +1044,12 @@ bool NavEKF2::setOriginLLH(const Location &loc)
     if (!core) {
         return false;
     }
-    return core[primary].setOriginLLH(loc);
+    for (uint8_t i = 0; i < num_cores; i++) {
+        if (!core[i].setOriginLLH(loc)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // return estimated height above ground level
