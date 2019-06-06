@@ -550,7 +550,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "Pixracer",
                 "F4BY",
                 "mRoX21-777",
-                "mRControlZeroF7",
+                "mRoControlZeroF7",
                 "F35Lightning",
                 "speedybeef4",
                 "DrotekP3Pro",
