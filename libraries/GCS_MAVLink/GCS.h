@@ -378,7 +378,7 @@ public:
         return GCS_MAVLINK::active_channel_mask() & (1 << (chan-MAVLINK_COMM_0));
     }
     bool is_streaming() const {
-        return GCS_MAVLINK::streaming_channel_mask() & (1 << (chan-MAVLINK_COMM_0));
+        return sending_bucket_id != no_bucket_to_send;
     }
 
     mavlink_channel_t get_chan() const { return chan; }
