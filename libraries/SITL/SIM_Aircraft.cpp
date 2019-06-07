@@ -831,11 +831,17 @@ float Aircraft::get_local_updraft(Vector3f currentPos)
             break;
     }
 
+    // Wind drift at this altitude
+    float driftX = sitl->wind_speed * currentPos.z * cosf(sitl->wind_direction * DEG_TO_RAD);
+    float driftY = sitl->wind_speed * currentPos.z * sinf(sitl->wind_direction * DEG_TO_RAD);
+
     int iThermal;
     float w = 0.0f;
     float r2;
     for (iThermal=0;iThermal<n_thermals;iThermal++) {
-        Vector3f thermalPos(thermals_x[iThermal],thermals_y[iThermal],0);
+        Vector3f thermalPos(thermals_x[iThermal] + driftX/thermals_w[iThermal],
+                            thermals_y[iThermal] + driftY/thermals_w[iThermal],
+                            0);
         Vector3f relVec = currentPos - thermalPos;
         r2 = relVec.x*relVec.x + relVec.y*relVec.y;
         w += thermals_w[iThermal]*exp(-r2/(thermals_r[iThermal]*thermals_r[iThermal]));
