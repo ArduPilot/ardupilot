@@ -132,7 +132,15 @@ bool AC_WPNav_Heli::update_l1_wpnav()
 
     case MAV_CMD_NAV_WAYPOINT:
         _L1_controller.update_waypoint(_prev_WP_loc, _next_WP_loc);
-        _stopping_at_waypoint = false;
+        AP_Mission::Mission_Command dummy_cmd;
+        if (_mission.get_next_nav_cmd(cmd.index+1,dummy_cmd)) {
+            _stopping_at_waypoint = false;
+        } else {
+            if (dist < stop_distance || _stopping_at_waypoint) {
+                desired_speed = 100.0f;
+                _stopping_at_waypoint = true;
+            }
+        }
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
@@ -142,6 +150,9 @@ bool AC_WPNav_Heli::update_l1_wpnav()
         _stopping_at_waypoint = false;
         break;
     }
+
+    // if last nav command is waypoint then stop at waypoint
+    
 
     _helispdhgtctrl.set_desired_speed(desired_speed);
     _helispdhgtctrl.update_speed_controller();
