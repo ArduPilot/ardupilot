@@ -341,6 +341,14 @@ public:
     */
     void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms);
 
+    /*
+      check if switching lanes will reduce the normalised
+      innovations. This is called when the vehicle code is about to
+      trigger an EKF failsafe, and it would like to avoid that by
+      using a different EKF lane
+     */
+    void checkLaneSwitch(void);
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
@@ -471,6 +479,9 @@ private:
     bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
 
     bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
+
+    // time of last lane switch
+    uint32_t lastLaneSwitch_ms;
 
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
