@@ -31,6 +31,11 @@ void panic(const char *errormsg, ...)
     va_end(ap);
     printf("\n");
 
+    if (getenv("SITL_PANIC_EXIT")) {
+        // this is used on the autotest server to prevent us waiting
+        // 10 hours for a timeout
+        exit(1);
+    }
     for(;;);
 }
 
