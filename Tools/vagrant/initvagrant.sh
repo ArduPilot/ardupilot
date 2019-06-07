@@ -61,7 +61,7 @@ echo "source /vagrant/Tools/vagrant/shellinit.sh" |
     sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
 
 # link a half-way decent .mavinit.scr into place:
-sudo --login -u $VAGRANT_USER ln -s /vagrant/Tools/vagrant/mavinit.scr /home/$VAGRANT_USER/.mavinit.scr
+sudo --login -u $VAGRANT_USER ln -sf /vagrant/Tools/vagrant/mavinit.scr /home/$VAGRANT_USER/.mavinit.scr
 
 #Plant a marker for sim_vehicle that we're inside a vagrant box
 touch /ardupilot.vagrant
