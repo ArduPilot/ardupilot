@@ -26,7 +26,7 @@ void ModeLoiter::update()
     plane.calc_throttle();
 }
 
-bool ModeLoiter::headingLinedUp(const Location loiterCenterLoc, const Location targetLoc)
+bool ModeLoiter::isHeadingLinedUp(const Location loiterCenterLoc, const Location targetLoc)
 {
     const uint16_t loiterRadius = abs(plane.aparm.loiter_radius);
     if (loiterCenterLoc.get_distance(targetLoc) < loiterRadius + loiterRadius*0.05) {
@@ -37,9 +37,19 @@ bool ModeLoiter::headingLinedUp(const Location loiterCenterLoc, const Location t
         return true;
     }
 
-    // Bearing in degrees
+    // Bearing in centi-degrees
     const int32_t bearing_cd = plane.current_loc.get_bearing_to(targetLoc);
+    return isHeadingLinedUp(bearing_cd);
+}
 
+bool ModeLoiter::isHeadingLinedUp(const float bearing)
+{
+    const int32_t bearing_cd = bearing*100;
+    return isHeadingLinedUp(bearing_cd);
+}
+
+bool ModeLoiter::isHeadingLinedUp(const int32_t bearing_cd)
+{
     // get current heading.
     const int32_t heading_cd = plane.gps.ground_course_cd();
 
