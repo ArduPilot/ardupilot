@@ -872,7 +872,7 @@ void Copter::ModeAuto::land_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     
-    land_run_horizontal_control();
+    land_run_horizontal_control(auto_yaw.mode()==AUTO_YAW_FIXED, auto_yaw.yaw());
     land_run_vertical_control();
 }
 
