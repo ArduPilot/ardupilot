@@ -96,8 +96,9 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
 }
 
 
+///
 /// waypoint navigation
-
+///
 
 /// wp_and_spline_init - initialise straight line and spline waypoint controllers
 ///     updates target roll, pitch targets and I terms based on vehicle lean angles
