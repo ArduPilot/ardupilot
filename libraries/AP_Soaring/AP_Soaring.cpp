@@ -174,27 +174,36 @@ bool SoaringController::check_thermal_criteria()
 SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
 {
     if (!soar_active) {
+        _cruise_criteria_msg_last = SOARING_DISABLED;
         return SOARING_DISABLED;
     }
 
+    LoiterStatus result = THERMAL_GOOD_TO_KEEP_LOITERING;
     const float alt = _vario.alt;
 
     if (alt > alt_max) {
-        gcs().send_text(MAV_SEVERITY_ALERT, "Reached upper altitude, beginning cruise. Alt = %f2", (double)alt);
-        return ALT_TOO_HIGH;
+        result = ALT_TOO_HIGH;
+        if (result != _cruise_criteria_msg_last) {
+            gcs().send_text(MAV_SEVERITY_ALERT, "Reached upper alt = %dm", (int16_t)alt);
+        }
     } else if (alt < alt_min) {
-        gcs().send_text(MAV_SEVERITY_ALERT, "Reached lower altitude, beginning cruise. Alt = %f2", (double)alt);
-        return ALT_TOO_LOW;
+        result = ALT_TOO_LOW;
+        if (result != _cruise_criteria_msg_last) {
+            gcs().send_text(MAV_SEVERITY_ALERT, "Reached lower alt = %dm", (int16_t)alt);
+        }
     } else if ((AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6)) {
         const float thermalability = (_ekf.X[0]*expf(-powf(_aparm.loiter_radius / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK;
         const float mcCreadyAlt = McCready(alt);
         if (thermalability < mcCreadyAlt) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak, recommend quitting: W %f2 R %f2 th %f2 alt %f2 Mc %f2", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)alt, (double)mcCreadyAlt);
-            return THERMAL_WEAK;
+            result = THERMAL_WEAK;
+            if (result != _cruise_criteria_msg_last) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: W %f.3 R %f.3 th %f.1 alt %dm Mc %dm", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (int32_t)alt, (int32_t)mcCreadyAlt);
+            }
         }
     }
 
-    return THERMAL_GOOD_TO_KEEP_LOITERING;
+    _cruise_criteria_msg_last = result;
+    return result;
 }
 
 void SoaringController::init_thermalling()

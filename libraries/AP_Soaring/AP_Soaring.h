@@ -67,13 +67,13 @@ protected:
 public:
     SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
 
-    enum LoiterStatus {
+    typedef enum LoiterStatus {
         SOARING_DISABLED,
         ALT_TOO_HIGH,
         ALT_TOO_LOW,
         THERMAL_WEAK,
         THERMAL_GOOD_TO_KEEP_LOITERING,
-    };
+    } LoiterStatus;
 
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -100,4 +100,8 @@ public:
     }
 
     void update_vario();
+
+private:
+    // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
+    LoiterStatus _cruise_criteria_msg_last;
 };
