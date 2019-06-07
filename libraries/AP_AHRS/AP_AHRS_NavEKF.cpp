@@ -1773,6 +1773,28 @@ uint8_t AP_AHRS_NavEKF::get_primary_gyro_index(void) const
     return AP::ins().get_primary_gyro();
 }
 
+// see if EKF lane switching is possible to avoid EKF failsafe
+void AP_AHRS_NavEKF::check_lane_switch(void)
+{
+    switch (active_EKF_type()) {
+    case EKF_TYPE_NONE:
+        break;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+        break;
+#endif
+
+    case EKF_TYPE2:
+        EKF2.checkLaneSwitch();
+        break;
+
+    case EKF_TYPE3:
+        EKF3.checkLaneSwitch();
+        break;
+    }
+}
+
 
 AP_AHRS_NavEKF &AP::ahrs_navekf()
 {

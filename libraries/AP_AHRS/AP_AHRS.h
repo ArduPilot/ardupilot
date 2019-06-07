@@ -223,6 +223,9 @@ public:
         return false;
     }
 
+    // see if EKF lane switching is possible to avoid EKF failsafe
+    virtual void check_lane_switch(void) {}
+    
     // Euler angles (radians)
     float roll;
     float pitch;
