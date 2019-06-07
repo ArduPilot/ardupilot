@@ -70,7 +70,7 @@ void Plane::update_soaring() {
         }
 
         const char* strTooHigh = "Soaring: Too high, restoring ";
-        const char* strTooLow =  "Soaring: Too high, restoring ";
+        const char* strTooLow =  "Soaring: Too low, restoring ";
         const char* strTooWeak = "Soaring: Thermal ended, restoring ";
 
         // Exit as soon as thermal state estimate deteriorates
