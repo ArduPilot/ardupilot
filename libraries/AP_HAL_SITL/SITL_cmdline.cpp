@@ -6,9 +6,6 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
-#include <stdio.h>
-#include <signal.h>
-#include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_Logger/AP_Logger_SITL.h>
 
@@ -32,15 +29,102 @@
 #include <SITL/SIM_Submarine.h>
 #include <SITL/SIM_Morse.h>
 
+#include <signal.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 using namespace SITL;
 
+// partly flogged from: https://github.com/tridge/junkcode/blob/master/segv_handler/segv_handler.c
+static void dump_stack_trace()
+{
+    // find dumpstack command:
+    const char *dumpstack = "dumpstack"; // if we can't find it trust in PATH
+    struct stat statbuf;
+    const char *paths[] {
+        "Tools/scripts/dumpstack",
+        "APM/Tools/scripts/dumpstack", // for autotest server
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
+        if (::stat(paths[i], &statbuf) != -1) {
+            dumpstack = paths[i];
+            break;
+        }
+    }
+
+    char cmd[100];
+	char progname[100];
+	char *p;
+	int n;
+
+	n = readlink("/proc/self/exe", progname, sizeof(progname));
+	progname[n] = 0;
+
+	p = strrchr(progname, '/');
+	*p = 0;
+
+    char output_filepath[30];
+    snprintf(output_filepath,
+             ARRAY_SIZE(output_filepath),
+             "segv_%s.%d.out",
+             p+1,
+             (int)getpid());
+	snprintf(cmd,
+             sizeof(cmd),
+             "sh %s %d >%s 2>&1",
+             dumpstack,
+             (int)getpid(),
+             output_filepath);
+    fprintf(stderr, "Running: %s\n", cmd);
+
+	if (system(cmd)) {
+        fprintf(stderr, "Failed\n");
+        return;
+    }
+    fprintf(stderr, "Stack dumped\n");
+
+    // print the trace on stderr:
+    int fd = open(output_filepath, O_RDONLY);
+    if (fd == -1) {
+        fprintf(stderr, "Failed to open stack dump filepath: %m");
+        return;
+    }
+    char buf[1024]; // let's hope we're not here because we ran out of stack
+    while (true) {
+        const ssize_t ret = read(fd, buf, ARRAY_SIZE(buf));
+        if (ret == -1) {
+            fprintf(stderr, "Read error: %m");
+            break;
+        }
+        if (ret == 0) {
+            break;
+        }
+        if (write(2, buf, ret) != ret) {
+            // *sigh*
+            break;
+        }
+    }
+    close(fd);
+}
+
 // catch floating point exceptions
 static void _sig_fpe(int signum)
 {
     fprintf(stderr, "ERROR: Floating point exception - aborting\n");
+    dump_stack_trace();
+    abort();
+}
+
+// catch segfault
+static void _sig_segv(int signum)
+{
+    fprintf(stderr, "ERROR: segmentation fault - aborting\n");
+    dump_stack_trace();
     abort();
 }
 
@@ -123,16 +207,20 @@ static const struct {
 void SITL_State::_set_signal_handlers(void) const
 {
     struct sigaction sa_fpe = {};
-
     sigemptyset(&sa_fpe.sa_mask);
     sa_fpe.sa_handler = _sig_fpe;
     sigaction(SIGFPE, &sa_fpe, nullptr);
 
     struct sigaction sa_pipe = {};
-
     sigemptyset(&sa_pipe.sa_mask);
     sa_pipe.sa_handler = SIG_IGN; /* No-op SIGPIPE handler */
     sigaction(SIGPIPE, &sa_pipe, nullptr);
+
+    struct sigaction sa_segv = {};
+    sigemptyset(&sa_segv.sa_mask);
+    sa_segv.sa_handler = _sig_segv;
+    sigaction(SIGSEGV, &sa_segv, nullptr);
+
 }
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
