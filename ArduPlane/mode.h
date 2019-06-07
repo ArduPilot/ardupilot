@@ -173,7 +173,9 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool headingLinedUp(const Location loiterCenterLoc, const Location targetLoc);
+    bool isHeadingLinedUp(const Location loiterCenterLoc, const Location targetLoc);
+    bool isHeadingLinedUp(const float bearing);
+    bool isHeadingLinedUp(const int32_t bearing_cd);
 
 protected:
 
