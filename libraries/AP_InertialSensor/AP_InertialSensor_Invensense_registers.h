@@ -189,7 +189,7 @@
 #define BITS_DLPF_CFG_10HZ                          0x05
 #define BITS_DLPF_CFG_5HZ                           0x06
 // Only supported on MPU 9250 and ICM20608
-#define BITS_DLPF_CFG_3KHZ_NOLPF                    0x07
+#define BITS_DLPF_CFG_3KHZ                          0x07
 #define BITS_DLPF_CFG_MASK                          0x07
 
 // Product ID Description for MPU6000. Used to detect buggy chips
