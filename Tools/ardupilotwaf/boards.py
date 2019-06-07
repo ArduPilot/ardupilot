@@ -92,6 +92,7 @@ class Board:
             '-Werror=unused-result',
             '-Werror=narrowing',
             '-Werror=attributes',
+            '-Werror=format-extra-args',
         ]
 
         if cfg.options.enable_scripting:
