@@ -555,6 +555,81 @@ class AutoTestCopter(AutoTest):
                 self.progress("Armed")
                 return
 
+    def wait_distance_from_home(self, distance_min, distance_max, timeout=10):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > timeout:
+                raise NotAchievedException("Did not achieve distance from home")
+            distance = self.distance_to_home(use_cached_home=True)
+            self.progress("Distance from home: now=%f %f<want<%f" %
+                          (distance, distance_min, distance_max))
+            if distance >= distance_min and distance <= distance_max:
+                return
+
+    # fly_fence_test - fly east until you hit the horizontal circular fence
+    avoid_behave_slide = 0
+    def fly_fence_avoid_test_radius_check(self, timeout=180, avoid_behave=avoid_behave_slide):
+        using_mode = "LOITER" # must be something which adjusts velocity!
+        self.change_mode(using_mode)
+        self.set_parameter("FENCE_ENABLE", 1) # fence
+        self.set_parameter("FENCE_TYPE", 2) # circle
+        fence_radius = 15
+        self.set_parameter("FENCE_RADIUS", fence_radius)
+        fence_margin = 3
+        self.set_parameter("FENCE_MARGIN", fence_margin)
+        self.set_parameter("AVOID_ENABLE", 1)
+        self.set_parameter("AVOID_BEHAVE", avoid_behave)
+        self.set_parameter("RC10_OPTION", 40) # avoid-enable
+        self.wait_ready_to_arm()
+        self.set_rc(10, 2000)
+        home_distance = self.distance_to_home(use_cached_home=True)
+        if home_distance > 5:
+            raise PreconditionFailedException("Expected to be within 5m of home")
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_altitude(10, 100, relative=True)
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1400)
+        self.wait_distance_from_home(12, 20)
+        tstart = self.get_sim_time()
+        push_time = 70 # push against barrier for 60 seconds
+        failed_max = False
+        failed_min = False
+        while True:
+            if self.get_sim_time() - tstart > push_time:
+                self.progress("Push time up")
+                break
+            # make sure we don't RTL:
+            if not self.mode_is(using_mode):
+                raise NotAchievedException("Changed mode away from %s" % using_mode)
+            distance = self.distance_to_home(use_cached_home=True)
+            inner_radius = fence_radius - fence_margin
+            want_min = inner_radius - 1 # allow 1m either way
+            want_max = inner_radius + 1 # allow 1m either way
+            self.progress("Push: distance=%f %f<want<%f" %
+                          (distance, want_min, want_max))
+            if distance < want_min:
+                if failed_min is False:
+                    self.progress("Failed min")
+                    failed_min = True
+            if distance > want_max:
+                if failed_max is False:
+                    self.progress("Failed max")
+                    failed_max = True
+        if failed_min and failed_max:
+            raise NotAchievedException("Failed both min and max checks.  Clever")
+        if failed_min:
+            raise NotAchievedException("Failed min")
+        if failed_max:
+            raise NotAchievedException("Failed max")
+        self.set_rc(2, 1500)
+        self.do_RTL()
+
+    def fly_fence_avoid_test(self, timeout=180):
+        self.fly_fence_avoid_test_radius_check(avoid_behave=1, timeout=timeout)
+        self.fly_fence_avoid_test_radius_check(avoid_behave=0, timeout=timeout)
+
     # fly_fence_test - fly east until you hit the horizontal circular fence
     def fly_fence_test(self, timeout=180):
         # enable fence, disable avoidance
@@ -3330,6 +3405,10 @@ class AutoTestCopter(AutoTest):
             ("HorizontalFence",
              "Test horizontal fence",
              self.fly_fence_test),
+
+            ("HorizontalAvoidFence",
+             "Test horizontal Avoidance fence",
+             self.fly_fence_avoid_test),
 
             ("MaxAltFence",
              "Test Max Alt Fence",
