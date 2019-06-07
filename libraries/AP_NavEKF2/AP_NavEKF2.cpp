@@ -571,7 +571,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     // @Range: 0 500
     // @Units: mGauss
-    AP_GROUPINFO("MAG_EF_LIM", 52, NavEKF2, _mag_ef_limit, 0),
+    AP_GROUPINFO("MAG_EF_LIM", 52, NavEKF2, _mag_ef_limit, 50),
     
     AP_GROUPEND
 };
