@@ -73,33 +73,37 @@ void Plane::update_soaring() {
         const char* strTooLow =  "Soaring: Too low, restoring ";
         const char* strTooWeak = "Soaring: Thermal ended, restoring ";
 
-        // Exit as soon as thermal state estimate deteriorates
-        switch (previous_mode->mode_number()) {
+        // Exit as soon as thermal state estimate deteriorates and we're lined up to next target
+        switch (previous_mode->mode_number()){
         case Mode::Number::FLY_BY_WIRE_B: {
+            const bool homeIsSet = AP::ahrs().home_is_set();
+            const bool headingLinedupToHome = homeIsSet && plane.mode_loiter.isHeadingLinedUp(next_WP_loc, AP::ahrs().get_home());
+            if (homeIsSet && !headingLinedupToHome) {
+                break;
+            }
             switch (loiterStatus) {
-                case SoaringController::LoiterStatus::ALT_TOO_HIGH: {
-                    const bool homeIsSet = AP::ahrs().home_is_set();
-                    const bool headingLinedupToHome = homeIsSet && plane.mode_loiter.headingLinedUp(next_WP_loc, AP::ahrs().get_home());
-                    if (!homeIsSet || headingLinedupToHome) {
-                        gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooHigh, mode_fbwb.name());
-                        set_mode(mode_fbwb, ModeReason::SOARING_ALT_TOO_HIGH);
-                    }
-                    }
+                case SoaringController::LoiterStatus::ALT_TOO_HIGH:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooHigh, mode_fbwb.name());
+                    set_mode(mode_fbwb, ModeReason::SOARING_ALT_TOO_HIGH);
                     break;
-                default:
                 case SoaringController::LoiterStatus::ALT_TOO_LOW:
                     gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooLow, mode_rtl.name());
                     set_mode(mode_rtl, ModeReason::SOARING_ALT_TOO_LOW);
                     break;
+                default:
                 case SoaringController::LoiterStatus::THERMAL_WEAK:
                     gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_fbwb.name());
                     set_mode(mode_fbwb, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
                     break;
                 } // switch louterStatus
-            } // case FBWB
             break;
+            }
 
         case Mode::Number::CRUISE: {
+            const bool headingLinedupToCruise = plane.mode_loiter.isHeadingLinedUp(cruise_state.locked_heading_cd);
+            if (cruise_state.locked_heading && !headingLinedupToCruise) {
+                break;
+            }
             // return to cruise with old ground course
             const CruiseState cruise = cruise_state;
             switch (loiterStatus) {
@@ -107,11 +111,11 @@ void Plane::update_soaring() {
                     gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooHigh, mode_cruise.name());
                     set_mode(mode_cruise, ModeReason::SOARING_ALT_TOO_HIGH);
                     break;
-                default:
                 case SoaringController::LoiterStatus::ALT_TOO_LOW:
                     gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooLow, mode_rtl.name());
                     set_mode(mode_rtl, ModeReason::SOARING_ALT_TOO_LOW);
                     break;
+                default:
                 case SoaringController::LoiterStatus::THERMAL_WEAK:
                     gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_cruise.name());
                     set_mode(mode_cruise, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
@@ -122,31 +126,31 @@ void Plane::update_soaring() {
             break;
             } // case Cruise
 
-        case Mode::Number::AUTO:
+        case Mode::Number::AUTO: {
+            //Get the lat/lon of next Nav waypoint after this one:
+            AP_Mission::Mission_Command next_nav_cmd;
+            const bool nextWpisValid = mission.get_next_nav_cmd(mission.get_current_nav_index() + 1, next_nav_cmd);
+            const bool headingLinedupToWP = nextWpisValid && plane.mode_loiter.isHeadingLinedUp(next_WP_loc, next_nav_cmd.content.location);
+            if (nextWpisValid && !headingLinedupToWP) {
+                break;
+            }
             switch (loiterStatus) {
                 case SoaringController::LoiterStatus::ALT_TOO_HIGH:
                     gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooHigh, mode_auto.name());
                     set_mode(mode_auto, ModeReason::SOARING_ALT_TOO_HIGH);
                     break;
-                default:
                 case SoaringController::LoiterStatus::ALT_TOO_LOW:
                     gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooLow, mode_auto.name());
                     set_mode(mode_auto, ModeReason::SOARING_ALT_TOO_LOW);
                     break;
-                case SoaringController::LoiterStatus::THERMAL_WEAK: {
-                    //Get the lat/lon of next Nav waypoint after this one:
-                    AP_Mission::Mission_Command next_nav_cmd;
-                    const bool nextWpisValid = mission.get_next_nav_cmd(mission.get_current_nav_index() + 1, next_nav_cmd);
-                    const bool headingLinedupToWP = nextWpisValid && plane.mode_loiter.headingLinedUp(next_WP_loc, next_nav_cmd.content.location);
-                    if (!nextWpisValid || headingLinedupToWP) {
+                default:
+                case SoaringController::LoiterStatus::THERMAL_WEAK:
                         gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_auto.name());
                         set_mode(mode_auto, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                    }
-                    }
                     break;
-            } // switch loiterStatus
+                } // switch loiterStatus
             break;
-
+            } // case AUTO
         default: // all other modes
             break;
         } // switch previous_mode
