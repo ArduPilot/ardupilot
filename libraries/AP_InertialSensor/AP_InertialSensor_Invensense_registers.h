@@ -181,14 +181,15 @@
 #define BIT_I2C_SLVX_EN                         0x80
 
 // Configuration bits MPU 3000 and MPU 6000 (not revised)?
-#define BITS_DLPF_CFG_256HZ_NOLPF2              0x00
+#define BITS_DLPF_CFG_256HZ                         0x00
 #define BITS_DLPF_CFG_188HZ                         0x01
 #define BITS_DLPF_CFG_98HZ                          0x02
 #define BITS_DLPF_CFG_42HZ                          0x03
 #define BITS_DLPF_CFG_20HZ                          0x04
 #define BITS_DLPF_CFG_10HZ                          0x05
 #define BITS_DLPF_CFG_5HZ                           0x06
-#define BITS_DLPF_CFG_2100HZ_NOLPF              0x07
+// Only supported on MPU 9250 and ICM20608
+#define BITS_DLPF_CFG_3KHZ_NOLPF                    0x07
 #define BITS_DLPF_CFG_MASK                          0x07
 
 // Product ID Description for MPU6000. Used to detect buggy chips

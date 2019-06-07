@@ -600,7 +600,7 @@ void AP_InertialSensor_Invensensev2::_set_filter_and_scaling(void)
     }
     
     if (_fast_sampling) {
-        // this gives us 9kHz sampling on gyros
+        // this gives us 9kHz sampling on gyros, no LPF
         gyro_config |= BIT_GYRO_NODLPF_9KHZ;
         accel_config |= BIT_ACCEL_NODLPF_4_5KHZ;
     } else {
