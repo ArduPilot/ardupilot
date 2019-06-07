@@ -74,6 +74,7 @@ private:
 
     // L1 controller variables
     AP_Int8     _l1_nav_use;
+    AP_Float    _loiter_radius;
     bool        _reached_l1_destination;
     bool        _stopping_at_waypoint;
     uint32_t    _wp_last_l1_update;

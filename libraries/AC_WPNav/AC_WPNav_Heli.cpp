@@ -13,6 +13,14 @@ const AP_Param::GroupInfo AC_WPNav_Heli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("USE_L1_NAV",   1, AC_WPNav_Heli, _l1_nav_use, 0),
 
+    // @Param: L1_LOIT_RAD
+    // @DisplayName: Loiter Radius for L1 Navigation
+    // @Description: This sets the circle radius for the L1 loiter mode
+    // @Range: 25 200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("L1_LTR_RAD",   2, AC_WPNav_Heli, _loiter_radius, 50.0f),
+
     AP_GROUPEND
 };
 
@@ -146,7 +154,7 @@ bool AC_WPNav_Heli::update_l1_wpnav()
     case MAV_CMD_NAV_LOITER_UNLIM:
     case MAV_CMD_NAV_LOITER_TIME:
     case MAV_CMD_NAV_LOITER_TURNS:
-        _L1_controller.update_loiter(_next_WP_loc, 75.0f,1);
+        _L1_controller.update_loiter(_next_WP_loc, _loiter_radius, 1);
         _stopping_at_waypoint = false;
         break;
     }
@@ -164,6 +172,38 @@ bool AC_WPNav_Heli::update_l1_wpnav()
 
 bool AC_WPNav_Heli::advance_l1_wp_target_along_track(float dt)
 {
+
+    // set up for altitude calculation
+    int32_t temp_alt;
+    int32_t wp_alt;
+    int32_t prev_wp_alt;
+    _next_WP_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, wp_alt);
+    _prev_WP_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, prev_wp_alt);
+    Location_Class curr_loc = _inav.get_position();
+    float dist_to_wp = _prev_WP_loc.get_distance(curr_loc);
+    float dist_btwn_wp = _prev_WP_loc.get_distance(_next_WP_loc);
+
+    // get current waypoint nav command
+    AP_Mission::Mission_Command cmd;
+    cmd = _mission.get_current_nav_cmd();
+
+    switch (cmd.id) {
+
+    case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LOITER_TURNS:
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        if (_L1_controller.reached_loiter_target()) {
+            temp_alt = wp_alt;
+        } else {
+            float radius = _L1_controller.loiter_radius(_loiter_radius);
+            temp_alt = (wp_alt - prev_wp_alt) * (dist_to_wp - radius) / (dist_btwn_wp - radius) + prev_wp_alt;
+        }
+        break;
+
+    case MAV_CMD_NAV_LAND:
+    case MAV_CMD_NAV_WAYPOINT:
+    default:
+
         Location flex_next_WP_loc = _next_WP_loc;
 
         _L1_controller.update_waypoint(_prev_WP_loc, flex_next_WP_loc);
@@ -184,7 +224,6 @@ bool AC_WPNav_Heli::advance_l1_wp_target_along_track(float dt)
             }
             acceptance_distance_m = _L1_controller.turn_distance(_wp_radius_cm * 0.01f, next_turn_angle);
         }
-        Location_Class curr_loc = _inav.get_position();
         if (get_distance(curr_loc, _next_WP_loc) <= acceptance_distance_m) {
             _reached_l1_destination = true;
 	}
@@ -194,20 +233,15 @@ bool AC_WPNav_Heli::advance_l1_wp_target_along_track(float dt)
             _reached_l1_destination = true;
         }
 
-    int32_t temp_alt;
-    int32_t wp_alt;
-    int32_t prev_wp_alt;
-    _next_WP_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, wp_alt);
-    _prev_WP_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, prev_wp_alt);
-    float dist_to_wp = _prev_WP_loc.get_distance(curr_loc);
-    float dist_btwn_wp = _prev_WP_loc.get_distance(_next_WP_loc);
+        temp_alt = (wp_alt - prev_wp_alt) * dist_to_wp / dist_btwn_wp + prev_wp_alt;
 
-    temp_alt = (wp_alt - prev_wp_alt) * dist_to_wp / dist_btwn_wp + prev_wp_alt;
+        break;
 
+    }
 
     _pos_control.set_alt_target(temp_alt);
 
-        return true;
+    return true;
 }
 
 /// using_l1_navigation - true when using L1 navigation controller
