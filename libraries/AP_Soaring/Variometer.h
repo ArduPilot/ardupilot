@@ -34,15 +34,21 @@ class Variometer {
 
     AverageFilterFloat_Size5 _sp_filter;
 
+    // low pass filter @ 30s time constant
+    LowPassFilter<float> _climb_filter;
+
 public:
     Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms);
     float alt;
     float reading;
     float filtered_reading;
     float displayed_reading;
+    float raw_climb_rate;
+    float smoothed_climb_rate;
 
     void update(const float polar_K, const float polar_CD0, const float polar_B);
     float correct_netto_rate(float climb_rate, float phi, float aspd, const float polar_K, const float polar_CD0, const float polar_B);
 
+    void reset_filter(float value) { _climb_filter.reset(value);}
 };
 
