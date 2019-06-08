@@ -180,7 +180,7 @@ bool AC_WPNav_Heli::advance_l1_wp_target_along_track(float dt)
     _next_WP_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, wp_alt);
     _prev_WP_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, prev_wp_alt);
     Location_Class curr_loc = _inav.get_position();
-    float dist_to_wp = _prev_WP_loc.get_distance(curr_loc);
+    float dist_to_curr_loc = _prev_WP_loc.get_distance(curr_loc);
     float dist_btwn_wp = _prev_WP_loc.get_distance(_next_WP_loc);
 
     // get current waypoint nav command
@@ -194,9 +194,10 @@ bool AC_WPNav_Heli::advance_l1_wp_target_along_track(float dt)
     case MAV_CMD_NAV_LOITER_UNLIM:
         if (_L1_controller.reached_loiter_target()) {
             temp_alt = wp_alt;
+            _reached_l1_destination = true;
         } else {
             float radius = _L1_controller.loiter_radius(_loiter_radius);
-            temp_alt = (wp_alt - prev_wp_alt) * (dist_to_wp - radius) / (dist_btwn_wp - radius) + prev_wp_alt;
+            temp_alt = (wp_alt - prev_wp_alt) * dist_to_curr_loc / (dist_btwn_wp - radius) + prev_wp_alt;
         }
         break;
 
@@ -233,12 +234,21 @@ bool AC_WPNav_Heli::advance_l1_wp_target_along_track(float dt)
             _reached_l1_destination = true;
         }
 
-        temp_alt = (wp_alt - prev_wp_alt) * dist_to_wp / dist_btwn_wp + prev_wp_alt;
-
+        if (wp_alt == prev_wp_alt) {
+            temp_alt = wp_alt;
+        } else {
+            temp_alt = (wp_alt - prev_wp_alt) * dist_to_curr_loc / dist_btwn_wp + prev_wp_alt;
+        }
         break;
 
     }
 
+    // don't allow temp_alt to beyond wp altitudes
+    if (wp_alt > prev_wp_alt) {
+        temp_alt = constrain_float(temp_alt, prev_wp_alt, wp_alt);
+    } else if (prev_wp_alt > wp_alt) {
+        temp_alt = constrain_float(temp_alt, wp_alt, prev_wp_alt);
+    }
     _pos_control.set_alt_target(temp_alt);
 
     return true;
