@@ -1694,3 +1694,17 @@ void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points
     };
     WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
 }
+
+void AP_Logger::Write_OA(uint8_t algorithm, const Location& final_dest, const Location& oa_dest)
+{
+    struct log_OA pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_OA_MSG),
+        time_us     : AP_HAL::micros64(),
+        algorithm   : algorithm,
+        final_lat   : final_dest.lat,
+        final_lng   : final_dest.lng,
+        oa_lat      : oa_dest.lat,
+        oa_lng      : oa_dest.lng,
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
