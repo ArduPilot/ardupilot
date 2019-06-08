@@ -16,7 +16,7 @@
 #define AP_SPDHGTCTRL_VEL_I                       0.5f
 #define AP_SPDHGTCTRL_VEL_D                       0.0f
 #define AP_SPDHGTCTRL_VEL_IMAX                    1000.0f
-#define AP_SPDHGTCTRL_VEL_FF                      0.0f
+#define AP_SPDHGTCTRL_VEL_FF                      0.15f
 #define AP_SPDHGTCTRL_VEL_FILT_HZ                 10.0f
 #define AP_SPDHGTCTRL_VEL_DT                      0.0025f
 
@@ -24,7 +24,7 @@ class AP_SpdHgtControl_Heli {
 public:
     AP_SpdHgtControl_Heli(AP_AHRS &ahrs)
         : _ahrs(ahrs)
-        , _pid_vel(AP_SPDHGTCTRL_VEL_P, AP_SPDHGTCTRL_VEL_I, AP_SPDHGTCTRL_VEL_D, AP_SPDHGTCTRL_VEL_IMAX, AP_SPDHGTCTRL_VEL_FILT_HZ, AP_SPDHGTCTRL_VEL_DT)
+        , _pid_vel(AP_SPDHGTCTRL_VEL_P, AP_SPDHGTCTRL_VEL_I, AP_SPDHGTCTRL_VEL_D, AP_SPDHGTCTRL_VEL_IMAX, AP_SPDHGTCTRL_VEL_FILT_HZ, AP_SPDHGTCTRL_VEL_DT, AP_SPDHGTCTRL_VEL_FF)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
