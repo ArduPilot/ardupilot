@@ -2498,7 +2498,7 @@ void GCS_MAVLINK::send_home_position() const
         return;
     }
 
-    Location home = AP::ahrs().get_home();
+    const Location &home = AP::ahrs().get_home();
 
     const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
     mavlink_msg_home_position_send(
