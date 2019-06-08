@@ -199,10 +199,10 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: W %f.3 R %f.3 th %f.1 alt %dm Mc %dm", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (int32_t)alt, (int32_t)mcCreadyAlt);
             }
-        } else if (alt < _thermal_start_alt) {
+        } else if (alt < _thermal_start_alt || _vario.smoothed_climb_rate < 0.0) {
             result = ALT_LOST;
             if (result != _cruise_criteria_msg_last) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Altitude lost from entry = %dm", (int32_t)_thermal_start_alt);
+                gcs().send_text(MAV_SEVERITY_INFO, "Not climbing");
             }
         }
     }
@@ -252,6 +252,8 @@ void SoaringController::init_thermalling()
     _prev_update_time = AP_HAL::micros64();
     _thermal_start_time_us = AP_HAL::micros64();
     _thermal_start_alt = _vario.alt;
+
+    _vario.reset_filter(0.0);
 }
 
 void SoaringController::init_cruising()
