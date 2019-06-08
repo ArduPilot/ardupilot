@@ -10,6 +10,7 @@ Variometer::Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
     _ahrs(ahrs),
     _aparm(parms)
 {
+    _climb_filter = LowPassFilter<float>(1.0/60.0);
 }
 
 void Variometer::update(const float polar_K, const float polar_B, const float polar_Cd0)
@@ -26,12 +27,12 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
     // take 5 point moving average
     float dsp = _vdot_filter.apply(temp);
 
-    float dh = 0;
     Vector3f velned;
     if (_ahrs.get_velocity_NED(velned)) {
         // if possible use the EKF vertical velocity
-        dh = -velned.z;
+        raw_climb_rate = -velned.z;
     }
+    smoothed_climb_rate = _climb_filter.apply(raw_climb_rate, (AP_HAL::micros64() - _prev_update_time)/1e6);
 
     float aspd = 0;
     if (!_ahrs.airspeed_estimate(aspd)) {
@@ -44,7 +45,7 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
     // Compute still-air sinkrate
     float sinkrate = correct_netto_rate(0.0f,  roll, _aspd_filt, polar_K, polar_Cd0, polar_B);
 
-    reading = dh + dsp*_aspd_filt/GRAVITY_MSS + sinkrate;
+    reading = raw_climb_rate + dsp*_aspd_filt/GRAVITY_MSS + sinkrate;
     
 
     filtered_reading = TE_FILT * reading + (1 - TE_FILT) * filtered_reading;                       // Apply low pass timeconst filter for noise
@@ -52,14 +53,16 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
 
     _prev_update_time = AP_HAL::micros64();
 
-    AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt", "Qffffff",
+    AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc", "Qffffffff",
                        AP_HAL::micros64(),
                        (double)0.0,
                        (double)_aspd_filt,
                        (double)alt,
                        (double)roll,
                        (double)reading,
-                       (double)filtered_reading);
+                       (double)filtered_reading,
+                       (double)raw_climb_rate,
+                       (double)smoothed_climb_rate);
 }
 
 
