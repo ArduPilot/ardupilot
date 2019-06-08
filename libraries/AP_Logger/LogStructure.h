@@ -1125,6 +1125,16 @@ struct PACKED log_SRTL {
     float D;
 };
 
+struct PACKED log_OA {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t algorithm;
+    int32_t final_lat;
+    int32_t final_lng;
+    int32_t oa_lat;
+    int32_t oa_lng;
+};
+
 struct PACKED log_DSTL {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1337,7 +1347,9 @@ struct PACKED log_Arm_Disarm {
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
       "PM",  "QHHIIHIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,IntErr,SPICnt,I2CCnt", "s---b%--", "F---0A--" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
-      "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }
+      "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
+    { LOG_OA_MSG, sizeof(log_OA), \
+      "OA","QBLLLL","TimeUS,Algo,DLat,DLng,OALat,OALng", "s-----", "F-GGGG" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -1681,6 +1693,7 @@ enum LogMessages : uint8_t {
     LOG_ERROR_MSG,
     LOG_ADSB_MSG,
     LOG_ARM_DISARM_MSG,
+    LOG_OA_MSG,
 
     _LOG_LAST_MSG_
 };
