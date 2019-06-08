@@ -66,7 +66,7 @@ bool ModeLoiter::isHeadingLinedUp(const int32_t bearing_cd)
     */
 
     // Use integer division to get discrete steps
-    const int32_t expanded_acceptance = 1000 * (plane.loiter.sum_cd / 36000);
+    const int32_t expanded_acceptance = 1000 * (labs(plane.loiter.sum_cd) / 36000);
 
     if (labs(heading_err_cd) <= 1000 + expanded_acceptance) {
         // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
