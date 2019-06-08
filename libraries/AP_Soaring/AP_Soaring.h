@@ -37,6 +37,9 @@ class SoaringController {
     // store time thermal was entered for hysteresis
     unsigned long _thermal_start_time_us;
 
+    // store altitude thermal was entered as a backup check
+    float _thermal_start_alt;
+
     // store time cruise was entered for hysteresis
     unsigned long _cruise_start_time_us;
 
@@ -72,7 +75,8 @@ public:
         ALT_TOO_HIGH,
         ALT_TOO_LOW,
         THERMAL_WEAK,
-        THERMAL_GOOD_TO_KEEP_LOITERING,
+        ALT_LOST,
+        THERMAL_GOOD_TO_KEEP_LOITERING
     } LoiterStatus;
 
     // this supports the TECS_* user settable parameters
