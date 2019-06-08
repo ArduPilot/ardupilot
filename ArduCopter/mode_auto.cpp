@@ -1802,11 +1802,25 @@ bool Copter::ModeAuto::verify_loiter_unlimited()
 // verify_loiter_time - check if we have loitered long enough
 bool Copter::ModeAuto::verify_loiter_time()
 {
+
+#if FRAME_CONFIG == HELI_FRAME
+    if (wp_nav->use_l1_navigation()) {
+        // check if we have reached the waypoint
+        if ( !copter.wp_nav->reached_l1_destination() ) {
+            return false;
+        }
+    } else {
+        // return immediately if we haven't reached our destination
+        if (!copter.wp_nav->reached_wp_destination()) {
+            return false;
+        }
+    }
+#else
     // return immediately if we haven't reached our destination
     if (!copter.wp_nav->reached_wp_destination()) {
         return false;
     }
-
+#endif
     // start our loiter timer
     if ( loiter_time == 0 ) {
         loiter_time = millis();
