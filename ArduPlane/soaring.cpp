@@ -128,10 +128,9 @@ void Plane::update_soaring() {
 
         case Mode::Number::AUTO: {
             //Get the lat/lon of next Nav waypoint after this one:
-            AP_Mission::Mission_Command next_nav_cmd;
-            const bool nextWpisValid = mission.get_next_nav_cmd(mission.get_current_nav_index() + 1, next_nav_cmd);
-            const bool headingLinedupToWP = nextWpisValid && plane.mode_loiter.isHeadingLinedUp(next_WP_loc, next_nav_cmd.content.location);
-            if (nextWpisValid && !headingLinedupToWP) {
+            AP_Mission::Mission_Command current_nav_cmd = mission.get_current_nav_cmd();;
+            const bool headingLinedupToWP = isHeadingLinedUp(next_WP_loc, current_nav_cmd.content.location);
+            if (!headingLinedupToWP) {
                 break;
             }
             switch (loiterStatus) {
