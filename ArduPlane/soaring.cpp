@@ -64,8 +64,10 @@ void Plane::update_soaring() {
 
         const SoaringController::LoiterStatus loiterStatus = g2.soaring_controller.check_cruise_criteria();
 
-        if (loiterStatus == SoaringController::LoiterStatus::THERMAL_GOOD_TO_KEEP_LOITERING ||
-            loiterStatus == SoaringController::LoiterStatus::SOARING_DISABLED) {
+        if (loiterStatus == SoaringController::LoiterStatus::THERMAL_GOOD_TO_KEEP_LOITERING) {
+            // Reset loiter angle, so that the loiter exit heading criteria
+            // only starts expanding when we're ready to exit.
+            plane.loiter.sum_cd = 0;
             break;
         }
 
