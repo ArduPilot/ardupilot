@@ -121,6 +121,13 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ENABLE_CH", 15, SoaringController, soar_active_ch, 0),
 
+    // @Param: MAX_DEV
+    // @DisplayName: (Optional) Maximum drift distance to allow when thermalling.
+    // @Description: The previous mode will be restored if the horizontal distance to the thermalling start location exceeds this value. 0 to disable.
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("MAX_DRIFT", 16, SoaringController, max_drift, 0),
+
     AP_GROUPEND
 };
 
@@ -181,6 +188,11 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
     LoiterStatus result = THERMAL_GOOD_TO_KEEP_LOITERING;
     const float alt = _vario.alt;
 
+    Vector3f position;
+    if (!_ahrs.get_relative_position_NED_home(position)) {
+        return SOARING_DISABLED;
+    }
+
     if (alt > alt_max) {
         result = ALT_TOO_HIGH;
         if (result != _cruise_criteria_msg_last) {
@@ -199,10 +211,15 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: W %f.3 R %f.3 th %f.1 alt %dm Mc %dm", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (int32_t)alt, (int32_t)mcCreadyAlt);
             }
-        } else if (alt < _thermal_start_alt || _vario.smoothed_climb_rate < 0.0) {
+        } else if (alt < (-_thermal_start_pos.z) || _vario.smoothed_climb_rate < 0.0) {
             result = ALT_LOST;
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Not climbing");
+            }
+        } else if (max_drift && (powf(position.x - _thermal_start_pos.x, 2) + powf(position.y - _thermal_start_pos.y, 2)) > powf(max_drift,2)) {
+            result = DEVIATION_EXCEEDED;
+            if (result != _cruise_criteria_msg_last) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Drifted too far");
             }
         }
     }
@@ -251,7 +268,7 @@ void SoaringController::init_thermalling()
 
     _prev_update_time = AP_HAL::micros64();
     _thermal_start_time_us = AP_HAL::micros64();
-    _thermal_start_alt = _vario.alt;
+    _thermal_start_pos = position;
 
     _vario.reset_filter(0.0);
 }
