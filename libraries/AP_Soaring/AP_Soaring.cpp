@@ -121,7 +121,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ENABLE_CH", 15, SoaringController, soar_active_ch, 0),
 
-    // @Param: MAX_DEV
+    // @Param: MAX_DRIFT
     // @DisplayName: (Optional) Maximum drift distance to allow when thermalling.
     // @Description: The previous mode will be restored if the horizontal distance to the thermalling start location exceeds this value. 0 to disable.
     // @Range: 0 1000
@@ -216,8 +216,8 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Not climbing");
             }
-        } else if (max_drift && (powf(position.x - _thermal_start_pos.x, 2) + powf(position.y - _thermal_start_pos.y, 2)) > powf(max_drift,2)) {
-            result = DEVIATION_EXCEEDED;
+        } else if (!(max_drift<0) && (powf(position.x - _thermal_start_pos.x, 2) + powf(position.y - _thermal_start_pos.y, 2)) > powf(max_drift,2)) {
+            result = DRIFT_EXCEEDED;
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Drifted too far");
             }
