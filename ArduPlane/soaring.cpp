@@ -74,6 +74,7 @@ void Plane::update_soaring() {
         const char* strTooHigh = "Soaring: Too high, restoring ";
         const char* strTooLow =  "Soaring: Too low, restoring ";
         const char* strTooWeak = "Soaring: Thermal ended, restoring ";
+        const char* strTooFar  = "Soaring: Drifted too far, restoring ";
 
         // Exit as soon as thermal state estimate deteriorates and we're lined up to next target
         switch (previous_mode->mode_number()){
@@ -96,6 +97,10 @@ void Plane::update_soaring() {
                 case SoaringController::LoiterStatus::THERMAL_WEAK:
                     gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_fbwb.name());
                     set_mode(mode_fbwb, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
+                    break;
+                case SoaringController::LoiterStatus::DRIFT_EXCEEDED:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooFar, mode_fbwb.name());
+                    set_mode(mode_fbwb, ModeReason::SOARING_DRIFT_EXCEEDED);
                     break;
                 } // switch louterStatus
             break;
@@ -122,6 +127,10 @@ void Plane::update_soaring() {
                     gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_cruise.name());
                     set_mode(mode_cruise, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
                     break;
+                case SoaringController::LoiterStatus::DRIFT_EXCEEDED:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooFar, mode_cruise.name());
+                    set_mode(mode_cruise, ModeReason::SOARING_DRIFT_EXCEEDED);
+                    break;
             } // switch loiterStatus
             cruise_state = cruise;
             set_target_altitude_current();
@@ -131,7 +140,7 @@ void Plane::update_soaring() {
         case Mode::Number::AUTO: {
             //Get the lat/lon of next Nav waypoint after this one:
             AP_Mission::Mission_Command current_nav_cmd = mission.get_current_nav_cmd();;
-            const bool headingLinedupToWP = isHeadingLinedUp(next_WP_loc, current_nav_cmd.content.location);
+            const bool headingLinedupToWP = plane.mode_loiter.isHeadingLinedUp(next_WP_loc, current_nav_cmd.content.location);
             if (!headingLinedupToWP) {
                 break;
             }
@@ -148,6 +157,10 @@ void Plane::update_soaring() {
                 case SoaringController::LoiterStatus::THERMAL_WEAK:
                         gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooWeak, mode_auto.name());
                         set_mode(mode_auto, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
+                    break;
+                case SoaringController::LoiterStatus::DRIFT_EXCEEDED:
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s%s", strTooFar, mode_auto.name());
+                    set_mode(mode_auto, ModeReason::SOARING_DRIFT_EXCEEDED);
                     break;
                 } // switch loiterStatus
             break;

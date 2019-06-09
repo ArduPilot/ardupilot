@@ -78,7 +78,7 @@ public:
         ALT_TOO_LOW,
         THERMAL_WEAK,
         ALT_LOST,
-        DEVIATION_EXCEEDED,
+        DRIFT_EXCEEDED,
         THERMAL_GOOD_TO_KEEP_LOITERING
     } LoiterStatus;
 
