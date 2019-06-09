@@ -92,6 +92,7 @@ class Board:
             '-Werror=unused-result',
             '-Werror=narrowing',
             '-Werror=attributes',
+            '-Werror=overflow',
             '-Werror=format-extra-args',
         ]
 
