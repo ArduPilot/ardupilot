@@ -366,8 +366,8 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("PLND_TYPE", 4)
 
             self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_MIN", 0)
+            self.set_parameter("RNGFND1_MAX", 4000)
             self.set_parameter("RNGFND1_PIN", 0)
             self.set_parameter("RNGFND1_SCALING", 12.12)
 
@@ -1202,8 +1202,8 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("FLOW_TYPE", 10)
 
             self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_MIN", 0)
+            self.set_parameter("RNGFND1_MAX", 4000)
             self.set_parameter("RNGFND1_PIN", 0)
             self.set_parameter("RNGFND1_SCALING", 12.12, epsilon=0.01)
 
@@ -1607,8 +1607,8 @@ class AutoTestCopter(AutoTest):
 
         try:
             self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_MIN", 0)
+            self.set_parameter("RNGFND1_MAX", 4000)
             self.set_parameter("RNGFND1_PIN", 0)
             self.set_parameter("RNGFND1_SCALING", 12.12)
             self.set_parameter("RC9_OPTION", 10) # rangefinder
@@ -1757,8 +1757,8 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("PLND_TYPE", 4)
 
             self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_MIN", 0)
+            self.set_parameter("RNGFND1_MAX", 4000)
             self.set_parameter("RNGFND1_PIN", 0)
             self.set_parameter("RNGFND1_SCALING", 12)
             self.set_parameter("SIM_SONAR_SCALE", 12)
@@ -2454,8 +2454,8 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_MIN", 0)
+            self.set_parameter("RNGFND1_MAX", 4000)
             self.set_parameter("RNGFND1_PIN", 0)
             self.set_parameter("RNGFND1_SCALING", 12.12)
             self.set_parameter("GRIP_ENABLE", 1)
@@ -3023,8 +3023,8 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("PLND_TYPE", 1)
 
             self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_MIN", 0)
+            self.set_parameter("RNGFND1_MAX", 4000)
             self.set_parameter("RNGFND1_PIN", 0)
             self.set_parameter("RNGFND1_SCALING", 12.12)
 
