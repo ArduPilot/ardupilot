@@ -312,12 +312,7 @@ public:
 
     // accesss to public parameters
     void set_force_log_disarmed(bool force_logging) { _force_log_disarmed = force_logging; }
-    bool log_while_disarmed(void) const {
-        if (_force_log_disarmed) {
-            return true;
-        }
-        return _params.log_disarmed != 0;
-    }
+    bool log_while_disarmed(void) const;
     uint8_t log_replay(void) const { return _params.log_replay; }
     
     vehicle_startup_message_Writer _vehicle_messages;
@@ -343,6 +338,10 @@ public:
     bool logging_present() const;
     bool logging_enabled() const;
     bool logging_failed() const;
+
+    // notify logging subsystem of an arming failure. This triggers
+    // logging for HAL_LOGGER_ARM_PERSIST seconds
+    void arming_failure() { _last_arming_failure_ms = AP_HAL::millis(); }
 
     void set_vehicle_armed(bool armed_state);
     bool vehicle_is_armed() const { return _armed; }
@@ -504,6 +503,9 @@ private:
 
     GCS_MAVLINK *_log_sending_link;
     HAL_Semaphore_Recursive _log_send_sem;
+
+    // last time arming failed, for backends
+    uint32_t _last_arming_failure_ms;
 
     bool should_handle_log_message();
     void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);
