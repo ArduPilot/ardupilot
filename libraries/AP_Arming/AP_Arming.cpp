@@ -825,6 +825,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         //Can't do this from this class until there is a unified logging library
 
     } else {
+        AP::logger().arming_failure();
         armed = false;
     }
 
