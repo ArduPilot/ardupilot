@@ -1236,8 +1236,19 @@ void Copter::ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
     // calculate radius
     uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
 
+#if FRAME_CONFIG == HELI_FRAME
+    if (wp_nav->use_l1_navigation()) {
+        // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
+        circle_movetoedge_start(circle_center, 0);
+    } else {
+        // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
+        circle_movetoedge_start(circle_center, circle_radius_m);
+    }
+#else
     // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
     circle_movetoedge_start(circle_center, circle_radius_m);
+#endif
+
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -1919,6 +1930,43 @@ bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 // verify_circle - check if we have circled the point enough
 bool Copter::ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
+
+#if FRAME_CONFIG == HELI_FRAME
+    if (wp_nav->use_l1_navigation()) {
+        // check if we have reached the waypoint
+        if ( !copter.wp_nav->reached_l1_destination()) {
+            return false;
+        }
+        // check if we have completed circling
+        return fabsf((float)copter.wp_nav->get_angle_total()/36000.0f) >= LOWBYTE(cmd.p1);
+    } else {
+        // check if we've reached the edge
+        if (mode() == Auto_CircleMoveToEdge) {
+            if (copter.wp_nav->reached_wp_destination()) {
+                const Vector3f curr_pos = copter.inertial_nav.get_position();
+                Vector3f circle_center = copter.pv_location_to_vector(cmd.content.location);
+
+                // set target altitude if not provided
+                if (is_zero(circle_center.z)) {
+                    circle_center.z = curr_pos.z;
+                }
+
+                // set lat/lon position if not provided
+                if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
+                    circle_center.x = curr_pos.x;
+                    circle_center.y = curr_pos.y;
+                }
+
+                // start circling
+                circle_start();
+            }
+            return false;
+        }
+
+        // check if we have completed circling
+        return fabsf(copter.circle_nav->get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+    }
+#else
     // check if we've reached the edge
     if (mode() == Auto_CircleMoveToEdge) {
         if (copter.wp_nav->reached_wp_destination()) {
@@ -1942,8 +1990,11 @@ bool Copter::ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
+
     // check if we have completed circling
     return fabsf(copter.circle_nav->get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+#endif
+
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
