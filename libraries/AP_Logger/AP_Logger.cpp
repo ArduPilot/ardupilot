@@ -22,6 +22,11 @@ extern const AP_HAL::HAL& hal;
 #define HAL_LOGGING_MAV_BUFSIZE  8
 #endif 
 
+// by default log for 15 seconds after disarming
+#ifndef HAL_LOGGER_ARM_PERSIST
+#define HAL_LOGGER_ARM_PERSIST 15
+#endif
+
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
 # ifdef HAL_LOGGING_DATAFLASH
 #  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::BLOCK
@@ -509,10 +514,12 @@ void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
 
 bool AP_Logger::should_log(const uint32_t mask) const
 {
+    bool armed = vehicle_is_armed();
+
     if (!(mask & _log_bitmask)) {
         return false;
     }
-    if (!vehicle_is_armed() && !log_while_disarmed()) {
+    if (!armed && !log_while_disarmed()) {
         return false;
     }
     if (in_log_download()) {
@@ -1139,6 +1146,35 @@ void AP_Logger::Write_Error(LogErrorSubsystem sub_system,
       error_code    : uint8_t(error_code),
   };
   WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+/*
+  return true if we should log while disarmed
+ */
+bool AP_Logger::log_while_disarmed(void) const
+{
+    if (_force_log_disarmed) {
+        return true;
+    }
+    if (_params.log_disarmed != 0) {
+        return true;
+    }
+
+    uint32_t now = AP_HAL::millis();
+    uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
+
+    // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming
+    const uint32_t arm_change_ms = hal.util->get_last_armed_change();
+    if (!hal.util->get_soft_armed() && arm_change_ms != 0 && now - arm_change_ms < persist_ms) {
+        return true;
+    }
+
+    // keep logging for HAL_LOGGER_ARM_PERSIST seconds after an arming failure
+    if (_last_arming_failure_ms && now - _last_arming_failure_ms < persist_ms) {
+        return true;
+    }
+
+    return false;
 }
 
 namespace AP {
