@@ -512,3 +512,38 @@ void AP_L1_Control_Heli::update_level_flight(void)
 
     _data_is_stale = false; // status are correctly updated with current waypoint data
 }
+
+/*
+  reset the total loiter angle
+ */
+void AP_L1_Control_Heli::loiter_angle_reset(void)
+{
+    loiter.sum_cd = 0;
+    loiter.total_cd = 0;
+}
+
+/*
+  update the total angle we have covered in a loiter. Used to support
+  commands to do N circles of loiter
+ */
+void AP_L1_Control_Heli::loiter_angle_update(void)
+{
+    int32_t target_bearing_cd = wrap_180_cd(_target_bearing_cd);
+    int32_t loiter_delta_cd;
+
+    if (loiter.sum_cd == 0 && !reached_loiter_target()) {
+        // we don't start summing until we are doing the real loiter
+        loiter_delta_cd = 0;
+    } else if (loiter.sum_cd == 0) {
+        // use 1 cd for initial delta
+        loiter_delta_cd = 1;
+    } else {
+        loiter_delta_cd = target_bearing_cd - loiter.old_target_bearing_cd;
+    }
+
+    loiter.old_target_bearing_cd = target_bearing_cd;
+    loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
+    loiter.sum_cd += loiter_delta_cd * loiter.direction;
+
+}
+

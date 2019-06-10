@@ -53,6 +53,12 @@ public:
     void update_heading_hold(int32_t navigation_heading_cd);
     void update_level_flight(void);
     bool reached_loiter_target(void);
+    void loiter_angle_reset(void);
+    void loiter_angle_update(void);
+
+    // get the total angle traveled while in loiter
+    int32_t get_angle_total() { return loiter.sum_cd; }
+
 
     // set the default NAVL1_PERIOD
     void set_default_period(float period) {
@@ -130,4 +136,28 @@ private:
     bool _reverse = false;
     float get_yaw();
     float get_yaw_sensor();
+
+    /*
+      meta data to support counting the number of circles in a loiter
+    */
+    struct {
+        // previous target bearing, used to update sum_cd
+        int32_t old_target_bearing_cd;
+
+        // Total desired rotation in a loiter.  Used for Loiter Turns commands. 
+        int32_t total_cd;
+
+        // total angle completed in the loiter so far
+        int32_t sum_cd;
+
+        // Direction for loiter. 1 for clockwise, -1 for counter-clockwise
+        int8_t direction = 1;
+
+        // start time of the loiter.  Milliseconds.
+        uint32_t start_time_ms;
+
+        // The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
+        uint32_t time_max_ms;
+    } loiter;
+
 };
