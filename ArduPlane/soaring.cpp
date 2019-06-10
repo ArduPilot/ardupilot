@@ -70,8 +70,12 @@ void Plane::update_soaring() {
             // Reset loiter angle, so that the loiter exit heading criteria
             // only starts expanding when we're ready to exit.
             plane.loiter.sum_cd = 0;
+            plane.soaring_mode_timer = AP_HAL::millis();
             break;
         }
+
+        // Some other loiter status, we need to think about exiting loiter.
+        uint32_t timer = AP_HAL::millis() - plane.soaring_mode_timer;
 
         const char* strTooHigh = "Soaring: Too high, restoring ";
         const char* strTooLow =  "Soaring: Too low, restoring ";
@@ -83,7 +87,7 @@ void Plane::update_soaring() {
         case Mode::Number::FLY_BY_WIRE_B: {
             const bool homeIsSet = AP::ahrs().home_is_set();
             const bool headingLinedupToHome = homeIsSet && plane.mode_loiter.isHeadingLinedUp(next_WP_loc, AP::ahrs().get_home());
-            if (homeIsSet && !headingLinedupToHome) {
+            if (homeIsSet && !headingLinedupToHome && loiterStatus!=SoaringController::LoiterStatus::ALT_TOO_LOW && timer<20e3) {
                 break;
             }
             switch (loiterStatus) {
@@ -110,7 +114,7 @@ void Plane::update_soaring() {
 
         case Mode::Number::CRUISE: {
             const bool headingLinedupToCruise = plane.mode_loiter.isHeadingLinedUp(cruise_state.locked_heading_cd);
-            if (cruise_state.locked_heading && !headingLinedupToCruise) {
+            if (cruise_state.locked_heading && !headingLinedupToCruise && loiterStatus!=SoaringController::LoiterStatus::ALT_TOO_LOW && timer<20e3) {
                 break;
             }
             // return to cruise with old ground course
@@ -143,7 +147,7 @@ void Plane::update_soaring() {
             //Get the lat/lon of next Nav waypoint after this one:
             AP_Mission::Mission_Command current_nav_cmd = mission.get_current_nav_cmd();;
             const bool headingLinedupToWP = plane.mode_loiter.isHeadingLinedUp(next_WP_loc, current_nav_cmd.content.location);
-            if (!headingLinedupToWP) {
+            if (!headingLinedupToWP && loiterStatus!=SoaringController::LoiterStatus::ALT_TOO_LOW && timer<20e3) {
                 break;
             }
             switch (loiterStatus) {
