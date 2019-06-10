@@ -96,10 +96,9 @@ void QuadPlane::tiltrotor_continuous_update(void)
       needed. There are 4 strategies we will use:
 
       1a) In QAUTOTUNE mode the angle will be set to zero.
-      1b) In QHOVER, QSTABILIZE and QACRO modes with rc_bias_ch null, the angle will be set to zero.
-            This enables these modes to be used as a safe recovery mode.
+      1b) In QACRO mode with rc_bias_ch null, the angle will be set to zero.
 
-      2) In QHOVER, QSTABILIZE and QACRO modes with rc_bias_ch assigned to a valid RC channel:
+      2) In QACRO mode with rc_bias_ch assigned to a valid RC channel:
            The tilt angle is determined by RC input.
 
       3) In fixed wing assisted flight or velocity controlled modes we
@@ -117,12 +116,12 @@ void QuadPlane::tiltrotor_continuous_update(void)
         return;
     }
     if (plane.control_mode == &plane.mode_qacro) {
-        if (tilt.rc_bias_ch == nullptr) {
+        if (rc_bias_ch == nullptr) {
             // case 1b
             tiltrotor_slew(0);
         } else {
             // case 2) manual control of motor tilt
-            float settilt = constrain_float((1.0f + tilt.rc_bias_ch->norm_input()) / 2, 0, 1);
+            float settilt = constrain_float((1.0f + rc_bias_ch->norm_input()) / 2, 0, 1);
             settilt *= tilt.max_angle_deg / 90.0f;
             tiltrotor_slew(settilt);
         }
