@@ -2680,6 +2680,16 @@ int8_t QuadPlane::forward_throttle_pct(void)
         return 0;
     }
 
+    // in QACRO and QSTABILIZE modes, control throttle directly from RC.
+    // QHOVER mode will get manual speed bias applied below.
+    if (rc_bias_ch != nullptr &&
+        (plane.control_mode == &plane.mode_qacro ||
+         plane.control_mode == &plane.mode_qstabilize)) {
+
+        float speed_bias = constrain_float((1.0f + rc_bias_ch->norm_input()) / 2, 0, 1);
+        return 100.0f * speed_bias;
+    }
+
     float deltat = (AP_HAL::millis() - vel_forward.last_ms) * 0.001f;
     if (deltat > 1 || deltat < 0) {
         vel_forward.integrator = 0;

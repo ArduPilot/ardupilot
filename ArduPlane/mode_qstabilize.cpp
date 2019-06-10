@@ -42,5 +42,8 @@ void ModeQStabilize::update()
 
     plane.nav_roll_cd = (plane.channel_roll->get_control_in() / 4500.0) * roll_limit;
     plane.nav_roll_cd = constrain_int32(plane.nav_roll_cd, -roll_limit, roll_limit);
+
+    // set rudder using copter controller
+    plane.steering_control.rudder = plane.quadplane.motors->get_yaw() * SERVO_MAX;
 }
 
