@@ -51,6 +51,7 @@ public:
     /// get L1 desired roll, pitch which should be fed into stabilize controllers
     int32_t get_l1_roll() const { return _L1_controller.nav_roll_cd(); }
     int32_t get_l1_pitch() const { return _helispdhgtctrl.get_pitch(); }
+    int32_t get_angle_total() { return _L1_controller.get_angle_total(); }
 
     // get desired yaw rate to coordinate turns
     int32_t get_yaw_rate() const { return _L1_controller.turn_rate_cds(); }

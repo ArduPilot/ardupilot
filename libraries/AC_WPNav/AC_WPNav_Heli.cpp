@@ -189,8 +189,14 @@ bool AC_WPNav_Heli::advance_l1_wp_target_along_track(float dt)
 
     switch (cmd.id) {
 
-    case MAV_CMD_NAV_LOITER_TIME:
     case MAV_CMD_NAV_LOITER_TURNS:
+        if (_L1_controller.reached_loiter_target()) {
+            _L1_controller.loiter_angle_update();
+        } else {
+            _L1_controller.loiter_angle_reset();
+        }
+        // fallthrough
+    case MAV_CMD_NAV_LOITER_TIME:
     case MAV_CMD_NAV_LOITER_UNLIM:
         if (_L1_controller.reached_loiter_target()) {
             temp_alt = wp_alt;
@@ -257,8 +263,6 @@ bool AC_WPNav_Heli::advance_l1_wp_target_along_track(float dt)
 /// using_l1_navigation - true when using L1 navigation controller
 bool AC_WPNav_Heli::use_l1_navigation()
 {
-//    const Vector3f &curr_vel = _inav.get_velocity();
-//    if (_l1_nav_use == 1 && curr_vel.length() > WPNAV_HELI_MIN_L1_NAV_SPEED && _wp_speed_cms > WPNAV_HELI_MIN_L1_NAV_CMD_SPEED) {
     if (_l1_nav_use == 1) {
         return true;
     } else {
