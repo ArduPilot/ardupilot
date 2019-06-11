@@ -287,7 +287,22 @@ private:
         int8_t glitch_count;
     } rangefinder_state;
 
-    struct {
+    class SurfaceTracking {
+    public:
+        float adjust_climb_rate(int16_t target_rate);
+        bool get_target_alt_cm(float &target_alt_cm) const;
+        void set_target_alt_cm(float target_alt_cm);
+        float logging_target_alt() const {
+            if (!valid_for_logging) {
+                return AP::logger().quiet_nan();
+            }
+            return target_alt_cm * 0.01f; // cm->m
+        }
+        void invalidate_for_logging() {
+            valid_for_logging = false;
+        }
+
+    private:
         float target_alt_cm;        // desired altitude in cm above the ground
         uint32_t last_update_ms;    // system time of last update to target_alt_cm
         bool valid_for_logging;     // true if target_alt_cm is valid for logging
@@ -646,9 +661,6 @@ private:
     void set_throttle_takeoff();
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_non_takeoff_throttle();
-    float get_surface_tracking_climb_rate(int16_t target_rate);
-    bool get_surface_tracking_target_alt_cm(float &target_alt_cm) const;
-    void set_surface_tracking_target_alt_cm(float target_alt_cm);
     float get_avoidance_adjusted_climbrate(float target_rate);
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);

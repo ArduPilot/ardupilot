@@ -39,12 +39,6 @@ void Copter::Log_Write_Control_Tuning()
         target_climb_rate_cms = pos_control->get_vel_target_z();
     }
 
-    float surface_tracking_target_alt;
-    if (surface_tracking.valid_for_logging) {
-        surface_tracking_target_alt = surface_tracking.target_alt_cm * 0.01f; // cm->m
-    } else {
-        surface_tracking_target_alt = logger.quiet_nan();
-    }
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         time_us             : AP_HAL::micros64(),
@@ -55,7 +49,7 @@ void Copter::Log_Write_Control_Tuning()
         desired_alt         : des_alt_m,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
-        desired_rangefinder_alt : surface_tracking_target_alt,
+        desired_rangefinder_alt : surface_tracking.logging_target_alt(),
         rangefinder_alt     : rangefinder_state.alt_cm,
         terr_alt            : terr_alt,
         target_climb_rate   : target_climb_rate_cms,
