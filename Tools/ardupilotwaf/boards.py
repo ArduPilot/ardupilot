@@ -93,6 +93,7 @@ class Board:
             '-Werror=narrowing',
             '-Werror=attributes',
             '-Werror=overflow',
+            '-Werror=parentheses',
             '-Werror=format-extra-args',
         ]
 
@@ -175,6 +176,7 @@ class Board:
             '-Werror=unused-variable',
             '-Wfatal-errors',
             '-Wno-trigraphs',
+            '-Werror=parentheses',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
