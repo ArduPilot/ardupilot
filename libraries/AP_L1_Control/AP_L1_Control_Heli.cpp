@@ -528,7 +528,7 @@ void AP_L1_Control_Heli::loiter_angle_reset(void)
  */
 void AP_L1_Control_Heli::loiter_angle_update(void)
 {
-    int32_t target_bearing_cd = wrap_180_cd(_target_bearing_cd);
+//    int32_t target_bearing_cd = wrap_180_cd(_target_bearing_cd);
     int32_t loiter_delta_cd;
 
     if (loiter.sum_cd == 0 && !reached_loiter_target()) {
@@ -538,10 +538,10 @@ void AP_L1_Control_Heli::loiter_angle_update(void)
         // use 1 cd for initial delta
         loiter_delta_cd = 1;
     } else {
-        loiter_delta_cd = target_bearing_cd - loiter.old_target_bearing_cd;
+        loiter_delta_cd = wrap_180_cd(_target_bearing_cd) - loiter.old_target_bearing_cd;
     }
 
-    loiter.old_target_bearing_cd = target_bearing_cd;
+    loiter.old_target_bearing_cd = wrap_180_cd(_target_bearing_cd);
     loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
     loiter.sum_cd += loiter_delta_cd * loiter.direction;
 
