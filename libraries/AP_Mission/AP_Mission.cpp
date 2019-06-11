@@ -14,7 +14,8 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @Range: 0 32766
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("TOTAL",  0, AP_Mission, _cmd_total, 0),
+    // @ReadOnly: True
+    AP_GROUPINFO_FLAGS("TOTAL",  0, AP_Mission, _cmd_total, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
     // @Param: RESTART
     // @DisplayName: Mission Restart when entering Auto mode
