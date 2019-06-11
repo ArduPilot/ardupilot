@@ -825,7 +825,7 @@ AP_Param::find_group(const char *name, uint16_t vindex, ptrdiff_t group_offset,
 // Find a variable by name.
 //
 AP_Param *
-AP_Param::find(const char *name, enum ap_var_type *ptype)
+AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
 {
     for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = _var_info[i].type;
@@ -840,6 +840,9 @@ AP_Param::find(const char *name, enum ap_var_type *ptype)
             }
             AP_Param *ap = find_group(name + len, i, 0, group_info, ptype);
             if (ap != nullptr) {
+                if (flags != nullptr) {
+                    *flags = group_info->flags;
+                }
                 return ap;
             }
             // we continue looking as we want to allow top level
