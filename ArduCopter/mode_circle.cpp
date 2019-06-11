@@ -44,7 +44,7 @@ void ModeCircle::run()
     // adjust climb rate using rangefinder
     if (copter.rangefinder_alt_ok()) {
         // if rangefinder is ok, use surface tracking
-        target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate);
+        target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
     }
 
     // if not armed set throttle to zero and exit immediately
