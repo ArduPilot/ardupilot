@@ -202,7 +202,6 @@ protected:
     class Parameters &g;
     class ParametersG2 &g2;
     class RC_Channel *&channel_steer;
-    class RC_Channel *&channel_throttle;
     class RC_Channel *&channel_lateral;
     class AR_AttitudeControl &attitude_control;
 

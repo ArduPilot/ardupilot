@@ -433,6 +433,10 @@ private:
     void read_radio();
     void radio_failsafe_check(uint16_t pwm);
     bool trim_radio();
+    int16_t get_throttle_control_in(bool no_deadzone = false) const;
+    int16_t get_throttle_norm_input(bool no_deadzone = false) const;
+    bool have_reverse_throttle_rc_option;
+    bool reversed_throttle;
 
     // sensors.cpp
     void init_compass_location(void);

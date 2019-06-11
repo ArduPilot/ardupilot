@@ -215,7 +215,7 @@ void Rover::Log_Write_Throttle()
     struct log_Throttle pkt = {
         LOG_PACKET_HEADER_INIT(LOG_THR_MSG),
         time_us         : AP_HAL::micros64(),
-        throttle_in     : channel_throttle->get_control_in(),
+        throttle_in     : get_throttle_control_in(),
         throttle_out    : g2.motors.get_throttle(),
         desired_speed   : g2.attitude_control.get_desired_speed(),
         speed           : speed,

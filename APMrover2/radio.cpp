@@ -12,7 +12,13 @@ void Rover::set_control_channels(void)
 
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
-    channel_throttle->set_angle(100);
+    if (have_reverse_throttle_rc_option) {
+        // when we have a reverse throttle RC option setup we use throttle
+        // as a range, and rely on the RC switch to get reverse thrust
+        channel_throttle->set_range(100);
+    } else {
+        channel_throttle->set_angle(100);
+    }
     channel_lateral->set_angle(100);
 
     // Allow to reconfigure output when not armed
@@ -49,7 +55,7 @@ void Rover::rudder_arm_disarm_check()
 
     // In Rover we need to check that its set to the throttle trim and within the DZ
     // if throttle is not within trim dz, then pilot cannot rudder arm/disarm
-    if (!channel_throttle->in_trim_dz()) {
+    if (get_throttle_control_in() != 0) {
         rudder_arm_timer = 0;
         return;
     }
@@ -147,4 +153,34 @@ bool Rover::trim_radio()
     }
 
     return true;
+}
+
+int16_t Rover::get_throttle_control_in(bool no_deadzone) const
+{
+    int16_t ret;
+    if (no_deadzone) {
+        ret = channel_throttle->get_control_in_zero_dz();
+    } else {
+        ret = channel_throttle->get_control_in();
+    }
+    if (reversed_throttle) {
+        // RC option for reverse throttle has been set
+        ret = -ret;
+    }
+    return ret;
+}
+
+int16_t Rover::get_throttle_norm_input(bool no_deadzone) const
+{
+    int16_t ret;
+    if (no_deadzone) {
+        ret = channel_throttle->norm_input();
+    } else {
+        ret = channel_throttle->norm_input_dz();
+    }
+    if (reversed_throttle) {
+        // RC option for reverse throttle has been set
+        ret = -ret;
+    }
+    return ret;
 }

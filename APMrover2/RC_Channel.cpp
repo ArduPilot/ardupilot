@@ -46,6 +46,18 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     case AUX_FUNC::FOLLOW:
     case AUX_FUNC::SAILBOAT_TACK:
         break;
+
+    case AUX_FUNC::REVERSE_THROTTLE:
+        rover.have_reverse_throttle_rc_option = true;
+        // setup input throttle as a range. This is needed as init_aux_function is called
+        // after set_control_channels()
+        if (rover.channel_throttle) {
+            rover.channel_throttle->set_range(100);
+        }
+        // note that we don't call do_aux_function() here as we don't
+        // want to startup with reverse thrust
+        break;
+
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
         break;
@@ -193,6 +205,10 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
     case AUX_FUNC::SAILBOAT_TACK:
         // any switch movement interpreted as request to tack
         rover.control_mode->handle_tack_request();
+        break;
+
+    case AUX_FUNC::REVERSE_THROTTLE:
+        rover.reversed_throttle = (ch_flag == HIGH);
         break;
 
     default:
