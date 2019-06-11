@@ -252,10 +252,11 @@ public:
     /// If the variable has no name, it cannot be found by this interface.
     ///
     /// @param  name            The full name of the variable to be found.
+    /// @param  flags           If non-null will be filled with parameter flags
     /// @return                 A pointer to the variable, or nullptr if
     ///                         it does not exist.
     ///
-    static AP_Param * find(const char *name, enum ap_var_type *ptype);
+    static AP_Param * find(const char *name, enum ap_var_type *ptype, uint16_t *flags = nullptr);
 
     /// set a default value by name
     ///
