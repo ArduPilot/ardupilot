@@ -51,7 +51,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
 	// @Group: 1_
 	// @Path: AP_RangeFinder_Params.cpp
-	AP_SUBGROUPINFO_FLAGS(params[0], "1_", 25, RangeFinder, AP_RangeFinder_Params),
+	AP_SUBGROUPINFO(params[0], "1_", 25, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 1_
     // @Path: AP_RangeFinder_Wasp.cpp
