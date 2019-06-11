@@ -63,13 +63,18 @@
 // the var_info is a pointer, allowing for dynamic definition of the var_info tree
 #define AP_PARAM_FLAG_INFO_POINTER  (1<<4)
 
+// this parameter is visible to GCS via mavlink but should never be
+// set by anything other than the ArduPilot code responsible for its
+// use.
+#define AP_PARAM_FLAG_INTERNAL_USE_ONLY (1<<5)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   5
+#define AP_PARAM_FRAME_TYPE_SHIFT   6
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
