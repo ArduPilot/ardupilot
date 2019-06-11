@@ -684,7 +684,7 @@ void RangeFinder::Log_RFND()
         const struct log_RFND pkt = {
                 LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
                 time_us      : AP_HAL::micros64(),
-                instance     : i,
+                instance     : (uint8_t)(i + 1),
                 dist         : s->distance_cm(),
                 status       : (uint8_t)s->status(),
                 orient       : s->orientation(),
