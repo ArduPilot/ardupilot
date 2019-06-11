@@ -1804,14 +1804,16 @@ class AutoTest(ABC):
                 return True
         raise WaitHeadingTimeout("Failed to attain heading %d" % heading)
 
+    def distance_to(self, loc):
+        return self.get_distance(loc, self.mav.location())
+
     def wait_distance(self, distance, accuracy=5, timeout=30):
         """Wait for flight of a given distance."""
         tstart = self.get_sim_time()
         start = self.mav.location()
         last_distance_message = 0
         while self.get_sim_time_cached() < tstart + timeout:
-            pos = self.mav.location()
-            delta = self.get_distance(start, pos)
+            delta = self.distance_to(start)
             if self.get_sim_time_cached() - last_distance_message >= 1:
                 self.progress("Distance=%.2f meters want=%.2f" %
                               (delta, distance))

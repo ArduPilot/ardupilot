@@ -15,6 +15,7 @@ from pysim import util, rotmat
 
 from common import AutoTest
 from common import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
+from common import WaitModeTimeout
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -4111,6 +4112,80 @@ class AutoTestCopter(AutoTest):
         self.wait_current_waypoint(0, timeout=10)
         self.set_rc(7, 1000)
 
+    def test_radio_failsafe(self):
+        self.start_subtest("If you haven't taken off yet RC failure should be instant disarm")
+        self.change_mode("STABILIZE")
+        self.set_parameter("DISARM_DELAY", 0)
+        self.arm_vehicle()
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.disarm_wait(timeout=1)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.set_parameter("DISARM_DELAY", 10)
+
+        self.start_subtest("Default behavour from loiter should be RTL")
+        self.takeoff(10, mode="LOITER")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_mode("RTL")
+        self.disarm_wait(timeout=100)
+
+    def rtl_to_auto(self, timeout=1):
+        '''change vehicle flightmode'''
+        mode = "RTL"
+        want_mode = "AUTO"
+        self.progress("Changing mode to %s by setting mode to %s" % (
+            want_mode, mode))
+        self.mavproxy.send('mode %s\n' % mode)
+        tstart = self.get_sim_time()
+        while not self.mode_is(want_mode):
+            custom_num = self.mav.messages['HEARTBEAT'].custom_mode
+            self.progress("mav.flightmode=%s Want=%s custom=%u" % (
+                    self.mav.flightmode, want_mode, custom_num))
+            if (timeout is not None and
+                    self.get_sim_time_cached() > tstart + timeout):
+                raise WaitModeTimeout("Did not change mode")
+            self.mavproxy.send('mode %s\n' % mode)
+        self.progress("Got mode %s" % want_mode)
+
+    def test_do_land_start(self):
+        self.start_subtest("RTL while in mission gos to DLS")
+        self.set_parameter("RTL_TYPE", 1) # do-land-start
+        self.load_mission("copter-do-land-start.txt")
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode("AUTO")
+        self.set_rc(3, 1500)
+        self.wait_current_waypoint(3)
+        self.rtl_to_auto()
+        self.drain_mav()
+        got_seq = self.mav.waypoint_current()
+        expected_seq = 6
+        if got_seq != expected_seq:
+            raise NotAchievedException("Expected to jump to %u got %u" %
+                                       (expected_seq, got_seq))
+
+        self.start_subtest("RTL while in STABILIZE gos to DLS")
+        self.change_mode("STABILIZE")
+        self.mavproxy.send('wp set 1\n')
+        self.delay_sim_time(1)
+        self.rtl_to_auto()
+        got_seq = self.mav.waypoint_current()
+        expected_seq = 6
+        if got_seq != expected_seq:
+            raise NotAchievedException("Expected to jump to %u got %u" %
+                                       (expected_seq, got_seq))
+
+        self.mav.motors_disarmed_wait()
+
+        # following numbers copied in from the mission:
+        loc = mavutil.location(-35.362831, 149.164902, 0, 0)
+        if self.distance_to(loc) > 2:
+            raise NotAchievedException("Did not return to landing point")
+
+        # as landing will move the home location and random other
+        # tests rely on it, we reboot sitl here:
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
@@ -4324,6 +4399,10 @@ class AutoTestCopter(AutoTest):
             ("DynamicNotches",
              "Fly Dynamic Notches",
              self.fly_dynamic_notches),
+
+            ("DO_LAND_START",
+             "Test RTL jumping to DO_LAND_START",
+             self.test_do_land_start),
 
             ("LogDownLoad",
              "Log download",
