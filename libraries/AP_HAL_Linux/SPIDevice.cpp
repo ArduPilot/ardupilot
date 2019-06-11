@@ -205,7 +205,9 @@ void SPIBus::end_cb()
 
 void SPIBus::open(uint16_t subdev)
 {
-    char path[sizeof("/dev/spidevXXXXX.XXXXX")];
+    // varargs means gcc gets confused about amount of space required
+    // to store bus and subdev in path, so expand it a little:
+    char path[sizeof("/dev/spidevXXXXXXXXXX.XXXXXXXXXX")];
 
     /* Already open by another device */
     if (fd[subdev] >= 0) {
