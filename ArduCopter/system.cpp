@@ -122,6 +122,7 @@ void Copter::init_ardupilot()
 #endif
 #if FRAME_CONFIG == HELI_FRAME
     input_manager.set_loop_rate(scheduler.get_loop_rate_hz());
+    helispdhgtctrl.set_dt(scheduler.get_loop_period_s());
 #endif
 
     init_rc_in();               // sets up rc channels from radio
