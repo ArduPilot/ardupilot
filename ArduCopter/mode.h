@@ -532,6 +532,8 @@ protected:
 
 private:
 
+    void init_target();
+
     uint32_t _timeout_start;
     uint32_t _timeout_ms;
 
