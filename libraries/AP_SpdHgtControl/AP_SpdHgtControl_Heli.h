@@ -32,6 +32,9 @@ public:
     // reset controller
     void init_controller(void);
 
+    // set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
+    void set_dt(float delta_sec);
+
     // update speed controller for use in heli wp nav
     void update_speed_controller(void);
 
@@ -72,6 +75,7 @@ private:
     float       _cmd_vel;
     float       accel_target;
     float       delta_speed_fwd;
+    float       _dt;
 
 
     LowPassFilterFloat _accel_target_filter; // acceleration target filter

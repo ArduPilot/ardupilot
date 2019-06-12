@@ -67,6 +67,16 @@ void AP_SpdHgtControl_Heli::init_controller(void)
 
 }
 
+// set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
+void AP_SpdHgtControl_Heli::set_dt(float delta_sec)
+{
+    _dt = delta_sec;
+
+    // update PID controller dt
+    _pid_vel.set_dt(_dt);
+
+}
+
 // update speed controller
 void AP_SpdHgtControl_Heli::update_speed_controller(void)
 {
@@ -82,12 +92,12 @@ void AP_SpdHgtControl_Heli::update_speed_controller(void)
 
     // calculate velocity error
     if (_cmd_vel < _vel_target) {
-        _cmd_vel += _accel_max * 0.0025f;
+        _cmd_vel += _accel_max * _dt;
         if (_cmd_vel > _vel_target) {
             _cmd_vel = _vel_target;
         }
     } else {
-        _cmd_vel -= _accel_max * 0.0025f;
+        _cmd_vel -= _accel_max * _dt;
         if (_cmd_vel < _vel_target) {
             _cmd_vel = _vel_target;
         }
@@ -119,7 +129,7 @@ void AP_SpdHgtControl_Heli::update_speed_controller(void)
 
     // filter correction acceleration
     _accel_target_filter.set_cutoff_frequency(10.0f);
-    _accel_target_filter.apply(accel_target, 0.0025);
+    _accel_target_filter.apply(accel_target, _dt);
 
     // the following section converts desired accelerations provided in lat/lon frame to roll/pitch angles
 
@@ -129,9 +139,9 @@ void AP_SpdHgtControl_Heli::update_speed_controller(void)
         accel_target = _accel_out_last - _accel_max;
     }
 
-    if (fabsf(delta_speed_fwd * 100.0f) > _accel_max * 0.0025f) {
+    if (fabsf(delta_speed_fwd * 100.0f) > _accel_max * _dt) {
         _flag_limit_accel = true;
-    } else if (fabsf(delta_speed_fwd * 100.0f) < _accel_max * 0.0025f){
+    } else if (fabsf(delta_speed_fwd * 100.0f) < _accel_max * _dt){
         _flag_limit_accel = false;
     }
 
