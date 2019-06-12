@@ -157,7 +157,7 @@ void AP_KDECAN::init(uint8_t driver_index, bool enable_filters)
         debug_can(2, "KDECAN: found ESC id %u\n\r", id.source_id);
     }
 
-    snprintf(_thread_name, sizeof(_thread_name), "kdecan_%u", driver_index);
+    snprintf(_thread_name, sizeof(_thread_name), "kdecan_%u", driver_index & 0x7);
 
     // start thread for receiving and sending CAN frames
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_KDECAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {

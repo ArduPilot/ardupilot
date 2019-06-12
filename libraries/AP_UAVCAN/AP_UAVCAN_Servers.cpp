@@ -326,16 +326,21 @@ failed:
 void AP_UAVCAN_Servers::reset()
 {
     debug_uavcan("UAVCAN_Servers: Resetting Server Database...\n");
-    DIR* dp;
+    DIR *dp = opendir(UAVCAN_NODE_DB_PATH);
+    if (dp == NULL) {
+        return;
+    }
     struct dirent* ep;
-    dp = opendir(UAVCAN_NODE_DB_PATH);
-    char abs_filename[100];
-    if (dp != NULL)
-    {
-        while((ep = readdir(dp))) {
-            snprintf(abs_filename, 100, "%s/%s", UAVCAN_NODE_DB_PATH, ep->d_name);
-            unlink(abs_filename);
+    while((ep = readdir(dp))) {
+        if (strlen(ep->d_name) > 90) { // note this should relate to MaxPathLength
+            continue;
         }
+        char *abs_filename;
+        if (asprintf(&abs_filename, "%s/%s", UAVCAN_NODE_DB_PATH, ep->d_name) == -1) {
+            continue;
+        }
+        unlink(abs_filename);
+        free(abs_filename);
     }
     closedir(dp);
 }

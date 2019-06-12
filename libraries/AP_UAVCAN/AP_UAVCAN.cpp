@@ -236,7 +236,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     // Spin node for device discovery
     _node->spin(uavcan::MonotonicDuration::fromMSec(5000));
 
-    snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
+    snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index & 0x7);
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
         _node->setModeOfflineAndPublish();
