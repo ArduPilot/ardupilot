@@ -139,7 +139,7 @@ bool AP_OADijkstra::polygon_fence_enabled() const
     if (fence == nullptr) {
         return false;
     }
-    if (!fence->is_polygon_valid()) {
+    if (!fence->polyfence_const().valid_const()) {
         return false;
     }
     return ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) > 0);
@@ -153,7 +153,7 @@ bool AP_OADijkstra::check_polygon_fence_updated() const
     if (fence == nullptr) {
         return false;
     }
-    return (_polyfence_update_ms != fence->get_boundary_update_ms());
+    return (_polyfence_update_ms != fence->polyfence_const().update_ms());
 }
 
 // create a smaller polygon fence within the existing polygon fence
@@ -168,7 +168,7 @@ bool AP_OADijkstra::create_polygon_fence_with_margin(float margin_cm)
 
     // get polygon boundary
     uint16_t num_points;
-    const Vector2f* boundary = fence->get_boundary_points(num_points);
+    const Vector2f* boundary = fence->polyfence_const().get_boundary_points(num_points);
     if ((boundary == nullptr) || (num_points < 3)) {
         return false;
     }
@@ -218,7 +218,7 @@ bool AP_OADijkstra::create_polygon_fence_with_margin(float margin_cm)
     _polyfence_numpoints = num_points;
 
     // record fence update time so we don't process this exact fence again
-    _polyfence_update_ms = fence->get_boundary_update_ms();
+    _polyfence_update_ms = fence->polyfence_const().update_ms();
 
     return true;
 }
@@ -241,7 +241,7 @@ bool AP_OADijkstra::create_polygon_fence_visgraph()
 
     // get polygon boundary
     uint16_t num_points;
-    const Vector2f* boundary = fence->get_boundary_points(num_points);
+    const Vector2f* boundary = fence->polyfence_const().get_boundary_points(num_points);
     if ((boundary == nullptr) || (num_points < 3)) {
         return false;
     }
@@ -293,7 +293,7 @@ bool AP_OADijkstra::update_visgraph(AP_OAVisGraph& visgraph, const AP_OAVisGraph
 
     // get polygon boundary
     uint16_t num_points;
-    const Vector2f* boundary = fence->get_boundary_points(num_points);
+    const Vector2f* boundary = fence->polyfence_const().get_boundary_points(num_points);
     if ((boundary == nullptr) || (num_points < 3)) {
         return false;
     }
