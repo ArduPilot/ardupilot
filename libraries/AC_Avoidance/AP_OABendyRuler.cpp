@@ -206,13 +206,13 @@ bool AP_OABendyRuler::calc_margin_from_polygon_fence(const Location &start, cons
     if (fence == nullptr) {
         return false;
     }
-    if (((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) || !fence->is_polygon_valid()) {
+    if (((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) || !fence->polyfence_const().valid_const()) {
         return false;
     }
 
     // get polygon boundary
     uint16_t num_points;
-    const Vector2f* boundary = fence->get_boundary_points(num_points);
+    const Vector2f* boundary = fence->polyfence_const().get_boundary_points(num_points);
     if (num_points < 3) {
         // this should have already been checked by is_polygon_valid() but just in case
         return false;
