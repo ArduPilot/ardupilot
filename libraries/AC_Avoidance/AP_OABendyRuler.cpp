@@ -216,8 +216,11 @@ bool AP_OABendyRuler::calc_margin_from_polygon_fence(const Location &start, cons
         return false;
     }
 
+    // if outside the fence margin is the closest distance but with negative sign
+    const float sign = Polygon_outside(start_NE, boundary, num_points) ? -1.0f : 1.0f;
+
     // calculate min distance (in meters) from line to polygon
-    margin = Polygon_closest_distance_line(boundary, num_points, start_NE, end_NE) * 0.01f;
+    margin = sign * Polygon_closest_distance_line(boundary, num_points, start_NE, end_NE) * 0.01f;
     return true;
 }
 
