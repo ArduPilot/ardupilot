@@ -139,7 +139,7 @@ void AP_ServoRelayEvents::update_events(void)
         }
         break;
     }
-        
+
     case EVENT_TYPE_RELAY:
         relay.toggle(channel);
         break;
