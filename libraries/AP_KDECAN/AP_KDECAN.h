@@ -62,7 +62,7 @@ private:
     void loop();
 
     bool _initialized;
-    char _thread_name[9];
+    char _thread_name[sizeof("kdecan_X")];
     uint8_t _driver_index;
     uavcan::ICanDriver* _can_driver;
 
