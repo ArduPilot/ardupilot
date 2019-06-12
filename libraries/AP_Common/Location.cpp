@@ -271,7 +271,7 @@ void Location::offset_bearing(float bearing, float distance)
 float Location::longitude_scale() const
 {
     float scale = cosf(lat * (1.0e-7f * DEG_TO_RAD));
-    return constrain_float(scale, 0.01f, 1.0f);
+    return MAX(scale, 0.01f);
 }
 
 /*
