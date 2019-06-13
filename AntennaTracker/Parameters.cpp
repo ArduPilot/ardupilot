@@ -403,6 +403,12 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(initial_mode,            "INITIAL_MODE",     10),
 
+    // @Param: SAFE_DISARM_PWM
+    // @DisplayName: PWM that will be output when disarmed or in stop mode
+    // @Description: 0:zero pwm, 1:trim pwm
+    // @User: Standard
+    GSCALAR(disarm_pwm,              "SAFE_DISARM_PWM",        0),
+
     AP_VAREND
 };
 
