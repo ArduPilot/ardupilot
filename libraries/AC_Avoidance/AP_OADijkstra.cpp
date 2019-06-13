@@ -37,6 +37,11 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
         return false;
     }
 
+    // no avoidance required if fence is disabled
+    if (!polygon_fence_enabled()) {
+        return false;
+    }
+
     // check for fence updates
     if (check_polygon_fence_updated()) {
         _polyfence_with_margin_ok = false;
@@ -108,6 +113,16 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
     }
 
     return false;
+}
+
+// returns true if polygon fence is enabled
+bool AP_OADijkstra::polygon_fence_enabled() const
+{
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return false;
+    }
+    return ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) > 0);
 }
 
 // check if polygon fence has been updated since we created the inner fence. returns true if changed
