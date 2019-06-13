@@ -9,7 +9,6 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Motors/AP_Motors.h>
