@@ -8,7 +8,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
