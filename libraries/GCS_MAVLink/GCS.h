@@ -7,7 +7,6 @@
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
 #include <AP_Mission/AP_Mission.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <stdint.h>
 #include "MAVLink_routing.h"
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -397,8 +396,7 @@ public:
     void send_meminfo(void);
     void send_fence_status() const;
     void send_power_status(void);
-    void send_battery_status(const AP_BattMonitor &battery,
-                             const uint8_t instance) const;
+    void send_battery_status(const uint8_t instance) const;
     bool send_battery_status() const;
     void send_distance_sensor() const;
     // send_rangefinder sends only if a downward-facing instance is
