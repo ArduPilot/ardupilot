@@ -196,6 +196,10 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SITL RGBLed")
 
+    g.add_option('--build-dates', action='store_true',
+                 default=False,
+                 help="Include build date in binaries.  Appears in AUTOPILOT_VERSION.os_sw_version")
+
     g.add_option('--sitl-flash-storage',
         action='store_true',
         default=False,
