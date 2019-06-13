@@ -246,6 +246,9 @@ class Board:
                 cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
 
+        if cfg.env.build_dates:
+            env.build_dates = True
+
         # We always want to use PRI format macros
         cfg.define('__STDC_FORMAT_MACROS', 1)
 
@@ -259,9 +262,10 @@ class Board:
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
         import time
         ltime = time.localtime()
-        bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
-        bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
-        bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
+        if bld.env.build_dates:
+            bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
+            bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
+            bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
 
     def embed_ROMFS_files(self, ctx):
         '''embed some files using AP_ROMFS'''
