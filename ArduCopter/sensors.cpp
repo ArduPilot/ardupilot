@@ -3,10 +3,7 @@
 void Copter::read_airspeed(void)
 {
     if (airspeed.enabled()) {
-        airspeed.read();
-        if (should_log(MASK_LOG_IMU)) {
-            DataFlash.Log_Write_Airspeed(airspeed);
-        }
+        airspeed.update(should_log(MASK_LOG_IMU));
     }
 
      // supply a new temperature to the barometer from the digital
