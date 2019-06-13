@@ -3339,6 +3339,7 @@ class AutoTestCopter(AutoTest):
         self.assert_mission_count(5)
         self.progress("Clear mission")
         self.set_rc(7, 2000)
+        self.delay_sim_time(1) # allow switch to debounce
         self.assert_mission_count(0)
         self.set_rc(7, 1000)
         self.set_parameter("RC7_OPTION", 24) # reset mission
