@@ -119,7 +119,8 @@ public:
         k_param_gcs_pid_mask = 225,
         k_param_scan_speed_yaw,
         k_param_scan_speed_pitch,
-        k_param_initial_mode
+        k_param_initial_mode,
+        k_param_disarm_pwm
     };
 
     AP_Int16 format_version;
@@ -156,6 +157,7 @@ public:
     AP_Int16 pitch_max;
     AP_Int16 gcs_pid_mask;
     AP_Int8  initial_mode;
+    AP_Int8 disarm_pwm;
 
     // Waypoints
     //
