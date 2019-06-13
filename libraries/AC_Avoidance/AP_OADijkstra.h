@@ -31,6 +31,9 @@ public:
 
 private:
 
+    // returns true if polygon fence is enabled
+    bool polygon_fence_enabled() const;
+
     // check if polygon fence has been updated since we created the inner fence. returns true if changed
     bool check_polygon_fence_updated() const;
 
