@@ -51,6 +51,10 @@ public:
     // read the analog source and update airspeed
     void update(bool log);
 
+    // filtered equivalent airspeed used by TECS
+    void update_EAS(void);
+    float get_EAS(void) const { return _EAS_state; }
+
     // calibrate the airspeed. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
     void calibrate(bool in_startup);
@@ -216,6 +220,10 @@ private:
     // current primary sensor
     uint8_t primary;
     
+    float   _EAS_state;   // TECS airspeed
+    float   _integETAS_state;
+    uint64_t _update_speed_last_usec;
+
     void read(uint8_t i);
     // return the differential pressure in Pascal for the last airspeed reading for the requested instance
     // returns 0 if the sensor is not enabled

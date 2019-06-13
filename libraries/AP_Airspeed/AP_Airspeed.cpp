@@ -69,7 +69,6 @@ extern const AP_HAL::HAL &hal;
 #else
 #define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
 #endif
-
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
@@ -437,6 +436,13 @@ void AP_Airspeed::read(uint8_t i)
     }
 
     /*
+      Convert filtered differential pressure to airspeed in m/sec.
+      differential pressure: p_d = (density/2) * airspeed^2
+      airspeed = sqrt(p_d * 2/density)
+      density of air at STP in SI units is approximately 1 kg/m^3
+      param[i].ratio is 2/density ~= 2
+     *
+     *
       we support different pitot tube setups so user can choose if
       they want to be able to detect pressure on the static port
      */
@@ -468,6 +474,41 @@ void AP_Airspeed::read(uint8_t i)
     state[i].last_update_ms = AP_HAL::millis();
 }
 
+void AP_Airspeed::update_EAS(void)
+{
+    // note that the airspeed returned here is constrained to be > 0
+    // (zero-mean noise will not average to zero if airspeed is small relative
+    // to the noise amplitude)
+    const float _EAS = get_airspeed();
+
+    // Calculate time in seconds since last update
+    const uint64_t now = AP_HAL::micros64();
+    float DT = (now - _update_speed_last_usec) * 1.0e-6f;
+    _update_speed_last_usec = now;
+
+    // Reset states of time since last update is too large
+    if (DT > 1.0f) {
+        _EAS_state = _EAS;
+        _integETAS_state = 0.0f;
+        DT            = 0.1f; // when first starting TECS, use a
+        // small time constant
+    }
+
+    // Implement a second order complementary filter to obtain a
+    // smoothed airspeed estimate
+    // airspeed estimate is held in _EAS_state
+    // TODO: this is the default value of TECS parameter SPD_OMEGA; move the parameter here?
+    constexpr float _spdCompFiltOmega = 2.0f;
+    float aspdErr = _EAS - _EAS_state;
+    float integDTAS_input = aspdErr * _spdCompFiltOmega * _spdCompFiltOmega;
+    // Prevent state from winding up
+    if (_EAS_state < 3.1f) {
+        integDTAS_input = MAX(integDTAS_input , 0.0f);
+    }
+    _integETAS_state = _integETAS_state + integDTAS_input * DT;
+    float EAS_input = _integETAS_state + AP::ahrs().get_VXdot() + aspdErr * _spdCompFiltOmega * M_SQRT2;
+    _EAS_state = _EAS_state + EAS_input * DT;
+}
 // read all airspeed sensors
 void AP_Airspeed::update(bool log)
 {
@@ -495,6 +536,9 @@ void AP_Airspeed::update(bool log)
     }
 
     check_sensor_failures();
+
+    // update TECS speed
+    update_EAS();
 
 #ifndef HAL_BUILD_AP_PERIPH
     if (log) {
@@ -529,6 +573,11 @@ void AP_Airspeed::Log_Airspeed()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+    // TODO: add get_EAS to log_AIRSPEED and remove this Write call
+    //  --also-- Why aren't we logging get_airspeed() here???
+    AP::logger().Write("EAS", "TimeUS,EAS,integ", "Qff", now,
+                       get_EAS(),
+                       _integETAS_state);
 }
 
 void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
