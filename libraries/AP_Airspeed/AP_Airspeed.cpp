@@ -511,6 +511,12 @@ void AP_Airspeed::Log_Airspeed()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+    // log filteredIAS for comparison
+    AP::logger().Write("IAS", "TimeUS,ias,iasfp,fp,iasint", "Qffff", AP_HAL::micros64(),
+                       get_filtered_IAS(),
+                       state[primary].IAS_filtered_pressure,
+                       state[primary].filtered_pressure,
+                       state[primary].IAS_integ);
 }
 
 void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
