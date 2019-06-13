@@ -57,6 +57,8 @@
   #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #endif
 
+#include <AP_BattMonitor/AP_BattMonitor.h>
+
 extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
@@ -267,13 +269,13 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->power_status_flags());
 }
 
-void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery,
-                                      const uint8_t instance) const
+void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
 {
     // catch the battery backend not supporting the required number of cells
     static_assert(sizeof(AP_BattMonitor::cells) >= (sizeof(uint16_t) * MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN),
                   "Not enough battery cells for the MAVLink message");
 
+    const AP_BattMonitor &battery = AP::battery();
     float temp;
     bool got_temperature = battery.get_temperature(temp, instance);
 
@@ -317,7 +319,7 @@ bool GCS_MAVLINK::send_battery_status() const
     for(uint8_t i = 0; i < battery.num_instances(); i++) {
         if (battery.get_type(i) != AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_NONE) {
             CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
-            send_battery_status(battery, i);
+            send_battery_status(i);
         }
     }
     return true;
