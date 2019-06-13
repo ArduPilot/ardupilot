@@ -21,7 +21,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
