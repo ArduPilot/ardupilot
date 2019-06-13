@@ -55,6 +55,13 @@ public:
     }
     float get_airspeed(void) const { return get_airspeed(primary); }
 
+    // return the filtered indicated airspeed in m/s
+    float get_filtered_IAS(uint8_t i) const {
+        float ias = state[i].filtered_IAS;
+        return (ias > 0) ? ias : 0;
+    }
+    float get_filtered_IAS(void) const { return get_filtered_IAS(primary); }
+
     // return the unfiltered airspeed in m/s
     float get_raw_airspeed(uint8_t i) const {
         return state[i].raw_airspeed;
@@ -171,8 +178,11 @@ private:
     struct airspeed_state {
         float   raw_airspeed;
         float   airspeed;
+        float   filtered_IAS;   // filtered Indicated Airspeed
         float	last_pressure;
         float   filtered_pressure;
+        float   IAS_filtered_pressure;
+        float   IAS_integ;
         float	corrected_pressure;
         bool	healthy:1;
         bool	hil_set:1;
