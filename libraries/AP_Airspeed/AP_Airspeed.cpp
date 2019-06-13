@@ -396,11 +396,32 @@ void AP_Airspeed::read(uint8_t i)
         // use an IIR filter, otherwise a bad reading will last for
         // some time after the sensor becomees healthy again
         state[i].filtered_pressure = airspeed_pressure;
+        state[i].IAS_filtered_pressure = airspeed_pressure;
+//        state[i].IAS_integ = 0;
     } else {
         state[i].filtered_pressure = 0.7f * state[i].filtered_pressure + 0.3f * airspeed_pressure;
+
+//        // apply a second order complementary filter (from TECS) to airspeed_pressure
+//        // to generate a smoothed Indicated AirSpeed (IAS) estimate
+//        constexpr float omega = 2.0f;
+//        constexpr float omega2 = omega * omega;
+//        float dt = (AP_HAL::millis() - state[i].last_update_ms) * 1.0e-3f;
+//        float aspdErr = airspeed_pressure - state[i].IAS_filtered_pressure;
+//        float integ_input = aspdErr * omega2;
+//        state[i].IAS_integ = state[i].IAS_integ + integ_input * dt;
+//        float IAS_input = state[i].IAS_integ + aspdErr * omega * 1.4142f;
+//        state[i].IAS_filtered_pressure = state[i].IAS_filtered_pressure + IAS_input * dt;
+        state[i].IAS_filtered_pressure = 0.7f * state[i].IAS_filtered_pressure + 0.3f * state[i].filtered_pressure;
     }
 
     /*
+      Convert filtered differential pressure to airspeed in m/sec.
+      differential pressure: p_d = (density/2) * airspeed^2
+      airspeed = sqrt(p_d * 2/density)
+      density of air at STP in SI units is approximately 1 kg/m^3
+      param[i].ratio is 2/density ~= 2
+     *
+     *
       we support different pitot tube setups so user can choose if
       they want to be able to detect pressure on the static port
      */
@@ -409,17 +430,20 @@ void AP_Airspeed::read(uint8_t i)
         state[i].last_pressure  = -airspeed_pressure;
         state[i].raw_airspeed   = sqrtf(MAX(-airspeed_pressure, 0) * param[i].ratio);
         state[i].airspeed       = sqrtf(MAX(-state[i].filtered_pressure, 0) * param[i].ratio);
+        state[i].filtered_IAS   = sqrtf(MAX(-state[i].IAS_filtered_pressure, 0) * param[i].ratio);
         break;
     case PITOT_TUBE_ORDER_POSITIVE:
         state[i].last_pressure  = airspeed_pressure;
         state[i].raw_airspeed   = sqrtf(MAX(airspeed_pressure, 0) * param[i].ratio);
         state[i].airspeed       = sqrtf(MAX(state[i].filtered_pressure, 0) * param[i].ratio);
+        state[i].filtered_IAS   = sqrtf(MAX(state[i].IAS_filtered_pressure, 0) * param[i].ratio);
         break;
     case PITOT_TUBE_ORDER_AUTO:
     default:
         state[i].last_pressure  = fabsf(airspeed_pressure);
         state[i].raw_airspeed   = sqrtf(fabsf(airspeed_pressure) * param[i].ratio);
         state[i].airspeed       = sqrtf(fabsf(state[i].filtered_pressure) * param[i].ratio);
+        state[i].filtered_IAS   = sqrtf(fabsf(state[i].IAS_filtered_pressure) * param[i].ratio);
         break;
     }
 
@@ -491,6 +515,11 @@ void AP_Airspeed::Log_Airspeed()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+    // log filteredIAS for comparison
+    AP::logger().Write("IAS", "TimeUS,ias,iasfp,fp", "Qfff", AP_HAL::micros64(),
+                       get_filtered_IAS(),
+                       state[primary].IAS_filtered_pressure,
+                       state[primary].filtered_pressure);
 }
 
 void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
