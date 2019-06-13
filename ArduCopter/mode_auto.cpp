@@ -143,6 +143,12 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
 
     Location dest(dest_loc);
 
+    if (!copter.current_loc.initialised()) {
+        // vehicle doesn't know where it is ATM.  We should not
+        // initialise our takeoff destination without knowing this!
+        return;
+    }
+
     // set horizontal target
     dest.lat = copter.current_loc.lat;
     dest.lng = copter.current_loc.lng;
