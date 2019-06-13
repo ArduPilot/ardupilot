@@ -1,5 +1,6 @@
 #include "GCS.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 extern const AP_HAL::HAL& hal;
 
