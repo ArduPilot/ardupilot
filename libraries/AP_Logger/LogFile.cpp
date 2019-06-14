@@ -11,6 +11,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <AP_GPS/AP_GPS.h>
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
