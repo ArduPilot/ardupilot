@@ -36,6 +36,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_GPS/AP_GPS.h>
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
