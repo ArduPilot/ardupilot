@@ -8,6 +8,7 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
 
 void setup();
 void loop();
