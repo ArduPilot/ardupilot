@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/AP_ExpandingArray.h>
 #include <AP_HAL/AP_HAL.h>
 
 /*
@@ -57,7 +58,6 @@ public:
 
 private:
 
-    VisGraphItem *_items;
-    uint8_t _num_items_max;
+    AP_ExpandingArray<VisGraphItem> _items;
     uint8_t _num_items;
 };
