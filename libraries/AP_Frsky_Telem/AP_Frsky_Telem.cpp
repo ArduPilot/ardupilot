@@ -28,7 +28,7 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/Location.h>
-
+#include <AP_GPS/AP_GPS.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
