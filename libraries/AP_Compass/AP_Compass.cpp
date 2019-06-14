@@ -968,7 +968,6 @@ Compass::read(void)
         _backends[i]->read();
     }
     uint32_t time = AP_HAL::millis();
-	hal.console->printf("DEBUG Compass read ,%d\n",time);///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
         _state[i].healthy = (time - _state[i].last_update_ms < 500);
     }
@@ -983,7 +982,6 @@ Compass::read(void)
     if (ret && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit) && !AP::ahrs().have_ekf_logging()) {
         AP::logger().Write_Compass();
     }
-	hal.console->printf("DEBUG Compass read ,%d\n",ret);///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     return ret;
 }
 

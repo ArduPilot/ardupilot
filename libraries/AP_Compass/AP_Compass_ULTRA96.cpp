@@ -25,12 +25,13 @@ AP_Compass_ULTRA96::AP_Compass_ULTRA96()
 	data_pointer = (volatile int32_t*) mmap(NULL, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x78000000);
 	close(mem_fd);
 	_compass_instance = register_compass();
+
+    hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Compass_ULTRA96::timer_update, void));
 }
 
 
-void AP_Compass_ULTRA96::update(void)
+void AP_Compass_ULTRA96::timer_update(void)
 {
-		hal.console->printf("Test 6\n");///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//check offsets
     float xMag = (*((volatile int32_t *)(data_pointer+24)))*0.1;
     float yMag = (*((volatile int32_t *)(data_pointer+25)))*0.1;

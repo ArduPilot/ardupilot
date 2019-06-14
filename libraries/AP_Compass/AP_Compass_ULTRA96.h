@@ -18,7 +18,7 @@ public:
 private:
     volatile int32_t *data_pointer;
 	void init() ;
-    void update(void) ;
+    void timer_update(void);
     uint8_t _compass_instance;
 };
 #endif // CONFIG_HAL_BOARD
