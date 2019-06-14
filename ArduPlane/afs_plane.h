@@ -27,7 +27,7 @@
 class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
 {
 public:
-    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps);
+    AP_AdvancedFailsafe_Plane(AP_Mission &_mission);
 
     // called to set all outputs to termination state
     void terminate_vehicle(void) override;
