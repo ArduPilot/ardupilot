@@ -24,6 +24,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -189,7 +190,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
 
     uint32_t now = AP_HAL::millis();
     bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
-    bool gps_lock_ok = ((now - gps.last_fix_time_ms()) < 3000);
+    bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);
 
     switch (_state) {
     case STATE_PREFLIGHT:
@@ -324,6 +325,7 @@ AP_AdvancedFailsafe::check_altlimit(void)
 
     // see if the barometer is dead
     const AP_Baro &baro = AP::baro();
+    const AP_GPS &gps = AP::gps();
     if (AP_HAL::millis() - baro.get_last_update() > 5000) {
         // the barometer has been unresponsive for 5 seconds. See if we can switch to GPS
         if (_amsl_margin_gps != -1 &&
