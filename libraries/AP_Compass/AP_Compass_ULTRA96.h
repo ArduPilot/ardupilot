@@ -14,6 +14,7 @@ public:
     AP_Compass_ULTRA96();
 	void read(void) ;
 
+
 private:
     volatile int32_t *data_pointer;
 	void init() ;

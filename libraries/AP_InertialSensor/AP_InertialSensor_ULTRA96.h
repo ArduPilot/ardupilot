@@ -11,7 +11,7 @@ public:
 
     /* update accel and gyro state */
     bool update();
-
+	void accumulate(void) override {update();}
   
 private:
     uint8_t gyro_instance;
