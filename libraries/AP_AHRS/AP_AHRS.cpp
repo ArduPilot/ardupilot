@@ -18,6 +18,7 @@
 #include "AP_AHRS_View.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 
 extern const AP_HAL::HAL& hal;
