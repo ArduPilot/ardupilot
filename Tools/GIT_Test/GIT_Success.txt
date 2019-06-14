@@ -14,7 +14,7 @@ Robert Lefebvre, unconfuzzled his clone.
 Olivier check test
 Phil Rowse was here :)
 Nils Hogberg (Vizual54) testing
-Linus Penzlien 
+Linus Penzlien
 Hazy
 Benoit GRUSON
 Dario Lindo Andres
@@ -69,7 +69,7 @@ Isamu Ishiguro
 Naoya Sato
 Brian Ankeny
 Opemipo Ogunkola saying Hi from Nigeria!
-Nishchay Agrawal 
+Nishchay Agrawal
 Akash Nair
 Borys Tymchenko (spsancti)
 Mahtab Sandhu(ma8sa)
@@ -104,7 +104,7 @@ ShingoKANEKO
 Tom Pittenger
 Pedro Villegas
 Christian Llanes (llanesc)
-Ameer Hussain   
+Ameer Hussain
 sal-mo
 Koji Ohse(Homework)
 Giacomo Ornati
@@ -121,3 +121,4 @@ Arjun Chauhan
 Jimmy Jacobson was successful in following the directions!
 Daksh Bhatia
 Biswajit Ghosh
+Kyle "Shelley" McILroy
