@@ -24,27 +24,17 @@ AP_OAVisGraph::AP_OAVisGraph(uint8_t size)
 // initialise array to given size
 bool AP_OAVisGraph::init(uint8_t size)
 {
-    // only allow init once
-    if (_items != nullptr) {
-        return false;
-    }
-
-    // allocate array
-    _items = (VisGraphItem *)calloc(size, sizeof(VisGraphItem));
-    if (_items != nullptr) {
-        _num_items_max = size;
-        return true;
-    }
-
-    return false;
+    return _items.expand_to_hold(size);
 }
 
 // add item to visiblity graph, returns true on success, false if graph is full
 bool AP_OAVisGraph::add_item(const OAItemID &id1, const OAItemID &id2, float distance_cm)
 {
     // check there is space
-    if (_num_items >= _num_items_max) {
-        return false;
+    if (_num_items >= _items.max_items()) {
+        if (!_items.expand(1)) {
+            return false;
+        }
     }
 
     // add item

@@ -153,8 +153,8 @@ bool AP_OADijkstra::create_polygon_fence_with_margin(float margin_cm)
         return false;
     }
 
-    // fail if fence is too large
-    if (num_points > OA_DIJKSTRA_POLYGON_FENCE_PTS) {
+    // expand fence point array if required
+    if (!_polyfence_pts.expand_to_hold(num_points)) {
         return false;
     }
 
@@ -416,6 +416,11 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
     // check OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX is defined correct
     static_assert(OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX > OA_DIJKSTRA_POLYGON_FENCE_PTS, "check OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX > OA_DIJKSTRA_POLYGON_FENCE_PTS");
 
+    // expand _short_path_data if necessary
+    if (!_short_path_data.expand_to_hold(2 + _polyfence_numpoints)) {
+        return false;
+    }
+
     // add origin and destination (node_type, id, visited, distance_from_idx, distance_cm) to short_path_data array
     _short_path_data[0] = {{AP_OAVisGraph::OATYPE_SOURCE, 0}, false, 0, 0};
     _short_path_data[1] = {{AP_OAVisGraph::OATYPE_DESTINATION, 0}, false, OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX, FLT_MAX};
@@ -460,9 +465,14 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
     }
     _path_numpoints = 0;
     while (true) {
-        // fail if out of space or newest node has invalid distance or from index
-        if ((_path_numpoints >= OA_DIJKSTRA_POLYGON_SHORTPATH_PTS) ||
-            (_short_path_data[nidx].distance_from_idx == OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX) ||
+        // fail if out of space
+        if (_path_numpoints >= _path.max_items()) {
+            if (!_path.expand()) {
+                break;
+            }
+        }
+        // fail if newest node has invalid distance_from_index
+        if ((_short_path_data[nidx].distance_from_idx == OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX) ||
             (_short_path_data[nidx].distance_cm >= FLT_MAX)) {
             break;
         } else {

@@ -62,7 +62,7 @@ private:
 
     // polygon fence (with margin) related variables
     float _polyfence_margin = 10;
-    Vector2f _polyfence_pts[OA_DIJKSTRA_POLYGON_FENCE_PTS];
+    AP_ExpandingArray<Vector2f> _polyfence_pts;
     uint8_t _polyfence_numpoints;
     uint32_t _polyfence_update_ms;  // system time of boundary update from AC_Fence (used to detect changes to polygon fence)
 
@@ -83,7 +83,8 @@ private:
         bool visited;                   // true if all this node's neighbour's distances have been updated
         node_index distance_from_idx;   // index into _short_path_data from where distance was updated (or 255 if not set)
         float distance_cm;              // distance from source (number is tentative until this node is the current node and/or visited = true)
-    } _short_path_data[OA_DIJKSTRA_POLYGON_SHORTPATH_PTS];
+    };
+    AP_ExpandingArray<ShortPathNode> _short_path_data;
     node_index _short_path_data_numpoints;  // number of elements in _short_path_data array
 
     // update total distance for all nodes visible from current node
@@ -99,10 +100,10 @@ private:
     bool find_closest_node_idx(node_index &node_idx) const;
 
     // final path variables and functions
-    AP_OAVisGraph::OAItemID _path[OA_DIJKSTRA_POLYGON_SHORTPATH_PTS];    // ids of points on return path in reverse order (i.e. destination is first element)
-    uint8_t _path_numpoints;                                                // number of points on return path
-    Vector2f _path_source;                                                  // source point used in shortest path calculations (offset in cm from EKF origin)
-    Vector2f _path_destination;                                             // destination position used in shortest path calculations (offset in cm from EKF origin)
+    AP_ExpandingArray<AP_OAVisGraph::OAItemID> _path;   // ids of points on return path in reverse order (i.e. destination is first element)
+    uint8_t _path_numpoints;                            // number of points on return path
+    Vector2f _path_source;                              // source point used in shortest path calculations (offset in cm from EKF origin)
+    Vector2f _path_destination;                         // destination position used in shortest path calculations (offset in cm from EKF origin)
 
     // return point from final path as an offset (in cm) from the ekf origin
     bool get_shortest_path_point(uint8_t point_num, Vector2f& pos);
