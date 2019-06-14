@@ -990,7 +990,7 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_fence_breach_circle_at(self, loc):
+    def test_fence_breach_circle_at(self, loc, disable_on_breach=False):
         ex = None
         try:
             fence_filepath = os.path.join(self.mission_directory(),
@@ -1030,6 +1030,9 @@ class AutoTestPlane(AutoTest):
                 self.assert_fence_sys_status(True, True, False)
                 break
 
+            if disable_on_breach:
+                self.do_fence_disable()
+
             self.wait_circling_point_with_radius(loc, expected_radius)
 
             self.disarm_vehicle(force=True)
@@ -1045,7 +1048,10 @@ class AutoTestPlane(AutoTest):
 
     def test_fence_rtl(self):
         self.progress("Testing FENCE_ACTION_RTL no rally point")
-        self.test_fence_breach_circle_at(self.home_position_as_mav_location())
+        # have to disable the fence once we've breached or we breach
+        # it as part of the loiter-at-home!
+        self.test_fence_breach_circle_at(self.home_position_as_mav_location(),
+                                         disable_on_breach=True)
 
     def location_offset_ne(self, location, north, east):
         print("old: %f %f" % (location.lat, location.lng))
