@@ -26,6 +26,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_GPS/AP_GPS.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
