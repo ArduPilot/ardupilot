@@ -14,6 +14,7 @@ public:
 	void accumulate(void) override {update();}
   
 private:
+    void timer_update();
     uint8_t gyro_instance;
     uint8_t accel_instance;
     volatile int32_t *data_pointer;

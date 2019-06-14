@@ -27,9 +27,11 @@ AP_InertialSensor_ULTRA96::AP_InertialSensor_ULTRA96(AP_InertialSensor &imu) :
                                        AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UNKNOWN,0,0,0));
     accel_instance= _imu.register_accel(1000,
                                         AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UNKNOWN,0,0,0));
+
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_ULTRA96::timer_update, void));
 }
 
-bool AP_InertialSensor_ULTRA96::update(void)
+void AP_InertialSensor_ULTRA96::timer_update(void)
 {
 	
 	// ACC Data  m/s^2
@@ -42,17 +44,19 @@ bool AP_InertialSensor_ULTRA96::update(void)
 	float zGyro = (*((volatile int32_t *)(data_pointer+23)))*0.0001;
 	hal.console->printf("DEBUG ACCEL read ,%f\n",xAccel);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	hal.console->printf("DEBUG Gyro read ,%f\n",xGyro);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	Vector3f accel = Vector3f(xAccel, yAccel, zAccel);
-	Vector3f gyro = Vector3f(xGyro, yGyro, zGyro);
+    Vector3f accel = Vector3f(xAccel, yAccel, zAccel);
+    Vector3f gyro = Vector3f(xGyro, yGyro, zGyro);
 	
 	_rotate_and_correct_gyro(gyro_instance, gyro);
 	_notify_new_gyro_raw_sample(gyro_instance, gyro, AP_HAL::micros64());
 	_rotate_and_correct_accel(accel_instance, accel);
 	_notify_new_accel_raw_sample(accel_instance, accel, AP_HAL::micros64());
- 
-	update_accel(accel_instance);
-	update_gyro(gyro_instance);
+}
 
+bool AP_InertialSensor_ULTRA96::update(void)
+{
+    update_accel(accel_instance);
+    update_gyro(gyro_instance);
     return true;
 }
 
