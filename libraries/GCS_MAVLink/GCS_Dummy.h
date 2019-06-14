@@ -9,7 +9,9 @@ const AP_FWVersion AP_FWVersion::fwver
     fw_type: FIRMWARE_VERSION_TYPE_DEV,
     fw_string: "Dummy GCS",
     fw_hash_str: "",
+    middleware_name: "",
     middleware_hash_str: "",
+    os_name: "",
     os_hash_str: "",
     os_sw_version: 0
 };
