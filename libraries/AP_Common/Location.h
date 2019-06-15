@@ -112,6 +112,8 @@ public:
      */
     float line_path_proportion(const Location &point1, const Location &point2) const;
 
+    bool initialised() const { return (lat !=0 || lng != 0); }
+
 private:
     static AP_Terrain *_terrain;
 
