@@ -4,6 +4,9 @@
 
 void Copter::gcs_send_heartbeat(void)
 {
+    if (!ap.initialised) {
+        return;
+    }
     gcs().send_message(MSG_HEARTBEAT);
 }
 
