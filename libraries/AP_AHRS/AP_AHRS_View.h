@@ -84,7 +84,7 @@ public:
         return ahrs.get_position(loc);
     }
 
-    Vector3f wind_estimate(void) {
+    Vector3f wind_estimate(void) const {
         return ahrs.wind_estimate();
     }
 

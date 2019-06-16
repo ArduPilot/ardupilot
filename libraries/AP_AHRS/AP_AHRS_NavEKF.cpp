@@ -468,7 +468,7 @@ Vector3f AP_AHRS_NavEKF::wind_estimate(void) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
-        wind.zero();
+        wind = _sitl->state.wind;
         break;
 #endif
 
