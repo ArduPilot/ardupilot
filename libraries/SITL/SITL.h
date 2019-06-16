@@ -47,6 +47,7 @@ struct sitl_fdm {
     double range;           // rangefinder value
     Vector3f bodyMagField;  // Truth XYZ magnetic field vector in body-frame. Includes motor interference. Units are milli-Gauss.
     Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
+    Vector3f wind;
 
     struct {
         // data from simulated laser scanner, if available
