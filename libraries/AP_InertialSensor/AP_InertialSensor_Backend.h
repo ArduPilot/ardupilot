@@ -75,7 +75,7 @@ public:
 
     // notify of a fifo reset
     void notify_fifo_reset(void);
-    
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -179,7 +179,7 @@ protected:
 
     // update the sensor rate for FIFO sensors
     void _update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz) const;
-    
+
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);
 
@@ -233,15 +233,26 @@ protected:
     uint16_t get_sample_rate_hz(void) const;
 
     // return the notch filter center in Hz for the sample rate
-    uint16_t _gyro_notch_center_freq_hz(void) const { return _imu._notch_filter.center_freq_hz(); }
+    float _gyro_notch_center_freq_hz(void) const { return _imu._notch_filter.center_freq_hz(); }
 
     // return the notch filter bandwidth in Hz for the sample rate
-    uint16_t _gyro_notch_bandwidth_hz(void) const { return _imu._notch_filter.bandwidth_hz(); }
+    float _gyro_notch_bandwidth_hz(void) const { return _imu._notch_filter.bandwidth_hz(); }
 
     // return the notch filter attenuation in dB for the sample rate
     float _gyro_notch_attenuation_dB(void) const { return _imu._notch_filter.attenuation_dB(); }
 
     uint8_t _gyro_notch_enabled(void) const { return _imu._notch_filter.enabled(); }
+
+    // return the harmonic notch filter center in Hz for the sample rate
+    float _gyro_harmonic_notch_center_freq_hz() const { return _imu._calculated_harmonic_notch_freq_hz; }
+
+    // return the harmonic notch filter bandwidth in Hz for the sample rate
+    float _gyro_harmonic_notch_bandwidth_hz(void) const { return _imu._harmonic_notch_filter.bandwidth_hz(); }
+
+    // return the harmonic notch filter attenuation in dB for the sample rate
+    float _gyro_harmonic_notch_attenuation_dB(void) const { return _imu._harmonic_notch_filter.attenuation_dB(); }
+
+    uint8_t _gyro_harmonic_notch_enabled(void) const { return _imu._harmonic_notch_filter.enabled(); }
 
     // common gyro update function for all backends
     void update_gyro(uint8_t instance);
@@ -250,12 +261,17 @@ protected:
     void update_accel(uint8_t instance);
 
     // support for updating filter at runtime
-    uint16_t _last_accel_filter_hz[INS_MAX_INSTANCES];
-    uint16_t _last_gyro_filter_hz[INS_MAX_INSTANCES];
-    uint16_t _last_notch_center_freq_hz[INS_MAX_INSTANCES];
-    uint16_t _last_notch_bandwidth_hz[INS_MAX_INSTANCES];
-    float _last_notch_attenuation_dB[INS_MAX_INSTANCES];
+    uint16_t _last_accel_filter_hz;
+    uint16_t _last_gyro_filter_hz;
+    float _last_notch_center_freq_hz;
+    float _last_notch_bandwidth_hz;
+    float _last_notch_attenuation_dB;
 
+    // support for updating harmonic filter at runtime
+    float _last_harmonic_notch_center_freq_hz;
+    float _last_harmonic_notch_bandwidth_hz;
+    float _last_harmonic_notch_attenuation_dB;
+    
     void set_gyro_orientation(uint8_t instance, enum Rotation rotation) {
         _imu._gyro_orientation[instance] = rotation;
     }

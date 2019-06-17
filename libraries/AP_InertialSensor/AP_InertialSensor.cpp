@@ -453,6 +453,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
 
+    // @Group: HNTCH_
+    // @Path: ../Filter/HarmonicNotchFilter.cpp
+    AP_SUBGROUPINFO(_harmonic_notch_filter, "HNTCH_",  41, AP_InertialSensor, HarmonicNotchFilterParams),
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -471,6 +475,7 @@ AP_InertialSensor::AP_InertialSensor() :
     }
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
+
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _gyro_cal_ok[i] = true;
         _accel_max_abs_offsets[i] = 3.5f;
@@ -654,6 +659,15 @@ AP_InertialSensor::init(uint16_t sample_rate)
 
     // initialise IMU batch logging
     batchsampler.init();
+
+    // the center frequency of the harmonic notch is always taken from the calculated value so that it can be updated
+    // dynamically, the calculated value is always some multiple of the configured center frequency, so start with the
+    // configured value
+    _calculated_harmonic_notch_freq_hz = _harmonic_notch_filter.center_freq_hz();
+
+    for (uint8_t i=0; i<get_gyro_count(); i++) {
+        _gyro_harmonic_notch_filter[i].create(_harmonic_notch_filter.harmonics());
+    }
 }
 
 bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
@@ -1706,6 +1720,14 @@ void AP_InertialSensor::acal_update()
 
     if (hal.util->get_soft_armed() && _acal->get_status() != ACCEL_CAL_NOT_STARTED) {
         _acal->cancel();
+    }
+}
+
+// Update the harmonic notch frequency
+void AP_InertialSensor::update_harmonic_notch_freq_hz(float scaled_freq) {
+    // When disarmed, throttle is zero
+    if (is_positive(scaled_freq)) {
+        _calculated_harmonic_notch_freq_hz = scaled_freq;
     }
 }
 
