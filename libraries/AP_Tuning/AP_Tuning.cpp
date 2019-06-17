@@ -89,7 +89,9 @@ void AP_Tuning::check_selector_switch(void)
         // low selector
         if (selector_start_ms != 0) {
             uint32_t hold_time = AP_HAL::millis() - selector_start_ms;
-            if (hold_time < 2000) {
+            if (hold_time < 200) {
+                // debounce!
+            } else if (hold_time < 2000) {
                 // re-center the value
                 re_center();
                 gcs().send_text(MAV_SEVERITY_INFO, "Tuning: recentered %s", get_tuning_name(current_parm));
@@ -97,8 +99,8 @@ void AP_Tuning::check_selector_switch(void)
                 // change parameter
                 next_parameter();
             }
+            selector_start_ms = 0;
         }
-        selector_start_ms = 0;
     }
 }
 
