@@ -129,6 +129,9 @@ public:
     /// get_alt_error - returns altitude error in cm
     float get_alt_error() const;
 
+    /// get_vel_z_error_ratio - returns the proportion of error relative to the maximum request
+    float get_vel_z_control_ratio() const { return constrain_float(_vel_z_control_ratio, 0.0f, 1.0f); }
+    
     // returns horizontal error in cm
     float get_horizontal_error() const;
 
@@ -403,6 +406,7 @@ protected:
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
+    float       _vel_z_control_ratio = 2.0f;   // confidence that we have control in the vertical axis
 
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller

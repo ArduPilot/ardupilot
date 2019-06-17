@@ -304,7 +304,7 @@ public:
     // control rpy throttle mix
     virtual void set_throttle_mix_min() {}
     virtual void set_throttle_mix_man() {}
-    virtual void set_throttle_mix_max() {}
+    virtual void set_throttle_mix_max(float ratio) {}
     virtual void set_throttle_mix_value(float value) {}
     virtual float get_throttle_mix(void) const { return 0; }
 

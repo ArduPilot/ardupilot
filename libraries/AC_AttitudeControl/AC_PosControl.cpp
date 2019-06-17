@@ -252,7 +252,8 @@ void AC_PosControl::set_max_speed_z(float speed_down, float speed_up)
     // ensure speed_down is always negative
     speed_down = -fabsf(speed_down);
 
-    if ((fabsf(_speed_down_cms - speed_down) > 1.0f) || (fabsf(_speed_up_cms - speed_up) > 1.0f)) {
+    // only update if there is a minimum of 1cm/s change and is valid
+    if (((fabsf(_speed_down_cms - speed_down) > 1.0f) || (fabsf(_speed_up_cms - speed_up) > 1.0f)) && is_positive(_speed_up_cms) && is_negative(_speed_down_cms) ) {
         _speed_down_cms = speed_down;
         _speed_up_cms = speed_up;
         _flags.recalc_leash_z = true;
@@ -617,6 +618,12 @@ void AC_PosControl::run_z_controller()
 
     // send throttle to attitude controller with angle boost
     _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
+
+    // _speed_down_cms is checked to be non-zero when set
+    float error_ratio = _vel_error.z/_speed_down_cms;
+
+    _vel_z_control_ratio += _dt*0.1f*(0.5-error_ratio);
+    _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
 }
 
 ///
