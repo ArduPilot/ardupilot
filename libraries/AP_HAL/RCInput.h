@@ -34,7 +34,10 @@ public:
 
     /* get receiver based RSSI if available. -1 for unknown, 0 for no link, 255 for maximum link */
     virtual int16_t get_rssi(void) { return -1; }
-    
+
+    /* Return string describing method RC input protocol */
+    virtual const char *protocol() const = 0;
+
     /**
      * Overrides: these are really grody and don't belong here but we need
      * them at the moment to make the port work.
