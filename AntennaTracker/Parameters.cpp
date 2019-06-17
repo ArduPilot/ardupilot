@@ -355,7 +355,8 @@ const AP_Param::Info Tracker::var_info[] = {
 	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
 #ifdef ENABLE_SCRIPTING
-    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
+    // @Group: SCR_
+    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     GOBJECT(scripting, "SCR_", AP_Scripting),
 #endif
 
