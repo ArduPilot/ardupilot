@@ -13,6 +13,26 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * ExpandingArray class description
+ *
+ * Elements are organised into "chunks" with each chunk holding "chunk_size" elements
+ * The "chunk_ptrs" array holds pointers to all allocated chunks
+ *
+ * The "expand" function allows expanding the array by a specified number of chunks
+ * The "expand_to_hold" function expands the array (if necessary) to hold at least the specified number of elements
+ *
+ * When the array is expanded up to two memory allocations are required:
+ *    1. if the chunk_ptrs array (which holds points to all allocated chunks) is full, this array will be re-allocated.
+ *       During this operation a new copy of the chunk_ptr array will be created with "chunk_ptr_increment" more rows,
+ *       the old array's data will be copied to the new array and finally the old array will be freed.
+ *    2. a new chunk will be allocated and a pointer to this new chunk will be added to the chunk_ptrs array
+ *
+ * Warnings:
+ *    1. memset, memcpy, memcmp cannot be used because the individual elements are not guaranteed to be next to each other in memory
+ *    2. operator[] functions do not perform any range checking so max_items() should be used when necessary to avoid out-of-bound memory access
+ */
+
 #pragma once
 
 #include <AP_Common/AP_Common.h>
@@ -22,17 +42,9 @@ class AP_ExpandingArray
 {
 public:
 
-    AP_ExpandingArray<T>() :
-        chunk_size(50)
-    {   // create one chunk
-        expand(1);
-    }
-
-    AP_ExpandingArray<T>(uint16_t num_chunks, uint16_t elements_per_chunk) :
+    AP_ExpandingArray<T>(uint16_t elements_per_chunk) :
         chunk_size(elements_per_chunk)
-    {   // create requested number of chunks
-        expand(num_chunks);
-    }
+    {}
 
     /* Do not allow copies */
     AP_ExpandingArray<T>(const AP_ExpandingArray<T> &other) = delete;
@@ -63,7 +75,7 @@ public:
         // expand chunk_ptrs array if necessary
         if (chunk_count + num_chunks >= chunk_count_max) {
             uint16_t chunk_ptr_size = chunk_count + num_chunks + chunk_ptr_increment;
-            chunk_ptr *chunk_ptrs_new = (chunk_ptr*)calloc(chunk_ptr_size, sizeof(T*));
+            chunk_ptr_t *chunk_ptrs_new = (chunk_ptr_t*)calloc(chunk_ptr_size, sizeof(T*));
             if (chunk_ptrs_new == nullptr) {
                 return false;
             }
@@ -71,7 +83,7 @@ public:
             memcpy(chunk_ptrs_new, chunk_ptrs, chunk_count_max * sizeof(T*));
 
             // free old pointers array
-            delete chunk_ptrs;
+            free(chunk_ptrs);
 
             // use new pointers array
             chunk_ptrs = chunk_ptrs_new;
@@ -107,9 +119,10 @@ private:
     // chunk_ptrs array is grown by this many elements each time it fills
     const uint16_t chunk_ptr_increment = 50;
 
-    typedef T* chunk_ptr;
+    typedef T* chunk_ptr_t;     // pointer to a chunk
+
     uint16_t chunk_size;        // the number of T elements in each chunk
-    chunk_ptr* chunk_ptrs;      // array of pointers to allocated chunks
+    chunk_ptr_t *chunk_ptrs;    // array of pointers to allocated chunks
     uint16_t chunk_count_max;   // number of elements in chunk_ptrs array
     uint16_t chunk_count;       // number of allocated chunks
 };
