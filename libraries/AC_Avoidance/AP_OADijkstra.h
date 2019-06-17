@@ -6,9 +6,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_OAVisGraph.h"
 
-#define OA_DIJKSTRA_POLYGON_FENCE_PTS       20      // algorithm can handle up to this many polygon fence points
-#define OA_DIJKSTRA_POLYGON_SHORTPATH_PTS   OA_DIJKSTRA_POLYGON_FENCE_PTS+1 // return path can have up to this many destinations
-
 /*
  * Dijkstra's algorithm for path planning around polygon fence
  */

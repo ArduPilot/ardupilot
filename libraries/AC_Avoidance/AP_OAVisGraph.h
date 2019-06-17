@@ -10,7 +10,6 @@
 class AP_OAVisGraph {
 public:
     AP_OAVisGraph();
-    AP_OAVisGraph(uint8_t size);
 
     /* Do not allow copies */
     AP_OAVisGraph(const AP_OAVisGraph &other) = delete;
@@ -39,9 +38,6 @@ public:
         OAItemID id2;       // second item's id
         float distance_cm;  // distance between the items
     };
-
-    // initialise array to given size
-    bool init(uint8_t size);
 
     // clear all elements from graph
     void clear() { _num_items = 0; }
