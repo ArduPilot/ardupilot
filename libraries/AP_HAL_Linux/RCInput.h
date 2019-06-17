@@ -26,7 +26,9 @@ public:
     int16_t get_rssi(void) override {
         return _rssi;
     }
-    
+
+    const char *protocol() const override { return "Unknown"; }
+
     // default empty _timer_tick, this is overridden by board
     // specific implementations
     virtual void _timer_tick() {}
