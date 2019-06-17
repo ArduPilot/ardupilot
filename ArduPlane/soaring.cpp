@@ -77,6 +77,18 @@ void Plane::update_soaring() {
         // Some other loiter status, we need to think about exiting loiter.
         uint32_t timer = AP_HAL::millis() - plane.soaring_mode_timer;
 
+        // Check distance to home.
+        Vector3f position;
+        if (!ahrs.get_relative_position_NED_home(position)) {
+            return;
+        } else if (g2.soaring_controller.max_radius > 0 &&
+                   powf(position.x,2)+powf(position.y,2) > powf(g2.soaring_controller.max_radius,2) &&
+                previous_mode->mode_number()!=Mode::Number::AUTO) {
+            // Some other loiter status, and outside of maximum soaring radius, and previous mode wasn't AUTO
+            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Outside SOAR_MAX_RADIUS, RTL");
+            set_mode(mode_rtl, ModeReason::SOARING_DRIFT_EXCEEDED);
+        }
+
         const char* strTooHigh = "Soaring: Too high, restoring ";
         const char* strTooLow =  "Soaring: Too low, restoring ";
         const char* strTooWeak = "Soaring: Thermal ended, restoring ";

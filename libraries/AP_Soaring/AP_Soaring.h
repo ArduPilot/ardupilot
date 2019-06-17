@@ -68,7 +68,6 @@ protected:
     AP_Float alt_cutoff;
     AP_Float max_drift;
 
-
 public:
     SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
 
@@ -81,6 +80,8 @@ public:
         DRIFT_EXCEEDED,
         THERMAL_GOOD_TO_KEEP_LOITERING
     } LoiterStatus;
+
+    AP_Float max_radius;
 
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];

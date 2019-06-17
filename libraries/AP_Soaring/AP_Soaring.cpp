@@ -128,6 +128,13 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAX_DRIFT", 16, SoaringController, max_drift, 0),
 
+    // @Param: MAX_RADIUS
+    // @DisplayName: (Optional) Maximum distance from home
+    // @Description: RTL will be entered when a thermal is exited and the plane is more than this distance from home. -1 to disable.
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("MAX_RADIUS", 17, SoaringController, max_radius, -1),
+
     AP_GROUPEND
 };
 
