@@ -117,6 +117,9 @@ AP_AHRS_DCM::update(bool skip_ins_update)
     // update AOA and SSA
     update_AOA_SSA();
 
+    // update vel_dot
+    update_vel_dot();
+
     backup_attitude();
 }
 

@@ -253,6 +253,15 @@ public:
     // if we have an estimate
     virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED;
 
+    // maintain estimate of velocity rate of change; used by EAS_estimate()
+    void update_vel_dot(void);
+
+    // Rate of change of velocity along X body axis in m/s^2
+    float get_VXdot(void) { return vel_dot; }
+
+    // return a filtered airspeed estimate. return true if estimate was available
+    virtual bool EAS_estimate(float *airspeed_ret) const WARN_IF_UNUSED;
+
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
     bool airspeed_estimate_true(float &airspeed_ret) const WARN_IF_UNUSED {
@@ -629,6 +638,13 @@ protected:
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
     Vector3f        _accel_ef_blended;
+
+    // Rate of change of speed along body frame X axis
+    float vel_dot;
+
+    // declares a 5point average filter using floats
+    AverageFilterFloat_Size5 vdot_filter;
+    uint64_t _update_vdot_last_msec;
 
     // Declare filter states for HPF and LPF used by complementary
     // filter in AP_AHRS::groundspeed_vector

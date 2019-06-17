@@ -199,6 +199,41 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
     return false;
 }
 
+void AP_AHRS::update_vel_dot(void)
+{
+    // Update and average speed rate of change at 50Hz
+    uint32_t now = AP_HAL::millis();
+    if ((now - _update_vdot_last_msec) >= 20) {
+        _update_vdot_last_msec = now;
+        // Get DCM
+        const Matrix3f &rotMat = get_rotation_body_to_ned();
+        // Calculate speed rate of change
+        float temp = rotMat.c.x * GRAVITY_MSS + AP::ins().get_accel().x;
+        // take 5 point moving average
+        vel_dot = vdot_filter.apply(temp);
+    }
+}
+
+// return filtered airspeed estimate if available
+bool AP_AHRS::EAS_estimate(float *airspeed_ret) const
+{
+    if (airspeed_sensor_enabled()) {
+        *airspeed_ret = _airspeed->get_EAS();
+        if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+            // constrain the airspeed by the ground speed
+            // and AHRS_WIND_MAX
+            const float gnd_speed = AP::gps().ground_speed();
+            float true_airspeed = *airspeed_ret * get_EAS2TAS();
+            true_airspeed = constrain_float(true_airspeed,
+                                            gnd_speed - _wind_max,
+                                            gnd_speed + _wind_max);
+            *airspeed_ret = true_airspeed / get_EAS2TAS();
+        }
+        return true;
+    }
+    return false;
+}
+
 // set_trim
 void AP_AHRS::set_trim(const Vector3f &new_trim)
 {
