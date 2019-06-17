@@ -2,13 +2,15 @@
 
 ## Enabling Scripting Support in Builds
 
-To enable scripting the `--enable-scripting` flag must be passed to waf.
-The following example enables scripting and builds the ArduPlane firmware for the Cube.
+Scripting is automatically enabled on all boards with at least 1MB of flash space.
+The following example enables scripting, builds the ArduPlane firmware for the Cube, and uploads it.
 
 ```
-$ waf configure --enable-scripting --board=CubeBlack
+$ waf configure --board=CubeBlack
 
 $ waf plane
+
+$ waf plane --upload
 ```
 
 To run SITL you can simply use the `sim_vehicle.py` script which will wrap the configuration, compilation,
@@ -16,8 +18,10 @@ and launching of the simulation into one command for you.
 
 
 ```
-$ Tools/autotest/sim_vehicle.py --waf-configure-arg --enable-scripting -v ArduPlane
+$ Tools/autotest/sim_vehicle.py -v ArduPlane
 ```
+
+Once you have a vehicle flashed with scripting you need to set the `SCR_ENABLE` parameter to 1 to enable scripting and reboot.
 
 ## Adding Scripts
 
