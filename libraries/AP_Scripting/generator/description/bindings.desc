@@ -11,7 +11,7 @@ userdata Location field loiter_xtrack boolean read write
 
 userdata Location method get_distance float Location
 userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
-userdata Location method get_vector_from_origin_NEU boolean Vector3f
+userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
 
 include AP_AHRS/AP_AHRS.h
 
