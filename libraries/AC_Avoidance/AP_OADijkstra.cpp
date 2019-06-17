@@ -16,14 +16,14 @@
 #include "AP_OADijkstra.h"
 #include <AC_Fence/AC_Fence.h>
 
-#define OA_DIJKSTRA_POLYGON_VISGRAPH_PTS         (OA_DIJKSTRA_POLYGON_FENCE_PTS * OA_DIJKSTRA_POLYGON_FENCE_PTS / 2)
-#define OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX 255     // index use to indicate we do not have a tentative short path for a node
+#define OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK  20      // expanding arrays for inner polygon fence and paths to destination will grow in increments of 20 elements
+#define OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX        255     // index use to indicate we do not have a tentative short path for a node
 
 /// Constructor
 AP_OADijkstra::AP_OADijkstra() :
-        _polyfence_visgraph(OA_DIJKSTRA_POLYGON_VISGRAPH_PTS),
-        _source_visgraph(OA_DIJKSTRA_POLYGON_FENCE_PTS),
-        _destination_visgraph(OA_DIJKSTRA_POLYGON_FENCE_PTS)
+        _polyfence_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _short_path_data(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _path(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK)
 {
 }
 
@@ -226,6 +226,11 @@ bool AP_OADijkstra::create_polygon_fence_visgraph()
         return false;
     }
 
+    // fail if more than number of polygon points algorithm can handle
+    if (num_points >= OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX) {
+        return false;
+    }
+
     // clear polygon visibility graph
     _polyfence_visgraph.clear();
 
@@ -412,9 +417,6 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
     // create origin and destination visgraphs of polygon points
     update_visgraph(_source_visgraph, {AP_OAVisGraph::OATYPE_SOURCE, 0}, origin_NE, true, destination_NE);
     update_visgraph(_destination_visgraph, {AP_OAVisGraph::OATYPE_DESTINATION, 0}, destination_NE);
-
-    // check OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX is defined correct
-    static_assert(OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX > OA_DIJKSTRA_POLYGON_FENCE_PTS, "check OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX > OA_DIJKSTRA_POLYGON_FENCE_PTS");
 
     // expand _short_path_data if necessary
     if (!_short_path_data.expand_to_hold(2 + _polyfence_numpoints)) {
