@@ -1,5 +1,4 @@
 #include "AP_TECS.h"
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Logger/AP_Logger.h>
@@ -241,14 +240,13 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("SYNAIRSPEED", 27, AP_TECS, _use_synthetic_airspeed, 0),
-
+    
     // @Param: OPTIONS
     // @DisplayName: Extra TECS options
     // @Description: This allows the enabling of special features in the speed/height controller
     // @Bitmask: 0:GliderOnly
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 28, AP_TECS, _options, 0),
-
     AP_GROUPEND
 };
 
@@ -379,25 +377,12 @@ void AP_TECS::_update_speed(float load_factor)
     // Get airspeed or default to halfway between min and max if
     // airspeed is not being used and set speed rate to zero
     bool use_airspeed = _use_synthetic_airspeed_once || _use_synthetic_airspeed.get() || _ahrs.airspeed_sensor_enabled();
-    if (!use_airspeed || !_ahrs.airspeed_estimate(_EAS)) {
+    if (!use_airspeed || !_ahrs.EAS_estimate(&_EAS)) {
         // If no airspeed available use average of min and max
         _EAS = 0.5f * (aparm.airspeed_min.get() + (float)aparm.airspeed_max.get());
     }
 
-    // Implement a second order complementary filter to obtain a
-    // smoothed airspeed estimate
-    // airspeed estimate is held in _TAS_state
-    float aspdErr = (_EAS * EAS2TAS) - _TAS_state;
-    float integDTAS_input = aspdErr * _spdCompFiltOmega * _spdCompFiltOmega;
-    // Prevent state from winding up
-    if (_TAS_state < 3.1f) {
-        integDTAS_input = MAX(integDTAS_input , 0.0f);
-    }
-    _integDTAS_state = _integDTAS_state + integDTAS_input * DT;
-    float TAS_input = _integDTAS_state + _vel_dot + aspdErr * _spdCompFiltOmega * 1.4142f;
-    _TAS_state = _TAS_state + TAS_input * DT;
-    // limit the airspeed to a minimum of 3 m/s
-    _TAS_state = MAX(_TAS_state, 3.0f);
+    _TAS_state = MAX(_EAS * EAS2TAS, 3.0f);
 
 }
 
@@ -572,7 +557,7 @@ void AP_TECS::_update_energies(void)
 
     // Calculate specific energy rate
     _SPEdot = _climb_rate * GRAVITY_MSS;
-    _SKEdot = _TAS_state * _vel_dot;
+    _SKEdot = _TAS_state * AP::ahrs().get_VXdot();
 
 }
 
@@ -991,7 +976,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     // min of 1% throttle range to prevent a numerical error
     _THRmaxf = MAX(_THRmaxf, _THRminf+0.01);
-
     // work out the maximum and minimum pitch
     // if TECS_PITCH_{MAX,MIN} isn't set then use
     // LIM_PITCH_{MAX,MIN}. Don't allow TECS_PITCH_{MAX,MIN} to be
@@ -1014,12 +998,11 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _PITCHminf = constrain_float(_PITCHminf, -_pitch_max_limit, _PITCHmaxf);
         _pitch_max_limit = 90;
     }
-
+        
     if (!_landing.is_on_approach()) {
         // reset land pitch min when not landing
         _land_pitch_min = _PITCHminf;
     }
-    
     if (_landing.is_flaring()) {
         // in flare use min pitch from LAND_PITCH_CD
         _PITCHminf = MAX(_PITCHminf, _landing.get_pitch_cd() * 0.01f);
@@ -1074,7 +1057,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
             _PITCHmaxf = MIN(_land_pitch_max, _PITCHmaxf);
         }
     }
-
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         if (!_flags.reached_speed_takeoff && _TAS_state >= _TAS_dem_adj) {
             // we have reached our target speed in takeoff, allow for
@@ -1089,7 +1071,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     // don't allow max pitch to go below min pitch
     _PITCHmaxf = MAX(_PITCHmaxf, _PITCHminf);
-
     // initialise selected states and variables if DT > 1 second or in climbout
     _initialise_states(ptchMinCO_cd, hgt_afe);
 
@@ -1145,7 +1126,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         (double)_hgt_rate_dem,
         (double)_TAS_dem_adj,
         (double)_TAS_state,
-        (double)_vel_dot,
+        (double)AP::ahrs().get_VXdot(),
         (double)_integTHR_state,
         (double)_integSEB_state,
         (double)_throttle_dem,
@@ -1157,11 +1138,11 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                        "s------",
                        "F------",
                        "Qffffff",
-                       now,
+                                           now,
                        (double)degrees(_PITCHmaxf),
                        (double)degrees(_PITCHminf),
-                       (double)logging.SKE_error,
-                       (double)logging.SPE_error,
-                       (double)logging.SEB_delta,
-                       (double)load_factor);
+                                           (double)logging.SKE_error,
+                                           (double)logging.SPE_error,
+                                           (double)logging.SEB_delta,
+                                           (double)load_factor);
 }

@@ -69,7 +69,7 @@ public:
 
     // Rate of change of velocity along X body axis in m/s^2
     float get_VXdot(void) override {
-        return _vel_dot;
+        return AP::ahrs().get_VXdot();
     }
 
     // return current target airspeed
@@ -203,9 +203,6 @@ private:
         float height;
     } _height_filter;
 
-    // Integrator state 4 - airspeed filter first derivative
-    float _integDTAS_state;
-
     // Integrator state 5 - true airspeed
     float _TAS_state;
 
@@ -221,8 +218,8 @@ private:
     // pitch demand rate limiter state
     float _last_pitch_dem;
 
-    // Rate of change of speed along X axis
-    float _vel_dot;
+//    // Rate of change of speed along X axis
+//    float _vel_dot;
 
     // Equivalent airspeed
     float _EAS;
