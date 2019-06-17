@@ -43,6 +43,29 @@ class Board:
         env = waflib.ConfigSet.ConfigSet()
         self.configure_env(cfg, env)
 
+        # Setup scripting, had to defer this to allow checking board size
+        if (not cfg.options.disable_scripting) and ((cfg.env.BOARD_FLASH_SIZE is None) or (cfg.env.BOARD_FLASH_SIZE == []) or (cfg.env.BOARD_FLASH_SIZE > 1024)):
+            env.DEFINES.update(
+                ENABLE_SCRIPTING = 1,
+                ENABLE_HEAP = 1,
+                LUA_32BITS = 1,
+                )
+
+            env.ROMFS_FILES += [
+                ('sandbox.lua', 'libraries/AP_Scripting/scripts/sandbox.lua'),
+                ]
+
+            env.AP_LIBRARIES += [
+                'AP_Scripting',
+                'AP_Scripting/lua/src',
+                ]
+
+            env.CXXFLAGS += [
+                '-DHAL_HAVE_AP_ROMFS_EMBEDDED_H'
+                ]
+        else:
+            cfg.options.disable_scripting = True;
+
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
         # the priority.
@@ -96,26 +119,6 @@ class Board:
             '-Werror=parentheses',
             '-Werror=format-extra-args',
         ]
-
-        if cfg.options.enable_scripting:
-            env.DEFINES.update(
-                ENABLE_SCRIPTING = 1,
-                ENABLE_HEAP = 1,
-                LUA_32BITS = 1,
-                )
-
-            env.ROMFS_FILES += [
-                ('sandbox.lua', 'libraries/AP_Scripting/scripts/sandbox.lua'),
-                ]
-
-            env.AP_LIBRARIES += [
-                'AP_Scripting',
-                'AP_Scripting/lua/src',
-                ]
-
-            env.CXXFLAGS += [
-                '-DHAL_HAVE_AP_ROMFS_EMBEDDED_H'
-                ]
 
         if cfg.options.scripting_checks:
             env.DEFINES.update(
