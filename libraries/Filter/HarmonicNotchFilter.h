@@ -14,57 +14,48 @@
  */
 #pragma once
 
-/*
-  notch filter with settable sample rate, center frequency, bandwidth and attenuation
-
-  Design by Leonard Hall
- */
-
 #include <AP_Math/AP_Math.h>
 #include <cmath>
 #include <inttypes.h>
 #include <AP_Param/AP_Param.h>
-
+#include "NotchFilter.h"
 
 template <class T>
-class NotchFilter {
+class HarmonicNotchFilter {
 public:
     // set parameters
+    void create(uint8_t harmonics);
     void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
-    void init_with_A_and_Q(float sample_freq_hz, float center_freq_hz, float A, float Q);
     T apply(const T &sample);
     void reset();
-
-    // calculate attenuation and quality from provided center frequency and bandwidth
-    static void calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q); 
+    void update(float center_freq_hz);
+    ~HarmonicNotchFilter();
 
 private:
-
-    bool initialised;
-    float b0, b1, b2, a1, a2, a0_inv;
-    T ntchsig, ntchsig1, ntchsig2, signal2, signal1;
+    NotchFilter<T>*  _filters;
+    float _sample_freq_hz;
+    float _A;
+    float _Q;
+    uint8_t _harmonics;
+    uint8_t _num_filters;
+    bool _initialised;
 };
 
 /*
   notch filter enable and filter parameters
  */
-class NotchFilterParams {
+class HarmonicNotchFilterParams : public NotchFilterParams {
 public:
-    NotchFilterParams(void);
+    HarmonicNotchFilterParams(void);
+    void set_center_freq_hz(float center_freq) { _center_freq_hz.set(center_freq); }
+    uint8_t harmonics(void) const { return _harmonics; }
+    float reference(void) const { return _reference; }
     static const struct AP_Param::GroupInfo var_info[];
 
-    float center_freq_hz(void) const { return _center_freq_hz; }
-    float bandwidth_hz(void) const { return _bandwidth_hz; }
-    float attenuation_dB(void) const { return _attenuation_dB; }
-    uint8_t enabled(void) const { return _enable; }
-    
-protected:
-    AP_Int8 _enable;
-    AP_Float _center_freq_hz;
-    AP_Float _bandwidth_hz;
-    AP_Float _attenuation_dB;
+private:
+    AP_Int8 _harmonics;
+    AP_Float _reference;
 };
 
-typedef NotchFilter<float> NotchFilterFloat;
-typedef NotchFilter<Vector3f> NotchFilterVector3f;
+typedef HarmonicNotchFilter<Vector3f> HarmonicNotchFilterVector3f;
 
