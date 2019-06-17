@@ -181,6 +181,17 @@ void LoggerMessageWriter_WriteSysInfo::process() {
                 return; // call me again
             }
         }
+        stage = ws_blockwriter_stage_rc_protocol;
+        FALLTHROUGH;
+
+    case ws_blockwriter_stage_rc_protocol:
+        const char *prot = hal.rcin->protocol();
+        if (prot == nullptr) {
+            prot = "None";
+        }
+        if (! _logger_backend->Write_MessageF("RC Protocol: %s", prot)) {
+            return; // call me again
+        }
     }
 
     _finished = true;  // all done!
