@@ -33,7 +33,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
+AP_Frsky_Telem::AP_Frsky_Telem(void) :
+  _statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY)
+{
+}
 
 /*
  * init - perform required initialisation
