@@ -123,6 +123,7 @@ class Board:
             '-Werror=overflow',
             '-Werror=parentheses',
             '-Werror=format-extra-args',
+            '-Werror=delete-non-virtual-dtor',
         ]
 
         if cfg.options.scripting_checks:
