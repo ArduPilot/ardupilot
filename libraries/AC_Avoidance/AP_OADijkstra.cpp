@@ -16,7 +16,7 @@
 #include "AP_OADijkstra.h"
 #include <AC_Fence/AC_Fence.h>
 
-#define OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK  20      // expanding arrays for inner polygon fence and paths to destination will grow in increments of 20 elements
+#define OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK  32      // expanding arrays for inner polygon fence and paths to destination will grow in increments of 20 elements
 #define OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX        255     // index use to indicate we do not have a tentative short path for a node
 
 /// Constructor
