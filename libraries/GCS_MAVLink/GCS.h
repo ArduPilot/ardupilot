@@ -976,7 +976,7 @@ public:
     bool out_of_time() const;
 
     // frsky backend
-    AP_Frsky_Telem frsky;
+    AP_Frsky_Telem *frsky;
 
     // Devo backend
     AP_DEVO_Telem devo_telemetry;
