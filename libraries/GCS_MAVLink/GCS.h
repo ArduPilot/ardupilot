@@ -597,10 +597,10 @@ protected:
     // returns a timestamp suitable for packing into the ts1 field of TIMESYNC:
     uint64_t timesync_timestamp_ns() const;
     void handle_timesync(mavlink_message_t *msg);
-    struct {
+    struct timesync_request {
         int64_t sent_ts1;
         uint32_t last_sent_ms;
-        const uint16_t interval_ms = 10000;
+        static constexpr const uint16_t interval_ms = 10000;
     }  _timesync_request;
 
     void handle_statustext(mavlink_message_t *msg);
