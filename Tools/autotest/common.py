@@ -507,23 +507,23 @@ class AutoTest(ABC):
                                 0,
                                 math.degrees(m.yaw))
 
-    def save_wp(self):
-        """Trigger RC 7 to save waypoint."""
-        self.set_rc(7, 1000)
+    def save_wp(self, ch=7):
+        """Trigger RC Aux to save waypoint."""
+        self.set_rc(ch, 1000)
         self.wait_seconds(1)
-        self.set_rc(7, 2000)
+        self.set_rc(ch, 2000)
         self.wait_seconds(1)
-        self.set_rc(7, 1000)
+        self.set_rc(ch, 1000)
         self.wait_seconds(1)
 
-    def clear_wp(self):
-        """Trigger RC 8 to clear waypoint."""
+    def clear_wp(self, ch=8):
+        """Trigger RC Aux to clear waypoint."""
         self.progress("Clearing waypoints")
-        self.set_rc(8, 1000)
+        self.set_rc(ch, 1000)
         self.wait_seconds(0.5)
-        self.set_rc(8, 2000)
+        self.set_rc(ch, 2000)
         self.wait_seconds(0.5)
-        self.set_rc(8, 1000)
+        self.set_rc(ch, 1000)
         self.mavproxy.send('wp list\n')
         self.mavproxy.expect('Requesting 0 waypoints')
 

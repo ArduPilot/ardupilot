@@ -59,7 +59,7 @@ class AutoTestRover(AutoTest):
         try:
             self.progress("TEST SQUARE")
             self.set_parameter("RC7_OPTION", 7)
-            self.set_parameter("RC8_OPTION", 58)
+            self.set_parameter("RC9_OPTION", 58)
 
             self.mavproxy.send('switch 5\n')
             self.wait_mode('MANUAL')
@@ -67,7 +67,7 @@ class AutoTestRover(AutoTest):
             self.wait_ready_to_arm()
             self.arm_vehicle()
 
-            self.clear_wp()
+            self.clear_wp(9)
 
             # first aim north
             self.progress("\nTurn right towards north")
@@ -120,7 +120,7 @@ class AutoTestRover(AutoTest):
 
             # TODO: actually drive the mission
 
-            self.clear_wp()
+            self.clear_wp(9)
         except Exception as e:
             self.progress("Caught exception: %s" % str(e))
             ex = e
