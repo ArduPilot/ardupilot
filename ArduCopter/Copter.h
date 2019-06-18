@@ -718,9 +718,6 @@ private:
     // fence.cpp
     void fence_check();
 
-    // GCS_Mavlink.cpp
-    void gcs_send_heartbeat(void);
-
     // heli.cpp
     void heli_init();
     void check_dynamic_flight(void);
