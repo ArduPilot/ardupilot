@@ -51,6 +51,7 @@ public:
         main_loop_stuck             = (1U << 15),
         gcs_bad_missionprotocol_link= (1U << 16),
         bitmask_range               = (1U << 17),
+        gcs_offset                  = (1U << 18),
     };
 
     void error(const AP_InternalError::error_t error);
