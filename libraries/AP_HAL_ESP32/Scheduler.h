@@ -41,6 +41,9 @@ public:
     void     reboot(bool hold_in_bootloader) override;
     bool     in_main_thread() const override;
     void     system_initialized() override;
+    static void     thread_create_trampoline(void *ctx);
+    virtual bool thread_create(AP_HAL::MemberProc proc, const char *name,
+                               uint32_t stack_size, priority_base base, int8_t priority);
 
     static const int SPI_PRIORITY = 21;
     static const int MAIN_PRIO = 20;

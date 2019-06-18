@@ -22,6 +22,9 @@
 #ifdef WITH_SITL_OSD
 #include "AP_OSD_SITL.h"
 #endif
+#ifdef WITH_INT_OSD
+#include "AP_OSD_INT.h"
+#endif
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
@@ -168,9 +171,13 @@ AP_OSD::AP_OSD()
     // default first screen enabled
     screen[0].enabled = 1;
 #ifdef WITH_SITL_OSD
-    osd_type.set_default(2);
+    osd_type.set_default(OSD_SITL);
 #endif
-    
+
+#ifdef WITH_INT_OSD
+    osd_type.set_default(OSD_INT);
+#endif
+
 #ifdef HAL_OSD_TYPE_DEFAULT
     osd_type.set_default(HAL_OSD_TYPE_DEFAULT);
 #endif
@@ -207,6 +214,18 @@ void AP_OSD::init()
         break;
     }
 #endif
+
+#ifdef WITH_INT_OSD
+    case OSD_INT: {
+        backend = AP_OSD_INT::probe(*this);
+        if (backend == nullptr) {
+            break;
+        }
+        hal.console->printf("Started INT OSD\n");
+        break;
+    }
+#endif
+
     }
     if (backend != nullptr) {
         // create thread as higher priority than IO
@@ -243,10 +262,10 @@ void AP_OSD::stats()
         return;
     }
 
-    // flight distance     
+    // flight distance
     uint32_t delta_ms = now - last_update_ms;
     last_update_ms = now;
-    
+
     AP_AHRS &ahrs = AP::ahrs();
     Vector2f v = ahrs.groundspeed_vector();
     float speed = v.length();
@@ -255,10 +274,10 @@ void AP_OSD::stats()
     }
     float dist_m = (speed * delta_ms)*0.001;
     last_distance_m += dist_m;
-    
+
     // maximum ground speed
     max_speed_mps = fmaxf(max_speed_mps,speed);
-    
+
     // maximum distance
     Location loc;
     if (ahrs.get_position(loc) && ahrs.home_is_set()) {
@@ -266,7 +285,7 @@ void AP_OSD::stats()
         float distance = home_loc.get_distance(loc);
         max_dist_m = fmaxf(max_dist_m, distance);
     }
-    
+
     // maximum altitude
     float alt;
     AP::ahrs().get_relative_position_D_home(alt);

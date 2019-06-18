@@ -198,6 +198,7 @@ public:
         OSD_NONE=0,
         OSD_MAX7456=1,
         OSD_SITL=2,
+        OSD_INT=3,
     };
     enum switch_method {
         TOGGLE=0,
