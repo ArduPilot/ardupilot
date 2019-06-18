@@ -1,3 +1,27 @@
+Copyright (c) 2011-2019
+Andrew Tridgell
+Randy Mackay
+Peter Barker
+Lucas De Marchi
+Paul Riseborough
+Michael du Breuil
+Tom Pittenger
+Jason Short
+Jonathan Challinger
+Pierre Kancir
+Gustavo José de Sousa
+Leonard Hall
+Jacob Walser
+Michael Oborne
+Pat Hickey
+Amilcar do Carmo Lucas
+Robert Lefebvre
+Siddharth Bharat Purohit
+Francisco Ferreira
+Katsutoshi Murata
+and other contributors
+
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
