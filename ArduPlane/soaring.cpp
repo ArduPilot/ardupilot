@@ -81,7 +81,7 @@ void Plane::update_soaring() {
         Vector3f position;
         if (!ahrs.get_relative_position_NED_home(position)) {
             return;
-        } else if (g2.soaring_controller.max_radius > 0 &&
+        } else if (g2.soaring_controller.max_radius >= 0 &&
                    powf(position.x,2)+powf(position.y,2) > powf(g2.soaring_controller.max_radius,2) &&
                 previous_mode->mode_number()!=Mode::Number::AUTO) {
             // Some other loiter status, and outside of maximum soaring radius, and previous mode wasn't AUTO
