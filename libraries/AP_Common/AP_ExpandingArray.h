@@ -31,6 +31,7 @@
  * Warnings:
  *    1. memset, memcpy, memcmp cannot be used because the individual elements are not guaranteed to be next to each other in memory
  *    2. operator[] functions do not perform any range checking so max_items() should be used when necessary to avoid out-of-bound memory access
+ *    3. elements_per_chunk (provided in constructor) should be a factor of 2 (i.e. 16, 32, 64) for best performance
  */
 
 #pragma once
@@ -75,15 +76,10 @@ public:
         // expand chunk_ptrs array if necessary
         if (chunk_count + num_chunks >= chunk_count_max) {
             uint16_t chunk_ptr_size = chunk_count + num_chunks + chunk_ptr_increment;
-            chunk_ptr_t *chunk_ptrs_new = (chunk_ptr_t*)calloc(chunk_ptr_size, sizeof(T*));
+            chunk_ptr_t *chunk_ptrs_new = (chunk_ptr_t*)realloc(chunk_ptrs, chunk_ptr_size * sizeof(T*));
             if (chunk_ptrs_new == nullptr) {
                 return false;
             }
-            // copy pointers to new points array
-            memcpy(chunk_ptrs_new, chunk_ptrs, chunk_count_max * sizeof(T*));
-
-            // free old pointers array
-            free(chunk_ptrs);
 
             // use new pointers array
             chunk_ptrs = chunk_ptrs_new;
@@ -116,12 +112,11 @@ public:
 
 private:
 
-    // chunk_ptrs array is grown by this many elements each time it fills
-    const uint16_t chunk_ptr_increment = 50;
+    const uint16_t chunk_size;  // the number of T elements in each chunk
+    const uint16_t chunk_ptr_increment = 32;    // chunk_ptrs array is grown by this many elements each time it fills
 
     typedef T* chunk_ptr_t;     // pointer to a chunk
 
-    uint16_t chunk_size;        // the number of T elements in each chunk
     chunk_ptr_t *chunk_ptrs;    // array of pointers to allocated chunks
     uint16_t chunk_count_max;   // number of elements in chunk_ptrs array
     uint16_t chunk_count;       // number of allocated chunks
