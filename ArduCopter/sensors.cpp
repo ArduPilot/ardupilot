@@ -2,16 +2,7 @@
 
 void Copter::read_airspeed(void)
 {
-    if (airspeed.enabled()) {
-        airspeed.update(should_log(MASK_LOG_IMU));
-    }
-
-     // supply a new temperature to the barometer from the digital
-    // airspeed sensor if we can
-    float temperature;
-    if (airspeed.get_temperature(temperature)) {
-        barometer.set_external_temperature(temperature);
-    }
+    airspeed.update(should_log(MASK_LOG_IMU));
 }
 
 // return barometric altitude in centimeters
