@@ -2134,8 +2134,9 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
         logger->Write_Message(text);
     }
 
-    // add statustext message to FrSky lib queue
-    frsky.queue_message(severity, text);
+    if (frsky != nullptr) {
+        frsky->queue_message(severity, text);
+    }
 
     AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
@@ -2277,7 +2278,13 @@ void GCS::setup_uarts()
         chan(i).setup_uart(i);
     }
 
-    frsky.init();
+    if (frsky == nullptr) {
+        frsky = new AP_Frsky_Telem();
+        if (frsky == nullptr || !frsky->init()) {
+            delete frsky;
+            frsky = nullptr;
+        }
+    }
 
     devo_telemetry.init();
 }
