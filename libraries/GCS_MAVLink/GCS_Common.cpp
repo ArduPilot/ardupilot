@@ -3728,7 +3728,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
 #endif
 }
 
-
+MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_t &packet)
+{
+    const uint16_t battery_mask = packet.param1;
+    const float percentage = packet.param2;
+    if (AP::battery().reset_remaining(battery_mask, percentage)) {
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_FAILED;
+}
 
 MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
 {
@@ -3921,6 +3929,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_preflight_calibration(packet);
         break;
 
+    case MAV_CMD_BATTERY_RESET:
+        result = handle_command_battery_reset(packet);
+        break;
+        
     case MAV_CMD_PREFLIGHT_UAVCAN:
         result = handle_command_preflight_can(packet);
         break;
