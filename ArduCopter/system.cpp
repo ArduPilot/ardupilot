@@ -148,9 +148,6 @@ void Copter::init_ardupilot()
     ahrs.set_optflow(&optflow);
 #endif
 
-    // give AHRS the airspeed sensor
-    ahrs.set_airspeed(&airspeed); 
-
     // init Location class
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location::set_terrain(&terrain);

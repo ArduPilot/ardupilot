@@ -1354,18 +1354,9 @@ MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
 
 float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
 {
-    // airspeed sensors are best.  While the AHRS airspeed_estimate
-    // will use an airspeed sensor, that value is constrained by the
-    // ground speed.  When reporting we should send the true airspeed
-    // value if possible:
+    // Only report airspeed sensor if healthy
     if (copter.airspeed.enabled() && copter.airspeed.healthy()) {
         return copter.airspeed.get_airspeed();
-    }
-
-    // airspeed estimates are OK:
-    float aspeed;
-    if (AP::ahrs().airspeed_estimate(&aspeed)) {
-        return aspeed;
     }
 
     // lying is worst:
