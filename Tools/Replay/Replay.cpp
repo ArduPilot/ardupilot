@@ -624,6 +624,9 @@ void Replay::write_ekf_logs(void)
     if (!LogReader::in_list("POS", nottypes)) {
         _vehicle.logger.Write_POS(_vehicle.ahrs);
     }
+    if (!LogReader::in_list("VEL", nottypes)) {
+        _vehicle.logger.Write_VEL();
+    }
 }
 
 void Replay::read_sensors(const char *type)
