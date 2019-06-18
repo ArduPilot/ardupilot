@@ -38,6 +38,8 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Arming/AP_Arming.h>
 #include <AP_GPS/AP_GPS.h>
 
+#define SWITCH_DEBOUNCE_TIME_MS  200
+
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: RC min PWM
@@ -379,15 +381,11 @@ int16_t RC_Channel::stick_mixing(const int16_t servo_in)
 //
 // support for auxillary switches:
 //
-#define MODE_SWITCH_DEBOUNCE_TIME_MS  200
-
-uint32_t RC_Channel::old_switch_positions;
-RC_Channel::modeswitch_state_t RC_Channel::mode_switch_state;
 
 void RC_Channel::reset_mode_switch()
 {
-    mode_switch_state.last_position = -1;
-    mode_switch_state.debounced_position = -1;
+    switch_state.current_position = -1;
+    switch_state.debounce_position = -1;
     read_mode_switch();
 }
 
@@ -407,32 +405,36 @@ void RC_Channel::read_mode_switch()
     else if (pulsewidth < 1750) position = 4;
     else position = 5;
 
-    if (mode_switch_state.last_position == position) {
-        // nothing to do
-        return;
-    }
-
-    const uint32_t tnow_ms = AP_HAL::millis();
-    if (position != mode_switch_state.debounced_position) {
-        mode_switch_state.debounced_position = position;
-        // store time that switch last moved
-        mode_switch_state.last_edge_time_ms = tnow_ms;
-        return;
-    }
-
-    if (tnow_ms - mode_switch_state.last_edge_time_ms < MODE_SWITCH_DEBOUNCE_TIME_MS) {
-        // still in debounce
+    if (!debounce_completed(position)) {
         return;
     }
 
     // set flight mode and simple mode setting
     mode_switch_changed(position);
+}
 
-    // set the last switch position.  This marks the
-    // transition as complete, even if the mode switch actually
-    // failed.  This prevents the vehicle changing modes
-    // unexpectedly some time later.
-    mode_switch_state.last_position = position;
+bool RC_Channel::debounce_completed(int8_t position) 
+{
+    // switch change not detected
+    if (switch_state.current_position == position) {
+        // reset debouncing
+         switch_state.debounce_position = position;
+    } else {
+        // switch change detected
+        const uint32_t tnow_ms = AP_HAL::millis();
+
+        // position not established yet
+        if (switch_state.debounce_position != position) {
+            switch_state.debounce_position = position;
+            switch_state.last_edge_time_ms = tnow_ms;
+        } else if (tnow_ms - switch_state.last_edge_time_ms >= SWITCH_DEBOUNCE_TIME_MS) {
+            // position estabilished; debounce completed
+            switch_state.current_position = position;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //
@@ -495,24 +497,13 @@ bool RC_Channel::read_aux()
     if (!read_3pos_switch(new_position)) {
         return false;
     }
-    const aux_switch_pos_t old_position = old_switch_position();
-    if (new_position == old_position) {
-        debounce.count = 0;
-        return false;
-    }
-    if (debounce.new_position != new_position) {
-        debounce.new_position = new_position;
-        debounce.count = 0;
-    }
-    // a value of 2 means we need 3 values in a row with the same
-    // value to activate
-    if (debounce.count++ < 2) {
+
+    if (!debounce_completed(new_position)) {
         return false;
     }
 
     // debounced; undertake the action:
     do_aux_function(_option, new_position);
-    set_old_switch_position(new_position);
     return true;
 }
 
