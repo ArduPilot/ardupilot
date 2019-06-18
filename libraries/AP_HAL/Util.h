@@ -14,6 +14,9 @@ public:
     void set_soft_armed(const bool b);
     bool get_soft_armed() const { return soft_armed; }
 
+    // return the time that the armed state last changed
+    uint32_t get_last_armed_change() const { return last_armed_change_ms; };
+
     // return true if the reason for the reboot was a watchdog reset
     virtual bool was_watchdog_reset() const { return false; }
 
@@ -158,4 +161,5 @@ protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
     bool soft_armed = false;
+    uint32_t last_armed_change_ms;
 };
