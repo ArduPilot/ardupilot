@@ -46,6 +46,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @DisplayName: Heartbeat Pin
     // @Description: This sets a digital output pin which is cycled at 10Hz when termination is not activated. Note that if a FS_TERM_PIN is set then the heartbeat pin will continue to cycle at 10Hz when termination is activated, to allow the termination board to distinguish between autopilot crash and termination.
     // @User: Advanced
+    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5
     AP_GROUPINFO("HB_PIN",      1, AP_AdvancedFailsafe, _heartbeat_pin, -1),
 
     // @Param: WP_COMMS
@@ -76,6 +77,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @DisplayName: Terminate Pin
     // @Description: This sets a digital output pin to set high on flight termination
     // @User: Advanced
+    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5
     AP_GROUPINFO("TERM_PIN",    7, AP_AdvancedFailsafe, _terminate_pin,    -1),
 
     // @Param: AMSL_LIMIT
