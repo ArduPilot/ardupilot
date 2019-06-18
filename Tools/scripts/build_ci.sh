@@ -93,6 +93,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeOrange-bootloader" ]; then
+        echo "Building CubeOrange bootloader"
+        $waf configure --board CubeOrange --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+
     if [ "$t" == "stm32f7" ]; then
         echo "Building mRoX21-777/"
         $waf configure --board mRoX21-777
