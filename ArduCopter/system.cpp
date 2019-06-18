@@ -52,8 +52,7 @@ void Copter::init_ardupilot()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs().chan(0).setup_uart(0);
-
+    gcs().setup_console();
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
