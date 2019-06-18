@@ -1500,7 +1500,8 @@ class AutoTestCopter(AutoTest):
                     break
 
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
@@ -1667,7 +1668,69 @@ class AutoTestCopter(AutoTest):
                 raise NotAchievedException("Did not see expected RFND message")
 
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
+    def test_surface_tracking(self):
+        ex = None
+        self.context_push()
+
+        try:
+            self.set_parameter("RNGFND1_TYPE", 1)
+            self.set_parameter("RNGFND1_MIN_CM", 0)
+            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_PIN", 0)
+            self.set_parameter("RNGFND1_SCALING", 12.12)
+            self.set_parameter("RC9_OPTION", 10) # rangefinder
+            self.set_rc(9, 2000)
+
+            self.reboot_sitl() # needed for both rangefinder and initial position
+            self.assert_vehicle_location_is_at_startup_location()
+
+            self.takeoff(10, mode="LOITER")
+            lower_surface_pos = mavutil.location(-35.362421, 149.164534, 584, 270)
+            here = self.mav.location()
+            bearing = self.get_bearing(here, lower_surface_pos)
+
+            self.change_mode("GUIDED")
+            self.guided_achieve_heading(bearing)
+            self.change_mode("LOITER")
+            self.delay_sim_time(2)
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            orig_absolute_alt_mm = m.alt
+
+            self.progress("Original alt: absolute=%f" % orig_absolute_alt_mm)
+
+            self.progress("Flying somewhere which surface is known lower compared to takeoff point")
+            self.set_rc(2, 1450)
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time() - tstart > 200:
+                    raise NotAchievedException("Did not reach lower point")
+                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                x = mavutil.location(m.lat/1e7, m.lon/1e7, m.alt/1e3, 0)
+                dist = self.get_distance(x, lower_surface_pos)
+                delta = (orig_absolute_alt_mm - m.alt)/1000.0
+
+                self.progress("Distance: %fm abs-alt-delta: %fm" %
+                              (dist, delta))
+                if dist < 10:
+                    if delta < 0.8:
+                        raise NotAchievedException("Did not dip in altitude as expected")
+                    break
+
+            self.set_rc(2, 1500)
+            self.do_RTL()
+
+        except Exception as e:
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
+            self.disarm_vehicle(force=True)
             ex = e
         self.context_pop()
         self.reboot_sitl()
@@ -2139,7 +2202,8 @@ class AutoTestCopter(AutoTest):
             self.wait_mode("ACRO")
 
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
@@ -2165,7 +2229,8 @@ class AutoTestCopter(AutoTest):
             self.set_rc(10, 1000) # this re-polls the mode switch
             self.wait_mode("CIRCLE")
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
@@ -2489,7 +2554,8 @@ class AutoTestCopter(AutoTest):
             self.mav.motors_disarmed_wait()
 
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
@@ -2538,6 +2604,7 @@ class AutoTestCopter(AutoTest):
             self.load_mission("copter-gripper-mission.txt")
             self.mavproxy.send('mode loiter\n')
             self.wait_ready_to_arm()
+            self.assert_vehicle_location_is_at_startup_location()
             self.arm_vehicle()
             self.mavproxy.send('mode auto\n')
             self.wait_mode('AUTO')
@@ -2545,7 +2612,8 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.expect("Gripper Grabbed")
             self.mavproxy.expect("Gripper Released")
         except Exception as e:
-            self.progress("Exception caught: %s" % str(e))
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             self.mavproxy.send('mode land\n')
             ex = e
         self.context_pop()
@@ -2983,7 +3051,8 @@ class AutoTestCopter(AutoTest):
                 self.progress("Attitude: %f %f %f" %
                               (math.degrees(att.roll), math.degrees(att.pitch), math.degrees(att.yaw)))
         except Exception as e:
-            print("Exception caught: %s" % str(e))
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
@@ -3067,7 +3136,8 @@ class AutoTestCopter(AutoTest):
             self.loiter_to_ne(start.x + 5, start.y - 10, start.z + 10)
 
         except Exception as e:
-            self.progress("Exception caught: %s" % self.get_exception_stacktrace(e))
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
@@ -3520,6 +3590,10 @@ class AutoTestCopter(AutoTest):
             ("RangeFinder",
              "Test RangeFinder Basic Functionality",
              self.test_rangefinder),
+
+            ("SurfaceTracking",
+             "Test Surface Tracking",
+             self.test_surface_tracking),
 
             ("Parachute",
              "Test Parachute Functionality",

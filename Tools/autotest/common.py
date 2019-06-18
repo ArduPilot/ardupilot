@@ -314,6 +314,7 @@ class AutoTest(ABC):
     def reboot_sitl(self):
         """Reboot SITL instance and wait for it to reconnect."""
         self.reboot_sitl_mav()
+        self.assert_simstate_location_is_at_startup_location()
 
     def reboot_sitl_mavproxy(self):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
@@ -1379,6 +1380,26 @@ class AutoTest(ABC):
             self.set_rc(3, 1500)
             self.set_rc(1, 1500)
 
+    def assert_vehicle_location_is_at_startup_location(self, dist_max=1):
+        here = self.mav.location()
+        start_loc = self.sitl_start_location()
+        dist = self.get_distance(here, start_loc)
+        data = "dist=%f max=%f (here: %s start-loc: %s)" % (dist, dist_max, here, start_loc)
+
+        if dist > dist_max:
+            raise NotAchievedException("Far from startup location: %s" % data)
+        self.progress("Close to startup location: %s" % data)
+
+    def assert_simstate_location_is_at_startup_location(self, dist_max=1):
+        simstate_loc = self.sim_location()
+        start_loc = self.sitl_start_location()
+        dist = self.get_distance(simstate_loc, start_loc)
+        data = "dist=%f max=%f (simstate: %s start-loc: %s)" % (dist, dist_max, simstate_loc, start_loc)
+
+        if dist > dist_max:
+            raise NotAchievedException("simstate from startup location: %s" % data)
+        self.progress("Simstate Close to startup location: %s" % data)
+
     def reach_distance_manual(self, distance):
         """Manually direct the vehicle to the target distance from home."""
         if self.is_copter():
@@ -1394,21 +1415,21 @@ class AutoTest(ABC):
 
     def guided_achieve_heading(self, heading):
         tstart = self.get_sim_time()
-        self.run_cmd(mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                     heading,  # target angle
-                     10,  # degrees/second
-                     1,  # -1 is counter-clockwise, 1 clockwise
-                     0,  # 1 for relative, 0 for absolute
-                     0,  # p5
-                     0,  # p6
-                     0,  # p7
-                     )
         while True:
             if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not achieve heading")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                         heading,  # target angle
+                         10,  # degrees/second
+                         1,  # -1 is counter-clockwise, 1 clockwise
+                         0,  # 1 for relative, 0 for absolute
+                         0,  # p5
+                         0,  # p6
+                         0,  # p7
+            )
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("heading=%d want=%f" % (m.heading, heading))
-            if m.heading == heading:
+            self.progress("heading=%d want=%d" % (m.heading, int(heading)))
+            if m.heading == int(heading):
                 return
 
     #################################################
