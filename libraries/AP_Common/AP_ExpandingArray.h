@@ -47,6 +47,16 @@ public:
         chunk_size(elements_per_chunk)
     {}
 
+    ~AP_ExpandingArray(void)
+    {
+        // free chunks
+        for (uint16_t i=0; i<chunk_count; i++) {
+            free(chunk_ptrs[i]);
+        }
+        // free chunks_ptrs array
+        free(chunk_ptrs);
+    }
+
     /* Do not allow copies */
     AP_ExpandingArray<T>(const AP_ExpandingArray<T> &other) = delete;
     AP_ExpandingArray<T> &operator=(const AP_ExpandingArray<T>&) = delete;
