@@ -417,6 +417,16 @@ struct PACKED log_POS {
     float rel_origin_alt;
 };
 
+struct PACKED log_VEL {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float vx;
+    float vy;
+    float vz;
+    float gx;
+    float gy;
+};
+
 struct PACKED log_POWR {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1362,6 +1372,8 @@ struct PACKED log_Arm_Disarm {
       "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBB0GG????" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
       "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" }, \
+    { LOG_VEL_MSG, sizeof(log_VEL), \
+      "VEL","Qfffff","TimeUS,Vx,Vy,Vz,Gx,Gy", "snnnnn", "F00000" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
@@ -1640,6 +1652,7 @@ enum LogMessages : uint8_t {
     LOG_GYR2_MSG,
     LOG_GYR3_MSG,
     LOG_POS_MSG,
+    LOG_VEL_MSG,
     LOG_PIDR_MSG,
     LOG_PIDP_MSG,
     LOG_PIDY_MSG,

@@ -240,6 +240,7 @@ public:
     void Write_Power(void);
     void Write_AHRS2(AP_AHRS &ahrs);
     void Write_POS(AP_AHRS &ahrs);
+    void Write_VEL();
 #if AP_AHRS_NAVEKF_AVAILABLE
     void Write_EKF(AP_AHRS_NavEKF &ahrs);
 #endif

@@ -501,6 +501,25 @@ void AP_Logger::Write_POS(AP_AHRS &ahrs)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write a VEL packet
+void AP_Logger::Write_VEL()
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector3f vel;
+    Vector2f gs {ahrs.groundspeed_vector()};
+    bool have_vel {ahrs.get_velocity_NED(vel)};
+    struct log_VEL pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_VEL_MSG),
+        time_us : AP_HAL::micros64(),
+        vx      : have_vel ? vel.x : quiet_nanf(),
+        vy      : have_vel ? vel.y : quiet_nanf(),
+        vz      : have_vel ? vel.z : quiet_nanf(),
+        gx      : gs.x,
+        gy      : gs.y,
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 #if AP_AHRS_NAVEKF_AVAILABLE
 void AP_Logger::Write_EKF(AP_AHRS_NavEKF &ahrs)
 {
