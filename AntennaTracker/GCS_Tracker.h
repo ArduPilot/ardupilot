@@ -10,23 +10,20 @@ class GCS_Tracker : public GCS
 
 public:
 
-    // return the number of valid GCS objects
-    uint8_t num_gcs() const override { return ARRAY_SIZE(_chan); };
-
     // return GCS link at offset ofs
-    GCS_MAVLINK_Tracker &chan(uint8_t ofs) override {
-        if (ofs >= num_gcs()) {
+    GCS_MAVLINK_Tracker *chan(const uint8_t ofs) override {
+        if (ofs > _num_gcs) {
             AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
-            ofs = 0;
+            return nullptr;
         }
-        return _chan[ofs];
+        return (GCS_MAVLINK_Tracker*)_chan[ofs];
     }
-    const GCS_MAVLINK_Tracker &chan(uint8_t ofs) const override {
-        if (ofs >= num_gcs()) {
+    const GCS_MAVLINK_Tracker *chan(const uint8_t ofs) const override {
+        if (ofs > _num_gcs) {
             AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
-            ofs = 0;
+            return nullptr;
         }
-        return _chan[ofs];
+        return (GCS_MAVLINK_Tracker*)_chan[ofs];
     }
 
     void update_vehicle_sensor_status_flags() override;
@@ -34,11 +31,16 @@ public:
     uint32_t custom_mode() const override;
     MAV_TYPE frame_type() const override;
 
+protected:
+
+    GCS_MAVLINK_Tracker *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
+                                                 AP_HAL::UARTDriver &uart) override {
+        return new GCS_MAVLINK_Tracker(params, uart);
+    }
+
 private:
 
     void request_datastream_position(uint8_t sysid, uint8_t compid);
     void request_datastream_airpressure(uint8_t sysid, uint8_t compid);
-
-    GCS_MAVLINK_Tracker _chan[MAVLINK_COMM_NUM_BUFFERS];
 
 };
