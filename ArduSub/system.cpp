@@ -56,7 +56,7 @@ void Sub::init_ardupilot()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs().chan(0).setup_uart(AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(0);
 
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
