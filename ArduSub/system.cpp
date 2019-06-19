@@ -56,7 +56,7 @@ void Sub::init_ardupilot()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
@@ -79,7 +79,7 @@ void Sub::init_ardupilot()
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // setup telem slots with serial ports
-    gcs().setup_uarts(serial_manager);
+    gcs().setup_uarts();
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
