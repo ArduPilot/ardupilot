@@ -25,7 +25,7 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::SLCAN_Interface::var_info[] = {
     // @Values: 0:Disabled,1:First driver,2:Second driver
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("CPORT", 1, AP_BoardConfig_CAN::SLCAN_Interface, _can_port, 1),
+    AP_GROUPINFO("CPORT", 1, AP_BoardConfig_CAN::SLCAN_Interface, _can_port, 0),
 
     // @Param: SERNUM
     // @DisplayName: SLCAN Serial Port
