@@ -105,10 +105,10 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
   setup a UART, handling begin() and init()
  */
 void
-GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance)
+GCS_MAVLINK::setup_uart(AP_SerialManager::SerialProtocol protocol, uint8_t instance)
 {
     // search for serial port
-    
+    const AP_SerialManager& serial_manager = AP::serialmanager();
     AP_HAL::UARTDriver *uart;
     uart = serial_manager.find_serial(protocol, instance);
     if (uart == nullptr) {
@@ -2270,10 +2270,10 @@ void GCS::send_mission_item_reached_message(uint16_t mission_index)
     }
 }
 
-void GCS::setup_uarts(AP_SerialManager &serial_manager)
+void GCS::setup_uarts()
 {
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        chan(i).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
+        chan(i).setup_uart(AP_SerialManager::SerialProtocol_MAVLink, i);
     }
 
     frsky.init();
