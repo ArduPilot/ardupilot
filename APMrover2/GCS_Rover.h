@@ -9,24 +9,21 @@ class GCS_Rover : public GCS
 
 public:
 
-    // return the number of valid GCS objects
-    uint8_t num_gcs() const override { return ARRAY_SIZE(_chan); };
-
     // return GCS link at offset ofs
-    GCS_MAVLINK_Rover &chan(uint8_t ofs) override {
-        if (ofs >= num_gcs()) {
+    GCS_MAVLINK_Rover *chan(const uint8_t ofs) override {
+        if (ofs > _num_gcs) {
             AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
-            ofs = 0;
+            return nullptr;
         }
-        return _chan[ofs];
+        return (GCS_MAVLINK_Rover*)_chan[ofs];
     }
     // return GCS link at offset ofs
-    const GCS_MAVLINK_Rover &chan(uint8_t ofs) const override {
-        if (ofs >= num_gcs()) {
+    const GCS_MAVLINK_Rover *chan(const uint8_t ofs) const override {
+        if (ofs > _num_gcs) {
             AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
-            ofs = 0;
+            return nullptr;
         }
-        return _chan[ofs];
+        return (GCS_MAVLINK_Rover*)_chan[ofs];
     }
 
     uint32_t custom_mode() const override;
@@ -39,8 +36,11 @@ public:
     bool simple_input_active() const override;
     bool supersimple_input_active() const override;
 
-private:
+protected:
 
-    GCS_MAVLINK_Rover _chan[MAVLINK_COMM_NUM_BUFFERS];
+    GCS_MAVLINK_Rover *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
+                                               AP_HAL::UARTDriver &uart) override {
+        return new GCS_MAVLINK_Rover(params, uart);
+    }
 
 };
