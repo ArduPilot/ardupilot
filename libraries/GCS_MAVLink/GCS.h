@@ -9,7 +9,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <stdint.h>
 #include "MAVLink_routing.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
@@ -297,7 +296,7 @@ public:
     void        update_receive(uint32_t max_time_us=1000);
     void        update_send();
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
-    void        setup_uart(AP_SerialManager::SerialProtocol protocol, uint8_t instance);
+    void        setup_uart(uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...) const;
     void        send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list) const;

@@ -28,6 +28,7 @@
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
@@ -105,12 +106,13 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
   setup a UART, handling begin() and init()
  */
 void
-GCS_MAVLINK::setup_uart(AP_SerialManager::SerialProtocol protocol, uint8_t instance)
+GCS_MAVLINK::setup_uart(uint8_t instance)
 {
     // search for serial port
     const AP_SerialManager& serial_manager = AP::serialmanager();
-    AP_HAL::UARTDriver *uart;
-    uart = serial_manager.find_serial(protocol, instance);
+    const AP_SerialManager::SerialProtocol protocol = AP_SerialManager::SerialProtocol_MAVLink;
+
+    AP_HAL::UARTDriver *uart = serial_manager.find_serial(protocol, instance);
     if (uart == nullptr) {
         // return immediately if not found
         return;
@@ -2273,7 +2275,7 @@ void GCS::send_mission_item_reached_message(uint16_t mission_index)
 void GCS::setup_uarts()
 {
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        chan(i).setup_uart(AP_SerialManager::SerialProtocol_MAVLink, i);
+        chan(i).setup_uart(i);
     }
 
     frsky.init();
