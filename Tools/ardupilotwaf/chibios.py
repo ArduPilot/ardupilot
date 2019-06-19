@@ -179,7 +179,6 @@ def setup_can_build(cfg):
     env.AP_LIBRARIES += [
         'AP_UAVCAN',
         'modules/uavcan/libuavcan/src/**/*.cpp',
-        'modules/uavcan/libuavcan_drivers/stm32/driver/src/*.cpp'
         ]
 
     env.CFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
@@ -199,7 +198,6 @@ def setup_can_build(cfg):
 
     env.INCLUDES += [
         cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath(),
-        cfg.srcnode.find_dir('modules/uavcan/libuavcan_drivers/stm32/driver/include').abspath()
         ]
     cfg.get_board().with_uavcan = True
 
