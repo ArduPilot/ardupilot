@@ -594,6 +594,10 @@ public:
     AP_Scripting scripting;
 #endif // ENABLE_SCRIPTING
 
+#if SMARTAUDIO_ENABLED == ENABLED
+    AP_SmartAudio smartaudio;
+#endif
+
     AP_Float tuning_min;
     AP_Float tuning_max;
 };

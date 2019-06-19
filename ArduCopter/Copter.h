@@ -163,6 +163,10 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#if SMARTAUDIO_ENABLED == ENABLED
+#include <AP_SmartAudio/AP_SmartAudio.h>
+#endif
+
 // Local modules
 #ifdef USER_PARAMS_ENABLED
 #include "UserParameters.h"

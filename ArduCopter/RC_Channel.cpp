@@ -564,6 +564,15 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 #endif
             break;
 
+#if SMARTAUDIO_ENABLED == ENABLED
+   case AUX_FUNC::SA_PWR_LOW_OR_AUTO:
+        if (ch_flag == LOW) {
+            copter.g2.smartaudio.set_power_mode(AP_SmartAudio::SmartAudio_Power_0);
+        } else {
+            copter.g2.smartaudio.set_power_mode(AP_SmartAudio::SmartAudio_Power_AUTO);
+        }
+#endif
+
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
         break;

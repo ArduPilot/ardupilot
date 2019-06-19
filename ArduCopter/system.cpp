@@ -234,6 +234,10 @@ void Copter::init_ardupilot()
     }
 #endif // ENABLE_SCRIPTING
 
+#if SMARTAUDIO_ENABLED == ENABLED
+    g2.smartaudio.init();
+#endif
+
     // set landed flags
     set_land_complete(true);
     set_land_complete_maybe(true);

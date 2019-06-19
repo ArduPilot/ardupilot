@@ -46,6 +46,7 @@
 //#define MODE_ZIGZAG_ENABLED   DISABLED            // disable zigzag mode support
 //#define DEVO_TELEM_ENABLED    DISABLED            // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
 //#define OSD_ENABLED           DISABLED            // disable on-screen-display support
+//#define SMARTAUDIO_ENABLED    DISABLED            // disable TBS SmartAudio support
 
 
 // features below are disabled by default on all boards

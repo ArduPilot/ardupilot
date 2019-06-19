@@ -200,6 +200,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
+#if SMARTAUDIO_ENABLED == ENABLED
+    SCHED_TASK_CLASS(AP_SmartAudio,         &copter.g2.smartaudio,        update,         5,  75),
+#endif
 };
 
 constexpr int8_t Copter::_failsafe_priorities[7];

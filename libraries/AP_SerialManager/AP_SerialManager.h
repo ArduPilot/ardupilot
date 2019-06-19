@@ -107,6 +107,7 @@ public:
         SerialProtocol_Robotis = 19,
         SerialProtocol_NMEAOutput = 20,
         SerialProtocol_WindVane = 21,
+        SerialProtocol_SmartAudio = 22,
     };
 
     // get singleton instance
