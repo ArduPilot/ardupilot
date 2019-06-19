@@ -55,7 +55,7 @@ void Plane::init_ardupilot()
 
     // initialise serial ports
     serial_manager.init();
-    gcs().chan(0).setup_uart(AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(0);
 
 
     // Register mavlink_delay_cb, which will run anytime you have
