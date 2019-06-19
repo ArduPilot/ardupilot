@@ -232,5 +232,8 @@ bool AP_BattMonitor_Backend::reset_remaining(float percentage)
     // full charge
     _state.consumed_wh = _state.consumed_mah * 1000 * _state.voltage;
 
+    // reset failsafe state for this backend
+    _state.failsafe = update_failsafes();
+
     return true;
 }
