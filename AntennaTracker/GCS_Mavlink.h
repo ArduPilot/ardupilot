@@ -7,6 +7,8 @@ class GCS_MAVLINK_Tracker : public GCS_MAVLINK
 
 public:
 
+    using GCS_MAVLINK::GCS_MAVLINK;
+
 protected:
 
     // telem_delay is not used by Tracker but is pure virtual, thus
