@@ -1812,6 +1812,7 @@ class AutoTest(ABC):
 
     def check_sitl_reset(self):
         self.wait_heartbeat()
+        self.clear_mission()
         if self.armed():
             self.progress("Armed at end of test; force-rebooting SITL")
             self.disarm_vehicle(force=True)
