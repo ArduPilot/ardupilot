@@ -837,10 +837,8 @@ class AutoTestCopter(AutoTest):
         # initialise current glitch
         glitch_current = 0
         self.progress("Apply first glitch")
-        self.mavproxy.send('param set SIM_GPS_GLITCH_X %.7f\n' %
-                           glitch_lat[glitch_current])
-        self.mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' %
-                           glitch_lon[glitch_current])
+        self.set_parameter("SIM_GPS_GLITCH_X", glitch_lat[glitch_current])
+        self.set_parameter("SIM_GPS_GLITCH_Y", glitch_lon[glitch_current])
 
         # record position for 30 seconds
         while tnow < tstart + timeout:
@@ -857,10 +855,8 @@ class AutoTestCopter(AutoTest):
                 else:
                     self.progress("Applying glitch %u" % glitch_current)
                     # move onto the next glitch
-                    self.mavproxy.send('param set SIM_GPS_GLITCH_X %.7f\n' %
-                                       glitch_lat[glitch_current])
-                    self.mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' %
-                                       glitch_lon[glitch_current])
+                    self.set_parameter("SIM_GPS_GLITCH_X", glitch_lat[glitch_current])
+                    self.set_parameter("SIM_GPS_GLITCH_Y", glitch_lon[glitch_current])
 
             # start displaying distance moved after all glitches applied
             if glitch_current == -1:
@@ -952,10 +948,8 @@ class AutoTestCopter(AutoTest):
         # initialise current glitch
         glitch_current = 0
         self.progress("Apply first glitch")
-        self.mavproxy.send('param set SIM_GPS_GLITCH_X %.7f\n' %
-                           glitch_lat[glitch_current])
-        self.mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' %
-                           glitch_lon[glitch_current])
+        self.set_parameter("SIM_GPS_GLITCH_X", glitch_lat[glitch_current])
+        self.set_parameter("SIM_GPS_GLITCH_Y", glitch_lon[glitch_current])
 
         # record position for 30 seconds
         while glitch_current < glitch_num:
@@ -966,9 +960,9 @@ class AutoTestCopter(AutoTest):
                 # apply next glitch
                 if glitch_current < glitch_num:
                     self.progress("Applying glitch %u" % glitch_current)
-                    self.mavproxy.send('param set SIM_GPS_GLITCH_X %.7f\n' %
+                    self.set_parameter("SIM_GPS_GLITCH_X",
                                        glitch_lat[glitch_current])
-                    self.mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' %
+                    self.set_parameter("SIM_GPS_GLITCH_Y",
                                        glitch_lon[glitch_current])
 
         # turn off glitching
