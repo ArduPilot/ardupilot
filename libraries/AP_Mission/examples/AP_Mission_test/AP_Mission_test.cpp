@@ -15,7 +15,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
     AP_GROUPEND
 };
 
