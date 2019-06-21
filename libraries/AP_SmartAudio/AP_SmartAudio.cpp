@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_SmartAudio::var_info[] = {
     // @DisplayName: SmartAudio protocol version
     // @Description: 0: None, 3: Version 2.0 One way
     // @User: Standard
-    AP_GROUPINFO("PROTOCOL", 1, AP_SmartAudio, protocol_version, 0),
+    AP_GROUPINFO_FLAGS("PROTOCOL", 1, AP_SmartAudio, protocol_version, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: TRAILZERO
     // @DisplayName: Enable trailing zero
@@ -36,31 +36,31 @@ const AP_Param::GroupInfo AP_SmartAudio::var_info[] = {
     // @DisplayName: Power #0
     // @Description: First (minimal) VTX power level
     // @User: Standard
-    AP_GROUPINFO("PWR_0", 5, AP_SmartAudio, power_0, -1),
+    AP_GROUPINFO("PWR_0", 5, AP_SmartAudio, power_value[0], -1),
 
     // @Param: PWR_1
     // @DisplayName: Power #1
     // @Description: Second power level
     // @User: Standard
-    AP_GROUPINFO("PWR_1", 6, AP_SmartAudio, power_1, -1),
+    AP_GROUPINFO("PWR_1", 6, AP_SmartAudio, power_value[1], -1),
 
     // @Param: PWR_2
     // @DisplayName: Power #2
     // @Description: Third power level
     // @User: Standard
-    AP_GROUPINFO("PWR_2", 7, AP_SmartAudio, power_2, -1),
+    AP_GROUPINFO("PWR_2", 7, AP_SmartAudio, power_value[2], -1),
 
     // @Param: PWR_3
     // @DisplayName: Power #3
     // @Description: Fourth power level
     // @User: Standard
-    AP_GROUPINFO("PWR_3", 8, AP_SmartAudio, power_3, -1),
+    AP_GROUPINFO("PWR_3", 8, AP_SmartAudio, power_value[3], -1),
 
     // @Param: PWR_4
     // @DisplayName: Power #4
     // @Description: Fifth power level
     // @User: Standard
-    AP_GROUPINFO("PWR_4", 9, AP_SmartAudio, power_4, -1),
+    AP_GROUPINFO("PWR_4", 9, AP_SmartAudio, power_value[4], -1),
 
     AP_GROUPEND
 };
@@ -101,15 +101,9 @@ void AP_SmartAudio::update()
             // TODO: calculate power basing on home distance
             break;
 
-        case SmartAudio_Power_0: power = power_0; break;
-
-        case SmartAudio_Power_1: power = power_1; break;
-
-        case SmartAudio_Power_2: power = power_2; break;
-
-        case SmartAudio_Power_3: power = power_3; break;
-
-        case SmartAudio_Power_4: power = power_4; break;
+        default:
+            power = power_value[power_mode];
+            break;
     }
     if (power >= 0) {
         device->set_power(power);

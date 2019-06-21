@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_SmartAudioDevice.h"
 
 AP_SmartAudioDevice::AP_SmartAudioDevice(AP_HAL::UARTDriver* _port, bool _use_trailing_zero) :
@@ -11,13 +12,15 @@ void AP_SmartAudioDevice::update()
 {
     switch(state) {
         case State_READY:
-            if (update_power() || update_channel())
+            if (update_power() || update_channel()) {
                 state = State_READING_RESPONSE;
+            }
             break;
 
         case State_READING_RESPONSE:
-            if (read_response())
+            if (read_response()) {
                 state = State_READY;
+            }
             break;
     }
 }
@@ -55,19 +58,10 @@ void AP_SmartAudioDevice::send_command(uint8_t* command, uint8_t size)
     }
 
     // write crc
-    port->write(get_crc8(command, size));
+    port->write(crc_crc8_dvb_s2(command, size));
 
     // some VTX need this
     if (use_trailing_zero) {
         port->write((uint8_t)0);
     }
-}
-
-uint8_t AP_SmartAudioDevice::get_crc8(uint8_t* command, uint8_t size)
-{
-    uint8_t crc = 0;
-    for (uint8_t i = 0; i < size; i++) {
-        crc = crc8tab[crc ^ *command++];
-    }
-    return crc;
 }

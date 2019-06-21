@@ -54,11 +54,7 @@ private:
     AP_Int8 use_trailing_zero;
     AP_Int8 channel;
     AP_Int8 power_mode;
-    AP_Int8 power_0;
-    AP_Int8 power_1;
-    AP_Int8 power_2;
-    AP_Int8 power_3;
-    AP_Int8 power_4;
+    AP_Int8 power_value[5];
 
     AP_SmartAudioDevice* device;
 };
