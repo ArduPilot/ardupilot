@@ -326,8 +326,7 @@ public:
     void reset_mode_switch();
     virtual void read_mode_switch();
 
-    // has_valid_input should be pure-virtual when Plane is converted
-    virtual bool has_valid_input() const { return false; };
+    virtual bool has_valid_input() const = 0;
 
     bool gcs_overrides_enabled() const { return _gcs_overrides_enabled; }
     void set_gcs_overrides_enabled(bool enable) {
