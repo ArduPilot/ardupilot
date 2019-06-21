@@ -670,7 +670,7 @@ private:
     bool far_from_EKF_origin(const Location& loc);
 
     // compassmot.cpp
-    MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
+    MAV_RESULT mavlink_compassmot(const GCS_MAVLINK &gcs_chan);
 
     // crash_check.cpp
     void crash_check();
