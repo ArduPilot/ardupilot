@@ -65,6 +65,10 @@ void AP_Tuning::check_selector_switch(void)
         // no selector switch enabled
         return;
     }
+    if (!rc().has_valid_input()) {
+        selector_start_ms = 0;
+        return;
+    }
     RC_Channel *selchan = rc().channel(selector-1);
     if (selchan == nullptr) {
         return;
