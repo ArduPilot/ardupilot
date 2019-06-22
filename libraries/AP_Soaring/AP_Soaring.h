@@ -16,7 +16,6 @@
 #include "Variometer.h"
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 
-#define EXPECTED_THERMALLING_SINK 0.7
 #define INITIAL_THERMAL_STRENGTH 2.0
 #define INITIAL_THERMAL_RADIUS 30.0 //150.0
 #define INITIAL_STRENGTH_COVARIANCE 0.0049
@@ -49,6 +48,9 @@ class SoaringController {
     bool _throttle_suppressed;
 
     float McCready(float alt);
+
+    float _thermalability;
+    float _expected_sink;
 
 protected:
     AP_Int8 soar_active;

@@ -28,6 +28,7 @@ class Variometer {
     float _last_aspd;
     float _last_roll;
     float _last_total_E;
+    float _expected_thermalling_sink;
 
     // declares a 5point average filter using floats
     AverageFilterFloat_Size5 _vdot_filter;
@@ -50,5 +51,9 @@ public:
     float correct_netto_rate(float climb_rate, float phi, float aspd, const float polar_K, const float polar_CD0, const float polar_B);
 
     void reset_filter(float value) { _climb_filter.reset(value);}
+
+    float get_airspeed(void) {return _aspd_filt;};
+
+    float get_exp_thermalling_sink(void) {return _expected_thermalling_sink;};
 };
 

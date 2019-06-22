@@ -42,10 +42,15 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
 
     float roll = _ahrs.roll;
 
-    // Compute still-air sinkrate
-    float sinkrate = correct_netto_rate(0.0f,  roll, _aspd_filt, polar_K, polar_Cd0, polar_B);
+    // Constrained airspeed.
+    const float minV = sqrt(polar_K/1.5);
+    float aspd_filt_constrained = _aspd_filt>minV ? _aspd_filt : minV;
 
-    reading = raw_climb_rate + dsp*_aspd_filt/GRAVITY_MSS + sinkrate;
+
+    // Compute still-air sinkrate
+    float sinkrate = correct_netto_rate(0.0f,  roll, aspd_filt_constrained, polar_K, polar_Cd0, polar_B);
+
+    reading = raw_climb_rate + dsp*aspd_filt_constrained/GRAVITY_MSS + sinkrate;
     
 
     filtered_reading = TE_FILT * reading + (1 - TE_FILT) * filtered_reading;                       // Apply low pass timeconst filter for noise
@@ -56,13 +61,16 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
     AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc", "Qffffffff",
                        AP_HAL::micros64(),
                        (double)0.0,
-                       (double)_aspd_filt,
+                       (double)aspd_filt_constrained,
                        (double)alt,
                        (double)roll,
                        (double)reading,
                        (double)filtered_reading,
                        (double)raw_climb_rate,
                        (double)smoothed_climb_rate);
+
+    float expected_roll = asinf(constrain_float(powf(aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius),-1.0, 1.0));
+    _expected_thermalling_sink = correct_netto_rate(0.0, expected_roll, aspd_filt_constrained, polar_K, polar_Cd0, polar_B);
 }
 
 
@@ -80,6 +88,7 @@ float Variometer::correct_netto_rate(float climb_rate,
     float netto_rate;
     float cosphi;
     CL0 = polar_K / (aspd * aspd);
+
     C1 = polar_CD0 / CL0;  // constant describing expected angle to overcome zero-lift drag
     C2 = polar_B * CL0;    // constant describing expected angle to overcome lift induced drag at zero bank
 

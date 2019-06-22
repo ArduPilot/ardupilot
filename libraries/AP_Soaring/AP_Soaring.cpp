@@ -213,12 +213,11 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
             gcs().send_text(MAV_SEVERITY_ALERT, "Reached lower alt = %dm", (int16_t)alt);
         }
     } else if ((AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6)) {
-        const float thermalability = (_ekf.X[0]*expf(-powf(_aparm.loiter_radius / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK;
         const float mcCreadyAlt = McCready(alt);
-        if (thermalability < mcCreadyAlt) {
+        if (_thermalability < mcCreadyAlt) {
             result = THERMAL_WEAK;
             if (result != _cruise_criteria_msg_last) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: W %f.3 R %f.3 th %f.1 alt %dm Mc %dm", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (int32_t)alt, (int32_t)mcCreadyAlt);
+                gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: W %f.3 R %f.3 th %f.1 alt %dm Mc %dm", (double)_ekf.X[0], (double)_ekf.X[1], (double)_thermalability, (int32_t)alt, (int32_t)mcCreadyAlt);
             }
         } else if (alt < (-_thermal_start_pos.z) || _vario.smoothed_climb_rate < 0.0) {
             result = ALT_LOST;
@@ -303,8 +302,16 @@ void SoaringController::update_thermalling()
 
     Vector3f wind_drift = _ahrs.wind_estimate()*deltaT;
 
+    // update the filter
+    _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
+
+    
+    _thermalability = (_ekf.X[0]*expf(-powf(_aparm.loiter_radius / _ekf.X[1], 2))) - _vario.get_exp_thermalling_sink();
+
+    _prev_update_time = AP_HAL::micros64();
+
     // write log - save the data.
-    AP::logger().Write("SOAR", "TimeUS,nettorate,x0,x1,x2,x3,north,east,alt,dx_w,dy_w", "Qffffffffff",
+    AP::logger().Write("SOAR", "TimeUS,nettorate,x0,x1,x2,x3,north,east,alt,dx_w,dy_w,th", "Qfffffffffff",
                                            AP_HAL::micros64(),
                                            (double)_vario.reading,
                                            (double)_ekf.X[0],
@@ -315,12 +322,8 @@ void SoaringController::update_thermalling()
                                            current_position.y,
                                            (double)_vario.alt,
                                            (double)wind_drift.x,
-                                           (double)wind_drift.y);
-
-    // update the filter
-    _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
-
-    _prev_update_time = AP_HAL::micros64();
+                                           (double)wind_drift.y,
+                                           (double)_thermalability);
 }
 
 void SoaringController::update_cruising()
