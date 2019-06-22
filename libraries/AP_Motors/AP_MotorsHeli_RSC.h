@@ -125,6 +125,7 @@ private:
     float           _control_output;              // latest logic controlled output
     float           _rotor_ramp_output;           // scalar used to ramp rotor speed between _rsc_idle_output and full speed (0.0-1.0f)
     float           _rotor_runup_output;          // scalar used to store status of rotor run-up time (0.0-1.0f)
+    bool            _rpm_sensor;                  // flag to determine if rpm sensor is used
     int8_t          _ramp_time;                   // time in seconds for the output to the main rotor's ESC to reach full speed
     int8_t          _runup_time;                  // time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     bool            _runup_complete;              // flag for determining if runup is complete
