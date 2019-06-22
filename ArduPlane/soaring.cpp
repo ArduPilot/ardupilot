@@ -64,7 +64,24 @@ void Plane::update_soaring() {
         // Update thermal estimate and check for switch back to AUTO
         g2.soaring_controller.update_thermalling();  // Update estimate
 
-        const SoaringController::LoiterStatus loiterStatus = g2.soaring_controller.check_cruise_criteria();
+        Vector2f prev_wp, next_wp;
+
+        // If previous mode was AUTO and there was a previous NAV command, we can use previous and next wps for drift calculation.
+        if (previous_mode->mode_number() == Mode::Number::AUTO) {
+            AP_Mission::Mission_Command current_nav_cmd = mission.get_current_nav_cmd();
+            AP_Mission::Mission_Command prev_nav_cmd;
+
+            if (!(mission.get_next_nav_cmd(mission.get_prev_nav_cmd_with_wp_index(), prev_nav_cmd) &&
+                   prev_nav_cmd.content.location.get_vector_xy_from_origin_NE(prev_wp) &&
+                current_nav_cmd.content.location.get_vector_xy_from_origin_NE(next_wp))) {
+                prev_wp.x = 0.0;
+                prev_wp.y = 0.0;
+                next_wp.x = 0.0;
+                next_wp.y = 0.0;
+            }
+        }
+
+        const SoaringController::LoiterStatus loiterStatus = g2.soaring_controller.check_cruise_criteria(prev_wp/100, next_wp/100);
 
         if (loiterStatus == SoaringController::LoiterStatus::THERMAL_GOOD_TO_KEEP_LOITERING) {
             // Reset loiter angle, so that the loiter exit heading criteria
