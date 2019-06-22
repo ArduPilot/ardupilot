@@ -181,7 +181,7 @@ bool SoaringController::check_thermal_criteria()
 {
     return (soar_active
             && ((AP_HAL::micros64() - _cruise_start_time_us) > ((unsigned)min_cruise_s * 1e6))
-            && _vario.filtered_reading > thermal_vspeed
+            && (_vario.filtered_reading - _vario.get_exp_thermalling_sink()) > thermal_vspeed
             && _vario.alt < alt_max
             && _vario.alt > alt_min);
 }
