@@ -126,7 +126,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Description: The previous mode will be restored if the horizontal distance to the thermalling start location exceeds this value. 0 to disable.
     // @Range: 0 1000
     // @User: Advanced
-    AP_GROUPINFO("MAX_DRIFT", 16, SoaringController, max_drift, 0),
+    AP_GROUPINFO("MAX_DRIFT", 16, SoaringController, max_drift, -1),
 
     // @Param: MAX_RADIUS
     // @DisplayName: (Optional) Maximum distance from home
@@ -187,7 +187,7 @@ bool SoaringController::check_thermal_criteria()
 }
 
 
-SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
+SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2f prev_wp, Vector2f next_wp)
 {
     if (!soar_active) {
         _cruise_criteria_msg_last = SOARING_DISABLED;
@@ -196,11 +196,6 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
 
     LoiterStatus result = THERMAL_GOOD_TO_KEEP_LOITERING;
     const float alt = _vario.alt;
-
-    Vector3f position;
-    if (!_ahrs.get_relative_position_NED_home(position)) {
-        return SOARING_DISABLED;
-    }
 
     if (alt > alt_max) {
         result = ALT_TOO_HIGH;
@@ -224,7 +219,7 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria()
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Not climbing");
             }
-        } else if (!(max_drift<0) && (powf(position.x - _thermal_start_pos.x, 2) + powf(position.y - _thermal_start_pos.y, 2)) > powf(max_drift,2)) {
+        } else if (check_drift(prev_wp, next_wp)) {
             result = DRIFT_EXCEEDED;
             if (result != _cruise_criteria_msg_last) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Drifted too far");
@@ -363,4 +358,50 @@ void SoaringController::set_throttle_suppressed(bool suppressed)
 
     // Let the TECS know.
     _spdHgt.set_gliding_requested_flag(suppressed);
+}
+
+bool SoaringController::check_drift(Vector2f prev_wp, Vector2f next_wp)
+{
+    // Check for -1 (disabled)
+    if (max_drift<0) {
+        return false;
+    }
+
+    // Check against the estimated thermal.
+    Vector2f position(_ekf.X[2], _ekf.X[3]);
+
+    Vector2f start_pos(_thermal_start_pos.x, _thermal_start_pos.y);
+
+    Vector2f mission_leg = next_wp - prev_wp;
+
+    if (prev_wp.is_zero() || mission_leg.length() < 0.1) {
+        // Simple check of distance from initial start point.
+        return (position - start_pos).length() > max_drift;
+    } else {
+        // Regard the effective start point as projected onto mission leg.
+        // Calculate drift parallel and perpendicular to mission leg.
+        // Drift parallel and in direction of mission leg is acceptable.
+        Vector2f effective_start, vec1, vec2;
+
+        // Calculate effective start point (on mission leg).
+        vec1 = (start_pos - prev_wp).projected(mission_leg);
+        effective_start = prev_wp + vec1;
+
+        // Calculate parallel and perpendicular offsets.
+        vec2 = position - effective_start;
+
+        float parallel      = vec2 * mission_leg.normalized();
+        float perpendicular = (vec2 - mission_leg.normalized()*parallel).length();
+
+       // Check if we've drifted beyond the next wp.
+        if (parallel>(next_wp - effective_start).length()) {
+            return true;
+        }
+
+        // Check if we've drifted too far laterally or backwards. We don't count positive parallel offsets
+        // as these are favourable (towards next wp)
+        parallel = parallel>0 ? 0 : parallel;
+
+        return (powf(parallel,2)+powf(perpendicular,2)) > powf(max_drift,2);;
+    }
 }
