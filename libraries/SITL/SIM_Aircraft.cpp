@@ -832,8 +832,8 @@ float Aircraft::get_local_updraft(Vector3f currentPos)
     }
 
     // Wind drift at this altitude
-    float driftX = sitl->wind_speed * currentPos.z * cosf(sitl->wind_direction * DEG_TO_RAD);
-    float driftY = sitl->wind_speed * currentPos.z * sinf(sitl->wind_direction * DEG_TO_RAD);
+    float driftX = sitl->wind_speed * (currentPos.z+100) * cosf(sitl->wind_direction * DEG_TO_RAD);
+    float driftY = sitl->wind_speed * (currentPos.z+100) * sinf(sitl->wind_direction * DEG_TO_RAD);
 
     int iThermal;
     float w = 0.0f;
