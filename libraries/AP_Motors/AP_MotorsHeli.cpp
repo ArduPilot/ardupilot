@@ -66,34 +66,34 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_mode, SERVO_CONTROL_MODE_AUTOMATED),
 
     // @Param: RSC_SETPOINT
-    // @DisplayName: External Motor Governor Setpoint
-    // @Description: PWM in microseconds passed to the external motor governor when external governor is enabled
-    // @Range: 0 1000
+    // @DisplayName: Electric ESC Throttle Setting
+    // @Description: Throttle signal percent for electric helicopters when a governor is used in the ESC
+    // @Range: 0 100
     // @Units: PWM
-    // @Increment: 10
+    // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RSC_SETPOINT", 7, AP_MotorsHeli, _rsc_setpoint, AP_MOTORS_HELI_RSC_SETPOINT),
 
     // @Param: RSC_MODE
-    // @DisplayName: Rotor Speed Control Mode
-    // @Description: Determines the method of rotor speed control
-    // @Values: 1:Ch8 Input, 2:SetPoint, 3:Throttle Curve, 4:Governor
+    // @DisplayName: Throttle Control Mode
+    // @Description: Selects the type of throttle control that will be used
+    // @Values: 1:RC Passthru,2:Electric ESC Governor,3:Throttle Curve,4:Rotor Governor
     // @User: Standard
-    AP_GROUPINFO("RSC_MODE", 8, AP_MotorsHeli, _rsc_mode, (int8_t)ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH),
+    AP_GROUPINFO("RSC_MODE", 8, AP_MotorsHeli, _rsc_mode, ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT),
 
     // index 9 was LAND_COL_MIN. Do not use this index in the future.
 
     // @Param: RSC_RAMP_TIME
-    // @DisplayName: RSC Ramp Time
-    // @Description: Time in seconds for the output to the main rotor's ESC to reach full speed
+    // @DisplayName: Throttle Ramp Time
+    // @Description: Time in seconds for throttle to ramp from ground idle to flight idle power when throttle hold is released. This setting is used primarily by piston and turbine engines to smoothly engage the transmission clutch. However, it can also be used for electric ESC's that do not have an internal soft-start. If used with electric ESC with soft-start it is recommended to set this to 1 second so as to not confuse the ESC's soft-start function
     // @Range: 0 60
     // @Units: s
     // @User: Standard
     AP_GROUPINFO("RSC_RAMP_TIME", 10, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
 
     // @Param: RSC_RUNUP_TIME
-    // @DisplayName: RSC Runup Time
-    // @Description: Time in seconds for the main rotor to reach full speed.  Must be longer than RSC_RAMP_TIME
+    // @DisplayName: Rotor Runup Time
+    // @Description: Actual time in seconds for the main rotor to reach full speed after throttle hold is released. Must be at least one second longer than the Throttle Ramp Time that is set with RSC_RAMP_TIME.
     // @Range: 0 60
     // @Units: s
     // @User: Standard
@@ -101,17 +101,17 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: RSC_CRITICAL
     // @DisplayName: Critical Rotor Speed
-    // @Description: Rotor speed below which flight is not possible
-    // @Range: 0 1000
-    // @Increment: 10
+    // @Description: Percentage of normal rotor speed where entry to autorotation becomes dangerous. For helicopters with rotor speed sensor should be set to the percentage of the governor rpm setting used. Even if governor is not used when a speed sensor is installed, set the governor rpm to normal headspeed then set critical to a percentage of normal rpm (usually 90%). This can be considered the bottom of the green arc for autorotation. For helicopters without speed sensor should be set to the throttle percentage where flight is no longer possible. With no speed sensor critical should be lower than electric ESC throttle setting for ESC's with governor, or lower than normal in-flight throttle percentage when the throttle curve or RC Passthru is used.
+    // @Range: 0 100
+    // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RSC_CRITICAL", 12, AP_MotorsHeli, _rsc_critical, AP_MOTORS_HELI_RSC_CRITICAL),
 
     // @Param: RSC_IDLE
-    // @DisplayName: Rotor Speed Output at Idle
-    // @Description: Rotor speed output while armed but rotor control speed is not engaged
-    // @Range: 0 500
-    // @Increment: 10
+    // @DisplayName: Engine Ground Idle Setting
+    // @Description: FOR COMBUSTION ENGINES ONLY. Sets the engine ground idle throttle percentage with clutch disengaged. This must be set to zero for electric helicopters
+    // @Range: 0 50
+    // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RSC_IDLE", 13, AP_MotorsHeli, _rsc_idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
 
@@ -411,7 +411,15 @@ void AP_MotorsHeli::output_logic()
 // parameter_check - check if helicopter specific parameters are sensible
 bool AP_MotorsHeli::parameter_check(bool display_msg) const
 {
-    // returns false if _rsc_setpoint is not higher than _rsc_critical as this would not allow rotor_runup_complete to ever return true
+    // returns false if _rsc_setpoint exceeds 100% throttle
+    if (_rsc_setpoint > 100.0f) {
+        if (display_msg) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Electric throttle over 100 percent");
+        }
+        return false;
+    }
+
+    // returns false if _rsc_setpoint is not higher than _rsc_critical as this would not allow rotor_runup_complete to ever return true for electric helicopters with ESC governor
     if (_rsc_critical >= _rsc_setpoint) {
         if (display_msg) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL too large");
@@ -422,23 +430,23 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if RSC Mode is not set to a valid control mode
     if (_rsc_mode <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _rsc_mode > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Throttle mode invalid");
         }
         return false;
     }
 
-    // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
+    // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate when no speed sensor is used
     if (_rsc_runup_time <= _rsc_ramp_time){
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Runup time too small");
         }
         return false;
     }
 
-    // returns false if idle output is higher than critical rotor speed as this could block runup_complete from going false
+    // returns false if idle output is higher than critical rotor speed percentage
     if ( _rsc_idle_output >=  _rsc_critical){
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Engine idle speed too high");
         }
         return false;
     }
