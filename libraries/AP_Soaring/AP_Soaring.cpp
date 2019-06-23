@@ -295,7 +295,7 @@ void SoaringController::update_thermalling()
         return;
     }
 
-    Vector3f wind_drift = _ahrs.wind_estimate()*deltaT;
+    Vector3f wind_drift = _ahrs.wind_estimate()*deltaT*_vario.smoothed_climb_rate/_ekf.X[0];
 
     // update the filter
     _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
