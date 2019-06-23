@@ -1204,6 +1204,9 @@ def write_ADC_config(f):
         if p.label == 'VDD_5V_SENS':
             f.write('#define ANALOG_VCC_5V_PIN %u\n' % chan)
             f.write('#define HAL_HAVE_BOARD_VOLTAGE 1\n')
+        if p.label == 'FMU_SERVORAIL_VCC_SENS':
+            f.write('#define FMU_SERVORAIL_ADC_CHAN %u\n' % chan)
+            f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n')
         adc_chans.append((chan, scale, p.label, p.portpin))
     adc_chans = sorted(adc_chans)
     vdd = get_config('STM32_VDD')
