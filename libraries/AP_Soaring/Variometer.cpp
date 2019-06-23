@@ -13,7 +13,7 @@ Variometer::Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
     _climb_filter = LowPassFilter<float>(1.0/60.0);
 }
 
-void Variometer::update(const float polar_K, const float polar_B, const float polar_Cd0)
+void Variometer::update(const float polar_K, const float polar_Cd0, const float polar_B)
 {
     _ahrs.get_relative_position_D_home(alt);
     alt = -alt;
