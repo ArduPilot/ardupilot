@@ -1158,7 +1158,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                        (m.target_component, mav.mav.srcComponent))
         return m
 
-    def clear_mission(self, mission_type, target_system, target_component):
+    def send_clear_mission(self, mission_type, target_system, target_component):
         self.mav.mav.mission_count_send(target_system,
                                         target_component,
                                         0,
@@ -1537,9 +1537,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.start_subtest("Test write-partial-list")
             self.progress("Clearing rally points using count-send")
-            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
-                               target_system,
-                               target_component)
+            self.send_clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+                                    target_system,
+                                    target_component)
             self.progress("Should not be able to set items completely past the waypoint count")
             self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                                items)
