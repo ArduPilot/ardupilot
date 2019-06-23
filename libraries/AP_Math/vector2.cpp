@@ -453,6 +453,8 @@ template float Vector2<float>::closest_distance_between_radial_and_point(const V
 template float Vector2<float>::closest_distance_between_line_and_point(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
 template float Vector2<float>::closest_distance_between_line_and_point_squared(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
 template float Vector2<float>::closest_distance_between_lines_squared(const Vector2<float> &a1,const Vector2<float> &a2,const Vector2<float> &b1,const Vector2<float> &b2);
+template Vector2<float> Vector2<float>::projected(const Vector2<float> &v);
+
 
 template void Vector2<float>::reflect(const Vector2<float> &n);
 
