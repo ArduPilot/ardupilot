@@ -34,7 +34,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
     _aspd_filt = _sp_filter.apply(aspd);
 
     // Constrained airspeed.
-    const float minV = sqrt(polar_K/1.5);
+    const float minV = sqrtf(polar_K/1.5);
     _aspd_filt_constrained = _aspd_filt>minV ? _aspd_filt : minV;
 
 
