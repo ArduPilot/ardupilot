@@ -166,8 +166,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 // init
 void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
-    // remember frame type
+    // remember frame class and type
     _frame_type = frame_type;
+    _frame_class = frame_class;
 
     // set update rate
     set_update_rate(_speed_hz);
@@ -293,14 +294,24 @@ void AP_MotorsHeli::output_disarmed()
                 _roll_in = 0.0f;
                 _pitch_in = 0.0f;
                 _throttle_filter.reset(1.0f);
-                _yaw_in = 1.0f;
+                if (_frame_class == MOTOR_FRAME_HELI_DUAL ||
+                    _frame_class == MOTOR_FRAME_HELI_QUAD) {
+                    _yaw_in = 0;
+                } else {
+                    _yaw_in = 1;
+                }
                 break;
             case SERVO_CONTROL_MODE_MANUAL_MIN:
                 // fixate min collective
                 _roll_in = 0.0f;
                 _pitch_in = 0.0f;
                 _throttle_filter.reset(0.0f);
-                _yaw_in = -1.0f;
+                if (_frame_class == MOTOR_FRAME_HELI_DUAL ||
+                    _frame_class == MOTOR_FRAME_HELI_QUAD) {
+                    _yaw_in = 0;
+                } else {
+                    _yaw_in = -1;
+                }
                 break;
             case SERVO_CONTROL_MODE_MANUAL_OSCILLATE:
                 // use servo_test function from child classes
