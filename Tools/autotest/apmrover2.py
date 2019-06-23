@@ -977,8 +977,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter("BTN_ENABLE", 1)
         btn = 2
         pin = 3
-        self.set_parameter("BTN_PIN%u" % btn, pin)
         self.drain_mav()
+        self.set_parameter("BTN_PIN%u" % btn, pin)
         m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
         self.progress("m: %s" % str(m))
         if m is None:
