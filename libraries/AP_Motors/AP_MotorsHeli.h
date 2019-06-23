@@ -224,4 +224,5 @@ protected:
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 
     motor_frame_type _frame_type;
+    motor_frame_class _frame_class;
 };
