@@ -49,7 +49,7 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
 
     // Compute still-air sinkrate
     float roll = _ahrs.roll;
-    float sinkrate = correct_netto_rate(0.0f,  roll, _aspd_filt_constrained, polar_K, polar_Cd0, polar_B);
+    float sinkrate = calculate_aircraft_sinkrate(roll, polar_K, polar_Cd0, polar_B);
 
     reading = raw_climb_rate + dsp*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;
     
@@ -71,37 +71,27 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
                        (double)smoothed_climb_rate);
 
     float expected_roll = asinf(constrain_float(powf(_aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius),-1.0, 1.0));
-    _expected_thermalling_sink = correct_netto_rate(0.0, expected_roll, _aspd_filt_constrained, polar_K, polar_Cd0, polar_B);
+    _expected_thermalling_sink = calculate_aircraft_sinkrate(expected_roll, polar_K, polar_Cd0, polar_B);
 }
 
 
-float Variometer::correct_netto_rate(float climb_rate,
-                                     float phi,
-                                     float aspd,
-                                     const float polar_K,
-                                     const float polar_CD0,
-                                     const float polar_B)
+float Variometer::calculate_aircraft_sinkrate(float phi,
+                                             const float polar_K,
+                                             const float polar_CD0,
+                                             const float polar_B)
 {
     // Remove aircraft sink rate
     float CL0;  // CL0 = 2*W/(rho*S*V^2)
     float C1;   // C1 = CD0/CL0
     float C2;   // C2 = CDi0/CL0 = B*CL0
-    float netto_rate;
-    float cosphi;
-    CL0 = polar_K / (aspd * aspd);
+    CL0 = polar_K / (_aspd_filt_constrained * _aspd_filt_constrained);
 
     C1 = polar_CD0 / CL0;  // constant describing expected angle to overcome zero-lift drag
     C2 = polar_B * CL0;    // constant describing expected angle to overcome lift induced drag at zero bank
 
-    cosphi = (1 - phi * phi / 2); // first two terms of mclaurin series for cos(phi)
-    netto_rate = climb_rate + aspd * (C1 + C2 / (cosphi * cosphi));  // effect of aircraft drag removed
-
-    // Remove acceleration effect - needs to be tested.
-    //float temp_netto = netto_rate;
-    //float dVdt = SpdHgt_Controller->get_VXdot();
-    //netto_rate = netto_rate + aspd*dVdt/GRAVITY_MSS;
-    //gcs().send_text(MAV_SEVERITY_INFO, "%f %f %f %f",temp_netto,dVdt,netto_rate,barometer.get_altitude());
-    return netto_rate;
+    float cosphi = (1 - phi * phi / 2); // first two terms of mclaurin series for cos(phi)
+    
+    return _aspd_filt_constrained * (C1 + C2 / (cosphi * cosphi));
 }
 
 float Variometer::calculate_circling_time_constant()
