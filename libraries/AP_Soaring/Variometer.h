@@ -25,6 +25,8 @@ class Variometer {
     float _last_alt;
 
     float _aspd_filt;
+    float _aspd_filt_constrained;
+
     float _last_aspd;
     float _last_roll;
     float _last_total_E;
@@ -55,5 +57,7 @@ public:
     float get_airspeed(void) {return _aspd_filt;};
 
     float get_exp_thermalling_sink(void) {return _expected_thermalling_sink;};
+
+    float calculate_circling_time_constant();
 };
 
