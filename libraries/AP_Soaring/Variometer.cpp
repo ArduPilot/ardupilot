@@ -27,30 +27,31 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
     // take 5 point moving average
     float dsp = _vdot_filter.apply(temp);
 
-    Vector3f velned;
-    if (_ahrs.get_velocity_NED(velned)) {
-        // if possible use the EKF vertical velocity
-        raw_climb_rate = -velned.z;
-    }
-    smoothed_climb_rate = _climb_filter.apply(raw_climb_rate, (AP_HAL::micros64() - _prev_update_time)/1e6);
-
     float aspd = 0;
     if (!_ahrs.airspeed_estimate(aspd)) {
             aspd = _aparm.airspeed_cruise_cm / 100.0f;
     }
     _aspd_filt = _sp_filter.apply(aspd);
 
-    float roll = _ahrs.roll;
-
     // Constrained airspeed.
     const float minV = sqrt(polar_K/1.5);
-    float aspd_filt_constrained = _aspd_filt>minV ? _aspd_filt : minV;
+    _aspd_filt_constrained = _aspd_filt>minV ? _aspd_filt : minV;
 
+
+    Vector3f velned;
+    if (_ahrs.get_velocity_NED(velned)) {
+        // if possible use the EKF vertical velocity
+        raw_climb_rate = -velned.z;
+    }
+    float tau = calculate_circling_time_constant();
+    _climb_filter.set_cutoff_frequency(1/tau);
+    smoothed_climb_rate = _climb_filter.apply(raw_climb_rate, (AP_HAL::micros64() - _prev_update_time)/1e6);
 
     // Compute still-air sinkrate
-    float sinkrate = correct_netto_rate(0.0f,  roll, aspd_filt_constrained, polar_K, polar_Cd0, polar_B);
+    float roll = _ahrs.roll;
+    float sinkrate = correct_netto_rate(0.0f,  roll, _aspd_filt_constrained, polar_K, polar_Cd0, polar_B);
 
-    reading = raw_climb_rate + dsp*aspd_filt_constrained/GRAVITY_MSS + sinkrate;
+    reading = raw_climb_rate + dsp*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;
     
 
     filtered_reading = TE_FILT * reading + (1 - TE_FILT) * filtered_reading;                       // Apply low pass timeconst filter for noise
@@ -61,7 +62,7 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
     AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc", "Qffffffff",
                        AP_HAL::micros64(),
                        (double)0.0,
-                       (double)aspd_filt_constrained,
+                       (double)_aspd_filt_constrained,
                        (double)alt,
                        (double)roll,
                        (double)reading,
@@ -69,8 +70,8 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
                        (double)raw_climb_rate,
                        (double)smoothed_climb_rate);
 
-    float expected_roll = asinf(constrain_float(powf(aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius),-1.0, 1.0));
-    _expected_thermalling_sink = correct_netto_rate(0.0, expected_roll, aspd_filt_constrained, polar_K, polar_Cd0, polar_B);
+    float expected_roll = asinf(constrain_float(powf(_aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius),-1.0, 1.0));
+    _expected_thermalling_sink = correct_netto_rate(0.0, expected_roll, _aspd_filt_constrained, polar_K, polar_Cd0, polar_B);
 }
 
 
@@ -101,4 +102,14 @@ float Variometer::correct_netto_rate(float climb_rate,
     //netto_rate = netto_rate + aspd*dVdt/GRAVITY_MSS;
     //gcs().send_text(MAV_SEVERITY_INFO, "%f %f %f %f",temp_netto,dVdt,netto_rate,barometer.get_altitude());
     return netto_rate;
+}
+
+float Variometer::calculate_circling_time_constant()
+{
+    // Calculate a time constant to use to filter quantities over a full thermal orbit.
+    // This is used for rejecting variation in e.g. climb rate, or estimated climb rate
+    // potential, as the aircraft orbits the thermal.
+    // Use the time to circle - variations at the circling frequency then have a gain of 25%
+    // and the response to a step input will reach 64% of final value in three orbits.
+    return 3*_aparm.loiter_radius*2*M_PI/_aspd_filt_constrained;
 }
