@@ -522,7 +522,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         // read WP position
         uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
-        PackedContent packed_content;
+        PackedContent packed_content {};
 
         uint8_t b1 = _storage.read_byte(pos_in_storage);
         if (b1 == 0) {
@@ -599,7 +599,7 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
         return false;
     }
 
-    PackedContent packed;
+    PackedContent packed {};
     if (stored_in_location(cmd.id)) {
         // Location is not PACKED; field-wise copy it:
         packed.location.flags.relative_alt = cmd.content.location.relative_alt;
