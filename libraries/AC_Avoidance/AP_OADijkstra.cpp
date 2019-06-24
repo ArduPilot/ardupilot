@@ -237,7 +237,7 @@ bool AP_OADijkstra::create_polygon_fence_visgraph()
     // calculate distance from each polygon fence point to all other points
     for (uint8_t i=0; i<_polyfence_numpoints-1; i++) {
         const Vector2f &start1 = _polyfence_pts[i];
-        for (uint8_t j=i+1; j<_polyfence_numpoints-1; j++) {
+        for (uint8_t j=i+1; j<_polyfence_numpoints; j++) {
             const Vector2f &end1 = _polyfence_pts[j];
             Vector2f intersection;
             // ToDo: calculation below could be sped up by removing unused intersection and
@@ -282,8 +282,8 @@ bool AP_OADijkstra::update_visgraph(AP_OAVisGraph& visgraph, const AP_OAVisGraph
     // clear visibility graph
     visgraph.clear();
 
-    // calculate distance from position to all fence points
-    for (uint8_t i=0; i<_polyfence_numpoints-1; i++) {
+    // calculate distance from extra_position to all fence points
+    for (uint8_t i=0; i<_polyfence_numpoints; i++) {
         Vector2f intersection;
         if (!Polygon_intersects(boundary, num_points, position, _polyfence_pts[i], intersection)) {
             // line segment does not intersect with original fence so add to visgraph
@@ -429,8 +429,7 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
     _short_path_data_numpoints = 2;
 
     // add fence points to short_path_data array (node_type, id, visited, distance_from_idx, distance_cm)
-    // skip last fence point because it is the same as the first
-    for (uint8_t i=0; i<_polyfence_numpoints-1; i++) {
+    for (uint8_t i=0; i<_polyfence_numpoints; i++) {
         _short_path_data[_short_path_data_numpoints++] = {{AP_OAVisGraph::OATYPE_FENCE_POINT, i}, false, OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX, FLT_MAX};
     }
 
