@@ -887,13 +887,16 @@ class AutoTestPlane(AutoTest):
     def do_fence_disable(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
         self.do_fence_en_or_dis_able(False, want_result=want_result)
 
-    def wait_circling_point_with_radius(self, loc, want_radius, epsilon=2.0, min_circle_time=5):
+    def wait_circling_point_with_radius(self, loc, want_radius, epsilon=5.0, min_circle_time=5, timeout=120):
         on_radius_start_heading = None
         average_radius = 0.0
         circle_time_start = 0
         done_time = False
         done_angle = False
+        tstart = self.get_sim_time()
         while True:
+            if self.get_sim_time() - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get onto circle")
             here = self.mav.location()
             got_radius = self.get_distance(loc, here)
             average_radius = 0.95*average_radius + 0.05*got_radius
