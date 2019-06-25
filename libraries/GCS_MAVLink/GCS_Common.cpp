@@ -1434,7 +1434,7 @@ void GCS_MAVLINK::update_send()
     }
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
-    uint32_t retry_deferred_body_start = 0;
+    uint32_t retry_deferred_body_start = AP_HAL::micros();
 #endif
 
     const uint32_t start = AP_HAL::millis();
