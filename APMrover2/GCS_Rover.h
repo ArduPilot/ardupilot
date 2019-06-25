@@ -13,9 +13,21 @@ public:
     uint8_t num_gcs() const override { return ARRAY_SIZE(_chan); };
 
     // return GCS link at offset ofs
-    GCS_MAVLINK_Rover &chan(const uint8_t ofs) override { return _chan[ofs]; };
+    GCS_MAVLINK_Rover &chan(uint8_t ofs) override {
+        if (ofs >= num_gcs()) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            ofs = 0;
+        }
+        return _chan[ofs];
+    }
     // return GCS link at offset ofs
-    const GCS_MAVLINK_Rover &chan(const uint8_t ofs) const override { return _chan[ofs]; };
+    const GCS_MAVLINK_Rover &chan(uint8_t ofs) const override {
+        if (ofs >= num_gcs()) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            ofs = 0;
+        }
+        return _chan[ofs];
+    }
 
     uint32_t custom_mode() const override;
     MAV_TYPE frame_type() const override;
