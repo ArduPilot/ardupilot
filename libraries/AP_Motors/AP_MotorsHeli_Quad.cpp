@@ -144,7 +144,6 @@ void AP_MotorsHeli_Quad::calculate_scalars()
 
     // set mode of main rotor controller and trigger recalculation of scalars
     _rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
-    enable_rsc_parameters();
     calculate_armed_scalars();
 }
 

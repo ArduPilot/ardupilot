@@ -133,9 +133,6 @@ public:
     // support passing init_targets_on_arming flag to greater code
     bool init_targets_on_arming() const { return _heliflags.init_targets_on_arming; }
 
-    void enable_rsc_parameters(void);
-
-
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 

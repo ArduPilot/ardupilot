@@ -22,12 +22,7 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo RSCThrCrvParam::var_info[] = {
 
-    // @Param: ENABLE
-    // @DisplayName: Enable settings for RSC Setpoint
-    // @Description: Automatically set when RSC Setpoint mode is selected. Should not be set manually.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, RSCThrCrvParam, enable, 0, AP_PARAM_FLAG_ENABLE),
+// enable param removed
 
     // @Param: 000
     // @DisplayName: Throttle Servo Position in percent for 0 percent collective
@@ -74,12 +69,7 @@ const AP_Param::GroupInfo RSCThrCrvParam::var_info[] = {
 
 const AP_Param::GroupInfo RSCGovParam::var_info[] = {
 
-    // @Param: ENABLE
-    // @DisplayName: Enable settings for RSC Governor
-    // @Description: Automatically set when RSC Governor mode is selected. Should not be set manually.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, RSCGovParam, enable, 0, AP_PARAM_FLAG_ENABLE),
+// enable parameter removed
 
     // @Param: SETPNT
     // @DisplayName: Governor RPM Reference Setting

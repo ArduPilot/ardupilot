@@ -498,18 +498,3 @@ void AP_MotorsHeli::rc_write_swash(uint8_t chan, float swash_in)
     SRV_Channels::set_output_pwm_trimmed(function, pwm);
 }
 
-// enable_parameters - enables the rsc parameters for the rsc mode
-void AP_MotorsHeli::enable_rsc_parameters(void)
-{
-    if (_rsc_mode == (int8_t)ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT || _rsc_mode == (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
-        _rsc_thrcrv.set_thrcrv_enable(1);
-    } else {
-        _rsc_thrcrv.set_thrcrv_enable(0);
-    }
-    if (_rsc_mode == (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
-        _rsc_gov.set_gov_enable(1);
-    } else {
-        _rsc_gov.set_gov_enable(0);
-    }
-}
-
