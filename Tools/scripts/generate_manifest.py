@@ -10,7 +10,7 @@ import fnmatch
 import gen_stable
 
 FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub"]
-RELEASE_TYPES = ["beta", "latest", "stable", "stable-*"]
+RELEASE_TYPES = ["beta", "latest", "stable", "stable-*", "dirty"]
 
 # mapping for board names to brand name and manufacturer
 brand_map = {
@@ -236,8 +236,6 @@ class ManifestGenerator():
                                    vehicletype,
                                    releasetype="dev"):
         '''accumulate additional information about firmwares from directory'''
-        platform_frame_regex = re.compile(
-            "(?P<board>PX4|navio|pxf)(-(?P<frame>.+))?")
         variant_firmware_regex = re.compile("[^-]+-(?P<variant>v\d+)[.px4]")
         if not os.path.isdir(dir):
             return
@@ -283,16 +281,15 @@ class ManifestGenerator():
                 # is incomplete.
                 continue
 
+            # Directory names for heli builds end in -heli
+            platform_frame_regex = re.compile("(?P<board>.+)(-(?P<frame>heli)$)")
             m = platform_frame_regex.match(platformdir)
             if m is not None:
-                # the model type (quad/tri) is
-                # encoded in the platform name
-                # (e.g. navio-octa)
+		# This is a heli build
                 platform = m.group("board")  # e.g. navio
-                frame = m.group("frame")  # e.g. octa
-                if frame is None:
-                    frame = vehicletype
+                frame = "heli"
             else:
+                # Non-heli build
                 frame = vehicletype  # e.g. Plane
                 platform = platformdir  # e.g. apm2
 
