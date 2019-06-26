@@ -235,6 +235,7 @@ void Tracker::set_mode(enum ControlMode mode, mode_reason_t reason)
 
 	// log mode change
 	logger.Write_Mode(control_mode, reason);
+  gcs().send_message(MSG_HEARTBEAT);
 
     nav_status.bearing = ahrs.yaw_sensor * 0.01f;
 }
