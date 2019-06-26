@@ -121,7 +121,7 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
         _rotor.set_governor_droop_response(_rsc_gov.get_droop_response()*0.01f);
         _rotor.set_governor_reference(_rsc_gov.get_reference());
         _rotor.set_governor_range(_rsc_gov.get_range());
-        _rotor.set_governor_thrcurve(_rsc_gov.get_thrcurve()*0.01f);
+        _rotor.set_governor_tcgain(_rsc_gov.get_tcgain()*0.01f);
     }
 }
 

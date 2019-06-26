@@ -234,7 +234,7 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
         _main_rotor.set_governor_droop_response(_rsc_gov.get_droop_response()*0.01f);
         _main_rotor.set_governor_reference(_rsc_gov.get_reference());
         _main_rotor.set_governor_range(_rsc_gov.get_range());
-        _main_rotor.set_governor_thrcurve(_rsc_gov.get_thrcurve()*0.01f);
+        _main_rotor.set_governor_tcgain(_rsc_gov.get_tcgain()*0.01f);
     }
 }
 
@@ -539,7 +539,7 @@ bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
     // returns false if DDVP tail throttle setting is over 100%
     if (_direct_drive_tailspeed > 100.0f){
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Tail throttle setting over 100 percent");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: DDVP throttle over 100 percent");
         }
         return false;
     }

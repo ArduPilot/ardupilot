@@ -16,7 +16,7 @@
 #define AP_MOTORS_HELI_RSC_GOVERNOR_SETPNT_DEFAULT    1500
 #define AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT 25
 #define AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT     30
-#define AP_MOTORS_HELI_RSC_GOVERNOR_THRCURVE_DEFAULT  90
+#define AP_MOTORS_HELI_RSC_GOVERNOR_TCGAIN_DEFAULT    90
 #define AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT     100
 
 // rotor controller states
@@ -69,7 +69,7 @@ public:
     void        set_governor_output(float governor_output) {_governor_output = governor_output; }
     void        set_governor_reference(float governor_reference) { _governor_reference = governor_reference; }
     void        set_governor_range(float governor_range) { _governor_range = governor_range; }
-    void        set_governor_thrcurve(float governor_thrcurve) {_governor_thrcurve = governor_thrcurve; }
+    void        set_governor_tcgain(float governor_tcgain) {_governor_tcgain = governor_tcgain; }
 
     // get_desired_speed
     float       get_desired_speed() const { return _desired_speed; }
@@ -139,7 +139,7 @@ private:
     float           _governor_reference;          // sets rotor speed for governor
     float           _governor_droop_response;     // governor response to droop under load
     bool            _governor_engage;             // RSC governor status flag for soft-start
-    float           _governor_thrcurve;           // governor throttle curve gain, range 50-100%
+    float           _governor_tcgain;             // governor throttle curve gain, range 50-100%
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
@@ -183,13 +183,13 @@ public:
     float get_range() { return range; }
     float get_disengage() { return disengage; }
     float get_droop_response() { return droop_response; }
-    float get_thrcurve() { return thrcurve; }
+    float get_tcgain() { return tcgain; }
 
 private:
     AP_Int16  reference;      // sets rotor speed for governor
     AP_Float  range;          // RPM range +/- governor rpm reference setting where governor is operational
     AP_Float  disengage;      // sets the throttle percent where the governor disengages for return to flight idle
     AP_Float  droop_response; // governor response to droop under load
-    AP_Float  thrcurve;       // governor throttle curve weighting, range 50-100%
+    AP_Float  tcgain;       // governor throttle curve weighting, range 50-100%
 
 };
