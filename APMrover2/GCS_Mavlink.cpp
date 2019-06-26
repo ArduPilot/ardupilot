@@ -666,7 +666,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
         // param3 : throttle (range depends upon param2)
         // param4 : timeout (in seconds)
-        return rover.mavlink_motor_test_start(chan,
+        return rover.mavlink_motor_test_start(*this,
                                               static_cast<uint8_t>(packet.param1),
                                               static_cast<uint8_t>(packet.param2),
                                               static_cast<int16_t>(packet.param3),
