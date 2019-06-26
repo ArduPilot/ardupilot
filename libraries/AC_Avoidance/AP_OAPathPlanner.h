@@ -30,9 +30,17 @@ public:
     /// returns true if all pre-takeoff checks have completed successfully
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 
+    // object avoidance processing return status enum
+    enum OA_RetState : uint8_t {
+        OA_NOT_REQUIRED = 0,            // object avoidance is not required
+        OA_PROCESSING,                  // still calculating alternative path
+        OA_ERROR,                       // error during calculation
+        OA_SUCCESS                      // success
+    };
+
     // provides an alternative target location if path planning around obstacles is required
     // returns true and updates result_origin and result_destination with an intermediate path
-    bool mission_avoidance(const Location &current_loc,
+    OA_RetState mission_avoidance(const Location &current_loc,
                            const Location &origin,
                            const Location &destination,
                            Location &result_origin,
@@ -67,7 +75,7 @@ private:
         Location origin_new;        // intermediate origin.  The start of line segment that vehicle should follow
         Location destination_new;   // intermediate destination vehicle should move towards
         uint32_t result_time_ms;    // system time the result was calculated (used to verify the result is recent)
-        bool avoidance_needed;      // true if the vehicle should move along the path from origin_new to destination_new
+        OA_RetState ret_state;      // OA_SUCCESS if the vehicle should move along the path from origin_new to destination_new
     } avoidance_result;
 
     // parameters
