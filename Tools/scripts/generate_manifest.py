@@ -285,7 +285,7 @@ class ManifestGenerator():
             platform_frame_regex = re.compile("(?P<board>.+)(-(?P<frame>heli)$)")
             m = platform_frame_regex.match(platformdir)
             if m is not None:
-		# This is a heli build
+                # This is a heli build
                 platform = m.group("board")  # e.g. navio
                 frame = "heli"
             else:
