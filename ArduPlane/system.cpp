@@ -301,6 +301,7 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
     // log and notify mode change
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
     notify_mode(*control_mode);
+    gcs().send_message(MSG_HEARTBEAT);
 
     return true;
 }
