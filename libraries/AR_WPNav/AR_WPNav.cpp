@@ -102,9 +102,24 @@ void AR_WPNav::update(float dt)
     _last_update_ms = AP_HAL::millis();
 
     // run path planning around obstacles
+    bool stop_vehicle = false;
     AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
     if (oa != nullptr) {
-        _oa_active = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination);
+        const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination);
+        switch (oa_retstate) {
+        case AP_OAPathPlanner::OA_NOT_REQUIRED:
+            _oa_active = false;
+            break;
+        case AP_OAPathPlanner::OA_PROCESSING:
+        case AP_OAPathPlanner::OA_ERROR:
+            // during processing or in case of error, slow vehicle to a stop
+            stop_vehicle = true;
+            _oa_active = false;
+            break;
+        case AP_OAPathPlanner::OA_SUCCESS:
+            _oa_active = true;
+            break;
+        }
     }
     if (!_oa_active) {
         _oa_origin = _origin;
@@ -118,6 +133,15 @@ void AR_WPNav::update(float dt)
     const bool past_wp = !_oa_active && current_loc.past_interval_finish_line(_origin, _destination);
     if (!_reached_destination && (near_wp || past_wp)) {
        _reached_destination = true;
+    }
+
+    // handle stopping vehicle if avoidance has failed
+    if (stop_vehicle) {
+        // decelerate to speed to zero and set turn rate to zero
+        _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
+        _desired_lat_accel = 0.0f;
+        _desired_turn_rate_rads = 0.0f;
+        return;
     }
 
     // calculate the required turn of the wheels
