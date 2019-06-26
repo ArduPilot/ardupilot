@@ -237,6 +237,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     control_mode = mode;
     control_mode_reason = reason;
     logger.Write_Mode(control_mode, reason);
+    gcs().send_message(MSG_HEARTBEAT);
 
 #if ADSB_ENABLED == ENABLED
     adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
