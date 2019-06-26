@@ -28,18 +28,18 @@ AP_OADijkstra::AP_OADijkstra() :
 }
 
 // calculate a destination to avoid the polygon fence
-// returns true if avoidance is required and updates origin_new and destination_new
-bool AP_OADijkstra::update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new)
+// returns DIJKSTRA_STATE_SUCCESS and populates origin_new and destination_new if avoidance is required
+AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new)
 {
     // require ekf origin to have been set
     struct Location ekf_origin {};
     if (!AP::ahrs().get_origin(ekf_origin)) {
-        return false;
+        return DIJKSTRA_STATE_NOT_REQUIRED;
     }
 
     // no avoidance required if fence is disabled
     if (!polygon_fence_enabled()) {
-        return false;
+        return DIJKSTRA_STATE_NOT_REQUIRED;
     }
 
     // check for fence updates
@@ -53,7 +53,7 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
         if (!_polyfence_with_margin_ok) {
             _polyfence_visgraph_ok = false;
             _shortest_path_ok = false;
-            return false;
+            return DIJKSTRA_STATE_ERROR;
         }
     }
 
@@ -62,7 +62,7 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
         _polyfence_visgraph_ok = create_polygon_fence_visgraph();
         if (!_polyfence_visgraph_ok) {
             _shortest_path_ok = false;
-            return false;
+            return DIJKSTRA_STATE_ERROR;
         }
     }
 
@@ -76,7 +76,7 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
     if (!_shortest_path_ok) {
         _shortest_path_ok = calc_shortest_path(current_loc, destination);
         if (!_shortest_path_ok) {
-            return false;
+            return DIJKSTRA_STATE_ERROR;
         }
         // start from 2nd point on path (first is the original origin)
         _path_idx_returned = 1;
@@ -109,10 +109,10 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
         if (near_oa_wp || past_oa_wp) {
             _path_idx_returned++;
         }
-        return true;
+        return DIJKSTRA_STATE_SUCCESS;
     }
 
-    return false;
+    return DIJKSTRA_STATE_ERROR;
 }
 
 // returns true if polygon fence is enabled
