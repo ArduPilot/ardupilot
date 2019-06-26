@@ -60,14 +60,8 @@ void Rover::motor_test_output()
 
 // mavlink_motor_test_check - perform checks before motor tests can begin
 // return true if tests can continue, false if not
-bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value)
+bool Rover::mavlink_motor_test_check(const GCS_MAVLINK &gcs_chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value)
 {
-    GCS_MAVLINK_Rover *gcs_chan_ptr = gcs().chan(chan-MAVLINK_COMM_0);
-    if (gcs_chan_ptr == nullptr) {
-        return false;
-    }
-    GCS_MAVLINK_Rover &gcs_chan = *gcs_chan_ptr;
-
     // check board has initialised
     if (!initialised) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Motor Test: Board initialising");
@@ -114,7 +108,7 @@ bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint
 
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 // returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
-MAV_RESULT Rover::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec)
+MAV_RESULT Rover::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec)
 {
     // if test has not started try to start it
     if (!motor_test) {
@@ -122,7 +116,7 @@ MAV_RESULT Rover::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor
            The RC calibrated check can be skipped if direct pwm is
            supplied
         */
-        if (!mavlink_motor_test_check(chan, throttle_type != 1, motor_seq, throttle_type, throttle_value)) {
+        if (!mavlink_motor_test_check(gcs_chan, throttle_type != 1, motor_seq, throttle_type, throttle_value)) {
             return MAV_RESULT_FAILED;
         } else {
             // start test
