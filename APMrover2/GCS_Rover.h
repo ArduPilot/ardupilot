@@ -5,9 +5,8 @@
 
 class GCS_Rover : public GCS
 {
-    friend class Rover; // for access to _chan in parameter declarations
 
-public:
+protected:
 
     // return GCS link at offset ofs
     GCS_MAVLINK_Rover *chan(const uint8_t ofs) override {
@@ -35,8 +34,6 @@ public:
 
     bool simple_input_active() const override;
     bool supersimple_input_active() const override;
-
-protected:
 
     GCS_MAVLINK_Rover *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
