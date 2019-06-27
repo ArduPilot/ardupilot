@@ -1,5 +1,6 @@
 #include "SoloGimbal_Parameters.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 
