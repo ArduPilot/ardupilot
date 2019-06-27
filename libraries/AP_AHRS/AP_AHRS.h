@@ -165,16 +165,8 @@ public:
         _airspeed = airspeed;
     }
 
-    void set_beacon(AP_Beacon *beacon) {
-        _beacon = beacon;
-    }
-
     const AP_Airspeed *get_airspeed(void) const {
         return _airspeed;
-    }
-
-    const AP_Beacon *get_beacon(void) const {
-        return _beacon;
     }
 
     // get the index of the current primary accelerometer sensor
@@ -644,9 +636,6 @@ protected:
 
     // pointer to airspeed object, if available
     AP_Airspeed     * _airspeed;
-
-    // pointer to beacon object, if available
-    AP_Beacon     * _beacon;
 
     // time in microseconds of last compass update
     uint32_t _compass_last_update;
