@@ -82,7 +82,7 @@ private:
         AP_Int8     type;               // winch type
         AP_Float    rate_max;           // deploy or retract rate maximum (in m/s).
         AP_Float    pos_p;              // position error P gain
-        AC_PID      rate_pid = AC_PID(AP_WINCH_RATE_P, AP_WINCH_RATE_I, AP_WINCH_RATE_D, AP_WINCH_RATE_IMAX, AP_WINCH_RATE_FILT, AP_WINCH_RATE_DT);           // rate control PID
+        AC_PID      rate_pid = AC_PID(AP_WINCH_RATE_P, AP_WINCH_RATE_I, AP_WINCH_RATE_D, 0.0f, AP_WINCH_RATE_IMAX, 0.0f, AP_WINCH_RATE_FILT, 0.0f, AP_WINCH_RATE_DT);           // rate control PID
         winch_state state;              // state of winch control (using target position or target rate)
         float       length_curr;        // current length of the line (in meters) that has been deployed
         float       length_desired;     // target desired length (in meters)
