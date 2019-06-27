@@ -25,40 +25,40 @@ const AP_Param::GroupInfo RSCThrCrvParam::var_info[] = {
 // enable param removed
 
     // @Param: 0
-    // @DisplayName: Throttle Servo Position in percent for 0 percent collective
-    // @Description: Throttle Servo Position in percent for 0 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @DisplayName: Throttle at 0% collective
+    // @Description: Sets the engine's throttle percent for the throttle curve with the swashplate all the way to its maximum negative collective pitch position
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("0", 2, RSCThrCrvParam, thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
 
     // @Param: 25
-    // @DisplayName: Throttle Servo Position in percent for 25 percent collective
-    // @Description: Throttle Servo Position in percent for 25 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @DisplayName: Throttle at 25% collective
+    // @Description: Sets the engine's throttle percent for the throttle curve with the swashplate at 25% of it's full collective travel.This may or may not correspond to 25% position of the collective stick, depending on the range of negative pitch in the setup. Example: if the setup has -2 degree to +10 degree collective pitch setup, the total range is 12 degrees. 25% of 12 degrees is 3 degrees, so this setting would correspond to +1 degree of positive pitch.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("25", 3, RSCThrCrvParam, thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
 
     // @Param: 50
-    // @DisplayName: Throttle Servo Position in percent for 50 percent collective
-    // @Description: Throttle Servo Position in percent for 50 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @DisplayName: Throttle at 50% collective
+    // @Description: Sets the engine's throttle percent for the throttle curve with the swashplate at 50% of it's full collective travel.This may or may not correspond to 50% position of the collective stick, depending on the range of negative pitch in the setup. Example: if the setup has -2 degree to +10 degree collective pitch setup, the total range is 12 degrees. 50% of 12 degrees is 6 degrees, so this setting would correspond to +4 degrees of positive pitch.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("50", 4, RSCThrCrvParam, thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
 
     // @Param: 75
-    // @DisplayName: Throttle Servo Position in percent for 75 percent collective
-    // @Description: Throttle Servo Position in percent for 75 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @DisplayName: Throttle at 75% collective
+    // @Description: Sets the engine's throttle percent for the throttle curve with the swashplate at 75% of it's full collective travel.This may or may not correspond to 75% position of the collective stick, depending on the range of negative pitch in the setup. Example: if the setup has -2 degree to +10 degree collective pitch setup, the total range is 12 degrees. 75% of 12 degrees is 9 degrees, so this setting would correspond to +7 degrees of positive pitch.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("75", 5, RSCThrCrvParam, thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
 
     // @Param: 100
-    // @DisplayName: Throttle Servo Position in percent for 100 percent collective
-    // @Description: Throttle Servo Position in percent for 100 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @DisplayName: Throttle at 100% collective
+    // @Description: Sets the engine's throttle percent for the throttle curve with the swashplate at 100% of it's full collective travel, which is maximum positive pitch.
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo RSCGovParam::var_info[] = {
 
     // @Param: DISGAG
     // @DisplayName: Throttle Percentage for Governor Disengage
-    // @Description: Percentage of throttle where the governor will disenage to allow return to flight idle power. Typically should be set to a value slightly below flight idle throttle. The governor disengage can be disabled by setting this value to zero, requiring throttle hold to shut down the governor
+    // @Description: Percentage of throttle where the governor will disengage to allow return to flight idle power. Typically should be set to the same value as flight idle throttle (the very lowest throttle setting on your throttle curve). The governor disengage can be disabled by setting this value to zero and using the pull-down from the governor TCGAIN to reduce power to flight idle with the collective at it's lowest throttle setting on the throttle curve.
     // @Range: 0 50
     // @Units: %
     // @Increment: 1
@@ -99,7 +99,7 @@ const AP_Param::GroupInfo RSCGovParam::var_info[] = {
 
     // @Param: TCGAIN
     // @DisplayName: Governor Throttle Curve Gain
-    // @Description: Percentage of throttle curve gain in governor output. This provides a type of feedforward response to sudden loading or unloading of the engine. If headspeed drops excessively during sudden heavy load, increase the throttle curve gain. If the governor runs with excessive droop more than 15 rpm lower than the speed setting, increase this setting until the governor runs at 8-10 rpm droop from the speed setting. The throttle curve must be properly tuned to fly the helicopter without the governor for this setting will work properly
+    // @Description: Percentage of throttle curve gain in governor output. This provides a type of feedforward response to sudden loading or unloading of the engine. If headspeed drops excessively during sudden heavy load, increase the throttle curve gain. If the governor runs with excessive droop more than 15 rpm lower than the speed setting, increase this setting until the governor runs at 8-10 rpm droop from the speed setting. The throttle curve must be properly tuned to fly the helicopter without the governor for this setting to work properly
     // @Range: 50 100
     // @Units: %
     // @Increment: 1
