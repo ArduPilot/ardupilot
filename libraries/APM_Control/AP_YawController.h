@@ -13,7 +13,7 @@ public:
         , _ahrs(ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
-        _pid_info.desired = 0;
+        _pid_info.target = 0;
         _pid_info.FF = 0;
         _pid_info.P = 0;
     }
