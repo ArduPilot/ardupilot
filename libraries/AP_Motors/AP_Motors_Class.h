@@ -82,8 +82,11 @@ public:
 
     // set_roll, set_pitch, set_yaw, set_throttle
     void                set_roll(float roll_in) { _roll_in = roll_in; };        // range -1 ~ +1
+    void                set_roll_ff(float roll_in) { _roll_in_ff = roll_in; };    // range -1 ~ +1
     void                set_pitch(float pitch_in) { _pitch_in = pitch_in; };    // range -1 ~ +1
+    void                set_pitch_ff(float pitch_in) { _pitch_in_ff = pitch_in; };  // range -1 ~ +1
     void                set_yaw(float yaw_in) { _yaw_in = yaw_in; };            // range -1 ~ +1
+    void                set_yaw_ff(float yaw_in) { _yaw_in_ff = yaw_in; };      // range -1 ~ +1
     void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
     void                set_throttle_avg_max(float throttle_avg_max) { _throttle_avg_max = constrain_float(throttle_avg_max, 0.0f, 1.0f); };   // range 0 ~ 1
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
@@ -215,8 +218,11 @@ protected:
     uint16_t            _loop_rate;                 // rate in Hz at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
+    float               _roll_in_ff;                // desired roll feed forward control from attitude controllers, -1 ~ +1
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
+    float               _pitch_in_ff;               // desired pitch feed forward control from attitude controller, -1 ~ +1
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
+    float               _yaw_in_ff;                 // desired yaw feed forward control from attitude controller, -1 ~ +1
     float               _throttle_in;               // last throttle input from set_throttle caller
     float               _forward_in;                // last forward input from set_forward caller
     float               _lateral_in;                // last lateral input from set_lateral caller
