@@ -1,6 +1,8 @@
 #include "AP_TECS.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
