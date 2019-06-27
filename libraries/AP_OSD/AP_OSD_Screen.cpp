@@ -32,6 +32,7 @@
 #include <AP_Common/Location.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Baro/AP_Baro.h>
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
