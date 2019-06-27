@@ -10,8 +10,6 @@
 #include "SIM_Parachute.h"
 #include "SIM_Precland.h"
 
-class AP_Logger;
-
 namespace SITL {
 
 struct vector3f_array {
