@@ -230,7 +230,7 @@ private:
     // relay support
     AP_Relay relay;
 
-    AP_ServoRelayEvents ServoRelayEvents{relay};
+    AP_ServoRelayEvents ServoRelayEvents;
 
     // The rover's current location
     struct Location current_loc;
