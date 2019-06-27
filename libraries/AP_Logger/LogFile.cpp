@@ -797,6 +797,7 @@ void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
         time_us         : AP_HAL::micros64(),
         target          : info.target,
         actual          : info.actual,
+        error           : info.error,
         P               : info.P,
         I               : info.I,
         D               : info.D,

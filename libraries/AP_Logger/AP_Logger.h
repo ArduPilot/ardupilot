@@ -285,6 +285,7 @@ public:
     struct PID_Info {
         float target;
         float actual;
+        float error;
         float P;
         float I;
         float D;
