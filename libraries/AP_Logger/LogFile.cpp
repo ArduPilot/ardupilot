@@ -829,7 +829,7 @@ void AP_Logger::Write_EKF2(AP_AHRS_NavEKF &ahrs)
     }
 
     // write range beacon fusion debug packet if the range value is non-zero
-    if (ahrs.get_beacon() != nullptr) {
+    if (AP::beacon() != nullptr) {
         uint8_t ID;
         float rng;
         float innovVar;
