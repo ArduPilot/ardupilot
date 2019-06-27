@@ -58,22 +58,6 @@ void AP_Winch_Servo::update()
         rate_desired = config.rate_desired;
     }
 
-    // calculate rate error and pass to pid controller
-    float rate_error = rate_desired - rate;
-    config.rate_pid.set_input_filter_all(rate_error);
-
-    // get p
-    float p = config.rate_pid.get_p();
-
-    // get i unless winch hit limit on last iteration
-    float i = config.rate_pid.get_integrator();
-    if (((is_negative(rate_error) && !limit_low) || (is_positive(rate_error) && !limit_high))) {
-        i = config.rate_pid.get_i();
-    }
-
-    // get d
-    float d = config.rate_pid.get_d();
-
     // calculate base output
     float base = 0.0f;
     if (is_positive(config.rate_max)) {
@@ -81,7 +65,7 @@ void AP_Winch_Servo::update()
     }
 
     // constrain and set limit flags
-    float output = base + p + i + d;
+    float output = base + config.rate_pid.update_all(rate_desired, rate, (limit_low || limit_high));
     limit_low = (output <= -1.0f);
     limit_high = (output >= 1.0f);
     output = constrain_float(output, -1.0f, 1.0f);
