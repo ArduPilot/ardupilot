@@ -162,3 +162,11 @@ void AP_Relay::toggle(uint8_t relay)
     }
 }
 
+namespace AP {
+
+AP_Relay *relay()
+{
+    return AP_Relay::get_singleton();
+}
+
+}
