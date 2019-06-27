@@ -22,6 +22,7 @@
 
 #include "SIM_Sailboat.h"
 #include <AP_Math/AP_Math.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <string.h>
 #include <stdio.h>
 
