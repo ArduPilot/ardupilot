@@ -16,7 +16,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Logger/AP_Logger.h>
 #include <AP_Common/Location.h>
 
 #if (HAL_OS_POSIX_IO || HAL_OS_FATFS_IO) && defined(HAL_BOARD_TERRAIN_DIRECTORY)
@@ -28,7 +27,6 @@
 #if AP_TERRAIN_AVAILABLE
 
 #include <AP_Param/AP_Param.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
 
 #define TERRAIN_DEBUG 0
