@@ -54,7 +54,12 @@ bool AP_ServoRelayEvents::do_set_servo(uint8_t _channel, uint16_t pwm)
 
 bool AP_ServoRelayEvents::do_set_relay(uint8_t relay_num, uint8_t state)
 {
-    if (!relay.enabled(relay_num)) {
+    AP_Relay *relay = AP::relay();
+    if (relay == nullptr) {
+        return false;
+    }
+
+    if (!relay->enabled(relay_num)) {
         return false;
     }
     if (type == EVENT_TYPE_RELAY && 
@@ -63,11 +68,11 @@ bool AP_ServoRelayEvents::do_set_relay(uint8_t relay_num, uint8_t state)
         repeat = 0;
     }
     if (state == 1) {
-        relay.on(relay_num);
+        relay->on(relay_num);
     } else if (state == 0) {
-        relay.off(relay_num);
+        relay->off(relay_num);
     } else {
-        relay.toggle(relay_num);
+        relay->toggle(relay_num);
     }
     return true;
 }
@@ -102,7 +107,11 @@ bool AP_ServoRelayEvents::do_repeat_servo(uint8_t _channel, uint16_t _servo_valu
 
 bool AP_ServoRelayEvents::do_repeat_relay(uint8_t relay_num, int16_t _repeat, uint32_t _delay_ms)
 {
-    if (!relay.enabled(relay_num)) {
+    AP_Relay *relay = AP::relay();
+    if (relay == nullptr) {
+        return false;
+    }
+    if (!relay->enabled(relay_num)) {
         return false;
     }
     type = EVENT_TYPE_RELAY;
@@ -140,11 +149,14 @@ void AP_ServoRelayEvents::update_events(void)
         break;
     }
 
-    case EVENT_TYPE_RELAY:
-        relay.toggle(channel);
+    case EVENT_TYPE_RELAY: {
+        AP_Relay *relay = AP::relay();
+        if (relay != nullptr) {
+            relay->toggle(channel);
+        }
         break;
     }
-    
+    }
     if (repeat > 0) {
         repeat--;
     } else {
