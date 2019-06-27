@@ -223,7 +223,7 @@ void GCS_MAVLINK_Copter::send_pid_tuning()
         if (pid_info != nullptr) {
             mavlink_msg_pid_tuning_send(chan,
                                         axes[i],
-                                        pid_info->desired*0.01f,
+                                        pid_info->target*0.01f,
                                         achieved,
                                         pid_info->FF*0.01f,
                                         pid_info->P*0.01f,

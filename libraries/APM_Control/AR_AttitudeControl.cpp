@@ -613,7 +613,7 @@ float AR_AttitudeControl::get_desired_pitch() const
         return 0.0f;
     }
 
-    return _pitch_to_throttle_pid.get_pid_info().desired;
+    return _pitch_to_throttle_pid.get_pid_info().target;
 }
 
 // Sailboat heel(roll) angle contorller release sail to keep at maximum heel angle
