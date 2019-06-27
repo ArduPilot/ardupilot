@@ -452,10 +452,10 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_A_RAT_RLL_P",    0.25 },
     { "Q_A_RAT_RLL_I",    0.25 },
-    { "Q_A_RAT_RLL_FILT", 10.0 },
+    { "Q_A_RAT_RLL_FLTD", 10.0 },
     { "Q_A_RAT_PIT_P",    0.25 },
     { "Q_A_RAT_PIT_I",    0.25 },
-    { "Q_A_RAT_PIT_FILT", 10.0 },
+    { "Q_A_RAT_PIT_FLTD", 10.0 },
     { "Q_M_SPOOL_TIME",   0.25 },
     { "Q_M_HOVER_LEARN",     0 },
     { "Q_LOIT_ANG_MAX",   15.0 },
@@ -495,12 +495,18 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_quadplane, 80,   AP_PARAM_FLOAT, "Q_P_ACCZ_I"},      //  Q_AZ_I
     { Parameters::k_param_quadplane, 144,  AP_PARAM_FLOAT, "Q_P_ACCZ_D"},      //  Q_AZ_D
     { Parameters::k_param_quadplane, 336,  AP_PARAM_FLOAT, "Q_P_ACCZ_IMAX"},   //  Q_AZ_IMAX
-    { Parameters::k_param_quadplane, 400,  AP_PARAM_FLOAT, "Q_P_ACCZ_FILT"},   //  Q_AZ_FILT
+    { Parameters::k_param_quadplane, 400,  AP_PARAM_FLOAT, "Q_P_ACCZ_FLTD"},   //  Q_AZ_FILT
     { Parameters::k_param_quadplane, 464,  AP_PARAM_FLOAT, "Q_P_ACCZ_FF"},     //  Q_AZ_FF
     { Parameters::k_param_quadplane, 276,  AP_PARAM_FLOAT, "Q_LOIT_SPEED"},    //  Q_WP_LOIT_SPEED
     { Parameters::k_param_quadplane, 468,  AP_PARAM_FLOAT, "Q_LOIT_BRK_JERK" },//  Q_WP_LOIT_JERK
     { Parameters::k_param_quadplane, 532,  AP_PARAM_FLOAT, "Q_LOIT_ACC_MAX" }, //  Q_WP_LOIT_MAXA
     { Parameters::k_param_quadplane, 596,  AP_PARAM_FLOAT, "Q_LOIT_BRK_ACCEL" },// Q_WP_LOIT_MINA
+    { Parameters::k_param_q_attitude_control, 385,  AP_PARAM_FLOAT, "Q_A_RAT_RLL_FLTD" },// Q_A_RAT_RLL_FILT
+    { Parameters::k_param_q_attitude_control, 386,  AP_PARAM_FLOAT, "Q_A_RAT_PIT_FLTD" },// Q_A_RAT_PIT_FILT
+    { Parameters::k_param_q_attitude_control, 387,  AP_PARAM_FLOAT, "Q_A_RAT_YAW_FLTE" },// Q_A_RAT_YAW_FILT
+    { Parameters::k_param_q_attitude_control, 449,  AP_PARAM_FLOAT, "Q_A_RAT_RLL_FF" },  // Q_A_RAT_RLL_FF
+    { Parameters::k_param_q_attitude_control, 450,  AP_PARAM_FLOAT, "Q_A_RAT_PIT_FF" },  // Q_A_RAT_PIT_FF
+    { Parameters::k_param_q_attitude_control, 451,  AP_PARAM_FLOAT, "Q_A_RAT_YAW_FF" },  // Q_A_RAT_YAW_FILT
 };
 
 
