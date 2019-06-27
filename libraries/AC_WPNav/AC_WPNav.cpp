@@ -96,35 +96,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
 }
 
 
-/// init_brake_target - initializes stop position from current position and velocity
-void AC_WPNav::init_brake_target(float accel_cmss)
-{
-    const Vector3f& curr_vel = _inav.get_velocity();
-    Vector3f stopping_point;
-
-    // initialise position controller
-    _pos_control.set_desired_velocity_xy(0.0f,0.0f);
-    _pos_control.set_desired_accel_xy(0.0f,0.0f);
-    _pos_control.init_xy_controller();
-
-    // initialise pos controller speed and acceleration
-    _pos_control.set_max_speed_xy(curr_vel.length());
-    _pos_control.set_max_accel_xy(accel_cmss);
-    _pos_control.calc_leash_length_xy();
-
-    // set target position
-    _pos_control.get_stopping_point_xy(stopping_point);
-    _pos_control.set_xy_target(stopping_point.x, stopping_point.y);
-}
-
-// update_brake - run the stop controller - gets called at 400hz
-void AC_WPNav::update_brake()
-{
-    // send adjusted feed forward velocity back to position controller
-    _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
-    _pos_control.update_xy_controller();
-}
-
 ///
 /// waypoint navigation
 ///

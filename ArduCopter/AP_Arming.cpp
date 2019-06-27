@@ -204,11 +204,6 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
 #endif
 
-        // check for something close to vehicle
-        if (!pre_arm_proximity_check(display_failure)) {
-            return false;
-        }
-
         // ensure controllers are OK with us arming:
         char failure_msg[50];
         if (!copter.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
@@ -404,19 +399,17 @@ bool AP_Arming_Copter::pre_arm_terrain_check(bool display_failure)
 }
 
 // check nothing is too close to vehicle
-bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
+bool AP_Arming_Copter::proximity_checks(bool display_failure) const
 {
 #if PROXIMITY_ENABLED == ENABLED
 
-    // return true immediately if no sensor present
-    if (copter.g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
-        return true;
+    if (!AP_Arming::proximity_checks(display_failure)) {
+        return false;
     }
 
-    // return false if proximity sensor unhealthy
-    if (copter.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
-        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "check proximity sensor");
-        return false;
+    if (!((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS))) {
+        // check is disabled
+        return true;
     }
 
     // get closest object if we might use it for avoidance

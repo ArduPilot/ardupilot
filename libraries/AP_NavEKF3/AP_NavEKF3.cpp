@@ -4,6 +4,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
 #include <new>
 
 /*
@@ -789,10 +790,50 @@ void NavEKF3::UpdateFilter(void)
             updateLaneSwitchPosResetData(newPrimaryIndex, primary);
             updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
             primary = newPrimaryIndex;
+            lastLaneSwitch_ms = AP_HAL::millis();
         }
     }
 
     check_log_write();
+}
+
+/*
+  check if switching lanes will reduce the normalised
+  innovations. This is called when the vehicle code is about to
+  trigger an EKF failsafe, and it would like to avoid that by
+  using a different EKF lane
+*/
+void NavEKF3::checkLaneSwitch(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (lastLaneSwitch_ms != 0 && now - lastLaneSwitch_ms < 5000) {
+        // don't switch twice in 5 seconds
+        return;
+    }
+    float primaryErrorScore = core[primary].errorScore();
+    float lowestErrorScore = primaryErrorScore;
+    uint8_t newPrimaryIndex = primary;
+    for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
+        if (coreIndex != primary) {
+            // an alternative core is available for selection only if healthy and if states have been updated on this time step
+            bool altCoreAvailable = core[coreIndex].healthy();
+            float altErrorScore = core[coreIndex].errorScore();
+            if (altCoreAvailable && altErrorScore < lowestErrorScore && altErrorScore < 0.9) {
+                newPrimaryIndex = coreIndex;
+                lowestErrorScore = altErrorScore;
+            }
+        }
+    }
+
+    // update the yaw and position reset data to capture changes due to the lane switch
+    if (newPrimaryIndex != primary) {
+        updateLaneSwitchYawResetData(newPrimaryIndex, primary);
+        updateLaneSwitchPosResetData(newPrimaryIndex, primary);
+        updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
+        primary = newPrimaryIndex;
+        lastLaneSwitch_ms = now;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: lane switch %u", primary);
+    }
 }
 
 // Check basic filter health metrics and return a consolidated health status

@@ -22,7 +22,7 @@ const AP_Param::GroupInfo AP_InertialSensor::BatchSampler::var_info[] = {
     // @Param: BAT_OPT
     // @DisplayName: Batch Logging Options Mask
     // @Description: Options for the BatchSampler
-    // @Bitmask: 0:Sensor-Rate Logging (sample at full sensor rate seen by AP)
+    // @Bitmask: 0:Sensor-Rate Logging (sample at full sensor rate seen by AP), 1: Sample post-filtering
     // @User: Advanced
     AP_GROUPINFO("BAT_OPT",  3, AP_InertialSensor::BatchSampler, _batch_options_mask, 0),
 
@@ -87,6 +87,13 @@ void AP_InertialSensor::BatchSampler::periodic()
 
 void AP_InertialSensor::BatchSampler::update_doing_sensor_rate_logging()
 {
+    // We can't do post-filter sensor rate logging
+    if ((batch_opt_t)(_batch_options_mask.get()) & BATCH_OPT_POST_FILTER) {
+        _doing_post_filter_logging = true;
+        _doing_sensor_rate_logging = false;
+        return;
+    }
+    _doing_post_filter_logging = false;
     if (!((batch_opt_t)(_batch_options_mask.get()) & BATCH_OPT_SENSOR_RATE)) {
         _doing_sensor_rate_logging = false;
         return;

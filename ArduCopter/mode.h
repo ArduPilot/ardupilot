@@ -1,6 +1,6 @@
 #pragma once
 
-// this class is #included into the Copter:: namespace
+#include "Copter.h"
 
 class Mode {
 
@@ -99,7 +99,6 @@ protected:
     RC_Channel *&channel_throttle;
     RC_Channel *&channel_yaw;
     float &G_Dt;
-    ap_t &ap;
 
     // note that we support two entirely different automatic takeoffs:
 
@@ -221,7 +220,7 @@ class ModeAcro : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     virtual void run() override;
 
@@ -241,7 +240,7 @@ protected:
         if (g2.acro_thr_mid > 0) {
             return g2.acro_thr_mid;
         }
-        return Copter::Mode::throttle_hover();
+        return Mode::throttle_hover();
     }
 
 private:
@@ -254,10 +253,11 @@ class ModeAcro_Heli : public ModeAcro {
 
 public:
     // inherit constructor
-    using Copter::ModeAcro::Mode;
+    using ModeAcro::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
+    void virtual_flybar( float &roll_out, float &pitch_out, float &yaw_out, float pitch_leak, float roll_leak);
 
 protected:
 private:
@@ -269,7 +269,7 @@ class ModeAltHold : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -296,7 +296,7 @@ class ModeAuto : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -338,9 +338,9 @@ public:
     bool do_guided(const AP_Mission::Mission_Command& cmd);
 
     AP_Mission mission{
-        FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::start_command, bool, const AP_Mission::Mission_Command &),
-        FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::verify_command, bool, const AP_Mission::Mission_Command &),
-        FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::exit_mission, void)};
+        FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
 
 protected:
 
@@ -487,7 +487,7 @@ class ModeAutoTune : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -513,7 +513,7 @@ class ModeBrake : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -532,6 +532,8 @@ protected:
 
 private:
 
+    void init_target();
+
     uint32_t _timeout_start;
     uint32_t _timeout_ms;
 
@@ -542,7 +544,7 @@ class ModeCircle : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -571,7 +573,7 @@ class ModeDrift : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -597,7 +599,7 @@ class ModeFlip : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -724,7 +726,7 @@ class ModeGuided : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -788,7 +790,7 @@ class ModeGuidedNoGPS : public ModeGuided {
 
 public:
     // inherit constructor
-    using Copter::ModeGuided::Mode;
+    using ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -812,7 +814,7 @@ class ModeLand : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -843,7 +845,7 @@ class ModeLoiter : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -884,7 +886,7 @@ class ModePosHold : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -963,7 +965,7 @@ class ModeRTL : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override {
@@ -1036,7 +1038,7 @@ class ModeSmartRTL : public ModeRTL {
 
 public:
     // inherit constructor
-    using Copter::ModeRTL::Mode;
+    using ModeRTL::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1073,7 +1075,7 @@ class ModeSport : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1100,7 +1102,7 @@ class ModeStabilize : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     virtual void run() override;
 
@@ -1123,7 +1125,7 @@ class ModeStabilize_Heli : public ModeStabilize {
 
 public:
     // inherit constructor
-    using Copter::ModeStabilize::Mode;
+    using ModeStabilize::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1140,7 +1142,7 @@ class ModeThrow : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1191,7 +1193,7 @@ class ModeAvoidADSB : public ModeGuided {
 
 public:
     // inherit constructor
-    using Copter::ModeGuided::Mode;
+    using ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1217,7 +1219,7 @@ class ModeFollow : public ModeGuided {
 public:
 
     // inherit constructor
-    using Copter::ModeGuided::Mode;
+    using ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1243,7 +1245,7 @@ class ModeZigZag : public Mode {
 public:
 
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;

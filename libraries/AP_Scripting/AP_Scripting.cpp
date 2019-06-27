@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Values: 0:None,1:Lua Scripts
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_Scripting, _enable, 1, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_Scripting, _enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: VM_I_COUNT
     // @DisplayName: Scripting Virtual Machine Instruction Count

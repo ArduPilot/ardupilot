@@ -85,17 +85,17 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
-    if [ "$t" == "sitl-scripting" ]; then
-        echo "Building scripting"
-        $waf configure --enable-scripting
-        $waf clean
-        $waf all
-        continue
-    fi
-
     if [ "$t" == "revo-bootloader" ]; then
         echo "Building revo bootloader"
         $waf configure --board revo-mini --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+
+    if [ "$t" == "CubeOrange-bootloader" ]; then
+        echo "Building CubeOrange bootloader"
+        $waf configure --board CubeOrange --bootloader
         $waf clean
         $waf bootloader
         continue

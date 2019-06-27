@@ -495,16 +495,16 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             break;
 
 #ifdef USERHOOK_AUXSWITCH
-        case USER_FUNC1:
-            userhook_auxSwitch1(ch_flag);
+        case AUX_FUNC::USER_FUNC1:
+            copter.userhook_auxSwitch1(ch_flag);
             break;
 
-        case USER_FUNC2:
-            userhook_auxSwitch2(ch_flag);
+        case AUX_FUNC::USER_FUNC2:
+            copter.userhook_auxSwitch2(ch_flag);
             break;
 
-        case USER_FUNC3:
-            userhook_auxSwitch3(ch_flag);
+        case AUX_FUNC::USER_FUNC3:
+            copter.userhook_auxSwitch3(ch_flag);
             break;
 #endif
 

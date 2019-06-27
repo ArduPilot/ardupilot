@@ -3,7 +3,7 @@
 #if MODE_THROW_ENABLED == ENABLED
 
 // throw_init - initialise throw controller
-bool Copter::ModeThrow::init(bool ignore_checks)
+bool ModeThrow::init(bool ignore_checks)
 {
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to use throw to start
@@ -24,7 +24,7 @@ bool Copter::ModeThrow::init(bool ignore_checks)
 
 // runs the throw to start controller
 // should be called at 100hz or more
-void Copter::ModeThrow::run()
+void ModeThrow::run()
 {
     /* Throw State Machine
     Throw_Disarmed - motors are off
@@ -216,7 +216,7 @@ void Copter::ModeThrow::run()
     }
 }
 
-bool Copter::ModeThrow::throw_detected()
+bool ModeThrow::throw_detected()
 {
     // Check that we have a valid navigation solution
     nav_filter_status filt_status = inertial_nav.get_filter_status();
@@ -261,20 +261,20 @@ bool Copter::ModeThrow::throw_detected()
     }
 }
 
-bool Copter::ModeThrow::throw_attitude_good()
+bool ModeThrow::throw_attitude_good()
 {
     // Check that we have uprighted the copter
     const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
     return (rotMat.c.z > 0.866f); // is_upright
 }
 
-bool Copter::ModeThrow::throw_height_good()
+bool ModeThrow::throw_height_good()
 {
     // Check that we are within 0.5m of the demanded height
     return (pos_control->get_alt_error() < 50.0f);
 }
 
-bool Copter::ModeThrow::throw_position_good()
+bool ModeThrow::throw_position_good()
 {
     // check that our horizontal position error is within 50cm
     return (pos_control->get_horizontal_error() < 50.0f);

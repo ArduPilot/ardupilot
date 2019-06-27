@@ -112,14 +112,14 @@ for FrSky SPort Passthrough
 
 class AP_Frsky_Telem {
 public:
-    AP_Frsky_Telem() {}
+    AP_Frsky_Telem();
 
     /* Do not allow copies */
     AP_Frsky_Telem(const AP_Frsky_Telem &other) = delete;
     AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
 
     // init - perform required initialisation
-    void init();
+    bool init();
 
     // add statustext message to FrSky lib message queue
     void queue_message(MAV_SEVERITY severity, const char *text);
@@ -130,8 +130,6 @@ public:
     // functioning correctly
     uint32_t sensor_status_flags() const;
 
-    static ObjectArray<mavlink_statustext_t> _statustext_queue;
-
 private:
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
     AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
@@ -141,6 +139,9 @@ private:
     uint32_t check_sensor_status_timer;
     uint32_t check_ekf_status_timer;
     uint8_t _paramID;
+
+    ObjectArray<mavlink_statustext_t> _statustext_queue;
+
     
     struct
     {

@@ -27,7 +27,7 @@ public:
     void update_soft_armed();
 
 protected:
-    bool proximity_check(bool report);
+    bool oa_check(bool report);
 
 private:
 

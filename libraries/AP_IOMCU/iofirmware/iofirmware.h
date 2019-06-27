@@ -126,6 +126,7 @@ private:
     bool update_default_rate;
     bool update_rcout_freq;
     bool has_heater;
+    bool heater_pwm_polarity;
     uint32_t last_blue_led_ms;
     uint32_t safety_update_ms;
     uint32_t safety_button_counter;
@@ -144,7 +145,7 @@ private:
 };
 
 // GPIO macros
-#define HEATER_SET(on) palWriteLine(HAL_GPIO_PIN_HEATER, !(on));
+#define HEATER_SET(on) palWriteLine(HAL_GPIO_PIN_HEATER, (on));
 #define BLUE_TOGGLE() palToggleLine(HAL_GPIO_PIN_HEATER);
 #define AMBER_SET(on) palWriteLine(HAL_GPIO_PIN_AMBER_LED, !(on));
 #define SPEKTRUM_POWER(on) palWriteLine(HAL_GPIO_PIN_SPEKTRUM_PWR_EN, on);

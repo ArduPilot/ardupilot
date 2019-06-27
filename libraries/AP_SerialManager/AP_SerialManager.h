@@ -106,6 +106,7 @@ public:
         SerialProtocol_OpticalFlow = 18,
         SerialProtocol_Robotis = 19,
         SerialProtocol_NMEAOutput = 20,
+        SerialProtocol_WindVane = 21,
     };
 
     // get singleton instance

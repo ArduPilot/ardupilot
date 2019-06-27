@@ -628,7 +628,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
 
 #ifdef ENABLE_SCRIPTING
-    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
+    // @Group: SCR_
+    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     AP_SUBGROUPINFO(scripting, "SCR_", 18, ParametersG2, AP_Scripting),
 #endif
 

@@ -28,6 +28,7 @@
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Parachute.h"
 #include "SIM_Precland.h"
+#include <Filter/Filter.h>
 
 namespace SITL {
 

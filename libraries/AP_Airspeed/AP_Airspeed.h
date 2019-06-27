@@ -4,7 +4,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Baro/AP_Baro.h>
+#include <AP_Math/AP_Math.h>
 
 class AP_Airspeed_Backend;
 
@@ -101,18 +101,6 @@ public:
     }
     float get_differential_pressure(void) const { return get_differential_pressure(primary); }
 
-    // set the apparent to true airspeed ratio
-    void set_EAS2TAS(uint8_t i, float v) {
-        state[i].EAS2TAS = v;
-    }
-    void set_EAS2TAS(float v) { set_EAS2TAS(primary, v); }
-
-    // get the apparent to true airspeed ratio
-    float get_EAS2TAS(uint8_t i) const {
-        return state[i].EAS2TAS;
-    }
-    float get_EAS2TAS(void) const { return get_EAS2TAS(primary); }
-
     // update airspeed ratio calibration
     void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
@@ -186,7 +174,6 @@ private:
         float	last_pressure;
         float   filtered_pressure;
         float	corrected_pressure;
-        float   EAS2TAS;
         bool	healthy:1;
         bool	hil_set:1;
         float   hil_pressure;

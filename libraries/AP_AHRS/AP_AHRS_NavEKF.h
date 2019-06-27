@@ -259,6 +259,9 @@ public:
     // get the index of the current primary gyro sensor
     uint8_t get_primary_gyro_index(void) const override;
 
+    // see if EKF lane switching is possible to avoid EKF failsafe
+    void check_lane_switch(void) override;
+    
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
                    EKF_TYPE3=3,

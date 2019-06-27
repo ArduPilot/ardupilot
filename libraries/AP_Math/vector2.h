@@ -30,9 +30,6 @@
 #pragma once
 
 #include <cmath>
-#if MATH_CHECK_INDEXES
-#include <assert.h>
-#endif
 
 template <typename T>
 struct Vector2
@@ -98,6 +95,10 @@ struct Vector2
     // returns 0 if the vectors are parallel, and M_PI if they are antiparallel
     float angle(const Vector2<T> &v2) const;
 
+    // computes the angle of this vector in radians, from 0 to 2pi,
+    // from a unit vector(1,0); a (1,1) vector's angle is +M_PI/4
+    float angle(void) const;
+
     // check if any elements are NAN
     bool is_nan(void) const;
 
@@ -131,59 +132,29 @@ struct Vector2
     }
 
     // gets the length of this vector squared
-    T   length_squared() const
-    {
-        return (T)(*this * *this);
-    }
+    float length_squared() const;
 
     // gets the length of this vector
-    float           length(void) const;
+    float length(void) const;
 
     // normalizes this vector
-    void    normalize()
-    {
-        *this/=length();
-    }
+    void normalize();
 
     // returns the normalized vector
-    Vector2<T>  normalized() const
-    {
-        return *this/length();
-    }
+    Vector2<T> normalized() const;
 
     // reflects this vector about n
-    void    reflect(const Vector2<T> &n)
-    {
-        const Vector2<T>        orig(*this);
-        project(n);
-        *this= *this*2 - orig;
-    }
+    void reflect(const Vector2<T> &n);
 
     // projects this vector onto v
-    void    project(const Vector2<T> &v)
-    {
-        *this= v * (*this * v)/(v*v);
-    }
+    void project(const Vector2<T> &v);
 
     // returns this vector projected onto v
-    Vector2<T>  projected(const Vector2<T> &v)
-    {
-        return v * (*this * v)/(v*v);
-    }
+    Vector2<T> projected(const Vector2<T> &v);
 
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1
-    static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1)
-    {
-        const Vector2<T> perpendicular1 = Vector2<T>(-v1[1], v1[0]);
-        const Vector2<T> perpendicular2 = Vector2<T>(v1[1], -v1[0]);
-        const T d1 = perpendicular1 * pos_delta;
-        const T d2 = perpendicular2 * pos_delta;
-        if (d1 > d2) {
-            return perpendicular1;
-        }
-        return perpendicular2;
-    }
+    static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1);
 
     /*
      * Returns the point closest to p on the line segment (v,w).
@@ -191,38 +162,47 @@ struct Vector2
      * Comments and implementation taken from
      * http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
      */
-    static Vector2<T> closest_point(const Vector2<T> &p, const Vector2<T> &v, const Vector2<T> &w)
-    {
-        // length squared of line segment
-        const float l2 = (v - w).length_squared();
-        if (l2 < FLT_EPSILON) {
-            // v == w case
-            return v;
-        }
-        // Consider the line extending the segment, parameterized as v + t (w - v).
-        // We find projection of point p onto the line.
-        // It falls where t = [(p-v) . (w-v)] / |w-v|^2
-        // We clamp t from [0,1] to handle points outside the segment vw.
-        const float t = ((p - v) * (w - v)) / l2;
-        if (t <= 0) {
-            return v;
-        } else if (t >= 1) {
-            return w;
-        } else {
-            return v + (w - v)*t;
-        }
-    }
+    static Vector2<T> closest_point(const Vector2<T> &p, const Vector2<T> &v, const Vector2<T> &w);
+
+    /*
+     * Returns the point closest to p on the line segment (0,w).
+     *
+     * this is a simplification of closest point with a general segment, with v=(0,0)
+     */
+    static Vector2<T> closest_point(const Vector2<T> &p, const Vector2<T> &w);
+
+    // w1 and w2 define a line segment
+    // p is a point
+    // returns the square of the closest distance between the line segment and the point
+    static float closest_distance_between_line_and_point_squared(const Vector2<T> &w1,
+                                                                 const Vector2<T> &w2,
+                                                                 const Vector2<T> &p);
+
+    // w1 and w2 define a line segment
+    // p is a point
+    // returns the closest distance between the line segment and the point
+    static float closest_distance_between_line_and_point(const Vector2<T> &w1,
+                                                         const Vector2<T> &w2,
+                                                         const Vector2<T> &p);
+
+    // a1->a2 and b2->v2 define two line segments
+    // returns the square of the closest distance between the two line segments
+    static float closest_distance_between_lines_squared(const Vector2<T> &a1,
+                                                        const Vector2<T> &a2,
+                                                        const Vector2<T> &b1,
+                                                        const Vector2<T> &b2);
+
+    // w defines a line segment from the origin
+    // p is a point
+    // returns the square of the closest distance between the radial and the point
+    static float closest_distance_between_radial_and_point_squared(const Vector2<T> &w,
+                                                                   const Vector2<T> &p);
 
     // w defines a line segment from the origin
     // p is a point
     // returns the closest distance between the radial and the point
     static float closest_distance_between_radial_and_point(const Vector2<T> &w,
-                                                           const Vector2<T> &p)
-    {
-        const Vector2<T> closest = closest_point(p, Vector2<T>(0,0), w);
-        const Vector2<T> delta = closest - p;
-        return delta.length();
-    }
+                                                           const Vector2<T> &p);
 
     // find the intersection between two line segments
     // returns true if they intersect, false if they do not

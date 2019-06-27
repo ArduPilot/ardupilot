@@ -22,6 +22,7 @@
 #include "AP_Proximity_MAV.h"
 #include "AP_Proximity_SITL.h"
 #include "AP_Proximity_MorseSITL.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -376,6 +377,26 @@ const Vector2f* AP_Proximity::get_boundary_points(uint8_t instance, uint16_t& nu
 const Vector2f* AP_Proximity::get_boundary_points(uint16_t& num_points) const
 {
     return get_boundary_points(primary_instance, num_points);
+}
+
+// copy location points around vehicle into a buffer owned by the caller
+// caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
+// num_copied is updated with the number of locations copied into the buffer
+// returns true on success, false on failure (should only happen if there is a semaphore conflict)
+bool AP_Proximity::copy_locations(uint8_t instance, Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied)
+{
+    if ((drivers[instance] == nullptr) || (_type[instance] == Proximity_Type_None)) {
+        num_copied = 0;
+        return false;
+    }
+
+    // call backend copy_locations
+    return drivers[instance]->copy_locations(buff, buff_size, num_copied);
+}
+
+bool AP_Proximity::copy_locations(Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied)
+{
+    return copy_locations(primary_instance, buff, buff_size, num_copied);
 }
 
 // get distance and angle to closest object (used for pre-arm check)

@@ -103,7 +103,7 @@ Location::AltFrame Location::get_alt_frame() const
 bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (lat == 0 && lng == 0) {
+    if (!initialised()) {
         AP_HAL::panic("Should not be called on invalid location");
     }
 #endif
@@ -271,7 +271,7 @@ void Location::offset_bearing(float bearing, float distance)
 float Location::longitude_scale() const
 {
     float scale = cosf(lat * (1.0e-7f * DEG_TO_RAD));
-    return constrain_float(scale, 0.01f, 1.0f);
+    return MAX(scale, 0.01f);
 }
 
 /*

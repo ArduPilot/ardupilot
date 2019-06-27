@@ -13,12 +13,20 @@ public:
     uint8_t num_gcs() const override { return ARRAY_SIZE(_chan); };
 
     // return GCS link at offset ofs
-    GCS_MAVLINK_Copter &chan(const uint8_t ofs) override {
+    GCS_MAVLINK_Copter &chan(uint8_t ofs) override {
+        if (ofs >= num_gcs()) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            ofs = 0;
+        }
         return _chan[ofs];
-    };
-    const GCS_MAVLINK_Copter &chan(const uint8_t ofs) const override {
+    }
+    const GCS_MAVLINK_Copter &chan(uint8_t ofs) const override {
+        if (ofs >= num_gcs()) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            ofs = 0;
+        }
         return _chan[ofs];
-    };
+    }
 
     void update_vehicle_sensor_status_flags(void) override;
 
@@ -31,6 +39,16 @@ public:
 
     bool simple_input_active() const override;
     bool supersimple_input_active() const override;
+
+protected:
+
+    // minimum amount of time (in microseconds) that must remain in
+    // the main scheduler loop before we are allowed to send any
+    // mavlink messages.  We want to prioritise the main flight
+    // control loop over communications
+    uint16_t min_loop_time_remaining_for_message_send_us() const override {
+        return 250;
+    }
 
 private:
 

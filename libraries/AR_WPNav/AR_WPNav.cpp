@@ -101,11 +101,21 @@ void AR_WPNav::update(float dt)
     }
     _last_update_ms = AP_HAL::millis();
 
+    // run path planning around obstacles
+    AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
+    if (oa != nullptr) {
+        _oa_active = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination);
+    }
+    if (!_oa_active) {
+        _oa_origin = _origin;
+        _oa_destination = _destination;
+    }
+
     update_distance_and_bearing_to_destination();
 
     // check if vehicle has reached the destination
     const bool near_wp = _distance_to_destination <= _radius;
-    const bool past_wp = current_loc.past_interval_finish_line(_origin, _destination);
+    const bool past_wp = !_oa_active && current_loc.past_interval_finish_line(_origin, _destination);
     if (!_reached_destination && (near_wp || past_wp)) {
        _reached_destination = true;
     }
@@ -131,7 +141,8 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, float ne
     }
 
     // initialise some variables
-    _destination = destination;
+    _oa_origin = _origin;
+    _oa_destination = _destination = destination;
     _orig_and_dest_valid = true;
     _reached_destination = false;
     update_distance_and_bearing_to_destination();
@@ -269,10 +280,23 @@ void AR_WPNav::update_distance_and_bearing_to_destination()
     if (!_orig_and_dest_valid || !AP::ahrs().get_position(current_loc)) {
         _distance_to_destination = 0.0f;
         _wp_bearing_cd = 0.0f;
+
+        // update OA adjusted values
+        _oa_distance_to_destination = 0.0f;
+        _oa_wp_bearing_cd = 0.0f;
         return;
     }
     _distance_to_destination = current_loc.get_distance(_destination);
     _wp_bearing_cd = current_loc.get_bearing_to(_destination);
+
+    // update OA adjusted values
+    if (_oa_active) {
+        _oa_distance_to_destination = current_loc.get_distance(_oa_destination);
+        _oa_wp_bearing_cd = _oa_origin.get_bearing_to(_oa_destination);
+    } else {
+        _oa_distance_to_destination = _distance_to_destination;
+        _oa_wp_bearing_cd = _wp_bearing_cd;
+    }
 }
 
 // calculate steering output to drive along line from origin to destination waypoint
@@ -280,7 +304,7 @@ void AR_WPNav::update_distance_and_bearing_to_destination()
 void AR_WPNav::update_steering(const Location& current_loc, float current_speed)
 {
     // calculate yaw error for determining if vehicle should pivot towards waypoint
-    float yaw_cd = _reversed ? wrap_360_cd(_wp_bearing_cd + 18000) : _wp_bearing_cd;
+    float yaw_cd = _reversed ? wrap_360_cd(_oa_wp_bearing_cd + 18000) : _oa_wp_bearing_cd;
     float yaw_error_cd = wrap_180_cd(yaw_cd - AP::ahrs().yaw_sensor);
 
     // calculate desired turn rate and update desired heading
@@ -292,7 +316,7 @@ void AR_WPNav::update_steering(const Location& current_loc, float current_speed)
     } else {
         // run L1 controller
         _nav_controller.set_reverse(_reversed);
-        _nav_controller.update_waypoint((_reached_destination ? current_loc : _origin), _destination, _radius);
+        _nav_controller.update_waypoint(_reached_destination ? current_loc : _oa_origin, _oa_destination, _radius);
 
         // retrieve lateral acceleration, heading back towards line and crosstrack error
         _desired_lat_accel = constrain_float(_nav_controller.lateral_acceleration(), -_turn_max_mss, _turn_max_mss);
@@ -308,7 +332,7 @@ void AR_WPNav::update_steering(const Location& current_loc, float current_speed)
 
 // calculated desired speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
 // relies on update_distance_and_bearing_to_destination and update_steering being run so these internal members
-// have been updated: _wp_bearing_cd, _cross_track_error, _distance_to_destination
+// have been updated: _oa_wp_bearing_cd, _cross_track_error, _oa_distance_to_destination
 void AR_WPNav::update_desired_speed(float dt)
 {
     // reduce speed to zero during pivot turns
@@ -325,11 +349,11 @@ void AR_WPNav::update_desired_speed(float dt)
     // calculate number of degrees vehicle must turn to face waypoint
     float ahrs_yaw_sensor = AP::ahrs().yaw_sensor;
     const float heading_cd = is_negative(des_speed_lim) ? wrap_180_cd(ahrs_yaw_sensor + 18000) : ahrs_yaw_sensor;
-    const float wp_yaw_diff_cd = wrap_180_cd(_wp_bearing_cd - heading_cd);
+    const float wp_yaw_diff_cd = wrap_180_cd(_oa_wp_bearing_cd - heading_cd);
     const float turn_angle_rad = fabsf(radians(wp_yaw_diff_cd * 0.01f));
 
     // calculate distance from vehicle to line + wp_overshoot
-    const float line_yaw_diff = wrap_180_cd(_origin.get_bearing_to(_destination) - heading_cd);
+    const float line_yaw_diff = wrap_180_cd(_oa_origin.get_bearing_to(_oa_destination) - heading_cd);
     const float dist_from_line = fabsf(_cross_track_error);
     const bool heading_away = is_positive(line_yaw_diff) == is_positive(_cross_track_error);
     const float wp_overshoot_adj = heading_away ? -dist_from_line : dist_from_line;
@@ -346,8 +370,8 @@ void AR_WPNav::update_desired_speed(float dt)
     des_speed_lim = constrain_float(des_speed_lim, -overshoot_speed_max, overshoot_speed_max);
 
     // limit speed based on distance to waypoint and max acceleration/deceleration
-    if (is_positive(_distance_to_destination) && is_positive(_atc.get_decel_max())) {
-        const float dist_speed_max = safe_sqrt(2.0f * _distance_to_destination * _atc.get_decel_max() + sq(_desired_speed_final));
+    if (is_positive(_oa_distance_to_destination) && is_positive(_atc.get_decel_max())) {
+        const float dist_speed_max = safe_sqrt(2.0f * _oa_distance_to_destination * _atc.get_decel_max() + sq(_desired_speed_final));
         des_speed_lim = constrain_float(des_speed_lim, -dist_speed_max, dist_speed_max);
     }
 

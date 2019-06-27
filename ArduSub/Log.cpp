@@ -256,8 +256,6 @@ const struct LogStructure Sub::log_structure[] = {
       "CTUN", "Qfffffffccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
       "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-" },
-    { LOG_EVENT_MSG, sizeof(log_Event),         
-      "EV",   "QB",           "TimeUS,Id", "s-", "F-" },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
       "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         

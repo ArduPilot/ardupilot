@@ -7,7 +7,7 @@
  */
 
 // sport_init - initialise sport controller
-bool Copter::ModeSport::init(bool ignore_checks)
+bool ModeSport::init(bool ignore_checks)
 {
     // initialize vertical speed and acceleration
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
@@ -24,7 +24,7 @@ bool Copter::ModeSport::init(bool ignore_checks)
 
 // sport_run - runs the sport controller
 // should be called at 100hz or more
-void Copter::ModeSport::run()
+void ModeSport::run()
 {
     float takeoff_climb_rate = 0.0f;
 

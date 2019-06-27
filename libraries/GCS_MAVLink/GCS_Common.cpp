@@ -28,10 +28,12 @@
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_OpticalFlow/OpticalFlow.h>
+#include <AP_Baro/AP_Baro.h>
 
 #include "GCS.h"
 
@@ -56,6 +58,9 @@
   #endif
   #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #endif
+
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -102,14 +107,13 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
   setup a UART, handling begin() and init()
  */
 void
-GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance)
+GCS_MAVLINK::setup_uart(uint8_t instance)
 {
-    serialmanager_p = &serial_manager;
-
     // search for serial port
-    
-    AP_HAL::UARTDriver *uart;
-    uart = serial_manager.find_serial(protocol, instance);
+    const AP_SerialManager& serial_manager = AP::serialmanager();
+    const AP_SerialManager::SerialProtocol protocol = AP_SerialManager::SerialProtocol_MAVLink;
+
+    AP_HAL::UARTDriver *uart = serial_manager.find_serial(protocol, instance);
     if (uart == nullptr) {
         // return immediately if not found
         return;
@@ -149,7 +153,7 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
     // and init the gcs instance
     init(uart, mav_chan);
 
-    AP_SerialManager::SerialProtocol mavlink_protocol = serialmanager_p->get_mavlink_protocol(mav_chan);
+    AP_SerialManager::SerialProtocol mavlink_protocol = AP::serialmanager().get_mavlink_protocol(mav_chan);
     mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status == nullptr) {
         return;
@@ -267,13 +271,13 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->power_status_flags());
 }
 
-void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery,
-                                      const uint8_t instance) const
+void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
 {
     // catch the battery backend not supporting the required number of cells
     static_assert(sizeof(AP_BattMonitor::cells) >= (sizeof(uint16_t) * MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN),
                   "Not enough battery cells for the MAVLink message");
 
+    const AP_BattMonitor &battery = AP::battery();
     float temp;
     bool got_temperature = battery.get_temperature(temp, instance);
 
@@ -317,7 +321,7 @@ bool GCS_MAVLINK::send_battery_status() const
     for(uint8_t i = 0; i < battery.num_instances(); i++) {
         if (battery.get_type(i) != AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_NONE) {
             CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
-            send_battery_status(battery, i);
+            send_battery_status(i);
         }
     }
     return true;
@@ -1431,11 +1435,10 @@ void GCS_MAVLINK::update_send()
     }
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
-    uint32_t retry_deferred_body_start = 0;
+    uint32_t retry_deferred_body_start = AP_HAL::micros();
 #endif
 
     const uint32_t start = AP_HAL::millis();
-    gcs().set_out_of_time(false);
     while (AP_HAL::millis() - start < 5) { // spend a max of 5ms sending messages.  This should never trigger - out_of_time() should become true
         if (gcs().out_of_time()) {
             break;
@@ -1523,7 +1526,7 @@ void GCS_MAVLINK::update_send()
     // between the last pass through here
     mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status != nullptr) {
-        send_packet_count += (status->current_tx_seq - last_tx_seq);
+        send_packet_count += uint8_t(status->current_tx_seq - last_tx_seq);
         last_tx_seq = status->current_tx_seq;
     }
 }
@@ -1659,6 +1662,12 @@ void GCS_MAVLINK::send_message(enum ap_message id)
 {
     if (id == MSG_HEARTBEAT) {
         save_signing_timestamp(false);
+        // update the mask of all streaming channels
+        if (is_streaming()) {
+            GCS_MAVLINK::chan_is_streaming |= (1U<<(chan-MAVLINK_COMM_0));
+        } else {
+            GCS_MAVLINK::chan_is_streaming &= ~(1U<<(chan-MAVLINK_COMM_0));
+        }
     }
 
     pushed_ap_message_ids.set(id);
@@ -1677,8 +1686,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     }
     if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
         (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
-        serialmanager_p &&
-        serialmanager_p->get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2) {
+        AP::serialmanager().get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2) {
         // if we receive any MAVLink2 packets on a connection
         // currently sending MAVLink1 then switch to sending
         // MAVLink2
@@ -2127,8 +2135,9 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
         logger->Write_Message(text);
     }
 
-    // add statustext message to FrSky lib queue
-    frsky.queue_message(severity, text);
+    if (frsky != nullptr) {
+        frsky->queue_message(severity, text);
+    }
 
     AP_Notify *notify = AP_Notify::get_singleton();
     if (notify) {
@@ -2264,13 +2273,19 @@ void GCS::send_mission_item_reached_message(uint16_t mission_index)
     }
 }
 
-void GCS::setup_uarts(AP_SerialManager &serial_manager)
+void GCS::setup_uarts()
 {
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        chan(i).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
+        chan(i).setup_uart(i);
     }
 
-    frsky.init();
+    if (frsky == nullptr) {
+        frsky = new AP_Frsky_Telem();
+        if (frsky == nullptr || !frsky->init()) {
+            delete frsky;
+            frsky = nullptr;
+        }
+    }
 
     devo_telemetry.init();
 }
@@ -2385,7 +2400,6 @@ void GCS_MAVLINK::send_autopilot_version() const
 {
     uint32_t flight_sw_version;
     uint32_t middleware_sw_version = 0;
-    uint32_t os_sw_version = 0;
     uint32_t board_version = 0;
     char flight_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_FLIGHT_CUSTOM_VERSION_LEN]{};
     char middleware_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_MIDDLEWARE_CUSTOM_VERSION_LEN]{};
@@ -2421,7 +2435,7 @@ void GCS_MAVLINK::send_autopilot_version() const
         capabilities(),
         flight_sw_version,
         middleware_sw_version,
-        os_sw_version,
+        version.os_sw_version,
         board_version,
         (uint8_t *)flight_custom_version,
         (uint8_t *)middleware_custom_version,
@@ -2492,7 +2506,7 @@ void GCS_MAVLINK::send_home_position() const
         return;
     }
 
-    Location home = AP::ahrs().get_home();
+    const Location &home = AP::ahrs().get_home();
 
     const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
     mavlink_msg_home_position_send(
@@ -3721,7 +3735,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
 #endif
 }
 
-
+MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_t &packet)
+{
+    const uint16_t battery_mask = packet.param1;
+    const float percentage = packet.param2;
+    if (AP::battery().reset_remaining(battery_mask, percentage)) {
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_FAILED;
+}
 
 MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
 {
@@ -3914,6 +3936,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_preflight_calibration(packet);
         break;
 
+    case MAV_CMD_BATTERY_RESET:
+        result = handle_command_battery_reset(packet);
+        break;
+        
     case MAV_CMD_PREFLIGHT_UAVCAN:
         result = handle_command_preflight_can(packet);
         break;
@@ -4251,6 +4277,7 @@ void GCS_MAVLINK::send_sys_status()
     const uint32_t errors = AP::internalerror().errors();
     const uint16_t errors1 = errors & 0xffff;
     const uint16_t errors2 = (errors>>16) & 0xffff;
+    const uint16_t errors4 = AP::internalerror().count() & 0xffff;
 
     mavlink_msg_sys_status_send(
         chan,
@@ -4266,7 +4293,7 @@ void GCS_MAVLINK::send_sys_status()
         errors1,
         errors2,
         0,  // errors3
-        0); // errors4
+        errors4); // errors4
 }
 
 void GCS_MAVLINK::send_extended_sys_state() const
@@ -4917,7 +4944,7 @@ uint64_t GCS_MAVLINK::capabilities() const
 {
     uint64_t ret = 0;
 
-    AP_SerialManager::SerialProtocol mavlink_protocol = serialmanager_p->get_mavlink_protocol(chan);
+    AP_SerialManager::SerialProtocol mavlink_protocol = AP::serialmanager().get_mavlink_protocol(chan);
     if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2) {
         ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
     }

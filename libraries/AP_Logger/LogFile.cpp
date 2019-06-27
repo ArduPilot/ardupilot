@@ -11,6 +11,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <AP_GPS/AP_GPS.h>
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -1693,4 +1694,18 @@ void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points
         D               : breadcrumb.z
     };
     WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
+}
+
+void AP_Logger::Write_OA(uint8_t algorithm, const Location& final_dest, const Location& oa_dest)
+{
+    struct log_OA pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_OA_MSG),
+        time_us     : AP_HAL::micros64(),
+        algorithm   : algorithm,
+        final_lat   : final_dest.lat,
+        final_lng   : final_dest.lng,
+        oa_lat      : oa_dest.lat,
+        oa_lng      : oa_dest.lng,
+    };
+    WriteBlock(&pkt, sizeof(pkt));
 }

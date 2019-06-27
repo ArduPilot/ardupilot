@@ -269,7 +269,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
                                            recv, recv_len, chTimeMS2I(timeout_ms));
         }
 
-        i2cStop(I2CD[bus.busnum].i2c);
+        i2cSoftStop(I2CD[bus.busnum].i2c);
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
         
         bus.dma_handle->unlock();

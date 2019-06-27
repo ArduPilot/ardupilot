@@ -332,7 +332,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X, V, etc)
     // @Description: Controls motor mixing for multicopters.  Not used for Tri or Traditional Helicopters.
-    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B, 11:Y6F, 12:BetaFlightX, 13:DJIX, 14:ClockwiseX
+    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B, 11:Y6F, 12:BetaFlightX, 13:DJIX, 14:ClockwiseX, 15: I
     // @User: Standard
     // @RebootRequired: True
     GSCALAR(frame_type, "FRAME_TYPE", HAL_FRAME_TYPE_DEFAULT),
@@ -427,7 +427,7 @@ const AP_Param::Info Copter::var_info[] = {
 #if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // @Param: ACRO_BAL_ROLL
     // @DisplayName: Acro Balance Roll
-    // @Description: rate at which roll angle returns to level in acro and sport mode.  A higher value causes the vehicle to return to level faster.
+    // @Description: rate at which roll angle returns to level in acro and sport mode.  A higher value causes the vehicle to return to level faster. For helicopter sets the decay rate of the virtual flybar in the roll axis. A higher value causes faster decay of desired to actual attitude.
     // @Range: 0 3
     // @Increment: 0.1
     // @User: Advanced
@@ -435,7 +435,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: ACRO_BAL_PITCH
     // @DisplayName: Acro Balance Pitch
-    // @Description: rate at which pitch angle returns to level in acro and sport mode.  A higher value causes the vehicle to return to level faster.
+    // @Description: rate at which pitch angle returns to level in acro and sport mode.  A higher value causes the vehicle to return to level faster. For helicopter sets the decay rate of the virtual flybar in the pitch axis. A higher value causes faster decay of desired to actual attitude.
     // @Range: 0 3
     // @Increment: 0.1
     // @User: Advanced
@@ -742,7 +742,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Used by THROW mode. Specifies whether Copter is thrown upward or dropped.
     // @Values: 0:Upward Throw,1:Drop
     // @User: Standard
-    AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, Copter::ModeThrow::ThrowType_Upward),
+    AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, ModeThrow::ThrowType_Upward),
 #endif
 
     // @Param: GND_EFFECT_COMP
@@ -882,7 +882,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     // @Group: FHLD
     // @Path: mode_flowhold.cpp
-    AP_SUBGROUPPTR(mode_flowhold_ptr, "FHLD", 26, ParametersG2, Copter::ModeFlowHold),
+    AP_SUBGROUPPTR(mode_flowhold_ptr, "FHLD", 26, ParametersG2, ModeFlowHold),
 #endif
 
 #if MODE_FOLLOW_ENABLED == ENABLED
@@ -898,11 +898,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #if AUTOTUNE_ENABLED == ENABLED
     // @Group: AUTOTUNE_
     // @Path: ../libraries/AC_AutoTune/AC_AutoTune.cpp
-    AP_SUBGROUPPTR(autotune_ptr, "AUTOTUNE_",  29, ParametersG2, Copter::AutoTune),
+    AP_SUBGROUPPTR(autotune_ptr, "AUTOTUNE_",  29, ParametersG2, AutoTune),
 #endif
 
 #ifdef ENABLE_SCRIPTING
-    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
+    // @Group: SCR_
+    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     AP_SUBGROUPINFO(scripting, "SCR_", 30, ParametersG2, AP_Scripting),
 #endif
 
@@ -984,7 +985,7 @@ ParametersG2::ParametersG2(void)
     , proximity(copter.serial_manager)
 #endif
 #if ADVANCED_FAILSAFE == ENABLED
-    ,afs(copter.mode_auto.mission, copter.gps)
+    ,afs(copter.mode_auto.mission)
 #endif
 #if MODE_SMARTRTL_ENABLED == ENABLED
     ,smart_rtl()
@@ -1338,6 +1339,18 @@ void Copter::convert_tradheli_parameters(void)
         for (uint8_t i=0; i<table_size; i++) {
             AP_Param::convert_old_parameter(&dualheli_conversion_info[i], 1.0f);
         }
+    }
+    const AP_Param::ConversionInfo allheli_conversion_info[] = {
+        { Parameters::k_param_motors, 1280, AP_PARAM_INT16, "H_RSC_CRV_000" },
+        { Parameters::k_param_motors, 1344, AP_PARAM_INT16, "H_RSC_CRV_025" },
+        { Parameters::k_param_motors, 1408, AP_PARAM_INT16, "H_RSC_CRV_050" },
+        { Parameters::k_param_motors, 1472, AP_PARAM_INT16, "H_RSC_CRV_075" },
+        { Parameters::k_param_motors, 1536, AP_PARAM_INT16, "H_RSC_CRV_100" },
+    };
+    // convert dual heli parameters without scaling
+    uint8_t table_size = ARRAY_SIZE(allheli_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&allheli_conversion_info[i], 0.1f);
     }
 }
 #endif

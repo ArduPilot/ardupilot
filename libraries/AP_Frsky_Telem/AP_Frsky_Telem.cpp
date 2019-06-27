@@ -28,17 +28,20 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/Location.h>
-
+#include <AP_GPS/AP_GPS.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
-ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
+AP_Frsky_Telem::AP_Frsky_Telem(void) :
+  _statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY)
+{
+}
 
 /*
  * init - perform required initialisation
  */
-void AP_Frsky_Telem::init()
+bool AP_Frsky_Telem::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
@@ -65,7 +68,11 @@ void AP_Frsky_Telem::init()
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::tick, void));
         // we don't want flow control for either protocol
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+
+        return true;
     }
+
+    return false;
 }
 
 

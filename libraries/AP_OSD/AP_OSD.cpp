@@ -26,6 +26,7 @@
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <utility>
 #include <AP_Notify/AP_Notify.h>
 

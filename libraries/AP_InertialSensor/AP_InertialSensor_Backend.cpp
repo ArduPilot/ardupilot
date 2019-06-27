@@ -204,14 +204,25 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._last_delta_angle[instance] = delta_angle;
         _imu._last_raw_gyro[instance] = gyro;
 
+        // apply the low pass filter
         _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(gyro);
+        // apply the notch filter
+        if (_gyro_notch_enabled()) {
+            _imu._gyro_filtered[instance] = _imu._gyro_notch_filter[instance].apply(_imu._gyro_filtered[instance]);
+        }
         if (_imu._gyro_filtered[instance].is_nan() || _imu._gyro_filtered[instance].is_inf()) {
             _imu._gyro_filter[instance].reset();
+            _imu._gyro_notch_filter[instance].reset();
         }
         _imu._new_gyro_data[instance] = true;
     }
 
-    log_gyro_raw(instance, sample_us, gyro);
+    if (!_imu.batchsampler.doing_post_filter_logging()) {
+        log_gyro_raw(instance, sample_us, gyro);
+    }
+    else {
+        log_gyro_raw(instance, sample_us, _imu._gyro_filtered[instance]);
+    }
 }
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
@@ -326,7 +337,11 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         _imu._new_accel_data[instance] = true;
     }
 
-    log_accel_raw(instance, sample_us, accel);
+    if (!_imu.batchsampler.doing_post_filter_logging()) {
+        log_accel_raw(instance, sample_us, accel);
+    } else {
+        log_accel_raw(instance, sample_us, _imu._accel_filtered[instance]);
+    }
 }
 
 void AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample(uint8_t instance, const Vector3f &accel)
@@ -437,6 +452,15 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
     if (_last_gyro_filter_hz[instance] != _gyro_filter_cutoff()) {
         _imu._gyro_filter[instance].set_cutoff_frequency(_gyro_raw_sample_rate(instance), _gyro_filter_cutoff());
         _last_gyro_filter_hz[instance] = _gyro_filter_cutoff();
+    }
+    // possily update the notch filter parameters
+    if (_last_notch_center_freq_hz[instance] != _gyro_notch_center_freq_hz() ||
+        _last_notch_bandwidth_hz[instance] != _gyro_notch_bandwidth_hz() ||
+        !is_equal(_last_notch_attenuation_dB[instance], _gyro_notch_attenuation_dB())) {
+        _imu._gyro_notch_filter[instance].init(_gyro_raw_sample_rate(instance), _gyro_notch_center_freq_hz(), _gyro_notch_bandwidth_hz(), _gyro_notch_attenuation_dB());
+        _last_notch_center_freq_hz[instance] = _gyro_notch_center_freq_hz();
+        _last_notch_bandwidth_hz[instance] = _gyro_notch_bandwidth_hz();
+        _last_notch_attenuation_dB[instance] = _gyro_notch_attenuation_dB();
     }
 }
 

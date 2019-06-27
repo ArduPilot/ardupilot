@@ -51,7 +51,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
 	// @Group: 1_
 	// @Path: AP_RangeFinder_Params.cpp
-	AP_SUBGROUPINFO_FLAGS(params[0], "1_", 25, RangeFinder, AP_RangeFinder_Params, AP_PARAM_FLAG_IGNORE_ENABLE),
+	AP_SUBGROUPINFO(params[0], "1_", 25, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 1_
     // @Path: AP_RangeFinder_Wasp.cpp
@@ -458,7 +458,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
     case RangeFinder_TYPE_BEBOP:
         if (AP_RangeFinder_Bebop::detect()) {
-            drivers[instance] = new AP_RangeFinder_Bebop(state[instance]);
+            drivers[instance] = new AP_RangeFinder_Bebop(state[instance], params[instance]);
         }
         break;
 #endif
@@ -675,23 +675,22 @@ void RangeFinder::Log_RFND()
         return;
     }
 
-    const AP_RangeFinder_Backend *s0 = get_backend(0);
-    const AP_RangeFinder_Backend *s1 = get_backend(1);
-    if (s0 == nullptr && s1 == nullptr) {
-        return;
-    }
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        const AP_RangeFinder_Backend *s = get_backend(i);
+        if (s == nullptr) {
+            continue;
+        }
 
-    struct log_RFND pkt = {
-        LOG_PACKET_HEADER_INIT((uint8_t)(LOG_RFND_MSG)),
-        time_us       : AP_HAL::micros64(),
-        dist1         : s0 ? s0->distance_cm() : (uint16_t)0,
-        status1       : s0 ? (uint8_t)s0->status() : (uint8_t)0,
-        orient1       : s0 ? s0->orientation() : ROTATION_NONE,
-        dist2         : s1 ? s1->distance_cm() : (uint16_t)0,
-        status2       : s1 ? (uint8_t)s1->status() : (uint8_t)0,
-        orient2       : s1 ? s1->orientation() : ROTATION_NONE,
-    };
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+        const struct log_RFND pkt = {
+                LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
+                time_us      : AP_HAL::micros64(),
+                instance     : i,
+                dist         : s->distance_cm(),
+                status       : (uint8_t)s->status(),
+                orient       : s->orientation(),
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 
 RangeFinder *RangeFinder::_singleton;

@@ -6,9 +6,6 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
-#include <stdio.h>
-#include <signal.h>
-#include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_Logger/AP_Logger_SITL.h>
 
@@ -32,6 +29,9 @@
 #include <SITL/SIM_Submarine.h>
 #include <SITL/SIM_Morse.h>
 
+#include <signal.h>
+#include <stdio.h>
+
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
@@ -41,6 +41,15 @@ using namespace SITL;
 static void _sig_fpe(int signum)
 {
     fprintf(stderr, "ERROR: Floating point exception - aborting\n");
+    AP_HAL::dump_stack_trace();
+    abort();
+}
+
+// catch segfault
+static void _sig_segv(int signum)
+{
+    fprintf(stderr, "ERROR: segmentation fault - aborting\n");
+    AP_HAL::dump_stack_trace();
     abort();
 }
 
@@ -123,16 +132,20 @@ static const struct {
 void SITL_State::_set_signal_handlers(void) const
 {
     struct sigaction sa_fpe = {};
-
     sigemptyset(&sa_fpe.sa_mask);
     sa_fpe.sa_handler = _sig_fpe;
     sigaction(SIGFPE, &sa_fpe, nullptr);
 
     struct sigaction sa_pipe = {};
-
     sigemptyset(&sa_pipe.sa_mask);
     sa_pipe.sa_handler = SIG_IGN; /* No-op SIGPIPE handler */
     sigaction(SIGPIPE, &sa_pipe, nullptr);
+
+    struct sigaction sa_segv = {};
+    sigemptyset(&sa_segv.sa_mask);
+    sa_segv.sa_handler = _sig_segv;
+    sigaction(SIGSEGV, &sa_segv, nullptr);
+
 }
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])

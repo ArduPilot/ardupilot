@@ -5,6 +5,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -312,7 +313,7 @@ void NavEKF3_core::detectFlight()
         // trigger at 8 m/s airspeed
         if (_ahrs->airspeed_sensor_enabled()) {
             const AP_Airspeed *airspeed = _ahrs->get_airspeed();
-            if (airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 10.0f) {
+            if (airspeed->get_airspeed() * AP::ahrs().get_EAS2TAS() > 10.0f) {
                 highAirSpd = true;
             }
         }

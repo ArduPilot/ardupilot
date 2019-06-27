@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 
     // @Group: _
     // @Path: AP_BattMonitor_Params.cpp
-    AP_SUBGROUPINFO_FLAGS(_params[0], "_", 23, AP_BattMonitor, AP_BattMonitor_Params, AP_PARAM_FLAG_IGNORE_ENABLE),
+    AP_SUBGROUPINFO(_params[0], "_", 23, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: 2_
     // @Path: AP_BattMonitor_Params.cpp
@@ -492,6 +492,33 @@ void AP_BattMonitor::checkPoweringOff(void)
             state[i].powerOffNotified = true;
         }
     }
+}
+
+/*
+  reset battery remaining percentage for batteries that integrate to
+  calculate percentage remaining
+*/
+bool AP_BattMonitor::reset_remaining(uint16_t battery_mask, float percentage)
+{
+    bool ret = true;
+    BatteryFailsafe highest_failsafe = BatteryFailsafe_None;
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        if ((1U<<i) & battery_mask) {
+            ret &= drivers[i]->reset_remaining(percentage);
+        }
+        if (state[i].failsafe > highest_failsafe) {
+            highest_failsafe = state[i].failsafe;
+        }
+    }
+
+    // If all backends are not in failsafe then set overall failsafe state
+    if (highest_failsafe == BatteryFailsafe_None) {
+        _highest_failsafe_priority = INT8_MAX;
+        _has_triggered_failsafe = false;
+        // and reset notify flag
+        AP_Notify::flags.failsafe_battery = false;
+    }
+    return ret;
 }
 
 namespace AP {

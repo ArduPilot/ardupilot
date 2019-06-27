@@ -223,8 +223,6 @@ class uploader(object):
 
         # open the port, keep the default timeout short so we can poll quickly
         self.port = serial.Serial(portname, baudrate_bootloader, timeout=1.0)
-        self.otp = b''
-        self.sn = b''
         self.baudrate_bootloader = baudrate_bootloader
         if baudrate_bootloader_flash is not None:
             self.baudrate_bootloader_flash = baudrate_bootloader_flash
@@ -575,6 +573,98 @@ class uploader(object):
         self.board_rev = self.__getInfo(uploader.INFO_BOARD_REV)
         self.fw_maxsize = self.__getInfo(uploader.INFO_FLASH_SIZE)
 
+    def dump_board_info(self):
+        # OTP added in v4:
+        print("Bootloader Protocol: %u" % self.bl_rev)
+        if self.bl_rev > 3:
+            otp = b''
+            for byte in range(0, 32*6, 4):
+                x = self.__getOTP(byte)
+                otp = otp + x
+#                print(binascii.hexlify(x).decode('Latin-1') + ' ', end='')
+            # see src/modules/systemlib/otp.h in px4 code:
+            otp_id = otp[0:4]
+            otp_idtype = otp[4:5]
+            otp_vid = otp[8:4:-1]
+            otp_pid = otp[12:8:-1]
+            otp_coa = otp[32:160]
+            # show user:
+            try:
+                print("OTP:")
+                print("  type: " + otp_id.decode('Latin-1'))
+                print("  idtype: " + binascii.b2a_qp(otp_idtype).decode('Latin-1'))
+                print("  vid: " + binascii.hexlify(otp_vid).decode('Latin-1'))
+                print("  pid: " + binascii.hexlify(otp_pid).decode('Latin-1'))
+                print("  coa: " + binascii.b2a_base64(otp_coa).decode('Latin-1'), end='')
+                print("  sn: ", end='')
+                for byte in range(0, 12, 4):
+                    x = self.__getSN(byte)
+                    x = x[::-1]  # reverse the bytes
+                    print(binascii.hexlify(x).decode('Latin-1'), end='')  # show user
+                print('')
+            except Exception:
+                # ignore bad character encodings
+                pass
+
+        if self.bl_rev >= 5:
+            des = self.__getCHIPDes()
+            if (len(des) == 2):
+                print("ChipDes:")
+                print("  family: %s" % des[0])
+                print("  revision: %s" % des[1])
+        print("Chip:")
+        if self.bl_rev > 4:
+            chip = self.__getCHIP()
+            mcu_id = chip & 0xfff
+            revs = {}
+
+            F4_IDS = {
+                0x413: "STM32F40x_41x",
+                0x419: "STM32F42x_43x",
+                0x421: "STM32F42x_446xx",
+            }
+            F7_IDS = {
+                0x449: "STM32F74x_75x",
+                0x451: "STM32F76x_77x",
+            }
+
+            family = mcu_id & 0xfff
+            chip_s = "%x [unknown family/revision]" % (chip)
+
+            if family in F4_IDS:
+                mcu = F4_IDS[family]
+                MCU_REV_STM32F4_REV_A = 0x1000
+                MCU_REV_STM32F4_REV_Z = 0x1001
+                MCU_REV_STM32F4_REV_Y = 0x1003
+                MCU_REV_STM32F4_REV_1 = 0x1007
+                MCU_REV_STM32F4_REV_3 = 0x2001
+                revs = {
+                    MCU_REV_STM32F4_REV_A: ("A", True),
+                    MCU_REV_STM32F4_REV_Z: ("Z", True),
+                    MCU_REV_STM32F4_REV_Y: ("Y", True),
+                    MCU_REV_STM32F4_REV_1: ("1", True),
+                    MCU_REV_STM32F4_REV_3: ("3", False),
+                }
+                rev = (chip & 0xFFFF0000) >> 16
+
+                if rev in revs:
+                    (label, flawed) = revs[rev]
+                    if flawed:
+                        print("  %x %s rev%s (flawed; 1M limit)" % (chip, mcu, label,))
+                    else:
+                        print("  %x %s rev%s (no 1M flaw)" % (chip, mcu, label,))
+            elif family in F7_IDS:
+                print("  %s %08x" % (F7_IDS[family], chip))
+        else:
+            print("  [unavailable; bootloader too old]")
+
+        print("Info:")
+        print("  flash size: %u" % self.fw_maxsize)
+        print("  board_type: %u" % self.board_type)
+        print("  board_rev: %u" % self.board_rev)
+
+        print("Identification complete")
+
     # upload the firmware
     def upload(self, fw, force=False, boot_delay=None):
         # Make sure we are doing the right thing
@@ -598,45 +688,11 @@ class uploader(object):
                     print("FORCED WRITE, FLASHING ANYWAY!")
                 else:
                     raise IOError(msg)
+
+        self.dump_board_info()
+
         if self.fw_maxsize < fw.property('image_size'):
             raise RuntimeError("Firmware image is too large for this board")
-
-        # OTP added in v4:
-        if self.bl_rev > 3:
-            for byte in range(0, 32*6, 4):
-                x = self.__getOTP(byte)
-                self.otp = self.otp + x
-                print(binascii.hexlify(x).decode('Latin-1') + ' ', end='')
-            # see src/modules/systemlib/otp.h in px4 code:
-            self.otp_id = self.otp[0:4]
-            self.otp_idtype = self.otp[4:5]
-            self.otp_vid = self.otp[8:4:-1]
-            self.otp_pid = self.otp[12:8:-1]
-            self.otp_coa = self.otp[32:160]
-            # show user:
-            try:
-                print("type: " + self.otp_id.decode('Latin-1'))
-                print("idtype: " + binascii.b2a_qp(self.otp_idtype).decode('Latin-1'))
-                print("vid: " + binascii.hexlify(self.otp_vid).decode('Latin-1'))
-                print("pid: " + binascii.hexlify(self.otp_pid).decode('Latin-1'))
-                print("coa: " + binascii.b2a_base64(self.otp_coa).decode('Latin-1'))
-                print("sn: ", end='')
-                for byte in range(0, 12, 4):
-                    x = self.__getSN(byte)
-                    x = x[::-1]  # reverse the bytes
-                    self.sn = self.sn + x
-                    print(binascii.hexlify(x).decode('Latin-1'), end='')  # show user
-                print('')
-                print("chip: %08x" % self.__getCHIP())
-                if (self.bl_rev >= 5):
-                    des = self.__getCHIPDes()
-                    if (len(des) == 2):
-                        print("family: %s" % des[0])
-                        print("revision: %s" % des[1])
-                        print("flash %d" % self.fw_maxsize)
-            except Exception:
-                # ignore bad character encodings
-                pass
 
         if self.baudrate_bootloader_flash != self.baudrate_bootloader:
             print("Setting baudrate to %u" % self.baudrate_bootloader_flash)
@@ -778,6 +834,7 @@ def find_bootloader(up, port):
         if not reboot_sent:
             return False
 
+
 def main():
 
     # Parse commandline arguments
@@ -794,17 +851,22 @@ def main():
     parser.add_argument('--source-system', type=int, action="store", help="Source system to send reboot mavlink packets from", default=255)
     parser.add_argument('--source-component', type=int, action="store", help="Source component to send reboot mavlink packets from", default=0)
     parser.add_argument('--download', action='store_true', default=False, help='download firmware from board')
-    parser.add_argument('firmware', action="store", help="Firmware file to be uploaded")
+    parser.add_argument('--identify', action="store_true", help="Do not flash firmware; simply dump information about board")
+    parser.add_argument('firmware', nargs="?", action="store", default=None, help="Firmware file to be uploaded")
     args = parser.parse_args()
 
     # warn people about ModemManager which interferes badly with Pixhawk
     modemmanager_check()
 
+    if args.firmware is None and not args.identify:
+        parser.error("Firmware filename required for upload or download")
+        sys.exit(1)
+
     # Load the firmware file
-    if not args.download:
+    if not args.download and not args.identify:
         fw = firmware(args.firmware)
         print("Loaded firmware for %x,%x, size: %d bytes, waiting for the bootloader..." % (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size')))
-        print("If the board does not respond within 1-2 seconds, unplug and re-plug the USB connector.")
+    print("If the board does not respond within 1-2 seconds, unplug and re-plug the USB connector.")
 
     baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
 
@@ -842,7 +904,9 @@ def main():
 
                 try:
                     # ok, we have a bootloader, try flashing it
-                    if args.download:
+                    if args.identify:
+                        up.dump_board_info()
+                    elif args.download:
                         up.download(args.firmware)
                     else:
                         up.upload(fw, force=args.force, boot_delay=args.boot_delay)

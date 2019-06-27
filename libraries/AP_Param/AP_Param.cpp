@@ -1609,7 +1609,6 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
                                                                     ginfo, group_nesting, &idx);
         if (info && ginfo &&
             (ginfo->flags & AP_PARAM_FLAG_ENABLE) &&
-            !(ginfo->flags & AP_PARAM_FLAG_IGNORE_ENABLE) &&
             ((AP_Int8 *)ap)->get() == 0 &&
             _hide_disabled_groups) {
             /*

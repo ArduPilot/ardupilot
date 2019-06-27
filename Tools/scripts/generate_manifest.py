@@ -8,9 +8,10 @@ import os
 import re
 import fnmatch
 import gen_stable
+import subprocess
 
 FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub"]
-RELEASE_TYPES = ["beta", "latest", "stable", "stable-*"]
+RELEASE_TYPES = ["beta", "latest", "stable", "stable-*", "dirty"]
 
 # mapping for board names to brand name and manufacturer
 brand_map = {
@@ -230,14 +231,24 @@ class ManifestGenerator():
             self.add_USB_IDs_ChibiOS(firmware)
             return
 
+    def firmware_format_for_filepath(self, filepath):
+        filename = os.path.basename(filepath)
+        if "." in filename:
+            return "".join(filename.split(".")[-1:])
+        # no extension; ensure this is an elf:
+        text = subprocess.check_output(["file", "-b", filepath])
+        if re.match("^ELF", text):
+            return "ELF"
+        print("Unknown file type (%s)" % filepath)
+        print("Got: %s" % text)
+        return "Unknown" # should raise an error somehow
+
     def add_firmware_data_from_dir(self,
                                    dir,
                                    firmware_data,
                                    vehicletype,
                                    releasetype="dev"):
         '''accumulate additional information about firmwares from directory'''
-        platform_frame_regex = re.compile(
-            "(?P<board>PX4|navio|pxf)(-(?P<frame>.+))?")
         variant_firmware_regex = re.compile("[^-]+-(?P<variant>v\d+)[.px4]")
         if not os.path.isdir(dir):
             return
@@ -283,26 +294,25 @@ class ManifestGenerator():
                 # is incomplete.
                 continue
 
+            # Directory names for heli builds end in -heli
+            platform_frame_regex = re.compile("(?P<board>.+)(-(?P<frame>heli)$)")
             m = platform_frame_regex.match(platformdir)
             if m is not None:
-                # the model type (quad/tri) is
-                # encoded in the platform name
-                # (e.g. navio-octa)
+                # This is a heli build
                 platform = m.group("board")  # e.g. navio
-                frame = m.group("frame")  # e.g. octa
-                if frame is None:
-                    frame = vehicletype
+                frame = "heli"
             else:
+                # Non-heli build
                 frame = vehicletype  # e.g. Plane
                 platform = platformdir  # e.g. apm2
 
-            for file in os.listdir(some_dir):
-                if file in ["git-version.txt", "firmware-version.txt", "files.html"]:
+            for filename in os.listdir(some_dir):
+                if filename in ["git-version.txt", "firmware-version.txt", "files.html"]:
                     continue
-                if file.startswith("."):
+                if filename.startswith("."):
                     continue
 
-                m = variant_firmware_regex.match(file)
+                m = variant_firmware_regex.match(filename)
                 if m:
                     # the platform variant is
                     # encoded in the firmware filename
@@ -313,7 +323,10 @@ class ManifestGenerator():
                 else:
                     file_platform = platform
 
-                firmware_format = "".join(file.split(".")[-1:])
+                filepath = os.path.join(some_dir, filename)
+                firmware_format = self.firmware_format_for_filepath(filepath)
+                if firmware_format not in [ "ELF", "abin", "apj", "hex", "px4" ]:
+                    print("Unknown firmware format (%s)" % firmware_format)
 
                 firmware = Firmware()
 
@@ -323,17 +336,17 @@ class ManifestGenerator():
                 firmware["latest"] = 0
                 if releasetype == "dev":
                     if firmware["filepath"] is None:
-                        firmware["filepath"] = os.path.join(some_dir, file)
+                        firmware["filepath"] = filepath
                     if firmware["release-type"] is None:
                         firmware["release-type"] = "dev"
                 elif releasetype == "latest":
                     firmware["latest"] = 1
-                    firmware["filepath"] = os.path.join(some_dir, file)
+                    firmware["filepath"] = filepath
                     if firmware["release-type"] is None:
                         firmware["release-type"] = "dev"
                 else:
                     if (not firmware["latest"]):
-                        firmware["filepath"] = os.path.join(some_dir, file)
+                        firmware["filepath"] = filepath
                     firmware["release-type"] = releasetype
 
                 firmware["platform"] = file_platform

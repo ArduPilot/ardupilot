@@ -7,6 +7,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 

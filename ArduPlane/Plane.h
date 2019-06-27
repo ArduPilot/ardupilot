@@ -674,7 +674,7 @@ private:
 
     // Outback Challenge Failsafe Support
 #if ADVANCED_FAILSAFE == ENABLED
-    AP_AdvancedFailsafe_Plane afs {mission, gps};
+    AP_AdvancedFailsafe_Plane afs {mission};
 #endif
 
     /*
@@ -906,6 +906,7 @@ private:
     bool geofence_check_minalt(void);
     bool geofence_check_maxalt(void);
     void geofence_check(bool altitude_check_only);
+    bool geofence_prearm_check(void);
     bool geofence_stickmixing(void);
     void geofence_send_status(mavlink_channel_t chan);
     bool geofence_breached(void);

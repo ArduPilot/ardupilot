@@ -131,9 +131,9 @@ submodules at specific revisions.
                  default=False,
                  help="Enable checking of math indexes")
 
-    g.add_option('--enable-scripting', action='store_true',
+    g.add_option('--disable-scripting', action='store_true',
                  default=False,
-                 help="Enable onboard scripting engine")
+                 help="Disable onboard scripting engine")
 
     g.add_option('--scripting-checks', action='store_true',
                  default=True,
@@ -195,6 +195,10 @@ configuration in order to save typing.
     g.add_option('--sitl-rgbled', action='store_true',
                  default=False,
                  help="Enable SITL RGBLed")
+
+    g.add_option('--build-dates', action='store_true',
+                 default=False,
+                 help="Include build date in binaries.  Appears in AUTOPILOT_VERSION.os_sw_version")
 
     g.add_option('--sitl-flash-storage',
         action='store_true',
@@ -424,10 +428,10 @@ def configure(cfg):
         cfg.end_msg('disabled', color='YELLOW')
 
     cfg.start_msg('Scripting')
-    if cfg.options.enable_scripting:
-        cfg.end_msg('enabled')
-    else:
+    if cfg.options.disable_scripting:
         cfg.end_msg('disabled', color='YELLOW')
+    else:
+        cfg.end_msg('enabled')
 
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:

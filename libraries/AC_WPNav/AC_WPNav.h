@@ -51,23 +51,11 @@ public:
     /// provide pointer to terrain database
     void set_terrain(AP_Terrain* terrain_ptr) { _terrain = terrain_ptr; }
 
-    /// provide pointer to avoidance library
-    void set_avoidance(AC_Avoid* avoid_ptr) { _avoid = avoid_ptr; }
-
     /// provide rangefinder altitude
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
     // return true if range finder may be used for terrain following
     bool rangefinder_used() const { return _rangefinder_use && _rangefinder_healthy; }
-
-    ///
-    /// brake controller
-    ///
-    /// init_brake_target - initialize's position and feed-forward velocity from current pos and velocity
-    void init_brake_target(float accel_cmss);
-    ///
-    /// update_brake - run the brake controller - should be called at 400hz
-    void update_brake();
 
     ///
     /// waypoint controller
@@ -285,7 +273,6 @@ protected:
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
     AP_Terrain              *_terrain;
-    AC_Avoid                *_avoid;
 
     // parameters
     AP_Float    _wp_speed_cms;          // default maximum horizontal speed in cm/s during missions

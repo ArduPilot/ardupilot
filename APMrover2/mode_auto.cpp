@@ -137,7 +137,7 @@ bool ModeAuto::get_desired_location(Location& destination) const
     switch (_submode) {
     case Auto_WP:
         if (g2.wp_nav.is_destination_valid()) {
-            destination = g2.wp_nav.get_destination();
+            destination = g2.wp_nav.get_oa_destination();
             return true;
         }
         return false;

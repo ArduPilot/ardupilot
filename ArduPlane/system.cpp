@@ -55,7 +55,7 @@ void Plane::init_ardupilot()
 
     // initialise serial ports
     serial_manager.init();
-    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(0);
 
 
     // Register mavlink_delay_cb, which will run anytime you have
@@ -96,7 +96,7 @@ void Plane::init_ardupilot()
     rpm_sensor.init();
 
     // setup telem slots with serial ports
-    gcs().setup_uarts(serial_manager);
+    gcs().setup_uarts();
 
 #if OSD_ENABLED == ENABLED
     osd.init();
@@ -301,6 +301,7 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
     // log and notify mode change
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
     notify_mode(*control_mode);
+    gcs().send_message(MSG_HEARTBEAT);
 
     return true;
 }

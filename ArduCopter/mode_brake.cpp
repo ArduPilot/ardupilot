@@ -7,10 +7,10 @@
  */
 
 // brake_init - initialise brake controller
-bool Copter::ModeBrake::init(bool ignore_checks)
+bool ModeBrake::init(bool ignore_checks)
 {
     // set target to current position
-    wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
+    init_target();
 
     // initialize vertical speed and acceleration
     pos_control->set_max_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
@@ -29,12 +29,12 @@ bool Copter::ModeBrake::init(bool ignore_checks)
 
 // brake_run - runs the brake controller
 // should be called at 100hz or more
-void Copter::ModeBrake::run()
+void ModeBrake::run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
-        wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
+        init_target();
         return;
     }
 
@@ -42,19 +42,20 @@ void Copter::ModeBrake::run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // relax stop target if we might be landed
-    if (ap.land_complete_maybe) {
+    if (copter.ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();
     }
 
-    // run brake controller
-    wp_nav->update_brake();
+    // use position controller to stop
+    pos_control->set_desired_velocity_xy(0.0f, 0.0f);
+    pos_control->update_xy_controller();
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
 
     // update altitude target and call position controller
     // protects heli's from inflight motor interlock disable
-    if (motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::GROUND_IDLE && !ap.land_complete) {
+    if (motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::GROUND_IDLE && !copter.ap.land_complete) {
         pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
     } else {
         pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
@@ -68,10 +69,28 @@ void Copter::ModeBrake::run()
     }
 }
 
-void Copter::ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
+void ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
 {
     _timeout_start = millis();
     _timeout_ms = timeout_ms;
+}
+
+void ModeBrake::init_target()
+{
+    // initialise position controller
+    pos_control->set_desired_velocity_xy(0.0f,0.0f);
+    pos_control->set_desired_accel_xy(0.0f,0.0f);
+    pos_control->init_xy_controller();
+
+    // initialise pos controller speed and acceleration
+    pos_control->set_max_speed_xy(inertial_nav.get_velocity().length());
+    pos_control->set_max_accel_xy(BRAKE_MODE_DECEL_RATE);
+    pos_control->calc_leash_length_xy();
+
+    // set target position
+    Vector3f stopping_point;
+    pos_control->get_stopping_point_xy(stopping_point);
+    pos_control->set_xy_target(stopping_point.x, stopping_point.y);
 }
 
 #endif

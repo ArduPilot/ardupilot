@@ -388,13 +388,18 @@ static int Vector3f___sub(lua_State *L) {
 
 static int Location_get_vector_from_origin_NEU(lua_State *L) {
     // 1 Vector3f 14 : 6
-    binding_argcheck(L, 2);
+    binding_argcheck(L, 1);
     Location * ud = check_Location(L, 1);
-    Vector3f & data_2 = *check_Vector3f(L, 2);
+    Vector3f data_5002 = {};
     const bool data = ud->get_vector_from_origin_NEU(
-            data_2);
+            data_5002);
 
-    lua_pushboolean(L, data);
+    if (data) {
+        new_Vector3f(L);
+        *check_Vector3f(L, -1) = data_5002;
+    } else {
+        lua_pushnil(L);
+    }
     return 1;
 }
 

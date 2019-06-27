@@ -42,6 +42,11 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Rover::gps_checks(bool display_failure)
 {
+    if (!rover.control_mode->requires_position() && !rover.control_mode->requires_velocity()) {
+        // we don't care!
+        return true;
+    }
+
     const AP_AHRS &ahrs = AP::ahrs();
 
     // always check if inertial nav has started and is ready
@@ -52,11 +57,6 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         }
         check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
         return false;
-    }
-
-    if (!rover.control_mode->requires_position() && !rover.control_mode->requires_velocity()) {
-        // we don't care!
-        return true;
     }
 
     // check for ekf failsafe
@@ -93,7 +93,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
     return (AP_Arming::pre_arm_checks(report)
             & rover.g2.motors.pre_arm_check(report)
             & fence_checks(report)
-            & proximity_check(report));
+            & oa_check(report));
 }
 
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
@@ -103,23 +103,6 @@ bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
         return true;
     }
     return AP_Arming::arm_checks(method);
-}
-
-// check nothing is too close to vehicle
-bool AP_Arming_Rover::proximity_check(bool report)
-{
-    // return true immediately if no sensor present
-    if (rover.g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
-        return true;
-    }
-
-    // return false if proximity sensor unhealthy
-    if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
-        check_failed(ARMING_CHECK_NONE, report, "check proximity sensor");
-        return false;
-    }
-
-    return true;
 }
 
 void AP_Arming_Rover::update_soft_armed()
@@ -183,4 +166,21 @@ bool AP_Arming_Rover::disarm(void)
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
     return true;
+}
+
+// check object avoidance has initialised correctly
+bool AP_Arming_Rover::oa_check(bool report)
+{
+    char failure_msg[50];
+    if (rover.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
+        return true;
+    }
+
+    // display failure
+    if (strlen(failure_msg) == 0) {
+        check_failed(ARMING_CHECK_NONE, report, "Check Object Avoidance");
+    } else {
+        check_failed(ARMING_CHECK_NONE, report, failure_msg);
+    }
+    return false;
 }

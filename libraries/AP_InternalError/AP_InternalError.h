@@ -38,7 +38,7 @@ public:
         logger_logwrite_missingfmt  = (1U <<  2),
         logger_too_many_deletions   = (1U <<  3),
         logger_bad_getfilename      = (1U <<  4),
-        logger_stopping_without_sem = (1U <<  5),
+        unused1                     = (1U <<  5), // was logger_stopping_without_sem
         logger_flushing_without_sem = (1U <<  6),
         logger_bad_current_block    = (1U <<  7),
         logger_blockcount_mismatch  = (1U <<  8),
@@ -51,9 +51,11 @@ public:
         main_loop_stuck             = (1U << 15),
         gcs_bad_missionprotocol_link= (1U << 16),
         bitmask_range               = (1U << 17),
+        gcs_offset                  = (1U << 18),
     };
 
     void error(const AP_InternalError::error_t error);
+    uint32_t count() const { return total_error_count; }
 
     // internal_errors - return mask of internal errors seen
     uint32_t errors() const {
@@ -64,6 +66,8 @@ private:
 
     // bitmask holding errors from internal_error_t
     uint32_t internal_errors;
+
+    uint32_t total_error_count;
 };
 
 namespace AP {

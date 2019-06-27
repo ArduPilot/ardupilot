@@ -29,6 +29,9 @@ public:
     // override with a custom destructor if need be
     virtual ~AP_WindVane_Backend() {}
 
+    // initialization
+    virtual void init(const AP_SerialManager& serial_manager) {};
+
     // update the state structure
     virtual void update_speed() {};
     virtual void update_direction() {};

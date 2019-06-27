@@ -52,7 +52,7 @@ void Copter::init_ardupilot()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(0);
 
 
     // Register mavlink_delay_cb, which will run anytime you have
@@ -85,7 +85,7 @@ void Copter::init_ardupilot()
     barometer.init();
 
     // setup telem slots with serial ports
-    gcs().setup_uarts(serial_manager);
+    gcs().setup_uarts();
 
 #if OSD_ENABLED == ENABLED
     osd.init();
@@ -149,11 +149,6 @@ void Copter::init_ardupilot()
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location::set_terrain(&terrain);
     wp_nav->set_terrain(&terrain);
-#endif
-
-#if AC_AVOID_ENABLED == ENABLED
-    wp_nav->set_avoidance(&avoid);
-    loiter_nav->set_avoidance(&avoid);
 #endif
 
     attitude_control->parameter_sanity_check();

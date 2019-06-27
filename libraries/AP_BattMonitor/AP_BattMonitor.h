@@ -167,6 +167,9 @@ public:
     // sends powering off mavlink broadcasts and sets notify flag
     void checkPoweringOff(void);
 
+    // reset battery remaining percentage
+    bool reset_remaining(uint16_t battery_mask, float percentage);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:

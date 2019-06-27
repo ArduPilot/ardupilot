@@ -2,12 +2,6 @@
 
 #include "GCS_Mavlink.h"
 
-void Copter::gcs_send_heartbeat(void)
-{
-    gcs().send_message(MSG_HEARTBEAT);
-}
-
-
 /*
  *  !!NOTE!!
  *
@@ -164,7 +158,7 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
         return;
     }
     const Vector3f &targets = copter.attitude_control->get_att_target_euler_cd();
-    const Copter::Mode *flightmode = copter.flightmode;
+    const Mode *flightmode = copter.flightmode;
     mavlink_msg_nav_controller_output_send(
         chan,
         targets.x * 1.0e-2f,
@@ -257,20 +251,6 @@ bool GCS_Copter::vehicle_initialised() const {
 // try to send a message, return false if it wasn't sent
 bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 {
-#if HIL_MODE != HIL_MODE_SENSORS
-    // if we don't have at least 250 micros remaining before the main loop
-    // wants to fire then don't send a mavlink message. We want to
-    // prioritise the main flight control loop over communications
-
-    // the check for nullptr here doesn't just save a nullptr
-    // dereference; it means that we send messages out even if we're
-    // failing to detect a PX4 board type (see delay(3000) in px_drivers).
-    if (copter.motors != nullptr && copter.scheduler.time_available_usec() < 250 && copter.motors->armed()) {
-        gcs().set_out_of_time(true);
-        return false;
-    }
-#endif
-
     switch(id) {
 
     case MSG_TERRAIN:
@@ -545,7 +525,7 @@ MAV_RESULT GCS_MAVLINK_Copter::_handle_command_preflight_calibration(const mavli
 {
     if (is_equal(packet.param6,1.0f)) {
         // compassmot calibration
-        return copter.mavlink_compassmot(chan);
+        return copter.mavlink_compassmot(*this);
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
@@ -1261,7 +1241,7 @@ void Copter::mavlink_delay_cb()
     uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs_send_heartbeat();
+        gcs().send_message(MSG_HEARTBEAT);
         gcs().send_message(MSG_SYS_STATUS);
     }
     if (tnow - last_50hz > 20) {

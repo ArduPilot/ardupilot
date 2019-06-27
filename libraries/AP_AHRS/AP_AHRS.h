@@ -25,9 +25,7 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Beacon/AP_Beacon.h>
-#include <AP_GPS/AP_GPS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 
@@ -223,6 +221,9 @@ public:
         return false;
     }
 
+    // see if EKF lane switching is possible to avoid EKF failsafe
+    virtual void check_lane_switch(void) {}
+    
     // Euler angles (radians)
     float roll;
     float pitch;
@@ -233,10 +234,10 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
-    // return a smoothed and corrected gyro vector
+    // return a smoothed and corrected gyro vector in radians/second
     virtual const Vector3f &get_gyro(void) const = 0;
 
-    // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
+    // return a smoothed and corrected gyro vector in radians/second using the latest ins data (which may not have been consumed by the EKF yet)
     Vector3f get_gyro_latest(void) const;
 
     // return the current estimate of the gyro drift
@@ -278,6 +279,7 @@ public:
     // otherwise false. This call fills in lat, lng and alt
     virtual bool get_position(struct Location &loc) const = 0;
 
+    // get latest altitude estimate above ground level in meters and validity flag
     virtual bool get_hagl(float &height) const { return false; }
 
     // return a wind estimation vector, in m/s
@@ -298,12 +300,7 @@ public:
     }
 
     // get apparent to true airspeed ratio
-    float get_EAS2TAS(void) const {
-        if (_airspeed) {
-            return _airspeed->get_EAS2TAS();
-        }
-        return 1.0f;
-    }
+    float get_EAS2TAS(void) const;
 
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate

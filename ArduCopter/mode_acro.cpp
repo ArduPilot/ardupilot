@@ -8,7 +8,7 @@
  * Init and run calls for acro flight mode
  */
 
-void Copter::ModeAcro::run()
+void ModeAcro::run()
 {
     // convert the input to the desired body frame rate
     float target_roll, target_pitch, target_yaw;
@@ -17,7 +17,7 @@ void Copter::ModeAcro::run()
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-    } else if (ap.throttle_zero) {
+    } else if (copter.ap.throttle_zero) {
         // Attempting to Land
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     } else {
@@ -59,7 +59,7 @@ void Copter::ModeAcro::run()
 
 // get_pilot_desired_angle_rates - transform pilot's roll pitch and yaw input into a desired lean angle rates
 // returns desired angle rates in centi-degrees-per-second
-void Copter::ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out)
+void ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out)
 {
     float rate_limit;
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;
