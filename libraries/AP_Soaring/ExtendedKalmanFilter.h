@@ -9,12 +9,12 @@ Extended Kalman Filter class by Sam Tabor, 2013.
 
 #include <AP_Math/matrixN.h>
 
-#define N 4
-
 class ExtendedKalmanFilter {
 public:
     ExtendedKalmanFilter(void) {}
-    
+
+    static constexpr const uint8_t N = 4;
+
     VectorN<float,N> X;
     MatrixN<float,N> P;
     MatrixN<float,N> Q;
