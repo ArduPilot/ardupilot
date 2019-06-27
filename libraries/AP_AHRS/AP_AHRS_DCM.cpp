@@ -24,6 +24,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Baro/AP_Baro.h>
 
 extern const AP_HAL::HAL& hal;
 

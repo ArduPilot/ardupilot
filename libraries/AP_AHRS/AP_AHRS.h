@@ -26,7 +26,6 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 
@@ -301,9 +300,7 @@ public:
     }
 
     // get apparent to true airspeed ratio
-    float get_EAS2TAS(void) const {
-        return AP::baro().get_EAS2TAS();
-    }
+    float get_EAS2TAS(void) const;
 
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
