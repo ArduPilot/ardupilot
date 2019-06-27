@@ -7,7 +7,7 @@
  */
 
 // loiter_init - initialise loiter controller
-bool Copter::ModeBrgNoGPS::init(bool ignore_checks)
+bool ModeBrgNoGPS::init(bool ignore_checks)
 {
     if (!copter.failsafe.radio) {
         float target_roll, target_pitch;
@@ -35,12 +35,12 @@ bool Copter::ModeBrgNoGPS::init(bool ignore_checks)
 }
 
 #if PRECISION_LANDING == ENABLED
-bool Copter::ModeBrgNoGPS::do_precision_loiter()
+bool ModeBrgNoGPS::do_precision_loiter()
 {
     if (!_precision_loiter_enabled) {
         return false;
     }
-    if (ap.land_complete_maybe) {
+    if (copter.ap.land_complete_maybe) {
         return false;        // don't move on the ground
     }
     // if the pilot *really* wants to move the vehicle, let them....
@@ -53,7 +53,7 @@ bool Copter::ModeBrgNoGPS::do_precision_loiter()
     return true;
 }
 
-void Copter::ModeBrgNoGPS::precision_loiter_xy()
+void ModeBrgNoGPS::precision_loiter_xy()
 {
     loiter_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
@@ -72,13 +72,13 @@ void Copter::ModeBrgNoGPS::precision_loiter_xy()
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
-void Copter::ModeBrgNoGPS::run()
+void ModeBrgNoGPS::run()
 {
     if(AP_GPS::NO_FIX >= copter.gps.status()){
         hal.console->printf("\n GPS status is NO_FIX then switch to ALT_HOLD mode \n");
         copter.set_mode(ALT_HOLD, MODE_REASON_UNKNOWN);
     }
-
+    
     float target_roll, target_pitch;
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
@@ -111,7 +111,7 @@ void Copter::ModeBrgNoGPS::run()
     }
 
     // relax loiter target if we might be landed
-    if (ap.land_complete_maybe) {
+    if (copter.ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();
     }
 
@@ -199,12 +199,12 @@ void Copter::ModeBrgNoGPS::run()
     }
 }
 
-uint32_t Copter::ModeBrgNoGPS::wp_distance() const
+uint32_t ModeBrgNoGPS::wp_distance() const
 {
     return loiter_nav->get_distance_to_target();
 }
 
-int32_t Copter::ModeBrgNoGPS::wp_bearing() const
+int32_t ModeBrgNoGPS::wp_bearing() const
 {
     return loiter_nav->get_bearing_to_target();
 }

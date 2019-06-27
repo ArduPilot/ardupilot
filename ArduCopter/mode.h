@@ -1289,7 +1289,7 @@ class ModeBrgNoGPS : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;

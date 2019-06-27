@@ -233,6 +233,7 @@ public:
     friend class ModeStabilize_Heli;
     friend class ModeThrow;
     friend class ModeZigZag;
+    friend class ModeBrgNoGPS;
 
     Copter(void);
 
