@@ -103,7 +103,7 @@ void GCS_MAVLINK_Tracker::send_pid_tuning()
         const AP_Logger::PID_Info *pid_info;
         pid_info = &g.pidPitch2Srv.get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
-                                    pid_info->desired,
+                                    pid_info->target,
                                     pid_info->actual,
                                     pid_info->FF,
                                     pid_info->P,
@@ -119,7 +119,7 @@ void GCS_MAVLINK_Tracker::send_pid_tuning()
         const AP_Logger::PID_Info *pid_info;
         pid_info = &g.pidYaw2Srv.get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW,
-                                    pid_info->desired,
+                                    pid_info->target,
                                     pid_info->actual,
                                     pid_info->FF,
                                     pid_info->P,

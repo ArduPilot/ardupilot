@@ -283,7 +283,7 @@ public:
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
-        float desired;
+        float target;
         float actual;
         float P;
         float I;

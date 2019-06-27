@@ -448,7 +448,7 @@ void AP_Landing_Deepstall::Log(void) const {
                              constrain_float(predicted_travel_distance * 1e2f, (float)INT16_MIN, (float)INT16_MAX) : 0),
         l1_i             : stage >= DEEPSTALL_STAGE_LAND ? L1_xtrack_i : 0.0f,
         loiter_sum_cd    : stage >= DEEPSTALL_STAGE_ESTIMATE_WIND ? loiter_sum_cd : 0,
-        desired          : pid_info.desired,
+        desired          : pid_info.target,
         P                : pid_info.P,
         I                : pid_info.I,
         D                : pid_info.D,

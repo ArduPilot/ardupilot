@@ -724,7 +724,7 @@ struct PACKED log_Attitude {
 struct PACKED log_PID {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float   desired;
+    float   target;
     float   actual;
     float   P;
     float   I;
