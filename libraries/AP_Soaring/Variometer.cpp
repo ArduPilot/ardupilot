@@ -62,7 +62,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
     float expected_roll = atanf(powf(_aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius));
     _expected_thermalling_sink = calculate_aircraft_sinkrate(expected_roll, polar_K, polar_Cd0, polar_B);
 
-    AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc,exs", "Qfffffffff",
+    AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc,exs,dsp", "Qffffffffff",
                        AP_HAL::micros64(),
                        (double)0.0,
                        (double)_aspd_filt_constrained,
@@ -72,7 +72,8 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
                        (double)filtered_reading,
                        (double)raw_climb_rate,
                        (double)smoothed_climb_rate,
-                       (double)_expected_thermalling_sink);
+                       (double)_expected_thermalling_sink,
+                       (double)dsp);
 }
 
 
