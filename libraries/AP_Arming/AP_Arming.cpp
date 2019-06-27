@@ -107,7 +107,6 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
 
-    // index 4 was VOLT_MIN, moved to AP_BattMonitor
     AP_GROUPEND
 };
 
