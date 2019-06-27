@@ -144,31 +144,9 @@ float AP_WheelRateControl::get_rate_controlled_throttle(uint8_t instance, float 
     // get actual rate from wheeel encoder
     float actual_rate = _wheel_encoder.get_rate(instance);
 
-    // calculate rate error and pass to pid controller
-    float rate_error = desired_rate - actual_rate;
-    rate_pid.set_input_filter_all(rate_error);
-
-    // store desired and actual for logging purposes
-    rate_pid.set_desired_rate(desired_rate);
-    rate_pid.set_actual_rate(actual_rate);
-
-    // get ff
-    float ff = rate_pid.get_ff(desired_rate);
-
-    // get p
-    float p = rate_pid.get_p();
-
-    // get i unless we hit limit on last iteration
-    float i = rate_pid.get_integrator();
-    if (((is_negative(rate_error) && !_limit[instance].lower) || (is_positive(rate_error) && !_limit[instance].upper))) {
-        i = rate_pid.get_i();
-    }
-
-    // get d
-    float d = rate_pid.get_d();
-
     // constrain and set limit flags
-    float output = ff + p + i + d;
+    float output = rate_pid.update_all(desired_rate, actual_rate, (_limit[instance].lower || _limit[instance].upper));
+    output += rate_pid.get_ff();
 
     // set limits for next iteration
     _limit[instance].upper = output >= 100.0f;
