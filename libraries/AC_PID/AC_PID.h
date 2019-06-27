@@ -9,8 +9,9 @@
 #include <cmath>
 #include <AP_Logger/AP_Logger.h>
 
-#define AC_PID_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
-#define AC_PID_FILT_HZ_MIN      0.01f   // minimum input filter frequency
+#define AC_PID_TFILT_HZ_DEFAULT  0.0f   // default input filter frequency
+#define AC_PID_EFILT_HZ_DEFAULT  0.0f   // default input filter frequency
+#define AC_PID_DFILT_HZ_DEFAULT  20.0f   // default input filter frequency
 
 /// @class	AC_PID
 /// @brief	Copter PID control class
@@ -18,93 +19,118 @@ class AC_PID {
 public:
 
     // Constructor for PID
-    AC_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff = 0);
+    AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt);
 
     // set_dt - set time step in seconds
-    void        set_dt(float dt);
+    void set_dt(float dt);
 
-    // set_input_filter_all - set input to PID controller
-    //  input is filtered before the PID controllers are run
-    //  this should be called before any other calls to get_p, get_i or get_d
-    void        set_input_filter_all(float input);
+    //  update_all - set target and measured inputs to PID controller and calculate outputs
+    //  target and error are filtered
+    //  the derivative is then calculated and filtered
+    //  the integral is then updated based on the setting of the limit flag
+    float update_all(float target, float measurement, bool limit = false);
 
-    // set_input_filter_d - set input to PID controller
-    //  only input to the D portion of the controller is filtered
-    //  this should be called before any other calls to get_p, get_i or get_d
-    void        set_input_filter_d(float input);
+    //  update_error - set error input to PID controller and calculate outputs
+    //  target is set to zero and error is set and filtered
+    //  the derivative then is calculated and filtered
+    //  the integral is then updated based on the setting of the limit flag
+    //  Target and Measured must be set manually for logging purposes.
+    // todo: remove function when it is no longer used.
+    float update_error(float error, bool limit = false);
+
+    //  update_i - update the integral
+    //  if the limit flag is set the integral is only allowed to shrink
+    void update_i(bool limit);
 
     // get_pid - get results from pid controller
-    float       get_pid();
-    float       get_pi();
-    float       get_p();
-    float       get_i();
-    float       get_d();
-    float       get_ff(float requested_rate);
+    float get_pid() const;
+    float get_pi() const;
+    float get_p() const;
+    float get_i() const;
+    float get_d() const;
+    float get_ff();
+
+    // todo: remove function when it is no longer used.
+    float get_ff(float target);
 
     // reset_I - reset the integrator
-    void        reset_I();
+    void reset_I();
 
     // reset_filter - input filter will be reset to the next value provided to set_input()
-    void        reset_filter() { _flags._reset_filter = true; }
+    void reset_filter() {
+        _flags._reset_filter = true;
+    }
 
     // load gain from eeprom
-    void        load_gains();
+    void load_gains();
 
     // save gain to eeprom
-    void        save_gains();
+    void save_gains();
 
     /// operator function call for easy initialisation
-    void operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt, float ffval = 0);
+    void operator()(float p_val, float i_val, float d_val, float ff_val, float imax_val, float input_filt_T_hz, float input_filt_E_hz, float input_filt_D_hz, float dt);
 
     // get accessors
-    AP_Float   &kP() { return _kp; }
-    AP_Float   &kI() { return _ki; }
-    AP_Float   &kD() { return _kd; }
-    AP_Float   &filt_hz() { return _filt_hz; }
-    float       imax() const { return _imax.get(); }
-    float       get_filt_alpha() const;
-    float       ff() const { return _ff.get(); }
+    AP_Float &kP() { return _kp; }
+    AP_Float &kI() { return _ki; }
+    AP_Float &kD() { return _kd; }
+    AP_Float &ff() { return _kff;}
+    AP_Float &filt_T_hz() { return _filt_T_hz; }
+    AP_Float &filt_E_hz() { return _filt_E_hz; }
+    AP_Float &filt_D_hz() { return _filt_D_hz; }
+    float imax() const { return _kimax.get(); }
+    float get_filt_alpha(float filt_hz) const;
+    float get_filt_T_alpha() const;
+    float get_filt_E_alpha() const;
+    float get_filt_D_alpha() const;
 
     // set accessors
-    void        kP(const float v) { _kp.set(v); }
-    void        kI(const float v) { _ki.set(v); }
-    void        kD(const float v) { _kd.set(v); }
-    void        imax(const float v) { _imax.set(fabsf(v)); }
-    void        filt_hz(const float v);
-    void        ff(const float v) { _ff.set(v); }
-
-    float       get_integrator() const { return _integrator; }
-    void        set_integrator(float i) { _integrator = i; }
+    void kP(const float v) { _kp.set(v); }
+    void kI(const float v) { _ki.set(v); }
+    void kD(const float v) { _kd.set(v); }
+    void ff(const float v) { _kff.set(v); }
+    void imax(const float v) { _kimax.set(fabsf(v)); }
+    void filt_T_hz(const float v);
+    void filt_E_hz(const float v);
+    void filt_D_hz(const float v);
 
     // set the desired and actual rates (for logging purposes)
-    void        set_desired_rate(float desired) { _pid_info.desired = desired; }
-    void        set_actual_rate(float actual) { _pid_info.actual = actual; }
+    void set_target_rate(float target) { _pid_info.target = target; }
+    void set_actual_rate(float actual) { _pid_info.actual = actual; }
 
-    const       AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
+    // integrator setting functions
+    void set_integrator(float target, float measurement, float i);
+    void set_integrator(float error, float i);
+    void set_integrator(float i) { _integrator = constrain_float(i, -_kimax, _kimax); }
+
+    const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
 
     // parameter var table
-    static const struct AP_Param::GroupInfo        var_info[];
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
     // parameters
-    AP_Float        _kp;
-    AP_Float        _ki;
-    AP_Float        _kd;
-    AP_Float        _imax;
-    AP_Float        _filt_hz;                   // PID Input filter frequency in Hz
-    AP_Float        _ff;
+    AP_Float _kp;
+    AP_Float _ki;
+    AP_Float _kd;
+    AP_Float _kff;
+    AP_Float _kimax;
+    AP_Float _filt_T_hz;         // PID target filter frequency in Hz
+    AP_Float _filt_E_hz;         // PID error filter frequency in Hz
+    AP_Float _filt_D_hz;         // PID derivative filter frequency in Hz
 
     // flags
     struct ac_pid_flags {
-        bool        _reset_filter : 1;    // true when input filter should be reset during next call to set_input
+        bool _reset_filter :1; // true when input filter should be reset during next call to set_input
     } _flags;
 
     // internal variables
-    float           _dt;                    // timestep in seconds
-    float           _integrator;            // integrator value
-    float           _input;                 // last input for derivative
-    float           _derivative;            // last derivative for low-pass filter
+    float _dt;                // timestep in seconds
+    float _integrator;        // integrator value
+    float _target;            // target value to enable filtering
+    float _error;             // error value to enable filtering
+    float _derivative;        // derivative value to enable filtering
 
-    AP_Logger::PID_Info        _pid_info;
+    AP_Logger::PID_Info _pid_info;
 };
