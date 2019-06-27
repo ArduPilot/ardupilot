@@ -23,7 +23,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_RCMapper/AP_RCMapper.h>
 #include <inttypes.h>
 
