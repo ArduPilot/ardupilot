@@ -19,12 +19,7 @@
 #pragma once
 
 #include <AP_Math/AP_Math.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_Compass/AP_Compass.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_NavEKF/AP_Nav_Common.h>
-#include <AP_AHRS/AP_AHRS.h>
 //#include <AP_NavEKF2/AP_NavEKF2.h>
 
 #include <AP_Math/vectorN.h>
