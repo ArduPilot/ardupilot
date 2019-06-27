@@ -543,8 +543,10 @@ void AP_Logger::Write_Radio(const mavlink_radio_t &packet)
 }
 
 // Write a Camera packet
-void AP_Logger::Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us)
+void AP_Logger::Write_CameraInfo(enum LogMessages msg, const Location &current_loc, uint64_t timestamp_us)
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
     int32_t altitude, altitude_rel, altitude_gps;
     if (current_loc.relative_alt) {
         altitude = current_loc.alt+ahrs.get_home().alt;
@@ -578,15 +580,15 @@ void AP_Logger::Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, cons
 }
 
 // Write a Camera packet
-void AP_Logger::Write_Camera(const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us)
+void AP_Logger::Write_Camera(const Location &current_loc, uint64_t timestamp_us)
 {
-    Write_CameraInfo(LOG_CAMERA_MSG, ahrs, current_loc, timestamp_us);
+    Write_CameraInfo(LOG_CAMERA_MSG, current_loc, timestamp_us);
 }
 
 // Write a Trigger packet
-void AP_Logger::Write_Trigger(const AP_AHRS &ahrs, const Location &current_loc)
+void AP_Logger::Write_Trigger(const Location &current_loc)
 {
-    Write_CameraInfo(LOG_TRIGGER_MSG, ahrs, current_loc, 0);
+    Write_CameraInfo(LOG_TRIGGER_MSG, current_loc, 0);
 }
 
 // Write an attitude packet
