@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Module/AP_Module.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Baro/AP_Baro.h>
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 

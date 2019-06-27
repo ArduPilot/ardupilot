@@ -9,6 +9,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Baro/AP_Baro.h>
 
 void setup();
 void loop();
