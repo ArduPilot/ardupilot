@@ -4,6 +4,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Baro/AP_Baro.h>
 
 extern const AP_HAL::HAL& hal;
 
