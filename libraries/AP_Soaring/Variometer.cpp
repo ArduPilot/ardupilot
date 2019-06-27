@@ -4,6 +4,8 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 */
 #include "Variometer.h"
 
+#include <AP_Logger/AP_Logger.h>
+
 Variometer::Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
     _ahrs(ahrs),
     _aparm(parms),
