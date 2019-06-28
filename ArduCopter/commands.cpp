@@ -23,8 +23,8 @@ void Copter::update_home_from_EKF()
 void Copter::set_home_to_current_location_inflight() {
     // get current location from EKF
     Location temp_loc;
-    if (inertial_nav.get_location(temp_loc)) {
-        const struct Location &ekf_origin = inertial_nav.get_origin();
+    Location ekf_origin;
+    if (ahrs.get_location(temp_loc) && ahrs.get_origin(ekf_origin)) {
         temp_loc.alt = ekf_origin.alt;
         if (!set_home(temp_loc, false)) {
             return;
@@ -40,7 +40,7 @@ void Copter::set_home_to_current_location_inflight() {
 bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
     Location temp_loc;
-    if (inertial_nav.get_location(temp_loc)) {
+    if (ahrs.get_location(temp_loc)) {
         if (!set_home(temp_loc, lock)) {
             return false;
         }
@@ -106,8 +106,8 @@ bool Copter::set_home(const Location& loc, bool lock)
 bool Copter::far_from_EKF_origin(const Location& loc)
 {
     // check distance to EKF origin
-    const struct Location &ekf_origin = inertial_nav.get_origin();
-    if (ekf_origin.get_distance(loc) > EKF_ORIGIN_MAX_DIST_M) {
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin) && (ekf_origin.get_distance(loc) > EKF_ORIGIN_MAX_DIST_M)) {
         return true;
     }
 
