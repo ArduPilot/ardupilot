@@ -40,6 +40,8 @@ class Variometer {
     // low pass filter @ 30s time constant
     LowPassFilter<float> _climb_filter;
 
+    LowPassFilter<float> _vdot_filter2;
+
 public:
     Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms);
     float alt;

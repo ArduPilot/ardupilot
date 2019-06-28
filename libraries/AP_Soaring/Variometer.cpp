@@ -11,21 +11,14 @@ Variometer::Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
     _aparm(parms)
 {
     _climb_filter = LowPassFilter<float>(1.0/60.0);
+
+    _vdot_filter2 = LowPassFilter<float>(1.0f/60.0f);
 }
 
 void Variometer::update(const float polar_K, const float polar_Cd0, const float polar_B)
 {
     _ahrs.get_relative_position_D_home(alt);
     alt = -alt;
-
-    // Logic borrowed from AP_TECS.cpp
-    // Update and average speed rate of change
-    // Get DCM
-    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
-    // Calculate speed rate of change
-    float temp = rotMat.c.x * GRAVITY_MSS + AP::ins().get_accel().x;
-    // take 5 point moving average
-    float dsp = _vdot_filter.apply(temp);
 
     float aspd = 0;
     if (!_ahrs.airspeed_estimate(aspd)) {
@@ -38,20 +31,40 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
     _aspd_filt_constrained = _aspd_filt>minV ? _aspd_filt : minV;
 
 
+    float tau = calculate_circling_time_constant();
+
+    float dt = (float)(AP_HAL::micros64() - _prev_update_time)/1e6;
+
+    // Logic borrowed from AP_TECS.cpp
+    // Update and average speed rate of change
+    // Get DCM
+    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
+    // Calculate speed rate of change
+    float temp = rotMat.c.x * GRAVITY_MSS + AP::ins().get_accel().x;
+    // take 5 point moving average
+    float dsp = _vdot_filter.apply(temp);
+
+    // Now we need to high-pass this signal to remove bias.
+    _vdot_filter2.set_cutoff_frequency(1/(20*tau));
+    float dsp_bias = _vdot_filter2.apply(temp, dt);
+    
+    float dsp_cor = dsp - dsp_bias;
+
+
     Vector3f velned;
     if (_ahrs.get_velocity_NED(velned)) {
         // if possible use the EKF vertical velocity
         raw_climb_rate = -velned.z;
     }
-    float tau = calculate_circling_time_constant();
-    _climb_filter.set_cutoff_frequency(1/tau);
-    smoothed_climb_rate = _climb_filter.apply(raw_climb_rate, (AP_HAL::micros64() - _prev_update_time)/1e6);
+    
+    _climb_filter.set_cutoff_frequency(1/(3*tau));
+    smoothed_climb_rate = _climb_filter.apply(raw_climb_rate, dt);
 
     // Compute still-air sinkrate
     float roll = _ahrs.roll;
     float sinkrate = calculate_aircraft_sinkrate(roll, polar_K, polar_Cd0, polar_B);
 
-    reading = raw_climb_rate + dsp*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;
+    reading = raw_climb_rate + dsp_cor*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;
     
 
     filtered_reading = TE_FILT * reading + (1 - TE_FILT) * filtered_reading;                       // Apply low pass timeconst filter for noise
@@ -62,7 +75,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
     float expected_roll = atanf(powf(_aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius));
     _expected_thermalling_sink = calculate_aircraft_sinkrate(expected_roll, polar_K, polar_Cd0, polar_B);
 
-    AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc,exs,dsp", "Qffffffffff",
+    AP::logger().Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt,cl,fc,exs,dsp,dspb", "Qfffffffffff",
                        AP_HAL::micros64(),
                        (double)0.0,
                        (double)_aspd_filt_constrained,
@@ -73,7 +86,8 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
                        (double)raw_climb_rate,
                        (double)smoothed_climb_rate,
                        (double)_expected_thermalling_sink,
-                       (double)dsp);
+                       (double)dsp,
+                       (double)dsp_bias);
 }
 
 
@@ -103,5 +117,5 @@ float Variometer::calculate_circling_time_constant()
     // potential, as the aircraft orbits the thermal.
     // Use the time to circle - variations at the circling frequency then have a gain of 25%
     // and the response to a step input will reach 64% of final value in three orbits.
-    return 3*_aparm.loiter_radius*2*M_PI/_aspd_filt_constrained;
+    return _aparm.loiter_radius*2*M_PI/_aspd_filt_constrained;
 }
