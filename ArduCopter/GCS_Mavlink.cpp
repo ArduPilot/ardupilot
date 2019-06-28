@@ -993,9 +993,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 if (!AP::ahrs().home_is_set()) {
                     break;
                 }
-                const Location &origin = copter.inertial_nav.get_origin();
+                Location origin;
                 pos_vector.z += AP::ahrs().get_home().alt;
-                pos_vector.z -= origin.alt;
+                if (copter.ahrs.get_origin(origin)) {
+                    pos_vector.z -= origin.alt;
+                }
             }
         }
 
