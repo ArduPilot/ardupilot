@@ -294,8 +294,8 @@ define AP_FEATURE_SBUS_OUT 1
 
 # Now setup the default battery pins driver analog pins and default
 # scaling for the power brick.
-define HAL_BATT_VOLT_PIN 2
-define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_PIN 14
+define HAL_BATT_CURR_PIN 15
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 define HAL_GPIO_PWM_VOLT_PIN 3
