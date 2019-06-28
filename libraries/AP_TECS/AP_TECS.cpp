@@ -697,10 +697,8 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         _integTHR_state = _integTHR_state + (_STE_error * _get_i_gain()) * _DT * K_STE2Thr;
         if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)
         {
-            if (!_flags.reached_speed_takeoff) {
-                // ensure we run at full throttle until we reach the target airspeed
-                _throttle_dem = MAX(_throttle_dem, _THRmaxf - _integTHR_state);
-            }
+            // ensure we run at full throttle until we reach the target airspeed
+            _throttle_dem = MAX(_throttle_dem, _THRmaxf - _integTHR_state);
             _integTHR_state = integ_max;
         }
         else
