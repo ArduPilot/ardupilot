@@ -166,7 +166,7 @@ void Plane::ahrs_update()
     quadplane.check_yaw_reset();
 
     // update inertial_nav for quadplane
-    quadplane.inertial_nav.update(G_Dt);
+    quadplane.inertial_nav.update();
 }
 
 /*
