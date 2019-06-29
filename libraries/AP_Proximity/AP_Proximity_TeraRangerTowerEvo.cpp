@@ -178,6 +178,6 @@ void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint
         _distance_valid[sector] = distance_cm != 0xffff && distance_cm != 0x0000 && distance_cm != 0x0001;
         _last_distance_received_ms = AP_HAL::millis();
         // update boundary used for avoidance
-        update_boundary_for_sector(sector);
+        update_boundary_for_sector(sector, true);
     }
 }

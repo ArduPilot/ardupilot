@@ -416,7 +416,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                             _distance[_last_sector] = _distance_m_last;
                             _distance_valid[_last_sector] = true;
                             // update boundary used for avoidance
-                            update_boundary_for_sector(_last_sector);
+                            update_boundary_for_sector(_last_sector, true);
                             // initialize the new sector
                             _last_sector     = sector;
                             _distance_m_last = distance_m;

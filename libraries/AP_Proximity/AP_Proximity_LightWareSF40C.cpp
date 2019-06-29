@@ -418,7 +418,7 @@ bool AP_Proximity_LightWareSF40C::process_reply()
                 _last_distance_received_ms = AP_HAL::millis();
                 success = true;
                 // update boundary used for avoidance
-                update_boundary_for_sector(sector);
+                update_boundary_for_sector(sector, true);
             }
             break;
         }

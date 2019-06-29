@@ -17,6 +17,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
+#include <AP_Common/Location.h>
 
 #define PROXIMITY_SECTORS_MAX   12  // maximum number of sectors
 #define PROXIMITY_BOUNDARY_DIST_MIN 0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
@@ -64,12 +65,6 @@ public:
     // get distances in 8 directions. used for sending distances to ground station
     bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 
-    // copy location points around vehicle into a buffer owned by the caller
-    // caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
-    // num_copied is updated with the number of locations copied into the buffer
-    // returns true on success, false on failure which should only happen if buff is nullptr
-    bool copy_locations(AP_Proximity::Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied);
-
 protected:
 
     // set status and update valid_count
@@ -85,15 +80,17 @@ protected:
     // update boundary points used for object avoidance based on a single sector's distance changing
     //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
     //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-    void update_boundary_for_sector(uint8_t sector);
+    void update_boundary_for_sector(const uint8_t sector, const bool push_to_OA_DB);
 
     // get ignore area info
     uint8_t get_ignore_area_count() const;
     bool get_ignore_area(uint8_t index, uint16_t &angle_deg, uint8_t &width_deg) const;
     bool get_next_ignore_start_or_end(uint8_t start_or_end, int16_t start_angle, int16_t &ignore_start) const;
 
-    // earth frame objects
-    void update_locations();
+    // database helpers
+    bool database_prepare_for_push(Location &current_loc, float &current_vehicle_bearing);
+    void database_push(const float angle, const float distance);
+    void database_push(const float angle, const float distance, const uint32_t timestamp_ms, const Location &current_loc, const float current_vehicle_bearing);
 
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
@@ -111,9 +108,4 @@ protected:
     // fence boundary
     Vector2f _sector_edge_vector[PROXIMITY_SECTORS_MAX];    // vector for right-edge of each sector, used to speed up calculation of boundary
     Vector2f _boundary_point[PROXIMITY_SECTORS_MAX];        // bounding polygon around the vehicle calculated conservatively for object avoidance
-
-    // earth frame locations (i.e. detected obstacles stored as lat/lon points)
-    uint16_t _location_count;                               // number of locations held in _locations buffer
-    AP_Proximity::Proximity_Location _locations[PROXIMITY_SECTORS_MAX];   // buffer of locations
-    HAL_Semaphore_Recursive _rsem;                          // semaphore for access to _locations and _location_count
 };
