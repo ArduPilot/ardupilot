@@ -83,6 +83,11 @@ AP_GPS_UBLOX::_request_next_config(void)
             _next_message--;
         }
         break;
+    case STEP_TIMEGPS:
+        if(!_request_message_rate(CLASS_NAV, MSG_TIMEGPS)) {
+            _next_message--;
+        }
+        break;
     case STEP_PORT:
         _request_port();
         break;
@@ -217,10 +222,11 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             }
             break;
         case MSG_SOL:
-            if(rate == RATE_SOL) {
+            desired_rate = havePvtMsg ? 0 : RATE_SOL;
+            if(rate == desired_rate) {
                 _unconfigured_messages &= ~CONFIG_RATE_SOL;
             } else {
-                _configure_message_rate(msg_class, msg_id, RATE_SOL);
+                _configure_message_rate(msg_class, msg_id, desired_rate);
                 _unconfigured_messages |= CONFIG_RATE_SOL;
                 _cfg_needs_save = true;
             }
@@ -231,6 +237,15 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             } else {
                 _configure_message_rate(msg_class, msg_id, RATE_PVT);
                 _unconfigured_messages |= CONFIG_RATE_PVT;
+                _cfg_needs_save = true;
+            }
+            break;
+        case MSG_TIMEGPS:
+            if(rate == RATE_TIMEGPS) {
+                _unconfigured_messages &= ~CONFIG_RATE_TIMEGPS;
+            } else {
+                _configure_message_rate(msg_class, msg_id, RATE_TIMEGPS);
+                _unconfigured_messages |= CONFIG_RATE_TIMEGPS;
                 _cfg_needs_save = true;
             }
             break;
@@ -1017,6 +1032,11 @@ AP_GPS_UBLOX::_parse_gps(void)
         next_fix = state.status;
 #endif
         break;
+    case MSG_TIMEGPS:
+        Debug("MSG_TIMEGPS");
+        if (_buffer.timegps.valid & UBX_TIMEGPS_VALID_WEEK_MASK)
+            state.time_week = _buffer.timegps.week;
+        break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
         if (havePvtMsg) {
@@ -1278,8 +1298,8 @@ static const char *reasons[] = {"navigation rate",
                                 "navigation settings",
                                 "GNSS settings",
                                 "SBAS settings",
-                                "PVT rate"};
-
+                                "PVT rate",
+                                "TIMEGPS rate"};
 
 void
 AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {
