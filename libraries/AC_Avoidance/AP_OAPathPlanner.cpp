@@ -51,10 +51,16 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @DisplayName: Object Avoidance wide margin distance
     // @Description: Object Avoidance will ignore objects more than this many meters from vehicle
     // @Units: m
-    // @Range: 1 100
+    // @Range: 0.1 100
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("MARGIN_MAX", 3, AP_OAPathPlanner, _margin_max, OA_MARGIN_MAX_DEFAULT),
+
+#if !HAL_MINIMIZE_FEATURES
+    // @Group: DB_
+    // @Path: AP_OADatabase.cpp
+    AP_SUBGROUPINFO(_oadatabase, "DB_", 4, AP_OAPathPlanner, AP_OADatabase),
+#endif
 
     AP_GROUPEND
 };
@@ -74,7 +80,7 @@ void AP_OAPathPlanner::init()
     switch (_type) {
     case OA_PATHPLAN_DISABLED:
         // do nothing
-        break;
+        return;
     case OA_PATHPLAN_BENDYRULER:
         if (_oabendyruler == nullptr) {
             _oabendyruler = new AP_OABendyRuler();
@@ -86,6 +92,9 @@ void AP_OAPathPlanner::init()
         }
         break;
     }
+
+    _oadatabase.init();
+    start_thread();
 }
 
 // pre-arm checks that algorithms have been initialised successfully
@@ -112,6 +121,29 @@ bool AP_OAPathPlanner::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
     return true;
 }
 
+bool AP_OAPathPlanner::start_thread()
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (_thread_created) {
+        return true;
+    }
+    if (_type == OA_PATHPLAN_DISABLED) {
+        return false;
+    }
+
+    // create the avoidance thread as low priority. It should soak
+    // up spare CPU cycles to fill in the avoidance_result structure based
+    // on requests in avoidance_request
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OAPathPlanner::avoidance_thread, void),
+                                      "avoidance",
+                                      8192, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
+        return false;
+    }
+    _thread_created = true;
+    return true;
+}
+
 // provides an alternative target location if path planning around obstacles is required
 // returns true and updates result_loc with an intermediate location
 AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location &current_loc,
@@ -120,26 +152,13 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
                                          Location &result_origin,
                                          Location &result_destination)
 {
-    // exit immediately if disabled
-    if (_type == OA_PATHPLAN_DISABLED) {
+    // exit immediately if disabled or thread is not running from a failed init
+    if (_type == OA_PATHPLAN_DISABLED || !_thread_created) {
         return OA_NOT_REQUIRED;
     }
 
-    WITH_SEMAPHORE(_rsem);
-
-    if (!_thread_created) {
-        // create the avoidance thread as low priority. It should soak
-        // up spare CPU cycles to fill in the avoidance_result structure based
-        // on requests in avoidance_request
-        if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OAPathPlanner::avoidance_thread, void),
-                                          "avoidance",
-                                          8192, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
-            return OA_ERROR;
-        }
-        _thread_created = true;
-    }
-
     const uint32_t now = AP_HAL::millis();
+    WITH_SEMAPHORE(_rsem);
 
     // place new request for the thread to work on
     avoidance_request.current_loc = current_loc;
@@ -180,15 +199,31 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
 void AP_OAPathPlanner::avoidance_thread()
 {
     while (true) {
+#if !HAL_MINIMIZE_FEATURES
 
-        // run at 10hz or less
+        // if database queue needs attention, service it faster
+        if (_oadatabase.process_queue()) {
+            hal.scheduler->delay(1);
+        } else {
+            hal.scheduler->delay(20);
+        }
+
+        const uint32_t now = AP_HAL::millis();
+        if (now - avoidance_latest_ms < 100) {
+            continue;
+        }
+        avoidance_latest_ms = now;
+
+        _oadatabase.update();
+#else
         hal.scheduler->delay(100);
+        const uint32_t now = AP_HAL::millis();
+#endif
 
         Location origin_new;
         Location destination_new;
         {
             WITH_SEMAPHORE(_rsem);
-            uint32_t now = AP_HAL::millis();
             if (now - avoidance_request.request_time_ms > OA_TIMEOUT_MS) {
                 // this is a very old request, don't process it
                 continue;
@@ -216,6 +251,7 @@ void AP_OAPathPlanner::avoidance_thread()
                 res = OA_SUCCESS;
             }
             break;
+
         case OA_PATHPLAN_DIJKSTRA:
             if (_oadijkstra == nullptr) {
                 continue;
