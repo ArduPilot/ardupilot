@@ -3348,6 +3348,65 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_beacon_position(self):
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm(require_absolute=True)
+
+        old_pos = self.mav.location()
+        print("old_pos=%s" % str(old_pos))
+
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("BCN_TYPE", 10)
+            self.set_parameter("BCN_LATITUDE", SITL_START_LOCATION.lat)
+            self.set_parameter("BCN_LONGITUDE", SITL_START_LOCATION.lng)
+            self.set_parameter("BCN_ALT", SITL_START_LOCATION.alt)
+            self.set_parameter("BCN_ORIENT_YAW", 45)
+            self.set_parameter("AVOID_ENABLE", 4)
+            self.set_parameter("GPS_TYPE", 0)
+            self.set_parameter("EK2_GPS_TYPE", 3) # NOGPS
+
+            self.reboot_sitl()
+
+            # require_absolute=True infers a GPS is present
+            self.wait_ready_to_arm(require_absolute=False)
+
+            tstart = self.get_sim_time()
+            timeout = 20
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Did not get new position like old position")
+                self.progress("Fetching location")
+                new_pos = self.mav.location()
+                pos_delta = self.get_distance(old_pos, new_pos)
+                max_delta = 1
+                self.progress("delta=%u want <= %u" % (pos_delta, max_delta))
+                if pos_delta <= max_delta:
+                    break
+
+            self.progress("Moving to ensure location is tracked")
+            self.takeoff(10, mode="LOITER")
+            self.set_rc(2, 1400)
+            self.delay_sim_time(5)
+            self.set_rc(2, 1500)
+            self.wait_groundspeed(0, 0.1)
+            pos_delta = self.get_distance(self.sim_location(), self.mav.location)
+            if pos_delta > max_delta:
+                raise NotAchievedException("Vehicle location not tracking simulated location (%u > %u)" %
+                                           (pos_delta, max_delta))
+
+        except Exception as e:
+            self.progress("Caught exception: %s" % str(e))
+            ex = e
+        self.context_pop()
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
+
     def fly_beacon_avoidance_test(self):
         self.context_push()
         ex = None
@@ -3573,6 +3632,10 @@ class AutoTestCopter(AutoTest):
              "Fly Vision Position",
              self.fly_vision_position),
 
+            ("BeaconPosition",
+             "Fly Beacon Position",
+             self.fly_beacon_position),
+
             ("RTLSpeed",
              "Fly RTL Speed",
              self.fly_rtl_speed),
@@ -3628,6 +3691,7 @@ class AutoTestCopter(AutoTest):
         return {
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
+            "BeaconPosition": "Does not currently pass",
         }
 
 class AutoTestHeli(AutoTestCopter):
