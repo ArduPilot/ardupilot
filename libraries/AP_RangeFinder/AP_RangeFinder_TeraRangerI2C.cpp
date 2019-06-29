@@ -139,21 +139,25 @@ bool AP_RangeFinder_TeraRangerI2C::collect_raw(uint16_t &raw_distance)
 // Checks for error code and if correct converts to cm
 bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, uint16_t &output_distance_cm)
 {
-  // Check for error codes
-  if (raw_distance == 0xFFFF) {
-      // Too far away is unreliable so we dont enforce max range here
-      return false;
-  } else if (raw_distance == 0x0000) {
-      // Too close
-      output_distance_cm =  params.min_distance_cm;
-      return true;
-  } else if (raw_distance == 0x0001) {
-      // Unable to measure
-      return false;
-  } else {
-    output_distance_cm = raw_distance/10; // Conversion to centimeters
-    return true;
-  }
+    // Check for error codes
+    switch (raw_distance) {
+    case 0xFFFF:
+        // Too far away is unreliable so we dont enforce max range here
+        return false;
+
+    case 0x0000:
+        // Too close
+        output_distance_cm =  params.min_distance_cm;
+        return true;
+
+    case 0x0001:
+        // Unable to measure
+        return false;
+
+    default:
+        output_distance_cm = raw_distance/10; // Conversion to centimeters
+        return true;
+    }
 }
 
 /*
