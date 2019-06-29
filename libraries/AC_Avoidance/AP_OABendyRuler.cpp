@@ -14,7 +14,7 @@
  */
 
 #include "AP_OABendyRuler.h"
-
+#include <AC_Avoidance/AP_OADatabase.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_AHRS/AP_AHRS.h>
 
@@ -157,7 +157,7 @@ float AP_OABendyRuler::calc_avoidance_margin(const Location &start, const Locati
     }
 
     float proximity_margin;
-    if (!calc_margin_from_proximity_sensors(start, end, proximity_margin)) {
+    if (!calc_margin_from_object_database(start, end, proximity_margin)) {
         proximity_margin = FLT_MAX;
     }
 
@@ -228,20 +228,12 @@ bool AP_OABendyRuler::calc_margin_from_polygon_fence(const Location &start, cons
 
 // calculate minimum distance between a path and proximity sensor obstacles
 // on success returns true and updates margin
-bool AP_OABendyRuler::calc_margin_from_proximity_sensors(const Location &start, const Location &end, float &margin)
+bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, const Location &end, float &margin)
 {
-    AP_Proximity* prx = AP_Proximity::get_singleton();
-    if (prx == nullptr) {
-        return false;
-    }
-
-    // retrieve obstacles from proximity library
-    if (!prx->copy_locations(_prx_locs, ARRAY_SIZE(_prx_locs), _prx_loc_count)) {
-        return false;
-    }
-
-    // exit if no obstacles
-    if (_prx_loc_count == 0) {
+#if !HAL_MINIMIZE_FEATURES
+    // exit immediately if db is empty
+    AP_OADatabase *oaDb = AP::oadatabase();
+    if (oaDb == nullptr || !oaDb->healthy()) {
         return false;
     }
 
@@ -252,33 +244,20 @@ bool AP_OABendyRuler::calc_margin_from_proximity_sensors(const Location &start, 
     }
 
     // check each obstacle's distance from segment
-    bool valid_loc_found = false;
     float smallest_margin = FLT_MAX;
-    uint32_t now = AP_HAL::millis();
-    for (uint16_t i=0; i<_prx_loc_count; i++) {
-
-        // check time of objects is still valid
-        if ((now - _prx_locs[i].last_update_ms) > PROXIMITY_LOCATION_TIMEOUT_MS) {
-            continue;
-        }
-        valid_loc_found = true;
+    for (uint16_t i=0; i<oaDb->database_count(); i++) {
 
         // convert obstacle's location to offset (in cm) from EKF origin
         Vector2f point;
-        if (!_prx_locs[i].loc.get_vector_xy_from_origin_NE(point)) {
+        if (!oaDb->get_item(i).loc.get_vector_xy_from_origin_NE(point)) {
             continue;
         }
 
         // margin is distance between line segment and obstacle minus obstacle's radius
-        const float m = Vector2f::closest_distance_between_line_and_point(start_NE, end_NE, point) * 0.01f - _prx_locs[i].radius_m;
+        const float m = Vector2f::closest_distance_between_line_and_point(start_NE, end_NE, point) * 0.01f - oaDb->get_accuracy();
         if (m < smallest_margin) {
             smallest_margin = m;
         }
-    }
-
-    // if no valid obstacles found then they've all expired so clear buffer
-    if (!valid_loc_found) {
-        _prx_loc_count = 0;
     }
 
     // return smallest margin
@@ -287,5 +266,6 @@ bool AP_OABendyRuler::calc_margin_from_proximity_sensors(const Location &start, 
         return true;
     }
 
+#endif
     return false;
 }
