@@ -3366,7 +3366,9 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("BCN_ORIENT_YAW", 45)
             self.set_parameter("AVOID_ENABLE", 4)
             self.set_parameter("GPS_TYPE", 0)
-            self.set_parameter("EK2_GPS_TYPE", 3) # NOGPS
+            self.set_parameter("EK3_GPS_TYPE", 3) # NOGPS
+            self.set_parameter("EK3_ENABLE", 1)
+            self.set_parameter("EK2_ENABLE", 0)
 
             self.reboot_sitl()
 
