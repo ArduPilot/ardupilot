@@ -20,13 +20,11 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Common/Location.h>
 
 #define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_MAX_IGNORE                6   // up to six areas can be ignored
 #define PROXIMITY_MAX_DIRECTION 8
 #define PROXIMITY_SENSOR_ID_START 10
-#define PROXIMITY_LOCATION_TIMEOUT_MS       3000 // locations (provided by copy_locations method) are valid for this many milliseconds
 
 class AP_Proximity_Backend;
 
@@ -65,13 +63,6 @@ public:
         float distance[PROXIMITY_MAX_DIRECTION];      // distance in meters
     };
 
-    // structure holding locations of detected objects in earth frame
-    struct Proximity_Location {
-        float radius_m; // radius of object in meters
-        Location loc;
-        uint32_t last_update_ms;
-    };
-
     // detect and initialise any available proximity sensors
     void init(void);
 
@@ -107,13 +98,6 @@ public:
     //   returns nullptr and sets num_points to zero if no boundary can be returned
     const Vector2f* get_boundary_points(uint8_t instance, uint16_t& num_points) const;
     const Vector2f* get_boundary_points(uint16_t& num_points) const;
-
-    // copy location points around vehicle into a buffer owned by the caller
-    // caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
-    // num_copied is updated with the number of locations copied into the buffer
-    // returns true on success, false on failure (should only happen if there is a semaphore conflict)
-    bool copy_locations(uint8_t instance, Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied);
-    bool copy_locations(Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied);
 
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings

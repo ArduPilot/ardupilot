@@ -52,12 +52,12 @@ void AP_Proximity_RangeFinder::update(void)
             if (sensor->orientation() <= ROTATION_YAW_315) {
                 uint8_t sector = (uint8_t)sensor->orientation();
                 _angle[sector] = sector * 45;
-                _distance[sector] = sensor->distance_cm() / 100.0f;
-                _distance_min = sensor->min_distance_cm() / 100.0f;
-                _distance_max = sensor->max_distance_cm() / 100.0f;
+                _distance[sector] = sensor->distance_cm() * 0.01f;
+                _distance_min = sensor->min_distance_cm() * 0.01f;
+                _distance_max = sensor->max_distance_cm() * 0.01f;
                 _distance_valid[sector] = (_distance[sector] >= _distance_min) && (_distance[sector] <= _distance_max);
                 _last_update_ms = now;
-                update_boundary_for_sector(sector);
+                update_boundary_for_sector(sector, true);
             }
             // check upward facing range finder
             if (sensor->orientation() == ROTATION_PITCH_90) {

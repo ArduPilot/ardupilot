@@ -16,6 +16,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AC_Avoidance/AP_OADatabase.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
@@ -174,17 +175,20 @@ void AP_Proximity_Backend::init_boundary()
         _sector_edge_vector[sector].y = sinf(angle_rad) * 100.0f;
         _boundary_point[sector] = _sector_edge_vector[sector] * PROXIMITY_BOUNDARY_DIST_DEFAULT;
     }
-    update_locations();
 }
 
 // update boundary points used for object avoidance based on a single sector's distance changing
 //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
 //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
+void AP_Proximity_Backend::update_boundary_for_sector(const uint8_t sector, const bool push_to_OA_DB)
 {
     // sanity check
     if (sector >= _num_sectors) {
         return;
+    }
+
+    if (push_to_OA_DB) {
+        database_push(_angle[sector], _distance[sector]);
     }
 
     // find adjacent sector (clockwise)
@@ -229,27 +233,6 @@ void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
     if (!_distance_valid[prev_sector_ccw]) {
         _boundary_point[prev_sector_ccw] = _sector_edge_vector[prev_sector_ccw] * shortest_distance;
     }
-    update_locations();
-}
-
-// copy location points around vehicle into a buffer owned by the caller
-// caller should provide the buff_size which is the maximum number of locations the buffer can hold (normally PROXIMITY_MAX_DIRECTION)
-// num_copied is updated with the number of locations copied into the buffer
-// returns true on success, false on failure which should only happen if buff is nullptr
-bool AP_Proximity_Backend::copy_locations(AP_Proximity::Proximity_Location* buff, uint16_t buff_size, uint16_t& num_copied)
-{
-    // sanity check buffer
-    if (buff == nullptr) {
-        num_copied = 0;
-        return false;
-    }
-
-    WITH_SEMAPHORE(_rsem);
-
-    // copy locations into caller's buffer
-    num_copied = MIN(_location_count, buff_size);
-    memcpy(buff, _locations, num_copied * sizeof(AP_Proximity::Proximity_Location));
-    return true;
 }
 
 // set status and update valid count
@@ -351,40 +334,41 @@ bool AP_Proximity_Backend::get_next_ignore_start_or_end(uint8_t start_or_end, in
     return found;
 }
 
-void AP_Proximity_Backend::update_locations()
+// returns true if database is ready to be pushed to and all cached data is ready
+bool AP_Proximity_Backend::database_prepare_for_push(Location &current_loc, float &current_vehicle_bearing)
 {
-    WITH_SEMAPHORE(_rsem);
+    AP_OADatabase *oaDb = AP::oadatabase();
+    if (oaDb == nullptr || !oaDb->healthy()) {
+        return false;
+    }
 
-    // get number of objects, return early if none
-    const uint8_t num_objects = get_object_count();
-    if (num_objects == 0) {
-        _location_count = 0;
+    if (!AP::ahrs().get_position(current_loc)) {
+        return false;
+    }
+
+    current_vehicle_bearing = AP::ahrs().yaw_sensor * 0.01f;
+    return true;
+}
+
+// update Object Avoidance database with Earth-frame point
+void AP_Proximity_Backend::database_push(const float angle, const float distance)
+{
+    Location current_loc;
+    float current_vehicle_bearing;
+    if (database_prepare_for_push(current_loc, current_vehicle_bearing) == true) {
+        database_push(angle, distance, AP_HAL::millis(), current_loc, current_vehicle_bearing);
+    }
+}
+
+// update Object Avoidance database with Earth-frame point
+void AP_Proximity_Backend::database_push(const float angle, const float distance, const uint32_t timestamp_ms, const Location &current_loc, const float current_vehicle_bearing)
+{
+    AP_OADatabase *oaDb = AP::oadatabase();
+    if (oaDb == nullptr || !oaDb->healthy()) {
         return;
     }
 
-    // get vehicle location and heading in degrees
-    float veh_bearing;
-    Location my_loc;
-    {
-        WITH_SEMAPHORE(AP::ahrs().get_semaphore());
-        if (!AP::ahrs().get_position(my_loc)) {
-            return;
-        }
-        veh_bearing = AP::ahrs().yaw_sensor * 0.01f;
-    }
-
-    // convert offset from vehicle position to earth frame location
-    const uint32_t now_ms = AP_HAL::millis();
-    _location_count = 0;
-    for (uint8_t i=0; i<num_objects; i++) {
-        float ang_deg, dist_m;
-        if (get_object_angle_and_distance(i, ang_deg, dist_m)) {
-            Location temp_loc = my_loc;
-            temp_loc.offset_bearing(wrap_180(veh_bearing + ang_deg), dist_m);
-            _locations[_location_count].loc = temp_loc;
-            _locations[_location_count].radius_m = 1;
-            _locations[_location_count].last_update_ms = now_ms;
-            _location_count++;
-        }
-    }
+    Location temp_loc = current_loc;
+    temp_loc.offset_bearing(wrap_180(current_vehicle_bearing + angle), distance);
+    oaDb->queue_push(temp_loc, timestamp_ms, distance, angle);
 }
