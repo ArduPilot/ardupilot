@@ -57,7 +57,7 @@ void AP_Proximity_SITL::update(void)
             set_status(AP_Proximity::Proximity_Good);
             _distance_valid[last_sector] = true;
             _angle[last_sector] = _sector_middle_deg[last_sector];
-            update_boundary_for_sector(last_sector);
+            update_boundary_for_sector(last_sector, true);
         } else {
             _distance_valid[last_sector] = false;
         }
