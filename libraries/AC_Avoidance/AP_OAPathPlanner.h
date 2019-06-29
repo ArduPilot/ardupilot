@@ -6,6 +6,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_OABendyRuler.h"
 #include "AP_OADijkstra.h"
+#include "AP_OADatabase.h"
 
 /*
  * This class provides path planning around fence, stay-out zones and moving obstacles
@@ -59,6 +60,7 @@ private:
 
     // avoidance thread that continually updates the avoidance_result structure based on avoidance_request
     void avoidance_thread();
+    bool start_thread();
 
     // an avoidance request from the navigation code
     struct avoidance_info {
@@ -88,7 +90,11 @@ private:
     bool _thread_created;           // true once background thread has been created
     AP_OABendyRuler *_oabendyruler; // Bendy Ruler algorithm
     AP_OADijkstra *_oadijkstra;     // Dijkstra's algorithm
+    AP_OADatabase _oadatabase;      // Database of dynamic objects to avoid
     uint32_t _logged_time_ms;       // result_time_ms of last result logged (triggers logging of new results)
+#if !HAL_MINIMIZE_FEATURES
+    uint32_t avoidance_latest_ms;   // last time Dijkstra's or BendyRuler algorithms ran
+#endif
 
     static AP_OAPathPlanner *_singleton;
 };

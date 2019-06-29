@@ -3,7 +3,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Proximity/AP_Proximity.h>
 #include <AP_HAL/AP_HAL.h>
 
 /*
@@ -40,7 +39,7 @@ private:
 
     // calculate minimum distance between a path and proximity sensor obstacles
     // on success returns true and updates margin
-    bool calc_margin_from_proximity_sensors(const Location &start, const Location &end, float &margin);
+    bool calc_margin_from_object_database(const Location &start, const Location &end, float &margin);
 
     // configuration parameters
     float _lookahead;               // object avoidance will look this many meters ahead of vehicle
@@ -48,6 +47,4 @@ private:
 
     // internal variables used by background thread
     float _current_lookahead;       // distance (in meters) ahead of the vehicle we are looking for obstacles
-    AP_Proximity::Proximity_Location _prx_locs[PROXIMITY_MAX_DIRECTION];  // buffer of locations from proximity library
-    uint16_t _prx_loc_count;
 };
