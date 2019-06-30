@@ -1117,14 +1117,12 @@ AP_InertialSensor::_init_gyro()
     // cold start
     hal.console->printf("Init Gyro");
     //EXPECT_DELAY_MS(60000);
-	//hal.console->printf("DEBUG Delay DONE\n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /*
       we do the gyro calibration with no board rotation. This avoids
       having to rotate readings during the calibration
     */
     enum Rotation saved_orientation = _board_orientation;
     _board_orientation = ROTATION_NONE;
-	//hal.console->printf("DEBUG 1 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
         _gyro_offset[k].set(Vector3f());
@@ -1133,17 +1131,13 @@ AP_InertialSensor::_init_gyro()
         last_average[k].zero();
         converged[k] = false;
     }
-hal.console->printf("DEBUG 2 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     for(int8_t c = 0; c < 5; c++) {
         hal.scheduler->delay(5);
-		//hal.console->printf("DEBUG delay test \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         update();
-		//hal.console->printf("DEBUG update test \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
     // the strategy is to average 50 points over 0.5 seconds, then do it
     // again and see if the 2nd average is within a small margin of
     // the first
-hal.console->printf("DEBUG 3 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     uint8_t num_converged = 0;
 
     // we try to get a good calibration estimate for up to 30 seconds
@@ -1157,7 +1151,6 @@ hal.console->printf("DEBUG 3 \n");//////////////////////////////////////////////
         memset(diff_norm, 0, sizeof(diff_norm));
 
         hal.console->printf("*");
-	//hal.console->printf("DEBUG 4 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         for (uint8_t k=0; k<num_gyros; k++) {
             gyro_sum[k].zero();
         }
@@ -1178,13 +1171,11 @@ hal.console->printf("DEBUG 3 \n");//////////////////////////////////////////////
             // with around 5 degrees/second of rotation.
             continue;
         }
-		//hal.console->printf("DEBUG 5 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         for (uint8_t k=0; k<num_gyros; k++) {
             gyro_avg[k] = gyro_sum[k] / i;
             gyro_diff[k] = last_average[k] - gyro_avg[k];
             diff_norm[k] = gyro_diff[k].length();
         }
-		//hal.console->printf("DEBUG 6 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         for (uint8_t k=0; k<num_gyros; k++) {
             if (best_diff[k] < 0) {
                 best_diff[k] = diff_norm[k];
@@ -1206,7 +1197,6 @@ hal.console->printf("DEBUG 3 \n");//////////////////////////////////////////////
             last_average[k] = gyro_avg[k];
         }
     }
-	//hal.console->printf("DEBUG 7 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // we've kept the user waiting long enough - use the best pair we
     // found so far
     hal.console->printf("\n");
@@ -1224,13 +1214,11 @@ hal.console->printf("DEBUG 3 \n");//////////////////////////////////////////////
             _gyro_offset[k] = new_gyro_offset[k];
         }
     }
-	//hal.console->printf("DEBUG 8 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // restore orientation
     _board_orientation = saved_orientation;
 
     // record calibration complete
     _calibrating = false;
-	//hal.console->printf("DEBUG 9 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // stop flashing leds
     AP_Notify::flags.initialising = false;
 }
@@ -1256,9 +1244,7 @@ void AP_InertialSensor::update(void)
 {
     // during initialisation update() may be called without
     // wait_for_sample(), and a wait is implied
-	//hal.console->printf("DEBUG hit update \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     wait_for_sample();
-	//hal.console->printf("DEBUG pass wait for sample \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (!_hil_mode) {
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             // mark sensors unhealthy and let update() in each backend
@@ -1272,7 +1258,6 @@ void AP_InertialSensor::update(void)
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
         }
-		//hal.console->printf("DEBUG 10 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // clear accumulators
         for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
             _delta_velocity_acc[i].zero();
@@ -1280,7 +1265,6 @@ void AP_InertialSensor::update(void)
             _delta_angle_acc[i].zero();
             _delta_angle_acc_dt[i] = 0;
         }
-	//hal.console->printf("DEBUG `11 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if (!_startup_error_counts_set) {
             for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
                 _accel_startup_error_count[i] = _accel_error_count[i];
@@ -1293,7 +1277,6 @@ void AP_InertialSensor::update(void)
                 _startup_error_counts_set = true;
             }
         }
-		//hal.console->printf("DEBUG 12 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_accel_error_count[i] < _accel_startup_error_count[i]) {
                 _accel_startup_error_count[i] = _accel_error_count[i];
@@ -1301,7 +1284,6 @@ void AP_InertialSensor::update(void)
             if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
                 _gyro_startup_error_count[i] = _gyro_error_count[i];
             }
-			//hal.console->printf("DEBUG 13 \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         }
 
         // adjust health status if a sensor has a non-zero error count
@@ -1373,14 +1355,12 @@ void AP_InertialSensor::wait_for_sample(void)
     }
 
     uint32_t now = AP_HAL::micros();
-	//hal.console->printf("DEBUG wait for sample time = %d \n",now);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (_next_sample_usec == 0 && _delta_time <= 0) {
         // this is the first call to wait_for_sample()
         _last_sample_usec = now - _sample_period_usec;
         _next_sample_usec = now + _sample_period_usec;
         goto  check_sample;
     }
-	//hal.console->printf("DEBUG after go to check sample \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // see how long it is till the next sample is due
     if (_next_sample_usec - now <=_sample_period_usec) {
         // we're ahead on time, schedule next sample at expected period
@@ -1409,9 +1389,7 @@ void AP_InertialSensor::wait_for_sample(void)
     }
 
 check_sample:
-	//hal.console->printf("DEBUG check sample \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (!_hil_mode) {
-		//hal.console->printf("DEBUG !_hil_mode \n");//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // we also wait for at least one backend to have a sample of both
         // accel and gyro. This normally completes immediately.
         bool gyro_available = false;
@@ -1423,9 +1401,7 @@ check_sample:
 
             for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
                 gyro_available |= _new_gyro_data[i];
-				//hal.console->printf("DEBUG gyro_available = %d \n",gyro_available);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 accel_available |= _new_accel_data[i];
-				//hal.console->printf("DEBUG accel_available = %d \n",accel_available);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             }
 
             if (gyro_available && accel_available) {
@@ -1436,7 +1412,6 @@ check_sample:
     }
 
     now = AP_HAL::micros();
-	//hal.console->printf("DEBUG wait for sample time1 = %d \n",now);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (_hil_mode && _hil.delta_time > 0) {
         _delta_time = _hil.delta_time;
         _hil.delta_time = 0;

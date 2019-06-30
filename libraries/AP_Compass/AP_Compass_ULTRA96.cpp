@@ -15,13 +15,12 @@ extern const AP_HAL::HAL& hal;
 AP_Compass_ULTRA96::AP_Compass_ULTRA96()
     : AP_Compass_Backend()
 {
-	hal.console->printf("Test 7\n");///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	//assign pointer here
 	int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
 	if (mem_fd == -1) {
         hal.console->printf("Unable to open /dev/mem\n");
 	}
-	hal.console->printf("Test 7\n");/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	data_pointer = (volatile int32_t*) mmap(NULL, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x78000000);
 	close(mem_fd);
 	_compass_instance = register_compass();

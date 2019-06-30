@@ -42,8 +42,6 @@ void AP_InertialSensor_ULTRA96::timer_update(void)
 	float xGyro = (*((volatile int32_t *)(data_pointer+21)))*0.0001;
 	float yGyro = (*((volatile int32_t *)(data_pointer+22)))*0.0001;
 	float zGyro = (*((volatile int32_t *)(data_pointer+23)))*0.0001;
-	//hal.console->printf("DEBUG ACCEL read ,%f\n",xAccel);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//hal.console->printf("DEBUG Gyro read ,%f\n",xGyro);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     Vector3f accel = Vector3f(xAccel, yAccel, zAccel);
     Vector3f gyro = Vector3f(xGyro, yGyro, zGyro);
 	

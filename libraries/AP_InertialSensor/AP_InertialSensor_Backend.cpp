@@ -292,7 +292,6 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
      */
     if (sample_us != 0 && _imu._accel_last_sample_us[instance] != 0) {
         dt = (sample_us - _imu._accel_last_sample_us[instance]) * 1.0e-6f;
-		//hal.console->printf("DEBUG dt = %f \n",dt);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
         // don't accept below 100Hz
         if (_imu._accel_raw_sample_rates[instance] < 100) {
@@ -300,7 +299,6 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         }
 
         dt = 1.0f / _imu._accel_raw_sample_rates[instance];
-		//hal.console->printf("DEBUG dt = %f \n",dt);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
     _imu._accel_last_sample_us[instance] = sample_us;
 

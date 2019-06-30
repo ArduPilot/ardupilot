@@ -35,7 +35,7 @@ AP_Baro_ULTRA96::AP_Baro_ULTRA96(AP_Baro &baro) :
 void AP_Baro_ULTRA96::update(void)
 {
 	//check offsets
-    float press =  (*((volatile int32_t *)(data_pointer+27)))*0.0001;
+    float press =  (*((volatile int32_t *)(data_pointer+27)))*0.01;
     float temp =  (*((volatile int32_t *)(data_pointer+28)))*0.0001;
 
     _copy_to_frontend(_instance, press, temp);
