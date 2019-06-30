@@ -3693,7 +3693,7 @@ class AutoTestCopter(AutoTest):
         return {
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
-            "BeaconPosition": "Does not currently pass",
+            "BeaconPosition": "See https://github.com/ArduPilot/ardupilot/issues/11689",
         }
 
 class AutoTestHeli(AutoTestCopter):
