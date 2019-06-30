@@ -104,6 +104,15 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+    if (!plane.g2.characterise.prearm_healthy()) {
+        const char *reason = plane.g2.characterise.prearm_failure_reason();
+        if (reason == nullptr) {
+            reason = "AP Characterise Error";
+        }
+        check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
+        ret = false;
+    }
+
     return ret;
 }
 

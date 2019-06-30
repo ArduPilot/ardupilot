@@ -1235,6 +1235,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_AILMTCH", 21, ParametersG2, crow_flap_aileron_matching, 100),
 
+    // @Group: CHAR_
+    // @Path: ../libraries/AP_Characterise/AP_Characterise.cpp
+    AP_SUBGROUPINFO(characterise, "CHAR_", 22, ParametersG2, AP_Characterise),
+
     AP_GROUPEND
 };
 

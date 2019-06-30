@@ -564,6 +564,9 @@ public:
     AP_Int8 crow_flap_weight_inner;
     AP_Int8 crow_flap_options;
     AP_Int8 crow_flap_aileron_matching;
+
+    // Characterization library
+    AP_Characterise characterise;
 };
 
 extern const AP_Param::Info var_info[];

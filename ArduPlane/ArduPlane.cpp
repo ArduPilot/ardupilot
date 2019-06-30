@@ -106,6 +106,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landing_gear_update, 5, 50),
 #endif
+    SCHED_TASK_CLASS(AP_Characterise, &plane.g2.characterise, update, 10, 100),
 };
 
 constexpr int8_t Plane::_failsafe_priorities[7];
@@ -167,6 +168,8 @@ void Plane::ahrs_update()
 
     // update inertial_nav for quadplane
     quadplane.inertial_nav.update(G_Dt);
+
+    g2.characterise.update_inputs();
 }
 
 /*
