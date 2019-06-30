@@ -39,7 +39,7 @@ public:
     bool is_initialized() override;
     void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
-
+    bool is_usbserial() override { return sdef.is_usb; }
 
     uint32_t available() override;
     uint32_t txspace() override;
