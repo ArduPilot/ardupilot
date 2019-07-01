@@ -510,6 +510,7 @@ private:
         UBLOX_6,
         UBLOX_7,
         UBLOX_M8,
+        UBLOX_F9 = 0x80, // comes from MON_VER hwVersion string
         UBLOX_UNKNOWN_HARDWARE_GENERATION = 0xff // not in the ublox spec used for
                                                  // flagging state in the driver
     };

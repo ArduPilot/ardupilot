@@ -78,7 +78,15 @@ AP_GPS_UBLOX::_request_next_config(void)
         return;
     }
 
-    Debug("Unconfigured messages: %u Current message: %u\n", (unsigned)_unconfigured_messages, (unsigned)_next_message);
+    if (_unconfigured_messages == CONFIG_RATE_SOL && havePvtMsg) {
+        /*
+          we don't need SOL if we have PVT and TIMEGPS. This is needed
+          as F9P doesn't support the SOL message
+         */
+        _unconfigured_messages &= ~CONFIG_RATE_SOL;
+    }
+
+    Debug("Unconfigured messages: 0x%x Current message: %u\n", (unsigned)_unconfigured_messages, (unsigned)_next_message);
 
     // check AP_GPS_UBLOX.h for the enum that controls the order.
     // This switch statement isn't maintained against the enum in order to reduce code churn
@@ -869,6 +877,11 @@ AP_GPS_UBLOX::_parse_gps(void)
                                              state.instance + 1,
                                              _version.hwVersion,
                                              _version.swVersion);
+            // check for F9. The F9 does not respond to SVINFO, so we need to use MON_VER
+            // for hardware generation
+            if (strncmp(_version.hwVersion, "00190000", 8) == 0) {
+                _hardware_generation = UBLOX_F9;
+            }
             break;
         default:
             unexpected_message();
@@ -1090,8 +1103,9 @@ AP_GPS_UBLOX::_parse_gps(void)
     case MSG_TIMEGPS:
         Debug("MSG_TIMEGPS");
         _check_new_itow(_buffer.timegps.itow);
-        if (_buffer.timegps.valid & UBX_TIMEGPS_VALID_WEEK_MASK)
+        if (_buffer.timegps.valid & UBX_TIMEGPS_VALID_WEEK_MASK) {
             state.time_week = _buffer.timegps.week;
+        }
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
@@ -1393,6 +1407,11 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
     case UBLOX_7:
     case UBLOX_M8:
         // based on flight logs the 7 and 8 series seem to produce about 120ms lag
+        lag_sec = 0.12f;
+        break;
+    case UBLOX_F9:
+        // F9 lag not verified yet from flight log, but likely to be at least
+        // as good as M8
         lag_sec = 0.12f;
         break;
     };
