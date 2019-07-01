@@ -213,14 +213,13 @@ def process_library(vehicle, library, pathprefix=None):
                 else:
                     error("tagged param<: unknown parameter metadata field '%s'" % field[0])
             if ((non_vehicle_specific_values_seen or not other_vehicle_values_seen) or this_vehicle_values_seen):
-                if this_vehicle_values_seen:
-                    debug("Setting vehicle-specific value (%s)" % str(this_vehicle_value))
+                if this_vehicle_values_seen and field[0] == 'Values':
                     setattr(p, field[0], this_vehicle_value)
 #                debug("Appending (non_vehicle_specific_values_seen=%u "
 #                      "other_vehicle_values_seen=%u this_vehicle_values_seen=%u)" %
 #                      (non_vehicle_specific_values_seen, other_vehicle_values_seen, this_vehicle_values_seen))
-                p.path = path # Add path. Later deleted - only used for duplicates
-                library.params.append(p)
+            p.path = path # Add path. Later deleted - only used for duplicates
+            library.params.append(p)
 
         group_matches = prog_groups.findall(p_text)
         debug("Found %u groups" % len(group_matches))
