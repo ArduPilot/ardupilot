@@ -1713,7 +1713,7 @@ class AutoTestCopter(AutoTest):
 
                 self.progress("Distance: %fm abs-alt-delta: %fm" %
                               (dist, delta))
-                if dist < 10:
+                if dist < 15:
                     if delta < 0.8:
                         raise NotAchievedException("Did not dip in altitude as expected")
                     break
