@@ -233,23 +233,38 @@ def	run_coverage_tests(bld):
 
     FNULL = open(os.devnull, 'w')
 
-    #tests = ['fly.ArduPlane']
-    #tests = ['fly.ArduCopter','fly.ArduPlane']
-    tests = ['fly.ArduCopter','fly.ArduPlane', 'fly.QuadPlane', 'drive.APMrover2', 'dive.ArduSub']
+    # this currently relies on a build with no arguments creating all the
+    # relevant binaries.
+    tests = [
+        'fly.ArduCopter',
+        'fly.ArduPlane',
+        'fly.QuadPlane',
+        'drive.APMrover2',
+        'dive.ArduSub',
+        'fly.CopterAVC',
+        'test.AntennaTracker',
+    ]
 
     for test in tests:
-        print("LCOV/GCOV -> "+test+" started.... this will take quite some time...")
-        testcmd = '( ./Tools/autotest/autotest.py --speedup=5 --timeout=14400 --debug --no-configure '+test+' ) '
-        print("Coverage Tests Executing:"+testcmd+" > ./GCOV_"+test+".log")
-        FLOG = open("./GCOV_"+test+".log", 'w')
-        if subprocess.Popen(testcmd, shell=True , stdout=FLOG, stderr=FNULL).wait():
-	        print("LCOV/GCOV -> "+test+" see ./GCOV_"+test+".log for log of activity)")
+        print("LCOV/GCOV -> %s started.... this will take quite some time..." %
+              (test,))
+        testcmd = '( ./Tools/autotest/autotest.py --speedup=5 --timeout=14400 --debug --no-configure %s )' % (test,)
+        logfile = "./GCOV_%s.log" % test
+        print("Coverage Tests Executing: %s > %s" % (test, logfile,))
+        FLOG = open(logfile, 'w')
+        if subprocess.Popen(testcmd, shell=True , stdout=FLOG, stderr=FLOG).wait():
+	        print("LCOV/GCOV -> %s see %s for log of activity)" % (test, logfile,))
 	        raise SystemExit(1)
-        print("LCOV/GCOV -> "+test+" succeeded")
+        print("LCOV/GCOV -> %s succeeded" % (test,))
         FLOG.close()
 
-    #TODO add any other execution path/s we can to maximise the actually used code, can we run other tests or things?
-    # eg run.unit_tests, run.examples , test.AntennaTracker or other things?
+    # build and run examples:
+    logfile = "GCOV_examples.log"
+    FLOG = open(logfile, 'w')
+    if subprocess.Popen("./Tools/autotest/autotest.py --debug build.Examples run.Examples build.unit_tests run.unit_tests", shell=True , stdout=FLOG, stderr=FLOG).wait():
+	    print("LCOV/GCOV -> %s see %s for log of activity)" % ("examples", logfile,))
+	    raise SystemExit(1)
+    FLOG.close()
 
 
 def lcov_report(bld):
