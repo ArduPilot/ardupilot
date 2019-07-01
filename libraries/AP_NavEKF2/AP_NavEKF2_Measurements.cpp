@@ -540,13 +540,9 @@ void NavEKF2_core::readGpsData()
                 useGpsVertVel = false;
             }
 
-            // Monitor quality of the GPS velocity data before and after alignment using separate checks
-            if (PV_AidingMode != AID_ABSOLUTE) {
-                // Pre-alignment checks
-                gpsGoodToAlign = calcGpsGoodToAlign();
-            } else {
-                gpsGoodToAlign = false;
-            }
+            // Monitor quality of the GPS velocity data both before and after alignment. This updates
+            // GpsGoodToAlign class variable
+            calcGpsGoodToAlign();
 
             // Post-alignment checks
             calcGpsGoodForFlight();
