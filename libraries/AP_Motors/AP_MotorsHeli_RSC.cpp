@@ -20,6 +20,38 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_Param::GroupInfo RSCParam::var_info[] = {
+
+    // @Param: SETPOINT
+    // @DisplayName: Electric ESC Throttle Setting
+    // @Description: Throttle signal percent for electric helicopters when a governor is used in the ESC
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SETPOINT", 1, RSCParam, setpoint, AP_MOTORS_HELI_RSC_SETPOINT),
+
+    // @Param: CRITICAL
+    // @DisplayName: Critical Rotor Speed
+    // @Description: Percentage of normal rotor speed where entry to autorotation becomes dangerous. For helicopters with rotor speed sensor should be set to the percentage of the governor rpm setting used. Even if governor is not used when a speed sensor is installed, set the governor rpm to normal headspeed then set critical to a percentage of normal rpm (usually 90%). This can be considered the bottom of the green arc for autorotation. For helicopters without speed sensor should be set to the throttle percentage where flight is no longer possible. With no speed sensor critical should be lower than electric ESC throttle setting for ESC's with governor, or lower than normal in-flight throttle percentage when the throttle curve or RC Passthru is used.
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("CRITICAL", 2, RSCParam, critical, AP_MOTORS_HELI_RSC_CRITICAL),
+
+    // @Param: IDLE
+    // @DisplayName: Engine Ground Idle Setting
+    // @Description: FOR COMBUSTION ENGINES. Sets the engine ground idle throttle percentage with clutch disengaged. This must be set to zero for electric helicopters under most situations. If the ESC has an autorotation window this can be set to keep the autorotation window open in the ESC. Consult the operating manual for your ESC to set it properly for this purpose
+    // @Range: 0 50
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("IDLE", 3, RSCParam, idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
+
+    AP_GROUPEND
+};
+
 const AP_Param::GroupInfo RSCThrCrvParam::var_info[] = {
 
 // enable param removed
@@ -116,6 +148,11 @@ const AP_Param::GroupInfo RSCGovParam::var_info[] = {
 
     AP_GROUPEND
 };
+
+RSCParam::RSCParam(void)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
 
 RSCThrCrvParam::RSCThrCrvParam(void)
 {

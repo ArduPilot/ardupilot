@@ -20,15 +20,6 @@
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
 
-// default main rotor speed (ch8 out) as a number from 0 ~ 1000
-#define AP_MOTORS_HELI_RSC_SETPOINT             70
-
-// default main rotor critical speed
-#define AP_MOTORS_HELI_RSC_CRITICAL             50
-
-// RSC output defaults
-#define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0
-
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to setpoint
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
@@ -87,7 +78,7 @@ public:
     uint8_t get_rsc_mode() const { return _rsc_mode; }
 
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
-    float get_rsc_setpoint() const { return _rsc_setpoint * 0.01f; }
+    float get_rsc_setpoint() const { return _rsc.get_setpoint() * 0.01f; }
     
     // set_rpm - for rotor speed governor
     virtual void set_rpm(float rotor_rpm) = 0;
@@ -150,6 +141,7 @@ protected:
 
     RSCThrCrvParam   _rsc_thrcrv;
     RSCGovParam      _rsc_gov;
+    RSCParam         _rsc;
 
     // output - sends commands to the motors
     void output_armed_stabilizing() override;
@@ -207,12 +199,9 @@ protected:
     AP_Int16        _collective_max;            // Highest possible servo position for the swashplate
     AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
     AP_Int8         _servo_mode;                // Pass radio inputs directly to servos during set-up through mission planner
-    AP_Int16        _rsc_setpoint;              // Electric ESC governor throttle setting
     AP_Int8         _rsc_mode;                  // Method of throttle control used
     AP_Int8         _rsc_ramp_time;             // Time in seconds to ramp throttle from ground idle to flight idle
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
-    AP_Int16        _rsc_critical;              // Rotor speed below which autorotation is no longer possible
-    AP_Int16        _rsc_idle_output;           // Combustion engine idle speed setting
     AP_Int16        _rsc_slewrate;              // throttle slew rate (percentage per second)
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
 

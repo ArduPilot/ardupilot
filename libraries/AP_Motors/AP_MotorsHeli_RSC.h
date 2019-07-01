@@ -5,6 +5,15 @@
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 
+// default main rotor speed (ch8 out) as a number from 0 ~ 100
+#define AP_MOTORS_HELI_RSC_SETPOINT             70
+
+// default main rotor critical speed
+#define AP_MOTORS_HELI_RSC_CRITICAL             50
+
+// RSC output defaults
+#define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0
+
 // Throttle Curve Defaults
 #define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     25
 #define AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT    32
@@ -152,6 +161,24 @@ private:
 
     // calculate_desired_throttle - uses throttle curve and collective input to determine throttle setting
     float           calculate_desired_throttle(float collective_in);
+};
+
+
+class RSCParam {
+public:
+    RSCParam(void);
+
+    static struct AP_Param::GroupInfo var_info[];
+
+    float get_setpoint() const { return setpoint; }
+    float get_critical() const { return critical; }
+    float get_idle_output() const { return idle_output; }
+
+private:
+    AP_Int16        setpoint;              // Electric ESC governor throttle setting
+    AP_Int16        critical;              // Rotor speed below which autorotation is no longer possible
+    AP_Int16        idle_output;           // Combustion engine idle speed setting
+
 };
 
 class RSCThrCrvParam {

@@ -108,8 +108,8 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
     // Set common RSC variables
     _rotor.set_ramp_time(_rsc_ramp_time);
     _rotor.set_runup_time(_rsc_runup_time);
-    _rotor.set_critical_speed(_rsc_critical*0.01f);
-    _rotor.set_idle_output(_rsc_idle_output*0.01f);
+    _rotor.set_critical_speed(_rsc.get_critical()*0.01f);
+    _rotor.set_idle_output(_rsc.get_idle_output()*0.01f);
     _rotor.set_slewrate(_rsc_slewrate);
 
     // Set rsc mode specific parameters

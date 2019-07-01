@@ -221,8 +221,8 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
     // Set common RSC variables
     _main_rotor.set_ramp_time(_rsc_ramp_time);
     _main_rotor.set_runup_time(_rsc_runup_time);
-    _main_rotor.set_critical_speed(_rsc_critical*0.01f);
-    _main_rotor.set_idle_output(_rsc_idle_output*0.01f);
+    _main_rotor.set_critical_speed(_rsc.get_critical()*0.01f);
+    _main_rotor.set_idle_output(_rsc.get_idle_output()*0.01f);
     _main_rotor.set_slewrate(_rsc_slewrate);
 
     // Set rsc mode specific parameters
@@ -264,8 +264,8 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SPEED_SETPOINT);
         _tail_rotor.set_ramp_time(_rsc_ramp_time);
         _tail_rotor.set_runup_time(_rsc_runup_time);
-        _tail_rotor.set_critical_speed(_rsc_critical*0.01f);
-        _tail_rotor.set_idle_output(_rsc_idle_output*0.01f);
+        _tail_rotor.set_critical_speed(_rsc.get_critical()*0.01f);
+        _tail_rotor.set_idle_output(_rsc.get_idle_output()*0.01f);
     } else {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_DISABLED);
         _tail_rotor.set_ramp_time(0);
