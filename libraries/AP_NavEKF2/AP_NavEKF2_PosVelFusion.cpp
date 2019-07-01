@@ -214,21 +214,22 @@ bool NavEKF2_core::resetHeightDatum(void)
     // reset the height state
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
-    if (validOrigin) {
-        const AP_GPS &gps = AP::gps();
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+
+    if (validOrigin && !inFlight) {
+        if (!gpsGoodToAlign) {
+            // if we don't have GPS lock then we shouldn't be doing a
+            // resetHeightDatum, but if we do then the best option is
+            // to maintain the old error
+            ekfGpsRefHgt += (int32_t)(100.0f * oldHgt);
+        } else {
             // if we have a good GPS lock then reset to the GPS
             // altitude. This ensures the reported AMSL alt from
             // getLLH() is equal to GPS altitude, while also ensuring
             // that the relative alt is zero
-            ekfGpsRefHgt = gps.location().alt*0.01;
-        } else {
-            // if we don't have GPS lock then we shouldn't be doing a
-            // resetHeightDatum, but if we do then the best option is
-            // to maintain the old error
-            ekfGpsRefHgt += oldHgt;
+            ekfGpsRefHgt = AP::gps().location().alt*0.01;
         }
     }
+
     // adjust the terrain state
     terrainState += oldHgt;
     return true;
