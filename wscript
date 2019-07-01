@@ -235,7 +235,10 @@ def	run_coverage_tests(bld):
 
     #tests = ['fly.ArduPlane']
     #tests = ['fly.ArduCopter','fly.ArduPlane']
-    tests = ['fly.ArduCopter','fly.ArduPlane', 'fly.QuadPlane', 'drive.APMrover2', 'dive.ArduSub']
+    #tests = ['fly.ArduCopter','fly.ArduPlane', 'fly.QuadPlane', 'drive.APMrover2', 'dive.ArduSub']
+    tests = ['build.examples','build.unit_tests','run.examples','run.unit_tests',
+             'fly.ArduCopter','fly.ArduPlane', 'fly.QuadPlane', 'drive.APMrover2', 'dive.ArduSub', 
+             'test.AntennaTracker', 'fly.CopterAVC' ]
 
     for test in tests:
         print("LCOV/GCOV -> "+test+" started.... this will take quite some time...")
