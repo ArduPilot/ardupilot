@@ -82,7 +82,7 @@ void Copter::Log_Write_Attitude()
 // Write an EKF and POS packet
 void Copter::Log_Write_EKF_POS()
 {
-    logger.Write_EKF(ahrs);
+    AP::ahrs_navekf().Log_Write();
     logger.Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
