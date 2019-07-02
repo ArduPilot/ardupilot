@@ -261,7 +261,9 @@ public:
 
     // see if EKF lane switching is possible to avoid EKF failsafe
     void check_lane_switch(void) override;
-    
+
+    void Log_Write();
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
                    EKF_TYPE3=3,

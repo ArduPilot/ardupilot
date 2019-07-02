@@ -1810,6 +1810,11 @@ void AP_AHRS_NavEKF::check_lane_switch(void)
     }
 }
 
+void AP_AHRS_NavEKF::Log_Write()
+{
+    get_NavEKF2().Log_Write();
+    get_NavEKF3().Log_Write();
+}
 
 AP_AHRS_NavEKF &AP::ahrs_navekf()
 {
