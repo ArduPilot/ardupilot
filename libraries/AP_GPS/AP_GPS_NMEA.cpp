@@ -223,6 +223,13 @@ bool AP_GPS_NMEA::_have_new_message()
     if (_last_VTG_ms != 0) {
         _last_VTG_ms = 1;
     }
+    if (_last_GSA_ms != 0 &&
+        now - _last_GSA_ms > 150) {
+        return false;
+    }
+    if (_last_GSA_ms != 0) {
+        _last_GSA_ms = 1;
+    }
     _last_GGA_ms = 1;
     _last_RMC_ms = 1;
     return true;
@@ -293,6 +300,22 @@ bool AP_GPS_NMEA::_term_complete()
                     fill_3d_velocity();
                     // VTG has no fix indicator, can't change fix status
                     break;
+                case _GPS_SENTENCE_GSA:
+                    _last_GSA_ms = now;
+                    state.hdop = (_new_hdop_alt && _new_hdop_alt < state.hdop) ? _new_hdop_alt : state.hdop;
+                    state.vdop = (_new_vdop && _new_vdop < state.vdop) ? _new_vdop : state.vdop;
+                    switch(_new_quality_indicator_alt) {
+                    case 1: // Fix not available or invalid
+                        state.status = _new_quality_indicator_alt > _new_quality_indicator ? AP_GPS::NO_FIX : state.status;;
+                        break;
+                    case 2: // 2D Fix
+                        state.status = _new_quality_indicator_alt > _new_quality_indicator ? AP_GPS::GPS_OK_FIX_2D : state.status;;
+                        break;
+                    case 3: // 3D Fix
+                        state.status = _new_quality_indicator_alt > _new_quality_indicator ? AP_GPS::GPS_OK_FIX_3D : state.status;
+                        break;
+                    }
+                    break;
                 }
             } else {
                 switch (_sentence_type) {
@@ -332,13 +355,15 @@ bool AP_GPS_NMEA::_term_complete()
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
             _gps_data_good = true;
+        } else if (strcmp(term_type, "GSA") == 0) {
+            _sentence_type = _GPS_SENTENCE_GSA;
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
         }
         return false;
     }
 
-    // 32 = RMC, 64 = GGA, 96 = VTG
+    // 32 = RMC, 64 = GGA, 96 = VTG, 128 GSA
     if (_sentence_type != _GPS_SENTENCE_OTHER && _term[0]) {
         switch (_sentence_type + _term_number) {
         // operational status
@@ -353,11 +378,19 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_VTG + 9: // validity (VTG) (we may not see this field)
             _gps_data_good = _term[0] != 'N';
             break;
+        case _GPS_SENTENCE_GSA + 2:
+            _new_quality_indicator_alt = _term[0] - '0';
+            _gps_data_good = _new_quality_indicator_alt > 1;
+            break;
         case _GPS_SENTENCE_GGA + 7: // satellite count (GGA)
             _new_satellite_count = atol(_term);
             break;
         case _GPS_SENTENCE_GGA + 8: // HDOP (GGA)
             _new_hdop = (uint16_t)_parse_decimal_100(_term);
+        case _GPS_SENTENCE_GSA + 16:
+            _new_hdop_alt = (uint16_t)_parse_decimal_100(_term);
+        case _GPS_SENTENCE_GSA + 17:
+            _new_vdop = (uint16_t)_parse_decimal_100(_term);
             break;
 
         // time and date
