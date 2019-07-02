@@ -35,6 +35,7 @@ public:
 static DummyVehicle vehicle;
 // create compass object
 static Compass compass;
+
 static AP_SerialManager serial_manager;
 
 uint32_t timer;
@@ -58,6 +59,8 @@ static void setup()
     timer = AP_HAL::micros();
 }
 
+int max_attempts = 200;
+
 // loop
 static void loop()
 {
@@ -79,7 +82,15 @@ static void loop()
 
             if (!compass.healthy()) {
                 hal.console->printf("not healthy\n");
-                continue;
+
+                max_attempts--;                 
+
+                // dont attempt at all for the first 100 iterations if not reporting healthy 
+                if ( max_attempts >= 100 ) { 
+                    continue; 
+                } else { 
+                    hal.console->printf("warning! compass never went healthy\n");
+                } 
             }
 
             Matrix3f dcm_matrix;
@@ -120,6 +131,9 @@ static void loop()
             hal.console->printf(" t=%u", (unsigned)read_time);
 
             hal.console->printf("\n");
+
+            // exit after 100-200 max attempts, that's enough to test it.
+            if ( max_attempts <= 0 ) { hal.scheduler->delay(100); exit(1); } 
         }
     } else {
 
