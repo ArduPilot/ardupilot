@@ -323,7 +323,7 @@ void AP_Logger_MAVLink::Write_logger_MAV(AP_Logger_MAVLink &logger_mav)
     if (logger_mav.stats.collection_count == 0) {
         return;
     }
-    struct log_MAV_Stats pkt = {
+    const struct log_MAV_Stats pkt{
         LOG_PACKET_HEADER_INIT(LOG_MAV_STATS),
         timestamp         : AP_HAL::millis(),
         seqno             : logger_mav._next_seq_num-1,

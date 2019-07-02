@@ -1075,7 +1075,7 @@ bool AP_Logger::Write_ISBH(const uint16_t seqno,
     if (_next_backend == 0) {
         return false;
     }
-    struct log_ISBH pkt = {
+    const struct log_ISBH pkt{
         LOG_PACKET_HEADER_INIT(LOG_ISBH_MSG),
         time_us        : AP_HAL::micros64(),
         seqno          : seqno,
@@ -1127,7 +1127,7 @@ bool AP_Logger::Write_ISBD(const uint16_t isb_seqno,
 // Wrote an event packet
 void AP_Logger::Write_Event(Log_Event id)
 {
-    struct log_Event pkt = {
+    const struct log_Event pkt{
         LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
         time_us  : AP_HAL::micros64(),
         id       : id
@@ -1139,7 +1139,7 @@ void AP_Logger::Write_Event(Log_Event id)
 void AP_Logger::Write_Error(LogErrorSubsystem sub_system,
                             LogErrorCode error_code)
 {
-  struct log_Error pkt = {
+  const struct log_Error pkt{
       LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
       time_us       : AP_HAL::micros64(),
       sub_system    : uint8_t(sub_system),
