@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # encoding: utf-8
 
 """
@@ -17,8 +17,9 @@ import subprocess
 
 def parse_inc_dir(lines):
     for line in lines.splitlines():
-        if line.startswith('INCLUDES: '):
-            return line.replace('INCLUDES: ', '').split()
+        if line.startswith(b'INCLUDES: '):
+            print(str(line.replace(b'INCLUDES: ', b'')).split())
+            return str(line.replace(b'INCLUDES: ', b'')).split()
 
 def configure(cfg):
     def srcpath(path):
@@ -70,3 +71,10 @@ def esp32_firmware(self):
         img_out = self.bld.bldnode.find_or_declare('idf-copter/arducopter.elf')
         generate_bin_task = self.create_task('build_esp32_image_copter', src=src_in, tgt=img_out)
         generate_bin_task.set_run_after(self.link_task)
+        
+        #add generated include files
+        cmd = "cd {0}&&{1} showinc".format(self.env.AP_HAL_COPTER, self.env.MAKE[0])
+        result = subprocess.check_output(cmd, shell=True)
+        self.env.INCLUDES += parse_inc_dir(result)
+        
+        
