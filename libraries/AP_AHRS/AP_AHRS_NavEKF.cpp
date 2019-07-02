@@ -1535,8 +1535,21 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
-        // send zero status report
-        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0);
+        {
+        // send status report with everything looking good
+        const uint16_t flags =
+        EKF_ATTITUDE | /* Set if EKF's attitude estimate is good. | */
+        EKF_VELOCITY_HORIZ | /* Set if EKF's horizontal velocity estimate is good. | */
+        EKF_VELOCITY_VERT | /* Set if EKF's vertical velocity estimate is good. | */
+        EKF_POS_HORIZ_REL | /* Set if EKF's horizontal position (relative) estimate is good. | */
+        EKF_POS_HORIZ_ABS | /* Set if EKF's horizontal position (absolute) estimate is good. | */
+        EKF_POS_VERT_ABS | /* Set if EKF's vertical position (absolute) estimate is good. | */
+        EKF_POS_VERT_AGL | /* Set if EKF's vertical position (above ground) estimate is good. | */
+        //EKF_CONST_POS_MODE | /* EKF is in constant position mode and does not know it's absolute or relative position. | */
+        EKF_PRED_POS_HORIZ_REL | /* Set if EKF's predicted horizontal position (relative) estimate is good. | */
+        EKF_PRED_POS_HORIZ_ABS; /* Set if EKF's predicted horizontal position (absolute) estimate is good. | */
+        mavlink_msg_ekf_status_report_send(chan, flags, 0, 0, 0, 0, 0, 0);
+        }
         break;
 #endif
         
