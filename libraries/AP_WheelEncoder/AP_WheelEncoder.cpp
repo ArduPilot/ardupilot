@@ -15,6 +15,7 @@
 
 #include "AP_WheelEncoder.h"
 #include "WheelEncoder_Quadrature.h"
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -180,6 +181,25 @@ void AP_WheelEncoder::update(void)
             drivers[i]->update();
         }
     }
+}
+
+// log wheel encoder information
+void AP_WheelEncoder::Log_Write()
+{
+    // return immediately if no wheel encoders are enabled
+    if (!enabled(0) && !enabled(1)) {
+        return;
+    }
+
+    struct log_WheelEncoder pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_WHEELENCODER_MSG),
+        time_us     : AP_HAL::micros64(),
+        distance_0  : get_distance(0),
+        quality_0   : (uint8_t)get_signal_quality(0),
+        distance_1  : get_distance(1),
+        quality_1   : (uint8_t)get_signal_quality(1),
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 // check if an instance is healthy

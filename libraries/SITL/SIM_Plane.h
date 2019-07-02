@@ -32,7 +32,7 @@ public:
     Plane(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    virtual void update(const struct sitl_input &input);
+    virtual void update(const struct sitl_input &input) override;
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -104,7 +104,18 @@ protected:
     float launch_time;
     uint64_t launch_start_ms;
 
-    ICEngine icengine{2, 14, 12, 13, 100};
+    const uint8_t throttle_servo = 2;
+    const int8_t choke_servo = 14;
+    const int8_t ignition_servo = 12;
+    const int8_t starter_servo = 13;
+    const float slewrate = 100;
+    ICEngine icengine{
+        throttle_servo,
+        choke_servo,
+        ignition_servo,
+        starter_servo,
+        slewrate
+    };
 
     float liftCoeff(float alpha) const;
     float dragCoeff(float alpha) const;

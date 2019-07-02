@@ -21,7 +21,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "RCInput.h"
 using namespace ESP32;
 
 extern const AP_HAL::HAL& hal;
@@ -35,7 +34,6 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
-    mount_sdcard();
     xTaskCreate(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle);
     xTaskCreate(_timer_thread, "APM_TIMER", TIMER_SS, this, TIMER_PRIO, &_timer_task_handle);
     xTaskCreate(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle);
@@ -135,13 +133,9 @@ void Scheduler::_timer_thread(void *arg)
     while (!_initialized) {
         sched->delay_microseconds(1000);
     }
-    printf("Scheduler::_timer_thread initialized\n");
-
     while (true) {
         sched->delay_microseconds(1000);
         sched->_run_timers();
-        // process any pending RC output requests
-        //hal.rcout->timer_tick();
         //analog in
         //((AnalogIn *)hal.analogin)->_timer_tick();
     }
@@ -181,11 +175,10 @@ void Scheduler::_rcin_thread(void *arg)
     while (!_initialized) {
         sched->delay_microseconds(20000);
     }
-
-    printf("Scheduler::_rcin_thread initialized\n");
+    hal.rcin->init();
     while (true) {
-        sched->delay_microseconds(25000); //25millisecs is approx 1 full ppmsum frame
-			((RCInput *)hal.rcin)->_timer_tick();
+        sched->delay_microseconds(3000);
+        ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
 
@@ -216,8 +209,6 @@ void Scheduler::_io_thread(void* arg)
     while (!sched->_initialized) {
         sched->delay_microseconds(1000);
     }
-    printf("Scheduler::_io_thread initialized\n");
-
     while (true) {
         sched->delay_microseconds(1000);
         // run registered IO processes
@@ -228,11 +219,9 @@ void Scheduler::_io_thread(void* arg)
 void Scheduler::_storage_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    while (sched->_initialized) {
+    while (!_initialized) {
         sched->delay_microseconds(10000);
     }
-    printf("Scheduler::_storage_thread initialized\n");
-
     while (true) {
         sched->delay_microseconds(10000);
         // process any pending storage writes
@@ -247,15 +236,13 @@ void Scheduler::_uart_thread(void *arg)
     while (!_initialized) {
         sched->delay_microseconds(20000);
     }
-    printf("Scheduler::_uart_thread initialized\n");
-
     while (true) {
         sched->delay_microseconds(1000);
-        hal.uartA->_timer_tick();  // serial mavlink or serial gps
-        hal.uartB->_timer_tick();  // we handle this becasue the uart is used on icarus board/s
-        hal.uartC->_timer_tick();  // mavlink over WiFi/TCP
-        //hal.uartD->_timer_tick();  // unused
-        hal.console->_timer_tick(); // console message, serial 0
+        hal.uartA->_timer_tick();
+        hal.uartB->_timer_tick();
+        hal.uartC->_timer_tick();
+        hal.uartD->_timer_tick();
+        hal.console->_timer_tick();
     }
 }
 
@@ -274,17 +261,12 @@ void print_stats()
 void Scheduler::_main_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    // hal->console() is also a serial device for console/boot messages, at 115200
-    hal.uartA->begin(115200);  // serial mavlink or serial gps
-    hal.uartB->begin(115200);  // only used on icarus boards right now.
-    hal.uartC->begin(115200);  // mavlink over WiFi/TCP
-    //hal.uartD->begin(115200);  // unused
-    // note that right now we begin() and _timer_tick() on B and D but dont use them normally.
-    // but E,F,G,H we don't even do that on.
+    hal.uartA->begin(115200);
+    hal.uartB->begin(38400);
+    hal.uartC->begin(57600);
     hal.analogin->init();
-    hal.rcin->init();
-    hal.rcout->init();
     sched->callbacks->setup();
+    hal.rcout->init();
     sched->system_initialized();
 
     while (true) {

@@ -67,7 +67,7 @@ private:
 
     const float exp_limit_max = 2;
     const float exp_limit_min = 0;
-    float learn_delta = 0.01;
+    float learn_delta = 0.01f;
     
     // require observation of at least 5 degrees of temp range to
     // start learning

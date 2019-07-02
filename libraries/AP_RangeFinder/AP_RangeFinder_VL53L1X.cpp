@@ -34,8 +34,8 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
-    : AP_RangeFinder_Backend(_state)
+AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
+    : AP_RangeFinder_Backend(_state, _params)
     , dev(std::move(_dev)) {}
 
 /*
@@ -43,14 +43,14 @@ AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     if (!dev) {
         return nullptr;
     }
 
     AP_RangeFinder_VL53L1X *sensor
-        = new AP_RangeFinder_VL53L1X(_state, std::move(dev));
+        = new AP_RangeFinder_VL53L1X(_state, _params, std::move(dev));
 
     if (!sensor) {
         delete sensor;
@@ -421,6 +421,8 @@ bool AP_RangeFinder_VL53L1X::get_reading(uint16_t &reading_mm)
         }
     }
 
+    const uint8_t range_status = read_register(RESULT__RANGE_STATUS);
+
     reading_mm = read_register16(RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0);
     // "apply correction gain"
     // gain factor of 2011 is tuning parm default (VL53L1_TUNINGPARM_LITE_RANGING_GAIN_FACTOR_DEFAULT)
@@ -435,7 +437,18 @@ bool AP_RangeFinder_VL53L1X::get_reading(uint16_t &reading_mm)
     }
 
     write_register(SYSTEM__INTERRUPT_CLEAR, 0x01); // sys_interrupt_clear_range
-    return true;
+
+    switch ((DeviceError)range_status) {
+      case RANGECOMPLETE:
+        return true;
+
+      default:
+#ifdef VL53L1X_DEBUG
+        hal.console->printf("VL53L1X: %d ms status %d\n", AP_HAL::millis(), (int)range_status);
+#endif // VL53L1X_DEBUG
+        return false;
+
+    }
 }
 
 uint8_t AP_RangeFinder_VL53L1X::read_register(uint16_t reg)
@@ -492,6 +505,7 @@ void AP_RangeFinder_VL53L1X::timer(void)
 {
     uint16_t range_mm;
     if ((get_reading(range_mm)) && (range_mm <= 4000)) {
+        WITH_SEMAPHORE(_sem);
         sum_mm += range_mm;
         counter++;
     }

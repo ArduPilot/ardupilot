@@ -164,13 +164,13 @@ void AP_Baro_DPS280::calculate_PT(int32_t UT, int32_t UP, float &pressure, float
 {
     const struct dps280_cal &cal = calibration;
     // scaling for 16x oversampling
-    const float scaling_16 = 1.0/253952;
+    const float scaling_16 = 1.0f/253952;
 
     float temp_scaled;
     float press_scaled;
 
     temp_scaled = float(UT) * scaling_16;
-    temperature = cal.C0 * 0.5 + cal.C1 * temp_scaled;
+    temperature = cal.C0 * 0.5f + cal.C1 * temp_scaled;
 
     press_scaled = float(UP) * scaling_16;
 

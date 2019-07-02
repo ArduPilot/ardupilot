@@ -70,13 +70,13 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
 
 AP_Gripper::AP_Gripper()
 {
-    if (_s_instance) {
+    if (_singleton) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Too many grippers");
 #endif
         return;
     }
-    _s_instance = this;
+    _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -84,10 +84,10 @@ AP_Gripper::AP_Gripper()
 /*
  * Get the AP_Gripper singleton
  */
-AP_Gripper *AP_Gripper::_s_instance = nullptr;
-AP_Gripper *AP_Gripper::get_instance()
+AP_Gripper *AP_Gripper::_singleton = nullptr;
+AP_Gripper *AP_Gripper::get_singleton()
 {
-    return _s_instance;
+    return _singleton;
 }
 
 void AP_Gripper::init()
@@ -155,7 +155,7 @@ namespace AP {
 
 AP_Gripper *gripper()
 {
-    return AP_Gripper::get_instance();
+    return AP_Gripper::get_singleton();
 }
 
 };

@@ -129,8 +129,8 @@ void AC_Loiter::init_target()
     // update angle targets that will be passed to stabilize controller
     float roll_cd, pitch_cd;
     _pos_control.accel_to_lean_angles(_predicted_accel.x, _predicted_accel.y, roll_cd, pitch_cd);
-    _predicted_euler_angle.x = radians(roll_cd*0.01);
-    _predicted_euler_angle.y = radians(pitch_cd*0.01);
+    _predicted_euler_angle.x = radians(roll_cd*0.01f);
+    _predicted_euler_angle.y = radians(pitch_cd*0.01f);
     // set target position
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
 
@@ -149,6 +149,10 @@ void AC_Loiter::soften_for_landing()
 
     // set target position to current position
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
+
+    // also prevent I term build up in xy velocity controller. Note
+    // that this flag is reset on each loop, in run_xy_controller()
+    _pos_control.set_limit_accel_xy();
 }
 
 /// set pilot desired acceleration in centi-degrees

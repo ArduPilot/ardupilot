@@ -1,5 +1,6 @@
 #include "AP_InertialSensor.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 // Class level parameters
 const AP_Param::GroupInfo AP_InertialSensor::BatchSampler::var_info[] = {
@@ -176,8 +177,8 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
         // avoid flooding AP_Logger's buffer
         return;
     }
-    AP_Logger *dataflash = AP_Logger::instance();
-    if (dataflash == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         // should not have been called
         return;
     }
@@ -199,7 +200,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
             }
             break;
         }
-        if (!dataflash->Write_ISBH(isb_seqnum,
+        if (!logger->Write_ISBH(isb_seqnum,
                                        type,
                                        instance,
                                        multiplier,
@@ -212,7 +213,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
         isbh_sent = true;
     }
     // pack and send a data packet:
-    if (!dataflash->Write_ISBD(isb_seqnum,
+    if (!logger->Write_ISBD(isb_seqnum,
                                    data_read_offset/samples_per_msg,
                                    &data_x[data_read_offset],
                                    &data_y[data_read_offset],
@@ -250,12 +251,12 @@ bool AP_InertialSensor::BatchSampler::should_log(uint8_t _instance, IMU_SENSOR_T
     if (data_write_offset >= _required_count) {
         return false;
     }
-    AP_Logger *dataflash = AP_Logger::instance();
-    if (dataflash == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return false;
     }
 #define MASK_LOG_ANY                    0xFFFF
-    if (!dataflash->should_log(MASK_LOG_ANY)) {
+    if (!logger->should_log(MASK_LOG_ANY)) {
         return false;
     }
     return true;

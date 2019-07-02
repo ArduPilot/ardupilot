@@ -62,6 +62,8 @@ STM32_ST_USE_TIMER 5
 # flash size
 FLASH_SIZE_KB 2048
 
+env OPTIMIZE -O3
+
 # now define which UART is used for printf(). We rarely use printf()
 # in ChibiOS, so this is really only for debugging very early startup
 # in drivers.

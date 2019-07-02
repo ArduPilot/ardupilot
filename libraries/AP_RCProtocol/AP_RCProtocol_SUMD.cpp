@@ -43,6 +43,7 @@
  * @author Marco Bauer <marco@wtns.de>
  */
 #include "AP_RCProtocol_SUMD.h"
+#include <AP_Math/crc.h>
 
 #define SUMD_HEADER_LENGTH	3
 #define SUMD_HEADER_ID		0xA8
@@ -63,18 +64,6 @@
 
 // #define SUMD_DEBUG
 extern const AP_HAL::HAL& hal;
-
-uint16_t AP_RCProtocol_SUMD::sumd_crc16(uint16_t crc, uint8_t value)
-{
-    int i;
-    crc ^= (uint16_t)value << 8;
-
-    for (i = 0; i < 8; i++) {
-        crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
-    }
-
-    return crc;
-}
 
 uint8_t AP_RCProtocol_SUMD::sumd_crc8(uint8_t crc, uint8_t value)
 {
@@ -107,7 +96,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
             _crc16 = 0x0000;
             _crc8 = 0x00;
             _crcOK = false;
-            _crc16 = sumd_crc16(_crc16, byte);
+            _crc16 = crc_xmodem_update(_crc16, byte);
             _crc8 = sumd_crc8(_crc8, byte);
             _decode_state = SUMD_DECODE_STATE_GOT_HEADER;
 
@@ -127,7 +116,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
             }
 
             if (_sumd) {
-                _crc16 = sumd_crc16(_crc16, byte);
+                _crc16 = crc_xmodem_update(_crc16, byte);
 
             } else {
                 _crc8 = sumd_crc8(_crc8, byte);
@@ -150,7 +139,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
             _rxpacket.length = byte;
 
             if (_sumd) {
-                _crc16 = sumd_crc16(_crc16, byte);
+                _crc16 = crc_xmodem_update(_crc16, byte);
 
             } else {
                 _crc8 = sumd_crc8(_crc8, byte);
@@ -173,7 +162,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
         _rxpacket.sumd_data[_rxlen] = byte;
 
         if (_sumd) {
-            _crc16 = sumd_crc16(_crc16, byte);
+            _crc16 = crc_xmodem_update(_crc16, byte);
 
         } else {
             _crc8 = sumd_crc8(_crc8, byte);
@@ -341,4 +330,3 @@ void AP_RCProtocol_SUMD::process_byte(uint8_t byte, uint32_t baudrate)
     }
     _process_byte(AP_HAL::micros(), byte);
 }
-

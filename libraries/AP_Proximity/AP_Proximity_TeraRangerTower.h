@@ -27,7 +27,6 @@ private:
     // check and process replies from sensor
     bool read_sensor_data();
     void update_sector_data(int16_t angle_deg, uint16_t distance_cm);
-    uint16_t process_distance(uint8_t buf1, uint8_t buf2);
 
     // reply related variables
     AP_HAL::UARTDriver *uart = nullptr;

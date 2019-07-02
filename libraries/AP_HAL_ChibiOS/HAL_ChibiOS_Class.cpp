@@ -26,6 +26,9 @@
 #include "sdcard.h"
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #include <hwdef.h>
 
@@ -83,6 +86,12 @@ static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 
+#ifndef HAL_NO_FLASH_SUPPORT
+static ChibiOS::Flash flashDriver;
+#else
+static Empty::Flash flashDriver;
+#endif
+
 
 #if HAL_WITH_IO_MCU
 HAL_UART_IO_DRIVER;
@@ -110,6 +119,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlowDriver,
+        &flashDriver,
         nullptr
         )
 {}
@@ -194,11 +204,24 @@ static void main_loop()
      */
     chThdSetPriority(APM_MAIN_PRIORITY);
 
+#ifndef IOMCU_FW
+    // setup watchdog to reset if main loop stops
+    if (AP_BoardConfig::watchdog_enabled()) {
+        stm32_watchdog_init();
+    }
+
+    if (hal.util->was_watchdog_reset()) {
+        AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
+    }
+#else
+    stm32_watchdog_init();
+#endif
+
     while (true) {
         g_callbacks->loop();
 
         /*
-          give up 250 microseconds of time if the INS loop hasn't
+          give up 50 microseconds of time if the INS loop hasn't
           called delay_microseconds_boost(), to ensure low priority
           drivers get a chance to run. Calling
           delay_microseconds_boost() means we have already given up
@@ -207,9 +230,20 @@ static void main_loop()
          */
 #ifndef HAL_DISABLE_LOOP_DELAY
         if (!schedulerInstance.check_called_boost()) {
-            hal.scheduler->delay_microseconds(250);
+            hal.scheduler->delay_microseconds(50);
         }
 #endif
+        stm32_watchdog_pat();
+
+#if 0
+        // simple method to test watchdog functionality
+        static bool done_pause;
+        if (!done_pause && AP_HAL::millis() > 20000) {
+            done_pause = true;
+            while (AP_HAL::millis() < 22200) ;
+        }
+#endif
+
     }
     thread_running = false;
 }

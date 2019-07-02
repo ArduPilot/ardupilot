@@ -55,7 +55,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            10,    200),
 #endif
-    SCHED_TASK(compass_cal_update,   100,    100),
+    SCHED_TASK_CLASS(Compass,          &sub.compass,              cal_update, 100, 100),
     SCHED_TASK(accel_cal_update,      10,    100),
     SCHED_TASK(terrain_update,        10,    100),
 #if GRIPPER_ENABLED == ENABLED
@@ -167,14 +167,10 @@ void Sub::update_batt_compass()
     // read battery before compass because it may be used for motor interference compensation
     battery.read();
 
-    if (g.compass_enabled) {
+    if (AP::compass().enabled()) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle(motors.get_throttle());
         compass.read();
-        // log compass information
-        if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            logger.Write_Compass();
-        }
     }
 }
 
@@ -266,6 +262,7 @@ void Sub::one_hz_loop()
     ap.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_gps_check = position_ok();
+    AP_Notify::flags.flying = motors.armed();
 
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
@@ -273,7 +270,7 @@ void Sub::one_hz_loop()
 
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config
-        ahrs.set_orientation();
+        ahrs.update_orientation();
 
         // set all throttle channel settings
         motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
@@ -335,7 +332,6 @@ void Sub::update_altitude()
     // read in baro altitude
     read_barometer();
 
-    // write altitude info to dataflash logs
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
     }

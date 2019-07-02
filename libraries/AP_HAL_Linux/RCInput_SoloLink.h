@@ -30,8 +30,8 @@ class RCInput_SoloLink : public RCInput
 public:
     RCInput_SoloLink();
 
-    void init();
-    void _timer_tick();
+    void init() override;
+    void _timer_tick() override;
 
 private:
     static const unsigned int PACKET_LEN = 26;

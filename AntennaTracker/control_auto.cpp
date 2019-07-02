@@ -10,13 +10,8 @@
  */
 void Tracker::update_auto(void)
 {
-    // exit immediately if we do not have a valid vehicle position
-    if (!vehicle.location_valid) {
-        return;
-    }
-
     float yaw = wrap_180_cd((nav_status.bearing+g.yaw_trim)*100); // target yaw in centidegrees
-    float pitch = constrain_float(nav_status.pitch+g.pitch_trim, -90, 90) * 100; // target pitch in centidegrees
+    float pitch = constrain_float(nav_status.pitch+g.pitch_trim, g.pitch_min, g.pitch_max) * 100; // target pitch in centidegrees
 
     bool direction_reversed = get_ef_yaw_direction();
 
@@ -26,8 +21,8 @@ void Tracker::update_auto(void)
     float bf_yaw;
     convert_ef_to_bf(pitch, yaw, bf_pitch, bf_yaw);
 
-    // only move servos if target is at least distance_min away
-    if ((g.distance_min <= 0) || (nav_status.distance >= g.distance_min)) {
+    // only move servos if target is at least distance_min away if we  have a target
+    if ((g.distance_min <= 0) || (nav_status.distance >= g.distance_min) || !vehicle.location_valid) {
         update_pitch_servo(bf_pitch);
         update_yaw_servo(bf_yaw);
     }
@@ -60,6 +55,12 @@ void Tracker::calc_angle_error(float pitch, float yaw, bool direction_reversed)
     convert_ef_to_bf(ef_pitch_angle_error, ef_yaw_angle_error, bf_pitch_err, bf_yaw_err);
     nav_status.angle_error_pitch = bf_pitch_err;
     nav_status.angle_error_yaw = bf_yaw_err;
+
+    // set actual and desired for logging, note we are using angles not rates
+    g.pidPitch2Srv.set_desired_rate(pitch * 0.01);
+    g.pidPitch2Srv.set_actual_rate(ahrs_pitch * 0.01);
+    g.pidYaw2Srv.set_desired_rate(yaw * 0.01);
+    g.pidYaw2Srv.set_actual_rate(ahrs_yaw_cd * 0.01);
 }
 
 void Tracker::convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw)

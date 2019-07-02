@@ -67,7 +67,7 @@ public:
     void reset() override;
 
     bool is_initialized() override;
-    
+
     int32_t tx_pending() override;
 
     int32_t available() override;
@@ -181,14 +181,14 @@ public:
     ~CANManager() { }
 
     //These methods belong to AP_HAL::CANManager
-    
+
     virtual bool begin(uint32_t bitrate, uint8_t can_number) override;
 
-    virtual void initialized(bool val);
-    virtual bool is_initialized();
+    virtual void initialized(bool val) override;
+    virtual bool is_initialized() override;
 
     //These methods belong to ICanDriver
-    
+
     virtual CAN* getIface(uint8_t iface_index) override;
 
     virtual uint8_t getNumIfaces() const override { return _ifaces.size(); }

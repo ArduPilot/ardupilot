@@ -54,8 +54,8 @@ public:
     void update();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    int32_t get_roll() const { return _pos_control.get_roll(); }
-    int32_t get_pitch() const { return _pos_control.get_pitch(); }
+    float get_roll() const { return _pos_control.get_roll(); }
+    float get_pitch() const { return _pos_control.get_pitch(); }
 
     static const struct AP_Param::GroupInfo var_info[];
 

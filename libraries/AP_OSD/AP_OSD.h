@@ -218,6 +218,9 @@ public:
     AP_Float warn_batvolt;
     AP_Float warn_bat2volt;
     AP_Int8 msgtime_s;
+    AP_Int8 arm_scr;
+    AP_Int8 disarm_scr;
+    AP_Int8 failsafe_scr;
 
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
@@ -263,7 +266,11 @@ private:
     bool switch_debouncer;
     uint32_t last_switch_ms;
     struct NavInfo nav_info;
-
+    int8_t previous_pwm_screen;
+    int8_t pre_fs_screen;
+    bool was_armed;
+    bool was_failsafe;
+    
     uint32_t last_update_ms;
     float last_distance_m;
     float max_dist_m;

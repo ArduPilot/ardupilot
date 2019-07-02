@@ -8,6 +8,7 @@
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Parachute.h"
+#include "SIM_Precland.h"
 
 class AP_Logger;
 
@@ -65,18 +66,24 @@ public:
         mag_ofs.set(Vector3f(5, 13, -18));
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
-        if (_s_instance != nullptr) {
+        if (_singleton != nullptr) {
             AP_HAL::panic("Too many SITL instances");
         }
-        _s_instance = this;
+        _singleton = this;
     }
 
     /* Do not allow copies */
     SITL(const SITL &other) = delete;
     SITL &operator=(const SITL&) = delete;
 
-    static SITL *_s_instance;
-    static SITL *get_instance() { return _s_instance; }
+    static SITL *_singleton;
+    static SITL *get_singleton() { return _singleton; }
+
+    enum SITL_RCFail {
+        SITL_RCFail_None = 0,
+        SITL_RCFail_NoPulses = 1,
+        SITL_RCFail_Throttle950 = 2,
+    };
 
     enum GPSType {
         GPS_TYPE_NONE  = 0,
@@ -167,6 +174,8 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
+    AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
+    AP_Float flow_noise; // optical flow measurement noise (rad/sec)
 
     // wind control
     enum WindType {
@@ -221,7 +230,31 @@ public:
 
     // vibration frequencies in Hz on each axis
     AP_Vector3f vibe_freq;
-    
+
+    // gyro and accel fail masks
+    AP_Int8 gyro_fail_mask;
+    AP_Int8 accel_fail_mask;
+
+    struct {
+        AP_Float x;
+        AP_Float y;
+        AP_Float z;
+        AP_Int32 t;
+
+        uint32_t start_ms;
+    } shove;
+
+    struct {
+        AP_Float x;
+        AP_Float y;
+        AP_Float z;
+        AP_Int32 t;
+
+        uint32_t start_ms;
+    } twist;
+
+    AP_Int8 gnd_behav;
+
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);
@@ -242,6 +275,7 @@ public:
     Gripper_EPM gripper_epm_sim;
 
     Parachute parachute_sim;
+    SIM_Precland precland_sim;
 };
 
 } // namespace SITL

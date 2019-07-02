@@ -22,10 +22,14 @@
 
 class ESP32::Util : public AP_HAL::Util {
 public:
-    bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
-   
-     //returns the amount of malloc capable memory
-     virtual uint32_t available_memory(void) {
-    	 return heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
-     }
+    bool run_debug_shell(AP_HAL::BetterStream *stream) override
+    {
+        return false;
+    }
+
+    //returns the amount of malloc capable memory
+    virtual uint32_t available_memory(void)
+    {
+        return heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+    }
 };

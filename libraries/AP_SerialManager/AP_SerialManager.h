@@ -21,10 +21,9 @@
  */
 #pragma once
 
-#include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Param/AP_Param.h>
 
 // we have hal.uartA to hal.uartG
 #define SERIALMANAGER_NUM_PORTS 7
@@ -109,8 +108,8 @@ public:
     };
 
     // get singleton instance
-    static AP_SerialManager *get_instance(void) {
-        return _instance;
+    static AP_SerialManager *get_singleton(void) {
+        return _singleton;
     }
     
     // init_console - initialise console at default baud rate
@@ -154,7 +153,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    static AP_SerialManager *_instance;
+    static AP_SerialManager *_singleton;
     
     // array of uart info
     struct UARTState {

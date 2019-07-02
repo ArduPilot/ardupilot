@@ -17,6 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/utility/OwnPtr.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include "Util.h"
 #include "Scheduler.h"
 #include "Semaphores.h"
@@ -29,6 +30,20 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
 // SPI mode numbers
+#if defined(STM32H7)
+#define SPIDEV_MODE0    0
+#define SPIDEV_MODE1    SPI_CFG2_CPHA
+#define SPIDEV_MODE2    SPI_CFG2_CPOL
+#define SPIDEV_MODE3    SPI_CFG2_CPOL | SPI_CFG2_CPHA
+
+#define SPI1_CLOCK  STM32_SPI1CLK
+#define SPI2_CLOCK  STM32_SPI2CLK
+#define SPI3_CLOCK  STM32_SPI3CLK
+#define SPI4_CLOCK  STM32_SPI4CLK
+#define SPI5_CLOCK  STM32_SPI5CLK
+#define SPI6_CLOCK  STM32_SPI6CLK
+
+#else // F4 and F7
 #define SPIDEV_MODE0    0
 #define SPIDEV_MODE1    SPI_CR1_CPHA
 #define SPIDEV_MODE2    SPI_CR1_CPOL
@@ -40,6 +55,7 @@ extern const AP_HAL::HAL& hal;
 #define SPI4_CLOCK  STM32_PCLK2
 #define SPI5_CLOCK  STM32_PCLK2
 #define SPI6_CLOCK  STM32_PCLK2
+#endif
 
 // expected bus clock speeds
 static const uint32_t bus_clocks[6] = {
@@ -151,27 +167,49 @@ void SPIDevice::set_slowdown(uint8_t slowdown)
 /*
   low level transfer function
  */
-void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
+bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
 {
     bool old_cs_forced = cs_forced;
 
     if (!set_chip_select(true)) {
-        return;
+        return false;
     }
 
+    bool ret = true;
+
+#if defined(HAL_SPI_USE_POLLED)
+    for (uint16_t i=0; i<len; i++) {
+        uint8_t ret = spiPolledExchange(spi_devices[device_desc.bus].driver, send?send[i]:0);
+        if (recv) {
+            recv[i] = ret;
+        }
+    }
+#else
     bus.bouncebuffer_setup(send, len, recv, len);
-
+    osalSysLock();
     if (send == nullptr) {
-        spiReceive(spi_devices[device_desc.bus].driver, len, recv);
+        spiStartReceiveI(spi_devices[device_desc.bus].driver, len, recv);
     } else if (recv == nullptr) {
-        spiSend(spi_devices[device_desc.bus].driver, len, send);
+        spiStartSendI(spi_devices[device_desc.bus].driver, len, send);
     } else {
-        spiExchange(spi_devices[device_desc.bus].driver, len, send, recv);
+        spiStartExchangeI(spi_devices[device_desc.bus].driver, len, send, recv);
     }
-
+    // we allow SPI transfers to take a maximum of 20ms plus 32us per
+    // byte. This covers all use cases in ArduPilot. We don't ever
+    // expect this timeout to trigger unless there is a severe MCU
+    // error
+    const uint32_t timeout_us = 20000U + len * 32U;
+    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_MS2I(timeout_us));
+    osalSysUnlock();
+    if (msg == MSG_TIMEOUT) {
+        ret = false;
+        AP::internalerror().error(AP_InternalError::error_t::spi_fail);
+        spiAbort(spi_devices[device_desc.bus].driver);
+    }
     bus.bouncebuffer_finish(send, recv, len);
-    
+#endif
     set_chip_select(old_cs_forced);
+    return ret;
 }
 
 bool SPIDevice::clock_pulse(uint32_t n)
@@ -190,7 +228,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
     return true;
 }
 
-uint16_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
+uint32_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
 {
     uint32_t spi_clock_freq = SPI1_CLOCK;
     if (busid > 0 && uint8_t(busid-1) < ARRAY_SIZE(bus_clocks)) {
@@ -207,10 +245,14 @@ uint16_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
     // assuming the bitrate bits are consecutive in the CR1 register,
     // we can just multiply by BR_0 to get the right bits for the desired
     // scaling
+#if defined(STM32H7)
+    return (i * SPI_CFG1_MBR_0) | SPI_CFG1_DSIZE_VALUE(7); // 8 bit transfers
+#else
     return i * SPI_CR1_BR_0;
+#endif
 }
 
-uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
+uint32_t SPIDevice::derive_freq_flag(uint32_t _frequency)
 {
     uint8_t busid = spi_devices[device_desc.bus].busid;
     return derive_freq_flag_bus(busid, _frequency);
@@ -225,8 +267,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     }
     if ((send_len == recv_len && send == recv) || !send || !recv) {
         // simplest cases, needed for DMA
-        do_transfer(send, recv, recv_len?recv_len:send_len);
-        return true;
+        return do_transfer(send, recv, recv_len?recv_len:send_len);
     }
     uint8_t buf[send_len+recv_len];
     if (send_len > 0) {
@@ -235,11 +276,11 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     if (recv_len > 0) {
         memset(&buf[send_len], 0, recv_len);
     }
-    do_transfer(buf, buf, send_len+recv_len);
-    if (recv_len > 0) {
+    bool ret = do_transfer(buf, buf, send_len+recv_len);
+    if (ret && recv_len > 0) {
         memcpy(recv, &buf[send_len], recv_len);
     }
-    return true;
+    return ret;
 }
 
 bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t len)
@@ -247,9 +288,11 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t
     bus.semaphore.assert_owner();
     uint8_t buf[len];
     memcpy(buf, send, len);
-    do_transfer(buf, buf, len);
-    memcpy(recv, buf, len);
-    return true;
+    bool ret = do_transfer(buf, buf, len);
+    if (ret) {
+        memcpy(recv, buf, len);
+    }
+    return ret;
 }
 
 AP_HAL::Semaphore *SPIDevice::get_semaphore()
@@ -293,8 +336,20 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
         bus.spicfg.end_cb = nullptr;
         bus.spicfg.ssport = PAL_PORT(device_desc.pal_line);
         bus.spicfg.sspad = PAL_PAD(device_desc.pal_line);
+#if defined(STM32H7)
+        bus.spicfg.cfg1 = freq_flag;
+        bus.spicfg.cfg2 = device_desc.mode;
+        if (bus.spicfg.dummytx == nullptr) {
+            bus.spicfg.dummytx = (uint32_t *)malloc_dma(4);
+            memset(bus.spicfg.dummytx, 0xFF, 4);
+        }
+        if (bus.spicfg.dummyrx == nullptr) {
+            bus.spicfg.dummyrx = (uint32_t *)malloc_dma(4);
+        }
+#else
         bus.spicfg.cr1 = (uint16_t)(freq_flag | device_desc.mode);
         bus.spicfg.cr2 = 0;
+#endif
         if (bus.spi_started) {
             spiStop(spi_devices[device_desc.bus].driver);
             bus.spi_started = false;
@@ -358,6 +413,7 @@ SPIDeviceManager::get_device(const char *name)
 }
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
+
 /*
   test clock frequencies. This measures the actual SPI clock
   frequencies on all configured SPI buses. Used during board bringup
@@ -367,29 +423,51 @@ void SPIDevice::test_clock_freq(void)
 {
     // delay for USB to come up
     hal.console->printf("Waiting for USB\n");
-    hal.scheduler->delay(1000);
-    hal.console->printf("SPI1_CLOCK=%u SPI2_CLOCK=%u SPI3_CLOCK=%u SPI4_CLOCK=%u\n",
-                        SPI1_CLOCK, SPI2_CLOCK, SPI3_CLOCK, SPI4_CLOCK);
+    for (uint8_t i=0; i<3; i++) {
+        hal.scheduler->delay(1000);
+        hal.console->printf("Waiting %u\n", AP_HAL::millis());
+    }
+    hal.console->printf("CLOCKS=\n");
+    for (uint8_t i=0; i<ARRAY_SIZE(bus_clocks); i++) {
+        hal.console->printf("%u:%u ", i+1, bus_clocks[i]);
+    }
+    hal.console->printf("\n");
 
     // we will send 1024 bytes without any CS asserted and measure the
     // time it takes to do the transfer
     uint16_t len = 1024;
-    uint8_t *buf = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
+    uint8_t *buf1 = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
+    uint8_t *buf2 = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
     for (uint8_t i=0; i<ARRAY_SIZE(spi_devices); i++) {
         SPIConfig spicfg {};
         const uint32_t target_freq = 2000000UL;
         // use a clock divisor of 256 for maximum resolution
+#if defined(STM32H7)
+        spicfg.cfg1 = derive_freq_flag_bus(spi_devices[i].busid, target_freq);
+#else
         spicfg.cr1 = derive_freq_flag_bus(spi_devices[i].busid, target_freq);
+#endif
         spiAcquireBus(spi_devices[i].driver);
         spiStart(spi_devices[i].driver, &spicfg);
         uint32_t t0 = AP_HAL::micros();
-        spiExchange(spi_devices[i].driver, len, buf, buf);
+        spiStartExchange(spi_devices[i].driver, len, buf1, buf2);
+        chSysLock();
+        msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[i].driver->thread, TIME_MS2I(100));
+        chSysUnlock();
+        if (msg == MSG_TIMEOUT) {
+            spiAbort(spi_devices[i].driver);
+            hal.console->printf("SPI[%u] FAIL %p %p\n", spi_devices[i].busid, buf1, buf2);
+            spiStop(spi_devices[i].driver);
+            spiReleaseBus(spi_devices[i].driver);
+            continue;
+        }
         uint32_t t1 = AP_HAL::micros();
         spiStop(spi_devices[i].driver);
         spiReleaseBus(spi_devices[i].driver);
         hal.console->printf("SPI[%u] clock=%u\n", spi_devices[i].busid, unsigned(1000000ULL * len * 8ULL / uint64_t(t1 - t0)));
     }
-    hal.util->free_type(buf, len, AP_HAL::Util::MEM_DMA_SAFE);
+    hal.util->free_type(buf1, len, AP_HAL::Util::MEM_DMA_SAFE);
+    hal.util->free_type(buf2, len, AP_HAL::Util::MEM_DMA_SAFE);
 }
 #endif // HAL_SPI_CHECK_CLOCK_FREQ
 

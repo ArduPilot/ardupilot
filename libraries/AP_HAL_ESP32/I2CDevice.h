@@ -24,13 +24,23 @@
 #include "Scheduler.h"
 #include "DeviceBus.h"
 
+#include "driver/i2c.h"
 
 namespace ESP32 {
+
+struct I2CBusDesc {
+    i2c_port_t port;
+    gpio_num_t sda;
+    gpio_num_t scl;
+    uint32_t speed;
+    bool internal;
+};
 
 class I2CBus : public  DeviceBus {
 public:
     I2CBus():DeviceBus(Scheduler::I2C_PRIORITY) {};
-    uint8_t bus;
+    i2c_port_t port;
+    uint32_t bus_clock;
 };
 
 class I2CDevice : public AP_HAL::I2CDevice {

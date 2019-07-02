@@ -19,7 +19,7 @@ float QuadPlane::tilt_max_change(bool up)
     }
     if (tilt.tilt_type != TILT_TYPE_BINARY && !up) {
         bool fast_tilt = false;
-        if (plane.control_mode == MANUAL) {
+        if (plane.control_mode == &plane.mode_manual) {
             fast_tilt = true;
         }
         if (hal.util->get_soft_armed() && !in_vtol_mode() && !assisted_flight) {
@@ -109,9 +109,9 @@ void QuadPlane::tiltrotor_continuous_update(void)
       3) if we are in TRANSITION_TIMER mode then we are transitioning
          to forward flight and should put the rotors all the way forward
     */
-    if (plane.control_mode == QSTABILIZE ||
-        plane.control_mode == QHOVER ||
-        plane.control_mode == QAUTOTUNE) {
+    if (plane.control_mode == &plane.mode_qstabilize ||
+        plane.control_mode == &plane.mode_qhover ||
+        plane.control_mode == &plane.mode_qautotune) {
         tiltrotor_slew(0);
         return;
     }

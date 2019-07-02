@@ -1,6 +1,10 @@
 #include "Util.h"
 #include <sys/time.h>
 
+#ifdef WITH_SITL_TONEALARM
+HALSITL::ToneAlarm_SF HALSITL::Util::_toneAlarm;
+#endif
+
 uint64_t HALSITL::Util::get_hw_rtc() const
 {
 #ifndef CLOCK_REALTIME
@@ -75,13 +79,13 @@ void *HALSITL::Util::allocate_heap_memory(size_t size)
     return (void *)new_heap;
 }
 
-void *HALSITL::Util::heap_realloc(void *heap, void *ptr, size_t new_size)
+void *HALSITL::Util::heap_realloc(void *heap_ptr, void *ptr, size_t new_size)
 {
-    if (heap == nullptr) {
+    if (heap_ptr == nullptr) {
         return nullptr;
     }
 
-    struct heap *heapp = (struct heap*)heap;
+    struct heap *heapp = (struct heap*)heap_ptr;
 
     // extract appropriate headers
     size_t old_size = 0;

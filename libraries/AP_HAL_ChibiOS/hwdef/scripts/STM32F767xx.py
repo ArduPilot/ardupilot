@@ -30,17 +30,15 @@ mcu = {
     # location of MCU serial number
     'UDID_START' : 0x1FF0F420,
 
-    # base address of main memory. We use SRAM1/SRAM2 as main memory
-    # for maximum speed (using the dcache). DMA will be done from DTCM
-    # memory
-    'RAM_BASE_ADDRESS' : 0x20020000,
-
-    # size of main memory
-    'RAM_SIZE_KB' : 384,
-
-    # DTCM ram address and size
-    'DTCM_BASE_ADDRESS' : 0x20000000,
-    'DTCM_RAM_SIZE_KB' : 128,
+    # ram map, as list of (address, size-kb, flags)
+    # flags of 1 means DMA-capable
+    # flags of 2 means faster memory for CPU intensive work
+    'RAM_MAP' : [
+        (0x20020000, 384, 0), # SRAM1/SRAM2
+        # split DTCM in two to allow for fast checking of IS_DMA_SAFE in bouncebuffer code
+        (0x20000000,  64, 1), # DTCM, DMA safe
+        (0x20010000,  64, 2), # DTCM, 2nd half, used as fast memory. This lowers memory contention in the EKF code
+    ]
 }
 
 DMA_Map = {

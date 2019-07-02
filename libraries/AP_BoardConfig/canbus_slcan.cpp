@@ -15,7 +15,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
 #include "AP_BoardConfig_CAN.h"
 
 const AP_Param::GroupInfo AP_BoardConfig_CAN::SLCAN_Interface::var_info[] = {

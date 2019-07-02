@@ -16,6 +16,7 @@ public:
         AP_Logger_Block(front, writer) {}
     void        Init() override;
     bool        CardInserted() const override;
+    static constexpr const char *filename = "dataflash.bin";
 
 private:
     void  BufferToPage(uint32_t PageAdr) override;

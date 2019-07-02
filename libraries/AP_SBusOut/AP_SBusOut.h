@@ -8,7 +8,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Param/AP_Param.h>
 
 class AP_SBusOut {

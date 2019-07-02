@@ -125,7 +125,7 @@ void AP_ToneAlarm::play_tone(const uint8_t tone_index)
     _tone_playing = tone_index;
     _tone_beginning_ms = tnow_ms;
 
-    play_string(tone_requested.str);
+    play_tune(tone_requested.str);
 }
 
 void AP_ToneAlarm::_timer_task()
@@ -134,7 +134,7 @@ void AP_ToneAlarm::_timer_task()
     _mml_player.update();
 }
 
-void AP_ToneAlarm::play_string(const char *str)
+void AP_ToneAlarm::play_tune(const char *str)
 {
     WITH_SEMAPHORE(_sem);
 
@@ -147,7 +147,7 @@ void AP_ToneAlarm::play_string(const char *str)
 void AP_ToneAlarm::stop_cont_tone()
 {
     if (_cont_tone_playing == _tone_playing) {
-        play_string("");
+        play_tune("");
         _tone_playing = -1;
     }
     _cont_tone_playing = -1;

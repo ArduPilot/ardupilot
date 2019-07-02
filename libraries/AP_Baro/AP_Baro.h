@@ -31,8 +31,8 @@ public:
     AP_Baro &operator=(const AP_Baro&) = delete;
 
     // get singleton
-    static AP_Baro *get_instance(void) {
-        return _instance;
+    static AP_Baro *get_singleton(void) {
+        return _singleton;
     }
 
     // barometer types
@@ -179,11 +179,11 @@ public:
 
     // indicate which bit in LOG_BITMASK indicates baro logging enabled
     void set_log_baro_bit(uint32_t bit) { _log_baro_bit = bit; }
-    bool should_df_log() const;
+    bool should_log() const;
 
 private:
     // singleton
-    static AP_Baro *_instance;
+    static AP_Baro *_singleton;
     
     // how many drivers do we have?
     uint8_t _num_drivers;

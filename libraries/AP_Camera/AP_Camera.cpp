@@ -3,6 +3,11 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -310,7 +315,7 @@ void AP_Camera::update()
         return;
     }
 
-    if (get_distance(current_loc, _last_location) < _trigg_dist) {
+    if (current_loc.get_distance(_last_location) < _trigg_dist) {
         return;
     }
 
@@ -390,18 +395,18 @@ void AP_Camera::setup_feedback_callback(void)
 // log_picture - log picture taken and send feedback to GCS
 void AP_Camera::log_picture()
 {
-    AP_Logger *df = AP_Logger::instance();
-    if (df == nullptr) {
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
         return;
     }
     if (!using_feedback_pin()) {
         gcs().send_message(MSG_CAMERA_FEEDBACK);
-        if (df->should_log(log_camera_bit)) {
-            df->Write_Camera(ahrs, current_loc);
+        if (logger->should_log(log_camera_bit)) {
+            logger->Write_Camera(ahrs, current_loc);
         }
     } else {
-        if (df->should_log(log_camera_bit)) {
-            df->Write_Trigger(ahrs, current_loc);
+        if (logger->should_log(log_camera_bit)) {
+            logger->Write_Trigger(ahrs, current_loc);
         }
     }
 }
@@ -437,12 +442,12 @@ void AP_Camera::update_trigger()
         _camera_trigger_logged = _camera_trigger_count;
 
         gcs().send_message(MSG_CAMERA_FEEDBACK);
-        AP_Logger *df = AP_Logger::instance();
-        if (df != nullptr) {
-            if (df->should_log(log_camera_bit)) {
+        AP_Logger *logger = AP_Logger::get_singleton();
+        if (logger != nullptr) {
+            if (logger->should_log(log_camera_bit)) {
                 uint32_t tdiff = AP_HAL::micros() - timestamp32;
                 uint64_t timestamp = AP_HAL::micros64();
-                df->Write_Camera(ahrs, current_loc, timestamp - tdiff);
+                logger->Write_Camera(ahrs, current_loc, timestamp - tdiff);
             }
         }
     }

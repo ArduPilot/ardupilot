@@ -15,11 +15,15 @@ bool Plane::auto_takeoff_check(void)
     uint32_t now = millis();
     uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
+    // reset all takeoff state if disarmed
+    if (!hal.util->get_soft_armed()) {
+        memset(&takeoff_state, 0, sizeof(takeoff_state));
+        return false;
+    }
+
     // Reset states if process has been interrupted
     if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
-	    takeoff_state.launchTimerStarted = false;
-	    takeoff_state.last_tkoff_arm_time = 0;
-        takeoff_state.last_check_ms = now;
+        memset(&takeoff_state, 0, sizeof(takeoff_state));
         return false;
     }
 
@@ -92,6 +96,7 @@ bool Plane::auto_takeoff_check(void)
         gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
         takeoff_state.launchTimerStarted = false;
         takeoff_state.last_tkoff_arm_time = 0;
+        takeoff_state.start_time_ms = now;
         steer_state.locked_course_err = 0; // use current heading without any error offset
         return true;
     }
@@ -222,8 +227,8 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
  */
 int8_t Plane::takeoff_tail_hold(void)
 {
-    bool in_takeoff = ((control_mode == AUTO && !auto_state.takeoff_complete) ||
-                       (control_mode == FLY_BY_WIRE_A && auto_state.fbwa_tdrag_takeoff_mode));
+    bool in_takeoff = ((control_mode == &mode_auto && !auto_state.takeoff_complete) ||
+                       (control_mode == &mode_fbwa && auto_state.fbwa_tdrag_takeoff_mode));
     if (!in_takeoff) {
         // not in takeoff
         return 0;

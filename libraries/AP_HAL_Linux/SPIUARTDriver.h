@@ -9,12 +9,12 @@ namespace Linux {
 class SPIUARTDriver : public UARTDriver {
 public:
     SPIUARTDriver();
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
-    void _timer_tick(void);
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void _timer_tick(void) override;
 
 protected:
-    int _write_fd(const uint8_t *buf, uint16_t n);
-    int _read_fd(uint8_t *buf, uint16_t n);
+    int _write_fd(const uint8_t *buf, uint16_t n) override;
+    int _read_fd(uint8_t *buf, uint16_t n) override;
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 

@@ -25,6 +25,7 @@
 #include <AP_HAL_ChibiOS/RCOutput.h>
 #include "analog.h"
 #include "rc.h"
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -39,6 +40,9 @@ void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+// enable testing of IOMCU watchdog using safety switch
+#define IOMCU_ENABLE_WATCHDOG_TEST 0
 
 // pending events on the main thread
 enum ioevents {
@@ -176,6 +180,11 @@ void AP_IOMCU_FW::init()
 
     // we do no allocations after setup completes
     reg_status.freemem = hal.util->available_memory();
+
+    if (hal.util->was_watchdog_safety_off()) {
+        hal.rcout->force_safety_off();
+        reg_status.flag_safety_off = true;
+    }
 }
 
 
@@ -202,6 +211,7 @@ void AP_IOMCU_FW::update()
     }
 
     uint32_t now = last_ms;
+    reg_status.timestamp_ms = last_ms;
 
     // output SBUS if enabled
     if ((reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) &&
@@ -660,7 +670,28 @@ void AP_IOMCU_FW::safety_update(void)
     if (safety_button_counter == 10) {
         // safety has been pressed for 1 second, change state
         reg_status.flag_safety_off = !reg_status.flag_safety_off;
+        if (reg_status.flag_safety_off) {
+            hal.rcout->force_safety_off();
+        } else {
+            hal.rcout->force_safety_on();
+        }
     }
+
+#if IOMCU_ENABLE_WATCHDOG_TEST
+    if (safety_button_counter == 50) {
+        // deliberate lockup of IOMCU on 5s button press, for testing
+        // watchdog
+        while (true) {
+            hal.scheduler->delay(50);
+            palToggleLine(HAL_GPIO_PIN_SAFETY_LED);
+            if (palReadLine(HAL_GPIO_PIN_SAFETY_INPUT)) {
+                // only trigger watchdog on button release, so we
+                // don't end up stuck in the bootloader
+                stm32_watchdog_pat();
+            }
+        }
+    }
+#endif
 
     led_counter = (led_counter+1) % 16;
     const uint16_t led_pattern = reg_status.flag_safety_off?0xFFFF:0x5500;

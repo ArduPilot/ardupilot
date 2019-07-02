@@ -38,6 +38,7 @@
  *
  */
 #include "AP_SBusOut.h"
+#include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
 
@@ -181,7 +182,7 @@ void AP_SBusOut::init() {
         sbus_frame_interval = 3700;
     }
 
-    AP_SerialManager *serial_manager = AP_SerialManager::get_instance();
+    AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
     if (!serial_manager) {
         return;
     }

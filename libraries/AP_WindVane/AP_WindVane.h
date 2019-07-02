@@ -18,6 +18,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_RPM/AP_RPM.h>
 
 class AP_WindVane
 {
@@ -142,6 +143,7 @@ private:
         WINDSPEED_NONE               = 0,
         WINDSPEED_AIRSPEED           = 1,
         WINDVANE_WIND_SENSOR_REV_P   = 2,
+        WINDSPEED_RPM                = 3,
         WINDSPEED_SITL               = 10
     };
 

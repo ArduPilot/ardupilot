@@ -9,7 +9,7 @@ class AP_RangeFinder_VL53L1X : public AP_RangeFinder_Backend
 
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev);
 
     // update state
     void update(void) override;
@@ -21,6 +21,33 @@ protected:
     }
 
 private:
+    enum DeviceError : uint8_t
+    {
+        NOUPDATE                    = 0,
+        VCSELCONTINUITYTESTFAILURE  = 1,
+        VCSELWATCHDOGTESTFAILURE    = 2,
+        NOVHVVALUEFOUND             = 3,
+        MSRCNOTARGET                = 4,
+        RANGEPHASECHECK             = 5,
+        SIGMATHRESHOLDCHECK         = 6,
+        PHASECONSISTENCY            = 7,
+        MINCLIP                     = 8,
+        RANGECOMPLETE               = 9,
+        ALGOUNDERFLOW               = 10,
+        ALGOOVERFLOW                = 11,
+        RANGEIGNORETHRESHOLD        = 12,
+        USERROICLIP                 = 13,
+        REFSPADCHARNOTENOUGHDPADS   = 14,
+        REFSPADCHARMORETHANTARGET   = 15,
+        REFSPADCHARLESSTHANTARGET   = 16,
+        MULTCLIPFAIL                = 17,
+        GPHSTREAMCOUNT0READY        = 18,
+        RANGECOMPLETE_NO_WRAP_CHECK = 19,
+        EVENTCONSISTENCY            = 20,
+        MINSIGNALEVENTCHECK         = 21,
+        RANGECOMPLETE_MERGED_PULSE  = 22,
+    };
+
     // register addresses from API vl53l1x_register_map.h
     enum regAddr : uint16_t
     {
@@ -1213,7 +1240,7 @@ private:
     };
 
     // constructor
-    AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     bool init();
     void timer();

@@ -2,6 +2,8 @@
 
 #include "AP_HAL_Namespace.h"
 
+#include <AP_Common/AP_Common.h>
+
 #define HAL_SEMAPHORE_BLOCK_FOREVER 0
 
 class AP_HAL::Semaphore {

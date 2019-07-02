@@ -35,6 +35,8 @@
 */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
 
 #include "AP_RobotisServo.h"

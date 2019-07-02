@@ -19,11 +19,8 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_RTC/AP_RTC.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -32,11 +29,7 @@
 #define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
 #define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPS instances including the 'virtual' GPS created by blending receiver data
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
-#define GPS_RTK_INJECT_TO_ALL 127
-#define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
 #define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
-#define GPS_WORST_LAG_SEC 0.22f // worst lag value any GPS driver is expected to return, expressed in seconds
-#define GPS_MAX_DELTA_MS 245 // 200 ms (5Hz) + 45 ms buffer
 
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
@@ -71,8 +64,8 @@ public:
     AP_GPS(const AP_GPS &other) = delete;
     AP_GPS &operator=(const AP_GPS&) = delete;
 
-    static AP_GPS &gps() {
-        return *_singleton;
+    static AP_GPS *get_singleton() {
+        return _singleton;
     }
 
     // GPS driver types
@@ -336,22 +329,6 @@ public:
         return have_vertical_velocity(primary_instance);
     }
 
-    // return number of satellites used for RTK calculation
-    uint8_t rtk_num_sats(uint8_t instance) const {
-        return state[instance].rtk_num_sats;
-    }
-    uint8_t rtk_num_sats(void) const {
-        return rtk_num_sats(primary_instance);
-    }
-
-    // return age of last baseline correction in milliseconds
-    uint32_t rtk_age_ms(uint8_t instance) const {
-        return state[instance].rtk_age_ms;
-    }
-    uint32_t rtk_age_ms(void) const {
-        return rtk_age_ms(primary_instance);
-    }
-
     // the expected lag (in seconds) in the position and velocity readings from the gps
     // return true if the GPS hardware configuration is known or the lag parameter has been set manually
     bool get_lag(uint8_t instance, float &lag_sec) const;
@@ -471,8 +448,8 @@ private:
         uint16_t delta_time_ms;
     };
     // Note allowance for an additional instance to contain blended data
-    GPS_timing timing[GPS_MAX_RECEIVERS+1];
-    GPS_State state[GPS_MAX_RECEIVERS+1];
+    GPS_timing timing[GPS_MAX_INSTANCES];
+    GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_RECEIVERS];
     AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
 
@@ -545,7 +522,7 @@ private:
     Vector2f _NE_pos_offset_m[GPS_MAX_RECEIVERS]; // Filtered North,East position offset from GPS instance to blended solution in _output_state.location (m)
     float _hgt_offset_cm[GPS_MAX_RECEIVERS]; // Filtered height offset from GPS instance relative to blended solution in _output_state.location (cm)
     Vector3f _blended_antenna_offset; // blended antenna offset
-    float _blended_lag_sec = 0.001f * GPS_MAX_RATE_MS; // blended receiver lag in seconds
+    float _blended_lag_sec; // blended receiver lag in seconds
     float _blend_weights[GPS_MAX_RECEIVERS]; // blend weight for each GPS. The blend weights must sum to 1.0 across all instances.
     uint32_t _last_time_updated[GPS_MAX_RECEIVERS]; // the last value of state.last_gps_time_ms read for that GPS instance - used to detect new data.
     float _omega_lpf; // cutoff frequency in rad/sec of LPF applied to position offsets
@@ -558,7 +535,7 @@ private:
     // calculate the blended state
     void calc_blended_state(void);
 
-    bool should_df_log() const;
+    bool should_log() const;
 
     // Auto configure types
     enum GPS_AUTO_CONFIG {

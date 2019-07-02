@@ -21,6 +21,7 @@ import apmrover2
 import arducopter
 import arduplane
 import ardusub
+import antennatracker
 import quadplane
 import balancebot
 
@@ -110,6 +111,11 @@ def build_binaries():
     copy_gm = util.reltopdir('./generate_manifest.py')
     shutil.copy2(orig_gm, copy_gm)
 
+    # and gen_stable.py
+    orig_gs = util.reltopdir('Tools/scripts/gen_stable.py')
+    copy_gs = util.reltopdir('./gen_stable.py')
+    shutil.copy2(orig_gs, copy_gs)
+    
     if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
         print("Failed build_binaries.py")
         return False
@@ -222,6 +228,7 @@ def alarm_handler(signum, frame):
     """Handle test timeout."""
     global results, opts
     try:
+        print("Alarm handler called")
         results.add('TIMEOUT',
                     '<span class="failed-text">FAILED</span>',
                     opts.timeout)
@@ -281,7 +288,7 @@ def binary_path(step, debug=False):
 
 def split_specific_test_step(step):
     print('step=%s' % str(step))
-    m = re.match("((fly|drive|dive)[.][^.]+)[.](.*)", step)
+    m = re.match("((fly|drive|dive|test)[.][^.]+)[.](.*)", step)
     if m is None:
         return None
     return ( (m.group(1), m.group(3)) )
@@ -293,19 +300,23 @@ def find_specific_test_to_run(step):
     (testname, test) = t
     return "%s.%s" % (testname, test)
 
+tester_class_map = {
+    "fly.ArduCopter": arducopter.AutoTestCopter,
+    "fly.ArduPlane": arduplane.AutoTestPlane,
+    "fly.QuadPlane": quadplane.AutoTestQuadPlane,
+    "drive.APMrover2": apmrover2.AutoTestRover,
+    "drive.balancebot": balancebot.AutoTestBalanceBot,
+    "fly.CopterAVC": arducopter.AutoTestHeli,
+    "dive.ArduSub": ardusub.AutoTestSub,
+    "test.AntennaTracker": antennatracker.AutoTestTracker,
+}
+
 def run_specific_test(step, *args, **kwargs):
     t = split_specific_test_step(step)
     if t is None:
         return []
     (testname, test) = t
 
-    tester_class_map = {
-        "fly.ArduCopter": arducopter.AutoTestCopter,
-        "fly.ArduPlane": arduplane.AutoTestPlane,
-        "drive.APMrover2": apmrover2.AutoTestRover,
-        "drive.BalanceBot": balancebot.AutoTestBalanceBot,
-        "fly.CopterAVC": arducopter.AutoTestHeli,
-    }
     tester_class = tester_class_map[testname]
     tester = tester_class(*args, **kwargs)
 
@@ -369,50 +380,19 @@ def run_step(step):
         "gdb": opts.gdb,
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
+        "frame": opts.frame,
+        "_show_test_timings": opts.show_test_timings,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
 
-    if step == 'fly.ArduCopter':
-        tester = arducopter.AutoTestCopter(binary,
-                                           frame=opts.frame,
-                                           **fly_opts)
-        return tester.autotest()
-
-    if step == 'fly.CopterAVC':
-        tester = arducopter.AutoTestHeli(binary, **fly_opts)
-        return tester.autotest()
-
-    if step == 'fly.ArduPlane':
-        tester = arduplane.AutoTestPlane(binary, **fly_opts)
-        return tester.autotest()
-
-    if step == 'fly.QuadPlane':
-        tester = quadplane.AutoTestQuadPlane(binary, **fly_opts)
-        return tester.autotest()
-
-    if step == 'drive.APMrover2':
-        tester = apmrover2.AutoTestRover(binary,
-                                         frame=opts.frame,
-                                         **fly_opts)
-        return tester.autotest()
-
-    if step == 'drive.balancebot':
-        tester = balancebot.AutoTestBalanceBot(binary,
-                                               frame=opts.frame,
-                                               **fly_opts)
-        return tester.autotest()
-
-    if step == 'dive.ArduSub':
-        tester = ardusub.AutoTestSub(binary, **fly_opts)
-        return tester.autotest()
+    # handle "fly.ArduCopter" etc:
+    if step in tester_class_map:
+        return tester_class_map[step](binary, **fly_opts).autotest()
 
     specific_test_to_run = find_specific_test_to_run(step)
     if specific_test_to_run is not None:
-        return run_specific_test(specific_test_to_run,
-                                 binary,
-                                 frame=opts.frame,
-                                 **fly_opts)
+        return run_specific_test(specific_test_to_run, binary, **fly_opts)
 
     if step == 'build.All':
         return build_all()
@@ -489,6 +469,31 @@ class TestResults(object):
         for f in glob.glob(buildlogs_path(pattern)):
             self.addimage(name, os.path.basename(f))
 
+    def generate_badge(self):
+        """
+        Gets the badge template, populates and saves the result to buildlogs
+        path.
+        """
+        passed_tests = len([t for t in self.tests if "PASSED" in t.result])
+        total_tests = len(self.tests)
+        badge_color = "#4c1" if passed_tests == total_tests else "#e05d44"
+
+        badge_text = "{0}/{1}".format(passed_tests, total_tests)
+        # Text length so it is not stretched by svg
+        text_length = len(badge_text) * 70
+
+        # Load template file
+        template_path = 'Tools/autotest/web/autotest-badge-template.svg'
+        with open(util.reltopdir(template_path), "r") as f:
+            template = f.read()
+
+        # Add our results to the template
+        badge = template.format(color=badge_color,
+                                text=badge_text,
+                                text_length=text_length)
+        with open(buildlogs_path("autotest-badge.svg"), "w") as f:
+            f.write(badge)
+
 
 def write_webresults(results_to_write):
     """Write webpage results."""
@@ -500,6 +505,7 @@ def write_webresults(results_to_write):
         f.close()
     for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
         shutil.copy(f, buildlogs_path(os.path.basename(f)))
+    results_to_write.generate_badge()
 
 
 def write_fullresults():
@@ -643,13 +649,17 @@ if __name__ == "__main__":
                       action='store_true',
                       help='enable experimental tests')
     parser.add_option("--timeout",
-                      default=3000,
+                      default=3600,
                       type='int',
                       help='maximum runtime in seconds')
     parser.add_option("--frame",
                       type='string',
                       default=None,
                       help='specify frame type')
+    parser.add_option("--show-test-timings",
+                      action="store_true",
+                      default=False,
+                      help="show how long each test took to run")
 
     group_build = optparse.OptionGroup(parser, "Build options")
     group_build.add_option("--no-configure",
@@ -730,6 +740,8 @@ if __name__ == "__main__":
         'fly.CopterAVC',
 
         'build.AntennaTracker',
+        'defaults.AntennaTracker',
+        'test.AntennaTracker',
 
         'build.ArduSub',
         'defaults.ArduSub',

@@ -36,7 +36,7 @@
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
-SRV_Channels *SRV_Channels::instance;
+SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_RobotisServo *SRV_Channels::robotis_ptr;
@@ -51,7 +51,8 @@ uint16_t SRV_Channels::reversible_mask;
 
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
-Bitmask SRV_Channels::function_mask{SRV_Channel::k_nr_aux_servo_functions};
+bool SRV_Channels::emergency_stop;
+Bitmask<SRV_Channel::k_nr_aux_servo_functions> SRV_Channels::function_mask;
 SRV_Channels::srv_function SRV_Channels::functions[SRV_Channel::k_nr_aux_servo_functions];
 
 const AP_Param::GroupInfo SRV_Channels::var_info[] = {
@@ -160,7 +161,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
  */
 SRV_Channels::SRV_Channels(void)
 {
-    instance = this;
+    _singleton = this;
     channels = obj_channels;
 
     // set defaults from the parameter table

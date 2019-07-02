@@ -366,3 +366,9 @@ Quaternion Quaternion::operator/(const Quaternion &v) const
     ret.q4 = (rquat0*quat3 - rquat1*quat2 + rquat2*quat1 - rquat3*quat0);
     return ret;
 }
+
+// angular difference in radians between quaternions
+Quaternion Quaternion::angular_difference(const Quaternion &v) const
+{
+    return v.inverse() * *this;
+}

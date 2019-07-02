@@ -36,6 +36,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus_Maxell;
     friend class AP_BattMonitor_UAVCAN;
     friend class AP_BattMonitor_Sum;
+    friend class AP_BattMonitor_FuelFlow;
 
 public:
 
@@ -54,8 +55,8 @@ public:
     AP_BattMonitor(const AP_BattMonitor &other) = delete;
     AP_BattMonitor &operator=(const AP_BattMonitor&) = delete;
 
-    static AP_BattMonitor &battery() {
-        return *_singleton;
+    static AP_BattMonitor *get_singleton() {
+        return _singleton;
     }
 
     struct cells {
@@ -78,6 +79,8 @@ public:
         float       resistance;                // resistance, in Ohms, calculated by comparing resting voltage vs in flight voltage
         BatteryFailsafe failsafe;              // stage failsafe the battery is in
         bool        healthy;                   // battery monitor is communicating correctly
+        bool        is_powering_off;           // true when power button commands power off
+        bool        powerOffNotified;          // only send powering off notification once
     };
 
     // Return the number of battery monitor instances
@@ -130,10 +133,6 @@ public:
     int32_t pack_capacity_mah(uint8_t instance) const;
     int32_t pack_capacity_mah() const { return pack_capacity_mah(AP_BATT_PRIMARY_INSTANCE); }
  
-    /// returns the failsafe state of the battery
-    BatteryFailsafe check_failsafe(const uint8_t instance);
-    void check_failsafes(void); // checks all batteries failsafes
-
     /// returns true if a battery failsafe has ever been triggered
     bool has_failsafed(void) const { return _has_triggered_failsafe; };
 
@@ -141,11 +140,8 @@ public:
     int8_t get_highest_failsafe_priority(void) const { return _highest_failsafe_priority; };
 
     /// get_type - returns battery monitor type
-    enum AP_BattMonitor_Params::BattMonitor_Type get_type() { return get_type(AP_BATT_PRIMARY_INSTANCE); }
-    enum AP_BattMonitor_Params::BattMonitor_Type get_type(uint8_t instance) { return _params[instance].type(); }
-
-    /// set_monitoring - sets the monitor type (used for example sketch only)
-    void set_monitoring(uint8_t instance, uint8_t mon) { _params[instance]._type.set(mon); }
+    enum AP_BattMonitor_Params::BattMonitor_Type get_type() const { return get_type(AP_BATT_PRIMARY_INSTANCE); }
+    enum AP_BattMonitor_Params::BattMonitor_Type get_type(uint8_t instance) const { return _params[instance].type(); }
 
     /// true when (voltage * current) > watt_max
     bool overpower_detected() const;
@@ -168,6 +164,9 @@ public:
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     bool arming_checks(size_t buflen, char *buffer) const;
 
+    // sends powering off mavlink broadcasts and sets notify flag
+    void checkPoweringOff(void);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -184,6 +183,10 @@ private:
     uint8_t     _num_instances;                                     /// number of monitors
 
     void convert_params(void);
+
+    /// returns the failsafe state of the battery
+    BatteryFailsafe check_failsafe(const uint8_t instance);
+    void check_failsafes(void); // checks all batteries failsafes
 
     battery_failsafe_handler_fn_t _battery_failsafe_handler_fn;
     const int8_t *_failsafe_priorities; // array of failsafe priorities, sorted highest to lowest priority, -1 indicates no more entries

@@ -411,14 +411,6 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     }
 }
 
-static void swap_uint32(uint32_t *v, uint8_t n)
-{
-    while (n--) {
-        *v = htonl(*v);
-        v++;
-    }
-}
-
 /*
   MTK type simple checksum
  */
@@ -458,11 +450,11 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d, uint8_t instance)
     p.preamble2     = 0x62;
     p.msg_class     = 1;
     p.msg_id        = 5;
-    p.latitude      = d->latitude  * 1.0e6;
-    p.longitude     = d->longitude * 1.0e6;
-    p.altitude      = d->altitude * 100;
-    p.ground_speed  = norm(d->speedN, d->speedE) * 100;
-    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 1000000.0f;
+    p.latitude      = htonl(d->latitude  * 1.0e6);
+    p.longitude     = htonl(d->longitude * 1.0e6);
+    p.altitude      = htonl(d->altitude * 100);
+    p.ground_speed  = htonl(norm(d->speedN, d->speedE) * 100);
+    p.ground_course = htonl(ToDeg(atan2f(d->speedE, d->speedN)) * 1000000.0f);
     if (p.ground_course < 0.0f) {
         p.ground_course += 360.0f * 1000000.0f;
     }
@@ -480,10 +472,8 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d, uint8_t instance)
     tm = *gmtime(&tv.tv_sec);
     uint32_t hsec = (tv.tv_usec / (10000*20)) * 20; // always multiple of 20
 
-    p.utc_time = hsec + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100;
+    p.utc_time = htonl(hsec + tm.tm_sec*100 + tm.tm_min*100*100 + tm.tm_hour*100*100*100);
 
-    swap_uint32((uint32_t *)&p.latitude, 5);
-    swap_uint32((uint32_t *)&p.utc_time, 1);
     mtk_checksum(&p.msg_class, sizeof(p)-4, &p.ck_a, &p.ck_b);
 
     _gps_write((uint8_t*)&p, sizeof(p), instance);

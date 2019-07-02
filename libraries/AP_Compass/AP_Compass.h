@@ -70,11 +70,13 @@ public:
     /// @returns    True if the compass was initialized OK, false if it was not
     ///             found or is not functioning.
     ///
-    bool init();
+    void init();
 
     /// Read the compass and update the mag_ variables.
     ///
     bool read();
+
+    bool enabled() const { return _enabled; }
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
@@ -121,7 +123,7 @@ public:
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
     // compass calibrator interface
-    void compass_cal_update();
+    void cal_update();
 
     // per-motor calibration access
     void per_motor_calibration_start(void) {
@@ -140,6 +142,9 @@ public:
 
     bool compass_cal_requires_reboot() const { return _cal_complete_requires_reboot; }
     bool is_calibrating() const;
+
+    // indicate which bit in LOG_BITMASK indicates we should log compass readings
+    void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
 
     /*
       handle an incoming MAG_CAL command
@@ -176,17 +181,6 @@ public:
     /// @param  longitude            GPS Longitude.
     ///
     void set_initial_location(int32_t latitude, int32_t longitude);
-
-    /// Program new offset values.
-    ///
-    /// @param  i                   compass instance
-    /// @param  x                   Offset to the raw mag_x value in milligauss.
-    /// @param  y                   Offset to the raw mag_y value in milligauss.
-    /// @param  z                   Offset to the raw mag_z value in milligauss.
-    ///
-    void set_and_save_offsets(uint8_t i, int x, int y, int z) {
-        set_and_save_offsets(i, Vector3f(x, y, z));
-    }
 
     // learn offsets accessor
     bool learn_offsets_enabled() const { return _learn == LEARN_INFLIGHT; }
@@ -379,6 +373,7 @@ private:
         DRIVER_SITL     =13,
         DRIVER_MAG3110  =14,
         DRIVER_IST8308  = 15,
+		DRIVER_RM3100   =16,
     };
 
     bool _driver_enabled(enum DriverType driver_type);
@@ -386,6 +381,9 @@ private:
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
+
+    // whether to enable the compass drivers at all
+    AP_Int8     _enabled;
 
     // number of registered compasses.
     uint8_t     _compass_count;
@@ -408,6 +406,9 @@ private:
 
     // first-time-around flag used by offset nulling
     bool        _null_init_done;
+
+    // stores which bit is used to indicate we should log compass readings
+    uint32_t _log_bit = -1;
 
     // used by offset correction
     static const uint8_t _mag_history_size = 20;

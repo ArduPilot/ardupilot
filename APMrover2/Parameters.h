@@ -58,7 +58,8 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
-
+        k_param_rpm_sensor,     // rpm sensor 98
+        
         // 100: Arming parameters
         k_param_arming = 100,
 
@@ -83,7 +84,7 @@ public:
         //
         // 130: Sensor parameters
         //
-        k_param_compass_enabled = 130,
+        k_param_compass_enabled_deprecated = 130,
         k_param_steering_learn,     // unused
         k_param_NavEKF,             // deprecated - remove
         k_param_mission,            // mission library
@@ -176,14 +177,14 @@ public:
         k_param_waypoint_overshoot,
 
         //
-        // 230: camera control
+        // camera control
         //
         k_param_camera,
         k_param_camera_mount,
         k_param_camera_mount2,          // unused
 
         //
-        // 240: PID Controllers
+        // 230: PID Controllers
         k_param_pidNavSteer = 230,
         k_param_pidServoSteer,  // unused
         k_param_pidSpeedThrottle_old,   // unused
@@ -225,9 +226,6 @@ public:
     AP_Int16    sysid_this_mav;
     AP_Int16    sysid_my_gcs;
     AP_Int8     telem_delay;
-
-    // sensor parameters
-    AP_Int8     compass_enabled;
 
     // navigation parameters
     //
@@ -370,6 +368,10 @@ public:
     // Sprayer
     AC_Sprayer sprayer;
 
+#if GRIPPER_ENABLED
+    AP_Gripper gripper;
+#endif
+
     // Rally point library
     AP_Rally_Rover rally;
 
@@ -391,6 +393,17 @@ public:
 
     // mission behave
     AP_Int8 mis_done_behave;
+
+    // balance both pitch trim
+    AP_Float bal_pitch_trim;
+
+    // stick mixing for auto modes
+    AP_Int8     stick_mixing;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern const AP_Param::Info var_info[];

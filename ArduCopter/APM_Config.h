@@ -4,7 +4,7 @@
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
 // uncomment the lines below to disable features (flash sizes listed are for APM2 boards and will underestimate savings on Pixhawk and other boards)
-//#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
+//#define LOGGING_ENABLED       DISABLED            // disable logging to save 11K of flash space
 //#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
 //#define AUTOTUNE_ENABLED      DISABLED            // disable the auto tune functionality to save 7k of flash
 //#define AC_FENCE              DISABLED            // disable fence to save 2k of flash
@@ -39,12 +39,13 @@
 //#define MODE_GUIDED_NOGPS_ENABLED   DISABLED      // disable guided/nogps mode support
 //#define MODE_LOITER_ENABLED   DISABLED            // disable loiter mode support
 //#define MODE_POSHOLD_ENABLED  DISABLED            // disable poshold mode support
-//#define MODE_RTL_ENABLED DISABLED                 // disable rtl mode support
+//#define MODE_RTL_ENABLED      DISABLED            // disable rtl mode support
 //#define MODE_SMARTRTL_ENABLED DISABLED            // disable smartrtl mode support
-//#define MODE_SPORT_ENABLED DISABLED               // disable sport mode support
+//#define MODE_SPORT_ENABLED    DISABLED            // disable sport mode support
 //#define MODE_THROW_ENABLED    DISABLED            // disable throw mode support
 //#define MODE_ZIGZAG_ENABLED   DISABLED            // disable zigzag mode support
-//#define DEVO_TELEM_ENABLED DISABLED               // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
+//#define DEVO_TELEM_ENABLED    DISABLED            // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
+//#define OSD_ENABLED           DISABLED            // disable on-screen-display support
 
 
 // features below are disabled by default on all boards

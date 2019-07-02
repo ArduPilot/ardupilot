@@ -4,6 +4,10 @@
 
 #include <AP_Gripper/AP_Gripper.h>
 
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
+#endif
+
 // Global parameter class.
 //
 class Parameters {
@@ -176,7 +180,7 @@ public:
         k_param_xtrack_angle_limit, // Angle limit for crosstrack correction in Auto modes (degrees)
         k_param_pilot_speed_up,     // renamed from k_param_pilot_velocity_z_max
         k_param_pilot_accel_z,
-        k_param_compass_enabled,
+        k_param_compass_enabled_deprecated,
         k_param_surface_depth,
         k_param_rc_speed, // Main output pwm frequency
         k_param_gcs_pid_mask = 178,
@@ -232,8 +236,6 @@ public:
     AP_Float        failsafe_pilot_input_timeout;
 
     AP_Int8         xtrack_angle_limit;
-
-    AP_Int8         compass_enabled;
 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
@@ -331,6 +333,11 @@ public:
 
     // control over servo output ranges
     SRV_Channels servo_channels;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
 };
 
 extern const AP_Param::Info        var_info[];

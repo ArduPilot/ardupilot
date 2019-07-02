@@ -358,10 +358,9 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_r
     // It does assume that the rotor aerodynamics and mechanics are essentially symmetrical about the main shaft, which is a generally valid assumption. 
     if (_piro_comp_enabled){
 
-        int32_t         piro_roll_i, piro_pitch_i;            // used to hold I-terms while doing piro comp
-
-        piro_roll_i  = roll_i;
-        piro_pitch_i = pitch_i;
+        // used to hold current I-terms while doing piro comp:
+        const float piro_roll_i  = roll_i;
+        const float piro_pitch_i = pitch_i;
 
         Vector2f yawratevector;
         yawratevector.x     = cosf(-rate_rads.z * _dt);

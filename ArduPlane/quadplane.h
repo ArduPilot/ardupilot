@@ -23,7 +23,19 @@ public:
     friend class GCS_MAVLINK_Plane;
     friend class AP_AdvancedFailsafe_Plane;
     friend class QAutoTune;
+    friend class AP_Arming_Plane;
 
+    friend class Mode;
+    friend class ModeAuto;
+    friend class ModeAvoidADSB;
+    friend class ModeGuided;
+    friend class ModeQHover;
+    friend class ModeQLand;
+    friend class ModeQLoiter;
+    friend class ModeQRTL;
+    friend class ModeQStabilize;
+    friend class ModeQAutotune;
+    
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
     // var_info for holding Parameter information
@@ -39,6 +51,8 @@ public:
     void setup_target_position(void);
     void takeoff_controller(void);
     void waypoint_controller(void);
+
+    void update_throttle_thr_mix(void);
     
     // update transition handling
     void update(void);
@@ -74,6 +88,7 @@ public:
     bool verify_vtol_land(void);
     bool in_vtol_auto(void) const;
     bool in_vtol_mode(void) const;
+    void update_throttle_hover();
 
     // vtol help for is_flying()
     bool is_flying(void);
@@ -134,7 +149,9 @@ public:
         int16_t  climb_rate;
         float    throttle_mix;
     };
-        
+
+    MAV_TYPE get_mav_type(void) const;
+
 private:
     AP_AHRS_NavEKF &ahrs;
     AP_Vehicle::MultiCopter aparm;
@@ -193,13 +210,18 @@ private:
     void control_stabilize(void);
 
     void check_attitude_relax(void);
+    void init_qacro(void);
+    float get_pilot_throttle(void);
+    void control_qacro(void);
     void init_hover(void);
     void control_hover(void);
 
     void init_loiter(void);
-    void init_land(void);
+    void init_qland(void);
     void control_loiter(void);
     void check_land_complete(void);
+    bool land_detector(uint32_t timeout_ms);
+    bool check_land_final(void);
 
     void init_qrtl(void);
     void control_qrtl(void);
@@ -220,7 +242,7 @@ private:
     void guided_start(void);
     void guided_update(void);
 
-    void check_throttle_suppression(void);
+    void update_throttle_suppression(void);
 
     void run_z_controller(void);
 
@@ -239,6 +261,7 @@ private:
 
     // Quadplane trim, degrees
     AP_Float ahrs_trim_pitch;
+    float _last_ahrs_trim_pitch;
 
     // fw landing approach radius
     AP_Float fw_land_approach_radius;
@@ -287,8 +310,15 @@ private:
 
     // HEARTBEAT mav_type override
     AP_Int8 mav_type;
-    MAV_TYPE get_mav_type(void) const;
-    
+
+    // manual throttle curve expo strength
+    AP_Float throttle_expo;
+
+    // QACRO mode max roll/pitch/yaw rates
+    AP_Float acro_roll_rate;
+    AP_Float acro_pitch_rate;
+    AP_Float acro_yaw_rate;
+
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
 
@@ -404,6 +434,8 @@ private:
     enum tailsitter_input {
         TAILSITTER_INPUT_MULTICOPTER = 0,
         TAILSITTER_INPUT_PLANE       = 1,
+        TAILSITTER_INPUT_BF_ROLL_M   = 2,
+        TAILSITTER_INPUT_BF_ROLL_P   = 3,
     };
 
     enum tailsitter_mask {
@@ -424,6 +456,7 @@ private:
         AP_Float vectored_hover_power;
         AP_Float throttle_scale_max;
         AP_Float max_roll_angle;
+        AP_Int16 motor_mask;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller
@@ -488,6 +521,16 @@ private:
     QAutoTune qautotune;
 #endif
 
+    /*
+      are we in the approach phase of a VTOL landing?
+     */
+    bool in_vtol_land_approach(void) const;
+
+    /*
+      are we in the descent phase of a VTOL landing?
+     */
+    bool in_vtol_land_descent(void) const;
+    
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,

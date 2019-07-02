@@ -260,3 +260,27 @@ def check_SFML(cfg, env):
     env.LIB += libs
     return True
 
+
+@conf
+def check_SFML_Audio(cfg, env):
+    if not cfg.options.enable_sfml_audio:
+        cfg.msg("Checking for SFML audio:", 'disabled', color='YELLOW')
+        return False
+    libs = ['sfml-audio']
+    for lib in libs:
+        if not cfg.check(compiler='cxx', lib=lib, mandatory=False,
+                         global_define=True):
+            cfg.fatal("Missing SFML libraries - please install libsfml-dev")
+            return False
+
+    # see if we need Audio.hpp or Audio.h
+    if not cfg.check(compiler='cxx',
+                     fragment='''#include <SFML/Audio.hpp>\nint main() {}''', define_name="HAVE_SFML_AUDIO_HPP",
+                     msg="Checking for Audio.hpp", mandatory=False):
+        if not cfg.check(compiler='cxx', fragment='''#include <SFML/Audio.h>\nint main() {}''', define_name="HAVE_SFML_AUDIO_H",
+                         msg="Checking for Audio.h", mandatory=False):
+            cfg.fatal("Missing SFML headers SFML/Audio.hpp or SFML/Audio.h")
+            return False
+    env.LIB += libs
+    return True
+

@@ -1,5 +1,26 @@
 Rover Release Notes:
-========================
+--------------------------------
+Rover 3.5.1-rc1 30-Apr-2019
+Changes from 3.5.0
+1) WHEEL_DISTANCE mavlink messages sent to ground station and companion computers
+2) Bug fixes:
+    a) EKF compass switching fix for vehicles with 3 compasses
+    b) Guided's heading-and-speed controller no longer uses land based speed control
+    c) Pre-arm check fix that all required motors for the frame are configured
+    d) Prevent loss of active IMU from causing loss of attitude control
+    e) Added startup check for Hex CubeBlack sensor failure
+    f) don't reset INS_ENABLE_MASK based on found IMUs
+--------------------------------
+Rover 3.5.0 06-Feb-2019
+Changes from 3.5.0-rc3
+1) Bug fixes and minor enhancements
+    a) Avoid potential divide-by-zero when waypoints are almost in a straight line
+    b) LOIT_TYPE parameter description fix
+--------------------------------
+Rover 3.5.0-rc3 30-Jan-2019
+Changes from 3.5.0-rc2
+1) Fix build issue affecting fmuv2
+--------------------------------
 Rover 3.5.0-rc2 24-Jan-2019
 Changes from 3.5.0-rc1
 1) ChibiOS fixes and enhancements to many boards including Pixhawk4

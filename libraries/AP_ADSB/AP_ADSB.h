@@ -80,6 +80,14 @@ public:
     // mavlink message handler
     void handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg);
 
+    // when true, a vehicle with that ICAO was found in database and the vehicle is populated.
+    bool get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const;
+
+    uint32_t get_special_ICAO_target() const { return (uint32_t)_special_ICAO_target; };
+    void set_special_ICAO_target(const uint32_t new_icao_target) { _special_ICAO_target = (int32_t)new_icao_target; };
+    bool is_special_vehicle(uint32_t icao) const { return _special_ICAO_target != 0 && (_special_ICAO_target == (int32_t)icao); }
+
+
 private:
     // initialize _vehicle_list
     void init();
@@ -133,6 +141,7 @@ private:
         adsb_vehicle_t *vehicle_list = nullptr;
         uint16_t    vehicle_count;
         AP_Int32    list_radius;
+        AP_Int16    list_altitude;
 
         // streamrate stuff
         uint32_t    send_start_ms[MAVLINK_COMM_NUM_BUFFERS];
@@ -176,9 +185,21 @@ private:
     uint16_t    furthest_vehicle_index;
     float       furthest_vehicle_distance;
 
+
+    // special ICAO of interest that ignored filters when != 0
+    AP_Int32 _special_ICAO_target;
+
     static const uint8_t max_samples = 30;
     AP_Buffer<adsb_vehicle_t, max_samples> samples;
 
     void push_sample(adsb_vehicle_t &vehicle);
 
+    // logging
+    AP_Int8 _log;
+    void write_log(const adsb_vehicle_t &vehicle);
+    enum logging {
+        NONE            = 0,
+        SPECIAL_ONLY    = 1,
+        ALL             = 2
+    };
 };

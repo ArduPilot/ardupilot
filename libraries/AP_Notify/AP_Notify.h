@@ -47,8 +47,8 @@ public:
     AP_Notify &operator=(const AP_Notify&) = delete;
 
     // get singleton instance
-    static AP_Notify *instance(void) {
-        return _instance;
+    static AP_Notify *get_singleton(void) {
+        return _singleton;
     }
     
     // Oreo LED Themes
@@ -78,6 +78,7 @@ public:
         uint8_t gps_num_sats;     // number of sats
         uint8_t flight_mode;      // flight mode
         bool armed;               // 0 = disarmed, 1 = armed
+        bool flying;              // 0 = not flying, 1 = flying/driving/diving/tracking
         bool pre_arm_check;       // true if passing pre arm checks
         bool pre_arm_gps_check;   // true if passing pre arm gps checks
         bool save_trim;           // true if gathering trim data
@@ -138,6 +139,9 @@ public:
     // handle a PLAY_TUNE message
     static void handle_play_tune(mavlink_message_t* msg);
 
+    // play a tune string
+    static void play_tune(const char *tune);
+
     bool buzzer_enabled() const { return _buzzer_enable; }
 
     // set flight mode string
@@ -151,10 +155,11 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
     uint8_t get_buzz_pin() const  { return _buzzer_pin; }
+    uint8_t get_buzz_level() const  { return _buzzer_level; }
 
 private:
 
-    static AP_Notify *_instance;
+    static AP_Notify *_singleton;
 
     void add_backend_helper(NotifyDevice *backend);
 
@@ -169,6 +174,7 @@ private:
     AP_Int8 _oreo_theme;
     AP_Int8 _buzzer_pin;
     AP_Int32 _led_type;
+    AP_Int8 _buzzer_level;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
@@ -176,4 +182,8 @@ private:
 
     static NotifyDevice* _devices[];
     static uint8_t _num_devices;
+};
+
+namespace AP {
+    AP_Notify &notify();
 };

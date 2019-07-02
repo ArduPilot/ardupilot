@@ -117,9 +117,9 @@ void Sub::auto_wp_run()
         //    (of course it would be better if people just used take-off)
         // call attitude controller
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
         return;
     }
 
@@ -134,7 +134,7 @@ void Sub::auto_wp_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     // TODO logic for terrain tracking target going below fence limit
@@ -203,9 +203,9 @@ void Sub::auto_spline_run()
         // To-Do: reset waypoint origin to current location because vehicle is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
         return;
     }
 
@@ -220,7 +220,7 @@ void Sub::auto_spline_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint controller
     wp_nav.update_spline();
@@ -259,7 +259,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
     if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
         // default to current position and log error
         circle_center_neu = inertial_nav.get_position();
-        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_CIRCLE_INIT);
+        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
     }
     circle_nav.set_center(circle_center_neu);
 
@@ -389,9 +389,10 @@ void Sub::auto_loiter_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
 
         return;
     }
@@ -403,7 +404,7 @@ void Sub::auto_loiter_run()
     }
 
     // set motors to full range
-    motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run waypoint and z-axis position controller
     failsafe_terrain_set_status(wp_nav.update_wpnav());
@@ -653,7 +654,7 @@ bool Sub::auto_terrain_recover_start()
     pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
 
     // initialize vertical speeds and leash lengths
-    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
     pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // Reset vertical position and velocity targets
@@ -674,20 +675,21 @@ void Sub::auto_terrain_recover_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
         return;
     }
 
     switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
 
     case RangeFinder::RangeFinder_OutOfRangeLow:
-        target_climb_rate = wp_nav.get_speed_up();
+        target_climb_rate = wp_nav.get_default_speed_up();
         rangefinder_recovery_ms = 0;
         break;
 
     case RangeFinder::RangeFinder_OutOfRangeHigh:
-        target_climb_rate = wp_nav.get_speed_down();
+        target_climb_rate = wp_nav.get_default_speed_down();
         rangefinder_recovery_ms = 0;
         break;
 

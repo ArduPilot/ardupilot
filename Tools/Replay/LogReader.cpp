@@ -38,7 +38,7 @@ LogReader::LogReader(AP_AHRS &_ahrs,
                      Compass &_compass,
                      AP_GPS &_gps,
                      AP_Airspeed &_airspeed,
-                     AP_Logger &_dataflash,
+                     AP_Logger &_logger,
                      struct LogStructure *log_structure,
                      uint8_t log_structure_count,
                      const char **&_nottypes):
@@ -49,7 +49,7 @@ LogReader::LogReader(AP_AHRS &_ahrs,
     compass(_compass),
     gps(_gps),
     airspeed(_airspeed),
-    dataflash(_dataflash),
+    logger(_logger),
     accel_mask(7),
     gyro_mask(7),
     last_timestamp_usec(0),
@@ -80,7 +80,7 @@ void LogReader::maybe_install_vehicle_specific_parsers() {
 	    for (uint8_t i = 0; i<LOGREADER_MAX_FORMATS; i++) {
 		if (deferred_formats[i].type != 0) {
 		    msgparser[i] = new LR_MsgHandler_NTUN_Copter
-			(deferred_formats[i], dataflash, last_timestamp_usec,
+			(deferred_formats[i], logger, last_timestamp_usec,
                          inavpos);
 		}
 	    }
@@ -247,7 +247,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	debug("Defining log format for type (%d) (%s)\n", f.type, name);
 
     struct LogStructure s = _log_structure[_log_structure_count++];
-    dataflash.set_num_types(_log_structure_count);
+    logger.set_num_types(_log_structure_count);
 
     if (in_list(name, log_write_names)) {
         debug("%s is a Log_Write-written message\n", name);
@@ -287,7 +287,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         strncpy(pkt.name, s.name, sizeof(pkt.name));
         strncpy(pkt.format, s.format, sizeof(pkt.format));
         strncpy(pkt.labels, s.labels, sizeof(pkt.labels));
-        dataflash.WriteCriticalBlock(&pkt, sizeof(pkt));
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 
     if (msgparser[f.type] != NULL) {
@@ -297,85 +297,85 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	// map from format name to a parser subclass:
 	if (streq(name, "PARM")) {
             msgparser[f.type] = new LR_MsgHandler_PARM
-                (formats[f.type], dataflash,
+                (formats[f.type], logger,
                  last_timestamp_usec,
                  [this](const char *xname, const float xvalue) {
                     return set_parameter(xname, xvalue);
                  });
 	} else if (streq(name, "GPS")) {
 	    msgparser[f.type] = new LR_MsgHandler_GPS(formats[f.type],
-                                                      dataflash,
+                                                      logger,
                                                       last_timestamp_usec,
                                                       gps, ground_alt_cm);
 	} else if (streq(name, "GPS2")) {
-	    msgparser[f.type] = new LR_MsgHandler_GPS2(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_GPS2(formats[f.type], logger,
                                                        last_timestamp_usec,
                                                        gps, ground_alt_cm);
 	} else if (streq(name, "GPA")) {
 	    msgparser[f.type] = new LR_MsgHandler_GPA(formats[f.type],
-                                                      dataflash,
+                                                      logger,
                                                       last_timestamp_usec,
                                                       gps);
 	} else if (streq(name, "GPA2")) {
-	    msgparser[f.type] = new LR_MsgHandler_GPA2(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_GPA2(formats[f.type], logger,
                                                        last_timestamp_usec,
                                                        gps);
 	} else if (streq(name, "MSG")) {
-	    msgparser[f.type] = new LR_MsgHandler_MSG(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_MSG(formats[f.type], logger,
                                                    last_timestamp_usec,
 						   vehicle, ahrs);
 	} else if (streq(name, "IMU")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMU(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_IMU(formats[f.type], logger,
                                                    last_timestamp_usec,
 						   accel_mask, gyro_mask, ins);
 	} else if (streq(name, "IMU2")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMU2(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_IMU2(formats[f.type], logger,
                                                     last_timestamp_usec,
 						    accel_mask, gyro_mask, ins);
 	} else if (streq(name, "IMU3")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMU3(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_IMU3(formats[f.type], logger,
                                                     last_timestamp_usec,
 						    accel_mask, gyro_mask, ins);
 	} else if (streq(name, "IMT")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMT(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_IMT(formats[f.type], logger,
                                                       last_timestamp_usec,
                                                       accel_mask, gyro_mask, use_imt, ins);
 	} else if (streq(name, "IMT2")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMT2(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_IMT2(formats[f.type], logger,
                                                        last_timestamp_usec,
                                                        accel_mask, gyro_mask, use_imt, ins);
 	} else if (streq(name, "IMT3")) {
-	    msgparser[f.type] = new LR_MsgHandler_IMT3(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_IMT3(formats[f.type], logger,
                                                        last_timestamp_usec,
                                                        accel_mask, gyro_mask, use_imt, ins);
 	} else if (streq(name, "SIM")) {
-	  msgparser[f.type] = new LR_MsgHandler_SIM(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_SIM(formats[f.type], logger,
                                                  last_timestamp_usec,
 						 sim_attitude);
 	} else if (streq(name, "BARO")) {
-	  msgparser[f.type] = new LR_MsgHandler_BARO(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_BARO(formats[f.type], logger,
                                                   last_timestamp_usec);
 	} else if (streq(name, "ARM")) {
-	  msgparser[f.type] = new LR_MsgHandler_ARM(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_ARM(formats[f.type], logger,
                                                   last_timestamp_usec);
 	} else if (streq(name, "EV")) {
-	  msgparser[f.type] = new LR_MsgHandler_Event(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_Event(formats[f.type], logger,
                                                   last_timestamp_usec);
 	} else if (streq(name, "AHR2")) {
-	  msgparser[f.type] = new LR_MsgHandler_AHR2(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_AHR2(formats[f.type], logger,
 						  last_timestamp_usec,
                                                   ahr2_attitude);
 	} else if (streq(name, "ATT")) {
 	  // this parser handles *all* attitude messages - the common one,
 	  // and also the rover/copter/plane-specific (old) messages
-	  msgparser[f.type] = new LR_MsgHandler_ATT(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_ATT(formats[f.type], logger,
 						 last_timestamp_usec,
                                                  attitude);
 	} else if (streq(name, "MAG")) {
-	  msgparser[f.type] = new LR_MsgHandler_MAG(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_MAG(formats[f.type], logger,
 						 last_timestamp_usec, compass);
 	} else if (streq(name, "MAG2")) {
-	  msgparser[f.type] = new LR_MsgHandler_MAG2(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_MAG2(formats[f.type], logger,
 						 last_timestamp_usec, compass);
 	} else if (streq(name, "NTUN")) {
 	    // the label "NTUN" is used by rover, copter and plane -
@@ -385,18 +385,18 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	    memcpy(&deferred_formats[f.type], &formats[f.type],
                    sizeof(struct log_Format));
 	} else if (streq(name, "ARSP")) { // plane-specific(?!)
-	    msgparser[f.type] = new LR_MsgHandler_ARSP(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_ARSP(formats[f.type], logger,
                                                     last_timestamp_usec,
                                                     airspeed);
 	} else if (streq(name, "NKF1")) {
-	    msgparser[f.type] = new LR_MsgHandler_NKF1(formats[f.type], dataflash,
+	    msgparser[f.type] = new LR_MsgHandler_NKF1(formats[f.type], logger,
                                                        last_timestamp_usec);
 	} else if (streq(name, "CHEK")) {
-	  msgparser[f.type] = new LR_MsgHandler_CHEK(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_CHEK(formats[f.type], logger,
                                                      last_timestamp_usec,
                                                      check_state);
 	} else if (streq(name, "PM")) {
-	  msgparser[f.type] = new LR_MsgHandler_PM(formats[f.type], dataflash,
+	  msgparser[f.type] = new LR_MsgHandler_PM(formats[f.type], logger,
                                                    last_timestamp_usec);
 	} else {
             debug("  No parser for (%s)\n", name);
@@ -420,10 +420,10 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
         }
         msg[2] = mapped_msgid[msg[2]];
         if (!in_list(name, nottypes)) {
-            dataflash.WriteBlock(msg, f.length);        
+            logger.WriteBlock(msg, f.length);        
         }
         // a MsgHandler would probably have found a timestamp and
-        // caled stop_clock.  This runs IO, clearing dataflash's
+        // caled stop_clock.  This runs IO, clearing logger's
         // buffer.
         hal.scheduler->stop_clock(last_timestamp_usec);
     }

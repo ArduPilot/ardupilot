@@ -26,11 +26,14 @@ bool Copter::ModeFollow::init(const bool ignore_checks)
 
 void Copter::ModeFollow::run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_spool_down();
         return;
     }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // re-use guided mode's velocity controller
     // Note: this is safe from interference from GCSs and companion computer's whose guided mode
@@ -113,7 +116,7 @@ void Copter::ModeFollow::run()
 
             case AP_Follow::YAW_BEHAVE_SAME_AS_LEAD_VEHICLE: {
                 float target_hdg = 0.0f;
-                if (g2.follow.get_target_heading(target_hdg)) {
+                if (g2.follow.get_target_heading_deg(target_hdg)) {
                     yaw_cd = target_hdg * 100.0f;
                     use_yaw = true;
                 }
@@ -168,7 +171,7 @@ bool Copter::ModeFollow::get_wp(Location &loc)
     float dist = g2.follow.get_distance_to_target();
     float bearing = g2.follow.get_bearing_to_target();
     loc = copter.current_loc;
-    location_update(loc, bearing, dist);
+    loc.offset_bearing(bearing, dist);
     return true;
 }
 

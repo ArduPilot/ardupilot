@@ -199,16 +199,17 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
     _destination = destination;
 
     // initialise distance
-    _distance_to_destination = get_distance(_origin, _destination);
+    _distance_to_destination = _origin.get_distance(_destination);
     _reached_destination = false;
 
     // set final desired speed
     _desired_speed_final = 0.0f;
     if (!is_equal(next_leg_bearing_cd, MODE_NEXT_HEADING_UNKNOWN)) {
-        const float curr_leg_bearing_cd = get_bearing_cd(_origin, _destination);
+        const float curr_leg_bearing_cd = _origin.get_bearing_to(_destination);
         const float turn_angle_cd = wrap_180_cd(next_leg_bearing_cd - curr_leg_bearing_cd);
-        if (is_zero(turn_angle_cd)) {
-            // if not turning can continue at full speed
+        if (fabsf(turn_angle_cd) < 10.0f) {
+            // if turning less than 0.1 degrees vehicle can continue at full speed
+            // we use 0.1 degrees instead of zero to avoid divide by zero in calcs below
             _desired_speed_final = _desired_speed;
         } else if (rover.use_pivot_steering_at_next_WP(turn_angle_cd)) {
             // pivoting so we will stop
@@ -230,7 +231,7 @@ bool Mode::set_desired_location_NED(const Vector3f& destination, float next_leg_
         return false;
     }
     // apply offset
-    location_offset(destination_ned, destination.x, destination.y);
+    destination_ned.offset(destination.x, destination.y);
     set_desired_location(destination_ned, next_leg_bearing_cd);
     return true;
 }
@@ -308,7 +309,7 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
     float throttle_out;
 
     // call speed or stop controller
-    if (is_zero(target_speed)) {
+    if (is_zero(target_speed) && !rover.is_balancebot()) {
         bool stopped;
         throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
     } else {
@@ -332,11 +333,14 @@ bool Mode::stop_vehicle()
 {
     // call throttle controller and convert output to -100 to +100 range
     bool stopped = false;
-    float throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
+    float throttle_out;
 
-    // if vehicle is balance bot, calculate actual throttle required for balancing
+    // if vehicle is balance bot, calculate throttle required for balancing
     if (rover.is_balancebot()) {
+        throttle_out = 100.0f * attitude_control.get_throttle_out_speed(0, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
         rover.balancebot_pitch_control(throttle_out);
+    } else {
+        throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
     }
 
     // relax mainsail if present
@@ -428,7 +432,7 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
     const float turn_angle_rad = fabsf(radians(wp_yaw_diff * 0.01f));
 
     // calculate distance from vehicle to line + wp_overshoot
-    const float line_yaw_diff = wrap_180_cd(get_bearing_cd(_origin, _destination) - heading_cd);
+    const float line_yaw_diff = wrap_180_cd(_origin.get_bearing_to(_destination) - heading_cd);
     const float xtrack_error = rover.nav_controller->crosstrack_error();
     const float dist_from_line = fabsf(xtrack_error);
     const bool heading_away = is_positive(line_yaw_diff) == is_positive(xtrack_error);
@@ -507,7 +511,7 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
                                                                            g2.motors.limit.steer_left,
                                                                            g2.motors.limit.steer_right,
                                                                            rover.G_Dt);
-    g2.motors.set_steering(steering_out * 4500.0f);
+    set_steering(steering_out * 4500.0f);
 }
 
 // calculate steering output to drive towards desired heading
@@ -523,7 +527,7 @@ void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max_deg
                                                                          g2.motors.limit.steer_left,
                                                                          g2.motors.limit.steer_right,
                                                                          rover.G_Dt);
-    g2.motors.set_steering(steering_out * 4500.0f);
+    set_steering(steering_out * 4500.0f);
 }
 
 // calculate vehicle stopping point using current location, velocity and maximum acceleration
@@ -548,7 +552,16 @@ void Mode::calc_stopping_location(Location& stopping_loc)
     // calculate stopping position from current location in meters
     const Vector2f stopping_offset = velocity.normalized() * stopping_dist;
 
-    location_offset(stopping_loc, stopping_offset.x, stopping_offset.y);
+    stopping_loc.offset(stopping_offset.x, stopping_offset.y);
+}
+
+void Mode::set_steering(float steering_value)
+{
+    if (allows_stick_mixing() && g2.stick_mixing > 0) {
+        steering_value = channel_steer->stick_mixing((int16_t)steering_value);
+    }
+    steering_value = constrain_float(steering_value, -4500.0f, 4500.0f);
+    g2.motors.set_steering(steering_value);
 }
 
 Mode *Rover::mode_from_mode_num(const enum Mode::Number num)

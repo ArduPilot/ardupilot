@@ -21,6 +21,8 @@
 #include "AP_InertialSensor_SITL.h"
 #include "AP_InertialSensor_RST.h"
 #include "AP_InertialSensor_BMI055.h"
+#include "AP_InertialSensor_BMI088.h"
+#include "AP_InertialSensor_Invensensev2.h"
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -439,14 +441,14 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Path: ../AP_InertialSensor/BatchSampler.cpp
     AP_SUBGROUPINFO(batchsampler, "LOG_",  39, AP_InertialSensor, AP_InertialSensor::BatchSampler),
 
-    // @Group: ENABLE_MASK
+    // @Param: ENABLE_MASK
     // @DisplayName: IMU enable mask
-    // @Description: This is a bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs
+    // @Description: Bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs
     // @User: Advanced
     // @Values: 1:FirstIMUOnly,3:FirstAndSecondIMU,7:FirstSecondAndThirdIMU,127:AllIMUs
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
-    
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -454,16 +456,16 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     AP_GROUPEND
 };
 
-AP_InertialSensor *AP_InertialSensor::_s_instance = nullptr;
+AP_InertialSensor *AP_InertialSensor::_singleton = nullptr;
 
 AP_InertialSensor::AP_InertialSensor() :
     _board_orientation(ROTATION_NONE),
     _log_raw_bit(-1)
 {
-    if (_s_instance) {
+    if (_singleton) {
         AP_HAL::panic("Too many inertial sensors");
     }
-    _s_instance = this;
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _gyro_cal_ok[i] = true;
@@ -480,12 +482,12 @@ AP_InertialSensor::AP_InertialSensor() :
 /*
  * Get the AP_InertialSensor singleton
  */
-AP_InertialSensor *AP_InertialSensor::get_instance()
+AP_InertialSensor *AP_InertialSensor::get_singleton()
 {
-    if (!_s_instance) {
-        _s_instance = new AP_InertialSensor();
+    if (!_singleton) {
+        _singleton = new AP_InertialSensor();
     }
-    return _s_instance;
+    return _singleton;
 }
 
 /*
@@ -739,13 +741,23 @@ AP_InertialSensor::detect_backends(void)
                                                       ROTATION_ROLL_180_YAW_90,
                                                       ROTATION_ROLL_180_YAW_90));
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_YAW_270));
+        // new cubes have ICM20602, ICM20948, ICM20649
+        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20602_ext"), ROTATION_ROLL_180_YAW_270));
+        ADD_BACKEND(AP_InertialSensor_Invensensev2::probe(*this, hal.spi->get_device("icm20948_ext"), ROTATION_PITCH_180));
+        ADD_BACKEND(AP_InertialSensor_Invensensev2::probe(*this, hal.spi->get_device("icm20948"), ROTATION_YAW_270));
         break;
 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
         _fast_sampling_mask.set_default(1);
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20689"), ROTATION_NONE));
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20602"), ROTATION_NONE));
+        // allow for either BMI055 or BMI088
         ADD_BACKEND(AP_InertialSensor_BMI055::probe(*this,
+                                                    hal.spi->get_device("bmi055_a"),
+                                                    hal.spi->get_device("bmi055_g"),
+                                                    ROTATION_ROLL_180_YAW_90));
+        ADD_BACKEND(AP_InertialSensor_BMI088::probe(*this,
                                                     hal.spi->get_device("bmi055_a"),
                                                     hal.spi->get_device("bmi055_g"),
                                                     ROTATION_ROLL_180_YAW_90));
@@ -866,8 +878,6 @@ AP_InertialSensor::detect_backends(void)
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
-
-    _enable_mask.set(found_mask);
 
     if (_backend_count == 0) {
         AP_BoardConfig::sensor_config_error("INS: unable to initialise driver");
@@ -1105,6 +1115,8 @@ AP_InertialSensor::_init_gyro()
     // cold start
     hal.console->printf("Init Gyro");
 
+    hal.scheduler->expect_delay_ms(60000);
+
     /*
       we do the gyro calibration with no board rotation. This avoids
       having to rotate readings during the calibration
@@ -1219,6 +1231,8 @@ AP_InertialSensor::_init_gyro()
 
     // stop flashing leds
     AP_Notify::flags.initialising = false;
+
+    hal.scheduler->expect_delay_ms(0);
 }
 
 // save parameters to eeprom
@@ -1601,9 +1615,12 @@ AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id, uint8_t i
 void AP_InertialSensor::calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt)
 {
     // check for clipping
-    if (fabsf(accel.x) > AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS ||
-        fabsf(accel.y) > AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS ||
-        fabsf(accel.z) > AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS) {
+    if (_backends[instance] == nullptr) {
+        return;
+    }
+    if (fabsf(accel.x) >  _backends[instance]->get_clip_limit() ||
+        fabsf(accel.y) >  _backends[instance]->get_clip_limit() ||
+        fabsf(accel.z) > _backends[instance]->get_clip_limit()) {
         _accel_clip_count[instance]++;
     }
 
@@ -1680,11 +1697,13 @@ void AP_InertialSensor::acal_update()
         return;
     }
 
+    hal.scheduler->expect_delay_ms(20000);
     _acal->update();
 
     if (hal.util->get_soft_armed() && _acal->get_status() != ACCEL_CAL_NOT_STARTED) {
         _acal->cancel();
     }
+    hal.scheduler->expect_delay_ms(0);
 }
 
 /*
@@ -1841,6 +1860,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
+    hal.scheduler->expect_delay_ms(20000);
     // record we are calibrating
     _calibrating = true;
 
@@ -1980,7 +2000,20 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
     // stop flashing leds
     AP_Notify::flags.initialising = false;
 
+    hal.scheduler->expect_delay_ms(0);
+
     return result;
+}
+
+/*
+  see if gyro calibration should be performed
+ */
+AP_InertialSensor::Gyro_Calibration_Timing AP_InertialSensor::gyro_calibration_timing()
+{
+    if (hal.util->was_watchdog_reset()) {
+        return GYRO_CAL_NEVER;
+    }
+    return (Gyro_Calibration_Timing)_gyro_cal_timing.get();
 }
 
 
@@ -1988,7 +2021,7 @@ namespace AP {
 
 AP_InertialSensor &ins()
 {
-    return *AP_InertialSensor::get_instance();
+    return *AP_InertialSensor::get_singleton();
 }
 
 };

@@ -31,14 +31,22 @@
 
 namespace ESP32 {
 
-struct SPIDesc {
+struct SPIDeviceDesc {
     const char *name;
-    uint8_t device;
     uint8_t bus;
-    uint8_t cs_gpio;
+    uint8_t device;
+    gpio_num_t cs;
     uint16_t mode;
-    uint32_t lowspeed;
-    uint32_t highspeed;
+    uint32_t lspeed;
+    uint32_t hspeed;
+};
+
+struct SPIBusDesc {
+    spi_host_device_t host;
+    int dma_ch;
+    gpio_num_t mosi;
+    gpio_num_t miso;
+    gpio_num_t sclk;
 };
 
 class SPIBus : public DeviceBus {
@@ -49,7 +57,7 @@ public:
 
 class SPIDevice : public AP_HAL::SPIDevice {
 public:
-    SPIDevice(SPIBus &_bus, SPIDesc &_device_desc);
+    SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc);
     virtual ~SPIDevice();
 
     bool set_speed(AP_HAL::Device::Speed speed) override;
@@ -64,7 +72,7 @@ public:
 
 private:
     SPIBus &bus;
-    SPIDesc &device_desc;
+    SPIDeviceDesc &device_desc;
     Speed speed;
     char *pname;
     spi_device_handle_t low_speed_dev_handle;
@@ -80,7 +88,6 @@ public:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
 
 private:
-    static SPIDesc device_table[];
     SPIBus *buses;
 };
 }

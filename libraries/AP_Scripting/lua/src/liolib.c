@@ -1,4 +1,3 @@
-#if 0
 /*
 ** $Id: liolib.c,v 2.151.1.1 2017/04/19 17:29:57 roberto Exp $
 ** Standard I/O (and system) library
@@ -207,7 +206,7 @@ static int aux_close (lua_State *L) {
 }
 
 
-static int f_close (lua_State *L) {
+static int lf_close (lua_State *L) {
   tofile(L);  /* make sure argument is an open stream */
   return aux_close(L);
 }
@@ -216,7 +215,7 @@ static int f_close (lua_State *L) {
 static int io_close (lua_State *L) {
   if (lua_isnone(L, 1))  /* no argument? */
     lua_getfield(L, LUA_REGISTRYINDEX, IO_OUTPUT);  /* use standard output */
-  return f_close(L);
+  return lf_close(L);
 }
 
 
@@ -582,7 +581,7 @@ static int io_read (lua_State *L) {
 }
 
 
-static int f_read (lua_State *L) {
+static int lf_read (lua_State *L) {
   return g_read(L, tofile(L), 2);
 }
 
@@ -647,7 +646,7 @@ static int io_write (lua_State *L) {
 }
 
 
-static int f_write (lua_State *L) {
+static int lf_write (lua_State *L) {
   FILE *f = tofile(L);
   lua_pushvalue(L, 1);  /* push file at the stack top (to be returned) */
   return g_write(L, f, 2);
@@ -673,6 +672,7 @@ static int f_seek (lua_State *L) {
 }
 
 
+#if 0
 static int f_setvbuf (lua_State *L) {
   static const int mode[] = {_IONBF, _IOFBF, _IOLBF};
   static const char *const modenames[] = {"no", "full", "line", NULL};
@@ -682,7 +682,7 @@ static int f_setvbuf (lua_State *L) {
   int res = setvbuf(f, NULL, mode[op], (size_t)sz);
   return luaL_fileresult(L, res == 0, NULL);
 }
-
+#endif
 
 
 static int io_flush (lua_State *L) {
@@ -718,13 +718,13 @@ static const luaL_Reg iolib[] = {
 ** methods for file handles
 */
 static const luaL_Reg flib[] = {
-  {"close", f_close},
+  {"close", lf_close},
   {"flush", f_flush},
   {"lines", f_lines},
-  {"read", f_read},
+  {"read", lf_read},
   {"seek", f_seek},
-  {"setvbuf", f_setvbuf},
-  {"write", f_write},
+//  {"setvbuf", f_setvbuf},
+  {"write", lf_write},
   {"__gc", f_gc},
   {"__tostring", f_tostring},
   {NULL, NULL}
@@ -775,4 +775,3 @@ LUAMOD_API int luaopen_io (lua_State *L) {
   return 1;
 }
 
-#endif

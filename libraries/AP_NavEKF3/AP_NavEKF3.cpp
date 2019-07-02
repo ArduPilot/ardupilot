@@ -1,5 +1,4 @@
 #include <AP_HAL/AP_HAL.h>
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
 #include "AP_NavEKF3_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -35,6 +34,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_DEFAULT        1
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -59,6 +59,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_DEFAULT        1
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -80,9 +81,10 @@
 #define MAG_CAL_DEFAULT         0
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
-#define FLOW_M_NSE_DEFAULT      0.25f
-#define FLOW_I_GATE_DEFAULT     300
+#define FLOW_M_NSE_DEFAULT      0.15f
+#define FLOW_I_GATE_DEFAULT     500
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_DEFAULT        2
 
 #else
 // build type not specified, use copter defaults
@@ -107,6 +109,7 @@
 #define FLOW_M_NSE_DEFAULT      0.25f
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_DEFAULT        1
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -185,7 +188,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     AP_GROUPINFO("GLITCH_RAD", 7, NavEKF3, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
     // 8 previously used for EKF3_GPS_DELAY parameter that has been deprecated.
-    // The EKF now takes its GPs delay form the GPS library with the default delays
+    // The EKF now takes its GPS delay form the GPS library with the default delays
     // specified by the GPS_DELAY and GPS_DELAY2 parameters.
 
     // Height measurement parameters
@@ -576,6 +579,14 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m/s
     AP_GROUPINFO("WENC_VERR", 53, NavEKF3, _wencOdmVelErr, 0.1f),
 
+    // @Param: FLOW_USE
+    // @DisplayName: Optical flow use bitmask
+    // @Description: Controls if the optical flow data is fused into the 24-state navigation estimator OR the 1-state terrain height estimator.
+    // @User: Advanced
+    // @Values: 0:None,1:Navigation,2:Terrain
+    // @RebootRequired: True
+    AP_GROUPINFO("FLOW_USE", 54, NavEKF3, _flowUse, FLOW_USE_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -635,9 +646,9 @@ bool NavEKF3::InitialiseFilter(void)
     if (core == nullptr) {
 
         // see if we will be doing logging
-        AP_Logger *dataflash = AP_Logger::instance();
-        if (dataflash != nullptr) {
-            logging.enabled = dataflash->log_replay();
+        AP_Logger *logger = AP_Logger::get_singleton();
+        if (logger != nullptr) {
+            logging.enabled = logger->log_replay();
         }
 
         // don't run multiple filters for 1 IMU
@@ -682,7 +693,7 @@ bool NavEKF3::InitialiseFilter(void)
 
     // Set up any cores that have been created
     // This specifies the IMU to be used and creates the data buffers
-    // If we are unble to set up a core, return false and try again next time the function is called
+    // If we are unable to set up a core, return false and try again next time the function is called
     bool core_setup_success = true;
     for (uint8_t core_index=0; core_index<num_cores; core_index++) {
         if (coreSetupRequired[core_index]) {
@@ -793,6 +804,19 @@ bool NavEKF3::healthy(void) const
     return core[primary].healthy();
 }
 
+bool NavEKF3::all_cores_healthy(void) const
+{
+    if (!core) {
+        return false;
+    }
+    for (uint8_t i = 0; i < num_cores; i++) {
+        if (!core[i].healthy()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // returns the index of the primary core
 // return -1 if no primary core selected
 int8_t NavEKF3::getPrimaryCoreIndex(void) const
@@ -850,7 +874,7 @@ void NavEKF3::getVelNED(int8_t instance, Vector3f &vel) const
 float NavEKF3::getPosDownDerivative(int8_t instance) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
-    // return the value calculated from a complementary filer applied to the EKF height and vertical acceleration
+    // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     if (core) {
         return core[instance].getPosDownDerivative();
     }
@@ -904,7 +928,7 @@ void NavEKF3::resetGyroBias(void)
 
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
-// Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+// Adjusts the EKF origin height so that the EKF height + origin height is the same as before
 // Returns true if the height datum reset has been performed
 // If using a range finder for height no reset is performed and it returns false
 bool NavEKF3::resetHeightDatum(void)
@@ -1016,7 +1040,7 @@ bool NavEKF3::getLLH(struct Location &loc) const
 }
 
 // Return the latitude and longitude and height used to set the NED origin for the specified instance
-// An out of range instance (eg -1) returns data for the the primary instance
+// An out of range instance (eg -1) returns data for the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
 bool NavEKF3::getOriginLLH(int8_t instance, struct Location &loc) const
@@ -1068,6 +1092,17 @@ void NavEKF3::getRotationBodyToNED(Matrix3f &mat) const
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
+void NavEKF3::getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        Matrix3f mat;
+        core[instance].getRotationBodyToNED(mat);
+        quat.from_rotation_matrix(mat);
+    }
+}
+
+// return the quaternions defining the rotation from NED to XYZ (autopilot) axes
 void NavEKF3::getQuaternion(int8_t instance, Quaternion &quat) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
@@ -1425,7 +1460,13 @@ const char *NavEKF3::prearm_failure_reason(void) const
     if (!core) {
         return nullptr;
     }
-    return core[primary].prearm_failure_reason();
+    for (uint8_t i = 0; i < num_cores; i++) {
+        const char * failure = core[primary].prearm_failure_reason();
+        if (failure != nullptr) {
+            return failure;
+        }
+    }
+    return nullptr;
 }
 
 // Returns the amount of vertical position change due to the last reset or core switch in metres
@@ -1559,4 +1600,3 @@ void NavEKF3::getTimingStatistics(int8_t instance, struct ekf_timing &timing) co
     }
 }
 
-#endif //HAL_CPU_CLASS

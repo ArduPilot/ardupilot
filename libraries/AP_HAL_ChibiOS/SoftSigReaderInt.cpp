@@ -29,11 +29,11 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 // singleton instance
-SoftSigReaderInt *SoftSigReaderInt::_instance;
+SoftSigReaderInt *SoftSigReaderInt::_singleton;
 
 SoftSigReaderInt::SoftSigReaderInt()
 {
-    _instance = this;
+    _singleton = this;
 }
 
 eicuchannel_t SoftSigReaderInt::get_pair_channel(eicuchannel_t channel)
@@ -97,7 +97,7 @@ void SoftSigReaderInt::_irq_handler(EICUDriver *eicup, eicuchannel_t aux_channel
     pulse.w0 = eicup->tim->CCR[channel];
     pulse.w1 = eicup->tim->CCR[aux_channel];
     
-    _instance->sigbuf.push(pulse);
+    _singleton->sigbuf.push(pulse);
 
     //check for missed interrupt 
     uint32_t mask = (STM32_TIM_SR_CC1OF << channel) | (STM32_TIM_SR_CC1OF << aux_channel);
@@ -106,7 +106,7 @@ void SoftSigReaderInt::_irq_handler(EICUDriver *eicup, eicuchannel_t aux_channel
         //try to reset RCProtocol parser by returning invalid value (i.e. 0 width pulse)
         pulse.w0 = 0;
         pulse.w1 = 0;
-        _instance->sigbuf.push(pulse);
+        _singleton->sigbuf.push(pulse);
         //reset overcapture mask
         eicup->tim->SR &= ~mask;
     }

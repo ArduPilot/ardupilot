@@ -87,7 +87,7 @@ protected:
 
     void _detection_message(char *buffer, uint8_t buflen) const;
 
-    bool should_df_log() const;
+    bool should_log() const;
 
     /*
       set a timestamp based on arrival time on uart at current byte,

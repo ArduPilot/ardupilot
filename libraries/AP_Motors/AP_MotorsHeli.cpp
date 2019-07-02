@@ -365,81 +365,81 @@ void AP_MotorsHeli::output_logic()
     // force desired and current spool mode if disarmed and armed with interlock enabled
     if (_flags.armed) {
         if (!_flags.interlock) {
-            _spool_desired = DESIRED_GROUND_IDLE;
+            _spool_desired = DesiredSpoolState::GROUND_IDLE;
         } else {
             _heliflags.init_targets_on_arming = false;
         }
     } else {
         _heliflags.init_targets_on_arming = true;
-        _spool_desired = DESIRED_SHUT_DOWN;
-        _spool_mode = SHUT_DOWN;
+        _spool_desired = DesiredSpoolState::SHUT_DOWN;
+        _spool_state = SpoolState::SHUT_DOWN;
     }
 
-    switch (_spool_mode) {
-        case SHUT_DOWN:
+    switch (_spool_state) {
+        case SpoolState::SHUT_DOWN:
             // Motors should be stationary.
             // Servos set to their trim values or in a test condition.
 
             // make sure the motors are spooling in the correct direction
-            if (_spool_desired != DESIRED_SHUT_DOWN) {
-                _spool_mode = GROUND_IDLE;
+            if (_spool_desired != DesiredSpoolState::SHUT_DOWN) {
+                _spool_state = SpoolState::GROUND_IDLE;
                 break;
             }
 
             break;
 
-        case GROUND_IDLE: {
+        case SpoolState::GROUND_IDLE: {
             // Motors should be stationary or at ground idle.
             // Servos should be moving to correct the current attitude.
-            if (_spool_desired == DESIRED_SHUT_DOWN){
-                _spool_mode = SHUT_DOWN;
-            } else if(_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
-                _spool_mode = SPOOL_UP;
+            if (_spool_desired == DesiredSpoolState::SHUT_DOWN){
+                _spool_state = SpoolState::SHUT_DOWN;
+            } else if(_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {
+                _spool_state = SpoolState::SPOOLING_UP;
             } else {    // _spool_desired == GROUND_IDLE
 
             }
 
             break;
         }
-        case SPOOL_UP:
+        case SpoolState::SPOOLING_UP:
             // Maximum throttle should move from minimum to maximum.
             // Servos should exhibit normal flight behavior.
 
             // make sure the motors are spooling in the correct direction
-            if (_spool_desired != DESIRED_THROTTLE_UNLIMITED ){
-                _spool_mode = SPOOL_DOWN;
+            if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED ){
+                _spool_state = SpoolState::SPOOLING_DOWN;
                 break;
             }
 
             if (_heliflags.rotor_runup_complete){
-                _spool_mode = THROTTLE_UNLIMITED;
+                _spool_state = SpoolState::THROTTLE_UNLIMITED;
             }
             break;
 
-        case THROTTLE_UNLIMITED:
+        case SpoolState::THROTTLE_UNLIMITED:
             // Throttle should exhibit normal flight behavior.
             // Servos should exhibit normal flight behavior.
 
             // make sure the motors are spooling in the correct direction
-            if (_spool_desired != DESIRED_THROTTLE_UNLIMITED) {
-                _spool_mode = SPOOL_DOWN;
+            if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
+                _spool_state = SpoolState::SPOOLING_DOWN;
                 break;
             }
 
 
             break;
 
-        case SPOOL_DOWN:
+        case SpoolState::SPOOLING_DOWN:
             // Maximum throttle should move from maximum to minimum.
             // Servos should exhibit normal flight behavior.
 
             // make sure the motors are spooling in the correct direction
-            if (_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
-                _spool_mode = SPOOL_UP;
+            if (_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {
+                _spool_state = SpoolState::SPOOLING_UP;
                 break;
             }
             if (!rotor_speed_above_critical()){
-                _spool_mode = GROUND_IDLE;
+                _spool_state = SpoolState::GROUND_IDLE;
             }
             break;
     }

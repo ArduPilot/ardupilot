@@ -23,6 +23,8 @@ STM32_ST_USE_TIMER 5
 # flash size
 FLASH_SIZE_KB 2048
 
+env OPTIMIZE -O3
+
 # serial port for stdout, disabled so console is on USB
 #STDOUT_SERIAL SD7
 #STDOUT_BAUDRATE 57600

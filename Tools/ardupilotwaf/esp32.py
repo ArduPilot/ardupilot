@@ -29,8 +29,9 @@ def configure(cfg):
     env.AP_HAL_COPTER = srcpath('libraries/AP_HAL_ESP32/targets/copter')
     env.AP_PROGRAM_FEATURES += ['esp32_ap_program']
     cmd = "cd {0}&&echo '{2}' > ../board.txt&&{1} defconfig BATCH_BUILD=1&&{1} showinc BATCH_BUILD=1".format(env.AP_HAL_PLANE, env.MAKE[0], env.BOARD)
+    print(cmd)
     result = subprocess.check_output(cmd, shell=True)
-    env.INCLUDES += parse_inc_dir(result)
+    #env.INCLUDES += parse_inc_dir(result)
 
 class build_esp32_image_plane(Task.Task):
     '''build an esp32 image'''
@@ -42,31 +43,10 @@ class build_esp32_image_plane(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
-class build_esp32icarus_image_plane(Task.Task):
-    '''build an esp32 image'''
-    color='CYAN'
-    run_str="(cd ${AP_HAL_PLANE} && ${MAKE} -f Makefile.icarus V=1)"
-    always_run = True
-    def keyword(self):
-        return "Generating"
-    def __str__(self):
-        return self.outputs[0].path_from(self.generator.bld.bldnode)
-
-
 class build_esp32_image_copter(Task.Task):
     '''build an esp32 image'''
     color='CYAN'
     run_str="cd ${AP_HAL_COPTER}&&'${MAKE}' BATCH_BUILD=1"
-    always_run = True
-    def keyword(self):
-        return "Generating"
-    def __str__(self):
-        return self.outputs[0].path_from(self.generator.bld.bldnode)
-
-class build_esp32_image_rover(Task.Task):
-    '''build an esp32 image'''
-    color='CYAN'
-    run_str="cd ${AP_HAL_ROVER}&&'${MAKE}' V=1"
     always_run = True
     def keyword(self):
         return "Generating"
@@ -90,10 +70,3 @@ def esp32_firmware(self):
         img_out = self.bld.bldnode.find_or_declare('idf-copter/arducopter.elf')
         generate_bin_task = self.create_task('build_esp32_image_copter', src=src_in, tgt=img_out)
         generate_bin_task.set_run_after(self.link_task)
-        
-        #add generated include files
-        cmd = "cd {0}&&{1} showinc".format(self.env.AP_HAL_COPTER, self.env.MAKE[0])
-        result = subprocess.check_output(cmd, shell=True)
-        self.env.INCLUDES += parse_inc_dir(result)
-        
-        

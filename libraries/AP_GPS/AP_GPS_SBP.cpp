@@ -392,7 +392,7 @@ void
 AP_GPS_SBP::logging_log_full_update()
 {
 
-    if (!should_df_log()) {
+    if (!should_log()) {
         return;
     }
 
@@ -412,7 +412,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
         uint8_t *msg_buff) {
-    if (!should_df_log()) {
+    if (!should_log()) {
         return;
     }
 

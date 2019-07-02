@@ -54,14 +54,14 @@ void Copter::AutoTune::run()
 
         // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f) {
-            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+            copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
-            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+            copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         }
         copter.attitude_control->reset_rate_controller_I_terms();
         copter.attitude_control->set_yaw_target_to_current_heading();
 
-        int32_t target_roll, target_pitch, target_yaw_rate;
+        float target_roll, target_pitch, target_yaw_rate;
         get_pilot_desired_rp_yrate_cd(target_roll, target_pitch, target_yaw_rate);
 
         copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
@@ -90,17 +90,11 @@ float Copter::AutoTune::get_pilot_desired_climb_rate_cms(void) const
 /*
   get stick roll, pitch and yaw rate
  */
-void Copter::AutoTune::get_pilot_desired_rp_yrate_cd(int32_t &des_roll_cd, int32_t &des_pitch_cd, int32_t &yaw_rate_cds)
+void Copter::AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitch_cd, float &yaw_rate_cds)
 {
-    // map from int32_t to float
-    float des_roll, des_pitch;
-
-    copter.mode_autotune.get_pilot_desired_lean_angles(des_roll, des_pitch, copter.aparm.angle_max,
+    copter.mode_autotune.get_pilot_desired_lean_angles(des_roll_cd, des_pitch_cd, copter.aparm.angle_max,
                                                        copter.attitude_control->get_althold_lean_angle_max());
     yaw_rate_cds = copter.mode_autotune.get_pilot_desired_yaw_rate(copter.channel_yaw->get_control_in());
-
-    des_roll_cd = des_roll;
-    des_pitch_cd = des_pitch;
 }
 
 /*
@@ -128,7 +122,7 @@ void Copter::AutoTune::Log_Write_Event(enum at_event id)
 {
     const struct {
         enum at_event eid;
-        uint8_t id;
+        Log_Event id;
     } map[] = {
         { EVENT_AUTOTUNE_INITIALISED, DATA_AUTOTUNE_INITIALISED },
         { EVENT_AUTOTUNE_OFF, DATA_AUTOTUNE_OFF },

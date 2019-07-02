@@ -256,7 +256,7 @@ void AP_InertialSensor_BMI055::read_fifo_accel(void)
         return;
     }
     // data is 12 bits with 16g range, 7.81mg/LSB
-    const float scale = 7.81 * 0.001 * GRAVITY_MSS / 16.0;
+    const float scale = 7.81 * 0.001 * GRAVITY_MSS / 16.0f;
     for (uint8_t i = 0; i < num_frames; i++) {
         const uint8_t *d = &data[i*6];
         int16_t xyz[3] {
@@ -277,7 +277,7 @@ void AP_InertialSensor_BMI055::read_fifo_accel(void)
         if (!dev_accel->read_registers(REGA_ACCD_TEMP, (uint8_t *)&t, 1)) {
             _inc_accel_error_count(accel_instance);
         } else {
-            float temp_degc = (0.5 * t) + 23.0;
+            float temp_degc = (0.5f * t) + 23.0f;
             _publish_temperature(accel_instance, temp_degc);
         }
     }
@@ -313,7 +313,7 @@ void AP_InertialSensor_BMI055::read_fifo_gyro(void)
     }
 
     // data is 16 bits with 2000dps range
-    const float scale = radians(2000.0) / 32767.0;
+    const float scale = radians(2000.0f) / 32767.0f;
     for (uint8_t i = 0; i < num_frames; i++) {
         const uint8_t *d = &data[i*6];
         int16_t xyz[3] {

@@ -37,8 +37,6 @@
 #include <AP_Camera/AP_Camera.h>                    // Camera triggering
 #include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
 #include <AP_Declination/AP_Declination.h>          // Compass declination library
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
-#include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
 #include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
 #include <AP_L1_Control/AP_L1_Control.h>
@@ -54,10 +52,12 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
 #include <AP_Relay/AP_Relay.h>                      // APM relay
+#include <AP_RPM/AP_RPM.h>
 #include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_Gripper/AP_Gripper.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
@@ -79,6 +79,11 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_WindVane/AP_WindVane.h>
+
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -160,7 +165,6 @@ private:
     // primary control channels
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
-    RC_Channel *channel_aux;
     RC_Channel *channel_lateral;
 
     AP_Logger logger;
@@ -170,12 +174,15 @@ private:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
-    RangeFinder rangefinder{serial_manager, ROTATION_NONE};
+    RangeFinder rangefinder{serial_manager};
     AP_Button button;
 
     // flight modes convenience array
     AP_Int8 *modes;
     const uint8_t num_modes = 6;
+
+    // AP_RPM Module
+    AP_RPM rpm_sensor;
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -289,23 +296,6 @@ private:
                            FUNCTOR_BIND_MEMBER(&Rover::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
-#endif
-#if DEVO_TELEM_ENABLED == ENABLED
-    AP_DEVO_Telem devo_telemetry{ahrs};
-#endif
-
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
-
-    // 3D Location vectors
-    // Location structure defined in AP_Common
-    // The home location used for RTL.  The location is set when we first get stable GPS lock
-    const struct Location &home;
-
     // true if the compass's initial location has been set
     bool compass_init_location;
 
@@ -331,14 +321,11 @@ private:
     // Store the time the last GPS message was received.
     uint32_t last_gps_msg_ms{0};
 
-    // last visual odometry update time
-    uint32_t visual_odom_last_update_ms;
-
     // last wheel encoder update times
     float wheel_encoder_last_angle_rad[WHEELENCODER_MAX_INSTANCES];     // distance in radians at time of last update to EKF
+    float wheel_encoder_last_distance_m[WHEELENCODER_MAX_INSTANCES];    // distance in meters at time of last update to EKF (for reporting to GCS)
     uint32_t wheel_encoder_last_update_ms[WHEELENCODER_MAX_INSTANCES];  // system time of last ping from each encoder
     uint32_t wheel_encoder_last_ekf_update_ms;                          // system time of last encoder data push to EKF
-    float wheel_encoder_rpm[WHEELENCODER_MAX_INSTANCES];                // for reporting to GCS
 
     // True when we are doing motor test
     bool motor_test;
@@ -383,28 +370,20 @@ private:
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
-    void update_compass(void);
     void update_logging1(void);
     void update_logging2(void);
-    void update_aux(void);
     void one_second_loop(void);
     void update_GPS(void);
     void update_current_mode(void);
+    void update_mission(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);
     bool is_balancebot() const;
 
-    // capabilities.cpp
-    void init_capabilities(void);
-
-    // commands_logic.cpp
-    void update_mission(void);
-
     // commands.cpp
-    void update_home_from_EKF();
-    bool set_home_to_current_location(bool lock);
-    bool set_home(const Location& loc, bool lock);
+    bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
     void update_home();
 
     // compat.cpp
@@ -435,21 +414,15 @@ private:
 
     // fence.cpp
     void fence_check();
-    void fence_send_mavlink_status(mavlink_channel_t chan);
 
     // GCS_Mavlink.cpp
-    void send_sys_status(mavlink_channel_t chan);
-    void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
-    void send_pid_tuning(mavlink_channel_t chan);
-    void send_wheel_encoder(mavlink_channel_t chan);
-    void send_fence_status(mavlink_channel_t chan);
+    void send_wheel_encoder_distance(mavlink_channel_t chan);
 
     // Log.cpp
     void Log_Write_Arm_Disarm();
     void Log_Write_Attitude();
     void Log_Write_Depth();
-    void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Nav_Tuning();
     void Log_Write_Sail();
@@ -458,7 +431,6 @@ private:
     void Log_Write_Throttle();
     void Log_Write_Rangefinder();
     void Log_Write_RC(void);
-    void Log_Write_WheelEncoder();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
@@ -472,7 +444,6 @@ private:
     // radio.cpp
     void set_control_channels(void);
     void init_rc_in();
-    void init_rc_out();
     void rudder_arm_disarm_check();
     void read_radio();
     void radio_failsafe_check(uint16_t pwm);
@@ -490,19 +461,17 @@ private:
     float sailboat_calc_heading(float desired_heading_cd);
 
     // sensors.cpp
-    void init_compass(void);
     void init_compass_location(void);
+    void update_compass(void);
+    void compass_save(void);
     void init_beacon();
     void init_visual_odom();
-    void update_visual_odom();
     void update_wheel_encoder();
-    void compass_cal_update(void);
-    void compass_save(void);
     void accel_cal_update(void);
     void read_rangefinders(void);
     void init_proximity();
     void read_airspeed();
-    void update_sensor_status_flags(void);
+    void rpm_update(void);
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);
@@ -521,7 +490,7 @@ private:
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
     void change_arm_state(void);
-    bool arm_motors(AP_Arming::ArmingMethod method);
+    bool arm_motors(AP_Arming::Method method);
     bool disarm_motors(void);
     bool is_boat() const;
 

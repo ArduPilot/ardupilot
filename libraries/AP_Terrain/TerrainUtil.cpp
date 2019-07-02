@@ -79,7 +79,7 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
     ref.lng = info.lon_degrees*10*1000*1000L;
 
     // find offset from reference
-    Vector2f offset = location_diff(ref, loc);
+    const Vector2f offset = ref.get_distance_NE(loc);
 
     // get indices in terms of grid_spacing elements
     uint32_t idx_x = offset.x / grid_spacing;
@@ -100,9 +100,8 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
     info.frac_y = (offset.y - idx_y * grid_spacing) / grid_spacing;
 
     // calculate lat/lon of SW corner of 32*28 grid_block
-    location_offset(ref, 
-                    info.grid_idx_x * TERRAIN_GRID_BLOCK_SPACING_X * (float)grid_spacing,
-                    info.grid_idx_y * TERRAIN_GRID_BLOCK_SPACING_Y * (float)grid_spacing);
+    ref.offset(info.grid_idx_x * TERRAIN_GRID_BLOCK_SPACING_X * (float)grid_spacing,
+               info.grid_idx_y * TERRAIN_GRID_BLOCK_SPACING_Y * (float)grid_spacing);
     info.grid_lat = ref.lat;
     info.grid_lon = ref.lng;
 

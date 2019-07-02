@@ -1,5 +1,52 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.9-rc1/rc2 30-Apr-2019
+Changes from 3.6.8
+1) CX-OF flow sensor enabled on all boards
+2) CUAVv5 Nano board support added
+3) RangeFinders supported on all I2C ports
+4) Compass maximum acceptable offsets increased
+5) Septentrio GPS driver loses logging of camera feedback which could cause lag
+6) Bug Fixes:
+    a) Acro mode leveling fix for when ACRO_TRAINER was 1
+    b) Tradheli collective position pre-arm check removed
+    c) Fallback to microSD for storage fixed
+    d) GPS blending memory access fix that could lead to unhealthy GPS
+------------------------------------------------------------------
+Copter 3.6.8 26-Apr-2019 / 3.6.8-rc1 24-Apr-2019
+Changes from 3.6.7
+1) Safety fixes
+    a) Prevent loss of active IMU from causing loss of attitude control
+    b) Added startup check for Hex CubeBlack sensor failure
+    c) don't reset INS_ENABLE_MASK based on found IMUs
+------------------------------------------------------------------
+Copter 3.6.7 06-Mar-2019 / 3.6.7-rc1 28-Feb-2019
+Changes from 3.6.6
+1) Bug fixes and minor enhancements
+    a) Matek405-Wing compass fix (thread initialisation fix)
+    b) Landing flips reduced by reducing I-term build-up
+    c) Land mission command slows down less aggressively
+    d) Lightware LW20 lidar more reliably switches to serial mode 
+------------------------------------------------------------------
+Copter 3.6.6 15-Feb-2019 / Copter 3.6.6-rc2 09-Feb-2019
+Changes from 3.6.6-rc1
+1) Bug fixes
+    a) EKF compass switching fix for vehicles with 3 compasses
+    b) CAN fixed on Pixhawk4 and PH4-mini
+    c) Mini-pix uart telem1 and telem2 reversed
+    d) Divide-by-zero protection if _FILT_HZ params set to zero
+    e) Guided_NoGPS skips GPS pre-arm check
+------------------------------------------------------------------
+Copter 3.6.6-rc1 02-Feb-2019
+Changes from 3.6.5
+1) AP_RSSI fixes and minor enhancements
+    a) RSSI pwm input driver for ChibiOS
+    b) add V5 Nano to RSSI_ANA_PIN parameter description
+2) Bug fixes and minor enhancements
+    a) TradHeli roll trim ramp time fix
+    b) First Spline waypoint no longer skipped
+    c) RC override (from GCS Joystick) disable fix (command to disable overrides could be interpreted as real input)
+------------------------------------------------------------------
 Copter 3.6.5 24-Jan-2019 / 3.6.5-rc3 21-Jan-2019
 Changes from 3.6.5-rc2
 1) Bug fixes:

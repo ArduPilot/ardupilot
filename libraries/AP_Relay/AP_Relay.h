@@ -38,9 +38,13 @@ public:
     // toggle the relay status
     void        toggle(uint8_t relay);
 
+    static AP_Relay *get_singleton(void) {return singleton; }
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
+    static AP_Relay *singleton;
+
     AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
     AP_Int8 _default;
 };

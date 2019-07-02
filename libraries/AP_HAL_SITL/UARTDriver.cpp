@@ -51,14 +51,15 @@ bool UARTDriver::_console;
 
 void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
-    if (_portNumber > ARRAY_SIZE(_sitlState->_uart_path)) {
+    if (_portNumber >= ARRAY_SIZE(_sitlState->_uart_path)) {
         AP_HAL::panic("port number out of range; you may need to extend _sitlState->_uart_path");
     }
 
     const char *path = _sitlState->_uart_path[_portNumber];
 
-    // default to 1MBit
-    _uart_baudrate = 1000000U;
+    if (baud != 0) {
+        _uart_baudrate = baud;
+    }
     
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
@@ -304,6 +305,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
         fcntl(_fd, F_SETFD, FD_CLOEXEC);
         _connected = true;
+        fprintf(stdout, "Connection on serial port %u\n", _portNumber);
     }
 }
 
@@ -360,6 +362,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 
     setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    fcntl(_fd, F_SETFD, FD_CLOEXEC);
     _connected = true;
 }
 
@@ -545,6 +548,7 @@ void UARTDriver::_check_connection(void)
             _connected = true;
             setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
             setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+            fcntl(_fd, F_SETFD, FD_CLOEXEC);
             fprintf(stdout, "New connection on serial port %u\n", _portNumber);
         }
     }
@@ -612,9 +616,22 @@ void UARTDriver::_timer_tick(void)
         return;
     }
     ssize_t nwritten;
+    uint32_t max_bytes = 10000;
+    SITL::SITL *_sitl = AP::sitl();
+    if (_sitl && _sitl->telem_baudlimit_enable) {
+        // limit byte rate to configured baudrate
+        uint32_t now = AP_HAL::micros();
+        float dt = 1.0e-6 * (now - last_tick_us);
+        max_bytes = _uart_baudrate * dt / 10;
+        if (max_bytes == 0) {
+            return;
+        }
+        last_tick_us = now;
+    }
 
     if (_packetise) {
         uint16_t n = _writebuffer.available();
+        n = MIN(n, max_bytes);
         if (n > 0) {
             n = mavlink_packetise(_writebuffer, n);
         }
@@ -631,6 +648,7 @@ void UARTDriver::_timer_tick(void)
         uint32_t navail;
         const uint8_t *readptr = _writebuffer.readptr(navail);
         if (readptr && navail > 0) {
+            navail = MIN(navail, max_bytes);
             if (!_use_send_recv) {
                 nwritten = ::write(_fd, readptr, navail);
                 if (nwritten == -1 && errno != EAGAIN && _uart_path) {
@@ -651,6 +669,7 @@ void UARTDriver::_timer_tick(void)
     if (space == 0) {
         return;
     }
+    space = MIN(space, max_bytes);
     
     char buf[space];
     ssize_t nread = 0;

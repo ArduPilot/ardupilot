@@ -24,10 +24,9 @@ extern const AP_HAL::HAL& hal;
    The constructor also initialises the rangefinder.
 */
 AP_RangeFinder_PWM::AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
-                                       AP_Int16 &_powersave_range,
+                                       AP_RangeFinder_Params &_params,
                                        float &_estimated_terrain_height) :
-    AP_RangeFinder_Backend(_state),
-    powersave_range(_powersave_range),
+    AP_RangeFinder_Backend(_state, _params),
     estimated_terrain_height(_estimated_terrain_height)
 {
 }
@@ -68,13 +67,13 @@ bool AP_RangeFinder_PWM::get_reading(uint16_t &reading_cm)
     if (value_us == 0 || sample_count == 0) {
         return false;
     }
-    reading_cm = (value_us/sample_count) * 1e-1f; // correct for LidarLite.  Parameter needed?
+    reading_cm = value_us/(sample_count * 10); // correct for LidarLite.  Parameter needed?  Converts from decimetres -> cm here
     return true;
 }
 
 void AP_RangeFinder_PWM::check_pin()
 {
-    if (state.pin == last_pin) {
+    if (params.pin == last_pin) {
         return;
     }
 
@@ -88,19 +87,19 @@ void AP_RangeFinder_PWM::check_pin()
         }
     }
 
-    // set last pin to state.pin so we don't continually try to attach
+    // set last pin to params.pin so we don't continually try to attach
     // to it if the attach is failing
-    last_pin = state.pin;
+    last_pin = params.pin;
 
-    if (state.pin <= 0) {
+    if (params.pin <= 0) {
         // don't need to install handler
         return;
     }
 
     // install interrupt handler on rising and falling edge
-    hal.gpio->pinMode(state.pin, HAL_GPIO_INPUT);
+    hal.gpio->pinMode(params.pin, HAL_GPIO_INPUT);
     if (!hal.gpio->attach_interrupt(
-            state.pin,
+            params.pin,
             FUNCTOR_BIND_MEMBER(&AP_RangeFinder_PWM::irq_handler,
                                 void,
                                 uint8_t,
@@ -110,20 +109,20 @@ void AP_RangeFinder_PWM::check_pin()
         // failed to attach interrupt
         gcs().send_text(MAV_SEVERITY_WARNING,
                         "RangeFinder_PWM: Failed to attach to pin %u",
-                        state.pin);
+                        params.pin);
         return;
     }
 }
 
 void AP_RangeFinder_PWM::check_stop_pin()
 {
-    if (state.stop_pin == last_stop_pin) {
+    if (params.stop_pin == last_stop_pin) {
         return;
     }
 
-    hal.gpio->pinMode(state.stop_pin, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(params.stop_pin, HAL_GPIO_OUTPUT);
 
-    last_stop_pin = state.stop_pin;
+    last_stop_pin = params.stop_pin;
 }
 
 void AP_RangeFinder_PWM::check_pins()
@@ -146,12 +145,12 @@ void AP_RangeFinder_PWM::update(void)
         return;
     }
 
-    if (state.stop_pin != -1) {
+    if (params.stop_pin != -1) {
         const bool oor = out_of_range();
         if (oor) {
             if (!was_out_of_range) {
                 // we are above the power saving range. Disable the sensor
-                hal.gpio->write(state.stop_pin, false);
+                hal.gpio->write(params.stop_pin, false);
                 set_status(RangeFinder::RangeFinder_NoData);
                 state.distance_cm = 0;
                 state.voltage_mv = 0;
@@ -161,7 +160,7 @@ void AP_RangeFinder_PWM::update(void)
         }
         // re-enable the sensor:
         if (!oor && was_out_of_range) {
-            hal.gpio->write(state.stop_pin, true);
+            hal.gpio->write(params.stop_pin, true);
             was_out_of_range = oor;
         }
     }
@@ -182,5 +181,5 @@ void AP_RangeFinder_PWM::update(void)
 
 // return true if we are beyond the power saving range
 bool AP_RangeFinder_PWM::out_of_range(void) const {
-    return powersave_range > 0 && estimated_terrain_height > powersave_range;
+    return params.powersave_range > 0 && estimated_terrain_height > params.powersave_range;
 }

@@ -49,10 +49,11 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_Benewake::AP_RangeFinder_Benewake(RangeFinder::RangeFinder_State &_state,
+                                                             AP_RangeFinder_Params &_params,
                                                              AP_SerialManager &serial_manager,
                                                              uint8_t serial_instance,
                                                              benewake_model_type model) :
-    AP_RangeFinder_Backend(_state),
+    AP_RangeFinder_Backend(_state, _params),
     model_type(model)
 {
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);

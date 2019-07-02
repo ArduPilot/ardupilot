@@ -130,3 +130,23 @@ void UARTDevice::set_flow_control(AP_HAL::UARTDriver::flow_control flow_control_
 
     _flow_control = flow_control_setting;
 }
+
+void UARTDevice::set_parity(int v)
+{
+    struct termios t;
+    tcgetattr(_fd, &t);
+    if (v != 0) {
+        // enable parity
+        t.c_cflag |= PARENB;
+        if (v == 1) {
+            t.c_cflag |= PARODD;
+        } else {
+            t.c_cflag &= ~PARODD;
+        }
+    }
+    else {
+        // disable parity
+        t.c_cflag &= ~PARENB;
+    }
+    tcsetattr(_fd, TCSANOW, &t);
+}

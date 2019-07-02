@@ -21,6 +21,7 @@
 #include <ch.h>
 #include "RCOutput.h"
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
 #include "sdcard.h"
@@ -54,7 +55,7 @@ void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
     if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
         return malloc_dma(size);
     } else if (mem_type == AP_HAL::Util::MEM_FAST) {
-        return try_alloc_from_ccm_ram(size);
+        return malloc_fastmem(size);
     } else {
         return calloc(1, size);
     }
@@ -67,16 +68,6 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
     }
 }
 
-
-void* Util::try_alloc_from_ccm_ram(size_t size)
-{
-    void *ret = malloc_ccm(size);
-    if (ret == nullptr) {
-        //we failed to allocate from CCM so we are going to try common SRAM
-        ret = calloc(1, size);
-    }
-    return ret;
-}
 
 #ifdef ENABLE_HEAP
 
@@ -134,8 +125,8 @@ Util::safety_state Util::safety_switch_state(void)
 
 void Util::set_imu_temp(float current)
 {
-#if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
-    if (!heater.target || *heater.target == -1 || !AP_BoardConfig::io_enabled()) {
+#if HAL_HAVE_IMU_HEATER
+    if (!heater.target || *heater.target == -1) {
         return;
     }
 
@@ -146,6 +137,11 @@ void Util::set_imu_temp(float current)
     // update once a second
     uint32_t now = AP_HAL::millis();
     if (now - heater.last_update_ms < 1000) {
+#if defined(HAL_HEATER_GPIO_PIN)
+        // output as duty cycle to local pin
+        hal.gpio->write(HAL_HEATER_GPIO_PIN, heater.duty_counter < heater.output);
+        heater.duty_counter = (heater.duty_counter+1) % 100;
+#endif
         return;
     }
     heater.last_update_ms = now;
@@ -167,17 +163,22 @@ void Util::set_imu_temp(float current)
     heater.integrator += kI * err;
     heater.integrator = constrain_float(heater.integrator, 0, 70);
 
-    float output = constrain_float(kP * err + heater.integrator, 0, 100);
+    heater.output = constrain_float(kP * err + heater.integrator, 0, 100);
     
-    // hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", heater.integrator, output, current, err);
+    //hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", heater.integrator, heater.output, current, err);
 
-    iomcu.set_heater_duty_cycle(output);
-#endif // HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        // tell IOMCU to setup heater
+        iomcu.set_heater_duty_cycle(heater.output);
+    }
+#endif
+#endif // HAL_HAVE_IMU_HEATER
 }
 
 void Util::set_imu_target_temp(int8_t *target)
 {
-#if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
+#if HAL_HAVE_IMU_HEATER
     heater.target = target;
 #endif
 }
@@ -229,32 +230,35 @@ bool Util::flash_bootloader()
     uint32_t fw_size;
     const char *fw_name = "bootloader.bin";
 
+    hal.scheduler->expect_delay_ms(11000);
+
     uint8_t *fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
         hal.console->printf("failed to find %s\n", fw_name);
+        hal.scheduler->expect_delay_ms(0);
         return false;
     }
 
-    const uint32_t addr = stm32_flash_getpageaddr(0);
+    const uint32_t addr = hal.flash->getpageaddr(0);
     if (!memcmp(fw, (const void*)addr, fw_size)) {
         hal.console->printf("Bootloader up-to-date\n");
         free(fw);
+        hal.scheduler->expect_delay_ms(0);
         return true;
     }
 
     hal.console->printf("Erasing\n");
-    if (!stm32_flash_erasepage(0)) {
+    if (!hal.flash->erasepage(0)) {
         hal.console->printf("Erase failed\n");
         free(fw);
+        hal.scheduler->expect_delay_ms(0);
         return false;
     }
     hal.console->printf("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
     const uint8_t max_attempts = 10;
     for (uint8_t i=0; i<max_attempts; i++) {
-        void *context = hal.scheduler->disable_interrupts_save();
-        const int32_t written = stm32_flash_write(addr, fw, fw_size);
-        hal.scheduler->restore_interrupts(context);
-        if (written == -1 || written < fw_size) {
+        bool ok = hal.flash->write(addr, fw, fw_size);
+        if (!ok) {
             hal.console->printf("Flash failed! (attempt=%u/%u)\n",
                                 i+1,
                                 max_attempts);
@@ -263,11 +267,13 @@ bool Util::flash_bootloader()
         }
         hal.console->printf("Flash OK\n");
         free(fw);
+        hal.scheduler->expect_delay_ms(0);
         return true;
     }
 
     hal.console->printf("Flash failed after %u attempts\n", max_attempts);
     free(fw);
+    hal.scheduler->expect_delay_ms(0);
     return false;
 }
 #endif //#ifndef HAL_NO_FLASH_SUPPORT
@@ -307,6 +313,65 @@ bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
  */
 bool Util::fs_init(void)
 {
-    return sdcard_init();
+    return sdcard_retry();
 }
 #endif
+
+// return true if the reason for the reboot was a watchdog reset
+bool Util::was_watchdog_reset() const
+{
+    return stm32_was_watchdog_reset();
+}
+
+// return true if safety was off and this was a watchdog reset
+bool Util::was_watchdog_safety_off() const
+{
+    return stm32_was_watchdog_reset() && stm32_get_boot_backup_safety_state() == false;
+}
+
+// return true if vehicle was armed and this was a watchdog reset
+bool Util::was_watchdog_armed() const
+{
+    return stm32_was_watchdog_reset() && stm32_get_boot_backup_armed() == true;
+}
+
+/*
+  change armed state
+ */
+void Util::set_soft_armed(const bool b)
+{
+    AP_HAL::Util::set_soft_armed(b);
+    stm32_set_backup_armed(b);
+}
+
+// backup home state for restore on watchdog reset
+void Util::set_backup_home_state(int32_t lat, int32_t lon, int32_t alt_cm) const
+{
+    stm32_set_backup_home(lat, lon, alt_cm);
+}
+
+// backup home state for restore on watchdog reset
+bool Util::get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const
+{
+    if (was_watchdog_reset()) {
+        stm32_get_backup_home(&lat, &lon, &alt_cm);
+        return true;
+    }
+    return false;
+}
+
+// backup atttude for restore on watchdog reset
+void Util::set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const
+{
+    stm32_set_attitude(roll_cd, pitch_cd, yaw_cd);
+}
+
+// get watchdog reset attitude
+bool Util::get_backup_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd) const
+{
+    if (was_watchdog_reset()) {
+        stm32_get_attitude(&roll_cd, &pitch_cd, &yaw_cd);
+        return true;
+    }
+    return false;
+}

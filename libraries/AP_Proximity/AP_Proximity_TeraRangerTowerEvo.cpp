@@ -150,35 +150,20 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
 
             //check if message has right CRC
             if (crc_crc8(buffer, 19) == buffer[19]){
-
-                uint16_t d1 = process_distance(buffer[2], buffer[3]);
-                uint16_t d2 = process_distance(buffer[4], buffer[5]);
-                uint16_t d3 = process_distance(buffer[6], buffer[7]);
-                uint16_t d4 = process_distance(buffer[8], buffer[9]);
-                uint16_t d5 = process_distance(buffer[10], buffer[11]);
-                uint16_t d6 = process_distance(buffer[12], buffer[13]);
-                uint16_t d7 = process_distance(buffer[14], buffer[15]);
-                uint16_t d8 = process_distance(buffer[16], buffer[17]);
-
-                update_sector_data(0, d1);
-                update_sector_data(45, d2);
-                update_sector_data(90, d3);
-                update_sector_data(135, d4);
-                update_sector_data(180, d5);
-                update_sector_data(225, d6);
-                update_sector_data(270, d7);
-                update_sector_data(315, d8);
+                update_sector_data(0,   UINT16_VALUE(buffer[2],  buffer[3]));   // d1
+                update_sector_data(45,  UINT16_VALUE(buffer[4],  buffer[5]));   // d2
+                update_sector_data(90,  UINT16_VALUE(buffer[6],  buffer[7]));   // d3
+                update_sector_data(135, UINT16_VALUE(buffer[8],  buffer[9]));   // d4
+                update_sector_data(180, UINT16_VALUE(buffer[10], buffer[11]));  // d5
+                update_sector_data(225, UINT16_VALUE(buffer[12], buffer[13]));  // d6
+                update_sector_data(270, UINT16_VALUE(buffer[14], buffer[15]));  // d7
+                update_sector_data(315, UINT16_VALUE(buffer[16], buffer[17]));  // d8
 
                 message_count++;
             }
         }
     }
     return (message_count > 0);
-}
-
-uint16_t AP_Proximity_TeraRangerTowerEvo::process_distance(uint8_t buf1, uint8_t buf2)
-{
-    return (buf1 << 8) + buf2;
 }
 
 // process reply

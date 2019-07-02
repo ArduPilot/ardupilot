@@ -86,8 +86,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // get singleton instance
-    static AP_Radio *instance(void) {
-        return _instance;
+    static AP_Radio *get_singleton(void) {
+        return _singleton;
     }
 
     // handle a data96 mavlink packet for fw upload
@@ -117,5 +117,5 @@ private:
     AP_Int8 auto_bind_time;
     AP_Int8 auto_bind_rssi;
     
-    static AP_Radio *_instance;
+    static AP_Radio *_singleton;
 };

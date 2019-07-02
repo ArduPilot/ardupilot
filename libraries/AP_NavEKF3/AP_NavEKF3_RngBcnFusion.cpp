@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -102,7 +100,7 @@ void NavEKF3_core::FuseRngBcn()
         H_BCN[7] = -t4*t9;
         H_BCN[8] = -t3*t9;
         // If we are not using the beacons as a height reference, we pretend that the beacons
-        // are a the same height as the flight vehicle when calculating the observation derivatives
+        // are at the same height as the flight vehicle when calculating the observation derivatives
         // and Kalman gains
         // TODO  - less hacky way of achieving this, preferably using an alternative derivation
         if (activeHgtSource != HGT_SOURCE_BCN) {
@@ -249,7 +247,7 @@ void NavEKF3_core::FuseRngBcn()
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
                 ForceSymmetry();
                 ConstrainVariances();
 
@@ -337,7 +335,7 @@ void NavEKF3_core::FuseRngBcnStatic()
                 // We are using a different height reference for the main EKF so need to estimate a vertical
                 // position offset to be applied to the beacon system that minimises the range innovations
                 // The position estimate should be stable after 100 iterations so we use a simple dual
-                // hypothesis 1-state EKF to estiate the offset
+                // hypothesis 1-state EKF to estimate the offset
                 Vector3f refPosNED;
                 refPosNED.x = receiverPos.x;
                 refPosNED.y = receiverPos.y;
@@ -641,4 +639,3 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
     rngBcnDataDelayed.beacon_posNED.z += bcnPosOffsetNED.z;
 }
 
-#endif // HAL_CPU_CLASS

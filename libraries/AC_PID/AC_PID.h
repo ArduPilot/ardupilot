@@ -40,7 +40,7 @@ public:
     float       get_i();
     float       get_d();
     float       get_ff(float requested_rate);
-    
+
     // reset_I - reset the integrator
     void        reset_I();
 

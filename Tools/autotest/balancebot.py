@@ -4,42 +4,17 @@
 from __future__ import print_function
 
 import os
-import pexpect
 
 from apmrover2 import AutoTestRover
 from common import AutoTest
 
-from pymavlink import mavutil
-
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
-# HOME = mavutil.location(-35.362938, 149.165085, 584, 270)
-HOME = mavutil.location(40.071374969556928,
-                        -105.22978898137808,
-                        1583.702759,
-                        246)
-
+def log_name(self):
+    return "BalanceBot"
 
 class AutoTestBalanceBot(AutoTestRover):
-    def __init__(self,
-                 binary,
-                 valgrind=False,
-                 gdb=False,
-                 speedup=10,
-                 frame=None,
-                 params=None,
-                 gdbserver=False,
-                 **kwargs):
-        super(AutoTestBalanceBot, self).__init__(binary,
-                                                 valgrind,
-                                                 gdb,
-                                                 speedup,
-                                                 frame,
-                                                 params,
-                                                 gdbserver,
-                                                 **kwargs)
-        self.log_name = "BalanceBot"
 
     def vehicleinfo_key(self):
         return "APMrover2"
@@ -53,9 +28,24 @@ class AutoTestBalanceBot(AutoTestRover):
         self.do_set_mode_via_command_long("HOLD")
         self.do_set_mode_via_command_long("MANUAL")
 
-    def set_rc_default(self):
-        super(AutoTestBalanceBot, self).set_rc_default()
-        self.set_rc(3, 1500)
+    def rc_defaults(self):
+        ret = super(AutoTestBalanceBot, self).rc_defaults()
+        ret[3] = 1500
+        return ret
+
+    def is_balancebot(self):
+        return True
+
+    def drive_rtl_mission_max_distance_from_home(self):
+        '''maximum distance allowed from home at end'''
+        '''balancebot tends to wander backwards, away from the target'''
+        return 8
+
+    def drive_rtl_mission(self):
+        # if we Hold then the balancebot continues to wander
+        # indefinitely at ~1m/s
+        self.set_parameter("MIS_DONE_BEHAVE", 1)
+        super(AutoTestBalanceBot, self).drive_rtl_mission()
 
     def tests(self):
         '''return list of all tests'''

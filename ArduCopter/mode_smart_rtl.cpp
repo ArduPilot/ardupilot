@@ -11,7 +11,7 @@
 
 bool Copter::ModeSmartRTL::init(bool ignore_checks)
 {
-    if ((copter.position_ok() || ignore_checks) && g2.smart_rtl.is_active()) {
+    if (g2.smart_rtl.is_active()) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
 
@@ -62,7 +62,7 @@ void Copter::ModeSmartRTL::run()
 void Copter::ModeSmartRTL::wait_cleanup_run()
 {
     // hover at current target position
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
     pos_control->update_z_controller();
     attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
@@ -105,7 +105,7 @@ void Copter::ModeSmartRTL::path_follow_run()
     }
 
     // update controllers
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
     pos_control->update_z_controller();
 
@@ -135,7 +135,7 @@ void Copter::ModeSmartRTL::pre_land_position_run()
     }
 
     // update controllers
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
     pos_control->update_z_controller();
     attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);

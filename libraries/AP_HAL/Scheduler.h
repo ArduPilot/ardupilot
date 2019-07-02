@@ -30,6 +30,14 @@ public:
     virtual void     delay_microseconds_boost(uint16_t us) { delay_microseconds(us); }
 
     /*
+      inform the scheduler that we are calling an operation from the
+      main thread that may take an extended amount of time. This can
+      be used to prevent watchdog reset during expected long delays
+      A value of zero cancels the previous expected delay
+     */
+    virtual void     expect_delay_ms(uint32_t ms) { }
+    
+    /*
       end the priority boost from delay_microseconds_boost()
      */
     virtual void     boost_end(void) {}

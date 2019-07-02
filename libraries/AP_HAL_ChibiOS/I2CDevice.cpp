@@ -118,7 +118,7 @@ I2CDeviceManager::I2CDeviceManager(void)
           drop the speed to be the minimum speed requested
          */
         businfo[i].busclock = HAL_I2C_MAX_CLOCK;
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
         if (businfo[i].busclock <= 100000) {
             businfo[i].i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             businfo[i].busclock = 100000;
@@ -150,7 +150,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
     if (bus_clock < bus.busclock) {
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
         if (bus_clock <= 100000) {
             bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             bus.busclock = 100000;
@@ -197,7 +197,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         return false;
     }
     
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
     if (_use_smbus) {
         bus.i2ccfg.cr1 |= I2C_CR1_SMBHEN;
     } else {

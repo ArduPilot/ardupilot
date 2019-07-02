@@ -31,6 +31,15 @@ public:
     ///     set force_descend to true during landing to allow target to move low enough to slow the motors
     void set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend) override;
 
+    /// relax_alt_hold_controllers - set all desired and targets to measured
+    void relax_alt_hold_controllers(float throttle_setting) {
+        AC_PosControl::relax_alt_hold_controllers(throttle_setting);
+    }
+
+    /// relax_alt_hold_controllers - set all desired and targets to measured
+    ///     integrator is not reset
+    void relax_alt_hold_controllers();
+
 private:
     float       _alt_max; // max altitude - should be updated from the main code with altitude limit from fence
     float       _alt_min; // min altitude - should be updated from the main code with altitude limit from fence

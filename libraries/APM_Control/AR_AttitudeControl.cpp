@@ -143,7 +143,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_ACC_MAX
     // @DisplayName: Steering control angular acceleration maximum
-    // @Description: Steering control angular acceleartion maximum (in deg/s/s).  0 to disable acceleration limiting
+    // @Description: Steering control angular acceleration maximum (in deg/s/s).  0 to disable acceleration limiting
     // @Range: 0 1000
     // @Increment: 0.1
     // @Units: deg/s/s
@@ -747,4 +747,12 @@ float AR_AttitudeControl::get_stopping_distance(float speed) const
 
     // assume linear deceleration
     return 0.5f * sq(speed) / accel_max;
+}
+
+// relax I terms of throttle and steering controllers
+void AR_AttitudeControl::relax_I()
+{
+    _steer_rate_pid.reset_I();
+    _throttle_speed_pid.reset_I();
+    _pitch_to_throttle_pid.reset_I();
 }

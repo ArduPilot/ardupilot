@@ -18,32 +18,12 @@
 
 using namespace ESP32;
 
-// note that the ESP32 hardware actually only has THREE hardware uarts, so we cant
-// enable all these at the same time, serial2 is probably least likely to be used.
+UARTDesc uart_desc[] = {HAL_ESP32_UART_DEVICES};
+
 UARTDriver::UARTDriver(uint8_t serial_num)
 {
     _initialized = false;
-    uart_num = (uart_port_t)serial_num; // hardware zero
-    if (serial_num == 0 ) { //typically console, used by both boards the same, on the same pins.
-    	rx_pin = 3;
-    	tx_pin = 1;
-    }
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
-     else if (serial_num == 1) { //typically mavlink or gps, connected to the pins normally labeled RX2 and TX2
-    	rx_pin = 16;
-    	tx_pin = 17;
-    }
-#endif
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
-    else if (serial_num == 1) { //typically mavlink or gps
-        rx_pin = 34;
-        tx_pin = 32;
-    } else if (serial_num == 2) { //typically mavlink or gps
-        rx_pin = 35;
-        tx_pin = 33;
-    }
-#endif
-
+    uart_num = serial_num;
 }
 
 void UARTDriver::begin(uint32_t b)
@@ -53,31 +33,39 @@ void UARTDriver::begin(uint32_t b)
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
-    if (!_initialized) {
-        uart_config_t config = {
-            .baud_rate = (int)b,
-            .data_bits = UART_DATA_8_BITS,
-            .parity = UART_PARITY_DISABLE,
-            .stop_bits = UART_STOP_BITS_1,
-            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        };
-        uart_param_config(uart_num, &config);
-        uart_set_pin(uart_num,tx_pin,rx_pin,
-                     UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-        uart_driver_install(uart_num, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
-        _readbuf.set_size(RX_BUF_SIZE);
-        _writebuf.set_size(TX_BUF_SIZE);
-        _initialized = true;
-    } else {
-        uart_set_baudrate(uart_num, b);
+    if (uart_num < ARRAY_SIZE(uart_desc)) {
+        uart_port_t p = uart_desc[uart_num].port;
+        if (!_initialized) {
+
+            uart_config_t config = {
+                .baud_rate = (int)b,
+                .data_bits = UART_DATA_8_BITS,
+                .parity = UART_PARITY_DISABLE,
+                .stop_bits = UART_STOP_BITS_1,
+                .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+            };
+            uart_param_config(p, &config);
+            uart_set_pin(p,
+                         uart_desc[uart_num].tx,
+                         uart_desc[uart_num].rx,
+                         UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+            uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
+            _readbuf.set_size(RX_BUF_SIZE);
+            _writebuf.set_size(TX_BUF_SIZE);
+            _initialized = true;
+        } else {
+            uart_set_baudrate(p, b);
+        }
     }
 }
 
 void UARTDriver::end()
 {
-    uart_driver_delete(uart_num);
-    _readbuf.set_size(0);
-    _writebuf.set_size(0);
+    if (_initialized) {
+        uart_driver_delete(uart_desc[uart_num].port);
+        _readbuf.set_size(0);
+        _writebuf.set_size(0);
+    }
     _initialized = false;
 }
 
@@ -142,9 +130,10 @@ void UARTDriver::_timer_tick(void)
 
 void UARTDriver::read_data()
 {
+    uart_port_t p = uart_desc[uart_num].port;
     int count = 0;
     do {
-        count = uart_read_bytes(uart_num, _buffer, sizeof(_buffer), 0);
+        count = uart_read_bytes(p, _buffer, sizeof(_buffer), 0);
         if (count > 0) {
             _readbuf.write(_buffer, count);
         }
@@ -153,12 +142,13 @@ void UARTDriver::read_data()
 
 void UARTDriver::write_data()
 {
+    uart_port_t p = uart_desc[uart_num].port;
     int count = 0;
     _write_mutex.take_blocking();
     do {
         count = _writebuf.peekbytes(_buffer, sizeof(_buffer));
         if (count > 0) {
-            count = uart_tx_chars(uart_num, (const char*) _buffer, count);
+            count = uart_tx_chars(p, (const char*) _buffer, count);
             _writebuf.advance(count);
         }
     } while (count > 0);

@@ -14,7 +14,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-instal
 ENV USER=ardupilot
 ADD . /ardupilot
 RUN chown -R ardupilot:ardupilot /ardupilot && \
-    bash -c "Tools/scripts/install-prereqs-ubuntu.sh -y && apt-get install gcc-arm-none-eabi -y" && \
+    bash -c "Tools/environment_install/install-prereqs-ubuntu.sh -y && apt-get install gcc-arm-none-eabi -y" && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 USER ardupilot

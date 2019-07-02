@@ -6,7 +6,7 @@ void Copter::report_compass()
     hal.console->printf("Compass\n");
     print_divider();
 
-    print_enabled(g.compass_enabled);
+    print_enabled(AP::compass().enabled());
 
     // mag declination
     hal.console->printf("Mag Dec: %4.4f\n",

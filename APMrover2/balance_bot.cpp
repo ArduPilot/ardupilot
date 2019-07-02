@@ -5,7 +5,7 @@
 void Rover::balancebot_pitch_control(float &throttle)
 {
     // calculate desired pitch angle
-    const float demanded_pitch = radians(-throttle * 0.01f * g2.bal_pitch_max);
+    const float demanded_pitch = radians(-throttle * 0.01f * g2.bal_pitch_max) + radians(g2.bal_pitch_trim);
 
     // calculate speed from wheel encoders
     float veh_speed_pct = 0.0f;

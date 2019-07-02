@@ -187,6 +187,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     _pid_info.D = rate_error * gains.D * scaler;
 	_last_out = _pid_info.D + _pid_info.FF + _pid_info.P;
     _pid_info.desired = desired_rate;
+    _pid_info.actual = achieved_rate;
 
     if (autotune.running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 

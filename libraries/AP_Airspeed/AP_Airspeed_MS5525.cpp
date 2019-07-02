@@ -26,6 +26,7 @@
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -113,27 +114,7 @@ bool AP_Airspeed_MS5525::init()
  */
 uint16_t AP_Airspeed_MS5525::crc4_prom(void)
 {
-    uint16_t n_rem = 0;
-    uint8_t n_bit;
-
-    for (uint8_t cnt = 0; cnt < sizeof(prom); cnt++) {
-        /* uneven bytes */
-        if (cnt & 1) {
-            n_rem ^= (uint8_t)((prom[cnt >> 1]) & 0x00FF);
-        } else {
-            n_rem ^= (uint8_t)(prom[cnt >> 1] >> 8);
-        }
-
-        for (n_bit = 8; n_bit > 0; n_bit--) {
-            if (n_rem & 0x8000) {
-                n_rem = (n_rem << 1) ^ 0x3000;
-            } else {
-                n_rem = (n_rem << 1);
-            }
-        }
-    }
-
-    return (n_rem >> 12) & 0xF;
+    return crc_crc4(prom);
 }
 
 bool AP_Airspeed_MS5525::read_prom(void)

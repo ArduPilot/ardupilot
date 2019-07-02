@@ -32,7 +32,7 @@ public:
     AP_LandingGear &operator=(const AP_LandingGear&) = delete;
     
     // get singleton instance
-    static AP_LandingGear *instance(void) {
+    static AP_LandingGear *get_singleton(void) {
         return _singleton;
     }
 

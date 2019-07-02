@@ -182,9 +182,6 @@ protected:
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;
 
-    // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
-    virtual void calculate_roll_pitch_collective_factors() = 0;
-
     // servo_test - move servos through full range of movement
     // to be overloaded by child classes, different vehicle types would have different movement patterns
     virtual void servo_test() = 0;

@@ -3,7 +3,7 @@
 # This allows the PX4NuttX build to proceed when the underlying fs is on windows
 # It is only marginally less efficient on Linux
 export PX4_WINTOOL=y
-export PATH=$PATH:$HOME/jsbsim/src
+export PATH=$PATH:$HOME/jsbsim/build/src
 export BUILDLOGS=/tmp/buildlogs
 
 export APMROOT=/vagrant

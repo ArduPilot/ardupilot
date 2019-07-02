@@ -35,6 +35,9 @@ public:
     // read latest values from sensor and fill in x,y and totals.
     virtual void update() = 0;
 
+    // handle optical flow mavlink messages
+    virtual void handle_msg(const mavlink_message_t *msg) {}
+
 protected:
     // access to frontend
     OpticalFlow &frontend;

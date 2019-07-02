@@ -60,7 +60,7 @@ public:
     AP_GPS gps;
     Compass compass;
     AP_SerialManager serial_manager;
-    RangeFinder rng{serial_manager, ROTATION_PITCH_270};
+    RangeFinder rng{serial_manager};
     NavEKF2 EKF2{&ahrs, rng};
     NavEKF3 EKF3{&ahrs, rng};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3};
@@ -69,7 +69,7 @@ public:
     AP_Int32 unused; // logging is magic for Replay; this is unused
     struct LogStructure log_structure[256] = {
     };
-    AP_Logger dataflash{unused};
+    AP_Logger logger{unused};
 
 private:
     Parameters g;
@@ -91,7 +91,7 @@ public:
     void setup() override;
     void loop() override;
 
-    void flush_dataflash(void);
+    void flush_logger(void);
     void show_packet_counts();
 
     bool check_solution = false;
@@ -124,7 +124,7 @@ private:
             _vehicle.compass,
             _vehicle.gps,
             _vehicle.airspeed,
-            _vehicle.dataflash,
+            _vehicle.logger,
             _vehicle.log_structure,
             0,
             nottypes};

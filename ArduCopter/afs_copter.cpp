@@ -21,7 +21,7 @@ void AP_AdvancedFailsafe_Copter::terminate_vehicle(void)
         copter.set_mode(LAND, MODE_REASON_TERMINATE);
     } else {
         // stop motors
-        copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         copter.motors->output();
 
         // disarm as well

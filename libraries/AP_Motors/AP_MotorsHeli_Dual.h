@@ -11,18 +11,7 @@
 
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
-
-// servo position defaults
-#define AP_MOTORS_HELI_DUAL_SERVO1_POS               -60
-#define AP_MOTORS_HELI_DUAL_SERVO2_POS                60
-#define AP_MOTORS_HELI_DUAL_SERVO3_POS               180
-#define AP_MOTORS_HELI_DUAL_SERVO4_POS               -60
-#define AP_MOTORS_HELI_DUAL_SERVO5_POS                60
-#define AP_MOTORS_HELI_DUAL_SERVO6_POS               180
-
-// collective control direction definitions
-#define AP_MOTORS_HELI_DUAL_COLLECTIVE_DIRECTION_NORMAL        0
-#define AP_MOTORS_HELI_DUAL_COLLECTIVE_DIRECTION_REVERSED      1
+#include "AP_MotorsHeli_Swash.h"
 
 // rsc function output channel
 #define AP_MOTORS_HELI_DUAL_RSC                     CH_8
@@ -30,6 +19,11 @@
 // tandem modes
 #define AP_MOTORS_HELI_DUAL_MODE_TANDEM                0 // tandem mode (rotors front and aft)
 #define AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE            1 // transverse mode (rotors side by side)
+
+// tandem modes
+#define AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH           0 // swashplate pitch tilt axis
+#define AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL            1 // swashplate roll tilt axis
+#define AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL            2 // swashplate collective axis
 
 // default differential-collective-pitch scaler
 #define AP_MOTORS_HELI_DUAL_DCP_SCALER             0.25f
@@ -94,6 +88,9 @@ public:
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
+    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
+    bool parameter_check(bool display_msg) const override;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -105,14 +102,16 @@ protected:
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state) override;
 
-    // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
-    void calculate_roll_pitch_collective_factors () override;
+    // get_swashplate - calculate movement of each swashplate based on configuration
+    float get_swashplate(int8_t swash_num, int8_t swash_axis, float pitch_input, float roll_input, float yaw_input, float coll_input);
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;
 
     //  objects we depend upon
     AP_MotorsHeli_RSC           _rotor;             // main rotor controller
+    AP_MotorsHeli_Swash        _swashplate1;        // swashplate1
+    AP_MotorsHeli_Swash        _swashplate2;        // swashplate2
 
     // internal variables
     float _oscillate_angle = 0.0f;                  // cyclic oscillation angle, used by servo_test function
@@ -120,21 +119,12 @@ protected:
     float _collective_test = 0.0f;                  // over-ride for collective output, used by servo_test function
     float _roll_test = 0.0f;                        // over-ride for roll output, used by servo_test function
     float _pitch_test = 0.0f;                       // over-ride for pitch output, used by servo_test function
-    float _servo_out[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];    // output value sent to motor
+    float _servo_out[8];                            // output value sent to motor
 
     // parameters
     AP_Int16        _collective2_min;               // Lowest possible servo position for the rear swashplate
     AP_Int16        _collective2_max;               // Highest possible servo position for the rear swashplate
     AP_Int16        _collective2_mid;               // Swash servo position corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
-    AP_Int16        _servo1_pos;                    // angular location of swash servo #1
-    AP_Int16        _servo2_pos;                    // angular location of swash servo #2
-    AP_Int16        _servo3_pos;                    // angular location of swash servo #3
-    AP_Int16        _servo4_pos;                    // angular location of swash servo #4
-    AP_Int16        _servo5_pos;                    // angular location of swash servo #5
-    AP_Int16        _servo6_pos;                    // angular location of swash servo #6
-    AP_Int8         _collective_direction;          // Collective control direction, normal or reversed
-    AP_Int16        _swash1_phase_angle;            // phase angle correction for 1st swash.
-    AP_Int16        _swash2_phase_angle;            // phase angle correction for 2nd swash.
     AP_Int8         _dual_mode;                     // which dual mode the heli is
     AP_Float        _dcp_scaler;                    // scaling factor applied to the differential-collective-pitch
     AP_Float        _dcp_yaw_effect;                // feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
@@ -142,10 +132,6 @@ protected:
 
     // internal variables
     float           _collective2_mid_pct = 0.0f;      // collective mid parameter value for rear swashplate converted to 0 ~ 1 range
-    float           _rollFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
-    float           _pitchFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
-    float           _collectiveFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
-    float           _yawFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
 };
 
 #endif  // AP_MotorsHeli_Dual

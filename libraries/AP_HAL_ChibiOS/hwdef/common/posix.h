@@ -314,7 +314,7 @@ int mkdir ( const char *pathname , mode_t mode );
 int rename ( const char *oldpath , const char *newpath );
 int rmdir ( const char *pathname );
 int unlink ( const char *pathname );
-int remove(const char *pathname);
+int __wrap_remove(const char *pathname);
 int closedir ( DIR *dirp );
 DIR *opendir ( const char *pathdir );
 struct dirent *readdir ( DIR *dirp );

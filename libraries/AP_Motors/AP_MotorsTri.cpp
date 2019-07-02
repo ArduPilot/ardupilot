@@ -77,15 +77,15 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
 
 void AP_MotorsTri::output_to_motors()
 {
-    switch (_spool_mode) {
-        case SHUT_DOWN:
+    switch (_spool_state) {
+        case SpoolState::SHUT_DOWN:
             // sends minimum values out to the motors
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(0));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(0));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(0));
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             break;
-        case GROUND_IDLE:
+        case SpoolState::GROUND_IDLE:
             // sends output to motors when armed but not flying
             set_actuator_with_slew(_actuator[1], actuator_spin_up_to_ground_idle());
             set_actuator_with_slew(_actuator[2], actuator_spin_up_to_ground_idle());
@@ -95,9 +95,9 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[4]));
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             break;
-        case SPOOL_UP:
-        case THROTTLE_UNLIMITED:
-        case SPOOL_DOWN:
+        case SpoolState::SPOOLING_UP:
+        case SpoolState::THROTTLE_UNLIMITED:
+        case SpoolState::SPOOLING_DOWN:
             // set motor output based on thrust requests
             set_actuator_with_slew(_actuator[1], thrust_to_actuator(_thrust_right));
             set_actuator_with_slew(_actuator[2], thrust_to_actuator(_thrust_left));

@@ -17,7 +17,7 @@ Please use lastest stable version of the esp-idf (https://github.com/espressif/e
 ```bash
 cd ardupilot
 source source_this_file.sh
-./waf configure --board=esp32 --debug
+./waf configure --board=esp32diy --debug
 ./waf plane
 or
 ./waf copter
@@ -107,6 +107,12 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [ ] Buzzer
 - [ ] GSD
 
+- [x] OTA update of the fw
+- [x] SdCard
+- [x] Custom boards build
+- [x] Perfomance optimization
+
+
 ### Future development
 - [ ] Pin remapping via parameters
 - [ ] Custom boards build
@@ -193,3 +199,5 @@ example log of boot messages:
 [22:51:22:044] spi device constructed SPI:MPU9250:0:1
 [22:51:23:878] Sensor failure: INS: unable to initialise driver
 [22:51:26:878] Sensor failure: INS: unable to initialise driver
+
+

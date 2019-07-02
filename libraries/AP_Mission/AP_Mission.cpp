@@ -269,6 +269,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_DO_PARACHUTE:
         return true;
     default:
         return _cmd_verify_fn(cmd);
@@ -277,6 +278,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
 
 bool AP_Mission::start_command(const Mission_Command& cmd)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
     switch (cmd.id) {
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
@@ -290,6 +292,8 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return start_command_camera(cmd);
+    case MAV_CMD_DO_PARACHUTE:
+        return start_command_parachute(cmd);
     default:
         return _cmd_start_fn(cmd);
     }
@@ -320,7 +324,7 @@ bool AP_Mission::add_cmd(Mission_Command& cmd)
 /// replace_cmd - replaces the command at position 'index' in the command list with the provided cmd
 ///     replacing the current active command will have no effect until the command is restarted
 ///     returns true if successfully replaced, false on failure
-bool AP_Mission::replace_cmd(uint16_t index, Mission_Command& cmd)
+bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
 {
     // sanity check index
     if (index >= (unsigned)_cmd_total) {
@@ -343,10 +347,8 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
-    uint16_t cmd_index = start_index;
-
     // search until the end of the mission command list
-    while(cmd_index < (unsigned)_cmd_total) {
+    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
         // get next command
         if (!get_next_cmd(cmd_index, cmd, false)) {
             // no more commands so return failure
@@ -356,8 +358,6 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
         if (is_nav_cmd(cmd)) {
             return true;
         }
-        // move on in list
-        cmd_index++;
     }
 
     // if we got this far we did not find a navigation command
@@ -381,14 +381,12 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
     if (cmd.id == MAV_CMD_NAV_SET_YAW_SPEED) {
         return (_nav_cmd.content.set_yaw_speed.angle_deg * 100);
     }
-    return get_bearing_cd(_nav_cmd.content.location, cmd.content.location);
+    return _nav_cmd.content.location.get_bearing_to(cmd.content.location);
 }
 
 // set_current_cmd - jumps to command specified by index
 bool AP_Mission::set_current_cmd(uint16_t index)
 {
-    Mission_Command cmd;
-
     // sanity check index and that we have a mission
     if (index >= (unsigned)_cmd_total || _cmd_total == 1) {
         return false;
@@ -420,6 +418,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
         // search until we find next nav command or reach end of command list
         while (!_flags.nav_cmd_loaded) {
             // get next command
+            Mission_Command cmd;
             if (!get_next_cmd(index, cmd, true)) {
                 _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
                 return false;
@@ -502,7 +501,7 @@ assert_storage_size<PackedContent, 12> assert_storage_size_PackedContent;
 bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const
 {
     WITH_SEMAPHORE(_rsem);
-    
+
     // exit immediately if index is beyond last command but we always let cmd #0 (i.e. home) be read
     if (index >= (unsigned)_cmd_total && index != 0) {
         return false;
@@ -547,7 +546,8 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
             // all other options in Content are assumed to be packed:
             static_assert(sizeof(cmd.content) >= 12,
                           "content is big enough to take bytes");
-            memcpy(&cmd.content, packed_content.bytes, 12);
+            // (void *) cast to specify gcc that we know that we are copy byte into a non trivial type and leaving 4 bytes untouched
+            memcpy((void *)&cmd.content, packed_content.bytes, 12);
         }
 
         // set command's index to it's position in eeprom
@@ -570,6 +570,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
     case MAV_CMD_NAV_LOITER_TO_ALT:
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
+    case MAV_CMD_NAV_GUIDED_ENABLE:
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_GO_AROUND:
@@ -586,7 +587,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
 /// write_cmd_to_storage - write a command to storage
 ///     index is used to calculate the storage location
 ///     true is returned if successful
-bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
+bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd)
 {
     WITH_SEMAPHORE(_rsem);
     
@@ -608,7 +609,9 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
         packed.location.lng = cmd.content.location.lng;
     } else {
         // all other options in Content are assumed to be packed:
-        memcpy(packed.bytes, &cmd.content.jump, sizeof(packed.bytes));
+        static_assert(sizeof(packed.bytes) >= 12,
+                      "packed.bytes is big enough to take content");
+        memcpy(packed.bytes, &cmd.content, 12);
     }
 
     // calculate where in storage the command should be placed
@@ -1458,9 +1461,6 @@ void AP_Mission::complete()
 //      returns true if command is advanced, false if failed (i.e. mission completed)
 bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
 {
-    Mission_Command cmd;
-    uint16_t cmd_index;
-
     // exit immediately if we're not running
     if (_flags.state != MISSION_RUNNING) {
         return false;
@@ -1477,7 +1477,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     _flags.do_cmd_all_done = false;
 
     // get starting point for search
-    cmd_index = starting_index > 0 ? starting_index - 1 : _nav_cmd.index;
+    uint16_t cmd_index = starting_index > 0 ? starting_index - 1 : _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         // start from beginning of the mission command list
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
@@ -1492,6 +1492,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     // search until we find next nav command or reach end of command list
     while (!_flags.nav_cmd_loaded) {
         // get next command
+        Mission_Command cmd;
         if (!get_next_cmd(cmd_index, cmd, true)) {
             return false;
         }
@@ -1540,40 +1541,32 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
 ///     accounts for do-jump commands
 void AP_Mission::advance_current_do_cmd()
 {
-    Mission_Command cmd;
-    uint16_t cmd_index;
-
     // exit immediately if we're not running or we've completed all possible "do" commands
     if (_flags.state != MISSION_RUNNING || _flags.do_cmd_all_done) {
         return;
     }
 
     // get starting point for search
-    cmd_index = _do_cmd.index;
+    uint16_t cmd_index = _do_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }else{
         // start from one position past the current do command
-        cmd_index++;
+        cmd_index = _do_cmd.index + 1;
     }
 
-    // check if we've reached end of mission
-    if (cmd_index >= (unsigned)_cmd_total) {
+    // find next do command
+    Mission_Command cmd;
+    if (!get_next_do_cmd(cmd_index, cmd)) {
         // set flag to stop unnecessarily searching for do commands
         _flags.do_cmd_all_done = true;
         return;
     }
 
-    // find next do command
-    if (get_next_do_cmd(cmd_index, cmd)) {
-        // set current do command and start it
-        _do_cmd = cmd;
-        _flags.do_cmd_loaded = true;
-        start_command(_do_cmd);
-    }else{
-        // set flag to stop unnecessarily searching for do commands
-        _flags.do_cmd_all_done = true;
-    }
+    // set current do command and start it
+    _do_cmd = cmd;
+    _flags.do_cmd_loaded = true;
+    start_command(_do_cmd);
 }
 
 /// get_next_cmd - gets next command found at or after start_index
@@ -1729,6 +1722,7 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd)
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
         if (_jump_tracking[i].index == cmd.index) {
             _jump_tracking[i].num_times_run++;
+            gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
             return;
         }else if(_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
             // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
@@ -1787,7 +1781,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
             continue;
         }
         if (tmp.id == MAV_CMD_DO_LAND_START) {
-            float tmp_distance = get_distance(tmp.content.location, current_loc);
+            float tmp_distance = tmp.content.location.get_distance(current_loc);
             if (min_distance < 0 || tmp_distance < min_distance) {
                 min_distance = tmp_distance;
                 landing_start_index = i;
@@ -1836,7 +1830,7 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
                 continue;
             }
             if (tmp.id == MAV_CMD_DO_GO_AROUND) {
-                float tmp_distance = get_distance(tmp.content.location, current_loc);
+                float tmp_distance = tmp.content.location.get_distance(current_loc);
                 if (tmp_distance < min_distance) {
                     min_distance = tmp_distance;
                     abort_index = i;
@@ -1864,12 +1858,20 @@ const char *AP_Mission::Mission_Command::type() const {
     switch(id) {
     case MAV_CMD_NAV_WAYPOINT:
         return "WP";
+    case MAV_CMD_NAV_SPLINE_WAYPOINT:
+        return "SplineWP";
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return "RTL";
     case MAV_CMD_NAV_LOITER_UNLIM:
         return "LoitUnlim";
     case MAV_CMD_NAV_LOITER_TIME:
         return "LoitTime";
+    case MAV_CMD_NAV_GUIDED_ENABLE:
+        return "GuidedEnable";
+    case MAV_CMD_NAV_LOITER_TURNS:
+        return "LoitTurns";
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+        return "LoitAltitude";
     case MAV_CMD_NAV_SET_YAW_SPEED:
         return "SetYawSpd";
     case MAV_CMD_CONDITION_DELAY:
@@ -1900,7 +1902,47 @@ const char *AP_Mission::Mission_Command::type() const {
         return "SetROI";
     case MAV_CMD_DO_SET_REVERSE:
         return "SetReverse";
+    case MAV_CMD_DO_GUIDED_LIMITS:
+        return "GuidedLimits";
+    case MAV_CMD_NAV_TAKEOFF:
+        return "Takeoff";
+    case MAV_CMD_NAV_LAND:
+        return "Land";
+    case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
+        return "ContinueAndChangeAlt";
+    case MAV_CMD_NAV_ALTITUDE_WAIT:
+        return "AltitudeWait";
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        return "VTOLTakeoff";
+    case MAV_CMD_NAV_VTOL_LAND:
+        return "VTOLLand";
+    case MAV_CMD_DO_INVERTED_FLIGHT:
+        return "InvertedFlight";
+    case MAV_CMD_DO_FENCE_ENABLE:
+        return "FenceEnable";
+    case MAV_CMD_DO_AUTOTUNE_ENABLE:
+        return "AutoTuneEnable";
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        return "VTOLTransition";
+    case MAV_CMD_DO_ENGINE_CONTROL:
+        return "EngineControl";
+    case MAV_CMD_CONDITION_YAW:
+        return "CondYaw";
+    case MAV_CMD_DO_LAND_START:
+        return "LandStart";
+    case MAV_CMD_NAV_DELAY:
+        return "Delay";
+    case MAV_CMD_DO_GRIPPER:
+        return "Gripper";
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
+        return "PayloadPlace";
+    case MAV_CMD_DO_PARACHUTE:
+        return "Parachute";
+
     default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Mission command with ID %u has no string", id);
+#endif
         return "?";
     }
 }

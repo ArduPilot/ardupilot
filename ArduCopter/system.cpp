@@ -28,8 +28,6 @@ void Copter::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
-    init_capabilities();
-
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
     //
@@ -89,19 +87,6 @@ void Copter::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    // setup frsky, and pass a number of parameters to the library
-    frsky_telemetry.init(serial_manager,
-                         get_frame_mav_type(),
-                         &ap.value);
-    frsky_telemetry.set_frame_string(get_frame_string());
-#endif
-
-#if DEVO_TELEM_ENABLED == ENABLED
-    // setup devo
-    devo_telemetry.init(serial_manager);
-#endif
-
 #if OSD_ENABLED == ENABLED
     osd.init();
 #endif
@@ -152,7 +137,8 @@ void Copter::init_ardupilot()
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);
 
-    init_compass();
+    AP::compass().set_log_bit(MASK_LOG_COMPASS);
+    AP::compass().init();
 
 #if OPTFLOW == ENABLED
     // make optflow available to AHRS
@@ -246,6 +232,12 @@ void Copter::init_ardupilot()
     rc().init();
 
     startup_INS_ground();
+
+#ifdef ENABLE_SCRIPTING
+    if (!g2.scripting.init()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
+    }
+#endif // ENABLE_SCRIPTING
 
     // set landed flags
     set_land_complete(true);
@@ -377,28 +369,26 @@ void Copter::update_auto_armed()
         if(flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
-        if(ap.land_complete && !motors->rotor_runup_complete()) {
+        if(ap.land_complete && motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED && ap.using_interlock) {
             set_auto_armed(false);
         }
-#endif // HELI_FRAME
     }else{
         // arm checks
         
-#if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors->armed() && !ap.throttle_zero && motors->rotor_runup_complete()) {
-            set_auto_armed(true);
-        }
-#else
+        if(motors->armed() && ap.using_interlock) {
+            if(!ap.throttle_zero && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+                set_auto_armed(true);
+            }
         // if motors are armed and throttle is above zero auto_armed should be true
         // if motors are armed and we are in throw mode, then auto_armed should be true
-        if(motors->armed() && (!ap.throttle_zero || control_mode == THROW)) {
-            set_auto_armed(true);
+        } else if (motors->armed() && !ap.using_interlock) {
+            if(!ap.throttle_zero || control_mode == THROW) {
+                set_auto_armed(true);
+            }
         }
-#endif // HELI_FRAME
     }
 }
 
@@ -648,6 +638,9 @@ void Copter::allocate_motors(void)
 
     // upgrade parameters. This must be done after allocating the objects
     convert_pid_parameters();
+#if FRAME_CONFIG == HELI_FRAME
+    convert_tradheli_parameters();
+#endif
 }
 
 bool Copter::is_tradheli() const

@@ -19,6 +19,37 @@
 #include <stdint.h>
 #include "crc.h"
 
+/**
+ * crc4 method from datasheet for 16 bytes (8 short values)
+ * 
+ * @param [in] data
+ * @return crc4 
+ */
+uint16_t crc_crc4(uint16_t *data)
+{
+    uint16_t n_rem = 0;
+    uint8_t n_bit;
+
+    for (uint8_t cnt = 0; cnt < 16; cnt++) {
+        /* uneven bytes */
+        if (cnt & 1) {
+            n_rem ^= (uint8_t)((data[cnt >> 1]) & 0x00FF);
+        } else {
+            n_rem ^= (uint8_t)(data[cnt >> 1] >> 8);
+        }
+
+        for (n_bit = 8; n_bit > 0; n_bit--) {
+            if (n_rem & 0x8000) {
+                n_rem = (n_rem << 1) ^ 0x3000;
+            } else {
+                n_rem = (n_rem << 1);
+            }
+        }
+    }
+
+    return (n_rem >> 12) & 0xF;
+}
+
 static const uint8_t crc8_table[] = {
     0x00, 0x07, 0x0e, 0x09, 0x1c, 0x1b, 0x12, 0x15, 0x38, 0x3f, 0x36, 0x31,
     0x24, 0x23, 0x2a, 0x2d, 0x70, 0x77, 0x7e, 0x79, 0x6c, 0x6b, 0x62, 0x65,
@@ -49,11 +80,10 @@ static const uint8_t crc8_table[] = {
  */
 uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 {
-	uint16_t i;
 	uint16_t crc = 0x0;
 
 	while (len--) {
-		i = (crc ^ *p++) & 0xFF;
+		const uint16_t i = (crc ^ *p++) & 0xFF;
 		crc = (crc8_table[i] ^ (crc << 8)) & 0xFF;
 	}
 

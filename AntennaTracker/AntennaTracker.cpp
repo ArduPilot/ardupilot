@@ -49,7 +49,7 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_InertialSensor, &tracker.ins,       periodic,       50,   50),
     SCHED_TASK_CLASS(AP_Notify,         &tracker.notify,    update,         50,  100),
     SCHED_TASK(one_second_loop,         1,   3900),
-    SCHED_TASK(compass_cal_update,     50,    100),
+    SCHED_TASK_CLASS(Compass,          &tracker.compass,              cal_update, 50, 100),
     SCHED_TASK(accel_cal_update,       10,    100)
 };
 
@@ -87,7 +87,7 @@ void Tracker::one_second_loop()
     gcs().send_message(MSG_HEARTBEAT);
 
     // make it possible to change orientation at runtime
-    ahrs.set_orientation();
+    ahrs.update_orientation();
 
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
@@ -101,23 +101,28 @@ void Tracker::one_second_loop()
     one_second_counter++;
 
     if (one_second_counter >= 60) {
-        if (g.compass_enabled) {
-            compass.save_offsets();
-        }
+        compass_save();
         one_second_counter = 0;
     }
+
+    // init compass location for declination
+    init_compass_location();
 
     if (!ahrs.home_is_set()) {
         // set home to current location
         Location temp_loc;
         if (ahrs.get_location(temp_loc)) {
-            set_home(temp_loc);
+            if (!set_home(temp_loc)){
+                // fail silently
+            }
         }
     }
 
     // need to set "likely flying" when armed to allow for compass
     // learning to run
     ahrs.set_likely_flying(hal.util->get_soft_armed());
+
+    AP_Notify::flags.flying = hal.util->get_soft_armed();
 }
 
 void Tracker::ten_hz_logging_loop()
@@ -141,7 +146,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Tracker::Tracker(void)
     : logger(g.log_bitmask)
 {
-    memset(&vehicle, 0, sizeof(vehicle));
 }
 
 Tracker tracker;

@@ -26,7 +26,7 @@
 #include "string.h"
 
 // singleton
-AP_RCProtocol *AP_RCProtocol::instance;
+AP_RCProtocol *AP_RCProtocol::_singleton;
 
 void AP_RCProtocol::init()
 {
@@ -47,7 +47,7 @@ AP_RCProtocol::~AP_RCProtocol()
             backend[i] = nullptr;
         }
     }
-    instance = nullptr;
+    _singleton = nullptr;
 }
 
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)

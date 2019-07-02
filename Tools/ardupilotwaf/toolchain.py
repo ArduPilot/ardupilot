@@ -131,6 +131,8 @@ def configure(cfg):
     _filter_supported_c_compilers('gcc', 'clang')
     _filter_supported_cxx_compilers('g++', 'clang++')
 
+    cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
+
     if cfg.env.TOOLCHAIN == 'native':
         cfg.load('compiler_cxx compiler_c')
 
@@ -138,8 +140,6 @@ def configure(cfg):
             cfg.load('gccdeps')
 
         return
-
-    cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
 
     _set_pkgconfig_crosscompilation_wrapper(cfg)
     cfg.find_program('%s-ar' % cfg.env.TOOLCHAIN, var='AR', quiet=True)

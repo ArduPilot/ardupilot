@@ -76,6 +76,7 @@
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_TemperatureSensor/TSYS01.h>
+#include <AP_Common/AP_FWVersion.h>
 
 // Local modules
 #include "defines.h"
@@ -117,6 +118,10 @@
 
 #if CAMERA == ENABLED
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
+#endif
+
+#ifdef ENABLE_SCRIPTING
+#include <AP_Scripting/AP_Scripting.h>
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -162,7 +167,6 @@ private:
     RC_Channel *channel_forward;
     RC_Channel *channel_lateral;
 
-    // Dataflash
     AP_Logger logger;
 
     AP_GPS gps;
@@ -174,7 +178,7 @@ private:
     Compass compass;
     AP_InertialSensor ins;
 
-    RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder{serial_manager};
     struct {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
@@ -225,7 +229,7 @@ private:
     union {
         struct {
             uint8_t pre_arm_check       : 1; // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-            uint8_t logging_started     : 1; // true if dataflash logging has started
+            uint8_t logging_started     : 1; // true if logging has started
             uint8_t compass_mot         : 1; // true if we are currently performing compassmot calibration
             uint8_t motor_test          : 1; // true if we are currently performing the motors test
             uint8_t initialised         : 1; // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
@@ -413,7 +417,7 @@ private:
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence fence{ahrs};
+    AC_Fence fence;
 #endif
 
 #if AVOIDANCE_ENABLED == ENABLED
@@ -422,7 +426,7 @@ private:
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally rally{ahrs};
+    AP_Rally rally;
 #endif
 
     // terrain handling
@@ -451,7 +455,6 @@ private:
     static const struct LogStructure log_structure[];
 
     void init_compass_location();
-    void compass_cal_update(void);
     void fast_loop();
     void fifty_hz_loop();
     void update_batt_compass(void);
@@ -475,24 +478,19 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
     void gcs_send_heartbeat(void);
     void send_heartbeat(mavlink_channel_t chan);
-    void send_sys_status(mavlink_channel_t chan);
-    void send_nav_controller_output(mavlink_channel_t chan);
 #if RPM_ENABLED == ENABLED
-    void send_rpm(mavlink_channel_t chan);
     void rpm_update();
 #endif
-    void send_pid_tuning(mavlink_channel_t chan);
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();
     void Log_Write_MotBatt();
-    void Log_Write_Event(uint8_t id);
+    void Log_Write_Event(Log_Event id);
     void Log_Write_Data(uint8_t id, int32_t value);
     void Log_Write_Data(uint8_t id, uint32_t value);
     void Log_Write_Data(uint8_t id, int16_t value);
     void Log_Write_Data(uint8_t id, uint16_t value);
     void Log_Write_Data(uint8_t id, float value);
-    void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Sensor_Health();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
@@ -505,8 +503,8 @@ private:
     void userhook_SuperSlowLoop();
     void update_home_from_EKF();
     void set_home_to_current_location_inflight();
-    bool set_home_to_current_location(bool lock);
-    bool set_home(const Location& loc, bool lock);
+    bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
     bool far_from_EKF_origin(const Location& loc);
     void exit_mission();
     bool verify_loiter_unlimited();
@@ -579,7 +577,6 @@ private:
     void mainloop_failsafe_enable();
     void mainloop_failsafe_disable();
     void fence_check();
-    void fence_send_mavlink_status(mavlink_channel_t chan);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
@@ -591,7 +588,7 @@ private:
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
-    bool init_arm_motors(AP_Arming::ArmingMethod method);
+    bool init_arm_motors(AP_Arming::Method method);
     void init_disarm_motors();
     void motors_output();
     Vector3f pv_location_to_vector(const Location& loc);
@@ -610,7 +607,6 @@ private:
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok(void);
-    void init_compass();
 #if OPTFLOW == ENABLED
     void init_optflow();
 #endif
@@ -660,7 +656,6 @@ private:
 
     void auto_spline_start(const Location& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location& next_destination);
     void log_init(void);
-    void init_capabilities(void);
     void accel_cal_update(void);
 
     void failsafe_leak_check();

@@ -46,7 +46,7 @@ public:
     static const int MAIN_PRIO = 20;
     static const int I2C_PRIORITY = 19;
     static const int TIMER_PRIO = 15;
-    static const int RCIN_PRIO = 20;
+    static const int RCIN_PRIO = 10;
     static const int WIFI_PRIO = 7;
     static const int UART_PRIO = 6;
     static const int IO_PRIO = 5;

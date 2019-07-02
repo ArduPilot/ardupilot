@@ -38,6 +38,7 @@
 #pragma once
 
 #include "vector3.h"
+#include "vector2.h"
 
 // 3x3 matrix with elements of type T
 template <typename T>

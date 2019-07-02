@@ -213,7 +213,7 @@ AP_GPS_SBP2::_sbp_process_message() {
     }
 
     // send all messages we receive to log, even if it's an unsupported message,
-    // so we can do additional post-processing from Dataflash logs.
+    // so we can do additional post-processing from logs.
     // The log mask will be used to adjust or suppress logging
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
 }
@@ -271,14 +271,14 @@ AP_GPS_SBP2::_attempt_state_update()
         //
         // Check Flags for Valid Messages
         //
-        if (last_gps_time.flags.fix_mode    == 0 ||
-            last_vel_ned.flags.fix_mode     == 0 ||
+        if (last_gps_time.flags.time_src    == 0 ||
+            last_vel_ned.flags.vel_mode     == 0 ||
             last_pos_llh.flags.fix_mode     == 0 ||
             last_dops.flags.fix_mode        == 0) {
 
             Debug("Message Marked as Invalid. NO FIX! Flags: {GPS_TIME: %d, VEL_NED: %d, POS_LLH: %d, DOPS: %d}",
-                   last_gps_time.flags.fix_mode,
-                   last_vel_ned.flags.fix_mode,
+                   last_gps_time.flags.time_src,
+                   last_vel_ned.flags.vel_mode,
                    last_pos_llh.flags.fix_mode,
                    last_dops.flags.fix_mode);
 
@@ -440,7 +440,7 @@ AP_GPS_SBP2::_detect(struct SBP2_detect_state &state, uint8_t data)
 void
 AP_GPS_SBP2::logging_log_full_update()
 {
-    if (!should_df_log()) {
+    if (!should_log()) {
       return;
     }
 
@@ -462,7 +462,7 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
         uint8_t *msg_buff) {
-    if (!should_df_log()) {
+    if (!should_log()) {
       return;
     }
 
@@ -507,7 +507,7 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
 
 void
 AP_GPS_SBP2::logging_ext_event() {
-    if (!should_df_log()) {
+    if (!should_log()) {
       return;
     }
 

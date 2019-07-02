@@ -17,66 +17,47 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "Scheduler.h"
-#include "driver/i2c.h"
 
 using namespace ESP32;
 
-#ifndef HAL_I2C_INTERNAL_MASK
-#define HAL_I2C_INTERNAL_MASK 0
-#endif
+#define MHZ (1000U*1000U)
+#define KHZ (1000U)
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
-// pins 12 and 13 are shared with the "debug" header on buzz's blue board, so you cant debug and use i2c at the same time
-// without changing this or disabling I2c and the SD pullup.
-i2c_config_t i2c_bus_config[1] = {{
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = (gpio_num_t)13,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = (gpio_num_t)12,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        400000
-    }
-};
+extern const AP_HAL::HAL& hal;
 
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
+I2CBusDesc i2c_bus_desc[] = { HAL_ESP32_I2C_BUSES };
 
-i2c_config_t i2c_bus_config[1] = {{
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = (gpio_num_t)26,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = (gpio_num_t)25,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        400000
-    }
-};
-
-#endif
-
-I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(i2c_bus_config)];
+I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(i2c_bus_desc)];
 
 I2CDeviceManager::I2CDeviceManager(void)
 {
-	printf("%s\n",__PRETTY_FUNCTION__);
-    for (uint8_t i=0; i<ARRAY_SIZE(i2c_bus_config); i++) {
-        businfo[i].bus = i;
-        i2c_param_config((i2c_port_t)i, &i2c_bus_config[i]);
-        i2c_driver_install((i2c_port_t)i, I2C_MODE_MASTER, 0, 0, 0);
-        i2c_filter_enable((i2c_port_t)i, 7);
+    for (uint8_t i=0; i<ARRAY_SIZE(i2c_bus_desc); i++) {
+        i2c_config_t i2c_bus_config = {
+            .mode = I2C_MODE_MASTER,
+            .sda_io_num = i2c_bus_desc[i].sda,
+            .sda_pullup_en = GPIO_PULLUP_ENABLE,
+            .scl_io_num = i2c_bus_desc[i].scl,
+            .scl_pullup_en = GPIO_PULLUP_ENABLE,
+            i2c_bus_desc[i].speed
+        };
+        i2c_port_t p = i2c_bus_desc[i].port;
+        businfo[i].port = p;
+        businfo[i].bus_clock = i2c_bus_desc[i].speed;
+        i2c_param_config(p, &i2c_bus_config);
+        i2c_driver_install(p, I2C_MODE_MASTER, 0, 0, ESP_INTR_FLAG_IRAM);
+        i2c_filter_enable(p, 7);
     }
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
-    _retries(2),
+    _retries(3),
     _address(address),
     bus(I2CDeviceManager::businfo[busnum])
 {
-	//printf("%s -> busnum:%d address:%d\n",__PRETTY_FUNCTION__,busnum, address);
     set_device_bus(busnum);
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
-    printf("i2c device constructed %s\n", pname);
-
 }
 
 I2CDevice::~I2CDevice()
@@ -87,24 +68,35 @@ I2CDevice::~I2CDevice()
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();    
-    if( send_len != 0 && send != nullptr ) {
+    if (!bus.semaphore.check_owner()) {
+        hal.console->printf("I2C: not owner of 0x%x\n", (unsigned)get_bus_id());
+        return false;
+    }
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    if (send_len != 0 && send != nullptr) {
         //tx with optional rx (after tx)
         i2c_master_start(cmd);
         i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_WRITE, true);
         i2c_master_write(cmd, (uint8_t*)send, send_len, true);
-    }    
-    if(recv_len != 0 && recv != nullptr) {
+    }
+    if (recv_len != 0 && recv != nullptr) {
         //rx only or rx after tx
         //rx separated from tx by (re)start
-        i2c_master_start(cmd); 
+        i2c_master_start(cmd);
         i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_READ, true);
         i2c_master_read(cmd, (uint8_t *)recv, recv_len, I2C_MASTER_LAST_NACK);
-    }        
-    i2c_master_stop(cmd);    
-    bool result = (i2c_master_cmd_begin((i2c_port_t)bus.bus, cmd, portMAX_DELAY) == ESP_OK);
+    }
+    i2c_master_stop(cmd);
+    bool result = false;
+    TickType_t timeout = 1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock / portTICK_PERIOD_MS;
+    for (int i = 0; !result && i < _retries; i++) {
+        result = (i2c_master_cmd_begin(bus.port, cmd, timeout) == ESP_OK);
+        if (!result) {
+            i2c_reset_tx_fifo(bus.port);
+            i2c_reset_rx_fifo(bus.port);
+        }
+    }
     i2c_cmd_link_delete(cmd);
-	//printf("%s -> transfer result:%s\n",__PRETTY_FUNCTION__,result?"success":"failed ");
     return result;
 }
 
@@ -131,7 +123,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
                              bool use_smbus,
                              uint32_t timeout_ms)
 {
-    if (bus >= ARRAY_SIZE(i2c_bus_config)) {
+    if (bus >= ARRAY_SIZE(i2c_bus_desc)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
     auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
@@ -143,7 +135,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
 */
 uint32_t I2CDeviceManager::get_bus_mask(void) const
 {
-    return ((1U << ARRAY_SIZE(i2c_bus_config)) - 1);
+    return ((1U << ARRAY_SIZE(i2c_bus_desc)) - 1);
 }
 
 /*
@@ -151,7 +143,13 @@ uint32_t I2CDeviceManager::get_bus_mask(void) const
 */
 uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
 {
-    return get_bus_mask() & HAL_I2C_INTERNAL_MASK;;
+    uint32_t result = 0;
+    for (size_t i = 0; i < ARRAY_SIZE(i2c_bus_desc); i++) {
+        if (i2c_bus_desc[i].internal) {
+            result |= (1u << i);
+        }
+    }
+    return result;
 }
 
 /*
@@ -159,5 +157,5 @@ uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
 */
 uint32_t I2CDeviceManager::get_bus_mask_external(void) const
 {
-    return get_bus_mask() & ~HAL_I2C_INTERNAL_MASK;
+    return get_bus_mask() & ~get_bus_mask_internal();
 }

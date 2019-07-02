@@ -16,7 +16,7 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// EKF_check strucutre
+// EKF_check structure
 ////////////////////////////////////////////////////////////////////////////////
 static struct {
     uint8_t fail_count;         // number of iterations ekf or dcm have been out of tolerances
@@ -54,8 +54,7 @@ void Copter::ekf_check()
                 // limit count from climbing too high
                 ekf_check_state.fail_count = EKF_CHECK_ITERATIONS_MAX;
                 ekf_check_state.bad_variance = true;
-                // log an error in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKFCHECK, ERROR_CODE_EKFCHECK_BAD_VARIANCE);
+                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
@@ -72,8 +71,7 @@ void Copter::ekf_check()
             // if compass is flagged as bad and the counter reaches zero then clear flag
             if (ekf_check_state.bad_variance && ekf_check_state.fail_count == 0) {
                 ekf_check_state.bad_variance = false;
-                // log recovery in the dataflash
-                Log_Write_Error(ERROR_SUBSYSTEM_EKFCHECK, ERROR_CODE_EKFCHECK_VARIANCE_CLEARED);
+                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
                 // clear failsafe
                 failsafe_ekf_off_event();
             }
@@ -100,12 +98,14 @@ bool Copter::ekf_over_threshold()
     Vector2f offset;
     ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance, offset);
 
-    // return true if two of compass, velocity and position variances are over the threshold
+    // return true if two of compass, velocity and position variances are over the threshold OR velocity variance is twice the threshold
     uint8_t over_thresh_count = 0;
     if (mag_variance.length() >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
-    if (vel_variance >= g.fs_ekf_thresh) {
+    if (vel_variance >= (2.0f * g.fs_ekf_thresh)) {
+        over_thresh_count += 2;
+    } else if (vel_variance >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
     if (position_variance >= g.fs_ekf_thresh) {
@@ -134,7 +134,7 @@ void Copter::failsafe_ekf_event()
 
     // EKF failsafe event has occurred
     failsafe.ekf = true;
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
+    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
 
     // sometimes LAND *does* require GPS so ensure we are in non-GPS land
     if (control_mode == LAND && landing_with_GPS()) {
@@ -171,9 +171,8 @@ void Copter::failsafe_ekf_off_event(void)
         return;
     }
 
-    // clear flag and log recovery
     failsafe.ekf = false;
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_RESOLVED);
+    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
 // check for ekf yaw reset and adjust target heading, also log position reset
@@ -193,7 +192,7 @@ void Copter::check_ekf_reset()
     if ((EKF2.getPrimaryCoreIndex() != ekf_primary_core) && (EKF2.getPrimaryCoreIndex() != -1)) {
         attitude_control->inertial_frame_reset();
         ekf_primary_core = EKF2.getPrimaryCoreIndex();
-        Log_Write_Error(ERROR_SUBSYSTEM_EKF_PRIMARY, ekf_primary_core);
+        AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
         gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
     }
 #endif

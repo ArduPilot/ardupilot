@@ -5,9 +5,9 @@
  */
 #pragma once
 
-#define DATAFLASH_MAVLINK_SUPPORT 1
+#define LOGGER_MAVLINK_SUPPORT 1
 
-#if DATAFLASH_MAVLINK_SUPPORT
+#if LOGGER_MAVLINK_SUPPORT
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -144,7 +144,7 @@ private:
     uint8_t _next_block_number_to_resend;
     bool _sending_to_client;
 
-    void Write_DF_MAV(AP_Logger_MAVLink &df);
+    void Write_logger_MAV(AP_Logger_MAVLink &logger);
 
     uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block();
@@ -181,4 +181,4 @@ private:
     HAL_Semaphore semaphore;
 };
 
-#endif // DATAFLASH_MAVLINK_SUPPORT
+#endif // LOGGER_MAVLINK_SUPPORT

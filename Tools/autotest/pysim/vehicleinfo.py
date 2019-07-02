@@ -28,6 +28,24 @@ class VehicleInfo(object):
                 # param fetch happens asynchronously
                 "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
             },
+            "bfx": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-bfx.parm" ],
+            },
+            "djix": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-djix.parm" ],
+            },
+            "cwx": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-cwx.parm" ],
+            },
             "hexa": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",

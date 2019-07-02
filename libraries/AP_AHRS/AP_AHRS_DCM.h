@@ -55,7 +55,7 @@ public:
 
     // get rotation matrix specifically from DCM backend (used for compass calibrator)
     const Matrix3f &get_DCM_rotation_body_to_ned(void) const override { return _body_dcm_matrix; }
-    
+
     // return the current drift correction integrator value
     const Vector3f &get_gyro_drift() const override {
         return _omega_I;
@@ -96,14 +96,13 @@ public:
 
     bool            use_compass() override;
 
-    void set_home(const Location &loc) override;
+    bool set_home(const Location &loc) override WARN_IF_UNUSED;
     void estimate_wind(void);
 
     // is the AHRS subsystem healthy?
     bool healthy() const override;
 
-    // time that the AHRS has been up
-    uint32_t uptime_ms() const override;
+    bool get_velocity_NED(Vector3f &vec) const override;
 
 private:
     float _ki;
@@ -120,6 +119,8 @@ private:
     void            euler_angles(void);
     bool            have_gps(void) const;
     bool            use_fast_gains(void) const;
+    void            load_watchdog_home();
+    void            backup_attitude(void);
 
     // primary representation of attitude of board used for all inertial calculations
     Matrix3f _dcm_matrix;
@@ -194,4 +195,7 @@ private:
 
     // time when DCM was last reset
     uint32_t _last_startup_ms;
+
+    // time when DCM was last backed up to stm32 backup registers
+    uint32_t _last_backup_ms;
 };

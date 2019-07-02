@@ -201,8 +201,6 @@ private:
     HAL_Semaphore_Recursive _rsem;
 };
 
-float closest_distance_between_radial_and_point(const Vector2f &w,
-                                                const Vector2f &p);
 float closest_approach_xy(const Location &my_loc,
                           const Vector3f &my_vel,
                           const Location &obstacle_loc,

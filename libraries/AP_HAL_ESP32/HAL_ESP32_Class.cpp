@@ -15,37 +15,32 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
-#include "AP_HAL_ESP32.h"
-#include "HAL_ESP32_Class.h"
 
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "HAL_ESP32_Class.h"
 #include "Scheduler.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
 #include "UARTDriver.h"
 #include "WiFiDriver.h"
-#include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "Storage.h"
 #include "Util.h"
 
-// the three available hardware uarts are assigned by at most (0), (1), (2) only. no more.
-// both boards use the first two:
-static ESP32::UARTDriver cons(0);        // console      on hardware serial 0
-static ESP32::UARTDriver uartADriver(1); // mavlink1/gps on hardware serial 1
-// ...then ICARUS has an extra uart enabled:
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
-static ESP32::UARTDriver uartBDriver(2);
-#else // and the other board/s do not, for now.
-static Empty::UARTDriver uartBDriver;
+#ifdef HAL_ESP32_NO_MAVLINK_0
+static Empty::UARTDriver uartADriver;
+static ESP32::UARTDriver cons(0);
+#else
+static ESP32::UARTDriver uartADriver(0);
+#define cons uartADriver
 #endif
-
-// both boards use the Wifi UART as well
-static ESP32::WiFiDriver uartCDriver;    // wifi/tcp doesnt use real serial hardware
-
-static Empty::UARTDriver uartDDriver;    // unused
+static ESP32::UARTDriver uartBDriver(1);
+#ifdef HAL_ESP32_WIFI
+static ESP32::WiFiDriver uartCDriver;
+#else
+static Empty::UARTDriver uartCDriver;
+#endif
+static ESP32::UARTDriver uartDDriver(2);
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;
@@ -59,6 +54,7 @@ static ESP32::RCOutput rcoutDriver;
 static ESP32::Scheduler schedulerInstance;
 static ESP32::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
+static Empty::Flash flashDriver;
 
 extern const AP_HAL::HAL& hal;
 
@@ -82,6 +78,7 @@ HAL_ESP32::HAL_ESP32() :
         &schedulerInstance,
         &utilInstance,
         &opticalFlowDriver,
+        &flashDriver,
         nullptr
     )
 {}
@@ -97,10 +94,3 @@ void AP_HAL::init()
 {
 }
 
-const AP_HAL::HAL& AP_HAL::get_HAL() {
-    static const HAL_ESP32 hal_esp;
-    return hal_esp;
-}
-
-
-#endif

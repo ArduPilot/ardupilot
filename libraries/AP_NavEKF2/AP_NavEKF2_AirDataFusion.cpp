@@ -1,7 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -132,7 +130,7 @@ void NavEKF2_core::FuseAirspeed()
             lastTasPassTime_ms = imuSampleTime_ms;
 
 
-            // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+            // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
             stateStruct.angErr.zero();
 
             // correct the state vector
@@ -180,7 +178,7 @@ void NavEKF2_core::FuseAirspeed()
         }
     }
 
-    // force the covariance matrix to me symmetrical and limit the variances to prevent ill-condiioning.
+    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
 
@@ -246,7 +244,7 @@ void NavEKF2_core::SelectBetaFusion()
 }
 
 /*
- * Fuse sythetic sideslip measurement of zero using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * Fuse synthetic sideslip measurement of zero using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
 */
@@ -380,7 +378,7 @@ void NavEKF2_core::FuseSideslip()
             return;
         }
 
-        // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+        // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
         stateStruct.angErr.zero();
 
         // correct the state vector
@@ -427,7 +425,7 @@ void NavEKF2_core::FuseSideslip()
         }
     }
 
-    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
 
@@ -439,5 +437,3 @@ void NavEKF2_core::FuseSideslip()
 *                   MISC FUNCTIONS                      *
 ********************************************************/
 
-
-#endif // HAL_CPU_CLASS

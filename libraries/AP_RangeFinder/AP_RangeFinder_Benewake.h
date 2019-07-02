@@ -15,6 +15,7 @@ public:
 
     // constructor
     AP_RangeFinder_Benewake(RangeFinder::RangeFinder_State &_state,
+                            AP_RangeFinder_Params &_params,
                             AP_SerialManager &serial_manager,
                             uint8_t serial_instance,
                             benewake_model_type model);

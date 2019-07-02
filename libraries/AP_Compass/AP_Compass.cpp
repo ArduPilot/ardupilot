@@ -4,6 +4,7 @@
 #endif
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include "AP_Compass_SITL.h"
 #include "AP_Compass_AK8963.h"
@@ -23,6 +24,7 @@
 #endif
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MAG3110.h"
+#include "AP_Compass_RM3100.h"
 #include "AP_Compass.h"
 #include "Compass_learn.h"
 
@@ -35,7 +37,7 @@ extern AP_HAL::HAL& hal;
 #endif
 
 #ifndef AP_COMPASS_OFFSETS_MAX_DEFAULT
-#define AP_COMPASS_OFFSETS_MAX_DEFAULT 1250
+#define AP_COMPASS_OFFSETS_MAX_DEFAULT 1800
 #endif
 
 #ifndef HAL_COMPASS_FILTER_DEFAULT
@@ -85,8 +87,8 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
-    // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle.
-    // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning
+    // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle. If InFlight learning is enabled then the compass with automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.
+    // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning,3:InFlight-Learning
     // @User: Advanced
     AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 
@@ -475,7 +477,14 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: The expected value of COMPASS_DEV_ID3, used by arming checks. Setting this to -1 means "don't care."
     // @User: Advanced
     AP_GROUPINFO("EXP_DID3", 38, Compass, _state[2].expected_dev_id, -1),
-    
+
+    // @Param: ENABLE
+    // @DisplayName: Enable Compass
+    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
+    // @User: Standard
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("ENABLE", 39, Compass, _enabled, 1),
+
     AP_GROUPEND
 };
 
@@ -497,9 +506,12 @@ Compass::Compass(void)
 
 // Default init method
 //
-bool
-Compass::init()
+void Compass::init()
 {
+    if (!AP::compass().enabled()) {
+        return;
+    }
+
     if (_compass_count == 0) {
         // detect available backends. Only called once
         _detect_backends();
@@ -517,7 +529,17 @@ Compass::init()
     for (uint8_t i=_compass_count; i<COMPASS_MAX_INSTANCES; i++) {
         _state[i].dev_id.set(0);
     }
-    return true;
+
+    // check that we are actually working before passing the compass
+    // through to ARHS to use.
+    if (!read()) {
+        _enabled = false;
+        hal.console->printf("Compass initialisation failed\n");
+        AP::logger().Write_Error(LogErrorSubsystem::COMPASS, LogErrorCode::FAILED_TO_INITIALISE);
+        return;
+    }
+
+    AP::ahrs().set_compass(this);
 }
 
 //  Register a new compass instance
@@ -630,7 +652,7 @@ void Compass::_probe_external_i2c_compasses(void)
                                                                         GET_I2C_DEVICE(i, HAL_COMPASS_ICM20948_I2C_ADDR),
                                                                         all_external, ROTATION_PITCH_180_YAW_90));
     }
-    
+
     // lis3mdl on bus 0 with default address
     FOREACH_I2C_INTERNAL(i) {
         ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS3MDL_I2C_ADDR),
@@ -666,7 +688,8 @@ void Compass::_probe_external_i2c_compasses(void)
     }
     
     // IST8310 on external and internal bus
-    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5) {
+    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5 &&
+        AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV6) {
         enum Rotation default_rotation;
 
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_AEROFC) {
@@ -738,6 +761,7 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PIXRACER: 
     case AP_BoardConfig::PX4_BOARD_MINDPXV2: 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
     case AP_BoardConfig::PX4_BOARD_AEROFC:
         _probe_external_i2c_compasses();
@@ -788,9 +812,11 @@ void Compass::_detect_backends(void)
         // we run the AK8963 only on the 2nd MPU9250, which leaves the
         // first MPU9250 to run without disturbance at high rate
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(1, ROTATION_YAW_270));
+        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe_ICM20948(0, ROTATION_ROLL_180_YAW_90));
         break;
 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
+    case AP_BoardConfig::PX4_BOARD_FMUV6:
         FOREACH_I2C_EXTERNAL(i) {
             ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8310_I2C_ADDR),
                                                                   true, ROTATION_ROLL_180_YAW_90));
@@ -955,7 +981,11 @@ Compass::read(void)
     if (_learn == LEARN_INFLIGHT && learn != nullptr) {
         learn->update();
     }
-    return healthy();
+    bool ret = healthy();
+    if (ret && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit) && !AP::ahrs().have_ekf_logging()) {
+        AP::logger().Write_Compass();
+    }
+    return ret;
 }
 
 uint8_t

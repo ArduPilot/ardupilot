@@ -35,12 +35,12 @@ public:
     // handle a PLAY_TUNE message
     void handle_play_tune(mavlink_message_t *msg) override;
 
+    // play_tune - play tone specified by the provided string of notes
+    void play_tune(const char *tune) override;
+
 private:
     /// play_tune - play one of the pre-defined tunes
     void play_tone(const uint8_t tone_index);
-
-    // play_string - play tone specified by the provided string of notes
-    void play_string(const char *str);
 
     // stop_cont_tone - stop playing the currently playing continuous tone
     void stop_cont_tone();

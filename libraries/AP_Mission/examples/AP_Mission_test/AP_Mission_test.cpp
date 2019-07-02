@@ -178,7 +178,7 @@ void MissionTest::init_mission()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -191,7 +191,7 @@ void MissionTest::init_mission()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -204,7 +204,7 @@ void MissionTest::init_mission()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -217,7 +217,7 @@ void MissionTest::init_mission()
         1234567890,
         -1234567890,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -238,7 +238,7 @@ void MissionTest::init_mission()
         0,
         0,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -261,7 +261,7 @@ void MissionTest::init_mission_no_nav_commands()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -274,7 +274,7 @@ void MissionTest::init_mission_no_nav_commands()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -287,7 +287,7 @@ void MissionTest::init_mission_no_nav_commands()
         0,
         0,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -324,7 +324,7 @@ void MissionTest::init_mission_endless_loop()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -345,7 +345,7 @@ void MissionTest::init_mission_endless_loop()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -358,7 +358,7 @@ void MissionTest::init_mission_endless_loop()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -382,7 +382,7 @@ void MissionTest::init_mission_jump_to_nonnav()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -395,7 +395,7 @@ void MissionTest::init_mission_jump_to_nonnav()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -408,7 +408,7 @@ void MissionTest::init_mission_jump_to_nonnav()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -429,7 +429,7 @@ void MissionTest::init_mission_jump_to_nonnav()
         12345678,
         23456789,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -454,7 +454,7 @@ void MissionTest::init_mission_starts_with_do_commands()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -467,7 +467,7 @@ void MissionTest::init_mission_starts_with_do_commands()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -480,7 +480,7 @@ void MissionTest::init_mission_starts_with_do_commands()
         0,
         0,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -493,7 +493,7 @@ void MissionTest::init_mission_starts_with_do_commands()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -506,7 +506,7 @@ void MissionTest::init_mission_starts_with_do_commands()
         12345678,
         23456789,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -519,7 +519,7 @@ void MissionTest::init_mission_starts_with_do_commands()
         12345678,
         23456789,
         33,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -543,7 +543,7 @@ void MissionTest::init_mission_ends_with_do_commands()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -556,7 +556,7 @@ void MissionTest::init_mission_ends_with_do_commands()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
 
     // Command #2 : "do" command
@@ -566,7 +566,7 @@ void MissionTest::init_mission_ends_with_do_commands()
         12345678,
         23456789,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -579,7 +579,7 @@ void MissionTest::init_mission_ends_with_do_commands()
         12345678,
         23456789,
         33,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -592,7 +592,7 @@ void MissionTest::init_mission_ends_with_do_commands()
         0,
         0,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -605,7 +605,7 @@ void MissionTest::init_mission_ends_with_do_commands()
         12345678,
         23456789,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -628,7 +628,7 @@ void MissionTest::init_mission_ends_with_jump_command()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -641,7 +641,7 @@ void MissionTest::init_mission_ends_with_jump_command()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -654,7 +654,7 @@ void MissionTest::init_mission_ends_with_jump_command()
         12345678,
         23456789,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -667,7 +667,7 @@ void MissionTest::init_mission_ends_with_jump_command()
         12345678,
         23456789,
         33,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -680,7 +680,7 @@ void MissionTest::init_mission_ends_with_jump_command()
         0,
         0,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -693,7 +693,7 @@ void MissionTest::init_mission_ends_with_jump_command()
         12345678,
         23456789,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -761,7 +761,7 @@ void MissionTest::run_resume_test()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -774,7 +774,7 @@ void MissionTest::run_resume_test()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -787,7 +787,7 @@ void MissionTest::run_resume_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -800,7 +800,7 @@ void MissionTest::run_resume_test()
         1234567890,
         -1234567890,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -813,7 +813,7 @@ void MissionTest::run_resume_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -826,7 +826,7 @@ void MissionTest::run_resume_test()
         0,
         0,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -881,7 +881,7 @@ void MissionTest::run_set_current_cmd_test()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -894,7 +894,7 @@ void MissionTest::run_set_current_cmd_test()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -907,7 +907,7 @@ void MissionTest::run_set_current_cmd_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -920,7 +920,7 @@ void MissionTest::run_set_current_cmd_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -933,7 +933,7 @@ void MissionTest::run_set_current_cmd_test()
         1234567890,
         -1234567890,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -946,7 +946,7 @@ void MissionTest::run_set_current_cmd_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -959,7 +959,7 @@ void MissionTest::run_set_current_cmd_test()
         0,
         0,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1002,7 +1002,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1015,7 +1015,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1028,7 +1028,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
         12345678,
         23456789,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1041,7 +1041,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1054,7 +1054,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
         1234567890,
         -1234567890,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1067,7 +1067,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1080,7 +1080,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
         0,
         0,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1155,7 +1155,7 @@ void MissionTest::run_replace_cmd_test()
         12345678,
         23456789,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1168,7 +1168,7 @@ void MissionTest::run_replace_cmd_test()
         0,
         0,
         10,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1181,7 +1181,7 @@ void MissionTest::run_replace_cmd_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1194,7 +1194,7 @@ void MissionTest::run_replace_cmd_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1207,7 +1207,7 @@ void MissionTest::run_replace_cmd_test()
         1234567890,
         -1234567890,
         22,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1220,7 +1220,7 @@ void MissionTest::run_replace_cmd_test()
         0,
         0,
         0,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.add_cmd(cmd)) {
         hal.console->printf("failed to add command\n");
@@ -1246,7 +1246,7 @@ void MissionTest::run_replace_cmd_test()
         12345678,
         23456789,
         11,
-        Location::ALT_FRAME_ABSOLUTE
+        Location::AltFrame::ABSOLUTE
     };
     if (!mission.replace_cmd(4, cmd)) {
         hal.console->printf("failed to replace command 4\n");
@@ -1281,7 +1281,7 @@ void MissionTest::run_max_cmd_test()
             12345678,
             23456789,
             num_commands,
-            Location::ALT_FRAME_ABSOLUTE
+            Location::AltFrame::ABSOLUTE
         };
         if (!mission.add_cmd(cmd)) {
             hal.console->printf("failed to add command #%u, library says max is %u\n",(unsigned int)num_commands, (unsigned int)mission.num_commands_max());

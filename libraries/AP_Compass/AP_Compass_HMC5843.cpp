@@ -130,7 +130,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev
 
 AP_Compass_Backend *AP_Compass_HMC5843::probe_mpu6000(enum Rotation rotation)
 {
-    AP_InertialSensor &ins = *AP_InertialSensor::get_instance();
+    AP_InertialSensor &ins = *AP_InertialSensor::get_singleton();
 
     AP_HMC5843_BusDriver *bus =
         new AP_HMC5843_BusDriver_Auxiliary(ins, HAL_INS_MPU60XX_SPI,

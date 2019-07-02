@@ -21,19 +21,20 @@
 #include <stdint.h>
 #include <string.h>
 
+template<uint16_t num_bits>
 class Bitmask {
 public:
-    Bitmask(uint16_t num_bits) :
+    Bitmask() :
         numbits(num_bits),
         numwords((num_bits+31)/32) {
-        bits = new uint32_t[numwords];
         clearall();
     }
-    ~Bitmask(void) {
-        delete[] bits;
+
+    Bitmask &operator=(const Bitmask&other) {
+        memcpy(bits, other.bits, sizeof(bits[0])*other.numwords);
+        return *this;
     }
 
-    Bitmask &operator=(const Bitmask&other);
     Bitmask(const Bitmask &other) = delete;
 
     // set given bitnumber
@@ -129,5 +130,5 @@ public:
 private:
     uint16_t numbits;
     uint16_t numwords;
-    uint32_t *bits;
+    uint32_t bits[(num_bits+31)/32];
 };

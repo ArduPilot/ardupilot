@@ -9,13 +9,12 @@ class AnalogIn;
 class RCInput;
 class RCOutput;
 class ADCSource;
+class RCInput;
 class Util;
 class Semaphore;
 class Semaphore_Recursive;
 class GPIO;
 class DigitalSource;
 class Storage;
-class SoftSigReaderInt;
-class SoftSigReaderRMT;
 class RmtSigReader;
 }  // namespace ESP32

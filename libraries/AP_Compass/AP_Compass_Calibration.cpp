@@ -7,8 +7,12 @@
 extern AP_HAL::HAL& hal;
 
 void
-Compass::compass_cal_update()
+Compass::cal_update()
 {
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
+
     bool running = false;
 
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {

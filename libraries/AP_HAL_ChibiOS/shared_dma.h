@@ -80,6 +80,18 @@ private:
 
     // core of lock call, after semaphores gained
     void lock_core(void);
+
+    // lock one stream
+    static void lock_stream(uint8_t stream_id);
+
+    // unlock one stream
+    void unlock_stream(uint8_t stream_id);
+
+    // unlock one stream from an IRQ handler
+    void unlock_stream_from_IRQ(uint8_t stream_id);
+
+    // lock one stream, non-blocking
+    bool lock_stream_nonblocking(uint8_t stream_id);
     
     static struct dma_lock {
         // semaphore to ensure only one peripheral uses a DMA channel at a time
@@ -92,7 +104,7 @@ private:
 
         // point to object that holds the allocation, if allocated
         Shared_DMA *obj;
-    } locks[SHARED_DMA_MAX_STREAM_ID];
+    } locks[SHARED_DMA_MAX_STREAM_ID+1];
 };
 #endif //#if STM32_DMA_ADVANCED
 

@@ -11,10 +11,10 @@ public:
     AP_OpticalFlow_SITL(OpticalFlow &_frontend);
 
     // init - initialise the sensor
-    void init();
+    void init() override;
 
     // update - read latest values from sensor and fill in x,y and totals.
-    void update(void);
+    void update(void) override;
 
 private:
     SITL::SITL *_sitl;

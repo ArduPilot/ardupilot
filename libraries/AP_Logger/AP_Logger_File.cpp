@@ -16,6 +16,7 @@
 #include "AP_Logger_File.h"
 
 #include <AP_Common/AP_Common.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #if HAL_OS_POSIX_IO
 #include <unistd.h>
@@ -47,7 +48,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define MAX_LOG_FILES 500U
-#define DATAFLASH_PAGE_SIZE 1024UL
+#define LOGGER_PAGE_SIZE 1024UL
 
 #ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
 #define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
@@ -90,12 +91,13 @@ void AP_Logger_File::Init()
         _log_directory = custom_dir;
     }
 
+    hal.scheduler->expect_delay_ms(3000);
     ret = stat(_log_directory, &st);
     if (ret == -1) {
         ret = mkdir(_log_directory, 0777);
     }
-    if (ret == -1) {
-#ifdef DBG_CONSOLEMSGS
+    hal.scheduler->expect_delay_ms(0);
+    if (ret == -1 && errno != EEXIST) {
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
 #endif
     }
@@ -136,11 +138,14 @@ void AP_Logger_File::Init()
 bool AP_Logger_File::file_exists(const char *filename) const
 {
     struct stat st;
+    hal.scheduler->expect_delay_ms(3000);
     if (stat(filename, &st) == -1) {
         // hopefully errno==ENOENT.  If some error occurs it is
         // probably better to assume this file exists.
+        hal.scheduler->expect_delay_ms(0);
         return false;
     }
+    hal.scheduler->expect_delay_ms(0);
     return true;
 }
 
@@ -270,14 +275,18 @@ uint16_t AP_Logger_File::find_oldest_log()
     // We could count up to find_last_log(), but if people start
     // relying on the min_avail_space_percent feature we could end up
     // doing a *lot* of asprintf()s and stat()s
+    hal.scheduler->expect_delay_ms(3000);
     DIR *d = opendir(_log_directory);
+    hal.scheduler->expect_delay_ms(0);
     if (d == nullptr) {
-        internal_error();
+        // SD card may have died?  On linux someone may have rm-rf-d
         return 0;
     }
 
     // we only remove files which look like xxx.BIN
+    hal.scheduler->expect_delay_ms(3000);
     for (struct dirent *de=readdir(d); de; de=readdir(d)) {
+        hal.scheduler->expect_delay_ms(3000);
         uint8_t length = strlen(de->d_name);
         if (length < 5) {
             // not long enough for \d+[.]BIN
@@ -312,6 +321,7 @@ uint16_t AP_Logger_File::find_oldest_log()
         }
     }
     closedir(d);
+    hal.scheduler->expect_delay_ms(0);
     _cached_oldest_log = current_oldest_log;
 
     return current_oldest_log;
@@ -319,6 +329,10 @@ uint16_t AP_Logger_File::find_oldest_log()
 
 void AP_Logger_File::Prep_MinSpace()
 {
+    if (hal.util->was_watchdog_reset()) {
+        // don't clear space if watchdog reset, it takes too long
+        return;
+    }
     const uint16_t first_log_to_remove = find_oldest_log();
     if (first_log_to_remove == 0) {
         // no files to remove
@@ -333,7 +347,6 @@ void AP_Logger_File::Prep_MinSpace()
     do {
         float avail = avail_space_percent();
         if (is_equal(avail, -1.0f)) {
-            internal_error();
             break;
         }
         if (avail >= min_avail_space_percent) {
@@ -341,19 +354,18 @@ void AP_Logger_File::Prep_MinSpace()
         }
         if (count++ > MAX_LOG_FILES+10) {
             // *way* too many deletions going on here.  Possible internal error.
-            internal_error();
+            AP::internalerror().error(AP_InternalError::error_t::logger_too_many_deletions);
             break;
         }
         char *filename_to_remove = _log_file_name(log_to_remove);
         if (filename_to_remove == nullptr) {
-            internal_error();
+            AP::internalerror().error(AP_InternalError::error_t::logger_bad_getfilename);
             break;
         }
         if (file_exists(filename_to_remove)) {
 #ifdef DBG_CONSOLEMSGS
             printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
-#endif
             if (unlink(filename_to_remove) == -1) {
 #ifdef DBG_CONSOLEMSGS
                 printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
@@ -364,12 +376,12 @@ void AP_Logger_File::Prep_MinSpace()
                     // sequence of files...  however, there may be still
                     // files out there, so keep going.
                 } else {
-                    internal_error();
                     break;
                 }
             } else {
                 free(filename_to_remove);
             }
+            hal.scheduler->expect_delay_ms(0);
         }
         log_to_remove++;
         if (log_to_remove > MAX_LOG_FILES) {
@@ -486,7 +498,9 @@ void AP_Logger_File::EraseAll()
         if (fname == nullptr) {
             break;
         }
+        hal.scheduler->expect_delay_ms(3000);
         unlink(fname);
+        hal.scheduler->expect_delay_ms(0);
         free(fname);
     }
     char *fname = _lastlog_file_name();
@@ -590,7 +604,9 @@ uint16_t AP_Logger_File::find_last_log()
     if (fname == nullptr) {
         return ret;
     }
+    hal.scheduler->expect_delay_ms(3000);
     int fd = open(fname, O_RDONLY|O_CLOEXEC);
+    hal.scheduler->expect_delay_ms(0);
     free(fname);
     if (fd != -1) {
         char buf[10];
@@ -623,13 +639,16 @@ uint32_t AP_Logger_File::_get_log_size(const uint16_t log_num)
         write_fd_semaphore.give();
     }
     struct stat st;
+    hal.scheduler->expect_delay_ms(3000);
     if (::stat(fname, &st) != 0) {
 #ifdef DBG_CONSOLEMSGS
         printf("Unable to fetch Log File Size: %s,%s\n", fname,strerror(errno));
 #endif
         free(fname);
+        hal.scheduler->expect_delay_ms(0);
         return 0;
     }
+    hal.scheduler->expect_delay_ms(0);
     free(fname);
     return st.st_size;
 }
@@ -654,11 +673,14 @@ uint32_t AP_Logger_File::_get_log_time(const uint16_t log_num)
         write_fd_semaphore.give();
     }
     struct stat st;
+    hal.scheduler->expect_delay_ms(3000);
     if (::stat(fname, &st) != 0) {
         free(fname);
+        hal.scheduler->expect_delay_ms(0);
         return 0;
     }
     free(fname);
+    hal.scheduler->expect_delay_ms(0);
     return st.st_mtime;
 }
 
@@ -698,7 +720,7 @@ void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & st
     }
 
     start_page = 0;
-    end_page = _get_log_size(log_num) / DATAFLASH_PAGE_SIZE;
+    end_page = _get_log_size(log_num) / LOGGER_PAGE_SIZE;
 }
 
 /*
@@ -726,7 +748,9 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
             return -1;
         }
         stop_logging();
+        hal.scheduler->expect_delay_ms(3000);
         _read_fd = ::open(fname, O_RDONLY|O_CLOEXEC);
+        hal.scheduler->expect_delay_ms(0);
         if (_read_fd == -1) {
             _open_error = true;
             int saved_errno = errno;
@@ -741,7 +765,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         _read_offset = 0;
         _read_fd_log_num = log_num;
     }
-    uint32_t ofs = page * (uint32_t)DATAFLASH_PAGE_SIZE + offset;
+    uint32_t ofs = page * (uint32_t)LOGGER_PAGE_SIZE + offset;
 
     /*
       this rather strange bit of code is here to work around a bug
@@ -848,7 +872,7 @@ void AP_Logger_File::stop_logging(void)
     if (have_sem) {
         write_fd_semaphore.give();
     } else {
-        _internal_errors++;
+        AP::internalerror().error(AP_InternalError::error_t::logger_stopping_without_sem);
     }
 }
 
@@ -928,6 +952,7 @@ uint16_t AP_Logger_File::start_new_log(void)
         write_fd_semaphore.give();
         return 0xFFFF;
     }
+    hal.scheduler->expect_delay_ms(3000);
 #ifdef DBG_CONSOLEMSGS
     printf("AP_Logger_File::_write_filename: %s\n",_write_filename);
 #endif
@@ -937,6 +962,7 @@ uint16_t AP_Logger_File::start_new_log(void)
     //TODO add support for mode flags
     _write_fd = ::open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
 #endif
+    hal.scheduler->expect_delay_ms(0);
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
@@ -960,11 +986,13 @@ uint16_t AP_Logger_File::start_new_log(void)
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write
+    hal.scheduler->expect_delay_ms(3000);
 #if HAL_OS_POSIX_IO
     int fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
 #else
     int fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
 #endif
+    hal.scheduler->expect_delay_ms(0);
     free(fname);
     if (fd == -1) {
         _open_error = true;
@@ -1011,7 +1039,7 @@ void AP_Logger_File::flush(void)
         }
         write_fd_semaphore.give();
     } else {
-        _internal_errors++;
+        AP::internalerror().error(AP_InternalError::error_t::logger_flushing_without_sem);
     }
 }
 #else
@@ -1172,7 +1200,6 @@ void AP_Logger_File::Write_AP_Logger_Stats_File(const struct df_stats &_stats)
         LOG_PACKET_HEADER_INIT(LOG_DF_FILE_STATS),
         time_us         : AP_HAL::micros64(),
         dropped         : _dropped,
-        internal_errors : _internal_errors,
         blocks          : _stats.blocks,
         bytes           : _stats.bytes,
         buf_space_min   : _stats.buf_space_min,

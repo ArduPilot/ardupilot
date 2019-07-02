@@ -147,8 +147,8 @@ private:
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
     const RangeFinder *_rangefinder;
-    uint8_t primary_instance:3;
-    uint8_t num_instances:3;
+    uint8_t primary_instance;
+    uint8_t num_instances;
     AP_SerialManager &serial_manager;
 
     // parameters for all instances

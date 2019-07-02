@@ -758,7 +758,7 @@
 #if LUA_FLOAT_TYPE == LUA_FLOAT_LONGDOUBLE
 #define LUAL_BUFFERSIZE		8192
 #else
-#define LUAL_BUFFERSIZE   ((int)(0x80 * sizeof(void*) * sizeof(lua_Integer)))
+#define LUAL_BUFFERSIZE   ((int)(0x20 * sizeof(void*) * sizeof(lua_Integer)))
 #endif
 
 /* }================================================================== */

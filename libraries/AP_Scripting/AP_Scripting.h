@@ -42,6 +42,7 @@ private:
     AP_Int8 _enable;
     AP_Int32 _script_vm_exec_count;
     AP_Int32 _script_heap_size;
+    AP_Int8 _debug_level;
 
     static AP_Scripting *_singleton;
 

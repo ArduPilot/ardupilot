@@ -76,7 +76,7 @@ public:
     
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
-    static AP_Radio_cc2500 *radio_instance;
+    static AP_Radio_cc2500 *radio_singleton;
     static thread_t *_irq_handler_ctx;
     static virtual_timer_t timeout_vt;
 

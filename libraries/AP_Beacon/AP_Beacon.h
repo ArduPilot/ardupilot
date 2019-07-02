@@ -19,6 +19,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Common/Location.h>
 
 class AP_Beacon_Backend;
 

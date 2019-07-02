@@ -428,7 +428,7 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     location.lng = degrees(fdm.longitude) * 1.0e7;
     location.alt = fdm.agl*100 + home.alt;
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
-    airspeed = fdm.vcas * FEET_TO_METERS;
+    airspeed = fdm.vcas * KNOTS_TO_METERS_PER_SECOND;
     airspeed_pitot = airspeed;
 
     // update magnetic field

@@ -19,6 +19,9 @@ public:
 
     // handle a PLAY_TUNE message, by default device ignore message
     virtual void handle_play_tune(mavlink_message_t *msg) {}
+
+    // play a MML tune
+    virtual void play_tune(const char *tune) {}
     
     // this pointer is used to read the parameters relative to devices
     const AP_Notify *pNotify;

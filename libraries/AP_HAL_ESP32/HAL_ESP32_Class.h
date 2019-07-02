@@ -20,14 +20,6 @@
 #include <AP_HAL_Empty/AP_HAL_Empty_Namespace.h>
 #include <AP_HAL_ESP32/HAL_ESP32_Namespace.h>
 
-#include "esp_types.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "soc/timer_group_struct.h"
-#include "driver/periph_ctrl.h"
-#include "driver/timer.h"
-
 class HAL_ESP32 : public AP_HAL::HAL {
 public:
     HAL_ESP32();

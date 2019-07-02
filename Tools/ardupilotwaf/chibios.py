@@ -75,11 +75,9 @@ class set_default_parameters(Task.Task):
         sys.path.append(os.path.dirname(apj_tool))
         from apj_tool import embedded_defaults
         defaults = embedded_defaults(self.inputs[0].abspath())
-        if not defaults.find():
-            print("Error: Param defaults support not found in firmware")
-            sys.exit(1)
-        defaults.set_file(abs_default_parameters)
-        defaults.save()
+        if defaults.find():
+            defaults.set_file(abs_default_parameters)
+            defaults.save()
 
 
 class generate_bin(Task.Task):
@@ -235,6 +233,18 @@ def load_env_vars(env):
     if env.ENABLE_ASSERTS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
 
+def setup_optimization(env):
+    '''setup optimization flags for build'''
+    if env.DEBUG:
+        OPTIMIZE = "-Og"
+    elif env.OPTIMIZE:
+        OPTIMIZE = env.OPTIMIZE
+    else:
+        OPTIMIZE = "-Os"
+    env.CFLAGS += [ OPTIMIZE ]
+    env.CXXFLAGS += [ OPTIMIZE ]
+    env.CHIBIOS_BUILD_FLAGS += ' USE_COPT=%s' % OPTIMIZE
+
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
@@ -307,6 +317,7 @@ def configure(cfg):
     load_env_vars(cfg.env)
     if env.HAL_WITH_UAVCAN:
         setup_can_build(cfg)
+    setup_optimization(cfg.env)
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''

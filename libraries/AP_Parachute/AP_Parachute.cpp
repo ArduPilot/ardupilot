@@ -5,6 +5,8 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -60,6 +62,16 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
     
+    // @Param: CRT_SINK
+    // @DisplayName: Critical sink speed rate in m/s to trigger emergency parachute
+    // @Description: Release parachute when critical sink rate is reached
+    // @Range: 0 15
+    // @Units: m/s
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("CRT_SINK", 6, AP_Parachute, _critical_sink, AP_PARACHUTE_CRITICAL_SINK_DEFAULT),
+    
+    
     AP_GROUPEND
 };
 
@@ -70,6 +82,8 @@ void AP_Parachute::enabled(bool on_off)
 
     // clear release_time
     _release_time = 0;
+
+    AP::logger().Write_Event(_enabled ? DATA_PARACHUTE_ENABLED : DATA_PARACHUTE_DISABLED);
 }
 
 /// release - release parachute
@@ -79,6 +93,9 @@ void AP_Parachute::release()
     if (_enabled <= 0) {
         return;
     }
+
+    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
+    AP::logger().Write_Event(DATA_PARACHUTE_RELEASED);
 
     // set release time to current system time
     if (_release_time == 0) {
@@ -98,7 +115,19 @@ void AP_Parachute::update()
     if (_enabled <= 0) {
         return;
     }
-
+    // check if the plane is sinking too fast for more than a second and release parachute
+    uint32_t time = AP_HAL::millis();
+    if((_critical_sink > 0) && (_sink_rate > _critical_sink) && !_release_initiated && _is_flying) {
+        if(_sink_time == 0) {
+            _sink_time = AP_HAL::millis();
+        }
+        if((time - _sink_time) >= 1000) {
+            release();
+        }
+    } else {
+        _sink_time = 0;
+    }
+    
     // calc time since release
     uint32_t time_diff = AP_HAL::millis() - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
@@ -130,4 +159,16 @@ void AP_Parachute::update()
         // update AP_Notify
         AP_Notify::flags.parachute_release = 0;
     }
+}
+
+// singleton instance
+AP_Parachute *AP_Parachute::_singleton;
+
+namespace AP {
+
+AP_Parachute *parachute()
+{
+    return AP_Parachute::get_singleton();
+}
+
 }

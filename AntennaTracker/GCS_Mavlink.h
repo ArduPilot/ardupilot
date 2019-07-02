@@ -2,9 +2,6 @@
 
 #include <GCS_MAVLink/GCS.h>
 
-// default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
-#define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS)
-
 class GCS_MAVLINK_Tracker : public GCS_MAVLINK
 {
 
@@ -28,6 +25,13 @@ protected:
         return 0; // what if we have been picked up and carried somewhere?
     }
 
+    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
+    uint64_t capabilities() const override;
+
+    void send_nav_controller_output() const override;
+    void send_pid_tuning() override;
+
 private:
 
     void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;
@@ -35,10 +39,9 @@ private:
     void handleMessage(mavlink_message_t * msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
-    bool try_send_message(enum ap_message id) override;
+    void send_global_position_int() override;
 
-    MAV_TYPE frame_type() const override;
     MAV_MODE base_mode() const override;
-    uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
+
 };

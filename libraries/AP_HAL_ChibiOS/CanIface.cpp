@@ -63,7 +63,7 @@
 # endif
 #endif
 
-#if (CH_KERNEL_MAJOR == 3 || CH_KERNEL_MAJOR == 4 || CH_KERNEL_MAJOR == 5)
+#if (CH_KERNEL_MAJOR == 3 || CH_KERNEL_MAJOR == 4 || CH_KERNEL_MAJOR == 5 || CH_KERNEL_MAJOR == 6)
 #define CAN1_TX_IRQHandler      STM32_CAN1_TX_HANDLER
 #define CAN1_RX0_IRQHandler     STM32_CAN1_RX0_HANDLER
 #define CAN1_RX1_IRQHandler     STM32_CAN1_RX1_HANDLER
@@ -759,8 +759,9 @@ void CanIface::handleRxInterrupt(uavcan::uint8_t fifo_index, uavcan::uint64_t ut
      * Store with timeout into the FIFO buffer and signal update event
      */
     rx_queue_.push(frame, utc_usec, 0);
+ #if !HAL_MINIMIZE_FEATURES
     slcan_router().route_frame_to_slcan(this, frame, utc_usec);
-
+#endif
     had_activity_ = true;
     update_event_.signalFromInterrupt();
 
@@ -1212,10 +1213,16 @@ UAVCAN_STM32_IRQ_HANDLER(CAN1_RX1_IRQHandler)
 
 # if UAVCAN_STM32_NUM_IFACES > 1
 
-#if !defined(CAN2_TX_IRQHandler) ||\
-    !defined(CAN2_RX0_IRQHandler) ||\
-    !defined(CAN2_RX1_IRQHandler)
-# error "Misconfigured build"
+#if !defined(CAN2_TX_IRQHandler)
+# error "Misconfigured build1"
+#endif
+
+#if !defined(CAN2_RX0_IRQHandler)
+# error "Misconfigured build2"
+#endif
+
+#if !defined(CAN2_RX1_IRQHandler)
+# error "Misconfigured build3"
 #endif
 
 UAVCAN_STM32_IRQ_HANDLER(CAN2_TX_IRQHandler);

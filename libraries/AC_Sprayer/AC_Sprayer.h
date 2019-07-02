@@ -17,9 +17,6 @@
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
-#include <SRV_Channel/SRV_Channel.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 #define AC_SPRAYER_DEFAULT_PUMP_RATE        10.0f   ///< default quantity of spray per meter travelled
 #define AC_SPRAYER_DEFAULT_PUMP_MIN         0       ///< default minimum pump speed expressed as a percentage from 0 to 100
@@ -38,8 +35,8 @@ public:
     AC_Sprayer(const AC_Sprayer &other) = delete;
     AC_Sprayer &operator=(const AC_Sprayer&) = delete;
 
-    static AC_Sprayer *get_instance();
-    static AC_Sprayer *_s_instance;
+    static AC_Sprayer *get_singleton();
+    static AC_Sprayer *_singleton;
 
     /// run - allow or disallow spraying to occur
     void run(bool true_false);

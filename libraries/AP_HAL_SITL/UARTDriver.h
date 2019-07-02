@@ -22,10 +22,6 @@ public:
         _listen_fd = -1;
     }
 
-    static UARTDriver *from(AP_HAL::UARTDriver *uart) {
-        return static_cast<UARTDriver*>(uart);
-    }
-    
     /* Implementations of UARTDriver virtual methods */
     void begin(uint32_t b) override {
         begin(b, 0, 0);
@@ -123,6 +119,7 @@ private:
     bool _is_udp;
     bool _packetise;
     uint16_t _mc_myport;
+    uint32_t last_tick_us;
 };
 
 #endif

@@ -59,14 +59,14 @@ public:
     bool get_telem_data(uint8_t esc_index, struct telem_data &td);
 
     static AP_BLHeli *get_singleton(void) {
-        return singleton;
+        return _singleton;
     }
 
     // send ESC telemetry messages over MAVLink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
     
 private:
-    static AP_BLHeli *singleton;
+    static AP_BLHeli *_singleton;
     
     // mask of channels to use for BLHeli protocol
     AP_Int32 channel_mask;

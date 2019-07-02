@@ -88,16 +88,20 @@
  # define RANGEFINDER_HEALTH_MAX 3          // number of good reads that indicates a healthy rangefinder
 #endif
 
+#ifndef RANGEFINDER_TIMEOUT_MS
+# define RANGEFINDER_TIMEOUT_MS 1000        // rangefinder filter reset if no updates from sensor in 1 second
+#endif
+
 #ifndef RANGEFINDER_GAIN_DEFAULT
  # define RANGEFINDER_GAIN_DEFAULT 0.8f     // gain for controlling how quickly rangefinder range adjusts target altitude (lower means slower reaction)
 #endif
 
-#ifndef THR_SURFACE_TRACKING_VELZ_MAX
- # define THR_SURFACE_TRACKING_VELZ_MAX 150 // max vertical speed change while surface tracking with rangefinder
+#ifndef SURFACE_TRACKING_VELZ_MAX
+ # define SURFACE_TRACKING_VELZ_MAX 150     // max vertical speed change while surface tracking with rangefinder
 #endif
 
-#ifndef RANGEFINDER_TIMEOUT_MS
- # define RANGEFINDER_TIMEOUT_MS  1000      // desired rangefinder alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
+#ifndef SURFACE_TRACKING_TIMEOUT_MS
+ # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
 #endif
 
 #ifndef RANGEFINDER_WPNAV_FILT_HZ
@@ -159,7 +163,7 @@
 
 // Radio failsafe
 #ifndef FS_RADIO_TIMEOUT_MS
- #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
+ #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 milliseconds with No RC Input
 #endif
 
 // missing terrain data failsafe
@@ -623,7 +627,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Dataflash logging control
+// Logging control
 //
 #ifndef LOGGING_ENABLED
  # define LOGGING_ENABLED                ENABLED
@@ -704,6 +708,18 @@
   #error Helicopter frame requires acro mode support which is disabled
 #endif
 
+#if MODE_SMARTRTL_ENABLED && !MODE_RTL_ENABLED
+  #error SmartRTL requires ModeRTL which is disabled
+#endif
+
+#if ADSB_ENABLED && !MODE_GUIDED_ENABLED
+  #error ADSB requires ModeGuided which is disabled
+#endif
+
+#if MODE_FOLLOW_ENABLED && !MODE_GUIDED_ENABLED
+  #error Follow requires ModeGuided which is disabled
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
@@ -743,4 +759,8 @@
 
 #ifndef OSD_ENABLED
  #define OSD_ENABLED DISABLED
+#endif
+
+#ifndef HAL_FRAME_TYPE_DEFAULT
+#define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif

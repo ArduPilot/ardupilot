@@ -4,6 +4,7 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include "AP_HAL_SITL.h"
 #include "Semaphores.h"
+#include "ToneAlarm_SF.h"
 
 class HALSITL::Util : public AP_HAL::Util {
 public:
@@ -37,9 +38,20 @@ public:
     virtual void *allocate_heap_memory(size_t size);
     virtual void *heap_realloc(void *heap, void *ptr, size_t new_size);
 #endif // ENABLE_HEAP
-    
+
+#ifdef WITH_SITL_TONEALARM
+    bool toneAlarm_init() override { return _toneAlarm.init(); }
+    void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override {
+        _toneAlarm.set_buzzer_tone(frequency, volume, duration_ms);
+    }
+#endif
+
 private:
     SITL_State *sitlState;
+
+#ifdef WITH_SITL_TONEALARM
+    static ToneAlarm_SF _toneAlarm;
+#endif
 
 #ifdef ENABLE_HEAP
     struct heap_allocation_header {

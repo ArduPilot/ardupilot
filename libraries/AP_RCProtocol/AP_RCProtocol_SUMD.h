@@ -30,7 +30,6 @@ public:
 
 private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
-    static uint16_t sumd_crc16(uint16_t crc, uint8_t value);
     static uint8_t sumd_crc8(uint8_t crc, uint8_t value);
 
 #pragma pack(push, 1)

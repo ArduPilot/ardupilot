@@ -203,7 +203,7 @@ void MsgHandler::location_from_msg(uint8_t *msg,
 {
     loc.lat = require_field_int32_t(msg, label_lat);
     loc.lng = require_field_int32_t(msg, label_long);
-    loc.set_alt_cm(require_field_int32_t(msg, label_alt), Location::ALT_FRAME_ABSOLUTE);
+    loc.set_alt_cm(require_field_int32_t(msg, label_alt), Location::AltFrame::ABSOLUTE);
 }
 
 void MsgHandler::ground_vel_from_msg(uint8_t *msg,

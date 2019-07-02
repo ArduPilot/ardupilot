@@ -257,8 +257,8 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     stack_size += 2300;
     
     pthread_t thread {};
-    uint32_t alloc_stack = MAX(PTHREAD_STACK_MIN,stack_size);
-    
+    const uint32_t alloc_stack = MAX(size_t(PTHREAD_STACK_MIN),stack_size);
+
     struct thread_attr *a = new struct thread_attr;
     if (!a) {
         return false;

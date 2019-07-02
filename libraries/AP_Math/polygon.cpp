@@ -43,10 +43,10 @@ bool Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n)
         if ((V[i].y > P.y) == (V[j].y > P.y)) {
             continue;
         }
-        const int32_t dx1 = P.x - V[i].x;
-        const int32_t dx2 = V[j].x - V[i].x;
-        const int32_t dy1 = P.y - V[i].y;
-        const int32_t dy2 = V[j].y - V[i].y;
+        const T dx1 = P.x - V[i].x;
+        const T dx2 = V[j].x - V[i].x;
+        const T dy1 = P.y - V[i].y;
+        const T dy2 = V[j].y - V[i].y;
         const int8_t dx1s = (dx1 < 0) ? -1 : 1;
         const int8_t dx2s = (dx2 < 0) ? -1 : 1;
         const int8_t dy1s = (dy1 < 0) ? -1 : 1;

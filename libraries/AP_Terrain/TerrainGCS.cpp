@@ -118,9 +118,8 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     for (int8_t x=-1; x<=1; x++) {
         for (int8_t y=-1; y<=1; y++) {
             Location loc2 = loc;
-            location_offset(loc2, 
-                            x*TERRAIN_GRID_BLOCK_SIZE_X*0.7f*grid_spacing,
-                            y*TERRAIN_GRID_BLOCK_SIZE_Y*0.7f*grid_spacing);
+            loc2.offset(x*TERRAIN_GRID_BLOCK_SIZE_X*0.7f*grid_spacing,
+                        y*TERRAIN_GRID_BLOCK_SIZE_Y*0.7f*grid_spacing);
             struct grid_info info2;
             calculate_grid_info(loc2, info2);            
             if (request_missing(chan, info2)) {
@@ -301,7 +300,7 @@ void AP_Terrain::handle_terrain_data(mavlink_message_t *msg)
         Location loc2;
         loc2.lat = grid.lat;
         loc2.lng = grid.lon;
-        location_offset(loc2, 28*grid_spacing, 32*grid_spacing);
+        loc2.offset(28*grid_spacing, 32*grid_spacing);
         hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
                             loc2.lat*1.0e-7f,
                             loc2.lng*1.0e-7f,

@@ -23,9 +23,6 @@ public:
     static AP_Airspeed_Backend* probe(AP_Airspeed &_fronted, uint8_t _instance);
 
 private:
-    static bool take_registry();
-
-    static void give_registry();
 
     static void handle_airspeed(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AirspeedCb &cb);
 

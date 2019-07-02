@@ -1,11 +1,12 @@
 language: cpp
 sudo: false
 
+dist: xenial
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-7 main'
+      - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main'
         key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     packages:
       - build-essential
@@ -19,8 +20,8 @@ addons:
       - zlib1g-dev
       - gcc-4.9
       - g++-4.9
-      - cmake3
-      - cmake3-data
+      - cmake
+      - cmake-data
       - clang-7
       - llvm-7
 
@@ -52,15 +53,14 @@ env:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
+    - AUTOTEST_UPLOAD=true  # Upload logs of failed tests to ArduPilot server; requires authentication
 
 matrix:
   fast_finish: true
   include:
     - if: type != cron
       compiler: "gcc"
-      env: CI_BUILD_TARGET="revo-bootloader iofirmware"
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="revo-mini"
+      env: CI_BUILD_TARGET="revo-bootloader iofirmware stm32f7 stm32h7 fmuv2-plane"
     - if: type != cron
       compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-copter"
@@ -68,8 +68,11 @@ matrix:
       compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane"
     - if: type != cron
-      compiler: "clang"
+      compiler: "clang-7"
       env: CI_BUILD_TARGET="sitltest-rover sitltest-sub""
+    - if: type != cron
+      compiler: "clang-7"
+      env: CI_BUILD_TARGET="sitl""
     - language: python
       python: 3.7
       addons:  # speedup: This test does not need addons

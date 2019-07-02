@@ -18,10 +18,10 @@ void ModeGuided::update()
     switch (_guided_mode) {
         case Guided_WP:
         {
-            _distance_to_destination = get_distance(rover.current_loc, _destination);
+            _distance_to_destination = rover.current_loc.get_distance(_destination);
             const bool near_wp = _distance_to_destination <= rover.g.waypoint_radius;
             // check if we've reached the destination
-            if (!_reached_destination && (near_wp || location_passed_point(rover.current_loc, _origin, _destination))) {
+            if (!_reached_destination && (near_wp || rover.current_loc.past_interval_finish_line(_origin, _destination))) {
                 _reached_destination = true;
                 rover.gcs().send_mission_item_reached_message(0);
             }
@@ -53,7 +53,7 @@ void ModeGuided::update()
             if (have_attitude_target) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, true);
+                calc_throttle(_desired_speed, true, true);
             } else {
                 // we have reached the destination so stay here
                 if (rover.is_boat()) {
@@ -80,7 +80,7 @@ void ModeGuided::update()
                                                                             g2.motors.limit.steer_left,
                                                                             g2.motors.limit.steer_right,
                                                                             rover.G_Dt);
-                g2.motors.set_steering(steering_out * 4500.0f);
+                set_steering(steering_out * 4500.0f);
                 calc_throttle(_desired_speed, true, true);
             } else {
                 // we have reached the destination so stay here
@@ -114,6 +114,24 @@ float ModeGuided::get_distance_to_destination() const
         return 0.0f;
     }
     return _distance_to_destination;
+}
+
+// return true if vehicle has reached or even passed destination
+bool ModeGuided::reached_destination() const
+{
+    switch (_guided_mode) {
+    case Guided_WP:
+        return _reached_destination;
+        break;
+    case Guided_HeadingAndSpeed:
+    case Guided_TurnRateAndSpeed:
+    case Guided_Loiter:
+        return true;
+        break;
+    }
+
+    // we should never reach here but just in case, return true is the safer option
+    return true;
 }
 
 // set desired location
@@ -181,5 +199,44 @@ bool ModeGuided::start_loiter()
         _guided_mode = Guided_Loiter;
         return true;
     }
+    return false;
+}
+
+// set guided timeout and movement limits
+void ModeGuided::limit_set(uint32_t timeout_ms, float horiz_max)
+{
+    limit.timeout_ms = timeout_ms;
+    limit.horiz_max = horiz_max;
+}
+
+// clear/turn off guided limits
+void ModeGuided::limit_clear()
+{
+    limit.timeout_ms = 0;
+    limit.horiz_max = 0.0f;
+}
+
+// initialise guided start time and location as reference for limit checking
+//  only called from AUTO mode's start_guided method
+void ModeGuided::limit_init_time_and_location()
+{
+    limit.start_time_ms = AP_HAL::millis();
+    limit.start_loc = rover.current_loc;
+}
+
+// returns true if guided mode has breached a limit
+bool ModeGuided::limit_breached() const
+{
+    // check if we have passed the timeout
+    if ((limit.timeout_ms > 0) && (millis() - limit.start_time_ms >= limit.timeout_ms)) {
+        return true;
+    }
+
+    // check if we have gone beyond horizontal limit
+    if (is_positive(limit.horiz_max)) {
+        return (rover.current_loc.get_distance(limit.start_loc) > limit.horiz_max);
+    }
+
+    // if we got this far we must be within limits
     return false;
 }

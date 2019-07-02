@@ -26,7 +26,7 @@ struct FI {
     struct FI * next;
 };
 
-FI fi[8192];
+FI* ht[1024];
 
 extern "C" __attribute__((section(".iram1"))) __attribute__((no_instrument_function))
 void _mcount()
@@ -37,24 +37,19 @@ void _mcount()
     uint32_t hash = address;
     hash = ((hash >> 16)^hash)*0x45d9f3b;
     hash = ((hash >> 16)^hash)*0x45d9f3b;
-    uint32_t index = ((hash >> 16)^hash)%ARRAY_SIZE(fi);
-    FI *current = &(fi[index]);
-    while (current->next != nullptr && current->address != address) {
-        current = current->next;
+    uint32_t index = ((hash >> 16)^hash)%ARRAY_SIZE(ht);
+    FI **current = &(ht[index]);
+    while (*current != nullptr && (*current)->address != address) {
+        current = &((*current)->next);
     }
-    if (current->address == address) {
-        current->count++;
+    if (*current != nullptr) {
+        (*current)->count++;
     } else {
-        if(current->address == 0) {
-           current->address = address;
-           current->count = 1;
-        } else {
-           FI* next = new FI();
-           next->address = address;
-           next->count = 1;
-           next->next = nullptr;
-           current->next = next;
-        }
+        FI* next = (FI *)malloc(sizeof(FI));
+        next->address = address;
+        next->count = 1;
+        next->next = nullptr;
+        *current = next;
     }
 }
 
@@ -68,15 +63,13 @@ void print_profile()
         ++counter;
         FILE *f = fopen(fname, "w");
         if (f != nullptr) {
-            for (size_t i=0; i < ARRAY_SIZE(fi); i++) {
-                FI *current = &(fi[i]);
-                do {
-                    if (current->address != 0) {
+            for (size_t i=0; i < ARRAY_SIZE(ht); i++) {
+                for (FI *current = ht[i]; current != nullptr; current = current->next) {
+                    if (current->count != 0) {
                         fprintf(f, "0x%016x 0x%x\n", current->address , current->count);
+                        current->count = 0;
                     }
-                    current->count = 0;
-                    current = current->next;
-                } while (current != nullptr);
+                }
             }
             fclose(f);
             printf("profile dumped %s\n", fname);

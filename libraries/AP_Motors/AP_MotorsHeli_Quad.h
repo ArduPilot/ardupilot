@@ -81,7 +81,7 @@ protected:
     void update_motor_control(RotorControlState state) override;
 
     // calculate_roll_pitch_collective_factors - setup rate factors
-    void calculate_roll_pitch_collective_factors () override;
+    void calculate_roll_pitch_collective_factors ();
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;

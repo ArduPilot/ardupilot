@@ -70,6 +70,9 @@ public:
      */
     int16_t get_id() const { return _id; }
 
+    //Returns the Clip Limit
+    float get_clip_limit() const { return _clip_limit; }
+
     // notify of a fifo reset
     void notify_fifo_reset(void);
     
@@ -99,6 +102,12 @@ public:
         DEVTYPE_INS_ICM20689 = 0x28,
         DEVTYPE_INS_BMI055   = 0x29,
         DEVTYPE_SITL         = 0x2A,
+        DEVTYPE_INS_BMI088   = 0x2B,
+        DEVTYPE_INS_ICM20948 = 0x2C,
+        DEVTYPE_INS_ICM20648 = 0x2D,
+        DEVTYPE_INS_ICM20649 = 0x2E,
+        DEVTYPE_INS_ICM20602 = 0x2F,
+        DEVTYPE_INS_ICM20601 = 0x30,
     };
 
 protected:
@@ -107,6 +116,9 @@ protected:
 
     // semaphore for access to shared frontend data
     HAL_Semaphore_Recursive _sem;
+
+    //Default Clip Limit
+    float _clip_limit = 15.5f * GRAVITY_MSS;
 
     void _rotate_and_correct_accel(uint8_t instance, Vector3f &accel);
     void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro);
@@ -171,22 +183,24 @@ protected:
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);
 
-    // get accelerometer raw sample rate
-    uint32_t _accel_raw_sample_rate(uint8_t instance) const {
+    // get accelerometer raw sample rate.
+    float _accel_raw_sample_rate(uint8_t instance) const {
         return _imu._accel_raw_sample_rates[instance];
     }
 
-    // set accelerometer raw sample rate
+    // set accelerometer raw sample rate;  note that the storage type
+    // is actually float!
     void _set_accel_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
         _imu._accel_raw_sample_rates[instance] = rate_hz;
     }
     
     // get gyroscope raw sample rate
-    uint32_t _gyro_raw_sample_rate(uint8_t instance) const {
+    float _gyro_raw_sample_rate(uint8_t instance) const {
         return _imu._gyro_raw_sample_rates[instance];
     }
 
-    // set gyro raw sample rate
+    // set gyro raw sample rate; note that the storage type is
+    // actually float!
     void _set_gyro_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
         _imu._gyro_raw_sample_rates[instance] = rate_hz;
     }

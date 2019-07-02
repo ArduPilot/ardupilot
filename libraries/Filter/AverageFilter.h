@@ -36,7 +36,7 @@ public:
     virtual T        apply(T sample) override;
 
     // reset - clear the filter
-    virtual void        reset();
+    virtual void        reset() override;
 
 protected:
     // the number of samples in the filter, maxes out at size of the filter

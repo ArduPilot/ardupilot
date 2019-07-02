@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: ANA_PIN
     // @DisplayName: Receiver RSSI sensing pin
     // @Description: Pin used to read the RSSI voltage or PWM value
-    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @Values: 8:V5 Nano,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("ANA_PIN", 1, AP_RSSI, rssi_analog_pin,  BOARD_RSSI_ANA_PIN),
 
@@ -100,10 +100,10 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 AP_RSSI::AP_RSSI()
 {       
     AP_Param::setup_object_defaults(this, var_info);
-    if (_s_instance) {
+    if (_singleton) {
         AP_HAL::panic("Too many RSSI sensors");
     }
-    _s_instance = this;
+    _singleton = this;
 }
 
 // destructor
@@ -114,9 +114,9 @@ AP_RSSI::~AP_RSSI(void)
 /*
  * Get the AP_RSSI singleton
  */
-AP_RSSI *AP_RSSI::get_instance()
+AP_RSSI *AP_RSSI::get_singleton()
 {
-    return _s_instance;
+    return _singleton;
 }
 
 // Initialize the rssi object and prepare it for use
@@ -131,35 +131,25 @@ void AP_RSSI::init()
 // 0.0 represents weakest signal, 1.0 represents maximum signal.
 float AP_RSSI::read_receiver_rssi()
 {
-    // Default to 0 RSSI
-    float receiver_rssi = 0.0f;  
-
-    switch (rssi_type) {
-        case RssiType::RSSI_DISABLED:
-            receiver_rssi = 0.0f;
-            break;
-        case RssiType::RSSI_ANALOG_PIN:
-            receiver_rssi = read_pin_rssi();
-            break;
-        case RssiType::RSSI_RC_CHANNEL_VALUE:
-            receiver_rssi = read_channel_rssi();
-            break;
-        case RssiType::RSSI_RECEIVER: {
+    switch (RssiType(rssi_type.get())) {
+        case RssiType::TYPE_DISABLED:
+            return 0.0f;
+        case RssiType::ANALOG_PIN:
+            return read_pin_rssi();
+        case RssiType::RC_CHANNEL_VALUE:
+            return read_channel_rssi();
+        case RssiType::RECEIVER: {
             int16_t rssi = RC_Channels::get_receiver_rssi();
             if (rssi != -1) {
-                receiver_rssi = rssi / 255.0;
+                return rssi / 255.0;
             }
-            break;
+            return 0.0f;
         }
-        case RssiType::RSSI_PWM_PIN:
-            receiver_rssi = read_pwm_pin_rssi();
-            break;
-        default :   
-            receiver_rssi = 0.0f;
-            break;
-    }    
-                  
-    return receiver_rssi;
+        case RssiType::PWM_PIN:
+            return read_pwm_pin_rssi();
+    }
+    // should never get to here
+    return 0.0f;
 }
 
 // Read the receiver RSSI value as an 8-bit integer
@@ -310,13 +300,13 @@ void AP_RSSI::irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us)
     }
 }
 
-AP_RSSI *AP_RSSI::_s_instance = nullptr;
+AP_RSSI *AP_RSSI::_singleton = nullptr;
 
 namespace AP {
 
 AP_RSSI *rssi()
 {
-    return AP_RSSI::get_instance();
+    return AP_RSSI::get_singleton();
 }
 
 };
