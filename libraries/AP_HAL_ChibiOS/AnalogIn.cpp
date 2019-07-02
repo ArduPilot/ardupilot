@@ -298,6 +298,11 @@ void AnalogIn::_timer_tick(void)
             _board_voltage = buf_adc[i] * pin_config[i].scaling;
         }
 #endif
+#ifdef FMU_SERVORAIL_ADC_CHAN
+        if (pin_config[i].channel == FMU_SERVORAIL_ADC_CHAN) {
+           _servorail_voltage = buf_adc[i] * pin_config[i].scaling;
+        }
+#endif
     }
 
 #if HAL_WITH_IO_MCU

@@ -138,9 +138,6 @@ void Rover::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
-    // give AHRS the range beacon sensor
-    ahrs.set_beacon(&g2.beacon);
-
     // initialize SmartRTL
     g2.smart_rtl.init();
 

@@ -256,8 +256,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: TILT_TYPE
     // @DisplayName: Tiltrotor type
-    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE. A vectored yaw tiltrotor will use the tilt of the motors to control yaw in hover
-    // @Values: 0:Continuous,1:Binary,2:VectoredYaw
+    // @Description: This is the type of tiltrotor when TILT_MASK is non-zero. A continuous tiltrotor can tilt the rotors to any angle on demand. A binary tiltrotor assumes a retract style servo where the servo is either fully forward or fully up. In both cases the servo can't move faster than Q_TILT_RATE. A vectored yaw tiltrotor will use the tilt of the motors to control yaw in hover, Bicopter tiltrottor must use the tailsitter frame class (10)
+    // @Values: 0:Continuous,1:Binary,2:VectoredYaw,3:Bicopter
     AP_GROUPINFO("TILT_TYPE", 47, QuadPlane, tilt.tilt_type, TILT_TYPE_CONTINUOUS),
 
     // @Param: TAILSIT_ANGLE
@@ -309,7 +309,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: TILT_YAW_ANGLE
     // @DisplayName: Tilt minimum angle for vectored yaw
-    // @Description: This is the angle of the tilt servos when in VTOL mode and at minimum output. This needs to be set for Q_TILT_TYPE=3 to enable vectored control for yaw of tricopter tilt quadplanes.
+    // @Description: This is the angle of the tilt servos when in VTOL mode and at minimum output. This needs to be set for Q_TILT_TYPE=3 to enable vectored control for yaw of tricopter tilt quadplanes. This is also used to limit the forwards travel of bicopter tilts when in VTOL modes
     // @Range: 0 30
     AP_GROUPINFO("TILT_YAW_ANGLE", 55, QuadPlane, tilt.tilt_yaw_angle, 0),
 
@@ -615,7 +615,9 @@ bool QuadPlane::setup(void)
             // this is a duo-motor tailsitter (vectored thrust if tilt.tilt_mask != 0)
             motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
             motors_var_info = AP_MotorsTailsitter::var_info;
-            rotation = ROTATION_PITCH_90;
+            if (tilt.tilt_type != TILT_TYPE_BICOPTER) {
+                rotation = ROTATION_PITCH_90;
+            }
             break;
         default:
             motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);

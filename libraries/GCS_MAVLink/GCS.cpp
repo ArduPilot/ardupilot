@@ -98,8 +98,6 @@ bool GCS::install_alternative_protocol(mavlink_channel_t c, GCS_MAVLINK::protoco
     return true;
 }
 
-#undef FOR_EACH_ACTIVE_CHANNEL
-
 void GCS::update_sensor_status_flags()
 {
     control_sensors_present = 0;
