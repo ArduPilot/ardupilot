@@ -230,8 +230,9 @@ bool NavEKF2_core::resetHeightDatum(void)
         }
     }
 
-    // adjust the terrain state
-    terrainState += oldHgt;
+    // set the terrain state to zero (on ground). The adjustment for
+    // frame height will get added in the later constraints
+    terrainState = 0;
     return true;
 }
 
