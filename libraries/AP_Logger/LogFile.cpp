@@ -67,7 +67,7 @@ bool AP_Logger_Backend::Write_Format(const struct LogStructure *s)
  */
 bool AP_Logger_Backend::Write_Unit(const struct UnitStructure *s)
 {
-    struct log_Unit pkt = {
+    struct log_Unit pkt{
         LOG_PACKET_HEADER_INIT(LOG_UNIT_MSG),
         time_us : AP_HAL::micros64(),
         type    : s->ID,
@@ -83,7 +83,7 @@ bool AP_Logger_Backend::Write_Unit(const struct UnitStructure *s)
  */
 bool AP_Logger_Backend::Write_Multiplier(const struct MultiplierStructure *s)
 {
-    struct log_Format_Multiplier pkt = {
+    const struct log_Format_Multiplier pkt{
         LOG_PACKET_HEADER_INIT(LOG_MULT_MSG),
         time_us      : AP_HAL::micros64(),
         type         : s->ID,
@@ -108,7 +108,7 @@ bool AP_Logger_Backend::Write_Format_Units(const struct LogStructure *s)
  */
 bool AP_Logger_Backend::Write_Parameter(const char *name, float value)
 {
-    struct log_Parameter pkt = {
+    struct log_Parameter pkt{
         LOG_PACKET_HEADER_INIT(LOG_PARAMETER_MSG),
         time_us : AP_HAL::micros64(),
         name  : {},
@@ -142,7 +142,7 @@ void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
     float yaw_deg=0, yaw_accuracy_deg=0;
     gps.gps_yaw_deg(i, yaw_deg, yaw_accuracy_deg);
 
-    struct log_GPS pkt = {
+    const struct log_GPS pkt = {
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPS_MSG+i)),
         time_us       : time_us,
         status        : (uint8_t)gps.status(i),
@@ -166,7 +166,7 @@ void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
     gps.horizontal_accuracy(i, hacc);
     gps.vertical_accuracy(i, vacc);
     gps.speed_accuracy(i, sacc);
-    struct log_GPA pkt2 = {
+    struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPA_MSG+i)),
         time_us       : time_us,
         vdop          : gps.get_vdop(i),
@@ -186,7 +186,7 @@ void AP_Logger::Write_RCIN(void)
 {
     uint16_t values[14] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
-    struct log_RCIN pkt = {
+    const struct log_RCIN pkt{
         LOG_PACKET_HEADER_INIT(LOG_RCIN_MSG),
         time_us       : AP_HAL::micros64(),
         chan1         : values[0],
@@ -210,7 +210,7 @@ void AP_Logger::Write_RCIN(void)
 // Write an SERVO packet
 void AP_Logger::Write_RCOUT(void)
 {
-    struct log_RCOUT pkt = {
+    const struct log_RCOUT pkt{
         LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
         time_us       : AP_HAL::micros64(),
         chan1         : hal.rcout->read(0),
@@ -239,7 +239,7 @@ void AP_Logger::Write_RSSI()
         return;
     }
 
-    struct log_RSSI pkt = {
+    const struct log_RSSI pkt{
         LOG_PACKET_HEADER_INIT(LOG_RSSI_MSG),
         time_us       : AP_HAL::micros64(),
         RXRSSI        : rssi->read_receiver_rssi()
@@ -253,7 +253,7 @@ void AP_Logger::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enu
     float climbrate = baro.get_climb_rate();
     float drift_offset = baro.get_baro_drift_offset();
     float ground_temp = baro.get_ground_temperature();
-    struct log_BARO pkt = {
+    const struct log_BARO pkt{
         LOG_PACKET_HEADER_INIT(type),
         time_us       : time_us,
         altitude      : baro.get_altitude(baro_instance),
@@ -289,7 +289,7 @@ void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_ins
     const AP_InertialSensor &ins = AP::ins();
     const Vector3f &gyro = ins.get_gyro(imu_instance);
     const Vector3f &accel = ins.get_accel(imu_instance);
-    struct log_IMU pkt = {
+    const struct log_IMU pkt{
         LOG_PACKET_HEADER_INIT(type),
         time_us : time_us,
         gyro_x  : gyro.x,
@@ -341,7 +341,7 @@ void AP_Logger::Write_IMUDT_instance(const uint64_t time_us, const uint8_t imu_i
     ins.get_delta_angle(imu_instance, delta_angle);
     ins.get_delta_velocity(imu_instance, delta_velocity);
 
-    struct log_IMUDT pkt = {
+    const struct log_IMUDT pkt{
         LOG_PACKET_HEADER_INIT(type),
         time_us : time_us,
         delta_time   : delta_t,
@@ -385,7 +385,7 @@ void AP_Logger::Write_Vibration()
     uint64_t time_us = AP_HAL::micros64();
     const AP_InertialSensor &ins = AP::ins();
     const Vector3f vibration = ins.get_vibration_levels();
-    struct log_Vibe pkt = {
+    const struct log_Vibe pkt{
         LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
         time_us     : time_us,
         vibe_x      : vibration.x,
@@ -403,7 +403,7 @@ bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
 {
     mavlink_mission_item_int_t mav_cmd = {};
     AP_Mission::mission_cmd_to_mavlink_int(cmd,mav_cmd);
-    struct log_Cmd pkt = {
+    const struct log_Cmd pkt{
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
         time_us         : AP_HAL::micros64(),
         command_total   : mission.num_commands(),
@@ -431,7 +431,7 @@ void AP_Logger_Backend::Write_EntireMission()
 // Write a text message to the log
 bool AP_Logger_Backend::Write_Message(const char *message)
 {
-    struct log_Message pkt = {
+    struct log_Message pkt{
         LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
         time_us : AP_HAL::micros64(),
         msg  : {}
@@ -448,7 +448,7 @@ void AP_Logger::Write_Power(void)
         // encode armed state in bit 3
         safety_and_armed |= 1U<<2;
     }
-    struct log_POWR pkt = {
+    const struct log_POWR pkt{
         LOG_PACKET_HEADER_INIT(LOG_POWR_MSG),
         time_us : AP_HAL::micros64(),
         Vcc     : hal.analogin->board_voltage(),
@@ -469,7 +469,7 @@ void AP_Logger::Write_AHRS2(AP_AHRS &ahrs)
     if (!ahrs.get_secondary_attitude(euler) || !ahrs.get_secondary_position(loc) || !ahrs.get_secondary_quaternion(quat)) {
         return;
     }
-    struct log_AHRS pkt = {
+    const struct log_AHRS pkt{
         LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
         time_us : AP_HAL::micros64(),
         roll  : (int16_t)(degrees(euler.x)*100),
@@ -495,7 +495,7 @@ void AP_Logger::Write_POS(AP_AHRS &ahrs)
     }
     float home, origin;
     ahrs.get_relative_position_D_home(home);
-    struct log_POS pkt = {
+    const struct log_POS pkt{
         LOG_PACKET_HEADER_INIT(LOG_POS_MSG),
         time_us        : AP_HAL::micros64(),
         lat            : loc.lat,
@@ -534,7 +534,7 @@ void AP_Logger::Write_EKF_Timing(const char *name, uint64_t time_us, const struc
 
 void AP_Logger::Write_Radio(const mavlink_radio_t &packet)
 {
-    struct log_Radio pkt = {
+    const struct log_Radio pkt{
         LOG_PACKET_HEADER_INIT(LOG_RADIO_MSG),
         time_us      : AP_HAL::micros64(),
         rssi         : packet.rssi,
@@ -568,7 +568,7 @@ void AP_Logger::Write_CameraInfo(enum LogMessages msg, const Location &current_l
         altitude_gps = 0;
     }
 
-    struct log_Camera pkt = {
+    const struct log_Camera pkt{
         LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(msg)),
         time_us     : timestamp_us?timestamp_us:AP_HAL::micros64(),
         gps_time    : gps.time_week_ms(),
@@ -600,7 +600,7 @@ void AP_Logger::Write_Trigger(const Location &current_loc)
 // Write an attitude packet
 void AP_Logger::Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets)
 {
-    struct log_Attitude pkt = {
+    const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
         time_us         : AP_HAL::micros64(),
         control_roll    : (int16_t)targets.x,
@@ -618,7 +618,7 @@ void AP_Logger::Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets)
 // Write an attitude packet
 void AP_Logger::Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets)
 {
-    struct log_Attitude pkt = {
+    const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
         time_us         : AP_HAL::micros64(),
         control_roll    : (int16_t)targets.x,
@@ -652,7 +652,7 @@ void AP_Logger::Write_Current_instance(const uint64_t time_us,
         consumed_wh = quiet_nanf();
     }
 
-    struct log_Current pkt = {
+    const struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(type),
         time_us             : time_us,
         voltage             : battery.voltage(battery_instance),
@@ -668,7 +668,7 @@ void AP_Logger::Write_Current_instance(const uint64_t time_us,
     // individual cell voltages
     if (battery.has_cell_voltages(battery_instance)) {
         const AP_BattMonitor::cells &cells = battery.get_cell_voltages(battery_instance);
-        struct log_Current_Cells cell_pkt = {
+        struct log_Current_Cells cell_pkt{
             LOG_PACKET_HEADER_INIT(celltype),
             time_us             : time_us,
             voltage             : battery.voltage(battery_instance)
@@ -714,7 +714,7 @@ void AP_Logger::Write_Compass_instance(const uint64_t time_us, const uint8_t mag
     const Vector3f &mag_field = compass.get_field(mag_instance);
     const Vector3f &mag_offsets = compass.get_offsets(mag_instance);
     const Vector3f &mag_motor_offsets = compass.get_motor_offsets(mag_instance);
-    struct log_Compass pkt = {
+    const struct log_Compass pkt{
         LOG_PACKET_HEADER_INIT(type),
         time_us         : time_us,
         mag_x           : (int16_t)mag_field.x,
@@ -755,7 +755,7 @@ void AP_Logger::Write_Compass(uint64_t time_us)
 // Write a mode packet.
 bool AP_Logger_Backend::Write_Mode(uint8_t mode, uint8_t reason)
 {
-    struct log_Mode pkt = {
+    const struct log_Mode pkt{
         LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
         time_us  : AP_HAL::micros64(),
         mode     : mode,
@@ -778,7 +778,7 @@ void AP_Logger::Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t vo
     if (id >= 8) {
         return;
     }
-    struct log_Esc pkt = {
+    const struct log_Esc pkt{
         LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+id)),
         time_us     : time_us,
         rpm         : rpm,
@@ -793,7 +793,7 @@ void AP_Logger::Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t vo
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
 {
-    struct log_PID pkt = {
+    const struct log_PID pkt{
         LOG_PACKET_HEADER_INIT(msg_type),
         time_us         : AP_HAL::micros64(),
         target          : info.target,
@@ -809,10 +809,9 @@ void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
 
 void AP_Logger::Write_Origin(uint8_t origin_type, const Location &loc)
 {
-    uint64_t time_us = AP_HAL::micros64();
-    struct log_ORGN pkt = {
+    const struct log_ORGN pkt{
         LOG_PACKET_HEADER_INIT(LOG_ORGN_MSG),
-        time_us     : time_us,
+        time_us     : AP_HAL::micros64(),
         origin_type : origin_type,
         latitude    : loc.lat,
         longitude   : loc.lng,
@@ -823,7 +822,7 @@ void AP_Logger::Write_Origin(uint8_t origin_type, const Location &loc)
 
 void AP_Logger::Write_RPM(const AP_RPM &rpm_sensor)
 {
-    struct log_RPM pkt = {
+    const struct log_RPM pkt{
         LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
         time_us     : AP_HAL::micros64(),
         rpm1        : rpm_sensor.get_rpm(0),
@@ -840,7 +839,7 @@ void AP_Logger::Write_Rate(const AP_AHRS_View *ahrs,
 {
     const Vector3f &rate_targets = attitude_control.rate_bf_targets();
     const Vector3f &accel_target = pos_control.get_accel_target();
-    struct log_Rate pkt_rate = {
+    const struct log_Rate pkt_rate{
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
         time_us         : AP_HAL::micros64(),
         control_roll    : degrees(rate_targets.x),
@@ -862,7 +861,7 @@ void AP_Logger::Write_Rate(const AP_AHRS_View *ahrs,
 // Write visual odometry sensor data
 void AP_Logger::Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence)
 {
-    struct log_VisualOdom pkt_visualodom = {
+    const struct log_VisualOdom pkt_visualodom{
         LOG_PACKET_HEADER_INIT(LOG_VISUALODOM_MSG),
         time_us             : AP_HAL::micros64(),
         time_delta          : time_delta,
@@ -880,7 +879,7 @@ void AP_Logger::Write_VisualOdom(float time_delta, const Vector3f &angle_delta, 
 // Write AOA and SSA
 void AP_Logger::Write_AOA_SSA(AP_AHRS &ahrs)
 {
-    struct log_AOA_SSA aoa_ssa = {
+    const struct log_AOA_SSA aoa_ssa{
         LOG_PACKET_HEADER_INIT(LOG_AOA_SSA_MSG),
         time_us         : AP_HAL::micros64(),
         AOA             : ahrs.getAOA(),
@@ -901,7 +900,7 @@ void AP_Logger::Write_Beacon(AP_Beacon &beacon)
     float accuracy = 0.0f;
     beacon.get_vehicle_position_ned(pos, accuracy);
 
-    struct log_Beacon pkt_beacon = {
+    const struct log_Beacon pkt_beacon{
        LOG_PACKET_HEADER_INIT(LOG_BEACON_MSG),
        time_us         : AP_HAL::micros64(),
        health          : (uint8_t)beacon.healthy(),
@@ -936,7 +935,7 @@ void AP_Logger::Write_Proximity(AP_Proximity &proximity)
     float close_ang = 0.0f, close_dist = 0.0f;
     proximity.get_closest_object(close_ang, close_dist);
 
-    struct log_Proximity pkt_proximity = {
+    const struct log_Proximity pkt_proximity{
             LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
             time_us         : AP_HAL::micros64(),
             health          : (uint8_t)proximity.get_status(),
@@ -957,7 +956,7 @@ void AP_Logger::Write_Proximity(AP_Proximity &proximity)
 
 void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& breadcrumb)
 {
-    struct log_SRTL pkt_srtl = {
+    const struct log_SRTL pkt_srtl{
         LOG_PACKET_HEADER_INIT(LOG_SRTL_MSG),
         time_us         : AP_HAL::micros64(),
         active          : active,
@@ -973,7 +972,7 @@ void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points
 
 void AP_Logger::Write_OABendyRuler(bool active, float target_yaw, float margin, const Location &final_dest, const Location &oa_dest)
 {
-    struct log_OABendyRuler pkt = {
+    const struct log_OABendyRuler pkt{
         LOG_PACKET_HEADER_INIT(LOG_OA_BENDYRULER_MSG),
         time_us     : AP_HAL::micros64(),
         active      : active,
@@ -990,7 +989,7 @@ void AP_Logger::Write_OABendyRuler(bool active, float target_yaw, float margin, 
 
 void AP_Logger::Write_OADijkstra(uint8_t state, uint8_t curr_point, uint8_t tot_points, const Location &final_dest, const Location &oa_dest)
 {
-    struct log_OADijkstra pkt = {
+    struct log_OADijkstra pkt{
         LOG_PACKET_HEADER_INIT(LOG_OA_DIJKSTRA_MSG),
         time_us     : AP_HAL::micros64(),
         state       : state,
