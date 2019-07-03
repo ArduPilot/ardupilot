@@ -108,9 +108,6 @@ void Copter::init_ardupilot()
 
     init_rc_in();               // sets up rc channels from radio
 
-    // default frame class to match firmware if possible
-    set_default_frame_class();
-
     // allocate the motors class
     allocate_motors();
 
@@ -393,16 +390,6 @@ bool Copter::should_log(uint32_t mask)
 #else
     return false;
 #endif
-}
-
-// default frame_class to match firmware if possible
-void Copter::set_default_frame_class()
-{
-    if (FRAME_CONFIG == HELI_FRAME &&
-        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_DUAL &&
-        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD) {
-        g2.frame_class.set(AP_Motors::MOTOR_FRAME_HELI);
-    }
 }
 
 // return MAV_TYPE corresponding to frame class
