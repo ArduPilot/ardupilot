@@ -32,42 +32,42 @@ include AP_BattMonitor/AP_BattMonitor.h
 
 singleton AP_BattMonitor alias battery
 singleton AP_BattMonitor method num_instances uint8_t
-singleton AP_BattMonitor method healthy boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method has_consumed_energy boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method has_current boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method voltage float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method voltage_resting_estimate float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method current_amps float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method consumed_mah float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method consumed_wh float uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method capacity_remaining_pct uint8_t uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method pack_capacity_mah int32_t uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method healthy boolean uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method has_consumed_energy boolean uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method has_current boolean uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method voltage float uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method voltage_resting_estimate float uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method current_amps float uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method consumed_mah float uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method consumed_wh float uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method capacity_remaining_pct uint8_t uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method pack_capacity_mah int32_t uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method has_failsafed boolean
-singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
-singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 AP_BATT_MONITOR_MAX_INSTANCES
+singleton AP_BattMonitor method overpower_detected boolean uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 ud->num_instances()
 
 include AP_GPS/AP_GPS.h
 
 singleton AP_GPS alias gps
 singleton AP_GPS method num_sensors uint8_t
 singleton AP_GPS method primary_sensor uint8_t
-singleton AP_GPS method status uint8_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method location Location uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method speed_accuracy boolean uint8_t 0 GPS_MAX_INSTANCES float'Null
-singleton AP_GPS method horizontal_accuracy boolean uint8_t 0 GPS_MAX_INSTANCES float'Null
-singleton AP_GPS method vertical_accuracy boolean uint8_t 0 GPS_MAX_INSTANCES float'Null
-singleton AP_GPS method velocity Vector3f uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method ground_speed float uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method ground_course float uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method num_sats uint8_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method time_week uint16_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method time_week_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method get_hdop uint16_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method get_vdop uint16_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method last_fix_time_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method last_message_time_ms uint32_t uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 GPS_MAX_INSTANCES
-singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 GPS_MAX_INSTANCES
+singleton AP_GPS method status uint8_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method location Location uint8_t 0 ud->num_sensors()
+singleton AP_GPS method speed_accuracy boolean uint8_t 0 ud->num_sensors() float'Null
+singleton AP_GPS method horizontal_accuracy boolean uint8_t 0 ud->num_sensors() float'Null
+singleton AP_GPS method vertical_accuracy boolean uint8_t 0 ud->num_sensors() float'Null
+singleton AP_GPS method velocity Vector3f uint8_t 0 ud->num_sensors()
+singleton AP_GPS method ground_speed float uint8_t 0 ud->num_sensors()
+singleton AP_GPS method ground_course float uint8_t 0 ud->num_sensors()
+singleton AP_GPS method num_sats uint8_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method time_week uint16_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method time_week_ms uint32_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method get_hdop uint16_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method get_vdop uint16_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method last_fix_time_ms uint32_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method last_message_time_ms uint32_t uint8_t 0 ud->num_sensors()
+singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 ud->num_sensors()
+singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 ud->num_sensors()
 singleton AP_GPS method all_configured boolean
 singleton AP_GPS method first_unconfigured_gps uint8_t
 
