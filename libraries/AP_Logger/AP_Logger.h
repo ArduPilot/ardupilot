@@ -241,7 +241,7 @@ public:
     void Write_AHRS2(AP_AHRS &ahrs);
     void Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void Write_EKF(AP_AHRS_NavEKF &ahrs);
+    void Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
 #endif
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
@@ -421,11 +421,6 @@ private:
 
     bool _armed;
 
-#if AP_AHRS_NAVEKF_AVAILABLE
-    void Write_EKF2(AP_AHRS_NavEKF &ahrs);
-    void Write_EKF3(AP_AHRS_NavEKF &ahrs);
-#endif
-
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
     void Write_IMU_instance(uint64_t time_us,
                                 uint8_t imu_instance,
@@ -460,8 +455,6 @@ private:
     double multiplier_name(const uint8_t multiplier_id);
     bool seen_ids[256] = { };
 #endif
-
-    void Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
 
     // possibly expensive calls to start log system:
     void Prep();
