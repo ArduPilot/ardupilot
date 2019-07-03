@@ -374,6 +374,8 @@ class uploader(object):
         length = self.__recv_int()
         value = self.__recv(length)
         self.__getSync()
+        if runningPython3:
+            value = value.decode('ascii')
         peices = value.split(",")
         return peices
 
