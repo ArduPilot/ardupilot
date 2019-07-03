@@ -17,6 +17,7 @@
 #include <cmath>
 #include <string.h>
 #include "matrixN.h"
+#include "matrixRC.h"
 
 #ifndef MATH_CHECK_INDEXES
 # define MATH_CHECK_INDEXES 0
@@ -29,6 +30,8 @@
 template <typename T, uint8_t N>
 class MatrixN;
 
+template <typename T, uint8_t R, uint8_t C>
+class MatrixRC;
 
 template <typename T, uint8_t N>
 class VectorN
@@ -158,7 +161,7 @@ public:
         return ret;
     }
     
-    // multiplication of a matrix by a vector, in-place
+    // multiplication of a square matrix by a vector, in-place
     // C = A * B
     void mult(const MatrixN<T,N> &A, const VectorN<T,N> &B) {
         for (uint8_t i = 0; i < N; i++) {
@@ -167,6 +170,26 @@ public:
                 _v[i] += A.v[i][k] * B[k];
             }
         }
+    }
+
+    // multiplication of a rectangular matrix by a vector, in-place
+    void mult(MatrixRC<T,3,11> &A, VectorN<T,11> &B) {
+        for (uint8_t i = 0; i < N; i++) {
+            _v[i] = 0;
+            for (uint8_t k = 0; k < 11; k++) {
+                _v[i] += A.get(i,k) * B[k];
+            }
+        }
+    }
+
+    // check if it is safe to use this vector
+    bool is_safe() {
+        for (uint8_t i=0; i<N; i++) {
+            if (isinf( _v[i]) || isnan(_v[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
 private:
