@@ -25,6 +25,7 @@
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
 #include <Filter/NotchFilter.h>
+#include <AP_Common/Semaphore.h>
 
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
@@ -48,6 +49,7 @@ class AP_InertialSensor : AP_AccelCal_Client
     friend class AP_InertialSensor_Backend;
 
 public:
+
     AP_InertialSensor();
 
     /* Do not allow copies */
@@ -274,6 +276,36 @@ public:
     // return time in microseconds of last update() call
     uint32_t get_last_update_usec(void) const { return _last_update_usec; }
 
+    class DeltaAccumulator {
+        friend class AP_InertialSensor;
+
+    public:
+        typedef struct {
+            Quaternion del_quat;
+            float del_ang_dt;
+            Vector3f del_vel;
+            float del_vel_dt;
+        } IMUDeltas;
+
+        IMUDeltas pop_imu_deltas();
+
+        float get_del_ang_dt() const {
+            return _deltas.del_ang_dt;
+        }
+
+        float get_del_vel_dt() const {
+            return _deltas.del_vel_dt;
+        }
+
+    private:
+        HAL_Semaphore _sem;
+        IMUDeltas _deltas;
+        DeltaAccumulator* _next;
+    };
+
+    // Register a new delta accumulator
+    void register_delta_accumulator(uint8_t instance, DeltaAccumulator& accumulator);
+
     enum IMU_SENSOR_TYPE {
         IMU_SENSOR_TYPE_ACCEL = 0,
         IMU_SENSOR_TYPE_GYRO = 1,
@@ -370,6 +402,9 @@ private:
 
     // save gyro calibration values to eeprom
     void _save_gyro_calibration();
+
+    void accumulate_del_ang(uint8_t instance);
+    void accumulate_del_vel(uint8_t instance);
 
     // backend objects
     AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
@@ -579,6 +614,8 @@ private:
     uint32_t _gyro_startup_error_count[INS_MAX_INSTANCES];
     bool _startup_error_counts_set;
     uint32_t _startup_ms;
+
+    DeltaAccumulator* _accumulator_list_head[INS_MAX_INSTANCES];
 };
 
 namespace AP {

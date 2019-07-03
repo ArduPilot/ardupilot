@@ -1,0 +1,10 @@
+uavcan.Timestamp timestamp
+
+# Index of sensor on this autopilot. Not globally unique across the bus.
+uint8 sensor_index
+
+float32 delta_angle_dt # s
+float32[3] delta_angle # rad
+
+float32 delta_velocity_dt # s
+float32[3] delta_velocity # m/s

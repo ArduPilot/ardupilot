@@ -23,6 +23,8 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 
+#include <AP_InertialSensor/AP_InertialSensor.h>
+
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 #include "AP_UAVCAN_Servers.h"
 
@@ -138,6 +140,7 @@ private:
     // Such cases will be firmware update, etc.
     class RaiiSynchronizer {};
 
+    void imu_check_and_broadcast(void);
     void loop(void);
 
     ///// SRV output /////
@@ -154,6 +157,8 @@ private:
     AP_Int32 _servo_bm;
     AP_Int32 _esc_bm;
     AP_Int16 _servo_rate_hz;
+    AP_Int8 _imu_pub_mask;
+    AP_Int16 _imu_pub_frequency;
 
     uavcan::Node<0> *_node;
 
@@ -190,6 +195,8 @@ private:
     } _led_conf;
 
     HAL_Semaphore _led_out_sem;
+
+    AP_InertialSensor::DeltaAccumulator _imu_accumulators[INS_MAX_INSTANCES];
 };
 
 #endif /* AP_UAVCAN_H_ */

@@ -36,6 +36,8 @@
 #include <uavcan/equipment/indication/SingleLightCommand.hpp>
 #include <uavcan/equipment/indication/RGB565.hpp>
 
+#include <org/ardupilot/sensor_output/IMUDeltas.hpp>
+
 #include <AP_Baro/AP_Baro_UAVCAN.h>
 #include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
 #include <AP_GPS/AP_GPS_UAVCAN.h>
@@ -87,6 +89,19 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SRV_RT", 4, AP_UAVCAN, _servo_rate_hz, 50),
 
+    // @Param: IMUD_M
+    // @DisplayName: IMU output index
+    // @Description: Bitmask describing which IMU deltas to publish
+    // @Bitmask: 0: IMU 1, 1: IMU 2, 2: IMU 3
+    // @User: Advanced
+    AP_GROUPINFO("IMUD_M", 5, AP_UAVCAN, _imu_pub_mask, 0),
+
+    // @Param: IMUD_F
+    // @DisplayName: IMU delta output rate
+    // @Description: Maximum transmit rate for IMU delta data
+    // @User: Advanced
+    AP_GROUPINFO("IMUD_F", 6, AP_UAVCAN, _imu_pub_frequency, 100),
+
     AP_GROUPEND
 };
 
@@ -98,6 +113,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Publisher<org::ardupilot::sensor_output::IMUDeltas>* imu_delta_publisher[MAX_NUMBER_OF_CAN_DRIVERS];
 
 AP_UAVCAN::AP_UAVCAN() :
     _node_allocator()
@@ -163,6 +179,14 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
+    // register IMU accumulators
+    auto ins = AP_InertialSensor::get_singleton();
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (_imu_pub_mask & (1<<i)) {
+            ins->register_delta_accumulator(i, _imu_accumulators[i]);
+        }
+    }
+
     uavcan::NodeID self_node_id(_uavcan_node);
     _node->setNodeID(self_node_id);
 
@@ -210,6 +234,10 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     AP_OpticalFlow_HereFlow::subscribe_msgs(this);
     AP_RangeFinder_UAVCAN::subscribe_msgs(this);
 
+    imu_delta_publisher[driver_index] = new uavcan::Publisher<org::ardupilot::sensor_output::IMUDeltas>(*_node);
+    imu_delta_publisher[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    imu_delta_publisher[driver_index]->setPriority(uavcan::TransferPriority(uavcan::TransferPriority::OneLowerThanHighest.get()+1));
+
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
     act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     act_out_array[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
@@ -248,6 +276,35 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     debug_uavcan(2, "UAVCAN: init done\n\r");
 }
 
+void AP_UAVCAN::imu_check_and_broadcast(void)
+{
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (_imu_pub_mask & (1<<i)) {
+            if (_imu_accumulators[i].get_del_ang_dt() >= 1.0f/_imu_pub_frequency) {
+                auto deltas = _imu_accumulators[i].pop_imu_deltas();
+                Vector3f del_ang;
+                deltas.del_quat.to_axis_angle(del_ang);
+
+                org::ardupilot::sensor_output::IMUDeltas msg;
+                msg.timestamp.usec = msg.timestamp.UNKNOWN;
+                msg.sensor_index = i;
+
+                msg.delta_angle_dt = deltas.del_ang_dt;
+                msg.delta_angle[0] = del_ang.x;
+                msg.delta_angle[1] = del_ang.y;
+                msg.delta_angle[2] = del_ang.z;
+
+                msg.delta_velocity_dt = deltas.del_vel_dt;
+                msg.delta_velocity[0] = deltas.del_vel.x;
+                msg.delta_velocity[1] = deltas.del_vel.y;
+                msg.delta_velocity[2] = deltas.del_vel.z;
+
+                imu_delta_publisher[_driver_index]->broadcast(msg);
+            }
+        }
+    }
+}
+
 void AP_UAVCAN::loop(void)
 {
     while (true) {
@@ -262,6 +319,8 @@ void AP_UAVCAN::loop(void)
             hal.scheduler->delay_microseconds(100);
             continue;
         }
+
+        imu_check_and_broadcast();
 
         if (_SRV_armed) {
             bool sent_servos = false;
