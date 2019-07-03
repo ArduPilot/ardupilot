@@ -57,7 +57,7 @@ const struct UnitStructure log_Units[] = {
     { 'L', "rad/s/s" },       // radians per second per second
     { 'm', "m" },             // metres
     { 'n', "m/s" },           // metres per second
-    // { 'N', "N" },          // Newton
+    { 'N', "N" },             // Newton
     { 'o', "m/s/s" },         // metres per second per second
     { 'O', "degC" },          // degrees Celsius. Not SI, but Kelvin is too cumbersome for most users
     { '%', "%" },             // percent
@@ -70,7 +70,7 @@ const struct UnitStructure log_Units[] = {
     { 'v', "V" },             // Volt
     { 'P', "Pa" },            // Pascal
     { 'w', "Ohm" },           // Ohm
-//    { 'W', "Watt" },        // Watt
+    { 'W', "Watt" },          // Watt
     { 'Y', "us" },            // pulse width modulation in microseconds
     { 'z', "Hz" },            // Hertz
     { '#', "instance" }       // (e.g.)Sensor instance number
@@ -1162,6 +1162,64 @@ struct PACKED log_Arm_Disarm {
     uint16_t arm_checks;
 };
 
+struct PACKED log_aero_KF_input{
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float aoa;
+    float air_spd;
+    float rho;
+    float rpm;
+    float accel_x;
+    float accel_z;
+    float power;
+};
+
+struct PACKED log_aero_KF_innovation{
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float calc_force_x;
+    float calc_force_z;
+    float calc_power;
+    float true_force_x;
+    float true_force_z;
+    float true_power;
+    float force_x_innovation;
+    float force_z_innovation;
+    float power_innovation;
+ };
+
+struct PACKED log_aero_KF_state{
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float Cl0;
+    float Cla;
+    float Cd0;
+    float Cda;
+    float Cdaa;
+    float Ct0;
+    float Ctj;
+    float Ctjj;
+    float CP0;
+    float CPj;
+    float CPjj;
+};
+
+struct PACKED log_aero_KF_covariance{
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float Cl0_cov;
+    float Cla_cov;
+    float Cd0_cov;
+    float Cda_cov;
+    float Cdaa_cov;
+    float Ct0_cov;
+    float Ctj_cov;
+    float Ctjj_cov;
+    float CP0_cov;
+    float CPj_cov;
+    float CPjj_cov;
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1332,7 +1390,7 @@ struct PACKED log_Arm_Disarm {
       "BCL8", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
     { LOG_CURRENT_CELLS9_MSG, sizeof(log_Current_Cells), \
       "BCL9", CURR_CELL_FMT, CURR_CELL_LABELS, CURR_CELL_UNITS, CURR_CELL_MULTS }, \
-	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
+    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw", "sddddhhdh", "FBBBBBBBB" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
@@ -1518,8 +1576,15 @@ struct PACKED log_Arm_Disarm {
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
       "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" }, \
     { LOG_ADSB_MSG, sizeof(log_ADSB), \
-      "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }
-
+      "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }, \
+    { LOG_AERO_KF_MSG1, sizeof(log_aero_KF_input), \
+      "AKF1", "Qfffffff", "TimeUS,AoA,AirSpd,Rho,Rpm,AcellX,AcellZ,Power",  "sdn?qoo?", "F-------" }, \
+    { LOG_AERO_KF_MSG2, sizeof(log_aero_KF_innovation), \
+      "AKF2", "Qfffffffff", "TimeUS,ClcFX,ClcFZ,ClcPwr,TruFX,TruFZ,TruPwr,FXInv,FZInv,PwrInv", "sNNWNNWNNW", "F---------" }, \
+    { LOG_AERO_KF_MSG3, sizeof(log_aero_KF_state), \
+      "AKF3", "Qfffffffffff", "TimeUS,cl0,cla,cdo,cda,cdaa,ct0,ctj,ctjj,cp0,cpj,cpjj", "s-----------", "F-----------" }, \
+    { LOG_AERO_KF_MSG4, sizeof(log_aero_KF_covariance), \
+      "AKF4", "Qfffffffffff", "TimeUS,cl0,cla,cdo,cda,cdaa,ct0,ctj,ctjj,cp0,cpj,cpjj", "s-----------", "F-----------"  }
 
 #define LOG_SBP_STRUCTURES \
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
@@ -1696,6 +1761,10 @@ enum LogMessages : uint8_t {
     LOG_ADSB_MSG,
     LOG_ARM_DISARM_MSG,
     LOG_OA_MSG,
+    LOG_AERO_KF_MSG1,
+    LOG_AERO_KF_MSG2,
+    LOG_AERO_KF_MSG3,
+    LOG_AERO_KF_MSG4,
 
     _LOG_LAST_MSG_
 };
