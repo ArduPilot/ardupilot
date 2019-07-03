@@ -94,8 +94,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
-    // @Description: Automatic switchover to GPS reporting best lock
-    // @Values: 0:Disabled,1:UseBest,2:Blend,3:UseSecond
+    // @Description: Automatic switchover to GPS reporting best lock. SwitchOnHigherStatus swtiches to GPS reporting higher lock status, so less swtiching than UseBest. SwitchOnHigherStatus also helps to switch if primary lost GPS.
+    // @Values: 0:Disabled,1:UseBest,2:Blend,3:UseSecond,4:SwitchOnHigherStatus
     // @User: Advanced
     AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, 1),
 
@@ -740,22 +740,23 @@ void AP_GPS::update(void)
                         _last_instance_swap_ms = now;
                         continue;
                     }
+                    if (_auto_switch != 4) {
+                        bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
 
-                    bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
+                        if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
 
-                    if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
+                            bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
 
-                        bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
-
-                        if ((another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
-                            (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000)) {
-                            // this GPS has more satellites than the
-                            // current primary, switch primary. Once we switch we will
-                            // then tend to stick to the new GPS as primary. We don't
-                            // want to switch too often as it will look like a
-                            // position shift to the controllers.
-                            primary_instance = i;
-                            _last_instance_swap_ms = now;
+                            if ((another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
+                                (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000)) {
+                                // this GPS has more satellites than the
+                                // current primary, switch primary. Once we switch we will
+                                // then tend to stick to the new GPS as primary. We don't
+                                // want to switch too often as it will look like a
+                                // position shift to the controllers.
+                                primary_instance = i;
+                                _last_instance_swap_ms = now;
+                            }
                         }
                     }
                 }

@@ -1151,11 +1151,11 @@ void SITL_State::_update_gps_file(uint8_t instance)
   possibly send a new GPS packet
  */
 void SITL_State::_update_gps(double latitude, double longitude, float altitude,
-                             double speedN, double speedE, double speedD, bool have_lock)
+                             double speedN, double speedE, double speedD)
 {
     struct gps_data d;
     char c;
-
+    bool have_lock;
     // simulate delayed lock times
     if (AP_HAL::millis() < _sitl->gps_lock_time*1000UL) {
         have_lock = false;
@@ -1202,7 +1202,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     d.speedN = speedN;
     d.speedE = speedE;
     d.speedD = speedD;
-    d.have_lock = have_lock;
+    d.have_lock = !_sitl->gps_disable;
 
     // correct the latitude, longitude, hiehgt and NED velocity for the offset between
     // the vehicle c.g. and GPs antenna
@@ -1274,6 +1274,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     d2.latitude += glitch_offsets.x;
     d2.longitude += glitch_offsets.y;
     d2.altitude += glitch_offsets.z;
+    d2.have_lock = !_sitl->gps2_disable;
 
     if (gps_state.gps_fd != 0) {
         _update_gps_instance((SITL::SITL::GPSType)_sitl->gps_type.get(), &d, 0);

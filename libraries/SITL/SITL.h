@@ -152,6 +152,7 @@ public:
     AP_Float engine_mul;  // engine multiplier
     AP_Int8  engine_fail; // engine servo to fail (0-7)
     AP_Int8  gps_disable; // disable simulated GPS
+    AP_Int8  gps2_disable; // disable simulated GPS
     AP_Int8  gps2_enable; // enable 2nd simulated GPS
     AP_Int8  gps_delay;   // delay in samples
     AP_Int8  gps_type;    // see enum GPSType
