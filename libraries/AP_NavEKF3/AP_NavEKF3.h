@@ -26,6 +26,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Logger/LogStructure.h>
 
 class NavEKF3_core;
 class AP_AHRS;
@@ -523,4 +524,15 @@ private:
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
+
+    // logging functions shared by cores:
+    void Log_Write_EKF1(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_NKF2a(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_NKF3(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_NKF4(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_NKF5(uint64_t time_us) const;
+    void Log_Write_Quaternion(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_Beacon(uint64_t time_us) const;
+    void Log_Write_BodyOdom(uint64_t time_us) const;
+    void Log_Write_State_Variances(uint64_t time_us) const;
 };
