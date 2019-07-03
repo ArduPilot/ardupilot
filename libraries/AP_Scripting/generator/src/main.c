@@ -1028,7 +1028,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   int arg_count = 1;
 
   const char *access_name = data->alias ? data->alias : data->name;
-
+  // bind ud early if it's a singleton, so that we can use it in the range checks
   fprintf(source, "static int %s_%s(lua_State *L) {\n", data->name, method->name);
   // emit comments on expected arg/type
   struct argument *arg = method->arguments;
@@ -1038,6 +1038,15 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
                                       arg->line_num, arg->token_num);
     arg = arg->next;
   }
+
+  if (data->ud_type == UD_SINGLETON) {
+      // fetch and check the singleton pointer
+      fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
+      fprintf(source, "    if (ud == nullptr) {\n");
+      fprintf(source, "        return luaL_argerror(L, %d, \"%s not supported on this firmware\");\n", arg_count, access_name);
+      fprintf(source, "    }\n\n");
+  }
+
   // sanity check number of args called with
   arg = method->arguments;
   arg_count = 1;
@@ -1055,11 +1064,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       fprintf(source, "    %s * ud = check_%s(L, 1);\n", data->name, data->name);
       break;
     case UD_SINGLETON:
-      // fetch and check the singleton pointer
-      fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
-      fprintf(source, "    if (ud == nullptr) {\n");
-      fprintf(source, "        return luaL_argerror(L, %d, \"%s not supported on this firmware\");\n", arg_count, access_name);
-      fprintf(source, "    }\n\n");
+      // this was bound early
       break;
   }
 
