@@ -203,8 +203,10 @@ void NavEKF2_core::ResetHeight(void)
 // Return true if the height datum reset has been performed
 bool NavEKF2_core::resetHeightDatum(void)
 {
-    if (activeHgtSource == HGT_SOURCE_RNG) {
-        // by definition the height datum is at ground level so cannot perform the reset
+    if (activeHgtSource == HGT_SOURCE_RNG || !onGround) {
+        // only allow resets when on the ground.
+        // If using using rangefinder for height then never perform a
+        // reset of the height datum
         return false;
     }
     // record the old height estimate
@@ -215,7 +217,7 @@ bool NavEKF2_core::resetHeightDatum(void)
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
 
-    if (validOrigin && !inFlight) {
+    if (validOrigin) {
         if (!gpsGoodToAlign) {
             // if we don't have GPS lock then we shouldn't be doing a
             // resetHeightDatum, but if we do then the best option is
