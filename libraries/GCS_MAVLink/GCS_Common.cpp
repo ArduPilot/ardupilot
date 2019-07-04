@@ -27,6 +27,7 @@
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <AP_RTC/AP_RTC.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Mount/AP_Mount.h>
