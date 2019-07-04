@@ -111,6 +111,7 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
     _rotor.set_critical_speed(_rsc.get_critical()*0.01f);
     _rotor.set_idle_output(_rsc.get_idle_output()*0.01f);
     _rotor.set_slewrate(_rsc_slewrate);
+    _rotor.set_rpm_reference(_rsc.get_rpm_reference());
 
     // Set rsc mode specific parameters
     if (_rsc_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
@@ -119,7 +120,6 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
         _rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
         _rotor.set_governor_disengage(_rsc_gov.get_disengage()*0.01f);
         _rotor.set_governor_droop_response(_rsc_gov.get_droop_response()*0.01f);
-        _rotor.set_governor_reference(_rsc_gov.get_reference());
         _rotor.set_governor_range(_rsc_gov.get_range());
         _rotor.set_governor_tcgain(_rsc_gov.get_tcgain()*0.01f);
     }

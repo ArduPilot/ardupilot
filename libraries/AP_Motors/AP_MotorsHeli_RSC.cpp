@@ -48,6 +48,14 @@ AP_Param::GroupInfo RSCParam::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("IDLE", 3, RSCParam, idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
+    
+    // @Param: HEADSPEED
+    // @DisplayName: Headspeed RPM Setting
+    // @Description: Set to the rotor rpm your helicopter runs in flight. When a speed sensor is installed the rotor governor maintains this speed. Also used for autorotation and for runup. For governor operation this should be set 10 rpm higher than the actual desired headspeed to allow for governor droop
+    // @Range: 800 3500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("HEADSPEED", 4, RSCParam, rpm_reference, AP_MOTORS_HELI_RSC_HEADSPEED_DEFAULT),
 
     AP_GROUPEND
 };
@@ -103,14 +111,6 @@ const AP_Param::GroupInfo RSCGovParam::var_info[] = {
 
 // enable parameter removed
 
-    // @Param: SETPNT
-    // @DisplayName: Headspeed RPM Setting
-    // @Description: Set to the rotor rpm your helicopter runs in flight. When a speed sensor is installed the rotor governor maintains this speed. Also used for autorotation and for runup. For governor operation this should be set 10 rpm higher than the actual desired headspeed to allow for governor droop
-    // @Range: 800 3500
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("SETPNT", 2, RSCGovParam, reference, AP_MOTORS_HELI_RSC_GOVERNOR_SETPNT_DEFAULT),
-
     // @Param: DISGAG
     // @DisplayName: Throttle Percentage for Governor Disengage
     // @Description: Percentage of throttle where the governor will disengage to allow return to flight idle power. Typically should be set to the same value as flight idle throttle (the very lowest throttle setting on your throttle curve). The governor disengage can be disabled by setting this value to zero and using the pull-down from the governor TCGAIN to reduce power to flight idle with the collective at it's lowest throttle setting on the throttle curve.
@@ -118,7 +118,7 @@ const AP_Param::GroupInfo RSCGovParam::var_info[] = {
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("DISGAG", 3, RSCGovParam, disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT),
+    AP_GROUPINFO("DISGAG", 2, RSCGovParam, disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT),
 
     // @Param: DROOP
     // @DisplayName: Governor Droop Response Setting
@@ -127,7 +127,7 @@ const AP_Param::GroupInfo RSCGovParam::var_info[] = {
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("DROOP", 4, RSCGovParam, droop_response, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
+    AP_GROUPINFO("DROOP", 3, RSCGovParam, droop_response, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
 
     // @Param: TCGAIN
     // @DisplayName: Governor Throttle Curve Gain
@@ -136,7 +136,7 @@ const AP_Param::GroupInfo RSCGovParam::var_info[] = {
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("TCGAIN", 5, RSCGovParam, tcgain, AP_MOTORS_HELI_RSC_GOVERNOR_TCGAIN_DEFAULT),
+    AP_GROUPINFO("TCGAIN", 4, RSCGovParam, tcgain, AP_MOTORS_HELI_RSC_GOVERNOR_TCGAIN_DEFAULT),
     
     // @Param: RANGE
     // @DisplayName: Governor Operational Range
@@ -144,7 +144,7 @@ const AP_Param::GroupInfo RSCGovParam::var_info[] = {
     // @Range: 50 200
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("RANGE", 6, RSCGovParam, range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
+    AP_GROUPINFO("RANGE", 5, RSCGovParam, range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
 
     AP_GROUPEND
 };
@@ -237,17 +237,17 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 // or throttle curve if governor is out of range or sensor failed
             	float desired_throttle = calculate_desired_throttle(_collective_in);
             	// governor is active if within user-set range from reference speed
-                if ((_rotor_rpm >= (_governor_reference - _governor_range)) && (_rotor_rpm <= (_governor_reference + _governor_range))) {
-            	    float governor_droop = constrain_float(_governor_reference - _rotor_rpm,0.0f,_governor_range);
+                if ((_rotor_rpm >= (_rpm_reference - _governor_range)) && (_rotor_rpm <= (_rpm_reference + _governor_range))) {
+            	    float governor_droop = constrain_float(_rpm_reference - _rotor_rpm,0.0f,_governor_range);
             	    // if rpm has not reached 40% of the operational range from reference speed, governor
             	    // remains in pre-engage status, no reference speed compensation due to droop
             	    // this provides a soft-start function that engages the governor less aggressively
-            	    if (_governor_engage && _rotor_rpm < (_governor_reference - (_governor_range * 0.4f))) {
-                        _governor_output = ((_rotor_rpm - _governor_reference) * desired_throttle) * _governor_droop_response * -0.01f;
+            	    if (_governor_engage && _rotor_rpm < (_rpm_reference - (_governor_range * 0.4f))) {
+                        _governor_output = ((_rotor_rpm - _rpm_reference) * desired_throttle) * _governor_droop_response * -0.01f;
                     } else {
             	        // normal flight status, governor fully engaged with reference speed compensation for droop
             	        _governor_engage = true;
-                        _governor_output = ((_rotor_rpm - (_governor_reference + governor_droop)) * desired_throttle) * _governor_droop_response * -0.01f;
+                        _governor_output = ((_rotor_rpm - (_rpm_reference + governor_droop)) * desired_throttle) * _governor_droop_response * -0.01f;
                     }
                     // check for governor disengage for return to flight idle power
                     if (desired_throttle <= _governor_disengage) {
@@ -351,7 +351,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     // runup complete based on actual measured rotor speed or runup scalar
     if (!_runup_complete) {
         // if rotor speed sensor is present runup is complete when rotor reaches actual critical speed
-        if (_rpm_sensor && (_rotor_rpm > (_governor_reference * _critical_speed))) {
+        if (_rpm_sensor && (_rotor_rpm > (_rpm_reference * _critical_speed))) {
             _runup_complete = true;
         // if no rotor speed sensor installed _runup_complete is determined by runup timer
         } else if ((_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f)) {
@@ -360,7 +360,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     if (_runup_complete) {
-        if (_rpm_sensor && (_rotor_rpm <= (_governor_reference * _critical_speed))) {
+        if (_rpm_sensor && (_rotor_rpm <= (_rpm_reference * _critical_speed))) {
             _runup_complete = false;
         } else if (get_rotor_speed() <= _critical_speed) {
             _runup_complete = false;

@@ -5,14 +5,11 @@
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 
-// default main rotor speed (ch8 out) as a number from 0 ~ 100
+// General RSC Defaults
 #define AP_MOTORS_HELI_RSC_SETPOINT             70
-
-// default main rotor critical speed
 #define AP_MOTORS_HELI_RSC_CRITICAL             50
-
-// RSC output defaults
 #define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0
+#define AP_MOTORS_HELI_RSC_HEADSPEED_DEFAULT    1500
 
 // Throttle Curve Defaults
 #define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     25
@@ -22,7 +19,6 @@
 #define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   100
 
 // RSC governor defaults
-#define AP_MOTORS_HELI_RSC_GOVERNOR_SETPNT_DEFAULT    1500
 #define AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT 25
 #define AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT     30
 #define AP_MOTORS_HELI_RSC_GOVERNOR_TCGAIN_DEFAULT    90
@@ -76,7 +72,7 @@ public:
     void        set_governor_disengage(float governor_disengage) {_governor_disengage = governor_disengage; }
     void        set_governor_droop_response(float governor_droop_response) { _governor_droop_response = governor_droop_response; }
     void        set_governor_output(float governor_output) {_governor_output = governor_output; }
-    void        set_governor_reference(float governor_reference) { _governor_reference = governor_reference; }
+    void        set_rpm_reference(float rpm_reference) { _rpm_reference = rpm_reference; }
     void        set_governor_range(float governor_range) { _governor_range = governor_range; }
     void        set_governor_tcgain(float governor_tcgain) {_governor_tcgain = governor_tcgain; }
 
@@ -134,6 +130,7 @@ private:
     float           _control_output;              // latest logic controlled output
     float           _rotor_ramp_output;           // scalar used to ramp rotor speed between _rsc_idle_output and full speed (0.0-1.0f)
     float           _rotor_runup_output;          // scalar used to store status of rotor run-up time (0.0-1.0f)
+    float           _rpm_reference;               // sets rotor rpm reference for governor, runup_complete, autorotation
     bool            _rpm_sensor;                  // flag to determine if rpm sensor is used
     int8_t          _ramp_time;                   // time in seconds for the output to the main rotor's ESC to reach full speed
     int8_t          _runup_time;                  // time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
@@ -145,7 +142,6 @@ private:
     float           _governor_disengage;          // throttle percentage where governor disenages to allow return to flight idle
     float           _governor_output;             // governor output for rotor speed control
     float           _governor_range;              // RPM range +/- governor rpm reference setting where governor is operational
-    float           _governor_reference;          // sets rotor speed for governor
     float           _governor_droop_response;     // governor response to droop under load
     bool            _governor_engage;             // RSC governor status flag for soft-start
     float           _governor_tcgain;             // governor throttle curve gain, range 50-100%
@@ -173,11 +169,13 @@ public:
     float get_setpoint() const { return setpoint; }
     float get_critical() const { return critical; }
     float get_idle_output() const { return idle_output; }
+    int16_t get_rpm_reference() { return rpm_reference; }
 
 private:
     AP_Int16        setpoint;              // Electric ESC governor throttle setting
     AP_Int16        critical;              // Rotor speed below which autorotation is no longer possible
     AP_Int16        idle_output;           // Combustion engine idle speed setting
+    AP_Int16        rpm_reference;         // sets the headspeed reference for governor, runup_complete, autorotation
 
 };
 
@@ -206,14 +204,12 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    int16_t get_reference() { return reference; }
     float get_range() { return range; }
     float get_disengage() { return disengage; }
     float get_droop_response() { return droop_response; }
     float get_tcgain() { return tcgain; }
 
 private:
-    AP_Int16  reference;      // sets rotor speed for governor
     AP_Float  range;          // RPM range +/- governor rpm reference setting where governor is operational
     AP_Float  disengage;      // sets the throttle percent where the governor disengages for return to flight idle
     AP_Float  droop_response; // governor response to droop under load
