@@ -307,23 +307,60 @@ void NavEKF2_core::readIMUData()
     imuSampleTime_ms = AP_HAL::millis();
 
     // use the nominated imu or primary if not available
+    uint8_t accel_active, gyro_active;
+
     if (ins.use_accel(imu_index)) {
-        readDeltaVelocity(imu_index, imuDataNew.delVel, imuDataNew.delVelDT);
-        accelPosOffset = ins.get_imu_pos_offset(imu_index);
+        accel_active = imu_index;
     } else {
-        readDeltaVelocity(ins.get_primary_accel(), imuDataNew.delVel, imuDataNew.delVelDT);
-        accelPosOffset = ins.get_imu_pos_offset(ins.get_primary_accel());
+        accel_active = ins.get_primary_accel();
     }
 
-    // Get delta angle data from primary gyro or primary if not available
     if (ins.use_gyro(imu_index)) {
-        readDeltaAngle(imu_index, imuDataNew.delAng, imuDataNew.delAngDT);
+        gyro_active = imu_index;
     } else {
-        readDeltaAngle(ins.get_primary_gyro(), imuDataNew.delAng, imuDataNew.delAngDT);
+        gyro_active = ins.get_primary_gyro();
     }
+
+    if (gyro_active != gyro_index_active) {
+        // we are switching active gyro at runtime. Copy over the
+        // biases we have learned from the previously inactive
+        // gyro. We don't re-init the bias uncertainty as it should
+        // have the same uncertainty as the previously active gyro
+        stateStruct.gyro_bias = inactiveBias[gyro_active].gyro_bias;
+        gyro_index_active = gyro_active;
+
+        // use the gyro scale factor we have previously used on this
+        // IMU (if any). We don't reset the variances as we don't want
+        // errors after switching to be mis-assigned to the gyro scale
+        // factor
+        stateStruct.gyro_scale = inactiveBias[gyro_active].gyro_scale;
+    }
+
+    if (accel_active != accel_index_active) {
+        // switch to the learned accel bias for this IMU
+        stateStruct.accel_zbias = inactiveBias[accel_active].accel_zbias;
+        accel_index_active = accel_active;
+    }
+
+    // update the inactive bias states
+    learnInactiveBiases();
+
+    readDeltaVelocity(accel_index_active, imuDataNew.delVel, imuDataNew.delVelDT);
+    accelPosOffset = ins.get_imu_pos_offset(accel_index_active);
+    imuDataNew.accel_index = accel_index_active;
+
+    // Get delta angle data from primary gyro or primary if not available
+    readDeltaAngle(gyro_index_active, imuDataNew.delAng, imuDataNew.delAngDT);
+    imuDataNew.gyro_index = gyro_index_active;
 
     // Get current time stamp
     imuDataNew.time_ms = imuSampleTime_ms;
+
+    // use the most recent IMU index for the downsampled IMU
+    // data. This isn't strictly correct if we switch IMUs between
+    // samples
+    imuDataDownSampledNew.gyro_index = imuDataNew.gyro_index;
+    imuDataDownSampledNew.accel_index = imuDataNew.accel_index;
 
     // Accumulate the measurement time interval for the delta velocity and angle data
     imuDataDownSampledNew.delAngDT += imuDataNew.delAngDT;
@@ -371,6 +408,8 @@ void NavEKF2_core::readIMUData()
         imuDataDownSampledNew.delVel.zero();
         imuDataDownSampledNew.delAngDT = 0.0f;
         imuDataDownSampledNew.delVelDT = 0.0f;
+        imuDataDownSampledNew.gyro_index = gyro_index_active;
+        imuDataDownSampledNew.accel_index = accel_index_active;
         imuQuatDownSampleNew[0] = 1.0f;
         imuQuatDownSampleNew[3] = imuQuatDownSampleNew[2] = imuQuatDownSampleNew[1] = 0.0f;
 
@@ -394,8 +433,8 @@ void NavEKF2_core::readIMUData()
         // correct the extracted IMU data for sensor errors
         delAngCorrected = imuDataDelayed.delAng;
         delVelCorrected = imuDataDelayed.delVel;
-        correctDeltaAngle(delAngCorrected, imuDataDelayed.delAngDT);
-        correctDeltaVelocity(delVelCorrected, imuDataDelayed.delVelDT);
+        correctDeltaAngle(delAngCorrected, imuDataDelayed.delAngDT, imuDataDelayed.gyro_index);
+        correctDeltaVelocity(delVelCorrected, imuDataDelayed.delVelDT, imuDataDelayed.accel_index);
 
     } else {
         // we don't have new IMU data in the buffer so don't run filter updates on this time step
@@ -568,7 +607,7 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng
     if (ins_index < ins.get_gyro_count()) {
         ins.get_delta_angle(ins_index,dAng);
         frontend->logging.log_imu = true;
-        dAng_dt = MAX(ins.get_delta_angle_dt(imu_index),1.0e-4f);
+        dAng_dt = MAX(ins.get_delta_angle_dt(ins_index),1.0e-4f);
         dAng_dt = MIN(dAng_dt,1.0e-1f);
         return true;
     }
@@ -885,3 +924,71 @@ float NavEKF2_core::MagDeclination(void) const
     }
     return _ahrs->get_compass()->get_declination();
 }
+
+/*
+  update estimates of inactive bias states. This keeps inactive IMUs
+  as hot-spares so we can switch to them without causing a jump in the
+  error
+ */
+void NavEKF2_core::learnInactiveBiases(void)
+{
+    const AP_InertialSensor &ins = AP::ins();
+
+    // learn gyro biases
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (!ins.use_gyro(i)) {
+            // can't use this gyro
+            continue;
+        }
+        if (gyro_index_active == i) {
+            // use current estimates from main filter of gyro bias and scale
+            inactiveBias[i].gyro_bias = stateStruct.gyro_bias;
+            inactiveBias[i].gyro_scale = stateStruct.gyro_scale;
+        } else {
+            // get filtered gyro and use the difference between the
+            // corrected gyro on the active IMU and the inactive IMU
+            // to move the inactive bias towards the right value
+            Vector3f filtered_gyro_active = ins.get_gyro(gyro_index_active) - (stateStruct.gyro_bias/dtEkfAvg);
+            Vector3f filtered_gyro_inactive = ins.get_gyro(i) - (inactiveBias[i].gyro_bias/dtEkfAvg);
+            Vector3f error = filtered_gyro_active - filtered_gyro_inactive;
+
+            // prevent a single large error from contaminating bias estimate
+            const float bias_limit = radians(5);
+            error.x = constrain_float(error.x, -bias_limit, bias_limit);
+            error.y = constrain_float(error.y, -bias_limit, bias_limit);
+            error.z = constrain_float(error.z, -bias_limit, bias_limit);
+
+            // slowly bring the inactive gyro in line with the active gyro. This corrects a 5 deg/sec
+            // gyro bias error in around 1 minute
+            inactiveBias[i].gyro_bias -= error * (1.0e-4f * dtEkfAvg);
+        }
+    }
+
+    // learn accel biases
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (!ins.use_accel(i)) {
+            // can't use this accel
+            continue;
+        }
+        if (accel_index_active == i) {
+            // use current estimate from main filter
+            inactiveBias[i].accel_zbias = stateStruct.accel_zbias;
+        } else {
+            // get filtered accel and use the difference between the
+            // corrected accel on the active IMU and the inactive IMU
+            // to move the inactive bias towards the right value
+            float filtered_accel_active = ins.get_accel(accel_index_active).z - (stateStruct.accel_zbias/dtEkfAvg);
+            float filtered_accel_inactive = ins.get_accel(i).z - (inactiveBias[i].accel_zbias/dtEkfAvg);
+            float error = filtered_accel_active - filtered_accel_inactive;
+
+            // prevent a single large error from contaminating bias estimate
+            const float bias_limit = 1; // m/s/s
+            error = constrain_float(error, -bias_limit, bias_limit);
+
+            // slowly bring the inactive accel in line with the active accel
+            // this learns 0.5m/s/s bias in about 1 minute
+            inactiveBias[i].accel_zbias -= error * (1.0e-4f * dtEkfAvg);
+        }
+    }
+}
+
