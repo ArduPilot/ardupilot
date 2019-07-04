@@ -284,6 +284,10 @@ void NavEKF3_core::EstimateTerrainOffset()
 */
 void NavEKF3_core::FuseOptFlow()
 {
+    Vector28 Kfusion;               // Kalman gain vector
+    Matrix24 KH;                    // intermediate result used for covariance updates
+    Matrix24 KHP;                   // intermediate result used for covariance updates
+
     Vector24 H_LOS;
     Vector3f relVelSensor;
     Vector14 SH_LOS;

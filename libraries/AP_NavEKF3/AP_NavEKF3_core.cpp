@@ -207,7 +207,6 @@ void NavEKF3_core::InitialiseVariables()
     lastKnownPositionNE.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
-    memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
     rangeDataToFuse  = false;
     Popt = 0.0f;
@@ -872,6 +871,8 @@ void NavEKF3_core::CovariancePrediction()
     float dvx_b;        // X axis delta velocity measurement bias (rad)
     float dvy_b;        // Y axis delta velocity measurement bias (rad)
     float dvz_b;        // Z axis delta velocity measurement bias (rad)
+    Matrix24 nextP;     // Predicted covariance matrix before addition of process noise to diagonals
+
 
     // Calculate the time step used by the covariance prediction as an average of the gyro and accel integration period
     // Constrain to prevent bad timing jitter causing numerical conditioning problems with the covariance prediction

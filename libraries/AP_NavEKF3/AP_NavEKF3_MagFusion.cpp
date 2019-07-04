@@ -312,6 +312,10 @@ void NavEKF3_core::SelectMagFusion()
 */
 void NavEKF3_core::FuseMagnetometer()
 {
+    Vector28 Kfusion;               // Kalman gain vector
+    Matrix24 KH;                    // intermediate result used for covariance updates
+    Matrix24 KHP;                   // intermediate result used for covariance updates
+
     // declarations
     ftype &q0 = mag_state.q0;
     ftype &q1 = mag_state.q1;
@@ -749,6 +753,10 @@ void NavEKF3_core::FuseMagnetometer()
 */
 void NavEKF3_core::fuseEulerYaw()
 {
+    Vector28 Kfusion;               // Kalman gain vector
+    Matrix24 KH;                    // intermediate result used for covariance updates
+    Matrix24 KHP;                   // intermediate result used for covariance updates
+
     float q0 = stateStruct.quat[0];
     float q1 = stateStruct.quat[1];
     float q2 = stateStruct.quat[2];
@@ -974,6 +982,10 @@ void NavEKF3_core::fuseEulerYaw()
 */
 void NavEKF3_core::FuseDeclination(float declErr)
 {
+    Vector28 Kfusion;               // Kalman gain vector
+    Matrix24 KH;                    // intermediate result used for covariance updates
+    Matrix24 KHP;                   // intermediate result used for covariance updates
+
     // declination error variance (rad^2)
     const float R_DECL = sq(declErr);
 

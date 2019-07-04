@@ -22,6 +22,10 @@ extern const AP_HAL::HAL& hal;
 */
 void NavEKF3_core::FuseAirspeed()
 {
+    Vector28 Kfusion;               // Kalman gain vector
+    Matrix24 KH;                    // intermediate result used for covariance updates
+    Matrix24 KHP;                   // intermediate result used for covariance updates
+
     // start performance timer
     hal.util->perf_begin(_perf_FuseAirspeed);
 
@@ -258,6 +262,10 @@ void NavEKF3_core::SelectBetaFusion()
 */
 void NavEKF3_core::FuseSideslip()
 {
+    Vector28 Kfusion;               // Kalman gain vector
+    Matrix24 KH;                    // intermediate result used for covariance updates
+    Matrix24 KHP;                   // intermediate result used for covariance updates
+
     // start performance timer
     hal.util->perf_begin(_perf_FuseSideslip);
 
