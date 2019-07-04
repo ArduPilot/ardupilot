@@ -401,6 +401,9 @@ void NavEKF2_core::SelectVelPosFusion()
 // fuse selected position, velocity and height measurements
 void NavEKF2_core::FuseVelPosNED()
 {
+    Vector28 Kfusion; // Kalman gain vector
+    Matrix24 KHP;     // intermediate result used for covariance updates
+
     // start performance timer
     hal.util->perf_begin(_perf_FuseVelPosNED);
 

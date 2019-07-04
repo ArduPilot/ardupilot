@@ -39,6 +39,9 @@ void NavEKF2_core::FuseAirspeed()
     float SK_TAS;
     Vector24 H_TAS;
     float VtasPred;
+    Vector28 Kfusion; // Kalman gain vector
+    Matrix24 KH;      // intermediate result used for covariance updates
+    Matrix24 KHP;     // intermediate result used for covariance updates
 
     // health is set bad until test passed
     tasHealth = false;
@@ -269,6 +272,10 @@ void NavEKF2_core::FuseSideslip()
     Vector3f vel_rel_wind;
     Vector24 H_BETA;
     float innovBeta;
+
+    Vector28 Kfusion; // Kalman gain vector
+    Matrix24 KH;      // intermediate result used for covariance updates
+    Matrix24 KHP;     // intermediate result used for covariance updates
 
     // copy required states to local variable names
     q0 = stateStruct.quat[0];

@@ -286,6 +286,10 @@ void NavEKF2_core::FuseOptFlow()
     Vector14 SH_LOS;
     Vector2 losPred;
 
+    Vector28 Kfusion; // Kalman gain vector
+    Matrix24 KH;      // intermediate result used for covariance updates
+    Matrix24 KHP;     // intermediate result used for covariance updates
+
     // Copy required states to local variable names
     float q0  = stateStruct.quat[0];
     float q1 = stateStruct.quat[1];

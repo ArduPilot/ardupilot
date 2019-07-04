@@ -153,8 +153,6 @@ void NavEKF2_core::InitialiseVariables()
     lastKnownPositionNE.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
-    memset(&nextP[0][0], 0, sizeof(nextP));
-    memset(&processNoise[0], 0, sizeof(processNoise));
     flowDataValid = false;
     rangeDataToFuse  = false;
     Popt = 0.0f;
@@ -854,6 +852,12 @@ void NavEKF2_core::CovariancePrediction()
     float day_s;        // Y axis delta angle measurement scale factor
     float daz_s;        // Z axis delta angle measurement scale factor
     float dvz_b;        // Z axis delta velocity measurement bias (rad)
+    Matrix24 nextP;     // Predicted covariance matrix before addition of process noise to diagonals
+    Vector24 processNoise; // process noise added to diagonals of predicted covariance matrix
+    Vector25 SF;                    // intermediate variables used to calculate predicted covariance matrix
+    Vector5 SG;                     // intermediate variables used to calculate predicted covariance matrix
+    Vector8 SQ;                     // intermediate variables used to calculate predicted covariance matrix
+    Vector23 SPP;                   // intermediate variables used to calculate predicted covariance matrix
 
     // calculate covariance prediction process noise
     // use filtered height rate to increase wind process noise when climbing or descending
@@ -1322,7 +1326,12 @@ void NavEKF2_core::CovariancePrediction()
     }
 
     // copy covariances to output
-    CopyCovariances();
+    for (uint8_t i=0; i<=stateIndexLim; i++) {
+        for (uint8_t j=0; j<=stateIndexLim; j++)
+        {
+            P[i][j] = nextP[i][j];
+        }
+    }
 
     // constrain diagonals to prevent ill-conditioning
     ConstrainVariances();
@@ -1405,18 +1414,6 @@ void NavEKF2_core::ForceSymmetry()
             float temp = 0.5f*(P[i][j] + P[j][i]);
             P[i][j] = temp;
             P[j][i] = temp;
-        }
-    }
-}
-
-// copy covariances across from covariance prediction calculation
-void NavEKF2_core::CopyCovariances()
-{
-    // copy predicted covariances
-    for (uint8_t i=0; i<=stateIndexLim; i++) {
-        for (uint8_t j=0; j<=stateIndexLim; j++)
-        {
-            P[i][j] = nextP[i][j];
         }
     }
 }

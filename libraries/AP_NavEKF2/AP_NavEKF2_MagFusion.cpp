@@ -347,6 +347,10 @@ void NavEKF2_core::FuseMagnetometer()
     Vector6 SK_MY;
     Vector6 SK_MZ;
 
+    Vector28 Kfusion; // Kalman gain vector
+    Matrix24 KH;      // intermediate result used for covariance updates
+    Matrix24 KHP;     // intermediate result used for covariance updates
+
     hal.util->perf_end(_perf_test[1]);
     
     // perform sequential fusion of magnetometer measurements.
@@ -766,6 +770,10 @@ void NavEKF2_core::FuseMagnetometer()
 */
 void NavEKF2_core::fuseEulerYaw()
 {
+    Vector28 Kfusion; // Kalman gain vector
+    Matrix24 KH;      // intermediate result used for covariance updates
+    Matrix24 KHP;     // intermediate result used for covariance updates
+
     float q0 = stateStruct.quat[0];
     float q1 = stateStruct.quat[1];
     float q2 = stateStruct.quat[2];
@@ -1003,6 +1011,10 @@ void NavEKF2_core::fuseEulerYaw()
 */
 void NavEKF2_core::FuseDeclination(float declErr)
 {
+    Vector28 Kfusion; // Kalman gain vector
+    Matrix24 KH;      // intermediate result used for covariance updates
+    Matrix24 KHP;     // intermediate result used for covariance updates
+
     // declination error variance (rad^2)
     const float R_DECL = sq(declErr);
 

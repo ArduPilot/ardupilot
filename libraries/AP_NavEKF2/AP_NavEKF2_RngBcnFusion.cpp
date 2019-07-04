@@ -44,6 +44,10 @@ void NavEKF2_core::FuseRngBcn()
     const float R_BCN = sq(MAX(rngBcnDataDelayed.rngErr , 0.1f));
     float rngPred;
 
+    Vector28 Kfusion; // Kalman gain vector
+    Matrix24 KH;      // intermediate result used for covariance updates
+    Matrix24 KHP;     // intermediate result used for covariance updates
+
     // health is set bad until test passed
     rngBcnHealth = false;
 
@@ -253,6 +257,9 @@ https://github.com/priseborough/InertialNav/blob/master/derivations/range_beacon
 */
 void NavEKF2_core::FuseRngBcnStatic()
 {
+    Matrix24 KH;      // intermediate result used for covariance updates
+    Matrix24 KHP;     // intermediate result used for covariance updates
+
     // get the estimated range measurement variance
     const float R_RNG = sq(MAX(rngBcnDataDelayed.rngErr , 0.1f));
 
