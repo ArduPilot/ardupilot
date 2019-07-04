@@ -163,12 +163,12 @@ void Scheduler::boost_end(void)
  */
 void Scheduler::delay_microseconds_boost(uint16_t usec)
 {
-    if (in_main_thread()) {
+    if (!_priority_boosted && in_main_thread()) {
         set_high_priority();
         _priority_boosted = true;
+        _called_boost = true;
     }
     delay_microseconds(usec); //Suspends Thread for desired microseconds
-    _called_boost = true;
 }
 
 /*
