@@ -46,8 +46,8 @@ def parse_args(proc_args):
     p.set_defaults(func=cmd_switch_to_i2c)
 
     p = subparsers.add_parser('switch-to-uart', help="Switch sensor to I2C mode")
-    p.add_argument('i2c-dev', help="I2C-device the sensor is currently using (e.g. /dev/i2c-1, /dev/i2c-2, etc)")
-    p.add_argument('addr', help="I2C-device's address the sensor is currently using (e.g. 0x10, 0x11, etc)")
+    p.add_argument('i2c_dev', help="I2C-device the sensor is currently using (e.g. /dev/i2c-1, /dev/i2c-2, etc)")
+    p.add_argument('addr', type=lambda x: int(x, 0), help="I2C-device's address the sensor is currently using (e.g. 0x10, 0x11, etc)")
     p.set_defaults(func=cmd_switch_to_uart)
 
     try:
