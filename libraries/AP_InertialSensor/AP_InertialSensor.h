@@ -495,6 +495,11 @@ private:
     uint8_t _primary_gyro;
     uint8_t _primary_accel;
 
+    // mask of accels and gyros which we will be actively using
+    // and this should wait for in wait_for_sample()
+    uint8_t _gyro_wait_mask;
+    uint8_t _accel_wait_mask;
+
     // bitmask bit which indicates if we should log raw accel and gyro data
     uint32_t _log_raw_bit;
 
