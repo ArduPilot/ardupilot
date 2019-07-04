@@ -44,7 +44,12 @@ class Board:
         self.configure_env(cfg, env)
 
         # Setup scripting, had to defer this to allow checking board size
-        if (not cfg.options.disable_scripting) and ((cfg.env.BOARD_FLASH_SIZE is None) or (cfg.env.BOARD_FLASH_SIZE == []) or (cfg.env.BOARD_FLASH_SIZE > 1024)):
+        if ((not cfg.options.disable_scripting) and
+            (not cfg.env.DISABLE_SCRIPTING) and
+            ((cfg.env.BOARD_FLASH_SIZE is None) or
+             (cfg.env.BOARD_FLASH_SIZE == []) or
+             (cfg.env.BOARD_FLASH_SIZE > 1024))):
+
             env.DEFINES.update(
                 ENABLE_SCRIPTING = 1,
                 ENABLE_HEAP = 1,
