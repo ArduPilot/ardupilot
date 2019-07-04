@@ -440,6 +440,10 @@ private:
     void Write_IMUDT_instance(uint64_t time_us,
                                   uint8_t imu_instance,
                                   enum LogMessages type);
+    void Write_Vibration_instance(uint64_t time_us,
+                                    const uint8_t imu_instance, 
+                                    const enum LogMessages type);
+
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);
 

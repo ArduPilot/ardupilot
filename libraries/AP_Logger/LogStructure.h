@@ -1500,6 +1500,10 @@ struct PACKED log_Arm_Disarm {
       "BAR3",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
       "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2", "s------", "F------" }, \
+    { LOG_VIBE2_MSG, sizeof(log_Vibe), \
+      "VIB2", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2", "s------", "F------" }, \
+    { LOG_VIBE3_MSG, sizeof(log_Vibe), \
+      "VIB3", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2", "s------", "F------" }, \
     { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
       "IMT",IMT_FMT,IMT_LABELS, IMT_UNITS, IMT_MULTS }, \
     { LOG_IMUDT2_MSG, sizeof(log_IMUDT), \
@@ -1675,6 +1679,8 @@ enum LogMessages : uint8_t {
     LOG_PIDS_MSG,
     LOG_DSTL_MSG,
     LOG_VIBE_MSG,
+    LOG_VIBE2_MSG,
+    LOG_VIBE3_MSG,
     LOG_IMUDT_MSG,
     LOG_IMUDT2_MSG,
     LOG_IMUDT3_MSG,

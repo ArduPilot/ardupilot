@@ -374,13 +374,12 @@ void AP_Logger::Write_IMUDT(uint64_t time_us, uint8_t imu_mask)
     }
 }
 
-void AP_Logger::Write_Vibration()
+void AP_Logger::Write_Vibration_instance(uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
 {
-    uint64_t time_us = AP_HAL::micros64();
     const AP_InertialSensor &ins = AP::ins();
-    const Vector3f vibration = ins.get_vibration_levels();
+    const Vector3f vibration = ins.get_vibration_levels(imu_instance);
     struct log_Vibe pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
+        LOG_PACKET_HEADER_INIT(type),
         time_us     : time_us,
         vibe_x      : vibration.x,
         vibe_y      : vibration.y,
@@ -390,6 +389,25 @@ void AP_Logger::Write_Vibration()
         clipping_2  : ins.get_accel_clip_count(2)
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
+
+void AP_Logger::Write_Vibration()
+{
+    uint64_t time_us = AP_HAL::micros64();
+    const AP_InertialSensor &ins = AP::ins();
+
+    Write_Vibration_instance(time_us, 0, LOG_VIBE_MSG);
+    if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
+        return;
+    }
+
+    Write_Vibration_instance(time_us, 1, LOG_VIBE2_MSG);
+
+    if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
+        return;
+    }
+
+    Write_Vibration_instance(time_us, 2, LOG_VIBE3_MSG);
 }
 
 bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
