@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <stdint.h>
 
 class AP_InternalError {
 public:
