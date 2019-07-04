@@ -351,7 +351,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     // runup complete based on actual measured rotor speed or runup scalar
     if (!_runup_complete) {
         // if rotor speed sensor is present runup is complete when rotor reaches actual critical speed
-        if ((_rpm_sensor = true) && (_rotor_rpm > (_governor_reference * _critical_speed))) {
+        if (_rpm_sensor && (_rotor_rpm > (_governor_reference * _critical_speed))) {
             _runup_complete = true;
         // if no rotor speed sensor installed _runup_complete is determined by runup timer
         } else if ((_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f)) {
@@ -360,7 +360,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     if (_runup_complete) {
-        if ((_rpm_sensor = true) && (_rotor_rpm <= (_governor_reference * _critical_speed))) {
+        if (_rpm_sensor && (_rotor_rpm <= (_governor_reference * _critical_speed))) {
             _runup_complete = false;
         } else if (get_rotor_speed() <= _critical_speed) {
             _runup_complete = false;
