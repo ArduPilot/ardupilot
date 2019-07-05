@@ -67,7 +67,11 @@ void dump_stack_trace()
 	char *p;
 	int n;
 
-	n = readlink("/proc/self/exe", progname, sizeof(progname));
+	n = readlink("/proc/self/exe", progname, sizeof(progname)-1);
+	if (n == -1) {
+        strncpy(progname, "unknown", sizeof(progname));
+        n = strlen(progname);
+	}
 	progname[n] = 0;
 
 	p = strrchr(progname, '/');
