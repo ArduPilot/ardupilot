@@ -150,7 +150,7 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
     Vector3f delta_angle;
     const AP_InertialSensor &_ins = AP::ins();
     for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
-        if (_ins.get_gyro_health(i) && healthy_count < 2) {
+        if (_ins.use_gyro(i) && healthy_count < 2) {
             Vector3f dangle;
             if (_ins.get_delta_angle(i, dangle)) {
                 healthy_count++;
@@ -638,8 +638,9 @@ AP_AHRS_DCM::drift_correction(float deltat)
     const AP_InertialSensor &_ins = AP::ins();
 
     // rotate accelerometer values into the earth frame
+    uint8_t healthy_count = 0;
     for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
-        if (_ins.get_accel_health(i)) {
+        if (_ins.use_accel(i) && healthy_count < 2) {
             /*
               by using get_delta_velocity() instead of get_accel() the
               accel value is sampled over the right time delta for
@@ -653,6 +654,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
                 // integrate the accel vector in the earth frame between GPS readings
                 _ra_sum[i] += _accel_ef[i] * deltat;
             }
+            healthy_count++;
         }
     }
 
