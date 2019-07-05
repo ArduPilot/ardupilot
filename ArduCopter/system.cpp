@@ -272,7 +272,7 @@ void Copter::startup_INS_ground()
 }
 
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
-bool Copter::position_ok()
+bool Copter::position_ok() const
 {
     // return false if ekf failsafe has triggered
     if (failsafe.ekf) {
@@ -284,7 +284,7 @@ bool Copter::position_ok()
 }
 
 // ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
-bool Copter::ekf_position_ok()
+bool Copter::ekf_position_ok() const
 {
     if (!ahrs.have_inertial_nav()) {
         // do not allow navigation with dcm position
@@ -304,7 +304,7 @@ bool Copter::ekf_position_ok()
 }
 
 // optflow_position_ok - returns true if optical flow based position estimate is ok
-bool Copter::optflow_position_ok()
+bool Copter::optflow_position_ok() const
 {
 #if OPTFLOW != ENABLED && VISUAL_ODOMETRY_ENABLED != ENABLED
     return false;
