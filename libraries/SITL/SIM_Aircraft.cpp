@@ -554,7 +554,14 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             // zero roll/pitch, but keep yaw
             float r, p, y;
             dcm.to_euler(&r, &p, &y);
-            dcm.from_euler(0.0f, 0.0f, y);
+            if (velocity_ef.length() < 5) {
+                // at high speeds don't constrain pitch, otherwise we
+                // can get stuck in takeoff
+                p = 0;
+            } else {
+                p = MAX(p, 0);
+            }
+            dcm.from_euler(0.0f, p, y);
             // only fwd movement
             Vector3f v_bf = dcm.transposed() * velocity_ef;
             v_bf.y = 0.0f;
