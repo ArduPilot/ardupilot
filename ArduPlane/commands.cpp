@@ -121,8 +121,14 @@ void Plane::update_home()
     }
     if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         Location loc;
-        if(ahrs.get_position(loc)) {
-            plane.set_home(loc);
+        if(ahrs.get_position(loc) && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+            // we take the altitude directly from the GPS as we are
+            // about to reset the baro calibration. We can't use AHRS
+            // altitude or we can end up perpetuating a bias in
+            // altitude, as AHRS alt depends on home alt, which means
+            // we would have a circular dependency
+            loc.alt = gps.location().alt;
+            ahrs.set_home(loc);
         }
     }
     barometer.update_calibration();
