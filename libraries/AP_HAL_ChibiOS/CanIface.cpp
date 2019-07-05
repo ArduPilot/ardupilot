@@ -43,12 +43,14 @@
 #if HAL_WITH_UAVCAN
 #include <cassert>
 #include <cstring>
-#include "CANIface.h"
 #include "CANClock.h"
 #include "CANInternal.h"
 #include "CANSerialRouter.h"
 #include <AP_UAVCAN/AP_UAVCAN_SLCAN.h>
 # include <hal.h>
+
+# if !defined(STM32H7XX)
+#include "CANIface.h"
 
 #if CH_KERNEL_MAJOR == 2
 # if !(defined(STM32F10X_CL) || defined(STM32F2XX) || defined(STM32F3XX)  || defined(STM32F4XX))
@@ -1252,5 +1254,7 @@ UAVCAN_STM32_IRQ_HANDLER(CAN2_RX1_IRQHandler)
 # endif
 
 } // extern "C"
+
+#endif //!defined(STM32H7XX)
 
 #endif //HAL_WITH_UAVCAN

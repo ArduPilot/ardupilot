@@ -43,16 +43,14 @@
 #include "AP_HAL_ChibiOS.h"
 
 #if HAL_WITH_UAVCAN
-# if defined(STM32H7XX)
-#include "CANFDIface.h"
-#else
+
 #include "CANThread.h"
-#include "CANIface.h"
-#include "bxcan.hpp"
+#include "fdcan.hpp"
 
 class SLCANRouter;
 
-namespace ChibiOS_CAN {
+namespace ChibiOS_CAN
+{
 /**
  * Driver error codes.
  * These values can be returned from driver functions negated.
@@ -85,16 +83,18 @@ struct CanRxItem {
  * Single CAN iface.
  * The application shall not use this directly.
  */
-class CanIface : public uavcan::ICanIface, uavcan::Noncopyable {
+class CanIface : public uavcan::ICanIface, uavcan::Noncopyable
+{
     friend class ::SLCANRouter;
-    class RxQueue {
+    static SLCANRouter *_slcan_router;
+    class RxQueue
+    {
         CanRxItem* const buf_;
         const uavcan::uint8_t capacity_;
         uavcan::uint8_t in_;
         uavcan::uint8_t out_;
         uavcan::uint8_t len_;
         uavcan::uint32_t overflow_cnt_;
-
         void registerOverflow();
 
     public:
@@ -123,6 +123,15 @@ class CanIface : public uavcan::ICanIface, uavcan::Noncopyable {
         }
     };
 
+    struct MessageRAM {
+        uavcan::uint32_t StandardFilterSA;
+        uavcan::uint32_t ExtendedFilterSA;
+        uavcan::uint32_t RxFIFO0SA;
+        uavcan::uint32_t RxFIFO1SA;
+        uavcan::uint32_t TxFIFOQSA;
+        uavcan::uint32_t EndAddress;
+    } MessageRam_;
+
     struct Timings {
         uavcan::uint16_t prescaler;
         uavcan::uint8_t sjw;
@@ -140,24 +149,21 @@ class CanIface : public uavcan::ICanIface, uavcan::Noncopyable {
     struct TxItem {
         uavcan::MonotonicTime deadline;
         uavcan::CanFrame frame;
-        bool pending;
         bool loopback;
         bool abort_on_error;
-
-        TxItem()
-            : pending(false)
-            , loopback(false)
-            , abort_on_error(false)
+        uint8_t index;
+        TxItem() :
+            loopback(false),
+            abort_on_error(false)
         { }
     };
 
-    enum { NumTxMailboxes = 3 };
-    enum { NumFilters = 14 };
+    enum { NumTxMailboxes = 32 };
 
     static const uavcan::uint32_t TSR_ABRQx[NumTxMailboxes];
-
+    static uint32_t FDCANMessageRAMOffset_;
     RxQueue rx_queue_;
-    bxcan::CanType* const can_;
+    fdcan::CanType* const can_;
     uavcan::uint64_t error_cnt_;
     uavcan::uint32_t served_aborts_cnt_;
     BusEvent& update_event_;
@@ -165,7 +171,6 @@ class CanIface : public uavcan::ICanIface, uavcan::Noncopyable {
     uavcan::uint8_t peak_tx_mailbox_index_;
     const uavcan::uint8_t self_index_;
     bool had_activity_;
-
     int computeTimings(uavcan::uint32_t target_bitrate, Timings& out_timings);
 
     virtual uavcan::int16_t send(const uavcan::CanFrame& frame, uavcan::MonotonicTime tx_deadline,
@@ -177,15 +182,11 @@ class CanIface : public uavcan::ICanIface, uavcan::Noncopyable {
     virtual uavcan::int16_t configureFilters(const uavcan::CanFilterConfig* filter_configs,
             uavcan::uint16_t num_configs);
 
-    virtual uavcan::uint16_t getNumFilters() const
-    {
-        return NumFilters;
-    }
+    virtual uavcan::uint16_t getNumFilters() const;
 
-    void handleTxMailboxInterrupt(uavcan::uint8_t mailbox_index, bool txok, uavcan::uint64_t utc_usec);
+    void setupMessageRam(void);
 
-    bool waitMsrINakBitStateChange(bool target_state);
-
+    static uint32_t FDCAN2MessageRAMOffset_;
 public:
     enum { MaxRxQueueCapacity = 254 };
 
@@ -194,19 +195,8 @@ public:
         SilentMode
     };
 
-    CanIface(bxcan::CanType* can, BusEvent& update_event, uavcan::uint8_t self_index,
-             CanRxItem* rx_queue_buffer, uavcan::uint8_t rx_queue_capacity)
-        : rx_queue_(rx_queue_buffer, rx_queue_capacity)
-        , can_(can)
-        , error_cnt_(0)
-        , served_aborts_cnt_(0)
-        , update_event_(update_event)
-        , peak_tx_mailbox_index_(0)
-        , self_index_(self_index)
-        , had_activity_(false)
-    {
-        UAVCAN_ASSERT(self_index_ < UAVCAN_STM32_NUM_IFACES);
-    }
+    CanIface(fdcan::CanType* can, BusEvent& update_event, uavcan::uint8_t self_index,
+             CanRxItem* rx_queue_buffer, uavcan::uint8_t rx_queue_capacity);
 
     /**
      * Initializes the hardware CAN controller.
@@ -217,9 +207,10 @@ public:
      */
     int init(const uavcan::uint32_t bitrate, const OperatingMode mode);
 
-    void handleTxInterrupt(uavcan::uint64_t utc_usec);
-    void handleRxInterrupt(uavcan::uint8_t fifo_index, uavcan::uint64_t utc_usec);
+    void handleTxCompleteInterrupt(uavcan::uint64_t utc_usec);
+    void handleRxInterrupt(uavcan::uint8_t fifo_index);
 
+    bool readRxFIFO(uavcan::uint8_t fifo_index);
     /**
      * This method is used to count errors and abort transmission on error if necessary.
      * This functionality used to be implemented in the SCE interrupt handler, but that approach was
@@ -280,14 +271,21 @@ public:
     {
         return uavcan::uint8_t(peak_tx_mailbox_index_ + 1);
     }
+
+    fdcan::CanType* can_reg(void)
+    {
+        return can_;
+    }
 };
 
 /**
  * CAN driver, incorporates all available CAN ifaces.
  * Please avoid direct use, prefer @ref CanInitHelper instead.
  */
-class CanDriver : public uavcan::ICanDriver, uavcan::Noncopyable {
+class CanDriver : public uavcan::ICanDriver, uavcan::Noncopyable
+{
     BusEvent update_event_;
+    static bool clock_init_;
     CanIface if0_;
 #if UAVCAN_STM32_NUM_IFACES > 1
     CanIface if1_;
@@ -308,9 +306,9 @@ public:
     template <unsigned RxQueueCapacity>
     CanDriver(CanRxItem(&rx_queue_storage)[UAVCAN_STM32_NUM_IFACES][RxQueueCapacity])
         : update_event_(*this)
-        , if0_(bxcan::Can[0], update_event_, 0, rx_queue_storage[0], RxQueueCapacity)
+        , if0_(fdcan::Can[0], update_event_, 0, rx_queue_storage[0], RxQueueCapacity)
 #if UAVCAN_STM32_NUM_IFACES > 1
-        , if1_(bxcan::Can[1], update_event_, 1, rx_queue_storage[1], RxQueueCapacity)
+        , if1_(fdcan::Can[1], update_event_, 1, rx_queue_storage[1], RxQueueCapacity)
 #endif
     {
         uavcan::StaticAssert<(RxQueueCapacity <= CanIface::MaxRxQueueCapacity)>::check();
@@ -357,7 +355,8 @@ public:
  * 145 usec per Extended CAN frame @ 1 Mbps, e.g. 32 RX slots * 145 usec --> 4.6 msec before RX queue overruns.
  */
 template <unsigned RxQueueCapacity = 128>
-class CanInitHelper {
+class CanInitHelper
+{
     CanRxItem queue_storage_[UAVCAN_STM32_NUM_IFACES][RxQueueCapacity];
 
 public:
@@ -404,8 +403,7 @@ public:
     {
         if (inout_bitrate > 0) {
             return driver.init(inout_bitrate, CanIface::NormalMode);
-        }
-        else {
+        } else {
             static const uavcan::uint32_t StandardBitRates[] = {
                 1000000,
                 500000,
@@ -446,5 +444,5 @@ public:
 }
 
 #include "CANSerialRouter.h"
-#endif // defined(STM32H7XX)
+
 #endif //HAL_WITH_UAVCAN
