@@ -28,7 +28,11 @@
 
 #include "CANThread.h"
 #include "CANClock.h"
+#if defined(STM32H7XX)
+#include "CANFDIface.h"
+#else
 #include "CANIface.h"
+#endif
 
 #define MAX_NUMBER_OF_CAN_INTERFACES    2
 #define MAX_NUMBER_OF_CAN_DRIVERS       2
