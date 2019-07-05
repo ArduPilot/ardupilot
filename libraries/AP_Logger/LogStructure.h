@@ -70,6 +70,7 @@ const struct UnitStructure log_Units[] = {
     { 'v', "V" },             // Volt
     { 'P', "Pa" },            // Pascal
     { 'w', "Ohm" },           // Ohm
+//    { 'W', "Watt" },        // Watt
     { 'Y', "us" },            // pulse width modulation in microseconds
     { 'z', "Hz" },            // Hertz
     { '#', "instance" }       // (e.g.)Sensor instance number
