@@ -119,7 +119,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: DISPLAY_TYPE
     // @DisplayName: Type of on-board I2C display
     // @Description: This sets up the type of on-board I2C display. Disabled by default.
-    // @Values: 0:Disable,1:ssd1306,2:sh1106
+    // @Values: 0:Disable,1:ssd1306,2:sh1106,10:SITL
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 
