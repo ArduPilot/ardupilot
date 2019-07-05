@@ -35,6 +35,8 @@
 
 #include <uavcan/equipment/power/BatteryInfo.hpp>
 
+#include <com/hex/equipment/flow/Measurement.hpp>
+
 void setup();
 void loop();
 
@@ -149,6 +151,7 @@ MSG_CB(uavcan::equipment::power::BatteryInfo, BatteryInfo);
 MSG_CB(uavcan::equipment::actuator::ArrayCommand, ArrayCommand)
 MSG_CB(uavcan::equipment::esc::RawCommand, RawCommand)
 MSG_CB(uavcan::equipment::indication::LightsCommand, LightsCommand);
+MSG_CB(com::hex::equipment::flow::Measurement, Measurement);
 
 void UAVCAN_sniffer::init(void)
 {
@@ -222,6 +225,7 @@ void UAVCAN_sniffer::init(void)
     START_CB(uavcan::equipment::actuator::ArrayCommand, ArrayCommand);
     START_CB(uavcan::equipment::esc::RawCommand, RawCommand);
     START_CB(uavcan::equipment::indication::LightsCommand, LightsCommand);
+    START_CB(com::hex::equipment::flow::Measurement, Measurement);
 
 
     /*
