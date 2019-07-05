@@ -1158,6 +1158,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                        (m.target_component, mav.mav.srcComponent))
         return m
 
+    def get_mission_item_on_link(self, item, mav, target_system, target_component, mission_type):
+        mav.mav.mission_request_send(target_system,
+                                     target_component,
+                                     item,
+                                     mission_type)
+        m = mav.recv_match(type='MISSION_ITEM',
+                           blocking=True,
+                           timeout=1)
+        if m is None:
+            raise NotAchievedException("Did not receive mission item int")
+        if m.target_system != mav.mav.srcSystem:
+            raise NotAchievedException("Unexpected target system %u want=%u" %
+                                       (m.target_system, mav.mav.srcSystem))
+        if m.target_component != mav.mav.srcComponent:
+            raise NotAchievedException("Unexpected target component %u want=%u" %
+                                       (m.target_component, mav.mav.srcComponent))
+        return m
+
     def send_clear_mission(self, mission_type, target_system, target_component):
         self.mav.mav.mission_count_send(target_system,
                                         target_component,
@@ -1389,6 +1407,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             m = self.get_mission_item_int_on_link(2, self.mav, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             if m2.x != m.x:
                 raise NotAchievedException("mission items do not match (%d vs %d)" % (m2.x, m.x))
+            m_nonint = self.get_mission_item_on_link(2, self.mav, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.start_subtest("Should enforce items come from correct GCS")
             self.mav.mav.mission_count_send(target_system,
                                             target_component,
