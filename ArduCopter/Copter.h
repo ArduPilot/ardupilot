@@ -839,9 +839,9 @@ private:
     // system.cpp
     void init_ardupilot();
     void startup_INS_ground();
-    bool position_ok();
-    bool ekf_position_ok();
-    bool optflow_position_ok();
+    bool position_ok() const;
+    bool ekf_position_ok() const;
+    bool optflow_position_ok() const;
     void update_auto_armed();
     bool should_log(uint32_t mask);
     MAV_TYPE get_frame_mav_type();
