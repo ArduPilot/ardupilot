@@ -316,6 +316,12 @@ static const uint8_t _font[] = {
 #endif
 };
 
+#ifdef AP_NOTIFY_DISPLAY_USE_EMOJI
+static_assert(ARRAY_SIZE(_font) == 1280, "_font is correct size");
+#else
+static_assert(ARRAY_SIZE(_font) == 475, "_font is correct size");
+#endif
+
 bool Display::init(void)
 {
     // exit immediately if already initialised
