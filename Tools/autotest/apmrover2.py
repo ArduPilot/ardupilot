@@ -1140,7 +1140,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Bad count received (want=%u got=%u)" %
                                        (expected_count, m.count))
 
-    def get_mission_item_on_link(self, item, mav, target_system, target_component, mission_type):
+    def get_mission_item_int_on_link(self, item, mav, target_system, target_component, mission_type):
         mav.mav.mission_request_int_send(target_system,
                                          target_component,
                                          item,
@@ -1384,9 +1384,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("Assert mission count on original link")
             self.assert_mission_count_on_link(self.mav, expected_count, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.progress("Get first item on new link")
-            m2 = self.get_mission_item_on_link(2, mav2, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            m2 = self.get_mission_item_int_on_link(2, mav2, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.progress("Get first item on original link")
-            m = self.get_mission_item_on_link(2, self.mav, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            m = self.get_mission_item_int_on_link(2, self.mav, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             if m2.x != m.x:
                 raise NotAchievedException("mission items do not match (%d vs %d)" % (m2.x, m.x))
             self.start_subtest("Should enforce items come from correct GCS")
