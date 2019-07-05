@@ -673,6 +673,9 @@ void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
     convert_MISSION_REQUEST_to_MISSION_REQUEST_INT(packet, request_int);
 
     mavlink_mission_item_int_t item_int{};
+    item_int.target_system = msg.sysid;
+    item_int.target_component = msg.compid;
+
     MAV_MISSION_RESULT ret = get_item(_link, msg, request_int, item_int);
     if (ret != MAV_MISSION_ACCEPTED) {
         return;
