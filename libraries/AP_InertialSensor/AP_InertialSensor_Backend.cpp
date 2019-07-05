@@ -156,6 +156,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     _update_sensor_rate(_imu._sample_gyro_count[instance], _imu._sample_gyro_start_us[instance],
                         _imu._gyro_raw_sample_rates[instance]);
 
+    uint64_t last_sample_us = _imu._gyro_last_sample_us[instance];
+
     /*
       we have two classes of sensors. FIFO based sensors produce data
       at a very predictable overall rate, but the data comes in
@@ -165,7 +167,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
       difference between the two is whether sample_us is provided.
      */
     if (sample_us != 0 && _imu._gyro_last_sample_us[instance] != 0) {
-        dt = (sample_us - _imu._gyro_last_sample_us[instance]) * 1.0e-6;
+        dt = (sample_us - _imu._gyro_last_sample_us[instance]) * 1.0e-6f;
+        _imu._gyro_last_sample_us[instance] = sample_us;
     } else {
         // don't accept below 100Hz
         if (_imu._gyro_raw_sample_rates[instance] < 100) {
@@ -173,8 +176,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         }
 
         dt = 1.0f / _imu._gyro_raw_sample_rates[instance];
+        _imu._gyro_last_sample_us[instance] = AP_HAL::micros64();
     }
-    _imu._gyro_last_sample_us[instance] = sample_us;
 
 #if AP_MODULE_SUPPORTED
     // call gyro_sample hook if any
@@ -182,8 +185,9 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 #endif
 
     // push gyros if optical flow present
-    if (hal.opticalflow)
+    if (hal.opticalflow) {
         hal.opticalflow->push_gyro(gyro.x, gyro.y, dt);
+    }
     
     // compute delta angle
     Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
@@ -199,6 +203,16 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     delta_coning *= 0.5f;
 
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        uint64_t now = AP_HAL::micros64();
+
+        if (now - last_sample_us > 100000U) {
+            // zero accumulator if sensor was unhealthy for 0.1s
+            _imu._delta_angle_acc[instance].zero();
+            _imu._delta_angle_acc_dt[instance] = 0;
+            dt = 0;
+            delta_angle.zero();
+        }
+
         // integrate delta angle accumulator
         // the angles and coning corrections are accumulated separately in the
         // referenced paper, but in simulation little difference was found between
@@ -295,6 +309,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     _update_sensor_rate(_imu._sample_accel_count[instance], _imu._sample_accel_start_us[instance],
                         _imu._accel_raw_sample_rates[instance]);
 
+    uint64_t last_sample_us = _imu._accel_last_sample_us[instance];
+
     /*
       we have two classes of sensors. FIFO based sensors produce data
       at a very predictable overall rate, but the data comes in
@@ -304,7 +320,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
       difference between the two is whether sample_us is provided.
      */
     if (sample_us != 0 && _imu._accel_last_sample_us[instance] != 0) {
-        dt = (sample_us - _imu._accel_last_sample_us[instance]) * 1.0e-6;
+        dt = (sample_us - _imu._accel_last_sample_us[instance]) * 1.0e-6f;
+        _imu._accel_last_sample_us[instance] = sample_us;
     } else {
         // don't accept below 100Hz
         if (_imu._accel_raw_sample_rates[instance] < 100) {
@@ -312,8 +329,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         }
 
         dt = 1.0f / _imu._accel_raw_sample_rates[instance];
+        _imu._accel_last_sample_us[instance] = AP_HAL::micros64();
     }
-    _imu._accel_last_sample_us[instance] = sample_us;
 
 #if AP_MODULE_SUPPORTED
     // call accel_sample hook if any
@@ -323,6 +340,15 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        uint64_t now = AP_HAL::micros64();
+
+        if (now - last_sample_us > 100000U) {
+            // zero accumulator if sensor was unhealthy for 0.1s
+            _imu._delta_velocity_acc[instance].zero();
+            _imu._delta_velocity_acc_dt[instance] = 0;
+            dt = 0;
+        }
+        
         // delta velocity
         _imu._delta_velocity_acc[instance] += accel * dt;
         _imu._delta_velocity_acc_dt[instance] += dt;
