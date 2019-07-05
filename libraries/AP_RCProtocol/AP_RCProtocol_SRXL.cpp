@@ -22,6 +22,7 @@
 
 #include "AP_RCProtocol_SRXL.h"
 #include <AP_Math/crc.h>
+#include <AP_Math/AP_Math.h>
 
 // #define SUMD_DEBUG
 extern const AP_HAL::HAL& hal;
@@ -232,28 +233,29 @@ void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
             /* CRC check here */
             crc_receiver = ((uint16_t)buffer[buflen-2] << 8U) | ((uint16_t)buffer[buflen-1]);
              if (crc_receiver == crc_fmu) {
-               /* at this point buffer contains all frame data and crc is valid --> extract channel info according to SRXL variant */
-                uint16_t values[SRXL_MAX_CHANNELS];
-                uint8_t num_values;
-                bool failsafe_state;
-                switch (frame_header) {
-                case SRXL_HEADER_V1:
-                    srxl_channels_get_v1v2(MAX_RCIN_CHANNELS, &num_values, values, &failsafe_state);
-                    add_input(num_values, values, failsafe_state);
-                    break;
-                case SRXL_HEADER_V2:
-                    srxl_channels_get_v1v2(MAX_RCIN_CHANNELS, &num_values, values, &failsafe_state);
-                    add_input(num_values, values, failsafe_state);
-                    break;
-                case SRXL_HEADER_V5:
-                    srxl_channels_get_v5(MAX_RCIN_CHANNELS, &num_values, values, &failsafe_state);
-                    add_input(num_values, values, failsafe_state);
-                    break;
-                default:
-                    break;
-                }
+                 /* at this point buffer contains all frame data and crc is valid --> extract channel info according to SRXL variant */
+                 const uint8_t max_values = MIN((unsigned)SRXL_MAX_CHANNELS,(unsigned)MAX_RCIN_CHANNELS);
+                 uint16_t values[max_values];
+                 uint8_t num_values;
+                 bool failsafe_state;
+                 switch (frame_header) {
+                 case SRXL_HEADER_V1:
+                     srxl_channels_get_v1v2(max_values, &num_values, values, &failsafe_state);
+                     add_input(num_values, values, failsafe_state);
+                     break;
+                 case SRXL_HEADER_V2:
+                     srxl_channels_get_v1v2(max_values, &num_values, values, &failsafe_state);
+                     add_input(num_values, values, failsafe_state);
+                     break;
+                 case SRXL_HEADER_V5:
+                     srxl_channels_get_v5(max_values, &num_values, values, &failsafe_state);
+                     add_input(num_values, values, failsafe_state);
+                     break;
+                 default:
+                     break;
+                 }
              }
-            decode_state_next = STATE_IDLE; /* frame data buffering and decoding finished --> statemachine not in use until new header drops is */
+             decode_state_next = STATE_IDLE; /* frame data buffering and decoding finished --> statemachine not in use until new header drops is */
         } else {
             /* frame not completely received --> frame data buffering still ongoing  */
             decode_state_next = STATE_COLLECT;
