@@ -70,6 +70,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.name = "ArduPilot (xenial32)"
     end
   end
+  config.vm.define "xenial64", autostart: false do |xenial64|
+    config.vm.box = "ubuntu/xenial64"
+    config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (xenial64)"
+    end
+  end
 
   # NO LONGER AVAILABLE FOR DOWNLOAD, EOL January 2018
   # EOL January 2018
