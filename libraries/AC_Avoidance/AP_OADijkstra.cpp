@@ -251,7 +251,6 @@ bool AP_OADijkstra::create_polygon_fence_visgraph()
                                              {AP_OAVisGraph::OATYPE_FENCE_POINT, j},
                                              (_polyfence_pts[i] - _polyfence_pts[j]).length());
             }
-            // ToDo: store infinity when there is no clear path between points to allow faster search later
         }
     }
 
