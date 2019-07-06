@@ -256,7 +256,8 @@ static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
 };
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
-    MSG_RADIO_IN
+    MSG_RC_CHANNELS,
+    MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
