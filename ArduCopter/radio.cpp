@@ -11,7 +11,6 @@ void Copter::default_dead_zones()
 #if FRAME_CONFIG == HELI_FRAME
     channel_throttle->set_default_dead_zone(10);
     channel_yaw->set_default_dead_zone(15);
-    rc().channel(CH_6)->set_default_dead_zone(10);
 #else
     channel_throttle->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
