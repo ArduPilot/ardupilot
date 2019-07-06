@@ -78,6 +78,8 @@ enum aux_sw_func {
     AUXSW_USER_FUNC1 =          47, // user function #1
     AUXSW_USER_FUNC2 =          48, // user function #2
     AUXSW_USER_FUNC3 =          49, // user function #3
+    AUXSW_KILL_IMU1  =          100, // kill IMU1
+    AUXSW_KILL_IMU2  =          101, // kill IMU2
     AUXSW_SWITCH_MAX,
 };
 
