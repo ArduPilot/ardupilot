@@ -32,6 +32,7 @@ public:
 
     enum rcprotocol_t {
         PPM = 0,
+        IBUS,
         SBUS,
         SBUS_NI,
         DSM,
