@@ -1155,7 +1155,8 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_MISSION_CURRENT,       MSG_CURRENT_WAYPOINT},
         { MAVLINK_MSG_ID_VFR_HUD,               MSG_VFR_HUD},
         { MAVLINK_MSG_ID_SERVO_OUTPUT_RAW,      MSG_SERVO_OUTPUT_RAW},
-        { MAVLINK_MSG_ID_RC_CHANNELS,           MSG_RADIO_IN},
+        { MAVLINK_MSG_ID_RC_CHANNELS,           MSG_RC_CHANNELS},
+        { MAVLINK_MSG_ID_RC_CHANNELS_RAW,       MSG_RC_CHANNELS_RAW},
         { MAVLINK_MSG_ID_RAW_IMU,               MSG_RAW_IMU},
         { MAVLINK_MSG_ID_SCALED_IMU,            MSG_SCALED_IMU},
         { MAVLINK_MSG_ID_SCALED_IMU2,           MSG_SCALED_IMU2},
@@ -1902,7 +1903,7 @@ void GCS_MAVLINK::send_system_time()
 /*
   send RC_CHANNELS messages
  */
-void GCS_MAVLINK::send_radio_in()
+void GCS_MAVLINK::send_rc_channels() const
 {
     AP_RSSI *rssi = AP::rssi();
     uint8_t receiver_rssi = 0;
@@ -1910,35 +1911,12 @@ void GCS_MAVLINK::send_radio_in()
         receiver_rssi = rssi->read_receiver_rssi_uint8();
     }
 
-    uint32_t now = AP_HAL::millis();
-    mavlink_status_t *status = mavlink_get_channel_status(chan);
-
     uint16_t values[18] = {};
     rc().get_radio_in(values, ARRAY_SIZE(values));
 
-    if (status && (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
-        // for mavlink1 send RC_CHANNELS_RAW, for compatibility with OSD implementations
-        mavlink_msg_rc_channels_raw_send(
-            chan,
-            now,
-            0,
-            values[0],
-            values[1],
-            values[2],
-            values[3],
-            values[4],
-            values[5],
-            values[6],
-            values[7],
-            receiver_rssi);
-    }
-    if (!HAVE_PAYLOAD_SPACE(chan, RC_CHANNELS)) {
-        // can't fit RC_CHANNELS
-        return;
-    }
     mavlink_msg_rc_channels_send(
         chan,
-        now,
+        AP_HAL::millis(),
         RC_Channels::get_valid_channel_count(),
         values[0],
         values[1],
@@ -1959,6 +1937,41 @@ void GCS_MAVLINK::send_radio_in()
         values[16],
         values[17],
         receiver_rssi);        
+}
+
+void GCS_MAVLINK::send_rc_channels_raw() const
+{
+    mavlink_status_t *status = mavlink_get_channel_status(chan);
+    if (status == nullptr) {
+        // should not happen
+        return;
+    }
+    // for mavlink1 send RC_CHANNELS_RAW, for compatibility with OSD
+    // implementations
+    if (!(status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+        return;
+    }
+    AP_RSSI *rssi = AP::rssi();
+    uint8_t receiver_rssi = 0;
+    if (rssi != nullptr) {
+        receiver_rssi = rssi->read_receiver_rssi_uint8();
+    }
+    uint16_t values[8] = {};
+    rc().get_radio_in(values, ARRAY_SIZE(values));
+
+    mavlink_msg_rc_channels_raw_send(
+        chan,
+        AP_HAL::millis(),
+        0,
+        values[0],
+        values[1],
+        values[2],
+        values[3],
+        values[4],
+        values[5],
+        values[6],
+        values[7],
+        receiver_rssi);
 }
 
 void GCS_MAVLINK::send_raw_imu()
@@ -4560,9 +4573,14 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_power_status();
         break;
 
-    case MSG_RADIO_IN:
+    case MSG_RC_CHANNELS:
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS);
+        send_rc_channels();
+        break;
+
+    case MSG_RC_CHANNELS_RAW:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        send_radio_in();
+        send_rc_channels_raw();
         break;
 
     case MSG_RAW_IMU:

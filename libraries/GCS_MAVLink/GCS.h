@@ -42,7 +42,8 @@ enum ap_message : uint8_t {
     MSG_CURRENT_WAYPOINT,
     MSG_VFR_HUD,
     MSG_SERVO_OUTPUT_RAW,
-    MSG_RADIO_IN,
+    MSG_RC_CHANNELS,
+    MSG_RC_CHANNELS_RAW,
     MSG_RAW_IMU,
     MSG_SCALED_IMU,
     MSG_SCALED_IMU2,
@@ -407,7 +408,8 @@ public:
     void send_ahrs2();
     void send_ahrs3();
     void send_system_time();
-    void send_radio_in();
+    void send_rc_channels() const;
+    void send_rc_channels_raw() const;
     void send_raw_imu();
 
     void send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature));
