@@ -122,6 +122,9 @@ bool AP_OADijkstra::polygon_fence_enabled() const
     if (fence == nullptr) {
         return false;
     }
+    if (!fence->is_polygon_valid()) {
+        return false;
+    }
     return ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) > 0);
 }
 
