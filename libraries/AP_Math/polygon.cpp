@@ -132,10 +132,21 @@ template bool Polygon_complete<float>(const Vector2f *V, unsigned n);
  */
 bool Polygon_intersects(const Vector2f *V, unsigned N, const Vector2f &p1, const Vector2f &p2, Vector2f &intersection)
 {
+    const bool complete = Polygon_complete(V, N);
+    if (complete) {
+        // if the last point is the same as the first point
+        // treat as if the last point wasn't passed in
+        N--;
+    }
+
     float intersect_dist_sq = FLT_MAX;
-    for (uint8_t i=0; i<N-1; i++) {
+    for (uint8_t i=0; i<N; i++) {
+        uint8_t j = i+1;
+        if (j >= N) {
+            j = 0;
+        }
         const Vector2f &v1 = V[i];
-        const Vector2f &v2 = V[i+1];
+        const Vector2f &v2 = V[j];
         // optimisations for common cases
         if (v1.x > p1.x && v2.x > p1.x && v1.x > p2.x && v2.x > p2.x) {
             continue;
