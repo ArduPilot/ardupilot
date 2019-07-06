@@ -18,6 +18,7 @@
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_PPMSum.h"
 #include "AP_RCProtocol_DSM.h"
+#include "AP_RCProtocol_IBUS.h"
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
@@ -29,6 +30,7 @@ AP_RCProtocol *AP_RCProtocol::_singleton;
 void AP_RCProtocol::init()
 {
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
+    backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true);
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false);
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
@@ -205,6 +207,8 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     switch (protocol) {
     case PPM:
         return "PPM";
+    case IBUS:
+        return "IBUS";
     case SBUS:
     case SBUS_NI:
         return "SBUS";
