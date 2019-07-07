@@ -75,7 +75,7 @@ bool SLCAN::CAN::push_Frame(uavcan::CanFrame &frame)
     frm.frame = frame;
     frm.flags = 0;
     frm.utc_usec = AP_HAL::micros64();
-    slcan_router().route_frame_to_can(frm.frame, frm.utc_usec);
+    ChibiOS_CAN::CanIface::slcan_router().route_frame_to_can(frm.frame, frm.utc_usec);
     return rx_queue_.push(frm);
 }
 
