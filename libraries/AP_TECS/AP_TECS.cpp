@@ -605,21 +605,8 @@ float AP_TECS::timeConstant(void) const
  */
 void AP_TECS::_update_throttle_with_airspeed(void)
 {
-    // Calculate limits to be applied to potential energy error to prevent over or underspeed occurring due to large height errors
-    float SPE_err_max = 0.5f * _TASmax * _TASmax - _SKE_dem;
-    float SPE_err_min = 0.5f * _TASmin * _TASmin - _SKE_dem;
-
-    if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_VTOL) {
-        /*
-          when we are in a VTOL state then we ignore potential energy
-          errors as we have vertical motors that interfere with the
-          total energy calculation.
-         */
-        SPE_err_max = SPE_err_min = 0;
-    }
-    
     // Calculate total energy error
-    _STE_error = constrain_float((_SPE_dem - _SPE_est), SPE_err_min, SPE_err_max) + _SKE_dem - _SKE_est;
+    _STE_error = _SPE_dem - _SPE_est + _SKE_dem - _SKE_est;
     float STEdot_dem = constrain_float((_SPEdot_dem + _SKEdot_dem), _STEdot_min, _STEdot_max);
     float STEdot_error = STEdot_dem - _SPEdot - _SKEdot;
 
