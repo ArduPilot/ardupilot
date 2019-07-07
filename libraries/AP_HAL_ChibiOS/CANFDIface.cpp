@@ -119,7 +119,9 @@ inline void handleInterrupt(uavcan::uint8_t iface_index, uavcan::uint8_t line_in
 } // namespace
 
 uint32_t CanIface::FDCANMessageRAMOffset_ = 0;
-SLCANRouter *CanIface::_slcan_router = nullptr;
+#if !HAL_MINIMIZE_FEATURES
+SLCANRouter CanIface::_slcan_router;
+#endif
 
 CanIface::CanIface(fdcan::CanType* can, BusEvent& update_event, uavcan::uint8_t self_index,
             CanRxItem* rx_queue_buffer, uavcan::uint8_t rx_queue_capacity)
@@ -133,7 +135,6 @@ CanIface::CanIface(fdcan::CanType* can, BusEvent& update_event, uavcan::uint8_t 
     , had_activity_(false)
 {
     UAVCAN_ASSERT(self_index_ < UAVCAN_STM32_NUM_IFACES);
-    _slcan_router = SLCANRouter::get_singleton();
 }
 
 /*
@@ -695,9 +696,7 @@ bool CanIface::readRxFIFO(uavcan::uint8_t fifo_index)
      */
     rx_queue_.push(frame, utc_usec, 0);
 #if !HAL_MINIMIZE_FEATURES
-    if (_slcan_router != nullptr) {
-        _slcan_router->route_frame_to_slcan(this, frame, utc_usec);
-    }
+    _slcan_router.route_frame_to_slcan(this, frame, utc_usec);
 #endif
     return true;
 }
