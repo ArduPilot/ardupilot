@@ -26,6 +26,14 @@ public:
 
 	void reset_I();
 
+    /*
+      reduce the integrator, used when we have a low scale factor in a quadplane hover
+    */
+    void decay_I() {
+        // this reduces integrator by 95% over 2s
+        _pid_info.I *= 0.995f;
+    }
+    
     void autotune_start(void) { autotune.start(); }
     void autotune_restore(void) { autotune.stop(); }
 
