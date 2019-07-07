@@ -1031,12 +1031,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   fprintf(source, "static int %s_%s(lua_State *L) {\n", data->name, method->name);
   // emit comments on expected arg/type
   struct argument *arg = method->arguments;
-  while (arg != NULL) {
-    fprintf(source, "    // %d %s %d : %d\n", arg_count++, arg->type.type == TYPE_USERDATA ? arg->type.data.userdata_name :
-                                                                                             arg->type.type == TYPE_ENUM ? arg->type.data.enum_name : type_labels[arg->type.type],
-                                      arg->line_num, arg->token_num);
-    arg = arg->next;
-  }
 
   if (data->ud_type == UD_SINGLETON) {
       // fetch and check the singleton pointer
@@ -1047,7 +1041,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   }
 
   // sanity check number of args called with
-  arg = method->arguments;
   arg_count = 1;
   while (arg != NULL) {
     if (!(arg->type.flags & TYPE_FLAGS_NULLABLE)) {
