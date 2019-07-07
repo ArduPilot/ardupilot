@@ -85,8 +85,10 @@ struct CanRxItem {
  */
 class CanIface : public uavcan::ICanIface, uavcan::Noncopyable
 {
+#if !HAL_MINIMIZE_FEATURES
     friend class ::SLCANRouter;
-    static SLCANRouter *_slcan_router;
+    static SLCANRouter _slcan_router;
+#endif
     class RxQueue
     {
         CanRxItem* const buf_;
@@ -276,6 +278,10 @@ public:
     {
         return can_;
     }
+
+#if !HAL_MINIMIZE_FEATURES
+    static SLCANRouter &slcan_router() { return _slcan_router; }
+#endif
 };
 
 /**

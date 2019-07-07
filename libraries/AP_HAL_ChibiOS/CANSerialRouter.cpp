@@ -20,14 +20,9 @@
 #if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
-SLCANRouter* SLCANRouter::_singleton = nullptr;
 
 extern const AP_HAL::HAL& hal;
 
-SLCANRouter &slcan_router()
-{
-    return *SLCANRouter::get_singleton();
-}
 
 void SLCANRouter::init(ChibiOS_CAN::CanIface* can_if, ChibiOS_CAN::BusEvent* update_event)
 {
