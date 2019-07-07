@@ -474,8 +474,8 @@ const luaL_Reg Location_meta[] = {
 };
 
 static int GCS_send_text(lua_State *L) {
-    // 1 MAV_SEVERITY 129 : 8
-    // 2 enum 129 : 9
+    // 1 MAV_SEVERITY 127 : 8
+    // 2 enum 127 : 9
     GCS * ud = GCS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 3, "gcs not supported on this firmware");
@@ -494,7 +494,7 @@ static int GCS_send_text(lua_State *L) {
 }
 
 static int AP_Relay_toggle(lua_State *L) {
-    // 1 uint8_t 125 : 8
+    // 1 uint8_t 123 : 8
     AP_Relay * ud = AP_Relay::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "relay not supported on this firmware");
@@ -511,7 +511,7 @@ static int AP_Relay_toggle(lua_State *L) {
 }
 
 static int AP_Relay_enabled(lua_State *L) {
-    // 1 uint8_t 124 : 8
+    // 1 uint8_t 122 : 8
     AP_Relay * ud = AP_Relay::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "relay not supported on this firmware");
@@ -529,7 +529,7 @@ static int AP_Relay_enabled(lua_State *L) {
 }
 
 static int AP_Relay_off(lua_State *L) {
-    // 1 uint8_t 123 : 8
+    // 1 uint8_t 121 : 8
     AP_Relay * ud = AP_Relay::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "relay not supported on this firmware");
@@ -546,7 +546,7 @@ static int AP_Relay_off(lua_State *L) {
 }
 
 static int AP_Relay_on(lua_State *L) {
-    // 1 uint8_t 122 : 8
+    // 1 uint8_t 120 : 8
     AP_Relay * ud = AP_Relay::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "relay not supported on this firmware");
@@ -563,8 +563,8 @@ static int AP_Relay_on(lua_State *L) {
 }
 
 static int AP_Terrain_height_above_terrain(lua_State *L) {
-    // 1 float 117 : 6
-    // 2 bool 117 : 7
+    // 1 float 115 : 6
+    // 2 bool 115 : 7
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 3, "terrain not supported on this firmware");
@@ -586,9 +586,9 @@ static int AP_Terrain_height_above_terrain(lua_State *L) {
 }
 
 static int AP_Terrain_height_relative_home_equivalent(lua_State *L) {
-    // 1 float 116 : 8
-    // 2 float 116 : 9
-    // 3 bool 116 : 10
+    // 1 float 114 : 8
+    // 2 float 114 : 9
+    // 3 bool 114 : 10
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 4, "terrain not supported on this firmware");
@@ -614,8 +614,8 @@ static int AP_Terrain_height_relative_home_equivalent(lua_State *L) {
 }
 
 static int AP_Terrain_height_terrain_difference_home(lua_State *L) {
-    // 1 float 115 : 6
-    // 2 bool 115 : 7
+    // 1 float 113 : 6
+    // 2 bool 113 : 7
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 3, "terrain not supported on this firmware");
@@ -637,9 +637,9 @@ static int AP_Terrain_height_terrain_difference_home(lua_State *L) {
 }
 
 static int AP_Terrain_height_amsl(lua_State *L) {
-    // 1 Location 114 : 6
-    // 2 float 114 : 7
-    // 3 bool 114 : 8
+    // 1 Location 112 : 6
+    // 2 float 112 : 7
+    // 3 bool 112 : 8
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 4, "terrain not supported on this firmware");
@@ -705,7 +705,7 @@ static int RangeFinder_num_sensors(lua_State *L) {
 }
 
 static int AP_Notify_play_tune(lua_State *L) {
-    // 1 enum 102 : 6
+    // 1 enum 100 : 6
     AP_Notify * ud = AP_Notify::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "AP_Notify not supported on this firmware");
@@ -748,7 +748,7 @@ static int AP_GPS_all_configured(lua_State *L) {
 }
 
 static int AP_GPS_get_antenna_offset(lua_State *L) {
-    // 1 uint8_t 73 : 8
+    // 1 uint8_t 71 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -767,7 +767,7 @@ static int AP_GPS_get_antenna_offset(lua_State *L) {
 }
 
 static int AP_GPS_have_vertical_velocity(lua_State *L) {
-    // 1 uint8_t 72 : 8
+    // 1 uint8_t 70 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -785,7 +785,7 @@ static int AP_GPS_have_vertical_velocity(lua_State *L) {
 }
 
 static int AP_GPS_last_message_time_ms(lua_State *L) {
-    // 1 uint8_t 71 : 8
+    // 1 uint8_t 69 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -804,7 +804,7 @@ static int AP_GPS_last_message_time_ms(lua_State *L) {
 }
 
 static int AP_GPS_last_fix_time_ms(lua_State *L) {
-    // 1 uint8_t 70 : 8
+    // 1 uint8_t 68 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -823,7 +823,7 @@ static int AP_GPS_last_fix_time_ms(lua_State *L) {
 }
 
 static int AP_GPS_get_vdop(lua_State *L) {
-    // 1 uint8_t 69 : 8
+    // 1 uint8_t 67 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -841,7 +841,7 @@ static int AP_GPS_get_vdop(lua_State *L) {
 }
 
 static int AP_GPS_get_hdop(lua_State *L) {
-    // 1 uint8_t 68 : 8
+    // 1 uint8_t 66 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -859,7 +859,7 @@ static int AP_GPS_get_hdop(lua_State *L) {
 }
 
 static int AP_GPS_time_week_ms(lua_State *L) {
-    // 1 uint8_t 67 : 8
+    // 1 uint8_t 65 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -878,7 +878,7 @@ static int AP_GPS_time_week_ms(lua_State *L) {
 }
 
 static int AP_GPS_time_week(lua_State *L) {
-    // 1 uint8_t 66 : 8
+    // 1 uint8_t 64 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -896,7 +896,7 @@ static int AP_GPS_time_week(lua_State *L) {
 }
 
 static int AP_GPS_num_sats(lua_State *L) {
-    // 1 uint8_t 65 : 8
+    // 1 uint8_t 63 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -914,7 +914,7 @@ static int AP_GPS_num_sats(lua_State *L) {
 }
 
 static int AP_GPS_ground_course(lua_State *L) {
-    // 1 uint8_t 64 : 8
+    // 1 uint8_t 62 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -932,7 +932,7 @@ static int AP_GPS_ground_course(lua_State *L) {
 }
 
 static int AP_GPS_ground_speed(lua_State *L) {
-    // 1 uint8_t 63 : 8
+    // 1 uint8_t 61 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -950,7 +950,7 @@ static int AP_GPS_ground_speed(lua_State *L) {
 }
 
 static int AP_GPS_velocity(lua_State *L) {
-    // 1 uint8_t 62 : 8
+    // 1 uint8_t 60 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -969,8 +969,8 @@ static int AP_GPS_velocity(lua_State *L) {
 }
 
 static int AP_GPS_vertical_accuracy(lua_State *L) {
-    // 1 uint8_t 61 : 8
-    // 2 float 61 : 9
+    // 1 uint8_t 59 : 8
+    // 2 float 59 : 9
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 3, "gps not supported on this firmware");
@@ -994,8 +994,8 @@ static int AP_GPS_vertical_accuracy(lua_State *L) {
 }
 
 static int AP_GPS_horizontal_accuracy(lua_State *L) {
-    // 1 uint8_t 60 : 8
-    // 2 float 60 : 9
+    // 1 uint8_t 58 : 8
+    // 2 float 58 : 9
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 3, "gps not supported on this firmware");
@@ -1019,8 +1019,8 @@ static int AP_GPS_horizontal_accuracy(lua_State *L) {
 }
 
 static int AP_GPS_speed_accuracy(lua_State *L) {
-    // 1 uint8_t 59 : 8
-    // 2 float 59 : 9
+    // 1 uint8_t 57 : 8
+    // 2 float 57 : 9
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 3, "gps not supported on this firmware");
@@ -1044,7 +1044,7 @@ static int AP_GPS_speed_accuracy(lua_State *L) {
 }
 
 static int AP_GPS_location(lua_State *L) {
-    // 1 uint8_t 58 : 8
+    // 1 uint8_t 56 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -1063,7 +1063,7 @@ static int AP_GPS_location(lua_State *L) {
 }
 
 static int AP_GPS_status(lua_State *L) {
-    // 1 uint8_t 57 : 8
+    // 1 uint8_t 55 : 8
     AP_GPS * ud = AP_GPS::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "gps not supported on this firmware");
@@ -1109,8 +1109,8 @@ static int AP_GPS_num_sensors(lua_State *L) {
 }
 
 static int AP_BattMonitor_get_temperature(lua_State *L) {
-    // 1 float 50 : 6
-    // 2 uint8_t 50 : 9
+    // 1 float 48 : 6
+    // 2 uint8_t 48 : 9
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 3, "battery not supported on this firmware");
@@ -1134,7 +1134,7 @@ static int AP_BattMonitor_get_temperature(lua_State *L) {
 }
 
 static int AP_BattMonitor_overpower_detected(lua_State *L) {
-    // 1 uint8_t 49 : 8
+    // 1 uint8_t 47 : 8
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "battery not supported on this firmware");
@@ -1166,7 +1166,7 @@ static int AP_BattMonitor_has_failsafed(lua_State *L) {
 }
 
 static int AP_BattMonitor_pack_capacity_mah(lua_State *L) {
-    // 1 uint8_t 47 : 8
+    // 1 uint8_t 45 : 8
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "battery not supported on this firmware");
@@ -1184,7 +1184,7 @@ static int AP_BattMonitor_pack_capacity_mah(lua_State *L) {
 }
 
 static int AP_BattMonitor_capacity_remaining_pct(lua_State *L) {
-    // 1 uint8_t 46 : 8
+    // 1 uint8_t 44 : 8
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "battery not supported on this firmware");
@@ -1202,61 +1202,82 @@ static int AP_BattMonitor_capacity_remaining_pct(lua_State *L) {
 }
 
 static int AP_BattMonitor_consumed_wh(lua_State *L) {
-    // 1 uint8_t 45 : 8
+    // 1 float 43 : 6
+    // 2 uint8_t 43 : 9
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
-        return luaL_argerror(L, 2, "battery not supported on this firmware");
+        return luaL_argerror(L, 3, "battery not supported on this firmware");
     }
 
     binding_argcheck(L, 2);
-    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(ud->num_instances(), UINT8_MAX))), 2, "argument out of range");
-    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
-    const float data = ud->consumed_wh(
-            data_2);
+    float data_5002 = {};
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(ud->num_instances(), UINT8_MAX))), 3, "argument out of range");
+    const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
+    const bool data = ud->consumed_wh(
+            data_5002,
+            data_3);
 
-    lua_pushnumber(L, data);
+    if (data) {
+        lua_pushnumber(L, data_5002);
+    } else {
+        lua_pushnil(L);
+    }
     return 1;
 }
 
 static int AP_BattMonitor_consumed_mah(lua_State *L) {
-    // 1 uint8_t 44 : 8
+    // 1 float 42 : 6
+    // 2 uint8_t 42 : 9
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
-        return luaL_argerror(L, 2, "battery not supported on this firmware");
+        return luaL_argerror(L, 3, "battery not supported on this firmware");
     }
 
     binding_argcheck(L, 2);
-    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(ud->num_instances(), UINT8_MAX))), 2, "argument out of range");
-    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
-    const float data = ud->consumed_mah(
-            data_2);
+    float data_5002 = {};
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(ud->num_instances(), UINT8_MAX))), 3, "argument out of range");
+    const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
+    const bool data = ud->consumed_mah(
+            data_5002,
+            data_3);
 
-    lua_pushnumber(L, data);
+    if (data) {
+        lua_pushnumber(L, data_5002);
+    } else {
+        lua_pushnil(L);
+    }
     return 1;
 }
 
 static int AP_BattMonitor_current_amps(lua_State *L) {
-    // 1 uint8_t 43 : 8
+    // 1 float 41 : 6
+    // 2 uint8_t 41 : 9
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
-        return luaL_argerror(L, 2, "battery not supported on this firmware");
+        return luaL_argerror(L, 3, "battery not supported on this firmware");
     }
 
     binding_argcheck(L, 2);
-    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(ud->num_instances(), UINT8_MAX))), 2, "argument out of range");
-    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
-    const float data = ud->current_amps(
-            data_2);
+    float data_5002 = {};
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(ud->num_instances(), UINT8_MAX))), 3, "argument out of range");
+    const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
+    const bool data = ud->current_amps(
+            data_5002,
+            data_3);
 
-    lua_pushnumber(L, data);
+    if (data) {
+        lua_pushnumber(L, data_5002);
+    } else {
+        lua_pushnil(L);
+    }
     return 1;
 }
 
 static int AP_BattMonitor_voltage_resting_estimate(lua_State *L) {
-    // 1 uint8_t 42 : 8
+    // 1 uint8_t 40 : 8
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "battery not supported on this firmware");
@@ -1274,7 +1295,7 @@ static int AP_BattMonitor_voltage_resting_estimate(lua_State *L) {
 }
 
 static int AP_BattMonitor_voltage(lua_State *L) {
-    // 1 uint8_t 41 : 8
+    // 1 uint8_t 39 : 8
     AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 2, "battery not supported on this firmware");
@@ -1288,42 +1309,6 @@ static int AP_BattMonitor_voltage(lua_State *L) {
             data_2);
 
     lua_pushnumber(L, data);
-    return 1;
-}
-
-static int AP_BattMonitor_has_current(lua_State *L) {
-    // 1 uint8_t 40 : 8
-    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
-    if (ud == nullptr) {
-        return luaL_argerror(L, 2, "battery not supported on this firmware");
-    }
-
-    binding_argcheck(L, 2);
-    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(ud->num_instances(), UINT8_MAX))), 2, "argument out of range");
-    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
-    const bool data = ud->has_current(
-            data_2);
-
-    lua_pushboolean(L, data);
-    return 1;
-}
-
-static int AP_BattMonitor_has_consumed_energy(lua_State *L) {
-    // 1 uint8_t 39 : 8
-    AP_BattMonitor * ud = AP_BattMonitor::get_singleton();
-    if (ud == nullptr) {
-        return luaL_argerror(L, 2, "battery not supported on this firmware");
-    }
-
-    binding_argcheck(L, 2);
-    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(ud->num_instances(), UINT8_MAX))), 2, "argument out of range");
-    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
-    const bool data = ud->has_consumed_energy(
-            data_2);
-
-    lua_pushboolean(L, data);
     return 1;
 }
 
@@ -1671,8 +1656,6 @@ const luaL_Reg AP_BattMonitor_meta[] = {
     {"current_amps", AP_BattMonitor_current_amps},
     {"voltage_resting_estimate", AP_BattMonitor_voltage_resting_estimate},
     {"voltage", AP_BattMonitor_voltage},
-    {"has_current", AP_BattMonitor_has_current},
-    {"has_consumed_energy", AP_BattMonitor_has_consumed_energy},
     {"healthy", AP_BattMonitor_healthy},
     {"num_instances", AP_BattMonitor_num_instances},
     {NULL, NULL}
