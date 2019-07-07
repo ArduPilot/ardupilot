@@ -125,7 +125,7 @@ void AP_BoardConfig_CAN::init()
                 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !HAL_MINIMIZE_FEATURES
                     if (_slcan._can_port == (i+1) && hal.can_mgr[drv_num - 1] != nullptr ) {
                         ChibiOS_CAN::CanDriver* drv = (ChibiOS_CAN::CanDriver*)hal.can_mgr[drv_num - 1]->get_driver();
-                        slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
+                        ChibiOS_CAN::CanIface::slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
                     }
                 #endif
             } else {
