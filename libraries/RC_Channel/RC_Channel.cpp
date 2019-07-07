@@ -756,6 +756,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         }
         break;
 
+#if !HAL_MINIMIZE_FEATURES
     case AUX_FUNC::KILL_IMU1:
         if (ch_flag == HIGH) {
             AP::ins().kill_imu(0, true);
@@ -771,6 +772,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             AP::ins().kill_imu(1, false);
         }
         break;
+#endif // HAL_MINIMIZE_FEATURES
 
     default:
         gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", ch_option);
