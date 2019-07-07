@@ -135,6 +135,7 @@ private:
     void draw_rssi(uint8_t x, uint8_t y);
     void draw_current(uint8_t x, uint8_t y);
     void draw_batused(uint8_t x, uint8_t y);
+    void draw_batused(uint8_t instance, uint8_t x, uint8_t y);
     void draw_sats(uint8_t x, uint8_t y);
     void draw_fltmode(uint8_t x, uint8_t y);
     void draw_message(uint8_t x, uint8_t y);
