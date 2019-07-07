@@ -459,7 +459,10 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    float amps = battery.current_amps();
+    float amps;
+    if (!battery.current_amps(amps)) {
+        amps = 0;
+    }
     backend->write(x, y, false, "%2.1f%c", (double)amps, SYM_AMP);
 }
 
@@ -485,10 +488,23 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
     backend->write(x, y, flash, "%c%c%2u", SYM_SAT_L, SYM_SAT_R, nsat);
 }
 
+void AP_OSD_Screen::draw_batused(uint8_t instance, uint8_t x, uint8_t y)
+{
+    float mah;
+    if (!AP::battery().consumed_mah(mah, instance)) {
+        mah = 0;
+    }
+    if (mah <= 9999) {
+        backend->write(x,y, false, "%4d%c", (int)mah, SYM_MAH);
+    } else {
+        const float ah = mah * 1e-3f;
+        backend->write(x,y, false, "%2.2f%c", (double)ah, SYM_AH);
+    }
+}
+
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP::battery();
-    backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(), SYM_MAH);
+    draw_batused(0, x, y);
 }
 
 //Autoscroll message is the same as in minimosd-extra.
@@ -922,8 +938,9 @@ void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Vector2f v = ahrs.groundspeed_vector();
     float speed = u_scale(SPEED,v.length());
-    if (speed > 2.0){
-        backend->write(x, y, false, "%c%3d%c", SYM_EFF,int(1000*battery.current_amps()/speed),SYM_MAH);
+    float current_amps;
+    if ((speed > 2.0) && battery.current_amps(current_amps)){
+        backend->write(x, y, false, "%c%3d%c", SYM_EFF,int(1000.0f*current_amps/speed),SYM_MAH);
     } else {
         backend->write(x, y, false, "%c---%c", SYM_EFF,SYM_MAH);
     }
@@ -945,8 +962,8 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     }
     if (vspd < 0.0) vspd = 0.0;
     AP_BattMonitor &battery = AP::battery();
-    float amps = battery.current_amps();
-    if (amps > 0.0) {
+    float amps;
+    if (battery.current_amps(amps) && is_positive(amps)) {
         backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(double)(3.6f * u_scale(VSPEED,vspd)/amps),unit_icon);
     } else {
         backend->write(x, y, false,"%c%c---%c",SYM_PTCHUP,SYM_EFF,unit_icon);
@@ -986,13 +1003,7 @@ void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP::battery();
-    float ah = battery.consumed_mah(1) / 1000;
-    if (battery.consumed_mah(1) <= 9999) {
-        backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(1), SYM_MAH);
-    } else {
-        backend->write(x,y, false, "%2.2f%c", (double)ah, SYM_AH);
-    }
+    draw_batused(1, x, y);
 }
 
 void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
