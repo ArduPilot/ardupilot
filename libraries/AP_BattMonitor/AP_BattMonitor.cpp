@@ -258,28 +258,6 @@ bool AP_BattMonitor::healthy(uint8_t instance) const {
     return instance < _num_instances && state[instance].healthy;
 }
 
-/// has_consumed_energy - returns true if battery monitor instance provides consumed energy info
-bool AP_BattMonitor::has_consumed_energy(uint8_t instance) const
-{
-    if (instance < _num_instances && drivers[instance] != nullptr && _params[instance].type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
-        return drivers[instance]->has_consumed_energy();
-    }
-
-    // not monitoring current
-    return false;
-}
-
-/// has_current - returns true if battery monitor instance provides current info
-bool AP_BattMonitor::has_current(uint8_t instance) const
-{
-    if (instance < _num_instances && drivers[instance] != nullptr && _params[instance].type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
-        return drivers[instance]->has_current();
-    }
-
-    // not monitoring current
-    return false;
-}
-
 /// voltage - returns battery voltage in volts
 float AP_BattMonitor::voltage(uint8_t instance) const
 {
@@ -302,29 +280,32 @@ float AP_BattMonitor::voltage_resting_estimate(uint8_t instance) const
 }
 
 /// current_amps - returns the instantaneous current draw in amperes
-float AP_BattMonitor::current_amps(uint8_t instance) const {
-    if (instance < _num_instances) {
-        return state[instance].current_amps;
+bool AP_BattMonitor::current_amps(float &current, uint8_t instance) const {
+    if ((instance < _num_instances) && (drivers[instance] != nullptr) && drivers[instance]->has_current()) {
+        current = state[instance].current_amps;
+        return true;
     } else {
-        return 0.0f;
+        return false;
     }
 }
 
 /// consumed_mah - returns total current drawn since start-up in milliampere.hours
-float AP_BattMonitor::consumed_mah(uint8_t instance) const {
-    if (instance < _num_instances) {
-        return state[instance].consumed_mah;
+bool AP_BattMonitor::consumed_mah(float &mah, const uint8_t instance) const {
+    if ((instance < _num_instances) && (drivers[instance] != nullptr) && drivers[instance]->has_current()) {
+        mah = state[instance].consumed_mah;
+        return true;
     } else {
-        return 0.0f;
+        return false;
     }
 }
 
 /// consumed_wh - returns energy consumed since start-up in Watt.hours
-float AP_BattMonitor::consumed_wh(uint8_t instance) const {
-    if (instance < _num_instances) {
-        return state[instance].consumed_wh;
+bool AP_BattMonitor::consumed_wh(float &wh, const uint8_t instance) const {
+    if (instance < _num_instances && drivers[instance] != nullptr && drivers[instance]->has_consumed_energy()) {
+        wh = state[instance].consumed_wh;
+        return true;
     } else {
-        return 0.0f;
+        return false;
     }
 }
 
@@ -377,7 +358,7 @@ void AP_BattMonitor::check_failsafes(void)
             }
 
             gcs().send_text(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", i + 1, type_str,
-                            (double)voltage(i), (double)consumed_mah(i));
+                            (double)voltage(i), (double)state[i].consumed_mah);
             _has_triggered_failsafe = true;
             AP_Notify::flags.failsafe_battery = true;
             state[i].failsafe = type;
