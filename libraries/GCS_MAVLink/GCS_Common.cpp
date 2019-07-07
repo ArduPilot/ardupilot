@@ -300,15 +300,29 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
         }
     }
 
+    float current, consumed_mah, consumed_wh;
+    if (battery.current_amps(current, instance)) {
+         current *= 100;
+    } else {
+        current = -1;
+    }
+    if (!battery.consumed_mah(consumed_mah, instance)) {
+        consumed_mah = -1;
+    }
+    if (battery.consumed_wh(consumed_wh, instance)) {
+        consumed_wh *= 36;
+    } else {
+        consumed_wh = -1;
+    }
     mavlink_msg_battery_status_send(chan,
                                     instance, // id
                                     MAV_BATTERY_FUNCTION_UNKNOWN, // function
                                     MAV_BATTERY_TYPE_UNKNOWN, // type
                                     got_temperature ? ((int16_t) (temp * 100)) : INT16_MAX, // temperature. INT16_MAX if unknown
                                     battery.has_cell_voltages(instance) ? battery.get_cell_voltages(instance).cells : fake_cells.cells, // cell voltages
-                                    battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current in centiampere
-                                    battery.has_current(instance) ? battery.consumed_mah(instance) : -1,       // total consumed current in milliampere.hour
-                                    battery.has_consumed_energy(instance) ? battery.consumed_wh(instance) * 36 : -1, // consumed energy in hJ (hecto-Joules)
+                                    current,      // current in centiampere
+                                    consumed_mah, // total consumed current in milliampere.hour
+                                    consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance),
                                     0, // time remaining, seconds (not provided)
                                     MAV_BATTERY_CHARGE_STATE_UNDEFINED);
@@ -2313,9 +2327,9 @@ void GCS_MAVLINK::send_battery2()
     const AP_BattMonitor &battery = AP::battery();
 
     if (battery.num_instances() > 1) {
-        int16_t current;
-        if (battery.has_current(1)) {
-            current = battery.current_amps(1) * 100; // 10*mA
+        float current;
+        if (battery.current_amps(current, 1)) {
+            current *= 100; // 10*mA
         } else {
             current = -1;
         }
@@ -4275,14 +4289,16 @@ void GCS_MAVLINK::send_sys_status()
         return;
     }
 
-    int16_t battery_current = -1;
-    int8_t battery_remaining = -1;
-
     const AP_BattMonitor &battery = AP::battery();
+    float battery_current;
+    int8_t battery_remaining;
 
-    if (battery.has_current() && battery.healthy()) {
+    if (battery.healthy() && battery.current_amps(battery_current)) {
         battery_remaining = battery.capacity_remaining_pct();
-        battery_current = battery.current_amps() * 100;
+        battery_current *= 100;
+    } else {
+        battery_current = -1;
+        battery_remaining = -1;
     }
 
     uint32_t control_sensors_present;
