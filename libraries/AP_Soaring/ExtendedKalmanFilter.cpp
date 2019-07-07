@@ -69,7 +69,7 @@ void ExtendedKalmanFilter::update(float z, float Px, float Py, float driftX, flo
     X += K * (z - z1);
 
     // Make sure X[1] stays positive.
-    X[1] = X[1]>0 ? X[1]: -X[1];
+    X[1] = X[1]>40.0 ? X[1]: 40.0;
 
     // Correct the covariance too.
     // LINE 46
