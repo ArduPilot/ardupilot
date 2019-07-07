@@ -36,13 +36,11 @@ include AP_BattMonitor/AP_BattMonitor.h
 singleton AP_BattMonitor alias battery
 singleton AP_BattMonitor method num_instances uint8_t
 singleton AP_BattMonitor method healthy boolean uint8_t 0 ud->num_instances()
-singleton AP_BattMonitor method has_consumed_energy boolean uint8_t 0 ud->num_instances()
-singleton AP_BattMonitor method has_current boolean uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method voltage float uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method voltage_resting_estimate float uint8_t 0 ud->num_instances()
-singleton AP_BattMonitor method current_amps float uint8_t 0 ud->num_instances()
-singleton AP_BattMonitor method consumed_mah float uint8_t 0 ud->num_instances()
-singleton AP_BattMonitor method consumed_wh float uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method current_amps boolean float'Null uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method consumed_mah boolean float'Null uint8_t 0 ud->num_instances()
+singleton AP_BattMonitor method consumed_wh boolean float'Null uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method capacity_remaining_pct uint8_t uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method pack_capacity_mah int32_t uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method has_failsafed boolean
