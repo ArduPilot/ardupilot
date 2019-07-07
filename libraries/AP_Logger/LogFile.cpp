@@ -640,14 +640,25 @@ void AP_Logger::Write_Current_instance(const uint64_t time_us,
     AP_BattMonitor &battery = AP::battery();
     float temp;
     bool has_temp = battery.get_temperature(temp, battery_instance);
+    float current, consumed_mah, consumed_wh;
+    if (!battery.current_amps(current)) {
+        current = 0;
+    }
+    if (!battery.consumed_mah(consumed_mah, battery_instance)) {
+        consumed_mah = 0;
+    }
+    if (!battery.consumed_wh(consumed_wh, battery_instance)) {
+        consumed_wh = 0;
+    }
+
     struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(type),
         time_us             : time_us,
         voltage             : battery.voltage(battery_instance),
         voltage_resting     : battery.voltage_resting_estimate(battery_instance),
-        current_amps        : battery.current_amps(battery_instance),
-        current_total       : battery.consumed_mah(battery_instance),
-        consumed_wh         : battery.consumed_wh(battery_instance),
+        current_amps        : current,
+        current_total       : consumed_mah,
+        consumed_wh         : consumed_wh,
         temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
         resistance          : battery.get_resistance(battery_instance)
     };
