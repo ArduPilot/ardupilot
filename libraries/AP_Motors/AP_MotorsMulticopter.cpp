@@ -287,9 +287,11 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
 {
     AP_BattMonitor &battery = AP::battery();
 
+    float _batt_current;
+
     if (_batt_current_max <= 0 || // return maximum if current limiting is disabled
         !_flags.armed || // remove throttle limit if disarmed
-        !battery.has_current(_batt_idx)) { // no current monitoring is available
+        !battery.current_amps(_batt_current, _batt_idx)) { // no current monitoring is available
         _throttle_limit = 1.0f;
         return 1.0f;
     }
@@ -300,8 +302,6 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
         _throttle_limit = 1.0f;
         return 1.0f;
     }
-
-    float _batt_current = battery.current_amps(_batt_idx);
 
     // calculate the maximum current to prevent voltage sag below _batt_voltage_min
     float batt_current_max = MIN(_batt_current_max, _batt_current + (battery.voltage(_batt_idx) - _batt_voltage_min) / _batt_resistance);
