@@ -42,7 +42,6 @@ class SLCANRouter {
     SLCAN::CAN _slcan_if;
     ObjectBuffer<CanRouteItem> _can_tx_queue;
     ObjectBuffer<CanRouteItem> _slcan_tx_queue;
-    static SLCANRouter* _singleton;
     ChibiOS_CAN::BusEvent* _update_event;
     uint32_t _last_active_time = 0;
     uint32_t _slcan_rt_timeout = 0;
@@ -56,26 +55,14 @@ class SLCANRouter {
 
 public:
     SLCANRouter() : _slcan_if(SLCAN_DRIVER_INDEX, SLCAN_RX_QUEUE_SIZE), _can_tx_queue(SLCAN_ROUTER_QUEUE_SIZE), _slcan_tx_queue(SLCAN_ROUTER_QUEUE_SIZE)
-    {
-        if (_singleton  == nullptr) {
-            _singleton = this;
-        }
-    }
+    {}
     void init(ChibiOS_CAN::CanIface* can_if, ChibiOS_CAN::BusEvent* update_event);
     void route_frame_to_slcan(ChibiOS_CAN::CanIface* can_if, const uavcan::CanFrame& frame, uint64_t timestamp_usec);
     void route_frame_to_can(const uavcan::CanFrame& frame, uint64_t timestamp_usec);
     void slcan2can_router_trampoline(void);
     void can2slcan_router_trampoline(void);
     void run(void);
-    static SLCANRouter* get_singleton()
-    {
-        if (_singleton == nullptr) {
-            _singleton = new SLCANRouter;
-        }
-        return _singleton;
-    }
-};
 
-SLCANRouter &slcan_router();
+};
 
 #endif

@@ -138,7 +138,9 @@ inline void handleRxInterrupt(uavcan::uint8_t iface_index, uavcan::uint8_t fifo_
 }
 
 } // namespace
-
+#if !HAL_MINIMIZE_FEATURES
+SLCANRouter CanIface::_slcan_router;
+#endif
 /*
  * CanIface::RxQueue
  */
@@ -761,8 +763,8 @@ void CanIface::handleRxInterrupt(uavcan::uint8_t fifo_index, uavcan::uint64_t ut
      * Store with timeout into the FIFO buffer and signal update event
      */
     rx_queue_.push(frame, utc_usec, 0);
- #if !HAL_MINIMIZE_FEATURES
-    slcan_router().route_frame_to_slcan(this, frame, utc_usec);
+#if !HAL_MINIMIZE_FEATURES
+    _slcan_router.route_frame_to_slcan(this, frame, utc_usec);
 #endif
     had_activity_ = true;
     update_event_.signalFromInterrupt();
