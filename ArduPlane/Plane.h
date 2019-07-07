@@ -349,6 +349,9 @@ private:
     // This is used to enable the inverted flight feature
     bool inverted_flight;
 
+    // last time we ran roll/pitch stabilization
+    uint32_t last_stabilize_ms;
+    
     // Failsafe
     struct {
         // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
