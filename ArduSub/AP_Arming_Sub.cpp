@@ -12,10 +12,44 @@ bool AP_Arming_Sub::rc_calibration_checks(bool display_failure)
     return rc_checks_copter_sub(display_failure, channels);
 }
 
+const bool AP_Arming_Sub::has_disarm_function () {
+    bool has_shift_function = false;
+    // make sure the craft has a disarm button assigned before it is armed
+    // check all the standard btn functions
+    for (uint8_t i = 0; i < 16; i++) {
+        switch (sub.get_button(i)->function(false)) {
+            case JSButton::k_shift :
+                has_shift_function = true;
+                break;
+            case JSButton::k_arm_toggle :
+                return true;
+            case JSButton::k_disarm :
+                return true;
+        }
+    }
+
+    // check all the shift functions if there's shift assigned
+    if (has_shift_function) {
+        for (uint8_t i = 0; i < 16; i++) {
+            switch (sub.get_button(i)->function(true)) {
+                case JSButton::k_arm_toggle :
+                case JSButton::k_disarm :
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
 {
     if (armed) {
         return true;
+    }
+    // don't allow arming unless there is a disarm button configured
+    if (!has_disarm_function()) {
+        check_failed(ARMING_CHECK_NONE, display_failure, "Must assign a disarm or arm_toggle button");
+        return false;
     }
 
     return AP_Arming::pre_arm_checks(display_failure);
