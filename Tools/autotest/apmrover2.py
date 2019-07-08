@@ -1019,7 +1019,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode("RTL")
         # location copied in from rover-test-rally.txt:
         loc = mavutil.location(40.071553,
-	                           -105.229401,
+                               -105.229401,
                                0,
                                0)
         self.wait_location(loc, accuracy=accuracy)
@@ -1720,7 +1720,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              lambda: self.drive_mission("rover1.txt")),
 
             # disabled due to frequent failures in travis. This test needs re-writing
-                # ("Drive Brake", self.drive_brake),
+            # ("Drive Brake", self.drive_brake),
 
             ("GetBanner", "Get Banner", self.do_get_banner),
 
@@ -1812,7 +1812,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ret = super(AutoTestRover, self).rc_defaults()
         ret[3] = 1500
         ret[8] = 1800
-        return ret;
+        return ret
 
     def default_mode(self):
         return 'MANUAL'
