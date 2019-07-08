@@ -282,6 +282,8 @@ void NavEKF3_core::EstimateTerrainOffset()
  * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
  * Requires a valid terrain height estimate.
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF3_core::FuseOptFlow()
 {
     Vector28 Kfusion;               // Kalman gain vector
@@ -763,7 +765,7 @@ void NavEKF3_core::FuseOptFlow()
         }
     }
 }
-
+#pragma GCC diagnostic pop
 /********************************************************
 *                   MISC FUNCTIONS                      *
 ********************************************************/

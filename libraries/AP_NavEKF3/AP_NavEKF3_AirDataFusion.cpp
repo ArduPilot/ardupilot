@@ -20,6 +20,8 @@ extern const AP_HAL::HAL& hal;
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF3_core::FuseAirspeed()
 {
     Vector28 Kfusion;               // Kalman gain vector
@@ -197,6 +199,7 @@ void NavEKF3_core::FuseAirspeed()
     // stop performance timer
     hal.util->perf_end(_perf_FuseAirspeed);
 }
+#pragma GCC diagnostic pop
 
 // select fusion of true airspeed measurements
 void NavEKF3_core::SelectTasFusion()
@@ -260,6 +263,8 @@ void NavEKF3_core::SelectBetaFusion()
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF3_core::FuseSideslip()
 {
     Vector28 Kfusion;               // Kalman gain vector
@@ -469,6 +474,7 @@ void NavEKF3_core::FuseSideslip()
     // stop the performance timer
     hal.util->perf_end(_perf_FuseSideslip);
 }
+#pragma GCC diagnostic pop
 
 /********************************************************
 *                   MISC FUNCTIONS                      *

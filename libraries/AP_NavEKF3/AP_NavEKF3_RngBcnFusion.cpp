@@ -46,6 +46,8 @@ void NavEKF3_core::SelectRngBcnFusion()
     }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF3_core::FuseRngBcn()
 {
     Vector28 Kfusion;               // Kalman gain vector
@@ -278,12 +280,15 @@ void NavEKF3_core::FuseRngBcn()
         rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
     }
 }
+#pragma GCC diagnostic pop
 
 /*
 Use range beacon measurements to calculate a static position using a 3-state EKF algorithm.
 Algorithm based on the following:
 https://github.com/priseborough/InertialNav/blob/master/derivations/range_beacon.m
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF3_core::FuseRngBcnStatic()
 {
     Matrix24 KH;                    // intermediate result used for covariance updates
@@ -517,6 +522,7 @@ void NavEKF3_core::FuseRngBcnStatic()
         rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
     }
 }
+#pragma GCC diagnostic pop
 
 /*
 Run a single state Kalman filter to estimate the vertical position offset of the range beacon constellation
