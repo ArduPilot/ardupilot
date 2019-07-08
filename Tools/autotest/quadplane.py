@@ -174,8 +174,6 @@ class AutoTestQuadPlane(AutoTest):
         ret.extend([
             ("TestMotorMask", "Test output_motor_mask", self.test_motor_mask),
 
-            ("QAutoTune", "Fly QAUTOTUNE mode", self.fly_qautotune),
-
             ("ParameterChecks",
              "Test Arming Parameter Checks",
              self.test_parameter_checks),
