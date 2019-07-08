@@ -12,6 +12,7 @@ class HAL_SITL : public AP_HAL::HAL {
 public:
     HAL_SITL();
     void run(int argc, char * const argv[], Callbacks* callbacks) const override;
+    static void actually_reboot();
 
 private:
     HALSITL::SITL_State *_sitl_state;

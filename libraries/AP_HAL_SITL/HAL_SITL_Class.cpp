@@ -191,6 +191,11 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         }
     }
 
+    actually_reboot();
+}
+
+void HAL_SITL::actually_reboot()
+{
     execv(new_argv[0], new_argv);
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }
