@@ -642,13 +642,13 @@ void AP_Logger::Write_Current_instance(const uint64_t time_us,
     bool has_temp = battery.get_temperature(temp, battery_instance);
     float current, consumed_mah, consumed_wh;
     if (!battery.current_amps(current)) {
-        current = 0;
+        current = quiet_nanf();
     }
     if (!battery.consumed_mah(consumed_mah, battery_instance)) {
-        consumed_mah = 0;
+        consumed_mah = quiet_nanf();
     }
     if (!battery.consumed_wh(consumed_wh, battery_instance)) {
-        consumed_wh = 0;
+        consumed_wh = quiet_nanf();
     }
 
     struct log_Current pkt = {
