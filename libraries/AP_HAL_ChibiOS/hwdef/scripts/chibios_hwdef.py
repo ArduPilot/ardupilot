@@ -552,12 +552,12 @@ def write_mcu_config(f):
     if get_config('PROCESS_STACK', required=False):
         env_vars['PROCESS_STACK'] = get_config('PROCESS_STACK')
     else:
-        env_vars['PROCESS_STACK'] = "0x2000"
+        env_vars['PROCESS_STACK'] = "10240"
 
     if get_config('MAIN_STACK', required=False):
         env_vars['MAIN_STACK'] = get_config('MAIN_STACK')
     else:
-        env_vars['MAIN_STACK'] = "0x400"
+        env_vars['MAIN_STACK'] = "1024"
 
     if get_config('IOMCU_FW', required=False):
         env_vars['IOMCU_FW'] = get_config('IOMCU_FW')
