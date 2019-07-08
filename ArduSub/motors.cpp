@@ -60,7 +60,7 @@ bool Sub::verify_motor_test()
 
     // Require at least 2 Hz incoming do_set_motor requests
     if (AP_HAL::millis() > last_do_motor_test_ms + 500) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Motor test timed out!");
+        gcs().send_text(MAV_SEVERITY_INFO, "Motor test timed out!");
         pass = false;
     }
 
