@@ -287,20 +287,20 @@ bool AP_IOMCU::erase()
 /*
   send new firmware to bootloader
  */
-bool AP_IOMCU::program(uint32_t fw_size)
+bool AP_IOMCU::program(uint32_t size)
 {
     bool ret = false;
     uint32_t sent = 0;
 
-    if (fw_size & 3) {
+    if (size & 3) {
         return false;
     }
 
-    debug("programming %u bytes...", (unsigned)fw_size);
+    debug("programming %u bytes...", (unsigned)size);
 
-    while (sent < fw_size) {
+    while (sent < size) {
         /* get more bytes to program */
-        uint32_t n = fw_size - sent;
+        uint32_t n = size - sent;
         if (n > PROG_MULTI_MAX) {
             n = PROG_MULTI_MAX;
         }
@@ -325,7 +325,7 @@ bool AP_IOMCU::program(uint32_t fw_size)
 /*
   verify firmware for a rev2 bootloader
  */
-bool AP_IOMCU::verify_rev2(uint32_t fw_size)
+bool AP_IOMCU::verify_rev2(uint32_t size)
 {
     bool ret;
     size_t sent = 0;
@@ -339,9 +339,9 @@ bool AP_IOMCU::verify_rev2(uint32_t fw_size)
         return ret;
     }
 
-    while (sent < fw_size) {
+    while (sent < size) {
         /* get more bytes to verify */
-        uint32_t n = fw_size - sent;
+        uint32_t n = size - sent;
         if (n > 4) {
             n = 4;
         }

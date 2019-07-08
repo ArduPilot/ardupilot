@@ -10,8 +10,8 @@
 #if HAL_WITH_IO_MCU
 
 #include "ch.h"
-
-#define IOMCU_MAX_CHANNELS 16
+#include "iofirmware/ioprotocol.h"
+#include <AP_RCMapper/AP_RCMapper.h>
 
 class AP_IOMCU {
 public:
@@ -65,6 +65,12 @@ public:
      */
     bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
 
+    // Do DSM receiver binding
+    void bind_dsm(uint8_t mode);
+
+    // get the name of the RC protocol
+    const char *get_rc_protocol(void);
+
     /*
       get servo rail voltage
      */
@@ -84,9 +90,19 @@ public:
     // set to oneshot mode
     void set_oneshot_mode(void);
 
+    // set to brushed mode
+    void set_brushed_mode(void);
+    
     // check if IO is healthy
     bool healthy(void);
 
+    // shutdown IO protocol (for reboot)
+    void shutdown();
+
+    // setup for FMU failsafe mixing
+    bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
+                      float mixing_gain, uint16_t manual_rc_mask);
+    
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -135,55 +151,18 @@ private:
     void discard_input(void);
     void event_failed(uint8_t event);
     void update_safety_options(void);
-    
+
+    // CONFIG page
+    struct page_config config;
+
     // PAGE_STATUS values
-    struct PACKED {
-        uint16_t freemem;
-        uint16_t cpuload;
-        
-        // status flags
-        uint16_t flag_outputs_armed:1;
-        uint16_t flag_override:1;
-        uint16_t flag_rc_ok:1;
-        uint16_t flag_rc_ppm:1;
-        uint16_t flag_rc_dsm:1;
-        uint16_t flag_rc_sbus:1;
-        uint16_t flag_fmu_ok:1;
-        uint16_t flag_raw_pwm:1;
-        uint16_t flag_mixer_ok:1;
-        uint16_t flag_arm_sync:1;
-        uint16_t flag_init_ok:1;
-        uint16_t flag_failsafe:1;
-        uint16_t flag_safety_off:1;
-        uint16_t flag_fmu_initialised:1;
-        uint16_t flag_rc_st24:1;
-        uint16_t flag_rc_sumd_srxl:1;
-        
-        uint16_t alarms;
-        uint16_t vbatt;
-        uint16_t ibatt;
-        uint16_t vservo;
-        uint16_t vrssi;
-        uint16_t prssi;
-    } reg_status;
+    struct page_reg_status reg_status;
 
     // PAGE_RAW_RCIN values
-    struct PACKED {
-        uint16_t count;
-        uint16_t flags_frame_drop:1;
-        uint16_t flags_failsafe:1;
-        uint16_t flags_dsm11:1;
-        uint16_t flags_mapping_ok:1;
-        uint16_t flags_rc_ok:1;
-        uint16_t flags_unused:11;
-        uint16_t nrssi;
-        uint16_t data;
-        uint16_t frame_count;
-        uint16_t lost_frame_count;
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
-        uint16_t last_frame_count;
-        uint32_t last_input_us;
-    } rc_input;
+    struct page_rc_input rc_input;
+
+    // MIXER values
+    struct page_mixing mixing;
     
     // output pwm values
     struct {
@@ -217,8 +196,17 @@ private:
     uint32_t last_servo_out_us;
 
     bool corked;
+    bool do_shutdown;
+    bool done_shutdown;
 
     bool crc_is_ok;
+    bool detected_io_reset;
+    bool initialised;
+    bool is_chibios_backend;
+
+    uint32_t protocol_fail_count;
+    uint32_t protocol_count;
+    uint32_t last_iocmu_timestamp_ms;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
@@ -241,7 +229,9 @@ private:
     bool reboot();
 
     bool check_crc(void);
-    
+    void handle_repeated_failures();
+    void check_iomcu_reset();
+
     enum {
         PROTO_NOP               = 0x00,
         PROTO_OK                = 0x10,
