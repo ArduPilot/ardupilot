@@ -16,7 +16,6 @@
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Common/Semaphore.h>
 
 #include "AP_InertialSensor_BMI088.h"
 
@@ -189,7 +188,9 @@ bool AP_InertialSensor_BMI088::setup_accel_config(void)
  */
 bool AP_InertialSensor_BMI088::accel_init()
 {
-    WITH_SEMAPHORE(dev_accel->get_semaphore());
+    if (!dev_accel->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
 
     uint8_t v;
 
@@ -197,6 +198,7 @@ bool AP_InertialSensor_BMI088::accel_init()
     read_accel_registers(REGA_CHIPID, &v, 1);
 
     if (!read_accel_registers(REGA_CHIPID, &v, 1) || v != 0x1E) {
+        dev_accel->get_semaphore()->give();
         return false;
     }
 
@@ -206,6 +208,7 @@ bool AP_InertialSensor_BMI088::accel_init()
 
     hal.console->printf("BMI088: found accel\n");
 
+    dev_accel->get_semaphore()->give();
     return true;
 }
 
@@ -214,14 +217,18 @@ bool AP_InertialSensor_BMI088::accel_init()
  */
 bool AP_InertialSensor_BMI088::gyro_init()
 {
-    WITH_SEMAPHORE(dev_gyro->get_semaphore());
+    if (!dev_gyro->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
 
     uint8_t v;
     if (!dev_gyro->read_registers(REGG_CHIPID, &v, 1) || v != 0x0F) {
+        dev_gyro->get_semaphore()->give();
         return false;
     }
 
     if (!dev_gyro->write_register(REGG_BGW_SOFTRESET, 0xB6)) {
+        dev_gyro->get_semaphore()->give();
         return false;
     }
     hal.scheduler->delay(10);
@@ -230,31 +237,37 @@ bool AP_InertialSensor_BMI088::gyro_init()
     
     // setup 2000dps range
     if (!dev_gyro->write_register(REGG_RANGE, 0x00, true)) {
+        dev_gyro->get_semaphore()->give();
         return false;
     }
 
     // setup filter bandwidth 230Hz, no decimation
     if (!dev_gyro->write_register(REGG_BW, 0x81, true)) {
+        dev_gyro->get_semaphore()->give();
         return false;
     }
 
     // disable low-power mode
     if (!dev_gyro->write_register(REGG_LPM1, 0, true)) {
+        dev_gyro->get_semaphore()->give();
         return false;
     }
 
     // setup for filtered data
     if (!dev_gyro->write_register(REGG_RATE_HBW, 0x00, true)) {
+        dev_gyro->get_semaphore()->give();
         return false;
     }
 
     // setup FIFO for streaming X,Y,Z
     if (!dev_gyro->write_register(REGG_FIFO_CONFIG_1, 0x80, true)) {
+        dev_gyro->get_semaphore()->give();
         return false;
     }
 
     hal.console->printf("BMI088: found gyro\n");    
 
+    dev_gyro->get_semaphore()->give();
     return true;
 }
 
