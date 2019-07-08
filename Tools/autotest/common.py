@@ -589,13 +589,13 @@ class AutoTest(ABC):
             if l1 == l2:
                 # e.g. the first "QGC WPL 110" line
                 continue
-            if re.match("0\s", l1):
+            if re.match(r"0\s", l1):
                 # home changes...
                 continue
             l1 = l1.rstrip()
             l2 = l2.rstrip()
-            fields1 = re.split("\s+", l1)
-            fields2 = re.split("\s+", l2)
+            fields1 = re.split(r"\s+", l1)
+            fields2 = re.split(r"\s+", l2)
             # line = int(fields1[0])
             t = int(fields1[3]) # mission item type
             for (count, (i1, i2)) in enumerate(zip(fields1, fields2)):
@@ -1859,10 +1859,10 @@ class AutoTest(ABC):
         for desc in self.test_timings.keys():
             if len(desc) > longest:
                 longest = len(desc)
-        for desc, time in sorted(self.test_timings.iteritems(),
+        for desc, test_time in sorted(self.test_timings.iteritems(),
                                  key=self.show_test_timings_key_sorter):
             fmt = "%" + str(longest) + "s: %.2fs"
-            self.progress(fmt % (desc, time))
+            self.progress(fmt % (desc, test_time))
 
     def send_statustext(self, text):
         if sys.version_info.major >= 3 and not isinstance(text, bytes):
