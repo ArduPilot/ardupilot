@@ -820,6 +820,8 @@ void NavEKF2_core::calcOutputStates()
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF2_core::CovariancePrediction()
 {
     hal.util->perf_begin(_perf_CovariancePrediction);
@@ -1338,6 +1340,7 @@ void NavEKF2_core::CovariancePrediction()
 
     hal.util->perf_end(_perf_CovariancePrediction);
 }
+#pragma GCC diagnostic pop
 
 // zero specified range of rows in the state covariance matrix
 void NavEKF2_core::zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last)

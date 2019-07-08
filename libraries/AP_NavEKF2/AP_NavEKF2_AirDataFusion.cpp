@@ -22,6 +22,8 @@ extern const AP_HAL::HAL& hal;
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF2_core::FuseAirspeed()
 {
     // start performance timer
@@ -188,6 +190,7 @@ void NavEKF2_core::FuseAirspeed()
     // stop performance timer
     hal.util->perf_end(_perf_FuseAirspeed);
 }
+#pragma GCC diagnostic pop
 
 // select fusion of true airspeed measurements
 void NavEKF2_core::SelectTasFusion()
@@ -251,6 +254,8 @@ void NavEKF2_core::SelectBetaFusion()
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF2_core::FuseSideslip()
 {
     // start performance timer
@@ -439,6 +444,7 @@ void NavEKF2_core::FuseSideslip()
     // stop the performance timer
     hal.util->perf_end(_perf_FuseSideslip);
 }
+#pragma GCC diagnostic pop
 
 /********************************************************
 *                   MISC FUNCTIONS                      *

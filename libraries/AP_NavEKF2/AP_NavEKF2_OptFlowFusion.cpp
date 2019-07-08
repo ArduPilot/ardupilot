@@ -279,6 +279,8 @@ void NavEKF2_core::EstimateTerrainOffset()
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
  * Requires a valid terrain height estimate.
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF2_core::FuseOptFlow()
 {
     Vector24 H_LOS;
@@ -732,6 +734,7 @@ void NavEKF2_core::FuseOptFlow()
         }
     }
 }
+#pragma GCC diagnostic pop
 
 /********************************************************
 *                   MISC FUNCTIONS                      *

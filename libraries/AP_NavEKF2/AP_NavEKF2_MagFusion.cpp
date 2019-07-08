@@ -322,6 +322,8 @@ void NavEKF2_core::SelectMagFusion()
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF2_core::FuseMagnetometer()
 {
     hal.util->perf_begin(_perf_test[1]);
@@ -757,6 +759,7 @@ void NavEKF2_core::FuseMagnetometer()
     hal.util->perf_end(_perf_test[5]);
 
 }
+#pragma GCC diagnostic pop
 
 
 /*
@@ -768,6 +771,8 @@ void NavEKF2_core::FuseMagnetometer()
  * It is not as robust to magnetometer failures.
  * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degrees latitude of the magnetic poles)
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF2_core::fuseEulerYaw()
 {
     Vector28 Kfusion; // Kalman gain vector
@@ -1001,6 +1006,7 @@ void NavEKF2_core::fuseEulerYaw()
         faultStatus.bad_yaw = true;
     }
 }
+#pragma GCC diagnostic pop
 
 /*
  * Fuse declination angle using explicit algebraic equations generated with Matlab symbolic toolbox.
@@ -1009,6 +1015,8 @@ void NavEKF2_core::fuseEulerYaw()
  * This is used to prevent the declination of the EKF earth field states from drifting during operation without GPS
  * or some other absolute position or velocity reference
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF2_core::FuseDeclination(float declErr)
 {
     Vector28 Kfusion; // Kalman gain vector
@@ -1132,6 +1140,7 @@ void NavEKF2_core::FuseDeclination(float declErr)
         faultStatus.bad_decl = true;
     }
 }
+#pragma GCC diagnostic pop
 
 /********************************************************
 *                   MISC FUNCTIONS                      *

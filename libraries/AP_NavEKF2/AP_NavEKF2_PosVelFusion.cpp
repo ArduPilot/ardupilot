@@ -399,6 +399,8 @@ void NavEKF2_core::SelectVelPosFusion()
 }
 
 // fuse selected position, velocity and height measurements
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wframe-larger-than=5300"
 void NavEKF2_core::FuseVelPosNED()
 {
     Vector28 Kfusion; // Kalman gain vector
@@ -773,6 +775,7 @@ void NavEKF2_core::FuseVelPosNED()
     // stop performance timer
     hal.util->perf_end(_perf_FuseVelPosNED);
 }
+#pragma GCC diagnostic pop
 
 /********************************************************
 *                   MISC FUNCTIONS                      *
