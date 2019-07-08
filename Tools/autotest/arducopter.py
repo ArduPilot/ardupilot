@@ -1782,7 +1782,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect('BANG')
         self.set_rc(9, 1000)
         self.reboot_sitl()
-        self.context_pop();
+        self.context_pop()
 
         self.progress("Crashing with 3pos switch in disable position")
         loiter_alt = 10
