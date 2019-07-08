@@ -1,3 +1,33 @@
+Release 3.9.9beta1, 8th July 2019
+---------------------------------
+
+This is a minor release with some important safety and flight
+improvement fixes.
+
+Key changes are:
+
+ - learn EKF biases even for inactive IMUs, making IMU failover much  more robust
+
+ - EKF uses earth magnetic field model to reduce in-flight compass errors
+
+ - EKF switches to first healthy IMU when disarmed
+
+ - IMU fix for dropped samples during high CPU usage
+
+ - added support for Ublox F9 GPS
+
+ - switched to ChibiOS I/O firmware for ChibiOS builds to support Spektrum bind
+
+ - CUAVv5 Nano LED fix
+
+ - fixed watchdog trigger on simple accelcal
+
+ - fixed drift of AMSL estimate when disarmed
+
+ - fixed rate integrator buildup when rate control disabled
+
+Happy flying!
+
 Release 3.9.8, 26th April 2019
 ------------------------------
 
