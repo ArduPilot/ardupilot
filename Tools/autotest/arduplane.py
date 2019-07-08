@@ -842,7 +842,8 @@ class AutoTestPlane(AutoTest):
             self.mavproxy.expect("Gripper Released")
             self.mavproxy.expect("Auto disarmed")
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught:")
+            self.progress(self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         if ex is not None:
@@ -1201,7 +1202,8 @@ class AutoTestPlane(AutoTest):
                                     blocking=True,
                                     timeout=5)
         except Exception as e:
-            print("Caught exception %s" % str(e))
+            print("Caught exception:")
+            self.progress(self.get_exception_stacktrace(e))
 
         if m is not None:
             raise NotAchievedException("Received unexpected RANGEFINDER msg")
@@ -1238,7 +1240,8 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("No RFND messages in log")
 
         except Exception as e:
-            self.progress("Exception caught: %s" % str(e))
+            self.progress("Exception caught:")
+            self.progress(self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         self.reboot_sitl()
