@@ -682,6 +682,9 @@ protected:
     uint32_t _last_AOA_update_ms;
 
 private:
+
+    enum Rotation last_orientation = ROTATION_INVALID;
+
     static AP_AHRS *_singleton;
 
     AP_NMEA_Output* _nmea_out;

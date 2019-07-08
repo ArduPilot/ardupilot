@@ -229,7 +229,14 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
 // Set the board mounting orientation, may be called while disarmed
 void AP_AHRS::update_orientation()
 {
-    const enum Rotation orientation = (enum Rotation)_board_orientation.get();
+    const Rotation orientation = (enum Rotation)_board_orientation.get();
+    if (last_orientation == orientation) {
+        // nothing to do
+        return;
+    }
+
+    last_orientation = orientation;
+
     if (orientation != ROTATION_CUSTOM) {
         AP::ins().set_board_orientation(orientation);
         if (_compass != nullptr) {
