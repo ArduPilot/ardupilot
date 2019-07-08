@@ -173,6 +173,9 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
 
 int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
 {
+    if (copter.motors == nullptr) {
+        return 0;
+    }
     return (int16_t)(copter.motors->get_throttle() * 100);
 }
 
