@@ -1055,7 +1055,12 @@ class AutoTest(ABC):
             self.mavproxy.send("param fetch %s\n" % name)
             try:
                 self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/retry)
-                return float(self.mavproxy.match.group(1))
+                try:
+                    # sometimes race conditions garble the MAVProxy output
+                    ret = float(self.mavproxy.match.group(1))
+                except ValueError as e:
+                    continue
+                return ret
             except pexpect.TIMEOUT:
                 pass
         raise NotAchievedException("Failed to retrieve parameter (%s)" % name)
