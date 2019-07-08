@@ -138,7 +138,7 @@ class AutoTestCopter(AutoTest):
         m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         alt = m.relative_alt / 1000.0 # mm -> m
         if alt < alt_min:
-            self.wait_altitude(alt_min - 1,
+            self.wait_altitude(alt_min -1,
                                (alt_min + 5),
                                relative=True,
                                timeout=timeout)
@@ -171,7 +171,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1500)
 
         # wait for copter to slow moving
-        self.wait_groundspeed(0, 2)
+        self.wait_groundspeed(0, 1, maintain_target_time=2)
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         start_altitude = m.alt
@@ -227,16 +227,14 @@ class AutoTestCopter(AutoTest):
 
     def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
         """Change altitude."""
-        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-        alt = m.relative_alt / 1000.0 # mm -> m
-        if alt < alt_min:
-            self.progress("Rise to alt:%u from %u" % (alt_min, alt))
-            self.set_rc(3, climb_throttle)
-            self.wait_altitude(alt_min, (alt_min + 5), relative=True)
-        else:
-            self.progress("Lower to alt:%u from %u" % (alt_min, alt))
-            self.set_rc(3, descend_throttle)
-            self.wait_altitude((alt_min - 5), alt_min, relative=True)
+        def ajust_altitude(current_alt, target_alt, accuracy):
+            if math.fabs(current_alt - target_alt) <= accuracy:
+                self.hover()
+            elif current_alt < target_alt:
+                self.set_rc(3, climb_throttle)
+            else:
+                self.set_rc(3, descend_throttle)
+        self.wait_altitude((alt_min - 5), alt_min, relative=True, called_function=lambda current_alt, target_alt: ajust_altitude(current_alt, target_alt, 1))
         self.hover()
 
     #################################################
@@ -330,7 +328,7 @@ class AutoTestCopter(AutoTest):
         self.progress("timeleft = %u" % time_left)
         if time_left < 20:
             time_left = 20
-        self.wait_altitude(-10, 10, time_left, relative=True)
+        self.wait_altitude(-10, 10, timeout=time_left, relative=True)
         self.set_rc(3, 1500)
         self.save_wp()
 
@@ -522,7 +520,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1500)
 
         # wait for copter to slow moving
-        self.wait_groundspeed(0, 2)
+        self.wait_groundspeed(0, 1, maintain_target_time=1)
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         start_altitude = m.alt
@@ -1242,7 +1240,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Moving higher")
             self.change_alt(60)
 
-            self.wait_groundspeed(10, 100, timeout=60)
+            self.wait_groundspeed(10, 100, maintain_target_time=1, timeout=60)
         except Exception as e:
             ex = e
 
@@ -2334,7 +2332,7 @@ class AutoTestCopter(AutoTest):
                 break
 
         self.progress("Waiting for vehicle to stop...")
-        self.wait_groundspeed(1, 100, timeout=timeout)
+        self.wait_groundspeed(0, 1, maintain_target_time=1, timeout=timeout)
 
         stoppos = self.mav.recv_match(type='LOCAL_POSITION_NED', blocking=True)
         self.progress("stop_pos=%s" % str(stoppos))
@@ -2934,7 +2932,7 @@ class AutoTestCopter(AutoTest):
                              roi_alt,
                              )
 
-                self.wait_heading(110, timeout=600)
+                self.wait_heading(110, maintain_target_time=2, timeout=600)
 
                 self.context_pop()
             except Exception:
@@ -3058,10 +3056,10 @@ class AutoTestCopter(AutoTest):
         self.change_mode("STABILIZE")
         self.set_rc(3, 1500)
         self.set_rc(2, 1200)
-        self.wait_groundspeed(5, 1000)
+        self.wait_groundspeed(5, 100)
 
         self.change_mode("BRAKE")
-        self.wait_groundspeed(0, 1)
+        self.wait_groundspeed(0, 0.2, maintain_target_time=1)
 
         self.set_rc(2, 1500)
 
@@ -3108,7 +3106,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(3, 1500)
             # move away a little
             self.set_rc(2, 1550)
-            self.wait_distance(5)
+            self.wait_distance(5, accuracy=1)
             self.set_rc(2, 1500)
             self.mavproxy.send('mode loiter\n')
             self.wait_mode('LOITER')
