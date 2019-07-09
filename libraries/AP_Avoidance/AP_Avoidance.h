@@ -136,6 +136,8 @@ protected:
 
 private:
 
+    void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour) const;
+
     // constants
     const uint32_t MAX_OBSTACLE_AGE_MS = 5000;      // obstacles that have not been heard from for 5 seconds are removed from the list
     const static uint8_t _gcs_notify_interval = 1; // seconds

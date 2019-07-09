@@ -391,6 +391,20 @@ MAV_COLLISION_THREAT_LEVEL AP_Avoidance::current_threat_level() const {
     return _obstacles[_current_most_serious_threat].threat_level;
 }
 
+void AP_Avoidance::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour) const
+{
+    const mavlink_collision_t packet{
+        id: threat.src_id,
+        time_to_minimum_delta: threat.time_to_closest_approach,
+        altitude_minimum_delta: threat.closest_approach_z,
+        horizontal_minimum_delta: threat.closest_approach_xy,
+        src: MAV_COLLISION_SRC_ADSB,
+        action: (uint8_t)behaviour,
+        threat_level: (uint8_t)threat.threat_level,
+    };
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_COLLISION, (const char *)&packet);
+}
+
 void AP_Avoidance::handle_threat_gcs_notify(AP_Avoidance::Obstacle *threat)
 {
     if (threat == nullptr) {
@@ -410,7 +424,7 @@ void AP_Avoidance::handle_threat_gcs_notify(AP_Avoidance::Obstacle *threat)
         _gcs_cleared_messages_first_sent = 0;
     }
     if (now - threat->last_gcs_report_time > _gcs_notify_interval * 1000) {
-        GCS_MAVLINK::send_collision_all(*threat, mav_avoidance_action());
+        send_collision_all(*threat, mav_avoidance_action());
         threat->last_gcs_report_time = now;
     }
 
