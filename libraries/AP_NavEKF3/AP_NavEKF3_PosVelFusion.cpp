@@ -219,14 +219,15 @@ bool NavEKF3_core::resetHeightDatum(void)
             // if we don't have GPS lock then we shouldn't be doing a
             // resetHeightDatum, but if we do then the best option is
             // to maintain the old error
-            ekfGpsRefHgt += (int32_t)(100.0f * oldHgt);
+            EKF_origin.alt += (int32_t)(100.0f * oldHgt);
         } else {
             // if we have a good GPS lock then reset to the GPS
             // altitude. This ensures the reported AMSL alt from
             // getLLH() is equal to GPS altitude, while also ensuring
             // that the relative alt is zero
-            ekfGpsRefHgt = AP::gps().location().alt*0.01;
+            EKF_origin.alt = AP::gps().location().alt;
         }
+        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     }
 
     // set the terrain state to zero (on ground). The adjustment for
