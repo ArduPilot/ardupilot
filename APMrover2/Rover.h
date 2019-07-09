@@ -179,7 +179,7 @@ private:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
-    RangeFinder rangefinder{serial_manager};
+    RangeFinder rangefinder;
     AP_Button button;
 
     // flight modes convenience array
