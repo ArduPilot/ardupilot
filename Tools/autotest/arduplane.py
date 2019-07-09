@@ -1571,8 +1571,8 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Did not get accepted response")
         self.wait_location(loc, accuracy=100) # based on loiter radius
         self.delay_sim_time(20)
-        self.wait_altitude(alt_min=desired_relative_alt-3,
-                           alt_max=desired_relative_alt+3,
+        self.wait_altitude(altitude_min=desired_relative_alt-3,
+                           altitude_max=desired_relative_alt+3,
                            relative=True)
 
         self.fly_home_land_and_disarm()
