@@ -14,7 +14,9 @@
  */
 
 #include "AP_OABendyRuler.h"
+
 #include <AC_Fence/AC_Fence.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const int16_t OA_BENDYRULER_BEARING_INC = 5;            // check every 5 degrees around vehicle
 const float OA_BENDYRULER_LOOKAHEAD_STEP2_RATIO = 1.0f; // step2's lookahead length as a ratio of step1's lookahead length
