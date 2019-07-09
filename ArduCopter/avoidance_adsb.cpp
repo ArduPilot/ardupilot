@@ -169,7 +169,7 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
     // decide on whether we should climb or descend
     bool should_climb = false;
     Location my_loc;
-    if (_ahrs.get_position(my_loc)) {
+    if (AP::ahrs().get_position(my_loc)) {
         should_climb = my_loc.alt > obstacle->_location.alt;
     }
 
