@@ -25,7 +25,6 @@
   based on AP_ADSB,  Tom Pittenger, November 2015
 */
 
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_ADSB/AP_ADSB.h>
 
 // F_RCVRY possible parameter values
@@ -40,6 +39,10 @@
 
 class AP_Avoidance {
 public:
+
+    // constructor
+    AP_Avoidance(class AP_ADSB &adsb);
+
     // obstacle class to hold latest information for a known obstacles
     class Obstacle {
     public:
@@ -92,8 +95,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-    // constructor
-    AP_Avoidance(AP_AHRS &ahrs, class AP_ADSB &adsb);
 
     // top level avoidance handler.  This calls the vehicle specific handle_avoidance with requested action
     void handle_avoidance_local(AP_Avoidance::Obstacle *threat);
@@ -132,9 +133,6 @@ protected:
     // Note: v1 is NED
     static Vector3f perpendicular_xyz(const Location &p1, const Vector3f &v1, const Location &p2);
     static Vector2f perpendicular_xy(const Location &p1, const Vector3f &v1, const Location &p2);
-
-    // reference to AHRS, so we can ask for our position, heading and speed
-    const AP_AHRS &_ahrs;
 
 private:
 
