@@ -9,7 +9,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <stdint.h>
 #include "MAVLink_routing.h"
-#include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_RTC/JitterCorrection.h>
@@ -435,7 +434,6 @@ public:
     virtual void send_position_target_global_int() { };
     virtual void send_position_target_local_ned() { };
     void send_servo_output_raw();
-    static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
     void send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag));
     void send_sys_status();
