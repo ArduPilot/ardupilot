@@ -53,10 +53,10 @@
 */
 AP_RangeFinder_BLPing::AP_RangeFinder_BLPing(RangeFinder::RangeFinder_State &_state,
                                              AP_RangeFinder_Params &_params,
-                                             AP_SerialManager &serial_manager,
                                              uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state, _params)
 {
+    const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
@@ -64,9 +64,9 @@ AP_RangeFinder_BLPing::AP_RangeFinder_BLPing(RangeFinder::RangeFinder_State &_st
 }
 
 // detect if a serial port has been setup to accept rangefinder input
-bool AP_RangeFinder_BLPing::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
+bool AP_RangeFinder_BLPing::detect(uint8_t serial_instance)
 {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
+    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 /*

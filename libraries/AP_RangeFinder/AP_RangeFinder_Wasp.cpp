@@ -68,11 +68,11 @@ const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
 
 AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
                                          AP_RangeFinder_Params &_params,
-                                         AP_SerialManager &serial_manager,
                                          uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state, _params) {
     AP_Param::setup_object_defaults(this, var_info);
 
+    const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
         uart->begin(115200);
@@ -85,8 +85,8 @@ AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
 }
 
 // detection is considered as locating a serial port
-bool AP_RangeFinder_Wasp::detect(AP_SerialManager &serial_manager, uint8_t serial_instance) {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
+bool AP_RangeFinder_Wasp::detect(uint8_t serial_instance) {
+    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 // read - return last value measured by sensor

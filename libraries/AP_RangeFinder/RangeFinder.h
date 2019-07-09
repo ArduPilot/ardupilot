@@ -17,7 +17,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_SerialManager/AP_SerialManager.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_RangeFinder_Params.h"
 
 // Maximum number of range finder instances available on this platform
@@ -38,7 +38,7 @@ class RangeFinder
     //UAVCAN drivers are initialised in the Backend, hence list of drivers is needed there.
     friend class AP_RangeFinder_UAVCAN;
 public:
-    RangeFinder(AP_SerialManager &_serial_manager);
+    RangeFinder();
 
     /* Do not allow copies */
     RangeFinder(const RangeFinder &other) = delete;
@@ -166,7 +166,6 @@ private:
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances;
     float estimated_terrain_height;
-    AP_SerialManager &serial_manager;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 
     void convert_params(void);
