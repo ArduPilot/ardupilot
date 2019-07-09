@@ -31,10 +31,10 @@ extern const AP_HAL::HAL& hal;
 */
 AP_RangeFinder_MaxsonarSerialLV::AP_RangeFinder_MaxsonarSerialLV(RangeFinder::RangeFinder_State &_state,
                                                                  AP_RangeFinder_Params &_params,
-                                                                 AP_SerialManager &serial_manager,
                                                                  uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state, _params)
 {
+    const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
@@ -46,9 +46,9 @@ AP_RangeFinder_MaxsonarSerialLV::AP_RangeFinder_MaxsonarSerialLV(RangeFinder::Ra
    trying to take a reading on Serial. If we get a result the sensor is
    there.
 */
-bool AP_RangeFinder_MaxsonarSerialLV::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
+bool AP_RangeFinder_MaxsonarSerialLV::detect(uint8_t serial_instance)
 {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
+    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 // read - return last value measured by sensor

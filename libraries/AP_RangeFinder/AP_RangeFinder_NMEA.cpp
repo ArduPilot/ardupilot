@@ -26,11 +26,11 @@ extern const AP_HAL::HAL& hal;
 // already know that we should setup the rangefinder
 AP_RangeFinder_NMEA::AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
                                          AP_RangeFinder_Params &_params,
-                                         AP_SerialManager &serial_manager,
                                          uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state, _params),
     _distance_m(-1.0f)
 {
+    const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
@@ -38,9 +38,9 @@ AP_RangeFinder_NMEA::AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
 }
 
 // detect if a NMEA rangefinder by looking to see if the user has configured it
-bool AP_RangeFinder_NMEA::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
+bool AP_RangeFinder_NMEA::detect(uint8_t serial_instance)
 {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
+    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 // update the state of the sensor
