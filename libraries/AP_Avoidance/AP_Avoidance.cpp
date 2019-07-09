@@ -3,6 +3,7 @@
 extern const AP_HAL::HAL& hal;
 
 #include <limits>
+#include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 
 #define AVOIDANCE_DEBUGGING 0
@@ -125,8 +126,7 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Avoidance::AP_Avoidance(AP_AHRS &ahrs, AP_ADSB &adsb) :
-    _ahrs(ahrs),
+AP_Avoidance::AP_Avoidance(AP_ADSB &adsb) :
     _adsb(adsb)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -436,6 +436,8 @@ bool AP_Avoidance::obstacle_is_more_serious_threat(const AP_Avoidance::Obstacle 
 
 void AP_Avoidance::check_for_threats()
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     Location my_loc;
     if (!_ahrs.get_position(my_loc)) {
         // if we don't know our own location we can't determine any threat level
@@ -522,7 +524,7 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
             action = (MAV_COLLISION_ACTION)_fail_action.get();
             Location my_loc;
             if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_minimum > 0 &&
-             _ahrs.get_position(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
+                AP::ahrs().get_position(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
                 // disable avoidance when close to ground, report only
                 action = MAV_COLLISION_ACTION_REPORT;
 			}
@@ -597,7 +599,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
     }
 
     Location my_abs_pos;
-    if (!_ahrs.get_position(my_abs_pos)) {
+    if (!AP::ahrs().get_position(my_abs_pos)) {
         // we should not get to here!  If we don't know our position
         // we can't know if there are any threats, for starters!
         return false;
