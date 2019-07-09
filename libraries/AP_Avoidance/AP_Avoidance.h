@@ -156,7 +156,7 @@ private:
     void deinit();
 
     // get unique id for adsb
-    uint32_t src_id_for_adsb_vehicle(AP_ADSB::adsb_vehicle_t vehicle) const;
+    uint32_t src_id_for_adsb_vehicle(const AP_ADSB::adsb_vehicle_t &vehicle) const;
 
     void check_for_threats();
     void update_threat_level(const Location &my_loc,
