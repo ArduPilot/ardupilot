@@ -1311,6 +1311,34 @@ class AutoTestPlane(AutoTest):
         self.wait_mode("CIRCLE")
         self.set_rc(9, 1000)
 
+    def test_adsb(self):
+        self.wait_ready_to_arm()
+        here = self.mav.location()
+        # message ADSB_VEHICLE 37 -353632614 1491652305 0 584070 0 0 0 "bob" 3 1 255 17
+        self.set_parameter("ADSB_ENABLE", 1)
+        self.set_parameter("AVD_ENABLE", 1)
+        self.delay_sim_time(1) # TODO: work out why this is required...
+        self.mav.mav.adsb_vehicle_send(37, # ICAO address
+                                       here.lat * 1e7,
+                                       here.lng * 1e7,
+                                       mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                                       here.alt*1000 + 10000, # 10m up
+                                       0, # heading in cdeg
+                                       0, # horizontal velocity cm/s
+                                       0, # vertical velocity cm/s
+                                       "bob", # callsign
+                                       mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,
+                                       1, # time since last communication
+                                       65535, # flags
+                                       17 # squawk
+        )
+        self.progress("Waiting for collision message")
+        m = self.mav.recv_match(type='COLLISION', blocking=True, timeout=2)
+        if m is None:
+            raise NotAchievedException("Did not get collision message")
+        if m.threat_level != 2:
+            raise NotAchievedException("Expected some threat at least")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -1363,6 +1391,10 @@ class AutoTestPlane(AutoTest):
             ("FenceRTLRally",
              "Test Fence RTL Rally",
              self.test_fence_rtl_rally),
+
+            ("ADSB",
+             "Test ADSB",
+             self.test_adsb),
 
             ("LogDownLoad",
              "Log download",
