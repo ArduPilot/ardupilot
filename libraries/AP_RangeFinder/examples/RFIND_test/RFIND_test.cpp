@@ -11,7 +11,7 @@ void loop();
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_SerialManager serial_manager;
-static RangeFinder sonar{serial_manager};
+static RangeFinder sonar;
 
 void setup()
 {
