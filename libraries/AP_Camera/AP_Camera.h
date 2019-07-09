@@ -3,8 +3,6 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Relay/AP_Relay.h>
 #include <GCS_MAVLink/GCS.h>
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
