@@ -2368,12 +2368,12 @@ MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32
     return result;
 }
 
-#if AP_AHRS_NAVEKF_AVAILABLE
 /*
   send OPTICAL_FLOW message
  */
 void GCS_MAVLINK::send_opticalflow()
 {
+#if AP_AHRS_NAVEKF_AVAILABLE
     const OpticalFlow *optflow = AP::opticalflow();
 
     // exit immediately if no optical flow sensor or not healthy
@@ -2407,8 +2407,8 @@ void GCS_MAVLINK::send_opticalflow()
         hagl,  // ground distance (in meters) set to zero
         flowRate.x,
         flowRate.y);
-}
 #endif
+}
 
 /*
   send AUTOPILOT_VERSION packet
