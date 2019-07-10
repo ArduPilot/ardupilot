@@ -39,6 +39,22 @@ public:
     }
 
 private:
+
+    // loopback to convert inbound Morse lidar data into inbound mavlink msgs
+    const char *mavlink_loopback_address = "127.0.0.1";
+    const uint16_t mavlink_loopback_port = 5762;
+    SocketAPM mav_socket { false };
+    struct {
+        // socket to telem2 on aircraft
+        bool connected;
+        mavlink_message_t rxmsg;
+        mavlink_status_t status;
+        uint8_t seq;
+    } mavlink {};
+
+    void send_report(void);
+    uint32_t send_report_last_ms;
+
     const char *morse_ip = "127.0.0.1";
 
     // assume sensors are streamed on port 60000

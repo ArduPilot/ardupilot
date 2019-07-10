@@ -522,6 +522,8 @@ void Morse::update(const struct sitl_input &input)
     }
 
     report_FPS();
+
+    send_report();
 }
 
 
@@ -542,4 +544,86 @@ void Morse::report_FPS(void)
         }
         last_frame_count_s = state.timestamp;
     }
+}
+
+
+
+/*
+  send a report to the vehicle control code over MAVLink
+*/
+void Morse::send_report(void)
+{
+    const uint32_t now = AP_HAL::millis();
+#if defined(__CYGWIN__) || defined(__CYGWIN64__)
+    if (now < 10000) {
+        // don't send lidar reports until 10s after startup. This
+        // avoids a windows threading issue with non-blocking sockets
+        // and the initial wait on uartA
+        return;
+    }
+#endif
+
+    // this is usually loopback
+    if (!mavlink.connected && mav_socket.connect(mavlink_loopback_address, mavlink_loopback_port)) {
+        ::printf("Morse MAVLink loopback connected to %s:%u\n", mavlink_loopback_address, (unsigned)mavlink_loopback_port);
+        mavlink.connected = true;
+    }
+    if (!mavlink.connected) {
+        return;
+    }
+
+    // send a OBSTACLE_DISTANCE messages at 15 Hz
+    if (now - send_report_last_ms >= (1000/15) && scanner.points.length == scanner.ranges.length && scanner.points.length > 0) {
+        send_report_last_ms = now;
+
+        mavlink_obstacle_distance_t packet {};
+        packet.time_usec = AP_HAL::micros64();
+        packet.min_distance = 1;
+        packet.max_distance = 0;
+        packet.sensor_type = MAV_DISTANCE_SENSOR_LASER;
+        packet.increment = 0; // use increment_f
+
+        packet.angle_offset = 180;
+        packet.increment_f = (-5);  // NOTE! This is negative because the distances[] arc is counter-clockwise
+
+        for (uint8_t i=0; i<MAVLINK_MSG_OBSTACLE_DISTANCE_FIELD_DISTANCES_LEN; i++) {
+
+            // default distance unless overwritten
+            packet.distances[i] = 65535;
+
+            if (i >= scanner.points.length) {
+                continue;
+            }
+
+            // convert m to cm and sanity check
+            const Vector2f v = Vector2f(scanner.points.data[i].x, scanner.points.data[i].y);
+            const float distance_cm = v.length()*100;
+            if (distance_cm < packet.min_distance || distance_cm >= 65535) {
+                continue;
+            }
+
+            packet.distances[i] = distance_cm;
+            const float max_cm = scanner.ranges.data[i] * 100.0;
+            if (packet.max_distance < max_cm && max_cm > 0 && max_cm < 65535) {
+                packet.max_distance = max_cm;
+            }
+        }
+
+        mavlink_message_t msg;
+        mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
+        uint8_t saved_seq = chan0_status->current_tx_seq;
+        chan0_status->current_tx_seq = mavlink.seq;
+        uint16_t len = mavlink_msg_obstacle_distance_encode(
+                0,
+                0,
+                &msg, &packet);
+        chan0_status->current_tx_seq = saved_seq;
+
+        uint8_t msgbuf[len];
+        len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+        if (len > 0) {
+            mav_socket.send(msgbuf, len);
+        }
+    }
+
 }
