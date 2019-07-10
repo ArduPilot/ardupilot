@@ -3061,18 +3061,18 @@ class AutoTestCopter(AutoTest):
 
         self.user_takeoff(alt_min=10)
 
-        """yaw through absolute angles using MAV_CMD_CONDITION_YAW"""
+        self.start_subtest("yaw through absolute angles using MAV_CMD_CONDITION_YAW")
         self.guided_achieve_heading(45)
         self.guided_achieve_heading(135)
 
-        """move the vehicle using set_position_target_global_int"""
+        self.start_subtest("move the vehicle using set_position_target_global_int")
         self.fly_guided_move_global_relative_alt(5, 5, 10)
 
-        """move the vehicle using MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED"""
+        self.start_subtest("move the vehicle using MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED")
         self.fly_guided_stop()
         self.fly_guided_move_local(5, 5, 10)
 
-        """ Check target position received by vehicle using SET_MESSAGE_INTERVAL """
+        self.start_subtest("Check target position received by vehicle using SET_MESSAGE_INTERVAL")
         self.test_guided_local_position_target(5, 5, 10)
         self.test_guided_local_velocity_target(2, 2, 1)
         self.test_position_target_message_mode()
