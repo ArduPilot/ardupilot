@@ -302,8 +302,13 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
+    // determine throttle thrust for harmonic notch
+    const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
+    // compensation_gain can never be zero
+    _throttle_out = throttle_thrust_best_plus_adj / compensation_gain;
+
     // check for failed motor
-    check_for_failed_motor(throttle_thrust_best_rpy + thr_adj);
+    check_for_failed_motor(throttle_thrust_best_plus_adj);
 }
 
 // check for failed motor

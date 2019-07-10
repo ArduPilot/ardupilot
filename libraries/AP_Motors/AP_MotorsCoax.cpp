@@ -186,6 +186,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
 
     // calculate the throttle setting for the lift fan
     thrust_out = throttle_avg_max + thr_adj;
+    // compensation_gain can never be zero
+    _throttle_out = thrust_out / compensation_gain;
 
     if (fabsf(yaw_thrust) > thrust_out) {
         yaw_thrust = constrain_float(yaw_thrust, -thrust_out, thrust_out);
