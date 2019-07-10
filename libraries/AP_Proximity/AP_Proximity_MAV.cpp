@@ -89,10 +89,10 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 
         // check increment (message's sector width)
         float increment;
-        if (packet.increment_f > 0) {
+        if (!is_zero(packet.increment_f)) {
             // use increment float
             increment = packet.increment_f;
-        } else if (packet.increment > 0) {
+        } else if (packet.increment != 0) {
             // use increment uint8_t
             increment = packet.increment;
         } else {
@@ -101,7 +101,7 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
         }
 
         const float MAX_DISTANCE = 9999.0f;
-        const float total_distances = MIN(360.0f / increment, MAVLINK_MSG_OBSTACLE_DISTANCE_FIELD_DISTANCES_LEN); // usually 72
+        const uint8_t total_distances = MIN(((360.0f / fabs(increment)) + 0.5f), MAVLINK_MSG_OBSTACLE_DISTANCE_FIELD_DISTANCES_LEN); // usually 72
 
         // set distance min and max
         _distance_min = packet.min_distance * 0.01f;
@@ -131,8 +131,18 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 
         // iterate over message's sectors
         for (uint8_t j = 0; j < total_distances; j++) {
-            const float packet_distance_m = packet.distances[j] * 0.01f;
-            const float mid_angle = wrap_360(j * increment + yaw_correction);
+            const uint16_t distance_cm = packet.distances[j];
+            if (distance_cm == 0 ||
+                distance_cm == 65535 ||
+                distance_cm < packet.min_distance ||
+                distance_cm > packet.max_distance)
+            {
+                // sanity check failed, ignore this distance value
+                continue;
+            }
+
+            const float packet_distance_m = distance_cm * 0.01f;
+            const float mid_angle = wrap_360((float)j * increment + yaw_correction);
 
             // iterate over proximity sectors
             for (uint8_t i = 0; i < _num_sectors; i++) {
