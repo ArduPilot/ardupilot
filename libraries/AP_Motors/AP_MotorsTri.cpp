@@ -255,10 +255,15 @@ void AP_MotorsTri::output_armed_stabilizing()
         }
     }
 
+    // determine throttle thrust for harmonic notch
+    const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
+    // compensation_gain can never be zero
+    _throttle_out = throttle_thrust_best_plus_adj / compensation_gain;
+
     // add scaled roll, pitch, constrained yaw and throttle for each motor
-    _thrust_right = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_right;
-    _thrust_left = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_left;
-    _thrust_rear = throttle_thrust_best_rpy + thr_adj + rpy_scale * _thrust_rear;
+    _thrust_right = throttle_thrust_best_plus_adj + rpy_scale * _thrust_right;
+    _thrust_left = throttle_thrust_best_plus_adj + rpy_scale * _thrust_left;
+    _thrust_rear = throttle_thrust_best_plus_adj + rpy_scale * _thrust_rear;
 
     // scale pivot thrust to account for pivot angle
     // we should not need to check for divide by zero as _pivot_angle is constrained to the 5deg ~ 80 deg range
