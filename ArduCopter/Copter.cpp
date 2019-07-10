@@ -305,6 +305,8 @@ void Copter::throttle_loop()
 
     // compensate for ground effect (if enabled)
     update_ground_effect_detector();
+
+    update_dynamic_notch();
 }
 
 // update_batt_compass - read battery and compass

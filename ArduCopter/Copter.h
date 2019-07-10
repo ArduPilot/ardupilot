@@ -867,6 +867,7 @@ private:
     // system.cpp
     void init_ardupilot();
     void startup_INS_ground();
+    void update_dynamic_notch();
     bool position_ok() const;
     bool ekf_position_ok() const;
     bool optflow_position_ok() const;
