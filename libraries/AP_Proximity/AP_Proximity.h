@@ -49,6 +49,7 @@ public:
         Proximity_Type_TRTOWEREVO = 6,
         Proximity_Type_SITL    = 10,
         Proximity_Type_MorseSITL = 11,
+        Proximity_Type_AirSimSITL = 12,
     };
 
     enum Proximity_Status {

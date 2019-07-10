@@ -22,6 +22,7 @@
 #include "AP_Proximity_MAV.h"
 #include "AP_Proximity_SITL.h"
 #include "AP_Proximity_MorseSITL.h"
+#include "AP_Proximity_AirSimSITL.h"
 #include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL &hal;
@@ -33,7 +34,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,1:LightWareSF40C,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL
+    // @Values: 0:None,1:LightWareSF40C,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL,12:AirSimSITL
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE",   1, AP_Proximity, _type[0], 0),
@@ -329,6 +330,11 @@ void AP_Proximity::detect_instance(uint8_t instance)
     if (type == Proximity_Type_MorseSITL) {
         state[instance].instance = instance;
         drivers[instance] = new AP_Proximity_MorseSITL(*this, state[instance]);
+        return;
+    }
+    if (type == Proximity_Type_AirSimSITL) {
+        state[instance].instance = instance;
+        drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance]);
         return;
     }
 #endif
