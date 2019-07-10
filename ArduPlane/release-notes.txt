@@ -1,3 +1,11 @@
+Release 3.9.9beta2, 11th July 2019
+----------------------------------
+
+Minor update over beta1:
+
+ - added mRoControlZeroF7 support
+ - enabled IO pass-thru on FMU failure on ChibiOS builds
+
 Release 3.9.9beta1, 8th July 2019
 ---------------------------------
 
