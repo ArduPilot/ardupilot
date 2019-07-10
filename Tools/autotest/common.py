@@ -884,6 +884,13 @@ class AutoTest(ABC):
             0,
             0)
 
+    def set_analog_rangefinder_parameters(self):
+        self.set_parameter("RNGFND1_TYPE", 1)
+        self.set_parameter("RNGFND1_MIN_CM", 0)
+        self.set_parameter("RNGFND1_MAX_CM", 4000)
+        self.set_parameter("RNGFND1_SCALING", 12.12)
+        self.set_parameter("RNGFND1_PIN", 0)
+
     def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
