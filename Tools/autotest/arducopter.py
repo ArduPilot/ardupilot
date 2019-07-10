@@ -2144,7 +2144,7 @@ class AutoTestCopter(AutoTest):
                                       blocking=True)
 
             if abs(m_r.distance - m_p.relative_alt/1000) > 1:
-                raise NotAchievedException("rangefinder/global position int mismatch")
+                raise NotAchievedException("rangefinder/global position int mismatch %0.2f vs %0.2f", (m_r.distance, m_p.relative_alt/1000))
 
             self.land_and_disarm()
 
