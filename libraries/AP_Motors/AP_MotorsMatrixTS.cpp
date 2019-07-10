@@ -114,6 +114,9 @@ void AP_MotorsMatrixTS::output_armed_stabilizing()
         }
     }
 
+    // compensation_gain can never be zero
+    _throttle_out = (throttle_thrust + thr_adj) / compensation_gain;
+
 }
 
 void AP_MotorsMatrixTS::setup_motors(motor_frame_class frame_class, motor_frame_type frame_type)

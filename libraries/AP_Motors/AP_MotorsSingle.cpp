@@ -202,6 +202,8 @@ void AP_MotorsSingle::output_armed_stabilizing()
 
     // calculate the throttle setting for the lift fan
     _thrust_out = throttle_avg_max + thr_adj;
+    // compensation_gain can never be zero
+    _throttle_out = _thrust_out / compensation_gain;
 
     if (is_zero(_thrust_out)) {
         limit.roll = true;
