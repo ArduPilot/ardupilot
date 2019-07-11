@@ -126,7 +126,7 @@ bool AP_VisualOdom::healthy() const
 }
 
 // consume VISION_POSITION_DELTA MAVLink message
-void AP_VisualOdom::handle_msg(mavlink_message_t *msg)
+void AP_VisualOdom::handle_msg(const mavlink_message_t &msg)
 {
     // exit immediately if not enabled
     if (!enabled()) {

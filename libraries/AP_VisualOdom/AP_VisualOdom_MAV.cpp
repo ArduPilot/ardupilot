@@ -26,11 +26,11 @@ AP_VisualOdom_MAV::AP_VisualOdom_MAV(AP_VisualOdom &frontend) :
 }
 
 // consume VISIOIN_POSITION_DELTA MAVLink message
-void AP_VisualOdom_MAV::handle_msg(mavlink_message_t *msg)
+void AP_VisualOdom_MAV::handle_msg(const mavlink_message_t &msg)
 {
     // decode message
     mavlink_vision_position_delta_t packet;
-    mavlink_msg_vision_position_delta_decode(msg, &packet);
+    mavlink_msg_vision_position_delta_decode(&msg, &packet);
 
     const Vector3f angle_delta(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
     const Vector3f position_delta(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);

@@ -69,7 +69,7 @@ public:
     const Vector3f &get_pos_offset(void) const { return _pos_offset; }
 
     // consume data from MAVLink messages
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t &msg);
 
     static const struct AP_Param::GroupInfo var_info[];
 
