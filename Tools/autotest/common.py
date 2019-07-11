@@ -2486,6 +2486,7 @@ class AutoTest(ABC):
                 self.progress("Armable mode : %s" % mode)
                 self.change_mode(mode)
                 self.arm_vehicle()
+                self.wait_heartbeat()
                 if not self.disarm_vehicle():
                     raise NotAchievedException("Failed to DISARM")
                 self.progress("PASS arm mode : %s" % mode)
