@@ -25,7 +25,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 #include <AP_Buffer/AP_Buffer.h>
 
