@@ -47,14 +47,14 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
     // check for fence updates
     if (check_polygon_fence_updated()) {
         _polyfence_with_margin_ok = false;
+        _polyfence_visgraph_ok = false;
+        _shortest_path_ok = false;
     }
 
     // create inner polygon fence
     if (!_polyfence_with_margin_ok) {
         _polyfence_with_margin_ok = create_polygon_fence_with_margin(_polyfence_margin * 100.0f);
         if (!_polyfence_with_margin_ok) {
-            _polyfence_visgraph_ok = false;
-            _shortest_path_ok = false;
             return DIJKSTRA_STATE_ERROR;
         }
     }
