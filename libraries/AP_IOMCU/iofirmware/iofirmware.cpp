@@ -295,9 +295,12 @@ void AP_IOMCU_FW::heater_update()
         // turn off the heater
         HEATER_SET(!heater_pwm_polarity);
     } else {
-        uint8_t cycle = ((now / 10UL) % 100U);
-        //Turn off heater when cycle is greater than specified duty cycle
-        HEATER_SET((cycle >= reg_setup.heater_duty_cycle) ? !heater_pwm_polarity : heater_pwm_polarity);
+        // we use a pseudo random sequence to dither the cycling as
+        // the heater has a significant effect on the internal
+        // magnetometers. The random generator dithers this so we don't get a 1Hz cycly in the magnetometer.
+        // The impact on the mags is about 25 mGauss.
+        bool heater_on = (get_random16() < uint32_t(reg_setup.heater_duty_cycle) * 0xFFFFU / 100U);
+        HEATER_SET(heater_on? heater_pwm_polarity : !heater_pwm_polarity);
     }
 }
 
