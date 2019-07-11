@@ -26,6 +26,12 @@
 
 #include <stdio.h>
 
+#if HAL_OS_POSIX_IO
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // Tunes follow the syntax of the Microsoft GWBasic/QBasic PLAY
@@ -92,6 +98,8 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
     { "MFT200L4<B#4A#6G#6", false },
 #define AP_NOTIFY_TONE_STARTUP 29
     { "MFT240L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
+#define AP_NOTIFY_TONE_NO_SDCARD 30
+    { "MNBGG", false },
 };
 
 bool AP_ToneAlarm::init()
@@ -110,6 +118,19 @@ bool AP_ToneAlarm::init()
     flags.pre_arm_check = 1;
     _cont_tone_playing = -1;
     hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_ToneAlarm::_timer_task, void));
+
+#if (HAL_OS_POSIX_IO || HAL_OS_FATFS_IO) && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+    // if we don't have a SDcard then play a failure tone instead of
+    // normal startup tone. This gives the user a chance to fix it
+    // before they try to arm. We don't do this on Linux as Linux
+    // flight controllers don't usually have removable storage
+    struct stat st;
+    if (stat(HAL_BOARD_STORAGE_DIRECTORY, &st) != 0) {
+        play_tone(AP_NOTIFY_TONE_NO_SDCARD);
+        return true;
+    }
+#endif
+
     play_tone(AP_NOTIFY_TONE_STARTUP);
     return true;
 }
