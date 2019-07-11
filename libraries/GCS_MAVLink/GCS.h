@@ -129,7 +129,7 @@ public:
 
     // note that all of these methods are named after the packet they
     // are handling; the "mission" part just comes as part of that.
-    void handle_mission_request_list(const GCS_MAVLINK &link,
+    void handle_mission_request_list(const class GCS_MAVLINK &link,
                                      const mavlink_mission_request_list_t &packet,
                                      const mavlink_message_t &msg);
     void handle_mission_request_int(const GCS_MAVLINK &link,
@@ -832,7 +832,7 @@ private:
 
     uint8_t send_parameter_async_replies();
 
-    void send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
+    void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
