@@ -432,7 +432,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Group: LOIT_
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
-    GOBJECT(loiter_nav, "LOITER_", AC_Loiter),
+    GOBJECT(loiter_nav, "LOIT_", AC_Loiter),
 
 #if CIRCLE_NAV_ENABLED == ENABLED
     // @Group: CIRCLE_
