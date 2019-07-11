@@ -320,7 +320,7 @@ public:
 
     // packetReceived is called on any successful decode of a mavlink message
     virtual void packetReceived(const mavlink_status_t &status,
-                                mavlink_message_t &msg);
+                                const mavlink_message_t &msg);
 
     // send a mavlink_message_t out this GCS_MAVLINK connection.
     // Caller is responsible for ensuring space.
@@ -463,7 +463,7 @@ public:
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
     */
-    static void send_to_components(const mavlink_message_t* msg) { routing.send_to_components(msg); }
+    static void send_to_components(const mavlink_message_t &msg) { routing.send_to_components(msg); }
     
     /*
       allow forwarding of packets / heartbeats to be blocked as required by some components to reduce traffic
@@ -505,7 +505,7 @@ protected:
 
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
-    bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg);
+    bool accept_packet(const mavlink_status_t &status, const mavlink_message_t &msg);
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
     virtual bool set_mode(uint8_t mode) = 0;
     void set_ekf_origin(const Location& loc);
@@ -525,11 +525,11 @@ protected:
     AP_Int16        streamRates[NUM_STREAMS];
 
     virtual bool persist_streamrates() const { return false; }
-    void handle_request_data_stream(mavlink_message_t *msg);
+    void handle_request_data_stream(const mavlink_message_t &msg);
 
-    virtual void handle_command_ack(const mavlink_message_t* msg);
-    void handle_set_mode(mavlink_message_t* msg);
-    void handle_command_int(mavlink_message_t* msg);
+    virtual void handle_command_ack(const mavlink_message_t &msg);
+    void handle_set_mode(const mavlink_message_t &msg);
+    void handle_command_int(const mavlink_message_t &msg);
 
     MAV_RESULT handle_command_int_do_set_home(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
@@ -539,35 +539,35 @@ protected:
 
     MAV_RESULT handle_command_do_set_home(const mavlink_command_long_t &packet);
 
-    void handle_mission_request_list(const mavlink_message_t *msg);
-    void handle_mission_request(mavlink_message_t *msg);
-    void handle_mission_request_int(mavlink_message_t *msg);
-    void handle_mission_clear_all(const mavlink_message_t *msg);
-    virtual void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg);
-    void handle_mission_count(const mavlink_message_t *msg);
-    void handle_mission_write_partial_list(const mavlink_message_t *msg);
-    void handle_mission_item(const mavlink_message_t *msg);
+    void handle_mission_request_list(const mavlink_message_t &msg);
+    void handle_mission_request(const mavlink_message_t &msg);
+    void handle_mission_request_int(const mavlink_message_t &msg);
+    void handle_mission_clear_all(const mavlink_message_t &msg);
+    virtual void handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg);
+    void handle_mission_count(const mavlink_message_t &msg);
+    void handle_mission_write_partial_list(const mavlink_message_t &msg);
+    void handle_mission_item(const mavlink_message_t &msg);
 
-    void handle_common_param_message(mavlink_message_t *msg);
-    void handle_param_set(mavlink_message_t *msg);
-    void handle_param_request_list(mavlink_message_t *msg);
-    void handle_param_request_read(mavlink_message_t *msg);
+    void handle_common_param_message(const mavlink_message_t &msg);
+    void handle_param_set(const mavlink_message_t &msg);
+    void handle_param_request_list(const mavlink_message_t &msg);
+    void handle_param_request_read(const mavlink_message_t &msg);
     virtual bool params_ready() const { return true; }
-    virtual void handle_rc_channels_override(const mavlink_message_t *msg);
-    void handle_system_time_message(const mavlink_message_t *msg);
-    void handle_common_rally_message(mavlink_message_t *msg);
-    void handle_rally_fetch_point(mavlink_message_t *msg);
-    void handle_rally_point(mavlink_message_t *msg);
-    virtual void handle_mount_message(const mavlink_message_t *msg);
-    void handle_fence_message(mavlink_message_t *msg);
-    void handle_param_value(mavlink_message_t *msg);
-    void handle_radio_status(mavlink_message_t *msg, bool log_radio);
-    void handle_serial_control(const mavlink_message_t *msg);
-    void handle_vision_position_delta(mavlink_message_t *msg);
+    virtual void handle_rc_channels_override(const mavlink_message_t &msg);
+    void handle_system_time_message(const mavlink_message_t &msg);
+    void handle_common_rally_message(const mavlink_message_t &msg);
+    void handle_rally_fetch_point(const mavlink_message_t &msg);
+    void handle_rally_point(const mavlink_message_t &msg);
+    virtual void handle_mount_message(const mavlink_message_t &msg);
+    void handle_fence_message(const mavlink_message_t &msg);
+    void handle_param_value(const mavlink_message_t &msg);
+    void handle_radio_status(const mavlink_message_t &msg, bool log_radio);
+    void handle_serial_control(const mavlink_message_t &msg);
+    void handle_vision_position_delta(const mavlink_message_t &msg);
 
-    void handle_common_message(mavlink_message_t *msg);
-    void handle_set_gps_global_origin(const mavlink_message_t *msg);
-    void handle_setup_signing(const mavlink_message_t *msg);
+    void handle_common_message(const mavlink_message_t &msg);
+    void handle_set_gps_global_origin(const mavlink_message_t &msg);
+    void handle_setup_signing(const mavlink_message_t &msg);
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
     MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet);
 
@@ -580,27 +580,27 @@ protected:
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
-    void handle_send_autopilot_version(const mavlink_message_t *msg);
+    void handle_send_autopilot_version(const mavlink_message_t &msg);
     MAV_RESULT handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet);
 
     virtual void send_banner();
 
-    void handle_device_op_read(mavlink_message_t *msg);
-    void handle_device_op_write(mavlink_message_t *msg);
+    void handle_device_op_read(const mavlink_message_t &msg);
+    void handle_device_op_write(const mavlink_message_t &msg);
 
     void send_timesync();
     // returns the time a timesync message was most likely received:
     uint64_t timesync_receive_timestamp_ns() const;
     // returns a timestamp suitable for packing into the ts1 field of TIMESYNC:
     uint64_t timesync_timestamp_ns() const;
-    void handle_timesync(mavlink_message_t *msg);
+    void handle_timesync(const mavlink_message_t &msg);
     struct {
         int64_t sent_ts1;
         uint32_t last_sent_ms;
         const uint16_t interval_ms = 10000;
     }  _timesync_request;
 
-    void handle_statustext(mavlink_message_t *msg);
+    void handle_statustext(const mavlink_message_t &msg);
 
     bool telemetry_delayed() const;
     virtual uint32_t telem_delay() const = 0;
@@ -618,7 +618,7 @@ protected:
     MAV_RESULT handle_command_preflight_can(const mavlink_command_long_t &packet);
 
     MAV_RESULT handle_command_battery_reset(const mavlink_command_long_t &packet);
-    void handle_command_long(mavlink_message_t* msg);
+    void handle_command_long(const mavlink_message_t &msg);
     MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
@@ -633,7 +633,7 @@ protected:
     MAV_RESULT handle_command_get_home_position(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_long_t &packet);
 
-    void handle_optical_flow(const mavlink_message_t* msg);
+    void handle_optical_flow(const mavlink_message_t &msg);
 
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);
@@ -643,7 +643,7 @@ protected:
     bool try_send_compass_message(enum ap_message id);
     bool try_send_mission_message(enum ap_message id);
     void send_hwstatus();
-    void handle_data_packet(mavlink_message_t *msg);
+    void handle_data_packet(const mavlink_message_t &msg);
 
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
@@ -667,7 +667,7 @@ private:
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
 
-    virtual void        handleMessage(mavlink_message_t * msg) = 0;
+    virtual void        handleMessage(const mavlink_message_t &msg) = 0;
 
     MAV_RESULT handle_servorelay_message(const mavlink_command_long_t &packet);
 
@@ -834,12 +834,12 @@ private:
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
-    void handle_common_mission_message(mavlink_message_t *msg);
+    void handle_common_mission_message(const mavlink_message_t &msg);
 
-    void handle_vicon_position_estimate(mavlink_message_t *msg);
-    void handle_vision_position_estimate(mavlink_message_t *msg);
-    void handle_global_vision_position_estimate(mavlink_message_t *msg);
-    void handle_att_pos_mocap(mavlink_message_t *msg);
+    void handle_vicon_position_estimate(const mavlink_message_t &msg);
+    void handle_vision_position_estimate(const mavlink_message_t &msg);
+    void handle_global_vision_position_estimate(const mavlink_message_t &msg);
+    void handle_att_pos_mocap(const mavlink_message_t &msg);
     void handle_common_vision_position_estimate_data(const uint64_t usec,
                                                      const float x,
                                                      const float y,
@@ -856,7 +856,7 @@ private:
                                            const float pitch,
                                            const float yaw);
 
-    void lock_channel(mavlink_channel_t chan, bool lock);
+    void lock_channel(const mavlink_channel_t chan, bool lock);
 
     /*
       correct an offboard timestamp in microseconds to a local time

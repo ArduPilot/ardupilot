@@ -19,7 +19,7 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Logger/AP_Logger.h>
 
-void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_rally_point(const mavlink_message_t &msg)
 {
     AP_Rally *r = AP::rally();
     if (r == nullptr) {
@@ -27,7 +27,7 @@ void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
     }
 
     mavlink_rally_point_t packet;
-    mavlink_msg_rally_point_decode(msg, &packet);
+    mavlink_msg_rally_point_decode(&msg, &packet);
 
     if (packet.idx >= r->get_rally_total() ||
         packet.idx >= r->get_rally_max()) {
@@ -58,7 +58,7 @@ void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
     }
 }
 
-void GCS_MAVLINK::handle_rally_fetch_point(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_rally_fetch_point(const mavlink_message_t &msg)
 {
     AP_Rally *r = AP::rally();
     if (r == nullptr) {
@@ -66,7 +66,7 @@ void GCS_MAVLINK::handle_rally_fetch_point(mavlink_message_t *msg)
     }
 
     mavlink_rally_fetch_point_t packet;
-    mavlink_msg_rally_fetch_point_decode(msg, &packet);
+    mavlink_msg_rally_fetch_point_decode(&msg, &packet);
 
     if (packet.idx > r->get_rally_total()) {
         send_text(MAV_SEVERITY_WARNING, "Bad rally point ID");
@@ -79,15 +79,15 @@ void GCS_MAVLINK::handle_rally_fetch_point(mavlink_message_t *msg)
         return;
     }
 
-    mavlink_msg_rally_point_send(chan, msg->sysid, msg->compid, packet.idx,
+    mavlink_msg_rally_point_send(chan, msg.sysid, msg.compid, packet.idx,
                                  r->get_rally_total(), rally_point.lat, rally_point.lng,
                                  rally_point.alt, rally_point.break_alt, rally_point.land_dir,
                                  rally_point.flags);
 }
 
-void GCS_MAVLINK::handle_common_rally_message(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_common_rally_message(const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_RALLY_POINT:
         handle_rally_point(msg);
         break;
