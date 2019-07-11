@@ -25,7 +25,7 @@ public:
 	AP_VisualOdom_Backend(AP_VisualOdom &frontend);
 
     // consume VISION_POSITION_DELTA MAVLink message
-	virtual void handle_msg(mavlink_message_t *msg) {};
+	virtual void handle_msg(const mavlink_message_t &msg) {};
 
 protected:
 
