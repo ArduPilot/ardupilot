@@ -195,7 +195,6 @@ private:
     // setup the var_info table
     AP_Param param_loader{var_info};
 
-    uint8_t one_second_counter = 0;
     bool target_set = false;
     bool stationary = true; // are we using the start lat and log?
 
