@@ -31,9 +31,11 @@
 
 #include "Rover.h"
 
-const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+#define FORCE_VERSION_H_INCLUDE
+#include "version.h"
+#undef FORCE_VERSION_H_INCLUDE
 
-Rover rover;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Rover, &rover, func, _interval_ticks, _max_time_micros)
 
@@ -106,6 +108,18 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 };
 
 constexpr int8_t Rover::_failsafe_priorities[7];
+
+Rover::Rover(void) :
+    param_loader(var_info),
+    channel_steer(nullptr),
+    channel_throttle(nullptr),
+    channel_lateral(nullptr),
+    logger{g.log_bitmask},
+    modes(&g.mode1),
+    control_mode(&mode_initializing),
+    G_Dt(0.02f)
+{
+}
 
 #if STATS_ENABLED == ENABLED
 /*
@@ -318,5 +332,7 @@ void Rover::update_mission(void)
         }
     }
 }
+
+Rover rover;
 
 AP_HAL_MAIN_CALLBACKS(&rover);
