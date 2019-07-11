@@ -524,23 +524,23 @@ MissionItemProtocol *GCS::get_prot_for_mission_type(const MAV_MISSION_TYPE missi
 }
 
 // handle a request for the number of items we have stored for a mission type:
-void GCS_MAVLINK::handle_mission_request_list(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_request_list(const mavlink_message_t &msg)
 {
     // decode
     mavlink_mission_request_list_t packet;
-    mavlink_msg_mission_request_list_decode(msg, &packet);
+    mavlink_msg_mission_request_list_decode(&msg, &packet);
 
     MissionItemProtocol *prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
     if (prot == nullptr) {
         mavlink_msg_mission_ack_send(chan,
-                                     msg->sysid,
-                                     msg->compid,
+                                     msg.sysid,
+                                     msg.compid,
                                      MAV_MISSION_UNSUPPORTED,
                                      packet.mission_type);
         return;
     }
 
-    prot->handle_mission_request_list(*this, packet, *msg);
+    prot->handle_mission_request_list(*this, packet, msg);
 }
 
 void MissionItemProtocol::handle_mission_request_list(
@@ -602,17 +602,17 @@ void MissionItemProtocol::handle_mission_request_int(const GCS_MAVLINK &_link,
 /*
   handle a MISSION_REQUEST mavlink packet
  */
-void GCS_MAVLINK::handle_mission_request_int(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg)
 {
         // decode
         mavlink_mission_request_int_t packet;
-        mavlink_msg_mission_request_int_decode(msg, &packet);
+        mavlink_msg_mission_request_int_decode(&msg, &packet);
 
         MissionItemProtocol *prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
         if (prot == nullptr) {
             return;
         }
-        prot->handle_mission_request_int(*this, packet, *msg);
+        prot->handle_mission_request_int(*this, packet, msg);
 }
 
 MAV_MISSION_RESULT MissionItemProtocol_Waypoints::get_item(const GCS_MAVLINK &_link,
@@ -657,17 +657,17 @@ MAV_MISSION_RESULT MissionItemProtocol_Waypoints::get_item(const GCS_MAVLINK &_l
         return MAV_MISSION_ACCEPTED;
 }
 
-void GCS_MAVLINK::handle_mission_request(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
 {
         // decode
         mavlink_mission_request_t packet;
-        mavlink_msg_mission_request_decode(msg, &packet);
+        mavlink_msg_mission_request_decode(&msg, &packet);
 
         MissionItemProtocol *prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
         if (prot == nullptr) {
             return;
         }
-        prot->handle_mission_request(*this, packet, *msg);
+        prot->handle_mission_request(*this, packet, msg);
 }
 
 void MissionItemProtocol::convert_MISSION_REQUEST_to_MISSION_REQUEST_INT(const mavlink_mission_request_t &request, mavlink_mission_request_int_t &request_int)
@@ -713,11 +713,11 @@ void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
 /*
   handle a MISSION_SET_CURRENT mavlink packet
  */
-void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
     // decode
     mavlink_mission_set_current_t packet;
-    mavlink_msg_mission_set_current_decode(msg, &packet);
+    mavlink_msg_mission_set_current_decode(&msg, &packet);
 
     // set current command
     if (mission.set_current_cmd(packet.seq)) {
@@ -728,23 +728,23 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, mavlink_messag
 /*
   handle a MISSION_COUNT mavlink packet
  */
-void GCS_MAVLINK::handle_mission_count(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_count(const mavlink_message_t &msg)
 {
     // decode
     mavlink_mission_count_t packet;
-    mavlink_msg_mission_count_decode(msg, &packet);
+    mavlink_msg_mission_count_decode(&msg, &packet);
 
     MissionItemProtocol *prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
     if (prot == nullptr) {
         mavlink_msg_mission_ack_send(chan,
-                                     msg->sysid,
-                                     msg->compid,
+                                     msg.sysid,
+                                     msg.compid,
                                      MAV_MISSION_UNSUPPORTED,
                                      packet.mission_type);
         return;
     }
 
-    prot->handle_mission_count(*this, packet, *msg);
+    prot->handle_mission_count(*this, packet, msg);
 }
 
 void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
@@ -810,20 +810,20 @@ void MissionItemProtocol_Waypoints::truncate(const mavlink_mission_count_t &pack
 /*
   handle a MISSION_CLEAR_ALL mavlink packet
  */
-void GCS_MAVLINK::handle_mission_clear_all(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_clear_all(const mavlink_message_t &msg)
 {
     // decode
     mavlink_mission_clear_all_t packet;
-    mavlink_msg_mission_clear_all_decode(msg, &packet);
+    mavlink_msg_mission_clear_all_decode(&msg, &packet);
 
     const MAV_MISSION_TYPE mission_type = (MAV_MISSION_TYPE)packet.mission_type;
     MissionItemProtocol *prot = gcs().get_prot_for_mission_type(mission_type);
     if (prot == nullptr) {
-        send_mission_ack(*msg, mission_type, MAV_MISSION_UNSUPPORTED);
+        send_mission_ack(msg, mission_type, MAV_MISSION_UNSUPPORTED);
         return;
     }
 
-    prot->handle_mission_clear_all(*this, *msg);
+    prot->handle_mission_clear_all(*this, msg);
 }
 
 bool MissionItemProtocol_Waypoints::clear_all_items()
@@ -857,18 +857,18 @@ bool GCS_MAVLINK::requesting_mission_items() const
     return false;
 }
 
-void GCS_MAVLINK::handle_mission_write_partial_list(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_write_partial_list(const mavlink_message_t &msg)
 {
     // decode
     mavlink_mission_write_partial_list_t packet;
-    mavlink_msg_mission_write_partial_list_decode(msg, &packet);
+    mavlink_msg_mission_write_partial_list_decode(&msg, &packet);
 
     MissionItemProtocol *use_prot = gcs().get_prot_for_mission_type((MAV_MISSION_TYPE)packet.mission_type);
     if (use_prot == nullptr) {
-        send_mission_ack(*msg, (MAV_MISSION_TYPE)packet.mission_type, MAV_MISSION_UNSUPPORTED);
+        send_mission_ack(msg, (MAV_MISSION_TYPE)packet.mission_type, MAV_MISSION_UNSUPPORTED);
         return;
     }
-    use_prot->handle_mission_write_partial_list(*this, *msg, packet);
+    use_prot->handle_mission_write_partial_list(*this, msg, packet);
 }
 
 void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
@@ -892,7 +892,7 @@ void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
 /*
   pass mavlink messages to the AP_Mount singleton
  */
-void GCS_MAVLINK::handle_mount_message(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mount_message(const mavlink_message_t &msg)
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
@@ -904,7 +904,7 @@ void GCS_MAVLINK::handle_mount_message(const mavlink_message_t *msg)
 /*
   pass parameter value messages through to mount library
  */
-void GCS_MAVLINK::handle_param_value(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_param_value(const mavlink_message_t &msg)
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
@@ -927,10 +927,10 @@ void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
     va_end(arg_list);
 }
 
-void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, bool log_radio)
+void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_radio)
 {
     mavlink_radio_t packet;
-    mavlink_msg_radio_decode(msg, &packet);
+    mavlink_msg_radio_decode(&msg, &packet);
 
     // record if the GCS has been receiving radio messages from
     // the aircraft
@@ -971,21 +971,21 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, bool log_radio)
   handle an incoming mission item
   return true if this is the last mission item, otherwise false
  */
-void GCS_MAVLINK::handle_mission_item(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
     // TODO: rename packet to mission_item_int
     mavlink_mission_item_int_t packet;
-    if (msg->msgid == MAVLINK_MSG_ID_MISSION_ITEM) {      
+    if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
         mavlink_mission_item_t mission_item;
-        mavlink_msg_mission_item_decode(msg, &mission_item);
+        mavlink_msg_mission_item_decode(&msg, &mission_item);
         MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, packet);
         if (ret != MAV_MISSION_ACCEPTED) {
             const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)packet.mission_type;
-            send_mission_ack(*msg, type, ret);
+            send_mission_ack(msg, type, ret);
             return;
         }
     } else {
-        mavlink_msg_mission_item_int_decode(msg, &packet);
+        mavlink_msg_mission_item_int_decode(&msg, &packet);
     }
     const uint8_t current = packet.current;
     const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)packet.mission_type;
@@ -995,7 +995,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t *msg)
         MAV_MISSION_RESULT result = AP_Mission::mavlink_int_to_mission_cmd(packet, cmd);
         if (result != MAV_MISSION_ACCEPTED) {
             //decode failed
-            send_mission_ack(*msg, MAV_MISSION_TYPE_MISSION, result);
+            send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
             return;
         }
         // guided or change-alt
@@ -1012,23 +1012,23 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t *msg)
             // verify we recevied the command
             result = MAV_MISSION_ACCEPTED;
         }
-        send_mission_ack(*msg, MAV_MISSION_TYPE_MISSION, result);
+        send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
         return;
     }
 
     // not a guided-mode reqest
     MissionItemProtocol *prot = gcs().get_prot_for_mission_type(type);
     if (prot == nullptr) {
-        send_mission_ack(*msg, type, MAV_MISSION_UNSUPPORTED);
+        send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
         return;
     }
 
     if (!prot->receiving) {
-        send_mission_ack(*msg, type, MAV_MISSION_ERROR);
+        send_mission_ack(msg, type, MAV_MISSION_ERROR);
         return;
     }
 
-    prot->handle_mission_item(*msg, packet);
+    prot->handle_mission_item(msg, packet);
 }
 
 MAV_MISSION_RESULT MissionItemProtocol_Waypoints::replace_item(const mavlink_mission_item_int_t &mission_item_int)
@@ -1693,7 +1693,7 @@ void GCS_MAVLINK::send_message(enum ap_message id)
 }
 
 void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
-                                 mavlink_message_t &msg)
+                                 const mavlink_message_t &msg)
 {
     // we exclude radio packets because we historically used this to
     // make it possible to use the CLI over the radio
@@ -1714,7 +1714,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
             cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
         }
     }
-    if (!routing.check_and_forward(chan, &msg)) {
+    if (!routing.check_and_forward(chan, msg)) {
         // the routing code has indicated we should not handle this packet locally
         return;
     }
@@ -1722,7 +1722,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         // e.g. enforce-sysid says we shouldn't look at this packet
         return;
     }
-    handleMessage(&msg);
+    handleMessage(msg);
 }
 
 void
@@ -2340,10 +2340,10 @@ void GCS_MAVLINK::send_battery2()
 /*
   handle a SET_MODE MAVLink message
  */
-void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg)
+void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
 {
     mavlink_set_mode_t packet;
-    mavlink_msg_set_mode_decode(msg, &packet);
+    mavlink_msg_set_mode_decode(&msg, &packet);
 
     const MAV_MODE _base_mode = (MAV_MODE)packet.base_mode;
     const uint32_t _custom_mode = packet.custom_mode;
@@ -2904,11 +2904,11 @@ uint64_t GCS_MAVLINK::timesync_timestamp_ns() const
   return a timesync request
   Sends back ts1 as received, and tc1 is the local timestamp in usec
  */
-void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
 {
     // decode incoming timesync message
     mavlink_timesync_t tsync;
-    mavlink_msg_timesync_decode(msg, &tsync);
+    mavlink_msg_timesync_decode(&msg, &tsync);
 
     if (tsync.tc1 != 0) {
         // this is a response to a timesync request
@@ -2921,7 +2921,7 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
 #if 0
         gcs().send_text(MAV_SEVERITY_INFO,
                         "timesync response sysid=%u (latency=%fms)",
-                        msg->sysid,
+                        msg.sysid,
                         round_trip_time_us*0.001f);
 #endif
         AP_Logger *logger = AP_Logger::get_singleton();
@@ -2933,7 +2933,7 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
                 "F-F",
                 "QBQ",
                 AP_HAL::micros64(),
-                msg->sysid,
+                msg.sysid,
                 round_trip_time_us
                 );
         }
@@ -2973,7 +2973,7 @@ void GCS_MAVLINK::send_timesync()
         );
 }
 
-void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
 {
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
@@ -2981,18 +2981,18 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
     }
 
     mavlink_statustext_t packet;
-    mavlink_msg_statustext_decode(msg, &packet);
+    mavlink_msg_statustext_decode(&msg, &packet);
     const uint8_t max_prefix_len = 20;
     const uint8_t text_len = MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+max_prefix_len;
     char text[text_len] = { 'G','C','S',':'};
     uint8_t offset = strlen(text);
 
-    if (msg->sysid != sysid_my_gcs()) {
+    if (msg.sysid != sysid_my_gcs()) {
         offset = hal.util->snprintf(text,
                                     max_prefix_len,
                                     "SRC=%u/%u:",
-                                    msg->sysid,
-                                    msg->compid);
+                                    msg.sysid,
+                                    msg.compid);
     }
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
@@ -3001,10 +3001,10 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 }
 
 
-void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
 {
     mavlink_system_time_t packet;
-    mavlink_msg_system_time_decode(msg, &packet);
+    mavlink_msg_system_time_decode(&msg, &packet);
 
     AP::rtc().set_utc_usec(packet.time_unix_usec, AP_RTC::SOURCE_MAVLINK_SYSTEM_TIME);
 }
@@ -3079,10 +3079,10 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
     }
 }
 
-void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t &msg)
 {
     mavlink_set_gps_global_origin_t packet;
-    mavlink_msg_set_gps_global_origin_decode(msg, &packet);
+    mavlink_msg_set_gps_global_origin_decode(&msg, &packet);
 
     // sanity check location
     if (!check_latlng(packet.latitude, packet.longitude)) {
@@ -3100,11 +3100,11 @@ void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t *msg)
 /*
   handle a DATA96 message
  */
-void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_data_packet(const mavlink_message_t &msg)
 {
 #if HAL_RCINPUT_WITH_AP_RADIO
     mavlink_data96_t m;
-    mavlink_msg_data96_decode(msg, &m);
+    mavlink_msg_data96_decode(&msg, &m);
     switch (m.type) {
     case 42:
     case 43: {
@@ -3122,7 +3122,7 @@ void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
 #endif
 }
 
-void GCS_MAVLINK::handle_vision_position_delta(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_vision_position_delta(const mavlink_message_t &msg)
 {
     AP_VisualOdom *visual_odom = AP::visualodom();
     if (visual_odom == nullptr) {
@@ -3131,28 +3131,28 @@ void GCS_MAVLINK::handle_vision_position_delta(mavlink_message_t *msg)
     visual_odom->handle_msg(msg);
 }
 
-void GCS_MAVLINK::handle_vision_position_estimate(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_vision_position_estimate(const mavlink_message_t &msg)
 {
     mavlink_vision_position_estimate_t m;
-    mavlink_msg_vision_position_estimate_decode(msg, &m);
+    mavlink_msg_vision_position_estimate_decode(&msg, &m);
 
     handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw,
                                                 PAYLOAD_SIZE(chan, VISION_POSITION_ESTIMATE));
 }
 
-void GCS_MAVLINK::handle_global_vision_position_estimate(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_global_vision_position_estimate(const mavlink_message_t &msg)
 {
     mavlink_global_vision_position_estimate_t m;
-    mavlink_msg_global_vision_position_estimate_decode(msg, &m);
+    mavlink_msg_global_vision_position_estimate_decode(&msg, &m);
 
     handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw,
                                                 PAYLOAD_SIZE(chan, GLOBAL_VISION_POSITION_ESTIMATE));
 }
 
-void GCS_MAVLINK::handle_vicon_position_estimate(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_vicon_position_estimate(const mavlink_message_t &msg)
 {
     mavlink_vicon_position_estimate_t m;
-    mavlink_msg_vicon_position_estimate_decode(msg, &m);
+    mavlink_msg_vicon_position_estimate_decode(&msg, &m);
 
     handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw,
                                                 PAYLOAD_SIZE(chan, VICON_POSITION_ESTIMATE));
@@ -3218,10 +3218,10 @@ void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
                                            (double)(yaw * RAD_TO_DEG));
 }
 
-void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
 {
     mavlink_att_pos_mocap_t m;
-    mavlink_msg_att_pos_mocap_decode(msg, &m);
+    mavlink_msg_att_pos_mocap_decode(&msg, &m);
 
     // sensor assumed to be at 0,0,0 body-frame; need parameters for this?
     const Vector3f sensor_offset = {};
@@ -3254,7 +3254,7 @@ void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
     log_vision_position_estimate_data(m.time_usec, m.x, m.y, m.z, roll, pitch, yaw);
 }
 
-void GCS_MAVLINK::handle_command_ack(const mavlink_message_t* msg)
+void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 {
     AP_AccelCal *accelcal = AP::ins().get_acal();
     if (accelcal != nullptr) {
@@ -3264,16 +3264,16 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t* msg)
 
 // allow override of RC channel values for HIL or for complete GCS
 // control of switch position and RC PWM values.
-void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
 {
-    if(msg->sysid != sysid_my_gcs()) {
+    if(msg.sysid != sysid_my_gcs()) {
         return; // Only accept control from our gcs
     }
 
     const uint32_t tnow = AP_HAL::millis();
 
     mavlink_rc_channels_override_t packet;
-    mavlink_msg_rc_channels_override_decode(msg, &packet);
+    mavlink_msg_rc_channels_override_decode(&msg, &packet);
 
     const uint16_t override_data[] = {
         packet.chan1_raw,
@@ -3304,7 +3304,7 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t *msg)
 
 // allow override of RC channel values for HIL or for complete GCS
 // control of switch position and RC PWM values.
-void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
 {
     OpticalFlow *optflow = AP::opticalflow();
     if (optflow == nullptr) {
@@ -3316,9 +3316,9 @@ void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t *msg)
 /*
   handle messages which don't require vehicle specific data
  */
-void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_COMMAND_ACK: {
         handle_command_ack(msg);
         break;
@@ -3485,13 +3485,13 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     }
 }
 
-void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
 {
     AP_Mission *_mission = AP::mission();
     if (_mission == nullptr) {
         return;
     }
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST: // MAV ID: 38
     {
         handle_mission_write_partial_list(msg);
@@ -3545,7 +3545,7 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     }
 }
 
-void GCS_MAVLINK::handle_send_autopilot_version(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_send_autopilot_version(const mavlink_message_t &msg)
 {
     send_autopilot_version();
 }
@@ -4034,11 +4034,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     return result;
 }
 
-void GCS_MAVLINK::handle_command_long(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 {
     // decode packet
     mavlink_command_long_t packet;
-    mavlink_msg_command_long_decode(msg, &packet);
+    mavlink_msg_command_long_decode(&msg, &packet);
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
@@ -4155,11 +4155,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     return MAV_RESULT_UNSUPPORTED;
 }
 
-void GCS_MAVLINK::handle_command_int(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
 {
     // decode packet
     mavlink_command_int_t packet;
-    mavlink_msg_command_int_decode(msg, &packet);
+    mavlink_msg_command_int_decode(&msg, &packet);
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
@@ -4825,7 +4825,7 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
   return true if we will accept this packet. Used to implement SYSID_ENFORCE
  */
 bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
-                                mavlink_message_t &msg)
+                                const mavlink_message_t &msg)
 {
     if (msg.sysid == mavlink_system.sysid) {
         // accept packets from our own components
