@@ -21,14 +21,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_lon
     }
 }
 
-void GCS_MAVLINK::handle_fence_message(mavlink_message_t *msg)
+void GCS_MAVLINK::handle_fence_message(const mavlink_message_t &msg)
 {
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return;
     }
     // send or receive fence points with GCS
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_FENCE_POINT:
     case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
         fence->handle_msg(*this, msg);
