@@ -17,6 +17,9 @@ include AP_AHRS/AP_AHRS.h
 
 singleton AP_AHRS alias ahrs
 singleton AP_AHRS semaphore
+singleton AP_AHRS method get_roll float
+singleton AP_AHRS method get_pitch float
+singleton AP_AHRS method get_yaw float
 singleton AP_AHRS method get_position boolean Location'Null
 singleton AP_AHRS method get_home Location
 singleton AP_AHRS method get_gyro Vector3f
