@@ -94,7 +94,7 @@ private:
     char prearm_fail_string[42];
 
     // read inputs from ESC telem and battery monitor
-    void read_esc_telem();
+    void read_esc_telem(const bool have_throttle);
     void read_bat_mon();
 
     // KF varables

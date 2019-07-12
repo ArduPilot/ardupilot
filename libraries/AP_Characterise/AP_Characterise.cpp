@@ -260,25 +260,29 @@ void AP_Characterise::update_inputs()
     }
 
     // body frame accelerations
-    Vector3f bf_accel = AP::ahrs().get_accel_ef_blended();                      // read in earth frame
-    bf_accel.z += GRAVITY_MSS;                                                  // remove gravity
-    Matrix3<float> DCM_inv;
-    const bool success = AP::ahrs().get_rotation_body_to_ned().inverse(DCM_inv);
-    if (success) {
-        bf_accel = bf_accel * DCM_inv;   // convert to body frame
-        _accel_x_mean = ((_accel_x_mean*_samples) + bf_accel.x) / (_samples + 1);
-        _accel_z_mean = ((_accel_z_mean*_samples) + bf_accel.z) / (_samples + 1);
-    }
+    Vector3f bf_accel = AP::ahrs().get_accel_ef_blended();
+    bf_accel.z += GRAVITY_MSS;      // remove gravity
+    const Matrix3f &rot = AP::ahrs().get_rotation_body_to_ned();
+    bf_accel = rot.mul_transpose(bf_accel);
+    _accel_x_mean = ((_accel_x_mean*_samples) + bf_accel.x) / (_samples + 1);
+    _accel_z_mean = ((_accel_z_mean*_samples) + bf_accel.z) / (_samples + 1);
+
+    // Zero rpm reading if throttle is zero
+    const bool have_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0;
 
     // read in power and rpm from ESC's
-    read_esc_telem();
+    read_esc_telem(have_throttle);
 
     // read RPM1 and RPM2
     const AP_RPM *rpm = AP_RPM::get_singleton();
     if (rpm != nullptr) {
         for (uint8_t i=0; i<2; i++) {
             if ((_prop_rpm_bitmask & (1 << (8+i))) != 0) {
-                _rpm_mean = ((_rpm_mean*_rpm_samples) + rpm->get_rpm(i)) / (_rpm_samples + 1);
+                if (have_throttle) {
+                    _rpm_mean = ((_rpm_mean*_rpm_samples) + rpm->get_rpm(i)) / (_rpm_samples + 1);
+                } else {
+                    _rpm_mean = (_rpm_mean*_rpm_samples) / (_rpm_samples + 1);
+                }
                 _rpm_samples++;
             }
         }
@@ -291,7 +295,7 @@ void AP_Characterise::update_inputs()
 }
 
 // read in power and rpm from blheli esc
-void AP_Characterise::read_esc_telem()
+void AP_Characterise::read_esc_telem(const bool have_throttle)
 {
 #ifdef HAVE_AP_BLHELI_SUPPORT
     AP_BLHeli *blheli = AP_BLHeli::get_singleton();
@@ -313,7 +317,11 @@ void AP_Characterise::read_esc_telem()
         }
 
         if (use_rpm) {
-            _rpm_mean = ((_rpm_mean*_rpm_samples) + td.rpm) / (_rpm_samples + 1);
+            if (have_throttle) {
+                _rpm_mean = ((_rpm_mean*_rpm_samples) + td.rpm) / (_rpm_samples + 1);
+            } else {
+                _rpm_mean = (_rpm_mean*_rpm_samples) / (_rpm_samples + 1);
+            }
             _rpm_samples++;
         }
 
