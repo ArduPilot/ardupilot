@@ -83,13 +83,6 @@ private:
     ///
     bool                        _decode(char c);
 
-    /// Return the numeric value of an ascii hex character
-    ///
-    /// @param	a		The character to be converted
-    /// @returns		The value of the character as a hex digit
-    ///
-    int16_t                     _from_hex(char a);
-
     /// Parses the @p as a NMEA-style decimal number with
     /// up to 3 decimal digits.
     ///
