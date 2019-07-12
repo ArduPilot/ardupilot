@@ -48,6 +48,14 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL6_BAUD HAL_SERIAL6_BAUD
 #endif
 
+#ifndef HAL_SERIAL7_PROTOCOL
+#define SERIAL7_PROTOCOL SerialProtocol_None
+#define SERIAL7_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#else
+#define SERIAL7_PROTOCOL HAL_SERIAL7_PROTOCOL
+#define SERIAL7_BAUD HAL_SERIAL7_BAUD
+#endif
+
 
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 0_BAUD
@@ -226,6 +234,29 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Units: s
     // @User: Advanced
     AP_GROUPINFO("_PASSTIMO",  22, AP_SerialManager, passthru_timeout, 15),
+
+    // @Param: 7_PROTOCOL
+    // @DisplayName: Serial7 protocol selection
+    // @Description: Control what protocol Serial7 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
+    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("7_PROTOCOL",  23, AP_SerialManager, state[7].protocol, SERIAL7_PROTOCOL),
+
+    // @Param: 7_BAUD
+    // @DisplayName: Serial 7 Baud Rate
+    // @Description: The baud rate used for Serial7. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,256:256000,500:500000,921:921600,1500:1500000
+    // @User: Standard
+    AP_GROUPINFO("7_BAUD", 24, AP_SerialManager, state[7].baud, SERIAL7_BAUD),
+
+    // @Param: 7_OPTIONS
+    // @DisplayName: Serial7 options
+    // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire.
+    // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 4:Swap
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("7_OPTIONS",  25, AP_SerialManager, state[7].options, 0),
     
     AP_GROUPEND
 };
@@ -266,6 +297,7 @@ void AP_SerialManager::init()
     state[4].uart = hal.uartE;  // serial4, uartE, normally 2nd GPS
     state[5].uart = hal.uartF;  // serial5
     state[6].uart = hal.uartG;  // serial6
+    state[7].uart = hal.uartH;  // serial7
 
     if (state[0].uart == nullptr) {
         init_console();
