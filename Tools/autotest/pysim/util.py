@@ -227,6 +227,7 @@ def start_SITL(binary,
                unhide_parameters=False,
                gdbserver=False,
                breakpoints=[],
+               disable_breakpoints=False,
                vicon=False):
     """Launch a SITL instance."""
     cmd = []
@@ -253,6 +254,8 @@ def start_SITL(binary,
             f.write("target extended-remote localhost:3333\nc\n")
             for breakpoint in breakpoints:
                 f.write("b %s\n" % (breakpoint,))
+            if disable_breakpoints:
+                f.write("disable\n")
             f.close()
             run_cmd('screen -d -m -S ardupilot-gdbserver '
                     'bash -c "gdb -x /tmp/x.gdb"')
@@ -260,6 +263,8 @@ def start_SITL(binary,
         f = open("/tmp/x.gdb", "w")
         for breakpoint in breakpoints:
             f.write("b %s\n" % (breakpoint,))
+        if disable_breakpoints:
+            f.write("disable\n")
         f.write("r\n")
         f.close()
         if os.environ.get('DISPLAY'):
