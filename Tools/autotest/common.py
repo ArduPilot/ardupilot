@@ -169,6 +169,7 @@ class AutoTest(ABC):
                  params=None,
                  gdbserver=False,
                  breakpoints=[],
+                 disable_breakpoints=False,
                  viewerip=None,
                  use_map=False,
                  _show_test_timings=False):
@@ -180,6 +181,7 @@ class AutoTest(ABC):
         self.params = params
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
+        self.disable_breakpoints = disable_breakpoints
         self.speedup = speedup
 
         self.mavproxy = None
@@ -2007,6 +2009,7 @@ class AutoTest(ABC):
         self.progress("Starting simulator")
         self.sitl = util.start_SITL(self.binary,
                                     breakpoints=self.breakpoints,
+                                    disable_breakpoints=self.disable_breakpoints,
                                     defaults_file=self.defaults_filepath(),
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver,

@@ -380,6 +380,7 @@ def run_step(step):
         "gdb": opts.gdb,
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
+        "disable_breakpoints": opts.disable_breakpoints,
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
     }
@@ -727,6 +728,10 @@ if __name__ == "__main__":
                          action="append",
                          default=[],
                          help="add a breakpoint at given location in debugger")
+    group_sim.add_option("--disable-breakpoints",
+                         default=False,
+                         action='store_true',
+                         help="disable all breakpoints before starting")
     parser.add_option_group(group_sim)
 
     opts, args = parser.parse_args()
