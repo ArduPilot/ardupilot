@@ -134,7 +134,12 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
 {
     // handle the last term in a message
     if (_term_is_checksum) {
-        uint8_t checksum = 16 * char_to_hex(_term[0]) + char_to_hex(_term[1]);
+        uint8_t nibble_high = 0;
+        uint8_t nibble_low  = 0;
+        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
+            return false;
+        }
+        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
         return ((checksum == _checksum) &&
                 !is_negative(_distance_m) &&
                 (_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT));
@@ -173,15 +178,4 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
     }
 
     return false;
-}
-
-// return the numeric value of an ascii hex character
-int16_t AP_RangeFinder_NMEA::char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
 }
