@@ -18,7 +18,11 @@
 #include <AP_Math/AP_Math.h>
 
 #include "Util.h"
+<<<<<<< HEAD
 #include <ch.h>
+=======
+#include <chheap.h>
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #include "RCOutput.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
@@ -295,6 +299,7 @@ bool Util::get_system_id(char buf[40])
     return true;
 }
 
+<<<<<<< HEAD
 bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 {
     len = MIN(12, len);
@@ -302,12 +307,15 @@ bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
     return true;
 }
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #ifdef USE_POSIX
 /*
   initialise filesystem
  */
 bool Util::fs_init(void)
 {
+<<<<<<< HEAD
     return sdcard_retry();
 }
 #endif
@@ -317,3 +325,8 @@ bool Util::was_watchdog_reset() const
 {
     return stm32_was_watchdog_reset();
 }
+=======
+    return sdcard_init();
+}
+#endif
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0

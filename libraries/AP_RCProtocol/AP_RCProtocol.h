@@ -26,7 +26,11 @@ class AP_RCProtocol_Backend;
 class AP_RCProtocol {
 public:
     AP_RCProtocol() {
+<<<<<<< HEAD
         _singleton = this;
+=======
+        instance = this;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
     ~AP_RCProtocol();
 
@@ -79,8 +83,13 @@ public:
     }
     
     // access to singleton
+<<<<<<< HEAD
     static AP_RCProtocol *get_singleton(void) {
         return _singleton;
+=======
+    static AP_RCProtocol *get_instance(void) {
+        return instance;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
 
 private:
@@ -93,7 +102,11 @@ private:
     bool _valid_serial_prot = false;
     uint8_t _good_frames[NONE];
 
+<<<<<<< HEAD
     static AP_RCProtocol *_singleton;
+=======
+    static AP_RCProtocol *instance;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 };
 
 #include "AP_RCProtocol_Backend.h"

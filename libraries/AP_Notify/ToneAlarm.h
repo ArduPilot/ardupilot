@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD:libraries/AP_Notify/ToneAlarm.h
  *  ToneAlarm driver
+=======
+ *  ToneAlarm PX4 driver
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/AP_Notify/ToneAlarm.h
  */
 /*
  *   This program is free software: you can redistribute it and/or modify
@@ -33,10 +37,14 @@ public:
     void update() override;
 
     // handle a PLAY_TUNE message
+<<<<<<< HEAD:libraries/AP_Notify/ToneAlarm.h
     void handle_play_tune(mavlink_message_t *msg) override;
 
     // play_tune - play tone specified by the provided string of notes
     void play_tune(const char *tune) override;
+=======
+    void handle_play_tune(mavlink_message_t *msg);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/AP_Notify/ToneAlarm.h
 
 private:
     /// play_tune - play one of the pre-defined tunes
@@ -77,7 +85,11 @@ private:
 
     const static Tone _tones[];
 
+<<<<<<< HEAD:libraries/AP_Notify/ToneAlarm.h
     HAL_Semaphore _sem;
+=======
+    AP_HAL::Semaphore* _sem;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/AP_Notify/ToneAlarm.h
     MMLPlayer _mml_player;
     char _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE];
 };

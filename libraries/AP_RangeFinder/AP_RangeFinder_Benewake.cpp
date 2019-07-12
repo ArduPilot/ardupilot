@@ -168,9 +168,15 @@ void AP_RangeFinder_Benewake::update(void)
 {
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
+<<<<<<< HEAD
         state.last_reading_ms = AP_HAL::millis();
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
+=======
+        last_reading_ms = AP_HAL::millis();
+        update_status();
+    } else if (AP_HAL::millis() - last_reading_ms > 200) {
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         set_status(RangeFinder::RangeFinder_NoData);
     }
 }

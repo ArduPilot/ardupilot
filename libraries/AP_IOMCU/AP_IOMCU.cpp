@@ -21,6 +21,57 @@
 
 extern const AP_HAL::HAL &hal;
 
+<<<<<<< HEAD
+=======
+#define PKT_MAX_REGS 32
+
+//#define IOMCU_DEBUG
+
+struct PACKED IOPacket {
+	uint8_t 	count:6;
+	uint8_t 	code:2;
+	uint8_t 	crc;
+	uint8_t 	page;
+	uint8_t 	offset;
+	uint16_t	regs[PKT_MAX_REGS];
+
+    // get packet size in bytes
+    uint8_t get_size(void) const {
+        return count*2 + 4;
+    }
+};
+
+/*
+  values for pkt.code
+ */
+enum iocode {
+    // read types
+    CODE_READ = 0,
+    CODE_WRITE = 1,
+
+    // reply codes
+    CODE_SUCCESS = 0,
+    CODE_CORRUPT = 1,
+    CODE_ERROR = 2
+};
+
+// IO pages
+enum iopage {
+    PAGE_CONFIG = 0,
+    PAGE_STATUS = 1,
+    PAGE_ACTUATORS = 2,
+    PAGE_SERVOS = 3,
+    PAGE_RAW_RCIN = 4,
+    PAGE_RCIN = 5,
+    PAGE_RAW_ADC = 6,
+    PAGE_PWM_INFO = 7,
+    PAGE_SETUP = 50,
+    PAGE_DIRECT_PWM = 54,
+    PAGE_FAILSAFE_PWM = 55,
+    PAGE_DISARMED_PWM = 108,
+};
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 // pending IO events to send, used as an event mask
 enum ioevents {
     IOEVENT_INIT=1,
@@ -235,7 +286,11 @@ void AP_IOMCU::thread_main(void)
         // update safety pwm
         if (pwm_out.safety_pwm_set != pwm_out.safety_pwm_sent) {
             uint8_t set = pwm_out.safety_pwm_set;
+<<<<<<< HEAD
             if (write_registers(PAGE_SAFETY_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm)) {
+=======
+            if (write_registers(PAGE_DISARMED_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm)) {
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
                 pwm_out.safety_pwm_sent = set;
             }
         }
@@ -288,7 +343,11 @@ void AP_IOMCU::read_rc_input()
     uint8_t n = MIN(MAX(9, rc_input.count), IOMCU_MAX_CHANNELS);
     read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input);
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
+<<<<<<< HEAD
         rc_input.last_input_ms = AP_HAL::millis();
+=======
+        rc_input.last_input_us = AP_HAL::micros();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
 }
 
@@ -300,15 +359,22 @@ void AP_IOMCU::read_status()
     uint16_t *r = (uint16_t *)&reg_status;
     read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r);
 
+<<<<<<< HEAD
     check_iomcu_reset();
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     if (reg_status.flag_safety_off == 0) {
         // if the IOMCU is indicating that safety is on, then force a
         // re-check of the safety options. This copes with a IOMCU reset
         last_safety_options = 0xFFFF;
 
         // also check if the safety should be definately off.
+<<<<<<< HEAD
         AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
+=======
+        AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         if (!boardconfig) {
             return;
         }
@@ -596,7 +662,11 @@ void AP_IOMCU::set_freq(uint16_t chmask, uint16_t freq)
 {
     const uint8_t masks[] = { 0x03,0x0C,0xF0 };
     // ensure mask is legal for the timer layout
+<<<<<<< HEAD
     for (uint8_t i=0; i<ARRAY_SIZE(masks); i++) {
+=======
+    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(masks); i++) {
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         if (chmask & masks[i]) {
             chmask |= masks[i];
         }

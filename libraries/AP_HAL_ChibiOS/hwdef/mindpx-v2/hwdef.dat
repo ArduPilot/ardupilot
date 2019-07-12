@@ -28,9 +28,15 @@ FLASH_RESERVE_START_KB 16
 # space to reserve for storage at end of flash
 FLASH_RESERVE_END_KB 0
 
+<<<<<<< HEAD
 # serial port for stdout disabled, uses USB instead
 # STDOUT_SERIAL SD7
 # STDOUT_BAUDRATE 57600
+=======
+# serial port for stdout
+#STDOUT_SERIAL SD7
+#STDOUT_BAUDRATE 57600
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 # order of I2C buses
 I2C_ORDER I2C1 I2C2
@@ -214,3 +220,5 @@ define HAL_BATT_CURR_SCALE 17.0
 
 # 12 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 12
+
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2

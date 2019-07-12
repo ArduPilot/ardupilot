@@ -148,8 +148,14 @@ private:
     thread_t* _rcin_thread_ctx;
     thread_t* _io_thread_ctx;
     thread_t* _storage_thread_ctx;
+<<<<<<< HEAD
     thread_t* _monitor_thread_ctx;
 
+=======
+#if HAL_WITH_UAVCAN
+    thread_t* _uavcan_thread_ctx;
+#endif
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #if CH_CFG_USE_SEMAPHORES == TRUE
     binary_semaphore_t _timer_semaphore;
     binary_semaphore_t _io_semaphore;
@@ -159,8 +165,14 @@ private:
     static void _io_thread(void *arg);
     static void _storage_thread(void *arg);
     static void _uart_thread(void *arg);
+<<<<<<< HEAD
     static void _monitor_thread(void *arg);
 
+=======
+#if HAL_WITH_UAVCAN
+    static void _uavcan_thread(void *arg);
+#endif
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     void _run_timers();
     void _run_io(void);
     static void thread_create_trampoline(void *ctx);    

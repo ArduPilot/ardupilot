@@ -53,6 +53,7 @@ void ModeLand::run()
 //      should be called at 100hz or more
 void ModeLand::gps_run()
 {
+<<<<<<< HEAD
     // disarm when the landing detector says we've landed
     if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
         copter.arming.disarm();
@@ -61,6 +62,12 @@ void ModeLand::gps_run()
     // Land State Machine Determination
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
+=======
+    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
+        zero_throttle_and_relax_ac();
+        loiter_nav->clear_pilot_desired_acceleration();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         loiter_nav->init_target();
     } else {
         // set motors to full range

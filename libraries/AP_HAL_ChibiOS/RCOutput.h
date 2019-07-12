@@ -140,6 +140,7 @@ public:
       set PWM to send to a set of channels if the FMU firmware dies
      */
     void set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
+<<<<<<< HEAD
 
     /*
       set safety mask for IOMCU
@@ -154,6 +155,8 @@ public:
     void set_reversible_mask(uint16_t chanmask) override {
         reversible_mask |= chanmask;
     }
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     
 private:
     struct pwm_group {

@@ -276,9 +276,18 @@ void ModeRTL::descent_run()
     float target_pitch = 0.0f;
     float target_yaw_rate = 0.0f;
 
+<<<<<<< HEAD
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
+=======
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
+        zero_throttle_and_relax_ac();
+        // set target to current position
+        loiter_nav->clear_pilot_desired_acceleration();
+        loiter_nav->init_target();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         return;
     }
 
@@ -373,8 +382,17 @@ bool ModeRTL::landing_gear_should_be_deployed() const
 //      called by rtl_run at 100hz or more
 void ModeRTL::land_run(bool disarm_on_land)
 {
+<<<<<<< HEAD
     // check if we've completed this stage of RTL
     _state_complete = copter.ap.land_complete;
+=======
+    // if not auto armed or landing completed or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
+        zero_throttle_and_relax_ac();
+        // set target to current position
+        loiter_nav->clear_pilot_desired_acceleration();
+        loiter_nav->init_target();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     // disarm when the landing detector says we've landed
     if (disarm_on_land && copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {

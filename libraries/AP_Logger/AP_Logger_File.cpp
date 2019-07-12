@@ -149,7 +149,11 @@ void AP_Logger_File::periodic_1Hz()
         if (io_thread_warning_decimation_counter == 0 && _initialised) {
             // we don't print this error unless we did initialise. When _initialised is set to true
             // we register the IO timer callback
+<<<<<<< HEAD:libraries/AP_Logger/AP_Logger_File.cpp
             gcs().send_text(MAV_SEVERITY_CRITICAL, "AP_Logger: stuck thread (%s)", last_io_operation);
+=======
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "DataFlash: stuck thread (%s)", last_io_operation);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/DataFlash/DataFlash_File.cpp
         }
         if (io_thread_warning_decimation_counter++ > 57) {
             io_thread_warning_decimation_counter = 0;

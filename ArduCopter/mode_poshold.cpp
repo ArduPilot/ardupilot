@@ -45,9 +45,19 @@ bool ModePosHold::init(bool ignore_checks)
 
     if (copter.ap.land_complete) {
         // if landed begin in loiter mode
+<<<<<<< HEAD
         roll_mode = RPMode::LOITER;
         pitch_mode = RPMode::LOITER;
     } else {
+=======
+        poshold.roll_mode = POSHOLD_LOITER;
+        poshold.pitch_mode = POSHOLD_LOITER;
+        // set target to current position
+        // only init here as we can switch to PosHold in flight with a velocity <> 0 that will be used as _last_vel in PosControl and never updated again as we inhibit Reset_I
+        loiter_nav->clear_pilot_desired_acceleration();
+        loiter_nav->init_target();
+    }else{
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         // if not landed start in pilot override to avoid hard twitch
         roll_mode = RPMode::PILOT_OVERRIDE;
         pitch_mode = RPMode::PILOT_OVERRIDE;
@@ -77,8 +87,13 @@ void ModePosHold::run()
     const Vector3f& vel = inertial_nav.get_velocity();
 
     // initialize vertical speeds and acceleration
+<<<<<<< HEAD
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
+=======
+    pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control->set_accel_z(g.pilot_accel_z);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     loiter_nav->clear_pilot_desired_acceleration();
 
     // apply SIMPLE mode transform to pilot inputs

@@ -77,8 +77,13 @@ public:
         uint8_t gps_status;       // see the GPS_0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
         uint8_t gps_num_sats;     // number of sats
         uint8_t flight_mode;      // flight mode
+<<<<<<< HEAD
         bool armed;               // 0 = disarmed, 1 = armed
         bool flying;              // 0 = not flying, 1 = flying/driving/diving/tracking
+=======
+        float battery_voltage;
+        bool armed;               // 0 = disarmed, 1 = armed
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         bool pre_arm_check;       // true if passing pre arm checks
         bool pre_arm_gps_check;   // true if passing pre arm gps checks
         bool save_trim;           // true if gathering trim data
@@ -128,7 +133,11 @@ public:
     static struct notify_events_type events;
 
     // initialisation
+<<<<<<< HEAD
     void init(void);
+=======
+    void init(bool dummy);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);
@@ -178,7 +187,10 @@ private:
     AP_Int8 _oreo_theme;
     AP_Int8 _buzzer_pin;
     AP_Int32 _led_type;
+<<<<<<< HEAD
     AP_Int8 _buzzer_level;
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed

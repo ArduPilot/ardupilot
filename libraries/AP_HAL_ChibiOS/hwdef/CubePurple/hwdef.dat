@@ -16,6 +16,7 @@ undef PB0
 undef PB1
 PB0 PB0_ADC ADC1 SCALE(1)
 PB1 PB1_ADC ADC1 SCALE(1)
+<<<<<<< HEAD
 
 # one non-isolated IMU
 IMU Invensense SPI:mpu9250 ROTATION_YAW_270
@@ -33,3 +34,5 @@ COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
 
 # also probe for external compasses
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0

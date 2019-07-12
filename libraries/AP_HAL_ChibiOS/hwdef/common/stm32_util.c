@@ -306,7 +306,11 @@ void peripheral_power_enable(void)
 #endif
 }
 
+<<<<<<< HEAD
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
+=======
+#if defined(STM32F7) || defined(STM32F4)
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 /*
   read mode of a pin. This allows a pin config to be read, changed and
   then written back

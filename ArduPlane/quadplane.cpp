@@ -359,6 +359,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 1 5
     // @User: Standard
     AP_GROUPINFO("TAILSIT_THSCMX", 3, QuadPlane, tailsitter.throttle_scale_max, 5),
+<<<<<<< HEAD
 
     // @Param: TRIM_PITCH
     // @DisplayName: Quadplane AHRS trim pitch
@@ -401,6 +402,11 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure, 0),
+=======
+	
+    AP_GROUPEND
+};
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     // @Param: TAILSIT_MOTMX
     // @DisplayName: Tailsiter mask
@@ -604,6 +610,7 @@ bool QuadPlane::setup(void)
         break;
     }
 
+<<<<<<< HEAD
     if (tailsitter.motor_mask == 0) {
         // this is a normal quadplane
         switch (motor_class) {
@@ -632,6 +639,22 @@ bool QuadPlane::setup(void)
         rotation = ROTATION_PITCH_90;
         motors = new AP_MotorsMatrixTS(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsMatrixTS::var_info;
+=======
+    switch (motor_class) {
+    case AP_Motors::MOTOR_FRAME_TRI:
+        motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsTri::var_info;
+        break;
+    case AP_Motors::MOTOR_FRAME_TAILSITTER:
+        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsTailsitter::var_info;
+        rotation = ROTATION_PITCH_90;
+        break;
+    default:
+        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsMatrix::var_info;
+        break;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
 
     const static char *strUnableToAllocate = "Unable to allocate";
@@ -775,6 +798,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
     check_attitude_relax();
 
+<<<<<<< HEAD
     // tailsitter-only bodyframe roll control options
     if (is_tailsitter()) {
         if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL_M) {
@@ -796,6 +820,8 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
     }
 
     // normal control modes for VTOL and FW flight
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     if (in_vtol_mode() || is_tailsitter()) {
         // use euler angle attitude control
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
@@ -887,6 +913,7 @@ void QuadPlane::check_attitude_relax(void)
     last_att_control_ms = now;
 }
 
+<<<<<<< HEAD
 /*
   init QACRO mode
  */
@@ -897,6 +924,8 @@ void QuadPlane::init_qacro(void)
     attitude_control->relax_attitude_controllers();
 }
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 // init quadplane hover mode 
 void QuadPlane::init_hover(void)
 {
@@ -1472,7 +1501,11 @@ void QuadPlane::update_transition(void)
     
     // if rotors are fully forward then we are not transitioning,
     // unless we are waiting for airspeed to increase (in which case
+<<<<<<< HEAD
     // the tilt will decrease rapidly)
+=======
+    // the tilt till decrease rapidly)
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     if (tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
         transition_state = TRANSITION_DONE;
         transition_start_ms = 0;
@@ -1646,6 +1679,7 @@ void QuadPlane::update(void)
         /*
           make sure we don't have any residual control from previous flight stages
          */
+<<<<<<< HEAD
         if (is_tailsitter()) {
             // tailsitters only relax I terms, to make ground testing easier
             attitude_control->reset_rate_controller_I_terms();
@@ -1653,6 +1687,9 @@ void QuadPlane::update(void)
             // otherwise full relax
             attitude_control->relax_attitude_controllers();
         }
+=======
+        attitude_control->relax_attitude_controllers();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         pos_control->relax_alt_hold_controllers(0);
     }
     
@@ -2058,6 +2095,8 @@ void QuadPlane::vtol_position_controller(void)
 
     check_attitude_relax();
 
+    check_attitude_relax();
+
     // horizontal position control
     switch (poscontrol.state) {
 
@@ -2284,6 +2323,8 @@ void QuadPlane::takeoff_controller(void)
     */
     check_attitude_relax();
 
+    check_attitude_relax();
+
     setup_target_position();
 
     // set position controller desired velocity and acceleration to zero
@@ -2410,13 +2451,18 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
+<<<<<<< HEAD
     // we always use the current location in XY for takeoff. The altitude defaults
     // to relative to current height, but if Q_OPTIONS is set to respect takeoff frame
     // then it will use normal frame handling for height
+=======
+    // we always use the current location in XY for takeoff.
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     Location loc = cmd.content.location;
     loc.lat = 0;
     loc.lng = 0;
     plane.set_next_WP(loc);
+<<<<<<< HEAD
     if (options & OPTION_RESPECT_TAKEOFF_FRAME) {
         if (plane.current_loc.alt >= plane.next_WP_loc.alt) {
             // we are above the takeoff already, no need to do anything
@@ -2425,6 +2471,9 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     } else {
         plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
     }
+=======
+    plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     throttle_wait = false;
 
     // set target to current position

@@ -94,11 +94,21 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 bool AP_ToneAlarm::init()
 {
     if (pNotify->buzzer_enabled() == false) {
+<<<<<<< HEAD:libraries/AP_Notify/ToneAlarm.cpp
         return false;
     }
     if (!hal.util->toneAlarm_init()) {
         return false;
     }
+=======
+        return false;
+    }
+    if (!hal.util->toneAlarm_init()) {
+        return false;
+    }
+
+    _sem = hal.util->new_semaphore();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/AP_Notify/ToneAlarm.cpp
 
     // set initial boot states. This prevents us issuing a arming
     // warning in plane and rover on every boot
@@ -129,6 +139,7 @@ void AP_ToneAlarm::play_tone(const uint8_t tone_index)
 
 void AP_ToneAlarm::_timer_task()
 {
+<<<<<<< HEAD:libraries/AP_Notify/ToneAlarm.cpp
     WITH_SEMAPHORE(_sem);
     _mml_player.update();
 }
@@ -141,12 +152,33 @@ void AP_ToneAlarm::play_tune(const char *str)
     strncpy(_tone_buf, str, AP_NOTIFY_TONEALARM_TONE_BUF_SIZE);
     _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE-1] = 0;
     _mml_player.play(_tone_buf);
+=======
+    if (_sem && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        _mml_player.update();
+        _sem->give();
+    }
+}
+
+void AP_ToneAlarm::play_string(const char *str)
+{
+    if (_sem && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        _mml_player.stop();
+        strncpy(_tone_buf, str, AP_NOTIFY_TONEALARM_TONE_BUF_SIZE);
+        _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE-1] = 0;
+        _mml_player.play(_tone_buf);
+        _sem->give();
+    }
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/AP_Notify/ToneAlarm.cpp
 }
 
 void AP_ToneAlarm::stop_cont_tone()
 {
     if (_cont_tone_playing == _tone_playing) {
+<<<<<<< HEAD:libraries/AP_Notify/ToneAlarm.cpp
         play_tune("");
+=======
+        play_string("");
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/AP_Notify/ToneAlarm.cpp
         _tone_playing = -1;
     }
     _cont_tone_playing = -1;
@@ -385,6 +417,7 @@ void AP_ToneAlarm::handle_play_tune(mavlink_message_t *msg)
 
     mavlink_msg_play_tune_decode(msg, &packet);
 
+<<<<<<< HEAD:libraries/AP_Notify/ToneAlarm.cpp
     WITH_SEMAPHORE(_sem);
 
     _mml_player.stop();
@@ -397,4 +430,18 @@ void AP_ToneAlarm::handle_play_tune(mavlink_message_t *msg)
     strncpy(_tone_buf+len, packet.tune2, len2);
     _tone_buf[sizeof(_tone_buf)-1] = 0;
     _mml_player.play(_tone_buf);
+=======
+    if (_sem && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        _mml_player.stop();
+
+        strncpy(_tone_buf, packet.tune, MIN(sizeof(packet.tune), sizeof(_tone_buf)-1));
+        _tone_buf[sizeof(_tone_buf)-1] = 0;
+        uint8_t len = strlen(_tone_buf);
+        uint8_t len2 = strnlen(packet.tune2, sizeof(packet.tune2));
+        len2 = MIN((sizeof(_tone_buf)-1)-len, len2);
+        strncpy(_tone_buf+len, packet.tune2, len2);
+        _tone_buf[sizeof(_tone_buf)-1] = 0;
+        _sem->give();
+    }
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/AP_Notify/ToneAlarm.cpp
 }

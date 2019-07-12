@@ -801,10 +801,19 @@ struct PACKED log_Mode {
 struct PACKED log_RFND {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+<<<<<<< HEAD:libraries/AP_Logger/LogStructure.h
     uint8_t instance;
     uint16_t dist;
     uint8_t status;
     uint8_t orient;
+=======
+    uint16_t dist1;
+    uint8_t status1;
+    uint8_t orient1;
+    uint16_t dist2;
+    uint8_t status2;
+    uint8_t orient2;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/DataFlash/LogStructure.h
 };
 
 /*
@@ -1338,9 +1347,15 @@ struct PACKED log_Arm_Disarm {
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
+<<<<<<< HEAD:libraries/AP_Logger/LogStructure.h
       "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--" }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "IIIIIBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "C-------------" }, \
+=======
+      "RFND", "QCBBCBB", "TimeUS,Dist1,Stat1,Orient1,Dist2,Stat2,Orient2", "sm--m--", "FB--B--" }, \
+    { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
+      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s--------------", "C--------------" }, \
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0:libraries/DataFlash/LogStructure.h
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
       "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--BBBBBBB" }, \
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \

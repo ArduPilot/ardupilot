@@ -829,10 +829,18 @@ void ModeAuto::spline_run()
 //      called by auto_run at 100hz or more
 void ModeAuto::land_run()
 {
+<<<<<<< HEAD
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
+=======
+    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
+        zero_throttle_and_relax_ac();
+        // set target to current position
+        loiter_nav->clear_pilot_desired_acceleration();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         loiter_nav->init_target();
         return;
     }

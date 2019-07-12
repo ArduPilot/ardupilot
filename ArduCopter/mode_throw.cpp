@@ -77,7 +77,11 @@ void ModeThrow::run()
         gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
         stage = Throw_PosHold;
 
+<<<<<<< HEAD
         // initialise the loiter target to the current position and velocity
+=======
+        // initialise the loiter target to the curent position and velocity
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 

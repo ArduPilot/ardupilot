@@ -29,9 +29,12 @@
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Stats/AP_Stats.h>
+<<<<<<< HEAD
 #include <AP_Common/Location.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -192,6 +195,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: EFF
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(eff, "EFF", 36, AP_OSD_Screen, AP_OSD_Setting),
+<<<<<<< HEAD
     
     // @Group: BTEMP
     // @Path: AP_OSD_Setting.cpp
@@ -213,6 +217,9 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(aspd2, "ASPD2", 41, AP_OSD_Screen, AP_OSD_Setting),
     
+=======
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     AP_GROUPEND
 };
 
@@ -306,7 +313,10 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_DIST      0x22
 #define SYM_FLY       0x9C
 #define SYM_EFF       0xF2
+<<<<<<< HEAD
 #define SYM_AH        0xF3
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -479,9 +489,14 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
+<<<<<<< HEAD
     uint8_t nsat = gps.num_sats();
     bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
     backend->write(x, y, flash, "%c%c%2u", SYM_SAT_L, SYM_SAT_R, nsat);
+=======
+    int nsat = gps.num_sats();
+    backend->write(x, y, nsat < osd->warn_nsat, "%c%c%2d", SYM_SAT_L, SYM_SAT_R, nsat);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 }
 
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
@@ -864,7 +879,11 @@ void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
     float hdp = gps.get_hdop() / 100.0f;
+<<<<<<< HEAD
     backend->write(x, y, false, "%c%c%3.2f", SYM_HDOP_L, SYM_HDOP_R, (double)hdp);
+=======
+    backend->write(x, y, false, "%c%c%3.2f", SYM_HDOP_L, SYM_HDOP_R, hdp);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 }
 
 void AP_OSD_Screen::draw_waypoint(uint8_t x, uint8_t y)
@@ -916,9 +935,14 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
 {
+<<<<<<< HEAD
     AP_BattMonitor &battery = AP::battery();
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
+=======
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_AHRS &ahrs = AP::ahrs();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     Vector2f v = ahrs.groundspeed_vector();
     float speed = u_scale(SPEED,v.length());
     if (speed > 2.0){
@@ -933,6 +957,7 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     char unit_icon = u_icon(DISTANCE);
     Vector3f v;
     float vspd;
+<<<<<<< HEAD
     auto &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
     if (ahrs.get_velocity_NED(v)) {
@@ -947,11 +972,24 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     float amps = battery.current_amps();
     if (amps > 0.0) {
         backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(double)(3.6f * u_scale(VSPEED,vspd)/amps),unit_icon);
+=======
+    if (AP::ahrs().get_velocity_NED(v)) {
+        vspd = -v.z;
+    } else {
+        vspd = AP::baro().get_climb_rate();
+    }
+    if (vspd < 0.0) vspd = 0.0;
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    float amps = battery.current_amps();
+    if (amps > 0.0) {
+        backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(3.6 * u_scale(VSPEED,vspd)/amps),unit_icon);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     } else {
         backend->write(x, y, false,"%c%c---%c",SYM_PTCHUP,SYM_EFF,unit_icon);
     } 
 }
 
+<<<<<<< HEAD
 void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
 {
     AP_Baro &barometer = AP::baro();
@@ -1008,6 +1046,8 @@ void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
     }
 }
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -1044,8 +1084,11 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
+<<<<<<< HEAD
     DRAW_SETTING(btemp);
     DRAW_SETTING(atemp);
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
 

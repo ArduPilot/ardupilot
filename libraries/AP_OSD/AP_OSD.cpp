@@ -26,7 +26,10 @@
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_AHRS/AP_AHRS.h>
+<<<<<<< HEAD
 #include <AP_BattMonitor/AP_BattMonitor.h>
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #include <utility>
 #include <AP_Notify/AP_Notify.h>
 
@@ -264,7 +267,11 @@ void AP_OSD::stats()
     Location loc;
     if (ahrs.get_position(loc) && ahrs.home_is_set()) {
         const Location &home_loc = ahrs.get_home();
+<<<<<<< HEAD
         float distance = home_loc.get_distance(loc);
+=======
+        float distance = get_distance(home_loc, loc);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         max_dist_m = fmaxf(max_dist_m, distance);
     }
     
@@ -274,7 +281,11 @@ void AP_OSD::stats()
     alt = -alt;
     max_alt_m = fmaxf(max_alt_m, alt);
     // maximum current
+<<<<<<< HEAD
     AP_BattMonitor &battery = AP::battery();
+=======
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     float amps = battery.current_amps();
     max_current_a = fmaxf(max_current_a, amps);
 }

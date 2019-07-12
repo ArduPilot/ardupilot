@@ -5,12 +5,28 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_RTC/AP_RTC.h>
 
+<<<<<<< HEAD
 #ifndef AP_FEATURE_BOARD_DETECT
 #if defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO) || defined(HAL_CHIBIOS_ARCH_BRAINV51) || defined(HAL_CHIBIOS_ARCH_BRAINV52) || defined(HAL_CHIBIOS_ARCH_UBRAINV51) || defined(HAL_CHIBIOS_ARCH_COREV10) || defined(HAL_CHIBIOS_ARCH_BRAINV54)
+=======
+#if defined(HAL_NEEDS_PARAM_HELPER)
+#include <AP_Param_Helper/AP_Param_Helper.h>
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #define AP_FEATURE_BOARD_DETECT 1
 #else
 #define AP_FEATURE_BOARD_DETECT 0
 #endif
+<<<<<<< HEAD
+=======
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_GPIO_PIN_SAFETY_IN) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
+#define AP_FEATURE_SAFETY_BUTTON 1
+#else
+#define AP_FEATURE_SAFETY_BUTTON 0
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #endif
 
 #ifndef AP_FEATURE_RTSCTS
@@ -138,6 +154,7 @@ public:
 #endif
     }
 
+<<<<<<< HEAD
 #if HAL_HAVE_BOARD_VOLTAGE
     // get minimum board voltage
     static float get_minimum_board_voltage(void) {
@@ -167,6 +184,14 @@ public:
         return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:false;
     }
 
+=======
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    static uint8_t get_sdcard_slowdown(void) {
+        return instance?instance->_sdcard_slowdown.get():0;
+    }
+#endif
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 private:
     static AP_BoardConfig *_singleton;
     
@@ -218,6 +243,7 @@ private:
     // real-time-clock; private because access is via the singleton
     AP_RTC rtc;
 
+<<<<<<< HEAD
 #if HAL_HAVE_BOARD_VOLTAGE
     AP_Float _vbus_min;
 #endif
@@ -235,4 +261,9 @@ private:
 #endif
 
     AP_Int32 _options;
+=======
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    AP_Int8 _sdcard_slowdown;
+#endif
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 };

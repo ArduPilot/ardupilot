@@ -1287,6 +1287,27 @@ def write_ROMFS(outdir):
     for k in romfs.keys():
         romfs_list.append((k, romfs[k]))
     env_vars['ROMFS_FILES'] = romfs_list
+<<<<<<< HEAD
+=======
+
+def write_prototype_file():
+    '''write the prototype file for apj generation'''
+    pf = open(os.path.join(outdir, "apj.prototype"), "w")
+    pf.write('''{
+    "board_id": %s, 
+    "magic": "PX4FWv1", 
+    "description": "Firmware for the %s board", 
+    "image": "", 
+    "build_time": 0, 
+    "summary": "PX4FMUv3",
+    "version": "0.1",
+    "image_size": 0,
+    "git_identity": "",
+    "board_revision": 0
+}
+''' % (get_config('APJ_BOARD_ID'),
+       get_config('APJ_BOARD_TYPE', default=mcu_type)))
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 def setup_apj_IDs():
     '''setup the APJ board IDs'''

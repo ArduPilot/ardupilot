@@ -46,6 +46,7 @@ extern AP_IOMCU iomcu;
 using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
+<<<<<<< HEAD
 #ifndef HAL_NO_TIMER_THREAD
 THD_WORKING_AREA(_timer_thread_wa, TIMER_THD_WA_SIZE);
 #endif
@@ -60,6 +61,14 @@ THD_WORKING_AREA(_storage_thread_wa, STORAGE_THD_WA_SIZE);
 #endif
 #ifndef HAL_NO_MONITOR_THREAD
 THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
+=======
+THD_WORKING_AREA(_timer_thread_wa, 2048);
+THD_WORKING_AREA(_rcin_thread_wa, 512);
+THD_WORKING_AREA(_io_thread_wa, 2048);
+THD_WORKING_AREA(_storage_thread_wa, 2048);
+#if HAL_WITH_UAVCAN
+THD_WORKING_AREA(_uavcan_thread_wa, 4096);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #endif
 
 Scheduler::Scheduler()
@@ -96,8 +105,12 @@ void Scheduler::init()
                      APM_RCIN_PRIORITY,        /* Initial priority.    */
                      _rcin_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
+<<<<<<< HEAD
 #endif
 #ifndef HAL_USE_EMPTY_IO
+=======
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     // the IO thread runs at lower priority
     _io_thread_ctx = chThdCreateStatic(_io_thread_wa,
                      sizeof(_io_thread_wa),
@@ -423,8 +436,13 @@ void Scheduler::_io_thread(void* arg)
             // thread when disarmed
             uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
+<<<<<<< HEAD
                 last_sd_start_ms = now;
                 sdcard_retry();
+=======
+                sdcard_retry();
+                last_sd_start_ms = now;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
             }
         }
     }

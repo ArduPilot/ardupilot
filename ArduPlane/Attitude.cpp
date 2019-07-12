@@ -29,6 +29,16 @@ float Plane::get_speed_scaler(void)
                 float new_scaler = linear_interpolate(0, g.scaling_speed / threshold, aspeed, 0, threshold);
                 speed_scaler = MIN(speed_scaler, new_scaler);
             }
+<<<<<<< HEAD
+=======
+        }
+    } else {
+        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0) {
+            speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 2.0f);                 // First order taylor expansion of square root
+            // Should maybe be to the 2/7 power, but we aren't going to implement that...
+        }else{
+            speed_scaler = 1.67f;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         }
     } else if (hal.util->get_soft_armed()) {
         // scale assumed surface movement using throttle output

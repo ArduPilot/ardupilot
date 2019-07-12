@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Release 3.9.8, 26th April 2019
 ------------------------------
 
@@ -136,6 +137,8 @@ and EKF handling of compass switching.
 Happy flying!
 
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 Release 3.9.5, 27th January 2019
 --------------------------------
 
@@ -278,7 +281,10 @@ series!
 Happy flying!
 
 
+<<<<<<< HEAD
 >>>>>>> a9d5581378... Plane: updated release notes for 3.9.8-beta1
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 Release 3.9.2beta3, 20th September 2018
 ---------------------------------------
 
@@ -493,6 +499,10 @@ beta cycle. Please test it and report both success and failure.
 
 Happy flying!
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 Release 3.9.0, 6th August 2018
 ------------------------------
 

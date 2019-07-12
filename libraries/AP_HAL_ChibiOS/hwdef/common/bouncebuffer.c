@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include "bouncebuffer.h"
 
+<<<<<<< HEAD
 #if defined(STM32H7)
 // always use a bouncebuffer on H7, to ensure alignment and padding
 #define IS_DMA_SAFE(addr) false
@@ -28,6 +29,11 @@
 // on F76x we only consider first half of DTCM memory as DMA safe, 2nd half is used as fast memory for EKF
 // on F74x we only have 64k of DTCM
 #define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & ((0xFFFFFFFF & ~(64*1024U-1)) | 1U)) == 0x20000000)
+=======
+#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
+// on F7 we check we are in the DTCM region, and 16 bit aligned
+#define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & ((0xFFFFFFFF & ~(DTCM_RAM_SIZE_KB*1024U-1)) | 1U)) == 0x20000000)
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #else
 // this checks an address is in main memory and 16 bit aligned
 #define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & 0xF0000001) == 0x20000000)

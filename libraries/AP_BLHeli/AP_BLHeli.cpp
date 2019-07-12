@@ -100,6 +100,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Values: 0:Console,1:Telem1,2:Telem2,3:Telem3,4:Telem4,5:Telem5
     // @User: Advanced
     AP_GROUPINFO("PORT",  8, AP_BLHeli, control_port, 0),
+<<<<<<< HEAD
 
     // @Param: POLES
     // @DisplayName: BLHeli Motor Poles
@@ -115,6 +116,9 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("REMASK",  10, AP_BLHeli, channel_reversible_mask, 0),
 
+=======
+    
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     AP_GROUPEND
 };
 
@@ -125,7 +129,11 @@ AP_BLHeli::AP_BLHeli(void)
 {
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
+<<<<<<< HEAD
     _singleton = this;
+=======
+    singleton = this;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     last_control_port = -1;
 }
 
@@ -674,9 +682,15 @@ bool AP_BLHeli::BL_ConnectEx(void)
     blheli.deviceInfo[blheli.chan][2] = BootInfo[3];
     blheli.deviceInfo[blheli.chan][1] = BootInfo[4];
     blheli.deviceInfo[blheli.chan][0] = BootInfo[5];
+<<<<<<< HEAD
 
     blheli.interface_mode[blheli.chan] = 0;
 
+=======
+
+    blheli.interface_mode[blheli.chan] = 0;
+    
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     uint16_t *devword = (uint16_t *)blheli.deviceInfo[blheli.chan];
     switch (*devword) {
     case 0x9307:
@@ -700,8 +714,11 @@ bool AP_BLHeli::BL_ConnectEx(void)
     case 0x3306:
     case 0x3406:
     case 0x3506:
+<<<<<<< HEAD
     case 0x2B06:
     case 0x4706:
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         blheli.interface_mode[blheli.chan] = imARM_BLB;
         debug("Interface type imARM_BLB");
         break;

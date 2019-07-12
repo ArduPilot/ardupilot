@@ -30,6 +30,10 @@ void show_stack_usage(void);
 
 // allocation functions in malloc.c    
 size_t mem_available(void);
+<<<<<<< HEAD
+=======
+void *malloc_ccm(size_t size);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 void *malloc_dma(size_t size);
 void *malloc_sdcard_dma(size_t size);
 void *malloc_fastmem(size_t size);
@@ -76,6 +80,7 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
+<<<<<<< HEAD
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
 iomode_t palReadLineMode(ioline_t line);
 #endif
@@ -86,6 +91,12 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n);
 // get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n);
 
+=======
+#if defined(STM32F7) || defined(STM32F4)
+iomode_t palReadLineMode(ioline_t line);
+#endif
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #ifdef __cplusplus
 }
 #endif

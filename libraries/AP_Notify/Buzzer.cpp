@@ -62,12 +62,15 @@ bool Buzzer::init()
 // update - updates led according to timed_updated.  Should be called at 50Hz
 void Buzzer::update()
 {
+<<<<<<< HEAD
     update_pattern_to_play();
     update_playing_pattern();
 }
 
 void Buzzer::update_pattern_to_play()
 {
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     // check for arming failed event
     if (AP_Notify::events.arming_failed) {
         // arming failed buzz

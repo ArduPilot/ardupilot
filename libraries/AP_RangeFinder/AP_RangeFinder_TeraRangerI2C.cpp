@@ -54,7 +54,11 @@ AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder::RangeF
         return nullptr;
     }
 
+<<<<<<< HEAD
     AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(_state, _params, std::move(i2c_dev));
+=======
+    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(_state, std::move(i2c_dev));
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     if (!sensor) {
         return nullptr;
     }
@@ -145,7 +149,11 @@ bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, ui
       return false;
   } else if (raw_distance == 0x0000) {
       // Too close
+<<<<<<< HEAD
       output_distance_cm =  params.min_distance_cm;
+=======
+      output_distance_cm =  state.min_distance_cm;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
       return true;
   } else if (raw_distance == 0x0001) {
       // Unable to measure
@@ -165,6 +173,7 @@ void AP_RangeFinder_TeraRangerI2C::timer(void)
     uint16_t _raw_distance = 0;
     uint16_t _distance_cm = 0;
 
+<<<<<<< HEAD
     if (collect_raw(_raw_distance)) {
         WITH_SEMAPHORE(_sem);
 
@@ -172,6 +181,14 @@ void AP_RangeFinder_TeraRangerI2C::timer(void)
             accum.sum += _distance_cm;
             accum.count++;
         }
+=======
+    if (collect_raw(_raw_distance) && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        if(process_raw_measure(_raw_distance, _distance_cm)){
+            accum.sum += _distance_cm;
+            accum.count++;
+        }
+        _sem->give();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
     // and immediately ask for a new reading
     measure();
@@ -182,6 +199,7 @@ void AP_RangeFinder_TeraRangerI2C::timer(void)
 */
 void AP_RangeFinder_TeraRangerI2C::update(void)
 {
+<<<<<<< HEAD
     WITH_SEMAPHORE(_sem);
 
     if (accum.count > 0) {
@@ -192,5 +210,17 @@ void AP_RangeFinder_TeraRangerI2C::update(void)
         update_status();        
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
         set_status(RangeFinder::RangeFinder_NoData);
+=======
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        if (accum.count > 0) {
+            state.distance_cm = accum.sum / accum.count;
+            accum.sum = 0;
+            accum.count = 0;
+            update_status();
+        } else {
+            set_status(RangeFinder::RangeFinder_NoData);
+        }
+        _sem->give();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
 }

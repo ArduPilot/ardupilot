@@ -819,6 +819,7 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
+<<<<<<< HEAD
         if (group.dma_handle == ctx && group.dma == nullptr) {
             chSysLock();
             group.dma = dmaStreamAllocI(group.dma_up_stream_id, 10, dma_irq_callback, &group);
@@ -828,6 +829,12 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
                 dmaSetRequestSource(group.dma, group.dma_up_channel);
             }
 #endif
+=======
+        if (group.dma_handle == ctx) {
+            chSysLock();
+            dmaStreamAllocate(group.dma, 10, dma_irq_callback, &group);
+            chSysUnlock();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         }
     }
 }
@@ -839,10 +846,16 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
+<<<<<<< HEAD
         if (group.dma_handle == ctx && group.dma != nullptr) {
             chSysLock();
             dmaStreamFreeI(group.dma);
             group.dma = nullptr;
+=======
+        if (group.dma_handle == ctx) {
+            chSysLock();
+            dmaStreamRelease(group.dma);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
             chSysUnlock();
         }
     }
@@ -928,6 +941,7 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
                 pwm = safe_pwm[chan+chan_offset];
             }
             
+<<<<<<< HEAD
             const uint16_t chan_mask = (1U<<chan);
             if (pwm == 0) {
                 // no output
@@ -948,6 +962,11 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
                     value = 0;
                 }
             }
+=======
+            pwm = constrain_int16(pwm, _esc_pwm_min, _esc_pwm_max);
+            uint16_t value = 2000UL * uint32_t(pwm - _esc_pwm_min) / uint32_t(_esc_pwm_max - _esc_pwm_min);
+            //uint32_t value = (chan+1) * 3;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
             if (value != 0) {
                 // dshot values are from 48 to 2047. Zero means off.
                 value += 47;
@@ -1022,6 +1041,17 @@ void RCOutput::dma_unlock(void *p)
 }
 
 /*
+  unlock DMA channel after a dshot send completes
+ */
+void RCOutput::dma_unlock(void *p)
+{
+    pwm_group *group = (pwm_group *)p;
+    chSysLockFromISR();
+    group->dma_handle->unlock_from_IRQ();
+    chSysUnlockFromISR();    
+}
+
+/*
   DMA interrupt handler. Used to mark DMA completed for DShot
  */
 void RCOutput::dma_irq_callback(void *p, uint32_t flags)
@@ -1034,7 +1064,11 @@ void RCOutput::dma_irq_callback(void *p, uint32_t flags)
         chEvtSignalI(irq.waiter, serial_event_mask);
     } else {
         // this prevents us ever having two dshot pulses too close together
+<<<<<<< HEAD
         chVTSetI(&group->dma_timeout, chTimeUS2I(dshot_min_gap_us), dma_unlock, p);
+=======
+        chVTSetI(&group->dma_timeout, US2ST(dshot_min_gap_us), dma_unlock, p);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
     chSysUnlockFromISR();
 }
@@ -1264,7 +1298,11 @@ void RCOutput::serial_byte_timeout(void *ctx)
 bool RCOutput::serial_read_byte(uint8_t &b)
 {
     irq.timed_out = false;
+<<<<<<< HEAD
     chVTSet(&irq.serial_timeout, chTimeMS2I(10), serial_byte_timeout, irq.waiter);
+=======
+    chVTSet(&irq.serial_timeout, MS2ST(10), serial_byte_timeout, irq.waiter);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     bool timed_out = ((chEvtWaitAny(serial_event_mask) & serial_event_mask) == 0) || irq.timed_out;
 
     uint16_t byteval = irq.byteval;

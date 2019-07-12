@@ -769,6 +769,23 @@ Vector3f CompassCalibrator::calculate_earth_field(CompassSample &sample, enum Ro
 }
 
 /*
+  return true if two rotations are equivalent
+  This copes with the fact that we have some duplicates, like ROLL_180_YAW_90 and PITCH_180_YAW_270
+ */
+bool CompassCalibrator::rotation_equal(enum Rotation r1, enum Rotation r2) const
+{
+    if (r1 == r2) {
+        return true;
+    }
+    Vector3f v(1,2,3);
+    Vector3f v1 = v;
+    Vector3f v2 = v;
+    v1.rotate(r1);
+    v2.rotate(r2);
+    return (v1 - v2).length() < 0.001;
+}
+
+/*
   calculate compass orientation using the attitude estimate associated
   with each sample, and fix orientation on external compasses if
   the feature is enabled
@@ -839,7 +856,11 @@ bool CompassCalibrator::calculate_orientation(void)
     }
     if (!pass) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u/%u %.1f", _compass_idx,
+<<<<<<< HEAD
                         besti, besti2, (double)_orientation_confidence);
+=======
+                        besti, besti2, _orientation_confidence);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     } else if (besti == _orientation) {
         // no orientation change
         gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) good orientation: %u %.1f", _compass_idx, besti, (double)_orientation_confidence);

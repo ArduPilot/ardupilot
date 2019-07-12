@@ -151,7 +151,12 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 void AC_AttitudeControl::relax_attitude_controllers()
 {
     // Initialize the attitude variables to the current attitude
+<<<<<<< HEAD
     _ahrs.get_quat_body_to_ned(_attitude_target_quat);
+=======
+    // TODO add _ahrs.get_quaternion()
+    _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
     _attitude_ang_error.initialise();
 

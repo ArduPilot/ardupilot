@@ -102,7 +102,10 @@ private:
     AP_OSD_Setting roll_angle{false, 0, 0};
     AP_OSD_Setting pitch_angle{false, 0, 0};
     AP_OSD_Setting temp{false, 0, 0};
+<<<<<<< HEAD
     AP_OSD_Setting btemp{false, 0, 0};
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     AP_OSD_Setting hdop{false, 0, 0};
     AP_OSD_Setting waypoint{false, 0, 0};
     AP_OSD_Setting xtrack_error{false, 0, 0};
@@ -111,9 +114,12 @@ private:
     AP_OSD_Setting flightime{false, 23, 10};
     AP_OSD_Setting climbeff{false,0,0};
     AP_OSD_Setting eff{false, 22, 10};
+<<<<<<< HEAD
     AP_OSD_Setting atemp{false, 0, 0};
     AP_OSD_Setting bat2_vlt{false, 0, 0};
     AP_OSD_Setting bat2used{false, 0, 0};
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     bool check_option(uint32_t option);
 
@@ -164,7 +170,10 @@ private:
     void draw_roll_angle(uint8_t x, uint8_t y);
     void draw_pitch_angle(uint8_t x, uint8_t y);
     void draw_temp(uint8_t x, uint8_t y);
+<<<<<<< HEAD
     void draw_btemp(uint8_t x, uint8_t y);
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     void draw_hdop(uint8_t x, uint8_t y);
     void draw_waypoint(uint8_t x, uint8_t y);
     void draw_xtrack_error(uint8_t x, uint8_t y);
@@ -173,9 +182,12 @@ private:
     void draw_flightime(uint8_t x, uint8_t y);
     void draw_climbeff(uint8_t x, uint8_t y);
     void draw_eff(uint8_t x, uint8_t y);
+<<<<<<< HEAD
     void draw_atemp(uint8_t x, uint8_t y);
     void draw_bat2_vlt(uint8_t x, uint8_t y);
     void draw_bat2used(uint8_t x, uint8_t y);
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 };
 
 class AP_OSD {
@@ -266,11 +278,15 @@ private:
     bool switch_debouncer;
     uint32_t last_switch_ms;
     struct NavInfo nav_info;
+<<<<<<< HEAD
     int8_t previous_pwm_screen;
     int8_t pre_fs_screen;
     bool was_armed;
     bool was_failsafe;
     
+=======
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     uint32_t last_update_ms;
     float last_distance_m;
     float max_dist_m;

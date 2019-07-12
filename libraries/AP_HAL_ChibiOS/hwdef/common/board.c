@@ -18,6 +18,7 @@
 #include "hal.h"
 #include "usbcfg.h"
 #include "stm32_util.h"
+<<<<<<< HEAD
 #include "watchdog.h"
 
 
@@ -48,6 +49,8 @@ const PALConfig pal_default_config =
 };
 
 #else //Other than STM32F1 series
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 /**
  * @brief   Type of STM32 GPIO port setup.
@@ -234,10 +237,13 @@ void __early_init(void) {
 void __late_init(void) {
   halInit();
   chSysInit();
+<<<<<<< HEAD
   stm32_watchdog_save_reason();
 #ifndef HAL_BOOTLOADER_BUILD
   stm32_watchdog_clear_reason();
 #endif
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #if CH_CFG_USE_HEAP == TRUE
   malloc_init();
 #endif

@@ -24,7 +24,11 @@
 #include "AP_RCProtocol_ST24.h"
 
 // singleton
+<<<<<<< HEAD
 AP_RCProtocol *AP_RCProtocol::_singleton;
+=======
+AP_RCProtocol *AP_RCProtocol::instance;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 void AP_RCProtocol::init()
 {
@@ -45,7 +49,11 @@ AP_RCProtocol::~AP_RCProtocol()
             backend[i] = nullptr;
         }
     }
+<<<<<<< HEAD
     _singleton = nullptr;
+=======
+    instance = nullptr;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 }
 
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)

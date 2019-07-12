@@ -113,7 +113,11 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
             break;
         }
     }
+<<<<<<< HEAD
     FALLTHROUGH;
+=======
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     case PHASE_MEASURE:
         if (_dev->write_register(LL40LS_MEASURE_REG, LL40LS_MSRREG_ACQUIRE)) {
             phase = PHASE_COLLECT;

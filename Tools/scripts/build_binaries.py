@@ -540,7 +540,10 @@ is bob we will attempt to checkout bob-AVR'''
                 "airbotf4",
                 "revo-mini",
                 "CubeBlack",
+<<<<<<< HEAD
                 "CubePurple",
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
                 "Pixhawk1",
                 "Pixhawk4",
                 "PH4-mini",
@@ -548,6 +551,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "CUAVv5Nano",
                 "mRoX21",
                 "Pixracer",
+<<<<<<< HEAD
                 "F4BY",
                 "mRoX21-777",
                 "mRoControlZeroF7",
@@ -567,6 +571,9 @@ is bob we will attempt to checkout bob-AVR'''
                 "SITL_x86_64_linux_gnu",
                 "SITL_arm_linux_gnueabihf",
                 ]
+=======
+                "F4BY"]
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''

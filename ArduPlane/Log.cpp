@@ -16,6 +16,7 @@ void Plane::Log_Write_Attitude(void)
         //Plane does not have the concept of navyaw. This is a placeholder.
         targets.z = 0;
     }
+<<<<<<< HEAD
 
     if (quadplane.tailsitter_active() || quadplane.in_vtol_mode()) {
         // we need the attitude targets from the AC_AttitudeControl controller, as they
@@ -26,6 +27,14 @@ void Plane::Log_Write_Attitude(void)
         quadplane.attitude_control->get_attitude_target_quat().to_euler(targets.x, targets.y, targets.z);
         targets *= degrees(100.0f);
         logger.Write_AttitudeView(*quadplane.ahrs_view, targets);
+=======
+    
+    if (quadplane.tailsitter_active() || quadplane.in_vtol_mode()) {
+        // we need the attitude targets from the AC_AttitudeControl controller, as they
+        // account for the acceleration limits
+        targets = quadplane.attitude_control->get_att_target_euler_cd();
+        DataFlash.Log_Write_AttitudeView(*quadplane.ahrs_view, targets);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     } else {
         logger.Write_Attitude(ahrs, targets);
     }

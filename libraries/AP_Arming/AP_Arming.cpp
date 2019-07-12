@@ -502,12 +502,23 @@ bool AP_Arming::rc_calibration_checks(bool report)
         if (c == nullptr) {
             continue;
         }
+<<<<<<< HEAD
         if (i >= num_channels && !(c->has_override())) {
             continue;
         }
         const uint16_t trim = c->get_radio_trim();
         if (c->get_radio_min() > trim) {
             check_failed(ARMING_CHECK_RC, report, "RC%d minimum is greater than trim", i + 1);
+=======
+        if (i >= num_channels && !(ch->has_override())) {
+            continue;
+        }
+        const uint16_t trim = ch->get_radio_trim();
+        if (ch->get_radio_min() > trim) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: RC%d minimum is greater than trim", i + 1);
+            }
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
             check_passed = false;
         }
         if (c->get_radio_max() < trim) {

@@ -291,7 +291,11 @@ void Plane::dspoiler_update(void)
  */
 void Plane::set_servos_idle(void)
 {
+<<<<<<< HEAD
     int16_t servo_value;
+=======
+    int16_t servo_value = 0;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     // move over full range for 2 seconds
     if (auto_state.idle_wiggle_stage != 0) {
         auto_state.idle_wiggle_stage += 2;
@@ -616,6 +620,11 @@ void Plane::servos_twin_engine_mix(void)
         rudder_dt = 0;
     }
 #endif
+
+    if (afs.should_crash_vehicle()) {
+        // when in AFS failsafe force rudder input for differential thrust to zero
+        rudder = 0;
+    }
 
     float throttle_left, throttle_right;
 

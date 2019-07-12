@@ -3,6 +3,7 @@
 
 include ../fmuv5/hwdef.dat
 
+<<<<<<< HEAD
 # extra LEDs, active low, used using the pixracer LED scheme
 PH10 LED_R1 OUTPUT OPENDRAIN HIGH GPIO(0)
 PH11 LED_G1 OUTPUT OPENDRAIN HIGH GPIO(1)
@@ -20,4 +21,8 @@ define HAL_GPIO_LED_OFF 1
 
 define HAL_HAVE_PIXRACER_LED
 
+=======
+# use default IO firmware on CUAVv5
+ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 

@@ -251,6 +251,7 @@ void Plane::control_failsafe()
         channel_roll->set_radio_in(channel_roll->get_radio_trim());
         channel_pitch->set_radio_in(channel_pitch->get_radio_trim());
         channel_rudder->set_radio_in(channel_rudder->get_radio_trim());
+        rudder_input = 0;
 
         // note that we don't set channel_throttle->radio_in to radio_trim,
         // as that would cause throttle failsafe to not activate

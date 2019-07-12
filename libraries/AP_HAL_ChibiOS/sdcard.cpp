@@ -18,13 +18,21 @@
 #include "sdcard.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+<<<<<<< HEAD
+=======
+#include "Semaphores.h"
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 extern const AP_HAL::HAL& hal;
 
 #ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
 static bool sdcard_running;
+<<<<<<< HEAD
 static HAL_Semaphore sem;
+=======
+static ChibiOS::Semaphore sem;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #endif
 
 #if HAL_USE_SDC
@@ -49,13 +57,21 @@ static SPIConfig highspeed;
 bool sdcard_init()
 {
 #ifdef USE_POSIX
+<<<<<<< HEAD
     WITH_SEMAPHORE(sem);
+=======
+    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
 #if HAL_USE_SDC
 
     if (SDCD1.bouncebuffer == nullptr) {
+<<<<<<< HEAD
         bouncebuffer_init(&SDCD1.bouncebuffer, 512, true);
+=======
+        bouncebuffer_init(&SDCD1.bouncebuffer, 512);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
 
     if (sdcard_running) {
@@ -79,7 +95,13 @@ bool sdcard_init()
 
         // Create APM Directory if needed
         mkdir("/APM", 0777);
+<<<<<<< HEAD
         sdcard_running = true;
+=======
+        mkdir("/APM/LOGS", 0777);
+        sdcard_running = true;
+        sem.give();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         return true;
     }
 #elif HAL_USE_MMC_SPI
@@ -92,7 +114,11 @@ bool sdcard_init()
     device = AP_HAL::get_HAL().spi->get_device("sdcard");
     if (!device) {
         printf("No sdcard SPI device found\n");
+<<<<<<< HEAD
         sdcard_running = false;
+=======
+        sem.give();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         return false;
     }
     device->set_slowdown(sd_slowdown);
@@ -124,10 +150,20 @@ bool sdcard_init()
 
         // Create APM Directory if needed
         mkdir("/APM", 0777);
+<<<<<<< HEAD
+=======
+        mkdir("/APM/LOGS", 0777);
+        sem.give();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         return true;
     }
-#endif
     sdcard_running = false;
+#endif
+<<<<<<< HEAD
+    sdcard_running = false;
+=======
+    sem.give();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #endif
     return false;
 }
@@ -156,15 +192,23 @@ void sdcard_stop(void)
 #endif
 }
 
+<<<<<<< HEAD
 bool sdcard_retry(void)
+=======
+void sdcard_retry(void)
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 {
 #ifdef USE_POSIX
     if (!sdcard_running) {
         sdcard_init();
     }
+<<<<<<< HEAD
     return sdcard_running;
 #endif
     return false;
+=======
+#endif
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 }
 
 #if HAL_USE_MMC_SPI

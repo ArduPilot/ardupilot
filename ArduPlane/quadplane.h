@@ -211,9 +211,12 @@ private:
     void control_stabilize(void);
 
     void check_attitude_relax(void);
+<<<<<<< HEAD
     void init_qacro(void);
     float get_pilot_throttle(void);
     void control_qacro(void);
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     void init_hover(void);
     void control_hover(void);
 
@@ -456,8 +459,11 @@ private:
         AP_Float vectored_hover_gain;
         AP_Float vectored_hover_power;
         AP_Float throttle_scale_max;
+<<<<<<< HEAD
         AP_Float max_roll_angle;
         AP_Int16 motor_mask;
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller

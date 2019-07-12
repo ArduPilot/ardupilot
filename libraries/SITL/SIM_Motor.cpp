@@ -111,7 +111,11 @@ uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_va
 
 
 // calculate current and voltage
+<<<<<<< HEAD
 void Motor::current_and_voltage(const struct sitl_input &input, float &voltage, float &current,
+=======
+void Motor::current_and_voltage(const Aircraft::sitl_input &input, float &voltage, float &current,
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
                                 uint8_t motor_offset)
 {
     // get motor speed from 0 to 1
@@ -121,7 +125,11 @@ void Motor::current_and_voltage(const struct sitl_input &input, float &voltage, 
     current = 10 * motor_speed;
 
     // assume 3S, and full throttle drops voltage by 0.7V
+<<<<<<< HEAD
     if (AP::sitl()) {
         voltage = AP::sitl()->batt_voltage - motor_speed * 0.7;
     }
+=======
+    voltage = 12.4 - motor_speed * 0.7;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 }

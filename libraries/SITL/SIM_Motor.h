@@ -78,7 +78,11 @@ public:
     uint16_t update_servo(uint16_t demand, uint64_t time_usec, float &last_value);
 
     // calculate current and voltage
+<<<<<<< HEAD
     void current_and_voltage(const struct sitl_input &input, float &voltage, float &current, uint8_t motor_offset);
+=======
+    void current_and_voltage(const Aircraft::sitl_input &input, float &voltage, float &current, uint8_t motor_offset);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 };
 
 }

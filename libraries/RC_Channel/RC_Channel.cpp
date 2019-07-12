@@ -348,6 +348,7 @@ void RC_Channel::clear_override()
 
 bool RC_Channel::has_override() const
 {
+<<<<<<< HEAD
     if (override_value <= 0) {
         return false;
     }
@@ -475,6 +476,11 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
 #endif
         break;
     }
+=======
+    int32_t override_timeout = (int32_t)(*RC_Channels::override_timeout);
+    return (override_value > 0) && ((override_timeout < 0) ||
+                                    ((AP_HAL::millis() - last_override_time) < (uint32_t)(override_timeout * 1000)));
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 }
 
 /*

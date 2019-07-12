@@ -2,6 +2,7 @@
 # for pixhawk1, based on fmuv3
 
 include ../fmuv3/hwdef.dat
+<<<<<<< HEAD
 
 # define the IMU types to probe. You can list more IMUs than you
 # actually have. The syntax for IMU declarations is:
@@ -33,3 +34,5 @@ COMPASS LSM303D SPI:lsm9ds0_am ROTATION_NONE
 
 # also probe for external compasses
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0

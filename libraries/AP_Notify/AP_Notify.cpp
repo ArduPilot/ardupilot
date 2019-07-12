@@ -22,7 +22,11 @@
 #include "ExternalLED.h"
 #include "PCA9685LED_I2C.h"
 #include "NCP5623.h"
+<<<<<<< HEAD
 #include "OreoLED_I2C.h"
+=======
+#include "OreoLED_PX4.h"
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm.h"
 #include "ToshibaLED_I2C.h"
@@ -49,7 +53,24 @@ AP_Notify *AP_Notify::_singleton;
                   Notify_LED_NCP5623_I2C_Internal | Notify_LED_NCP5623_I2C_External)
 
 #ifndef BUILD_DEFAULT_LED_TYPE
+<<<<<<< HEAD
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+=======
+// PX4 boards
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3 // Has enough memory for Oreo LEDs
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS | Notify_LED_OreoLED)
+  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
+    #define HAL_HAVE_PIXRACER_LED
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+  #else   // All other px4 boards use standard devices
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+  #endif
+
+// ChibiOS and VRBrain boards
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS || \
+      CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
   #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
 
 // Linux boards    
@@ -80,6 +101,13 @@ AP_Notify *AP_Notify::_singleton;
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
   #endif
 
+<<<<<<< HEAD
+=======
+// F4Light
+#elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
+  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_External)
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 // All other builds
 #else
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
@@ -88,10 +116,13 @@ AP_Notify *AP_Notify::_singleton;
 
 #endif // BUILD_DEFAULT_LED_TYPE
 
+<<<<<<< HEAD
 #ifndef BUZZER_ENABLE_DEFAULT
 #define BUZZER_ENABLE_DEFAULT 1
 #endif
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
@@ -148,6 +179,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
 
+<<<<<<< HEAD
 #if !defined(HAL_BUZZER_PIN)
     // @Param: BUZZ_ON_LVL
     // @DisplayName: Buzzer-on pin logic level
@@ -157,6 +189,8 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, 1),
 #endif
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     AP_GROUPEND
 };
 
@@ -164,7 +198,11 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
 AP_Notify::AP_Notify()
 {
     AP_Param::setup_object_defaults(this, var_info);
+<<<<<<< HEAD
     if (_singleton != nullptr) {
+=======
+    if (_instance != nullptr) {
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         AP_HAL::panic("AP_Notify must be singleton");
     }
     _singleton = this;
@@ -215,6 +253,7 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new DiscoLED());
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+<<<<<<< HEAD
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54
                 ADD_BACKEND(new ExternalLED()); // despite the name this is a built in set of onboard LED's
@@ -292,22 +331,121 @@ void AP_Notify::add_backends(void)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
     ADD_BACKEND(new Buzzer());
+=======
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+                ADD_BACKEND(new AP_ExternalLED()); // despite the name this is a built in set of onboard LED's
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+
+#if defined(HAL_HAVE_PIXRACER_LED)
+                ADD_BACKEND(new PixRacerLED());
+#elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
+  #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
+                ADD_BACKEND(new AP_BoardLED());
+  #else
+                ADD_BACKEND(new VRBoard_LED());
+ #endif // CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
+#elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN))
+                ADD_BACKEND(new AP_BoardLED2());
+#endif
+                break;
+            case Notify_LED_ToshibaLED_I2C_Internal:
+                ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
+                break;
+            case Notify_LED_ToshibaLED_I2C_External:
+                ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
+                break;
+#if !HAL_MINIMIZE_FEATURES
+            case Notify_LED_NCP5623_I2C_External:
+                FOREACH_I2C_EXTERNAL(b) {
+                    ADD_BACKEND(new NCP5623(b));
+                }
+                break;
+            case Notify_LED_NCP5623_I2C_Internal:
+                ADD_BACKEND(new NCP5623(TOSHIBA_LED_I2C_BUS_INTERNAL));
+                break;
+#endif
+#if !HAL_MINIMIZE_FEATURES
+            case Notify_LED_PCA9685LED_I2C_External:
+                ADD_BACKEND(new PCA9685LED_I2C());
+                break;
+#endif
+            case Notify_LED_OreoLED:
+                // OreoLED's are PX4-v3 build only
+#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3)
+                if (_oreo_theme) {
+                    ADD_BACKEND(new OreoLED_PX4(_oreo_theme));
+                }
+#endif // (CONFIG_HAL_BOARD == HAL_BOARD_PX4) && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3)
+                break;
+            case Notify_LED_UAVCAN:
+#if HAL_WITH_UAVCAN
+                ADD_BACKEND(new UAVCAN_RGB_LED(0));
+#endif // HAL_WITH_UAVCAN
+                break;
+
+        }
+    }
+
+
+    // Always try and add a display backend
+    ADD_BACKEND(new Display());
+
+    // Add noise making devices
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || \
+    CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    ADD_BACKEND(new AP_ToneAlarm());
+
+// ChibiOS noise makers
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#ifdef HAL_BUZZER_PIN
+    ADD_BACKEND(new Buzzer());
+#endif
+#ifdef HAL_PWM_ALARM
+    ADD_BACKEND(new AP_ToneAlarm());
+#endif
+
+// Linux noise makers
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+    // No noise makers, keep this though to ensure that the final else is safe
+
+  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
+        CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
+    ADD_BACKEND(new Buzzer());
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
   #else // other linux
     ADD_BACKEND(new AP_ToneAlarm());
   #endif
 
+<<<<<<< HEAD
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(new AP_ToneAlarm());
 #ifdef WITH_SITL_RGBLED
     ADD_BACKEND(new SITL_SFML_LED());
 #endif
+=======
+// F4Light noise makers
+#elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
+    ADD_BACKEND(new Buzzer());
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #endif // Noise makers
 
 }
 
 // initialisation
+<<<<<<< HEAD
 void AP_Notify::init(void)
+=======
+void AP_Notify::init(bool dummy)
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 {
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));

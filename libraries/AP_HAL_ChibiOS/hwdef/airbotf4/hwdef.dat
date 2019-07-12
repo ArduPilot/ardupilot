@@ -89,7 +89,10 @@ IMU Invensense SPI:mpu6000_cs ROTATION_YAW_180
 # one baro
 BARO MS56XX I2C:0:0x77
 
+<<<<<<< HEAD
 # no builtin compasses
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 define ALLOW_ARM_NO_COMPASS
 define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES

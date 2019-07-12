@@ -18,8 +18,12 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
+<<<<<<< HEAD
 #include "AP_HAL_ChibiOS.h"
 #include <ch.h>
+=======
+#include "Semaphores.h"
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
@@ -56,6 +60,7 @@ public:
 #ifdef HAL_PWM_ALARM
     bool toneAlarm_init() override;
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
+<<<<<<< HEAD
 #endif
 
 #ifdef USE_POSIX
@@ -68,6 +73,17 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
 
+=======
+#endif
+
+#ifdef USE_POSIX
+    /*
+      initialise (or re-initialise) filesystem storage
+     */
+    bool fs_init(void) override;
+#endif
+    
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {

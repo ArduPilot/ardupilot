@@ -17,4 +17,8 @@
 
 bool sdcard_init();
 void sdcard_stop();
+<<<<<<< HEAD
 bool sdcard_retry();
+=======
+void sdcard_retry();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0

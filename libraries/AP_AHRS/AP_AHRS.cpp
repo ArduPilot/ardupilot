@@ -256,7 +256,11 @@ Vector2f AP_AHRS::groundspeed_vector(void)
         const Vector3f wind = wind_estimate();
         const Vector2f wind2d(wind.x, wind.y);
         const Vector2f airspeed_vector(_cos_yaw * airspeed, _sin_yaw * airspeed);
+<<<<<<< HEAD
         gndVelADS = airspeed_vector + wind2d;
+=======
+        gndVelADS = airspeed_vector - wind2d;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
 
     // Generate estimate of ground speed vector using GPS
@@ -301,7 +305,11 @@ Vector2f AP_AHRS::groundspeed_vector(void)
         Vector2f ret(cosf(yaw), sinf(yaw));
         ret *= airspeed;
         // adjust for estimated wind
+<<<<<<< HEAD
         const Vector3f wind = wind_estimate();
+=======
+        Vector3f wind = wind_estimate();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         ret.x += wind.x;
         ret.y += wind.y;
         return ret;

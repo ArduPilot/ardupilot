@@ -62,8 +62,11 @@ STM32_ST_USE_TIMER 5
 # flash size
 FLASH_SIZE_KB 2048
 
+<<<<<<< HEAD
 env OPTIMIZE -O3
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 # now define which UART is used for printf(). We rarely use printf()
 # in ChibiOS, so this is really only for debugging very early startup
 # in drivers.
@@ -88,7 +91,11 @@ STDOUT_BAUDRATE 57600
 USB_VENDOR 0x0483 # ST
 USB_PRODUCT 0x5740
 USB_STRING_MANUFACTURER "mRo"
+<<<<<<< HEAD
 USB_STRING_PRODUCT "mRoX21-777"
+=======
+USB_STRING_PRODUCT "X2.1-777"
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 USB_STRING_SERIAL  "%SERIAL%"
 
 # now define the order that I2C buses are presented in the hal.i2c API

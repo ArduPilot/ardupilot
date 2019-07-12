@@ -129,8 +129,13 @@ void AC_Loiter::init_target()
     // update angle targets that will be passed to stabilize controller
     float roll_cd, pitch_cd;
     _pos_control.accel_to_lean_angles(_predicted_accel.x, _predicted_accel.y, roll_cd, pitch_cd);
+<<<<<<< HEAD
     _predicted_euler_angle.x = radians(roll_cd*0.01f);
     _predicted_euler_angle.y = radians(pitch_cd*0.01f);
+=======
+    _predicted_euler_angle.x = radians(roll_cd*0.01);
+    _predicted_euler_angle.y = radians(pitch_cd*0.01);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     // set target position
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
 

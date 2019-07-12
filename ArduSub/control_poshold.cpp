@@ -40,7 +40,11 @@ void Sub::poshold_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
+<<<<<<< HEAD
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+=======
+        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         loiter_nav.clear_pilot_desired_acceleration();
         loiter_nav.init_target();
         attitude_control.set_throttle_out(0,true,g.throttle_filt);

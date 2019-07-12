@@ -152,7 +152,11 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         case Failsafe_Action_Land:
+<<<<<<< HEAD
             if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland) {
+=======
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != QLAND) {
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
                 // never stop a landing if we were already committed
                 if (plane.mission.jump_to_landing_sequence()) {
                     plane.set_mode(mode_auto, MODE_REASON_BATTERY_FAILSAFE);
@@ -161,7 +165,11 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         case Failsafe_Action_RTL:
+<<<<<<< HEAD
             if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland ) {
+=======
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != QLAND ) {
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
                 // never stop a landing if we were already committed
                 set_mode(mode_rtl, MODE_REASON_BATTERY_FAILSAFE);
                 aparm.throttle_cruise.load();
@@ -178,10 +186,13 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #endif
             break;
 
+<<<<<<< HEAD
         case Failsafe_Action_Parachute:
             parachute_release();
             break;
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         case Failsafe_Action_None:
             // don't actually do anything, however we should still flag the system as having hit a failsafe
             // and ensure all appropriate flags are going off to the user

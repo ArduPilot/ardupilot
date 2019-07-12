@@ -780,7 +780,11 @@ void AC_PosControl::init_xy_controller()
     // initialise I terms from lean angles
     _pid_vel_xy.reset_filter();
     lean_angles_to_accel(_accel_target.x, _accel_target.y);
+<<<<<<< HEAD
     _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
+=======
+    _pid_vel_xy.set_integrator(_accel_target-_accel_desired);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
@@ -1098,8 +1102,13 @@ void AC_PosControl::accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss,
 
     // rotate accelerations into body forward-right frame
     // todo: this should probably be based on the desired heading not the current heading
+<<<<<<< HEAD
     accel_forward = accel_x_cmss * _ahrs.cos_yaw() + accel_y_cmss * _ahrs.sin_yaw();
     accel_right = -accel_x_cmss * _ahrs.sin_yaw() + accel_y_cmss * _ahrs.cos_yaw();
+=======
+    accel_forward = accel_x_cmss*_ahrs.cos_yaw() + accel_y_cmss*_ahrs.sin_yaw();
+    accel_right = -accel_x_cmss*_ahrs.sin_yaw() + accel_y_cmss*_ahrs.cos_yaw();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     // update angle targets that will be passed to stabilize controller
     pitch_target = atanf(-accel_forward / (GRAVITY_MSS * 100.0f)) * (18000.0f / M_PI);
@@ -1112,8 +1121,13 @@ void AC_PosControl::lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cms
 {
     // rotate our roll, pitch angles into lat/lon frame
     // todo: this should probably be based on the desired attitude not the current attitude
+<<<<<<< HEAD
     accel_x_cmss = (GRAVITY_MSS * 100) * (-_ahrs.cos_yaw() * _ahrs.sin_pitch() * _ahrs.cos_roll() - _ahrs.sin_yaw() * _ahrs.sin_roll()) / MAX(_ahrs.cos_roll() * _ahrs.cos_pitch(), 0.5f);
     accel_y_cmss = (GRAVITY_MSS * 100) * (-_ahrs.sin_yaw() * _ahrs.sin_pitch() * _ahrs.cos_roll() + _ahrs.cos_yaw() * _ahrs.sin_roll()) / MAX(_ahrs.cos_roll() * _ahrs.cos_pitch(), 0.5f);
+=======
+    accel_x_cmss = (GRAVITY_MSS * 100) * (-_ahrs.cos_yaw() * _ahrs.sin_pitch() * _ahrs.cos_roll() - _ahrs.sin_yaw() * _ahrs.sin_roll()) / MAX(_ahrs.cos_roll()*_ahrs.cos_pitch(), 0.5f);
+    accel_y_cmss = (GRAVITY_MSS * 100) * (-_ahrs.sin_yaw() * _ahrs.sin_pitch() * _ahrs.cos_roll() + _ahrs.cos_yaw() * _ahrs.sin_roll()) / MAX(_ahrs.cos_roll()*_ahrs.cos_pitch(), 0.5f);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 }
 
 /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain

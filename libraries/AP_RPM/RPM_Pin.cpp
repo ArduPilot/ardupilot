@@ -68,6 +68,19 @@ void AP_RPM_Pin::update(void)
                 gcs().send_text(MAV_SEVERITY_WARNING, "RPM: Failed to attach to pin %u", last_pin);
             }
         }
+<<<<<<< HEAD
+=======
+        
+        // install interrupt handler on rising edge of pin. This works
+        // for either polarity of pulse, as all we want is the period
+        stm32_gpiosetevent(gpio, true, false, false,
+                           state.instance==0?irq_handler0:irq_handler1);
+#else // other HALs
+        hal.gpio->pinMode(last_pin, HAL_GPIO_INPUT);
+        hal.gpio->attach_interrupt(last_pin, state.instance==0?irq_handler0:irq_handler1,
+                                   HAL_GPIO_INTERRUPT_RISING);
+#endif
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
 
     if (irq_state[state.instance].dt_count > 0) {

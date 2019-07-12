@@ -9,6 +9,7 @@
 // loiter_init - initialise loiter controller
 bool ModeLoiter::init(bool ignore_checks)
 {
+<<<<<<< HEAD
     if (!copter.failsafe.radio) {
         float target_roll, target_pitch;
         // apply SIMPLE mode transform to pilot inputs
@@ -16,6 +17,24 @@ bool ModeLoiter::init(bool ignore_checks)
 
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+=======
+    if (copter.position_ok() || ignore_checks) {
+        if (!copter.failsafe.radio) {
+            float target_roll, target_pitch;
+            // apply SIMPLE mode transform to pilot inputs
+            update_simple_mode();
+
+            // convert pilot input to lean angles
+            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+
+            // process pilot's roll and pitch input
+            loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
+        } else {
+            // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
+            loiter_nav->clear_pilot_desired_acceleration();
+        }
+        loiter_nav->init_target();
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
@@ -25,10 +44,16 @@ bool ModeLoiter::init(bool ignore_checks)
     }
     loiter_nav->init_target();
 
+<<<<<<< HEAD
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
         pos_control->set_alt_target_to_current_alt();
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+=======
+        return true;
+    } else {
+        return false;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     }
 
     return true;

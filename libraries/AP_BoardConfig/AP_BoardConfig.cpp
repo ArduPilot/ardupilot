@@ -196,6 +196,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Path: ../AP_RTC/AP_RTC.cpp
     AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
 
+<<<<<<< HEAD
 #if HAL_HAVE_BOARD_VOLTAGE
     // @Param: VBUS_MIN
     // @DisplayName: Autopilot board voltage requirement
@@ -219,6 +220,8 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("VSERVO_MIN",    16,     AP_BoardConfig, _vservo_min,  0),
 #endif
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     // @Param: SD_SLOWDOWN
     // @DisplayName: microSD slowdown
@@ -229,6 +232,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SD_SLOWDOWN",  17,     AP_BoardConfig, _sdcard_slowdown,  0),
 #endif
 
+<<<<<<< HEAD
 #ifdef HAL_GPIO_PWM_VOLT_PIN
     // @Param: PWM_VOLT_SEL
     // @DisplayName: Set PWM Out Voltage
@@ -245,6 +249,8 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 19, AP_BoardConfig, _options, HAL_BRD_OPTIONS_DEFAULT),
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     AP_GROUPEND
 };
 

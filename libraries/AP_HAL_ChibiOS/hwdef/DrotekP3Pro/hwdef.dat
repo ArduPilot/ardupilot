@@ -23,8 +23,11 @@ STM32_ST_USE_TIMER 5
 # flash size
 FLASH_SIZE_KB 2048
 
+<<<<<<< HEAD
 env OPTIMIZE -O3
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 # serial port for stdout, disabled so console is on USB
 #STDOUT_SERIAL SD7
 #STDOUT_BAUDRATE 57600
@@ -76,6 +79,10 @@ PE15 MAG_CS CS
 PH5 EEPROM_CS CS
 
 PA9 VBUS INPUT OPENDRAIN
+<<<<<<< HEAD
+=======
+PA10 FRSKY_INV OUTPUT GPIO(78)
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
@@ -173,11 +180,14 @@ PD15 MPU9250_DRDY INPUT
 # UART8 serial4 FrSky
 PE0 UART8_RX UART8
 PE1 UART8_TX UART8
+<<<<<<< HEAD
 # allow this uart to be inverted for transmit under user control
 # the polarity is the value to use on the GPIO to change the polarity
 # to the opposite of the default
 PA10 UART8_TXINV OUTPUT HIGH GPIO(78) POL(0)
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 PE3 VDD_SENSORS_EN OUTPUT HIGH
 
 # start peripheral power off, then enable after init
@@ -212,6 +222,7 @@ SPIDEV icm20608    SPI1 DEVID6  20608_CS   MODE3   2*MHZ   8*MHZ
 SPIDEV lis3mdl     SPI1 DEVID5  MAG_CS     MODE3 500*KHZ 500*KHZ
 SPIDEV ramtron     SPI2 DEVID10 FRAM_CS    MODE3   8*MHZ   8*MHZ
 
+<<<<<<< HEAD
 # two IMUs
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 IMU Invensense SPI:icm20608 ROTATION_ROLL_180_YAW_90
@@ -225,6 +236,8 @@ COMPASS AK8963:probe_mpu9250 0 ROTATION_ROLL_180_YAW_90
 COMPASS LIS3MDL SPI:lis3mdl false ROTATION_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 define HAL_CHIBIOS_ARCH_FMUV4PRO 1
 
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"

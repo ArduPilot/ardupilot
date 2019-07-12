@@ -103,9 +103,12 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
+<<<<<<< HEAD
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landing_gear_update, 5, 50),
 #endif
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 };
 
 constexpr int8_t Plane::_failsafe_priorities[7];
@@ -244,11 +247,14 @@ void Plane::afs_fs_check(void)
 }
 #endif
 
+<<<<<<< HEAD
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
 #endif
 
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 void Plane::one_second_loop()
 {
     // make it possible to change control channel ordering at runtime

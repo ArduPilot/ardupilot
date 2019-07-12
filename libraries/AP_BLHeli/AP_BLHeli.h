@@ -78,7 +78,10 @@ private:
     AP_Int8 debug_level;
     AP_Int8 output_type;
     AP_Int8 control_port;
+<<<<<<< HEAD
     AP_Int8 motor_poles;
+=======
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     
     enum mspState {
         MSP_IDLE=0,

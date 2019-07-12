@@ -15,7 +15,11 @@
 
 #include "PixRacerLED.h"
 
+<<<<<<< HEAD
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+=======
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4 || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 #ifndef HAL_GPIO_A_LED_PIN
 #define HAL_GPIO_A_LED_PIN        -1
@@ -36,6 +40,7 @@ PixRacerLED::PixRacerLED() :
 
 bool PixRacerLED::hw_init(void)
 {
+<<<<<<< HEAD
     // when HAL_GPIO_LED_ON is 0 then we must not use pinMode()
     // as it could remove the OPENDRAIN attribute on the pin
 #if HAL_GPIO_LED_ON != 0
@@ -43,6 +48,11 @@ bool PixRacerLED::hw_init(void)
     hal.gpio->pinMode(HAL_GPIO_B_LED_PIN, HAL_GPIO_OUTPUT);
     hal.gpio->pinMode(HAL_GPIO_C_LED_PIN, HAL_GPIO_OUTPUT);
 #endif
+=======
+    hal.gpio->pinMode(HAL_GPIO_A_LED_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(HAL_GPIO_B_LED_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(HAL_GPIO_C_LED_PIN, HAL_GPIO_OUTPUT);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
     hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
     hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);

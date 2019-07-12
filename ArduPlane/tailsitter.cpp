@@ -242,6 +242,7 @@ void QuadPlane::tailsitter_speed_scaling(void)
 {
     const float hover_throttle = motors->get_throttle_hover();
     const float throttle = motors->get_throttle();
+<<<<<<< HEAD
     float spd_scaler = 1;
 
     // If throttle_scale_max is > 1, boost gains at low throttle
@@ -321,6 +322,17 @@ void QuadPlane::tailsitter_speed_scaling(void)
     last_scale = scale;
 
     const SRV_Channel::Aux_servo_function_t functions[5] = {
+=======
+    float scaling;
+
+    if (is_zero(throttle)) {
+        scaling = tailsitter.throttle_scale_max;
+    } else {
+        scaling = constrain_float(hover_throttle / throttle, 0, tailsitter.throttle_scale_max);
+    }
+
+    const SRV_Channel::Aux_servo_function_t functions[2] = {
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
         SRV_Channel::Aux_servo_function_t::k_aileron,
         SRV_Channel::Aux_servo_function_t::k_elevator,
         SRV_Channel::Aux_servo_function_t::k_rudder,

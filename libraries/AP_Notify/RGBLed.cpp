@@ -86,6 +86,11 @@ uint8_t RGBLed::get_brightness(void) const
         break;
     }
 
+<<<<<<< HEAD
+=======
+    const uint8_t step = (AP_HAL::millis()/100) % 10;
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     // use dim light when connected through USB
     if (hal.gpio->usb_connected() && brightness > _led_dim) {
         brightness = _led_dim;

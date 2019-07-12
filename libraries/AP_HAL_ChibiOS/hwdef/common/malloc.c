@@ -57,6 +57,7 @@ static memory_heap_t heaps[NUM_MEMORY_REGIONS];
 #define DMA_ALIGNMENT 8
 #endif
 
+<<<<<<< HEAD
 // size of memory reserved for dma-capable alloc
 #ifndef DMA_RESERVE_SIZE
 #define DMA_RESERVE_SIZE 4096
@@ -66,10 +67,30 @@ static memory_heap_t heaps[NUM_MEMORY_REGIONS];
 static memory_heap_t dma_reserve_heap;
 #endif
 
+=======
+#if defined(CCM_RAM_SIZE_KB)
+static memory_heap_t ccm_heap;
+#endif
+
+#if defined(DTCM_RAM_SIZE_KB)
+static memory_heap_t dtcm_heap;
+#endif
+
+// size of memory reserved for dma-capable alloc
+#ifndef DMA_RESERVE_SIZE
+#define DMA_RESERVE_SIZE 4096
+#endif
+
+static memory_heap_t dma_reserve_heap;
+
+static void *malloc_dtcm(size_t size);
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 /*
   initialise memory handling
  */
 void malloc_init(void)
+<<<<<<< HEAD
 {
     uint8_t i;
     for (i=1; i<NUM_MEMORY_REGIONS; i++) {
@@ -85,6 +106,54 @@ void malloc_init(void)
     osalDbgAssert(dma_reserve != NULL, "DMA reserve");
     chHeapObjectInit(&dma_reserve_heap, dma_reserve, DMA_RESERVE_SIZE);
 #endif
+=======
+{
+#if defined(CCM_RAM_SIZE_KB)
+    chHeapObjectInit(&ccm_heap, (void *)CCM_BASE_ADDRESS, CCM_RAM_SIZE_KB*1024);
+#endif
+
+#if defined(DTCM_RAM_SIZE_KB)
+    chHeapObjectInit(&dtcm_heap, (void *)DTCM_BASE_ADDRESS, DTCM_RAM_SIZE_KB*1024);
+#endif
+
+    /*
+      create a DMA reserve heap, to ensure we keep some memory for DMA
+      safe memory allocations
+     */
+    void *dma_reserve = malloc_dtcm(DMA_RESERVE_SIZE);
+    if (!dma_reserve) {
+        dma_reserve = chHeapAllocAligned(NULL, DMA_RESERVE_SIZE, MIN_ALIGNMENT);
+    }
+    chHeapObjectInit(&dma_reserve_heap, dma_reserve, DMA_RESERVE_SIZE);
+}
+
+void *malloc_ccm(size_t size)
+{
+    void *p = NULL;
+#if defined(CCM_RAM_SIZE_KB)
+    p = chHeapAllocAligned(&ccm_heap, size, CH_HEAP_ALIGNMENT);
+    if (p != NULL) {
+        memset(p, 0, size);
+    }
+#else
+    (void)size;
+#endif
+    return p;
+}
+
+static void *malloc_dtcm(size_t size)
+{
+    void *p = NULL;
+#if defined(DTCM_RAM_SIZE_KB)
+    p = chHeapAllocAligned(&dtcm_heap, size, CH_HEAP_ALIGNMENT);
+#else
+    (void)size;
+#endif
+    if (p != NULL) {
+        memset(p, 0, size);
+    }
+    return p;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 }
 
 static void *malloc_flags(size_t size, uint32_t flags)
@@ -132,6 +201,7 @@ static void *malloc_flags(size_t size, uint32_t flags)
         }
     }
 
+<<<<<<< HEAD
     // if this is a not a DMA request then we can fall back to any heap
     if (!(flags & dma_flags)) {
         for (i=1; i<NUM_MEMORY_REGIONS; i++) {
@@ -150,13 +220,21 @@ static void *malloc_flags(size_t size, uint32_t flags)
 #if DMA_RESERVE_SIZE != 0
     // fall back to DMA reserve
     p = chHeapAllocAligned(&dma_reserve_heap, size, alignment);
+=======
+    // fall back to DMA reserve
+    p = chHeapAllocAligned(&dma_reserve_heap, size, MIN_ALIGNMENT);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     if (p) {
         memset(p, 0, size);
         return p;
     }
+<<<<<<< HEAD
 #endif
 
     // failed
+=======
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     return NULL;
 
 found:
@@ -176,6 +254,7 @@ void *malloc(size_t size)
  */
 void *malloc_dma(size_t size)
 {
+<<<<<<< HEAD
     return malloc_flags(size, MEM_REGION_FLAG_DMA_OK);
 }
 
@@ -190,6 +269,22 @@ void *malloc_sdcard_dma(size_t size)
 #else
     return malloc_flags(size, MEM_REGION_FLAG_DMA_OK);
 #endif
+=======
+    void *p;
+#if defined(DTCM_RAM_SIZE_KB)
+    p = malloc_dtcm(size);
+#else
+    // if we don't have DTCM memory then assume that main heap is DMA-safe
+    p = chHeapAllocAligned(NULL, size, MIN_ALIGNMENT);
+#endif
+    if (p == NULL) {
+        p = chHeapAllocAligned(&dma_reserve_heap, size, MIN_ALIGNMENT);
+    }
+    if (p) {
+        memset(p, 0, size);
+    }
+    return p;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 }
 
 /*
@@ -240,6 +335,13 @@ size_t mem_available(void)
     totalp += available;
 #endif
 
+<<<<<<< HEAD
+=======
+    size_t reserve_available = 0;
+    chHeapStatus(&dma_reserve_heap, &reserve_available, NULL);
+    totalp += reserve_available;
+
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     return totalp;
 }
 

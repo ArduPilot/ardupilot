@@ -24,7 +24,11 @@ PB5 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 0
 
 # the location where the bootloader will put the firmware
+<<<<<<< HEAD
 FLASH_BOOTLOADER_LOAD_KB 64
+=======
+define FLASH_BOOTLOADER_LOAD_KB 64
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
 # board voltage
 STM32_VDD 330U

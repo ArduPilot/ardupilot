@@ -34,7 +34,11 @@ public:
     /**
        return commandline arguments, if available
      */
+<<<<<<< HEAD
     void commandline_arguments(uint8_t &argc, char * const *&argv) override;
+=======
+    void commandline_arguments(uint8_t &argc, char * const *&argv);
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
 
     /*
       set system clock in UTC microseconds

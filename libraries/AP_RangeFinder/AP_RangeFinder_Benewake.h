@@ -40,6 +40,10 @@ private:
 
     AP_HAL::UARTDriver *uart = nullptr;
     benewake_model_type model_type;
+<<<<<<< HEAD
+=======
+    uint32_t last_reading_ms;
+>>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
     uint8_t linebuf[10];
     uint8_t linebuf_len;
 };
