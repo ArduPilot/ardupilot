@@ -3,9 +3,9 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <assert.h>
-#include <readline/readline.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 
 char keyword_alias[]     = "alias";
 char keyword_comment[]   = "--";
@@ -52,12 +52,13 @@ struct header {
 };
 
 struct generator_state {
-  char *line;
+  char line[1<<14];
   int line_num; // current line read in
   int token_num; // current token on the current line
   char *token;
 };
 
+FILE *description;
 FILE *header;
 FILE *source;
 
@@ -179,8 +180,10 @@ void error(const int code, const char *message, ...) {
   exit(code);
 }
 
+char *token_delimiters = " \n";
+
 char * next_token(void) {
-  state.token = strtok(NULL, " ");
+  state.token = strtok(NULL, token_delimiters);
   state.token_num++;
   trace(TRACE_TOKENS, "Token %d:%d %s", state.line_num, state.token_num, state.token);
   if ((state.token!= NULL) && (strcmp(state.token, keyword_comment) == 0)) {
@@ -191,14 +194,10 @@ char * next_token(void) {
 }
 
 char * start_line(void) {
-  if (state.line != NULL) {
-    free(state.line);
-  }
-
-  while ((state.line = readline(NULL))) {
+  while (fgets(state.line, sizeof(state.line)/sizeof(state.line[0]), description) != NULL) {//state.line = readline(NULL))) {
       state.line_num++;
     
-      state.token = strtok(state.line, " ");
+      state.token = strtok(state.line, token_delimiters);
       state.token_num = 1;
       trace(TRACE_TOKENS, "Token %d:%d %s", state.line_num, state.token_num, state.token);
 
@@ -1475,8 +1474,18 @@ int main(int argc, char **argv) {
   state.line_num = -1;
 
   int c;
-  while ((c = getopt(argc, argv, "o:")) != -1) {
+  while ((c = getopt(argc, argv, "i:o:")) != -1) {
     switch (c) {
+      case 'i':
+        if (description != NULL) {
+          error(ERROR_GENERAL, "Already loaded a description file");
+        }
+        trace(TRACE_GENERAL, "Loading a description file: %s", optarg);
+        description = fopen(optarg, "r");
+        if (description == NULL) {
+          error(ERROR_GENERAL, "Unable to load the description file: %s", optarg);
+        }
+        break;
       case 'o':
         if (output_path != NULL) {
           error(ERROR_GENERAL, "An output path was already selected.");
