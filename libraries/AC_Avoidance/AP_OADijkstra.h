@@ -22,9 +22,16 @@ public:
     // set fence margin (in meters) used when creating "safe positions" within the polygon fence
     void set_fence_margin(float margin) { _polyfence_margin = MAX(margin, 0.0f); }
 
+    // update return status enum
+    enum AP_OADijkstra_State : uint8_t {
+        DIJKSTRA_STATE_NOT_REQUIRED = 0,
+        DIJKSTRA_STATE_ERROR,
+        DIJKSTRA_STATE_SUCCESS
+    };
+
     // calculate a destination to avoid the polygon fence
-    // returns true if avoidance is required and target destination is placed in result_loc
-    bool update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new);
+    // returns DIJKSTRA_STATE_SUCCESS and populates origin_new and destination_new if avoidance is required
+    AP_OADijkstra_State update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new);
 
 private:
 

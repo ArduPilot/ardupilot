@@ -12,7 +12,11 @@ from pysim import util
 from common import AutoTest
 from common import NotAchievedException
 
+# get location of scripts
+testdir = os.path.dirname(os.path.realpath(__file__))
+
 SITL_START_LOCATION = mavutil.location(33.810313, -118.393867, 0, 185)
+
 
 class Joystick():
     Pitch = 1
@@ -22,7 +26,27 @@ class Joystick():
     Forward = 5
     Lateral = 6
 
+
 class AutoTestSub(AutoTest):
+    @staticmethod
+    def get_not_armable_mode_list():
+        return []
+
+    @staticmethod
+    def get_not_disarmed_settable_modes_list():
+        return []
+
+    @staticmethod
+    def get_no_position_not_settable_modes_list():
+        return ["AUTO", "GUIDED", "CIRCLE", "POSHOLD"]
+
+    @staticmethod
+    def get_position_armable_modes_list():
+        return []
+
+    @staticmethod
+    def get_normal_armable_modes_list():
+        return ["ACRO", "ALT_HOLD", "MANUAL", "STABILIZE", "SURFACE"]
 
     def log_name(self):
         return "ArduSub"
@@ -47,6 +71,9 @@ class AutoTestSub(AutoTest):
 
     def is_sub(self):
         return True
+
+    def arming_test_mission(self):
+        return os.path.join(testdir, "ArduSub-Missions", "test_arming.txt")
 
     def dive_manual(self):
         self.wait_ready_to_arm()
@@ -169,6 +196,13 @@ class AutoTestSub(AutoTest):
         while self.mav.recv_match(blocking=False):
             pass
         self.initialise_after_reboot_sitl()
+
+    def disabled_tests(self):
+        ret = super(AutoTestSub, self).disabled_tests()
+        ret.update({
+            "SensorConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",
+        })
+        return ret
 
     def tests(self):
         '''return list of all tests'''

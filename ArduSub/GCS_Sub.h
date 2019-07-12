@@ -13,10 +13,18 @@ public:
     uint8_t num_gcs() const override { return ARRAY_SIZE(_chan); };
 
     // return GCS link at offset ofs
-    GCS_MAVLINK_Sub &chan(const uint8_t ofs) override {
+    GCS_MAVLINK_Sub &chan(uint8_t ofs) override {
+        if (ofs >= num_gcs()) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            ofs = 0;
+        }
         return _chan[ofs];
     };
-    const GCS_MAVLINK_Sub &chan(const uint8_t ofs) const override {
+    const GCS_MAVLINK_Sub &chan(uint8_t ofs) const override {
+        if (ofs >= num_gcs()) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            ofs = 0;
+        }
         return _chan[ofs];
     };
 

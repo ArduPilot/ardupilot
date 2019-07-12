@@ -17,6 +17,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_RTC/AP_RTC.h>
 
 #if HAL_OS_POSIX_IO
 #include <unistd.h>

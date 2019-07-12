@@ -33,6 +33,25 @@ SITL_START_LOCATION_AVC = mavutil.location(40.072842, -105.230575, 1586, 0)
 
 
 class AutoTestCopter(AutoTest):
+    @staticmethod
+    def get_not_armable_mode_list():
+        return ["AUTO", "AUTOTUNE", "BRAKE", "CIRCLE", "FLIP", "LAND", "RTL", "SMART_RTL", "AVOID_ADSB", "FOLLOW"]
+
+    @staticmethod
+    def get_not_disarmed_settable_modes_list():
+        return ["FLIP", "AUTOTUNE"]
+
+    @staticmethod
+    def get_no_position_not_settable_modes_list():
+        return []
+
+    @staticmethod
+    def get_position_armable_modes_list():
+        return ["DRIFT", "GUIDED", "LOITER", "POSHOLD", "THROW"]
+
+    @staticmethod
+    def get_normal_armable_modes_list():
+        return ["ACRO", "ALT_HOLD", "SPORT", "STABILIZE", "GUIDED_NOGPS"]
 
     def log_name(self):
         return "ArduCopter"
@@ -365,11 +384,7 @@ class AutoTestCopter(AutoTest):
             self.fetch_parameters()
             self.set_parameter("PLND_TYPE", 4)
 
-            self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
-            self.set_parameter("RNGFND1_PIN", 0)
-            self.set_parameter("RNGFND1_SCALING", 12.12)
+            self.set_analog_rangefinder_parameters()
 
             self.reboot_sitl()
 
@@ -1195,11 +1210,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("SIM_FLOW_ENABLE", 1)
             self.set_parameter("FLOW_TYPE", 10)
 
-            self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
-            self.set_parameter("RNGFND1_PIN", 0)
-            self.set_parameter("RNGFND1_SCALING", 12.12, epsilon=0.01)
+            self.set_analog_rangefinder_parameters()
 
             self.set_parameter("SIM_GPS_DISABLE", 1)
             self.set_parameter("SIM_TERRAIN", 0)
@@ -1442,20 +1453,20 @@ class AutoTestCopter(AutoTest):
             # without a GPS or some sort of external prompting, AP
             # doesn't send system_time messages.  So prompt it:
             self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
-            self.mav.mav.set_gps_global_origin_send(1,
-                                                    old_pos.lat,
-                                                    old_pos.lon,
-                                                    old_pos.alt)
             self.progress("Waiting for non-zero-lat")
             tstart = self.get_sim_time()
             while True:
+                self.mav.mav.set_gps_global_origin_send(1,
+                                                        old_pos.lat,
+                                                        old_pos.lon,
+                                                        old_pos.alt)
                 gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                           blocking=True)
-                # self.progress("gpi=%s" % str(gpi))
+                self.progress("gpi=%s" % str(gpi))
                 if gpi.lat != 0:
                     break
 
-                if self.get_sim_time_cached() - tstart > 20:
+                if self.get_sim_time_cached() - tstart > 60:
                     raise AutoTestTimeoutException("Did not get non-zero lat")
 
             self.takeoff()
@@ -1601,11 +1612,7 @@ class AutoTestCopter(AutoTest):
             raise NotAchievedException("Found unexpected RFND message")
 
         try:
-            self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
-            self.set_parameter("RNGFND1_PIN", 0)
-            self.set_parameter("RNGFND1_SCALING", 12.12)
+            self.set_analog_rangefinder_parameters()
             self.set_parameter("RC9_OPTION", 10) # rangefinder
             self.set_rc(9, 2000)
 
@@ -1675,11 +1682,7 @@ class AutoTestCopter(AutoTest):
         self.context_push()
 
         try:
-            self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
-            self.set_parameter("RNGFND1_PIN", 0)
-            self.set_parameter("RNGFND1_SCALING", 12.12)
+            self.set_analog_rangefinder_parameters()
             self.set_parameter("RC9_OPTION", 10) # rangefinder
             self.set_rc(9, 2000)
 
@@ -1713,7 +1716,7 @@ class AutoTestCopter(AutoTest):
 
                 self.progress("Distance: %fm abs-alt-delta: %fm" %
                               (dist, delta))
-                if dist < 10:
+                if dist < 15:
                     if delta < 0.8:
                         raise NotAchievedException("Did not dip in altitude as expected")
                     break
@@ -1782,7 +1785,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect('BANG')
         self.set_rc(9, 1000)
         self.reboot_sitl()
-        self.context_pop();
+        self.context_pop()
 
         self.progress("Crashing with 3pos switch in disable position")
         loiter_alt = 10
@@ -1813,11 +1816,7 @@ class AutoTestCopter(AutoTest):
             self.fetch_parameters()
             self.set_parameter("PLND_TYPE", 4)
 
-            self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
-            self.set_parameter("RNGFND1_PIN", 0)
-            self.set_parameter("RNGFND1_SCALING", 12)
+            self.set_analog_rangefinder_parameters()
             self.set_parameter("SIM_SONAR_SCALE", 12)
 
             start = self.mav.location()
@@ -2512,11 +2511,7 @@ class AutoTestCopter(AutoTest):
 
         ex = None
         try:
-            self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
-            self.set_parameter("RNGFND1_PIN", 0)
-            self.set_parameter("RNGFND1_SCALING", 12.12)
+            self.set_analog_rangefinder_parameters()
             self.set_parameter("GRIP_ENABLE", 1)
             self.set_parameter("GRIP_TYPE", 1)
             self.set_parameter("SIM_GRPS_ENABLE", 1)
@@ -3085,11 +3080,7 @@ class AutoTestCopter(AutoTest):
             # enable companion backend:
             self.set_parameter("PLND_TYPE", 1)
 
-            self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
-            self.set_parameter("RNGFND1_PIN", 0)
-            self.set_parameter("RNGFND1_SCALING", 12.12)
+            self.set_analog_rangefinder_parameters()
 
             # set up a channel switch to enable precision loiter:
             self.set_parameter("RC7_OPTION", 39)
@@ -3348,6 +3339,67 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_beacon_position(self):
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm(require_absolute=True)
+
+        old_pos = self.mav.location()
+        print("old_pos=%s" % str(old_pos))
+
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("BCN_TYPE", 10)
+            self.set_parameter("BCN_LATITUDE", SITL_START_LOCATION.lat)
+            self.set_parameter("BCN_LONGITUDE", SITL_START_LOCATION.lng)
+            self.set_parameter("BCN_ALT", SITL_START_LOCATION.alt)
+            self.set_parameter("BCN_ORIENT_YAW", 45)
+            self.set_parameter("AVOID_ENABLE", 4)
+            self.set_parameter("GPS_TYPE", 0)
+            self.set_parameter("EK3_GPS_TYPE", 3) # NOGPS
+            self.set_parameter("EK3_ENABLE", 1)
+            self.set_parameter("EK2_ENABLE", 0)
+
+            self.reboot_sitl()
+
+            # require_absolute=True infers a GPS is present
+            self.wait_ready_to_arm(require_absolute=False)
+
+            tstart = self.get_sim_time()
+            timeout = 20
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Did not get new position like old position")
+                self.progress("Fetching location")
+                new_pos = self.mav.location()
+                pos_delta = self.get_distance(old_pos, new_pos)
+                max_delta = 1
+                self.progress("delta=%u want <= %u" % (pos_delta, max_delta))
+                if pos_delta <= max_delta:
+                    break
+
+            self.progress("Moving to ensure location is tracked")
+            self.takeoff(10, mode="LOITER")
+            self.set_rc(2, 1400)
+            self.delay_sim_time(5)
+            self.set_rc(2, 1500)
+            self.wait_groundspeed(0, 0.1)
+            pos_delta = self.get_distance(self.sim_location(), self.mav.location)
+            if pos_delta > max_delta:
+                raise NotAchievedException("Vehicle location not tracking simulated location (%u > %u)" %
+                                           (pos_delta, max_delta))
+
+        except Exception as e:
+            self.progress("Caught exception: %s" % str(e))
+            ex = e
+        self.context_pop()
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
+
     def fly_beacon_avoidance_test(self):
         self.context_push()
         ex = None
@@ -3573,6 +3625,10 @@ class AutoTestCopter(AutoTest):
              "Fly Vision Position",
              self.fly_vision_position),
 
+            ("BeaconPosition",
+             "Fly Beacon Position",
+             self.fly_beacon_position),
+
             ("RTLSpeed",
              "Fly RTL Speed",
              self.fly_rtl_speed),
@@ -3628,6 +3684,7 @@ class AutoTestCopter(AutoTest):
         return {
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
+            "BeaconPosition": "See https://github.com/ArduPilot/ardupilot/issues/11689",
         }
 
 class AutoTestHeli(AutoTestCopter):

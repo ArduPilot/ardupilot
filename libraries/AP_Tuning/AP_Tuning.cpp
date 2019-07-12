@@ -1,4 +1,5 @@
 #include "AP_Tuning.h"
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel.h>
 

@@ -1401,25 +1401,64 @@ void AP_InertialSensor::wait_for_sample(void)
 
 check_sample:
     if (!_hil_mode) {
-        // we also wait for at least one backend to have a sample of both
-        // accel and gyro. This normally completes immediately.
-        bool gyro_available = false;
-        bool accel_available = false;
+        // now we wait until we have the gyro and accel samples we need
+        uint8_t gyro_available_mask = 0;
+        uint8_t accel_available_mask = 0;
+        uint32_t wait_counter = 0;
+
         while (true) {
             for (uint8_t i=0; i<_backend_count; i++) {
+                // this is normally a nop, but can be used by backends
+                // that don't accumulate samples on a timer
                 _backends[i]->accumulate();
             }
 
-            for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-                gyro_available |= _new_gyro_data[i];
-                accel_available |= _new_accel_data[i];
+            for (uint8_t i=0; i<_gyro_count; i++) {
+                if (_new_gyro_data[i]) {
+                    const uint8_t imask = (1U<<i);
+                    gyro_available_mask |= imask;
+                    if (_use[i]) {
+                        _gyro_wait_mask |= imask;
+                    } else {
+                        _gyro_wait_mask &= ~imask;
+                    }
+                }
+            }
+            for (uint8_t i=0; i<_accel_count; i++) {
+                if (_new_accel_data[i]) {
+                    const uint8_t imask = (1U<<i);
+                    accel_available_mask |= imask;
+                    if (_use[i]) {
+                        _accel_wait_mask |= imask;
+                    } else {
+                        _accel_wait_mask &= ~imask;
+                    }
+                }
             }
 
-            if (gyro_available && accel_available) {
-                break;
+            // we wait for up to 800us to get all of the required
+            // accel and gyro samples. After that we accept at least
+            // one of each
+            if (wait_counter < 7) {
+                if (gyro_available_mask &&
+                    ((gyro_available_mask & _gyro_wait_mask) == _gyro_wait_mask) &&
+                    accel_available_mask &&
+                    ((accel_available_mask & _accel_wait_mask) == _accel_wait_mask)) {
+                    break;
+                }
+            } else {
+                if (gyro_available_mask && accel_available_mask) {
+                    // reset the wait mask so we don't keep delaying
+                    // for a dead IMU on the next loop. As soon as it
+                    // comes back we will start waiting on it again
+                    _gyro_wait_mask &= gyro_available_mask;
+                    _accel_wait_mask &= accel_available_mask;
+                    break;
+                }
             }
 
-            hal.scheduler->delay_microseconds(100);
+            hal.scheduler->delay_microseconds_boost(100);
+            wait_counter++;
         }
     }
 
@@ -2005,6 +2044,31 @@ AP_InertialSensor::Gyro_Calibration_Timing AP_InertialSensor::gyro_calibration_t
     }
     return (Gyro_Calibration_Timing)_gyro_cal_timing.get();
 }
+
+#if !HAL_MINIMIZE_FEATURES
+/*
+  update IMU kill mask, used for testing IMU failover
+ */
+void AP_InertialSensor::kill_imu(uint8_t imu_idx, bool kill_it)
+{
+    if (kill_it) {
+        uint8_t new_kill_mask = imu_kill_mask | (1U<<imu_idx);
+        // don't allow the last IMU to be killed
+        bool all_dead = true;
+        for (uint8_t i=0; i<MIN(_gyro_count, _accel_count); i++) {
+            if (use_gyro(i) && use_accel(i) && !(new_kill_mask & (1U<<i))) {
+                // we have at least one healthy IMU left
+                all_dead = false;
+            }
+        }
+        if (!all_dead) {
+            imu_kill_mask = new_kill_mask;
+        }
+    } else {
+        imu_kill_mask &= ~(1U<<imu_idx);
+    }
+}
+#endif // HAL_MINIMIZE_FEATURES
 
 
 namespace AP {

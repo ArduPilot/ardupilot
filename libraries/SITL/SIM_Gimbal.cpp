@@ -22,6 +22,8 @@
 
 #include "SIM_Aircraft.h"
 
+#include <AP_InertialSensor/AP_InertialSensor.h>
+
 extern const AP_HAL::HAL& hal;
 
 namespace SITL {

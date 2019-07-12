@@ -22,6 +22,7 @@ public:
     void set_config(float lookahead, float margin_max) { _lookahead = MAX(lookahead, 1.0f); _margin_max = MAX(margin_max, 0.0f); }
 
     // run background task to find best path and update avoidance_results
+    // returns true and populates origin_new and destination_new if OA is required.  returns false if OA is not required
     bool update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new);
 
 private:

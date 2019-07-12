@@ -4,6 +4,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Baro/AP_Baro.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -96,8 +97,6 @@ bool GCS::install_alternative_protocol(mavlink_channel_t c, GCS_MAVLINK::protoco
     chan(c).alternative.handler = handler;
     return true;
 }
-
-#undef FOR_EACH_ACTIVE_CHANNEL
 
 void GCS::update_sensor_status_flags()
 {

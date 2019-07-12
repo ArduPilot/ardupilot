@@ -173,6 +173,9 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
 
 int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
 {
+    if (copter.motors == nullptr) {
+        return 0;
+    }
     return (int16_t)(copter.motors->get_throttle() * 100);
 }
 
@@ -402,7 +405,8 @@ static const ap_message STREAM_POSITION_msgs[] = {
 };
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
-    MSG_RADIO_IN // RC_CHANNELS_RAW, RC_CHANNELS
+    MSG_RC_CHANNELS,
+    MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
@@ -711,7 +715,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         // param4 : timeout (in seconds)
         // param5 : num_motors (in sequence)
         // param6 : compass learning (0: disabled, 1: enabled)
-        return copter.mavlink_motor_test_start(chan,
+        return copter.mavlink_motor_test_start(*this,
                                                (uint8_t)packet.param1,
                                                (uint8_t)packet.param2,
                                                (uint16_t)packet.param3,

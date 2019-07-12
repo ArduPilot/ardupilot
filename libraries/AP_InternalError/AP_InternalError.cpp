@@ -1,5 +1,7 @@
 #include "AP_InternalError.h"
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
 extern const AP_HAL::HAL &hal;
 
 // actually create the instance:

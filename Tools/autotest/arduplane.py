@@ -25,6 +25,25 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 
 class AutoTestPlane(AutoTest):
+    @staticmethod
+    def get_not_armable_mode_list():
+        return []
+
+    @staticmethod
+    def get_not_disarmed_settable_modes_list():
+        return ["FOLLOW"]
+
+    @staticmethod
+    def get_no_position_not_settable_modes_list():
+        return []
+
+    @staticmethod
+    def get_position_armable_modes_list():
+        return ["GUIDED", "AUTO"]
+
+    @staticmethod
+    def get_normal_armable_modes_list():
+        return ["MANUAL", "STABILIZE", "ACRO"]
 
     def log_name(self):
         return "ArduPlane"
@@ -57,6 +76,9 @@ class AutoTestPlane(AutoTest):
 
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
+
+    def arming_test_mission(self):
+        return os.path.join(testdir, "ArduPlane-Missions", "test_arming.txt")
 
     def takeoff(self, alt=150, alt_max=None, relative=True):
         """Takeoff to altitude."""
@@ -842,7 +864,8 @@ class AutoTestPlane(AutoTest):
             self.mavproxy.expect("Gripper Released")
             self.mavproxy.expect("Auto disarmed")
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught:")
+            self.progress(self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         if ex is not None:
@@ -1201,17 +1224,14 @@ class AutoTestPlane(AutoTest):
                                     blocking=True,
                                     timeout=5)
         except Exception as e:
-            print("Caught exception %s" % str(e))
+            print("Caught exception:")
+            self.progress(self.get_exception_stacktrace(e))
 
         if m is not None:
             raise NotAchievedException("Received unexpected RANGEFINDER msg")
 
         try:
-            self.set_parameter("RNGFND1_TYPE", 1)
-            self.set_parameter("RNGFND1_MIN_CM", 0)
-            self.set_parameter("RNGFND1_MAX_CM", 4000)
-            self.set_parameter("RNGFND1_PIN", 0)
-            self.set_parameter("RNGFND1_SCALING", 12.12)
+            self.set_analog_rangefinder_parameters()
 
             self.reboot_sitl()
 
@@ -1238,7 +1258,8 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("No RFND messages in log")
 
         except Exception as e:
-            self.progress("Exception caught: %s" % str(e))
+            self.progress("Exception caught:")
+            self.progress(self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         self.reboot_sitl()

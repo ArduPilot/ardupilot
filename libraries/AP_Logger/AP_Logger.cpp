@@ -206,7 +206,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 #define DEBUG_LOG_STRUCTURES 0
 
 extern const AP_HAL::HAL& hal;
-#define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#define Debug(fmt, args ...)  do {::fprintf(stderr, "%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 
 /// return the number of commas present in string
 static uint8_t count_commas(const char *string)

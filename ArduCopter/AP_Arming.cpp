@@ -172,6 +172,13 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 #endif
 
         #if FRAME_CONFIG == HELI_FRAME
+        if (copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
+            copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_DUAL &&
+            copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Invalid Heli FRAME_CLASS");
+            return false;
+        }
+
         // check helicopter parameters
         if (!copter.motors->parameter_check(display_failure)) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Heli motors checks failed");
@@ -189,6 +196,13 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             return false;
         }
 
+        #else
+        if (copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_QUAD ||
+            copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_DUAL ||
+            copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Invalid MultiCopter FRAME_CLASS");
+            return false;
+        }
         #endif // HELI_FRAME
 
         // check for missing terrain data

@@ -13,7 +13,7 @@ void Rover::Log_Write_Attitude()
     logger.Write_Attitude(ahrs, targets);
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    logger.Write_EKF(ahrs);
+    AP::ahrs_navekf().Log_Write();
     logger.Write_AHRS2(ahrs);
 #endif
     logger.Write_POS(ahrs);

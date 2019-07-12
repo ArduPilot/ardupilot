@@ -274,6 +274,9 @@ public:
     // return time in microseconds of last update() call
     uint32_t get_last_update_usec(void) const { return _last_update_usec; }
 
+    // for killing an IMU for testing purposes
+    void kill_imu(uint8_t imu_idx, bool kill_it);
+
     enum IMU_SENSOR_TYPE {
         IMU_SENSOR_TYPE_ACCEL = 0,
         IMU_SENSOR_TYPE_GYRO = 1,
@@ -495,6 +498,11 @@ private:
     uint8_t _primary_gyro;
     uint8_t _primary_accel;
 
+    // mask of accels and gyros which we will be actively using
+    // and this should wait for in wait_for_sample()
+    uint8_t _gyro_wait_mask;
+    uint8_t _accel_wait_mask;
+
     // bitmask bit which indicates if we should log raw accel and gyro data
     uint32_t _log_raw_bit;
 
@@ -579,6 +587,8 @@ private:
     uint32_t _gyro_startup_error_count[INS_MAX_INSTANCES];
     bool _startup_error_counts_set;
     uint32_t _startup_ms;
+
+    uint8_t imu_kill_mask;
 };
 
 namespace AP {

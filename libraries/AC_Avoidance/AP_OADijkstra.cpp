@@ -14,7 +14,9 @@
  */
 
 #include "AP_OADijkstra.h"
+
 #include <AC_Fence/AC_Fence.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #define OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK  32      // expanding arrays for inner polygon fence and paths to destination will grow in increments of 20 elements
 #define OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX        255     // index use to indicate we do not have a tentative short path for a node
@@ -28,18 +30,18 @@ AP_OADijkstra::AP_OADijkstra() :
 }
 
 // calculate a destination to avoid the polygon fence
-// returns true if avoidance is required and updates origin_new and destination_new
-bool AP_OADijkstra::update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new)
+// returns DIJKSTRA_STATE_SUCCESS and populates origin_new and destination_new if avoidance is required
+AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new)
 {
     // require ekf origin to have been set
     struct Location ekf_origin {};
     if (!AP::ahrs().get_origin(ekf_origin)) {
-        return false;
+        return DIJKSTRA_STATE_NOT_REQUIRED;
     }
 
     // no avoidance required if fence is disabled
     if (!polygon_fence_enabled()) {
-        return false;
+        return DIJKSTRA_STATE_NOT_REQUIRED;
     }
 
     // check for fence updates
@@ -53,7 +55,7 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
         if (!_polyfence_with_margin_ok) {
             _polyfence_visgraph_ok = false;
             _shortest_path_ok = false;
-            return false;
+            return DIJKSTRA_STATE_ERROR;
         }
     }
 
@@ -62,7 +64,7 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
         _polyfence_visgraph_ok = create_polygon_fence_visgraph();
         if (!_polyfence_visgraph_ok) {
             _shortest_path_ok = false;
-            return false;
+            return DIJKSTRA_STATE_ERROR;
         }
     }
 
@@ -76,7 +78,7 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
     if (!_shortest_path_ok) {
         _shortest_path_ok = calc_shortest_path(current_loc, destination);
         if (!_shortest_path_ok) {
-            return false;
+            return DIJKSTRA_STATE_ERROR;
         }
         // start from 2nd point on path (first is the original origin)
         _path_idx_returned = 1;
@@ -109,10 +111,10 @@ bool AP_OADijkstra::update(const Location &current_loc, const Location &destinat
         if (near_oa_wp || past_oa_wp) {
             _path_idx_returned++;
         }
-        return true;
+        return DIJKSTRA_STATE_SUCCESS;
     }
 
-    return false;
+    return DIJKSTRA_STATE_ERROR;
 }
 
 // returns true if polygon fence is enabled
@@ -120,6 +122,9 @@ bool AP_OADijkstra::polygon_fence_enabled() const
 {
     const AC_Fence *fence = AC_Fence::get_singleton();
     if (fence == nullptr) {
+        return false;
+    }
+    if (!fence->is_polygon_valid()) {
         return false;
     }
     return ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) > 0);
@@ -248,7 +253,6 @@ bool AP_OADijkstra::create_polygon_fence_visgraph()
                                              {AP_OAVisGraph::OATYPE_FENCE_POINT, j},
                                              (_polyfence_pts[i] - _polyfence_pts[j]).length());
             }
-            // ToDo: store infinity when there is no clear path between points to allow faster search later
         }
     }
 

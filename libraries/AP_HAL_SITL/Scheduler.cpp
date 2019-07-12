@@ -5,6 +5,7 @@
 #include "UARTDriver.h"
 #include <sys/time.h>
 #include <fenv.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #if defined (__clang__)
 #include <stdlib.h>
 #else
@@ -137,6 +138,12 @@ void Scheduler::sitl_end_atomic() {
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
+    if (AP_BoardConfig::in_sensor_config_error()) {
+        // the _should_reboot flag set below is not checked by the
+        // sensor-config-error loop, so force the reboot here:
+        HAL_SITL::actually_reboot();
+        abort();
+    }
     _should_reboot = true;
 }
 
@@ -198,6 +205,7 @@ void Scheduler::_run_io_procs()
     hal.uartE->_timer_tick();
     hal.uartF->_timer_tick();
     hal.uartG->_timer_tick();
+    hal.uartH->_timer_tick();
     hal.storage->_timer_tick();
 
     check_thread_stacks();

@@ -3,9 +3,7 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Relay/AP_Relay.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
@@ -24,13 +22,11 @@
 class AP_Camera {
 
 public:
-    AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_AHRS &_ahrs)
+    AP_Camera(uint32_t _log_camera_bit, const struct Location &_loc)
         : log_camera_bit(_log_camera_bit)
         , current_loc(_loc)
-        , ahrs(_ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
-        _apm_relay = obj_relay;
         _singleton = this;
     }
 
@@ -91,7 +87,6 @@ private:
     AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
     uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
     uint8_t         _trigger_counter_cam_function;   // count of number of cycles alternative camera function has been held open
-    AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay.
     AP_Int8         _auto_mode_only;    // if 1: trigger by distance only if in AUTO mode.
     AP_Int8         _type;              // Set the type of camera in use, will open additional parameters if set
     bool            _is_in_auto_mode;   // true if in AUTO mode
@@ -124,7 +119,6 @@ private:
 
     uint32_t log_camera_bit;
     const struct Location &current_loc;
-    const AP_AHRS &ahrs;
 
     // entry point to trip local shutter (e.g. by relay or servo)
     void trigger_pic();

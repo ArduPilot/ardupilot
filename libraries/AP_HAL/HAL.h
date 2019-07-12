@@ -27,6 +27,7 @@ public:
         AP_HAL::UARTDriver* _uartE, // 2nd GPS
         AP_HAL::UARTDriver* _uartF, // extra1
         AP_HAL::UARTDriver* _uartG, // extra2
+        AP_HAL::UARTDriver* _uartH, // extra3
         AP_HAL::I2CDeviceManager* _i2c_mgr,
         AP_HAL::SPIDeviceManager* _spi,
         AP_HAL::AnalogIn*   _analogin,
@@ -52,6 +53,7 @@ public:
         uartE(_uartE),
         uartF(_uartF),
         uartG(_uartG),
+        uartH(_uartH),
         i2c_mgr(_i2c_mgr),
         spi(_spi),
         analogin(_analogin),
@@ -103,6 +105,7 @@ public:
     AP_HAL::UARTDriver* uartE;
     AP_HAL::UARTDriver* uartF;
     AP_HAL::UARTDriver* uartG;
+    AP_HAL::UARTDriver* uartH;
     AP_HAL::I2CDeviceManager* i2c_mgr;
     AP_HAL::SPIDeviceManager* spi;
     AP_HAL::AnalogIn*   analogin;

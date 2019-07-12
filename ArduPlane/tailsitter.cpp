@@ -25,8 +25,9 @@
  */
 bool QuadPlane::is_tailsitter(void) const
 {
-    return available() && ((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || 
-                           (tailsitter.motor_mask != 0));
+    return available() 
+        && ((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (tailsitter.motor_mask != 0))
+        && (tilt.tilt_type != TILT_TYPE_BICOPTER);
 }
 
 /*

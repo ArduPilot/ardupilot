@@ -28,6 +28,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+// Tunes follow the syntax of the Microsoft GWBasic/QBasic PLAY
+//   statement, with some exceptions and extensions.
+// See http://firmware.ardupilot.org/Tools/ToneTester/
 const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 #define AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK 0
     { "MFT200L4<<<B#A#2", false },

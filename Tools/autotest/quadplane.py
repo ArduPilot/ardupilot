@@ -23,6 +23,25 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 
 class AutoTestQuadPlane(AutoTest):
+    @staticmethod
+    def get_not_armable_mode_list():
+        return []
+
+    @staticmethod
+    def get_not_disarmed_settable_modes_list():
+        return []
+
+    @staticmethod
+    def get_no_position_not_settable_modes_list():
+        return []
+
+    @staticmethod
+    def get_position_armable_modes_list():
+        return []
+
+    @staticmethod
+    def get_normal_armable_modes_list():
+        return []
 
     def default_frame(self):
         return "quadplane"
@@ -173,8 +192,6 @@ class AutoTestQuadPlane(AutoTest):
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
             ("TestMotorMask", "Test output_motor_mask", self.test_motor_mask),
-
-            ("QAutoTune", "Fly QAUTOTUNE mode", self.fly_qautotune),
 
             ("ParameterChecks",
              "Test Arming Parameter Checks",

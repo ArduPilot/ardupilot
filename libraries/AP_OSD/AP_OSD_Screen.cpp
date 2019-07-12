@@ -33,8 +33,12 @@
 #include <AP_Common/Location.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
+<<<<<<< HEAD
 =======
 >>>>>>> b6638ba0750049a637f33b1929a3135351beaff0
+=======
+#include <AP_Baro/AP_Baro.h>
+>>>>>>> f21fcca9d0262bbd52259ca1480afb2a2621f128
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>

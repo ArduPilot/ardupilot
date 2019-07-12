@@ -26,7 +26,6 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 
@@ -166,16 +165,8 @@ public:
         _airspeed = airspeed;
     }
 
-    void set_beacon(AP_Beacon *beacon) {
-        _beacon = beacon;
-    }
-
     const AP_Airspeed *get_airspeed(void) const {
         return _airspeed;
-    }
-
-    const AP_Beacon *get_beacon(void) const {
-        return _beacon;
     }
 
     // get the index of the current primary accelerometer sensor
@@ -229,6 +220,10 @@ public:
     float roll;
     float pitch;
     float yaw;
+
+    float get_roll() const { return roll; }
+    float get_pitch() const { return pitch; }
+    float get_yaw() const { return yaw; }
 
     // integer Euler angles (Degrees * 100)
     int32_t roll_sensor;
@@ -301,9 +296,7 @@ public:
     }
 
     // get apparent to true airspeed ratio
-    float get_EAS2TAS(void) const {
-        return AP::baro().get_EAS2TAS();
-    }
+    float get_EAS2TAS(void) const;
 
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
@@ -647,9 +640,6 @@ protected:
 
     // pointer to airspeed object, if available
     AP_Airspeed     * _airspeed;
-
-    // pointer to beacon object, if available
-    AP_Beacon     * _beacon;
 
     // time in microseconds of last compass update
     uint32_t _compass_last_update;
