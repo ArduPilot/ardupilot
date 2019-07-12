@@ -264,6 +264,7 @@ void Scheduler::_run_uarts()
     hal.uartE->_timer_tick();
     hal.uartF->_timer_tick();
     hal.uartG->_timer_tick();
+    hal.uartH->_timer_tick();
 }
 
 void Scheduler::_rcin_task()
