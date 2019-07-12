@@ -63,7 +63,7 @@ for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
 
 #define START_STOP_SPORT            0x7E
 #define BYTESTUFF_SPORT             0x7D
-
+#define SPORT_DATA_FRAME            0x10
 /* 
 for FrSky SPort Passthrough
 */
@@ -107,8 +107,8 @@ for FrSky SPort Passthrough
 #define ATTIANDRNG_PITCH_LIMIT      0x3FF
 #define ATTIANDRNG_PITCH_OFFSET     11
 #define ATTIANDRNG_RNGFND_OFFSET    21
-
-
+// for fair scheduler
+#define TIME_SLOT_MAX               11
 
 class AP_Frsky_Telem {
 public:
@@ -138,9 +138,8 @@ private:
     uint32_t check_sensor_status_timer;
     uint32_t check_ekf_status_timer;
     uint8_t _paramID;
-
+    
     ObjectArray<mavlink_statustext_t> _statustext_queue;
-
     
     struct
     {
@@ -157,22 +156,36 @@ private:
         uint16_t speed_in_centimeter;
     } _gps;
 
-    struct
+    struct PACKED
     {
+        bool send_latitude; // sizeof(bool) = 4 ?
+        uint32_t gps_lng_sample;
+        uint32_t last_poll_timer;
+        uint32_t avg_packet_counter;
+        uint32_t packet_timer[TIME_SLOT_MAX];
+        uint32_t packet_weight[TIME_SLOT_MAX];
+        uint8_t avg_packet_rate;
         uint8_t new_byte;
-        bool send_attiandrng;
-        bool send_latitude;
-        bool send_chunk;
-        uint32_t params_timer;
-        uint32_t ap_status_timer;
-        uint32_t batt_timer;
-        uint32_t batt_timer2;
-        uint32_t gps_status_timer;
-        uint32_t home_timer;
-        uint32_t velandyaw_timer;
-        uint32_t gps_latlng_timer;
     } _passthrough;
     
+
+    struct
+    {
+        const uint32_t packet_min_period[TIME_SLOT_MAX] = {
+            0,      //0x5000 text,      no rate limiter
+            38,     //0x5006 attitude   20Hz
+            280,    //0x800  GPS        3Hz
+            280,    //0x800  GPS        3Hz
+            250,    //0x5005 vel&yaw    4Hz
+            500,    //0x5001 AP status  2Hz
+            500,    //0x5002 GPS status 2Hz
+            500,    //0x5004 home       2Hz
+            500,    //0x5008 batt 2     2Hz
+            500,    //0x5003 batt 1     2Hz
+            1000   //0x5007 parameters 1Hz
+        };
+    } _sport_config;
+
     struct
     {
         bool sport_status;
@@ -195,6 +208,9 @@ private:
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
     
+    // passthrough WFQ scheduler
+    void update_avg_packet_rate();
+    void passthrough_wfq_adaptive_scheduler(uint8_t prev_byte);
     // main transmission function when protocol is FrSky SPort Passthrough (OpenTX)
     void send_SPort_Passthrough(void);
     // main transmission function when protocol is FrSky SPort
@@ -203,13 +219,12 @@ private:
     void send_D(void);
     // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
     void loop(void);
-
     // methods related to the nuts-and-bolts of sending data
     void calc_crc(uint8_t byte);
     void send_crc(void);
     void send_byte(uint8_t value);
-    void send_uint32(uint16_t id, uint32_t data);
     void send_uint16(uint16_t id, uint16_t data);
+    void send_uint32(uint8_t frame, uint16_t id, uint32_t data);
 
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
     bool get_next_msg_chunk(void);
