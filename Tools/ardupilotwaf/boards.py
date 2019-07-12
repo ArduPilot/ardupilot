@@ -283,14 +283,6 @@ class Board:
     def embed_ROMFS_files(self, ctx):
         '''embed some files using AP_ROMFS'''
         import embed
-        if ctx.env.USE_NUTTX_IOFW:
-            # use fmuv2_IO_NuttX.bin instead of fmuv2_IO.bin
-            for i in range(len(ctx.env.ROMFS_FILES)):
-                (name,filename) = ctx.env.ROMFS_FILES[i]
-                if name == 'io_firmware.bin':
-                    filename = 'Tools/IO_Firmware/fmuv2_IO_NuttX.bin'
-                    print("Using IO firmware %s" % filename)
-                    ctx.env.ROMFS_FILES[i] = (name,filename);
         header = ctx.bldnode.make_node('ap_romfs_embedded.h').abspath()
         if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES):
             ctx.fatal("Failed to created ap_romfs_embedded.h")

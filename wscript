@@ -91,11 +91,6 @@ def options(opt):
         default=False,
         help='enable OS level asserts.')
 
-    g.add_option('--use-nuttx-iofw',
-        action='store_true',
-        default=False,
-        help='use old NuttX IO firmware for IOMCU')
-
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -362,7 +357,6 @@ def configure(cfg):
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
-    cfg.env.USE_NUTTX_IOFW = cfg.options.use_nuttx_iofw
 
     cfg.env.OPTIONS = cfg.options.__dict__
 
