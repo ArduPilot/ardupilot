@@ -249,7 +249,8 @@ class AutoTest(ABC):
         """Returns options to be passed to MAVProxy."""
         ret = ['--sitl=127.0.0.1:5501',
                '--out=' + self.autotest_connection_string_from_mavproxy(),
-               '--streamrate=%u' % self.sitl_streamrate()]
+               '--streamrate=%u' % self.sitl_streamrate(),
+               '--cmd="set heartbeat %u"' % self.speedup]
         if self.viewerip:
             ret.append("--out=%s:14550" % self.viewerip)
         if self.use_map:
