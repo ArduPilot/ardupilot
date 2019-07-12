@@ -961,6 +961,8 @@ def write_UART_config(f):
 #define HAL_SERIAL%d_BAUD 115200
 #endif
 ''' % (OTG2_index, OTG2_index))
+        f.write('#define HAL_HAVE_DUAL_USB_CDC 1\n')
+
     f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
     if not need_uart_driver and not args.bootloader:
         f.write('''
