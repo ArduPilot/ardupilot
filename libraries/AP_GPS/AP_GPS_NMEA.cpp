@@ -115,19 +115,6 @@ bool AP_GPS_NMEA::_decode(char c)
     return valid_sentence;
 }
 
-//
-// internal utilities
-//
-int16_t AP_GPS_NMEA::_from_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
-}
-
 int32_t AP_GPS_NMEA::_parse_decimal_100(const char *p)
 {
     char *endptr = nullptr;
@@ -240,7 +227,12 @@ bool AP_GPS_NMEA::_term_complete()
 {
     // handle the last term in a message
     if (_is_checksum_term) {
-        uint8_t checksum = 16 * _from_hex(_term[0]) + _from_hex(_term[1]);
+        uint8_t nibble_high = 0;
+        uint8_t nibble_low  = 0;
+        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
+            return false;
+        }
+        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
         if (checksum == _parity) {
             if (_gps_data_good) {
                 uint32_t now = AP_HAL::millis();
