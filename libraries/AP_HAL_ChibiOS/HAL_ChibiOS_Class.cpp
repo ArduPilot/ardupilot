@@ -159,6 +159,8 @@ thread_t* get_main_thread()
 
 static AP_HAL::HAL::Callbacks* g_callbacks;
 
+static AP_HAL::Util::PersistentData last_persistent_data;
+
 static void main_loop()
 {
     daemon_task = chThdGetSelfX();
@@ -200,6 +202,7 @@ static void main_loop()
     if (stm32_was_watchdog_reset()) {
         // load saved watchdog data
         stm32_watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
+        last_persistent_data = utilInstance.persistent_data;
     }
 
     schedulerInstance.hal_initialized();
@@ -216,7 +219,7 @@ static void main_loop()
 
     if (hal.util->was_watchdog_reset()) {
         AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
-        const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        const AP_HAL::Util::PersistentData &pd = last_persistent_data;
         AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine", "QbIIHHH",
                                    AP_HAL::micros64(),
                                    pd.scheduler_task,
