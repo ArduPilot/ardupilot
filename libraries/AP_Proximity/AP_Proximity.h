@@ -47,10 +47,17 @@ public:
         Proximity_Type_MAV     = 2,
         Proximity_Type_TRTOWER = 3,
         Proximity_Type_RangeFinder = 4,
-        Proximity_Type_RPLidarA2 = 5,
+        Proximity_Type_RPLidarA2M6R3 = 5,
         Proximity_Type_TRTOWEREVO = 6,
         Proximity_Type_SITL    = 10,
         Proximity_Type_MorseSITL = 11,
+        Proximity_Type_RPLidarA2M6R4 = 12,
+        Proximity_Type_RPLidarA2M4 = 13,
+        Proximity_Type_RPLidarA2M8R3 = 14,
+        Proximity_Type_RPLidarA2M8R4 = 15,
+        Proximity_Type_RPLidarA1M8R4 = 16,
+        Proximity_Type_RPLidarA1M8R5 = 17,
+        Proximity_Type_RPLidarA3M1 = 18,
     };
 
     enum Proximity_Status {

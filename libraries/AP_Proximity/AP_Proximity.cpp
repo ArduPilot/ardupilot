@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,1:LightWareSF40C,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL
+    // @Values: 0:None,1:LightWareSF40C,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2M6-R3,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL,12:RPLidarA2M6-R4,13:RPLidarA2M4,14:RPLidarA2M8-R3,15:RPLidarA2M8-R4,16:RPLidarA1M8-R4,17:RPLidarA1M8-R5,18:RPLidarA3M1
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE",   1, AP_Proximity, _type[0], 0),
@@ -289,12 +289,23 @@ void AP_Proximity::detect_instance(uint8_t instance)
             return;
         }
     }
-    if (type == Proximity_Type_RPLidarA2) {
+    switch (type) {
+    case Proximity_Type_RPLidarA2M6R3:
+    case Proximity_Type_RPLidarA2M6R4:
+    case Proximity_Type_RPLidarA2M4:
+    case Proximity_Type_RPLidarA2M8R3:
+    case Proximity_Type_RPLidarA2M8R4:
+    case Proximity_Type_RPLidarA1M8R4:
+    case Proximity_Type_RPLidarA1M8R5:
+    case Proximity_Type_RPLidarA3M1:
         if (AP_Proximity_RPLidarA2::detect(serial_manager)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance], serial_manager);
             return;
         }
+        break;
+    default:
+        break;
     }
     if (type == Proximity_Type_MAV) {
         state[instance].instance = instance;

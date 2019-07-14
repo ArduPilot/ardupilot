@@ -78,9 +78,6 @@ AP_Proximity_RPLidarA2::AP_Proximity_RPLidarA2(AP_Proximity &_frontend,
     if (_uart != nullptr) {
         _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
     }
-    _cnt = 0 ;
-    _sync_error = 0 ;
-    _byte_count = 0;
 }
 
 // detect if a RPLidarA2 proximity sensor is connected by looking for a configured serial port
@@ -118,13 +115,57 @@ void AP_Proximity_RPLidarA2::update(void)
 // get maximum distance (in meters) of sensor
 float AP_Proximity_RPLidarA2::distance_max() const
 {
-    return 16.0f;  //16m max range RPLIDAR2, if you want to support the 8m version this is the only line to change
+    float distMax = 0.0f;
+    switch (frontend.get_type(state.instance)) {
+    case AP_Proximity::Proximity_Type_RPLidarA3M1:
+        distMax = 25.0f;
+        break;
+    case AP_Proximity::Proximity_Type_RPLidarA2M6R4:
+        distMax = 18.0f;
+        break;
+    case AP_Proximity::Proximity_Type_RPLidarA2M6R3:
+        distMax = 16.0f;  // 16m max range RPLIDAR2, if you want to support the 8m version this is the only line to change;
+        break;
+    case AP_Proximity::Proximity_Type_RPLidarA2M8R4:
+    case AP_Proximity::Proximity_Type_RPLidarA1M8R5:
+        distMax = 12.0f;
+        break;
+    case AP_Proximity::Proximity_Type_RPLidarA2M8R3:
+        distMax = 8.0f;
+        break;
+    case AP_Proximity::Proximity_Type_RPLidarA2M4:
+    case AP_Proximity::Proximity_Type_RPLidarA1M8R4:
+        distMax = 6.0f;
+        break;
+    default:
+        break;  // This process has not been implemented
+    }
+
+    return distMax;
 }
 
 // get minimum distance (in meters) of sensor
 float AP_Proximity_RPLidarA2::distance_min() const
 {
-    return 0.20f;  //20cm min range RPLIDAR2
+    float distMin = 0.0f;
+    switch (frontend.get_type(state.instance)) {
+    case AP_Proximity::Proximity_Type_RPLidarA3M1:  // Interim. It is not written in the data sheet
+    case AP_Proximity::Proximity_Type_RPLidarA2M6R3:
+    case AP_Proximity::Proximity_Type_RPLidarA2M6R4:
+        distMin = 0.20f;  //20cm min range RPLIDAR2
+        break;
+    case AP_Proximity::Proximity_Type_RPLidarA2M4:
+    case AP_Proximity::Proximity_Type_RPLidarA2M8R3:
+    case AP_Proximity::Proximity_Type_RPLidarA2M8R4:
+    case AP_Proximity::Proximity_Type_RPLidarA1M8R4:
+    case AP_Proximity::Proximity_Type_RPLidarA1M8R5:
+        distMin = 0.15f;
+        break;
+    default:
+        break;  // This process has not been implemented
+    }
+
+    return distMin;
 }
 
 bool AP_Proximity_RPLidarA2::initialise()
