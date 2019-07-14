@@ -94,8 +94,8 @@ void RCOutput::init()
  */
 void RCOutput::set_freq_group(pwm_group &group)
 {
-    if (mode_requires_dma(group.current_mode)) {
-        // speed setup in DMA handler
+    if (mode_requires_dma(group.current_mode) || group.current_mode = MODE_STEPPER) {
+        // speed setup in DMA handler, steppers do not use pwm
         return;
     }
     
@@ -631,6 +631,7 @@ void RCOutput::set_group_mode(pwm_group &group)
 
     case MODE_PWM_NORMAL:
     case MODE_PWM_NONE:
+    case MODE_STEPPER
         // nothing needed
         break;
     }
@@ -638,6 +639,7 @@ void RCOutput::set_group_mode(pwm_group &group)
     set_freq_group(group);
     
     if (group.current_mode != MODE_PWM_NONE &&
+        group.current_mode != MODE_STEPPER &&
         !group.pwm_started) {
         pwmStart(group.pwm_drv, &group.pwm_cfg);
         group.pwm_started = true;
@@ -671,6 +673,22 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
             set_group_mode(group);
         }
     }
+
+    // Check for steppers up to a maximum of 4
+    if (mode == MODE_STEPPER) {
+        uint8_t num_steppers
+        for (uint8_t i = 0; i < 16; i++ ) {
+            if ((mask & (1U<<i)) && num_steppers < 4) {
+                // initialize virtual timer for stepper output
+                chVTObjectInit(stepper_on_timer);
+                stepper_timmer[i] = chVTObjectInit(stepper_timer);
+                chVTSet(&stepper_timmer[i], US2ST(STEPPER_DEFUALT_UPDATE_RATE), stepper_step, i);
+
+                num_steppers += 1;
+            }
+        }
+    }
+
 #if HAL_WITH_IO_MCU
     if ((mode == MODE_PWM_ONESHOT ||
          mode == MODE_PWM_ONESHOT125) &&
@@ -1516,6 +1534,61 @@ void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
         iomcu.set_failsafe_pwm(chmask, period_us);
     }
 #endif
+}
+
+void RCOutput::stepper_step(uint8_t chan)
+{
+    chSysLockFromISR();
+    uint16_t step_period = period[chan]
+
+    // should be switched off
+    if (step_period == 0 || step_period > STEPPER_MAX_PERIOD) {
+        // recall in default time to see if we should do anything then
+        chVTSet(&stepper_timmer[chan], US2ST(STEPPER_DEFUALT_UPDATE_RATE), stepper_step, chan);
+
+        chSysUnlockFromISR();
+        return;
+    }
+
+    // check were not trying to go too fast
+    step_period = max(step_period, STEPPER_HIGH_TIME * 2);
+
+    // set output high and start timer to turn it off again
+    const int16_t chanel_output_pin = ; // ??
+    hal.gpio->write(chanel_output_pin, 1);
+    chVTSet(&stepper_on_timer, US2ST(STEPPER_HIGH_TIME), stepper_high_timer, chan);
+
+    /*
+    increment a counter to keep track of stepper position
+    need to poll appropriate relay pin to see which direction the stepper is turning
+    so we know whether to add or subtract
+
+    relay numbers are hard coded in rover for this so just need to get the correct pin from the parameters??
+    */
+    const int16_t relay_pin = ; // ??
+    const int8_t dir = hal.gpio->read(relay_pin)?1:-1;
+    stepper_count[chan] += dir;
+
+    // recall in period
+    chVTSet(&stepper_timmer[chan], US2ST(step_period), stepper_step, chan);
+
+    chSysUnlockFromISR();
+}
+
+// turn off the stepper output after its on time
+void RCOutput::stepper_high_timer(uint8_t chan)
+{
+    chSysLockFromISR();
+    const int16_t chanel_output_pin = ; // ??
+    hal.gpio->write(chanel_output_pin, 0);
+    chSysUnlockFromISR();
+}
+
+int16_t RCOutput::get_stepper_count(uint8_t chan)
+{
+    const int16_t step_count = stepper_count[chan];
+    stepper_count[chan] = 0;
+    return step_count
 }
 
 #endif // HAL_USE_PWM

@@ -29,6 +29,11 @@
 #define CH_NONE 255
 #endif
 
+// Define stepper parameters
+#define STEPPER_MAX_PERIOD 100000  // us -> 10 Hz, this defines the slowest to output step signals, and therefore the minimum update rate
+#define STEPPER_HIGH_TIME 100 // us, this also defines max speed (2 * 100) = 200us -> 5KHz
+#define STEPPER_DEFUALT_UPDATE_RATE 20000  // us -> 50 Hz, stepper output will be called at this frequency if no output is needed
+
 class ByteBuffer;
 
 class AP_HAL::RCOutput {
@@ -171,7 +176,7 @@ public:
     virtual void serial_end(void) {}
     
     /*
-      output modes. Allows for support of PWM, oneshot and dshot 
+      output modes. Allows for support of PWM, oneshot, dshot and stepper
      */
     enum output_mode {
         MODE_PWM_NONE,
@@ -183,6 +188,7 @@ public:
         MODE_PWM_DSHOT300,
         MODE_PWM_DSHOT600,
         MODE_PWM_DSHOT1200,
+        MODE_STEPPER,
     };
     virtual void    set_output_mode(uint16_t mask, enum output_mode mode) {}
 

@@ -154,7 +154,10 @@ public:
     void set_reversible_mask(uint16_t chanmask) override {
         reversible_mask |= chanmask;
     }
-    
+
+    // return number of steps of stepper since last polled
+    int16_t get_stepper_count(uint8_t chan);
+
 private:
     struct pwm_group {
         // only advanced timers can do high clocks needed for more than 400Hz
@@ -258,6 +261,8 @@ private:
     uint16_t period[max_channels];
     uint16_t safe_pwm[max_channels]; // pwm to use when safety is on
     bool corked;
+    stepper_timmer *stepper_timmer[max_channels]; // pointer for virtual timers
+    int16_t stepper_count[max_channels]; 
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;
     uint16_t io_fast_channel_mask;
@@ -298,7 +303,11 @@ private:
 
     // update safety switch and LED
     void safety_update(void);
-    
+
+    // interrupts for stepper output
+    void stepper_step(uint8_t chan)
+    void stepper_high_timer(uint8_t chan)
+
     /*
       DShot handling
      */
