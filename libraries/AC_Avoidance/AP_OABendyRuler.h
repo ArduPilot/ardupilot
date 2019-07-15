@@ -33,9 +33,13 @@ private:
     // on success returns true and updates margin
     bool calc_margin_from_circular_fence(const Location &start, const Location &end, float &margin);
 
-    // calculate minimum distance between a path and the polygon fence
+    // calculate minimum distance between a path and all inclusion and exclusion polygons
     // on success returns true and updates margin
-    bool calc_margin_from_polygon_fence(const Location &start, const Location &end, float &margin);
+    bool calc_margin_from_inclusion_and_exclusion_polygons(const Location &start, const Location &end, float &margin);
+
+    // calculate minimum distance between a path and all inclusion and exclusion circles
+    // on success returns true and updates margin
+    bool calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin);
 
     // calculate minimum distance between a path and proximity sensor obstacles
     // on success returns true and updates margin
