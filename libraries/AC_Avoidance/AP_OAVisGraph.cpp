@@ -24,6 +24,11 @@ AP_OAVisGraph::AP_OAVisGraph() :
 // add item to visiblity graph, returns true on success, false if graph is full
 bool AP_OAVisGraph::add_item(const OAItemID &id1, const OAItemID &id2, float distance_cm)
 {
+    // no more than 65k items
+    if (_num_items == UINT16_MAX) {
+        return false;
+    }
+
     // ensure there is space in the array
     if (!_items.expand_to_hold(_num_items+1)) {
         return false;
