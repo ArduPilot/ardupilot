@@ -199,7 +199,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: ALT_SOURCE
     // @DisplayName: Primary altitude sensor source
     // @Description: Primary height sensor used by the EKF. If the selected option cannot be used, baro is used. 1 uses the range finder and only with optical flow navigation (EK2_GPS_TYPE = 3), Do not use "1" for terrain following. NOTE: the EK2_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
-    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon
+    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon, 4:Use External Navigation
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF2, _altSource, 0),
@@ -410,7 +410,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 3),
-    
+
     // @Param: CHECK_SCALE
     // @DisplayName: GPS accuracy check scaler (%)
     // @Description: This scales the thresholds that are used to check GPS accuracy before it is used by the EKF. A value of 100 is the default. Values greater than 100 increase and values less than 100 reduce the maximum GPS error the EKF will accept. A value of 200 will double the allowable GPS error.
@@ -573,7 +573,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 500
     // @Units: mGauss
     AP_GROUPINFO("MAG_EF_LIM", 52, NavEKF2, _mag_ef_limit, 50),
-    
+
     AP_GROUPEND
 };
 
@@ -635,13 +635,13 @@ bool NavEKF2::InitialiseFilter(void)
     if (logger != nullptr) {
         logging.enabled = logger->log_replay();
     }
-    
+
     if (core == nullptr) {
 
         // don't run multiple filters for 1 IMU
         uint8_t mask = (1U<<ins.get_accel_count())-1;
         _imuMask.set(_imuMask.get() & mask);
-        
+
         // count IMUs from mask
         num_cores = 0;
         for (uint8_t i=0; i<7; i++) {
@@ -708,7 +708,7 @@ void NavEKF2::UpdateFilter(void)
     }
 
     imuSampleTime_us = AP_HAL::micros64();
-    
+
     const AP_InertialSensor &ins = AP::ins();
 
     bool statePredictEnabled[num_cores];
@@ -1596,4 +1596,3 @@ void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, c
         }
     }
 }
-
