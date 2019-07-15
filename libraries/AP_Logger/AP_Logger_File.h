@@ -67,7 +67,9 @@ private:
     int _write_fd;
     char *_write_filename;
     uint32_t _last_write_ms;
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     bool _need_rtc_update;
+#endif
     
     int _read_fd;
     uint16_t _read_fd_log_num;

@@ -884,9 +884,11 @@ uint16_t AP_Logger_File::start_new_log(void)
         return 0xFFFF;
     }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     // remember if we had utc time when we opened the file
     uint64_t utc_usec;
     _need_rtc_update = !AP::rtc().get_utc_usec(utc_usec);
+#endif
 
     EXPECT_DELAY_MS(3000);
 #if HAL_OS_POSIX_IO
