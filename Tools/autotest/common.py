@@ -2356,6 +2356,8 @@ class AutoTest(ABC):
             self.progress("Exception (%s) caught" % str(e))
             ex = e
         self.context_pop()
+        self.mavproxy.send("module unload dataflash_logger\n")
+        self.mavproxy.expect("Unloaded module dataflash_logger")
         self.reboot_sitl()
         if ex is not None:
             raise ex
