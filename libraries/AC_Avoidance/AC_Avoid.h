@@ -91,9 +91,15 @@ private:
     void adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
 
     /*
-     * Adjusts the desired velocity for the polygon fence.
+     * Adjusts the desired velocity for inclusion and exclusion polygon fences
      */
-    void adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
+    void adjust_velocity_inclusion_and_exclusion_polygons(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
+
+    /*
+     * Adjusts the desired velocity for the inclusion and exclusion circles
+     */
+    void adjust_velocity_inclusion_circles(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
+    void adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
 
     /*
      * Adjusts the desired velocity for the beacon fence.
@@ -109,8 +115,9 @@ private:
      * Adjusts the desired velocity given an array of boundary points
      *   earth_frame should be true if boundary is in earth-frame, false for body-frame
      *   margin is the distance (in meters) that the vehicle should stop short of the polygon
+     *   stay_inside should be true for fences, false for exclusion polygons
      */
-    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt);
+    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt, bool stay_inside);
 
     /*
      * Computes distance required to stop, given current speed.
