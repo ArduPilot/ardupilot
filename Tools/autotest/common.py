@@ -537,6 +537,8 @@ class AutoTest(ABC):
     def log_download(self, filename, timeout=360, upload_logs=False):
         """Download latest log."""
         self.wait_heartbeat()
+        self.mavproxy.send("module load log\n")
+        self.mavproxy.expect("Loaded module log")
         self.mavproxy.send("log list\n")
         self.mavproxy.expect("numLogs")
         self.wait_heartbeat()
@@ -2934,9 +2936,14 @@ switch value'''
 
     def last_onboard_log(self):
         '''return number of last onboard log'''
+        self.mavproxy.send("module load log\n")
+        self.mavproxy.expect("Loaded module log")
         self.mavproxy.send("log list\n")
         self.mavproxy.expect("lastLog ([0-9]+)")
-        return int(self.mavproxy.match.group(1))
+        num_log = int(self.mavproxy.match.group(1))
+        self.mavproxy.send("module unload log\n")
+        self.mavproxy.expect("Unloaded module log")
+        return num_log
 
     def current_onboard_log_filepath(self):
         '''return filepath to currently open dataflash log'''
