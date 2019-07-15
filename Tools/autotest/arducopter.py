@@ -3025,6 +3025,30 @@ class AutoTestCopter(AutoTest):
                                        (tdelta, max_good_tdelta))
         self.progress("Vehicle returned")
 
+    def fly_dynamic_notches(self):
+        self.progress("Flying with dynamic notches")
+        self.set_parameter("INS_HNTCH_ENABLE", 1)
+        self.set_parameter("INS_HNTCH_FREQ", 80)
+        self.set_parameter("INS_HNTCH_REF", 0.35)
+        # first and third harmonic
+        self.set_parameter("INS_HNTCH_HMNCS", 5)
+        self.set_parameter("INS_NOTCH_ENABLE", 1)
+        self.set_parameter("INS_NOTCH_FREQ", 90)
+        self.reboot_sitl()
+
+        self.set_parameter("SIM_GYR_RND", 10)
+        self.takeoff(10, mode="LOITER")
+
+        self.change_mode("ALT_HOLD")
+        # fly fast forrest!
+        self.set_rc(3, 1900)
+        self.set_rc(2, 1200)
+        self.wait_groundspeed(5, 1000)
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1500)
+
+        self.do_RTL()
+
     def test_onboard_compass_calibration(self, timeout=240):
         twist_x = 2.1
         twist_y = 2.2
@@ -3800,11 +3824,16 @@ class AutoTestCopter(AutoTest):
              "Test onboard compass calibration",
              self.test_onboard_compass_calibration),
 
+            ("DynamicNotches",
+             "Fly Dynamic Notches",
+             self.fly_dynamic_notches),
+
             ("LogDownLoad",
              "Log download",
              lambda: self.log_download(
                  self.buildlogs_path("ArduCopter-log.bin"),
                  upload_logs=len(self.fail_list) > 0))
+
         ])
         return ret
 
