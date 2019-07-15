@@ -1074,7 +1074,7 @@ void AP_Logger_File::_io_timer(void)
                 t.modtime = utc_usec / (1000UL * 1000UL);
                 t.actime = t.modtime;
                 // we ignore return on utime() as there is nothing useful we can do
-                (void)utime(_write_filename, &t);
+                UNUSED_RESULT(utime(_write_filename, &t));
                 _need_rtc_update = false;
             }
         }
