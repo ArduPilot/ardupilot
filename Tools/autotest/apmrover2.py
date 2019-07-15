@@ -520,9 +520,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_servorelayevents(self):
-        self.mavproxy.send("relay set 0 0\n")
+        self.do_set_relay(0, 0)
         off = self.get_parameter("SIM_PIN_MASK")
-        self.mavproxy.send("relay set 0 1\n")
+        self.do_set_relay(0, 1)
         on = self.get_parameter("SIM_PIN_MASK")
         if on == off:
             raise NotAchievedException(
