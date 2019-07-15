@@ -355,6 +355,27 @@ bool SoaringController::is_active() const
     return RC_Channels::get_radio_in(soar_active_ch-1) >= 1400;
 }
 
+bool SoaringController::update_active_state()
+{
+    bool active = is_active();
+    bool state_changed = !(active == _last_update_active);
+
+    if (state_changed) {
+        if (active) {
+            // It's active, but wasn't on the last loop.
+            set_throttle_suppressed(true);
+        } else {
+            // It's not active, but was active on the last loop.
+            set_throttle_suppressed(false);
+        }
+    }
+
+    _last_update_active = active;
+
+    return active;
+}
+
+
 void SoaringController::set_throttle_suppressed(bool suppressed)
 {
     _throttle_suppressed = suppressed;
