@@ -52,6 +52,8 @@ class SoaringController {
     float _thermalability;
     float _expected_sink;
 
+    bool _last_update_active;
+
 protected:
     AP_Int8 soar_active;
     AP_Int8 soar_active_ch;
@@ -111,6 +113,8 @@ public:
     void update_vario();
 
     bool check_drift(Vector2f prev_wp, Vector2f next_wp);
+
+    bool update_active_state();
 
 private:
     // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters

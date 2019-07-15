@@ -265,7 +265,7 @@ int16_t GCS_MAVLINK_Plane::vfr_hud_throttle() const
 float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
 {
 #if SOARING_ENABLED == ENABLED
-    if (plane.g2.soaring_controller.is_active()) {
+    if (plane.g2.soaring_controller.update_active_state()) {
         return plane.g2.soaring_controller.get_vario_reading();
     }
 #endif

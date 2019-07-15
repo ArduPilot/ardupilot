@@ -9,9 +9,9 @@
 */
 void Plane::update_soaring() {
     
-    if (!g2.soaring_controller.is_active()) {
-        // This also sets the TECS gliding_requested to false.
-        g2.soaring_controller.set_throttle_suppressed(false);
+    // Check if soaring is active. Also sets throttle suppressed
+    // status on active state changes.
+    if (!g2.soaring_controller.update_active_state()) {
         return;
     }
     
