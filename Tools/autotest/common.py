@@ -1457,6 +1457,25 @@ class AutoTest(ABC):
             if m.heading == int(heading):
                 return
 
+    def do_set_relay(self, relay_num, on_off, timeout=10):
+        """Set relay with a command long message."""
+        self.progress("Set relay %d to %d" % (relay_num, on_off))
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_RELAY,
+                     relay_num,
+                     on_off,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=timeout)
+
+    def do_set_relay_mavproxy(self, relay_num, on_off):
+        """Set relay with mavproxy."""
+        self.progress("Set relay %d to %d" % (relay_num, on_off))
+        self.mavproxy.send('module load relay\n')
+        self.mavproxy.expect("Loaded module relay")
+        self.mavproxy.send("relay set %d %d\n" % (relay_num, on_off))
     #################################################
     # WAIT UTILITIES
     #################################################
