@@ -215,7 +215,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_accel_to_lean_xy = true;
     _flags.reset_rate_to_accel_z = true;
-    _flags.reset_accel_to_throttle = true;
     _flags.freeze_ff_z = true;
     _flags.use_desvel_ff_z = true;
     _limit.pos_up = true;
@@ -378,9 +377,10 @@ void AC_PosControl::relax_alt_hold_controllers(float throttle_setting)
     _vel_last.z = _inav.get_velocity_z();
     _accel_desired.z = 0.0f;
     _accel_last_z_cms = 0.0f;
-    _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
-    _flags.reset_accel_to_throttle = true;
+    _flags.reset_rate_to_accel_z = true;
     _pid_accel_z.set_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f);
+    _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
+    _pid_accel_z.reset_filter();
 }
 
 // get_alt_error - returns altitude error in cm
@@ -468,7 +468,9 @@ void AC_PosControl::update_z_controller()
     const uint64_t now_us = AP_HAL::micros64();
     if (now_us - _last_update_z_us > POSCONTROL_ACTIVE_TIMEOUT_US) {
         _flags.reset_rate_to_accel_z = true;
-        _flags.reset_accel_to_throttle = true;
+        _pid_accel_z.set_integrator((_motors.get_throttle() - _motors.get_throttle_hover()) * 1000.0f);
+        _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
+        _pid_accel_z.reset_filter();
     }
     _last_update_z_us = now_us;
 
@@ -588,15 +590,8 @@ void AC_PosControl::run_z_controller()
     // Calculate Earth Frame Z acceleration
     z_accel_meas = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
 
-    // reset target acceleration if this controller has just been engaged
-    if (_flags.reset_accel_to_throttle) {
-        // Reset Filter
-        _accel_error.z = 0;
-        _flags.reset_accel_to_throttle = false;
-    } else {
-        // calculate accel error
-        _accel_error.z = _accel_target.z - z_accel_meas;
-    }
+    // calculate accel error
+    _accel_error.z = _accel_target.z - z_accel_meas;
 
     // set input to PID
     _pid_accel_z.set_input_filter_all(_accel_error.z);
