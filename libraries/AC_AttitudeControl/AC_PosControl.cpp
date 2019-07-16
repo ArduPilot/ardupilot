@@ -193,7 +193,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _attitude_control(attitude_control),
     _p_pos_z(POSCONTROL_POS_Z_P),
     _p_vel_z(POSCONTROL_VEL_Z_P),
-    _pid_accel_z(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, POSCONTROL_ACC_Z_IMAX, POSCONTROL_ACC_Z_FILT_HZ, POSCONTROL_ACC_Z_DT),
+    _pid_accel_z(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, 0.0f, POSCONTROL_ACC_Z_IMAX, 0.0f, POSCONTROL_ACC_Z_FILT_HZ, 0.0f, POSCONTROL_ACC_Z_DT),
     _p_pos_xy(POSCONTROL_POS_XY_P),
     _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ, POSCONTROL_DT_50HZ),
     _dt(POSCONTROL_DT_400HZ),
@@ -449,7 +449,7 @@ void AC_PosControl::init_takeoff()
     freeze_ff_z();
 
     // shift difference between last motor out and hover throttle into accelerometer I
-    _pid_accel_z.set_integrator((_motors.get_throttle() - _motors.get_throttle_hover()) * 1000.0f);
+    _pid_accel_z.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f);
 
     // initialise ekf reset handler
     init_ekf_z_reset();
@@ -468,7 +468,7 @@ void AC_PosControl::update_z_controller()
     const uint64_t now_us = AP_HAL::micros64();
     if (now_us - _last_update_z_us > POSCONTROL_ACTIVE_TIMEOUT_US) {
         _flags.reset_rate_to_accel_z = true;
-        _pid_accel_z.set_integrator((_motors.get_throttle() - _motors.get_throttle_hover()) * 1000.0f);
+        _pid_accel_z.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f);
         _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
         _pid_accel_z.reset_filter();
     }
@@ -583,41 +583,19 @@ void AC_PosControl::run_z_controller()
 
     _accel_target.z += _accel_desired.z;
 
+
     // the following section calculates a desired throttle needed to achieve the acceleration target
     float z_accel_meas;         // actual acceleration
-    float p, i, d;              // used to capture pid values for logging
 
     // Calculate Earth Frame Z acceleration
     z_accel_meas = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
-
-    // calculate accel error
-    _accel_error.z = _accel_target.z - z_accel_meas;
-
-    // set input to PID
-    _pid_accel_z.set_input_filter_all(_accel_error.z);
-    _pid_accel_z.set_desired_rate(_accel_target.z);
-
-    // separately calculate p, i, d values for logging
-    p = _pid_accel_z.get_p();
-
-    // get i term
-    i = _pid_accel_z.get_integrator();
 
     // ensure imax is always large enough to overpower hover throttle
     if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
         _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
     }
 
-    // update i term as long as we haven't breached the limits or the I term will certainly reduce
-    // To-Do: should this be replaced with limits check from attitude_controller?
-    if ((!_motors.limit.throttle_lower && !_motors.limit.throttle_upper) || (i > 0 && _accel_error.z < 0) || (i < 0 && _accel_error.z > 0)) {
-        i = _pid_accel_z.get_i();
-    }
-
-    // get d term
-    d = _pid_accel_z.get_d();
-
-    float thr_out = (p + i + d) * 0.001f + _motors.get_throttle_hover();
+    float thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f +_motors.get_throttle_hover();
 
     // send throttle to attitude controller with angle boost
     _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
@@ -819,6 +797,7 @@ float AC_PosControl::time_since_last_xy_update() const
     return (now_us - _last_update_xy_us) * 1.0e-6f;
 }
 
+// write log to dataflash
 void AC_PosControl::write_log()
 {
     const Vector3f &pos_target = get_pos_target();
