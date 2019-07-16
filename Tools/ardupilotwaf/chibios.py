@@ -157,10 +157,13 @@ def chibios_firmware(self):
         abin_task.set_run_after(generate_apj_task)
 
     bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
-    if os.path.exists(bootloader_bin.abspath()) and self.bld.env.HAVE_INTEL_HEX:
-        hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
-        hex_task = self.create_task('build_intel_hex', src=[bin_target, bootloader_bin], tgt=hex_target)
-        hex_task.set_run_after(generate_bin_task)
+    if self.bld.env.HAVE_INTEL_HEX:
+        if os.path.exists(bootloader_bin.abspath()):
+            hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
+            hex_task = self.create_task('build_intel_hex', src=[bin_target, bootloader_bin], tgt=hex_target)
+            hex_task.set_run_after(generate_bin_task)
+        else:
+            print("Not embedding bootloader; %s does not exist" % bootloader_bin)
 
     if self.env.DEFAULT_PARAMETERS:
         default_params_task = self.create_task('set_default_parameters',
