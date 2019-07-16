@@ -36,6 +36,7 @@ class Board:
 
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
+        cfg.env.AP_MIN_CC_VERSION = [4, 9]
         cfg.env.ROMFS_FILES = []
         cfg.load('toolchain')
         cfg.load('cxx_checks')

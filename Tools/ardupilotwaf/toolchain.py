@@ -22,6 +22,28 @@ from waflib import Logs
 import os
 import re
 
+
+def _validate_cc_version(cfg):
+    """
+    Check for minimal cc version.
+    :param conf: Waf configuration holder.
+    """
+    # Minimal version
+    ap_cc_major = int(cfg.env['AP_MIN_CC_VERSION'][0])
+    ap_cc_minor = int(cfg.env['AP_MIN_CC_VERSION'][1])
+    enforce_version = bool(cfg.env.ENFORCE_TOOLCHAIN)
+
+    cc_major = int(cfg.env['CC_VERSION'][0])
+    cc_minor = int(cfg.env['CC_VERSION'][1])
+    cc_version = '.'.join(cfg.env['CC_VERSION'])
+
+    if enforce_version:
+        if cc_major != ap_cc_major or cc_minor != ap_cc_minor:
+            cfg.fatal("Wrong compiler version: {0}-{1}, expected version: {2}.{3}".format(cfg.env.CXX_NAME, cc_version, ap_cc_major, ap_cc_minor))
+    else:
+        if cc_major < ap_cc_major or (cc_major == ap_cc_major and cc_minor < ap_cc_minor):
+            cfg.fatal("Compiler version: {0}-{1}, required minimum version: {2}.{3}".format(cfg.env.CXX_NAME, cc_version, ap_cc_major, ap_cc_minor))
+
 @conf
 def find_gxx(conf):
     names = ['g++', 'c++']
@@ -139,14 +161,17 @@ def configure(cfg):
         if not cfg.options.disable_gccdeps:
             cfg.load('gccdeps')
 
-        return
+        _validate_cc_version(cfg)
 
+        return
     _set_pkgconfig_crosscompilation_wrapper(cfg)
     cfg.find_program('%s-ar' % cfg.env.TOOLCHAIN, var='AR', quiet=True)
     cfg.load('compiler_cxx compiler_c')
 
     if not cfg.options.disable_gccdeps:
         cfg.load('gccdeps')
+
+    _validate_cc_version(cfg)
 
     if cfg.env.COMPILER_CC == 'clang':
         cfg.env.CFLAGS += cfg.env.CLANG_FLAGS
