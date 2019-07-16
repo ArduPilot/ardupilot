@@ -66,6 +66,11 @@ public:
         uint16_t semaphore_line;
         uint32_t spi_count;
         uint32_t i2c_count;
+        uint16_t fault_line;
+        uint8_t fault_type;
+        uint8_t fault_thd_prio;
+        uint32_t fault_addr;
+        uint32_t fault_icsr;
     };
     struct PersistentData persistent_data;
 
