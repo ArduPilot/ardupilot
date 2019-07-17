@@ -66,6 +66,11 @@ void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
     }
 }
 
+bool GCS_MAVLINK::locked() const
+{
+    return (1U<<chan) & mavlink_locked_mask;
+}
+
 // set a channel as private. Private channels get sent heartbeats, but
 // don't get broadcast packets or forwarded packets
 void GCS_MAVLINK::set_channel_private(mavlink_channel_t _chan)
@@ -109,25 +114,6 @@ uint16_t comm_get_txspace(mavlink_channel_t chan)
 		ret = 0;
 	}
     return (uint16_t)ret;
-}
-
-/// Check for available data on the nominated MAVLink channel
-///
-/// @param chan		Channel to check
-/// @returns		Number of bytes available
-uint16_t comm_get_available(mavlink_channel_t chan)
-{
-    if (!valid_channel(chan)) {
-        return 0;
-    }
-    if ((1U<<chan) & mavlink_locked_mask) {
-        return 0;
-    }
-    int16_t bytes = mavlink_comm_port[chan]->available();
-	if (bytes == -1) {
-		return 0;
-	}
-    return (uint16_t)bytes;
 }
 
 /*

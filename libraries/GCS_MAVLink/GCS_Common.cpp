@@ -1728,6 +1728,11 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
 void
 GCS_MAVLINK::update_receive(uint32_t max_time_us)
 {
+    // do absolutely nothing if we are locked
+    if (locked()) {
+        return;
+    }
+
     // receive new packets
     mavlink_message_t msg;
     mavlink_status_t status;
@@ -1738,8 +1743,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 
     status.packet_rx_drop_count = 0;
 
-    // process received bytes
-    uint16_t nbytes = comm_get_available(chan);
+    const uint16_t nbytes = _port->available();
     for (uint16_t i=0; i<nbytes; i++)
     {
         const uint8_t c = (uint8_t)_port->read();
