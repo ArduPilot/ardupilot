@@ -1739,12 +1739,21 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     status.packet_rx_drop_count = 0;
 
     // process received bytes
+    bool parsed_packet = false;
     uint16_t nbytes = comm_get_available(chan);
     for (uint16_t i=0; i<nbytes; i++)
     {
+        if (parsed_packet || i % 100 == 0) {
+            // make sure we don't spend too much time parsing serial data
+            if (AP_HAL::micros() - tstart_us > max_time_us) {
+                break;
+            }
+            parsed_packet = false;
+        }
+
         const uint8_t c = (uint8_t)_port->read();
         const uint32_t protocol_timeout = 4000;
-        
+
         if (alternative.handler &&
             now_ms - alternative.last_mavlink_ms > protocol_timeout) {
             /*
@@ -1755,6 +1764,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             if (alternative.handler(c, mavlink_comm_port[chan])) {
                 alternative.last_alternate_ms = now_ms;
                 gcs_alternative_active[chan] = true;
+                parsed_packet = true;
             }
             
             /*
@@ -1766,8 +1776,6 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             }
         }
 
-        bool parsed_packet = false;
-
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
             hal.util->persistent_data.last_mavlink_msgid = msg.msgid;
@@ -1778,13 +1786,6 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             gcs_alternative_active[chan] = false;
             alternative.last_mavlink_ms = now_ms;
             hal.util->persistent_data.last_mavlink_msgid = 0;
-        }
-
-        if (parsed_packet || i % 100 == 0) {
-            // make sure we don't spend too much time parsing mavlink messages
-            if (AP_HAL::micros() - tstart_us > max_time_us) {
-                break;
-            }
         }
     }
 
