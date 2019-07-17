@@ -76,7 +76,7 @@ void GCS_MAVLINK::set_channel_private(mavlink_channel_t _chan)
 }
 
 // return a MAVLink parameter type given a AP_Param type
-MAV_PARAM_TYPE mav_param_type(enum ap_var_type t)
+MAV_PARAM_TYPE GCS_MAVLINK::mav_param_type(enum ap_var_type t)
 {
     if (t == AP_PARAM_INT8) {
 	    return MAV_PARAM_TYPE_INT8;
