@@ -126,7 +126,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: BATUSED_EN
     // @DisplayName: BATUSED_EN
-    // @Description: Displays main battery mah consumed
+    // @Description: Displays primary battery mAh consumed
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: BATUSED_X
@@ -449,7 +449,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: TEMP_EN
     // @DisplayName: TEMP_EN
-    // @Description: Displays temperature reported by barometer
+    // @Description: Displays temperature reported by primary barometer
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: TEMP_X
@@ -561,7 +561,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: CLIMBEFF_EN
     // @DisplayName: CLIMBEFF_EN
-    // @Description: Displays climb efficiency(climb rate/current)
+    // @Description: Displays climb efficiency (climb rate/current)
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: CLIMBEFF_X
@@ -577,7 +577,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: EFF_EN
     // @DisplayName: EFF_EN
-    // @Description: Displays flight efficiency(mah/km or /mi)
+    // @Description: Displays flight efficiency (mAh/km or /mi)
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EFF_X
@@ -593,7 +593,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: BTEMP_EN
     // @DisplayName: BTEMP_EN
-    // @Description: Displays temperature reported by second barometer
+    // @Description: Displays temperature reported by secondary barometer
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: BTEMP_X
@@ -609,7 +609,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
  
     // @Param: ATEMP_EN
     // @DisplayName: ATEMP_EN
-    // @Description: Displays temperature reported by airspeed sensor
+    // @Description: Displays temperature reported by primary airspeed sensor
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: ATEMP_X
@@ -617,7 +617,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: ATEMPP_Y
+    // @Param: ATEMP_Y
     // @DisplayName: ATEMP_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
@@ -641,7 +641,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: BAT2USED_EN
     // @DisplayName: BAT2USED_EN
-    // @Description: Displays mah used by battery2
+    // @Description: Displays secondary battery mAh consumed
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: BAT2USED_X
@@ -657,8 +657,8 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     
     
     // @Param: ASPD2_EN
-    // @DisplayName: ALTITUDE_EN
-    // @Description: Enables display of speed reported directly from second airspeed sensor
+    // @DisplayName: ASPD2_EN
+    // @Description: Displays airspeed reported directly from secondary airspeed sensor
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: ASPD2_X
