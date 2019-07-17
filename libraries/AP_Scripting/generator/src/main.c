@@ -9,6 +9,7 @@
 
 char keyword_alias[]     = "alias";
 char keyword_comment[]   = "--";
+char keyword_enum[]      = "enum";
 char keyword_field[]     = "field";
 char keyword_include[]   = "include";
 char keyword_method[]    = "method";
@@ -287,12 +288,18 @@ enum userdata_flags {
   UD_FLAG_SEMAPHORE = (1U << 0),
 };
 
+struct userdata_enum {
+  struct userdata_enum * next;
+  char * name;     // enum name
+};
+
 struct userdata {
   struct userdata * next;
   char *name;  // name of the C++ singleton
   char *alias; // (optional) used for scripting access
   struct userdata_field *fields;
   struct method *methods;
+  struct userdata_enum *enums;
   enum userdata_type ud_type;
   uint32_t operations; // bitset of enum operation_types
   int flags; // flags from the userdata_flags enum
@@ -498,6 +505,19 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
   return TRUE;
 }
 
+void handle_userdata_enum(struct userdata *data) {
+  trace(TRACE_USERDATA, "Adding a userdata enum");
+
+  char * enum_name;
+  while ((enum_name = next_token()) != NULL) {
+    trace(TRACE_USERDATA, "Adding enum %s", enum_name);
+    struct userdata_enum *ud_enum = (struct userdata_enum *) allocate(sizeof(struct userdata_enum));
+    ud_enum->next = data->enums;
+    string_copy(&(ud_enum->name), enum_name);
+    data->enums = ud_enum;
+  }
+}
+
 void handle_userdata_field(struct userdata *data) {
   trace(TRACE_USERDATA, "Adding a userdata field");
 
@@ -658,6 +678,8 @@ void handle_userdata(void) {
     handle_operator(node);
   } else if (strcmp(type, keyword_method) == 0) {
     handle_method(node->name, &(node->methods));
+  } else if (strcmp(type, keyword_enum) == 0) {
+    handle_userdata_enum(node);
   } else {
     error(ERROR_USERDATA, "Unknown or unsupported type for userdata: %s", type);
   }
@@ -710,6 +732,8 @@ void handle_singleton(void) {
     node->flags |= UD_FLAG_SEMAPHORE;
   } else if (strcmp(type, keyword_method) == 0) {
     handle_method(node->name, &(node->methods));
+  } else if (strcmp(type, keyword_enum) == 0) {
+    handle_userdata_enum(node);
   } else {
     error(ERROR_SINGLETON, "Singletons only support aliases, methods or semaphore keyowrds (got %s)", type);
   }
@@ -1336,7 +1360,7 @@ void emit_singleton_metatables(void) {
     fprintf(source, "const luaL_Reg %s_meta[] = {\n", node->name);
 
     struct method *method = node->methods;
-    while(method) {
+    while (method) {
       fprintf(source, "    {\"%s\", %s_%s},\n", method->name, node->name, method->name);
       method = method->next;
     }
@@ -1348,28 +1372,51 @@ void emit_singleton_metatables(void) {
   }
 }
 
-void emit_loaders(void) {
-  fprintf(source, "const struct userdata_fun {\n");
-  fprintf(source, "    const char *name;\n");
-  fprintf(source, "    const luaL_Reg *reg;\n");
-  fprintf(source, "} userdata_fun[] = {\n");
-  struct userdata * data = parsed_userdata;
+void emit_enums(struct userdata * data) {
   while (data) {
-    fprintf(source, "    {\"%s\", %s_meta},\n", data->name, data->name);
+    if (data->enums != NULL) {
+      fprintf(source, "struct userdata_enum %s_enums[] = {\n", data->name);
+      struct userdata_enum *ud_enum = data->enums;
+      while (ud_enum != NULL) {
+        fprintf(source, "    {\"%s\", %s::%s},\n", ud_enum->name, data->name, ud_enum->name);
+        ud_enum = ud_enum->next;
+      }
+      fprintf(source, "    {NULL, 0}};\n\n");
+    }
+    data = data->next;
+  }
+}
+
+void emit_metas(struct userdata * data, char * meta_name) {
+  fprintf(source, "const struct userdata_meta %s_fun[] = {\n", meta_name);
+  while (data) {
+    if (data->enums) {
+      fprintf(source, "    {\"%s\", %s_meta, %s_enums},\n", data->alias ? data->alias : data->name, data->name, data->name);
+    } else {
+      fprintf(source, "    {\"%s\", %s_meta, NULL},\n", data->alias ? data->alias : data->name, data->name);
+    }
     data = data->next;
   }
   fprintf(source, "};\n\n");
+}
 
-  fprintf(source, "const struct singleton_fun {\n");
+void emit_loaders(void) {
+  // emit the enum header
+  fprintf(source, "struct userdata_enum {\n");
+  fprintf(source, "    const char *name;\n");
+  fprintf(source, "    int value;\n");
+  fprintf(source, "};\n\n");
+  emit_enums(parsed_userdata);
+  emit_enums(parsed_singletons);
+
+  // emit the meta table header
+  fprintf(source, "struct userdata_meta {\n");
   fprintf(source, "    const char *name;\n");
   fprintf(source, "    const luaL_Reg *reg;\n");
-  fprintf(source, "} singleton_fun[] = {\n");
-  struct userdata * single = parsed_singletons;
-  while (single) {
-    fprintf(source, "    {\"%s\", %s_meta},\n", single->alias ? single->alias : single->name, single->name);
-    single = single->next;
-  }
+  fprintf(source, "    const struct userdata_enum *enums;\n");
   fprintf(source, "};\n\n");
+  emit_metas(parsed_userdata, "userdata");
+  emit_metas(parsed_singletons, "singleton");
 
   fprintf(source, "void load_generated_bindings(lua_State *L) {\n");
   fprintf(source, "    luaL_checkstack(L, 5, \"Out of stack\");\n"); // this is more stack space then we need, but should never fail
@@ -1391,6 +1438,17 @@ void emit_loaders(void) {
   fprintf(source, "        lua_pushstring(L, \"__index\");\n");
   fprintf(source, "        lua_pushvalue(L, -2);\n");
   fprintf(source, "        lua_settable(L, -3);\n");
+
+  fprintf(source, "        if (singleton_fun[i].enums != nullptr) {\n");
+  fprintf(source, "            int j = 0;\n");
+  fprintf(source, "            while (singleton_fun[i].enums[j].name != NULL) {\n");
+  fprintf(source, "                lua_pushstring(L, singleton_fun[i].enums[j].name);\n");
+  fprintf(source, "                lua_pushinteger(L, singleton_fun[i].enums[j].value);\n");
+  fprintf(source, "                lua_settable(L, -3);\n");
+  fprintf(source, "                j++;\n");
+  fprintf(source, "            }\n");
+  fprintf(source, "        }\n");
+
   fprintf(source, "        lua_pop(L, 1);\n");
   fprintf(source, "        lua_newuserdata(L, 0);\n");
   fprintf(source, "        luaL_getmetatable(L, singleton_fun[i].name);\n");
