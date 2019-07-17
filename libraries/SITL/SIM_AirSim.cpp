@@ -116,6 +116,54 @@ bool AirSim::parse_sensors(const char *json)
                 }
                 break;
             }
+
+            case DATA_VECTOR3F_ARRAY: {
+                // - array of floats that represent [x,y,z] coordinate for each point hit within the range
+                //       x0, y0, z0, x1, y1, z1, ..., xn, yn, zn
+                // example: [23.1,0.677024,1.4784,-8.97607135772705,-8.976069450378418,-8.642673492431641e-07,]
+                if (*p++ != '[') {
+                    return false;
+                }
+                uint16_t n = 0;
+                struct vector3f_array *v = (struct vector3f_array *)key.ptr;
+                while (true) {
+                    if (n >= v->length) {
+                        Vector3f *d = (Vector3f *)realloc(v->data, sizeof(Vector3f)*(n+1));
+                        if (d == nullptr) {
+                            return false;
+                        }
+                        v->data = d;
+                        v->length = n+1;
+                    }
+                    if (sscanf(p, "%f,%f,%f,", &v->data[n].x, &v->data[n].y, &v->data[n].z) != 3) {
+                        printf("Failed to parse Vector3f for %s/%s[%u]\n", key.section, key.key, n);
+                        return false;
+                    }
+                    n++;
+                    // Goto 3rd occurence of ,
+                    p = strchr(p,',');
+                    if (!p) {
+                        return false;
+                    }
+                    p++;
+                    p = strchr(p,',');
+                    if (!p) {
+                        return false;
+                    }
+                    p++;
+                    p = strchr(p,',');
+                    if (!p) {
+                        return false;
+                    }
+                    p++;
+                    // Reached end of point cloud
+                    if (p[0] == ']') {
+                        break;
+                    }
+                }
+                v->length = n;
+                break;
+            }
         }
     }
     return true;
@@ -149,14 +197,10 @@ void AirSim::recv_fdm()
         return;
     }
 
-    bool parse_ok = parse_sensors((const char *)(p1+1));
+    parse_sensors((const char *)(p1+1));
 
     memmove(sensor_buffer, p2, sensor_buffer_len - (p2 - sensor_buffer));
     sensor_buffer_len = sensor_buffer_len - (p2 - sensor_buffer);
-
-    if (!parse_ok) {
-        return;
-    }
 
     accel_body = Vector3f(state.imu.linear_acceleration[0],
                           state.imu.linear_acceleration[1],
@@ -187,6 +231,8 @@ void AirSim::recv_fdm()
             average_frame_time = average_frame_time * 0.98 + deltat * 0.02;
         }
     }
+
+    scanner.points = state.lidar.points;
 
 #if 0
     AP::logger().Write("ASM1", "TimeUS,TUS,R,P,Y,GX,GY,GZ",
