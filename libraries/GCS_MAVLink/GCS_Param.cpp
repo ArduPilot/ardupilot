@@ -308,7 +308,7 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
     const uint8_t to_copy = MIN(ARRAY_SIZE(packet.param_id), strlen(param_name));
     memcpy(packet.param_id, param_name, to_copy);
     packet.param_value = param_value;
-    packet.param_type = mav_param_type(param_type);
+    packet.param_type = GCS_MAVLINK::mav_param_type(param_type);
     packet.param_count = AP_Param::count_parameters();
     packet.param_index = -1;
 

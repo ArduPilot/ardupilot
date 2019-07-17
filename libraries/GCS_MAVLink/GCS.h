@@ -516,6 +516,9 @@ protected:
     virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_UNDEFINED; }
     virtual MAV_LANDED_STATE landed_state() const { return MAV_LANDED_STATE_UNDEFINED; }
 
+    // return a MAVLink parameter type given a AP_Param type
+    static MAV_PARAM_TYPE mav_param_type(enum ap_var_type t);
+
     AP_Param *                  _queued_parameter;      ///< next parameter to
                                                         // be sent in queue
     mavlink_channel_t           chan;
