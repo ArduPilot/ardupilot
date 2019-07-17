@@ -60,13 +60,6 @@ static inline bool valid_channel(mavlink_channel_t chan)
 
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
 
-/// Check for available data on the nominated MAVLink channel
-///
-/// @param chan		Channel to check
-/// @returns		Number of bytes available
-uint16_t comm_get_available(mavlink_channel_t chan);
-
-
 /// Check for available transmit space on the nominated MAVLink channel
 ///
 /// @param chan		Channel to check
