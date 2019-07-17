@@ -140,6 +140,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(batused, "BATUSED", 8, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Param: SATS_EN
     // @DisplayName: SATS_EN
     // @Description: Displays number of acquired sattelites
     // @Values: 0:Disabled,1:Enabled
@@ -425,7 +426,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 29
 
     // @Param: ROLL_Y
-    // @DisplayName:ROLL_Y
+    // @DisplayName: ROLL_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(roll_angle, "ROLL", 26, AP_OSD_Screen, AP_OSD_Setting),
@@ -441,7 +442,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 29
 
     // @Param: PITCH_Y
-    // @DisplayName:PITCH_Y
+    // @DisplayName: PITCH_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(pitch_angle, "PITCH", 27, AP_OSD_Screen, AP_OSD_Setting),
@@ -457,7 +458,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 29
 
     // @Param: TEMP_Y
-    // @DisplayName:TEMP_Y
+    // @DisplayName: TEMP_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
@@ -473,7 +474,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 29
 
     // @Param: HDOP_Y
-    // @DisplayName:HDOP_Y
+    // @DisplayName: HDOP_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(hdop, "HDOP", 29, AP_OSD_Screen, AP_OSD_Setting),
@@ -489,7 +490,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 29
 
     // @Param: WAYPOINT_Y
-    // @DisplayName:WAYPOINT_Y
+    // @DisplayName: WAYPOINT_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(waypoint, "WAYPOINT", 30, AP_OSD_Screen, AP_OSD_Setting),
