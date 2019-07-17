@@ -1619,28 +1619,43 @@ const luaL_Reg AP_AHRS_meta[] = {
     {NULL, NULL}
 };
 
-const struct userdata_fun {
+struct userdata_enum {
     const char *name;
-    const luaL_Reg *reg;
-} userdata_fun[] = {
-    {"Vector2f", Vector2f_meta},
-    {"Vector3f", Vector3f_meta},
-    {"Location", Location_meta},
+    int value;
 };
 
-const struct singleton_fun {
+struct userdata_enum AP_GPS_enums[] = {
+    {"GPS_OK_FIX_3D_RTK_FIXED", AP_GPS::GPS_OK_FIX_3D_RTK_FIXED},
+    {"GPS_OK_FIX_3D_RTK_FLOAT", AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT},
+    {"GPS_OK_FIX_3D_DGPS", AP_GPS::GPS_OK_FIX_3D_DGPS},
+    {"GPS_OK_FIX_3D", AP_GPS::GPS_OK_FIX_3D},
+    {"GPS_OK_FIX_2D", AP_GPS::GPS_OK_FIX_2D},
+    {"NO_FIX", AP_GPS::NO_FIX},
+    {"NO_GPS", AP_GPS::NO_GPS},
+    {NULL, 0}};
+
+struct userdata_meta {
     const char *name;
     const luaL_Reg *reg;
-} singleton_fun[] = {
-    {"gcs", GCS_meta},
-    {"relay", AP_Relay_meta},
-    {"terrain", AP_Terrain_meta},
-    {"rangefinder", RangeFinder_meta},
-    {"AP_Notify", AP_Notify_meta},
-    {"notify", notify_meta},
-    {"gps", AP_GPS_meta},
-    {"battery", AP_BattMonitor_meta},
-    {"ahrs", AP_AHRS_meta},
+    const struct userdata_enum *enums;
+};
+
+const struct userdata_meta userdata_fun[] = {
+    {"Vector2f", Vector2f_meta, NULL},
+    {"Vector3f", Vector3f_meta, NULL},
+    {"Location", Location_meta, NULL},
+};
+
+const struct userdata_meta singleton_fun[] = {
+    {"gcs", GCS_meta, NULL},
+    {"relay", AP_Relay_meta, NULL},
+    {"terrain", AP_Terrain_meta, NULL},
+    {"rangefinder", RangeFinder_meta, NULL},
+    {"AP_Notify", AP_Notify_meta, NULL},
+    {"notify", notify_meta, NULL},
+    {"gps", AP_GPS_meta, AP_GPS_enums},
+    {"battery", AP_BattMonitor_meta, NULL},
+    {"ahrs", AP_AHRS_meta, NULL},
 };
 
 void load_generated_bindings(lua_State *L) {
@@ -1662,6 +1677,15 @@ void load_generated_bindings(lua_State *L) {
         lua_pushstring(L, "__index");
         lua_pushvalue(L, -2);
         lua_settable(L, -3);
+        if (singleton_fun[i].enums != nullptr) {
+            int j = 0;
+            while (singleton_fun[i].enums[j].name != NULL) {
+                lua_pushstring(L, singleton_fun[i].enums[j].name);
+                lua_pushinteger(L, singleton_fun[i].enums[j].value);
+                lua_settable(L, -3);
+                j++;
+            }
+        }
         lua_pop(L, 1);
         lua_newuserdata(L, 0);
         luaL_getmetatable(L, singleton_fun[i].name);

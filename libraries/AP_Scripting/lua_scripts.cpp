@@ -69,16 +69,21 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
         switch (error) {
             case LUA_ERRSYNTAX:
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Syntax error in %s", filename);
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Error: %s", lua_tostring(L, -1));
+                lua_pop(L, lua_gettop(L));
                 return nullptr;
             case LUA_ERRMEM:
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Insufficent memory loading %s", filename);
+                lua_pop(L, lua_gettop(L));
                 return nullptr;
             case LUA_ERRFILE:
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Unable to load the file: %s", lua_tostring(L, -1));
                 hal.console->printf("Lua: File error: %s\n", lua_tostring(L, -1));
+                lua_pop(L, lua_gettop(L));
                 return nullptr;
             default:
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Unknown error (%d) loading %s", error, filename);
+                lua_pop(L, lua_gettop(L));
                 return nullptr;
         }
     }
