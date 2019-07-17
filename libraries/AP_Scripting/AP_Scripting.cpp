@@ -25,7 +25,7 @@
 #define SCRIPTING_STACK_MIN_SIZE (8 * 1024)
 
 #if !defined(SCRIPTING_STACK_SIZE)
-  #define SCRIPTING_STACK_SIZE (16 * 1024)
+  #define SCRIPTING_STACK_SIZE (17 * 1024) // Linux experiences stack corruption at ~16.25KB when handed bad scripts
 #endif // !defined(SCRIPTING_STACK_SIZE)
 
 #if !defined(SCRIPTING_STACK_MAX_SIZE)

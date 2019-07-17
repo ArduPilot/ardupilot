@@ -50,6 +50,7 @@ singleton AP_BattMonitor method get_temperature boolean float'Null uint8_t 0 ud-
 include AP_GPS/AP_GPS.h
 
 singleton AP_GPS alias gps
+singleton AP_GPS enum NO_GPS NO_FIX GPS_OK_FIX_2D GPS_OK_FIX_3D GPS_OK_FIX_3D_DGPS GPS_OK_FIX_3D_RTK_FLOAT GPS_OK_FIX_3D_RTK_FIXED
 singleton AP_GPS method num_sensors uint8_t
 singleton AP_GPS method primary_sensor uint8_t
 singleton AP_GPS method status uint8_t uint8_t 0 ud->num_sensors()
