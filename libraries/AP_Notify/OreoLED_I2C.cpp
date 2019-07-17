@@ -315,7 +315,8 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
             _state_desired[i].set_rgb(pattern, red, green, blue);
             if (!(_state_desired[i] == _state_sent[i])) {
                 _send_required = true;
-                _state_desired[i].last_update_ms = now_ms + _state_desired[i].get_update_offset();
+                _state_desired[i].last_update_ms = now_ms;
+                _state_desired[i].phase_delay_ms = _state_desired[i].get_update_offset();
             }
         }
     } else if (instance < OREOLED_NUM_LEDS) {
@@ -323,7 +324,8 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
         _state_desired[instance].set_rgb(pattern, red, green, blue);
         if (!(_state_desired[instance] == _state_sent[instance])) {
             _send_required = true;
-            _state_desired[instance].last_update_ms = now_ms + _state_desired[instance].get_update_offset();
+            _state_desired[instance].last_update_ms = now_ms;
+            _state_desired[instance].phase_delay_ms = _state_desired[instance].get_update_offset();
         }
     }
 }
@@ -345,7 +347,8 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
             _state_desired[i].set_rgb(pattern, red, green, blue, amplitude_red, amplitude_green, amplitude_blue, period, phase_offset);
             if (!(_state_desired[i] == _state_sent[i])) {
                 _send_required = true;
-                _state_desired[i].last_update_ms = now_ms + _state_desired[i].get_update_offset();
+                _state_desired[i].last_update_ms = now_ms;
+                _state_desired[i].phase_delay_ms = _state_desired[i].get_update_offset();
             }
         }
     } else if (instance < OREOLED_NUM_LEDS) {
@@ -353,7 +356,8 @@ void OreoLED_I2C::set_rgb(uint8_t instance, oreoled_pattern pattern, uint8_t red
         _state_desired[instance].set_rgb(pattern, red, green, blue, amplitude_red, amplitude_green, amplitude_blue, period, phase_offset);
         if (!(_state_desired[instance] == _state_sent[instance])) {
             _send_required = true;
-            _state_desired[instance].last_update_ms = now_ms + _state_desired[instance].get_update_offset();
+            _state_desired[instance].last_update_ms = now_ms;
+            _state_desired[instance].phase_delay_ms = _state_desired[instance].get_update_offset();
         }
     }
 }
@@ -373,7 +377,8 @@ void OreoLED_I2C::set_macro(uint8_t instance, oreoled_macro macro)
             _state_desired[i].set_macro(macro);
             if (!(_state_desired[i] == _state_sent[i])) {
                 _send_required = true;
-                _state_desired[i].last_update_ms = now_ms + _state_desired[i].get_update_offset();
+                _state_desired[i].last_update_ms = now_ms;
+                _state_desired[i].phase_delay_ms = _state_desired[i].get_update_offset();
             }
         }
     } else if (instance < OREOLED_NUM_LEDS) {
@@ -381,7 +386,8 @@ void OreoLED_I2C::set_macro(uint8_t instance, oreoled_macro macro)
         _state_desired[instance].set_macro(macro);
         if (!(_state_desired[instance] == _state_sent[instance])) {
             _send_required = true;
-            _state_desired[instance].last_update_ms = now_ms + _state_desired[instance].get_update_offset();
+            _state_desired[instance].last_update_ms = now_ms;
+            _state_desired[instance].phase_delay_ms = _state_desired[instance].get_update_offset();
         }
     }
 }
@@ -702,7 +708,7 @@ bool OreoLED_I2C::oreo_state::operator==(const OreoLED_I2C::oreo_state &os)
             && (os.period==period) && (os.repeat==repeat) && (os.phase_offset==phase_offset));
 }
 
-uint32_t OreoLED_I2C::oreo_state::get_update_offset()
+uint16_t OreoLED_I2C::oreo_state::get_update_offset()
 {
     if (period == 0) {
         return 0;

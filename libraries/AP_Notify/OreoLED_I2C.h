@@ -151,6 +151,7 @@ private:
         int8_t repeat;
         uint16_t phase_offset;
         uint32_t last_update_ms;
+        uint16_t phase_delay_ms;
         bool    period_toggle;
 
         oreo_state();
@@ -167,7 +168,7 @@ private:
 
         bool operator==(const oreo_state &os);
 
-        uint32_t get_update_offset();
+        uint16_t get_update_offset();
     };
 
     typedef struct {

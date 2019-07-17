@@ -58,7 +58,8 @@ void NeoPixel_Oreo::timer()
         // check for state change
         switch (oreo->_state_desired[i].mode) {
         case OreoLED_I2C::OREOLED_MODE_MACRO:
-            if (now_ms - oreo->_state_desired[i].last_update_ms >= 2000) {
+            if ((now_ms - oreo->_state_desired[i].last_update_ms) >= (2000U + oreo->_state_desired[i].phase_delay_ms)) {
+                oreo->_state_desired[i].phase_delay_ms = 0;
                 // TODO: replace with something better than fixed LED pattern
                 NeoPixel::RGB led {};
                 if (oreo->_state_desired[i].period_toggle) {
@@ -89,7 +90,8 @@ void NeoPixel_Oreo::timer()
 
         case OreoLED_I2C::OREOLED_MODE_RGB_EXTENDED:
             // last_update can be larger than now_ms if there are phase offsets applied
-            if (now_ms > oreo->_state_desired[i].last_update_ms && (now_ms - oreo->_state_desired[i].last_update_ms >= oreo->_state_desired[i].period)) {
+            if ((now_ms - oreo->_state_desired[i].last_update_ms) > (oreo->_state_desired[i].period + oreo->_state_desired[i].phase_delay_ms)) {
+                oreo->_state_desired[i].phase_delay_ms = 0;
                 oreo->_state_desired[i].last_update_ms = now_ms;
                 NeoPixel::RGB led {};
                 if (oreo->_state_desired[i].period_toggle) {
