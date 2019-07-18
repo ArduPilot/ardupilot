@@ -64,6 +64,7 @@ enum class HarmonicNotchDynamicMode {
     UpdateThrottle  = 1,
     UpdateRPM       = 2,
     UpdateBLHeli    = 3,
+    UpdateGyroFFT   = 4,
 };
 
 /*
