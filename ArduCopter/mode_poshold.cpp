@@ -111,6 +111,7 @@ void ModePosHold::run()
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         loiter_nav->update();
 
@@ -133,6 +134,7 @@ void ModePosHold::run()
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         // init and update loiter although pilot is controlling lean angles
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         loiter_nav->update();
 
@@ -147,6 +149,7 @@ void ModePosHold::run()
 
     case AltHold_Landed_Ground_Idle:
 
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         loiter_nav->update();
         attitude_control->reset_rate_controller_I_terms();

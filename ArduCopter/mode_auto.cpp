@@ -833,6 +833,7 @@ void ModeAuto::land_run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         return;
     }
@@ -928,6 +929,7 @@ void ModeAuto::loiter_to_alt_run()
     }
 
     if (!loiter_to_alt.loiter_start_done) {
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         _mode = Auto_LoiterToAlt;
         loiter_to_alt.loiter_start_done = true;
