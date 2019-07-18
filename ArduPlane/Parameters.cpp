@@ -1221,7 +1221,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: DSPOILER_OPTS
     // @DisplayName: Differential spoiler and crow flaps options
     // @Description: Differential spoiler and crow flaps options
-    // @Values: 0: none, 1: D spoilers have pitch input, 2: use both control surfaces on each wing for roll, 4: Progressive crow, flaps only first (0-50% flap in) then crow flaps (50 - 100% flap in)
+    // @Values: 0: none, 1: D spoilers have pitch input, 2: use both control surfaces on each wing for roll, 4: Progressive crow flaps only first (0-50% flap in) then crow flaps (50 - 100% flap in)
     // @Bitmask: 0:pitch control, 1:full span, 2:Progressive crow
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_OPTS", 20, ParametersG2, crow_flap_options, 3),
