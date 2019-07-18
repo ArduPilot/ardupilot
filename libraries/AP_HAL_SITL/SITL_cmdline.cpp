@@ -30,6 +30,7 @@
 #include <SITL/SIM_SilentWings.h>
 #include <SITL/SIM_Morse.h>
 #include <SITL/SIM_AirSim.h>
+#include <SITL/SIM_Scrimmage.h>
 
 #include <signal.h>
 #include <stdio.h>
@@ -69,6 +70,7 @@ void SITL_State::_usage(void)
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set home location (lat,lng,alt,yaw)\n"
            "\t--model|-M MODEL         set simulation model\n"
+           "\t--config string          set additional simulation config string\n"
            "\t--fg|-F ADDRESS          set Flight Gear view address, defaults to 127.0.0.1\n"
            "\t--disable-fgview         disable Flight Gear view\n"
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
@@ -132,6 +134,7 @@ static const struct {
     { "silentwings",        SilentWings::create },
     { "morse",              Morse::create },
     { "airsim",             AirSim::create},
+    { "scrimmage",          Scrimmage::create },
 };
 
 void SITL_State::_set_signal_handlers(void) const
@@ -165,6 +168,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _use_fg_view = true;
     char *autotest_dir = nullptr;
     _fg_address = "127.0.0.1";
+    const char* config = "";
 
     const int BASE_PORT = 5760;
     const int RCIN_PORT = 5501;
@@ -215,6 +219,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"synthetic-clock", false,  0, 'S'},
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
+        {"config",          true,   0, 'c'},
         {"fg",              true,   0, 'F'},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
         {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
@@ -246,7 +251,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     setvbuf(stdout, (char *)0, _IONBF, 0);
     setvbuf(stderr, (char *)0, _IONBF, 0);
 
-    GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:",
+    GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
                     options);
 
     while ((opt = gopt.getoption()) != -1) {
@@ -303,6 +308,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 'M':
             model_str = gopt.optarg;
+            break;
+        case 'c':
+            config = gopt.optarg;
             break;
         case 'F':
             _fg_address = gopt.optarg;
@@ -369,6 +377,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             sitl_model->set_speedup(speedup);
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
+            sitl_model->set_config(config);
             _synthetic_clock_mode = true;
             break;
         }
