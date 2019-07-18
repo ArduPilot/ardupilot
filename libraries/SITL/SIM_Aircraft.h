@@ -103,6 +103,11 @@ public:
 
     float gross_mass() const { return mass + external_payload_mass; }
 
+    virtual void set_config(const char* config) {
+        config_ = config;
+    }
+
+
     const Location &get_location() const { return location; }
 
     const Vector3f &get_position() const { return position; }
@@ -178,6 +183,7 @@ protected:
     const char *frame;
     bool use_time_sync = true;
     float last_speedup = -1.0f;
+    const char *config_ = "";
 
     // allow for AHRS_ORIENTATION
     AP_Int8 *ahrs_orientation;
