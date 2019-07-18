@@ -9,6 +9,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_Arming/AP_Arming.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/Location.h>
 
@@ -1289,6 +1290,34 @@ static int AP_BattMonitor_num_instances(lua_State *L) {
     return 1;
 }
 
+static int AP_Arming_is_armed(lua_State *L) {
+    AP_Arming * ud = AP_Arming::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "arming not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    const bool data = ud->is_armed(
+        );
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
+static int AP_Arming_disarm(lua_State *L) {
+    AP_Arming * ud = AP_Arming::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "arming not supported on this firmware");
+    }
+
+    binding_argcheck(L, 1);
+    const bool data = ud->disarm(
+        );
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
 static int AP_AHRS_prearm_healthy(lua_State *L) {
     AP_AHRS * ud = AP_AHRS::get_singleton();
     if (ud == nullptr) {
@@ -1602,6 +1631,12 @@ const luaL_Reg AP_BattMonitor_meta[] = {
     {NULL, NULL}
 };
 
+const luaL_Reg AP_Arming_meta[] = {
+    {"is_armed", AP_Arming_is_armed},
+    {"disarm", AP_Arming_disarm},
+    {NULL, NULL}
+};
+
 const luaL_Reg AP_AHRS_meta[] = {
     {"prearm_healthy", AP_AHRS_prearm_healthy},
     {"home_is_set", AP_AHRS_home_is_set},
@@ -1655,6 +1690,7 @@ const struct userdata_meta singleton_fun[] = {
     {"notify", notify_meta, NULL},
     {"gps", AP_GPS_meta, AP_GPS_enums},
     {"battery", AP_BattMonitor_meta, NULL},
+    {"arming", AP_Arming_meta, NULL},
     {"ahrs", AP_AHRS_meta, NULL},
 };
 
@@ -1705,6 +1741,7 @@ const char *singletons[] = {
     "notify",
     "gps",
     "battery",
+    "arming",
     "ahrs",
 };
 
