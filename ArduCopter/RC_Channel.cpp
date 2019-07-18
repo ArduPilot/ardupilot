@@ -556,7 +556,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 break;
             }
             break;
-
+            
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
         break;
