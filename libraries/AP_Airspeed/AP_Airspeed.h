@@ -140,8 +140,9 @@ public:
         TYPE_I2C_MS5525_ADDRESS_1=4,
         TYPE_I2C_MS5525_ADDRESS_2=5,
         TYPE_I2C_SDP3X=6,
-        TYPE_I2C_DLVR=7,
+        TYPE_I2C_DLVR_5IN=7,
         TYPE_UAVCAN=8,
+        TYPE_I2C_DLVR_10IN=9,
     };
 
     // get current primary sensor
