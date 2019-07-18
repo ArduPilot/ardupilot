@@ -231,6 +231,7 @@ def kill_tasks():
             'MAVProxy.exe',
             'runsim.py',
             'AntennaTracker.elf',
+            'scrimmage'
         }
         for vehicle in vinfo.options:
             for frame in vinfo.options[vehicle]["frames"]:
