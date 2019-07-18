@@ -1,8 +1,11 @@
 # ArduPilot IMU Filter Test Tool
 
-**Warning: always check the onboard FFT to setup filters, this tool only simulate effects of filtering.**
+**Warning: always check the onboard FFT to setup filters, this tool only simulates the effects of filtering.**
 
 This is a tool to simulate IMU filtering on a raw IMU log.
+This requires activating the RAW_IMU bit on the LOG_BITMASK parameter.
+Currently only supports the primary IMU and does not use batch sampling.
+
 To run it:
 
 ```bash
