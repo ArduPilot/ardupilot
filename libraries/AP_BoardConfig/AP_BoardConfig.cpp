@@ -76,6 +76,10 @@
 #endif
 #endif
 
+#ifndef HAL_DEFAULT_BOOT_DELAY
+#define HAL_DEFAULT_BOOT_DELAY 0
+#endif
+
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::_singleton;
 
@@ -245,6 +249,14 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 19, AP_BoardConfig, _options, HAL_BRD_OPTIONS_DEFAULT),
 
+    // @Param: BOOT_DELAY
+    // @DisplayName: Boot delay
+    // @Description: This adds a delay in milliseconds to boot to ensure peripherals initialise fully
+    // @Range: 0 10000
+    // @Units: ms
+    // @User: Advanced
+    AP_GROUPINFO("BOOT_DELAY", 20, AP_BoardConfig, _boot_delay_ms, HAL_DEFAULT_BOOT_DELAY),
+    
     AP_GROUPEND
 };
 
@@ -261,6 +273,16 @@ void AP_BoardConfig::init()
 
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
 
+    if (_boot_delay_ms > 0) {
+        uint16_t delay_ms = uint16_t(_boot_delay_ms.get());
+        if (hal.util->was_watchdog_armed() && delay_ms > 200) {
+            // don't delay a long time on watchdog reset, the pilot
+            // may be able to save the vehicle
+            delay_ms = 200;
+        }
+        hal.scheduler->delay(delay_ms);
+    }
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(USE_POSIX)
     uint8_t slowdown = constrain_int16(_sdcard_slowdown.get(), 0, 32);
     const uint8_t max_slowdown = 8;
