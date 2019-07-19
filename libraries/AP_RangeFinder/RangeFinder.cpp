@@ -660,6 +660,8 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case RangeFinder_TYPE_LWI2C:
         if (state[instance].address) {
+            // the LW20 needs a long time to boot up, so we delay 1.5s here
+            hal.scheduler->delay(1500);
 #ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
             _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance],
                 hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, state[instance].address)));
