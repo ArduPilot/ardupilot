@@ -14,7 +14,7 @@ void Tracker::init_servos()
     SRV_Channels::set_default_function(CH_PITCH, SRV_Channel::k_tracker_pitch);
 
     // yaw range is +/- (YAW_RANGE parameter/2) converted to centi-degrees
-    SRV_Channels::set_angle(SRV_Channel::k_tracker_yaw, g.yaw_range * 100/2);        
+    SRV_Channels::set_angle(SRV_Channel::k_tracker_yaw, g.yaw_range * 100/2);
 
     // pitch range is +/- (PITCH_MIN/MAX parameters/2) converted to centi-degrees
     SRV_Channels::set_angle(SRV_Channel::k_tracker_pitch, (-g.pitch_min+g.pitch_max) * 100/2);
@@ -46,10 +46,6 @@ void Tracker::update_pitch_servo(float pitch)
         update_pitch_position_servo();
         break;
     }
-
-    // convert servo_out to radio_out and send to servo
-    SRV_Channels::calc_pwm();
-    SRV_Channels::output_ch_all();
 }
 
 /**
@@ -154,10 +150,6 @@ void Tracker::update_yaw_servo(float yaw)
         update_yaw_position_servo();
         break;
     }
-
-    // convert servo_out to radio_out and send to servo
-    SRV_Channels::calc_pwm();
-    SRV_Channels::output_ch_all();
 }
 
 /**

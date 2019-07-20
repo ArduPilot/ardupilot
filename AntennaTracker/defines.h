@@ -31,6 +31,11 @@ enum mode_reason_t {
     MODE_REASON_GCS_COMMAND,
 };
 
+enum class PWMDisarmed {
+    ZERO = 0,
+    TRIM,
+};
+
 //  Filter
 #define SERVO_OUT_FILT_HZ               0.1f
 #define G_Dt                            0.02f
