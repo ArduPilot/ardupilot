@@ -478,7 +478,7 @@ static int GCS_send_text(lua_State *L) {
 
     binding_argcheck(L, 3);
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= MAV_SEVERITY_EMERGENCY) && (raw_data_2 <= MAV_SEVERITY_DEBUG)), 2, "argument out of range");
+    luaL_argcheck(L, ((raw_data_2 >= static_cast<int32_t>(MAV_SEVERITY_EMERGENCY)) && (raw_data_2 <= static_cast<int32_t>(MAV_SEVERITY_DEBUG))), 2, "argument out of range");
     const MAV_SEVERITY data_2 = static_cast<MAV_SEVERITY>(raw_data_2);
     const char * data_3 = luaL_checkstring(L, 3);
     ud->send_text(
@@ -1290,6 +1290,23 @@ static int AP_BattMonitor_num_instances(lua_State *L) {
     return 1;
 }
 
+static int AP_Arming_arm(lua_State *L) {
+    AP_Arming * ud = AP_Arming::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "arming not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= static_cast<int32_t>(AP_Arming::Method::RUDDER)) && (raw_data_2 <= static_cast<int32_t>(AP_Arming::Method::MOTORTEST))), 2, "argument out of range");
+    const AP_Arming::Method data_2 = static_cast<AP_Arming::Method>(raw_data_2);
+    const bool data = ud->arm(
+            data_2);
+
+    lua_pushboolean(L, data);
+    return 1;
+}
+
 static int AP_Arming_is_armed(lua_State *L) {
     AP_Arming * ud = AP_Arming::get_singleton();
     if (ud == nullptr) {
@@ -1632,6 +1649,7 @@ const luaL_Reg AP_BattMonitor_meta[] = {
 };
 
 const luaL_Reg AP_Arming_meta[] = {
+    {"arm", AP_Arming_arm},
     {"is_armed", AP_Arming_is_armed},
     {"disarm", AP_Arming_disarm},
     {NULL, NULL}
