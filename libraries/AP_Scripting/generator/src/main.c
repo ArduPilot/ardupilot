@@ -931,11 +931,36 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
                 arg_number, t.range->high, forced_max,
                 arg_number, name);
        } else {
-        fprintf(source, "%sluaL_argcheck(L, ((raw_data_%d >= %s) && (raw_data_%d <= %s)), %d, \"%s out of range\");\n",
-                indentation,
-                arg_number, t.range->low,
-                arg_number, t.range->high,
-                arg_number, name);
+         char * cast_target = "";
+
+         switch (t.type) {
+           case TYPE_FLOAT:
+             cast_target = "float";
+             break;
+           case TYPE_INT8_T:
+           case TYPE_INT16_T:
+           case TYPE_INT32_T:
+           case TYPE_UINT8_T:
+           case TYPE_UINT16_T:
+           case TYPE_ENUM:
+             cast_target = "int32_t";
+             break;
+           case TYPE_UINT32_T:
+             cast_target = "uint32_t";
+             break;
+           case TYPE_NONE:
+           case TYPE_STRING:
+           case TYPE_BOOLEAN:
+           case TYPE_USERDATA:
+             assert(t.range == NULL); // we should have caught this during the parse phase
+             break;
+         }
+
+         fprintf(source, "%sluaL_argcheck(L, ((raw_data_%d >= static_cast<%s>(%s)) && (raw_data_%d <= static_cast<%s>(%s))), %d, \"%s out of range\");\n",
+                 indentation,
+                 arg_number, cast_target, t.range->low,
+                 arg_number, cast_target, t.range->high,
+                 arg_number, name);
        }
     }
 
