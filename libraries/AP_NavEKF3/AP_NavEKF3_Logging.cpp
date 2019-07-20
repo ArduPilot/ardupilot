@@ -311,7 +311,7 @@ void NavEKF3::Log_Write()
     Log_Write_NKF5(time_us);
     Log_Write_Quaternion(0, LOG_XKQ1_MSG, time_us);
 
-    // log innovations for the second IMU if enabled
+    // log EKF state info for the second EFK core if enabled
     if (activeCores() >= 2) {
         Log_Write_EKF1(1, LOG_XKF6_MSG, time_us);
         Log_Write_NKF2a(1, LOG_XKF7_MSG, time_us);
@@ -319,6 +319,16 @@ void NavEKF3::Log_Write()
         Log_Write_NKF4(1, LOG_XKF9_MSG, time_us);
         Log_Write_Quaternion(1, LOG_XKQ2_MSG, time_us);
     }
+
+    // log EKF state info for the third EFK core if enabled
+    if (activeCores() >= 3) {
+        Log_Write_EKF1(2, LOG_XKF11_MSG, time_us);
+        Log_Write_NKF2a(2, LOG_XKF12_MSG, time_us);
+        Log_Write_NKF3(2, LOG_XKF13_MSG, time_us);
+        Log_Write_NKF4(2, LOG_XKF14_MSG, time_us);
+        Log_Write_Quaternion(2, LOG_XKQ3_MSG, time_us);
+    }
+    
 
     // write range beacon fusion debug packet if the range value is non-zero
     Log_Write_Beacon(time_us);
@@ -336,7 +346,13 @@ void NavEKF3::Log_Write()
         struct ekf_timing timing;
         for (uint8_t i=0; i<activeCores(); i++) {
             getTimingStatistics(i, timing);
-            AP::logger().Write_EKF_Timing(i==0?"XKT1":"XKT2", time_us, timing);
+            if (i == 0) {
+                AP::logger().Write_EKF_Timing("XKT1", time_us, timing);
+            } else if (i == 1) {
+                AP::logger().Write_EKF_Timing("XKT2", time_us, timing);
+            } else if (i == 2) {
+                AP::logger().Write_EKF_Timing("XKT3", time_us, timing);
+            }
         }
     }
 }
