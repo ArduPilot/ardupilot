@@ -66,7 +66,7 @@ public:
       A return value of zero means the HAL does not support this API
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
-    
+
 private:
     AP_HAL::OwnPtr<SerialDevice> _device;
     bool _nonblocking_writes;
@@ -83,12 +83,11 @@ private:
     void _deallocate_buffers();
 
     AP_HAL::OwnPtr<SerialDevice> _parseDevicePath(const char *arg);
-    uint64_t _last_write_time;
 
     // timestamp for receiving data on the UART, avoiding a lock
     uint64_t _receive_timestamp[2];
     uint8_t _receive_timestamp_idx;
-    
+
 protected:
     const char *device_path;
     volatile bool _initialised;
@@ -101,7 +100,7 @@ protected:
     virtual int _write_fd(const uint8_t *buf, uint16_t n);
     virtual int _read_fd(uint8_t *buf, uint16_t n);
 
-    Linux::Semaphore _write_mutex;    
+    Linux::Semaphore _write_mutex;
 };
 
 }
