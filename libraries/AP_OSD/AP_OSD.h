@@ -88,6 +88,7 @@ private:
     AP_OSD_Setting compass{true, 15, 3};
     AP_OSD_Setting wind{false, 2, 12};
     AP_OSD_Setting aspeed{false, 2, 13};
+    AP_OSD_Setting aspd1{false, 0, 0};
     AP_OSD_Setting aspd2{false, 0, 0};
     AP_OSD_Setting vspeed{true, 24, 9};
 
@@ -147,6 +148,7 @@ private:
     void draw_compass(uint8_t x, uint8_t y);
     void draw_wind(uint8_t x, uint8_t y);
     void draw_aspeed(uint8_t x, uint8_t y);
+    void draw_aspd1(uint8_t x, uint8_t y);
     void draw_aspd2(uint8_t x, uint8_t y);
     void draw_vspeed(uint8_t x, uint8_t y);
 
