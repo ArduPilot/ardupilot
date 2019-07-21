@@ -33,7 +33,6 @@ private:
     bool ibus_decode(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe);
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
-    uint32_t saved_width;
 
     struct {
         uint8_t buf[IBUS_FRAME_SIZE];
