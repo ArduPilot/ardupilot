@@ -1,5 +1,10 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.10-rc2 2-Jul-2019
+Changes from 3.6.10-rc1
+1) mRobotics ControlZeroF7 board support
+2) Motor Test fixed by removing delay that triggered CPU Watch Dog
+------------------------------------------------------------------
 Copter 3.6.10-rc1 08-Jul-2019
 Changes from 3.6.9
 1) EKF improvements:
