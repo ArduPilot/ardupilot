@@ -107,7 +107,7 @@ void AP_VisualOdom::update()
                                          time_delta_sec,
                                          get_last_update_ms(),
                                          get_pos_offset());
-    // log sensor data
+    // log sensor data (when enabled)
     AP::logger().Write_VisualOdom(time_delta_sec,
                                   get_angle_delta(),
                                   get_position_delta(),
@@ -128,8 +128,17 @@ bool AP_VisualOdom::healthy() const
 // consume VISION_POSITION_DELTA MAVLink message
 void AP_VisualOdom::handle_msg(const mavlink_message_t &msg)
 {
-    // exit immediately if not enabled
+    // log sensor data then exit immediately if not enabled
     if (!enabled()) {
+        // log sensor data (when not enabled)
+        mavlink_vision_position_delta_t packet;
+        mavlink_msg_vision_position_delta_decode(&msg, &packet);
+        const Vector3f angle_delta(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
+        const Vector3f position_delta(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);
+        AP::logger().Write_VisualOdom(packet.time_delta_usec,
+                                    angle_delta,
+                                    position_delta,
+                                    packet.confidence);
         return;
     }
 
