@@ -126,7 +126,7 @@ private:
     bool update_default_rate;
     bool update_rcout_freq;
     bool has_heater;
-    bool heater_pwm_polarity;
+    const bool heater_pwm_polarity = IOMCU_IMU_HEATER_POLARITY;
     uint32_t last_blue_led_ms;
     uint32_t safety_update_ms;
     uint32_t safety_button_counter;
