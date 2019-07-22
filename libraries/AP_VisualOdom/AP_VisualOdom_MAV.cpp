@@ -25,7 +25,7 @@ AP_VisualOdom_MAV::AP_VisualOdom_MAV(AP_VisualOdom &frontend) :
 {
 }
 
-// consume VISIOIN_POSITION_DELTA MAVLink message
+// consume VISION_POSITION_DELTA MAVLink message
 void AP_VisualOdom_MAV::handle_msg(const mavlink_message_t &msg)
 {
     // decode message
