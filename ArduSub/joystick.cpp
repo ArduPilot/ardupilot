@@ -25,6 +25,7 @@ const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
 const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
 
 uint8_t roll_pitch_flag = false; // Flag to adjust roll/pitch instead of forward/lateral
+bool controls_reset_since_input_hold = true;
 }
 
 void Sub::init_joystick()
@@ -93,17 +94,29 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     uint32_t tnow = AP_HAL::millis();
 
+    int16_t zTot = z + zTrim;
+    int16_t yTot = y + yTrim;
+    int16_t xTot = x + xTrim;
+
+    if (!controls_reset_since_input_hold) {
+        zTot = zTrim + 500; // 500 is neutral for throttle
+        yTot = yTrim;
+        xTot = xTrim;
+        // if all 3 axes return to neutral, than we're ready to accept input again
+        controls_reset_since_input_hold = (z == 500 && y == 0 && x == 0);
+    }
+
     RC_Channels::set_override(0, constrain_int16(pitchTrim + rpyCenter,1100,1900), tnow); // pitch
     RC_Channels::set_override(1, constrain_int16(rollTrim  + rpyCenter,1100,1900), tnow); // roll
 
-    RC_Channels::set_override(2, constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900), tnow); // throttle
+    RC_Channels::set_override(2, constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow); // throttle
     RC_Channels::set_override(3, constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);                 // yaw
 
     // maneuver mode:
     if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
-        RC_Channels::set_override(4, constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
-        RC_Channels::set_override(5, constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
+        RC_Channels::set_override(4, constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
+        RC_Channels::set_override(5, constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
     } else {
         // neutralize forward and lateral input while we are adjusting roll and pitch
         RC_Channels::set_override(4, constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
@@ -341,11 +354,12 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             yTrim = abs(y_last) > 50 ? y_last : 0;
             bool input_hold_engaged_last = input_hold_engaged;
             input_hold_engaged = zTrim || xTrim || yTrim;
-            if (input_hold_engaged) {
+            if (input_hold_engaged) { 
                 gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
             } else if (input_hold_engaged_last) {
                 gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Disabled");
             }
+            controls_reset_since_input_hold = !input_hold_engaged;
         }
         break;
     case JSButton::button_function_t::k_relay_1_on:
