@@ -171,8 +171,6 @@ void AP_IOMCU_FW::init()
         has_heater = true;
     }
 
-    //Set Heater PWM Polarity, 0 for Active Low and 1 for Active High
-    heater_pwm_polarity = !palReadLine(HAL_GPIO_PIN_HEATER);
     //Set Heater pin mode
     if (heater_pwm_polarity) {
         palSetLineMode(HAL_GPIO_PIN_HEATER, PAL_MODE_OUTPUT_PUSHPULL);
