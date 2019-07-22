@@ -1296,12 +1296,9 @@ static int AP_Arming_arm(lua_State *L) {
         return luaL_argerror(L, 1, "arming not supported on this firmware");
     }
 
-    binding_argcheck(L, 2);
-    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= static_cast<int32_t>(AP_Arming::Method::RUDDER)) && (raw_data_2 <= static_cast<int32_t>(AP_Arming::Method::MOTORTEST))), 2, "argument out of range");
-    const AP_Arming::Method data_2 = static_cast<AP_Arming::Method>(raw_data_2);
+    binding_argcheck(L, 1);
     const bool data = ud->arm(
-            data_2);
+            AP_Arming::Method::SCRIPTING);
 
     lua_pushboolean(L, data);
     return 1;
