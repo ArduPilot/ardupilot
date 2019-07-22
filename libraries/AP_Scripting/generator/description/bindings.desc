@@ -36,7 +36,7 @@ include AP_Arming/AP_Arming.h
 singleton AP_Arming alias arming
 singleton AP_Arming method disarm boolean
 singleton AP_Arming method is_armed boolean
-singleton AP_Arming method arm boolean AP_Arming::Method'enum AP_Arming::Method::RUDDER AP_Arming::Method::MOTORTEST
+singleton AP_Arming method arm boolean AP_Arming::Method::SCRIPTING'literal
 
 include AP_BattMonitor/AP_BattMonitor.h
 
