@@ -262,4 +262,4 @@ define BOARD_PWM_COUNT_DEFAULT 6
 DMA_NOSHARE USART6_TX USART6_RX ADC1
 DMA_PRIORITY USART6*
 
-ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
