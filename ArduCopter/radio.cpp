@@ -48,7 +48,7 @@ void Copter::init_rc_in()
     ap.rc_override_enable = true;
 }
 
- // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
+ // init_rc_out -- initialise motors
 void Copter::init_rc_out()
 {
     motors->set_loop_rate(scheduler.get_loop_rate_hz());
@@ -78,9 +78,6 @@ void Copter::init_rc_out()
     uint16_t safety_ignore_mask = (~copter.motors->get_motor_mask()) & 0x3FFF;
     BoardConfig.set_default_safety_ignore_mask(safety_ignore_mask);
 #endif
-
-    // check if we should enter esc calibration mode
-    esc_calibration_startup_check();
 }
 
 
