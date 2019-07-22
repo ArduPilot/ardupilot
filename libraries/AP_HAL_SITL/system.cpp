@@ -72,6 +72,9 @@ void dump_stack_trace()
         strncpy(progname, "unknown", sizeof(progname));
         n = strlen(progname);
 	}
+    if (n >= (int)sizeof(progname)) {
+        n = sizeof(progname) - 1;
+    }
 	progname[n] = 0;
 
 	p = strrchr(progname, '/');
