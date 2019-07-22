@@ -304,7 +304,7 @@ define HAL_GPIO_PWM_VOLT_PIN 3
 # we can automatically update the IOMCU firmware on boot. The format
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
-ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
 
 DMA_NOSHARE SPI1* SPI4* USART6*
 
