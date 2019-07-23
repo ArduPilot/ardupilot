@@ -256,6 +256,7 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     update_throttle_rpy_mix();
 
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
+
     _motors.set_roll(rate_target_to_motor_roll(gyro_latest.x, _rate_target_ang_vel.x));
     _motors.set_pitch(rate_target_to_motor_pitch(gyro_latest.y, _rate_target_ang_vel.y));
     _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _rate_target_ang_vel.z));
@@ -284,4 +285,7 @@ void AC_AttitudeControl_Multi::parameter_sanity_check()
         _thr_mix_min.set_and_save(AC_ATTITUDE_CONTROL_MIN_DEFAULT);
         _thr_mix_max.set_and_save(AC_ATTITUDE_CONTROL_MAX_DEFAULT);
     }
+
+    // Initialize the batch sampler
+    batchsampler.init(_dt);
 }

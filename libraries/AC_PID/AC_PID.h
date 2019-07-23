@@ -75,6 +75,8 @@ public:
 
     float       get_integrator() const { return _integrator; }
     void        set_integrator(float i) { _integrator = i; }
+    float       get_derivative() const { return _derivative; }
+    float       get_raw_derivative() const { return _raw_derivative; }
 
     // set the desired and actual rates (for logging purposes)
     void        set_desired_rate(float desired) { _pid_info.desired = desired; }
@@ -104,6 +106,7 @@ protected:
     float           _dt;                    // timestep in seconds
     float           _integrator;            // integrator value
     float           _input;                 // last input for derivative
+    float           _raw_derivative;        // last raw input derivative
     float           _derivative;            // last derivative for low-pass filter
 
     AP_Logger::PID_Info        _pid_info;

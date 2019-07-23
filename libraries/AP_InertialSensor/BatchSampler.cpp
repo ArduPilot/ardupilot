@@ -104,6 +104,7 @@ void AP_InertialSensor::BatchSampler::update_doing_sensor_rate_logging()
         _doing_sensor_rate_logging = _imu._gyro_sensor_rate_sampling_enabled & bit;
         break;
     case IMU_SENSOR_TYPE_ACCEL:
+    default:
         _doing_sensor_rate_logging = _imu._accel_sensor_rate_sampling_enabled & bit;
         break;
     }
@@ -201,6 +202,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
             }
             break;
         case IMU_SENSOR_TYPE_ACCEL:
+        default:
             sample_rate = _imu._accel_raw_sample_rates[instance];
             if (_doing_sensor_rate_logging) {
                 sample_rate *= _imu._accel_over_sampling[instance];

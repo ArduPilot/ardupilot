@@ -42,6 +42,9 @@
 
 #define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 
+#define AC_ATTITUDE_LOG_MAX_CONTROL_POINTS              2
+#define DEFAULT_AC_ATTITUDE_LOG_BAT_MASK                0
+
 class AC_AttitudeControl {
 public:
     AC_AttitudeControl( AP_AHRS_View &ahrs,
@@ -305,9 +308,77 @@ public:
 
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
+
+    // a function called by the main thread at the main loop rate:
+    void periodic();
     
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
+
+    enum DTERM_CONTROL_POINT_TYPE {
+        DTERM_PRE_FILTER_CONTROL_POINT = 0,
+        DTERM_POST_FILTER_CONTROL_POINT = 1
+    };
+
+    class DTermBatchSampler {
+    public:
+        DTermBatchSampler(const AC_AttitudeControl &controller) :
+            _controller(controller) {
+           AP_Param::setup_object_defaults(this, var_info);
+        };
+
+        void init(float dt);
+        void sample(AC_AttitudeControl::DTERM_CONTROL_POINT_TYPE _control_point, uint64_t sample_us, const Vector3f &sample);
+
+        // a function called by the main thread at the main loop rate:
+        void periodic();
+
+        // class level parameters
+        static const struct AP_Param::GroupInfo var_info[];
+
+        // Parameters
+        AP_Int16 _required_count;
+        AP_Int8 _control_mask;
+        AP_Int8 _batch_options_mask;
+
+        // Parameters controlling pushing data to DataFlash:
+        // Each DF message is ~ 108 bytes in size, so we use about 1kB/s of
+        // logging bandwidth with a 100ms interval.  If we are taking
+        // 1024 samples then we need to send 32 packets, so it will
+        // take ~3 seconds to push a complete batch to the log.  With 3 DOF
+        // then you will loop back around to the first sensor after about
+        // twenty seconds.
+        AP_Int16 samples_per_msg;
+        AP_Int8 push_interval_ms;
+
+        // end Parameters
+
+    private:
+
+        void rotate_to_next_control_point();
+
+        bool should_log(uint8_t _control_point);
+        void push_data_to_log();
+
+        uint64_t measurement_started_us;
+
+        bool initialised : 1;
+        bool isbh_sent : 1;
+        uint8_t control_point : 3; // control_point we are sending data for
+        uint16_t isb_seqnum;
+        int16_t *data_x;
+        int16_t *data_y;
+        int16_t *data_z;
+        uint16_t data_write_offset; // units: samples
+        uint16_t data_read_offset; // units: samples
+        uint32_t last_sent_ms;
+
+        // all samples are multiplied by this
+        uint16_t multiplier; // initialised as part of init()
+
+        const AC_AttitudeControl &_controller;
+    };
+    DTermBatchSampler batchsampler{*this};
 
 protected:
 

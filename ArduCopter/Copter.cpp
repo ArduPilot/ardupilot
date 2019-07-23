@@ -156,6 +156,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Logger,      &copter.logger,           periodic_tasks, 400, 300),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,    &copter.ins,                 periodic,       400,  50),
+#if FRAME_CONFIG != HELI_FRAME
+    SCHED_TASK(flush_dterm_update_logs,400,  50),
+#endif
     SCHED_TASK_CLASS(AP_Scheduler,         &copter.scheduler,           update_logging, 0.1,  75),
 #if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            40,    200),
