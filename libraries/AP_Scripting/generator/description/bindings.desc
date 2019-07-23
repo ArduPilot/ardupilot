@@ -77,8 +77,7 @@ singleton AP_GPS method last_fix_time_ms uint32_t uint8_t 0 ud->num_sensors()
 singleton AP_GPS method last_message_time_ms uint32_t uint8_t 0 ud->num_sensors()
 singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 ud->num_sensors()
 singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 ud->num_sensors()
-singleton AP_GPS method all_configured boolean
-singleton AP_GPS method first_unconfigured_gps uint8_t
+singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
 
 include AP_Math/AP_Math.h
 

@@ -700,22 +700,15 @@ static int AP_GPS_first_unconfigured_gps(lua_State *L) {
     }
 
     binding_argcheck(L, 1);
-    const uint8_t data = ud->first_unconfigured_gps();
+    uint8_t data_5002 = {};
+    const bool data = ud->first_unconfigured_gps(
+            data_5002);
 
-    lua_pushinteger(L, data);
-    return 1;
-}
-
-static int AP_GPS_all_configured(lua_State *L) {
-    AP_GPS * ud = AP_GPS::get_singleton();
-    if (ud == nullptr) {
-        return luaL_argerror(L, 1, "gps not supported on this firmware");
+    if (data) {
+        lua_pushinteger(L, data_5002);
+    } else {
+        lua_pushnil(L);
     }
-
-    binding_argcheck(L, 1);
-    const bool data = ud->all_configured();
-
-    lua_pushboolean(L, data);
     return 1;
 }
 
@@ -1582,7 +1575,6 @@ const luaL_Reg notify_meta[] = {
 
 const luaL_Reg AP_GPS_meta[] = {
     {"first_unconfigured_gps", AP_GPS_first_unconfigured_gps},
-    {"all_configured", AP_GPS_all_configured},
     {"get_antenna_offset", AP_GPS_get_antenna_offset},
     {"have_vertical_velocity", AP_GPS_have_vertical_velocity},
     {"last_message_time_ms", AP_GPS_last_message_time_ms},
