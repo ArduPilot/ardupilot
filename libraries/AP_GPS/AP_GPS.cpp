@@ -984,23 +984,26 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
     }
 }
 
-uint8_t AP_GPS::first_unconfigured_gps(void) const
+bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
 {
     for (int i = 0; i < GPS_MAX_RECEIVERS; i++) {
         if (_type[i] != GPS_TYPE_NONE && (drivers[i] == nullptr || !drivers[i]->is_configured())) {
-            return i;
+            instance = i;
+            return true;
         }
     }
-    return GPS_ALL_CONFIGURED;
+    return false;
 }
 
 void AP_GPS::broadcast_first_configuration_failure_reason(void) const
 {
-    const uint8_t unconfigured = first_unconfigured_gps();
-    if (drivers[unconfigured] == nullptr) {
-        gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
-    } else {
-        drivers[unconfigured]->broadcast_configuration_failure_reason();
+    uint8_t unconfigured;
+    if (first_unconfigured_gps(unconfigured)) {
+        if (drivers[unconfigured] == nullptr) {
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
+        } else {
+            drivers[unconfigured]->broadcast_configuration_failure_reason();
+        }
     }
 }
 
@@ -1123,7 +1126,8 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
     if (instance == GPS_BLENDED_INSTANCE) {
         lag_sec = _blended_lag_sec;
         // auto switching uses all GPS receivers, so all must be configured
-        return all_configured();
+        uint8_t inst; // we don't actually care what the number is, but must pass it
+        return first_unconfigured_gps(inst);
     }
 
     if (_delay_ms[instance] > 0) {
