@@ -397,6 +397,6 @@ void AP_AccelCal::_printf(const char* fmt, ...)
     }
 
 #if !APM_BUILD_TYPE(APM_BUILD_Replay)
-    _gcs->send_text(MAV_SEVERITY_CRITICAL, msg);
+    _gcs->send_text(MAV_SEVERITY_CRITICAL, "%s", msg);
 #endif
 }
