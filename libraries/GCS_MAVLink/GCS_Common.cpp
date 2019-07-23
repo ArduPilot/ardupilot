@@ -1741,6 +1741,12 @@ void GCS_MAVLINK::send_ahrs()
 */
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (strlen(text) > MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN) {
+        AP_HAL::panic("Statustext (%s) too long", text);
+    }
+#endif
+
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Message(text);
