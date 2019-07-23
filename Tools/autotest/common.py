@@ -1600,6 +1600,22 @@ class AutoTest(ABC):
                                           % (delta, distance))
         raise WaitDistanceTimeout("Failed to attain distance %u" % distance)
 
+    def wait_distance_to_location(self, location, distance_min, distance_max, timeout=30):
+        last_distance_message = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() < tstart + timeout:
+            pos = self.mav.location()
+            delta = self.get_distance(location, pos)
+            if self.get_sim_time_cached() - last_distance_message >= 1:
+                self.progress("Distance=%.2f meters want <%.2f and >%.2f" %
+                              (delta, distance_min, distance_max))
+                last_distance_message = self.get_sim_time_cached()
+            if (delta >= distance_min and delta <= distance_max):
+                self.progress("Attained distance %.02f meters OK" % delta)
+                return True
+        raise WaitDistanceTimeout("Failed to attain distance <%.2f and >%.2f" %
+                                  (distance_min, distance_max))
+
     def wait_servo_channel_value(self, channel, value, timeout=2, comparator=operator.eq):
         """wait for channel value comparison (default condition is equality)"""
         channel_field = "servo%u_raw" % channel
@@ -2168,11 +2184,11 @@ class AutoTest(ABC):
             next_to_request += 1
             remaining_to_receive.discard(m.seq)
 
-    def poll_home_position(self, quiet=False):
+    def poll_home_position(self, quiet=False, timeout=30):
         old = self.mav.messages.get("HOME_POSITION", None)
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time_cached() - tstart > 30:
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Failed to poll home position")
             if not quiet:
                 self.progress("Sending MAV_CMD_GET_HOME_POSITION")
