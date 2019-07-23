@@ -1242,7 +1242,7 @@ class AutoTestPlane(AutoTest):
             self.wait_ready_to_arm()
             self.arm_vehicle()
             home = self.poll_home_position()
-            self.wait_altitude(10, 1000, timeout=30, relative=True)
+            self.wait_waypoint(5, 5, max_dist=100)
             rf = self.mav.recv_match(type="RANGEFINDER", timeout=1, blocking=True)
             if rf is None:
                 raise NotAchievedException("Did not receive rangefinder message")
