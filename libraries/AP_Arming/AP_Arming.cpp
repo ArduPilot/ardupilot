@@ -448,8 +448,8 @@ bool AP_Arming::gps_checks(bool report)
     }
 
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
-        const uint8_t first_unconfigured = gps.first_unconfigured_gps();
-        if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
+        uint8_t first_unconfigured;
+        if (gps.first_unconfigured_gps(first_unconfigured)) {
             check_failed(ARMING_CHECK_GPS_CONFIG,
                          report,
                          "GPS %d failing configuration checks",
