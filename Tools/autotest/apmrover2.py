@@ -1709,6 +1709,48 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.mavproxy.send('module load wp\n')
         self.mavproxy.expect("Loaded module wp")
 
+    def wait_distance_to_home(self, distance, accuracy=5):
+        tstart = self.get_sim_time()
+        timeout = 30
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise AutoTestTimeoutException("Failed to get home")
+            self.mav.recv_match(type='VFR_HUD', blocking=True)
+            self.progress("Dist from home: %.02f" % self.distance_to_home(use_cached_home=True))
+            if abs(distance-self.distance_to_home(use_cached_home=True)) <= accuracy:
+                break
+
+    def drive_smartrtl(self):
+        self.change_mode("STEERING")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        # drive two sides of a square, make sure we don't go back through
+        # the middle of the square
+        self.progress("Driving North")
+        self.reach_heading_manual(0)
+        self.set_rc(3, 2000)
+        self.delay_sim_time(5)
+        self.set_rc(3, 1000)
+        self.wait_groundspeed(0, 1)
+        loc = self.mav.location()
+        self.progress("Driving East")
+        self.set_rc(3, 2000)
+        self.reach_heading_manual(90)
+        self.set_rc(3, 2000)
+        self.delay_sim_time(5)
+        self.set_rc(3, 1000)
+
+        self.progress("Entering smartrtl")
+        self.change_mode("SMART_RTL")
+
+        self.progress("Ensure we go via intermediate point")
+        self.wait_distance_to_location(loc, 0, 5)
+
+        self.progress("Ensure we get home")
+        self.wait_distance_to_home(5, accuracy=2)
+
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -1732,6 +1774,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             ("DriveRTL",
              "Drive an RTL Mission", self.drive_rtl_mission),
+
+            ("SmartRTL",
+             "Test SmartRTL",
+             self.drive_smartrtl),
 
             ("DriveSquare",
              "Learn/Drive Square with Ch7 option",
