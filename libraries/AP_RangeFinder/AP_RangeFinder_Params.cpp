@@ -1,6 +1,14 @@
 #include "AP_RangeFinder_Params.h"
 #include "AP_RangeFinder.h"
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    //default rangefinder type for sub
+    #define RANGEFINDER_TYPE_DEFAULT 10
+#else
+    //default rangefinder type for Plane and Copter
+    #define RANGEFINDER_TYPE_DEFAULT 0
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Param: TYPE
@@ -8,7 +16,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Description: What type of rangefinder device that is connected
     // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:UAVCAN,25:BenewakeTFMiniPlus
     // @User: Standard
-    AP_GROUPINFO("TYPE",    1, AP_RangeFinder_Params, type, 10),
+    AP_GROUPINFO("TYPE",    1, AP_RangeFinder_Params, type, RANGEFINDER_TYPE_DEFAULT),
 
     // @Param: PIN
     // @DisplayName: Rangefinder pin
