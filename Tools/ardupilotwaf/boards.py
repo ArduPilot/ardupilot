@@ -362,6 +362,7 @@ class sitl(Board):
         ]
 
         cfg.check_librt(env)
+        cfg.check_feenableexcept()
 
         env.LINKFLAGS += ['-pthread',]
         env.AP_LIBRARIES += [
