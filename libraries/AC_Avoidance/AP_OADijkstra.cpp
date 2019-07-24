@@ -47,6 +47,11 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         return DIJKSTRA_STATE_NOT_REQUIRED;
     }
 
+    // no avoidance required if destination is same as current location
+    if (current_loc.same_latlon_as(destination)) {
+        return DIJKSTRA_STATE_NOT_REQUIRED;
+    }
+
     // check for fence updates
     if (check_polygon_fence_updated()) {
         _polyfence_with_margin_ok = false;
