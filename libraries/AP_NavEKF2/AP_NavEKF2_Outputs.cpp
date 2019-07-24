@@ -616,3 +616,9 @@ void NavEKF2_core::getOutputTrackingError(Vector3f &error) const
     error = outputTrackError;
 }
 
+// return true when external nav data is also being used as a yaw observation
+bool NavEKF2_core::isExtNavUsedForYaw()
+{
+    return extNavUsedForYaw;
+}
+

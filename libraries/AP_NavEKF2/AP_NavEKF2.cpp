@@ -1612,3 +1612,12 @@ void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, c
     }
 }
 
+// check if external navigation is being used for yaw observation
+bool NavEKF2::isExtNavUsedForYaw() const
+{
+    if (core) {
+        return core[primary].isExtNavUsedForYaw();
+    }
+    return false;
+}
+

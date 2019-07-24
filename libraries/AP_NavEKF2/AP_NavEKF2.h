@@ -352,6 +352,9 @@ public:
     // write EKF information to on-board logs
     void Log_Write();
 
+    // check if external navigation is being used for yaw observation
+    bool isExtNavUsedForYaw(void) const;
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
