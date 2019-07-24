@@ -71,7 +71,7 @@ bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint
     }
 
     // check rc has been calibrated
-    if (check_rc && !arming.pre_arm_rc_checks(true)) {
+    if (check_rc && !arming.rc_calibration_checks(true)) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Motor Test: RC not calibrated");
         return false;
     }
