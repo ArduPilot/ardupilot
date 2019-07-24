@@ -271,8 +271,8 @@ void AP_OAPathPlanner::avoidance_thread()
             // give the main thread the avoidance result
             WITH_SEMAPHORE(_rsem);
             avoidance_result.destination = avoidance_request2.destination;
-            avoidance_result.origin_new = res ? origin_new : avoidance_result.origin_new;
-            avoidance_result.destination_new = res ? destination_new : avoidance_result.destination;
+            avoidance_result.origin_new = (res == OA_SUCCESS) ? origin_new : avoidance_result.origin_new;
+            avoidance_result.destination_new = (res == OA_SUCCESS) ? destination_new : avoidance_result.destination;
             avoidance_result.result_time_ms = AP_HAL::millis();
             avoidance_result.ret_state = res;
         }
