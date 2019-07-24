@@ -262,25 +262,28 @@ static int Location_lat(lua_State *L) {
 static int Vector2f_is_zero(lua_State *L) {
     binding_argcheck(L, 1);
     Vector2f * ud = check_Vector2f(L, 1);
-    ud->is_zero();
+    const bool data = ud->is_zero();
 
-    return 0;
+    lua_pushboolean(L, data);
+    return 1;
 }
 
 static int Vector2f_is_inf(lua_State *L) {
     binding_argcheck(L, 1);
     Vector2f * ud = check_Vector2f(L, 1);
-    ud->is_inf();
+    const bool data = ud->is_inf();
 
-    return 0;
+    lua_pushboolean(L, data);
+    return 1;
 }
 
 static int Vector2f_is_nan(lua_State *L) {
     binding_argcheck(L, 1);
     Vector2f * ud = check_Vector2f(L, 1);
-    ud->is_nan();
+    const bool data = ud->is_nan();
 
-    return 0;
+    lua_pushboolean(L, data);
+    return 1;
 }
 
 static int Vector2f_normalize(lua_State *L) {
@@ -321,25 +324,28 @@ static int Vector2f___sub(lua_State *L) {
 static int Vector3f_is_zero(lua_State *L) {
     binding_argcheck(L, 1);
     Vector3f * ud = check_Vector3f(L, 1);
-    ud->is_zero();
+    const bool data = ud->is_zero();
 
-    return 0;
+    lua_pushboolean(L, data);
+    return 1;
 }
 
 static int Vector3f_is_inf(lua_State *L) {
     binding_argcheck(L, 1);
     Vector3f * ud = check_Vector3f(L, 1);
-    ud->is_inf();
+    const bool data = ud->is_inf();
 
-    return 0;
+    lua_pushboolean(L, data);
+    return 1;
 }
 
 static int Vector3f_is_nan(lua_State *L) {
     binding_argcheck(L, 1);
     Vector3f * ud = check_Vector3f(L, 1);
-    ud->is_nan();
+    const bool data = ud->is_nan();
 
-    return 0;
+    lua_pushboolean(L, data);
+    return 1;
 }
 
 static int Vector3f_normalize(lua_State *L) {
