@@ -1133,10 +1133,12 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   arg = method->arguments;
   arg_count = 2;
   while (arg != NULL) {
-    // emit_checker will emit a nullable argument for us
-    emit_checker(arg->type, arg_count, "    ", "argument");
+    if (arg->type.type != TYPE_LITERAL) {
+      // emit_checker will emit a nullable argument for us
+      emit_checker(arg->type, arg_count, "    ", "argument");
+      arg_count++;
+    }
     arg = arg->next;
-    arg_count++;
   }
 
   if (data->flags & UD_FLAG_SEMAPHORE) {
@@ -1145,44 +1147,48 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   switch (method->return_type.type) {
     case TYPE_BOOLEAN:
-      fprintf(source, "    const bool data = ud->%s(\n", method->name);
+      fprintf(source, "    const bool data = ud->%s(", method->name);
       break;
     case TYPE_FLOAT:
-      fprintf(source, "    const float data = ud->%s(\n", method->name);
+      fprintf(source, "    const float data = ud->%s(", method->name);
       break;
     case TYPE_INT8_T:
-      fprintf(source, "    const int8_t data = ud->%s(\n", method->name);
+      fprintf(source, "    const int8_t data = ud->%s(", method->name);
       break;
     case TYPE_INT16_T:
-      fprintf(source, "    const int6_t data = ud->%s(\n", method->name);
+      fprintf(source, "    const int6_t data = ud->%s(", method->name);
       break;
     case TYPE_INT32_T:
-      fprintf(source, "    const int32_t data = ud->%s(\n", method->name);
+      fprintf(source, "    const int32_t data = ud->%s(", method->name);
       break;
     case TYPE_STRING:
-      fprintf(source, "    const char * data = ud->%s(\n", method->name);
+      fprintf(source, "    const char * data = ud->%s(", method->name);
       break;
     case TYPE_UINT8_T:
-      fprintf(source, "    const uint8_t data = ud->%s(\n", method->name);
+      fprintf(source, "    const uint8_t data = ud->%s(", method->name);
       break;
     case TYPE_UINT16_T:
-      fprintf(source, "    const uint16_t data = ud->%s(\n", method->name);
+      fprintf(source, "    const uint16_t data = ud->%s(", method->name);
       break;
     case TYPE_UINT32_T:
-      fprintf(source, "    const uint32_t data = ud->%s(\n", method->name);
+      fprintf(source, "    const uint32_t data = ud->%s(", method->name);
       break;
     case TYPE_ENUM:
-      fprintf(source, "    const %s &data = ud->%s(\n", method->return_type.data.enum_name, method->name);
+      fprintf(source, "    const %s &data = ud->%s(", method->return_type.data.enum_name, method->name);
       break;
     case TYPE_USERDATA:
-      fprintf(source, "    const %s &data = ud->%s(\n", method->return_type.data.userdata_name, method->name);
+      fprintf(source, "    const %s &data = ud->%s(", method->return_type.data.userdata_name, method->name);
       break;
     case TYPE_NONE:
-      fprintf(source, "    ud->%s(\n", method->name);
+      fprintf(source, "    ud->%s(", method->name);
       break;
     case TYPE_LITERAL:
       error(ERROR_USERDATA, "Can't return a literal from a method");
       break;
+  }
+
+  if (arg_count != 2) {
+    fprintf(source, "\n");
   }
 
   arg = method->arguments;
@@ -1209,13 +1215,15 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
         error(ERROR_INTERNAL, "Can't pass nil as an argument");
         break;
     }
+    if (arg->type.type != TYPE_LITERAL) {
+      arg_count++;
+    }
     arg = arg->next;
     if (arg != NULL) {
             fprintf(source, ",\n");
     }
-    arg_count++;
   }
-  fprintf(source, "%s);\n\n", arg_count == 2 ? "        " : "");
+  fprintf(source, "%s);\n\n", "");
 
   if (data->flags & UD_FLAG_SEMAPHORE) {
     fprintf(source, "    ud->get_semaphore().give();\n");
