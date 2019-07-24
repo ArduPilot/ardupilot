@@ -2,7 +2,7 @@
 #include "Rover.h"
 
 // perform pre_arm_rc_checks checks
-bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
+bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
 {
     // set rc-checks to success if RC checks are disabled
     if ((checks_to_perform != ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_RC)) {
@@ -27,16 +27,8 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
             return false;
         }
-        if (channel->get_radio_trim() < channel->get_radio_min()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim below min", channel_name);
-            return false;
-        }
-        if (channel->get_radio_trim() > channel->get_radio_max()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim above max", channel_name);
-            return false;
-        }
     }
-    return true;
+    return AP_Arming::rc_calibration_checks(display_failure);
 }
 
 // performs pre_arm gps related checks and returns true if passed
