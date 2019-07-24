@@ -92,7 +92,6 @@ private:
 
     AP_Int32 log_bitmask;
     AP_Logger logger{log_bitmask};
-    void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
     void Log_Write_TypeMessages_Log_Write();
