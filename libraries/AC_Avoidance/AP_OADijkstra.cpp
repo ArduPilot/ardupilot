@@ -88,6 +88,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
     if (!_shortest_path_ok) {
         _shortest_path_ok = calc_shortest_path(current_loc, destination);
         if (!_shortest_path_ok) {
+            AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
         // start from 2nd point on path (first is the original origin)
@@ -126,9 +127,9 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         return DIJKSTRA_STATE_SUCCESS;
     }
 
-    // log failure
-    AP::logger().Write_OADijkstra(DIJKSTRA_STATE_ERROR, 0, 0, destination, destination);
-    return DIJKSTRA_STATE_ERROR;
+    // we have reached the destination so avoidance is no longer required
+    AP::logger().Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, destination, destination);
+    return DIJKSTRA_STATE_NOT_REQUIRED;
 }
 
 // returns true if polygon fence is enabled
