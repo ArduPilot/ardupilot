@@ -87,9 +87,9 @@ userdata Vector3f field y float read write -FLT_MAX FLT_MAX
 userdata Vector3f field z float read write -FLT_MAX FLT_MAX
 userdata Vector3f method length float
 userdata Vector3f method normalize void
-userdata Vector3f method is_nan void
-userdata Vector3f method is_inf void
-userdata Vector3f method is_zero void
+userdata Vector3f method is_nan boolean
+userdata Vector3f method is_inf boolean
+userdata Vector3f method is_zero boolean
 userdata Vector3f operator +
 userdata Vector3f operator -
 
@@ -97,9 +97,9 @@ userdata Vector2f field x float read write -FLT_MAX FLT_MAX
 userdata Vector2f field y float read write -FLT_MAX FLT_MAX
 userdata Vector2f method length float
 userdata Vector2f method normalize void
-userdata Vector2f method is_nan void
-userdata Vector2f method is_inf void
-userdata Vector2f method is_zero void
+userdata Vector2f method is_nan boolean
+userdata Vector2f method is_inf boolean
+userdata Vector2f method is_zero boolean
 userdata Vector2f operator +
 userdata Vector2f operator -
 
