@@ -119,7 +119,8 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         return DIJKSTRA_STATE_SUCCESS;
     }
 
-    return DIJKSTRA_STATE_ERROR;
+    // we have reached the destination so avoidance is no longer required
+    return DIJKSTRA_STATE_NOT_REQUIRED;
 }
 
 // returns true if polygon fence is enabled
