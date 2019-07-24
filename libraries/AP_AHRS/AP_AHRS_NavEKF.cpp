@@ -1821,5 +1821,17 @@ AP_AHRS_NavEKF &AP::ahrs_navekf()
     return static_cast<AP_AHRS_NavEKF&>(*AP_AHRS::get_singleton());
 }
 
+// check whether compass can be bypassed for arming check in case when external navigation data is available 
+bool AP_AHRS_NavEKF::is_ext_nav_used_for_yaw(void) const
+{
+    switch (active_EKF_type()) {
+    case EKF_TYPE2:
+        return EKF2.isExtNavUsedForYaw();
+        
+    default:
+        return false; 
+    }
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
