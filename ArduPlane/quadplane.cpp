@@ -2072,7 +2072,8 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_POSITION1: {
         const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
         const float distance = diff_wp.length();
-
+        Vector2f groundspeed = ahrs.groundspeed_vector();
+        float speed_towards_target = distance>1?(diff_wp.normalized() * groundspeed):0;
         if (poscontrol.speed_scale <= 0) {
             // initialise scaling so we start off targeting our
             // current linear speed towards the target. If this is
@@ -2080,8 +2081,6 @@ void QuadPlane::vtol_position_controller(void)
             // land_speed_scale is then used to linearly change
             // velocity as we approach the waypoint, aiming for zero
             // speed at the waypoint
-            Vector2f groundspeed = ahrs.groundspeed_vector();
-            float speed_towards_target = distance>1?(diff_wp.normalized() * groundspeed):0;
             // setup land_speed_scale so at current distance we
             // maintain speed towards target, and slow down as we
             // approach
@@ -2137,9 +2136,15 @@ void QuadPlane::vtol_position_controller(void)
           than the actual velocity curve (for a high drag
           aircraft). Nose down will cause a lot of downforce on the
           wings which will draw a lot of current and also cause the
-          aircraft to lose altitude rapidly.
+          aircraft to lose altitude rapidly.pitch limit varies also with speed
+          to prevent inability to progress to position if moving from a loiter
+          to landing
          */
-        float pitch_limit_cd = linear_interpolate(-300, plane.aparm.pitch_limit_min_cd,
+        float minlimit = linear_interpolate(-aparm.angle_max, -300,
+                                            speed_towards_target, 
+                                            wp_nav->get_default_speed_xy() * 0.01, 
+                                            wp_nav->get_default_speed_xy() * 0.015);
+        float pitch_limit_cd = linear_interpolate(minlimit, plane.aparm.pitch_limit_min_cd,
                                                   plane.auto_state.wp_proportion, 0, 1);
         if (plane.nav_pitch_cd < pitch_limit_cd) {
             plane.nav_pitch_cd = pitch_limit_cd;
