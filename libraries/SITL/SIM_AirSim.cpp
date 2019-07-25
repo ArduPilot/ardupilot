@@ -164,6 +164,34 @@ bool AirSim::parse_sensors(const char *json)
                 v->length = n;
                 break;
             }
+
+            case DATA_FLOAT_ARRAY: {
+                // example: [18.0, 12.694079399108887]
+                if (*p++ != '[') {
+                    return false;
+                }
+                uint16_t n = 0;
+                struct float_array *v = (struct float_array *)key.ptr;
+                while (true) {
+                    if (n >= v->length) {
+                        float *d = (float *)realloc(v->data, sizeof(float)*(n+1));
+                        if (d == nullptr) {
+                            return false;
+                        }
+                        v->data = d;
+                        v->length = n+1;
+                    }
+                    v->data[n] = atof(p);
+                    n++;
+                    p = strchr(p,',');
+                    if (!p) {
+                        break;
+                    }
+                    p++;
+                }
+                v->length = n;
+                break;
+            }
         }
     }
     return true;
@@ -233,6 +261,11 @@ void AirSim::recv_fdm()
     }
 
     scanner.points = state.lidar.points;
+
+    rcin_chan_count = state.rc.rc_channels.length < 8 ? state.rc.rc_channels.length : 8;
+    for (uint8_t i=0; i < rcin_chan_count; i++) {
+        rcin[i] = state.rc.rc_channels.data[i];
+    }
 
 #if 0
     AP::logger().Write("ASM1", "TimeUS,TUS,R,P,Y,GX,GY,GZ",
