@@ -551,7 +551,7 @@ def write_mcu_config(f):
         f.write('#define HAL_USE_SERIAL_USB TRUE\n')
     if 'OTG2' in bytype:
         f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
-    if have_type_prefix('CAN') and not mcu_series.startswith("STM32F1"):
+    if have_type_prefix('CAN') and not 'AP_PERIPH' in env_vars:
         enable_can(f)
 
     if get_config('PROCESS_STACK', required=False):
