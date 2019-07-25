@@ -128,8 +128,12 @@
 /*
  * CAN driver system settings.
  */
+#ifndef STM32_CAN_USE_CAN1
 #define STM32_CAN_USE_CAN1                  FALSE
+#endif
+#ifndef STM32_CAN_USE_CAN2
 #define STM32_CAN_USE_CAN2                  FALSE
+#endif
 #define STM32_CAN_CAN1_IRQ_PRIORITY         11
 #define STM32_CAN_CAN2_IRQ_PRIORITY         11
 
