@@ -51,6 +51,7 @@ void NMI_Handler(void) { while (1); }
  */
 static void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_addr)
 {
+#ifndef HAL_BOOTLOADER_BUILD
     bool using_watchdog = AP_BoardConfig::watchdog_enabled();
     if (using_watchdog) {
         AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
@@ -61,6 +62,7 @@ static void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fa
         pd.fault_icsr = SCB->ICSR;
         stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
     }
+#endif
 }
 
 void HardFault_Handler(void);
