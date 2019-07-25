@@ -117,8 +117,8 @@ void QuadPlane::scale_control_surfaces(float& fw_aileron, float& fw_elevator, fl
             if (!assisted_flight) {
                 // match the Q rates with plane controller
                 // no fixed wing yaw controller so cannot stabilize VTOL roll
-                const float pitch_rate = attitude_control->get_rate_pitch_pid().get_pid_info().desired * 100;
-                const float yaw_rate = attitude_control->get_rate_yaw_pid().get_pid_info().desired * 100;
+                const float pitch_rate = attitude_control->get_rate_pitch_pid().get_pid_info().target * 100;
+                const float yaw_rate = attitude_control->get_rate_yaw_pid().get_pid_info().target * 100;
                 const float speed_scaler = plane.get_speed_scaler();
 
                 // due to reference frame change roll and yaw are swapped, use roll as rudder input and output direct as with plane
