@@ -9,6 +9,9 @@ FLASH_BOOTLOADER_LOAD_KB 25
 # board ID for firmware load
 APJ_BOARD_ID 3
 
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
