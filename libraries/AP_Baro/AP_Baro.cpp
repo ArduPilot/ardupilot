@@ -170,6 +170,12 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 // singleton instance
 AP_Baro *AP_Baro::_singleton;
 
+#ifdef HAL_NO_GCS
+#define BARO_SEND_TEXT(severity, format, args...)
+#else
+#define BARO_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+#endif
+
 /*
   AP_Baro constructor
  */
@@ -191,10 +197,10 @@ void AP_Baro::calibrate(bool save)
     }
 
     if (hal.util->was_watchdog_reset()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Baro: skipping calibration");
+        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration");
         return;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
+    BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
 
     // reset the altitude offset when we calibrate. The altitude
     // offset is supposed to be for within a flight
@@ -252,7 +258,7 @@ void AP_Baro::calibrate(bool save)
     uint8_t num_calibrated = 0;
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
+            BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
             num_calibrated++;
         }
     }
@@ -393,6 +399,7 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
         return _external_temperature;
     }
     
+#ifndef HAL_BUILD_AP_PERIPH
     // if we don't have an external temperature then try to use temperature
     // from the airspeed sensor
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
@@ -402,6 +409,7 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
             return temperature;
         }
     }
+#endif
     
     // if we don't have an external temperature and airspeed temperature
     // then use the minimum of the barometer temperature and 35 degrees C.
@@ -818,9 +826,11 @@ void AP_Baro::update(void)
     }
 
     // logging
+#ifndef HAL_NO_LOGGING
     if (should_log() && !AP::ahrs().have_ekf_logging()) {
         AP::logger().Write_Baro();
     }
+#endif
 }
 
 /*
