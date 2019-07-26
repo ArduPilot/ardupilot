@@ -1348,6 +1348,26 @@ void Copter::convert_tradheli_parameters(void)
         for (uint8_t i=0; i<table_size; i++) {
             AP_Param::convert_old_parameter(&singleheli_conversion_info[i], 1.0f);
         }
+
+        // convert to known swash type for setups that match
+        AP_Int16 *swash_pos_1, *swash_pos_2, *swash_pos_3, *swash_phang, *swash_type;
+        char pname[17];
+        enum ap_var_type ptype;
+        snprintf(pname, sizeof(pname), "H_SW_H3_SV1_POS");
+        swash_pos_1 = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW_H3_SV2_POS");
+        swash_pos_2 = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW_H3_SV3_POS");
+        swash_pos_3 = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW_H3_PHANG");
+        swash_phang = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW_TYPE");
+        swash_type = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        if (swash_pos_1->get() == -60 && swash_pos_2->get() == 60 && swash_pos_3->get() == 180 && swash_phang->get() == 0 && swash_type->get() == 0) {
+            snprintf(pname, sizeof(pname), "H_SW_TYPE");
+            AP_Param::set_default_by_name(pname, SwashPlateType::SWASHPLATE_TYPE_H3_120);
+        }
+
     } else if (g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_DUAL) {
         // dual heli conversion info
         const AP_Param::ConversionInfo dualheli_conversion_info[] = {
@@ -1368,6 +1388,42 @@ void Copter::convert_tradheli_parameters(void)
         for (uint8_t i=0; i<table_size; i++) {
             AP_Param::convert_old_parameter(&dualheli_conversion_info[i], 1.0f);
         }
+
+        // convert swashplate 1 to known swash type for setups that match
+        AP_Int16 *swash_pos_1, *swash_pos_2, *swash_pos_3, *swash_phang, *swash_type;
+        char pname[17];
+        enum ap_var_type ptype;
+        snprintf(pname, sizeof(pname), "H_SW1_H3_SV1_POS");
+        swash_pos_1 = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW1_H3_SV2_POS");
+        swash_pos_2 = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW1_H3_SV3_POS");
+        swash_pos_3 = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW1_H3_PHANG");
+        swash_phang = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW1_TYPE");
+        swash_type = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        if (swash_pos_1->get() == -60 && swash_pos_2->get() == 60 && swash_pos_3->get() == 180 && swash_phang->get() == 0 && swash_type->get() == 0) {
+            snprintf(pname, sizeof(pname), "H_SW1_TYPE");
+            AP_Param::set_default_by_name(pname, SwashPlateType::SWASHPLATE_TYPE_H3_120);
+        }
+
+        // convert swashplate 2 to known swash type for setups that match
+        snprintf(pname, sizeof(pname), "H_SW2_H3_SV1_POS");
+        swash_pos_1 = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW2_H3_SV2_POS");
+        swash_pos_2 = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW2_H3_SV3_POS");
+        swash_pos_3 = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW2_H3_PHANG");
+        swash_phang = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        snprintf(pname, sizeof(pname), "H_SW2_TYPE");
+        swash_type = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        if (swash_pos_1->get() == -60 && swash_pos_2->get() == 60 && swash_pos_3->get() == 180 && swash_phang->get() == 0 && swash_type->get() == 0) {
+            snprintf(pname, sizeof(pname), "H_SW2_TYPE");
+            AP_Param::set_default_by_name(pname, SwashPlateType::SWASHPLATE_TYPE_H3_120);
+        }
+
     }
     const AP_Param::ConversionInfo allheli_conversion_info[] = {
         { Parameters::k_param_motors, 1280, AP_PARAM_INT16, "H_RSC_CRV_000" },
@@ -1381,5 +1437,6 @@ void Copter::convert_tradheli_parameters(void)
     for (uint8_t i=0; i<table_size; i++) {
         AP_Param::convert_old_parameter(&allheli_conversion_info[i], 0.1f);
     }
+
 }
 #endif
