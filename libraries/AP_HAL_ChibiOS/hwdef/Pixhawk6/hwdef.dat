@@ -30,6 +30,9 @@ STM32_VDD 330U
 # order of UARTs (and USB)
 UART_ORDER OTG1 USART1 USART2 USART3 UART4 USART6 UART7 OTG2
 
+# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
+define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
+
 define HAL_STORAGE_SIZE 16384
 
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5

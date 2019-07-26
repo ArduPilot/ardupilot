@@ -957,7 +957,10 @@ def write_UART_config(f):
         f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
         f.write('''
 #if HAL_WITH_UAVCAN
-#define HAL_SERIAL%d_PROTOCOL SerialProtocol_SLCAN
+#ifndef HAL_OTG2_PROTOCOL
+#define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
+#endif
+#define HAL_SERIAL%d_PROTOCOL HAL_OTG2_PROTOCOL
 #define HAL_SERIAL%d_BAUD 115200
 #endif
 ''' % (OTG2_index, OTG2_index))

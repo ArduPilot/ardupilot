@@ -75,6 +75,9 @@ I2C_ORDER I2C1
 
 UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART6 UART7 OTG2
 
+# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
+define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
+
 # Another USART, this one for telem1. This one has RTS and CTS lines.
 # USART2 telem1
 PD3 USART2_CTS USART2
