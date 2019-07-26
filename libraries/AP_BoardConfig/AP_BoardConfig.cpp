@@ -334,11 +334,11 @@ void AP_BoardConfig::sensor_config_error(const char *reason)
         if (now - last_print_ms >= 3000) {
             last_print_ms = now;
             printf("Sensor failure: %s\n", reason);
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
             gcs().send_text(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
 #endif
         }
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
         gcs().update_receive();
         gcs().update_send();
 #endif
