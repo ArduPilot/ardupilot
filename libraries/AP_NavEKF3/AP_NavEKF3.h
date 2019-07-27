@@ -524,6 +524,10 @@ private:
 
     bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
 
+    // origin set by one of the cores
+    struct Location common_EKF_origin;
+    bool common_origin_valid;
+    
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary

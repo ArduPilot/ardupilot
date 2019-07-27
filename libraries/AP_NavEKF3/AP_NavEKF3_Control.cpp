@@ -479,10 +479,10 @@ bool NavEKF3_core::setOriginLLH(const Location &loc)
 }
 
 // Set the NED origin to be used until the next filter reset
-void NavEKF3_core::setOrigin()
+void NavEKF3_core::setOrigin(const Location &loc)
 {
     // assume origin at current GPS location (no averaging)
-    EKF_origin = AP::gps().location();
+    EKF_origin = loc;
     // if flying, correct for height change from takeoff so that the origin is at field elevation
     if (inFlight) {
         EKF_origin.alt += (int32_t)(100.0f * stateStruct.position.z);
@@ -491,7 +491,11 @@ void NavEKF3_core::setOrigin()
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, EKF_origin.lat);
     validOrigin = true;
-    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u Origin set to GPS",(unsigned)imu_index);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u origin set",(unsigned)imu_index);
+
+    // put origin in frontend as well to ensure it stays in sync between lanes
+    frontend->common_EKF_origin = EKF_origin;
+    frontend->common_origin_valid = true;
 }
 
 // record a yaw reset event
