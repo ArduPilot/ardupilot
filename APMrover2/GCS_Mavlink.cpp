@@ -82,7 +82,7 @@ void GCS_MAVLINK_Rover::send_position_target_global_int()
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
-        MAV_FRAME_GLOBAL_INT, // targets are always global altitude
+        MAV_FRAME_GLOBAL, // targets are always global altitude
         0xFFF8, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
