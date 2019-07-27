@@ -219,7 +219,7 @@ void AP_RSSI::check_pwm_pin_rssi()
         // failed to attach interrupt
         gcs().send_text(MAV_SEVERITY_WARNING,
                         "RSSI: Failed to attach to pin %u",
-                        rssi_analog_pin);
+                        (unsigned int)rssi_analog_pin);
         return;
     }
 }
