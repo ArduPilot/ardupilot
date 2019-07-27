@@ -104,7 +104,8 @@ void AP_MotorsMatrixTS::output_armed_stabilizing()
     if (thrust_max > 1.0f) {
         thr_adj = 1.0f - thrust_max;
         limit.throttle_upper = true;
-        limit.roll_pitch = true;
+        limit.roll = true;
+        limit.pitch = true;
         for (int i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
                 // calculate the thrust outputs for roll and pitch

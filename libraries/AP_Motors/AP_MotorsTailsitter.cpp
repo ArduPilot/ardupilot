@@ -161,7 +161,8 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
     if (thrust_max > 1.0f) {
         thr_adj = 1.0f - thrust_max;
         limit.throttle_upper = true;
-        limit.roll_pitch = true;
+        limit.roll = true;
+        limit.pitch = true;
     }
 
     // Add adjustment to reduce average throttle

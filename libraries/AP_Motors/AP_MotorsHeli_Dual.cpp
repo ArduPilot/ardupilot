@@ -374,7 +374,8 @@ void AP_MotorsHeli_Dual::update_motor_control(RotorControlState state)
 void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
     // initialize limits flag
-    limit.roll_pitch = false;
+    limit.roll = false;
+    limit.pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -382,22 +383,22 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE) {
         if (pitch_out < -_cyclic_max/4500.0f) {
             pitch_out = -_cyclic_max/4500.0f;
-            limit.roll_pitch = true;
+            limit.pitch = true;
         }
 
         if (pitch_out > _cyclic_max/4500.0f) {
             pitch_out = _cyclic_max/4500.0f;
-            limit.roll_pitch = true;
+            limit.pitch = true;
         }
     } else {
         if (roll_out < -_cyclic_max/4500.0f) {
             roll_out = -_cyclic_max/4500.0f;
-            limit.roll_pitch = true;
+            limit.roll = true;
         }
 
         if (roll_out > _cyclic_max/4500.0f) {
             roll_out = _cyclic_max/4500.0f;
-            limit.roll_pitch = true;
+            limit.roll = true;
         }
     }
 

@@ -136,7 +136,8 @@ public:
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {
-        uint8_t roll_pitch      : 1; // we have reached roll or pitch limit
+        uint8_t roll            : 1; // we have reached roll or pitch limit
+        uint8_t pitch           : 1; // we have reached roll or pitch limit
         uint8_t yaw             : 1; // we have reached yaw limit
         uint8_t throttle_lower  : 1; // we have reached throttle's lower limit
         uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
