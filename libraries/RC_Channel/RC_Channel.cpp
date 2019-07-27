@@ -791,7 +791,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
 #endif // HAL_MINIMIZE_FEATURES
 
     default:
-        gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", ch_option);
+        gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", (unsigned int)ch_option);
         break;
     }
 }
