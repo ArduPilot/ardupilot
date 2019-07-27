@@ -340,8 +340,8 @@ AP_GPS_SBF::process_message(void)
         check_new_itow(temp.TOW, sbf_msg.length);
         RxState = temp.RxState;
         if ((RxError & RX_ERROR_MASK) != (temp.RxError & RX_ERROR_MASK)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF error changed (0x%08x/0x%08x)", state.instance + 1,
-                            RxError & RX_ERROR_MASK, temp.RxError & RX_ERROR_MASK);
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %u: SBF error changed (0x%08x/0x%08x)", (unsigned int)(state.instance + 1),
+                            (unsigned int)(RxError & RX_ERROR_MASK), (unsigned int)(temp.RxError & RX_ERROR_MASK));
         }
         RxError = temp.RxError;
         break;
