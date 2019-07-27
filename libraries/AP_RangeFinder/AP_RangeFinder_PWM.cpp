@@ -109,7 +109,7 @@ void AP_RangeFinder_PWM::check_pin()
         // failed to attach interrupt
         gcs().send_text(MAV_SEVERITY_WARNING,
                         "RangeFinder_PWM: Failed to attach to pin %u",
-                        params.pin);
+                        (unsigned int)params.pin);
         return;
     }
 }
