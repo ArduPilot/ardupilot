@@ -1380,8 +1380,8 @@ void
 AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {
     for (uint8_t i = 0; i < ARRAY_SIZE(reasons); i++) {
         if (_unconfigured_messages & (1 << i)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: u-blox %s configuration 0x%02x",
-                state.instance +1, reasons[i], _unconfigured_messages);
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %u: u-blox %s configuration 0x%02x",
+                (unsigned int)(state.instance + 1), reasons[i], (unsigned int)_unconfigured_messages);
             break;
         }
     }
