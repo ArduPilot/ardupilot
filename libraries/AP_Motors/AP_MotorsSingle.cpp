@@ -168,7 +168,8 @@ void AP_MotorsSingle::output_armed_stabilizing()
     } else {
         rp_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), (float) _yaw_headroom / 1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
         if (rp_scale < 1.0f) {
-            limit.roll_pitch = true;
+            limit.roll = true;
+            limit.pitch = true;
         }
     }
 
@@ -203,7 +204,8 @@ void AP_MotorsSingle::output_armed_stabilizing()
     _thrust_out = throttle_avg_max + thr_adj;
 
     if (is_zero(_thrust_out)) {
-        limit.roll_pitch = true;
+        limit.roll = true;
+        limit.pitch = true;
         limit.yaw = true;
     }
 
@@ -219,7 +221,8 @@ void AP_MotorsSingle::output_armed_stabilizing()
     if (actuator_max > thrust_out_actuator && !is_zero(actuator_max)) {
         // roll, pitch and yaw request can not be achieved at full servo defection
         // reduce roll, pitch and yaw to reduce the requested defection to maximum
-        limit.roll_pitch = true;
+        limit.roll = true;
+        limit.pitch = true;
         limit.yaw = true;
         rp_scale = thrust_out_actuator / actuator_max;
     } else {

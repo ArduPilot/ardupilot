@@ -331,7 +331,8 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     float yaw_offset = 0.0f;
 
     // initialize limits flag
-    limit.roll_pitch = false;
+    limit.roll = false;
+    limit.pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -350,7 +351,8 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
         float ratio = (float)(_cyclic_max/4500.0f) / total_out;
         roll_out *= ratio;
         pitch_out *= ratio;
-        limit.roll_pitch = true;
+        limit.roll = true;
+        limit.pitch = true;
     }
 
     // constrain collective input

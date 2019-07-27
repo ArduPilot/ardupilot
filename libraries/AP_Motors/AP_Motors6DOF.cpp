@@ -205,7 +205,8 @@ void AP_Motors6DOF::output_min()
     int8_t i;
 
     // set limits flags
-    limit.roll_pitch = true;
+    limit.roll = true;
+    limit.pitch = true;
     limit.yaw = true;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -302,7 +303,8 @@ void AP_Motors6DOF::output_armed_stabilizing()
         float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
         // initialize limits flags
-        limit.roll_pitch = false;
+        limit.roll = false;
+        limit.pitch = false;
         limit.yaw = false;
         limit.throttle_lower = false;
         limit.throttle_upper = false;
@@ -407,7 +409,8 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
     float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
     // initialize limits flags
-    limit.roll_pitch = false;
+    limit.roll= false;
+    limit.pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -493,7 +496,8 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
     float yfl_max;
 
     // initialize limits flags
-    limit.roll_pitch = false;
+    limit.roll = false;
+    limit.pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;

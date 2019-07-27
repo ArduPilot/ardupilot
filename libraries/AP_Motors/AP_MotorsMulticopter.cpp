@@ -518,7 +518,8 @@ void AP_MotorsMulticopter::output_logic()
         // Servos set to their trim values or in a test condition.
 
         // set limits flags
-        limit.roll_pitch = true;
+        limit.roll = true;
+        limit.pitch = true;
         limit.yaw = true;
         limit.throttle_lower = true;
         limit.throttle_upper = true;
@@ -543,7 +544,8 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should be moving to correct the current attitude.
 
         // set limits flags
-        limit.roll_pitch = true;
+        limit.roll = true;
+        limit.pitch = true;
         limit.yaw = true;
         limit.throttle_lower = true;
         limit.throttle_upper = true;
@@ -587,7 +589,8 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should exhibit normal flight behavior.
 
         // initialize limits flags
-        limit.roll_pitch = false;
+        limit.roll = false;
+        limit.pitch = false;
         limit.yaw = false;
         limit.throttle_lower = false;
         limit.throttle_upper = false;
@@ -620,7 +623,8 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should exhibit normal flight behavior.
 
         // initialize limits flags
-        limit.roll_pitch = false;
+        limit.roll = false;
+        limit.pitch = false;
         limit.yaw = false;
         limit.throttle_lower = false;
         limit.throttle_upper = false;
@@ -647,7 +651,8 @@ void AP_MotorsMulticopter::output_logic()
         // Servos should exhibit normal flight behavior.
 
         // initialize limits flags
-        limit.roll_pitch = false;
+        limit.roll = false;
+        limit.pitch = false;
         limit.yaw = false;
         limit.throttle_lower = false;
         limit.throttle_upper = false;
