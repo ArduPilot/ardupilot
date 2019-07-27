@@ -188,7 +188,7 @@ void lua_scripts::run_next_script(lua_State *L) {
     if(lua_pcall(L, 0, LUA_MULTRET, 0)) {
         if (overtime) {
             // script has consumed an excessive amount of CPU time
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s exceeded time limit (%d)", script->name,  vm_steps);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s exceeded time limit (%d)", script->name,  (int)vm_steps);
             remove_script(L, script);
         } else {
             gcs().send_text(MAV_SEVERITY_INFO, "Lua: %s", lua_tostring(L, -1));
@@ -385,15 +385,15 @@ void lua_scripts::run(void) {
                 gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
             }
 
-            const uint32_t startMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+            const int startMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
             const uint32_t loadEnd = AP_HAL::micros();
 
             run_next_script(L);
 
             const uint32_t runEnd = AP_HAL::micros();
-            const uint32_t endMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+            const int endMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
             if (_debug_level > 1) {
-                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %d Mem: %d", runEnd - loadEnd, endMem - startMem);
+                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d", (unsigned int)(runEnd - loadEnd), (int)(endMem - startMem));
             }
 
         } else {
