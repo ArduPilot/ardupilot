@@ -214,7 +214,8 @@ void AP_MotorsHeli::output_min()
     update_motor_control(ROTOR_CONTROL_STOP);
 
     // override limits flags
-    limit.roll_pitch = true;
+    limit.roll = true;
+    limit.pitch = true;
     limit.yaw = true;
     limit.throttle_lower = true;
     limit.throttle_upper = false;
