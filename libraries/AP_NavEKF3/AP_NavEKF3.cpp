@@ -712,6 +712,9 @@ bool NavEKF3::InitialiseFilter(void)
     // Set the primary initially to be the lowest index
     primary = 0;
 
+    // invalidate shared origin
+    common_origin_valid = false;
+
     // initialise the cores. We return success only if all cores
     // initialise successfully
     bool ret = true;
