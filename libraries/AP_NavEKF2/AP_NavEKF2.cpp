@@ -684,6 +684,9 @@ bool NavEKF2::InitialiseFilter(void)
         primary = 0;
     }
 
+    // invalidate shared origin
+    common_origin_valid = false;
+    
     // initialise the cores. We return success only if all cores
     // initialise successfully
     bool ret = true;
