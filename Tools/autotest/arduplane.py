@@ -522,7 +522,7 @@ class AutoTestPlane(AutoTest):
         self.mavproxy.send('switch 1\n')  # auto mode
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 7, max_dist=60)
-        self.wait_groundspeed(0, 0.5, maintain_target_time=1, timeout=60)
+        self.wait_groundspeed(0, 0.5, minimum_duration=1, timeout=60)
         self.mavproxy.expect("Auto disarmed")
         self.progress("Mission OK")
 
@@ -573,11 +573,11 @@ class AutoTestPlane(AutoTest):
             0,
             0,
             0)
-        self.wait_groundspeed(new_target_groundspeed-0.5, new_target_groundspeed+0.5, maintain_target_time=2, timeout=40)
+        self.wait_groundspeed(new_target_groundspeed-0.5, new_target_groundspeed+0.5, minimum_duration=2, timeout=40)
         self.progress("Adding some wind, ensuring groundspeed holds")
         self.set_parameter("SIM_WIND_SPD", 5)
         self.delay_sim_time(5)
-        self.wait_groundspeed(new_target_groundspeed-0.5, new_target_groundspeed+0.5, maintain_target_time=2, timeout=40)
+        self.wait_groundspeed(new_target_groundspeed-0.5, new_target_groundspeed+0.5, minimum_duration=2, timeout=40)
         self.set_parameter("SIM_WIND_SPD", 0)
 
         self.progress("Setting airspeed")
@@ -591,7 +591,7 @@ class AutoTestPlane(AutoTest):
             0,
             0,
             0)
-        self.wait_groundspeed(new_target_airspeed-0.5, new_target_airspeed+0.5, maintain_target_time=2)
+        self.wait_groundspeed(new_target_airspeed-0.5, new_target_airspeed+0.5, minimum_duration=2)
         self.progress("Adding some wind, hoping groundspeed increases/decreases")
         self.set_parameter("SIM_WIND_SPD", 5)
         self.set_parameter("SIM_WIND_DIR", 270)

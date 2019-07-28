@@ -1467,7 +1467,7 @@ class AutoTest(ABC):
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time()
 
-    def wait_altitude(self, altitude_min, altitude_max, relative=False, maintain_target_time=0, timeout=30, called_function=None):
+    def wait_altitude(self, altitude_min, altitude_max, relative=False, timeout=30, **kwargs):
         """Wait for a given altitude range."""
         assert altitude_min <= altitude_max, "Minimum altitude should be less than maximum altitude."
 
@@ -1485,9 +1485,9 @@ class AutoTest(ABC):
             else:
                 return False
 
-        self.wait_and_maintain("Altitude", altitude_min, lambda: get_altitude(relative, timeout), accuracy=(altitude_max - altitude_min), validator=lambda value2, target2: validator(value2, target2), maintain_target_time=maintain_target_time, timeout=timeout, called_function=called_function)
+        self.wait_and_maintain(value_name="Altitude", target=altitude_min, achieved_getter=lambda: get_altitude(relative, timeout), accuracy=(altitude_max - altitude_min), validator=lambda value2, target2: validator(value2, target2), timeout=timeout, **kwargs)
 
-    def wait_groundspeed(self, speed_min, speed_max, maintain_target_time=None, timeout=30):
+    def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given ground speed range."""
         assert speed_min <= speed_max, "Minimum speed should be less than maximum speed."
 
@@ -1502,9 +1502,9 @@ class AutoTest(ABC):
             else:
                 return False
 
-        self.wait_and_maintain("Groundspeed", speed_min, lambda: get_groundspeed(timeout), accuracy=(speed_max - speed_min), validator=lambda value2, target2: validator(value2, target2), maintain_target_time=maintain_target_time, timeout=timeout)
+        self.wait_and_maintain(value_name="Groundspeed", target=speed_min, achieved_getter=lambda: get_groundspeed(timeout), accuracy=(speed_max - speed_min), validator=lambda value2, target2: validator(value2, target2), timeout=timeout, **kwargs)
 
-    def wait_roll(self, roll, accuracy, timeout=30):
+    def wait_roll(self, roll, accuracy, timeout=30, **kwargs):
         """Wait for a given roll in degrees."""
         def get_roll(timeout2):
             msg = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=timeout2)
@@ -1517,9 +1517,9 @@ class AutoTest(ABC):
         def validator(value2, target2):
             return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
 
-        self.wait_and_maintain("Roll", roll, lambda: get_roll(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout)
+        self.wait_and_maintain(value_name="Roll", target=roll, achieved_getter=lambda: get_roll(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
 
-    def wait_pitch(self, pitch, accuracy, timeout=30):
+    def wait_pitch(self, pitch, accuracy, timeout=30, **kwargs):
         """Wait for a given pitch in degrees."""
         def get_pitch(timeout2):
             msg = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=timeout2)
@@ -1532,21 +1532,22 @@ class AutoTest(ABC):
         def validator(value2, target2):
             return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
 
-        self.wait_and_maintain("Pitch", pitch, lambda: get_pitch(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout)
+        self.wait_and_maintain(value_name="Pitch", target=pitch, achieved_getter=lambda: get_pitch(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
 
-    def wait_and_maintain(self, value_name, target, target_retreiver, validator=None, accuracy=2.0, maintain_target_time=0, timeout=30, called_function=None):
+    def wait_and_maintain(self, value_name, target, achieved_getter, validator=None, accuracy=2.0, timeout=30, **kwargs):
         tstart = self.get_sim_time()
-        duration_start = None
-        mean_value = 0.0
+        achieving_duration_start = None
+        sum_of_achieved_values = 0.0
         last_value = 0.0
-        counter = 0.0
+        count_of_achieved_values = 0
+        called_function = kwargs.get("called_function", None)
+        minimum_duration = kwargs.get("minimum_duration", 0)
         self.progress("Waiting for %s %.02f with accuracy %.02f" % (value_name, target, accuracy))
         last_print_time = 0
         while self.get_sim_time_cached() < tstart + timeout:
+            last_value = achieved_getter()
             if called_function is not None:
                 called_function(last_value, target)
-            if target_retreiver is not None:
-                last_value = target_retreiver()
             if self.get_sim_time_cached() - last_print_time > 1:
                 self.progress("%s=%0.2f (want %f +- %f)" %
                               (value_name, last_value, target, accuracy))
@@ -1556,22 +1557,22 @@ class AutoTest(ABC):
             else:
                 is_value_valid = math.fabs(last_value - target) <= accuracy
             if is_value_valid:
-                mean_value += last_value
-                counter += 1.0
-                if duration_start is None:
-                    duration_start = self.get_sim_time_cached()
-                if self.get_sim_time_cached() - duration_start >= maintain_target_time:
-                    self.progress("Attained %s=%f" % (value_name, mean_value / counter))
+                sum_of_achieved_values += last_value
+                count_of_achieved_values += 1
+                if achieving_duration_start is None:
+                    achieving_duration_start = self.get_sim_time_cached()
+                if self.get_sim_time_cached() - achieving_duration_start >= minimum_duration:
+                    self.progress("Attained %s=%f" % (value_name, sum_of_achieved_values / count_of_achieved_values))
                     return True
             else:
-                duration_start = None
-                mean_value = 0.0
-                counter = 0.0
-        raise AutoTestTimeoutException("Failed to attain %s %f, reach %f" % (value_name, target, (mean_value / counter) if counter != 0.0 else last_value))
+                achieving_duration_start = None
+                sum_of_achieved_values = 0.0
+                count_of_achieved_values = 0
+        raise AutoTestTimeoutException("Failed to attain %s %f, reach %f" % (value_name, target, (sum_of_achieved_values / count_of_achieved_values) if count_of_achieved_values != 0 else last_value))
 
-    def wait_heading(self, heading, accuracy=5, maintain_target_time=0, timeout=30, called_function=None):
+    def wait_heading(self, heading, accuracy=5, timeout=30, **kwargs):
         """Wait for a given heading."""
-        def get_heading_wrapped(target, timeout2):
+        def get_heading_wrapped(timeout2):
             msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=timeout2)
             if msg:
                 return msg.heading
@@ -1579,9 +1580,9 @@ class AutoTest(ABC):
         def validator(value2, target2):
             return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
 
-        self.wait_and_maintain("Heading", heading, target_retreiver=lambda: get_heading_wrapped(heading, timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, maintain_target_time=maintain_target_time, timeout=timeout, called_function=called_function)
+        self.wait_and_maintain(value_name="Heading", target=heading, achieved_getter=lambda: get_heading_wrapped(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
 
-    def wait_distance(self, distance, accuracy=2, timeout=30):
+    def wait_distance(self, distance, accuracy=2, timeout=30, **kwargs):
         """Wait for flight of a given distance."""
         start = self.mav.location()
 
@@ -1591,7 +1592,7 @@ class AutoTest(ABC):
         def validator(value2, target2):
             return (value2 - target2) >= accuracy
 
-        self.wait_and_maintain("Distance", distance, target_retreiver=lambda: get_distance(), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout)
+        self.wait_and_maintain(value_name="Distance", target=distance, achieved_getter=lambda: get_distance(), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
 
     def wait_servo_channel_value(self, channel, value, timeout=2, comparator=operator.eq):
         """wait for channel value comparison (default condition is equality)"""
@@ -1644,8 +1645,7 @@ class AutoTest(ABC):
                       timeout=30,
                       target_altitude=None,
                       height_accuracy=-1,
-                      maintain_target_time=0,
-                      called_function=None):
+                      **kwargs):
         """Wait for arrival at a location."""
         def get_distance_to_loc():
             return self.get_distance(self.mav.location(), loc)
@@ -1662,7 +1662,7 @@ class AutoTest(ABC):
         debug_text = "Distance to Location (%.4f, %.4f) " % (loc.lat, loc.lng)
         if target_altitude is not None:
             debug_text += "at altitude %.1f height_accuracy=%.1f" % (target_altitude, height_accuracy)
-        self.wait_and_maintain(debug_text, 0, target_retreiver=lambda: get_distance_to_loc(), accuracy=accuracy, validator=lambda value2, target2: validator(value2, None), maintain_target_time=maintain_target_time, timeout=timeout, called_function=called_function)
+        self.wait_and_maintain(value_name=debug_text, target=0, achieved_getter=lambda: get_distance_to_loc(), accuracy=accuracy, validator=lambda value2, target2: validator(value2, None), timeout=timeout, **kwargs)
 
     def wait_current_waypoint(self, wpnum, timeout=60):
         tstart = self.get_sim_time()
