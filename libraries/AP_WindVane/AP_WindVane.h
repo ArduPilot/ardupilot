@@ -57,8 +57,8 @@ public:
         return wrap_PI(_direction_apparent_ef - AP::ahrs().yaw);
     }
 
-    // get the absolute wind direction in radians, 0 = wind coming from north
-    float get_absolute_wind_direction_rad() const { return _direction_absolute; }
+    // get the true wind direction in radians, 0 = wind coming from north
+    float get_true_wind_direction_rad() const { return _direction_true; }
 
     // Return apparent wind speed
     float get_apparent_wind_speed() const { return _speed_apparent; }
@@ -112,7 +112,7 @@ private:
 
     // wind direction variables
     float _direction_apparent_ef;                   // wind's apparent direction in radians (0 = ahead of vehicle)
-    float _direction_absolute;                      // wind's absolute direction in radians (0 = North)
+    float _direction_true;                          // wind's true direction in radians (0 = North)
 
     // wind speed variables
     float _speed_apparent;                          // wind's apparent speed in m/s
