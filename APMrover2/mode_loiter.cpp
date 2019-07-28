@@ -32,7 +32,7 @@ void ModeLoiter::update()
 
         // if we have a sail but not trying to use it then point into the wind
         if (!rover.g2.sailboat.nav_enabled() && rover.g2.sailboat.sail_enabled()) {
-            _desired_yaw_cd = degrees(g2.windvane.get_absolute_wind_direction_rad()) * 100.0f;
+            _desired_yaw_cd = degrees(g2.windvane.get_true_wind_direction_rad()) * 100.0f;
         }
     } else {
         // P controller with hard-coded gain to convert distance to desired speed

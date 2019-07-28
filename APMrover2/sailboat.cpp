@@ -221,7 +221,7 @@ void Sailboat::handle_tack_request_acro()
     }
     // set tacking heading target to the current angle relative to the true wind but on the new tack
     currently_tacking = true;
-    tack_heading_rad = wrap_2PI(rover.ahrs.yaw + 2.0f * wrap_PI((rover.g2.windvane.get_absolute_wind_direction_rad() - rover.ahrs.yaw)));
+    tack_heading_rad = wrap_2PI(rover.ahrs.yaw + 2.0f * wrap_PI((rover.g2.windvane.get_true_wind_direction_rad() - rover.ahrs.yaw)));
 
     tack_request_ms = AP_HAL::millis();
 }
@@ -275,7 +275,7 @@ bool Sailboat::use_indirect_route(float desired_heading_cd)
 
     // check if desired heading is in the no go zone, if it is we can't go direct
     // pad no go zone, this allows use of heading controller rather than L1 when close to the wind
-    return fabsf(wrap_PI(rover.g2.windvane.get_absolute_wind_direction_rad() - desired_heading_rad)) <= radians(sail_no_go + SAILBOAT_NOGO_PAD);
+    return fabsf(wrap_PI(rover.g2.windvane.get_true_wind_direction_rad() - desired_heading_rad)) <= radians(sail_no_go + SAILBOAT_NOGO_PAD);
 }
 
 // if we can't sail on the desired heading then we should pick the best heading that we can sail on
@@ -286,12 +286,14 @@ float Sailboat::calc_heading(float desired_heading_cd)
     if (!nav_enabled()) {
         return desired_heading_cd;
     }
+    
+    const float true_wind_rad = rover.g2.windvane.get_true_wind_direction_rad();
 
     // if the desired heading is outside the no go zone there is no need to change it
     // this allows use of heading controller rather than L1 when desired
     // this is used in the 'SAILBOAT_NOGO_PAD' region
     const float desired_heading_rad = radians(desired_heading_cd * 0.01f);
-    if (fabsf(wrap_PI(rover.g2.windvane.get_absolute_wind_direction_rad() - desired_heading_rad)) > radians(sail_no_go)) {
+    if (fabsf(wrap_PI(true_wind_rad - desired_heading_rad)) > radians(sail_no_go)) {
         return desired_heading_cd;
     }
 
@@ -306,8 +308,8 @@ float Sailboat::calc_heading(float desired_heading_cd)
     }
 
     // calculate left and right no go headings looking upwind
-    const float left_no_go_heading_rad = wrap_2PI(rover.g2.windvane.get_absolute_wind_direction_rad() + radians(sail_no_go));
-    const float right_no_go_heading_rad = wrap_2PI(rover.g2.windvane.get_absolute_wind_direction_rad() - radians(sail_no_go));
+    const float left_no_go_heading_rad = wrap_2PI(true_wind_rad + radians(sail_no_go));
+    const float right_no_go_heading_rad = wrap_2PI(true_wind_rad - radians(sail_no_go));
 
     // calculate current tack, Port if heading is left of no-go, STBD if right of no-go
     const float app_wind_rad = rover.g2.windvane.get_apparent_wind_direction_rad();
