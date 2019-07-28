@@ -432,7 +432,6 @@ bool NavEKF2_core::setOriginLLH(const Location &loc)
 // Set the NED origin to be used until the next filter reset
 void NavEKF2_core::setOrigin(const Location &loc)
 {
-    // assume origin at current GPS location (no averaging)
     EKF_origin = loc;
     // if flying, correct for height change from takeoff so that the origin is at field elevation
     if (inFlight) {
