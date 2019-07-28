@@ -331,7 +331,7 @@ void AP_WindVane::send_wind(mavlink_channel_t chan)
     // send wind
     mavlink_msg_wind_send(
         chan,
-        wrap_360(degrees(get_absolute_wind_direction_rad())),
+        wrap_360(degrees(get_true_wind_direction_rad())),
         get_true_wind_speed(),
         0);
 }
