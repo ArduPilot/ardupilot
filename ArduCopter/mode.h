@@ -55,6 +55,7 @@ public:
     virtual bool is_autopilot() const { return false; }
     virtual bool has_user_takeoff(bool must_navigate) const { return false; }
     virtual bool in_guided_mode() const { return false; }
+    virtual bool stop_attitude_logging() const { return false; }
 
     // return a string for this flightmode
     virtual const char *name() const = 0;
