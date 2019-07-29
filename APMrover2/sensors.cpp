@@ -150,7 +150,7 @@ void Rover::read_rangefinders(void)
             }
             if (obstacle.detected_count == g.rangefinder_debounce) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder1 obstacle %u cm",
-                        static_cast<uint32_t>(obstacle.rangefinder1_distance_cm));
+                                (unsigned int)obstacle.rangefinder1_distance_cm);
             }
             obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = g.rangefinder_turn_angle;
@@ -161,7 +161,7 @@ void Rover::read_rangefinders(void)
             }
             if (obstacle.detected_count == g.rangefinder_debounce) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder2 obstacle %u cm",
-                        static_cast<uint32_t>(obstacle.rangefinder2_distance_cm));
+                                (unsigned int)obstacle.rangefinder2_distance_cm);
             }
             obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = -g.rangefinder_turn_angle;
@@ -177,7 +177,7 @@ void Rover::read_rangefinders(void)
             }
             if (obstacle.detected_count == g.rangefinder_debounce) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder obstacle %u cm",
-                        static_cast<uint32_t>(obstacle.rangefinder1_distance_cm));
+                                (unsigned int)obstacle.rangefinder1_distance_cm);
             }
             obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = g.rangefinder_turn_angle;
