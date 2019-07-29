@@ -544,66 +544,6 @@ void  NavEKF3_core::getFilterGpsStatus(nav_gps_status &faults) const
     faults.flags.bad_horiz_vel      = gpsCheckStatus.bad_horiz_vel; // The GPS horizontal speed is excessive (check assumes the vehicle is static)
 }
 
-// send an EKF_STATUS message to GCS
-void NavEKF3_core::send_status_report(mavlink_channel_t chan)
-{
-    // prepare flags
-    uint16_t flags = 0;
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.gps_glitching) {
-        flags |= (1<<15);
-    }
-
-    // get variances
-    float velVar, posVar, hgtVar, tasVar;
-    Vector3f magVar;
-    Vector2f offset;
-    getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-
-    // Only report range finder normalised innovation levels if the EKF needs the data for primary
-    // height estimation or optical flow operation. This prevents false alarms at the GCS if a
-    // range finder is fitted for other applications
-    float temp;
-    if (((frontend->_useRngSwHgt > 0) && activeHgtSource == HGT_SOURCE_RNG) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
-        temp = sqrtf(auxRngTestRatio);
-    } else {
-        temp = 0.0f;
-    }
-
-    // send message
-    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVar.length(), temp, tasVar);
-
-}
-
 // report the reason for why the backend is refusing to initialise
 const char *NavEKF3_core::prearm_failure_reason(void) const
 {

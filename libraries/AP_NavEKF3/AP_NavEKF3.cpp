@@ -1428,11 +1428,73 @@ void  NavEKF3::getFilterGpsStatus(int8_t instance, nav_gps_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
+// for each variance we send the maximum of all lanes
 void NavEKF3::send_status_report(mavlink_channel_t chan)
 {
-    if (core) {
-        core[primary].send_status_report(chan);
+    if (!core) {
+        return;
     }
+    nav_filter_status filterStatus = core[primary].filterStatus;
+
+    // prepare flags
+    uint16_t flags = 0;
+    if (filterStatus.flags.attitude) {
+        flags |= EKF_ATTITUDE;
+    }
+    if (filterStatus.flags.horiz_vel) {
+        flags |= EKF_VELOCITY_HORIZ;
+    }
+    if (filterStatus.flags.vert_vel) {
+        flags |= EKF_VELOCITY_VERT;
+    }
+    if (filterStatus.flags.horiz_pos_rel) {
+        flags |= EKF_POS_HORIZ_REL;
+    }
+    if (filterStatus.flags.horiz_pos_abs) {
+        flags |= EKF_POS_HORIZ_ABS;
+    }
+    if (filterStatus.flags.vert_pos) {
+        flags |= EKF_POS_VERT_ABS;
+    }
+    if (filterStatus.flags.terrain_alt) {
+        flags |= EKF_POS_VERT_AGL;
+    }
+    if (filterStatus.flags.const_pos_mode) {
+        flags |= EKF_CONST_POS_MODE;
+    }
+    if (filterStatus.flags.pred_horiz_pos_rel) {
+        flags |= EKF_PRED_POS_HORIZ_REL;
+    }
+    if (filterStatus.flags.pred_horiz_pos_abs) {
+        flags |= EKF_PRED_POS_HORIZ_ABS;
+    }
+    if (filterStatus.flags.gps_glitching) {
+        flags |= (1<<15);
+    }
+
+    // get variances
+    float velVar=0, posVar=0, hgtVar=0, tasVar=0, magVarLen=0, rngVar=0;
+    Vector2f offset;
+
+    for (uint8_t i=0; i<num_cores; i++) {
+        float c_velVar, c_posVar, c_hgtVar, c_tasVar;
+        Vector3f c_magVar;
+        core[i].getVariances(c_velVar, c_posVar, c_hgtVar, c_magVar, c_tasVar, offset);
+        velVar = MAX(velVar, c_velVar);
+        hgtVar = MAX(hgtVar, c_hgtVar);
+        tasVar = MAX(tasVar, c_tasVar);
+        magVarLen = MAX(magVarLen, c_magVar.length());
+
+        // Only report range finder normalised innovation levels if the EKF needs the data for primary
+        // height estimation or optical flow operation. This prevents false alarms at the GCS if a
+        // range finder is fitted for other applications
+        if ((_useRngSwHgt > 0) || core[i].PV_AidingMode == NavEKF3_core::AID_RELATIVE || core[i].flowDataValid) {
+            rngVar = MAX(rngVar, sqrtf(core[primary].auxRngTestRatio));
+        }
+    }
+
+    // send message
+    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVarLen, rngVar, tasVar);
 }
 
 // provides the height limit to be observed by the control loops
