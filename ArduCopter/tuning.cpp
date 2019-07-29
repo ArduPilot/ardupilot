@@ -227,5 +227,11 @@ void Copter::tuning()
          g2.winch.set_desired_rate(tuning_value);
          break;
 #endif
+
+#if MODE_SYSTEMID_ENABLED == ENABLED
+     case SYSTEM_ID_MAGNITUDE:
+         copter.mode_systemid.set_magnitude(tuning_value);
+         break;
      }
+#endif
 }
