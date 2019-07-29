@@ -447,6 +447,10 @@ public:
     AP_Int16        gcs_pid_mask;
 
 #if MODE_THROW_ENABLED == ENABLED
+    enum class THROW_MOTOR_START : int8_t {
+        STOPPED = 0,
+        RUNNING,
+    };
     AP_Int8         throw_motor_start;
 #endif
 
