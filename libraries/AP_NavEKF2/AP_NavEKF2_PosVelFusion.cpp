@@ -602,10 +602,17 @@ void NavEKF2_core::FuseVelPosNED()
             varInnovVelPos[5] = P[8][8] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
             hgtTestRatio = sq(innovVelPos[5]) / (sq(MAX(0.01f * (float)frontend->_hgtInnovGate, 1.0f)) * varInnovVelPos[5]);
-            // fail if the ratio is > 1, but don't fail if bad IMU data
-            hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
+
+            // when on ground we accept a larger test ratio to allow
+            // the filter to handle large switch on IMU bias errors
+            // without rejecting the height sensor
+            const float maxTestRatio = (PV_AidingMode == AID_NONE && onGround)? 3.0 : 1.0;
+
+            // fail if the ratio is > maxTestRatio, but don't fail if bad IMU data
+            hgtHealth = (hgtTestRatio < maxTestRatio) || badIMUdata;
+
             // Fuse height data if healthy or timed out or in constant position mode
-            if (hgtHealth || hgtTimeout || (PV_AidingMode == AID_NONE && onGround)) {
+            if (hgtHealth || hgtTimeout) {
                 // Calculate a filtered value to be used by pre-flight health checks
                 // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
                 if (onGround) {
