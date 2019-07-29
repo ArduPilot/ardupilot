@@ -94,7 +94,8 @@ enum tuning_func {
     TUNING_RATE_YAW_FF =                54, // body frame yaw rate controller FF term
     TUNING_RATE_MOT_YAW_HEADROOM =      55, // motors yaw headroom minimum
     TUNING_RATE_YAW_FILT =              56, // yaw rate input filter
-    TUNING_WINCH =                      57  // winch control (not actually a value to be tuned)
+    TUNING_WINCH =                      57, // winch control (not actually a value to be tuned)
+    SYSTEM_ID_MAGNITUDE =               58  // magnitude of the system ID signal
 };
 
 // Acro Trainer types
@@ -189,6 +190,8 @@ enum LoggingParameters {
      LOG_HELI_MSG,
      LOG_PRECLAND_MSG,
      LOG_GUIDEDTARGET_MSG,
+     LOG_SYSIDD_MSG,
+     LOG_SYSIDS_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)

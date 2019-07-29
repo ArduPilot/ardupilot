@@ -35,6 +35,7 @@ public:
         FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
         FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
         ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
+        SYSTEMID  =    25,  // System ID mode produces automated system identification signals in the controllers
     };
 
     // constructor
@@ -1172,6 +1173,72 @@ private:
 };
 #endif
 
+class ModeSystemId : public Mode {
+
+public:
+    ModeSystemId(void);
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool stop_attitude_logging() const override { return true; }
+    void set_magnitude(float input) {waveform_magnitude = input;}
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+protected:
+
+    const char *name() const override { return "SYSTEMID"; }
+    const char *name4() const override { return "SYSI"; }
+
+private:
+    void        log_data();
+    float       waveform(float time);
+
+    enum AxisType {
+        NONE = 0,               // none
+        INPUT_ROLL = 1,         // angle input roll axis is being excited
+        INPUT_PITCH = 2,        // angle pitch axis is being excited
+        INPUT_YAW = 3,          // angle yaw axis is being excited
+        RECOVER_ROLL = 4,       // angle roll axis is being excited
+        RECOVER_PITCH = 5,      // angle pitch axis is being excited
+        RECOVER_YAW = 6,        // angle yaw axis is being excited
+        RATE_ROLL = 7,          // rate roll axis is being excited
+        RATE_PITCH = 8,         // rate pitch axis is being excited
+        RATE_YAW = 9,           // rate yaw axis is being excited
+        MIX_ROLL = 10,          // mixer roll axis is being excited
+        MIX_PITCH = 11,         // mixer pitch axis is being excited
+        MIX_YAW = 12,           // mixer pitch axis is being excited
+        MIX_THROTTLE = 13,      // mixer throttle axis is being excited
+    };
+
+    AP_Int8     systemID_axis;      // Controls which axis are being excited
+    AP_Float    waveform_magnitude; // Magnitude of chirp waveform
+    AP_Float    frequency_start;    // Frequency at the start of the chirp
+    AP_Float    frequency_stop;     // Frequency at the end of the chirp
+    AP_Float    time_fade_in;       // Time to reach maximum amplitude of chirp
+    AP_Float    time_record;        // Time taken to complete the chirp waveform
+    AP_Float    time_fade_out;      // Time to reach zero amplitude after chirp finishes
+
+    bool        att_bf_feedforward; // Setting of attitude_control->get_bf_feedforward
+    float       waveform_time;      // Time reference for waveform
+    float       waveform_sample;    // Current waveform sample
+    float       waveform_freq_rads; // Instantaneous waveform frequency
+    float       time_const_freq;    // Time at constant frequency before chirp starts
+    int8_t      log_subsample;      // Subsample multiple for logging.
+
+    // System ID states
+    enum SystemIDModeState {
+        SystemID_Stopped,
+        SystemID_Testing
+    };
+
+    SystemIDModeState systemIDState;
+};
 
 class ModeThrow : public Mode {
 

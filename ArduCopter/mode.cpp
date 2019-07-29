@@ -159,6 +159,12 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_SYSTEMID_ENABLED == ENABLED
+        case Mode::Number::SYSTEMID:
+            ret = (Mode *)g2.mode_systemid_ptr;
+            break;
+#endif
+
         default:
             break;
     }
