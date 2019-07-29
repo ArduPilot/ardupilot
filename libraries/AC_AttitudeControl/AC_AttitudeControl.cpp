@@ -710,6 +710,9 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
     att_from_quat.rotation_matrix(att_from_rot_matrix);
     Vector3f att_from_thrust_vec = att_from_rot_matrix * Vector3f(0.0f, 0.0f, 1.0f);
 
+    // the dot product is used to calculate the current lean angle for use of external functions
+    _thrust_angle = acosf(constrain_float(Vector3f(0.0f,0.0f,1.0f) * att_from_thrust_vec,-1.0f,1.0f));
+
     // the cross product of the desired and target thrust vector defines the rotation vector
     Vector3f thrust_vec_cross = att_from_thrust_vec % att_to_thrust_vec;
 
