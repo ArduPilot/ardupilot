@@ -583,13 +583,13 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         if (loiter_duration > 0) {
             // send message including loiter time
             gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u. Loiter for %u seconds",
-                    static_cast<uint32_t>(cmd.index),
-                    static_cast<uint32_t>(loiter_duration));
+                            (unsigned int)cmd.index,
+                            (unsigned int)loiter_duration);
             // record the current time i.e. start timer
             loiter_start_time = millis();
         } else {
             // send simpler message to GCS
-            gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u", static_cast<uint32_t>(cmd.index));
+            gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u", (unsigned int)cmd.index);
         }
     }
 
