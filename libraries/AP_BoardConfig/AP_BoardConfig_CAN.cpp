@@ -193,8 +193,11 @@ AP_HAL::UARTDriver *AP_BoardConfig_CAN::get_slcan_serial()
     if (_slcan._ser_port != -1) {
         return AP::serialmanager().get_serial_by_id(_slcan._ser_port);
     }
-    if (AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0)->is_initialized()) {
-        return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
+    AP_HAL::UARTDriver *ser_port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
+    if (ser_port != nullptr) {
+        if (ser_port->is_initialized()) {
+            return ser_port;
+        }
     }
     return nullptr;
 }
