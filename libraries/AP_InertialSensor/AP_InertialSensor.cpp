@@ -291,7 +291,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Use third IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  0),
+    AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  1),
 
     // @Param: STILL_THRESH
     // @DisplayName: Stillness threshold for detecting if we are moving
