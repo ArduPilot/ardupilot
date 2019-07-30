@@ -731,7 +731,7 @@ vehicle_options_string = '|'.join(vinfo.options.keys())
 def generate_frame_help():
     ret = ""
     for vehicle in vinfo.options:
-        frame_options = vinfo.options[vehicle]["frames"].keys()
+        frame_options = sorted(vinfo.options[vehicle]["frames"].keys())
         frame_options_string = '|'.join(frame_options)
         ret += "%s: %s\n" % (vehicle, frame_options_string)
     return ret
