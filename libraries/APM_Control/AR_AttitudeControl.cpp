@@ -551,8 +551,8 @@ float AR_AttitudeControl::get_desired_pitch() const
     return _pitch_to_throttle_pid.get_pid_info().target;
 }
 
-// Sailboat heel(roll) angle contorller release sail to keep at maximum heel angle
-// But do not atempt to reach maximum heel angle, ie only let sails off do not pull them in
+// Sailboat heel(roll) angle controller release sail to keep at maximum heel angle
+// But do not attempt to reach maximum heel angle, ie only let sails off do not pull them in
 float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
 {
     // sanity check dt
@@ -576,15 +576,15 @@ float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
 
     // get p
     float p = _sailboat_heel_pid.get_p();
-    // constrain p to only be positive
-    if (!is_positive(p)) {
+    // constrain p to only be negative
+    if (is_positive(p)) {
         p = 0.0f;
     }
 
     // get i
     float i = _sailboat_heel_pid.get_i();
-    // constrain i to only be positive, reset integrator if negative
-    if (!is_positive(i)) {
+    // constrain i to only be negative, reset integrator if negative
+    if (is_positive(i)) {
         i = 0.0f;
         _sailboat_heel_pid.reset_I();
     }
@@ -593,7 +593,7 @@ float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
     const float d = _sailboat_heel_pid.get_d();
 
     // constrain and return final output
-    return (ff + p + i + d );
+    return (ff + p + i + d) * -1.0f;
 }
 
 // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
