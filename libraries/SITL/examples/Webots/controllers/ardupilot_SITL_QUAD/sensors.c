@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <webots/supervisor.h>
-#include "util_time.h"
 #include "sensors.h"
 
 #define M_PI  3.14159265358979323846
@@ -110,35 +109,6 @@ void getAllSensors (char *buf, WbDeviceTag gyro, WbDeviceTag accelerometer, WbDe
 {
 
 /*
-
-{"timestamp": 1564002470.221124007,
-      "vehicle.imu": {
-            "timestamp": 1564002470.221124007,
-            "angular_velocity": [0.000000, 0.000000, -0.000000],
-            "linear_acceleration": [0.001169, -0.001169, 9.806650],
-            "magnetic_field": [0.991097, 0.133143, -0.000102],
-            "vehicle.gps":{
-                "timestamp": 1564002470.221124007,
-                "x": -0.123689,
-                "y": 0.073021,
-                "z": 0.049984},
-            "vehicle.velocity":{
-                "timestamp": 1564002470.221124007,
-                "linear_velocity": [0.000000, 0.000000, -0.000000],
-                "angular_velocity":[-0.000000, 0.000000, -0.000000], 
-                "world_linear_velocity": [ 0.0, 0.0, 0.0]},
-            "vehicle.pose":{
-                "timestamp": 1564002470.221124007,
-                "x": -0.123689,
-                "y": 0.073021,
-                "z": 0.049984,
-                "roll": 0.000119,
-                "pitch": 0.000119,
-                "yaw": 0.133539}
-                }
-
-
-
 {"timestamp": 1563544049.2840538, 
     "vehicle.imu": {"timestamp": 1563544049.2673872, 
     "angular_velocity": [-2.0466000023589004e-06, 3.1428675129063777e-07, -6.141597896913709e-09],
@@ -166,9 +136,6 @@ void getAllSensors (char *buf, WbDeviceTag gyro, WbDeviceTag accelerometer, WbDe
 
         char szTime[21];
         double time = wb_robot_get_time(); // current simulation time in [s]
-        //struct timespec ts = getMilliseconds();
-        //printf ("time %lld.%.9ld %d\n", (long long)ts.tv_sec, ts.tv_nsec,time);
-        //sprintf(szTime,"%lld.%.9ld", (long long)ts.tv_sec, ts.tv_nsec);
         sprintf(szTime,"%f", time);
         
         getGyro(gyro, gyro_buf);

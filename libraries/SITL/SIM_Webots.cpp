@@ -421,7 +421,7 @@ void Webots::output_quad(const struct sitl_input &input)
     for (uint8_t i=0; i<4; i++) {
         //return a filtered servo input as a value from 0 to 1
         //servo is assumed to be 1000 to 2000
-        motors[i] = constrain_float(((input.servos[i]-1000)/1000.0f) * max_thrust, 0, max_thrust); //WORKING
+        motors[i] = constrain_float(((input.servos[i]-1000)/1000.0f) * max_thrust, 0, max_thrust); 
     }
     const float &m_right = motors[0]; 
     const float &m_left  = motors[1]; 
@@ -525,34 +525,6 @@ void Webots::update(const struct sitl_input &input)
 
     dcm.from_euler(state.pose.roll, state.pose.pitch, -state.pose.yaw);
 
-    // GYRO OK 
-    gyro = Vector3f(state.imu.angular_velocity[0] ,
-                    state.imu.angular_velocity[1] ,
-                    -state.imu.angular_velocity[2] ); /// -gz is SURE
-    
-    // Webots IMU accel is NEU, convert to NED
-    // ACC OK 
-    accel_body = Vector3f(+state.imu.linear_acceleration[0]*1.0,
-                          +state.imu.linear_acceleration[1]*1.0,
-                          -state.imu.linear_acceleration[2]*1.0);
-
-    /*
-    g    a
-    x y x y 
-    + + + +  good but roll issue
-    + + + -  good but roll issue
-    + + - +
-    + + - -  good but roll issue
-    + - + +  bad ... roll issue   .... +gz    also bad with -gz
-    + - + - 
-    - + + -  bad ... roll & pitch issues
-    + - - -  bad ... roll & pitch issues
-    - - + +  bad ... roll & pitch issues
-    - + + +  bad ... roll issue   .... +gz    also bad with -gz
-    + - + +  bad ... roll issue   .... +gz
-    - - - -  bad ... roll & pitch issues
-    */
-
     gyro = Vector3f(state.imu.angular_velocity[0] ,
                     state.imu.angular_velocity[1] ,
                     -state.imu.angular_velocity[2] ); /// -gz is SURE
@@ -561,22 +533,12 @@ void Webots::update(const struct sitl_input &input)
                           +state.imu.linear_acceleration[1],
                           -state.imu.linear_acceleration[2]);
 
-
-
-
-
-
     velocity_ef = Vector3f(+state.velocity.world_linear_velocity[0],
                            +state.velocity.world_linear_velocity[1],
                            -state.velocity.world_linear_velocity[2]);
-    //printf("speed %f %f %f\n",velocity_ef.x, velocity_ef.y,velocity_ef.z);
+    
     position = Vector3f(state.gps.x, state.gps.y, -state.gps.z);
     
-
-    // Webots IMU accel is NEU, convert to NED
-    
-
-    //printf ("Gyro %f %f  Acc %f %f\n",gyro.x,gyro.y,accel_body.x,accel_body.y);
 
     // limit to 16G to match pixhawk1
     float a_limit = GRAVITY_MSS*16;
@@ -608,15 +570,12 @@ void Webots::update(const struct sitl_input &input)
 
     switch (output_type) {
     case OUTPUT_ROVER:
-        // HACK
         output_rover(input);
         break;
     case OUTPUT_QUAD:
-        // HACK
         output_quad(input);
         break;
     case OUTPUT_PWM:
-        // HACK
         output_pwm(input);
         break;
     }

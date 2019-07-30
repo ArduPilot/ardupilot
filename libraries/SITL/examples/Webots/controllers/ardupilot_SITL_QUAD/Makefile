@@ -66,7 +66,7 @@
 ### VERBOSE = 1
 ###
 ###-----------------------------------------------------------------------------
-C_SOURCES = ardupilot_SITL_QUAD.c sockets.c sensors.c util_time.c
+C_SOURCES = ardupilot_SITL_QUAD.c sockets.c sensors.c
 INCLUDE = -I"./"
 ### Do not modify: this includes Webots global Makefile.include
 space :=

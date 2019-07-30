@@ -31,10 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <time.h>
-#include <sys/time.h>
 #include <webots/supervisor.h>
-#include "util_time.h"
 #include "ardupilot_SITL_QUAD.h"
 #include "sockets.h"
 #include "sensors.h"
@@ -290,7 +287,10 @@ void run ()
         printf("%s\n",send_buf);
         #endif
         
-        write(fd,send_buf,strlen(send_buf));   
+        if (write(fd,send_buf,strlen(send_buf)) <= 0)
+        {
+          printf ("Send Data Error\n");
+        }
 
         if (fd) 
         {

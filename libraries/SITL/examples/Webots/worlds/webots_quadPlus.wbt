@@ -1,7 +1,7 @@
 #VRML_SIM R2019b utf8
 WorldInfo {
   gravity 0 -9.80665 0
-  basicTimeStep 5
+  basicTimeStep 2
   randomSeed 4
 }
 DogHouse {
@@ -18,7 +18,7 @@ DogHouse {
 }
 Viewpoint {
   orientation -0.7702134905905543 -0.6051081306816812 -0.20153245171742287 0.9786687416308627
-  position -230.10886738402496 393.4909449909295 298.504310894156
+  position -1.9269149318155745 3.6973950664162216 2.527479321389017
   follow "quad_x_sitl"
   followOrientation TRUE
 }
@@ -353,7 +353,7 @@ Robot {
     ]
   }
   rotationStep 0.261799
-  controller "my_controller_SITL"
+  controller "ardupilot_SITL_QUAD"
   supervisor TRUE
 }
 DirectionalLight {
