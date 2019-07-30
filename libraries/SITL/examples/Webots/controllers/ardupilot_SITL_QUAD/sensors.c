@@ -165,10 +165,11 @@ void getAllSensors (char *buf, WbDeviceTag gyro, WbDeviceTag accelerometer, WbDe
         static char linear_velocity_buf [150];
 
         char szTime[21];
-        struct timespec ts = getMilliseconds();
         double time = wb_robot_get_time(); // current simulation time in [s]
+        //struct timespec ts = getMilliseconds();
         //printf ("time %lld.%.9ld %d\n", (long long)ts.tv_sec, ts.tv_nsec,time);
-        sprintf(szTime,"%lld.%.9ld", (long long)ts.tv_sec, ts.tv_nsec);
+        //sprintf(szTime,"%lld.%.9ld", (long long)ts.tv_sec, ts.tv_nsec);
+        sprintf(szTime,"%f", time);
         
         getGyro(gyro, gyro_buf);
         getAcc(accelerometer, acc_buf);

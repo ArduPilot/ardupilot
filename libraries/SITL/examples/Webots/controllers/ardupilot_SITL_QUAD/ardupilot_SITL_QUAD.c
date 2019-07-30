@@ -1,6 +1,6 @@
 /*
- * File:          ardupilot_SITL_QUAD.c
- * Date:
+ * File: ardupilot_SITL_QUAD.c
+ * Date: 29 July 2019
  * Description: integration with ardupilot SITL simulation.
  * Author: M.S.Hefny (HefnySco)
  * Modifications:
@@ -59,13 +59,14 @@ static double v[MOTOR_NUM];
 static int timestep;
 
 
-
-
-
+#ifdef DEBUG_USE_KB
+/*
+// Code used tp simulae motors using keys to make sure that sensors directions and motor torques and thrusts are all correct.
+// You can start this controller and use telnet instead of SITL to start the simulator.
+Then you can use Keyboard to emulate motor input.
+*/
 void process_keyboard ()
 {
-
-  
   switch (wb_keyboard_get_key()) 
   {
     case 'Q':  // Q key -> up & left
@@ -137,19 +138,17 @@ void process_keyboard ()
     
   }
   
-  //printf ("Motors Internal %f %f %f %f\n", v[0],v[1],v[2],v[3]);
+  printf ("Motors Internal %f %f %f %f\n", v[0],v[1],v[2],v[3]);
+  
 }
-/****** END OF SOCKETS *******/
+#endif
+
 
 
 
 /*
- * You may want to add macros here.
- */
-
-
-///*
-
+// apply motor thrust.
+*/
 void update_controls()
 {
   /*
@@ -162,6 +161,7 @@ void update_controls()
       if Vehicle mass = 1 Kg. and we want omega = 1.0 to hover
       then (mass / 0.10197) / (4 motors) = t1
 
+    LINEAR_THRUST
       we also want throttle to be linear with thrust so we use sqrt to calculate omega from input.
    */
   static float factor = 1.0f;
@@ -180,8 +180,6 @@ void update_controls()
   v[3] = (state.motors.z ) * factor + offset;
 #endif
 
-
-
   for ( int i=0; i<4; ++i)
   {
     wb_motor_set_position(motors[i], INFINITY);
@@ -198,14 +196,15 @@ void update_controls()
 
 
 // data example: [my_controller_SITL] {"engines": [0.000, 0.000, 0.000, 0.000]}
+// the JSON parser is directly inspired by https://github.com/ArduPilot/ardupilot/blob/master/libraries/SITL/SIM_Morse.cpp
 bool parse_controls(const char *json)
 {
-
-    state.timestamp = 1.0;
+    //state.timestamp = 1.0;
+    #ifdef DEBUG_INPUT_DATA
+    printf("%s\n", json);
+    #endif
     
-    //printf("%s\n", json);
-    ///*
-     for (uint16_t i=0; i < ARRAY_SIZE(keytable); i++) {
+    for (uint16_t i=0; i < ARRAY_SIZE(keytable); i++) {
         struct keytable *key;
         key = &keytable[i];
         //printf("search   %s/%s\n", key->section, key->key);
@@ -230,48 +229,51 @@ bool parse_controls(const char *json)
         {
           case DATA_FLOAT:
               *((float *)key->ptr) = atof(p);
+              #ifdef DEBUG_INPUT_DATA
               printf("GOT  %s/%s\n", key->section, key->key);
+              #endif
               break;
 
           case DATA_DOUBLE:
               *((double *)key->ptr) = atof(p);
+              #ifdef DEBUG_INPUT_DATA
               printf("GOT  %s/%s\n", key->section, key->key);
+              #endif
               break;
 
           case DATA_VECTOR4F: {
               VECTOR4F *v = (VECTOR4F *)key->ptr;
               if (sscanf(p, "[%f, %f, %f, %f]", &(v->w), &(v->x), &(v->y), &(v->z)) != 4) {
                   printf("Failed to parse Vector3f for %s %s/%s\n",p,  key->section, key->key);
-                  //printf("Failed to parse Vector3f for  %s/%s\n", key.section, key.key);
                   return false;
               }
               else
               {
-                  //printf("GOT  %s/%s\n[%f, %f, %f, %f]\n ", key->section, key->key,v->w,v->x,v->y,v->z);
+                  #ifdef DEBUG_INPUT_DATA
+                  printf("GOT  %s/%s\n[%f, %f, %f, %f]\n ", key->section, key->key,v->w,v->x,v->y,v->z);
+                  #endif
               }
               
               break;
               }
         }
     }
-    
-    //socket_frame_counter++;
     return true;
-    
 }
 
-// */
-char send_buf[1000];
+
 void run ()
 {
 
+    char send_buf[1000]; //1000 just a safe margin
     char command_buffer[200];
     fd_set rfds;
     while (wb_robot_step(timestep) != -1) 
     {
-      
+        #ifdef DEBUG_USE_KB
         process_keyboard();
-        
+        #endif
+
         if (fd == 0) 
         {
           // if no socket wait till you get a socket
