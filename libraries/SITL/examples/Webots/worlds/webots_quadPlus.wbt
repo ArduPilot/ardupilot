@@ -5,7 +5,7 @@ WorldInfo {
   randomSeed 4
 }
 DogHouse {
-  translation 34.82 0.76 -10.83
+  translation 34.82 0.76 -24.56
   name "dog house(1)"
 }
 DogHouse {
@@ -17,8 +17,8 @@ DogHouse {
   name "dog house(5)"
 }
 Viewpoint {
-  orientation -0.7702134905905543 -0.6051081306816812 -0.20153245171742287 0.9786687416308627
-  position -1.9269149318155745 3.6973950664162216 2.527479321389017
+  orientation 1 0 0 4.71238898038469
+  position -0.03577547371249507 368.6220401568156 0.01438405216388429
   follow "quad_x_sitl"
   followOrientation TRUE
 }
@@ -30,7 +30,7 @@ Background {
   }
 }
 Solid {
-  translation 18.369999999999997 0.77 -11.51
+  translation 36.93 0.77 -37.93
   children [
     HouseWithGarage {
     }
@@ -85,7 +85,7 @@ Robot {
       rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.094395
       children [
         Solid {
-          translation 0 0.25 0
+          translation 0 0.35 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
@@ -151,7 +151,7 @@ Robot {
       rotation 0 0.7071067811865476 0.7071067811865476 -3.1415923071795864
       children [
         Solid {
-          translation 0 0.25 0
+          translation 0 0.35 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
@@ -215,7 +215,7 @@ Robot {
       rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094395307179586
       children [
         Solid {
-          translation 0 0.25 0
+          translation 0 0.35 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
@@ -280,7 +280,7 @@ Robot {
       rotation 1 0 0 -1.5707963071795863
       children [
         Solid {
-          translation 0 0.25 0
+          translation 0 0.35 0
           rotation 1 0 0 1.5707959999999999
           children [
             Propeller {
