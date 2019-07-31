@@ -253,6 +253,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/rover-skid.parm"],
             },
+            "airsim-rover": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/airsim-rover.parm"],
+            },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
             },
