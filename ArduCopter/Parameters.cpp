@@ -695,7 +695,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Used by THROW mode. Controls whether motors will run at the speed set by THR_MIN or will be stopped when armed and waiting for the throw.
     // @Values: 0:Stopped,1:Running
     // @User: Standard
-    GSCALAR(throw_motor_start, "THROW_MOT_START", (int8_t)Parameters::THROW_MOTOR_START::STOPPED),
+    GSCALAR(throw_motor_start, "THROW_MOT_START", (uint8_t)Parameters::THROW_MOTOR_START::STOPPED),
 #endif
 
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
