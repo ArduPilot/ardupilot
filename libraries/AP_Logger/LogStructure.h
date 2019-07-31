@@ -385,6 +385,7 @@ struct PACKED log_BARO {
     uint32_t sample_time_ms;
     float   drift_offset;
     float   ground_temp;
+    uint8_t healthy;
 };
 
 struct PACKED log_Optflow {
@@ -1174,10 +1175,10 @@ struct PACKED log_Arm_Disarm {
 #define ACC_MULTS "FF000"
 
 // see "struct sensor" in AP_Baro.h and "Write_Baro":
-#define BARO_LABELS "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp"
-#define BARO_FMT   "QffcfIff"
-#define BARO_UNITS "smPOnsmO"
-#define BARO_MULTS "F00B0C?0"
+#define BARO_LABELS "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,Health"
+#define BARO_FMT   "QffcfIffB"
+#define BARO_UNITS "smPOnsmO-"
+#define BARO_MULTS "F00B0C?0-"
 
 #define ESC_LABELS "TimeUS,RPM,Volt,Curr,Temp,CTot"
 #define ESC_FMT   "QeCCcH"
