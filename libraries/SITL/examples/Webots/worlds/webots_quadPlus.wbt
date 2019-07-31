@@ -2,7 +2,7 @@
 WorldInfo {
   gravity 0 -9.80665 0
   basicTimeStep 2
-  randomSeed 4
+  randomSeed 52
 }
 DogHouse {
   translation 34.82 0.76 -24.56
