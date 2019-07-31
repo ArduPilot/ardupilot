@@ -207,8 +207,7 @@ void AP_Baro::calibrate(bool save)
         do {
             update();
             if (AP_HAL::millis() - tstart > 500) {
-                AP_HAL::panic("PANIC: AP_Baro::read unsuccessful "
-                        "for more than 500ms in AP_Baro::calibrate [2]\r\n");
+                AP_BoardConfig::sensor_config_error("Baro: unable to calibrate");
             }
             hal.scheduler->delay(10);
         } while (!healthy());
@@ -225,8 +224,7 @@ void AP_Baro::calibrate(bool save)
         do {
             update();
             if (AP_HAL::millis() - tstart > 500) {
-                AP_HAL::panic("PANIC: AP_Baro::read unsuccessful "
-                        "for more than 500ms in AP_Baro::calibrate [3]\r\n");
+                AP_BoardConfig::sensor_config_error("Baro: unable to calibrate");
             }
         } while (!healthy());
         for (uint8_t i=0; i<_num_sensors; i++) {
@@ -260,7 +258,7 @@ void AP_Baro::calibrate(bool save)
     if (num_calibrated) {
         return;
     }
-    AP_HAL::panic("AP_Baro: all sensors uncalibrated");
+    AP_BoardConfig::sensor_config_error("AP_Baro: all sensors uncalibrated");
 }
 
 /*
