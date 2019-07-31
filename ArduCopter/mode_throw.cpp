@@ -108,7 +108,7 @@ void ModeThrow::run()
     case Throw_Disarmed:
 
         // prevent motors from rotating before the throw is detected unless enabled by the user
-        if (g.throw_motor_start == (int8_t)Parameters::THROW_MOTOR_START::RUNNING) {
+        if (g.throw_motor_start == (uint8_t)Parameters::THROW_MOTOR_START::RUNNING) {
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
