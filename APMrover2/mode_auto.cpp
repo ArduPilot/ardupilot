@@ -420,6 +420,26 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_guided_limits(cmd);
         break;
 
+    case MAV_CMD_DO_SET_SAILBOAT_THROTTLE_STATE:
+        switch(cmd.p1) {
+            case 0:
+                rover.g2.sailboat.throttle_state_t = rover.g2.sailboat.Sailboat_Throttle::NEVER;
+                gcs().send_text(MAV_SEVERITY_INFO, "Sailboat throttle disabled");
+                break;
+            case 1:
+                rover.g2.sailboat.throttle_state_t = rover.g2.sailboat.Sailboat_Throttle::ASSIST;
+                gcs().send_text(MAV_SEVERITY_INFO, "Sailboat throttle assist");
+                break;
+            case 2:
+                rover.g2.sailboat.throttle_state_t = rover.g2.sailboat.Sailboat_Throttle::FORCE_MOTOR;
+                gcs().send_text(MAV_SEVERITY_INFO, "Sailboat throttle force motor");
+                break;
+            default:
+                gcs().send_text(MAV_SEVERITY_INFO, "invalid sailboat throttle state");
+                break;
+        }
+        break; 
+
     default:
         // return false for unhandled commands
         return false;
@@ -510,6 +530,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_REVERSE:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_GUIDED_LIMITS:
+    case MAV_CMD_DO_SET_SAILBOAT_THROTTLE_STATE:
         return true;
 
     default:
