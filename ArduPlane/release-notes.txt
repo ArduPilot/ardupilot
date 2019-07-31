@@ -1,3 +1,11 @@
+Release 3.9.9beta4, 31st July 2019
+----------------------------------
+
+Minor update over beta3:
+
+ - fixed an issue with handling baro failure on CubeBlack
+ - forced INS_USE3=1 on CubeBlack when first two IMUs are enabled
+
 Release 3.9.9beta3, 28th July 2019
 ----------------------------------
 
