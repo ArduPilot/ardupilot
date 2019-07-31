@@ -681,6 +681,20 @@ AP_InertialSensor::detect_backends(void)
 
     _backends_detected = true;
 
+#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
+    // special case for CubeBlack, where the IMUs on the isolated
+    // board could fail on some boards. If the user has INS_USE=1,
+    // INS_USE2=1 and INS_USE3=0 then force INS_USE3 to 1. This is
+    // done as users loading past parameter files may end up with
+    // INS_USE3=0 unintentionally, which is unsafe on these
+    // boards. For users who really want limited IMUs they will need
+    // to either use the INS_ENABLE_MASK or set INS_USE2=0 which will
+    // enable the first IMU without triggering this check
+    if (_use[0] == 1 && _use[1] == 1 && _use[2] == 0) {
+        _use[2].set(1);
+    }
+#endif
+
     uint8_t probe_count = 0;
     uint8_t enable_mask = uint8_t(_enable_mask.get());
     uint8_t found_mask = 0;
