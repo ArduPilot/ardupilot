@@ -367,7 +367,7 @@ uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
 uint64_t AP_GPS::time_epoch_usec(uint8_t instance) const
 {
     const GPS_State &istate = state[instance];
-    if (istate.last_gps_time_ms == 0) {
+    if (istate.last_gps_time_ms == 0 || istate.time_week == 0) {
         return 0;
     }
     uint64_t fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
@@ -672,7 +672,9 @@ void AP_GPS::update_instance(uint8_t instance)
 
     if (state[instance].status >= GPS_OK_FIX_3D) {
         const uint64_t now = time_epoch_usec(instance);
-        AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
+        if (now != 0) {
+            AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
+        }
     }
 }
 
