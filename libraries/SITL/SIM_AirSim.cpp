@@ -34,7 +34,16 @@ AirSim::AirSim(const char *frame_str) :
 	Aircraft(frame_str),
 	sock(true)
 {
-	printf("Starting SITL Airsim\n");
+    if (strstr(frame_str, "-copter")) {
+        output_type = OutputType::Copter;
+    } else if (strstr(frame_str, "-rover")) {
+        output_type = OutputType::Rover;
+    } else {
+        // default to copter
+        output_type = OutputType::Copter;
+    }
+
+	printf("Starting SITL Airsim type %u\n", (unsigned)output_type);
 }
 
 /*
@@ -61,9 +70,9 @@ void AirSim::set_interface_ports(const char* address, const int port_in, const i
 /*
 	Decode and send servos
 */
-void AirSim::send_servos(const struct sitl_input &input)
+void AirSim::output_copter(const struct sitl_input &input)
 {
-	servo_packet pkt{0};
+    servo_packet pkt;
 
 	for (uint8_t i=0; i<kArduCopterRotorControlCount; i++) {
 		pkt.pwm[i] = input.servos[i];
@@ -78,6 +87,24 @@ void AirSim::send_servos(const struct sitl_input &input)
 			printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
 		}
 	}
+}
+
+void AirSim::output_rover(const struct sitl_input &input)
+{
+    rover_packet pkt;
+
+    pkt.steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
+    pkt.throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+
+    ssize_t send_ret = sock.sendto(&pkt, sizeof(pkt), airsim_ip, airsim_control_port);
+    if (send_ret != sizeof(pkt)) {
+        if (send_ret <= 0) {
+            printf("Unable to send control output to %s:%u - Error: %s, Return value: %ld\n",
+                     airsim_ip, airsim_control_port, strerror(errno), (long)send_ret);
+        } else {
+            printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
+        }
+    }
 }
 
 /*
@@ -320,7 +347,16 @@ void AirSim::recv_fdm()
 */
 void AirSim::update(const struct sitl_input &input)
 {
-	send_servos(input);
+    switch (output_type) {
+        case OutputType::Copter:
+            output_copter(input);
+            break;
+
+        case OutputType::Rover:
+            output_rover(input);
+            break;
+    }
+
     recv_fdm();
 
     // update magnetic field
