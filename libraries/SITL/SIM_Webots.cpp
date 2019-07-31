@@ -304,47 +304,26 @@ bool Webots::parse_sensors(const char *json)
  */
 bool Webots::connect_sockets(void)
 {
-    if (!sensors_sock) {
-        sensors_sock = new SocketAPM(false);
-        if (!sensors_sock) {
+    if (!sim_sock) {
+        sim_sock = new SocketAPM(false);
+        if (!sim_sock) {
             AP_HAL::panic("Out of memory for sensors socket");
         }
-        if (!sensors_sock->connect(morse_ip, morse_sensors_port)) {
+        if (!sim_sock->connect(morse_ip, morse_sensors_port)) {
             usleep(100000);
             if (connect_counter++ == 20) {
                 printf("Waiting to connect to sensors control on %s:%u\n",
                        morse_ip, morse_sensors_port);
                 connect_counter = 0;
             }
-            delete sensors_sock;
-            sensors_sock = nullptr;
+            delete sim_sock;
+            sim_sock = nullptr;
             return false;
         }
-        sensors_sock->reuseaddress();
+        sim_sock->reuseaddress();
         printf("Sensors connected\n");
     }
-    control_sock = sensors_sock;
-    return true; // hack
-    if (!control_sock) {
-        control_sock = new SocketAPM(false);
-        if (!control_sock) {
-            AP_HAL::panic("Out of memory for control socket");
-        }
-        if (!control_sock->connect(morse_ip, morse_control_port)) {
-            usleep(100000);
-            if (connect_counter++ == 20) {
-                printf("Waiting to connect to control control on %s:%u\n",
-                       morse_ip, morse_control_port);
-                connect_counter = 0;
-            }
-            delete control_sock;
-            control_sock = nullptr;
-            return false;
-        }
-        control_sock->reuseaddress();
-        printf("Control connected\n");
-    }
-    return true;
+    return true; 
 }
 
 /*
@@ -352,15 +331,13 @@ bool Webots::connect_sockets(void)
 */
 bool Webots::sensors_receive(void)
 {
-    ssize_t ret = sensors_sock->recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, 0);
+    ssize_t ret = sim_sock->recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, 0);
     if (ret <= 0) {
         no_data_counter++;
         if (no_data_counter == 1000) {
             no_data_counter = 0;
-            delete sensors_sock;
-            delete control_sock;
-            sensors_sock = nullptr;
-            control_sock = nullptr;
+            delete sim_sock;
+            sim_sock = nullptr;
         }
         return false;
     }
@@ -408,7 +385,7 @@ void Webots::output_rover(const struct sitl_input &input)
              speed_ms, -steering_rps);
     buf[sizeof(buf)-1] = 0;
 
-    control_sock->send(buf, strlen(buf));
+    sim_sock->send(buf, strlen(buf));
 }
 
 /*
@@ -440,7 +417,7 @@ void Webots::output_quad(const struct sitl_input &input)
              m_front, m_right, m_back, m_left);
     buf[sizeof(buf)-1] = 0;
 
-    control_sock->send(buf, strlen(buf));
+    sim_sock->send(buf, strlen(buf));
 }
 
 /*
@@ -456,7 +433,7 @@ void Webots::output_pwm(const struct sitl_input &input)
              input.servos[8], input.servos[9], input.servos[10], input.servos[11],
              input.servos[12], input.servos[13], input.servos[14], input.servos[15]);
     buf[sizeof(buf)-1] = 0;
-    control_sock->send(buf, strlen(buf));
+    sim_sock->send(buf, strlen(buf));
 }
 
 
@@ -483,7 +460,7 @@ void Webots::update(const struct sitl_input &input)
     }
 
     double dt_s = state.timestamp - last_state.timestamp;
-    //printf ("timediff: %f\n",dt_s);
+    
     if (dt_s < 0 || dt_s > 1) {
         // cope with restarting while connected
         initial_time_s = time_now_us * 1.0e-6f;
@@ -521,13 +498,11 @@ void Webots::update(const struct sitl_input &input)
     }
 
     // convert from state variables to ardupilot conventions
-
-
     dcm.from_euler(state.pose.roll, state.pose.pitch, -state.pose.yaw);
 
     gyro = Vector3f(state.imu.angular_velocity[0] ,
                     state.imu.angular_velocity[1] ,
-                    -state.imu.angular_velocity[2] ); /// -gz is SURE
+                    -state.imu.angular_velocity[2] ); 
     
     accel_body = Vector3f(+state.imu.linear_acceleration[0],
                           +state.imu.linear_acceleration[1],
@@ -593,10 +568,11 @@ void Webots::report_FPS(void)
 {
     if (frame_counter++ % 1000 == 0) {
         if (!is_zero(last_frame_count_s)) {
-            //uint64_t frames = socket_frame_counter - last_socket_frame_counter;
-            //last_socket_frame_counter = socket_frame_counter;
-            //double dt = state.timestamp - last_frame_count_s;
-            //printf("%.2f/%.2f FPS avg=%.2f\n",frames / dt, 1000 / dt, 1.0/average_frame_time_s);
+            uint64_t frames = socket_frame_counter - last_socket_frame_counter;
+            last_socket_frame_counter = socket_frame_counter;
+            double dt = state.timestamp - last_frame_count_s;
+            printf("%.2f/%.2f FPS avg=%.2f\n",
+                    frames / dt, 1000 / dt, 1.0/average_frame_time_s);
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }
