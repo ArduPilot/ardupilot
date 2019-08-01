@@ -112,8 +112,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     _num_types = num_types;
     _structures = structures;
 
-#if defined(HAL_BOARD_LOG_DIRECTORY)
- #if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
+#if defined(HAL_BOARD_LOG_DIRECTORY) && HAVE_FILESYSTEM_SUPPORT
     if (_params.backend_types & uint8_t(Backend_Type::FILESYSTEM)) {
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
@@ -128,8 +127,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
             _next_backend++;
         }
     }
- #endif
-#endif // HAL_BOARD_LOG_DIRECTORY
+#endif // HAVE_FILESYSTEM_SUPPORT
 
 #if LOGGER_MAVLINK_SUPPORT
     if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
