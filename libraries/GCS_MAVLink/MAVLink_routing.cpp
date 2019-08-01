@@ -100,6 +100,11 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     // learn new routes
     learn_route(in_channel, msg);
 
+    if (msg->msgid == MAVLINK_MSG_ID_LANDING_TARGET) {
+        // don't forward LANDING_TARGET packets, just process locally
+        return true;
+    }
+
     if (msg.msgid == MAVLINK_MSG_ID_RADIO ||
         msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
         // don't forward RADIO packets
