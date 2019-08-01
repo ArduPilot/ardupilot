@@ -383,8 +383,8 @@ bool AP_Proximity_LightWareSF40C::process_reply()
         case RequestType_Health:
             // expect result in the form "0xhhhh"
             if (element_len[0] > 0) {
-                int result;
-                if (sscanf(element_buf[0], "%x", &result) > 0) {
+                long int result = strtol(element_buf[0], nullptr, 16);
+                if (result > 0) {
                     _sensor_status.value = result;
                     success = true;
                 }
