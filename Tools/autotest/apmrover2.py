@@ -1281,7 +1281,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     target_component,
                     0, # seq
                     mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                    mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
                     0, # current
                     0, # autocontinue
                     0, # p1
@@ -1297,7 +1297,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     target_component,
                     1, # seq
                     mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                    mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
                     0, # current
                     0, # autocontinue
                     0, # p1
@@ -1313,7 +1313,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     target_component,
                     2, # seq
                     mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                    mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
                     0, # current
                     0, # autocontinue
                     0, # p1
@@ -1478,6 +1478,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                     timeout=1)
             if m is None:
                 raise NotAchievedException("Did not get mission request")
+            if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_RALLY:
+                raise NotAchievedException("Mission request of incorrect type")
             if m.seq != 1:
                 raise NotAchievedException("Unexpected sequence number (expected=%u got=%u)" % (1, m.seq))
             items[1].pack(self.mav.mav)
@@ -1617,7 +1619,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 target_component,
                 0, # seq
                 mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
                 0, # current
                 0, # autocontinue
                 0, # p1
@@ -1637,7 +1639,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 target_component,
                 2, # seq
                 mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
                 0, # current
                 0, # autocontinue
                 0, # p1
@@ -1658,7 +1660,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 target_component,
                 1, # seq
                 mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
                 0, # current
                 0, # autocontinue
                 0, # p1
