@@ -1,12 +1,12 @@
 # hw definition file for processing by chibios_pins.py
 # for Holybro KakuteF7 hardware.
-@ thanks to betaflight for pin information
+# thanks to betaflight for pin information
 
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
 
 # board ID for firmware load
-APJ_BOARD_ID 123
+APJ_BOARD_ID 145
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
