@@ -18,14 +18,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_ROMFS/AP_ROMFS.h>
 
-#if HAL_OS_POSIX_IO
-#include <dirent.h>
-#endif
-
-#if HAL_OS_FATFS_IO
-#include <stdio.h>
-#endif
-
 #include "lua_generated_bindings.h"
 
 #ifndef SCRIPTING_DIRECTORY
@@ -121,14 +113,14 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
         return;
     }
 
-    DIR *d = opendir(dirname);
+    DIR *d = AP::FS().opendir(dirname);
     if (d == nullptr) {
         gcs().send_text(MAV_SEVERITY_INFO, "Lua: Could not find a scripts directory");
         return;
     }
 
     // load anything that ends in .lua
-    for (struct dirent *de=readdir(d); de; de=readdir(d)) {
+    for (struct dirent *de=AP::FS().readdir(d); de; de=AP::FS().readdir(d)) {
         uint8_t length = strlen(de->d_name);
         if (length < 5) {
             // not long enough
@@ -157,7 +149,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
         reschedule_script(script);
 
     }
-    closedir(d);
+    AP::FS().closedir(d);
 }
 
 void lua_scripts::run_next_script(lua_State *L) {
