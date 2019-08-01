@@ -1139,12 +1139,27 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         print("spgti: %s" % str(sptgi))
 
     def assert_mission_count_on_link(self, mav, expected_count, target_system, target_component, mission_type):
+        if not mav.mavlink20():
+            raise NotAchievedException("Not doing mavlink2")
+        tstart = self.get_sim_time()
         mav.mav.mission_request_list_send(target_system,
                                           target_component,
                                           mission_type)
-        m = mav.recv_match(type="MISSION_COUNT", blocking=True, timeout=1)
-        if m is None:
-            raise NotAchievedException("Did not receive MISSION_COUNT on link")
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Did not receive MISSION_COUNT on link")
+            m = mav.recv_match(blocking=True, timeout=1)
+            if m is None:
+                self.progress("No messages")
+                continue
+            self.progress("Received (%s)" % str(m))
+            if m.get_type() == "MISSION_ACK":
+                if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
+                    raise NotAchievedException("Expected MISSION_COUNT, got (%s)" % m)
+            if m.get_type() == "MISSION_COUNT":
+                break
+        if m.mission_type != mission_type:
+            raise NotAchievedException("Did not get expected mission type (want=%u got=%u)" % (mission_type, m.mission_type))
         if m.count != expected_count:
             raise NotAchievedException("Bad count received (want=%u got=%u)" %
                                        (expected_count, m.count))
@@ -1159,9 +1174,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                            timeout=1)
         if m is None:
             raise NotAchievedException("Did not receive mission item int")
+        if m.mission_type != mission_type:
+            raise NotAchievedException("Mission item of incorrect type")
         if m.target_system != mav.mav.srcSystem:
             raise NotAchievedException("Unexpected target system %u want=%u" %
                                        (m.target_system, mav.mav.srcSystem))
+        if m.seq != item:
+            raise NotAchievedException("Incorrect sequence number on received item got=%u want=%u" %
+            (m.seq, item))
+        if m.mission_type != mission_type:
+            raise NotAchievedException("Mission type incorrect on received item (want=%u got=%u)" %
+                                       (mission_type, m.mission_type))
         if m.target_component != mav.mav.srcComponent:
             raise NotAchievedException("Unexpected target component %u want=%u" %
                                        (m.target_component, mav.mav.srcComponent))
@@ -1180,6 +1203,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if m.target_system != mav.mav.srcSystem:
             raise NotAchievedException("Unexpected target system %u want=%u" %
                                        (m.target_system, mav.mav.srcSystem))
+        if m.seq != item:
+            raise NotAchievedException("Incorrect sequence number on received item_int got=%u want=%u" %
+            (m.seq, item))
+        if m.mission_type != mission_type:
+            raise NotAchievedException("Mission type incorrect on received item_int (want=%u got=%u)" %
+                                       (mission_type, m.mission_type))
         if m.target_component != mav.mav.srcComponent:
             raise NotAchievedException("Unexpected target component %u want=%u" %
                                        (m.target_component, mav.mav.srcComponent))
@@ -1222,20 +1251,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def assert_receive_mission_ack(self, mission_type,
                                    want_type=mavutil.mavlink.MAV_MISSION_ACCEPTED,
                                    target_system=None,
-                                   target_component=None):
+                                   target_component=None,
+                                   mav=None):
+        if mav is None:
+            mav = self.mav
         if target_system is None:
-            target_system = self.mav.mav.srcSystem
+            target_system = mav.mav.srcSystem
         if target_component is None:
-            target_component = self.mav.mav.srcComponent
+            target_component = mav.mav.srcComponent
         self.progress("Expecting mission ack")
-        m = self.mav.recv_match(type='MISSION_ACK',
-                                blocking=True,
-                                timeout=1)
+        m = mav.recv_match(type='MISSION_ACK',
+                           blocking=True,
+                           timeout=1)
+        self.progress("Received ACK (%s)" % str(m))
         if m is None:
             raise NotAchievedException("Expected mission ACK")
         if m.target_system != target_system:
             raise NotAchievedException("ACK not targetted at correct system want=%u got=%u" %
-                                       (self.mav.mav.srcSystem, m.target_system))
+                                       (mav.mav.srcSystem, m.target_system))
         if m.target_component != target_component:
             raise NotAchievedException("ACK not targetted at correct component")
         if m.mission_type != mission_type:
@@ -1401,12 +1434,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.start_subtest("Check rally upload/download across separate links")
             self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                                items)
+            self.progress("ensure a mavlink1 connection can't do anything useful with new item types")
             mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
                                               robust_parsing=True,
                                               source_system = 7,
                                               source_component=7)
+            mav2.mav.mission_request_list_send(target_system,
+                                               target_component,
+                                               mission_type=mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            # so this looks a bit odd; the other end isn't sending
+            # mavlink2 so can't fill in the extension here.
+            self.assert_receive_mission_ack(
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+                want_type=mavutil.mavlink.MAV_MISSION_UNSUPPORTED,
+                mav=mav2,
+            )
+            self.set_parameter("SERIAL2_PROTOCOL", 2)
             expected_count = 3
-            self.progress("Assert mision count on new link")
+            self.progress("Assert mission count on new link")
             self.assert_mission_count_on_link(mav2, expected_count, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.progress("Assert mission count on original link")
             self.assert_mission_count_on_link(self.mav, expected_count, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
@@ -1417,6 +1462,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if m2.x != m.x:
                 raise NotAchievedException("mission items do not match (%d vs %d)" % (m2.x, m.x))
             m_nonint = self.get_mission_item_on_link(2, self.mav, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            # ensure we get nacks for bad mission item requests:
+            self.mav.mav.mission_request_send(target_system,
+                                              target_component,
+                                              65,
+                                              mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            self.assert_receive_mission_ack(
+                mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+                want_type=mavutil.mavlink.MAV_MISSION_INVALID_SEQUENCE,
+            )
+            self.mav.mav.mission_request_int_send(target_system,
+                                                  target_component,
+                                                  65,
+                                                  mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            self.assert_receive_mission_ack(
+                mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+                want_type=mavutil.mavlink.MAV_MISSION_INVALID_SEQUENCE,
+            )
+
             self.start_subtest("Should enforce items come from correct GCS")
             self.mav.mav.mission_count_send(target_system,
                                             target_component,
