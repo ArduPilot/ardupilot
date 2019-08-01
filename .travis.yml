@@ -81,5 +81,5 @@ matrix:
       dist: xenial  # required for Python >= 3.7 (travis-ci/travis-ci#9069)
       before_install: pip install flake8
       script:
-        - EXCLUDE=./.*,./modules/gtest,./modules/ChibiOS/test,./modules/uavcan/libuavcan
+        - EXCLUDE=./.*,./modules/gtest,./modules/ChibiOS/test,./modules/uavcan/libuavcan,./modules/libcanard
         - flake8 . --count --exclude=$EXCLUDE --select=E901,E999,F821,F822,F823 --show-source --statistics
