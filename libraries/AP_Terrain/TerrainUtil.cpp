@@ -25,15 +25,7 @@
 
 #if AP_TERRAIN_AVAILABLE
 
-#include <assert.h>
-#include <stdio.h>
-#if HAL_OS_POSIX_IO
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#endif
-#include <sys/types.h>
-#include <errno.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
 
