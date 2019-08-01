@@ -233,8 +233,8 @@ static void main_loop()
                                    pd.fault_thd_prio,
                                    pd.fault_icsr);
     }
-#endif
-#endif
+#endif // HAL_NO_LOGGING
+#endif // IOMCU_FW
 
     schedulerInstance.watchdog_pat();
 
