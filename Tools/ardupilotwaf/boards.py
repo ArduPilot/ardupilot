@@ -124,6 +124,7 @@ class Board:
             '-Werror=parentheses',
             '-Werror=format-extra-args',
             '-Werror=delete-non-virtual-dtor',
+            '-Werror=ignored-qualifiers',
         ]
 
         if cfg.options.scripting_checks:
