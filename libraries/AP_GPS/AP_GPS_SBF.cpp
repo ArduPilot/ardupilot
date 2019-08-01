@@ -371,8 +371,8 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
         _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not fully configured (%d/%d)", state.instance + 1,
-                        _init_blob_index, ARRAY_SIZE(_initialisation_blob));
+        gcs().send_text(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u)", state.instance + 1,
+                        _init_blob_index, (unsigned)ARRAY_SIZE(_initialisation_blob));
     }
 }
 
