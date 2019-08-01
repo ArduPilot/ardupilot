@@ -3674,7 +3674,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int
         return MAV_RESULT_FAILED;
     }
     Location::AltFrame frame;
-    if (!mavlink_coordinate_frame_to_location_alt_frame(packet.frame, frame)) {
+    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
         // unknown coordinate frame
         return MAV_RESULT_UNSUPPORTED;
     }
@@ -4520,7 +4520,7 @@ void GCS::passthru_timer(void)
     }
 }
 
-bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const uint8_t coordinate_frame, Location::AltFrame &frame)
+bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME coordinate_frame, Location::AltFrame &frame)
 {
     switch (coordinate_frame) {
     case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
