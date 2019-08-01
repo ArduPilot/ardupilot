@@ -112,13 +112,7 @@ void MissionItemProtocol::handle_mission_request_int(const GCS_MAVLINK &_link,
         return;
     }
 
-    // we already have a filled structure, use it in place of _send:
-    _mav_finalize_message_chan_send(_link.get_chan(),
-                                    MAVLINK_MSG_ID_MISSION_ITEM_INT,
-                                    (const char *)&ret_packet,
-                                    MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
-                                    MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN,
-                                    MAVLINK_MSG_ID_MISSION_ITEM_INT_CRC);
+    _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char*)&ret_packet);
 }
 
 void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
@@ -150,13 +144,7 @@ void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
         return;
     }
 
-    // we already have a filled structure, use it in place of _send:
-    _mav_finalize_message_chan_send(_link.get_chan(),
-                                    MAVLINK_MSG_ID_MISSION_ITEM,
-                                    (const char *)&ret_packet,
-                                    MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
-                                    MAVLINK_MSG_ID_MISSION_ITEM_LEN,
-                                    MAVLINK_MSG_ID_MISSION_ITEM_CRC);
+    _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM, (const char*)&ret_packet);
 }
 
 void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
