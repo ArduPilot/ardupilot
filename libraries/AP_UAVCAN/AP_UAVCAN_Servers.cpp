@@ -33,29 +33,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Logger/AP_Logger.h>
-
-#if HAL_OS_POSIX_IO
-#include <unistd.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <stdio.h>
-#include <time.h>
-#include <dirent.h>
-#if defined(__APPLE__) && defined(__MACH__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#else
-#include <sys/statfs.h>
-#endif
-#endif
-
-#if HAL_OS_FATFS_IO
-#include <stdio.h>
-#endif
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #ifndef UAVCAN_NODE_DB_PATH
 #define UAVCAN_NODE_DB_PATH HAL_BOARD_STORAGE_DIRECTORY "/UAVCAN"
@@ -117,8 +95,6 @@ class AP_UAVCAN_FileStorageBackend : public uavcan::dynamic_node_id_server::ISto
      */
     enum { MaxPathLength = 128 };
 
-    enum { FilePermissions = 438 };     ///< 0o666
-
     enum { MaxNumOpens = 100 };
     /**
      * This type is used for the path
@@ -141,7 +117,7 @@ protected:
             return value;
         }
         num_opens++;
-        int fd = open(path.c_str(), O_RDONLY);
+        int fd = AP::FS().open(path.c_str(), O_RDONLY);
         if (fd >= 0)
         {
             char buffer[MaxStringLength + 1];
@@ -151,7 +127,7 @@ protected:
             ssize_t nread = 0;
             do
             {
-                nread = ::read(fd, &buffer[total_read], remaining);
+                nread = AP::FS().read(fd, &buffer[total_read], remaining);
                 if (nread > 0)
                 {
                     remaining -= nread,
@@ -159,7 +135,7 @@ protected:
                 }
             }
             while (nread > 0 && remaining > 0);
-            (void)close(fd);
+            AP::FS().close(fd);
             if (total_read > 0)
             {
                 for (int i = 0; i < total_read; i++)
@@ -187,11 +163,7 @@ protected:
             return;
         }
         num_opens++;
-#if HAL_OS_POSIX_IO
-        int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, FilePermissions);
-#else
-        int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC);
-#endif
+        int fd = AP::FS().open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC);
         if (fd >= 0)
         {
             ssize_t remaining = value.size();
@@ -199,7 +171,7 @@ protected:
             ssize_t written = 0;
             do
             {
-                written = write(fd, &value.c_str()[total_written], remaining);
+                written = AP::FS().write(fd, &value.c_str()[total_written], remaining);
                 if (written > 0)
                 {
                     total_written += written;
@@ -208,8 +180,8 @@ protected:
             }
             while (written > 0 && remaining > 0);
 
-            (void)fsync(fd);
-            (void)close(fd);
+            AP::FS().fsync(fd);
+            AP::FS().close(fd);
         }
     }
 
@@ -238,10 +210,9 @@ public:
 
             rv = 0;
             struct stat sb;
-            if (stat(base_path.c_str(), &sb) != 0 || !S_ISDIR(sb.st_mode))
+            if (AP::FS().stat(base_path.c_str(), &sb) != 0 || !S_ISDIR(sb.st_mode))
             {
-                // coverity[toctou]
-                rv = mkdir(base_path.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+                rv = AP::FS().mkdir(base_path.c_str());
             }
             if (rv >= 0)
             {
@@ -328,16 +299,16 @@ void AP_UAVCAN_Servers::reset()
     debug_uavcan("UAVCAN_Servers: Resetting Server Database...\n");
     DIR* dp;
     struct dirent* ep;
-    dp = opendir(UAVCAN_NODE_DB_PATH);
+    dp = AP::FS().opendir(UAVCAN_NODE_DB_PATH);
     char abs_filename[100];
     if (dp != NULL)
     {
-        while((ep = readdir(dp))) {
+        while((ep = AP::FS().readdir(dp))) {
             snprintf(abs_filename, 100, "%s/%s", UAVCAN_NODE_DB_PATH, ep->d_name);
-            unlink(abs_filename);
+            AP::FS().unlink(abs_filename);
         }
     }
-    closedir(dp);
+    AP::FS().closedir(dp);
 }
 
 #endif

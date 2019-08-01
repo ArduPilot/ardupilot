@@ -1,7 +1,8 @@
 #pragma once
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
-#if (HAL_OS_POSIX_IO || HAL_OS_FATFS_IO)
+#if HAVE_FILESYSTEM_SUPPORT
 
 #define HAS_UAVCAN_SERVERS
 
