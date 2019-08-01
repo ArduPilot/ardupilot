@@ -683,7 +683,7 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
                 break;
             }
             Location::AltFrame frame;
-            if (!mavlink_coordinate_frame_to_location_alt_frame(packet.coordinate_frame, frame)) {
+            if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.coordinate_frame, frame)) {
                 // unknown coordinate frame
                 break;
             }
