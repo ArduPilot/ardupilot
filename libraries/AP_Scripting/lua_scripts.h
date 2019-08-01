@@ -18,6 +18,7 @@
 #include <AP_Param/AP_Param.h>
 #include <setjmp.h>
 
+#include <AP_Filesystem/posix_compat.h>
 #include "lua_bindings.h"
 
 class lua_scripts
