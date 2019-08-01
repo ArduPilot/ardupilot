@@ -561,7 +561,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "VRCore-v10",
                 "VRBrain-v54",
                 "TBS-Colibri-F7",
-                "Pixhawk6",
+                "Durandal",
                 "CubeOrange",
                 "CubeYellow",
                 # SITL targets

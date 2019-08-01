@@ -16,7 +16,7 @@ RELEASE_TYPES = ["beta", "latest", "stable", "stable-*", "dirty"]
 # mapping for board names to brand name and manufacturer
 brand_map = {
     'Pixhawk4' : ('Pixhawk 4', 'Holybro'),
-    'Pixhawk6' : ('Pixhawk 6', 'Holybro'),
+    'Durandal' : ('Durandal', 'Holybro'),
     'PH4-mini' : ('Pixhawk 4 Mini', 'Holybro'),
     'KakuteF4' : ('KakuteF4', 'Holybro'),
     'KakuteF7' : ('KakuteF7', 'Holybro'),
@@ -178,7 +178,7 @@ class ManifestGenerator():
             'CubeYellow': ['0x2DAE/0x1002'],
             'Pixhawk4': ['0x3162/0x0047'],
             'PH4-mini': ['0x3162/0x0049'],
-            'Pixhawk6': ['0x3162/0x004B'],
+            'Durandal': ['0x3162/0x004B'],
             'VRBrain-v51': ['0x27AC/0x1151'],
             'VRBrain-v52': ['0x27AC/0x1152'],
             'VRBrain-v54': ['0x27AC/0x1154'],
