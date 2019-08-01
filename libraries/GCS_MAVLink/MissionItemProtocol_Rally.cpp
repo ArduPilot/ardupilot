@@ -83,7 +83,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Rally::get_item(const GCS_MAVLINK &_link,
         return MAV_MISSION_INVALID_SEQUENCE;
     }
 
-    ret_packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT_INT;
+    ret_packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
     ret_packet.command = MAV_CMD_NAV_RALLY_POINT;
     ret_packet.x = rallypoint.lat;
     ret_packet.y = rallypoint.lng;
