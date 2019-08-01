@@ -110,8 +110,8 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "stm32h7" ]; then
-        echo "Building Pixhawk6"
-        $waf configure --board Pixhawk6
+        echo "Building Durandal"
+        $waf configure --board Durandal
         $waf clean
         $waf copter
         continue
