@@ -93,6 +93,18 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "periph-build" ]; then
+        echo "Building f103 bootloader"
+        $waf configure --board f103-periph --bootloader
+        $waf clean
+        $waf bootloader
+        echo "Building f103 peripheral fw"
+        $waf configure --board f103-periph
+        $waf clean
+        $waf AP_Periph
+        continue
+    fi
+    
     if [ "$t" == "CubeOrange-bootloader" ]; then
         echo "Building CubeOrange bootloader"
         $waf configure --board CubeOrange --bootloader
