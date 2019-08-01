@@ -12,7 +12,7 @@ bool AP_Arming_Sub::rc_calibration_checks(bool display_failure)
     return rc_checks_copter_sub(display_failure, channels);
 }
 
-const bool AP_Arming_Sub::has_disarm_function () {
+bool AP_Arming_Sub::has_disarm_function() const {
     bool has_shift_function = false;
     // make sure the craft has a disarm button assigned before it is armed
     // check all the standard btn functions
