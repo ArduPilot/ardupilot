@@ -26,11 +26,7 @@
 
 #include <stdio.h>
 
-#if HAL_OS_POSIX_IO
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#endif
+#include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -119,13 +115,13 @@ bool AP_ToneAlarm::init()
     _cont_tone_playing = -1;
     hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_ToneAlarm::_timer_task, void));
 
-#if (HAL_OS_POSIX_IO || HAL_OS_FATFS_IO) && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+#if HAVE_FILESYSTEM_SUPPORT && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
     // if we don't have a SDcard then play a failure tone instead of
     // normal startup tone. This gives the user a chance to fix it
     // before they try to arm. We don't do this on Linux as Linux
     // flight controllers don't usually have removable storage
     struct stat st;
-    if (stat(HAL_BOARD_STORAGE_DIRECTORY, &st) != 0) {
+    if (AP::FS().stat(HAL_BOARD_STORAGE_DIRECTORY, &st) != 0) {
         play_tone(AP_NOTIFY_TONE_NO_SDCARD);
         return true;
     }
