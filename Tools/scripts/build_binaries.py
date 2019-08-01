@@ -528,6 +528,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "pxfmini",
                 "KakuteF4",
                 "KakuteF7",
+                "KakuteF7-mini",
                 "MatekF405",
                 "MatekF405-STD",
                 "MatekF405-Wing",
@@ -651,7 +652,7 @@ is bob we will attempt to checkout bob-AVR'''
     def validate(self):
         '''run pre-run validation checks'''
         if "dirty" in self.tags:
-            if len(self.tags) > 1:
+            if len(self.tags) > '1:
                 raise ValueError("dirty must be only tag if present (%s)" %
                                  (str(self.tags)))
             self.dirty = True
