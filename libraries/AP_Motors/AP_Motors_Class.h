@@ -59,6 +59,8 @@ public:
         MOTOR_FRAME_TYPE_DJI_X = 13, // X frame, DJI ordering
         MOTOR_FRAME_TYPE_CW_X = 14, // X frame, clockwise ordering
         MOTOR_FRAME_TYPE_I = 15, // (sideways H) octo only
+        MOTOR_FRAME_TYPE_NYT_PLUS = 16, // plus frame, no differential torque for yaw
+        MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
     };
 
     // Constructor
