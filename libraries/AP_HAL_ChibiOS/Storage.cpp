@@ -19,7 +19,7 @@
 
 #include "Storage.h"
 #include "hwdef/common/flash.h"
-#include "hwdef/common/posix.h"
+#include <AP_Filesystem/AP_Filesystem.h>
 #include "sdcard.h"
 
 using namespace ChibiOS;
@@ -76,23 +76,23 @@ void Storage::_storage_open(void)
     // allow for fallback to microSD based storage
     sdcard_retry();
     
-    log_fd = open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
+    log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
     if (log_fd == -1) {
         hal.console->printf("open failed of " HAL_STORAGE_FILE "\n");
         return;
     }
-    int ret = read(log_fd, _buffer, CH_STORAGE_SIZE);
+    int ret = AP::FS().read(log_fd, _buffer, CH_STORAGE_SIZE);
     if (ret < 0) {
         hal.console->printf("read failed for " HAL_STORAGE_FILE "\n");
-        close(log_fd);
+        AP::FS().close(log_fd);
         log_fd = -1;
         return;
     }
     // pre-fill to full size
-    if (lseek(log_fd, ret, SEEK_SET) != ret ||
-        write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret) {
+    if (AP::FS().lseek(log_fd, ret, SEEK_SET) != ret ||
+        AP::FS().write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret) {
         hal.console->printf("setup failed for " HAL_STORAGE_FILE "\n");
-        close(log_fd);
+        AP::FS().close(log_fd);
         log_fd = -1;
         return;        
     }
@@ -113,10 +113,10 @@ void Storage::_save_backup(void)
 #ifdef USE_POSIX
     // allow for fallback to microSD based storage
     sdcard_retry();
-    int fd = open(HAL_STORAGE_BACKUP_FILE, O_WRONLY|O_CREAT|O_TRUNC);
+    int fd = AP::FS().open(HAL_STORAGE_BACKUP_FILE, O_WRONLY|O_CREAT|O_TRUNC);
     if (fd != -1) {
-        write(fd, _buffer, CH_STORAGE_SIZE);
-        close(fd);
+        AP::FS().write(fd, _buffer, CH_STORAGE_SIZE);
+        AP::FS().close(fd);
     }
 #endif
 }
@@ -194,13 +194,13 @@ void Storage::_timer_tick(void)
 #ifdef USE_POSIX
     if (using_filesystem && log_fd != -1) {
         uint32_t offset = CH_STORAGE_LINE_SIZE*i;
-        if (lseek(log_fd, offset, SEEK_SET) != offset) {
+        if (AP::FS().lseek(log_fd, offset, SEEK_SET) != offset) {
             return;
         }
-        if (write(log_fd, &_buffer[offset], CH_STORAGE_LINE_SIZE) != CH_STORAGE_LINE_SIZE) {
+        if (AP::FS().write(log_fd, &_buffer[offset], CH_STORAGE_LINE_SIZE) != CH_STORAGE_LINE_SIZE) {
             return;
         }
-        if (fsync(log_fd) != 0) {
+        if (AP::FS().fsync(log_fd) != 0) {
             return;
         }
         _dirty_mask.clear(i);
