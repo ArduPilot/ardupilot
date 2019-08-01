@@ -253,7 +253,7 @@ protected:
 
     virtual bool in_hil_mode() const { return false; }
 
-    bool mavlink_coordinate_frame_to_location_alt_frame(uint8_t coordinate_frame,
+    bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
                                                         Location::AltFrame &frame);
 
     // overridable method to check for packet acceptance. Allows for
