@@ -50,6 +50,9 @@ bool MissionItemProtocol_Rally::clear_all_items()
 
 MAV_MISSION_RESULT MissionItemProtocol_Rally::convert_MISSION_ITEM_INT_to_RallyLocation(const mavlink_mission_item_int_t &cmd, RallyLocation &ret)
 {
+    if (cmd.command != MAV_CMD_NAV_RALLY_POINT) {
+        return MAV_MISSION_UNSUPPORTED;
+    }
     if (cmd.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
         cmd.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT) {
         return MAV_MISSION_UNSUPPORTED_FRAME;
