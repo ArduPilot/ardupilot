@@ -396,7 +396,6 @@ protected:
     virtual void send_global_position_int();
 
     // message sending functions:
-    bool try_send_compass_message(enum ap_message id);
     bool try_send_mission_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(const mavlink_message_t &msg);
