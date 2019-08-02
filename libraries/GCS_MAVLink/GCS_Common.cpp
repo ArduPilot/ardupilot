@@ -1533,6 +1533,16 @@ void GCS_MAVLINK::send_rc_channels() const
         receiver_rssi);        
 }
 
+bool GCS_MAVLINK::sending_mavlink1() const
+{
+    const mavlink_status_t *status = mavlink_get_channel_status(chan);
+    if (status == nullptr) {
+        // should not happen
+        return true;
+    }
+    return ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0);
+}
+
 void GCS_MAVLINK::send_rc_channels_raw() const
 {
     mavlink_status_t *status = mavlink_get_channel_status(chan);
