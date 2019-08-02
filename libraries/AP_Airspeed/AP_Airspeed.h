@@ -172,6 +172,8 @@ private:
     struct airspeed_state {
         float   raw_airspeed;
         float   airspeed;
+        float   error_pos;
+        float   error_neg;
         float	last_pressure;
         float   filtered_pressure;
         float	corrected_pressure;
@@ -232,8 +234,13 @@ private:
     }
     float get_offset(void) const { return get_offset(primary); }
 
-    void check_sensor_failures();
+    void check_all_sensor_failures();
+    void check_sensor_failures(uint8_t i);
     void check_sensor_ahrs_wind_max_failures(uint8_t i);
+    void check_sensor_values_consistent(uint8_t i);
+    void update_error_estimate(uint8_t i);
+    void decay_health(uint8_t i);
+    void grow_health(uint8_t i);
 
     AP_Airspeed_Backend *sensor[AIRSPEED_MAX_SENSORS];
 

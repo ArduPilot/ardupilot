@@ -6,49 +6,43 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 
-void AP_Airspeed::check_sensor_failures()
+void AP_Airspeed::check_all_sensor_failures()
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        check_sensor_ahrs_wind_max_failures(i);
+        update_error_estimate(i);
     }
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        check_sensor_failures(i);
+    }
+
+}
+void AP_Airspeed::update_error_estimate(uint8_t i)
+{
+    if(state[i].airspeed<10.0f){
+        state[i].error_pos = 5.0f;
+        state[i].error_neg = 5.0f;
+    }
+    else{
+        state[i].error_pos = 2.0f;
+        state[i].error_neg = 2.0f;
+    }
+
 }
 
-void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
+void AP_Airspeed::check_sensor_failures(uint8_t i)
 {
-    const uint32_t now_ms = AP_HAL::millis();
+const uint32_t now_ms = AP_HAL::millis();
     if ((now_ms - state[i].failures.last_check_ms) <= 200) {
         // slow the checking rate
         return;
     }
 
-    const float aspeed = get_airspeed();
-    const float wind_max = AP::ahrs().get_max_wind();
-
-    if (aspeed <= 0 || wind_max <= 0) {
-        // invalid estimates
-        return;
-    }
 
     state[i].failures.last_check_ms = now_ms;
 
-    // update state[i].failures.health_probability via LowPassFilter
-    float speed_accuracy;
-    const AP_GPS &gps = AP::gps();
-    if (gps.speed_accuracy(speed_accuracy)) {
-        const float gnd_speed = gps.ground_speed();
 
-        if (aspeed > (gnd_speed + wind_max) || aspeed < (gnd_speed - wind_max)) {
-            // bad, decay fast
-            const float probability_coeff = 0.90f;
-            //state[i].failures.health_probability = probability_coeff*state[i].failures.health_probability + (1.0f-probability_coeff)*0.0f;
-            state[i].failures.health_probability = probability_coeff*state[i].failures.health_probability; // equivalent
-
-        } else if (aspeed < (gnd_speed + wind_max) && aspeed > (gnd_speed - wind_max)) {
-            // good, grow slow
-            const float probability_coeff = 0.98f;
-            state[i].failures.health_probability = probability_coeff*state[i].failures.health_probability + (1.0f-probability_coeff)*1.0f;
-        }
-    }
+    check_sensor_ahrs_wind_max_failures(i);
+    check_sensor_values_consistent(i);
 
 
     // Now check if we need to disable or enable the sensor
@@ -86,5 +80,80 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         param[i].use.set_and_notify(state[i].failures.param_use_backup); // resume
         state[i].failures.param_use_backup = -1; // set to invalid so we don't use it
         state[i].failures.has_warned = false;
+    }
+}
+
+void AP_Airspeed::check_sensor_values_consistent(uint8_t i)
+{
+
+     int8_t good_bad_count=0;
+
+    if(state[i].failures.param_use_backup <= 0 && param[i].use <=0)
+    {
+        return;
+    }
+
+    for (uint8_t j=0; j<AIRSPEED_MAX_SENSORS; j++) {
+        if(j != i){
+        //check if error bars overlap
+            if(state[j].failures.param_use_backup > 0 ||param[j].use >0)
+            {
+                if(state[i].airspeed +state[i].error_pos <= state[j].airspeed -state[j].error_neg || state[j].airspeed +state[j].error_pos <= state[i].airspeed -state[i].error_neg)
+                {
+                    good_bad_count--;
+                }
+                else
+                {
+                    good_bad_count++;
+                }
+            }
+        
+        }
+    }
+    if(good_bad_count<0){
+         decay_health(i);
+    }
+    else{
+        grow_health(i);
+    }
+    
+}
+
+
+void AP_Airspeed::decay_health(uint8_t i)
+{
+    // bad, decay fast
+    const float probability_coeff = 0.90f;
+    state[i].failures.health_probability = probability_coeff*state[i].failures.health_probability; 
+}
+
+void AP_Airspeed::grow_health(uint8_t i)
+{
+    // good, grow slow
+    const float probability_coeff = 0.98f;
+    state[i].failures.health_probability = probability_coeff*state[i].failures.health_probability + (1.0f-probability_coeff)*1.0f;
+    
+}
+
+void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
+{
+
+     const float wind_max = AP::ahrs().get_max_wind();
+    if (state[i].airspeed <= 0 || wind_max <= 0) {
+        // invalid estimates
+        return;
+    }
+    // update state[i].failures.health_probability via LowPassFilter
+    float speed_accuracy;
+    const AP_GPS &gps = AP::gps();
+    if (gps.speed_accuracy(speed_accuracy)) {
+        const float gnd_speed = gps.ground_speed();
+
+        if (state[i].airspeed > (gnd_speed + wind_max) || state[i].airspeed < (gnd_speed - wind_max)) {
+            decay_health(i);
+
+        } else if (state[i].airspeed < (gnd_speed + wind_max) && state[i].airspeed > (gnd_speed - wind_max)) {
+            grow_health(i);
+        }
     }
 }
