@@ -17,9 +17,9 @@ DogHouse {
   name "dog house(5)"
 }
 Viewpoint {
-  orientation 1 0 0 4.71238898038469
-  position -0.03577547371249507 368.6220401568156 0.01438405216388429
-  follow "quad_plus_sitl"
+  orientation 0.8271274640436935 0.5437841938242927 0.1419820720073933 5.671643293801365
+  position -7.234434459826133 13.00762277807382 18.43704042041417
+  follow "quad_x_sitl"
   followOrientation TRUE
 }
 Background {
@@ -46,8 +46,8 @@ Solid {
   name "solid(1)"
 }
 Robot {
-  translation -0.027600999999999997 0.674307 0.005031
-  rotation -0.012461000916064287 0.999885073506054 -0.008635000634797779 -0.22761130717958622
+  translation -0.027601 0.674307 0.005031
+  rotation 0 1 0 0.785388
   children [
     Shape {
       appearance Appearance {
@@ -60,24 +60,29 @@ Robot {
     }
     Camera {
       translation 0 0.12 0
-      rotation 0.12942795977353752 0.9831056944488316 0.12942795977353752 -1.5878343071795866
+      rotation 0 -1 0 2.356195
       name "camera1"
       width 128
       height 128
     }
     Compass {
+      rotation 0 1 0 -0.7853983071795865
       name "compass1"
     }
     GPS {
+      rotation 0 1 0 -0.785398
       name "gps1"
     }
     Accelerometer {
+      rotation 0 1 0 -0.785398
       name "accelerometer1"
     }
     Gyro {
+      rotation 0 1 0 -0.785398
       name "gyro1"
     }
     InertialUnit {
+      rotation 0 -1 0 0.7853979999999999
       name "inertial_unit"
     }
     Transform {
@@ -204,6 +209,7 @@ Robot {
         Shape {
           appearance Appearance {
             material Material {
+              diffuseColor 1 0.09999999999999999 0
             }
           }
           geometry USE DEF_ARM
@@ -341,7 +347,7 @@ Robot {
       ]
     }
   ]
-  name "quad_plus_sitl"
+  name "quad_x_sitl"
   boundingObject Box {
     size 0.1 0.1 0.1
   }
@@ -354,6 +360,7 @@ Robot {
   }
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
+  controllerArgs "-p 5591"
   supervisor TRUE
 }
 DirectionalLight {
