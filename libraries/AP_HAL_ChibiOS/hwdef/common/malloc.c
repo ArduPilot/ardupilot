@@ -278,6 +278,6 @@ void memory_flush_all(void)
 {
     uint8_t i;
     for (i=0; i<NUM_MEMORY_REGIONS; i++) {
-        cacheBufferFlush(memory_regions[i].address, memory_regions[i].size);
+        stm32_cacheBufferFlush(memory_regions[i].address, memory_regions[i].size);
     }
 }
