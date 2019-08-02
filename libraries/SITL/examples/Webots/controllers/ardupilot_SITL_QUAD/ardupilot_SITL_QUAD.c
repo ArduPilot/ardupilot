@@ -354,12 +354,10 @@ void initialize (int argc, char *argv[])
   port = 5599;  // default port
   for (int i = 0; i < argc; ++i)
     {
-        printf("argv[%d]: %s\n", i, argv[i]);
         if (strcmp (argv[i],"-p")==0)
         {
           if (argc > i+1 )
           {
-            printf ("found port %s",argv[i]);
             port = atoi (argv[i+1]);
           }
         }
