@@ -50,7 +50,7 @@ static WbDeviceTag camera;
 static WbDeviceTag inertialUnit;
 
 static double v[MOTOR_NUM];
-
+int port;
 
 
 static int timestep;
@@ -350,11 +350,21 @@ void initialize (int argc, char *argv[])
 {
   
   fd_set rfds;
-  int port;
-  if (argc > 1)
-    sscanf(argv[1], "%d", &port);
-  else
-    port = 5599;  // default port on the e-puck2 robot
+  
+  port = 5599;  // default port
+  for (int i = 0; i < argc; ++i)
+    {
+        printf("argv[%d]: %s\n", i, argv[i]);
+        if (strcmp (argv[i],"-p")==0)
+        {
+          if (argc > i+1 )
+          {
+            printf ("found port %s",argv[i]);
+            port = atoi (argv[i+1]);
+          }
+        }
+    }
+    
     
   sfd = create_socket_server(port);
   
@@ -415,6 +425,9 @@ void initialize (int argc, char *argv[])
  */
 int main(int argc, char **argv)
 {
+
+  
+
   initialize( argc, argv);
   
   /*

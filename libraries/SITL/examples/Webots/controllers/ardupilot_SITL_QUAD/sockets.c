@@ -107,6 +107,6 @@ int create_socket_server(int port) {
     return -1;
   }
   
-  printf ("socket initialized.\n");
+  printf ("socket initialized at port %d.\n", port);
   return sfd;
 }
