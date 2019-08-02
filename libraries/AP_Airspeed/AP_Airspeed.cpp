@@ -244,6 +244,8 @@ void AP_Airspeed::init()
 
         // Set the enable automatically to false and set the probability that the airspeed is healhy to start with
         state[i].failures.health_probability = 1.0f;
+        state[i].error_neg =1.0f;
+        state[i].error_neg =1.0f;
 
         switch ((enum airspeed_type)param[i].type.get()) {
         case TYPE_NONE:
@@ -464,7 +466,7 @@ void AP_Airspeed::update(bool log)
         }
     }
 
-    check_sensor_failures();
+    check_all_sensor_failures();
 
     if (log) {
         Log_Airspeed();
