@@ -2,6 +2,8 @@
 WorldInfo {
   gravity 0 -9.80665 0
   basicTimeStep 2
+  FPS 25
+  optimalThreadCount 4
   randomSeed 52
 }
 DogHouse {
@@ -360,7 +362,7 @@ Robot {
   }
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
-  controllerArgs "-p 5591"
+  controllerArgs "-p 5599"
   supervisor TRUE
 }
 DirectionalLight {

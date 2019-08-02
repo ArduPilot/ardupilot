@@ -94,14 +94,14 @@ Webots::Webots(const char *home_str, const char *frame_str) :
       format morse:IPADDRESS:SENSORS_PORT:CONTROL_PORT
      */
     if (args1) {
-        morse_ip = args1;
+        webots_ip = args1;
     }
     if (args2) {
-        morse_sensors_port = atoi(args2);
-        morse_control_port = morse_sensors_port+1;
+        webots_sensors_port = atoi(args2);
+        webots_control_port = webots_sensors_port;
     }
     if (args3) {
-        morse_control_port = atoi(args3);
+        webots_control_port = atoi(args3);
     }
 
     if (strstr(frame_option, "-rover")) {
@@ -126,7 +126,7 @@ Webots::Webots(const char *home_str, const char *frame_str) :
         }
     }
     printf("Started Webots with %s:%u:%u type %u\n",
-           morse_ip, morse_sensors_port, morse_control_port,
+           webots_ip, webots_sensors_port, webots_control_port,
            (unsigned)output_type);
 }
 
@@ -309,11 +309,11 @@ bool Webots::connect_sockets(void)
         if (!sim_sock) {
             AP_HAL::panic("Out of memory for sensors socket");
         }
-        if (!sim_sock->connect(morse_ip, morse_sensors_port)) {
+        if (!sim_sock->connect(webots_ip, webots_sensors_port)) {
             usleep(100000);
             if (connect_counter++ == 20) {
                 printf("Waiting to connect to sensors control on %s:%u\n",
-                       morse_ip, morse_sensors_port);
+                       webots_ip, webots_sensors_port);
                 connect_counter = 0;
             }
             delete sim_sock;
