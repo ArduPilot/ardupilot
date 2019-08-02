@@ -39,13 +39,13 @@ public:
     }
 
 private:
-    const char *morse_ip = "127.0.0.1";
+    const char *webots_ip = "127.0.0.1";
 
     // assume sensors are streamed on port 5599
-    uint16_t morse_sensors_port = 5599; 
+    uint16_t webots_sensors_port = 5599; 
 
     // assume we control vehicle on port 60001
-    uint16_t morse_control_port = 5599; //60001; //5599;
+    uint16_t webots_control_port = 5599; //60001; //5599;
 
     enum {
         OUTPUT_ROVER=1,

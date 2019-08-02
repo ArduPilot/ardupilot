@@ -2,6 +2,8 @@
 WorldInfo {
   gravity 0 -9.80665 0
   basicTimeStep 2
+  FPS 25
+  optimalThreadCount 4
   randomSeed 52
 }
 DogHouse {
@@ -17,8 +19,8 @@ DogHouse {
   name "dog house(5)"
 }
 Viewpoint {
-  orientation 1 0 0 4.71238898038469
-  position -0.03577547371249507 368.6220401568156 0.01438405216388429
+  orientation 0.9206416250609748 0.36103346961097993 0.14857264898272837 5.442484201093071
+  position -1.9234783002250637 6.507213279340571 5.620669046678885
   follow "quad_plus_sitl"
   followOrientation TRUE
 }
@@ -354,6 +356,7 @@ Robot {
   }
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
+  controllerArgs "-p 5599"
   supervisor TRUE
 }
 DirectionalLight {
