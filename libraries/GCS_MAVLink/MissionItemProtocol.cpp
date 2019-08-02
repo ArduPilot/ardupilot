@@ -31,11 +31,29 @@ void MissionItemProtocol::handle_mission_clear_all(const GCS_MAVLINK &_link,
     send_mission_ack(_link, msg, success ? MAV_MISSION_ACCEPTED : MAV_MISSION_ERROR);
 }
 
+bool MissionItemProtocol::mavlink2_requirement_met(const GCS_MAVLINK &_link, const mavlink_message_t &msg) const
+{
+    // need mavlink2 to do mission types other than mission:
+    if (mission_type() == MAV_MISSION_TYPE_MISSION) {
+        return true;
+    }
+    if (!_link.sending_mavlink1()) {
+        return true;
+    }
+    gcs().send_text(MAV_SEVERITY_WARNING, "Need mavlink2 for item transfer");
+    send_mission_ack(_link, msg, MAV_MISSION_UNSUPPORTED);
+    return false;
+}
+
 void MissionItemProtocol::handle_mission_count(
     GCS_MAVLINK &_link,
     const mavlink_mission_count_t &packet,
     const mavlink_message_t &msg)
 {
+    if (!mavlink2_requirement_met(_link, msg)) {
+        return;
+    }
+
     if (receiving) {
         // someone is already uploading a mission.  If we are
         // receiving from someone then we will allow them to restart -
@@ -70,6 +88,10 @@ void MissionItemProtocol::handle_mission_request_list(
     const mavlink_mission_request_list_t &packet,
     const mavlink_message_t &msg)
 {
+    if (!mavlink2_requirement_met(_link, msg)) {
+        return;
+    }
+
     if (receiving) {
         // someone is uploading a mission; reject fetching of points
         // until done or timeout
@@ -90,6 +112,10 @@ void MissionItemProtocol::handle_mission_request_int(const GCS_MAVLINK &_link,
                                                      const mavlink_mission_request_int_t &packet,
                                                      const mavlink_message_t &msg)
 {
+    if (!mavlink2_requirement_met(_link, msg)) {
+        return;
+    }
+
     if (receiving) {
         // someone is uploading a mission; reject fetching of points
         // until done or timeout
@@ -120,6 +146,10 @@ void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
                                                  const mavlink_message_t &msg
 )
 {
+    if (!mavlink2_requirement_met(_link, msg)) {
+        return;
+    }
+
     // convert into a MISSION_REQUEST_INT and reuse its handling code
     mavlink_mission_request_int_t request_int;
     request_int.target_system = packet.target_system;

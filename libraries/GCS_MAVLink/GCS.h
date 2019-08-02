@@ -56,6 +56,8 @@ public:
     void        queued_param_send();
     void        queued_mission_request_send();
 
+    bool sending_mavlink1() const;
+
     // returns true if we are requesting any items from the GCS:
     bool requesting_mission_items() const;
 

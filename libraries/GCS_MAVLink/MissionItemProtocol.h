@@ -108,4 +108,6 @@ private:
 
     virtual void complete(const GCS_MAVLINK &_link) {};
     virtual void timeout() {};
+
+    bool mavlink2_requirement_met(const GCS_MAVLINK &_link, const mavlink_message_t &msg) const;
 };
