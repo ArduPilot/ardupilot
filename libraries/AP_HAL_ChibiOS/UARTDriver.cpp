@@ -426,7 +426,7 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     if (!uart_drv->sdef.dma_rx) {
         return;
     }
-    cacheBufferInvalidate(uart_drv->rx_bounce_buf, RX_BOUNCE_BUFSIZE);
+    stm32_cacheBufferInvalidate(uart_drv->rx_bounce_buf, RX_BOUNCE_BUFSIZE);
     uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->rxdma);
     if (len > 0) {
         if (uart_drv->half_duplex) {
@@ -436,7 +436,7 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
             }
         }
 
-        cacheBufferInvalidate(uart_drv->rx_bounce_buf, len);
+        stm32_cacheBufferInvalidate(uart_drv->rx_bounce_buf, len);
         uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
 
         uart_drv->receive_timestamp_update();
@@ -765,7 +765,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
 
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
-    cacheBufferFlush(tx_bounce_buf, tx_len);
+    stm32_cacheBufferFlush(tx_bounce_buf, tx_len);
     dmaStreamSetMemory0(txdma, tx_bounce_buf);
     dmaStreamSetTransactionSize(txdma, tx_len);
     uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
@@ -917,7 +917,7 @@ void UARTDriver::_timer_tick(void)
         if (!(rxdma->stream->CR & STM32_DMA_CR_EN)) {
             uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(rxdma);
             if (len != 0) {
-                cacheBufferInvalidate(rx_bounce_buf, len);
+                stm32_cacheBufferInvalidate(rx_bounce_buf, len);
                 _readbuf.write(rx_bounce_buf, len);
 
                 receive_timestamp_update();
