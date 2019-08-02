@@ -97,7 +97,7 @@ void SoftSigReader::_irq_handler(void* self, uint32_t flags)
     // we need to restart the DMA as quickly as possible to prevent losing pulses, so we
     // make a fixed length copy to a 2nd buffer. On the F100 this reduces the time with DMA
     // disabled from 20us to under 1us
-    cacheBufferInvalidate(sig_reader->signal, SOFTSIG_BOUNCE_BUF_SIZE*4);
+    stm32_cacheBufferInvalidate(sig_reader->signal, SOFTSIG_BOUNCE_BUF_SIZE*4);
     memcpy(sig_reader->signal2, sig_reader->signal, SOFTSIG_BOUNCE_BUF_SIZE*4);
     //restart the DMA transfers
     dmaStreamDisable(sig_reader->dma);

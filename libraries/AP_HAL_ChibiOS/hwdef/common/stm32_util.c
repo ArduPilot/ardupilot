@@ -341,3 +341,13 @@ iomode_t palReadLineMode(ioline_t line)
     return ret;
 }
 #endif
+
+void stm32_cacheBufferInvalidate(const void *p, size_t size)
+{
+    cacheBufferInvalidate(p, size);
+}
+
+void stm32_cacheBufferFlush(const void *p, size_t size)
+{
+    cacheBufferFlush(p, size);
+}

@@ -379,7 +379,7 @@ bool stm32_flash_erasepage(uint32_t page)
 
     stm32_flash_wait_idle();
 
-    cacheBufferInvalidate(stm32_flash_getpageaddr(page), stm32_flash_getpagesize(page));
+    stm32_cacheBufferInvalidate(stm32_flash_getpageaddr(page), stm32_flash_getpagesize(page));
 
     stm32_flash_lock();
 #if STM32_FLASH_DISABLE_ISR
