@@ -18,13 +18,14 @@ void AP_Airspeed::check_all_sensor_failures()
 }
 void AP_Airspeed::update_error_estimate(uint8_t i)
 {
+    //very crude function for how error bars scale with speed
     if(state[i].airspeed<10.0f){
-        state[i].error_pos = 5.0f;
-        state[i].error_neg = 5.0f;
+        state[i].error_pos =2.5f;
+        state[i].error_neg =2.5f;
     }
     else{
-        state[i].error_pos = 2.0f;
-        state[i].error_neg = 2.0f;
+        state[i].error_pos = 1.0f;
+        state[i].error_neg = 1.0f;
     }
 
 }
@@ -32,7 +33,7 @@ void AP_Airspeed::update_error_estimate(uint8_t i)
 void AP_Airspeed::check_sensor_failures(uint8_t i)
 {
 const uint32_t now_ms = AP_HAL::millis();
-    if ((now_ms - state[i].failures.last_check_ms) <= 200) {
+    if ((now_ms - state[i].failures.last_check_ms) <= 100) {
         // slow the checking rate
         return;
     }
@@ -85,19 +86,21 @@ const uint32_t now_ms = AP_HAL::millis();
 
 void AP_Airspeed::check_sensor_values_consistent(uint8_t i)
 {
-
+    //counter for number of other sensors that this sensor is consistent with, within the sensor error
      int8_t good_bad_count=0;
 
+    // if this sensor is enabled
     if(state[i].failures.param_use_backup <= 0 && param[i].use <=0)
     {
         return;
     }
-
+    // check against all the other sensors
     for (uint8_t j=0; j<AIRSPEED_MAX_SENSORS; j++) {
         if(j != i){
-        //check if error bars overlap
+            //if the other sensor is enabled
             if(state[j].failures.param_use_backup > 0 ||param[j].use >0)
             {
+                //check if error bars overlap
                 if(state[i].airspeed +state[i].error_pos <= state[j].airspeed -state[j].error_neg || state[j].airspeed +state[j].error_pos <= state[i].airspeed -state[i].error_neg)
                 {
                     good_bad_count--;
