@@ -3,9 +3,6 @@
 #include <webots/supervisor.h>
 #include "sensors.h"
 
-#define M_PI  3.14159265358979323846
-#define M_PI2 6.28318530718
-
 
 /*
 https://discuss.ardupilot.org/t/copter-x-y-z-which-is-which/6823/2
