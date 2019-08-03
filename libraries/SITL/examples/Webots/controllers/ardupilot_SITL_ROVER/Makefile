@@ -70,6 +70,7 @@
 ### Do not modify: this includes Webots global Makefile.include
 C_SOURCES = ardupilot_SITL_ROVER.c sockets.c sensors.c
 INCLUDE = -I"./"
+LIBRARIES = -ldriver -lcar
 space :=
 space +=
 WEBOTS_HOME_PATH=$(subst $(space),\ ,$(strip $(subst \,/,$(WEBOTS_HOME))))

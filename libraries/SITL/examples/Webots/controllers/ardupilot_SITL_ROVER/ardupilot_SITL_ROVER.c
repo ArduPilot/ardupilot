@@ -11,14 +11,17 @@
  * <webots/motor.h>, etc.
  */
 #include <webots/robot.h>
-#include <webots/vehicle/driver.h>
 #include <webots/supervisor.h>
+
+#include <webots/vehicle/car.h>
+
+#include <webots/vehicle/driver.h>
 #include "ardupilot_SITL_ROVER.h"
 #include "sockets.h"
 #include "sensors.h"
 
 
-#define WHEELS 4
+#define MOTOR_NUM 2
 
 static WbDeviceTag gyro;
 static WbDeviceTag accelerometer;
@@ -26,18 +29,75 @@ static WbDeviceTag compass;
 static WbDeviceTag gps;
 static WbDeviceTag camera;
 static WbDeviceTag inertialUnit;
-static WbDeviceTag wheels[4];
+static WbDeviceTag car;
 
+static WbDeviceTag motor[MOTOR_NUM];
+
+static double v[MOTOR_NUM];
 int port;
 
 static int timestep;
+
+
+
+#ifdef DEBUG_USE_KB
+/*
+// Code used tp simulae motors using keys to make sure that sensors directions and motor torques and thrusts are all correct.
+// You can start this controller and use telnet instead of SITL to start the simulator.
+Then you can use Keyboard to emulate motor input.
+*/
+void process_keyboard ()
+{
+  switch (wb_keyboard_get_key()) 
+  {
+    case 'Q':  // Q key -> up & left
+      v[0] = 0.0;
+      v[1] = 0.0;
+      break;
+
+    case 'W':
+      v[1] += 0.01;
+      break;
+
+    case 'S':
+      v[1] -= 0.01;
+      break;
+  
+    case 'A':
+      v[0] = v[0] + 0.01;
+      break;
+
+    case 'D':
+      v[0] = v[0] - 0.01;
+      break;
+
+    
+  }
+
+  wbu_driver_set_cruising_speed (v[1]);
+  wbu_driver_set_steering_angle (v[0]);
+  
+  printf ("Motors Internal %f %f\n", v[0],v[1]);
+  
+}
+#endif
+
+
+
 
 /*
 // apply motor thrust.
 */
 void update_controls()
 {
+  float cruise_speed = state.rover.y;// * 3.6f;
+  float steer_angle =  state.rover.x;// * 0.6f;
+  wbu_driver_set_cruising_speed (cruise_speed + v[1]);
+  wbu_driver_set_steering_angle (steer_angle + v[0]);
   
+  #ifdef DEBUG_MOTORS
+  printf("cruise speed: %f steering angle: %f\n", cruise_speed, steer_angle);
+  #endif
 }
 
 
@@ -95,7 +155,7 @@ bool parse_controls(const char *json)
               else
               {
                   #ifdef DEBUG_INPUT_DATA
-                  printf("GOT  %s/%s\n[%f, %f]\n ", key->section, key->key,v->x,v->y);
+                  printf("GOT  %s/%s [%f, %f]\n ", key->section, key->key,v->x,v->y);
                   #endif
               }
               break;
@@ -197,7 +257,6 @@ void run ()
                   command_buffer[n] = 0;
                   parse_controls (command_buffer);
                   update_controls();
-                  
                 }
           }
           
@@ -212,7 +271,6 @@ void initialize (int argc, char *argv[])
 {
   
   fd_set rfds;
-  
   port = 5599;  // default port
   for (int i = 0; i < argc; ++i)
     {
@@ -233,6 +291,7 @@ void initialize (int argc, char *argv[])
 
   /* necessary to initialize webots stuff */
   wb_robot_init();
+  wbu_driver_init (); 
   
   // keybaard
   timestep = (int)wb_robot_get_basic_time_step();
@@ -262,20 +321,10 @@ void initialize (int argc, char *argv[])
 
   // camera
   camera = wb_robot_get_device("camera1");
-   wb_camera_enable(camera, timestep);
+  wb_camera_enable(camera, timestep);
 
 
-  /*
-  const char *MOTOR_NAMES[] = {"motor1", "motor2", "motor3", "motor4"};
-  
-  // get motor device tags
-  int i;
-  for (i = 0; i < MOTOR_NUM; i++) {
-    motors[i] = wb_robot_get_device(MOTOR_NAMES[i]);
-    v[i] = 0.0f;
-    //assert(motors[i]);
-  }
-  */
+  car = wb_robot_get_device ("rover");
 
   FD_ZERO(&rfds);
   FD_SET(sfd, &rfds);
@@ -309,6 +358,7 @@ int main(int argc, char **argv) {
 
   /* Enter your cleanup code here */
 
+  wbu_driver_cleanup();
   /* This is necessary to cleanup webots resources */
   wb_robot_cleanup();
 

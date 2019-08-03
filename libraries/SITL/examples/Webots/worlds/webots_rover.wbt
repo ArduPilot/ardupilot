@@ -47,18 +47,9 @@ Solid {
   name "solid(1)"
 }
 Car {
-  hidden position_0_0 2.0317303708297229e-10
-  hidden position2_0_0 -9.61115259093078e-07
-  hidden position_0_1 2.0219704309843518e-10
-  hidden position2_0_1 -9.569133073435762e-07
-  hidden position_0_2 -3.818560693474052e-05
-  hidden position_0_3 -3.806111609887626e-05
-  hidden rotation_1 0.00013443071031397024 -0.9999999909641921 -1.0334904436322076e-10 2.026119605515511e-06
-  hidden rotation_2 -0.00013169673318254267 0.9999999913279852 -1.031038315619893e-10 2.036395109398037e-06
-  hidden rotation_3 0 -1 0 0.0012360156708108975
-  hidden rotation_4 0 0.9999999999999999 0 0.001379676260058863
   translation -0.0010326953082284774 1.0033229120626295 2.2409311299249333
   rotation 0.00024190667924360975 0.9999990672138167 0.0013442665863175399 1.5707409280078055
+  name "rover"
   controller "ardupilot_SITL_ROVER"
   supervisor TRUE
   extensionSlot [
@@ -67,18 +58,23 @@ Car {
       name "camera1"
     }
     InertialUnit {
+      rotation 0 -1 0 1.5707959999999999
       name "inertial_unit"
     }
     Compass {
+      rotation 0 -1 0 1.5707959999999999
       name "compass1"
     }
     Gyro {
+      rotation 0 -1 0 1.5707959999999999
       name "gyro1"
     }
     Accelerometer {
+      rotation 0 -1 0 1.5707959999999999
       name "accelerometer1"
     }
     GPS {
+      rotation 0 -1 0 1.5707959999999999
       name "gps1"
     }
     VehicleLights {
@@ -86,6 +82,18 @@ Car {
   ]
   physics Physics {
     mass 3.5
+  }
+  wheelFrontRight VehicleWheel {
+    name "wheel1"
+  }
+  wheelFrontLeft VehicleWheel {
+    name "wheel2"
+  }
+  wheelRearRight VehicleWheel {
+    name "wheel3"
+  }
+  wheelRearLeft VehicleWheel {
+    name "wheel4"
   }
   engineType "electric"
 }

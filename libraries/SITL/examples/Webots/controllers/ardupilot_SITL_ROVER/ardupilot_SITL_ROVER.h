@@ -1,3 +1,5 @@
+#define DEBUG_USE_KB 
+#define DEBUG_MOTORS
 #define DEBUG_INPUT_DATA
 #define LINEAR_THRUST  
 
@@ -26,7 +28,7 @@ typedef struct vector2f VECTOR2F;
 
 struct {
         double timestamp;
-        VECTOR4F motors;
+        VECTOR2F rover;
         } state, last_state;
 
 
@@ -40,7 +42,7 @@ struct keytableROV {
 
 } keytableROV[1] = {
         //{ "", "timestamp", &state.timestamp, DATA_DOUBLE },
-        { "", "engines",    &state.motors, DATA_VECTOR2F }
+        { "", "rover",    &state.rover, DATA_VECTOR2F }
 };
 
 
