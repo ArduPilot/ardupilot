@@ -408,13 +408,6 @@ void Mode::navigate_to_waypoint()
 // calculate steering output given a turn rate and speed
 void Mode::calc_steering_from_turn_rate(float turn_rate, float speed, bool reversed)
 {
-    // add obstacle avoidance response to lateral acceleration target
-    // ToDo: replace this type of object avoidance with path planning
-    if (!reversed) {
-        const float lat_accel_adj = (rover.obstacle.turn_angle / 45.0f) * g.turn_max_g;
-        turn_rate += attitude_control.get_turn_rate_from_lat_accel(lat_accel_adj, speed);
-    }
-
     // calculate and send final steering command to motor library
     const float steering_out = attitude_control.get_steering_out_rate(turn_rate,
                                                                       g2.motors.limit.steer_left,
@@ -428,12 +421,6 @@ void Mode::calc_steering_from_turn_rate(float turn_rate, float speed, bool rever
 */
 void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reversed)
 {
-    // add obstacle avoidance response to lateral acceleration target
-    // ToDo: replace this type of object avoidance with path planning
-    if (!reversed) {
-        lat_accel += (rover.obstacle.turn_angle / 45.0f) * g.turn_max_g;
-    }
-
     // constrain to max G force
     lat_accel = constrain_float(lat_accel, -g.turn_max_g * GRAVITY_MSS, g.turn_max_g * GRAVITY_MSS);
 
