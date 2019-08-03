@@ -51,6 +51,7 @@
 #include "flash.h"
 #include "hal.h"
 #include <string.h>
+#include "stm32_util.h"
 
 // #pragma GCC optimize("O0")
 
@@ -379,7 +380,7 @@ bool stm32_flash_erasepage(uint32_t page)
 
     stm32_flash_wait_idle();
 
-    stm32_cacheBufferInvalidate(stm32_flash_getpageaddr(page), stm32_flash_getpagesize(page));
+    stm32_cacheBufferInvalidate((void*)stm32_flash_getpageaddr(page), stm32_flash_getpagesize(page));
 
     stm32_flash_lock();
 #if STM32_FLASH_DISABLE_ISR
