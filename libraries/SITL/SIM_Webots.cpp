@@ -442,8 +442,7 @@ void Webots::output_pwm(const struct sitl_input &input)
  */
 void Webots::update(const struct sitl_input &input)
 {   
-    #define M_PI2 6.28318530718
-
+    
     if (!connect_sockets()) {
         return;
     }
@@ -557,7 +556,6 @@ void Webots::update(const struct sitl_input &input)
 
     report_FPS();
 
-    #undef M_PI2
 }
 
 
