@@ -1,0 +1,104 @@
+#VRML_SIM R2019b utf8
+WorldInfo {
+  gravity 0 -9.80665 0
+  basicTimeStep 2
+  FPS 25
+  optimalThreadCount 4
+  randomSeed 52
+}
+DogHouse {
+  translation 34.82 0.76 -24.56
+  name "dog house(1)"
+}
+DogHouse {
+  translation 161.819 0.75 -152.174
+  name "dog house(2)"
+}
+DogHouse {
+  translation 185.42 0.77 48.97
+  name "dog house(5)"
+}
+Viewpoint {
+  orientation -0.4759293165022924 -0.6432695658143028 -0.5997462391634809 2.1976199672932206
+  position -0.37723192257331356 26.68936215527985 2.251285382699275
+  followOrientation TRUE
+}
+Background {
+  skyColor [
+    0.15 0.5 1
+  ]
+  cubemap Cubemap {
+  }
+}
+Solid {
+  translation 36.93 0.77 -37.93
+  children [
+    HouseWithGarage {
+    }
+  ]
+}
+Solid {
+  translation 192.76999999999998 0 64.98
+  rotation 0 1 0 -1.5707963071795863
+  children [
+    HouseWithGarage {
+    }
+  ]
+  name "solid(1)"
+}
+Car {
+  hidden linearVelocity_1 -0.0010527717688054161 0.07475334452743489 0.00040641899858891465
+  hidden angularVelocity_1 0.0009726208434861189 -3.548772802255449e-06 0.0037639832742125006
+  hidden linearVelocity_2 -0.0010499048064110171 0.06812631756989306 0.0003996678160173404
+  hidden angularVelocity_2 0.0009770784918835427 -3.5418048722437003e-06 0.00376630028793122
+  hidden linearVelocity_3 -0.0003857663281943141 0.06368980955151148 0.00039073208190801956
+  hidden angularVelocity_3 0.0009773421314811948 -3.555236289004244e-06 0.0006731709285696508
+  hidden linearVelocity_4 -0.0003852519666758927 0.05706277734736668 0.0003839907884660021
+  hidden angularVelocity_4 0.0009817881335843729 -3.5256145947903147e-06 0.0006865274826001362
+  translation -1.4305886048606129e-06 0.9800996853491717 2.240000771752673
+  rotation -3.3532484019725794e-06 0.9999999999793784 5.477144016859571e-06 1.5707959923742625
+  controller "ardupilot_SITL_ROVER"
+  supervisor TRUE
+  extensionSlot [
+    Camera {
+      rotation 0 1 0 -3.1415923071795864
+    }
+    InertialUnit {
+    }
+    Compass {
+      name "compass1"
+    }
+    Gyro {
+      name "gyro1"
+    }
+    Accelerometer {
+      name "accelerometer1"
+    }
+    GPS {
+    }
+    VehicleLights {
+    }
+  ]
+  physics Physics {
+    mass 3.5
+  }
+  engineType "electric"
+}
+DirectionalLight {
+  direction 0 -1 0
+}
+UnevenTerrain {
+  size 500 1 500
+}
+HouseWithGarage {
+  translation 174.25 1.88 -157.5
+  rotation 0 1 0 -1.5707963071795863
+}
+AdvertisingBoard {
+  translation 0 2.35 -5.71
+}
+AdvertisingBoard {
+  translation 84.03999999999999 2.35 -5.81
+  rotation 0 1 0 -1.5707963071795863
+  name "advertising board(1)"
+}

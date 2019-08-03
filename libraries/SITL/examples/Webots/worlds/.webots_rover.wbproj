@@ -4,9 +4,8 @@ simulationViewPerspectives: 000000ff0000000100000002000001180000010e010000000601
 sceneTreePerspectives: 000000ff0000000100000002000000c0000000fc0100000006010000000200
 maximizedDockId: -1
 centralWidgetVisible: 1
-renderingMode: PLAIN
 selectionDisabled: 0
 viewpointLocked: 0
 orthographicViewHeight: 1
-textFiles: 0 "controllers/ardupilot_SITL_QUAD/ardupilot_SITL_QUAD.c"
-renderingDevicePerspectives: quad_plus_sitl:camera1;1;1;0;0
+textFiles: 0 "controllers/ardupilot_SITL_ROVER/ardupilot_SITL_ROVER.c"
+renderingDevicePerspectives: vehicle:camera;1;1.89063;0;0
