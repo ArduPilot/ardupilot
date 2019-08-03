@@ -8,4 +8,4 @@ selectionDisabled: 0
 viewpointLocked: 0
 orthographicViewHeight: 1
 textFiles: 0 "controllers/ardupilot_SITL_ROVER/ardupilot_SITL_ROVER.c"
-renderingDevicePerspectives: vehicle:camera;1;1.89063;0;0
+renderingDevicePerspectives: vehicle:camera1;1;1.89063;0;0

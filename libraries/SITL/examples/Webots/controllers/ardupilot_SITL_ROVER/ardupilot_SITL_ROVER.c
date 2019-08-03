@@ -85,11 +85,25 @@ bool parse_controls(const char *json)
               printf("GOT  %s/%s\n", key->section, key->key);
               #endif
               break;
-
+          case DATA_VECTOR2F:
+          {
+              VECTOR2F *v = (VECTOR2F *)key->ptr;
+              if (sscanf(p, "[%f, %f]", &(v->x), &(v->y)) != 2) {
+                  printf("Failed to parse Vector2f for %s %s/%s\n",p,  key->section, key->key);
+                  return false;
+              }
+              else
+              {
+                  #ifdef DEBUG_INPUT_DATA
+                  printf("GOT  %s/%s\n[%f, %f]\n ", key->section, key->key,v->x,v->y);
+                  #endif
+              }
+              break;
+          }
           case DATA_VECTOR4F: {
               VECTOR4F *v = (VECTOR4F *)key->ptr;
               if (sscanf(p, "[%f, %f, %f, %f]", &(v->w), &(v->x), &(v->y), &(v->z)) != 4) {
-                  printf("Failed to parse Vector3f for %s %s/%s\n",p,  key->section, key->key);
+                  printf("Failed to parse Vector4f for %s %s/%s\n",p,  key->section, key->key);
                   return false;
               }
               else

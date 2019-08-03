@@ -371,6 +371,7 @@ bool Webots::sensors_receive(void)
  */
 void Webots::output_rover(const struct sitl_input &input)
 {
+
     float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
     float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
     const float steer_rate_max_dps = 60;
@@ -381,8 +382,12 @@ void Webots::output_rover(const struct sitl_input &input)
 
     // construct a JSON packet for v and w
     char buf[60];
-    snprintf(buf, sizeof(buf)-1, "{\"v\": %.3f, \"w\": %.2f}\n",
+    snprintf(buf, sizeof(buf)-1, "{\"v\": %.3f, \"s\": %.2f}\n",
              speed_ms, -steering_rps);
+    snprintf(buf, sizeof(buf)-1, "{\"engines\": [%f, %f]}\n",
+             motor1, motor2);
+    printf("rover motors m1: %f m2: %f\n",motor1,motor2);
+    
     buf[sizeof(buf)-1] = 0;
 
     sim_sock->send(buf, strlen(buf));
