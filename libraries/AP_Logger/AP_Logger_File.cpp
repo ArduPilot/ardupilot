@@ -808,7 +808,7 @@ uint16_t AP_Logger_File::start_new_log(void)
         _read_fd = -1;
     }
 
-    if (disk_space_avail() < _free_space_min_avail) {
+    if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
         hal.console->printf("Out of space for logging\n");
         _open_error = true;
         return 0xffff;
@@ -941,7 +941,7 @@ void AP_Logger_File::_io_timer(void)
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
-        if (disk_space_avail() < _free_space_min_avail) {
+        if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
             hal.console->printf("Out of space for logging\n");
             stop_logging();
             _open_error = true; // prevent logging starting again
@@ -982,8 +982,8 @@ void AP_Logger_File::_io_timer(void)
     ssize_t nwritten = AP::FS().write(_write_fd, head, nbytes);
     last_io_operation = "";
     if (nwritten <= 0) {
-        if (tnow - _last_write_ms > 2000) {
-            // if we can't write for 2 seconds we give up and close
+        if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
+            // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing
             hal.util->perf_count(_perf_errors);
@@ -994,7 +994,9 @@ void AP_Logger_File::_io_timer(void)
             _initialised = false;
             printf("Failed to write to File: %s\n", strerror(errno));
         }
+        _last_write_failed = true;
     } else {
+        _last_write_failed = false;
         _last_write_ms = tnow;
         _write_offset += nwritten;
         _writebuf.advance(nwritten);
@@ -1043,8 +1045,9 @@ bool AP_Logger_File::logging_enabled() const
 
 bool AP_Logger_File::io_thread_alive() const
 {
-    // if the io thread hasn't had a heartbeat in a full second then it is dead
-    return (AP_HAL::millis() - _io_timer_heartbeat) < 1000;
+    // if the io thread hasn't had a heartbeat in a full seconds then it is dead
+    // this is enough time for a sdcard remount
+    return (AP_HAL::millis() - _io_timer_heartbeat) < 3000U;
 }
 
 bool AP_Logger_File::logging_failed() const
@@ -1058,6 +1061,9 @@ bool AP_Logger_File::logging_failed() const
     if (!io_thread_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not
         // Good.
+        return true;
+    }
+    if (_last_write_failed) {
         return true;
     }
 

@@ -79,6 +79,7 @@ private:
     uint32_t _write_offset;
     volatile bool _open_error;
     const char *_log_directory;
+    bool _last_write_failed;
 
     uint32_t _io_timer_heartbeat;
     bool io_thread_alive() const;
