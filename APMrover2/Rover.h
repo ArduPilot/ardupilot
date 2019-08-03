@@ -274,18 +274,6 @@ private:
     // true if we have a position estimate from AHRS
     bool have_position;
 
-    // obstacle detection information
-    struct {
-        // have we detected an obstacle?
-        uint8_t detected_count;
-        float turn_angle;
-        uint16_t rangefinder1_distance_cm;
-        uint16_t rangefinder2_distance_cm;
-
-        // time when we last detected an obstacle, in milliseconds
-        uint32_t detected_time_ms;
-    } obstacle;
-
     // range finder last update (used for DPTH logging)
     uint32_t rangefinder_last_reading_ms;
 
@@ -415,7 +403,6 @@ private:
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Steering();
     void Log_Write_Throttle();
-    void Log_Write_Rangefinder();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);

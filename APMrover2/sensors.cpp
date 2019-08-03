@@ -129,71 +129,7 @@ void Rover::accel_cal_update() {
 void Rover::read_rangefinders(void)
 {
     rangefinder.update();
-
-    AP_RangeFinder_Backend *s0 = rangefinder.get_backend(0);
-    AP_RangeFinder_Backend *s1 = rangefinder.get_backend(1);
-
-    if (s0 == nullptr || s0->status() == RangeFinder::RangeFinder_NotConnected) {
-        // this makes it possible to disable rangefinder at runtime
-        return;
-    }
-
-    if (s1 != nullptr && s1->has_data()) {
-        // we have two rangefinders
-        obstacle.rangefinder1_distance_cm = s0->distance_cm();
-        obstacle.rangefinder2_distance_cm = s1->distance_cm();
-        if (obstacle.rangefinder1_distance_cm < static_cast<uint16_t>(g.rangefinder_trigger_cm) &&
-            obstacle.rangefinder1_distance_cm < static_cast<uint16_t>(obstacle.rangefinder2_distance_cm))  {
-            // we have an object on the left
-            if (obstacle.detected_count < 127) {
-                obstacle.detected_count++;
-            }
-            if (obstacle.detected_count == g.rangefinder_debounce) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder1 obstacle %u cm",
-                                (unsigned int)obstacle.rangefinder1_distance_cm);
-            }
-            obstacle.detected_time_ms = AP_HAL::millis();
-            obstacle.turn_angle = g.rangefinder_turn_angle;
-        } else if (obstacle.rangefinder2_distance_cm < static_cast<uint16_t>(g.rangefinder_trigger_cm)) {
-            // we have an object on the right
-            if (obstacle.detected_count < 127) {
-                obstacle.detected_count++;
-            }
-            if (obstacle.detected_count == g.rangefinder_debounce) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder2 obstacle %u cm",
-                                (unsigned int)obstacle.rangefinder2_distance_cm);
-            }
-            obstacle.detected_time_ms = AP_HAL::millis();
-            obstacle.turn_angle = -g.rangefinder_turn_angle;
-        }
-    } else {
-        // we have a single rangefinder
-        obstacle.rangefinder1_distance_cm = s0->distance_cm();
-        obstacle.rangefinder2_distance_cm = 0;
-        if (obstacle.rangefinder1_distance_cm < static_cast<uint16_t>(g.rangefinder_trigger_cm))  {
-            // obstacle detected in front
-            if (obstacle.detected_count < 127) {
-                obstacle.detected_count++;
-            }
-            if (obstacle.detected_count == g.rangefinder_debounce) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder obstacle %u cm",
-                                (unsigned int)obstacle.rangefinder1_distance_cm);
-            }
-            obstacle.detected_time_ms = AP_HAL::millis();
-            obstacle.turn_angle = g.rangefinder_turn_angle;
-        }
-    }
-
-    Log_Write_Rangefinder();
     Log_Write_Depth();
-
-    // no object detected - reset after the turn time
-    if (obstacle.detected_count >= g.rangefinder_debounce &&
-        AP_HAL::millis() > obstacle.detected_time_ms + g.rangefinder_turn_time*1000) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Obstacle passed");
-        obstacle.detected_count = 0;
-        obstacle.turn_angle = 0;
-    }
 }
 
 // initialise proximity sensor

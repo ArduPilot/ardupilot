@@ -169,41 +169,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH", 0.8f),
 
-    // @Param: RNGFND_TRIGGR_CM
-    // @DisplayName: Object avoidance trigger distance
-    // @Description: The distance from an obstacle in centimeters at which the rangefinder triggers a turn to avoid the obstacle
-    // @Units: cm
-    // @Range: 0 1000
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(rangefinder_trigger_cm,   "RNGFND_TRIGGR_CM",    100),
-
-    // @Param: RNGFND_TURN_ANGL
-    // @DisplayName: Object avoidance turn aggressiveness and direction
-    // @Description: The aggressiveness and direction of turn to avoid an obstacle.  Large positive or negative values (i.e. -450 or 450) cause turns up to the vehicle's maximum lateral acceleration (TURN_MAX_G) while values near zero cause gentle turns. Positive means to turn right, negative means turn left.
-    // @Units: deg
-    // @Range: -450 450
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(rangefinder_turn_angle,   "RNGFND_TURN_ANGL",    45),
-
-    // @Param: RNGFND_TURN_TIME
-    // @DisplayName: Object avoidance turn time
-    // @Description: The amount of time in seconds to apply the RNGFND_TURN_ANGL after detecting an obstacle.
-    // @Units: s
-    // @Range: 0 100
-    // @Increment: 0.1
-    // @User: Standard
-    GSCALAR(rangefinder_turn_time,    "RNGFND_TURN_TIME",     1.0f),
-
-    // @Param: RNGFND_DEBOUNCE
-    // @DisplayName: Object avoidance rangefinder debounce count
-    // @Description: The number of 50Hz rangefinder hits needed to trigger an obstacle avoidance event. If you get a lot of false rangefinder events then raise this number, but if you make it too large then it will cause lag in detecting obstacles, which could cause you go hit the obstacle.
-    // @Range: 1 100
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(rangefinder_debounce,   "RNGFND_DEBOUNCE",    2),
-
     // @Param: MODE_CH
     // @DisplayName: Mode channel
     // @Description: RC Channel to use for driving mode control
