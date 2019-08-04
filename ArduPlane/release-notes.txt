@@ -1,3 +1,67 @@
+Release 3.9.9, 4th August 2019
+------------------------------
+
+New plane stable release with two fixes over beta4:
+
+ - fixed setting file timestamps with u-blox F9 GPS (thanks to Martin Sollie)
+ - fixed return value of LightWare serial rangefinder driver when out of range
+
+Release 3.9.9beta4, 31st July 2019
+----------------------------------
+
+Minor update over beta3:
+
+ - fixed an issue with handling baro failure on CubeBlack
+ - forced INS_USE3=1 on CubeBlack when first two IMUs are enabled
+
+Release 3.9.9beta3, 28th July 2019
+----------------------------------
+
+Minor update over beta2:
+
+ - fixed issue with setting of EKF origin in GPS modes
+ - added support for MS4525 on 4th I2C bus
+ - added delay on LW20 I2C probe
+
+
+Release 3.9.9beta2, 11th July 2019
+----------------------------------
+
+Minor update over beta1:
+
+ - added mRoControlZeroF7 support
+ - enabled IO pass-thru on FMU failure on ChibiOS builds
+
+Release 3.9.9beta1, 8th July 2019
+---------------------------------
+
+This is a minor release with some important safety and flight
+improvement fixes.
+
+Key changes are:
+
+ - learn EKF biases even for inactive IMUs, making IMU failover much  more robust
+
+ - EKF uses earth magnetic field model to reduce in-flight compass errors
+
+ - EKF switches to first healthy IMU when disarmed
+
+ - IMU fix for dropped samples during high CPU usage
+
+ - added support for Ublox F9 GPS
+
+ - switched to ChibiOS I/O firmware for ChibiOS builds to support Spektrum bind
+
+ - CUAVv5 Nano LED fix
+
+ - fixed watchdog trigger on simple accelcal
+
+ - fixed drift of AMSL estimate when disarmed
+
+ - fixed rate integrator buildup when rate control disabled
+
+Happy flying!
+
 Release 3.9.8, 26th April 2019
 ------------------------------
 
