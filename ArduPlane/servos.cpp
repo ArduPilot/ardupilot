@@ -306,7 +306,8 @@ void Plane::airbrake_update(void)
 
     if (throttle_min<0) {
         if (landing.is_flaring()) {
-            // Don't adjust airbrakes during the flare.
+            // Full airbrakes during the flare
+            spoiler_pc = 100;
         }
         else {
             // Determine fraction between zero and full negative throttle.
