@@ -1,3 +1,11 @@
+Release 3.9.9, 4th August 2019
+------------------------------
+
+New plane stable release with two fixes over beta4:
+
+ - fixed setting file timestamps with u-blox F9 GPS (thanks to Martin Sollie)
+ - fixed return value of LightWare serial rangefinder driver when out of range
+
 Release 3.9.9beta4, 31st July 2019
 ----------------------------------
 
