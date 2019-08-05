@@ -76,8 +76,10 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
         Thruster t = thrusters[i];
         int16_t pwm = input.servos[t.servo];
         float output = 0;
-        if (pwm < 2000 && pwm > 1000) {
-         output = (pwm - 1500) / 400.0; // range -1~1
+        // if valid pwm and not in the esc deadzone
+        // TODO: extract deadzone from parameters/vehicle code
+        if (pwm < 2000 && pwm > 1000 && (pwm < 1475 || pwm > 1525)) {
+            output = (pwm - 1500) / 400.0; // range -1~1
         }
 
         // 2.5 scalar for approximate real-life performance of T200 thruster
