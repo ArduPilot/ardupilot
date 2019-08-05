@@ -332,7 +332,7 @@ void Sub::failsafe_gcs_check()
     // Send a warning every 30 seconds
     if (tnow - failsafe.last_gcs_warn_ms > 30000) {
         failsafe.last_gcs_warn_ms = tnow;
-        gcs().send_text(MAV_SEVERITY_WARNING, "MYGCS: %d, heartbeat lost", g.sysid_my_gcs);
+        gcs().send_text(MAV_SEVERITY_WARNING, "MYGCS: %u, heartbeat lost", g.sysid_my_gcs.get());
     }
 
     // do nothing if we have already triggered the failsafe action, or if the motors are disarmed
