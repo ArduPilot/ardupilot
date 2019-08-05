@@ -70,7 +70,7 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     rot_accel = Vector3f(0,0,0);
 
     // slight positive buoyancy
-    body_accel = Vector3f(0, 0, -calculate_buoyancy_acceleration());
+    body_accel = dcm.transposed() *  Vector3f(0, 0, -calculate_buoyancy_acceleration());
 
     for (int i = 0; i < n_thrusters; i++) {
         Thruster t = thrusters[i];
