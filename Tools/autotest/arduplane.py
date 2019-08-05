@@ -526,6 +526,31 @@ class AutoTestPlane(AutoTest):
         self.mavproxy.expect("Auto disarmed")
         self.progress("Mission OK")
 
+    def fly_do_reposition(self):
+        self.progress("Takeoff")
+        self.takeoff(alt=50)
+        self.set_rc(3, 1500)
+        self.progress("Entering guided and flying somewhere constant")
+        self.change_mode("GUIDED")
+        loc = self.mav.location()
+        self.location_offset_ne(loc, 500, 500)
+
+        new_alt = 100
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            0,
+            0,
+            0,
+            0,
+            loc.lat*1e7,
+            loc.lng*1e7,
+            new_alt,    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+        )
+        self.wait_altitude(new_alt-10, new_alt, timeout=30, relative=True)
+
+        self.fly_home_land_and_disarm()
+
     def fly_do_change_speed(self):
         # the following lines ensure we revert these parameter values
         # - DO_CHANGE_AIRSPEED is a permanent vehicle change!
@@ -607,6 +632,9 @@ class AutoTestPlane(AutoTest):
             self.progress("groundspeed and airspeed should be different (have=%f want=%f)" % (delta, want_delta))
             if delta > want_delta:
                 break
+        self.fly_home_land_and_disarm()
+
+    def fly_home_land_and_disarm(self):
         filename = os.path.join(testdir, "flaps.txt")
         self.progress("Using %s to fly home" % filename)
         self.load_mission(filename)
@@ -1073,6 +1101,7 @@ class AutoTestPlane(AutoTest):
                                          disable_on_breach=True)
 
     def location_offset_ne(self, location, north, east):
+        '''move location in metres'''
         print("old: %f %f" % (location.lat, location.lng))
         (lat, lng) = mp_util.gps_offset(location.lat, location.lng, east, north)
         location.lat = lat
@@ -1354,6 +1383,10 @@ class AutoTestPlane(AutoTest):
             ("TestFlaps", "Flaps", self.fly_flaps),
 
             ("DO_CHANGE_SPEED", "Test mavlink DO_CHANGE_SPEED command", self.fly_do_change_speed),
+
+            ("DO_REPOSITION",
+             "Test mavlink DO_REPOSITION command",
+             self.fly_do_reposition),
 
             ("MainFlight",
              "Lots of things in one flight",
