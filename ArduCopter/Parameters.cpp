@@ -1351,21 +1351,14 @@ void Copter::convert_tradheli_parameters(void)
 
         // convert to known swash type for setups that match
         AP_Int16 *swash_pos_1, *swash_pos_2, *swash_pos_3, *swash_phang, *swash_type;
-        char pname[17];
         enum ap_var_type ptype;
-        snprintf(pname, sizeof(pname), "H_SW_H3_SV1_POS");
-        swash_pos_1 = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW_H3_SV2_POS");
-        swash_pos_2 = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW_H3_SV3_POS");
-        swash_pos_3 = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW_H3_PHANG");
-        swash_phang = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW_TYPE");
-        swash_type = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        swash_pos_1 = (AP_Int16 *)AP_Param::find("H_SW_H3_SV1_POS", &ptype);
+        swash_pos_2 = (AP_Int16 *)AP_Param::find("H_SW_H3_SV2_POS", &ptype);
+        swash_pos_3 = (AP_Int16 *)AP_Param::find("H_SW_H3_SV3_POS", &ptype);
+        swash_phang = (AP_Int16 *)AP_Param::find("H_SW_H3_PHANG", &ptype);
+        swash_type = (AP_Int16 *)AP_Param::find("H_SW_TYPE", &ptype);
         if (swash_pos_1->get() == -60 && swash_pos_2->get() == 60 && swash_pos_3->get() == 180 && swash_phang->get() == 0 && swash_type->get() == 0) {
-            snprintf(pname, sizeof(pname), "H_SW_TYPE");
-            AP_Param::set_default_by_name(pname, SwashPlateType::SWASHPLATE_TYPE_H3_120);
+            AP_Param::set_default_by_name("H_SW_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3_120);
         }
 
     } else if (g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_DUAL) {
@@ -1391,37 +1384,24 @@ void Copter::convert_tradheli_parameters(void)
 
         // convert swashplate 1 to known swash type for setups that match
         AP_Int16 *swash_pos_1, *swash_pos_2, *swash_pos_3, *swash_phang, *swash_type;
-        char pname[17];
         enum ap_var_type ptype;
-        snprintf(pname, sizeof(pname), "H_SW1_H3_SV1_POS");
-        swash_pos_1 = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW1_H3_SV2_POS");
-        swash_pos_2 = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW1_H3_SV3_POS");
-        swash_pos_3 = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW1_H3_PHANG");
-        swash_phang = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW1_TYPE");
-        swash_type = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        swash_pos_1 = (AP_Int16 *)AP_Param::find("H_SW1_H3_SV1_POS", &ptype);
+        swash_pos_2 = (AP_Int16 *)AP_Param::find("H_SW1_H3_SV2_POS", &ptype);
+        swash_pos_3 = (AP_Int16 *)AP_Param::find("H_SW1_H3_SV3_POS", &ptype);
+        swash_phang = (AP_Int16 *)AP_Param::find("H_SW1_H3_PHANG", &ptype);
+        swash_type = (AP_Int16 *)AP_Param::find("H_SW1_TYPE", &ptype);
         if (swash_pos_1->get() == -60 && swash_pos_2->get() == 60 && swash_pos_3->get() == 180 && swash_phang->get() == 0 && swash_type->get() == 0) {
-            snprintf(pname, sizeof(pname), "H_SW1_TYPE");
-            AP_Param::set_default_by_name(pname, SwashPlateType::SWASHPLATE_TYPE_H3_120);
+            AP_Param::set_default_by_name("H_SW1_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3_120);
         }
 
         // convert swashplate 2 to known swash type for setups that match
-        snprintf(pname, sizeof(pname), "H_SW2_H3_SV1_POS");
-        swash_pos_1 = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW2_H3_SV2_POS");
-        swash_pos_2 = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW2_H3_SV3_POS");
-        swash_pos_3 = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW2_H3_PHANG");
-        swash_phang = (AP_Int16 *)AP_Param::find(pname, &ptype);
-        snprintf(pname, sizeof(pname), "H_SW2_TYPE");
-        swash_type = (AP_Int16 *)AP_Param::find(pname, &ptype);
+        swash_pos_1 = (AP_Int16 *)AP_Param::find("H_SW2_H3_SV1_POS", &ptype);
+        swash_pos_2 = (AP_Int16 *)AP_Param::find("H_SW2_H3_SV2_POS", &ptype);
+        swash_pos_3 = (AP_Int16 *)AP_Param::find("H_SW2_H3_SV3_POS", &ptype);
+        swash_phang = (AP_Int16 *)AP_Param::find("H_SW2_H3_PHANG", &ptype);
+        swash_type = (AP_Int16 *)AP_Param::find("H_SW2_TYPE", &ptype);
         if (swash_pos_1->get() == -60 && swash_pos_2->get() == 60 && swash_pos_3->get() == 180 && swash_phang->get() == 0 && swash_type->get() == 0) {
-            snprintf(pname, sizeof(pname), "H_SW2_TYPE");
-            AP_Param::set_default_by_name(pname, SwashPlateType::SWASHPLATE_TYPE_H3_120);
+            AP_Param::set_default_by_name("H_SW2_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3_120);
         }
 
     }
