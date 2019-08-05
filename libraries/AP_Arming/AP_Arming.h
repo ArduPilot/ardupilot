@@ -139,7 +139,7 @@ protected:
     // returns a mavlink severity which should be used if a specific check fails
     MAV_SEVERITY check_severity(const enum AP_Arming::ArmingChecks check) const;
     // handle the case where a check fails
-    void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const;
+    void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const FMT_PRINTF(4, 5);
 
     void Log_Write_Arm_Disarm();
 
