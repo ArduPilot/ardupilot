@@ -15,6 +15,8 @@ import operator
 from MAVProxy.modules.lib import mp_util
 
 from pymavlink import mavwp, mavutil, DFReader
+from pymavlink import mavextra
+
 from pysim import util, vehicleinfo
 
 # a list of pexpect objects to read while waiting for
@@ -222,6 +224,25 @@ class AutoTest(ABC):
                                 HOME.alt,
                                 HOME.heading)
 
+    def mavproxy_version(self):
+        '''return the current version of mavproxy as a tuple e.g. (1,8,8)'''
+        return util.MAVProxy_version()
+
+    def mavproxy_version_gt(self, major, minor, point):
+        if os.getenv("AUTOTEST_FORCE_MAVPROXY_VERSION", None) is not None:
+            return True
+        (got_major, got_minor, got_point) = self.mavproxy_version()
+        print("Got: %s.%s.%s" % (got_major, got_minor, got_point))
+        if got_major > major:
+            return True
+        elif got_major < major:
+            return False
+        if got_minor > minor:
+            return True
+        elif got_minor < minor:
+            return False
+        return got_point > point
+
     def open_mavproxy_logfile(self):
         return MAVProxyLogFile()
 
@@ -299,12 +320,29 @@ class AutoTest(ABC):
     def count_lines_in_filepath(self, filepath):
         return len([i for i in open(filepath)])
 
+    def count_expected_fence_lines_in_filepath(self, filepath):
+        count = 0
+        is_qgc = False
+        for i in open(filepath):
+            i = re.sub("#.*", "", i) # trim comments
+            if i.isspace():
+                # skip empty lines
+                continue
+            if re.match("QGC", i):
+                # skip QGC header line
+                is_qgc = True
+                continue
+            count += 1
+        if is_qgc:
+            count += 2 # file doesn't include return point + closing point
+        return count
+
     def load_fence_using_mavproxy(self, filename):
         self.set_parameter("FENCE_TOTAL", 0)
         filepath = os.path.join(self.mission_directory(), filename)
-        count = self.count_lines_in_filepath(filepath)
+        count = self.count_expected_fence_lines_in_filepath(filepath)
         self.mavproxy.send('fence load %s\n' % filepath)
-        self.mavproxy.expect("Loaded %u geo-fence" % count)
+#        self.mavproxy.expect("Loaded %u (geo-)?fence" % count)
         tstart = self.get_sim_time_cached()
         while True:
             t2 = self.get_sim_time_cached()
@@ -686,6 +724,97 @@ class AutoTest(ABC):
                 raise ValueError("count %u not handled" % count)
         self.progress("Files same")
 
+    def assert_rally_files_same(self, file1, file2):
+        self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
+        f1 = open(file1)
+        f2 = open(file2)
+        lines_f1 = f1.readlines()
+        lines_f2 = f2.readlines()
+        self.assert_rally_content_same(lines_f1, lines_f2)
+
+    def assert_rally_filepath_content(self, file1, content):
+        f1 = open(file1)
+        lines_f1 = f1.readlines()
+        lines_content = content.split("\n")
+        print("lines content: %s" % str(lines_content))
+        self.assert_rally_content_same(lines_f1, lines_content)
+
+    def assert_rally_content_same(self, f1, f2):
+        '''check each line in f1 matches one-to-one with f2'''
+        for l1, l2 in zip(f1, f2):
+            print("l1: %s" % l1)
+            print("l2: %s" % l2)
+            l1 = l1.rstrip("\n")
+            l2 = l2.rstrip("\n")
+            l1 = l1.rstrip("\r")
+            l2 = l2.rstrip("\r")
+            if l1 == l2:
+                # e.g. the first "QGC WPL 110" line
+                continue
+            if re.match(r"0\s", l1):
+                # home changes...
+                continue
+            l1 = l1.rstrip()
+            l2 = l2.rstrip()
+            print("al1: %s" % str(l1))
+            print("al2: %s" % str(l2))
+            fields1 = re.split(r"\s+", l1)
+            fields2 = re.split(r"\s+", l2)
+            # line = int(fields1[0])
+            t = int(fields1[3]) # mission item type
+            for (count, (i1, i2)) in enumerate(zip(fields1, fields2)):
+                # if count == 2: # frame
+                #     if t in [mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+                #              mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                #              mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+                #              mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME,
+                #              mavutil.mavlink.MAV_CMD_DO_JUMP,
+                #              mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
+                #              ]:
+                #         # ardupilot doesn't remember frame on these commands
+                #         if int(i1) == 3:
+                #             i1 = 0
+                #         if int(i2) == 3:
+                #             i2 = 0
+                # if count == 6: # param 3
+                #     if t in [mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME]:
+                #         # ardupilot canonicalises this to -1 for ccw or 1 for cw.
+                #         if float(i1) == 0:
+                #             i1 = 1.0
+                #         if float(i2) == 0:
+                #             i2 = 1.0
+                # if count == 7: # param 4
+                #     if t == mavutil.mavlink.MAV_CMD_NAV_LAND:
+                #         # ardupilot canonicalises "0" to "1" param 4 (yaw)
+                #         if int(float(i1)) == 0:
+                #             i1 = 1
+                #         if int(float(i2)) == 0:
+                #             i2 = 1
+                if 0 <= count <= 3 or 11 <= count <= 11:
+                    if int(i1) != int(i2):
+                        raise ValueError("Rally points different: (%s vs %s) (%d vs %d) (count=%u)" %
+                                         (l1, l2, int(i1), int(i2), count))  # NOCI
+                    continue
+                if 4 <= count <= 10:
+                    f_i1 = float(i1)
+                    f_i2 = float(i2)
+                    delta = abs(f_i1 - f_i2)
+                    max_allowed_delta = 0.000009
+                    if delta > max_allowed_delta:
+                        raise ValueError(
+                            ("Rally has different (float) content: " +
+                             "(%s vs %s) " +
+                             "(%f vs %f) " +
+                             "(%.10f) " +
+                             "(count=%u)") %
+                            (l1, l2,
+                             f_i1, f_i2,
+                             delta,
+                             count)) # NOCI
+                    continue
+                raise ValueError("count %u not handled" % count)
+        self.progress("Rally content same")
+
     def load_rally(self, filename):
         """Load rally points from a file to flight controller."""
         self.progress("Loading rally points (%s)" % filename)
@@ -938,6 +1067,7 @@ class AutoTest(ABC):
     def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
+        self.drain_mav()
         tstart = self.get_sim_time()
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                      1,  # ARM
@@ -2192,11 +2322,20 @@ class AutoTest(ABC):
                 continue
 
             if m.get_type() == 'MISSION_ACK':
-                raise NotAchievedException("Received unexpected mission ack %s" % str(m))
+                if (m.target_system == 255 and
+                    m.target_component == 0 and
+                    m.type == 1 and
+                    m.mission_type == 0):
+                    # this is just MAVProxy trying to screw us up
+                    continue
+                else:
+                    raise NotAchievedException("Received unexpected mission ack %s" % str(m))
 
-            self.progress("Handling request for item %u" % m.seq)
+            self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
+            self.progress("Item (%s)" % str(items[m.seq]))
             if m.seq in sent:
-                raise NotAchievedException("received duplicate request for item %u" % m.seq)
+                self.progress("received duplicate request for item %u" % m.seq)
+                continue
 
             if m.seq not in remaining_to_send:
                 raise NotAchievedException("received request for unknown item %u" % m.seq)
@@ -2211,10 +2350,9 @@ class AutoTest(ABC):
             if items[m.seq].target_component != target_component:
                 raise NotAchievedException("supplied item not of correct target component")
             if items[m.seq].seq != m.seq:
-                raise NotAchievedException("requested item has incorrect sequence number")
+                raise NotAchievedException("supplied item has incorrect sequence number (%u vs %u)" % (items[m.seq].seq, m.seq))
 
             items[m.seq].pack(self.mav.mav)
-            self.progress("Sending (%s)" % str(items[m.seq]))
             self.mav.mav.send(items[m.seq])
             remaining_to_send.discard(m.seq)
             sent.add(m.seq)
@@ -2230,22 +2368,34 @@ class AutoTest(ABC):
                                        (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name),)
         self.progress("Upload of all %u items succeeded" % len(items))
 
-    def download_using_mission_protocol(self, mission_type):
+    def download_using_mission_protocol(self, mission_type, verbose=False, timeout=10):
         '''mavlink2 required'''
         target_system = 1
         target_component = 1
+        self.drain_mav_unparsed()
+        self.progress("Sending mission_request_list")
         self.mav.mav.mission_request_list_send(target_system,
                                                target_component,
                                                mission_type)
 
+        tstart = self.get_sim_time_cached()
         while True:
-            m = self.mav.recv_match(type='MISSION_COUNT',
-                                    blocking=True,
-                                    timeout=5)
-            self.progress(str(m))
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not get MISSION_COUNT packet")
+            m = self.mav.recv_match(blocking=True, timeout=0.1)
+            if verbose:
+                self.progress(str(m))
+            if m.get_type() == 'MISSION_ACK':
+                if m.target_system == 255 and m.target_component == 0:
+                    # this was for MAVProxy
+                    continue
+                self.progress("Mission ACK: %s" % str(m))
+                raise NotAchievedException("Received MISSION_ACK while waiting for MISSION_COUNT")
+            if m.get_type() != 'MISSION_COUNT':
+                continue
             if m is None:
                 raise NotAchievedException("Did not get MISSION_COUNT response")
-            if m.target_component != 250:
+            if m.target_component != 250: # FIXME: constant?!
                 continue
             if m.mission_type != mission_type:
                 raise NotAchievedException("Mission count response of incorrect type")
@@ -2323,6 +2473,17 @@ class AutoTest(ABC):
     def home_position_as_mav_location(self):
         m = self.poll_home_position()
         return mavutil.location(m.latitude*1.0e-7, m.longitude*1.0e-7, m.altitude*1.0e-3, 0)
+
+    def offset_location_ne(self, location, metres_north, metres_east):
+        '''return a new location offset from passed-in location'''
+        (target_lat, target_lng) = mavextra.gps_offset(location.lat,
+                                                       location.lng,
+                                                       metres_east,
+                                                       metres_north)
+        return mavutil.location(target_lat,
+                                target_lng,
+                                location.alt,
+                                location.heading)
 
     def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
         tstart = self.get_sim_time()
@@ -2897,8 +3058,47 @@ class AutoTest(ABC):
         if m is None:
             raise NotAchievedException("Requested CAMERA_FEEDBACK did not arrive")
 
-    def clear_fence_using_mavproxy(self):
+    def clear_mission(self, mission_type, target_system=1, target_component=1):
+        '''clear mision_type from autopilot.  Note that this does NOT actually
+        send a MISSION_CLEAR_ALL message
+        '''
+        if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_ALL:
+            # recurse
+            if not self.is_tracker() and not self.is_plane():
+                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+            if not self.is_sub() and not self.is_tracker():
+                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            return
+
+        self.mav.mav.mission_count_send(target_system,
+                                        target_component,
+                                        0,
+                                        mission_type)
+        m = self.mav.recv_match(type='MISSION_ACK',
+                                blocking=True,
+                                timeout=5)
+        if m is None:
+            raise NotAchievedException("Expected ACK for clearing mission")
+        if m.target_system != self.mav.mav.srcSystem:
+            raise NotAchievedException("ACK not targetted at correct system want=%u got=%u" %
+                                       (self.mav.mav.srcSystem, m.target_system))
+        if m.target_component != self.mav.mav.srcComponent:
+            raise NotAchievedException("ACK not targetted at correct component want=%u got=%u" %
+                                       (self.mav.mav.srcComponent, m.target_component))
+        if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
+            raise NotAchievedException("Expected MAV_MISSION_ACCEPTED got %s" %
+                                       (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name,))
+
+    def clear_fence_using_mavproxy(self, timeout=10):
         self.mavproxy.send("fence clear\n")
+        tstart = self.get_sim_time_cached()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise AutoTestTimeoutException("FENCE_TOTAL did not go to zero")
+            if self.get_parameter("FENCE_TOTAL") == 0:
+                break
 
     def clear_fence(self):
         self.clear_fence_using_mavproxy()
@@ -3070,6 +3270,63 @@ class AutoTest(ABC):
         '''return mode vehicle should start in with default RC inputs set'''
         return None
 
+    def upload_fences_from_locations(self,
+                                     vertex_type,
+                                     list_of_list_of_locs,
+                                     target_system=1,
+                                     target_component=1):
+        seq = 0
+        items = []
+        for locs in list_of_list_of_locs:
+            if type(locs) == dict:
+                # circular fence
+                if vertex_type == mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION:
+                    v = mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION
+                else:
+                    v = mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION
+                item = self.mav.mav.mission_item_int_encode(
+                    target_system,
+                    target_component,
+                    seq, # seq
+                    mavutil.mavlink.MAV_FRAME_GLOBAL,
+                    v,
+                    0, # current
+                    0, # autocontinue
+                    locs["radius"], # p1
+                    0, # p2
+                    0, # p3
+                    0, # p4
+                    int(locs["loc"].lat *1e7), # latitude
+                    int(locs["loc"].lng *1e7), # longitude
+                    33.0000, # altitude
+                    mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+                seq += 1
+                items.append(item)
+                continue
+            count = len(locs)
+            for loc in locs:
+                item = self.mav.mav.mission_item_int_encode(
+                    target_system,
+                    target_component,
+                    seq, # seq
+                    mavutil.mavlink.MAV_FRAME_GLOBAL,
+                    vertex_type,
+                    0, # current
+                    0, # autocontinue
+                    count, # p1
+                    0, # p2
+                    0, # p3
+                    0, # p4
+                    int(loc.lat *1e7), # latitude
+                    int(loc.lng *1e7), # longitude
+                    33.0000, # altitude
+                    mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+                seq += 1
+                items.append(item)
+
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           items)
+
     def wait_for_initial_mode(self):
         '''wait until we get a heartbeat with an expected initial mode (the
 one specified in the vehicle constructor)'''
@@ -3093,6 +3350,19 @@ switch value'''
         self.progress("-")
         self.progress("---------- %s  ----------" % description)
         self.progress("-")
+
+    def start_subsubtest(self, description):
+        self.progress(".")
+        self.progress(".......... %s  .........." % description)
+        self.progress(".")
+
+    def end_subtest(self, description):
+        '''TODO: sanity checks?'''
+        pass
+
+    def end_subsubtest(self, description):
+        '''TODO: sanity checks?'''
+        pass
 
     def test_skipped(self, test, reason):
         (name, desc, func) = test
@@ -3142,6 +3412,8 @@ switch value'''
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.wait_for_mode_switch_poll()
+            if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
+                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
 
             for test in tests:
                 (name, desc, func) = test

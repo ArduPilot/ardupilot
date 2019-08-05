@@ -353,12 +353,26 @@ def start_SITL(binary,
     return child
 
 
+def mavproxy_cmd():
+    '''return path to which mavproxy to use'''
+    return os.getenv('MAVPROXY_CMD', 'mavproxy.py')
+
+def MAVProxy_version():
+    '''return the current version of mavproxy as a tuple e.g. (1,8,8)'''
+    command = "%s --version" % mavproxy_cmd()
+    output = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).communicate()[0]
+    output = output.decode('ascii')
+    match = re.search("MAVProxy Version: ([0-9]+)[.]([0-9]+)[.]([0-9]+)", output)
+    if match is None:
+        raise ValueError("Unable to determine MAVProxy version from (%s)" % output)
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
 def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
                         options=[], logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
     import pexpect
     global close_list
-    MAVPROXY = os.getenv('MAVPROXY_CMD', 'mavproxy.py')
+    MAVPROXY = mavproxy_cmd()
     cmd = MAVPROXY + ' --master=%s --out=127.0.0.1:14550' % master
     if setup:
         cmd += ' --setup'
