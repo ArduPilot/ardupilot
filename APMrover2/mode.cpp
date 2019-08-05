@@ -46,6 +46,10 @@ bool Mode::enter()
 
         // clear sailboat tacking flags
         rover.g2.sailboat.clear_tack();
+
+        if (is_autopilot_mode() && !is_positive(g2.wp_nav.get_default_speed())) {
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Bad desired speed, check param WP_SPEED.");
+        }
     }
 
     return ret;
