@@ -43,17 +43,17 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
 
     if (plane.aparm.roll_limit_cd < 300) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_ROLL_CD too small (%u)", plane.aparm.roll_limit_cd);
+        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_ROLL_CD too small (%u)", (unsigned)plane.aparm.roll_limit_cd);
         ret = false;
     }
 
     if (plane.aparm.pitch_limit_max_cd < 300) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_PITCH_MAX too small (%u)", plane.aparm.pitch_limit_max_cd);
+        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_PITCH_MAX too small (%u)", (unsigned)plane.aparm.pitch_limit_max_cd);
         ret = false;
     }
 
     if (plane.aparm.pitch_limit_min_cd > -300) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_PITCH_MIN too large (%u)", plane.aparm.pitch_limit_min_cd);
+        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_PITCH_MIN too large (%u)", (unsigned)plane.aparm.pitch_limit_min_cd);
         ret = false;
     }
 
