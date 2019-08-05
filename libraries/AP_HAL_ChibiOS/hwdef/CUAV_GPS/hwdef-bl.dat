@@ -8,7 +8,7 @@ FLASH_RESERVE_START_KB 0
 FLASH_BOOTLOADER_LOAD_KB 64
 
 # board ID for firmware load
-APJ_BOARD_ID 3
+APJ_BOARD_ID 1001
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

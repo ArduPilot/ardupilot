@@ -12,7 +12,7 @@ define STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 8192
 
 # board ID for firmware load
-APJ_BOARD_ID 3
+APJ_BOARD_ID 1001
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
