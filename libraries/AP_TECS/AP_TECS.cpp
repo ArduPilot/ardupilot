@@ -526,6 +526,8 @@ void AP_TECS::_update_height_demand(void)
         _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
         _flare_counter = 0;
     }
+
+    _hgt_dem_adj_last = _hgt_dem_adj;
 }
 
 void AP_TECS::_detect_underspeed(void)
