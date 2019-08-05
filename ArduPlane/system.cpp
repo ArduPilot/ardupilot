@@ -118,6 +118,11 @@ void Plane::init_ardupilot()
     }
 #endif
 
+    // init Location class
+#if AP_TERRAIN_AVAILABLE
+    Location::set_terrain(&terrain);
+#endif
+
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);
 
