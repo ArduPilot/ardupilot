@@ -18,20 +18,20 @@
 
 #include "SIM_Submarine.h"
 #include <AP_Motors/AP_Motors.h>
-#include "Frame_Vectored.h"
 
 #include <stdio.h>
 
 using namespace SITL;
 
 static Thruster vectored_thrusters[] =
-{
-       Thruster(0, MOT_1_ROLL_FACTOR, MOT_1_PITCH_FACTOR, MOT_1_YAW_FACTOR, MOT_1_THROTTLE_FACTOR, MOT_1_FORWARD_FACTOR, MOT_1_STRAFE_FACTOR),
-       Thruster(1, MOT_2_ROLL_FACTOR, MOT_2_PITCH_FACTOR, MOT_2_YAW_FACTOR, MOT_2_THROTTLE_FACTOR, MOT_2_FORWARD_FACTOR, MOT_2_STRAFE_FACTOR),
-       Thruster(2, MOT_3_ROLL_FACTOR, MOT_3_PITCH_FACTOR, MOT_3_YAW_FACTOR, MOT_3_THROTTLE_FACTOR, MOT_3_FORWARD_FACTOR, MOT_3_STRAFE_FACTOR),
-       Thruster(3, MOT_4_ROLL_FACTOR, MOT_4_PITCH_FACTOR, MOT_4_YAW_FACTOR, MOT_4_THROTTLE_FACTOR, MOT_4_FORWARD_FACTOR, MOT_4_STRAFE_FACTOR),
-       Thruster(4, MOT_5_ROLL_FACTOR, MOT_5_PITCH_FACTOR, MOT_5_YAW_FACTOR, MOT_5_THROTTLE_FACTOR, MOT_5_FORWARD_FACTOR, MOT_5_STRAFE_FACTOR),
-       Thruster(5, MOT_6_ROLL_FACTOR, MOT_6_PITCH_FACTOR, MOT_6_YAW_FACTOR, MOT_6_THROTTLE_FACTOR, MOT_6_FORWARD_FACTOR, MOT_6_STRAFE_FACTOR)
+{      //       Motor #     Roll Factor     Pitch Factor    Yaw Factor      Throttle Factor     Forward Factor      Lateral Factor
+       Thruster(0,          0,              0,              1.0f,           0,                  -1.0f,              1.0f),
+       Thruster(1,          0,              0,              -1.0f,          0,                  -1.0f,              -1.0f),
+       Thruster(2,          0,              0,              -1.0f,          0,                  1.0f,               1.0f),
+       Thruster(3,          0,              0,              1.0f,           0,                  1.0f,               -1.0f),
+       Thruster(4,          1.0f,           0,              0,              -1.0f,              0,                  0),
+       Thruster(5,          -1.0f,          0,              0,              -1.0f,              0,                  0)
+};
 
 };
 
