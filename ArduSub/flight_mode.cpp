@@ -76,6 +76,10 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         // update notify object
         AP_Notify::flags.autopilot_mode = mode_is_autopilot(control_mode);
 
+        if (mode_is_autopilot(control_mode) && !is_positive(wp_nav.get_default_speed_xy())) {
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Bad desired speed, check param WP_SPEED.");
+        }
+
 #if CAMERA == ENABLED
         camera.set_is_auto_mode(control_mode == AUTO);
 #endif
