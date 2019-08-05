@@ -644,6 +644,43 @@ class AutoTestCopter(AutoTest):
         self.fly_fence_avoid_test_radius_check(avoid_behave=1, timeout=timeout)
         self.fly_fence_avoid_test_radius_check(avoid_behave=0, timeout=timeout)
 
+    def assert_prearm_failure(self, expected_statustext, timeout=5, ignore_prearm_failures=[]):
+        seen_statustext = False
+        seen_command_ack = False
+
+        self.drain_mav()
+        tstart = self.get_sim_time_cached()
+        arm_last_send = 0
+        while True:
+            if seen_command_ack and seen_statustext:
+                break
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException("Did not see failure-to-arm messages (statustext=%s command_ack=%s" % (seen_statustext, seen_command_ack))
+            if now - arm_last_send > 1:
+                arm_last_send = now
+                self.send_mavlink_arm_command()
+            m = self.mav.recv_match(blocking=True, timeout=1)
+            if m is None:
+                continue
+            if m.get_type() == "STATUSTEXT":
+                if expected_statustext in m.text:
+                    self.progress("Got: %s" % str(m))
+                    seen_statustext = True
+                elif "PreArm" in m.text and m.text[8:] not in ignore_prearm_failures:
+                    self.progress("Got: %s" % str(m))
+                    raise NotAchievedException("Unexpected prearm failure (%s)" % m.text)
+
+            if m.get_type() == "COMMAND_ACK":
+                print("Got: %s" % str(m))
+                if m.command == mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM:
+                    if m.result != 4:
+                        raise NotAchievedException("command-ack says we didn't fail to arm")
+                    self.progress("Got: %s" % str(m))
+                    seen_command_ack = True
+            if self.mav.motors_armed():
+                raise NotAchievedException("Armed when we shouldn't have")
+
     # fly_fence_test - fly east until you hit the horizontal circular fence
     def fly_fence_test(self, timeout=180):
         # enable fence, disable avoidance
@@ -662,43 +699,29 @@ class AutoTestCopter(AutoTest):
         self.start_subtest("ensure we can't arm if ouside fence")
         self.load_fence_using_mavproxy("fence-in-middle-of-nowhere.txt")
         self.delay_sim_time(5) # let fence check run so it loads-from-eeprom
-        seen_statustext = False
-        seen_command_ack = False
-
-        tstart = self.get_sim_time_cached()
-        while True:
-            self.send_mavlink_arm_command()
-            if seen_command_ack and seen_statustext:
-                break
-            if self.get_sim_time_cached() - tstart > 5:
-                raise NotAchievedException("Did not see failure-to-arm messages (statustext=%s command_ack=%s" % (seen_statustext, seen_command_ack))
-            m = self.mav.recv_match(blocking=True, timeout=1)
-            if m is None:
-                continue
-            if m.get_type() == "STATUSTEXT":
-                if "vehicle outside fence" in m.text:
-                    self.progress("Got: %s" % str(m))
-                    seen_statustext = True
-                elif "PreArm" in m.text:
-                    self.progress("Got: %s" % str(m))
-                    raise NotAchievedException("Unexpected prearm failure (%s)" % m.text)
-
-            if m.get_type() == "COMMAND_ACK":
-                print("Got: %s" % str(m))
-                if m.command == mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM:
-                    if m.result != 4:
-                        raise NotAchievedException("command-ack says we didn't fail to arm")
-                    self.progress("Got: %s" % str(m))
-                    seen_command_ack = True
-            if self.mav.motors_armed():
-                raise NotAchievedException("Armed when we shouldn't have")
-
+        self.assert_prearm_failure("vehicle outside fence")
         self.progress("Failed to arm outside fence (good!)")
+        self.clear_fence()
+        self.delay_sim_time(5) # let fence breach clear
         self.drain_mav()
-        self.mavproxy.send('fence clear\n')
-        self.delay_sim_time(2)
-        self.mavproxy.send('fence list\n')
-        self.mavproxy.expect("No geo-fence points")
+        self.end_subtest("ensure we can't arm if ouside fence")
+
+        self.start_subtest("ensure we can't arm with bad radius")
+        self.context_push()
+        self.set_parameter("FENCE_RADIUS", -1)
+        self.assert_prearm_failure("Invalid FENCE_RADIUS value")
+        self.context_pop()
+        self.progress("Failed to arm with bad radius")
+        self.drain_mav()
+        self.end_subtest("ensure we can't arm with bad radius")
+
+        self.start_subtest("ensure we can't arm with bad alt")
+        self.context_push()
+        self.set_parameter("FENCE_ALT_MAX", -1)
+        self.assert_prearm_failure("Invalid FENCE_ALT_MAX value")
+        self.context_pop()
+        self.progress("Failed to arm with bad altitude")
+        self.end_subtest("ensure we can't arm with bad radius")
 
         self.start_subtest("Check breach-fence behaviour")
         self.set_parameter("FENCE_TYPE", 2)
