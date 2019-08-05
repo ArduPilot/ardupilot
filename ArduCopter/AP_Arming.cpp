@@ -255,7 +255,7 @@ bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
             #else
             const char *failmsg = "Throttle below Failsafe";
             #endif
-            check_failed(ARMING_CHECK_RC, display_failure, failmsg);
+            check_failed(ARMING_CHECK_RC, display_failure, "%s", failmsg);
             return false;
         }
     }
