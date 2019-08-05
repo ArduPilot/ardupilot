@@ -73,6 +73,15 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PIVOT_RATE", 5, AR_WPNav, _pivot_rate, AR_WPNAV_PIVOT_RATE_DEFAULT),
 
+    // @Param: SPEED_MIN
+    // @DisplayName: Waypoint speed minimum
+    // @Description: Vehicle will not slow below this speed for corners.  Should be set to boat's plane speed.  Does not apply to pivot turns.
+    // @Units: m/s
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("SPEED_MIN", 6, AR_WPNav, _speed_min, 0),
+
     AP_GROUPEND
 };
 
@@ -187,6 +196,8 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, float ne
             // calculate maximum speed that keeps overshoot within bounds
             const float radius_m = fabsf(_overshoot / (cosf(radians(turn_angle_cd * 0.01f)) - 1.0f));
             _desired_speed_final = MIN(_desired_speed, safe_sqrt(_turn_max_mss * radius_m));
+            // ensure speed does not fall below minimum
+            apply_speed_min(_desired_speed_final);
         }
     }
 
@@ -393,6 +404,9 @@ void AR_WPNav::update_desired_speed(float dt)
     const float overshoot_speed_max = safe_sqrt(_turn_max_mss * MAX(_turn_radius, radius_m));
     des_speed_lim = constrain_float(des_speed_lim, -overshoot_speed_max, overshoot_speed_max);
 
+    // ensure speed does not fall below minimum
+    apply_speed_min(des_speed_lim);
+
     // limit speed based on distance to waypoint and max acceleration/deceleration
     if (is_positive(_oa_distance_to_destination) && is_positive(_atc.get_decel_max())) {
         const float dist_speed_max = safe_sqrt(2.0f * _oa_distance_to_destination * _atc.get_decel_max() + sq(_desired_speed_final));
@@ -414,4 +428,19 @@ void AR_WPNav::set_turn_params(float turn_max_g, float turn_radius, bool pivot_p
 void AR_WPNav::set_default_overshoot(float overshoot)
 {
     _overshoot.set_default(overshoot);
+}
+
+// adjust speed to ensure it does not fall below value held in SPEED_MIN
+void AR_WPNav::apply_speed_min(float &desired_speed)
+{
+    if (!is_positive(_speed_min)) {
+        return;
+    }
+
+    float speed_min = MIN(_speed_min, _speed_max);
+
+    // ensure speed does not fall below minimum
+    if (fabsf(desired_speed) < speed_min) {
+        desired_speed = is_negative(desired_speed) ? -speed_min : speed_min;
+    }
 }
