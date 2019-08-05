@@ -74,7 +74,7 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         gcs().send_message(MSG_HEARTBEAT);
 
         // update notify object
-        notify_flight_mode(control_mode);
+        AP_Notify::flags.autopilot_mode = mode_is_autopilot(control_mode);
 
 #if CAMERA == ENABLED
         camera.set_is_auto_mode(control_mode == AUTO);
@@ -199,8 +199,8 @@ bool Sub::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
     );
 }
 
-// notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device
-void Sub::notify_flight_mode(control_mode_t mode)
+// returns true when mode is an autopilot navigation mode
+bool Sub::mode_is_autopilot(control_mode_t mode)
 {
     switch (mode) {
     case AUTO:
@@ -208,11 +208,9 @@ void Sub::notify_flight_mode(control_mode_t mode)
     case CIRCLE:
     case SURFACE:
         // autopilot modes
-        AP_Notify::flags.autopilot_mode = true;
-        break;
+        return true;
     default:
         // all other are manual flight modes
-        AP_Notify::flags.autopilot_mode = false;
-        break;
+        return false;
     }
 }

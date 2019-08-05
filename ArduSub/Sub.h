@@ -582,7 +582,7 @@ private:
     bool mode_requires_GPS(control_mode_t mode);
     bool mode_has_manual_throttle(control_mode_t mode);
     bool mode_allows_arming(control_mode_t mode, bool arming_from_gcs);
-    void notify_flight_mode(control_mode_t mode);
+    bool mode_is_autopilot(control_mode_t mode);
     void read_inertia();
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
