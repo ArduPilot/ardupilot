@@ -488,7 +488,11 @@ void AP_TECS::_update_height_demand(void)
     _hgt_dem_prev = _hgt_dem;
 
     // Apply first order lag to height demand
-    _hgt_dem_adj = 0.05f * _hgt_dem + 0.95f * _hgt_dem_adj_last;
+    if (!_flags.is_doing_auto_land) {
+        _hgt_dem_adj = 0.05f * _hgt_dem + 0.95f * _hgt_dem_adj_last;
+    } else {
+        _hgt_dem_adj = _hgt_dem;
+    }
 
     // when flaring force height rate demand to the
     // configured sink rate and adjust the demanded height to
@@ -522,25 +526,6 @@ void AP_TECS::_update_height_demand(void)
         _hgt_rate_dem = (_hgt_dem_adj - _hgt_dem_adj_last) / 0.1f;
         _flare_counter = 0;
     }
-
-    // for landing approach we will predict ahead by the time constant
-    // plus the lag produced by the first order filter. This avoids a
-    // lagged height demand while constantly descending which causes
-    // us to consistently be above the desired glide slope. This will
-    // be replaced with a better zero-lag filter in the future.
-    float new_hgt_dem = _hgt_dem_adj;
-    if (_flags.is_doing_auto_land) {
-        if (hgt_dem_lag_filter_slew < 1) {
-            hgt_dem_lag_filter_slew += 0.1f; // increment at 10Hz to gradually apply the compensation at first
-        } else {
-            hgt_dem_lag_filter_slew = 1;
-        }
-        new_hgt_dem += hgt_dem_lag_filter_slew*(_hgt_dem_adj - _hgt_dem_adj_last)*10.0f*(timeConstant()+1);
-    } else {
-        hgt_dem_lag_filter_slew = 0;
-    }
-    _hgt_dem_adj_last = _hgt_dem_adj;
-    // _hgt_dem_adj = new_hgt_dem;
 }
 
 void AP_TECS::_detect_underspeed(void)
