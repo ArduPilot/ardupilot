@@ -650,15 +650,14 @@ bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
         // only accept position updates when in GUIDED mode
         return false;
     }
-    plane.guided_WP_loc = cmd.content.location;
-    
-    // add home alt if needed
-    if (plane.guided_WP_loc.relative_alt) {
-        plane.guided_WP_loc.alt += plane.home.alt;
-        plane.guided_WP_loc.relative_alt = 0;
+    Location tmp = cmd.content.location;
+    if (!tmp.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+        return false;
     }
 
+    plane.guided_WP_loc = tmp;
     plane.set_guided_WP();
+
     return true;
 }
 
@@ -731,31 +730,30 @@ bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool lock)
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
 {
-    // sanity check location
-    if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_FAILED;
-    }
-
-    Location requested_position {};
-    requested_position.lat = packet.x;
-    requested_position.lng = packet.y;
-
     // check the floating representation for overflow of altitude
     if (fabsf(packet.z * 100.0f) >= 0x7fffff) {
         return MAV_RESULT_FAILED;
     }
-    requested_position.alt = (int32_t)(packet.z * 100.0f);
 
-    // load option flags
-    if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-        requested_position.relative_alt = 1;
+    // must be in guided mode or have been directed to enter it:
+    if (!(((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
+          (plane.control_mode == &plane.mode_guided))) {
+        return MAV_RESULT_FAILED;
     }
-    else if (packet.frame == MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
-        requested_position.terrain_alt = 1;
+
+    Location::AltFrame frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
+        // unknown coordinate frame
+        return MAV_RESULT_UNSUPPORTED;
     }
-    else if (packet.frame != MAV_FRAME_GLOBAL_INT &&
-             packet.frame != MAV_FRAME_GLOBAL) {
-        // not a supported frame
+
+    Location requested_position{
+        packet.x,
+        packet.y,
+        int32_t(packet.z * 100),
+        frame,
+    };
+    if (!requested_position.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
         return MAV_RESULT_FAILED;
     }
 
@@ -771,22 +769,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     }
 
     // location is valid load and set
-    if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
-        (plane.control_mode == &plane.mode_guided)) {
-        plane.set_mode(plane.mode_guided, MODE_REASON_GCS_COMMAND);
-        plane.guided_WP_loc = requested_position;
+    plane.set_mode(plane.mode_guided, MODE_REASON_GCS_COMMAND);
+    plane.guided_WP_loc = requested_position;
+    plane.set_guided_WP();
 
-        // add home alt if needed
-        if (plane.guided_WP_loc.relative_alt) {
-            plane.guided_WP_loc.alt += plane.home.alt;
-            plane.guided_WP_loc.relative_alt = 0;
-        }
-
-        plane.set_guided_WP();
-
-        return MAV_RESULT_ACCEPTED;
-    }
-    return MAV_RESULT_FAILED;
+    return MAV_RESULT_ACCEPTED;
 }
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_int_t &packet)
