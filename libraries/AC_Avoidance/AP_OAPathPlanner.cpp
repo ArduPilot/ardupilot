@@ -178,11 +178,6 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
         // we have a result from the thread
         result_origin = avoidance_result.origin_new;
         result_destination = avoidance_result.destination_new;
-        // log result
-        if (avoidance_result.result_time_ms != _logged_time_ms) {
-            _logged_time_ms = avoidance_result.result_time_ms;
-            AP::logger().Write_OA(_type, destination, result_destination);
-        }
         return avoidance_result.ret_state;
     }
 
