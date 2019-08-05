@@ -1195,14 +1195,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                        (m.target_component, mav.mav.srcComponent))
         return m
 
-    def send_clear_mission(self, mission_type, target_system, target_component):
+    def clear_mission(self, mission_type, target_system=1, target_component=1):
         self.mav.mav.mission_count_send(target_system,
                                         target_component,
                                         0,
                                         mission_type)
         m = self.mav.recv_match(type='MISSION_ACK',
                                 blocking=True,
-                                timeout=1)
+                                timeout=5)
         if m is None:
             raise NotAchievedException("Expected ACK for clearing mission")
         if m.target_system != self.mav.mav.srcSystem:
@@ -1212,8 +1212,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("ACK not targetted at correct component want=%u got=%u" %
                                        (self.mav.mav.srcComponent, m.target_component))
         if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
-            raise NotAchievedException("Expected MAV_MISSION_ACCEPTED got %u" %
-                                       (m.type))
+            raise NotAchievedException("Expected MAV_MISSION_ACCEPTED got %s" %
+                                       (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name,))
 
     def assert_receive_mission_item_request(self, mission_type, seq):
         self.progress("Expecting request for item %u" % seq)
@@ -1577,9 +1577,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.start_subtest("Test write-partial-list")
             self.progress("Clearing rally points using count-send")
-            self.send_clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
-                                    target_system,
-                                    target_component)
+            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+                               target_system=target_system,
+                               target_component=target_component)
             self.progress("Should not be able to set items completely past the waypoint count")
             self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                                items)
