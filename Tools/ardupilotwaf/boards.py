@@ -118,6 +118,7 @@ class Board:
             '-Werror=shadow',
             '-Werror=return-type',
             '-Werror=unused-result',
+            '-Werror=unused-variable',
             '-Werror=narrowing',
             '-Werror=attributes',
             '-Werror=overflow',
