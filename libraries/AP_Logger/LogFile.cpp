@@ -971,16 +971,35 @@ void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points
     WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
 }
 
-void AP_Logger::Write_OA(uint8_t algorithm, const Location& final_dest, const Location& oa_dest)
+void AP_Logger::Write_OABendyRuler(bool active, float target_yaw, float margin, const Location &final_dest, const Location &oa_dest)
 {
-    struct log_OA pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_OA_MSG),
+    struct log_OABendyRuler pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_OA_BENDYRULER_MSG),
         time_us     : AP_HAL::micros64(),
-        algorithm   : algorithm,
+        active      : active,
+        target_yaw  : (uint16_t)wrap_360(target_yaw),
+        yaw         : (uint16_t)wrap_360(AP::ahrs().yaw_sensor * 0.01f),
+        margin      : margin,
         final_lat   : final_dest.lat,
         final_lng   : final_dest.lng,
         oa_lat      : oa_dest.lat,
-        oa_lng      : oa_dest.lng,
+        oa_lng      : oa_dest.lng
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+void AP_Logger::Write_OADijkstra(uint8_t state, uint8_t curr_point, uint8_t tot_points, const Location &final_dest, const Location &oa_dest)
+{
+    struct log_OADijkstra pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_OA_DIJKSTRA_MSG),
+        time_us     : AP_HAL::micros64(),
+        state       : state,
+        curr_point  : curr_point,
+        tot_points  : tot_points,
+        final_lat   : final_dest.lat,
+        final_lng   : final_dest.lng,
+        oa_lat      : oa_dest.lat,
+        oa_lng      : oa_dest.lng
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
