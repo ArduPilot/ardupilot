@@ -29,6 +29,19 @@ namespace SITL {
  */
 
 
+class Thruster {
+public:
+    Thruster(int8_t _servo, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float lat_fac) :
+        servo(_servo)
+    {
+        linear = Vector3f(forward_fac, lat_fac, -throttle_fac);
+        rotational = Vector3f(roll_fac, pitch_fac, yaw_fac);
+    };
+    int8_t servo;
+    Vector3f linear;
+    Vector3f rotational;
+};
+
 class Submarine : public Aircraft {
 public:
     Submarine(const char *home_str, const char *frame_str);
@@ -80,18 +93,7 @@ protected:
     void calculate_drag_force(const Vector3f &velocity, const Vector3f &drag_coefficient, Vector3f &force);
 
     Frame *frame;
-};
-
-class Thruster {
-public:
-    Thruster(int8_t _servo, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, float lat_fac) :
-        servo(_servo)
-    {
-        linear = Vector3f(forward_fac, lat_fac, -throttle_fac);
-        rotational = Vector3f(roll_fac, pitch_fac, yaw_fac);
-    };
-    int8_t servo;
-    Vector3f linear;
-    Vector3f rotational;
+    Thruster* thrusters;
+    uint8_t n_thrusters;
 };
 }

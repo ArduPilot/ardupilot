@@ -117,6 +117,7 @@ static const struct {
     { "plane",              Plane::create },
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
+    { "vectored_6dof",      Submarine::create },
     { "morse",              Morse::create },
 };
 
