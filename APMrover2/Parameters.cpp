@@ -485,7 +485,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: RTL_SPEED
     // @DisplayName: Return-to-Launch speed default
-    // @Description: Return-to-Launch speed default.  If zero use WP_SPEED or CRUISE_SPEED.
+    // @Description: Return-to-Launch speed default.  If zero use WP_SPEED.
     // @Units: m/s
     // @Range: 0 100
     // @Increment: 0.1
@@ -681,7 +681,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
 // @Param: WP_SPEED
 // @DisplayName: Waypoint speed default
-// @Description: Waypoint speed default.  If zero use CRUISE_SPEED.
+// @Description: Waypoint speed default.
 // @Units: m/s
 // @Range: 0 100
 // @Increment: 0.1
