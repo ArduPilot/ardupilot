@@ -113,7 +113,7 @@ class AutoTestQuadPlane(AutoTest):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
         self.load_mission(filename)
-        self.mavproxy.send('fence load %s\n' % fence)
+        self.load_fence(fence)
         self.mavproxy.send('wp list\n')
         self.mavproxy.expect('Requesting [0-9]+ waypoints')
         self.wait_ready_to_arm()
