@@ -17,6 +17,7 @@
 #include <AC_Avoidance/AP_OADatabase.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
 const int16_t OA_BENDYRULER_BEARING_INC = 5;            // check every 5 degrees around vehicle
 const float OA_BENDYRULER_LOOKAHEAD_STEP2_RATIO = 1.0f; // step2's lookahead length as a ratio of step1's lookahead length
@@ -116,7 +117,9 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
                         destination_new.offset_bearing(bearing_test, distance_to_dest);
                         _current_lookahead = MIN(_lookahead, _current_lookahead * 1.1f);
                         // if the chosen direction is directly towards the destination turn off avoidance
-                        return (i != 0 || j != 0);
+                        const bool active = (i != 0 || j != 0);
+                        AP::logger().Write_OABendyRuler(active, bearing_to_dest, margin, destination, destination_new);
+                        return active;
                     }
                 }
             }
@@ -139,6 +142,9 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
     // calculate new target based on best effort
     destination_new = current_loc;
     destination_new.offset_bearing(chosen_bearing, distance_to_dest);
+
+    // log results
+    AP::logger().Write_OABendyRuler(true, chosen_bearing, best_margin, destination, destination_new);
 
     return true;
 }
