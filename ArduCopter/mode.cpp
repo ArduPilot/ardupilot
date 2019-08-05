@@ -257,6 +257,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     // update notify object
     notify_flight_mode();
 
+    if (flightmode->is_autopilot() && !is_positive(wp_nav->get_default_speed_xy())) {
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Bad desired speed, check param WP_SPEED.");
+    }
+
     // return success
     return true;
 }
