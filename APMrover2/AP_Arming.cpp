@@ -172,7 +172,7 @@ bool AP_Arming_Rover::oa_check(bool report)
     if (strlen(failure_msg) == 0) {
         check_failed(ARMING_CHECK_NONE, report, "Check Object Avoidance");
     } else {
-        check_failed(ARMING_CHECK_NONE, report, failure_msg);
+        check_failed(ARMING_CHECK_NONE, report, "%s", failure_msg);
     }
     return false;
 }
