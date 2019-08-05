@@ -292,6 +292,29 @@ class AutoTest(ABC):
         self.reboot_sitl()
         self.fetch_parameters()
 
+    def count_lines_in_filepath(self, filepath):
+        return len([i for i in open(filepath)])
+
+    def load_fence_using_mavproxy(self, filename):
+        self.set_parameter("FENCE_TOTAL", 0)
+        filepath = os.path.join(self.mission_directory(), filename)
+        count = self.count_lines_in_filepath(filepath)
+        self.mavproxy.send('fence load %s\n' % filepath)
+        self.mavproxy.expect("Loaded %u geo-fence" % count)
+        tstart = self.get_sim_time_cached()
+        while True:
+            t2 = self.get_sim_time_cached()
+            if t2 - tstart > 10:
+                raise AutoTestTimeoutException("Failed to do load")
+            newcount = self.get_parameter("FENCE_TOTAL")
+            self.progress("fence total: %u want=%u" % (newcount, count))
+            if count == newcount:
+                break
+            self.delay_sim_time(1)
+
+    def load_fence(self, filename):
+        self.load_fence_using_mavproxy(filename)
+
     def fetch_parameters(self):
         self.mavproxy.send("param fetch\n")
         self.mavproxy.expect("Received [0-9]+ parameters")
