@@ -33,6 +33,18 @@ static Thruster vectored_thrusters[] =
        Thruster(5,          -1.0f,          0,              0,              -1.0f,              0,                  0)
 };
 
+
+static Thruster vectored_6dof_thrusters[] =
+{
+       //       Motor #     Roll Factor     Pitch Factor    Yaw Factor      Throttle Factor     Forward Factor      Lateral Factor
+       Thruster(0,          0,              0,              1.0f,           0,                  -1.0f,              1.0f),
+       Thruster(1,          0,              0,              -1.0f,          0,                  -1.0f,              -1.0f),
+       Thruster(2,          0,              0,              -1.0f,          0,                  1.0f,               1.0f),
+       Thruster(3,          0,              0,              1.0f,           0,                  1.0f,               -1.0f),
+       Thruster(4,          1.0f,           -1.0f,          0,              -1.0f,              0,                  0),
+       Thruster(5,          -1.0f,          -1.0f,          0,              -1.0f,              0,                  0),
+       Thruster(6,          1.0f,           1.0f,           0,              -1.0f,              0,                  0),
+       Thruster(7,          -1.0f,          1.0f,           0,              -1.0f,              0,                  0)
 };
 
 Submarine::Submarine(const char *frame_str) :
@@ -41,6 +53,15 @@ Submarine::Submarine(const char *frame_str) :
 {
     frame_height = 0.0;
     ground_behavior = GROUND_BEHAVIOR_NONE;
+
+    // default to vectored frame
+    thrusters = vectored_thrusters;
+    n_thrusters = 6;
+
+    if (strstr(frame_str, "vectored_6dof")) {
+        thrusters = vectored_6dof_thrusters;
+        n_thrusters = 8;
+    }
 }
 
 // calculate rotational and linear accelerations
@@ -51,8 +72,8 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     // slight positive buoyancy
     body_accel = Vector3f(0, 0, -calculate_buoyancy_acceleration());
 
-    for (int i = 0; i < 6; i++) {
-        Thruster t = vectored_thrusters[i];
+    for (int i = 0; i < n_thrusters; i++) {
+        Thruster t = thrusters[i];
         int16_t pwm = input.servos[t.servo];
         float output = 0;
         if (pwm < 2000 && pwm > 1000) {

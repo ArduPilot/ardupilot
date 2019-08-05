@@ -134,6 +134,7 @@ static const struct {
     { "plane",              Plane::create },
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
+    { "vectored_6dof",      Submarine::create },
     { "silentwings",        SilentWings::create },
     { "morse",              Morse::create },
     { "airsim",             AirSim::create},
