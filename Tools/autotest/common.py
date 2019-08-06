@@ -2168,7 +2168,7 @@ class AutoTest(ABC):
         while True:
             m = self.mav.recv_match(type='MISSION_COUNT',
                                     blocking=True,
-                                    timeout=1)
+                                    timeout=5)
             self.progress(str(m))
             if m is None:
                 raise NotAchievedException("Did not get MISSION_COUNT response")
