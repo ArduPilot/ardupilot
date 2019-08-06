@@ -551,8 +551,8 @@ float AR_AttitudeControl::get_desired_pitch() const
     return _pitch_to_throttle_pid.get_pid_info().target;
 }
 
-// Sailboat heel(roll) angle controller release sail to keep at maximum heel angle
-// But do not attempt to reach maximum heel angle, ie only let sails off do not pull them in
+// Sailboat heel(roll) angle controller releases sail to keep at maximum heel angle
+// but does not attempt to reach maximum heel angle, ie only lets sails out, does not pull them in
 float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
 {
     // sanity check dt
@@ -574,16 +574,14 @@ float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
     // get feed-forward
     const float ff = _sailboat_heel_pid.get_ff();
 
-    // get p
+    // get p, constrain to be zero or negative
     float p = _sailboat_heel_pid.get_p();
-    // constrain p to only be negative
     if (is_positive(p)) {
         p = 0.0f;
     }
 
-    // get i
+    // get i, constrain to be zero or negative
     float i = _sailboat_heel_pid.get_i();
-    // constrain i to only be negative, reset integrator if negative
     if (is_positive(i)) {
         i = 0.0f;
         _sailboat_heel_pid.reset_I();
