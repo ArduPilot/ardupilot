@@ -156,13 +156,17 @@ public:
     float angle(const Vector3<T> &v2) const;
 
     // check if any elements are NAN
-    bool is_nan(void) const;
+    bool is_nan(void) const WARN_IF_UNUSED;
 
     // check if any elements are infinity
-    bool is_inf(void) const;
+    bool is_inf(void) const WARN_IF_UNUSED;
 
     // check if all elements are zero
-    bool is_zero(void) const { return (fabsf(x) < FLT_EPSILON) && (fabsf(y) < FLT_EPSILON) && (fabsf(z) < FLT_EPSILON); }
+    bool is_zero(void) const WARN_IF_UNUSED {
+        return (fabsf(x) < FLT_EPSILON) &&
+               (fabsf(y) < FLT_EPSILON) &&
+               (fabsf(z) < FLT_EPSILON);
+    }
 
 
     // rotate by a standard rotation

@@ -20,6 +20,7 @@ addons:
       - zlib1g-dev
       - gcc-4.9
       - g++-4.9
+      - gdb
       - cmake
       - cmake-data
       - clang-7
@@ -60,7 +61,7 @@ matrix:
   include:
     - if: type != cron
       compiler: "gcc"
-      env: CI_BUILD_TARGET="revo-bootloader iofirmware stm32f7 stm32h7 fmuv2-plane"
+      env: CI_BUILD_TARGET="revo-bootloader CubeOrange-bootloader iofirmware stm32f7 stm32h7 fmuv2-plane"
     - if: type != cron
       compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-copter"

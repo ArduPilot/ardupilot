@@ -103,7 +103,7 @@ def process_sitl_input(buf):
         ch1 = aileron
         ch2 = elevator
         aileron = (ch2-ch1)/2.0
-        # the minus does away with the need for RC2_REV=-1
+        # the minus does away with the need for RC2_REVERSED=-1
         elevator = -(ch2+ch1)/2.0
 
     if opts.vtail:

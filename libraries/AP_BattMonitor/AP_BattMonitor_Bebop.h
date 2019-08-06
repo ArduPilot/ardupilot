@@ -40,6 +40,9 @@ public:
     // bebop provides current info
     bool has_current() const override { return true; };
 
+    // don't allow reset of remaining capacity for bebop battery
+    bool reset_remaining(float percentage) override { return false; }
+
 private:
     float _prev_vbat_raw;
     float _prev_vbat;

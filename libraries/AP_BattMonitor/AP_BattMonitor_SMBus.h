@@ -42,6 +42,9 @@ public:
     // all smart batteries are expected to provide current
     bool has_current() const override { return true; }
 
+    // don't allow reset of remaining capacity for SMBus
+    bool reset_remaining(float percentage) override { return false; }
+    
     void init(void) override;
 
 protected:

@@ -38,7 +38,7 @@ public:
     void update() override;
 
     // handle a LED_CONTROL message, by default device ignore message
-    void handle_led_control(mavlink_message_t *msg) override;
+    void handle_led_control(const mavlink_message_t &msg) override;
 
 private:
     enum oreoled_pattern {

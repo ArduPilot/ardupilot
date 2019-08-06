@@ -26,10 +26,10 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Logger/LogStructure.h>
 
 class NavEKF2_core;
 class AP_AHRS;
@@ -341,6 +341,20 @@ public:
     */
     void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms);
 
+    /*
+      check if switching lanes will reduce the normalised
+      innovations. This is called when the vehicle code is about to
+      trigger an EKF failsafe, and it would like to avoid that by
+      using a different EKF lane
+     */
+    void checkLaneSwitch(void);
+
+    // write EKF information to on-board logs
+    void Log_Write();
+
+    // check if external navigation is being used for yaw observation
+    bool isExtNavUsedForYaw(void) const;
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
@@ -402,6 +416,7 @@ private:
     AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
     AP_Int8 _extnavDelay_ms;        // effective average delay of external nav system measurements relative to inertial measurements (msec)
     AP_Int8 _flowUse;               // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
+    AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -434,6 +449,10 @@ private:
     const uint16_t gndEffectTimeout_ms = 1000;     // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t fusionTimeStep_ms = 10;          // The minimum time interval between covariance predictions and measurement fusions in msec
+
+    // origin set by one of the cores
+    struct Location common_EKF_origin;
+    bool common_origin_valid;
 
     struct {
         bool enabled:1;
@@ -471,6 +490,9 @@ private:
 
     bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
 
+    // time of last lane switch
+    uint32_t lastLaneSwitch_ms;
+
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
@@ -485,4 +507,13 @@ private:
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
+
+    // logging functions shared by cores:
+    void Log_Write_EKF1(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_NKF2(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_NKF3(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_NKF4(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_NKF5(uint64_t time_us) const;
+    void Log_Write_Quaternion(uint8_t core, LogMessages msg_id, uint64_t time_us) const;
+    void Log_Write_Beacon(uint64_t time_us) const;
 };

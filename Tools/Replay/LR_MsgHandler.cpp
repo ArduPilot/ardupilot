@@ -2,6 +2,8 @@
 #include "LogReader.h"
 #include "Replay.h"
 
+#include <cinttypes>
+
 extern const AP_HAL::HAL& hal;
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f,
@@ -427,7 +429,7 @@ void LR_MsgHandler_PM::process_message(uint8_t *msg)
     uint32_t new_logdrop;
     if (field_value(msg, "LogDrop", new_logdrop) &&
         new_logdrop != 0) {
-        printf("PM.LogDrop: %u dropped at timestamp %lu\n", new_logdrop, last_timestamp_usec);
+        printf("PM.LogDrop: %u dropped at timestamp %" PRIu64 "\n", new_logdrop, last_timestamp_usec);
     }
 }
 

@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
-    // @Range: 0.05 0.5
+    // @Range: 0.01 0.5
     // @Increment: 0.005
     // @User: Standard
 
@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_RLL_D
     // @DisplayName: Roll axis rate controller D gain
     // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
-    // @Range: 0.0 0.02
+    // @Range: 0.0 0.05
     // @Increment: 0.001
     // @User: Standard
 
@@ -43,9 +43,25 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_RLL_FILT
-    // @DisplayName: Roll axis rate controller input frequency in Hz
-    // @Description: Roll axis rate controller input frequency in Hz
+    // @Param: RAT_RLL_FLTT
+    // @DisplayName: Roll axis rate controller target frequency in Hz
+    // @Description: Roll axis rate controller target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_RLL_FLTE
+    // @DisplayName: Roll axis rate controller error frequency in Hz
+    // @Description: Roll axis rate controller error frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_RLL_FLTD
+    // @DisplayName: Roll axis rate controller derivative frequency in Hz
+    // @Description: Roll axis rate controller derivative frequency in Hz
     // @Range: 1 100
     // @Increment: 1
     // @Units: Hz
@@ -55,7 +71,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
     // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
-    // @Range: 0.05 0.50
+    // @Range: 0.01 0.50
     // @Increment: 0.005
     // @User: Standard
 
@@ -77,7 +93,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_PIT_D
     // @DisplayName: Pitch axis rate controller D gain
     // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
-    // @Range: 0.0 0.02
+    // @Range: 0.0 0.05
     // @Increment: 0.001
     // @User: Standard
 
@@ -88,9 +104,25 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_PIT_FILT
-    // @DisplayName: Pitch axis rate controller input frequency in Hz
-    // @Description: Pitch axis rate controller input frequency in Hz
+    // @Param: RAT_PIT_FLTT
+    // @DisplayName: Pitch axis rate controller target frequency in Hz
+    // @Description: Pitch axis rate controller target frequency in Hz
+    // @Range: 1 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_PIT_FLTE
+    // @DisplayName: Pitch axis rate controller error frequency in Hz
+    // @Description: Pitch axis rate controller error frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_PIT_FLTD
+    // @DisplayName: Pitch axis rate controller derivative frequency in Hz
+    // @Description: Pitch axis rate controller derivative frequency in Hz
     // @Range: 1 100
     // @Increment: 1
     // @Units: Hz
@@ -133,10 +165,26 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_YAW_FILT
-    // @DisplayName: Yaw axis rate controller input frequency in Hz
-    // @Description: Yaw axis rate controller input frequency in Hz
+    // @Param: RAT_YAW_FLTT
+    // @DisplayName: Yaw axis rate controller target frequency in Hz
+    // @Description: Yaw axis rate controller target frequency in Hz
+    // @Range: 1 5
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_YAW_FLTE
+    // @DisplayName: Yaw axis rate controller error frequency in Hz
+    // @Description: Yaw axis rate controller error frequency in Hz
     // @Range: 1 10
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_YAW_FLTD
+    // @DisplayName: Yaw axis rate controller derivative frequency in Hz
+    // @Description: Yaw axis rate controller derivative frequency in Hz
+    // @Range: 1 20
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -163,15 +211,39 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
+    // @Param: RAT_RLL_FILT
+    // @DisplayName: Roll axis rate controller input frequency in Hz
+    // @Description: Roll axis rate controller input frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_PIT_FILT
+    // @DisplayName: Pitch axis rate controller input frequency in Hz
+    // @Description: Pitch axis rate controller input frequency in Hz
+    // @Range: 1 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: RAT_YAW_FILT
+    // @DisplayName: Yaw axis rate controller input frequency in Hz
+    // @Description: Yaw axis rate controller input frequency in Hz
+    // @Range: 1 10
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
     AP_GROUPEND
 };
 
 AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :
     AC_AttitudeControl(ahrs, aparm, motors, dt),
     _motors_multi(motors),
-    _pid_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
-    _pid_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
-    _pid_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_YAW_FILT_HZ, dt)
+    _pid_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
+    _pid_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
+    _pid_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, AC_ATC_MULTI_RATE_YAW_FILT_HZ, 0.0f, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -256,9 +328,15 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     update_throttle_rpy_mix();
 
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
-    _motors.set_roll(rate_target_to_motor_roll(gyro_latest.x, _rate_target_ang_vel.x));
-    _motors.set_pitch(rate_target_to_motor_pitch(gyro_latest.y, _rate_target_ang_vel.y));
-    _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _rate_target_ang_vel.z));
+
+    _motors.set_roll(get_rate_roll_pid().update_all(_rate_target_ang_vel.x, gyro_latest.x, _motors.limit.roll));
+    _motors.set_roll_ff(get_rate_roll_pid().get_ff());
+
+    _motors.set_pitch(get_rate_pitch_pid().update_all(_rate_target_ang_vel.y, gyro_latest.y, _motors.limit.pitch));
+    _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
+
+    _motors.set_yaw(get_rate_yaw_pid().update_all(_rate_target_ang_vel.z, gyro_latest.z, _motors.limit.yaw));
+    _motors.set_yaw_ff(get_rate_yaw_pid().get_ff());
 
     control_monitor_update();
 }

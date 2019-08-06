@@ -32,7 +32,7 @@ define HAL_STORAGE_SIZE 16384
 I2C_ORDER I2C2 I2C1
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7
+UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7 OTG2
 
 # If the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU.
@@ -81,8 +81,8 @@ PB2 BOOT1 INPUT
 PB3 FMU_SW0 INPUT
 
 # This defines the pins for the 2nd CAN interface, if available.
-#PB6 CAN2_TX CAN2
-#PB12 CAN2_RX CAN2
+PB6 CAN2_TX CAN2
+PB12 CAN2_RX CAN2
 
 # Now the first I2C bus. The pin speeds are automatically setup
 # correctly, but can be overridden here if needed.
@@ -135,8 +135,8 @@ PD7 BARO_CS CS
 PE4 MPU_EXT_CS CS
 
 # the first CAN bus
-#PD0 CAN1_RX CAN1
-#PD1 CAN1_TX CAN1
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
 
 # Another USART, this one for telem1. This one has RTS and CTS lines.
 # USART2 serial2 telem1
@@ -248,7 +248,7 @@ IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
 IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
 IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
 
-define HAL_DEFAULT_INS_FAST_SAMPLE 1
+define HAL_DEFAULT_INS_FAST_SAMPLE 5
 
 # two baros
 BARO MS56XX SPI:ms5611_ext
@@ -294,8 +294,8 @@ define AP_FEATURE_SBUS_OUT 1
 
 # Now setup the default battery pins driver analog pins and default
 # scaling for the power brick.
-define HAL_BATT_VOLT_PIN 2
-define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_PIN 14
+define HAL_BATT_CURR_PIN 15
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 define HAL_GPIO_PWM_VOLT_PIN 3
@@ -304,7 +304,7 @@ define HAL_GPIO_PWM_VOLT_PIN 3
 # we can automatically update the IOMCU firmware on boot. The format
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
-ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
 
 DMA_NOSHARE SPI1* SPI4* USART6*
 

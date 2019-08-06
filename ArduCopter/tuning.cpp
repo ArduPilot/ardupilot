@@ -215,7 +215,7 @@ void Copter::tuning()
 #endif
 
      case TUNING_RATE_YAW_FILT:
-         attitude_control->get_rate_yaw_pid().filt_hz(tuning_value);
+         attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
          break;
 
 #if WINCH_ENABLED == ENABLED

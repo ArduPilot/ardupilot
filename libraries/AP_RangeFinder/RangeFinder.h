@@ -17,7 +17,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_SerialManager/AP_SerialManager.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_RangeFinder_Params.h"
 
 // Maximum number of range finder instances available on this platform
@@ -38,7 +38,7 @@ class RangeFinder
     //UAVCAN drivers are initialised in the Backend, hence list of drivers is needed there.
     friend class AP_RangeFinder_UAVCAN;
 public:
-    RangeFinder(AP_SerialManager &_serial_manager);
+    RangeFinder();
 
     /* Do not allow copies */
     RangeFinder(const RangeFinder &other) = delete;
@@ -111,6 +111,9 @@ public:
         return num_instances;
     }
 
+    // prearm checks
+    bool prearm_healthy(char *failure_msg, const uint8_t failure_msg_len) const;
+
     // detect and initialise any available rangefinders
     void init(enum Rotation orientation_default);
 
@@ -119,7 +122,7 @@ public:
     void update(void);
 
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t &msg);
 
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
@@ -166,13 +169,11 @@ private:
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances;
     float estimated_terrain_height;
-    AP_SerialManager &serial_manager;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 
     void convert_params(void);
 
     void detect_instance(uint8_t instance, uint8_t& serial_instance);
-    void update_instance(uint8_t instance);  
 
     bool _add_backend(AP_RangeFinder_Backend *driver);
 

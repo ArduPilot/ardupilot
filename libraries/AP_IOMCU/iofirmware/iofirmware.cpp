@@ -171,6 +171,13 @@ void AP_IOMCU_FW::init()
         has_heater = true;
     }
 
+    //Set Heater pin mode
+    if (heater_pwm_polarity) {
+        palSetLineMode(HAL_GPIO_PIN_HEATER, PAL_MODE_OUTPUT_PUSHPULL);
+    } else {
+        palSetLineMode(HAL_GPIO_PIN_HEATER, PAL_MODE_OUTPUT_OPENDRAIN);
+    }
+
     adc_init();
     rcin_serial_init();
 
@@ -284,10 +291,14 @@ void AP_IOMCU_FW::heater_update()
         }
     } else if (reg_setup.heater_duty_cycle == 0 || (now - last_heater_ms > 3000UL)) {
         // turn off the heater
-        HEATER_SET(0);
+        HEATER_SET(!heater_pwm_polarity);
     } else {
-        uint8_t cycle = ((now / 10UL) % 100U);
-        HEATER_SET(!(cycle >= reg_setup.heater_duty_cycle));
+        // we use a pseudo random sequence to dither the cycling as
+        // the heater has a significant effect on the internal
+        // magnetometers. The random generator dithers this so we don't get a 1Hz cycly in the magnetometer.
+        // The impact on the mags is about 25 mGauss.
+        bool heater_on = (get_random16() < uint32_t(reg_setup.heater_duty_cycle) * 0xFFFFU / 100U);
+        HEATER_SET(heater_on? heater_pwm_polarity : !heater_pwm_polarity);
     }
 }
 

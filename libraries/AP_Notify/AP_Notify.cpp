@@ -119,7 +119,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: DISPLAY_TYPE
     // @DisplayName: Type of on-board I2C display
     // @Description: This sets up the type of on-board I2C display. Disabled by default.
-    // @Values: 0:Disable,1:ssd1306,2:sh1106
+    // @Values: 0:Disable,1:ssd1306,2:sh1106,10:SITL
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 
@@ -331,7 +331,7 @@ void AP_Notify::update(void)
 }
 
 // handle a LED_CONTROL message
-void AP_Notify::handle_led_control(mavlink_message_t *msg)
+void AP_Notify::handle_led_control(const mavlink_message_t &msg)
 {
     for (uint8_t i = 0; i < _num_devices; i++) {
         if (_devices[i] != nullptr) {
@@ -341,7 +341,7 @@ void AP_Notify::handle_led_control(mavlink_message_t *msg)
 }
 
 // handle a PLAY_TUNE message
-void AP_Notify::handle_play_tune(mavlink_message_t *msg)
+void AP_Notify::handle_play_tune(const mavlink_message_t &msg)
 {
     for (uint8_t i = 0; i < _num_devices; i++) {
         if (_devices[i] != nullptr) {

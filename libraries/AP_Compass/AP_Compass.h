@@ -8,7 +8,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
@@ -151,8 +150,8 @@ public:
     */
     MAV_RESULT handle_mag_cal_command(const mavlink_command_long_t &packet);
 
-    void send_mag_cal_progress(mavlink_channel_t chan);
-    void send_mag_cal_report(mavlink_channel_t chan);
+    bool send_mag_cal_progress(const class GCS_MAVLINK& link);
+    bool send_mag_cal_report(const class GCS_MAVLINK& link);
 
     // check if the compasses are pointing in the same direction
     bool consistent() const;

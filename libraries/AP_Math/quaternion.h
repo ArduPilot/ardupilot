@@ -57,7 +57,7 @@ public:
     }
 
     // check if any elements are NAN
-    bool        is_nan(void) const
+    bool        is_nan(void) const WARN_IF_UNUSED
     {
         return isnan(q1) || isnan(q2) || isnan(q3) || isnan(q4);
     }

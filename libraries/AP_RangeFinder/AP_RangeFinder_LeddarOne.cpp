@@ -14,6 +14,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/crc.h>
 #include "AP_RangeFinder_LeddarOne.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -26,10 +27,10 @@ extern const AP_HAL::HAL& hal;
 */
 AP_RangeFinder_LeddarOne::AP_RangeFinder_LeddarOne(RangeFinder::RangeFinder_State &_state,
                                                    AP_RangeFinder_Params &_params,
-                                                   AP_SerialManager &serial_manager,
                                                    uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state, _params)
 {
+    const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
@@ -41,9 +42,9 @@ AP_RangeFinder_LeddarOne::AP_RangeFinder_LeddarOne(RangeFinder::RangeFinder_Stat
    trying to take a reading on Serial. If we get a result the sensor is
    there.
 */
-bool AP_RangeFinder_LeddarOne::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
+bool AP_RangeFinder_LeddarOne::detect(uint8_t serial_instance)
 {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
+    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 // read - return last value measured by sensor
@@ -142,18 +143,7 @@ void AP_RangeFinder_LeddarOne::update(void)
 */
 bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck)
 {
-    uint16_t crc = 0xFFFF;
-
-    for (uint32_t i=0; i<aLength; i++) {
-        crc ^= aBuffer[i];
-        for (uint32_t j=0; j<8; j++) {
-            if (crc & 1) {
-                crc = (crc >> 1) ^ 0xA001;
-            } else {
-                crc >>= 1;
-            }
-        }
-    }
+    uint16_t crc = calc_crc_modbus(aBuffer, aLength);
 
     uint8_t lCRCLo = LOWBYTE(crc);
     uint8_t lCRCHi = HIGHBYTE(crc);

@@ -8,6 +8,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_Arming/AP_Arming.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/Location.h>
 #include "lua/src/lua.hpp"

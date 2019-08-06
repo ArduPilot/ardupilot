@@ -7,8 +7,8 @@
 #if ADVANCED_FAILSAFE == ENABLED
 
 // Constructor
-AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission, const AP_GPS &_gps) :
-    AP_AdvancedFailsafe(_mission, _gps)
+AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission) :
+    AP_AdvancedFailsafe(_mission)
 {}
 
 

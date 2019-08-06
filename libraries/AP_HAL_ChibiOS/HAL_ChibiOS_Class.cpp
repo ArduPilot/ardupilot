@@ -43,6 +43,7 @@ static HAL_UARTD_DRIVER;
 static HAL_UARTE_DRIVER;
 static HAL_UARTF_DRIVER;
 static HAL_UARTG_DRIVER;
+static HAL_UARTH_DRIVER;
 #else
 static Empty::UARTDriver uartADriver;
 static Empty::UARTDriver uartBDriver;
@@ -51,6 +52,7 @@ static Empty::UARTDriver uartDDriver;
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;
+static Empty::UARTDriver uartHDriver;
 #endif
 
 #if HAL_USE_I2C == TRUE
@@ -111,6 +113,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &uartEDriver,
         &uartFDriver,
         &uartGDriver,
+        &uartHDriver,
         &i2cDeviceManager,
         &spiDeviceManager,
         &analogIn,
@@ -156,6 +159,8 @@ thread_t* get_main_thread()
 
 static AP_HAL::HAL::Callbacks* g_callbacks;
 
+static AP_HAL::Util::PersistentData last_persistent_data;
+
 static void main_loop()
 {
     daemon_task = chThdGetSelfX();
@@ -197,6 +202,7 @@ static void main_loop()
     if (stm32_was_watchdog_reset()) {
         // load saved watchdog data
         stm32_watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
+        last_persistent_data = utilInstance.persistent_data;
     }
 
     schedulerInstance.hal_initialized();
@@ -213,15 +219,20 @@ static void main_loop()
 
     if (hal.util->was_watchdog_reset()) {
         AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
-        const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
-        AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine", "QbIIHHH",
+        const AP_HAL::Util::PersistentData &pd = last_persistent_data;
+        AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine,FL,FT,FA,FP,ICSR", "QbIIHHHHHIBI",
                                    AP_HAL::micros64(),
                                    pd.scheduler_task,
                                    pd.internal_errors,
                                    pd.internal_error_count,
                                    pd.last_mavlink_msgid,
                                    pd.last_mavlink_cmd,
-                                   pd.semaphore_line);
+                                   pd.semaphore_line,
+                                   pd.fault_line,
+                                   pd.fault_type,
+                                   pd.fault_addr,
+                                   pd.fault_thd_prio,
+                                   pd.fault_icsr);
     }
 #endif
 

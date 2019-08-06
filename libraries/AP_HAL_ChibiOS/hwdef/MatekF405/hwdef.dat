@@ -136,8 +136,10 @@ FLASH_RESERVE_START_KB 64
 # one IMU
 IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
-# one baro
+# probe for I2C BMP280, but allow init on board variants without onboard baro too
 BARO BMP280 I2C:0:0x76
+define HAL_PROBE_EXTERNAL_I2C_BAROS
+define HAL_BARO_ALLOW_INIT_NO_BARO
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types

@@ -33,7 +33,7 @@ public:
     // interface to the clients for registration
     static void register_client(AP_AccelCal_Client* client);
 
-    void handleMessage(const mavlink_message_t * msg);
+    void handleMessage(const mavlink_message_t &msg);
 
 private:
     GCS_MAVLINK *_gcs;
@@ -74,7 +74,6 @@ private:
     uint8_t _num_active_calibrators;
 
     AccelCalibrator* get_calibrator(uint8_t i);
-    void _printf(const char*, ...);
 };
 
 class AP_AccelCal_Client {

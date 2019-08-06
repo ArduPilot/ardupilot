@@ -217,17 +217,17 @@ private:
     };
     
     struct sensor {
-        baro_type_t type;                   // 0 for air pressure (default), 1 for water pressure
         uint32_t last_update_ms;        // last update time in ms
         uint32_t last_change_ms;        // last update time in ms that included a change in reading from previous readings
-        bool healthy:1;                 // true if sensor is healthy
-        bool alt_ok:1;                  // true if calculated altitude is ok
-        bool calibrated:1;              // true if calculated calibrated successfully
         float pressure;                 // pressure in Pascal
         float temperature;              // temperature in degrees C
         float altitude;                 // calculated altitude
         AP_Float ground_pressure;
         float p_correction;
+        baro_type_t type;               // 0 for air pressure (default), 1 for water pressure
+        bool healthy;                   // true if sensor is healthy
+        bool alt_ok;                    // true if calculated altitude is ok
+        bool calibrated;                // true if calculated calibrated successfully
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;

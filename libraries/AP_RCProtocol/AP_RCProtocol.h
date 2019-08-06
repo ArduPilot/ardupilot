@@ -18,7 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 
-#define MAX_RCIN_CHANNELS 32
+#define MAX_RCIN_CHANNELS 18
 #define MIN_RCIN_CHANNELS  5
 
 class AP_RCProtocol_Backend;
@@ -32,6 +32,7 @@ public:
 
     enum rcprotocol_t {
         PPM = 0,
+        IBUS,
         SBUS,
         SBUS_NI,
         DSM,

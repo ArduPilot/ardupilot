@@ -7,7 +7,13 @@ const AP_FWVersion AP_FWVersion::fwver
     minor: 1,
     patch: 4,
     fw_type: FIRMWARE_VERSION_TYPE_DEV,
-    fw_string: "Dummy GCS"
+    fw_string: "Dummy GCS",
+    fw_hash_str: "",
+    middleware_name: "",
+    middleware_hash_str: "",
+    os_name: "",
+    os_hash_str: "",
+    os_sw_version: 0
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
@@ -18,7 +24,7 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
 class GCS_MAVLINK_Dummy : public GCS_MAVLINK
 {
     uint32_t telem_delay() const override { return 0; }
-    void handleMessage(mavlink_message_t * msg) override {}
+    void handleMessage(const mavlink_message_t &msg) override {}
     bool try_send_message(enum ap_message id) override { return true; }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override {}

@@ -40,6 +40,11 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     if (strstr(frame_str, "-heavy")) {
         mass = 8;
     }
+    if (strstr(frame_str, "-jet")) {
+        // a 22kg "jet", level top speed is 102m/s
+        mass = 22;
+        thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
+    }
     if (strstr(frame_str, "-revthrust")) {
         reverse_thrust = true;
     }
@@ -68,11 +73,11 @@ Plane::Plane(const char *home_str, const char *frame_str) :
         launch_accel = 10;
         launch_time = 1;
     }
-   if (strstr(frame_str, "-tailsitter")) {
-       tailsitter = true;
-       ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
-       thrust_scale *= 1.5;
-   }
+    if (strstr(frame_str, "-tailsitter")) {
+        tailsitter = true;
+        ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
+        thrust_scale *= 1.5;
+    }
 
     if (strstr(frame_str, "-ice")) {
         ice_engine = true;
@@ -263,7 +268,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         float ch1 = aileron;
         float ch2 = elevator;
         aileron  = (ch2-ch1)/2.0f;
-        // the minus does away with the need for RC2_REV=-1
+        // the minus does away with the need for RC2_REVERSED=-1
         elevator = -(ch2+ch1)/2.0f;
 
         // assume no rudder

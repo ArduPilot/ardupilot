@@ -39,12 +39,6 @@ void Copter::Log_Write_Control_Tuning()
         target_climb_rate_cms = pos_control->get_vel_target_z();
     }
 
-    float surface_tracking_target_alt;
-    if (surface_tracking.valid_for_logging) {
-        surface_tracking_target_alt = surface_tracking.target_alt_cm * 0.01f; // cm->m
-    } else {
-        surface_tracking_target_alt = logger.quiet_nan();
-    }
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         time_us             : AP_HAL::micros64(),
@@ -55,7 +49,7 @@ void Copter::Log_Write_Control_Tuning()
         desired_alt         : des_alt_m,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
-        desired_rangefinder_alt : surface_tracking_target_alt,
+        desired_rangefinder_alt : surface_tracking.logging_target_alt(),
         rangefinder_alt     : rangefinder_state.alt_cm,
         terr_alt            : terr_alt,
         target_climb_rate   : target_climb_rate_cms,
@@ -82,7 +76,7 @@ void Copter::Log_Write_Attitude()
 // Write an EKF and POS packet
 void Copter::Log_Write_EKF_POS()
 {
-    logger.Write_EKF(ahrs);
+    AP::ahrs_navekf().Log_Write();
     logger.Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
@@ -280,6 +274,8 @@ struct PACKED log_Heli {
     uint64_t time_us;
     float    desired_rotor_speed;
     float    main_rotor_speed;
+    float    governor_output;
+    float    control_output;
 };
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -291,6 +287,8 @@ void Copter::Log_Write_Heli()
         time_us                 : AP_HAL::micros64(),
         desired_rotor_speed     : motors->get_desired_rotor_speed(),
         main_rotor_speed        : motors->get_main_rotor_speed(),
+        governor_output         : motors->get_governor_output(),
+        control_output          : motors->get_control_output(),
     };
     logger.WriteBlock(&pkt_heli, sizeof(pkt_heli));
 }
@@ -403,7 +401,7 @@ const struct LogStructure Copter::log_structure[] = {
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
 #if FRAME_CONFIG == HELI_FRAME
     { LOG_HELI_MSG, sizeof(log_Heli),
-      "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM", "s--", "F--" },
+      "HELI",  "Qffff",        "TimeUS,DRRPM,ERRPM,Gov,Throt", "s----", "F----" },
 #endif
 #if PRECISION_LANDING == ENABLED
     { LOG_PRECLAND_MSG, sizeof(log_Precland),

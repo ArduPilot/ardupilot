@@ -121,8 +121,7 @@ float ModeGuided::get_distance_to_destination() const
     case Guided_TurnRateAndSpeed:
         return 0.0f;
     case Guided_Loiter:
-        rover.mode_loiter.get_distance_to_destination();
-        break;
+        return rover.mode_loiter.get_distance_to_destination();
     }
 
     // we should never reach here but just in case, return 0
@@ -151,7 +150,7 @@ bool ModeGuided::get_desired_location(Location& destination) const
     switch (_guided_mode) {
     case Guided_WP:
         if (g2.wp_nav.is_destination_valid()) {
-            destination = g2.wp_nav.get_destination();
+            destination = g2.wp_nav.get_oa_destination();
             return true;
         }
         return false;

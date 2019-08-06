@@ -33,7 +33,7 @@
 #define FLIP_PITCH_FORWARD  -1      // used to set flip_dir
 
 // flip_init - initialise flip controller
-bool Copter::ModeFlip::init(bool ignore_checks)
+bool ModeFlip::init(bool ignore_checks)
 {
     // only allow flip from ACRO, Stabilize, AltHold or Drift flight modes
     if (copter.control_mode != ACRO &&
@@ -44,7 +44,7 @@ bool Copter::ModeFlip::init(bool ignore_checks)
     }
 
     // if in acro or stabilize ensure throttle is above zero
-    if (ap.throttle_zero && (copter.control_mode == ACRO || copter.control_mode == STABILIZE)) {
+    if (copter.ap.throttle_zero && (copter.control_mode == ACRO || copter.control_mode == STABILIZE)) {
         return false;
     }
 
@@ -54,7 +54,7 @@ bool Copter::ModeFlip::init(bool ignore_checks)
     }
 
     // only allow flip when flying
-    if (!motors->armed() || ap.land_complete) {
+    if (!motors->armed() || copter.ap.land_complete) {
         return false;
     }
 
@@ -92,7 +92,7 @@ bool Copter::ModeFlip::init(bool ignore_checks)
 
 // run - runs the flip controller
 // should be called at 100hz or more
-void Copter::ModeFlip::run()
+void ModeFlip::run()
 {
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
     if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {

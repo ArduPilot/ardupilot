@@ -209,6 +209,43 @@ void NavEKF3_core::realignYawGPS()
     }
 }
 
+void NavEKF3_core::alignYawAngle()
+{
+    // calculate the variance for the rotation estimate expressed as a rotation vector
+    // this will be used later to reset the quaternion state covariances
+    Vector3f angleErrVarVec = calcRotVecVariances();
+
+    if (yawAngDataDelayed.type == 2) {
+        Vector3f euler321;
+        stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
+        stateStruct.quat.from_euler(euler321.x, euler321.y, yawAngDataDelayed.yawAng);
+    } else if (yawAngDataDelayed.type == 1) {
+        Vector3f euler312 = stateStruct.quat.to_vector312();
+        stateStruct.quat.from_vector312(euler312.x, euler312.y, yawAngDataDelayed.yawAng);
+    }
+
+    // set the yaw angle variance to a larger value to reflect the uncertainty in yaw
+    angleErrVarVec.z = sq(yawAngDataDelayed.yawAngErr);
+
+    // reset the quaternion covariances using the rotation vector variances
+    zeroRows(P,0,3);
+    zeroCols(P,0,3);
+    initialiseQuatCovariances(angleErrVarVec);
+
+    // send yaw alignment information to console
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned",(unsigned)imu_index);
+
+
+    // record the yaw reset event
+    recordYawReset();
+
+    // clear any pending yaw reset requests
+    gpsYawResetRequest = false;
+    magYawResetRequest = false;
+
+
+}
+
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
@@ -223,6 +260,20 @@ void NavEKF3_core::SelectMagFusion()
     // used for load levelling
     magFusePerformed = false;
 
+    // Handle case where we are using an external yaw sensor instead of a magnetomer
+    if ((frontend->_magCal == 5)) {
+        if (storedYawAng.recall(yawAngDataDelayed,imuDataDelayed.time_ms)) {
+            if (tiltAlignComplete && !yawAlignComplete) {
+                alignYawAngle();
+            } else if (tiltAlignComplete && yawAlignComplete) {
+                fuseEulerYaw(false, true);
+            } else {
+                fuseEulerYaw(true, true);
+            }
+        }
+        return;
+    }
+
     // check for and read new magnetometer measurements
     readMagData();
 
@@ -234,11 +285,11 @@ void NavEKF3_core::SelectMagFusion()
         magTimeout = true;
     }
 
-    // check for availability of magnetometer data to fuse
+    // check for availability of magnetometer or other yaw data to fuse
     magDataToFuse = storedMag.recall(magDataDelayed,imuDataDelayed.time_ms);
 
     // Control reset of yaw and magnetic field states if we are using compass data
-    if (magDataToFuse && use_compass()) {
+    if (magDataToFuse) {
         controlMagYawReset();
     }
 
@@ -248,9 +299,11 @@ void NavEKF3_core::SelectMagFusion()
     if (dataReady) {
         // use the simple method of declination to maintain heading if we cannot use the magnetic field states
         if(inhibitMagStates || magStateResetRequest || !magStateInitComplete) {
-            fuseEulerYaw();
+            fuseEulerYaw(false, false);
+
             // zero the test ratio output from the inactive 3-axis magnetometer fusion
             magTestRatio.zero();
+
         } else {
             // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
             // maintained by fusing declination as a synthesised observation
@@ -278,7 +331,7 @@ void NavEKF3_core::SelectMagFusion()
     // airborne. For other platform types we do this all the time.
     if (!use_compass()) {
         if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
-            fuseEulerYaw();
+            fuseEulerYaw(true, false);
             magTestRatio.zero();
             yawTestRatio = 0.0f;
             lastSynthYawTime_ms = imuSampleTime_ms;
@@ -746,23 +799,51 @@ void NavEKF3_core::FuseMagnetometer()
  * It is suitable for use when the external magnetic field environment is disturbed (eg close to metal structures, on ground).
  * It is not as robust to magnetometer failures.
  * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degrees latitude of the magnetic poles)
+ *
+ * The following booleans are passed to the function to control the fusion process:
+ *
+ * usePredictedYaw -  Set this to true if no valid yaw measurement will be available for an extended periods.
+ *                    This uses an innovation set to zero which prevents uncontrolled quaternion covaraince growth.
+ * UseExternalYawSensor - Set this to true if yaw data from an external yaw sensor is being used instead of the magnetometer.
 */
-void NavEKF3_core::fuseEulerYaw()
+void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
 {
     float q0 = stateStruct.quat[0];
     float q1 = stateStruct.quat[1];
     float q2 = stateStruct.quat[2];
     float q3 = stateStruct.quat[3];
 
-    // compass measurement error variance (rad^2)
-    const float R_YAW = sq(frontend->_yawNoise);
+    // yaw measurement error variance (rad^2)
+    float R_YAW;
+    if (!useExternalYawSensor) {
+        R_YAW = sq(frontend->_yawNoise);
+    } else {
+        R_YAW = sq(yawAngDataDelayed.yawAngErr);
+    }
+
+    // determine if a 321 or 312 Euler sequence is best
+    bool useEuler321 = true;
+    if (useExternalYawSensor) {
+        // If using an external sensor, the definition of yaw is specified through the sensor interface
+        if (yawAngDataDelayed.type == 2) {
+            useEuler321 = true;
+        } else if (yawAngDataDelayed.type == 1) {
+            useEuler321 = false;
+        } else {
+            // invalid selection
+            return;
+        }
+    } else {
+        // if using the magnetometer, it is determined automatically
+        useEuler321 = (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2]));
+    }
 
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
-    // determine if a 321 or 312 Euler sequence is best
-    float predicted_yaw;
+    float yawAngPredicted;
     float H_YAW[4];
     Matrix3f Tbn_zeroYaw;
-    if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
+
+    if (useEuler321) {
         // calculate observation jacobian when we are observing the first rotation in a 321 sequence
         float t9 = q0*q3;
         float t10 = q1*q2;
@@ -796,7 +877,7 @@ void NavEKF3_core::fuseEulerYaw()
         // Get the 321 euler angles
         Vector3f euler321;
         stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
-        predicted_yaw = euler321.z;
+        yawAngPredicted = euler321.z;
 
         // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
         Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
@@ -834,27 +915,30 @@ void NavEKF3_core::fuseEulerYaw()
 
         // Get the 321 euler angles
         Vector3f euler312 = stateStruct.quat.to_vector312();
-        predicted_yaw = euler312.z;
+        yawAngPredicted = euler312.z;
 
         // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
         Tbn_zeroYaw.from_euler312(euler312.x, euler312.y, 0.0f);
     }
 
-    // rotate measured mag components into earth frame
-    Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
-
-    // Use the difference between the horizontal projection and declination to give the measured yaw
-    // If we can't use compass data, set the  measurement to the predicted
-    // to prevent uncontrolled variance growth whilst on ground without magnetometer
-    float measured_yaw;
-    if (use_compass() && yawAlignComplete) {
-        measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
-    } else {
-        measured_yaw = predicted_yaw;
-    }
-
     // Calculate the innovation
-    float innovation = wrap_PI(predicted_yaw - measured_yaw);
+    float innovation;
+    if (!usePredictedYaw) {
+        if (!useExternalYawSensor) {
+            // Use the difference between the horizontal projection and declination to give the measured yaw
+            // rotate measured mag components into earth frame
+            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+            innovation = wrap_PI(yawAngPredicted - yawAngMeasured);
+        } else {
+            // use the external yaw sensor data
+            innovation = wrap_PI(yawAngPredicted - yawAngDataDelayed.yawAng);
+        }
+    } else {
+        // setting the innovation to zero enables quaternion covariance growth to be constrained when there is no
+        // method of observing yaw
+        innovation = 0.0f;
+    }
 
     // Copy raw value to output variable used for data logging
     innovYaw = innovation;

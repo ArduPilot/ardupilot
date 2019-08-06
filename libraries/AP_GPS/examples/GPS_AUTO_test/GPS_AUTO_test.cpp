@@ -65,6 +65,7 @@ void setup()
 /*
   print a int32_t lat/long in decimal degrees
  */
+void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 {
     int32_t dec_portion, frac_portion;

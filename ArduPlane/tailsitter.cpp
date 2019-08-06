@@ -25,8 +25,9 @@
  */
 bool QuadPlane::is_tailsitter(void) const
 {
-    return available() && ((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || 
-                           (tailsitter.motor_mask != 0));
+    return available() 
+        && ((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (tailsitter.motor_mask != 0))
+        && (tilt.tilt_type != TILT_TYPE_BICOPTER);
 }
 
 /*
@@ -139,7 +140,8 @@ void QuadPlane::tailsitter_output(void)
         tilt_right = extra_elevator + tilt_right * tailsitter.vectored_hover_gain;
         if (fabsf(tilt_left) >= SERVO_MAX || fabsf(tilt_right) >= SERVO_MAX) {
             // prevent integrator windup
-            motors->limit.roll_pitch = 1;
+            motors->limit.roll = 1;
+            motors->limit.pitch = 1;
             motors->limit.yaw = 1;
         }
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);

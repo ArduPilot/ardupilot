@@ -616,7 +616,7 @@ void Replay::set_signal_handlers(void)
 void Replay::write_ekf_logs(void)
 {
     if (!LogReader::in_list("EKF", nottypes)) {
-        _vehicle.logger.Write_EKF(_vehicle.ahrs);
+        _vehicle.ahrs.Log_Write();
     }
     if (!LogReader::in_list("AHRS2", nottypes)) {
         _vehicle.logger.Write_AHRS2(_vehicle.ahrs);
@@ -803,12 +803,12 @@ void Replay::show_packet_counts()
     for(uint16_t i=0;i<LOGREADER_MAX_FORMATS;i++) {
         if (counts[i] != 0) {
             logreader.format_type(i, format_type);
-            printf("%10ld %s\n", counts[i], format_type);
+            printf("%10" PRIu64 " %s\n", counts[i], format_type);
             total += counts[i];
         }
     }
 
-    printf("%ld total\n", total);
+    printf("%" PRIu64 " total\n", total);
 }
 
 void Replay::loop()
@@ -830,7 +830,7 @@ void Replay::loop()
     if (last_timestamp != 0) {
         uint64_t gap = AP_HAL::micros64() - last_timestamp;
         if (gap > 40000) {
-            ::printf("Gap in log at timestamp=%lu of length %luus\n",
+            ::printf("Gap in log at timestamp=%" PRIu64 " of length %" PRIu64 "us\n",
                      last_timestamp, gap);
         }
     }

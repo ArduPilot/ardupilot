@@ -116,14 +116,11 @@ SPIDEV dataflash  SPI2 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
 # enable logging to dataflash
 define HAL_LOGGING_DATAFLASH
 
+# one IMU
+IMU Invensense SPI:mpu6000 ROTATION_YAW_90
 
-define HAL_INS_DEFAULT HAL_INS_MPU60XX_SPI
-# V6 needs 90 degree gyro alignment
-define HAL_INS_DEFAULT_ROTATION ROTATION_YAW_90
-
-# Baro
-define HAL_BARO_DEFAULT HAL_BARO_BMP280_SPI
-define HAL_BARO_BMP280_NAME "bmp280"
+# one baro
+BARO BMP280 SPI:bmp280
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types

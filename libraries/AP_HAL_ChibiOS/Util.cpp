@@ -138,9 +138,10 @@ void Util::set_imu_temp(float current)
     uint32_t now = AP_HAL::millis();
     if (now - heater.last_update_ms < 1000) {
 #if defined(HAL_HEATER_GPIO_PIN)
-        // output as duty cycle to local pin
-        hal.gpio->write(HAL_HEATER_GPIO_PIN, heater.duty_counter < heater.output);
-        heater.duty_counter = (heater.duty_counter+1) % 100;
+        // output as duty cycle to local pin. Use a random sequence to
+        // prevent a periodic change to magnetic field
+        bool heater_on = (get_random16() < uint32_t(heater.output) * 0xFFFFU / 100U);
+        hal.gpio->write(HAL_HEATER_GPIO_PIN, heater_on);
 #endif
         return;
     }

@@ -416,7 +416,7 @@ bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
                                          uint8_t sequence,
                                          const RallyLocation &rally_point)
 {
-    struct log_Rally pkt_rally = {
+    const struct log_Rally pkt_rally{
         LOG_PACKET_HEADER_INIT(LOG_RALLY_MSG),
         time_us         : AP_HAL::micros64(),
         total           : total,

@@ -7,7 +7,7 @@ The Pixhawk4-Mini flight controller is sold by [Holybro](http://www.holybro.com/
  - STM32F765 microcontroller
  - Two IMUs: ICM20689 and BMI055
  - MS5611 SPI barometer
- - builtin SPI IST8310 magnetometer
+ - builtin I2C IST8310 magnetometer
  - microSD card slot
  - 5 UARTs plus USB
  - 8 PWM outputs

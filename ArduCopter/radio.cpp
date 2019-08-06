@@ -11,7 +11,6 @@ void Copter::default_dead_zones()
 #if FRAME_CONFIG == HELI_FRAME
     channel_throttle->set_default_dead_zone(10);
     channel_yaw->set_default_dead_zone(15);
-    rc().channel(CH_6)->set_default_dead_zone(10);
 #else
     channel_throttle->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
@@ -45,7 +44,7 @@ void Copter::init_rc_in()
     ap.throttle_zero = true;
 }
 
- // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
+ // init_rc_out -- initialise motors
 void Copter::init_rc_out()
 {
     motors->set_loop_rate(scheduler.get_loop_rate_hz());
@@ -75,9 +74,6 @@ void Copter::init_rc_out()
     uint16_t safety_ignore_mask = (~copter.motors->get_motor_mask()) & 0x3FFF;
     BoardConfig.set_default_safety_ignore_mask(safety_ignore_mask);
 #endif
-
-    // check if we should enter esc calibration mode
-    esc_calibration_startup_check();
 }
 
 

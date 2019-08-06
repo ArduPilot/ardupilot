@@ -22,7 +22,7 @@ const AP_Param::GroupInfo AP_InertialSensor::BatchSampler::var_info[] = {
     // @Param: BAT_OPT
     // @DisplayName: Batch Logging Options Mask
     // @Description: Options for the BatchSampler
-    // @Bitmask: 0:Sensor-Rate Logging (sample at full sensor rate seen by AP)
+    // @Bitmask: 0:Sensor-Rate Logging (sample at full sensor rate seen by AP), 1: Sample post-filtering
     // @User: Advanced
     AP_GROUPINFO("BAT_OPT",  3, AP_InertialSensor::BatchSampler, _batch_options_mask, 0),
 
@@ -56,7 +56,7 @@ void AP_InertialSensor::BatchSampler::init()
     _required_count -= _required_count % 32; // round down to nearest multiple of 32
 
     const uint32_t total_allocation = 3*_required_count*sizeof(uint16_t);
-    gcs().send_text(MAV_SEVERITY_DEBUG, "INS: alloc %u bytes for ISB (free=%u)", total_allocation, hal.util->available_memory());
+    gcs().send_text(MAV_SEVERITY_DEBUG, "INS: alloc %u bytes for ISB (free=%u)", (unsigned int)total_allocation, (unsigned int)hal.util->available_memory());
 
     data_x = (int16_t*)calloc(_required_count, sizeof(int16_t));
     data_y = (int16_t*)calloc(_required_count, sizeof(int16_t));
@@ -68,7 +68,7 @@ void AP_InertialSensor::BatchSampler::init()
         data_x = nullptr;
         data_y = nullptr;
         data_z = nullptr;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for IMU batch sampling", total_allocation);
+        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for IMU batch sampling", (unsigned int)total_allocation);
         return;
     }
 
@@ -87,6 +87,13 @@ void AP_InertialSensor::BatchSampler::periodic()
 
 void AP_InertialSensor::BatchSampler::update_doing_sensor_rate_logging()
 {
+    // We can't do post-filter sensor rate logging
+    if ((batch_opt_t)(_batch_options_mask.get()) & BATCH_OPT_POST_FILTER) {
+        _doing_post_filter_logging = true;
+        _doing_sensor_rate_logging = false;
+        return;
+    }
+    _doing_post_filter_logging = false;
     if (!((batch_opt_t)(_batch_options_mask.get()) & BATCH_OPT_SENSOR_RATE)) {
         _doing_sensor_rate_logging = false;
         return;

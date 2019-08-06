@@ -25,7 +25,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 #include <AP_Buffer/AP_Buffer.h>
 
@@ -78,7 +77,7 @@ public:
     bool next_sample(adsb_vehicle_t &obstacle);
 
     // mavlink message handler
-    void handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg);
+    void handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg);
 
     // when true, a vehicle with that ICAO was found in database and the vehicle is populated.
     bool get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const;
@@ -121,12 +120,12 @@ private:
     uint8_t get_encoded_callsign_null_char(void);
 
     // add or update vehicle_list from inbound mavlink msg
-    void handle_vehicle(const mavlink_message_t* msg);
+    void handle_vehicle(const mavlink_message_t &msg);
 
     // handle ADS-B transceiver report for ping2020
-    void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
+    void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t &msg);
 
-    void handle_out_cfg(const mavlink_message_t* msg);
+    void handle_out_cfg(const mavlink_message_t &msg);
 
     AP_Int8     _enabled;
 

@@ -33,7 +33,7 @@ public:
 
     static bool _detect(struct MAV_detect_state &state, uint8_t data);
 
-    void handle_msg(const mavlink_message_t *msg) override;
+    void handle_msg(const mavlink_message_t &msg) override;
 
     const char *name() const override { return "MAV"; }
 

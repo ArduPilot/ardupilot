@@ -164,7 +164,7 @@ void OpticalFlow::update(void)
     _flags.healthy = (AP_HAL::millis() - _last_update_ms < 500);
 }
 
-void OpticalFlow::handle_msg(const mavlink_message_t *msg)
+void OpticalFlow::handle_msg(const mavlink_message_t &msg)
 {
     // exit immediately if not enabled
     if (!enabled()) {

@@ -20,6 +20,7 @@
  */
 #include "AP_Airspeed_SDP3X.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Baro/AP_Baro.h>
 
 #include <stdio.h>
 

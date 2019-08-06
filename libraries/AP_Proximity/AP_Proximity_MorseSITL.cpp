@@ -69,7 +69,7 @@ void AP_Proximity_MorseSITL::update(void)
             _distance_valid[sector] = true;
             _distance[sector] = range;
             _angle[sector] = angle_deg;
-            update_boundary_for_sector(sector);
+            update_boundary_for_sector(sector, true);
         }
     }
 

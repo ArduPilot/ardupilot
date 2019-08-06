@@ -82,16 +82,16 @@ template <typename T>
 float safe_sqrt(const T v);
 
 // invOut is an inverted 4x4 matrix when returns true, otherwise matrix is Singular
-bool inverse3x3(float m[], float invOut[]);
+bool inverse3x3(float m[], float invOut[]) WARN_IF_UNUSED;
 
 // invOut is an inverted 3x3 matrix when returns true, otherwise matrix is Singular
-bool inverse4x4(float m[],float invOut[]);
+bool inverse4x4(float m[],float invOut[]) WARN_IF_UNUSED;
 
 // matrix multiplication of two NxN matrices
 float *mat_mul(float *A, float *B, uint8_t n);
 
 // matrix algebra
-bool inverse(float x[], float y[], uint16_t dim);
+bool inverse(float x[], float y[], uint16_t dim) WARN_IF_UNUSED;
 
 /*
  * Constrain an angle to be within the range: -180 to 180 degrees. The second
@@ -270,7 +270,7 @@ float rand_float(void);
 Vector3f rand_vec3f(void);
 
 // confirm a value is a valid octal value
-bool is_valid_octal(uint16_t octal);
+bool is_valid_octal(uint16_t octal) WARN_IF_UNUSED;
 
 // return true if two rotations are equal
-bool rotation_equal(enum Rotation r1, enum Rotation r2);
+bool rotation_equal(enum Rotation r1, enum Rotation r2) WARN_IF_UNUSED;

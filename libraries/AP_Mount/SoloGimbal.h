@@ -14,7 +14,6 @@
 #include "SoloGimbalEKF.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_AccelCal/AP_AccelCal.h>
 
@@ -57,7 +56,7 @@ public:
     }
 
     void    update_target(const Vector3f &newTarget);
-    void    receive_feedback(mavlink_channel_t chan, const mavlink_message_t *msg);
+    void    receive_feedback(mavlink_channel_t chan, const mavlink_message_t &msg);
 
     void update_fast();
 
@@ -73,7 +72,7 @@ public:
     void disable_torque_report() { _gimbalParams.set_param(GMB_PARAM_GMB_SND_TORQUE, 0); }
     void fetch_params() { _gimbalParams.fetch_params(); }
 
-    void handle_param_value(const mavlink_message_t *msg) {
+    void handle_param_value(const mavlink_message_t &msg) {
         _gimbalParams.handle_param_value(msg);
     }
 

@@ -13,6 +13,7 @@ public:
 
     bool rc_calibration_checks(bool display_failure) override;
     bool pre_arm_checks(bool display_failure) override;
+    bool has_disarm_function() const;
 
     bool disarm() override;
     bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;

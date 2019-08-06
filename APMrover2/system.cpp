@@ -44,7 +44,7 @@ void Rover::init_ardupilot()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(0);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
@@ -73,7 +73,7 @@ void Rover::init_ardupilot()
 
     g2.airspeed.init();
 
-    g2.windvane.init();
+    g2.windvane.init(serial_manager);
 
     rover.g2.sailboat.init();
 
@@ -81,7 +81,7 @@ void Rover::init_ardupilot()
     barometer.init();
 
     // setup telem slots with serial ports
-    gcs().setup_uarts(serial_manager);
+    gcs().setup_uarts();
 
 #if OSD_ENABLED == ENABLED
     osd.init();
@@ -138,11 +138,11 @@ void Rover::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
-    // give AHRS the range beacon sensor
-    ahrs.set_beacon(&g2.beacon);
-
     // initialize SmartRTL
     g2.smart_rtl.init();
+
+    // initialise object avoidance
+    g2.oa.init();
 
     startup_ground();
 
@@ -160,6 +160,10 @@ void Rover::init_ardupilot()
 
     // flag that initialisation has completed
     initialised = true;
+
+#if AP_PARAM_KEY_DUMP
+    AP_Param::show_all(hal.console, true);
+#endif
 }
 
 //*********************************************************************************
@@ -265,6 +269,7 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 
     control_mode_reason = reason;
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
+    gcs().send_message(MSG_HEARTBEAT);
 
     notify_mode(control_mode);
     return true;

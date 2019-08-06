@@ -57,9 +57,9 @@ void Tracker::calc_angle_error(float pitch, float yaw, bool direction_reversed)
     nav_status.angle_error_yaw = bf_yaw_err;
 
     // set actual and desired for logging, note we are using angles not rates
-    g.pidPitch2Srv.set_desired_rate(pitch * 0.01);
+    g.pidPitch2Srv.set_target_rate(pitch * 0.01);
     g.pidPitch2Srv.set_actual_rate(ahrs_pitch * 0.01);
-    g.pidYaw2Srv.set_desired_rate(yaw * 0.01);
+    g.pidYaw2Srv.set_target_rate(yaw * 0.01);
     g.pidYaw2Srv.set_actual_rate(ahrs_yaw_cd * 0.01);
 }
 

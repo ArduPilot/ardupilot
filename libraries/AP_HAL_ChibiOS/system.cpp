@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include "hwdef/common/watchdog.h"
 
 #include <ch.h>
 #include "hal.h"
@@ -44,6 +46,23 @@ void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate
 void NMI_Handler(void);
 void NMI_Handler(void) { while (1); }
 
+/*
+  save watchdog data for a hard fault
+ */
+static void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_addr)
+{
+    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+    if (using_watchdog) {
+        AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        pd.fault_line = line;
+        pd.fault_type = fault_type;
+        pd.fault_addr = fault_addr;
+        pd.fault_thd_prio = chThdGetPriorityX();
+        pd.fault_icsr = SCB->ICSR;
+        stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+    }
+}
+
 void HardFault_Handler(void);
 void HardFault_Handler(void) {
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
@@ -69,6 +88,9 @@ void HardFault_Handler(void) {
     (void)isFaultOnUnstacking;
     (void)isFaultOnStacking;
     (void)isFaultAddressValid;
+
+    save_fault_watchdog(__LINE__, faultType, faultAddress);
+
     //Cause debugger to stop. Ignored if no debugger is attached
     while(1) {}
 }
@@ -85,6 +107,7 @@ void UsageFault_Handler(void) {
     //Interrupt status register: Which interrupt have we encountered, e.g. HardFault?
     FaultType faultType = (FaultType)__get_IPSR();
     (void)faultType;
+    uint32_t faultAddress = SCB->BFAR;
     //Flags about hardfault / busfault
     //See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0552a/Cihdjcfc.html for reference
     bool isUndefinedInstructionFault = ((SCB->CFSR >> SCB_CFSR_USGFAULTSR_Pos) & (1 << 0) ? true : false);
@@ -99,6 +122,9 @@ void UsageFault_Handler(void) {
     (void)isNoCoprocessorFault;
     (void)isUnalignedAccessFault;
     (void)isDivideByZeroFault;
+
+    save_fault_watchdog(__LINE__, faultType, faultAddress);
+
     //Cause debugger to stop. Ignored if no debugger is attached
     while(1) {}
 }
@@ -128,6 +154,9 @@ void MemManage_Handler(void) {
     (void)isExceptionUnstackingFault;
     (void)isExceptionStackingFault;
     (void)isFaultAddressValid;
+
+    save_fault_watchdog(__LINE__, faultType, faultAddress);
+
     while(1) {}
 }
 }

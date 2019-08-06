@@ -222,7 +222,7 @@ private:
 
     AP_InertialSensor ins;
 
-    RangeFinder rangefinder{serial_manager};
+    RangeFinder rangefinder;
 
     AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 
@@ -287,11 +287,11 @@ private:
     AP_Relay relay;
 
     // handle servo and relay events
-    AP_ServoRelayEvents ServoRelayEvents{relay};
+    AP_ServoRelayEvents ServoRelayEvents;
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera{&relay, MASK_LOG_CAMERA, current_loc, ahrs};
+    AP_Camera camera{MASK_LOG_CAMERA, current_loc};
 #endif
 
 #if OPTFLOW == ENABLED
@@ -349,6 +349,9 @@ private:
     // This is used to enable the inverted flight feature
     bool inverted_flight;
 
+    // last time we ran roll/pitch stabilization
+    uint32_t last_stabilize_ms;
+    
     // Failsafe
     struct {
         // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
@@ -670,11 +673,11 @@ private:
     AP_ADSB adsb;
 
     // avoidance of adsb enabled vehicles (normally manned vheicles)
-    AP_Avoidance_Plane avoidance_adsb{ahrs, adsb};
+    AP_Avoidance_Plane avoidance_adsb{adsb};
 
     // Outback Challenge Failsafe Support
 #if ADVANCED_FAILSAFE == ENABLED
-    AP_AdvancedFailsafe_Plane afs {mission, gps};
+    AP_AdvancedFailsafe_Plane afs {mission};
 #endif
 
     /*
@@ -860,6 +863,7 @@ private:
     float lookahead_adjustment(void);
     float rangefinder_correction(void);
     void rangefinder_height_update(void);
+    void rangefinder_terrain_correction(float &height);
     void set_next_WP(const struct Location &loc);
     void set_guided_WP(void);
     void update_home();
@@ -906,6 +910,7 @@ private:
     bool geofence_check_minalt(void);
     bool geofence_check_maxalt(void);
     void geofence_check(bool altitude_check_only);
+    bool geofence_prearm_check(void);
     bool geofence_stickmixing(void);
     void geofence_send_status(mavlink_channel_t chan);
     bool geofence_breached(void);

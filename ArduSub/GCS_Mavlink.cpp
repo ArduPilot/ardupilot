@@ -2,11 +2,6 @@
 
 #include "GCS_Mavlink.h"
 
-void Sub::gcs_send_heartbeat()
-{
-    gcs().send_message(MSG_HEARTBEAT);
-}
-
 /*
  *  !!NOTE!!
  *
@@ -161,7 +156,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
     if (g.gcs_pid_mask & 1) {
         const AP_Logger::PID_Info &pid_info = attitude_control.get_rate_roll_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL,
-                                    pid_info.desired*0.01f,
+                                    pid_info.target*0.01f,
                                     degrees(gyro.x),
                                     pid_info.FF*0.01f,
                                     pid_info.P*0.01f,
@@ -174,7 +169,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
     if (g.gcs_pid_mask & 2) {
         const AP_Logger::PID_Info &pid_info = attitude_control.get_rate_pitch_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
-                                    pid_info.desired*0.01f,
+                                    pid_info.target*0.01f,
                                     degrees(gyro.y),
                                     pid_info.FF*0.01f,
                                     pid_info.P*0.01f,
@@ -187,7 +182,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
     if (g.gcs_pid_mask & 4) {
         const AP_Logger::PID_Info &pid_info = attitude_control.get_rate_yaw_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW,
-                                    pid_info.desired*0.01f,
+                                    pid_info.target*0.01f,
                                     degrees(gyro.z),
                                     pid_info.FF*0.01f,
                                     pid_info.P*0.01f,
@@ -200,7 +195,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
     if (g.gcs_pid_mask & 8) {
         const AP_Logger::PID_Info &pid_info = sub.pos_control.get_accel_z_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
-                                    pid_info.desired*0.01f,
+                                    pid_info.target*0.01f,
                                     -(ahrs.get_accel_ef_blended().z + GRAVITY_MSS),
                                     pid_info.FF*0.01f,
                                     pid_info.P*0.01f,
@@ -224,14 +219,6 @@ bool GCS_Sub::vehicle_initialised() const {
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 {
-    // if we don't have at least 250 micros remaining before the main loop
-    // wants to fire then don't send a mavlink message. We want to
-    // prioritise the main flight control loop over communications
-    if (sub.scheduler.time_available_usec() < 250 && sub.motors.armed()) {
-        gcs().set_out_of_time(true);
-        return false;
-    }
-
     switch (id) {
 
     case MSG_NAMED_FLOAT:
@@ -356,7 +343,8 @@ static const ap_message STREAM_POSITION_msgs[] = {
 };
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
-    MSG_RADIO_IN
+    MSG_RC_CHANNELS,
+    MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
@@ -528,13 +516,13 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
 
 
 
-void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
+void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
 {
-    switch (msg->msgid) {
+    switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_HEARTBEAT: {    // MAV ID: 0
         // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
-        if (msg->sysid != sub.g.sysid_my_gcs) {
+        if (msg.sysid != sub.g.sysid_my_gcs) {
             break;
         }
         sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
@@ -542,11 +530,11 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     }
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
-        if (msg->sysid != sub.g.sysid_my_gcs) {
+        if (msg.sysid != sub.g.sysid_my_gcs) {
             break;    // Only accept control from our gcs
         }
         mavlink_manual_control_t packet;
-        mavlink_msg_manual_control_decode(msg, &packet);
+        mavlink_msg_manual_control_decode(&msg, &packet);
 
         if (packet.target != sub.g.sysid_this_mav) {
             break; // only accept control aimed at us
@@ -564,7 +552,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET: { // MAV ID: 82
         // decode packet
         mavlink_set_attitude_target_t packet;
-        mavlink_msg_set_attitude_target_decode(msg, &packet);
+        mavlink_msg_set_attitude_target_decode(&msg, &packet);
 
         // ensure type_mask specifies to use attitude
         // the thrust can be used from the altitude hold
@@ -596,7 +584,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED: {   // MAV ID: 84
         // decode packet
         mavlink_set_position_target_local_ned_t packet;
-        mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
+        mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((sub.control_mode != GUIDED) && !(sub.control_mode == AUTO && sub.auto_mode == Auto_NavGuided)) {
@@ -669,7 +657,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT: {  // MAV ID: 86
         // decode packet
         mavlink_set_position_target_global_int_t packet;
-        mavlink_msg_set_position_target_global_int_decode(msg, &packet);
+        mavlink_msg_set_position_target_global_int_decode(&msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((sub.control_mode != GUIDED) && !(sub.control_mode == AUTO && sub.auto_mode == Auto_NavGuided)) {
@@ -695,7 +683,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 break;
             }
             Location::AltFrame frame;
-            if (!mavlink_coordinate_frame_to_location_alt_frame(packet.coordinate_frame, frame)) {
+            if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.coordinate_frame, frame)) {
                 // unknown coordinate frame
                 break;
             }
@@ -735,7 +723,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_HOME_POSITION: {
         mavlink_set_home_position_t packet;
-        mavlink_msg_set_home_position_decode(msg, &packet);
+        mavlink_msg_set_home_position_decode(&msg, &packet);
         if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
             if (!sub.set_home_to_current_location(true)) {
                 // ignore this failure
@@ -760,7 +748,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SYS_STATUS: {
         uint32_t MAV_SENSOR_WATER = 0x20000000;
         mavlink_sys_status_t packet;
-        mavlink_msg_sys_status_decode(msg, &packet);
+        mavlink_msg_sys_status_decode(&msg, &packet);
         if ((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER)) {
             sub.leak_detector.set_detect();
         }
@@ -790,7 +778,7 @@ uint64_t GCS_MAVLINK_Sub::capabilities() const
 }
 
 // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t *msg)
+void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t &msg)
 {
     sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
     GCS_MAVLINK::handle_rc_channels_override(msg);
@@ -815,7 +803,7 @@ void Sub::mavlink_delay_cb()
     uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs_send_heartbeat();
+        gcs().send_message(MSG_HEARTBEAT);
         gcs().send_message(MSG_SYS_STATUS);
     }
     if (tnow - last_50hz > 20) {

@@ -20,6 +20,120 @@
 
 extern const AP_HAL::HAL& hal;
 
+const AP_Param::GroupInfo RSCThrCrvParam::var_info[] = {
+
+    // @Param: ENABLE
+    // @DisplayName: Enable settings for RSC Setpoint
+    // @Description: Automatically set when RSC Setpoint mode is selected. Should not be set manually.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("ENABLE", 1, RSCThrCrvParam, enable, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: 000
+    // @DisplayName: Throttle Servo Position in percent for 0 percent collective
+    // @Description: Throttle Servo Position in percent for 0 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("000", 2, RSCThrCrvParam, thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
+
+    // @Param: 025
+    // @DisplayName: Throttle Servo Position in percent for 25 percent collective
+    // @Description: Throttle Servo Position in percent for 25 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("025", 3, RSCThrCrvParam, thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
+
+    // @Param: 050
+    // @DisplayName: Throttle Servo Position in percent for 50 percent collective
+    // @Description: Throttle Servo Position in percent for 50 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("050", 4, RSCThrCrvParam, thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
+
+    // @Param: 075
+    // @DisplayName: Throttle Servo Position in percent for 75 percent collective
+    // @Description: Throttle Servo Position in percent for 75 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("075", 5, RSCThrCrvParam, thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
+
+    // @Param: 100
+    // @DisplayName: Throttle Servo Position in percent for 100 percent collective
+    // @Description: Throttle Servo Position in percent for 100 percent collective. This is on a scale from 0 to 100, where 100 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("100", 6, RSCThrCrvParam, thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
+
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo RSCGovParam::var_info[] = {
+
+    // @Param: ENABLE
+    // @DisplayName: Enable settings for RSC Governor
+    // @Description: Automatically set when RSC Governor mode is selected. Should not be set manually.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("ENABLE", 1, RSCGovParam, enable, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: SETPNT
+    // @DisplayName: Governor RPM Reference Setting
+    // @Description: Main rotor rpm setting that governor maintains when engaged
+    // @Range: 800 3500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("SETPNT", 2, RSCGovParam, reference, AP_MOTORS_HELI_RSC_GOVERNOR_SETPNT_DEFAULT),
+
+    // @Param: DISGAG
+    // @DisplayName: Throttle Percentage for Governor Disengage
+    // @Description: Percentage of throttle where the governor will disenage to allow return to flight idle power
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("DISGAG", 3, RSCGovParam, disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT),
+
+    // @Param: DROOP
+    // @DisplayName: Governor Droop Response Setting
+    // @Description: Governor droop response under load, 0-100%. Higher value is quicker response but may cause surging
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("DROOP", 4, RSCGovParam, droop_response, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
+
+    // @Param: THRCURVE
+    // @DisplayName: Governor Throttle Curve Gain
+    // @Description: Percentage of throttle curve gain in governor output
+    // @Range: 50 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("THRCURVE", 5, RSCGovParam, thrcurve, AP_MOTORS_HELI_RSC_GOVERNOR_THRCURVE_DEFAULT),
+    
+    // @Param: RANGE
+    // @DisplayName: Governor Operational Range
+    // @Description: RPM range +/- governor rpm reference setting where governor is operational. If speed sensor fails or rpm falls outside of this range, the governor will disengage and return to throttle curve. Recommended range is 100
+    // @Range: 50 200
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RANGE", 6, RSCGovParam, range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
+
+    AP_GROUPEND
+};
+
+RSCThrCrvParam::RSCThrCrvParam(void)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
+RSCGovParam::RSCGovParam(void)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 // init_servo - servo initialization on start-up
 void AP_MotorsHeli_RSC::init_servo()
 {
@@ -33,7 +147,7 @@ void AP_MotorsHeli_RSC::init_servo()
 
 // set_power_output_range
 // TODO: Look at possibly calling this at a slower rate.  Doesn't need to be called every cycle.
-void AP_MotorsHeli_RSC::set_throttle_curve(float thrcrv[5], uint16_t slewrate)
+void AP_MotorsHeli_RSC::set_throttle_curve(float thrcrv[5])
 {
 
     // Ensure user inputs are within parameter limits
@@ -43,7 +157,6 @@ void AP_MotorsHeli_RSC::set_throttle_curve(float thrcrv[5], uint16_t slewrate)
     // Calculate the spline polynomials for the throttle curve
     splinterp5(thrcrv,_thrcrv_poly);
 
-    _power_slewrate = slewrate;
 }
 
 // output - update value to send to ESC/Servo
@@ -87,8 +200,41 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 _control_output = _idle_output + (_rotor_ramp_output * (_desired_speed - _idle_output));
             } else if (_control_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
                 // throttle output from throttle curve based on collective position
-                    float desired_throttle = calculate_desired_throttle(_collective_in);
+                float desired_throttle = calculate_desired_throttle(_collective_in);
+                _control_output = _idle_output + (_rotor_ramp_output * (desired_throttle - _idle_output));
+            } else if (_control_mode == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+                // governor provides two modes of throttle control - governor engaged
+                // or throttle curve if governor is out of range or sensor failed
+            	float desired_throttle = calculate_desired_throttle(_collective_in);
+            	// governor is active if within user-set range from reference speed
+                if ((_rotor_rpm >= (_governor_reference - _governor_range)) && (_rotor_rpm <= (_governor_reference + _governor_range))) {
+            	    float governor_droop = constrain_float(_governor_reference - _rotor_rpm,0.0f,_governor_range);
+            	    // if rpm has not reached 40% of the operational range from reference speed, governor
+            	    // remains in pre-engage status, no reference speed compensation due to droop
+            	    // this provides a soft-start function that engages the governor less aggressively
+            	    if (_governor_engage && _rotor_rpm < (_governor_reference - (_governor_range * 0.4f))) {
+                        _governor_output = ((_rotor_rpm - _governor_reference) * desired_throttle) * _governor_droop_response * -0.01f;
+                    } else {
+            	        // normal flight status, governor fully engaged with reference speed compensation for droop
+            	        _governor_engage = true;
+                        _governor_output = ((_rotor_rpm - (_governor_reference + governor_droop)) * desired_throttle) * _governor_droop_response * -0.01f;
+                    }
+                    // check for governor disengage for return to flight idle power
+                    if (desired_throttle <= _governor_disengage) {
+                        _governor_output = 0.0f;
+                        _governor_engage = false;
+                    }
+                    // throttle output with governor on is constrained from minimum called for from throttle curve
+                    // to maximum WOT. This prevents outliers on rpm signal from closing the throttle in flight due
+                    // to rpm sensor failure or bad signal quality
+            	    _control_output = constrain_float(_idle_output + (_rotor_ramp_output * (((desired_throttle * _governor_thrcurve) + _governor_output) - _idle_output)), _idle_output + (_rotor_ramp_output * ((desired_throttle * _governor_thrcurve)) - _idle_output), 1.0f);
+            	} else {
+            	    // hold governor output at zero, engage status is false and use the throttle curve
+            	    // this is failover for in-flight failure of the speed sensor
+            	    _governor_output = 0.0f;
+            	    _governor_engage = false;
                     _control_output = _idle_output + (_rotor_ramp_output * (desired_throttle - _idle_output));
+                }
             }
             break;
     }
@@ -209,4 +355,3 @@ float AP_MotorsHeli_RSC::calculate_desired_throttle(float collective_in)
     return throttle;
 
 }
-

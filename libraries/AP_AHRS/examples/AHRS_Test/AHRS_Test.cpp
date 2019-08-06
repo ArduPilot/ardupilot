@@ -8,6 +8,8 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Baro/AP_Baro.h>
 
 void setup();
 void loop();
@@ -28,7 +30,7 @@ static AP_Logger logger{logger_bitmask};
 
 class DummyVehicle {
 public:
-    RangeFinder sonar{serial_manager};
+    RangeFinder sonar;
     NavEKF2 EKF2{&ahrs, sonar};
     NavEKF3 EKF3{&ahrs, sonar};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3,

@@ -207,8 +207,7 @@ void AP_Baro::calibrate(bool save)
         do {
             update();
             if (AP_HAL::millis() - tstart > 500) {
-                AP_HAL::panic("PANIC: AP_Baro::read unsuccessful "
-                        "for more than 500ms in AP_Baro::calibrate [2]\r\n");
+                AP_BoardConfig::sensor_config_error("Baro: unable to calibrate");
             }
             hal.scheduler->delay(10);
         } while (!healthy());
@@ -225,8 +224,7 @@ void AP_Baro::calibrate(bool save)
         do {
             update();
             if (AP_HAL::millis() - tstart > 500) {
-                AP_HAL::panic("PANIC: AP_Baro::read unsuccessful "
-                        "for more than 500ms in AP_Baro::calibrate [3]\r\n");
+                AP_BoardConfig::sensor_config_error("Baro: unable to calibrate");
             }
         } while (!healthy());
         for (uint8_t i=0; i<_num_sensors; i++) {
@@ -260,7 +258,7 @@ void AP_Baro::calibrate(bool save)
     if (num_calibrated) {
         return;
     }
-    AP_HAL::panic("AP_Baro: all sensors uncalibrated");
+    AP_BoardConfig::sensor_config_error("AP_Baro: all sensors uncalibrated");
 }
 
 /*
@@ -452,11 +450,6 @@ void AP_Baro::init(void)
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    ADD_BACKEND(new AP_Baro_SITL(*this));
-    return;
-#endif
-
 #if HAL_WITH_UAVCAN
     // Detect UAVCAN Modules, try as many times as there are driver slots
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
@@ -541,6 +534,17 @@ void AP_Baro::init(void)
 
     default:
         break;
+    }
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        AP_HAL::panic("No SITL pointer");
+    }
+    if (sitl->baro_count > 1) {
+        ::fprintf(stderr, "More than one baro not supported.  Sorry.");
+    }
+    if (sitl->baro_count == 1) {
+        ADD_BACKEND(new AP_Baro_SITL(*this));
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL
     drivers[0] = new AP_Baro_HIL(*this);

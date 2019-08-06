@@ -1,5 +1,19 @@
-#include "AC_Avoid.h"
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "AC_Avoid.h"
 #include <AP_AHRS/AP_AHRS.h>     // AHRS library
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
 #include <AP_Proximity/AP_Proximity.h>
@@ -15,9 +29,9 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Avoidance control enable/disable
-    // @Description: Enabled/disable stopping at fence
-    // @Values: 0:None,1:StopAtFence,2:UseProximitySensor,3:StopAtFence and UseProximitySensor,4:StopAtBeaconFence,7:All
-    // @Bitmask: 0:StopAtFence,1:UseProximitySensor,2:StopAtBeaconFence
+    // @Description: Enabled/disable avoidance input sources
+    // @Values: 0:None,1:UseFence,2:UseProximitySensor,3:UseFence and UseProximitySensor,4:UseBeaconFence,7:All
+    // @Bitmask: 0:UseFence,1:UseProximitySensor,2:UseBeaconFence
     // @User: Standard
     AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_DEFAULT),
 
@@ -289,6 +303,13 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
         return;
     }
 
+    // get desired speed
+    const float desired_speed = desired_vel_cms.length();
+    if (is_zero(desired_speed)) {
+        // no avoidance necessary when desired speed is zero
+        return;
+    }
+
     const AP_AHRS &_ahrs = AP::ahrs();
 
     // get position as a 2D offset from ahrs home
@@ -299,35 +320,55 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     }
     position_xy *= 100.0f; // m -> cm
 
-    const float speed = desired_vel_cms.length();
     // get the fence radius in cm
     const float fence_radius = _fence.get_radius() * 100.0f;
     // get the margin to the fence in cm
     const float margin_cm = _fence.get_margin() * 100.0f;
 
-    if (!is_zero(speed) && position_xy.length() <= fence_radius) {
-        // Currently inside circular fence
-        Vector2f stopping_point = position_xy + desired_vel_cms*(get_stopping_distance(kP, accel_cmss, speed)/speed);
-        float stopping_point_length = stopping_point.length();
-        if (stopping_point_length > fence_radius - margin_cm) {
-            // Unsafe desired velocity - will not be able to stop before fence breach
-            if ((AC_Avoid::BehaviourType)_behavior.get() == BEHAVIOR_SLIDE) {
-                // Project stopping point radially onto fence boundary
-                // Adjusted velocity will point towards this projected point at a safe speed
-                const Vector2f target = stopping_point * ((fence_radius - margin_cm) / stopping_point_length);
-                const Vector2f target_direction = target - position_xy;
-                const float distance_to_target = target_direction.length();
+    // get vehicle distance from home
+    const float dist_from_home = position_xy.length();
+    if (dist_from_home > fence_radius) {
+        // outside of circular fence, no velocity adjustments
+        return;
+    }
+
+    // vehicle is inside the circular fence
+    if ((AC_Avoid::BehaviourType)_behavior.get() == BEHAVIOR_SLIDE) {
+        // implement sliding behaviour
+        const Vector2f stopping_point = position_xy + desired_vel_cms*(get_stopping_distance(kP, accel_cmss, desired_speed)/desired_speed);
+        const float stopping_point_dist_from_home = stopping_point.length();
+        if (stopping_point_dist_from_home <= fence_radius - margin_cm) {
+            // stopping before before fence so no need to adjust
+            return;
+        }
+        // unsafe desired velocity - will not be able to stop before reaching margin from fence
+        // Project stopping point radially onto fence boundary
+        // Adjusted velocity will point towards this projected point at a safe speed
+        const Vector2f target_offset = stopping_point * ((fence_radius - margin_cm) / stopping_point_dist_from_home);
+        const Vector2f target_direction = target_offset - position_xy;
+        const float distance_to_target = target_direction.length();
+        const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
+        desired_vel_cms = target_direction * (MIN(desired_speed,max_speed) / distance_to_target);
+    } else {
+        // implement stopping behaviour
+        // calculate stopping point plus a margin so we look forward far enough to intersect with circular fence
+        const Vector2f stopping_point_plus_margin = position_xy + desired_vel_cms*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, desired_speed))/desired_speed);
+        const float stopping_point_plus_margin_dist_from_home = stopping_point_plus_margin.length();
+        if (dist_from_home >= fence_radius - margin_cm) {
+            // if vehicle has already breached margin around fence
+            // if stopping point is even further from home (i.e. in wrong direction) then adjust speed to zero
+            // otherwise user is backing away from fence so do not apply limits
+            if (stopping_point_plus_margin_dist_from_home >= dist_from_home) {
+                desired_vel_cms.zero();
+            }
+        } else {
+            // shorten vector without adjusting its direction
+            Vector2f intersection;
+            if (Vector2f::circle_segment_intersection(position_xy, stopping_point_plus_margin, Vector2f(0.0f,0.0f), fence_radius - margin_cm, intersection)) {
+                const float distance_to_target = MAX((intersection - position_xy).length() - margin_cm, 0.0f);
                 const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
-                desired_vel_cms = target_direction * (MIN(speed,max_speed) / distance_to_target);
-            } else {
-                // shorten vector without adjusting its direction
-                Vector2f intersection;
-                if (Vector2f::circle_segment_intersection(position_xy, stopping_point, Vector2f(0.0f,0.0f), fence_radius, intersection)) {
-                    const float distance_to_target = MAX((intersection - position_xy).length() - margin_cm, 0.0f);
-                    const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
-                    if (max_speed < speed) {
-                        desired_vel_cms *= MAX(max_speed, 0.0f) / speed;
-                    }
+                if (max_speed < desired_speed) {
+                    desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
                 }
             }
         }
@@ -356,11 +397,6 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
         return;
     }
 
-    // exit immediately if no desired velocity
-    if (desired_vel_cms.is_zero()) {
-        return;
-    }
-
     // get polygon boundary
     uint16_t num_points;
     const Vector2f* boundary = _fence.get_boundary_points(num_points);
@@ -378,11 +414,6 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
 
     // exit if the beacon is not present
     if (_beacon == nullptr) {
-        return;
-    }
-
-    // exit immediately if no desired velocity
-    if (desired_vel_cms.is_zero()) {
         return;
     }
 
@@ -418,11 +449,6 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &d
         return;
     }
 
-    // exit immediately if no desired velocity
-    if (desired_vel_cms.is_zero()) {
-        return;
-    }
-
     // get boundary from proximity sensor
     uint16_t num_points;
     const Vector2f *boundary = _proximity.get_boundary_points(num_points);
@@ -436,6 +462,11 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
 {
     // exit if there are no points
     if (boundary == nullptr || num_points == 0) {
+        return;
+    }
+
+    // exit immediately if no desired velocity
+    if (desired_vel_cms.is_zero()) {
         return;
     }
 
@@ -474,8 +505,11 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     const float speed = safe_vel.length();
     const Vector2f stopping_point_plus_margin = position_xy + safe_vel*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, speed))/speed);
 
-    uint16_t i, j;
-    for (i = 0, j = num_points-1; i < num_points; j = i++) {
+    for (uint16_t i=0; i<num_points; i++) {
+        uint16_t j = i+1;
+        if (j >= num_points) {
+            j = 0;
+        }
         // end points of current edge
         Vector2f start = boundary[j];
         Vector2f end = boundary[i];

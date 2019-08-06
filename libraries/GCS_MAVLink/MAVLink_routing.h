@@ -27,13 +27,13 @@ public:
 
       This returns true if the message should be processed locally
     */
-    bool check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t* msg);
+    bool check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t &msg);
 
     /*
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
     */
-    void send_to_components(const mavlink_message_t* msg);
+    void send_to_components(const mavlink_message_t &msg);
 
     /*
       search for the first vehicle or component in the routing table with given mav_type and retrieve it's sysid, compid and channel
@@ -56,11 +56,11 @@ private:
     uint8_t no_route_mask;
     
     // learn new routes
-    void learn_route(mavlink_channel_t in_channel, const mavlink_message_t* msg);
+    void learn_route(mavlink_channel_t in_channel, const mavlink_message_t &msg);
 
     // extract target sysid and compid from a message
-    void get_targets(const mavlink_message_t* msg, int16_t &sysid, int16_t &compid);
+    void get_targets(const mavlink_message_t &msg, int16_t &sysid, int16_t &compid);
 
     // special handling for heartbeat messages
-    void handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t* msg);
+    void handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t &msg);
 };

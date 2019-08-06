@@ -17,6 +17,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
+#include <AP_Common/Location.h>
 
 #define PROXIMITY_SECTORS_MAX   12  // maximum number of sectors
 #define PROXIMITY_BOUNDARY_DIST_MIN 0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
@@ -43,7 +44,7 @@ public:
     virtual bool get_upward_distance(float &distance) const { return false; }
 
     // handle mavlink DISTANCE_SENSOR messages
-    virtual void handle_msg(mavlink_message_t *msg) {}
+    virtual void handle_msg(const mavlink_message_t &msg) {}
 
     // get distance in meters in a particular direction in degrees (0 is forward, clockwise)
     // returns true on successful read and places distance in distance
@@ -79,12 +80,17 @@ protected:
     // update boundary points used for object avoidance based on a single sector's distance changing
     //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
     //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-    void update_boundary_for_sector(uint8_t sector);
+    void update_boundary_for_sector(const uint8_t sector, const bool push_to_OA_DB);
 
     // get ignore area info
     uint8_t get_ignore_area_count() const;
     bool get_ignore_area(uint8_t index, uint16_t &angle_deg, uint8_t &width_deg) const;
     bool get_next_ignore_start_or_end(uint8_t start_or_end, int16_t start_angle, int16_t &ignore_start) const;
+
+    // database helpers
+    bool database_prepare_for_push(Location &current_loc, float &current_vehicle_bearing);
+    void database_push(const float angle, const float distance);
+    void database_push(const float angle, const float distance, const uint32_t timestamp_ms, const Location &current_loc, const float current_vehicle_bearing);
 
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state

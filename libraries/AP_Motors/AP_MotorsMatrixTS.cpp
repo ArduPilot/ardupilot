@@ -75,8 +75,8 @@ void AP_MotorsMatrixTS::output_armed_stabilizing()
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
-    roll_thrust = _roll_in * compensation_gain;
-    pitch_thrust = _pitch_in * compensation_gain;
+    roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
+    pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     throttle_thrust = get_throttle() * compensation_gain;
 
     // sanity check throttle is above zero and below current limited throttle
@@ -104,7 +104,8 @@ void AP_MotorsMatrixTS::output_armed_stabilizing()
     if (thrust_max > 1.0f) {
         thr_adj = 1.0f - thrust_max;
         limit.throttle_upper = true;
-        limit.roll_pitch = true;
+        limit.roll = true;
+        limit.pitch = true;
         for (int i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
                 // calculate the thrust outputs for roll and pitch

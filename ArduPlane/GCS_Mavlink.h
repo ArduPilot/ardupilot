@@ -12,7 +12,7 @@ protected:
 
     uint32_t telem_delay() const override;
 
-    void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg) override;
+    void handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg) override;
 
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
 
@@ -46,12 +46,12 @@ private:
 
     void send_pid_info(const AP_Logger::PID_Info *pid_info, const uint8_t axis, const float achieved);
 
-    void handleMessage(mavlink_message_t * msg) override;
+    void handleMessage(const mavlink_message_t &msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
-    void handle_rc_channels_override(const mavlink_message_t *msg) override;
+    void handle_rc_channels_override(const mavlink_message_t &msg) override;
     bool try_send_message(enum ap_message id) override;
-    void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;
+    void packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg) override;
 
     MAV_MODE base_mode() const override;
     MAV_STATE system_status() const override;

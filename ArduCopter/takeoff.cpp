@@ -1,25 +1,25 @@
 #include "Copter.h"
 
-Copter::Mode::_TakeOff Copter::Mode::takeoff;
+Mode::_TakeOff Mode::takeoff;
 
 // This file contains the high-level takeoff logic for Loiter, PosHold, AltHold, Sport modes.
 //   The take-off can be initiated from a GCS NAV_TAKEOFF command which includes a takeoff altitude
 //   A safe takeoff speed is calculated and used to calculate a time_ms
 //   the pos_control target is then slowly increased until time_ms expires
 
-bool Copter::Mode::do_user_takeoff_start(float takeoff_alt_cm)
+bool Mode::do_user_takeoff_start(float takeoff_alt_cm)
 {
     copter.flightmode->takeoff.start(takeoff_alt_cm);
     return true;
 }
 
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
-bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
+bool Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
     if (!copter.motors->armed()) {
         return false;
     }
-    if (!ap.land_complete) {
+    if (!copter.ap.land_complete) {
         // can't takeoff again!
         return false;
     }
@@ -33,7 +33,7 @@ bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
     }
 
     // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
-    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED && ap.using_interlock) {
+    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED && copter.ap.using_interlock) {
         return false;
     }
 
@@ -46,7 +46,7 @@ bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 }
 
 // start takeoff to specified altitude above home in centimeters
-void Copter::Mode::_TakeOff::start(float alt_cm)
+void Mode::_TakeOff::start(float alt_cm)
 {
     // indicate we are taking off
     copter.set_land_complete(false);
@@ -69,7 +69,7 @@ void Copter::Mode::_TakeOff::start(float alt_cm)
 }
 
 // stop takeoff
-void Copter::Mode::_TakeOff::stop()
+void Mode::_TakeOff::stop()
 {
     _running = false;
     start_ms = 0;
@@ -79,7 +79,7 @@ void Copter::Mode::_TakeOff::stop()
 //  pilot_climb_rate is both an input and an output
 //  takeoff_climb_rate is only an output
 //  has side-effect of turning takeoff off when timeout as expired
-void Copter::Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
+void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
                                                   float& takeoff_climb_rate)
 {
     // return pilot_climb_rate if take-off inactive
@@ -138,7 +138,7 @@ void Copter::Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
     }
 }
 
-void Copter::Mode::auto_takeoff_set_start_alt(void)
+void Mode::auto_takeoff_set_start_alt(void)
 {
     // start with our current altitude
     auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
@@ -154,7 +154,7 @@ void Copter::Mode::auto_takeoff_set_start_alt(void)
   call attitude controller for automatic takeoff, limiting roll/pitch
   if below wp_navalt_min
  */
-void Copter::Mode::auto_takeoff_attitude_run(float target_yaw_rate)
+void Mode::auto_takeoff_attitude_run(float target_yaw_rate)
 {
     float nav_roll, nav_pitch;
     
@@ -173,12 +173,12 @@ void Copter::Mode::auto_takeoff_attitude_run(float target_yaw_rate)
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
 }
 
-bool Copter::Mode::is_taking_off() const
+bool Mode::is_taking_off() const
 {
     if (!has_user_takeoff(false)) {
         return false;
     }
-    if (ap.land_complete) {
+    if (copter.ap.land_complete) {
         return false;
     }
     if (takeoff.running()) {

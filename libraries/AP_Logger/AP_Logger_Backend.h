@@ -68,8 +68,8 @@ public:
 #endif
 
      // for Logger_MAVlink
-    virtual void remote_log_block_status_msg(mavlink_channel_t chan,
-                                             mavlink_message_t* msg) { }
+    virtual void remote_log_block_status_msg(const mavlink_channel_t chan,
+                                             const mavlink_message_t &msg) { }
     // end for Logger_MAVlink
 
    virtual void periodic_tasks();

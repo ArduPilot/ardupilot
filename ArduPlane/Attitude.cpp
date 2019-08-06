@@ -28,6 +28,12 @@ float Plane::get_speed_scaler(void)
             if (aspeed < threshold) {
                 float new_scaler = linear_interpolate(0, g.scaling_speed / threshold, aspeed, 0, threshold);
                 speed_scaler = MIN(speed_scaler, new_scaler);
+
+                // we also decay the integrator to prevent an integrator from before
+                // we were at low speed persistint at high speed
+                rollController.decay_I();
+                pitchController.decay_I();
+                yawController.decay_I();
             }
         }
     } else if (hal.util->get_soft_armed()) {
@@ -370,7 +376,17 @@ void Plane::stabilize()
         nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
         nav_roll_cd = 0;
     }
-    
+
+    uint32_t now = AP_HAL::millis();
+    if (now - last_stabilize_ms > 2000) {
+        // if we haven't run the rate controllers for 2 seconds then
+        // reset the integrators
+        rollController.reset_I();
+        pitchController.reset_I();
+        yawController.reset_I();
+    }
+    last_stabilize_ms = now;
+
     if (control_mode == &mode_training) {
         stabilize_training(speed_scaler);
     } else if (control_mode == &mode_acro) {

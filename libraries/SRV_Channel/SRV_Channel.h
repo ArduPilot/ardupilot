@@ -217,7 +217,11 @@ public:
     bool function_configured(void) const {
         return function.configured();
     }
-    
+
+    // specify that small rc input changes should be ignored during passthrough
+    // used by DO_SET_SERVO commands
+    void ignore_small_rcin_changes() { ign_small_rcin_changes = true; }
+
 private:
     AP_Int16 servo_min;
     AP_Int16 servo_max;
@@ -268,6 +272,13 @@ private:
     // mask of channels where we have a output_pwm value. Cleared when a
     // scaled value is written. 
     static servo_mask_t have_pwm_mask;
+
+    // previous radio_in during pass-thru
+    int16_t previous_radio_in;
+
+    // specify that small rcinput changes should be ignored during passthrough
+    // used by DO_SET_SERVO commands
+    bool ign_small_rcin_changes;
 };
 
 /*

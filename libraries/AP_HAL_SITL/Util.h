@@ -32,11 +32,12 @@ public:
 
     bool get_system_id(char buf[40]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
+    void dump_stack_trace();
 
 #ifdef ENABLE_HEAP
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size);
-    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size);
+    void *allocate_heap_memory(size_t size) override;
+    void *heap_realloc(void *heap, void *ptr, size_t new_size) override;
 #endif // ENABLE_HEAP
 
 #ifdef WITH_SITL_TONEALARM

@@ -149,11 +149,11 @@ public:
         // obstacle control
         k_param_sonar_enabled = 190,  // deprecated, can be removed
         k_param_sonar_old,            // unused
-        k_param_rangefinder_trigger_cm,
-        k_param_rangefinder_turn_angle,
-        k_param_rangefinder_turn_time,
+        k_param_rangefinder_trigger_cm, // unused
+        k_param_rangefinder_turn_angle, // unused
+        k_param_rangefinder_turn_time,  // unused
         k_param_sonar2_old,           // unused
-        k_param_rangefinder_debounce,
+        k_param_rangefinder_debounce, // unused
         k_param_rangefinder,          // rangefinder object
 
         //
@@ -250,13 +250,6 @@ public:
     AP_Int8     fs_crash_check;
     AP_Int8     fs_ekf_action;
     AP_Float    fs_ekf_thresh;
-
-    // obstacle avoidance control
-    AP_Int16    rangefinder_trigger_cm;
-    AP_Float    rangefinder_turn_angle;
-    AP_Float    rangefinder_turn_time;
-    AP_Int8     rangefinder_debounce;
-
 
     // driving modes
     //
@@ -392,6 +385,9 @@ public:
 
     // Sailboat functions
     Sailboat sailboat;
+
+    // object avoidance path planning
+    AP_OAPathPlanner oa;
 };
 
 extern const AP_Param::Info var_info[];

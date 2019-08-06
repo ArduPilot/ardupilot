@@ -49,7 +49,9 @@ public:
     int16_t get_rssi(void) override {
         return _rssi;
     }
-        
+
+    const char *protocol() const override { return last_protocol; }
+
     void _timer_tick(void);
     bool rc_bind(int dsmMode) override;
 

@@ -135,7 +135,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     AP_GROUPINFO("RATE_Y_MAX", 19, AC_AttitudeControl, _ang_vel_yaw_max, 0.0f),
 
     // @Param: INPUT_TC
-    // @DisplayName: Attitude control input time constant (aka smoothing)
+    // @DisplayName: Attitude control input time constant
     // @Description: Attitude control input time constant.  Low numbers lead to sharper response, higher numbers to softer response
     // @Units: s
     // @Range: 0 1
@@ -927,75 +927,6 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
     return rate_target_ang_vel;
 }
 
-// Run the roll angular velocity PID controller and return the output
-float AC_AttitudeControl::rate_target_to_motor_roll(float rate_actual_rads, float rate_target_rads)
-{
-    float rate_error_rads = rate_target_rads - rate_actual_rads;
-
-    // pass error to PID controller
-    get_rate_roll_pid().set_input_filter_d(rate_error_rads);
-    get_rate_roll_pid().set_desired_rate(rate_target_rads);
-
-    float integrator = get_rate_roll_pid().get_integrator();
-
-    // Ensure that integrator can only be reduced if the output is saturated
-    if (!_motors.limit.roll_pitch || ((is_positive(integrator) && is_negative(rate_error_rads)) || (is_negative(integrator) && is_positive(rate_error_rads)))) {
-        integrator = get_rate_roll_pid().get_i();
-    }
-
-    // Compute output in range -1 ~ +1
-    float output = get_rate_roll_pid().get_p() + integrator + get_rate_roll_pid().get_d() + get_rate_roll_pid().get_ff(rate_target_rads);
-
-    // Constrain output
-    return output;
-}
-
-// Run the pitch angular velocity PID controller and return the output
-float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_actual_rads, float rate_target_rads)
-{
-    float rate_error_rads = rate_target_rads - rate_actual_rads;
-
-    // pass error to PID controller
-    get_rate_pitch_pid().set_input_filter_d(rate_error_rads);
-    get_rate_pitch_pid().set_desired_rate(rate_target_rads);
-
-    float integrator = get_rate_pitch_pid().get_integrator();
-
-    // Ensure that integrator can only be reduced if the output is saturated
-    if (!_motors.limit.roll_pitch || ((is_positive(integrator) && is_negative(rate_error_rads)) || (is_negative(integrator) && is_positive(rate_error_rads)))) {
-        integrator = get_rate_pitch_pid().get_i();
-    }
-
-    // Compute output in range -1 ~ +1
-    float output = get_rate_pitch_pid().get_p() + integrator + get_rate_pitch_pid().get_d() + get_rate_pitch_pid().get_ff(rate_target_rads);
-
-    // Constrain output
-    return output;
-}
-
-// Run the yaw angular velocity PID controller and return the output
-float AC_AttitudeControl::rate_target_to_motor_yaw(float rate_actual_rads, float rate_target_rads)
-{
-    float rate_error_rads = rate_target_rads - rate_actual_rads;
-
-    // pass error to PID controller
-    get_rate_yaw_pid().set_input_filter_all(rate_error_rads);
-    get_rate_yaw_pid().set_desired_rate(rate_target_rads);
-
-    float integrator = get_rate_yaw_pid().get_integrator();
-
-    // Ensure that integrator can only be reduced if the output is saturated
-    if (!_motors.limit.yaw || ((is_positive(integrator) && is_negative(rate_error_rads)) || (is_negative(integrator) && is_positive(rate_error_rads)))) {
-        integrator = get_rate_yaw_pid().get_i();
-    }
-
-    // Compute output in range -1 ~ +1
-    float output = get_rate_yaw_pid().get_p() + integrator + get_rate_yaw_pid().get_d() + get_rate_yaw_pid().get_ff(rate_target_rads);
-
-    // Constrain output
-    return output;
-}
-
 // Enable or disable body-frame feed forward
 void AC_AttitudeControl::accel_limiting(bool enable_limits)
 {
@@ -1090,7 +1021,7 @@ float AC_AttitudeControl::stopping_point(float first_ord_mag, float p, float sec
 // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps
 float AC_AttitudeControl::max_rate_step_bf_roll()
 {
-    float alpha = get_rate_roll_pid().get_filt_alpha();
+    float alpha = MIN(get_rate_roll_pid().get_filt_E_alpha(), get_rate_roll_pid().get_filt_D_alpha());
     float alpha_remaining = 1 - alpha;
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
@@ -1100,7 +1031,7 @@ float AC_AttitudeControl::max_rate_step_bf_roll()
 // Return pitch rate step size in centidegrees/s that results in maximum output after 4 time steps
 float AC_AttitudeControl::max_rate_step_bf_pitch()
 {
-    float alpha = get_rate_pitch_pid().get_filt_alpha();
+    float alpha = MIN(get_rate_pitch_pid().get_filt_E_alpha(), get_rate_pitch_pid().get_filt_D_alpha());
     float alpha_remaining = 1 - alpha;
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
@@ -1110,7 +1041,7 @@ float AC_AttitudeControl::max_rate_step_bf_pitch()
 // Return yaw rate step size in centidegrees/s that results in maximum output after 4 time steps
 float AC_AttitudeControl::max_rate_step_bf_yaw()
 {
-    float alpha = get_rate_yaw_pid().get_filt_alpha();
+    float alpha = MIN(get_rate_yaw_pid().get_filt_E_alpha(), get_rate_yaw_pid().get_filt_D_alpha());
     float alpha_remaining = 1 - alpha;
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);

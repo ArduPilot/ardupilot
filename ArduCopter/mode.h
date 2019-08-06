@@ -1,6 +1,6 @@
 #pragma once
 
-// this class is #included into the Copter:: namespace
+#include "Copter.h"
 
 class Mode {
 
@@ -99,7 +99,6 @@ protected:
     RC_Channel *&channel_throttle;
     RC_Channel *&channel_yaw;
     float &G_Dt;
-    ap_t &ap;
 
     // note that we support two entirely different automatic takeoffs:
 
@@ -221,7 +220,7 @@ class ModeAcro : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     virtual void run() override;
 
@@ -241,7 +240,7 @@ protected:
         if (g2.acro_thr_mid > 0) {
             return g2.acro_thr_mid;
         }
-        return Copter::Mode::throttle_hover();
+        return Mode::throttle_hover();
     }
 
 private:
@@ -254,10 +253,11 @@ class ModeAcro_Heli : public ModeAcro {
 
 public:
     // inherit constructor
-    using Copter::ModeAcro::Mode;
+    using ModeAcro::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
+    void virtual_flybar( float &roll_out, float &pitch_out, float &yaw_out, float pitch_leak, float roll_leak);
 
 protected:
 private:
@@ -269,7 +269,7 @@ class ModeAltHold : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -296,7 +296,7 @@ class ModeAuto : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -313,7 +313,7 @@ public:
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
-    void wp_start(const Vector3f& destination);
+    void wp_start(const Vector3f& destination, bool terrain_alt);
     void wp_start(const Location& dest_loc);
     void land_start();
     void land_start(const Vector3f& destination);
@@ -338,9 +338,9 @@ public:
     bool do_guided(const AP_Mission::Mission_Command& cmd);
 
     AP_Mission mission{
-        FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::start_command, bool, const AP_Mission::Mission_Command &),
-        FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::verify_command, bool, const AP_Mission::Mission_Command &),
-        FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::exit_mission, void)};
+        FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
 
 protected:
 
@@ -487,7 +487,7 @@ class ModeAutoTune : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -513,7 +513,7 @@ class ModeBrake : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -532,6 +532,8 @@ protected:
 
 private:
 
+    void init_target();
+
     uint32_t _timeout_start;
     uint32_t _timeout_ms;
 
@@ -542,7 +544,7 @@ class ModeCircle : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -571,7 +573,7 @@ class ModeDrift : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -597,7 +599,7 @@ class ModeFlip : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -724,7 +726,7 @@ class ModeGuided : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -788,7 +790,7 @@ class ModeGuidedNoGPS : public ModeGuided {
 
 public:
     // inherit constructor
-    using Copter::ModeGuided::Mode;
+    using ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -812,7 +814,7 @@ class ModeLand : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -843,7 +845,7 @@ class ModeLoiter : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -884,7 +886,7 @@ class ModePosHold : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -903,10 +905,10 @@ protected:
 private:
 
     void update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
-    int16_t mix_controls(float mix_ratio, int16_t first_control, int16_t second_control);
-    void update_brake_angle_from_velocity(int16_t &brake_angle, float velocity);
+    float mix_controls(float mix_ratio, float first_control, float second_control);
+    void update_brake_angle_from_velocity(float &brake_angle, float velocity);
     void update_wind_comp_estimate();
-    void get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle);
+    void get_wind_comp_lean_angles(float &roll_angle, float &pitch_angle);
     void roll_controller_to_pilot_override();
     void pitch_controller_to_pilot_override();
 
@@ -931,30 +933,30 @@ private:
 
     // braking related variables
     float brake_gain;                           // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from brake_rate)
-    int16_t brake_roll;                         // target roll angle during braking periods
-    int16_t brake_pitch;                        // target pitch angle during braking periods
+    float brake_roll;                           // target roll angle during braking periods
+    float brake_pitch;                          // target pitch angle during braking periods
     int16_t brake_timeout_roll;                 // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
     int16_t brake_timeout_pitch;                // number of cycles allowed for the braking to complete, this timeout will be updated at half-braking
-    int16_t brake_angle_max_roll;               // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
-    int16_t brake_angle_max_pitch;              // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+    float brake_angle_max_roll;                 // maximum lean angle achieved during braking.  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
+    float brake_angle_max_pitch;                // maximum lean angle achieved during braking  Used to determine when the vehicle has begun to flatten out so that we can re-estimate the braking time
     int16_t brake_to_loiter_timer;              // cycles to mix brake and loiter controls in POSHOLD_BRAKE_TO_LOITER
 
     // loiter related variables
     int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
     int16_t controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
-    int16_t controller_final_roll;              // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
-    int16_t controller_final_pitch;             // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+    float controller_final_roll;                // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+    float controller_final_pitch;               // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
 
     // wind compensation related variables
     Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
-    int16_t wind_comp_roll;                     // roll angle to compensate for wind
-    int16_t wind_comp_pitch;                    // pitch angle to compensate for wind
+    float wind_comp_roll;                       // roll angle to compensate for wind
+    float wind_comp_pitch;                      // pitch angle to compensate for wind
     uint16_t wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
     int8_t  wind_comp_timer;                    // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
 
     // final output
-    int16_t roll;   // final roll angle sent to attitude controller
-    int16_t pitch;  // final pitch angle sent to attitude controller
+    float roll;   // final roll angle sent to attitude controller
+    float pitch;  // final pitch angle sent to attitude controller
 
 };
 
@@ -963,7 +965,7 @@ class ModeRTL : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override {
@@ -1036,7 +1038,7 @@ class ModeSmartRTL : public ModeRTL {
 
 public:
     // inherit constructor
-    using Copter::ModeRTL::Mode;
+    using ModeRTL::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1073,7 +1075,7 @@ class ModeSport : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1100,7 +1102,7 @@ class ModeStabilize : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     virtual void run() override;
 
@@ -1123,7 +1125,7 @@ class ModeStabilize_Heli : public ModeStabilize {
 
 public:
     // inherit constructor
-    using Copter::ModeStabilize::Mode;
+    using ModeStabilize::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1140,7 +1142,7 @@ class ModeThrow : public Mode {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1191,7 +1193,7 @@ class ModeAvoidADSB : public ModeGuided {
 
 public:
     // inherit constructor
-    using Copter::ModeGuided::Mode;
+    using ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1217,7 +1219,7 @@ class ModeFollow : public ModeGuided {
 public:
 
     // inherit constructor
-    using Copter::ModeGuided::Mode;
+    using ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1243,7 +1245,7 @@ class ModeZigZag : public Mode {
 public:
 
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Mode::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;

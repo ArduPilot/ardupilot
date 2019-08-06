@@ -135,7 +135,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     }
 #endif
 #if PRECISION_LANDING == ENABLED
-    if (!copter.precland.enabled() || copter.precland.healthy()) {
+    if (copter.precland.enabled() && copter.precland.healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif

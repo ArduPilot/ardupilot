@@ -204,17 +204,23 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
          * Initializes a serial-over-USB CDC driver.
          */
         if (!_device_initialised) {
-            sduObjectInit((SerialUSBDriver*)sdef.serial);
-            sduStart((SerialUSBDriver*)sdef.serial, &serusbcfg);
-            /*
-             * Activates the USB driver and then the USB bus pull-up on D+.
-             * Note, a delay is inserted in order to not have to disconnect the cable
-             * after a reset.
-             */
-            usbDisconnectBus(serusbcfg.usbp);
-            hal.scheduler->delay_microseconds(1500);
-            usbStart(serusbcfg.usbp, &usbcfg);
-            usbConnectBus(serusbcfg.usbp);
+            if ((SerialUSBDriver*)sdef.serial == &SDU1) {
+                sduObjectInit(&SDU1);
+                sduStart(&SDU1, &serusbcfg1);
+#if HAL_HAVE_DUAL_USB_CDC
+                sduObjectInit(&SDU2);
+                sduStart(&SDU2, &serusbcfg2);
+#endif
+                /*
+                * Activates the USB driver and then the USB bus pull-up on D+.
+                * Note, a delay is inserted in order to not have to disconnect the cable
+                * after a reset.
+                */
+                usbDisconnectBus(serusbcfg1.usbp);
+                hal.scheduler->delay_microseconds(1500);
+                usbStart(serusbcfg1.usbp, &usbcfg);
+                usbConnectBus(serusbcfg1.usbp);
+            }
             _device_initialised = true;
         }
 #endif

@@ -7,7 +7,7 @@
  */
 
 // sport_init - initialise sport controller
-bool Copter::ModeSport::init(bool ignore_checks)
+bool ModeSport::init(bool ignore_checks)
 {
     // initialize vertical speed and acceleration
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
@@ -24,7 +24,7 @@ bool Copter::ModeSport::init(bool ignore_checks)
 
 // sport_run - runs the sport controller
 // should be called at 100hz or more
-void Copter::ModeSport::run()
+void ModeSport::run()
 {
     float takeoff_climb_rate = 0.0f;
 
@@ -117,7 +117,7 @@ void Copter::ModeSport::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // adjust climb rate using rangefinder
-        target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate);
+        target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);

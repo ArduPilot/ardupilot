@@ -25,11 +25,10 @@ public:
     // constructor
     AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
                         AP_RangeFinder_Params &_params,
-                        AP_SerialManager &serial_manager,
                         uint8_t serial_instance);
 
     // static detection function
-    static bool detect(AP_SerialManager &serial_manager, uint8_t serial_instance);
+    static bool detect(uint8_t serial_instance);
 
     // update state
     void update(void) override;
@@ -60,9 +59,6 @@ private:
     // decode the just-completed term
     // returns true if new sentence has just passed checksum test and is validated
     bool decode_latest_term();
-
-    // return the numeric value of an ascii hex character
-    static int16_t char_to_hex(char a);
 
     AP_HAL::UARTDriver *uart = nullptr;     // pointer to serial uart
 

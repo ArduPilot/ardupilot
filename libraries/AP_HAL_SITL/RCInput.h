@@ -16,6 +16,8 @@ public:
     uint16_t read(uint8_t ch) override;
     uint8_t read(uint16_t* periods, uint8_t len) override;
 
+    const char *protocol() const override { return "SITL"; }
+
 private:
     SITL_State *_sitlState;
 };
