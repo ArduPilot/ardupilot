@@ -1940,7 +1940,7 @@ class AutoTest(ABC):
 
     def check_sitl_reset(self):
         self.wait_heartbeat()
-        self.clear_mission()
+        self.clear_mission_using_mavproxy()
         if self.armed():
             self.progress("Armed at end of test; force-rebooting SITL")
             self.disarm_vehicle(force=True)
@@ -2788,7 +2788,7 @@ class AutoTest(ABC):
         if m is None:
             raise NotAchievedException("Requested CAMERA_FEEDBACK did not arrive")
 
-    def clear_mission(self):
+    def clear_mission_using_mavproxy(self):
         self.mavproxy.send("wp clear\n")
         self.mavproxy.send('wp list\n')
         self.mavproxy.expect('Requesting [0-9]+ waypoints')
