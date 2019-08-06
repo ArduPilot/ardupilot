@@ -295,6 +295,7 @@ private:
     
     AP_Int8 enable;
     AP_Int8 transition_pitch_max;
+    AP_Int16 max_descend_trig_vel;
 
     // control if a VTOL RTL will be used
     AP_Int8 rtl_mode;
@@ -394,9 +395,10 @@ private:
     };
     struct {
         enum position_control_state state;
-        float speed_scale;
+        float stopping_distance;
+        float target_decel;
+        float pre_decel_gndspd;
         Vector2f target_velocity;
-        float max_speed;
         Vector3f target;
         bool slow_descent:1;
     } poscontrol;
