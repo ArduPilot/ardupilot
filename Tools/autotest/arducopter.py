@@ -3698,6 +3698,13 @@ class AutoTestHeli(AutoTestCopter):
         ret[3] = 1000 # collective
         return ret
 
+    @staticmethod
+    def get_position_armable_modes_list():
+        '''filter THROW mode out of armable modes list; Heli is special-cased'''
+        ret = AutoTestCopter.get_position_armable_modes_list()
+        ret = filter(lambda x : x != "THROW", ret)
+        return ret
+
     def loiter_requires_position(self):
         self.progress("Skipping loiter-requires-position for heli; rotor runup issues")
 
