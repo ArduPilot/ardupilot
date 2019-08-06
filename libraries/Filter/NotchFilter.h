@@ -32,7 +32,6 @@ public:
     // set parameters
     void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
     T apply(const T &sample);
-    void reset();
 
 private:
     bool initialised;
@@ -41,23 +40,29 @@ private:
 };
 
 /*
-  notch filter enable and filter parameters
+  a notch filter with enable and filter parameters
  */
-class NotchFilterParams {
+class NotchFilterVector3fParam {
 public:
-    NotchFilterParams(void);
-    static const struct AP_Param::GroupInfo var_info[];
+    NotchFilterVector3fParam(void);
+    void init(float sample_freq_hz);
+    Vector3f apply(const Vector3f &sample);
 
-    uint16_t center_freq_hz(void) const { return _center_freq_hz; }
-    uint16_t bandwidth_hz(void) const { return _bandwidth_hz; }
-    float attenuation_dB(void) const { return _attenuation_dB; }
-    uint8_t enabled(void) const { return _enable; }
+    static const struct AP_Param::GroupInfo var_info[];
     
 private:
-    AP_Int8 _enable;
-    AP_Int16 _center_freq_hz;
-    AP_Int16 _bandwidth_hz;
-    AP_Float _attenuation_dB;
+    AP_Int8 enable;
+    AP_Float center_freq_hz;
+    AP_Float bandwidth_hz;
+    AP_Float attenuation_dB;
+
+    float sample_freq_hz;
+
+    float last_center_freq;
+    float last_bandwidth;
+    float last_attenuation;
+    
+    NotchFilter<Vector3f> filter;
 };
 
 typedef NotchFilter<float> NotchFilterFloat;

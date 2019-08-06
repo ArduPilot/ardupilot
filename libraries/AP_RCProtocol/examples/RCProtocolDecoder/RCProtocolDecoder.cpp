@@ -20,9 +20,6 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-void setup();
-void loop();
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <AP_RCProtocol/AP_RCProtocol.h>
@@ -36,6 +33,10 @@ void loop();
 #include <termios.h>
 #include <string.h>
 #include <errno.h>
+
+void setup();
+void loop();
+
 
 static AP_RCProtocol *rcprot;
 

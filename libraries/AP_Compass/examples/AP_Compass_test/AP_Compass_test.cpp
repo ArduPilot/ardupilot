@@ -35,7 +35,6 @@ public:
 static DummyVehicle vehicle;
 // create compass object
 static Compass compass;
-static AP_SerialManager serial_manager;
 
 uint32_t timer;
 

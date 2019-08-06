@@ -5,7 +5,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_GPS/AP_GPS.h>
 
 #include <stdio.h>
 
@@ -47,8 +46,6 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
 {
     frontend = _frontend;
     imu_index = _imu_index;
-    gyro_index_active = _imu_index;
-    accel_index_active = _imu_index;
     core_index = _core_index;
     _ahrs = frontend->_ahrs;
 
@@ -134,7 +131,6 @@ void NavEKF2_core::InitialiseVariables()
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
-    lastGpsVelPass_ms = 0;
     lastGpsAidBadTime_ms = 0;
     timeTasReceived_ms = 0;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
@@ -320,7 +316,6 @@ void NavEKF2_core::InitialiseVariables()
 
     // now init mag variables
     yawAlignComplete = false;
-    have_table_earth_field = false;
 
     InitialiseVariablesMag();
 }
@@ -396,7 +391,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     Vector3f initAccVec;
 
     // TODO we should average accel readings over several cycles
-    initAccVec = ins.get_accel(accel_index_active);
+    initAccVec = ins.get_accel(imu_index);
 
     // read the magnetometer data
     readMagData();
@@ -451,15 +446,6 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
 
     // set to true now that states have be initialised
     statesInitialised = true;
-
-    // reset inactive biases
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        inactiveBias[i].gyro_bias.zero();
-        inactiveBias[i].accel_zbias = 0;
-        inactiveBias[i].gyro_scale.x = 1;
-        inactiveBias[i].gyro_scale.y = 1;
-        inactiveBias[i].gyro_scale.z = 1;
-    }
 
     // we initially return false to wait for the IMU buffer to fill
     return false;
@@ -602,17 +588,17 @@ void NavEKF2_core::UpdateFilter(bool predict)
     
 }
 
-void NavEKF2_core::correctDeltaAngle(Vector3f &delAng, float delAngDT, uint8_t gyro_index)
+void NavEKF2_core::correctDeltaAngle(Vector3f &delAng, float delAngDT)
 {
     delAng.x = delAng.x * stateStruct.gyro_scale.x;
     delAng.y = delAng.y * stateStruct.gyro_scale.y;
     delAng.z = delAng.z * stateStruct.gyro_scale.z;
-    delAng -= inactiveBias[gyro_index].gyro_bias * (delAngDT / dtEkfAvg);
+    delAng -= stateStruct.gyro_bias * (delAngDT / dtEkfAvg);
 }
 
-void NavEKF2_core::correctDeltaVelocity(Vector3f &delVel, float delVelDT, uint8_t accel_index)
+void NavEKF2_core::correctDeltaVelocity(Vector3f &delVel, float delVelDT)
 {
-    delVel.z -= inactiveBias[accel_index].accel_zbias * (delVelDT / dtEkfAvg);
+    delVel.z -= stateStruct.accel_zbias * (delVelDT / dtEkfAvg);
 }
 
 /*
@@ -695,8 +681,8 @@ void NavEKF2_core::calcOutputStates()
     // apply corrections to the IMU data
     Vector3f delAngNewCorrected = imuDataNew.delAng;
     Vector3f delVelNewCorrected = imuDataNew.delVel;
-    correctDeltaAngle(delAngNewCorrected, imuDataNew.delAngDT, imuDataNew.gyro_index);
-    correctDeltaVelocity(delVelNewCorrected, imuDataNew.delVelDT, imuDataNew.accel_index);
+    correctDeltaAngle(delAngNewCorrected, imuDataNew.delAngDT);
+    correctDeltaVelocity(delVelNewCorrected, imuDataNew.delVelDT);
 
     // apply corections to track EKF solution
     Vector3f delAng = delAngNewCorrected + delAngCorrection;
@@ -1455,22 +1441,6 @@ void NavEKF2_core::ConstrainVariances()
     for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_float(P[i][i],0.0f,1.0e3f); // wind velocity
 }
 
-// constrain states using WMM tables and specified limit
-void NavEKF2_core::MagTableConstrain(void)
-{
-    // constrain to error from table earth field
-    float limit_ga = frontend->_mag_ef_limit * 0.001f;
-    stateStruct.earth_magfield.x = constrain_float(stateStruct.earth_magfield.x,
-                                                   table_earth_field_ga.x-limit_ga,
-                                                   table_earth_field_ga.x+limit_ga);
-    stateStruct.earth_magfield.y = constrain_float(stateStruct.earth_magfield.y,
-                                                   table_earth_field_ga.y-limit_ga,
-                                                   table_earth_field_ga.y+limit_ga);
-    stateStruct.earth_magfield.z = constrain_float(stateStruct.earth_magfield.z,
-                                                   table_earth_field_ga.z-limit_ga,
-                                                   table_earth_field_ga.z+limit_ga);
-}
-
 // constrain states to prevent ill-conditioning
 void NavEKF2_core::ConstrainStates()
 {
@@ -1488,16 +1458,8 @@ void NavEKF2_core::ConstrainStates()
     for (uint8_t i=12; i<=14; i++) statesArray[i] = constrain_float(statesArray[i],0.95f,1.05f);
     // Z accel bias limit 1.0 m/s^2	(this needs to be finalised from test data)
     stateStruct.accel_zbias = constrain_float(stateStruct.accel_zbias,-1.0f*dtEkfAvg,1.0f*dtEkfAvg);
-
     // earth magnetic field limit
-    if (frontend->_mag_ef_limit <= 0 || !have_table_earth_field) {
-        // constrain to +/-1Ga
-        for (uint8_t i=16; i<=18; i++) statesArray[i] = constrain_float(statesArray[i],-1.0f,1.0f);
-    } else {
-        // use table constrain
-        MagTableConstrain();
-    }
-
+    for (uint8_t i=16; i<=18; i++) statesArray[i] = constrain_float(statesArray[i],-1.0f,1.0f);
     // body magnetic field limit
     for (uint8_t i=19; i<=21; i++) statesArray[i] = constrain_float(statesArray[i],-0.5f,0.5f);
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
@@ -1541,7 +1503,7 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         float magHeading = atan2f(initMagNED.y, initMagNED.x);
 
         // get the magnetic declination
-        float magDecAng = MagDeclination();
+        float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
         // calculate yaw angle rel to true north
         yaw = magDecAng - magHeading;
@@ -1566,11 +1528,7 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         // don't do this if the earth field has already been learned
         if (!magFieldLearned) {
             initQuat.rotation_matrix(Tbn);
-            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
-                stateStruct.earth_magfield = table_earth_field_ga;
-            } else {
-                stateStruct.earth_magfield = Tbn * magDataDelayed.mag;
-            }
+            stateStruct.earth_magfield = Tbn * magDataDelayed.mag;
 
             // set the NE earth magnetic field states using the published declination
             // and set the corresponding variances and covariances

@@ -260,7 +260,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @DisplayName: Gyro filter cutoff frequency
     // @Description: Filter cutoff frequency for gyroscopes. This can be set to a lower value to try to cope with very high vibration levels in aircraft. This option takes effect on the next reboot. A value of zero means no filtering (not recommended!)
     // @Units: Hz
-    // @Range: 0 256
+    // @Range: 0 127
     // @User: Advanced
     AP_GROUPINFO("GYRO_FILTER", 18, AP_InertialSensor, _gyro_filter_cutoff,  DEFAULT_GYRO_FILTER),
 
@@ -268,7 +268,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @DisplayName: Accel filter cutoff frequency
     // @Description: Filter cutoff frequency for accelerometers. This can be set to a lower value to try to cope with very high vibration levels in aircraft. This option takes effect on the next reboot. A value of zero means no filtering (not recommended!)
     // @Units: Hz
-    // @Range: 0 256
+    // @Range: 0 127
     // @User: Advanced
     AP_GROUPINFO("ACCEL_FILTER", 19, AP_InertialSensor, _accel_filter_cutoff,  DEFAULT_ACCEL_FILTER),
 
@@ -291,7 +291,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Use third IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  1),
+    AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  0),
 
     // @Param: STILL_THRESH
     // @DisplayName: Stillness threshold for detecting if we are moving
@@ -439,7 +439,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // @Group: NOTCH_
     // @Path: ../Filter/NotchFilter.cpp
-    AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, NotchFilterParams),
+    AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, NotchFilterVector3fParam),
 
     // @Group: LOG_
     // @Path: ../AP_InertialSensor/BatchSampler.cpp
@@ -646,6 +646,8 @@ AP_InertialSensor::init(uint16_t sample_rate)
 
     _sample_period_usec = 1000*1000UL / _sample_rate;
 
+    _notch_filter.init(sample_rate);
+    
     // establish the baseline time between samples
     _delta_time = 0;
     _next_sample_usec = 0;
@@ -680,20 +682,6 @@ AP_InertialSensor::detect_backends(void)
     }
 
     _backends_detected = true;
-
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-    // special case for CubeBlack, where the IMUs on the isolated
-    // board could fail on some boards. If the user has INS_USE=1,
-    // INS_USE2=1 and INS_USE3=0 then force INS_USE3 to 1. This is
-    // done as users loading past parameter files may end up with
-    // INS_USE3=0 unintentionally, which is unsafe on these
-    // boards. For users who really want limited IMUs they will need
-    // to either use the INS_ENABLE_MASK or set INS_USE2=0 which will
-    // enable the first IMU without triggering this check
-    if (_use[0] == 1 && _use[1] == 1 && _use[2] == 0) {
-        _use[2].set(1);
-    }
-#endif
 
     uint8_t probe_count = 0;
     uint8_t enable_mask = uint8_t(_enable_mask.get());
@@ -1351,6 +1339,9 @@ void AP_InertialSensor::update(void)
         }
     }
 
+    // apply notch filter to primary gyro
+    _gyro[_primary_gyro] = _notch_filter.apply(_gyro[_primary_gyro]);
+    
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;
@@ -1415,64 +1406,25 @@ void AP_InertialSensor::wait_for_sample(void)
 
 check_sample:
     if (!_hil_mode) {
-        // now we wait until we have the gyro and accel samples we need
-        uint8_t gyro_available_mask = 0;
-        uint8_t accel_available_mask = 0;
-        uint32_t wait_counter = 0;
-
+        // we also wait for at least one backend to have a sample of both
+        // accel and gyro. This normally completes immediately.
+        bool gyro_available = false;
+        bool accel_available = false;
         while (true) {
             for (uint8_t i=0; i<_backend_count; i++) {
-                // this is normally a nop, but can be used by backends
-                // that don't accumulate samples on a timer
                 _backends[i]->accumulate();
             }
 
-            for (uint8_t i=0; i<_gyro_count; i++) {
-                if (_new_gyro_data[i]) {
-                    const uint8_t imask = (1U<<i);
-                    gyro_available_mask |= imask;
-                    if (_use[i]) {
-                        _gyro_wait_mask |= imask;
-                    } else {
-                        _gyro_wait_mask &= ~imask;
-                    }
-                }
-            }
-            for (uint8_t i=0; i<_accel_count; i++) {
-                if (_new_accel_data[i]) {
-                    const uint8_t imask = (1U<<i);
-                    accel_available_mask |= imask;
-                    if (_use[i]) {
-                        _accel_wait_mask |= imask;
-                    } else {
-                        _accel_wait_mask &= ~imask;
-                    }
-                }
+            for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+                gyro_available |= _new_gyro_data[i];
+                accel_available |= _new_accel_data[i];
             }
 
-            // we wait for up to 800us to get all of the required
-            // accel and gyro samples. After that we accept at least
-            // one of each
-            if (wait_counter < 7) {
-                if (gyro_available_mask &&
-                    ((gyro_available_mask & _gyro_wait_mask) == _gyro_wait_mask) &&
-                    accel_available_mask &&
-                    ((accel_available_mask & _accel_wait_mask) == _accel_wait_mask)) {
-                    break;
-                }
-            } else {
-                if (gyro_available_mask && accel_available_mask) {
-                    // reset the wait mask so we don't keep delaying
-                    // for a dead IMU on the next loop. As soon as it
-                    // comes back we will start waiting on it again
-                    _gyro_wait_mask &= gyro_available_mask;
-                    _accel_wait_mask &= accel_available_mask;
-                    break;
-                }
+            if (gyro_available && accel_available) {
+                break;
             }
 
-            hal.scheduler->delay_microseconds_boost(100);
-            wait_counter++;
+            hal.scheduler->delay_microseconds(100);
         }
     }
 
@@ -2058,31 +2010,6 @@ AP_InertialSensor::Gyro_Calibration_Timing AP_InertialSensor::gyro_calibration_t
     }
     return (Gyro_Calibration_Timing)_gyro_cal_timing.get();
 }
-
-#if !HAL_MINIMIZE_FEATURES
-/*
-  update IMU kill mask, used for testing IMU failover
- */
-void AP_InertialSensor::kill_imu(uint8_t imu_idx, bool kill_it)
-{
-    if (kill_it) {
-        uint8_t new_kill_mask = imu_kill_mask | (1U<<imu_idx);
-        // don't allow the last IMU to be killed
-        bool all_dead = true;
-        for (uint8_t i=0; i<MIN(_gyro_count, _accel_count); i++) {
-            if (use_gyro(i) && use_accel(i) && !(new_kill_mask & (1U<<i))) {
-                // we have at least one healthy IMU left
-                all_dead = false;
-            }
-        }
-        if (!all_dead) {
-            imu_kill_mask = new_kill_mask;
-        }
-    } else {
-        imu_kill_mask &= ~(1U<<imu_idx);
-    }
-}
-#endif // HAL_MINIMIZE_FEATURES
 
 
 namespace AP {

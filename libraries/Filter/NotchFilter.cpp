@@ -55,38 +55,31 @@ T NotchFilter<T>::apply(const T &sample)
     return output;
 }
 
-template <class T>
-void NotchFilter<T>::reset()
-{
-    ntchsig2 = ntchsig1 = T();
-    signal2 = signal1 = T();
-}
-
 // table of user settable parameters
-const AP_Param::GroupInfo NotchFilterParams::var_info[] = {
+const AP_Param::GroupInfo NotchFilterVector3fParam::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable
     // @Description: Enable notch filter
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, NotchFilterParams, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, NotchFilterVector3fParam, enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: FREQ
     // @DisplayName: Frequency
     // @Description: Notch center frequency in Hz
-    // @Range: 10 400
+    // @Range: 10 200
     // @Units: Hz
     // @User: Advanced
-    AP_GROUPINFO("FREQ", 2, NotchFilterParams, _center_freq_hz, 80),
+    AP_GROUPINFO("FREQ", 2, NotchFilterVector3fParam, center_freq_hz, 80),
 
     // @Param: BW
     // @DisplayName: Bandwidth
     // @Description: Notch bandwidth in Hz
-    // @Range: 5 100
+    // @Range: 5 50
     // @Units: Hz
     // @User: Advanced
-    AP_GROUPINFO("BW", 3, NotchFilterParams, _bandwidth_hz, 20),
+    AP_GROUPINFO("BW", 3, NotchFilterVector3fParam, bandwidth_hz, 20),
 
     // @Param: ATT
     // @DisplayName: Attenuation
@@ -94,7 +87,7 @@ const AP_Param::GroupInfo NotchFilterParams::var_info[] = {
     // @Range: 5 30
     // @Units: dB
     // @User: Advanced
-    AP_GROUPINFO("ATT", 4, NotchFilterParams, _attenuation_dB, 15),
+    AP_GROUPINFO("ATT", 4, NotchFilterVector3fParam, attenuation_dB, 15),
     
     AP_GROUPEND
 };
@@ -102,9 +95,44 @@ const AP_Param::GroupInfo NotchFilterParams::var_info[] = {
 /*
   a notch filter with enable and filter parameters - constructor
  */
-NotchFilterParams::NotchFilterParams(void)
+NotchFilterVector3fParam::NotchFilterVector3fParam(void)
 {
     AP_Param::setup_object_defaults(this, var_info);    
+}
+
+/*
+  initialise filter
+ */
+void NotchFilterVector3fParam::init(float _sample_freq_hz)
+{
+    filter.init(_sample_freq_hz, center_freq_hz, bandwidth_hz, attenuation_dB);
+
+    sample_freq_hz = _sample_freq_hz;
+    last_center_freq = center_freq_hz;
+    last_bandwidth = bandwidth_hz;
+    last_attenuation = attenuation_dB;
+}
+
+/*
+  apply a filter sample
+ */
+Vector3f NotchFilterVector3fParam::apply(const Vector3f &sample)
+{
+    if (!enable) {
+        // when not enabled it is a simple pass-through
+        return sample;
+    }
+
+    // check for changed parameters
+    if (!is_equal(center_freq_hz.get(), last_center_freq) ||
+        !is_equal(bandwidth_hz.get(), last_bandwidth) ||
+        !is_equal(attenuation_dB.get(), last_attenuation)) {
+        if (!is_zero(sample_freq_hz)) {
+            init(sample_freq_hz);
+        }
+    }
+    
+    return filter.apply(sample);
 }
 
 /* 

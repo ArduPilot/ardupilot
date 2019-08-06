@@ -26,7 +26,6 @@
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <utility>
 #include <AP_Notify/AP_Notify.h>
 
@@ -275,10 +274,8 @@ void AP_OSD::stats()
     max_alt_m = fmaxf(max_alt_m, alt);
     // maximum current
     AP_BattMonitor &battery = AP::battery();
-    float amps;
-    if (battery.current_amps(amps)) {
-        max_current_a = fmaxf(max_current_a, amps);
-    }
+    float amps = battery.current_amps();
+    max_current_a = fmaxf(max_current_a, amps);
 }
 
 

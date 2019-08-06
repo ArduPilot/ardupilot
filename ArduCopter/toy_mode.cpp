@@ -410,7 +410,7 @@ void ToyMode::update()
         const uint8_t disarm_limit = copter.flightmode->has_manual_throttle()?TOY_LAND_MANUAL_DISARM_COUNT:TOY_LAND_DISARM_COUNT;
         if (throttle_low_counter >= disarm_limit) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: throttle disarm");
-            copter.arming.disarm();
+            copter.init_disarm_motors();
         }
     } else {
         throttle_low_counter = 0;
@@ -569,7 +569,7 @@ void ToyMode::update()
     case ACTION_DISARM:
         if (copter.motors->armed()) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: Force disarm");
-            copter.arming.disarm();
+            copter.init_disarm_motors();
         }
         break;
 
@@ -930,9 +930,9 @@ void ToyMode::blink_update(void)
 }
 
 // handle a mavlink message
-void ToyMode::handle_message(const mavlink_message_t &msg)
+void ToyMode::handle_message(mavlink_message_t *msg)
 {
-    if (msg.msgid != MAVLINK_MSG_ID_NAMED_VALUE_INT) {
+    if (msg->msgid != MAVLINK_MSG_ID_NAMED_VALUE_INT) {
         return;
     }
     mavlink_named_value_int_t m;

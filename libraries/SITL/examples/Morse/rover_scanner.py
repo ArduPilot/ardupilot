@@ -24,15 +24,13 @@ from morse.builder import *
 vehicle = ATRV()
 vehicle.properties(Object = True, Graspable = False, Label = "Vehicle")
 vehicle.translate(x=0.0, z=0.0)
-vehicle.rotate(z=math.pi)
 
 # add a camera
 camera = SemanticCamera(name="Camera")
 camera.translate(x=0.2, y=0.3, z=0.9)
 vehicle.append(camera)
 camera.properties(cam_far=800)
-camera.properties(Vertical_Flip=False)
-camera.rotate(z=math.pi)
+camera.properties(Vertical_Flip=True)
 
 # we could optionally stream the video to a port
 #camera.add_stream('socket')
@@ -85,7 +83,7 @@ motion.add_stream('socket')
 #vehicle.append(keyboard)
 
 # Environment
-env = Environment('indoors-1/boxes', fastmode=False)
+env = Environment('land-1/trees', fastmode=False)
 env.set_camera_location([10.0, -10.0, 10.0])
 env.set_camera_rotation([1.0470, 0, 0.7854])
 env.select_display_camera(camera)

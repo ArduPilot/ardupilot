@@ -26,11 +26,11 @@ extern const AP_HAL::HAL& hal;
 // already know that we should setup the rangefinder
 AP_RangeFinder_NMEA::AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
                                          AP_RangeFinder_Params &_params,
+                                         AP_SerialManager &serial_manager,
                                          uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state, _params),
     _distance_m(-1.0f)
 {
-    const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
@@ -38,9 +38,9 @@ AP_RangeFinder_NMEA::AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
 }
 
 // detect if a NMEA rangefinder by looking to see if the user has configured it
-bool AP_RangeFinder_NMEA::detect(uint8_t serial_instance)
+bool AP_RangeFinder_NMEA::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
 {
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
+    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 // update the state of the sensor
@@ -134,12 +134,7 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
 {
     // handle the last term in a message
     if (_term_is_checksum) {
-        uint8_t nibble_high = 0;
-        uint8_t nibble_low  = 0;
-        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
-            return false;
-        }
-        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
+        uint8_t checksum = 16 * char_to_hex(_term[0]) + char_to_hex(_term[1]);
         return ((checksum == _checksum) &&
                 !is_negative(_distance_m) &&
                 (_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT));
@@ -178,4 +173,15 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
     }
 
     return false;
+}
+
+// return the numeric value of an ascii hex character
+int16_t AP_RangeFinder_NMEA::char_to_hex(char a)
+{
+    if (a >= 'A' && a <= 'F')
+        return a - 'A' + 10;
+    else if (a >= 'a' && a <= 'f')
+        return a - 'a' + 10;
+    else
+        return a - '0';
 }

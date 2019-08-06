@@ -253,7 +253,3 @@
 #define HAL_SUPPORT_RCOUT_SERIAL 0
 #endif
 
-
-#ifndef HAL_HAVE_DUAL_USB_CDC
-#define HAL_HAVE_DUAL_USB_CDC 0
-#endif

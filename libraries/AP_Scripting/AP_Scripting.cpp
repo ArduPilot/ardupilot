@@ -25,7 +25,7 @@
 #define SCRIPTING_STACK_MIN_SIZE (8 * 1024)
 
 #if !defined(SCRIPTING_STACK_SIZE)
-  #define SCRIPTING_STACK_SIZE (17 * 1024) // Linux experiences stack corruption at ~16.25KB when handed bad scripts
+  #define SCRIPTING_STACK_SIZE (16 * 1024)
 #endif // !defined(SCRIPTING_STACK_SIZE)
 
 #if !defined(SCRIPTING_STACK_MAX_SIZE)
@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Values: 0:None,1:Lua Scripts
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_Scripting, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_Scripting, _enable, 1, AP_PARAM_FLAG_ENABLE),
 
     // @Param: VM_I_COUNT
     // @DisplayName: Scripting Virtual Machine Instruction Count

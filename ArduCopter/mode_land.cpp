@@ -7,7 +7,7 @@ static uint32_t land_start_time;
 static bool land_pause;
 
 // land_init - initialise land controller
-bool ModeLand::init(bool ignore_checks)
+bool Copter::ModeLand::init(bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
     land_with_gps = copter.position_ok();
@@ -32,14 +32,14 @@ bool ModeLand::init(bool ignore_checks)
     land_pause = false;
 
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
-    copter.ap.land_repo_active = false;
+    ap.land_repo_active = false;
 
     return true;
 }
 
 // land_run - runs the land controller
 // should be called at 100hz or more
-void ModeLand::run()
+void Copter::ModeLand::run()
 {
     if (land_with_gps) {
         gps_run();
@@ -51,17 +51,16 @@ void ModeLand::run()
 // land_gps_run - runs the land controller
 //      horizontal position controlled with loiter controller
 //      should be called at 100hz or more
-void ModeLand::gps_run()
+void Copter::ModeLand::gps_run()
 {
     // disarm when the landing detector says we've landed
-    if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
+    if (ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
         copter.arming.disarm();
     }
 
     // Land State Machine Determination
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
-        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
     } else {
         // set motors to full range
@@ -80,7 +79,7 @@ void ModeLand::gps_run()
 // land_nogps_run - runs the land controller
 //      pilot controls roll and pitch angles
 //      should be called at 100hz or more
-void ModeLand::nogps_run()
+void Copter::ModeLand::nogps_run()
 {
     float target_roll = 0.0f, target_pitch = 0.0f;
     float target_yaw_rate = 0;
@@ -109,7 +108,7 @@ void ModeLand::nogps_run()
     }
 
     // disarm when the landing detector says we've landed
-    if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
+    if (ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
         copter.arming.disarm();
     }
 
@@ -135,7 +134,7 @@ void ModeLand::nogps_run()
 // do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
 //  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS
 //  has no effect if we are not already in LAND mode
-void ModeLand::do_not_use_GPS()
+void Copter::ModeLand::do_not_use_GPS()
 {
     land_with_gps = false;
 }

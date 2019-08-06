@@ -30,9 +30,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Stats/AP_Stats.h>
 #include <AP_Common/Location.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -60,633 +57,159 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHAN_MAX", 3, AP_OSD_Screen, channel_max, 2100),
 
-    // @Param: ALTITUDE_EN
-    // @DisplayName: ALTITUDE_EN
-    // @Description: Enables display of altitude AGL
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: ALTITUDE_X
-    // @DisplayName: ALTITUDE_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: ALTITUDE_Y
-    // @DisplayName: ALTITUDE_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: ALTITUDE
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(altitude, "ALTITUDE", 4, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BATVOLT_EN
-    // @DisplayName: BATVOLT_EN
-    // @Description: Displays main battery voltage
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: BATVOLT_X
-    // @DisplayName: BATVOLT_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: BATVOLT_Y
-    // @DisplayName: BATVOLT_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: BATVOLT
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(bat_volt, "BAT_VOLT", 5, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: RSSI_EN
-    // @DisplayName: RSSI_EN
-    // @Description: Displays RC signal strength
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: RSSI_X
-    // @DisplayName: RSSI_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: RSSI_Y
-    // @DisplayName: RSSI_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: RSSI
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(rssi, "RSSI", 6, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: CURRENT_EN
-    // @DisplayName: CURRENT_EN
-    // @Description: Displays main battery current
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: CURRENT_X
-    // @DisplayName: CURRENT_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: CURRENT_Y
-    // @DisplayName: CURRENT_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: CURRENT
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(current, "CURRENT", 7, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BATUSED_EN
-    // @DisplayName: BATUSED_EN
-    // @Description: Displays primary battery mAh consumed
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: BATUSED_X
-    // @DisplayName: BATUSED_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: BATUSED_Y
-    // @DisplayName: BATUSED_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: BATUSED
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(batused, "BATUSED", 8, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: SATS_EN
-    // @DisplayName: SATS_EN
-    // @Description: Displays number of acquired sattelites
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: SATS_X
-    // @DisplayName: SATS_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: SATS_Y
-    // @DisplayName: SATS_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: SATS
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(sats, "SATS", 9, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: FLTMODE_EN
-    // @DisplayName: FLTMODE_EN
-    // @Description: Displays flight mode
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: FLTMODE_X
-    // @DisplayName: FLTMODE_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: FLTMODE_Y
-    // @DisplayName: FLTMODE_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: FLTMODE
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(fltmode, "FLTMODE", 10, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: MESSAGE_EN
-    // @DisplayName: MESSAGE_EN
-    // @Description: Displays Mavlink messages
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: MESSAGE_X
-    // @DisplayName: MESSAGE_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: MESSAGE_Y
-    // @DisplayName: MESSAGE_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: MESSAGE
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(message, "MESSAGE", 11, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: GSPEED_EN
-    // @DisplayName: GSPEED_EN
-    // @Description: Displays GPS ground speed
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: GSPEED_X
-    // @DisplayName: GSPEED_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: GSPEED_Y
-    // @DisplayName: GSPEED_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: GSPEED
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gspeed, "GSPEED", 12, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: HORIZON_EN
-    // @DisplayName: HORIZON_EN
-    // @Description: Displays artificial horizon
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: HORIZON_X
-    // @DisplayName: HORIZON_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: HORIZON_Y
-    // @DisplayName: HORIZON_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: HORIZON
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(horizon, "HORIZON", 13, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: HOME_EN
-    // @DisplayName: HOME_EN
-    // @Description: Displays distance and relative direction to HOME
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: HOME_X
-    // @DisplayName: HOME_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: HOME_Y
-    // @DisplayName: HOME_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: HOME
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(home, "HOME", 14, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: HEADING_EN
-    // @DisplayName: HEADING_EN
-    // @Description: Displays heading
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: HEADING_X
-    // @DisplayName: HEADING_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: HEADING_Y
-    // @DisplayName: HEADING_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    //@Group: HEADING
+    //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(heading, "HEADING", 15, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: THROTTLE_EN
-    // @DisplayName: THROTTLE_EN
-    // @Description: Displays actual throttle percentage being sent to motor(s)
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: THROTTLE_X
-    // @DisplayName: THROTTLE_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: THROTTLE_Y
-    // @DisplayName: THROTTLE_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    //@Group: THROTTLE
+    //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(throttle, "THROTTLE", 16, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: COMPASS_EN
-    // @DisplayName: COMPASS_EN
-    // @Description: Enables display of compass rose
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: COMPASS_X
-    // @DisplayName: COMPASS_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: COMPASS_Y
-    // @DisplayName: COMPASS_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    //@Group: COMPASS
+    //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(compass, "COMPASS", 17, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: WIND_EN
-    // @DisplayName: WIND_EN
-    // @Description: Displays wind speed and relative direction
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: WIND_X
-    // @DisplayName: WIND_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: WIND_Y
-    // @DisplayName: WIND_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    //@Group: WIND
+    //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(wind, "WIND", 18, AP_OSD_Screen, AP_OSD_Setting),
 
-
-    // @Param: ASPEED_EN
-    // @DisplayName: ASPEED_EN
-    // @Description: Displays airspeed value being used by TECS (fused value)
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: ASPEED_X
-    // @DisplayName: ASPEED_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: ASPEED_Y
-    // @DisplayName: ASPEED_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    //@Group: ASPEED
+    //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(aspeed, "ASPEED", 19, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: VSPEED_EN
-    // @DisplayName: VSPEED_EN
-    // @Description: Displays climb rate
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: VSPEED_X
-    // @DisplayName: VSPEED_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: VSPEED_Y
-    // @DisplayName: VSPEED_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    //@Group: VSPEED
+    //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(vspeed, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
-    // @Param: BLHTEMP_EN
-    // @DisplayName: BLHTEMP_EN
-    // @Description: Displays first esc's temp
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: BLHTEMP_X
-    // @DisplayName: BLHTEMP_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: BLHTEMP_Y
-    // @DisplayName: BLHTEMP_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: BLHTEMP
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(blh_temp, "BLHTEMP", 21, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BLHRPM_EN
-    // @DisplayName: BLHRPM_EN
-    // @Description: Displays first esc's rpm
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: BLHRPM_X
-    // @DisplayName: BLHRPM_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: BLHRPM_Y
-    // @DisplayName: BLHRPM_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: BLHRPM
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(blh_rpm, "BLHRPM", 22, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BLHAMPS_EN
-    // @DisplayName: BLHAMPS_EN
-    // @Description: Displays first esc's current
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: BLHAMPS_X
-    // @DisplayName: BLHAMPS_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: BLHAMPS_Y
-    // @DisplayName: BLHAMPS_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: BLHAMPS
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(blh_amps, "BLHAMPS", 23, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
-    // @Param: GPSLAT_EN
-    // @DisplayName: GPSLAT_EN
-    // @Description: Displays GPS latitude
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: GPSLAT_X
-    // @DisplayName: GPSLAT_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: GPSLAT_Y
-    // @DisplayName: GPSLAT_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: GPSLAT
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gps_latitude, "GPSLAT", 24, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: GPSLONG_EN
-    // @DisplayName: GPSLONG_EN
-    // @Description: Displays GPS longitude
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: GPSLONG_X
-    // @DisplayName: GPSLONG_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: GPSLONG_Y
-    // @DisplayName: GPSLONG_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: GPSLONG
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gps_longitude, "GPSLONG", 25, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: ROLL_EN
-    // @DisplayName: ROLL_EN
-    // @Description: Displays degrees of roll from level
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: ROLL_X
-    // @DisplayName: ROLL_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: ROLL_Y
-    // @DisplayName: ROLL_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: ROLL
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(roll_angle, "ROLL", 26, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: PITCH_EN
-    // @DisplayName: PITCH_EN
-    // @Description: Displays degrees of pitch from level
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PITCH_X
-    // @DisplayName: PITCH_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PITCH_Y
-    // @DisplayName: PITCH_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PITCH
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(pitch_angle, "PITCH", 27, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: TEMP_EN
-    // @DisplayName: TEMP_EN
-    // @Description: Displays temperature reported by primary barometer
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: TEMP_X
-    // @DisplayName: TEMP_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: TEMP_Y
-    // @DisplayName: TEMP_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: TEMP
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
-
-    // @Param: HDOP_EN
-    // @DisplayName: HDOP_EN
-    // @Description: Displays Horizontal Dilution Of Position
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: HDOP_X
-    // @DisplayName: HDOP_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: HDOP_Y
-    // @DisplayName: HDOP_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    
+    // @Group: HDOP
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(hdop, "HDOP", 29, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: WAYPOINT_EN
-    // @DisplayName: WAYPOINT_EN
-    // @Description: Displays bearing and distance to next waypoint
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: WAYPOINT_X
-    // @DisplayName: WAYPOINT_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: WAYPOINT_Y
-    // @DisplayName: WAYPOINT_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: WAYPOINT
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(waypoint, "WAYPOINT", 30, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: XTRACK_EN
-    // @DisplayName: XTRACK_EN
-    // @Description: Displays crosstrack error
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: XTRACK_X
-    // @DisplayName: XTRACK_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: XTRACK_Y
-    // @DisplayName: XTRACK_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: XTRACK
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(xtrack_error, "XTRACK", 31, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: DIST_EN
-    // @DisplayName: DIST_EN
-    // @Description: Displays total distance flown
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: DIST_X
-    // @DisplayName: DIST_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: DIST_Y
-    // @DisplayName: DIST_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: DIST
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(dist, "DIST", 32, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: STATS_EN
-    // @DisplayName: STATS_EN
-    // @Description: Displays flight stats
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: STATS_X
-    // @DisplayName: STATS_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: STATS_Y
-    // @DisplayName: STATS_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: STATS
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(stat, "STATS", 33, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: FLTIME_EN
-    // @DisplayName: FLTIME_EN
-    // @Description: Displays total flight time
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: FLTIME_X
-    // @DisplayName: FLTIME_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: FLTIME_Y
-    // @DisplayName: FLTIME_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: FLTIME
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(flightime, "FLTIME", 34, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: CLIMBEFF_EN
-    // @DisplayName: CLIMBEFF_EN
-    // @Description: Displays climb efficiency (climb rate/current)
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: CLIMBEFF_X
-    // @DisplayName: CLIMBEFF_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: CLIMBEFF_Y
-    // @DisplayName: CLIMBEFF_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: CLIMBEFF
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(climbeff, "CLIMBEFF", 35, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: EFF_EN
-    // @DisplayName: EFF_EN
-    // @Description: Displays flight efficiency (mAh/km or /mi)
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: EFF_X
-    // @DisplayName: EFF_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: EFF_Y
-    // @DisplayName: EFF_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: EFF
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(eff, "EFF", 36, AP_OSD_Screen, AP_OSD_Setting),
-
-    // @Param: BTEMP_EN
-    // @DisplayName: BTEMP_EN
-    // @Description: Displays temperature reported by secondary barometer
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: BTEMP_X
-    // @DisplayName: BTEMP_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: BTEMP_Y
-    // @DisplayName: BTEMP_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    
+    // @Group: BTEMP
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(btemp, "BTEMP", 37, AP_OSD_Screen, AP_OSD_Setting),
- 
-    // @Param: ATEMP_EN
-    // @DisplayName: ATEMP_EN
-    // @Description: Displays temperature reported by primary airspeed sensor
-    // @Values: 0:Disabled,1:Enabled
 
-    // @Param: ATEMP_X
-    // @DisplayName: ATEMP_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: ATEMP_Y
-    // @DisplayName: ATEMP_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: ATEMP
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(atemp, "ATEMP", 38, AP_OSD_Screen, AP_OSD_Setting),
     
-    // @Param: BAT2VLT_EN
-    // @DisplayName: BAT2VLT_EN
-    // @Description: Displays battery2 voltage
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: BAT2VLT_X
-    // @DisplayName: BAT2VLT_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: BAT2VLT_Y
-    // @DisplayName: BAT2VLT_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: BAT2VLT
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(bat2_vlt, "BAT2_VLT", 39, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BAT2USED_EN
-    // @DisplayName: BAT2USED_EN
-    // @Description: Displays secondary battery mAh consumed
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: BAT2USED_X
-    // @DisplayName: BAT2USED_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: BAT2USED_Y
-    // @DisplayName: BAT2USED_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: BAT2USED
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(bat2used, "BAT2USED", 40, AP_OSD_Screen, AP_OSD_Setting),
     
-    
-    // @Param: ASPD2_EN
-    // @DisplayName: ASPD2_EN
-    // @Description: Displays airspeed reported directly from secondary airspeed sensor
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: ASPD2_X
-    // @DisplayName: ASPD2_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: ASPD2_Y
-    // @DisplayName: ASPD2_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: ASPD2
+    // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(aspd2, "ASPD2", 41, AP_OSD_Screen, AP_OSD_Setting),
-    
-    // @Param: ASPD1_EN
-    // @DisplayName: ASPD1_EN
-    // @Description: Displays airspeed reported directly from primary airspeed sensor
-    // @Values: 0:Disabled,1:Enabled
-	
-    // @Param: ASPD1_X
-	// @DisplayName: ASPD1_X
-	// @Description: Horizontal position on screen
-	// @Range: 0 29
-	
-	// @Param: ASPD1_Y
-	// @DisplayName: ASPD1_Y
-	// @Description: Vertical position on screen
-	// @Range: 0 15
-    AP_SUBGROUPINFO(aspd1, "ASPD1", 42, AP_OSD_Screen, AP_OSD_Setting),
     
     AP_GROUPEND
 };
@@ -933,10 +456,7 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    float amps;
-    if (!battery.current_amps(amps)) {
-        amps = 0;
-    }
+    float amps = battery.current_amps();
     backend->write(x, y, false, "%2.1f%c", (double)amps, SYM_AMP);
 }
 
@@ -962,23 +482,10 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
     backend->write(x, y, flash, "%c%c%2u", SYM_SAT_L, SYM_SAT_R, nsat);
 }
 
-void AP_OSD_Screen::draw_batused(uint8_t instance, uint8_t x, uint8_t y)
-{
-    float mah;
-    if (!AP::battery().consumed_mah(mah, instance)) {
-        mah = 0;
-    }
-    if (mah <= 9999) {
-        backend->write(x,y, false, "%4d%c", (int)mah, SYM_MAH);
-    } else {
-        const float ah = mah * 1e-3f;
-        backend->write(x,y, false, "%2.2f%c", (double)ah, SYM_AH);
-    }
-}
-
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 {
-    draw_batused(0, x, y);
+    AP_BattMonitor &battery = AP::battery();
+    backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(), SYM_MAH);
 }
 
 //Autoscroll message is the same as in minimosd-extra.
@@ -1412,9 +919,8 @@ void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Vector2f v = ahrs.groundspeed_vector();
     float speed = u_scale(SPEED,v.length());
-    float current_amps;
-    if ((speed > 2.0) && battery.current_amps(current_amps)){
-        backend->write(x, y, false, "%c%3d%c", SYM_EFF,int(1000.0f*current_amps/speed),SYM_MAH);
+    if (speed > 2.0){
+        backend->write(x, y, false, "%c%3d%c", SYM_EFF,int(1000*battery.current_amps()/speed),SYM_MAH);
     } else {
         backend->write(x, y, false, "%c---%c", SYM_EFF,SYM_MAH);
     }
@@ -1436,8 +942,8 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     }
     if (vspd < 0.0) vspd = 0.0;
     AP_BattMonitor &battery = AP::battery();
-    float amps;
-    if (battery.current_amps(amps) && is_positive(amps)) {
+    float amps = battery.current_amps();
+    if (amps > 0.0) {
         backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(double)(3.6f * u_scale(VSPEED,vspd)/amps),unit_icon);
     } else {
         backend->write(x, y, false,"%c%c---%c",SYM_PTCHUP,SYM_EFF,unit_icon);
@@ -1477,20 +983,12 @@ void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
 {
-    draw_batused(1, x, y);
-}
-
-void AP_OSD_Screen::draw_aspd1(uint8_t x, uint8_t y)
-{
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (!airspeed) {
-        return;
-    }
-    float asp1 = airspeed->get_airspeed();
-    if (airspeed != nullptr && airspeed->healthy()) {
-        backend->write(x, y, false, "%c%4d%c", SYM_ASPD, (int)u_scale(SPEED, asp1), u_icon(SPEED));
+    AP_BattMonitor &battery = AP::battery();
+    float ah = battery.consumed_mah(1) / 1000;
+    if (battery.consumed_mah(1) <= 9999) {
+        backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(1), SYM_MAH);
     } else {
-        backend->write(x, y, false, "%c ---%c", SYM_ASPD, u_icon(SPEED));
+        backend->write(x,y, false, "%2.2f%c", (double)ah, SYM_AH);
     }
 }
 
@@ -1535,7 +1033,6 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(fltmode);
     DRAW_SETTING(gspeed);
     DRAW_SETTING(aspeed);
-    DRAW_SETTING(aspd1);
     DRAW_SETTING(aspd2);
     DRAW_SETTING(vspeed);
     DRAW_SETTING(throttle);

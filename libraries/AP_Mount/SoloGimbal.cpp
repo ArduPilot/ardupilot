@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -41,10 +40,10 @@ gimbal_mode_t SoloGimbal::get_mode()
     }
 }
 
-void SoloGimbal::receive_feedback(mavlink_channel_t chan, const mavlink_message_t &msg)
+void SoloGimbal::receive_feedback(mavlink_channel_t chan, const mavlink_message_t *msg)
 {
     mavlink_gimbal_report_t report_msg;
-    mavlink_msg_gimbal_report_decode(&msg, &report_msg);
+    mavlink_msg_gimbal_report_decode(msg, &report_msg);
     uint32_t tnow_ms = AP_HAL::millis();
     _last_report_msg_ms = tnow_ms;
 
@@ -230,7 +229,7 @@ void SoloGimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
 void SoloGimbal::update_fast() {
     const AP_InertialSensor &ins = AP::ins();
 
-    if (ins.use_gyro(0) && ins.use_gyro(1)) {
+    if (ins.get_gyro_health(0) && ins.get_gyro_health(1)) {
         // dual gyro mode - average first two gyros
         Vector3f dAng;
         readVehicleDeltaAngle(0, dAng);

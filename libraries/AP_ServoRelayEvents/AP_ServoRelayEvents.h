@@ -11,8 +11,9 @@
 
 class AP_ServoRelayEvents {
 public:
-    AP_ServoRelayEvents()
-        : type(EVENT_TYPE_RELAY)
+    AP_ServoRelayEvents(AP_Relay &_relay)
+        : relay(_relay)
+        , type(EVENT_TYPE_RELAY)
     {
         _singleton = this;
     }
@@ -35,6 +36,8 @@ public:
 private:
 
     static AP_ServoRelayEvents *_singleton;
+
+    AP_Relay &relay;
 
     // event control state
     enum event_type { 

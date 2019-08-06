@@ -44,7 +44,7 @@
 
 #if HAL_WITH_UAVCAN
 
-# if !defined(STM32H7XX)
+#include <uavcan_stm32/build_config.hpp>
 
 #include <uavcan/uavcan.hpp>
 #include <stdint.h>
@@ -326,5 +326,4 @@ constexpr unsigned long FMR_FINIT =           (1U << 0); /* Bit 0:  Filter Init 
 #if UAVCAN_CPP_VERSION < UAVCAN_CPP11
 # undef constexpr
 #endif
-#endif //!defined(STM32H7XX)
 #endif //HAL_WITH_UAVCAN

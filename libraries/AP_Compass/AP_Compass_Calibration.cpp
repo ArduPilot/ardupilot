@@ -186,17 +186,15 @@ Compass::_accept_calibration_mask(uint8_t mask)
     return success;
 }
 
-bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
+void
+Compass::send_mag_cal_progress(mavlink_channel_t chan)
 {
     uint8_t cal_mask = _get_cal_mask();
 
     for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
         // ensure we don't try to send with no space available
-        if (!HAVE_PAYLOAD_SPACE(link.get_chan(), MAG_CAL_PROGRESS)) {
-            // ideally we would only send one progress message per
-            // call.  If we don't return true here we may end up
-            // hogging *all* the bandwidth
-            return true;
+        if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_PROGRESS)) {
+            return;
         }
 
         auto& calibrator = _calibrator[compass_id];
@@ -207,32 +205,27 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
             cal_status == COMPASS_CAL_RUNNING_STEP_TWO) {
             uint8_t completion_pct = calibrator.get_completion_percent();
             auto& completion_mask = calibrator.get_completion_mask();
-            const Vector3f direction;
+            Vector3f direction(0.0f,0.0f,0.0f);
             uint8_t attempt = _calibrator[compass_id].get_attempt();
 
             mavlink_msg_mag_cal_progress_send(
-                link.get_chan(),
+                chan,
                 compass_id, cal_mask,
                 cal_status, attempt, completion_pct, completion_mask,
                 direction.x, direction.y, direction.z
             );
         }
     }
-
-    return true;
 }
 
-bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
+void Compass::send_mag_cal_report(mavlink_channel_t chan)
 {
     uint8_t cal_mask = _get_cal_mask();
 
     for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
         // ensure we don't try to send with no space available
-        if (!HAVE_PAYLOAD_SPACE(link.get_chan(), MAG_CAL_REPORT)) {
-            // ideally we would only send one progress message per
-            // call.  If we don't return true here we may end up
-            // hogging *all* the bandwidth
-            return true;
+        if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_REPORT)) {
+            return;
         }
 
         uint8_t cal_status = _calibrator[compass_id].get_status();
@@ -245,7 +238,7 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
             uint8_t autosaved = _cal_saved[compass_id];
 
             mavlink_msg_mag_cal_report_send(
-                link.get_chan(),
+                chan,
                 compass_id, cal_mask,
                 cal_status, autosaved,
                 fitness,
@@ -258,7 +251,6 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
             );
         }
     }
-    return true;
 }
 
 bool

@@ -9,7 +9,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Baro/AP_Baro.h>
 
 #include "AP_Airspeed.h"
 
@@ -128,7 +127,7 @@ void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t
 
     // calculate true airspeed, assuming a airspeed ratio of 1.0
     float dpress = MAX(get_differential_pressure(), 0);
-    float true_airspeed = sqrtf(dpress) * AP::baro().get_EAS2TAS();
+    float true_airspeed = sqrtf(dpress) * state[i].EAS2TAS;
 
     float zratio = state[i].calibration.update(true_airspeed, vground, max_airspeed_allowed_during_cal);
 
@@ -165,20 +164,27 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
 
 void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
 {
-    const mavlink_airspeed_autocal_t packet{
-        vx: vground.x,
-        vy: vground.y,
-        vz: vground.z,
-        diff_pressure: get_differential_pressure(primary),
-        EAS2TAS: AP::baro().get_EAS2TAS(),
-        ratio: param[primary].ratio.get(),
-        state_x: state[primary].calibration.state.x,
-        state_y: state[primary].calibration.state.y,
-        state_z: state[primary].calibration.state.z,
-        Pax: state[primary].calibration.P.a.x,
-        Pby: state[primary].calibration.P.b.y,
-        Pcz: state[primary].calibration.P.c.z
-    };
-    gcs().send_to_active_channels(MAVLINK_MSG_ID_AIRSPEED_AUTOCAL,
-                                  (const char *)&packet);
+    for (uint8_t i=0; i<gcs().num_gcs(); i++) {
+        if (!gcs().chan(i).initialised) {
+            continue;
+        }
+        const mavlink_channel_t chan = (mavlink_channel_t)i;
+        if (!HAVE_PAYLOAD_SPACE(chan, AIRSPEED_AUTOCAL)) {
+            continue;
+        }
+        mavlink_msg_airspeed_autocal_send(
+            chan,
+            vground.x,
+            vground.y,
+            vground.z,
+            get_differential_pressure(primary),
+            state[primary].EAS2TAS,
+            param[primary].ratio.get(),
+            state[primary].calibration.state.x,
+            state[primary].calibration.state.y,
+            state[primary].calibration.state.z,
+            state[primary].calibration.P.a.x,
+            state[primary].calibration.P.b.y,
+            state[primary].calibration.P.c.z);
+    }
 }

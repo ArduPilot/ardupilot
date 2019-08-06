@@ -1,7 +1,6 @@
 #pragma once
 
 #include "MsgHandler.h"
-#include <AP_GPS/AP_GPS.h>
 
 #include <functional>
 

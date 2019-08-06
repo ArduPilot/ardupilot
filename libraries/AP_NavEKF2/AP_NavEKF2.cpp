@@ -4,7 +4,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_GPS/AP_GPS.h>
 #include <new>
 
 /*
@@ -566,14 +565,6 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("FLOW_USE", 51, NavEKF2, _flowUse, FLOW_USE_DEFAULT),
 
-    // @Param: MAG_EF_LIM
-    // @DisplayName: EarthField error limit
-    // @Description: This limits the difference between the learned earth magnetic field and the earth field from the world magnetic model tables. A value of zero means to disable the use of the WMM tables.
-    // @User: Advanced
-    // @Range: 0 500
-    // @Units: mGauss
-    AP_GROUPINFO("MAG_EF_LIM", 52, NavEKF2, _mag_ef_limit, 50),
-    
     AP_GROUPEND
 };
 
@@ -684,9 +675,6 @@ bool NavEKF2::InitialiseFilter(void)
         primary = 0;
     }
 
-    // invalidate shared origin
-    common_origin_valid = false;
-    
     // initialise the cores. We return success only if all cores
     // initialise successfully
     bool ret = true;
@@ -765,64 +753,10 @@ void NavEKF2::UpdateFilter(void)
             updateLaneSwitchPosResetData(newPrimaryIndex, primary);
             updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
             primary = newPrimaryIndex;
-            lastLaneSwitch_ms = AP_HAL::millis();
         }
-    }
-
-    if (primary != 0 && core[0].healthy() && !hal.util->get_soft_armed()) {
-        // when on the ground and disarmed force the first lane. This
-        // avoids us ending with with a lottery for which IMU is used
-        // in each flight. Otherwise the alignment of the timing of
-        // the lane updates with the timing of GPS updates can lead to
-        // a lane other than the first one being used as primary for
-        // some flights. As different IMUs may have quite different
-        // noise characteristics this leads to inconsistent
-        // performance
-        primary = 0;
     }
 
     check_log_write();
-}
-
-/*
-  check if switching lanes will reduce the normalised
-  innovations. This is called when the vehicle code is about to
-  trigger an EKF failsafe, and it would like to avoid that by
-  using a different EKF lane
-*/
-void NavEKF2::checkLaneSwitch(void)
-{
-    uint32_t now = AP_HAL::millis();
-    if (lastLaneSwitch_ms != 0 && now - lastLaneSwitch_ms < 5000) {
-        // don't switch twice in 5 seconds
-        return;
-    }
-    float primaryErrorScore = core[primary].errorScore();
-    float lowestErrorScore = primaryErrorScore;
-    uint8_t newPrimaryIndex = primary;
-    for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
-        if (coreIndex != primary) {
-            // an alternative core is available for selection only if healthy and if states have been updated on this time step
-            bool altCoreAvailable = core[coreIndex].healthy();
-            float altErrorScore = core[coreIndex].errorScore();
-            if (altCoreAvailable &&
-                altErrorScore < lowestErrorScore &&
-                altErrorScore < 0.9) {
-                newPrimaryIndex = coreIndex;
-                lowestErrorScore = altErrorScore;
-            }
-        }
-    }
-
-    // update the yaw and position reset data to capture changes due to the lane switch
-    if (newPrimaryIndex != primary) {
-        updateLaneSwitchYawResetData(newPrimaryIndex, primary);
-        updateLaneSwitchPosResetData(newPrimaryIndex, primary);
-        updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
-        primary = newPrimaryIndex;
-        lastLaneSwitch_ms = now;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: lane switch %u", primary);
-    }
 }
 
 // Check basic filter health metrics and return a consolidated health status
@@ -1099,22 +1033,10 @@ bool NavEKF2::getOriginLLH(int8_t instance, struct Location &loc) const
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF2::setOriginLLH(const Location &loc)
 {
-    if (_fusionModeGPS != 3) {
-        // we don't allow setting of the EKF origin unless we are
-        // flying in non-GPS mode. This is to prevent accidental set
-        // of EKF origin with invalid position or height
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 refusing set origin");
-        return false;
-    }
     if (!core) {
         return false;
     }
-    bool ret = false;
-    for (uint8_t i=0; i<num_cores; i++) {
-        ret |= core[i].setOriginLLH(loc);
-    }
-    // return true if any core accepts the new origin
-    return ret;
+    return core[primary].setOriginLLH(loc);
 }
 
 // return estimated height above ground level
@@ -1610,14 +1532,5 @@ void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, c
             core[i].writeExtNavData(sensOffset, pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
         }
     }
-}
-
-// check if external navigation is being used for yaw observation
-bool NavEKF2::isExtNavUsedForYaw() const
-{
-    if (core) {
-        return core[primary].isExtNavUsedForYaw();
-    }
-    return false;
 }
 

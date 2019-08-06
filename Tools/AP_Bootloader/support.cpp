@@ -354,12 +354,12 @@ void init_uarts(void)
 {
 #if HAL_USE_SERIAL_USB == TRUE
     sduObjectInit(&SDU1);
-    sduStart(&SDU1, &serusbcfg1);
+    sduStart(&SDU1, &serusbcfg);
     
-    usbDisconnectBus(serusbcfg1.usbp);
+    usbDisconnectBus(serusbcfg.usbp);
     chThdSleepMilliseconds(1000);
-    usbStart(serusbcfg1.usbp, &usbcfg);
-    usbConnectBus(serusbcfg1.usbp);
+    usbStart(serusbcfg.usbp, &usbcfg);
+    usbConnectBus(serusbcfg.usbp);
 #endif
 
 #if HAL_USE_SERIAL == TRUE

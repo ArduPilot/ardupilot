@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Werror -Wextra -g -std=c99
+CFLAGS = -Wall -Werror -Wextra -g
 LDFLAGS = -lreadline
 
 OBJ_DIR = build/obj
@@ -17,7 +17,7 @@ all: directories $(OBJS)
 	cp $(OUT) .
 
 run: all
-	./$(OUT) -o ../lua_generated_bindings -i description/bindings.desc
+	./$(OUT) -o ../lua_generated_bindings < description/bindings.desc
 
 $(OBJ_DIR)/%.c.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@

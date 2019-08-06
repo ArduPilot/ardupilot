@@ -4,7 +4,6 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_GPS/AP_GPS.h>
 
 #include <stdio.h>
 
@@ -595,7 +594,7 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
 // report the reason for why the backend is refusing to initialise
 const char *NavEKF2_core::prearm_failure_reason(void) const
 {
-    if (gpsGoodToAlign) {
+    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
         // we are not failing
         return nullptr;
     }
@@ -614,11 +613,5 @@ uint8_t NavEKF2_core::getFramesSincePredict(void) const
 void NavEKF2_core::getOutputTrackingError(Vector3f &error) const
 {
     error = outputTrackError;
-}
-
-// return true when external nav data is also being used as a yaw observation
-bool NavEKF2_core::isExtNavUsedForYaw()
-{
-    return extNavUsedForYaw;
 }
 

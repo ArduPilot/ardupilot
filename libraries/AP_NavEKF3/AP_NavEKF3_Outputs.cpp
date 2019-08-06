@@ -4,7 +4,6 @@
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -607,7 +606,7 @@ void NavEKF3_core::send_status_report(mavlink_channel_t chan)
 // report the reason for why the backend is refusing to initialise
 const char *NavEKF3_core::prearm_failure_reason(void) const
 {
-    if (gpsGoodToAlign) {
+    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
         // we are not failing
         return nullptr;
     }

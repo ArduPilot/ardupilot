@@ -16,12 +16,13 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 class AP_WindVane_Backend;
 
 class AP_WindVane
 {
+
+public:
     friend class AP_WindVane_Backend;
     friend class AP_WindVane_Home;
     friend class AP_WindVane_Analog;
@@ -29,9 +30,7 @@ class AP_WindVane
     friend class AP_WindVane_ModernDevice;
     friend class AP_WindVane_Airspeed;
     friend class AP_WindVane_RPM;
-    friend class AP_WindVane_NMEA;
 
-public:
     AP_WindVane();
 
     /* Do not allow copies */
@@ -44,7 +43,7 @@ public:
     bool enabled() const;
 
     // Initialize the Wind Vane object and prepare it for use
-    void init(const AP_SerialManager& serial_manager);
+    void init();
 
     // update wind vane
     void update();
@@ -119,12 +118,11 @@ private:
     float _home_heading;
 
     enum WindVaneType {
-        WINDVANE_NONE           = 0,
-        WINDVANE_HOME_HEADING   = 1,
-        WINDVANE_PWM_PIN        = 2,
-        WINDVANE_ANALOG_PIN     = 3,
-        WINDVANE_NMEA           = 4,
-        WINDVANE_SITL           = 10
+        WINDVANE_NONE       = 0,
+        WINDVANE_HOME_HEADING = 1,
+        WINDVANE_PWM_PIN    = 2,
+        WINDVANE_ANALOG_PIN = 3,
+        WINDVANE_SITL       = 10
     };
 
     enum Speed_type {
@@ -132,7 +130,6 @@ private:
         WINDSPEED_AIRSPEED           = 1,
         WINDVANE_WIND_SENSOR_REV_P   = 2,
         WINDSPEED_RPM                = 3,
-        WINDSPEED_NMEA               = 4,
         WINDSPEED_SITL               = 10
     };
 

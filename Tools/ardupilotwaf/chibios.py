@@ -179,6 +179,7 @@ def setup_can_build(cfg):
     env.AP_LIBRARIES += [
         'AP_UAVCAN',
         'modules/uavcan/libuavcan/src/**/*.cpp',
+        'modules/uavcan/libuavcan_drivers/stm32/driver/src/*.cpp'
         ]
 
     env.CFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
@@ -198,6 +199,7 @@ def setup_can_build(cfg):
 
     env.INCLUDES += [
         cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath(),
+        cfg.srcnode.find_dir('modules/uavcan/libuavcan_drivers/stm32/driver/include').abspath()
         ]
     cfg.get_board().with_uavcan = True
 
@@ -352,7 +354,7 @@ def build(bld):
         common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
     ch_task = bld(
         # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
+        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f '${BOARD_MK}'",
         group='dynamic_sources',
         source=common_src,
         target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')

@@ -92,10 +92,6 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/gazebo-iris.parm"],
             },
-            "airsim-copter": {
-                "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter.parm",
-            },
             # HELICOPTER
             "heli": {
                 "make_target": "sitl-heli",
@@ -176,10 +172,6 @@ class VehicleInfo(object):
             "plane-tailsitter": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/plane-tailsitter.parm",
-            },
-            "plane-jet": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": ["default_params/plane.parm", "default_params/plane-jet.parm"],
             },
             "plane": {
                 "waf_target": "bin/arduplane",
@@ -281,7 +273,7 @@ class VehicleInfo(object):
         if frame in frames:
             ret = self.options[vehicle]["frames"][frame]
         else:
-            for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane", "airsim"]:
+            for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane"]:
                 if frame.startswith(p):
                     ret = self.options[vehicle]["frames"][p]
                     break

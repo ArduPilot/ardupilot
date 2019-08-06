@@ -1,5 +1,4 @@
 #include "AP_Mount_Alexmos.h"
-#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 

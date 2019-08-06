@@ -7,19 +7,19 @@
  */
 
 // initialise guided_nogps controller
-bool ModeGuidedNoGPS::init(bool ignore_checks)
+bool Copter::ModeGuidedNoGPS::init(bool ignore_checks)
 {
     // start in angle control mode
-    ModeGuided::angle_control_start();
+    Copter::ModeGuided::angle_control_start();
     return true;
 }
 
 // guided_run - runs the guided controller
 // should be called at 100hz or more
-void ModeGuidedNoGPS::run()
+void Copter::ModeGuidedNoGPS::run()
 {
     // run angle controller
-    ModeGuided::angle_control_run();
+    Copter::ModeGuided::angle_control_run();
 }
 
 #endif

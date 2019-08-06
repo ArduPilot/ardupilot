@@ -96,33 +96,18 @@ void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
     _rotor.set_desired_speed(desired_speed);
 }
 
-// set_rotor_rpm - used for governor with speed sensor
-void AP_MotorsHeli_Quad::set_rpm(float rotor_rpm)
-{
-    _rotor.set_rotor_rpm(rotor_rpm);
-}
-
 // calculate_armed_scalars
 void AP_MotorsHeli_Quad::calculate_armed_scalars()
 {
-    // Set common RSC variables
+    float thrcrv[5];
+    for (uint8_t i = 0; i < 5; i++) {
+        thrcrv[i]=_rsc_thrcrv[i]*0.001f;
+    }
     _rotor.set_ramp_time(_rsc_ramp_time);
     _rotor.set_runup_time(_rsc_runup_time);
     _rotor.set_critical_speed(_rsc_critical*0.001f);
     _rotor.set_idle_output(_rsc_idle_output*0.001f);
-    _rotor.set_slewrate(_rsc_slewrate);
-
-    // Set rsc mode specific parameters
-    if (_rsc_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
-        _rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
-    } else if (_rsc_mode == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
-        _rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
-        _rotor.set_governor_disengage(_rsc_gov.get_disengage()*0.01f);
-        _rotor.set_governor_droop_response(_rsc_gov.get_droop_response()*0.01f);
-        _rotor.set_governor_reference(_rsc_gov.get_reference());
-        _rotor.set_governor_range(_rsc_gov.get_range());
-        _rotor.set_governor_thrcurve(_rsc_gov.get_thrcurve()*0.01f);
-    }
+    _rotor.set_throttle_curve(thrcrv, (uint16_t)_rsc_slewrate.get());
 }
 
 // calculate_scalars
@@ -144,7 +129,6 @@ void AP_MotorsHeli_Quad::calculate_scalars()
 
     // set mode of main rotor controller and trigger recalculation of scalars
     _rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
-    enable_rsc_parameters();
     calculate_armed_scalars();
 }
 
@@ -211,8 +195,7 @@ void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
     // initialize limits flag
-    limit.roll = false;
-    limit.pitch = false;
+    limit.roll_pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -229,8 +212,8 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < _collective_mid_pct) {
-        collective_out = _collective_mid_pct;
+    if (_heliflags.landing_collective && collective_out < (_land_collective_min*0.001f)) {
+        collective_out = _land_collective_min*0.001f;
         limit.throttle_lower = true;
     }
 

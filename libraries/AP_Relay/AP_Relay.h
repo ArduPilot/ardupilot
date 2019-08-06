@@ -48,7 +48,3 @@ private:
     AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
     AP_Int8 _default;
 };
-
-namespace AP {
-    AP_Relay *relay();
-};

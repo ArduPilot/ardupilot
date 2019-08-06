@@ -355,8 +355,7 @@ const AP_Param::Info Tracker::var_info[] = {
 	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
 #ifdef ENABLE_SCRIPTING
-    // @Group: SCR_
-    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
+    // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
     GOBJECT(scripting, "SCR_", AP_Scripting),
 #endif
 
@@ -402,12 +401,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: 0:MANUAL, 1:STOP, 2:SCAN, 10:AUTO
     // @User: Standard
     GSCALAR(initial_mode,            "INITIAL_MODE",     10),
-
-    // @Param: SAFE_DISARM_PWM
-    // @DisplayName: PWM that will be output when disarmed or in stop mode
-    // @Description: 0:zero pwm, 1:trim pwm
-    // @User: Standard
-    GSCALAR(disarm_pwm,              "SAFE_DISARM_PWM",        0),
 
     AP_VAREND
 };

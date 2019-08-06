@@ -11,8 +11,6 @@
 #include "SoloGimbalEKF.h"
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_NavEKF/AP_Nav_Common.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 #include <stdio.h>
 

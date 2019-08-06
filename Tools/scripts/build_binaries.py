@@ -100,7 +100,7 @@ class build_binaries(object):
                           "--recursive",
                           "-f"])
 
-    def checkout(self, vehicle, ctag, cboard=None, cframe=None, submodule_update=True):
+    def checkout(self, vehicle, ctag, cboard=None, cframe=None):
         '''attempt to check out a git tree.  Various permutations are
 attempted based on ctag - for examplle, if the board is avr and ctag
 is bob we will attempt to checkout bob-AVR'''
@@ -131,8 +131,7 @@ is bob we will attempt to checkout bob-AVR'''
             try:
                 self.progress("Trying branch %s" % branch)
                 self.run_git(["checkout", "-f", branch])
-                if submodule_update:
-                    self.run_git_update_submodules()
+                self.run_git_update_submodules()
                 self.run_git(["log", "-1"])
                 return True
             except subprocess.CalledProcessError:
@@ -337,13 +336,14 @@ is bob we will attempt to checkout bob-AVR'''
                     framesuffix = ""
                 else:
                     framesuffix = "-%s" % frame
-                if not self.checkout(vehicle, tag, board, frame, submodule_update=False):
+                if not self.checkout(vehicle, tag, board, frame):
                     msg = ("Failed checkout of %s %s %s %s" %
                            (vehicle, board, tag, frame,))
                     self.progress(msg)
                     self.error_strings.append(msg)
                     continue
-
+                if self.skip_board_waf(board):
+                    continue
                 self.progress("Building %s %s %s binaries %s" %
                               (vehicle, tag, board, frame))
                 ddir = os.path.join(self.binaries,
@@ -356,19 +356,10 @@ is bob we will attempt to checkout bob-AVR'''
                 if self.skip_frame(board, frame):
                     continue
 
-                # we do the submodule update after the skip_board_waf check to avoid doing it on
-                # builds we will not be running
-                self.run_git_update_submodules()
-
-                if self.skip_board_waf(board):
-                    continue
-                
                 if os.path.exists(self.buildroot):
                     shutil.rmtree(self.buildroot)
 
                 self.remove_tmpdir()
-
-                t0 = time.time()
 
                 self.progress("Configuring for %s in %s" %
                               (board, self.buildroot))
@@ -392,10 +383,6 @@ is bob we will attempt to checkout bob-AVR'''
                     self.progress(msg)
                     self.error_strings.append(msg)
                     continue
-
-                t1 = time.time()
-                self.progress("Building %s %s %s %s took %u seconds" %
-                              (vehicle, tag, board, frame, t1-t0))
 
                 bare_path = os.path.join(self.buildroot,
                                          board,
@@ -531,7 +518,6 @@ is bob we will attempt to checkout bob-AVR'''
                 "MatekF405",
                 "MatekF405-STD",
                 "MatekF405-Wing",
-                "MatekF765-Wing",
                 "OMNIBUSF7V2",
                 "sparky2",
                 "omnibusf4pro",
@@ -551,7 +537,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "Pixracer",
                 "F4BY",
                 "mRoX21-777",
-                "mRoControlZeroF7",
+                "mRControlZeroF7",
                 "F35Lightning",
                 "speedybeef4",
                 "DrotekP3Pro",
@@ -561,7 +547,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "VRCore-v10",
                 "VRBrain-v54",
                 "TBS-Colibri-F7",
-                "Durandal",
+                "Pixhawk6",
                 "CubeOrange",
                 "CubeYellow",
                 # SITL targets
@@ -681,10 +667,7 @@ is bob we will attempt to checkout bob-AVR'''
         origin_env_path = os.environ.get("PATH")
         os.environ["PATH"] = ':'.join([prefix_bin_dirpath, origin_env_path,
                                        "/bin", "/usr/bin"])
-        if 'BUILD_BINARIES_PATH' in os.environ:
-            self.tmpdir = os.environ['BUILD_BINARIES_PATH']
-        else:
-            self.tmpdir = os.path.join(os.getcwd(), 'build.tmp.binaries')
+        self.tmpdir = os.path.join(os.getcwd(), 'build.tmp.binaries')
         os.environ["TMPDIR"] = self.tmpdir
 
         print(self.tmpdir)

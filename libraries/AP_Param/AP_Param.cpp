@@ -623,7 +623,7 @@ uint8_t AP_Param::type_size(enum ap_var_type type)
     case AP_PARAM_VECTOR3F:
         return 3*4;
     }
-    Debug("unknown type %d\n", type);
+    Debug("unknown type %u\n", type);
     return 0;
 }
 
@@ -1096,9 +1096,7 @@ void AP_Param::save(bool force_save)
         // when we are disarmed then loop waiting for a slot to become
         // available. This guarantees completion for large parameter
         // set loads
-        hal.scheduler->expect_delay_ms(1);
         hal.scheduler->delay_microseconds(500);
-        hal.scheduler->expect_delay_ms(0);
     }
 }
 
@@ -1120,9 +1118,7 @@ void AP_Param::flush(void)
 {
     uint16_t counter = 200; // 2 seconds max
     while (counter-- && save_queue.available()) {
-        hal.scheduler->expect_delay_ms(10);
         hal.scheduler->delay(10);
-        hal.scheduler->expect_delay_ms(0);
     }
 }
 
@@ -1613,6 +1609,7 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
                                                                     ginfo, group_nesting, &idx);
         if (info && ginfo &&
             (ginfo->flags & AP_PARAM_FLAG_ENABLE) &&
+            !(ginfo->flags & AP_PARAM_FLAG_IGNORE_ENABLE) &&
             ((AP_Int8 *)ap)->get() == 0 &&
             _hide_disabled_groups) {
             /*
@@ -1749,9 +1746,6 @@ void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_ta
     for (uint8_t i=0; i<table_size; i++) {
         convert_old_parameter(&conversion_table[i], 1.0f, flags);
     }
-    // we need to flush here to prevent a later set_default_by_name()
-    // causing a save to be done on a converted parameter
-    flush();
 }
 
 /*
@@ -2332,7 +2326,6 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
             port->printf("Key %i: Index %i: GroupElement %i  :  ", token.key, token.idx, token.group_element);
         }
         show(ap, token, type, port);
-        hal.scheduler->delay(1);
     }
 }
 #endif // AP_PARAM_KEY_DUMP

@@ -6,7 +6,7 @@
  */
 
 // althold_init - initialise althold controller
-bool ModeAltHold::init(bool ignore_checks)
+bool Copter::ModeAltHold::init(bool ignore_checks)
 {
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
@@ -19,7 +19,7 @@ bool ModeAltHold::init(bool ignore_checks)
 
 // althold_run - runs the althold controller
 // should be called at 100hz or more
-void ModeAltHold::run()
+void Copter::ModeAltHold::run()
 {
     float takeoff_climb_rate = 0.0f;
 
@@ -92,7 +92,7 @@ void ModeAltHold::run()
 #endif
 
         // adjust climb rate using rangefinder
-        target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
+        target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);

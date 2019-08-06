@@ -26,7 +26,6 @@
 #ifdef USE_TERMIOS
 #include <termios.h>
 #else
-#include <asm/ioctls.h>
 #include <asm/termbits.h>
 #endif
 

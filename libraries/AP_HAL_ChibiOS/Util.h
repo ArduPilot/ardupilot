@@ -86,6 +86,7 @@ private:
         uint16_t count;
         float sum;
         uint32_t last_update_ms;
+        uint8_t duty_counter;
         float output;
     } heater;
 #endif

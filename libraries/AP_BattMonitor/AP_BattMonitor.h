@@ -37,7 +37,6 @@ class AP_BattMonitor
     friend class AP_BattMonitor_UAVCAN;
     friend class AP_BattMonitor_Sum;
     friend class AP_BattMonitor_FuelFlow;
-    friend class AP_BattMonitor_FuelLevel_PWM;
 
 public:
 
@@ -97,6 +96,14 @@ public:
     bool healthy(uint8_t instance) const;
     bool healthy() const { return healthy(AP_BATT_PRIMARY_INSTANCE); }
 
+    /// has_consumed_energy - returns true if battery monitor instance provides consumed energy info
+    bool has_consumed_energy(uint8_t instance) const;
+    bool has_consumed_energy() const { return has_consumed_energy(AP_BATT_PRIMARY_INSTANCE); }
+
+    /// has_current - returns true if battery monitor instance provides current info
+    bool has_current(uint8_t instance) const;
+    bool has_current() const { return has_current(AP_BATT_PRIMARY_INSTANCE); }
+
     /// voltage - returns battery voltage in millivolts
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
@@ -107,13 +114,16 @@ public:
     float voltage_resting_estimate() const { return voltage_resting_estimate(AP_BATT_PRIMARY_INSTANCE); }
 
     /// current_amps - returns the instantaneous current draw in amperes
-    bool current_amps(float &current, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
+    float current_amps(uint8_t instance) const;
+    float current_amps() const { return current_amps(AP_BATT_PRIMARY_INSTANCE); }
 
     /// consumed_mah - returns total current drawn since start-up in milliampere.hours
-    bool consumed_mah(float &mah, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
+    float consumed_mah(uint8_t instance) const;
+    float consumed_mah() const { return consumed_mah(AP_BATT_PRIMARY_INSTANCE); }
 
     /// consumed_wh - returns total energy drawn since start-up in watt.hours
-    bool consumed_wh(float&wh, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
+    float consumed_wh(uint8_t instance) const;
+    float consumed_wh() const { return consumed_wh(AP_BATT_PRIMARY_INSTANCE); }
 
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     virtual uint8_t capacity_remaining_pct(uint8_t instance) const;
@@ -156,9 +166,6 @@ public:
 
     // sends powering off mavlink broadcasts and sets notify flag
     void checkPoweringOff(void);
-
-    // reset battery remaining percentage
-    bool reset_remaining(uint16_t battery_mask, float percentage);
 
     static const struct AP_Param::GroupInfo var_info[];
 

@@ -27,7 +27,7 @@
 class AP_AdvancedFailsafe_Copter : public AP_AdvancedFailsafe
 {
 public:
-    AP_AdvancedFailsafe_Copter(AP_Mission &_mission);
+    AP_AdvancedFailsafe_Copter(AP_Mission &_mission, const AP_GPS &_gps);
 
     // called to set all outputs to termination state
     void terminate_vehicle(void);

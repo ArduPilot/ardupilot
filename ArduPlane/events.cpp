@@ -32,11 +32,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case Mode::Number::QACRO:
         failsafe.saved_mode_number = control_mode->mode_number();
         failsafe.saved_mode_set = true;
-        if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
-            set_mode(mode_qrtl, reason);
-        } else {
-            set_mode(mode_qland, reason);
-        }
+        set_mode(mode_qland, reason);
         break;
         
     case Mode::Number::AUTO:
@@ -98,11 +94,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     case Mode::Number::QLOITER:
     case Mode::Number::QACRO:
     case Mode::Number::QAUTOTUNE:
-        if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
-            set_mode(mode_qrtl, reason);
-        } else {
-            set_mode(mode_qland, reason);
-        }
+        set_mode(mode_qland, reason);
         break;
         
     case Mode::Number::AUTO:

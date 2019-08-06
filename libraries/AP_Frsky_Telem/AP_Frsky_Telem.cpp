@@ -28,20 +28,17 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/Location.h>
-#include <AP_GPS/AP_GPS.h>
+
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
-AP_Frsky_Telem::AP_Frsky_Telem(void) :
-  _statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY)
-{
-}
+ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
 
 /*
  * init - perform required initialisation
  */
-bool AP_Frsky_Telem::init()
+void AP_Frsky_Telem::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
@@ -68,11 +65,7 @@ bool AP_Frsky_Telem::init()
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::tick, void));
         // we don't want flow control for either protocol
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-
-        return true;
     }
-
-    return false;
 }
 
 
@@ -214,14 +207,8 @@ void AP_Frsky_Telem::send_SPort(void)
                             send_uint32(DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
                             break;
                         case 2:
-                            {
-                                float current;
-                                if (!_battery.current_amps(current)) {
-                                    current = 0;
-                                }
-                                send_uint32(DATA_ID_CURRENT, (uint16_t)roundf(current * 10.0f)); // send current consumption
-                                break;
-                            }
+                            send_uint32(DATA_ID_CURRENT, (uint16_t)roundf(_battery.current_amps() * 10.0f)); // send current consumption
+                            break;
                     }
                     if (_SPort.fas_call++ > 2) _SPort.fas_call = 0;
                     break;
@@ -312,11 +299,7 @@ void AP_Frsky_Telem::send_D(void)
         send_uint16(DATA_ID_TEMP1, gcs().custom_mode()); // send flight mode
         send_uint16(DATA_ID_FUEL, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining
         send_uint16(DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
-        float current;
-        if (!_battery.current_amps(current)) {
-            current = 0;
-        }
-        send_uint16(DATA_ID_CURRENT, (uint16_t)roundf(current * 10.0f)); // send current consumption
+        send_uint16(DATA_ID_CURRENT, (uint16_t)roundf(_battery.current_amps() * 10.0f)); // send current consumption
         calc_nav_alt();
         send_uint16(DATA_ID_BARO_ALT_BP, _gps.alt_nav_meters); // send nav altitude integer part
         send_uint16(DATA_ID_BARO_ALT_AP, _gps.alt_nav_cm); // send nav altitude decimal part
@@ -694,20 +677,13 @@ uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
     const AP_BattMonitor &_battery = AP::battery();
 
     uint32_t batt;
-    float current, consumed_mah;
-    if (!_battery.current_amps(current, instance)) {
-        current = 0;
-    }
-    if (!_battery.consumed_mah(consumed_mah, instance)) {
-        consumed_mah = 0;
-    }
     
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
     batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
-    batt |= prep_number(roundf(current * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET;
+    batt |= prep_number(roundf(_battery.current_amps(instance) * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
-    batt |= ((consumed_mah < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(consumed_mah) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
+    batt |= ((_battery.consumed_mah(instance) < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.consumed_mah(instance)) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
     return batt;
 }
 

@@ -22,11 +22,6 @@ extern const AP_HAL::HAL& hal;
 #define HAL_LOGGING_MAV_BUFSIZE  8
 #endif 
 
-// by default log for 15 seconds after disarming
-#ifndef HAL_LOGGER_ARM_PERSIST
-#define HAL_LOGGER_ARM_PERSIST 15
-#endif
-
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
 # ifdef HAL_LOGGING_DATAFLASH
 #  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::BLOCK
@@ -206,7 +201,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 #define DEBUG_LOG_STRUCTURES 0
 
 extern const AP_HAL::HAL& hal;
-#define Debug(fmt, args ...)  do {::fprintf(stderr, "%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+#define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
 
 /// return the number of commas present in string
 static uint8_t count_commas(const char *string)
@@ -373,7 +368,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     }
 
     // ensure any float has a multiplier of zero
-    if (false && passed) {
+    if (passed) {
         for (uint8_t j=0; j<strlen(logstructure->multipliers); j++) {
             const char fmt = logstructure->format[j];
             if (fmt != 'f') {
@@ -400,11 +395,6 @@ void AP_Logger::validate_structures(const struct LogStructure *logstructures, co
 {
     Debug("Validating structures");
     bool passed = true;
-
-    for (uint16_t i=0; i<num_types; i++) {
-        const struct LogStructure *logstructure = &logstructures[i];
-        passed = validate_structure(logstructure, i) && passed;
-    }
 
     // ensure units are unique:
     for (uint16_t i=0; i<ARRAY_SIZE(log_Units); i++) {
@@ -514,12 +504,10 @@ void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
 
 bool AP_Logger::should_log(const uint32_t mask) const
 {
-    bool armed = vehicle_is_armed();
-
     if (!(mask & _log_bitmask)) {
         return false;
     }
-    if (!armed && !log_while_disarmed()) {
+    if (!vehicle_is_armed() && !log_while_disarmed()) {
         return false;
     }
     if (in_log_download()) {
@@ -651,9 +639,9 @@ bool AP_Logger::logging_started(void) {
     return false;
 }
 
-void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
+void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
 {
-    switch (msg.msgid) {
+    switch (msg->msgid) {
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         FOR_EACH_BACKEND(remote_log_block_status_msg(link.get_chan(), msg));
         break;
@@ -1075,7 +1063,7 @@ bool AP_Logger::Write_ISBH(const uint16_t seqno,
     if (_next_backend == 0) {
         return false;
     }
-    const struct log_ISBH pkt{
+    struct log_ISBH pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ISBH_MSG),
         time_us        : AP_HAL::micros64(),
         seqno          : seqno,
@@ -1127,7 +1115,7 @@ bool AP_Logger::Write_ISBD(const uint16_t isb_seqno,
 // Wrote an event packet
 void AP_Logger::Write_Event(Log_Event id)
 {
-    const struct log_Event pkt{
+    struct log_Event pkt = {
         LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
         time_us  : AP_HAL::micros64(),
         id       : id
@@ -1139,42 +1127,13 @@ void AP_Logger::Write_Event(Log_Event id)
 void AP_Logger::Write_Error(LogErrorSubsystem sub_system,
                             LogErrorCode error_code)
 {
-  const struct log_Error pkt{
+  struct log_Error pkt = {
       LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
       time_us       : AP_HAL::micros64(),
       sub_system    : uint8_t(sub_system),
       error_code    : uint8_t(error_code),
   };
   WriteCriticalBlock(&pkt, sizeof(pkt));
-}
-
-/*
-  return true if we should log while disarmed
- */
-bool AP_Logger::log_while_disarmed(void) const
-{
-    if (_force_log_disarmed) {
-        return true;
-    }
-    if (_params.log_disarmed != 0) {
-        return true;
-    }
-
-    uint32_t now = AP_HAL::millis();
-    uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
-
-    // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming
-    const uint32_t arm_change_ms = hal.util->get_last_armed_change();
-    if (!hal.util->get_soft_armed() && arm_change_ms != 0 && now - arm_change_ms < persist_ms) {
-        return true;
-    }
-
-    // keep logging for HAL_LOGGER_ARM_PERSIST seconds after an arming failure
-    if (_last_arming_failure_ms && now - _last_arming_failure_ms < persist_ms) {
-        return true;
-    }
-
-    return false;
 }
 
 namespace AP {

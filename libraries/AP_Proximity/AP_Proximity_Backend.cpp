@@ -14,9 +14,6 @@
  */
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Common/Location.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AC_Avoidance/AP_OADatabase.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
@@ -180,15 +177,11 @@ void AP_Proximity_Backend::init_boundary()
 // update boundary points used for object avoidance based on a single sector's distance changing
 //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
 //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-void AP_Proximity_Backend::update_boundary_for_sector(const uint8_t sector, const bool push_to_OA_DB)
+void AP_Proximity_Backend::update_boundary_for_sector(uint8_t sector)
 {
     // sanity check
     if (sector >= _num_sectors) {
         return;
-    }
-
-    if (push_to_OA_DB) {
-        database_push(_angle[sector], _distance[sector]);
     }
 
     // find adjacent sector (clockwise)
@@ -332,43 +325,4 @@ bool AP_Proximity_Backend::get_next_ignore_start_or_end(uint8_t start_or_end, in
         ignore_start = smallest_angle_start;
     }
     return found;
-}
-
-// returns true if database is ready to be pushed to and all cached data is ready
-bool AP_Proximity_Backend::database_prepare_for_push(Location &current_loc, float &current_vehicle_bearing)
-{
-    AP_OADatabase *oaDb = AP::oadatabase();
-    if (oaDb == nullptr || !oaDb->healthy()) {
-        return false;
-    }
-
-    if (!AP::ahrs().get_position(current_loc)) {
-        return false;
-    }
-
-    current_vehicle_bearing = AP::ahrs().yaw_sensor * 0.01f;
-    return true;
-}
-
-// update Object Avoidance database with Earth-frame point
-void AP_Proximity_Backend::database_push(const float angle, const float distance)
-{
-    Location current_loc;
-    float current_vehicle_bearing;
-    if (database_prepare_for_push(current_loc, current_vehicle_bearing) == true) {
-        database_push(angle, distance, AP_HAL::millis(), current_loc, current_vehicle_bearing);
-    }
-}
-
-// update Object Avoidance database with Earth-frame point
-void AP_Proximity_Backend::database_push(const float angle, const float distance, const uint32_t timestamp_ms, const Location &current_loc, const float current_vehicle_bearing)
-{
-    AP_OADatabase *oaDb = AP::oadatabase();
-    if (oaDb == nullptr || !oaDb->healthy()) {
-        return;
-    }
-
-    Location temp_loc = current_loc;
-    temp_loc.offset_bearing(wrap_180(current_vehicle_bearing + angle), distance);
-    oaDb->queue_push(temp_loc, timestamp_ms, distance, angle);
 }

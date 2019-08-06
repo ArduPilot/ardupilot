@@ -264,10 +264,9 @@ void AP_Baro_MS56XX::_timer(void)
     }
 
     /* if we had a failed read we are all done */
-    if (adc_val == 0 || adc_val == 0xFFFFFF) {
+    if (adc_val == 0) {
         // a failed read can mean the next returned value will be
-        // corrupt, we must discard it. This copes with MISO being
-        // pulled either high or low
+        // corrupt, we must discard it
         _discard_next = true;
         return;
     }

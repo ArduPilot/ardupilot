@@ -40,10 +40,8 @@ void Copter::read_rangefinder(void)
     // filter rangefinder for use by AC_WPNav
     uint32_t now = AP_HAL::millis();
 
-    const bool timed_out = now - rangefinder_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS;
-
     if (rangefinder_state.alt_healthy) {
-        if (timed_out) {
+        if (now - rangefinder_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS) {
             // reset filter if we haven't used it within the last second
             rangefinder_state.alt_cm_filt.reset(rangefinder_state.alt_cm);
         } else {
@@ -53,9 +51,7 @@ void Copter::read_rangefinder(void)
     }
 
     // send rangefinder altitude and health to waypoint navigation library
-    if (rangefinder_state.alt_healthy || timed_out) {
-        wp_nav->set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
-    }
+    wp_nav->set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
 
 #else
     rangefinder_state.enabled = false;

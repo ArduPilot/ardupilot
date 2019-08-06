@@ -91,6 +91,11 @@ def options(opt):
         default=False,
         help='enable OS level asserts.')
 
+    g.add_option('--use-nuttx-iofw',
+        action='store_true',
+        default=False,
+        help='use old NuttX IO firmware for IOMCU')
+
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -126,9 +131,9 @@ submodules at specific revisions.
                  default=False,
                  help="Enable checking of math indexes")
 
-    g.add_option('--disable-scripting', action='store_true',
+    g.add_option('--enable-scripting', action='store_true',
                  default=False,
-                 help="Disable onboard scripting engine")
+                 help="Enable onboard scripting engine")
 
     g.add_option('--scripting-checks', action='store_true',
                  default=True,
@@ -191,10 +196,6 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SITL RGBLed")
 
-    g.add_option('--build-dates', action='store_true',
-                 default=False,
-                 help="Include build date in binaries.  Appears in AUTOPILOT_VERSION.os_sw_version")
-
     g.add_option('--sitl-flash-storage',
         action='store_true',
         default=False,
@@ -230,10 +231,7 @@ def	run_coverage_tests(bld):
 
     #tests = ['fly.ArduPlane']
     #tests = ['fly.ArduCopter','fly.ArduPlane']
-    #tests = ['fly.ArduCopter','fly.ArduPlane', 'fly.QuadPlane', 'drive.APMrover2', 'dive.ArduSub']
-    tests = ['build.examples','build.unit_tests','run.examples','run.unit_tests',
-             'fly.ArduCopter','fly.ArduPlane', 'fly.QuadPlane', 'drive.APMrover2', 'dive.ArduSub', 
-             'test.AntennaTracker', 'fly.CopterAVC' ]
+    tests = ['fly.ArduCopter','fly.ArduPlane', 'fly.QuadPlane', 'drive.APMrover2', 'dive.ArduSub']
 
     for test in tests:
         print("LCOV/GCOV -> "+test+" started.... this will take quite some time...")
@@ -357,6 +355,7 @@ def configure(cfg):
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
+    cfg.env.USE_NUTTX_IOFW = cfg.options.use_nuttx_iofw
 
     cfg.env.OPTIONS = cfg.options.__dict__
 
@@ -425,10 +424,10 @@ def configure(cfg):
         cfg.end_msg('disabled', color='YELLOW')
 
     cfg.start_msg('Scripting')
-    if cfg.options.disable_scripting:
-        cfg.end_msg('disabled', color='YELLOW')
-    else:
+    if cfg.options.enable_scripting:
         cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
 
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:

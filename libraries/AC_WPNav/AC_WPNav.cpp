@@ -96,6 +96,35 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
 }
 
 
+/// init_brake_target - initializes stop position from current position and velocity
+void AC_WPNav::init_brake_target(float accel_cmss)
+{
+    const Vector3f& curr_vel = _inav.get_velocity();
+    Vector3f stopping_point;
+
+    // initialise position controller
+    _pos_control.set_desired_velocity_xy(0.0f,0.0f);
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
+    _pos_control.init_xy_controller();
+
+    // initialise pos controller speed and acceleration
+    _pos_control.set_max_speed_xy(curr_vel.length());
+    _pos_control.set_max_accel_xy(accel_cmss);
+    _pos_control.calc_leash_length_xy();
+
+    // set target position
+    _pos_control.get_stopping_point_xy(stopping_point);
+    _pos_control.set_xy_target(stopping_point.x, stopping_point.y);
+}
+
+// update_brake - run the stop controller - gets called at 400hz
+void AC_WPNav::update_brake()
+{
+    // send adjusted feed forward velocity back to position controller
+    _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
+    _pos_control.update_xy_controller();
+}
+
 ///
 /// waypoint navigation
 ///
@@ -283,7 +312,7 @@ void AC_WPNav::shift_wp_origin_to_current_pos()
     }
 
     // get current and target locations
-    const Vector3f &curr_pos = _inav.get_position();
+    const Vector3f curr_pos = _inav.get_position();
     const Vector3f pos_target = _pos_control.get_pos_target();
 
     // calculate difference between current position and target
@@ -321,7 +350,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     bool reached_leash_limit = false;   // true when track has reached leash limit and we need to slow down the target point
 
     // get current location
-    const Vector3f &curr_pos = _inav.get_position();
+    Vector3f curr_pos = _inav.get_position();
 
     // calculate terrain adjustments
     float terr_offset = 0.0f;
@@ -470,7 +499,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 float AC_WPNav::get_wp_distance_to_destination() const
 {
     // get current location
-    const Vector3f &curr = _inav.get_position();
+    Vector3f curr = _inav.get_position();
     return norm(_destination.x-curr.x,_destination.y-curr.y);
 }
 
@@ -830,7 +859,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         calculate_wp_leash_length();
 
         // get current location
-        const Vector3f &curr_pos = _inav.get_position();
+        Vector3f curr_pos = _inav.get_position();
 
         // get terrain altitude offset for origin and current position (i.e. change in terrain altitude from a position vs ekf origin)
         float terr_offset = 0.0f;

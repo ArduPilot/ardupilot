@@ -205,8 +205,7 @@ void AP_Motors6DOF::output_min()
     int8_t i;
 
     // set limits flags
-    limit.roll = true;
-    limit.pitch = true;
+    limit.roll_pitch = true;
     limit.yaw = true;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -292,9 +291,9 @@ void AP_Motors6DOF::output_armed_stabilizing()
         float   forward_thrust;             // forward thrust input value, +/- 1.0
         float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
-        roll_thrust = (_roll_in + _roll_in_ff);
-        pitch_thrust = (_pitch_in + _pitch_in_ff);
-        yaw_thrust = (_yaw_in + _yaw_in_ff);
+        roll_thrust = _roll_in;
+        pitch_thrust = _pitch_in;
+        yaw_thrust = _yaw_in;
         throttle_thrust = get_throttle_bidirectional();
         forward_thrust = _forward_in;
         lateral_thrust = _lateral_in;
@@ -303,8 +302,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
         float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
         // initialize limits flags
-        limit.roll = false;
-        limit.pitch = false;
+        limit.roll_pitch = false;
         limit.yaw = false;
         limit.throttle_lower = false;
         limit.throttle_upper = false;
@@ -350,10 +348,11 @@ void AP_Motors6DOF::output_armed_stabilizing()
     const AP_BattMonitor &battery = AP::battery();
 
 	// Current limiting
-    float _batt_current;
-    if (_batt_current_max <= 0.0f || !battery.current_amps(_batt_current)) {
+    if (_batt_current_max <= 0.0f || !battery.has_current()) {
         return;
     }
+
+    float _batt_current = battery.current_amps();
 
     float _batt_current_delta = _batt_current - _batt_current_last;
 
@@ -398,9 +397,9 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
     float   forward_thrust;             // forward thrust input value, +/- 1.0
     float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
-    roll_thrust = (_roll_in + _roll_in_ff);
-    pitch_thrust = (_pitch_in + _pitch_in_ff);
-    yaw_thrust = (_yaw_in + _yaw_in_ff);
+    roll_thrust = _roll_in;
+    pitch_thrust = _pitch_in;
+    yaw_thrust = _yaw_in;
     throttle_thrust = get_throttle_bidirectional();
     forward_thrust = _forward_in;
     lateral_thrust = _lateral_in;
@@ -409,8 +408,7 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
     float linear_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
 
     // initialize limits flags
-    limit.roll= false;
-    limit.pitch = false;
+    limit.roll_pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
@@ -483,9 +481,9 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
     float   forward_thrust;             // forward thrust input value, +/- 1.0
     float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
-    roll_thrust = (_roll_in + _roll_in_ff);
-    pitch_thrust = (_pitch_in + _pitch_in_ff);
-    yaw_thrust = (_yaw_in + _yaw_in_ff);
+    roll_thrust = _roll_in;
+    pitch_thrust = _pitch_in;
+    yaw_thrust = _yaw_in;
     throttle_thrust = get_throttle_bidirectional();
     forward_thrust = _forward_in;
     lateral_thrust = _lateral_in;
@@ -496,8 +494,7 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
     float yfl_max;
 
     // initialize limits flags
-    limit.roll = false;
-    limit.pitch = false;
+    limit.roll_pitch = false;
     limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;

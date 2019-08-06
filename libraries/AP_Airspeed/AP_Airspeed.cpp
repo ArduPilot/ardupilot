@@ -45,11 +45,7 @@ extern const AP_HAL::HAL &hal;
  #define ARSPD_DEFAULT_PIN 15
 #else
  #define ARSPD_DEFAULT_TYPE TYPE_I2C_MS4525
-#ifdef HAL_DEFAULT_AIRSPEED_PIN
- #define ARSPD_DEFAULT_PIN HAL_DEFAULT_AIRSPEED_PIN
-#else
  #define ARSPD_DEFAULT_PIN 15
-#endif
 #endif
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
@@ -66,7 +62,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR,8:UAVCAN
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
@@ -146,7 +142,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Airspeed type
     // @Description: Type of 2nd airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR,8:UAVCAN
     // @User: Standard
     AP_GROUPINFO_FLAGS("2_TYPE", 11, AP_Airspeed, param[1].type, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -223,6 +219,9 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
 AP_Airspeed::AP_Airspeed()
 {
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        state[i].EAS2TAS = 1;
+    }
     AP_Param::setup_object_defaults(this, var_info);
 
     if (_singleton != nullptr) {
@@ -267,14 +266,9 @@ void AP_Airspeed::init()
         case TYPE_I2C_SDP3X:
             sensor[i] = new AP_Airspeed_SDP3X(*this, i);
             break;
-        case TYPE_I2C_DLVR_5IN:
+        case TYPE_I2C_DLVR:
 #if !HAL_MINIMIZE_FEATURES
-            sensor[i] = new AP_Airspeed_DLVR(*this, i, 5);
-#endif // !HAL_MINIMIZE_FEATURES
-            break;
-        case TYPE_I2C_DLVR_10IN:
-#if !HAL_MINIMIZE_FEATURES
-            sensor[i] = new AP_Airspeed_DLVR(*this, i, 10);
+            sensor[i] = new AP_Airspeed_DLVR(*this, i);
 #endif // !HAL_MINIMIZE_FEATURES
             break;
         case TYPE_UAVCAN:

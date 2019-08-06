@@ -43,17 +43,17 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
 
     if (plane.aparm.roll_limit_cd < 300) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_ROLL_CD too small (%u)", (unsigned)plane.aparm.roll_limit_cd);
+        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_ROLL_CD too small (%u)", plane.aparm.roll_limit_cd);
         ret = false;
     }
 
     if (plane.aparm.pitch_limit_max_cd < 300) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_PITCH_MAX too small (%u)", (unsigned)plane.aparm.pitch_limit_max_cd);
+        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_PITCH_MAX too small (%u)", plane.aparm.pitch_limit_max_cd);
         ret = false;
     }
 
     if (plane.aparm.pitch_limit_min_cd > -300) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_PITCH_MIN too large (%u)", (unsigned)plane.aparm.pitch_limit_min_cd);
+        check_failed(ARMING_CHECK_NONE, display_failure, "LIM_PITCH_MIN too large (%u)", plane.aparm.pitch_limit_min_cd);
         ret = false;
     }
 
@@ -145,19 +145,6 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
         gcs().send_text(MAV_SEVERITY_WARNING, "watchdog: Bypassing arming checks");
         return true;
     }
-
-    if (plane.g.fence_autoenable == 3) {
-        if (!plane.geofence_set_enabled(true, AUTO_TOGGLED)) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Fence: cannot enable for arming");
-            return false;
-        } else if (!plane.geofence_prearm_check()) {
-            plane.geofence_set_enabled(false, AUTO_TOGGLED);
-            return false;
-        } else {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Fence: auto-enabled for arming");
-        }
-    }
-    
     // call parent class checks
     return AP_Arming::arm_checks(method);
 }
@@ -218,10 +205,6 @@ bool AP_Arming_Plane::disarm(void)
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
-    if (plane.g.fence_autoenable == 3) {
-        plane.geofence_set_enabled(false, AUTO_TOGGLED);
-    }
-    
     return true;
 }
 

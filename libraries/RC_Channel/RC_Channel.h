@@ -170,9 +170,7 @@ public:
         ALTHOLD   =           70, // althold mode
         FLOWHOLD  =           71, // flowhold mode
         CIRCLE    =           72, // circle mode
-        DRIFT     =           73, // drift mode
-        KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
-        KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
+        DRIFT     =           73  // drift mode
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
@@ -195,7 +193,6 @@ protected:
     void do_aux_function_clear_wp(const aux_switch_pos_t ch_flag);
     void do_aux_function_gripper(const aux_switch_pos_t ch_flag);
     void do_aux_function_lost_vehicle_sound(const aux_switch_pos_t ch_flag);
-    void do_aux_function_mission_reset(const aux_switch_pos_t ch_flag);
     void do_aux_function_rc_override_enable(const aux_switch_pos_t ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const aux_switch_pos_t ch_flag);
@@ -240,16 +237,37 @@ private:
     static const uint16_t AUX_PWM_TRIGGER_LOW = 1200;
     bool read_3pos_switch(aux_switch_pos_t &ret) const WARN_IF_UNUSED;
 
-    // Structure used to detect and debounce switch changes
-    struct {
-        int8_t debounce_position = -1;
-        int8_t current_position = -1;
-        uint32_t last_edge_time_ms;
-    } switch_state;
+    //Documentation of Aux Switch Flags:
+    // 0 is low or false, 1 is center or true, 2 is high
+    // pairs of bits in old_switch_positions give the old switch position for an RC input.
+    static uint32_t old_switch_positions;
+
+    aux_switch_pos_t old_switch_position() const {
+        return (aux_switch_pos_t)((old_switch_positions >> (ch_in*2)) & 0x3);
+    }
+    void set_old_switch_position(const RC_Channel::aux_switch_pos_t value) {
+        old_switch_positions &= ~(0x3 << (ch_in*2));
+        old_switch_positions |= (value << (ch_in*2));
+    }
+
+    // Structure used to detect changes in the flight mode control switch
+    // static since we should only ever have one mode switch!
+    typedef struct {
+        modeswitch_pos_t debounced_position; // currently used position
+        modeswitch_pos_t last_position;      // position in previous iteration
+        uint32_t last_edge_time_ms; // system time that position was last changed
+    } modeswitch_state_t;
+    static modeswitch_state_t mode_switch_state;
+
+    // de-bounce counters
+    typedef struct {
+        uint8_t count;
+        uint8_t new_position;
+    } debounce_state_t;
+    debounce_state_t debounce;
 
     void reset_mode_switch();
     void read_mode_switch();
-    bool debounce_completed(int8_t position);
 };
 
 

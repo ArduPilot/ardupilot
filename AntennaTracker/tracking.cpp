@@ -105,46 +105,31 @@ void Tracker::update_tracking(void)
     }
     // do not move if we are not armed:
     if (!hal.util->get_soft_armed()) {
-        switch ((PWMDisarmed)g.disarm_pwm.get()) {
-        case PWMDisarmed::TRIM:
-            SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, 0);
-            break;
-        default:
-        case PWMDisarmed::ZERO:
-            SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_yaw, 0);
-            SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_pitch, 0);
-            break;
-        }
-    } else {
-        switch (control_mode) {
-        case AUTO:
-            if (vehicle.location_valid) {
-                update_auto();
-            } else if (tracker.target_set) {
-                update_scan();
-            }
-            break;
-
-        case MANUAL:
-            update_manual();
-            break;
-
-        case SCAN:
-            update_scan();
-            break;
-
-        case SERVO_TEST:
-        case STOP:
-        case INITIALISING:
-            break;
-        }
+        return;
     }
 
-    // convert servo_out to radio_out and send to servo
-    SRV_Channels::calc_pwm();
-    SRV_Channels::output_ch_all();
-    return;
+    switch (control_mode) {
+    case AUTO:
+        if (vehicle.location_valid) {
+            update_auto();
+        } else if (tracker.target_set) {
+            update_scan();
+        }
+        break;
+
+    case MANUAL:
+        update_manual();
+        break;
+
+    case SCAN:
+        update_scan();
+        break;
+
+    case SERVO_TEST:
+    case STOP:
+    case INITIALISING:
+        break;
+    }
 }
 
 /**

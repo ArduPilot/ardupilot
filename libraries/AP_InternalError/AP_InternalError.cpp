@@ -1,7 +1,5 @@
 #include "AP_InternalError.h"
 
-#include <AP_BoardConfig/AP_BoardConfig.h>
-
 extern const AP_HAL::HAL &hal;
 
 // actually create the instance:
@@ -19,10 +17,8 @@ void AP_InternalError::error(const AP_InternalError::error_t e) {
     }
 #endif
     internal_errors |= uint32_t(e);
-    total_error_count++;
-
     hal.util->persistent_data.internal_errors = internal_errors;
-    hal.util->persistent_data.internal_error_count = total_error_count;
+    hal.util->persistent_data.internal_error_count++;
 }
 
 

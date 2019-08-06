@@ -24,8 +24,6 @@
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -47,7 +45,6 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @DisplayName: Heartbeat Pin
     // @Description: This sets a digital output pin which is cycled at 10Hz when termination is not activated. Note that if a FS_TERM_PIN is set then the heartbeat pin will continue to cycle at 10Hz when termination is activated, to allow the termination board to distinguish between autopilot crash and termination.
     // @User: Advanced
-    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5
     AP_GROUPINFO("HB_PIN",      1, AP_AdvancedFailsafe, _heartbeat_pin, -1),
 
     // @Param: WP_COMMS
@@ -78,7 +75,6 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @DisplayName: Terminate Pin
     // @Description: This sets a digital output pin to set high on flight termination
     // @User: Advanced
-    // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5
     AP_GROUPINFO("TERM_PIN",    7, AP_AdvancedFailsafe, _terminate_pin,    -1),
 
     // @Param: AMSL_LIMIT
@@ -193,7 +189,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
 
     uint32_t now = AP_HAL::millis();
     bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
-    bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);
+    bool gps_lock_ok = ((now - gps.last_fix_time_ms()) < 3000);
 
     switch (_state) {
     case STATE_PREFLIGHT:
@@ -328,7 +324,6 @@ AP_AdvancedFailsafe::check_altlimit(void)
 
     // see if the barometer is dead
     const AP_Baro &baro = AP::baro();
-    const AP_GPS &gps = AP::gps();
     if (AP_HAL::millis() - baro.get_last_update() > 5000) {
         // the barometer has been unresponsive for 5 seconds. See if we can switch to GPS
         if (_amsl_margin_gps != -1 &&

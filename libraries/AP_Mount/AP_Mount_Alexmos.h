@@ -7,6 +7,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include "AP_Mount_Backend.h"
 
@@ -70,19 +71,19 @@ public:
     {}
 
     // init - performs any required initialisation for this instance
-    void init(const AP_SerialManager& serial_manager) override;
+    virtual void init(const AP_SerialManager& serial_manager) override;
 
     // update mount position - should be called periodically
-    void update() override;
+    virtual void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    bool has_pan_control() const override;
+    virtual bool has_pan_control() const override;
 
     // set_mode - sets mount's mode
-    void set_mode(enum MAV_MOUNT_MODE mode) override;
+    virtual void set_mode(enum MAV_MOUNT_MODE mode) override;
 
     // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
-    void send_mount_status(mavlink_channel_t chan) override;
+    virtual void send_mount_status(mavlink_channel_t chan) override;
 
 private:
 

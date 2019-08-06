@@ -172,13 +172,6 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 #endif
 
         #if FRAME_CONFIG == HELI_FRAME
-        if (copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
-            copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_DUAL &&
-            copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Invalid Heli FRAME_CLASS");
-            return false;
-        }
-
         // check helicopter parameters
         if (!copter.motors->parameter_check(display_failure)) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Heli motors checks failed");
@@ -196,13 +189,6 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             return false;
         }
 
-        #else
-        if (copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_QUAD ||
-            copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_DUAL ||
-            copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Invalid MultiCopter FRAME_CLASS");
-            return false;
-        }
         #endif // HELI_FRAME
 
         // check for missing terrain data
@@ -217,6 +203,11 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             return false;
         }
 #endif
+
+        // check for something close to vehicle
+        if (!pre_arm_proximity_check(display_failure)) {
+            return false;
+        }
 
         // ensure controllers are OK with us arming:
         char failure_msg[50];
@@ -255,7 +246,7 @@ bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
             #else
             const char *failmsg = "Throttle below Failsafe";
             #endif
-            check_failed(ARMING_CHECK_RC, display_failure, "%s", failmsg);
+            check_failed(ARMING_CHECK_RC, display_failure, failmsg);
             return false;
         }
     }
@@ -413,17 +404,19 @@ bool AP_Arming_Copter::pre_arm_terrain_check(bool display_failure)
 }
 
 // check nothing is too close to vehicle
-bool AP_Arming_Copter::proximity_checks(bool display_failure) const
+bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
 {
 #if PROXIMITY_ENABLED == ENABLED
 
-    if (!AP_Arming::proximity_checks(display_failure)) {
-        return false;
+    // return true immediately if no sensor present
+    if (copter.g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return true;
     }
 
-    if (!((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS))) {
-        // check is disabled
-        return true;
+    // return false if proximity sensor unhealthy
+    if (copter.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "check proximity sensor");
+        return false;
     }
 
     // get closest object if we might use it for avoidance
@@ -456,14 +449,11 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     }
 
 #ifndef ALLOW_ARM_NO_COMPASS
-    // if external source of heading is available, we can skip compass health check
-    if (!ahrs.is_ext_nav_used_for_yaw()) {
-        const Compass &_compass = AP::compass();
-        // check compass health
-        if (!_compass.healthy()) {
-            check_failed(ARMING_CHECK_NONE, true, "Compass not healthy");
-            return false;
-        }
+    const Compass &_compass = AP::compass();
+    // check compass health
+    if (!_compass.healthy()) {
+        check_failed(ARMING_CHECK_NONE, true, "Compass not healthy");
+        return false;
     }
 #endif
 

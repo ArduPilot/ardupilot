@@ -112,5 +112,4 @@ parameters.edn
 cmake-build-*/
 /reports/
 /GCOV_*.log
-way.txt
 

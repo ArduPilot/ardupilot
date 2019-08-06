@@ -17,7 +17,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_InternalError/AP_InternalError.h>
-#include <AP_RTC/AP_RTC.h>
 
 #if HAL_OS_POSIX_IO
 #include <unistd.h>
@@ -816,7 +815,7 @@ uint16_t AP_Logger_File::get_num_logs()
 void AP_Logger_File::stop_logging(void)
 {
     // best-case effort to avoid annoying the IO thread
-    const bool have_sem = write_fd_semaphore.take(hal.util->get_soft_armed()?1:20);
+    const bool have_sem = write_fd_semaphore.take(1);
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
@@ -824,6 +823,8 @@ void AP_Logger_File::stop_logging(void)
     }
     if (have_sem) {
         write_fd_semaphore.give();
+    } else {
+        AP::internalerror().error(AP_InternalError::error_t::logger_stopping_without_sem);
     }
 }
 

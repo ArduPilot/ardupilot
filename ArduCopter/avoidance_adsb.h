@@ -8,8 +8,10 @@
 // functionality - for example, not doing anything while landed.
 class AP_Avoidance_Copter : public AP_Avoidance {
 public:
-
-    using AP_Avoidance::AP_Avoidance;
+    AP_Avoidance_Copter(AP_AHRS &ahrs, class AP_ADSB &adsb)
+        : AP_Avoidance(ahrs, adsb)
+    {
+    }
 
     /* Do not allow copies */
     AP_Avoidance_Copter(const AP_Avoidance_Copter &other) = delete;

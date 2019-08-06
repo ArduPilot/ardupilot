@@ -540,7 +540,6 @@ def write_mcu_config(f):
     else:
         f.write('#define HAL_USE_SDC FALSE\n')
         build_flags.append('USE_FATFS=no')
-        env_vars['DISABLE_SCRIPTING'] = True
     if 'OTG1' in bytype:
         f.write('#define STM32_USB_USE_OTG1                  TRUE\n')
         f.write('#define HAL_USE_USB TRUE\n')
@@ -573,7 +572,6 @@ def write_mcu_config(f):
             f.write('#define %s\n' % d[7:])
     flash_size = get_config('FLASH_SIZE_KB', type=int)
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
-    env_vars['BOARD_FLASH_SIZE'] = flash_size
     f.write('#define CRT1_AREAS_NUMBER 1\n')
 
     flash_reserve_start = get_config(
@@ -894,7 +892,7 @@ def write_UART_config(f):
                 % (devnames[idx], devnames[idx], sdev))
             sdev += 1
         idx += 1
-    for idx in range(len(uart_list), len(devnames)):
+    for idx in range(len(uart_list), 7):
         f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
                 (devnames[idx], devnames[idx]))
 
@@ -912,7 +910,6 @@ def write_UART_config(f):
     f.write('\n')
 
     need_uart_driver = False
-    OTG2_index = None
     devlist = []
     for dev in uart_list:
         if dev.startswith('UART'):
@@ -931,12 +928,7 @@ def write_UART_config(f):
             rts_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
         else:
             rts_line = "0"
-        if dev.startswith('OTG2'):
-            f.write(
-                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, true, false, 0, 0, false, 0, 0}\n'
-                % dev)
-            OTG2_index = uart_list.index(dev)
-        elif dev.startswith('OTG'):
+        if dev.startswith('OTG'):
             f.write(
                 '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0}\n'
                 % dev)
@@ -953,18 +945,6 @@ def write_UART_config(f):
             f.write("%s, " % get_extra_bylabel(dev + "_RXINV", "POL", "0"))
             f.write("%d, " % get_gpio_bylabel(dev + "_TXINV"))
             f.write("%s}\n" % get_extra_bylabel(dev + "_TXINV", "POL", "0"))
-    if OTG2_index is not None:
-        f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
-        f.write('''
-#if HAL_WITH_UAVCAN
-#ifndef HAL_OTG2_PROTOCOL
-#define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
-#endif
-#define HAL_SERIAL%d_PROTOCOL HAL_OTG2_PROTOCOL
-#define HAL_SERIAL%d_BAUD 115200
-#endif
-''' % (OTG2_index, OTG2_index))
-        f.write('#define HAL_HAVE_DUAL_USB_CDC 1\n')
 
     f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
     if not need_uart_driver and not args.bootloader:
@@ -981,20 +961,14 @@ def write_UART_config_bootloader(f):
     f.write('\n// UART configuration\n')
     devlist = []
     have_uart = False
-    OTG2_index = None
     for u in uart_list:
-        if u.startswith('OTG2'):
-            devlist.append('(BaseChannel *)&SDU2')
-            OTG2_index = uart_list.index(u)
-        elif u.startswith('OTG'):
+        if u.startswith('OTG'):
             devlist.append('(BaseChannel *)&SDU1')
         else:
             unum = int(u[-1])
             devlist.append('(BaseChannel *)&SD%u' % unum)
             have_uart = True
     f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
-    if OTG2_index is not None:
-        f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
     if not have_uart:
         f.write('''
 #ifndef HAL_USE_SERIAL
@@ -1229,9 +1203,6 @@ def write_ADC_config(f):
         if p.label == 'VDD_5V_SENS':
             f.write('#define ANALOG_VCC_5V_PIN %u\n' % chan)
             f.write('#define HAL_HAVE_BOARD_VOLTAGE 1\n')
-        if p.label == 'FMU_SERVORAIL_VCC_SENS':
-            f.write('#define FMU_SERVORAIL_ADC_CHAN %u\n' % chan)
-            f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n')
         adc_chans.append((chan, scale, p.label, p.portpin))
     adc_chans = sorted(adc_chans)
     vdd = get_config('STM32_VDD')

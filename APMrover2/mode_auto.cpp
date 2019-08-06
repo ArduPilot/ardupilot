@@ -137,7 +137,7 @@ bool ModeAuto::get_desired_location(Location& destination) const
     switch (_submode) {
     case Auto_WP:
         if (g2.wp_nav.is_destination_valid()) {
-            destination = g2.wp_nav.get_oa_destination();
+            destination = g2.wp_nav.get_destination();
             return true;
         }
         return false;
@@ -583,13 +583,13 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         if (loiter_duration > 0) {
             // send message including loiter time
             gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u. Loiter for %u seconds",
-                            (unsigned int)cmd.index,
-                            (unsigned int)loiter_duration);
+                    static_cast<uint32_t>(cmd.index),
+                    static_cast<uint32_t>(loiter_duration));
             // record the current time i.e. start timer
             loiter_start_time = millis();
         } else {
             // send simpler message to GCS
-            gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u", (unsigned int)cmd.index);
+            gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u", static_cast<uint32_t>(cmd.index));
         }
     }
 
