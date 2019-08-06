@@ -51,6 +51,7 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Notify,         &tracker.notify,    update,         50,  100),
     SCHED_TASK(one_second_loop,         1,   3900),
     SCHED_TASK_CLASS(Compass,          &tracker.compass,              cal_update, 50, 100),
+    SCHED_TASK(stats_update,            1,    200),
     SCHED_TASK(accel_cal_update,       10,    100)
 };
 
@@ -130,6 +131,15 @@ void Tracker::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
     }
+}
+
+/*
+  update AP_Stats
+*/
+void Tracker::stats_update(void)
+{
+    stats.set_flying(hal.util->get_soft_armed());
+    stats.update();
 }
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();

@@ -10,6 +10,7 @@ def build(bld):
             'AC_PID',
             'AP_Beacon',
             'AP_Arming',
+            'AP_Stats',
         ],
     )
 

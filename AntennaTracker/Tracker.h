@@ -51,6 +51,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Rally/AP_Rally.h>
+#include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_Notify/AP_Notify.h>      // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 #include <AP_Airspeed/AP_Airspeed.h>
@@ -144,6 +145,8 @@ private:
     GCS_Tracker _gcs; // avoid using this; use gcs()
     GCS_Tracker &gcs() { return _gcs; }
 
+    AP_Stats stats;
+
     AP_BoardConfig BoardConfig;
 
 #if HAL_WITH_UAVCAN
@@ -208,6 +211,7 @@ private:
     // AntennaTracker.cpp
     void one_second_loop();
     void ten_hz_logging_loop();
+    void stats_update();
 
     // control_auto.cpp
     void update_auto(void);
