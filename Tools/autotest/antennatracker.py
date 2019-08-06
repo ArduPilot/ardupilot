@@ -25,22 +25,6 @@ class AutoTestTracker(AutoTest):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
-    def start_stream_systemtime(self):
-        '''AntennaTracker doesn't stream this by default but we need it for get_sim_time'''
-        try:
-            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SYSTEM_TIME, 10)
-        except Exception:
-            pass
-        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SYSTEM_TIME, 10)
-
-    def set_rc_default(self):
-        '''tracker does not send RC_CHANNELS, so can't set_rc_default'''
-        '''... however, dodgily hook in here to get system time:'''
-        self.start_stream_systemtime()
-
-    def initialise_after_reboot_sitl(self):
-        self.start_stream_systemtime()
-
     def default_mode(self):
         return "AUTO"
 
@@ -56,18 +40,6 @@ class AutoTestTracker(AutoTest):
 
     def sysid_thismav(self):
         return 2
-
-    def reboot_sitl(self):
-        """Reboot SITL instance and wait it to reconnect."""
-        self.wait_heartbeat()
-        if self.armed():
-            self.disarm_vehicle()
-        self.mavproxy.send("reboot\n")
-        self.mavproxy.expect("Init AntennaTracker")
-        # empty mav to avoid getting old timestamps:
-        while self.mav.recv_match(blocking=False):
-            pass
-        self.initialise_after_reboot_sitl()
 
     def disabled_tests(self):
         return {
