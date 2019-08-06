@@ -322,19 +322,15 @@ class AutoTest(ABC):
     def reboot_sitl_mav(self, required_bootcount=None):
         """Reboot SITL instance using mavlink and wait for it to reconnect."""
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
-        # ardupilot SITL may actually NAK the reboot; replace with
-        # run_cmd when we don't do that.
-        self.mav.mav.command_long_send(self.sysid_thismav(),
-                                       1,
-                                       mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
-                                       1,  # confirmation
-                                       1, # reboot autopilot
-                                       0,
-                                       0,
-                                       0,
-                                       0,
-                                       0,
-                                       0)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                     1,  # confirmation
+                     1,  # reboot autopilot
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=5)
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
     def reboot_sitl(self, required_bootcount=None):
