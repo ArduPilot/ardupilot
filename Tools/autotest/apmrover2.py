@@ -1139,6 +1139,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         print("spgti: %s" % str(sptgi))
 
     def assert_mission_count_on_link(self, mav, expected_count, target_system, target_component, mission_type):
+        self.drain_mav(mav)
+        self.progress("waiting for a message - any message....")
+        m = mav.recv_match(blocking=True, timeout=1)
+        self.progress("Received (%s)" % str(m))
+
         if not mav.mavlink20():
             raise NotAchievedException("Not doing mavlink2")
         tstart = self.get_sim_time()
