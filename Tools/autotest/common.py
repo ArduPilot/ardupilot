@@ -339,6 +339,7 @@ class AutoTest(ABC):
 
     def reboot_sitl(self, required_bootcount=None):
         """Reboot SITL instance and wait for it to reconnect."""
+        self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount)
         self.assert_simstate_location_is_at_startup_location()
 
@@ -2374,6 +2375,9 @@ class AutoTest(ABC):
         if self.distance_to_home() > 1:
             raise NotAchievedException("Setting home to current location did not work")
 
+        if self.is_tracker():
+            # tracker starts armed...
+            self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
     def test_dataflash_over_mavlink(self):
@@ -2806,6 +2810,12 @@ class AutoTest(ABC):
         try:
             self.set_parameter("STAT_BOOTCNT", 0)
             self.set_parameter("SIM_BARO_COUNT", 0)
+
+            if self.is_tracker():
+                # starts armed...
+                self.progress("Disarming tracker")
+                self.disarm_vehicle(force=True)
+
             self.reboot_sitl(required_bootcount=1);
             self.progress("Waiting for 'Check BRD_TYPE'")
             self.mavproxy.expect("Check BRD_TYPE");
@@ -2816,6 +2826,11 @@ class AutoTest(ABC):
 
         self.progress("Resetting SIM_BARO_COUNT")
         self.set_parameter("SIM_BARO_COUNT", old_sim_baro_count)
+
+        if self.is_tracker():
+            # starts armed...
+            self.progress("Disarming tracker")
+            self.disarm_vehicle(force=True)
 
         self.progress("Calling reboot-sitl ")
         self.reboot_sitl(required_bootcount=2);
