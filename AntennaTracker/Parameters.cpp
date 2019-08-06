@@ -409,6 +409,10 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(disarm_pwm,              "SAFE_DISARM_PWM",        0),
 
+    // @Group: STAT_
+    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
+    GOBJECT(stats, "STAT",  AP_Stats),
+
     AP_VAREND
 };
 
