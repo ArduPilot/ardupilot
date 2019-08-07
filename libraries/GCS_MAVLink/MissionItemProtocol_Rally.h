@@ -9,7 +9,7 @@ public:
     void truncate(const mavlink_mission_count_t &packet) override;
     MAV_MISSION_TYPE mission_type() const override { return MAV_MISSION_TYPE_RALLY; }
 
-    void complete(const GCS_MAVLINK &_link) override;
+    MAV_MISSION_RESULT complete(const GCS_MAVLINK &_link) override;
     void timeout() override;
 
 protected:

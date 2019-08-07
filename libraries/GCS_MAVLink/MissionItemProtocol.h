@@ -106,7 +106,9 @@ private:
     virtual MAV_MISSION_RESULT replace_item(const mavlink_mission_item_int_t &mission_item_int) = 0;
     virtual MAV_MISSION_RESULT append_item(const mavlink_mission_item_int_t &mission_item_int) = 0;
 
-    virtual void complete(const GCS_MAVLINK &_link) {};
+    virtual MAV_MISSION_RESULT complete(const GCS_MAVLINK &_link) {
+        return MAV_MISSION_ACCEPTED;
+    };
     virtual void timeout() {};
 
     bool mavlink2_requirement_met(const GCS_MAVLINK &_link, const mavlink_message_t &msg) const;
