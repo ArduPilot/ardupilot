@@ -44,7 +44,7 @@ public:
     void get_pilot_desired_mainsail(float &mainsail_out);
 
     // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
-    // we return the throttle to ouput, this may be zeroed if the sail controller does not request throttle
+    // we return the throttle to output, this may be zeroed if the sail controller does not request throttle
     float update_sail_control(float desired_speed, float throttle_out);
 
     // Velocity Made Good, this is the speed we are traveling towards the desired destination

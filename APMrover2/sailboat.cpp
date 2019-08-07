@@ -171,7 +171,7 @@ float Sailboat::update_sail_control(float desired_speed, float throttle_out)
         return throttle_out;
     }
 
-    // if we are motoring do not use the sail
+    // if we are motoring relax the sail
     if (throttle_state_t == Sailboat_Throttle::FORCE_MOTOR) {
         rover.g2.motors.set_mainsail(100.0f);
         return throttle_out;
