@@ -153,7 +153,7 @@ void Plane::takeoff_calc_pitch(void)
         // degrees. This should be enough to get the tail off the
         // ground, while making it unlikely that overshoot in the
         // pitch controller will cause a prop strike
-        nav_pitch_cd = 500;
+        nav_pitch_cd = 0;
         return;
     }
 
