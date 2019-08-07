@@ -144,7 +144,8 @@ class AutoTestRover(AutoTest):
 
             self.clear_wp(9)
         except Exception as e:
-            self.progress("Caught exception: %s" % str(e))
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.disarm_vehicle()
@@ -291,7 +292,8 @@ class AutoTestRover(AutoTest):
 
             self.progress("Sprayer OK")
         except Exception as e:
-            self.progress("Caught exception: %s" % str(e))
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
@@ -507,7 +509,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_groundspeed(0, 0.2, timeout=120)
 
         except Exception as e:
-            self.progress("Caught exception: %s" % str(e))
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         self.mavproxy.send("fence clear\n")

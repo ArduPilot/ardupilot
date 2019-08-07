@@ -1597,7 +1597,8 @@ class AutoTestCopter(AutoTest):
                                     blocking=True,
                                     timeout=5)
         except Exception as e:
-            print("Caught exception %s" % str(e))
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
 
         if m is not None:
             raise NotAchievedException("Received unexpected RANGEFINDER msg")
@@ -3305,7 +3306,8 @@ class AutoTestCopter(AutoTest):
             self.set_rc(10, 2000)
             self.check_avoidance_corners()
         except Exception as e:
-            self.progress("Caught exception: %s" % str(e))
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         self.mavproxy.send("fence clear\n")
@@ -3322,10 +3324,11 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("FENCE_ENABLE", 1)
             self.check_avoidance_corners()
         except Exception as e:
-            self.progress("Caught exception: %s" % str(e))
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
-        self.mavproxy.send("fence clear\n")
+        self.clear_fence()
         self.disarm_vehicle(force=True)
         if ex is not None:
             raise ex
@@ -3382,7 +3385,8 @@ class AutoTestCopter(AutoTest):
                                            (pos_delta, max_delta))
 
         except Exception as e:
-            self.progress("Caught exception: %s" % str(e))
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
@@ -3421,7 +3425,8 @@ class AutoTestCopter(AutoTest):
             self.do_RTL()
 
         except Exception as e:
-            self.progress("Caught exception: %s" % str(e))
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         self.mavproxy.send("fence clear\n")

@@ -2768,7 +2768,7 @@ class AutoTest(ABC):
             self.mavproxy.send("set streamrate %u\n" % sr)
 
         except Exception as e:
-            self.progress("Caught exception %s" %
+            self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             # tell MAVProxy to start stuffing around with the rates:
             sr = self.sitl_streamrate()
@@ -2794,6 +2794,12 @@ class AutoTest(ABC):
         m = self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True, timeout=1)
         if m is None:
             raise NotAchievedException("Requested CAMERA_FEEDBACK did not arrive")
+
+    def clear_fence_using_mavproxy(self):
+        self.mavproxy.send("fence clear\n")
+
+    def clear_fence(self):
+        self.clear_fence_using_mavproxy()
 
     def clear_mission_using_mavproxy(self):
         self.mavproxy.send("wp clear\n")
