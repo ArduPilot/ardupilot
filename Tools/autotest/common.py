@@ -2196,7 +2196,7 @@ class AutoTest(ABC):
                                                   mission_type)
             m = self.mav.recv_match(type='MISSION_ITEM_INT',
                                     blocking=True,
-                                    timeout=1)
+                                    timeout=5)
             if m is None:
                 raise NotAchievedException("Did not receive MISSION_ITEM_INT")
             if m.mission_type != mission_type:
