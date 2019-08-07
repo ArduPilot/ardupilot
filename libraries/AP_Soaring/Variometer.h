@@ -20,7 +20,7 @@ class Variometer {
     const AP_Vehicle::FixedWing &_aparm;
 
     // store time of last update
-    unsigned long _prev_update_time;
+    uint64_t _prev_update_time;
 
     float _last_alt;
 
