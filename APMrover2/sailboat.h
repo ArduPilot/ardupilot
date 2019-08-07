@@ -36,6 +36,13 @@ public:
     // setup
     void init();
 
+    // initialise rc input (channel_mainsail)
+    void init_rc_in();
+
+    // decode pilot mainsail input and return in steer_out and throttle_out arguments
+    // mainsail_out is in the range 0 to 100, defaults to 100 (fully relaxed) if no input configured
+    void get_pilot_desired_mainsail(float &mainsail_out);
+
     // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
     // we return the throttle to ouput, this may be zeroed if the sail controller does not request throttle
     float update_sail_control(float desired_speed, float throttle_out);
@@ -66,9 +73,6 @@ public:
 
     // return sailboat loiter radius
     float get_loiter_radius() const {return loit_radius;}
-
-    // set sailboat mainsail from throttle position
-    void update_manual_sail(float desired_throttle);
 
     // check aux throttle at arming
     bool aux_throttle_pre_arm_check();
@@ -104,6 +108,7 @@ private:
         AUX_THROTTLE_LIMIT = (1 << 1)
     };
 
+    RC_Channel *channel_mainsail;   // rc input channel for controlling mainsail
     bool currently_tacking;         // true when sailboat is in the process of tacking to a new heading
     float tack_heading_rad;         // target heading in radians while tacking in either acro or autonomous modes
     uint32_t tack_request_ms;       // system time user requested tack

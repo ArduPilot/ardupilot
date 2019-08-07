@@ -136,6 +136,34 @@ void Sailboat::init()
     }
 }
 
+// initialise rc input (channel_mainsail), may be called intermittently
+void Sailboat::init_rc_in()
+{
+    // get auxiliary throttle value
+    RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MAINSAIL);
+    if (rc_ptr != nullptr) {
+        // use aux as sail input if defined
+        channel_mainsail = rc_ptr;
+        channel_mainsail->set_angle(100);
+        channel_mainsail->set_default_dead_zone(30);
+    } else {
+        // use throttle channel
+        channel_mainsail = rover.channel_throttle;
+    }
+}
+
+// decode pilot mainsail input and return in steer_out and throttle_out arguments
+// mainsail_out is in the range 0 to 100, defaults to 100 (fully relaxed) if no input configured
+void Sailboat::get_pilot_desired_mainsail(float &mainsail_out)
+{
+    // no RC input means mainsail is moved to trim
+    if ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (channel_mainsail == nullptr)) {
+        mainsail_out = 100.0f;
+        return;
+    }
+    mainsail_out = constrain_float(channel_mainsail->get_control_in(), 0.0f, 100.0f);
+}
+
 // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
 float Sailboat::update_sail_control(float desired_speed, float throttle_out)
 {
@@ -150,8 +178,7 @@ float Sailboat::update_sail_control(float desired_speed, float throttle_out)
     }
 
     // see if we should allow throttle
-    if (throttle_state_t == Sailboat_Throttle::NEVER ||
-       !throttle_assist()) {
+    if (throttle_state_t == Sailboat_Throttle::NEVER || !throttle_assist()) {
         throttle_out = 0.0f;
         if (enable == 2) {
             rover.g2.attitude_control.relax_throttle();
@@ -381,30 +408,6 @@ float Sailboat::calc_heading(float desired_heading_cd)
         default:
             return degrees(right_no_go_heading_rad) * 100.0f;
     }
-}
-
-// update manual mode sail, one for sail one for motor
-void Sailboat::update_manual_sail(float desired_throttle)
-{
-    if (!sail_enabled()) {
-        return;
-    }
-
-    // get auxiliary throttle value
-    RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::AUX_FUNC::SAIL_AUX_IN);
-    float aux_thr = 0.0f;
-    if (rc_ptr != nullptr) {
-        // use aux as sail input
-        rc_ptr->set_angle(100);
-        rc_ptr->set_default_dead_zone(30);
-        aux_thr = rc_ptr->get_control_in();
-        rover.g2.motors.set_mainsail(aux_thr);
-    } else {
-        // aux sail input not set up
-        rover.g2.motors.set_mainsail(desired_throttle);
-    }
-
-    return;
 }
 
 // should we use the throttle?
