@@ -2155,8 +2155,9 @@ class AutoTest(ABC):
         if m.mission_type != mission_type:
             raise NotAchievedException("Mission ack not of expected mission type")
         if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
-            raise NotAchievedException("Mission upload failed (%u)" % m.type)
-        self.progress("Upload succeeded")
+            raise NotAchievedException("Mission upload failed (%s)" %
+                                       (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name),)
+        self.progress("Upload of all %u items succeeded" % len(items))
 
     def download_using_mission_protocol(self, mission_type):
         '''mavlink2 required'''
@@ -2185,7 +2186,8 @@ class AutoTest(ABC):
         next_to_request = 0
         while True:
             if self.get_sim_time_cached() - tstart > 10:
-                raise NotAchievedException("timeout downloading %s" % str(mission_type))
+                raise NotAchievedException("timeout downloading type=%s" %
+                                           (mavutil.mavlink.enums["MAV_MISSION_TYPE"][mission_type].name))
             if len(remaining_to_receive) == 0:
                 self.progress("All received")
                 return items
@@ -2197,13 +2199,14 @@ class AutoTest(ABC):
             m = self.mav.recv_match(type='MISSION_ITEM_INT',
                                     blocking=True,
                                     timeout=5)
+            self.progress("Got (%s)" % str(m))
             if m is None:
                 raise NotAchievedException("Did not receive MISSION_ITEM_INT")
             if m.mission_type != mission_type:
                 raise NotAchievedException("Received waypoint of wrong type")
             if m.seq != next_to_request:
                 raise NotAchievedException("Received waypoint is out of sequence")
-            self.progress("Got item %u" % m.seq)
+            self.progress("Item %u OK" % m.seq)
             items.append(m)
             next_to_request += 1
             remaining_to_receive.discard(m.seq)
