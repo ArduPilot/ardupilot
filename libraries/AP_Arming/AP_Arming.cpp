@@ -685,7 +685,7 @@ bool AP_Arming::system_checks(bool report)
         }
     }
     if (AP::internalerror().errors() != 0) {
-        check_failed(ARMING_CHECK_NONE, report, "Internal errors (0x%x)", AP::internalerror().errors());
+        check_failed(ARMING_CHECK_NONE, report, "Internal errors (0x%x)", (unsigned int)AP::internalerror().errors());
         return false;
     }
 
