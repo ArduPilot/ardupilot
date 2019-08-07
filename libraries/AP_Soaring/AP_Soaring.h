@@ -34,16 +34,16 @@ class SoaringController {
     Vector3f _prev_update_location;
 
     // store time thermal was entered for hysteresis
-    unsigned long _thermal_start_time_us;
+    uint64_t _thermal_start_time_us;
 
     // store position thermal was entered as a backup check
     Vector3f _thermal_start_pos;
 
     // store time cruise was entered for hysteresis
-    unsigned long _cruise_start_time_us;
+    uint64_t _cruise_start_time_us;
 
     // store time of last update
-    unsigned long _prev_update_time;
+    uint64_t _prev_update_time;
 
     bool _throttle_suppressed;
 
