@@ -50,10 +50,11 @@ bool MissionItemProtocol_Waypoints::clear_all_items()
     return mission.clear();
 }
 
-void MissionItemProtocol_Waypoints::complete(const GCS_MAVLINK &_link)
+MAV_MISSION_RESULT MissionItemProtocol_Waypoints::complete(const GCS_MAVLINK &_link)
 {
     _link.send_text(MAV_SEVERITY_INFO, "Flight plan received");
     AP::logger().Write_EntireMission();
+    return MAV_MISSION_ACCEPTED;
 }
 
 MAV_MISSION_RESULT MissionItemProtocol_Waypoints::get_item(const GCS_MAVLINK &_link,

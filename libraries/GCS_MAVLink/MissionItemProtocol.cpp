@@ -74,8 +74,8 @@ void MissionItemProtocol::handle_mission_count(
 
     if (packet.count == 0) {
         // no requests to send...
-        send_mission_ack(_link, msg, MAV_MISSION_ACCEPTED);
-        complete(_link);
+        const MAV_MISSION_RESULT result = complete(_link);
+        send_mission_ack(_link, msg, result);
         return;
     }
 
@@ -233,6 +233,8 @@ void MissionItemProtocol::handle_mission_item(const mavlink_message_t &msg, cons
     }
     if (result != MAV_MISSION_ACCEPTED) {
         send_mission_ack(msg, result);
+        receiving = false;
+        link = nullptr;
         return;
     }
 
@@ -241,8 +243,8 @@ void MissionItemProtocol::handle_mission_item(const mavlink_message_t &msg, cons
     request_i++;
 
     if (request_i > request_last) {
-        send_mission_ack(msg, MAV_MISSION_ACCEPTED);
-        complete(*link);
+        const MAV_MISSION_RESULT complete_result = complete(*link);
+        send_mission_ack(msg, complete_result);
         receiving = false;
         link = nullptr;
         return;
