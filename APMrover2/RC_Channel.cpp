@@ -45,7 +45,7 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     case AUX_FUNC::LOITER:
     case AUX_FUNC::FOLLOW:
     case AUX_FUNC::SAILBOAT_TACK:
-    case AUX_FUNC::SAIL_AUX_IN:
+    case AUX_FUNC::MAINSAIL:
         break;
     case AUX_FUNC::SAILBOAT_MOTOR_3POS:
         do_aux_function_sailboat_motor_3pos(ch_flag);
@@ -214,13 +214,13 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
         rover.control_mode->handle_tack_request();
         break;
 
-    // sailboat aux sail input, nothing to do
-    case AUX_FUNC::SAIL_AUX_IN:
-        break;
-
     // sailboat motor state 3pos
     case AUX_FUNC::SAILBOAT_MOTOR_3POS:
         do_aux_function_sailboat_motor_3pos(ch_flag);
+        break;
+
+    // mainsail input, nothing to do
+    case AUX_FUNC::MAINSAIL:
         break;
 
     default:
