@@ -6,8 +6,14 @@
 /*
   allow for runtime change of control channel ordering
  */
-void Plane::set_control_channels(void)
+void Plane::set_control_channels(const bool ignore_armed_status)
 {
+    if (!ignore_armed_status && (arming.is_armed() || arming.arming_required() == AP_Arming::Required::NO)) {
+        // do nothing when armed.  Setting (e.g.) rcmap.roll to 76
+        // causes instant plane death.
+        return;
+    }
+
     if (g.rudder_only) {
         // in rudder only mode the roll and rudder channels are the
         // same.
@@ -40,7 +46,7 @@ void Plane::set_control_channels(void)
         SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 100);
     }
 
-    if (!arming.is_armed() && arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
+    if (arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     }
 

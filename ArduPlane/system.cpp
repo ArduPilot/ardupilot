@@ -49,7 +49,9 @@ void Plane::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    set_control_channels();
+    // tell set_control_channels to ignore armed state when doing this
+    // - in case ARMING_REQUIRE=0 or we've otherwise come up armed
+    set_control_channels(true);
 
     mavlink_system.sysid = g.sysid_this_mav;
 

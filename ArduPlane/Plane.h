@@ -928,7 +928,7 @@ private:
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
     bool reached_loiter_target(void);
-    void set_control_channels(void);
+    void set_control_channels(bool ignore_armed_state = false);
     void init_rc_in();
     void init_rc_out_main();
     void init_rc_out_aux();
