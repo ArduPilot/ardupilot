@@ -3,6 +3,16 @@
 /*
   allow for runtime change of control channel ordering
  */
+void Rover::update_control_channels()
+{
+    if (arming.is_armed()) {
+        // do nothing when armed.  Setting (e.g.) rcmap.roll to 76
+        // causes instant rover malfunction.
+        return;
+    }
+    set_control_channels();
+}
+
 void Rover::set_control_channels(void)
 {
     // check change on RCMAP
@@ -26,7 +36,8 @@ void Rover::set_control_channels(void)
         // For a rover safety is TRIM throttle
         g2.motors.setup_safety_output();
     }
-    // setup correct scaling for ESCs like the UAVCAN ESCs which
+
+    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed. Default to 1000 to 2000 for systems without
     // a k_throttle output
     hal.rcout->set_esc_scaling(1000, 2000);
