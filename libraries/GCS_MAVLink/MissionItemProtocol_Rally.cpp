@@ -36,10 +36,11 @@ MAV_MISSION_RESULT MissionItemProtocol_Rally::append_item(const mavlink_mission_
     return MAV_MISSION_ACCEPTED;
 }
 
-void MissionItemProtocol_Rally::complete(const GCS_MAVLINK &_link)
+MAV_MISSION_RESULT MissionItemProtocol_Rally::complete(const GCS_MAVLINK &_link)
 {
     _link.send_text(MAV_SEVERITY_INFO, "Rally points received");
     AP::logger().Write_Rally();
+    return MAV_MISSION_ACCEPTED;
 }
 
 bool MissionItemProtocol_Rally::clear_all_items()

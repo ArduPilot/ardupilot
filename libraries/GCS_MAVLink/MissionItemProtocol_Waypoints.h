@@ -16,7 +16,7 @@ public:
     // complete() is called by the base class after all waypoints have
     // been received.  _link is the link which the last item was
     // transfered on.
-    void complete(const GCS_MAVLINK &_link) override;
+    MAV_MISSION_RESULT complete(const GCS_MAVLINK &_link) override;
     // timeout() is called by the base class in the case that the GCS
     // does not transfer all waypoints to the vehicle.
     void timeout() override;
