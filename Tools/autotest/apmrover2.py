@@ -1267,7 +1267,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Expecting mission ack")
         m = mav.recv_match(type='MISSION_ACK',
                            blocking=True,
-                           timeout=1)
+                           timeout=5)
         self.progress("Received ACK (%s)" % str(m))
         if m is None:
             raise NotAchievedException("Expected mission ACK")
