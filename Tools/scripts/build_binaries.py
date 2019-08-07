@@ -534,6 +534,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "MatekF765-Wing",
                 "OMNIBUSF7V2",
                 "sparky2",
+                "omnibusf4",
                 "omnibusf4pro",
                 "omnibusf4v6",
                 "OmnibusNanoV6",
