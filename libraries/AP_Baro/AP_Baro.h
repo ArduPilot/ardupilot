@@ -4,6 +4,7 @@
 #include <AP_Param/AP_Param.h>
 #include <Filter/Filter.h>
 #include <Filter/DerivativeFilter.h>
+#include <UR_Atmosphere/UR_Atmosphere.h>
 
 // maximum number of sensor instances
 #define BARO_MAX_INSTANCES 3
@@ -16,12 +17,16 @@
 #define BARO_TIMEOUT_MS                 500     // timeout in ms since last successful read
 #define BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
 
+using namespace ISA_MATH_CONST;
+
 class AP_Baro_Backend;
+class UR_Atmosphere;
 
 class AP_Baro
 {
     friend class AP_Baro_Backend;
     friend class AP_Baro_SITL; // for access to sensors[]
+    friend class UR_Atmosphere;
 
 public:
     AP_Baro();
@@ -254,6 +259,9 @@ private:
 
     // semaphore for API access from threads
     HAL_Semaphore_Recursive            _rsem;
+
+    UR_Atmosphere *_atm;
+    AP_Int8 _altcalc_mode;
 };
 
 namespace AP {

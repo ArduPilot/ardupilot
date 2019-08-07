@@ -163,6 +163,13 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     AP_GROUPINFO("PROBE_EXT", 14, AP_Baro, _baro_probe_ext, HAL_BARO_PROBE_EXT_DEFAULT),
 #endif
 
+    // @Param: ALTCALC_MODE
+    // @DisplayName: Altitude Calculation Mode
+    // @Description: Select altitude calculation mode: set 1 for above mean sea level calculation, set 0 for above mean ground level calculation.
+    // @Values: 0:amgndl,1:amsl
+    // @User: Advanced
+    AP_GROUPINFO("ALTCALC_MODE", 15, AP_Baro, _altcalc_mode, 0),
+
     AP_GROUPEND
 };
 
@@ -175,7 +182,7 @@ AP_Baro *AP_Baro::_singleton;
 AP_Baro::AP_Baro()
 {
     _singleton = this;
-
+	_atm = UR_Atmosphere::get_instance();
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -442,6 +449,10 @@ void AP_Baro::init(void)
     if (!is_zero(_user_ground_temperature)) {
         _user_ground_temperature.set_and_save(0.0f);
         _user_ground_temperature.notify();
+    }
+
+    if (!_atm) {
+        _atm = new UR_Atmosphere;
     }
 
     if (_hil_mode) {
@@ -758,14 +769,31 @@ void AP_Baro::update(void)
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
             // update altitude calculation
+            _atm->consume_updated();
+            _atm->update(i);
+
             float ground_pressure = sensors[i].ground_pressure;
             if (!is_positive(ground_pressure) || isnan(ground_pressure) || isinf(ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
-            float altitude = sensors[i].altitude;
+
+            int alt_mode = _altcalc_mode;
+            float altitude_am = 0;
             float corrected_pressure = sensors[i].pressure + sensors[i].p_correction;
+            switch (alt_mode) {
+            case 0:
+                altitude_am = get_altitude_difference(sensors[i].ground_pressure, corrected_pressure);
+                break;
+            case 1:
+                altitude_am = _atm->get_altitude_amsl();
+                break;
+            default:
+                ;
+            }
+
+            float altitude = sensors[i].altitude;
             if (sensors[i].type == BARO_TYPE_AIR) {
-                altitude = get_altitude_difference(sensors[i].ground_pressure, corrected_pressure);
+                altitude = altitude_am;
             } else if (sensors[i].type == BARO_TYPE_WATER) {
                 //101325Pa is sea level air pressure, 9800 Pascal/ m depth in water.
                 //No temperature or depth compensation for density of water.
