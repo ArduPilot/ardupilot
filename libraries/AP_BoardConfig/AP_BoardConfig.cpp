@@ -16,12 +16,13 @@
  *   AP_BoardConfig - board specific configuration
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
-#include <stdio.h>
+
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -29,6 +30,8 @@
 #include <AP_HAL_Linux/CAN.h>
 #endif
 #endif
+
+#include <stdio.h>
 
 #ifndef BOARD_TYPE_DEFAULT
 #define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
