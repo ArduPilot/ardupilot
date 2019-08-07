@@ -27,6 +27,8 @@
 
 namespace ISA_MATH_CONST {
 
+using namespace std;
+
     const float p0      = 101325.0f;                    // [N/m^2] = [Pa]
     const float p1      = 22632.05545875171f;           // [N/m^2] = [Pa] Calculated @ 11000.0000000000001 [ft]
     const float p2      = 5474.884659730908f;           // [N/m^2] = [Pa] Calculated @ 20000.000000000001  [ft]
@@ -80,7 +82,7 @@ namespace ISA_MATH_CONST {
     const float CGamma     = 1.4f;    // [-]
     const float CGammaRGas = (CGamma * CRGasSI) / (CftTOm * CftTOm);    // [ft^2/(s^2*K)]
 
-    const float CaSLSI         = sqrt(CGamma * CRGasSI * T0);
+    const float CaSLSI         = sqrtf(CGamma * CRGasSI * T0);
     const float CPressureSLSI  = 101325.0f;                             // [Pa] = [N/m^2]
     const float CaSLNU         = CaSLSI * CmPsTOkn;                     // [kts] Nautical Unit
     const float CRhoSLSI       = 1.225f;                                // [kg/m^3]
