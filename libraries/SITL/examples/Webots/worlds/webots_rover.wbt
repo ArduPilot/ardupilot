@@ -1,0 +1,120 @@
+#VRML_SIM R2019b utf8
+WorldInfo {
+  gravity 0 -9.80665 0
+  basicTimeStep 2
+  FPS 25
+  optimalThreadCount 4
+  randomSeed 52
+}
+DogHouse {
+  translation 34.82 0.76 -24.56
+  name "dog house(1)"
+}
+DogHouse {
+  translation 161.819 0.75 -152.174
+  name "dog house(2)"
+}
+DogHouse {
+  translation 185.42 0.77 48.97
+  name "dog house(5)"
+}
+Viewpoint {
+  orientation -0.4802960487107921 -0.8160262481931511 -0.32158493100985075 1.374242044385044
+  position -34.80383906285916 39.60501890601726 13.953518107115032
+  followOrientation TRUE
+}
+Background {
+  skyColor [
+    0.15 0.5 1
+  ]
+  cubemap Cubemap {
+  }
+}
+Solid {
+  translation 36.93 0.77 -37.93
+  children [
+    HouseWithGarage {
+    }
+  ]
+}
+Solid {
+  translation 192.76999999999998 0 64.98
+  rotation 0 1 0 -1.5707963071795863
+  children [
+    HouseWithGarage {
+    }
+  ]
+  name "solid(1)"
+}
+Car {
+  translation -0.0010326953082284774 1.0033229120626295 2.2409311299249333
+  rotation 0.00024190667924360975 0.9999990672138167 0.0013442665863175399 1.5707409280078055
+  name "rover"
+  controller "ardupilot_SITL_ROVER"
+  supervisor TRUE
+  wheelbase 2
+  extensionSlot [
+    Camera {
+      rotation 0 1 0 -3.1415923071795864
+      name "camera1"
+    }
+    InertialUnit {
+      rotation 0 -1 0 1.5707959999999999
+      name "inertial_unit"
+    }
+    Compass {
+      rotation 0 -1 0 1.5707959999999999
+      name "compass1"
+    }
+    Gyro {
+      rotation 0 -1 0 1.5707959999999999
+      name "gyro1"
+    }
+    Accelerometer {
+      rotation 0 -1 0 1.5707959999999999
+      name "accelerometer1"
+    }
+    GPS {
+      rotation 0 -1 0 1.5707959999999999
+      name "gps1"
+    }
+    VehicleLights {
+    }
+  ]
+  physics Physics {
+    mass 3.5
+  }
+  wheelFrontRight VehicleWheel {
+    thickness 0.2
+    tireRadius 0.3
+  }
+  wheelFrontLeft VehicleWheel {
+    name "vehicle wheel(1)"
+    thickness 0.2
+    tireRadius 0.3
+  }
+  wheelRearRight VehicleWheel {
+  }
+  wheelRearLeft VehicleWheel {
+    name "wheel4"
+  }
+  engineType "electric"
+}
+DirectionalLight {
+  direction 0 -1 0
+}
+UnevenTerrain {
+  size 500 1 500
+}
+HouseWithGarage {
+  translation 174.25 1.88 -157.5
+  rotation 0 1 0 -1.5707963071795863
+}
+AdvertisingBoard {
+  translation 0 2.35 -5.71
+}
+AdvertisingBoard {
+  translation 84.03999999999999 2.35 -5.81
+  rotation 0 1 0 -1.5707963071795863
+  name "advertising board(1)"
+}
