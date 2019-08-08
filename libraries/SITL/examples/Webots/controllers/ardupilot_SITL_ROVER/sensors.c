@@ -145,7 +145,7 @@ void getAllSensors (char *buf, WbDeviceTag gyro, WbDeviceTag accelerometer, WbDe
         getInertia (inertial_unit, inertial_buf);
         getLinearVelocity(wb_supervisor_node_get_self(), linear_velocity_buf);
 
-        sprintf (buf,"{\"timestamp\": %s,\"vehicle.imu\": {\"timestamp\": %s,\"angular_velocity\": %s,\"linear_acceleration\": %s,\"magnetic_field\": %s,\"vehicle.gps\":{\"timestamp\": %s,%s},\"vehicle.velocity\":{\"timestamp\": %s,\"world_linear_velocity\": %s},\"vehicle.pose\":{\"timestamp\": %s,%s,%s}}\r\n"
-                                  , szTime,                             szTime,                 gyro_buf,                    acc_buf,                 compass_buf,               szTime, gps_buf,                                  szTime,                 linear_velocity_buf,               szTime, gps_buf, inertial_buf );
+        sprintf (buf,"{\"ts\": %s,\"vehicle.imu\": {\"av\": %s,\"la\": %s,\"mf\": %s,\"vehicle.gps\":{%s},\"vehicle.velocity\":{\"wlv\": %s},\"vehicle.pose\":{%s,%s}}\r\n"
+                                  , szTime,                                  gyro_buf,                    acc_buf,                 compass_buf,               gps_buf,                                  linear_velocity_buf,               gps_buf, inertial_buf );
 
 }

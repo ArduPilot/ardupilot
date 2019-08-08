@@ -83,12 +83,14 @@ static const struct {
 Webots::Webots(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str)
 {
+    use_time_sync = true;
+    rate_hz = 4000;
+    
     char *saveptr = nullptr;
     char *s = strdup(frame_str);
     char *frame_option = strtok_r(s, ":", &saveptr);
     char *args1 = strtok_r(nullptr, ":", &saveptr);
     char *args2 = strtok_r(nullptr, ":", &saveptr);
-    char *args3 = strtok_r(nullptr, ":", &saveptr);
     /*
       allow setting of IP, sensors port and control port
       format morse:IPADDRESS:SENSORS_PORT:CONTROL_PORT
@@ -98,11 +100,8 @@ Webots::Webots(const char *home_str, const char *frame_str) :
     }
     if (args2) {
         webots_sensors_port = atoi(args2);
-        webots_control_port = webots_sensors_port;
     }
-    if (args3) {
-        webots_control_port = atoi(args3);
-    }
+    
 
     if (strstr(frame_option, "-rover")) {
         output_type = OUTPUT_ROVER;
@@ -125,8 +124,8 @@ Webots::Webots(const char *home_str, const char *frame_str) :
             }
         }
     }
-    printf("Started Webots with %s:%u:%u type %u\n",
-           webots_ip, webots_sensors_port, webots_control_port,
+    printf("Started Webots with %s:%u type %u\n",
+           webots_ip, webots_sensors_port,
            (unsigned)output_type);
 }
 
@@ -352,12 +351,12 @@ bool Webots::sensors_receive(void)
 
 /*
   output control command assuming skid-steering rover
- */
+*/
 void Webots::output_rover(const struct sitl_input &input)
 {
 
-    float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-    float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+    const float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
+    const float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
     
     // construct a JSON packet for v and w
     char buf[60];
@@ -373,7 +372,7 @@ void Webots::output_rover(const struct sitl_input &input)
 
 /*
   output control command assuming a 4 channel quad
- */
+*/
 void Webots::output_quad(const struct sitl_input &input)
 {
     const float max_thrust = 1.0;
@@ -406,7 +405,7 @@ void Webots::output_quad(const struct sitl_input &input)
 /*
   output all 16 channels as PWM values. This allows for general
   control of a robot
- */
+*/
 void Webots::output_pwm(const struct sitl_input &input)
 {
     char buf[200];
@@ -420,6 +419,22 @@ void Webots::output_pwm(const struct sitl_input &input)
 }
 
 
+void Webots::output (const struct sitl_input &input)
+{
+    
+    switch (output_type) {
+        case OUTPUT_ROVER:
+            output_rover(input);
+            break;
+        case OUTPUT_QUAD:
+            output_quad(input);
+            break;
+        case OUTPUT_PWM:
+            output_pwm(input);
+            break;
+        }
+}
+
 /*
   update the Webots simulation by one time step
  */
@@ -431,22 +446,26 @@ void Webots::update(const struct sitl_input &input)
     }
 
     last_state = state;
-
-    if (sensors_receive()) {
+    const bool valid = sensors_receive();
+    if (valid) {
         // update average frame time used for extrapolation
         double dt = constrain_float(state.timestamp - last_state.timestamp, 0.001, 1.0/50);
         if (average_frame_time_s < 1.0e-6) {
+            //if average is too small take the current dt as a good start.
             average_frame_time_s = dt;
         }
+        
+        // this is complementry filter for updating average.
         average_frame_time_s = average_frame_time_s * 0.98 + dt * 0.02;
+        
     }
-
+    
+    // again measure dt as dt_s but with no constraints....
     double dt_s = state.timestamp - last_state.timestamp;
     
     if (dt_s < 0 || dt_s > 1) {
         // cope with restarting while connected
         initial_time_s = time_now_us * 1.0e-6f;
-        last_time_s = state.timestamp;
         return;
     }
 
@@ -456,89 +475,89 @@ void Webots::update(const struct sitl_input &input)
         if (delta_time + extrapolated_s > average_frame_time_s) {
             delta_time = average_frame_time_s - extrapolated_s;
         }
+
+        // check if extrapolation_s duration is longer than average_frame_time_s
         if (delta_time <= 0) {
+            // dont extrapolate anymore untill there is valid data with long-enough dt_s
             usleep(1000);
             return;
         }
+
+        // extrapolated_s duration is safe. keep on extrapolation.
         time_now_us += delta_time * 1.0e6;
         extrapolate_sensors(delta_time);
         update_position();
 
         //update body magnetic field from position and rotation
         update_mag_field_bf();
-        usleep(delta_time*1.0e6);
+        usleep(delta_time * 1.0e6);
         extrapolated_s += delta_time;
+
+        //output(input);
         report_FPS();
         return;
     }
 
-    extrapolated_s = 0;
-    
-    if (initial_time_s <= 0) {
-        dt_s = 0.001f;
-        initial_time_s = state.timestamp - dt_s;
-    }
+    if (valid)
+    {
+        // reset extrapolation duration.
+        extrapolated_s = 0;
+        
+        if (initial_time_s <= 0) {
+            dt_s = 0.001f;
+            initial_time_s = state.timestamp - dt_s;
+        }
 
-    // convert from state variables to ardupilot conventions
-    dcm.from_euler(state.pose.roll, state.pose.pitch, -state.pose.yaw);
+        // convert from state variables to ardupilot conventions
+        dcm.from_euler(state.pose.roll, state.pose.pitch, -state.pose.yaw);
 
-    gyro = Vector3f(state.imu.angular_velocity[0] ,
-                    state.imu.angular_velocity[1] ,
-                    -state.imu.angular_velocity[2] ); 
-    
-    accel_body = Vector3f(+state.imu.linear_acceleration[0],
-                          +state.imu.linear_acceleration[1],
-                          -state.imu.linear_acceleration[2]);
+        gyro = Vector3f(state.imu.angular_velocity[0] ,
+                        state.imu.angular_velocity[1] ,
+                        -state.imu.angular_velocity[2] ); 
+        
+        accel_body = Vector3f(+state.imu.linear_acceleration[0],
+                            +state.imu.linear_acceleration[1],
+                            -state.imu.linear_acceleration[2]);
 
-    velocity_ef = Vector3f(+state.velocity.world_linear_velocity[0],
-                           +state.velocity.world_linear_velocity[1],
-                           -state.velocity.world_linear_velocity[2]);
-    
-    position = Vector3f(state.gps.x, state.gps.y, -state.gps.z);
-    
+        velocity_ef = Vector3f(+state.velocity.world_linear_velocity[0],
+                            +state.velocity.world_linear_velocity[1],
+                            -state.velocity.world_linear_velocity[2]);
+        
+        position = Vector3f(state.gps.x, state.gps.y, -state.gps.z);
+        
 
-    // limit to 16G to match pixhawk1
-    float a_limit = GRAVITY_MSS*16;
-    accel_body.x = constrain_float(accel_body.x, -a_limit, a_limit);
-    accel_body.y = constrain_float(accel_body.y, -a_limit, a_limit);
-    accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
+        // limit to 16G to match pixhawk1
+        float a_limit = GRAVITY_MSS*16;
+        accel_body.x = constrain_float(accel_body.x, -a_limit, a_limit);
+        accel_body.y = constrain_float(accel_body.y, -a_limit, a_limit);
+        accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
 
-    // fill in laser scanner results, if available
-    scanner.points = state.scanner.points;
-    scanner.ranges = state.scanner.ranges;
+        // fill in laser scanner results, if available
+        scanner.points = state.scanner.points;
+        scanner.ranges = state.scanner.ranges;
 
-    update_position();
-    time_advance();
-    uint64_t new_time_us = (state.timestamp - initial_time_s)*1.0e6;
-    if (new_time_us < time_now_us) {
-        uint64_t dt_us = time_now_us - new_time_us;
-        if (dt_us > 500000) {
-            // time going backwards
+        update_position();
+        uint64_t new_time_us = (state.timestamp - initial_time_s)*1.0e6;
+        if (new_time_us < time_now_us) {
+            uint64_t dt_us = time_now_us - new_time_us;
+            if (dt_us > 500000) {
+                // time going backwards
+                time_now_us = new_time_us;
+            }
+        } else {
+            // update SITL time with webots time.
             time_now_us = new_time_us;
         }
-    } else {
-        time_now_us = new_time_us;
+
+        time_advance();
+        
+        // update magnetic field
+        update_mag_field_bf();
+
+        output(input);
+
+        report_FPS();
     }
-    time_diff = state.timestamp - last_time_s;
-    last_time_s = state.timestamp;
-
-    // update magnetic field
-    update_mag_field_bf();
-
-    switch (output_type) {
-    case OUTPUT_ROVER:
-        output_rover(input);
-        break;
-    case OUTPUT_QUAD:
-        output_quad(input);
-        break;
-    case OUTPUT_PWM:
-        output_pwm(input);
-        break;
-    }
-
-    report_FPS();
-
 }
 
 
