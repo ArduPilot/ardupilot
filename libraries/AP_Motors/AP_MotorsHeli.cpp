@@ -65,55 +65,11 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_mode, SERVO_CONTROL_MODE_AUTOMATED),
 
-    // @Param: RSC_SETPOINT
-    // @DisplayName: External Motor Governor Setpoint
-    // @Description: PWM in microseconds passed to the external motor governor when external governor is enabled
-    // @Range: 0 1000
-    // @Units: PWM
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_SETPOINT", 7, AP_MotorsHeli, _rsc_setpoint, AP_MOTORS_HELI_RSC_SETPOINT),
-
-    // @Param: RSC_MODE
-    // @DisplayName: Rotor Speed Control Mode
-    // @Description: Determines the method of rotor speed control
-    // @Values: 1:Ch8 Input, 2:SetPoint, 3:Throttle Curve, 4:Governor
-    // @User: Standard
-    AP_GROUPINFO("RSC_MODE", 8, AP_MotorsHeli, _rsc_mode, (int8_t)ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH),
+    // indices 7 and 8 were RSC parameters which were moved to RSC library. Do not use these indices in the future.
 
     // index 9 was LAND_COL_MIN. Do not use this index in the future.
 
-    // @Param: RSC_RAMP_TIME
-    // @DisplayName: RSC Ramp Time
-    // @Description: Time in seconds for the output to the main rotor's ESC to reach full speed
-    // @Range: 0 60
-    // @Units: s
-    // @User: Standard
-    AP_GROUPINFO("RSC_RAMP_TIME", 10, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
-
-    // @Param: RSC_RUNUP_TIME
-    // @DisplayName: RSC Runup Time
-    // @Description: Time in seconds for the main rotor to reach full speed.  Must be longer than RSC_RAMP_TIME
-    // @Range: 0 60
-    // @Units: s
-    // @User: Standard
-    AP_GROUPINFO("RSC_RUNUP_TIME", 11, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
-
-    // @Param: RSC_CRITICAL
-    // @DisplayName: Critical Rotor Speed
-    // @Description: Rotor speed below which flight is not possible
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_CRITICAL", 12, AP_MotorsHeli, _rsc_critical, AP_MOTORS_HELI_RSC_CRITICAL),
-
-    // @Param: RSC_IDLE
-    // @DisplayName: Rotor Speed Output at Idle
-    // @Description: Rotor speed output while armed but rotor control speed is not engaged
-    // @Range: 0 500
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_IDLE", 13, AP_MotorsHeli, _rsc_idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
+    // indices 10-13 were RSC parameters which were moved to RSC library. Do not use these indices in the future.
 
     // index 14 was RSC_POWER_LOW. Do not use this index in the future.
 
@@ -138,23 +94,13 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // index 18 was RSC_POWER_NEGC. Do not use this index in the future.
 
-    // @Param: RSC_SLEWRATE
-    // @DisplayName: Throttle servo slew rate
-    // @Description: This controls the maximum rate at which the throttle output can change, as a percentage per second. A value of 100 means the throttle can change over its full range in one second. A value of zero gives unlimited slew rate.
-    // @Range: 0 500
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
+    // index 19 was RSC_SLEWRATE and was moved to RSC library. Do not use this index in the future.
 
-    // indices 20 to 25 was throttle curve. Do not use this index in the future.
+    // indices 20 to 24 was throttle curve. Do not use this index in the future.
 
-    // @Group: RSC_CRV_
+    // @Group: RSC_
     // @Path: AP_MotorsHeli_RSC.cpp
-    AP_SUBGROUPINFO(_rsc_thrcrv, "RSC_CRV_", 27, AP_MotorsHeli, RSCThrCrvParam),
-
-    // @Group: RSC_GOV_
-    // @Path: AP_MotorsHeli_RSC.cpp
-    AP_SUBGROUPINFO(_rsc_gov, "RSC_GOV_", 28, AP_MotorsHeli, RSCGovParam),
+    AP_SUBGROUPINFO(_main_rotor, "RSC_", 25, AP_MotorsHeli, AP_MotorsHeli_RSC),
 
     AP_GROUPEND
 };
@@ -423,34 +369,42 @@ void AP_MotorsHeli::output_logic()
 // parameter_check - check if helicopter specific parameters are sensible
 bool AP_MotorsHeli::parameter_check(bool display_msg) const
 {
-    // returns false if _rsc_setpoint is not higher than _rsc_critical as this would not allow rotor_runup_complete to ever return true
-    if (_rsc_critical >= _rsc_setpoint) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL too large");
-        }
-        return false;
-    }
-
     // returns false if RSC Mode is not set to a valid control mode
-    if (_rsc_mode <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _rsc_mode > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+    if (_main_rotor._rsc_mode.get() <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _main_rotor._rsc_mode.get() > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
         if (display_msg) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
         }
         return false;
     }
 
-    // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
-    if (_rsc_runup_time <= _rsc_ramp_time){
+    // returns false if rsc_setpoint is out of range
+    if ( _main_rotor._rsc_setpoint.get() > 100 || _main_rotor._rsc_setpoint.get() < 10){
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_SETPOINT out of range");
         }
         return false;
     }
 
-    // returns false if idle output is higher than critical rotor speed as this could block runup_complete from going false
-    if ( _rsc_idle_output >=  _rsc_critical){
+    // returns false if idle output is out of range
+    if ( _main_rotor._idle_output.get() > 100 || _main_rotor._idle_output.get() < 0){
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE out of range");
+        }
+        return false;
+    }
+
+    // returns false if _rsc_critical is not between 0 and 100
+    if (_main_rotor._critical_speed.get() > 100 || _main_rotor._critical_speed.get() < 0) {
+        if (display_msg) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL out of range");
+        }
+        return false;
+    }
+
+    // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
+    if (_main_rotor._runup_time.get() <= _main_rotor._ramp_time.get()){
+        if (display_msg) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
         }
         return false;
     }
@@ -500,20 +454,5 @@ void AP_MotorsHeli::rc_write_swash(uint8_t chan, float swash_in)
     uint16_t pwm = (uint16_t)(1500 + 500 * swash_in);
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
     SRV_Channels::set_output_pwm_trimmed(function, pwm);
-}
-
-// enable_parameters - enables the rsc parameters for the rsc mode
-void AP_MotorsHeli::enable_rsc_parameters(void)
-{
-    if (_rsc_mode == (int8_t)ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT || _rsc_mode == (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
-        _rsc_thrcrv.set_thrcrv_enable(1);
-    } else {
-        _rsc_thrcrv.set_thrcrv_enable(0);
-    }
-    if (_rsc_mode == (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
-        _rsc_gov.set_gov_enable(1);
-    } else {
-        _rsc_gov.set_gov_enable(0);
-    }
 }
 
