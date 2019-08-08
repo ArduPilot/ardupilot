@@ -388,6 +388,8 @@ public:
 
     // object avoidance path planning
     AP_OAPathPlanner oa;
+
+    AP_Float    fs_throttle_timeout;
 };
 
 extern const AP_Param::Info var_info[];

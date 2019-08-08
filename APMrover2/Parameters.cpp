@@ -603,6 +603,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AC_Avoidance/AP_OAPathPlanner.cpp
     AP_SUBGROUPINFO(oa, "OA_", 45, ParametersG2, AP_OAPathPlanner),
 
+    // @Param: FS_THR_TIMEOUT
+    // @DisplayName: Throttle Failsafe Timeout
+    // @Description: The throttle failsafe timeout time in seconds. If no RC update occurs for this amount of time then throttle and steering demands are set to zero but no other action is taken. If this condition continues for another FS_TIMEOUT then a throttle failsafe will occur. This is useful for system failures where the RC input disappears or your are controlled only by MAVLink commands.
+    // @Units: s
+    // @User: Standard
+    AP_GROUPINFO("FS_THR_TIMEOUT", 46, ParametersG2, fs_throttle_timeout, 0.5f),
+
     AP_GROUPEND
 };
 
