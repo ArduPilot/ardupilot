@@ -1360,16 +1360,16 @@ void ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 // do_nav_delay - Delay the next navigation command
 void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    nav_delay_time_start = millis();
+    nav_delay_time_start_ms = millis();
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay
-        nav_delay_time_max = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
+        nav_delay_time_max_ms = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
     } else {
         // absolute delay to utc time
-        nav_delay_time_max = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
+        nav_delay_time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",nav_delay_time_max_ms/1000);
 }
 
 /********************************************************************************/
@@ -1897,8 +1897,8 @@ bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (millis() - nav_delay_time_start > (uint32_t)MAX(nav_delay_time_max,0)) {
-        nav_delay_time_max = 0;
+    if (millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
+        nav_delay_time_max_ms = 0;
         return true;
     }
     return false;
