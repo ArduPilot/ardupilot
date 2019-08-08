@@ -359,13 +359,11 @@ void Webots::output_rover(const struct sitl_input &input)
     float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
     float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
     
-    const float speed_ms = motor2;
-    const float steer_angle = motor1;
     // construct a JSON packet for v and w
     char buf[60];
     
     snprintf(buf, sizeof(buf)-1, "{\"rover\": [%f, %f]}\n",
-             steer_angle, speed_ms);
+             motor1, motor2);
     //printf("rover motors m1: %f m2: %f\n", steer_angle, speed_ms);
     
     buf[sizeof(buf)-1] = 0;
