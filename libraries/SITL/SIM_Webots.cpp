@@ -137,22 +137,6 @@ Webots::Webots(const char *home_str, const char *frame_str) :
   This parser does not do any syntax checking, and is not at all
   general purpose
 
-{"timestamp":1563474390.834705059,
-"vehicle.imu":{"timestamp":1563474390.834705059,
-   "angular_velocity":[0.000000, -0.000000, -0.000000],
-   "linear_acceleration":[0.000278, 0.006642, 9.809998],
-   "magnetic_field":[1.000000, -0.000000, -0.000028],
-   "vehicle.gps":{"timestamp":1563474390.834705059,"x":0.050467,"y": 0.004505,"z":0.314935},
-   "vehicle.velocity":{"timestamp":1563474390.834705059,
-        "linear_velocity": [0.0, 0.0, 0.0],
-        "angular_velocity":[0.000000, -0.000000, -0.000000], 
-        "world_linear_velocity": [0.0, 0.0, 0.0]},
-    "vehicle.pose":{"timestamp": 1563474390.834705059,
-        "x":0.050467,"y": 0.004505,"z":0.314935,
-        "yaw":0.000677, "pitch":0.000028, "roll":-0.000000}}
-
-
-              
 {"timestamp": 1563474924.817575, 
     "vehicle.imu": {"timestamp": 1563474924.8009083, 
         "angular_velocity": [2.319516170246061e-06, -3.5830129263558774e-07, 7.009341995711793e-09], 
@@ -372,25 +356,17 @@ bool Webots::sensors_receive(void)
 void Webots::output_rover(const struct sitl_input &input)
 {
 
-    //const float max_thrust = 1.0;
-    //float motor2 = constrain_float(((input.servos[2]-1000)/1000.0f) * max_thrust, 0, max_thrust); 
-
     float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
     float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
-    //const float steer_rate_max_dps = 60;
-    const float max_speed = 20;
-
-    //const float steering_rps = (motor1 - motor2) * radians(steer_rate_max_dps);
-    //const float speed_ms = 0.5*(motor1 + motor2) * max_speed;
-    const float speed_ms = motor2 * max_speed * 3.6f;
-    const float steer_angle = (motor1 * 0.5);
+    
+    const float speed_ms = motor2;
+    const float steer_angle = motor1;
     // construct a JSON packet for v and w
     char buf[60];
-    //snprintf(buf, sizeof(buf)-1, "{\"v\": %.3f, \"s\": %.2f}\n",
-    //         speed_ms, -steering_rps);
+    
     snprintf(buf, sizeof(buf)-1, "{\"rover\": [%f, %f]}\n",
              steer_angle, speed_ms);
-    printf("rover motors m1: %f m2: %f\n", steer_angle, speed_ms);
+    //printf("rover motors m1: %f m2: %f\n", steer_angle, speed_ms);
     
     buf[sizeof(buf)-1] = 0;
 

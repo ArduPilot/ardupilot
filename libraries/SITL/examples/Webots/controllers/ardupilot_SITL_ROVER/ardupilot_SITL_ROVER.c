@@ -31,7 +31,8 @@ static WbDeviceTag camera;
 static WbDeviceTag inertialUnit;
 static WbDeviceTag car;
 
-static WbDeviceTag motor[MOTOR_NUM];
+
+const float max_speed = 27; //m/s 
 
 static double v[MOTOR_NUM];
 int port;
@@ -90,8 +91,8 @@ void process_keyboard ()
 */
 void update_controls()
 {
-  float cruise_speed = state.rover.y;// * 3.6f;
-  float steer_angle =  state.rover.x;// * 0.6f;
+  float cruise_speed = state.rover.y * max_speed * 3.6f;
+  float steer_angle =  state.rover.x  * 0.7f;
   wbu_driver_set_cruising_speed (cruise_speed + v[1]);
   wbu_driver_set_steering_angle (steer_angle + v[0]);
   
