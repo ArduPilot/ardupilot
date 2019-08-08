@@ -418,12 +418,6 @@ void AC_Fence::record_breach(uint8_t fence_type)
 /// clear_breach - update breach bitmask, time and count
 void AC_Fence::clear_breach(uint8_t fence_type)
 {
-    // return immediately if this fence type was not breached
-    if ((_breached_fences & fence_type) == 0) {
-        return;
-    }
-
-    // update bitmask
     _breached_fences &= ~fence_type;
 }
 
