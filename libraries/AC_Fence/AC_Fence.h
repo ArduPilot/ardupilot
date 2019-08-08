@@ -72,7 +72,8 @@ public:
     /// get_breach_count - returns number of times we have breached the fence
     uint16_t get_breach_count() const { return _breach_count; }
 
-    /// get_breach_distance - returns distance in meters outside of the given fence
+    /// get_breach_distance - returns maximum distance in meters outside
+    /// of the given fences.  fence_type is a bitmask here.
     float get_breach_distance(uint8_t fence_type) const;
 
     /// get_action - getter for user requested action on limit breach

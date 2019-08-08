@@ -421,22 +421,18 @@ void AC_Fence::clear_breach(uint8_t fence_type)
     _breached_fences &= ~fence_type;
 }
 
-/// get_breach_distance - returns distance in meters outside of the given fence
+/// get_breach_distance - returns maximum distance in meters outside
+/// of the given fences.  fence_type is a bitmask here.
 float AC_Fence::get_breach_distance(uint8_t fence_type) const
 {
-    switch (fence_type) {
-        case AC_FENCE_TYPE_ALT_MAX:
-            return _alt_max_breach_distance;
-            break;
-        case AC_FENCE_TYPE_CIRCLE:
-            return _circle_breach_distance;
-            break;
-        case AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE:
-            return MAX(_alt_max_breach_distance,_circle_breach_distance);
+    float max = 0.0f;
+    if (fence_type & AC_FENCE_TYPE_ALT_MAX) {
+        max = MAX(_alt_max_breach_distance, max);
     }
-
-    // we don't recognise the fence type so just return 0
-    return 0;
+    if (fence_type & AC_FENCE_TYPE_CIRCLE) {
+        max = MAX(_circle_breach_distance, max);
+    }
+    return max;
 }
 
 /// manual_recovery_start - caller indicates that pilot is re-taking manual control so fence should be disabled for 10 seconds
