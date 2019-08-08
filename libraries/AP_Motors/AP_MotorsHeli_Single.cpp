@@ -192,7 +192,7 @@ void AP_MotorsHeli_Single::output_test_seq(uint8_t motor_seq, int16_t pwm)
             break;
         case 5:
             // main rotor
-            rc_write(AP_MOTORS_HELI_SINGLE_RSC, pwm);
+            rc_write(AP_MOTORS_HELI_RSC, pwm);
             break;
         default:
             // do nothing
@@ -206,7 +206,7 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(float desired_speed)
     _main_rotor.set_desired_speed(desired_speed);
 
     // always send desired speed to tail rotor control, will do nothing if not DDVP not enabled
-    _tail_rotor.set_desired_speed(_direct_drive_tailspeed*0.001f);
+    _tail_rotor.set_desired_speed(_direct_drive_tailspeed*0.01f);
 }
 
 // set_rotor_rpm - used for governor with speed sensor
@@ -218,23 +218,20 @@ void AP_MotorsHeli_Single::set_rpm(float rotor_rpm)
 // calculate_scalars - recalculates various scalers used.
 void AP_MotorsHeli_Single::calculate_armed_scalars()
 {
-    // Set common RSC variables
-    _main_rotor.set_ramp_time(_rsc_ramp_time);
-    _main_rotor.set_runup_time(_rsc_runup_time);
-    _main_rotor.set_critical_speed(_rsc_critical*0.001f);
-    _main_rotor.set_idle_output(_rsc_idle_output*0.001f);
-    _main_rotor.set_slewrate(_rsc_slewrate);
-
     // Set rsc mode specific parameters
-    if (_rsc_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
-        _main_rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
-    } else if (_rsc_mode == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
-        _main_rotor.set_throttle_curve(_rsc_thrcrv.get_thrcrv());
-        _main_rotor.set_governor_disengage(_rsc_gov.get_disengage()*0.01f);
-        _main_rotor.set_governor_droop_response(_rsc_gov.get_droop_response()*0.01f);
-        _main_rotor.set_governor_reference(_rsc_gov.get_reference());
-        _main_rotor.set_governor_range(_rsc_gov.get_range());
-        _main_rotor.set_governor_thrcurve(_rsc_gov.get_thrcurve()*0.01f);
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+        _main_rotor.set_throttle_curve();
+    }
+    // keeps user from changing RSC mode while armed
+    if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
+        _main_rotor.reset_rsc_mode_param();
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "RSC control mode change failed");
+        _heliflags.save_rsc_mode = true;
+    }
+    // saves rsc mode parameter when disarmed if it had been reset while armed
+    if (_heliflags.save_rsc_mode && !_flags.armed) {
+        _main_rotor._rsc_mode.save();
+        _heliflags.save_rsc_mode = false;
     }
 }
 
@@ -256,17 +253,16 @@ void AP_MotorsHeli_Single::calculate_scalars()
     _swashplate.calculate_roll_pitch_collective_factors();
 
     // send setpoints to main rotor controller and trigger recalculation of scalars
-    _main_rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
-    enable_rsc_parameters();
+    _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
     calculate_armed_scalars();
 
     // send setpoints to DDVP rotor controller and trigger recalculation of scalars
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SPEED_SETPOINT);
-        _tail_rotor.set_ramp_time(_rsc_ramp_time);
-        _tail_rotor.set_runup_time(_rsc_runup_time);
-        _tail_rotor.set_critical_speed(_rsc_critical*0.001f);
-        _tail_rotor.set_idle_output(_rsc_idle_output*0.001f);
+        _tail_rotor.set_ramp_time(_main_rotor._ramp_time.get());
+        _tail_rotor.set_runup_time(_main_rotor._runup_time.get());
+        _tail_rotor.set_critical_speed(_main_rotor._critical_speed.get());
+        _tail_rotor.set_idle_output(_main_rotor._idle_output.get());
     } else {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_DISABLED);
         _tail_rotor.set_ramp_time(0);
@@ -282,7 +278,7 @@ uint16_t AP_MotorsHeli_Single::get_motor_mask()
 {
     // heli uses channels 1,2,3,4 and 8
     // setup fast channels
-    uint32_t mask = 1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_SINGLE_RSC;
+    uint32_t mask = 1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_RSC;
 
     if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
         mask |= 1U << 4;
@@ -539,6 +535,14 @@ void AP_MotorsHeli_Single::servo_test()
 // parameter_check - check if helicopter specific parameters are sensible
 bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
 {
+    // returns false if direct drive tailspeed is outside of range
+    if ((_direct_drive_tailspeed < 0) || (_direct_drive_tailspeed > 100)){
+        if (display_msg) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_TAIL_SPEED out of range");
+        }
+        return false;
+    }
+
     // returns false if Phase Angle is outside of range for H3 swashplate
     if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H3 && (_swashplate.get_phase_angle() > 30 || _swashplate.get_phase_angle() < -30)){
         if (display_msg) {
