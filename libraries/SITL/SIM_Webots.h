@@ -33,19 +33,21 @@ public:
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
+    /* output servo to simulator */
+    void output(const struct sitl_input &input);
+
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
         return new Webots(home_str, frame_str);
     }
+
+    
 
 private:
     const char *webots_ip = "127.0.0.1";
 
     // assume sensors are streamed on port 5599
     uint16_t webots_sensors_port = 5599; 
-
-    // assume we control vehicle on port 60001
-    uint16_t webots_control_port = 5599; //60001; //5599;
 
     enum {
         OUTPUT_ROVER=1,
@@ -71,7 +73,6 @@ private:
     uint32_t connect_counter;
 
     double initial_time_s;
-    double last_time_s;
     double time_diff;
     double extrapolated_s;
     double average_frame_time_s;
@@ -119,19 +120,19 @@ private:
         void *ptr;
         enum data_type type;
     } keytable[13] = {
-        { "", "timestamp", &state.timestamp, DATA_DOUBLE },
-        { ".imu", "angular_velocity",    &state.imu.angular_velocity, DATA_VECTOR3F },
-        { ".imu", "linear_acceleration", &state.imu.linear_acceleration, DATA_VECTOR3F },
-        { ".imu", "magnetic_field",      &state.imu.magnetic_field, DATA_VECTOR3F },
+        { "", "ts", &state.timestamp, DATA_DOUBLE },
+        { ".imu", "av",    &state.imu.angular_velocity, DATA_VECTOR3F },
+        { ".imu", "la", &state.imu.linear_acceleration, DATA_VECTOR3F },
+        { ".imu", "mf",      &state.imu.magnetic_field, DATA_VECTOR3F },
         { ".gps", "x", &state.gps.x, DATA_FLOAT },
         { ".gps", "y", &state.gps.y, DATA_FLOAT },
         { ".gps", "z", &state.gps.z, DATA_FLOAT },
         { ".pose", "roll",  &state.pose.roll, DATA_FLOAT },
         { ".pose", "pitch", &state.pose.pitch, DATA_FLOAT },
         { ".pose", "yaw",   &state.pose.yaw, DATA_FLOAT },
-        { ".velocity", "world_linear_velocity", &state.velocity.world_linear_velocity, DATA_VECTOR3F },
-        { ".scan", "point_list", &state.scanner.points, DATA_VECTOR3F_ARRAY },
-        { ".scan", "range_list", &state.scanner.ranges, DATA_FLOAT_ARRAY },
+        { ".velocity", "wlv", &state.velocity.world_linear_velocity, DATA_VECTOR3F },
+        { ".scan", "pl", &state.scanner.points, DATA_VECTOR3F_ARRAY },
+        { ".scan", "rl", &state.scanner.ranges, DATA_FLOAT_ARRAY },
     };
 };
 
