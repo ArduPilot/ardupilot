@@ -24,8 +24,8 @@
 extern const AP_HAL::HAL &hal;
 
 // parameter defaults
-const float OA_LOOKAHEAD_DEFAULT = 50;
-const float OA_MARGIN_MAX_DEFAULT = 10;
+const float OA_LOOKAHEAD_DEFAULT = 15;
+const float OA_MARGIN_MAX_DEFAULT = 5;
 
 const int16_t OA_TIMEOUT_MS = 2000;             // avoidance results over 2 seconds old are ignored
 
