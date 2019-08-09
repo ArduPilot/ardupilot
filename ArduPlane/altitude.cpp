@@ -150,6 +150,27 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 }
 
 /*
+  return relative altitude in meters (relative to terrain, if available,
+  or home otherwise)
+ */
+float Plane::relative_ground_altitude_all_modes(bool use_rangefinder_if_available)
+{
+   if (use_rangefinder_if_available && rangefinder_state.in_range) {
+        return rangefinder_state.height_estimate;
+    }
+
+#if AP_TERRAIN_AVAILABLE
+    float altitude;
+    if (terrain.status() == AP_Terrain::TerrainStatusOK &&
+        terrain.height_above_terrain(altitude, true)) {
+        return altitude;
+    }
+#endif
+
+    return relative_altitude;
+}
+
+/*
   set the target altitude to the current altitude. This is used when 
   setting up for altitude hold, such as when releasing elevator in
   CRUISE mode.

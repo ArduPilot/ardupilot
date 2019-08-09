@@ -69,7 +69,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(rpm_update,             10,    100),
     SCHED_TASK(airspeed_ratio_update,   1,    100),
 #if MOUNT == ENABLED
-    SCHED_TASK_CLASS(AP_Mount, &plane.camera_mount, update, 50, 100),
+    SCHED_TASK(mount_update,           50,    100),
 #endif // MOUNT == ENABLED
 #if CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Camera, &plane.camera, update_trigger, 50, 100),
@@ -688,6 +688,12 @@ void Plane::publish_osd_info()
     nav_info.wp_xtrack_error = nav_controller->crosstrack_error();
     nav_info.wp_number = mission.get_current_nav_index();
     osd.set_nav_info(nav_info);
+}
+#endif
+
+#if MOUNT == ENABLED
+void Plane::mount_update() {
+    camera_mount.update(relative_ground_altitude_all_modes(g.rangefinder_landing));
 }
 #endif
 

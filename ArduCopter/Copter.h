@@ -882,6 +882,9 @@ private:
     void userhook_auxSwitch1(uint8_t ch_flag);
     void userhook_auxSwitch2(uint8_t ch_flag);
     void userhook_auxSwitch3(uint8_t ch_flag);
+#if MOUNT == ENABLED
+    void mount_update();
+#endif
 
 #if OSD_ENABLED == ENABLED
     void publish_osd_info();

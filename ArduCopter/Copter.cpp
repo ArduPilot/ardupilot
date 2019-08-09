@@ -145,7 +145,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive, 400, 180),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,    400, 550),
 #if MOUNT == ENABLED
-    SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75),
+    SCHED_TASK(mount_update,          50,     75),
 #endif
 #if CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Camera,            &copter.camera,              update_trigger,  50,  75),
@@ -578,6 +578,13 @@ void Copter::publish_osd_info()
     nav_info.wp_xtrack_error = flightmode->crosstrack_error() * 1.0e-2f;
     nav_info.wp_number = mode_auto.mission.get_current_nav_index();
     osd.set_nav_info(nav_info);
+}
+#endif
+
+#if MOUNT == ENABLED
+void Copter::mount_update() {
+    int32_t height_cm = flightmode->get_alt_above_ground_cm();
+    camera_mount.update(height_cm * 0.01f);
 }
 #endif
 

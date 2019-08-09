@@ -843,6 +843,7 @@ private:
     void setup_glide_slope(void);
     int32_t get_RTL_altitude();
     float relative_ground_altitude(bool use_rangefinder_if_available);
+    float relative_ground_altitude_all_modes(bool use_rangefinder_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);
@@ -1056,6 +1057,9 @@ private:
     void accel_cal_update(void);
 #if SOARING_ENABLED == ENABLED
     void update_soaring();
+#endif
+#if MOUNT == ENABLED
+    void mount_update();
 #endif
 
     bool reversed_throttle;

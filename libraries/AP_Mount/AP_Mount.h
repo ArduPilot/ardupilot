@@ -76,7 +76,7 @@ public:
     void init();
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
-    void update();
+    void update(float height_above_ground_m);
 
     // used for gimbals that need to read INS data at full rate
     void update_fast();
@@ -145,6 +145,7 @@ protected:
         // Parameters
         AP_Int8         _type;              // mount type (None, Servo or MAVLink, see MountType enum)
         AP_Int8         _default_mode;      // default mode on startup and when control is returned from autopilot
+        AP_Int16        _retract_altitude;   // retract altitude
         AP_Int8         _stab_roll;         // 1 = mount should stabilize earth-frame roll axis, 0 = no stabilization
         AP_Int8         _stab_tilt;         // 1 = mount should stabilize earth-frame pitch axis
         AP_Int8         _stab_pan;          // 1 = mount should stabilize earth-frame yaw axis
@@ -181,6 +182,7 @@ private:
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
 
+    bool _reached_altitude;  // flag to mark that minimum altitude reached to retract the mount
 };
 
 namespace AP {
