@@ -348,6 +348,10 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_set_yaw_speed(cmd);
         break;
 
+    case MAV_CMD_NAV_DELAY:                    // 93 Delay the next navigation command
+        do_nav_delay(cmd);
+        break;
+
     // Conditional commands
     case MAV_CMD_CONDITION_DELAY:
         do_wait_delay(cmd);
@@ -472,6 +476,9 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_GUIDED_ENABLE:
         return verify_nav_guided_enable(cmd);
 
+    case MAV_CMD_NAV_DELAY:
+       return verify_nav_delay(cmd);
+
     case MAV_CMD_CONDITION_DELAY:
         return verify_wait_delay();
 
@@ -538,6 +545,27 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     return true;
 }
 
+// do_nav_delay - Delay the next navigation command
+void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
+{
+    nav_delay_time_start_ms = millis();
+
+    // act like we're just doing a heading hold that we instantly achieve.
+    // the behavior of this will put a boat into loiter, else stop
+    nav_delay_submode_backup = _submode;
+    _submode = Auto_HeadingAndSpeed;
+    _reached_heading = true;
+
+    if (cmd.content.nav_delay.seconds > 0) {
+        // relative delay
+        nav_delay_time_max_ms = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
+    } else {
+        // absolute delay to utc time
+        nav_delay_time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
+    }
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",nav_delay_time_max_ms/1000);
+}
+
 // start guided within auto to allow external navigation system to control vehicle
 void ModeAuto::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
@@ -599,6 +627,18 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     } else {
         return (((millis() - loiter_start_time) / 1000) >= loiter_duration);
     }
+}
+
+// verify_nav_delay - check if we have waited long enough
+bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
+{
+    if (millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
+        nav_delay_time_max_ms = 0;
+        _submode = nav_delay_submode_backup;
+        return true;
+    }
+
+    return false;
 }
 
 bool ModeAuto::verify_RTL()
