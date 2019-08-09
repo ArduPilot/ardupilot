@@ -173,7 +173,8 @@ bool AC_WPNav::set_wp_destination(const Location& destination)
     return set_wp_destination(dest_neu, terr_alt);
 }
 
-bool AC_WPNav::get_wp_destination(Location& destination) {
+bool AC_WPNav::get_wp_destination(Location& destination) const
+{
     Vector3f dest = get_wp_destination();
     if (!AP::ahrs().get_origin(destination)) {
         return false;

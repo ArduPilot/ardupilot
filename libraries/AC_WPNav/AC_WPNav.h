@@ -104,7 +104,7 @@ public:
     // returns wp location using location class.
     // returns false if unable to convert from target vector to global
     // coordinates
-    bool get_wp_destination(Location& destination);
+    bool get_wp_destination(Location& destination) const;
 
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
