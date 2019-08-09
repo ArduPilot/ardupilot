@@ -206,7 +206,14 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // 23 formerly _K_RATE
 
-    // 24 is AVAILABLE
+    // @Param: _RETRAC_ALT
+    // @DisplayName: Altitude to retract mount
+    // @Description: Rectracts the mount if altitude above the home is less than defined. Disabled when value is 0.
+    // @Units: m
+    // @Range: -5000 5000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_RETRAC_ALT", 24, AP_Mount, state[0]._retract_altitude, 0),
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Param: 2_DEFLT_MODE
@@ -388,6 +395,16 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
+
+    // @Param: 2_RETRAC_ALT
+    // @DisplayName: Altitude to retract mount
+    // @Description: Rectracts the mount if altitude above the home is less than defined. Disabled when value is 0.
+    // @Units: m
+    // @Range: -5000 5000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("2_RETRAC_ALT", 43, AP_Mount, state[1]._retract_altitude, 0),
+
 #endif // AP_MOUNT_MAX_INSTANCES > 1
 
     AP_GROUPEND
@@ -478,9 +495,25 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
 // update - give mount opportunity to update servos.  should be called at 10hz or higher
 void AP_Mount::update()
 {
+    AP_AHRS &ahrs = AP::ahrs();
+
     // update each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
+            if (state[instance]._retract_altitude != 0 && ahrs.get_likely_flying() && get_mode() != MAV_MOUNT_MODE_RETRACT) {
+                float alt;
+                ahrs.get_relative_position_D_home(alt);
+                if (-alt < state[instance]._retract_altitude) {
+                    if (_reached_altitude) {
+                        _backends[instance]->set_mode(MAV_MOUNT_MODE_RETRACT);
+                        gcs().send_text(MAV_SEVERITY_INFO, "Low altitude %d. Retracting mount.", (int)-alt);
+                        _reached_altitude = false;
+                    }
+                } else {
+                    _reached_altitude = true;
+                }
+            }
+
             _backends[instance]->update();
         }
     }
@@ -692,7 +725,7 @@ void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_gimbal_report(chan);
         }
-    }    
+    }
 }
 
 
