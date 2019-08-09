@@ -55,6 +55,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             bool have_sa     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY) == 0);
             bool have_ha     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HORIZONTAL_ACCURACY) == 0);
             bool have_va     = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VERTICAL_ACCURACY) == 0);
+            bool have_yaw    = (packet.yaw != 0);
 
             state.time_week     = packet.time_week;
             state.time_week_ms  = packet.time_week_ms;
@@ -101,6 +102,11 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             if (have_va) {
                 state.vertical_accuracy = packet.vert_accuracy;
                 state.have_vertical_accuracy = true;
+            }
+
+            if (have_yaw) {
+                state.gps_yaw = wrap_360(packet.yaw*0.01);
+                state.have_gps_yaw = true;
             }
 
             state.num_sats = packet.satellites_visible;
