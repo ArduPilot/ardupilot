@@ -6,6 +6,11 @@ Released under GNU GPL v3 or later
 
 from pyvicon import pyvicon
 from pymavlink.quaternion import Quaternion
+
+# force mavlink2 for yaw in GPS_INPUT
+import os
+os.environ['MAVLINK20'] = '1'
+
 from pymavlink import mavutil
 from pymavlink import mavextra
 import math
@@ -26,6 +31,8 @@ parser.add_argument("--source-component", type=int, default=mavutil.mavlink.MAV_
 parser.add_argument("--rate", type=float, default=None, help="message rate for GLOBAL_VISION_POSITION_ESTIMATE")
 parser.add_argument("--gps-rate", type=int, default=5, help="message rate for GPS_INPUT")
 parser.add_argument("--gps-nsats", type=int, default=16, help="GPS satellite count")
+parser.add_argument("--gps-only", action='store_true', default=False, help="only send GPS data")
+parser.add_argument("--send-zero", action='store_true', default=False, help="send zero data")
 
 args = parser.parse_args()
 
@@ -48,13 +55,16 @@ last_origin_send = 0
 def connect_to_vicon(ip):
     '''connect to a vicon with given ip or hostname'''
     global vicon
+    print("Opening connection to %s" % ip)
     vicon.connect(ip)
+    print("Configuring vicon")
     vicon.set_stream_mode(pyvicon.StreamMode.ClientPull)
     vicon.enable_marker_data()
     vicon.enable_segment_data()
     vicon.enable_unlabeled_marker_data()
     vicon.enable_device_data()
     # wait for first subject to appear
+    print("waiting for vehicle...")
     while True:
         vicon.get_frame()
         name = vicon.get_subject_name(0)
@@ -91,7 +101,10 @@ def main_loop():
     gps_period_ms = 1000 // args.gps_rate
 
     while True:
-        vicon.get_frame()
+        if args.send_zero:
+            time.sleep(0.05)
+        else:
+            vicon.get_frame()
 
         now = time.time()
         now_ms = int(now * 1000)
@@ -104,7 +117,10 @@ def main_loop():
         last_msg_time = now
 
         # get position as ENU mm
-        pos_enu = vicon.get_segment_global_translation(name, segname)
+        if args.send_zero:
+            pos_enu = [0.0, 0.0, 0.0]
+        else:
+            pos_enu = vicon.get_segment_global_translation(name, segname)
         if pos_enu is None:
             continue
 
@@ -112,11 +128,19 @@ def main_loop():
         pos_ned = [pos_enu[1]*0.001, pos_enu[0]*0.001, -pos_enu[2]*0.001]
 
         # get orientation in euler, converting to ArduPilot conventions
-        quat = vicon.get_segment_global_quaternion(name, segname)
+        if args.send_zero:
+            quat = [0.0, 0.0, 0.0, 1.0]
+        else:
+            quat = vicon.get_segment_global_quaternion(name, segname)
         q = Quaternion([quat[3], quat[0], quat[1], quat[2]])
         euler = q.euler
         roll, pitch, yaw = euler[2], euler[1], euler[0]
-        yaw -= math.pi*0.5
+        yaw -= math.pi
+
+        yaw_cd = int(mavextra.wrap_360(math.degrees(yaw)) * 100)
+        if yaw_cd == 0:
+            # the yaw extension to GPS_INPUT uses 0 as no yaw support
+            yaw_cd = 36000
 
         if args.debug > 0:
             print("Pose: [%.3f, %.3f, %.3f] [%.2f %.2f %.2f]" % (
@@ -125,7 +149,7 @@ def main_loop():
 
         time_us = int(now * 1.0e6)
 
-        if now - last_origin_send > 1:
+        if now - last_origin_send > 1 and not args.gps_only:
             # send a heartbeat msg
             mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS, mavutil.mavlink.MAV_AUTOPILOT_GENERIC, 0, 0, 0)
 
@@ -146,6 +170,7 @@ def main_loop():
             gps_vel = [ (pos_ned[0]-last_gps_pos[0])/gps_dt,
                         (pos_ned[1]-last_gps_pos[1])/gps_dt,
                         (pos_ned[2]-last_gps_pos[2])/gps_dt ]
+            last_gps_pos = pos_ned
 
             gps_week, gps_week_ms = get_gps_time(now)
 
@@ -158,15 +183,19 @@ def main_loop():
                                    1.0, 1.0,
                                    gps_vel[0], gps_vel[1], gps_vel[2],
                                    0.2, 1.0, 1.0,
-                                   args.gps_nsats)
+                                   args.gps_nsats,
+                                   yaw_cd)
             last_gps_send_ms = (now_ms//gps_period_ms) * gps_period_ms
             last_gps_send = now
 
 
         # send VISION_POSITION_ESTIMATE
-        mav.mav.global_vision_position_estimate_send(time_us,
-                                                     pos_ned[0], pos_ned[1], pos_ned[2],
-                                                     roll, pitch, yaw)
+        if not args.gps_only:
+            # we force mavlink1 to avoid the covariances which seem to make the packets too large
+            # for the mavesp8266 wifi bridge
+            mav.mav.global_vision_position_estimate_send(time_us,
+                                                         pos_ned[0], pos_ned[1], pos_ned[2],
+                                                         roll, pitch, yaw, force_mavlink1=True)
 
 
 connect_to_vicon("vicon")
