@@ -206,7 +206,16 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // 23 formerly _K_RATE
 
-    // 24 is AVAILABLE
+    // @Param: _RETRAC_ALT
+    // @DisplayName: Altitude at which to retract the mount
+    // @Description: Rectracts the mount if altitude is less than defined. Disabled when value is -1.
+    // @Units: m
+    // @Range: -1 5000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_RETRAC_ALT", 24, AP_Mount, state[0]._retract_altitude, -1),
+
+    // 25 is AVAILABLE
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Param: 2_DEFLT_MODE
@@ -388,6 +397,16 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
+
+    // @Param: 2_RETRAC_ALT
+    // @DisplayName: Altitude at which to retract the mount
+    // @Description: Rectracts the mount if altitude is less than defined. Disabled when value is -1.
+    // @Units: m
+    // @Range: -1 5000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("2_RETRAC_ALT", 43, AP_Mount, state[1]._retract_altitude, -1),
+
 #endif // AP_MOUNT_MAX_INSTANCES > 1
 
     AP_GROUPEND
