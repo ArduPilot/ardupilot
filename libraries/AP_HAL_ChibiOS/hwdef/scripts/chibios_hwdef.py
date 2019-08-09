@@ -718,10 +718,17 @@ def write_mcu_config(f):
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex]
         build_info['MCU'] = cortex
     else:
-        # default to F4
         cortex = "cortex-m4"
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
         build_info['MCU'] = cortex
+
+    env_vars['CORTEX'] = cortex
+
+    if not args.bootloader:
+        if cortex == 'cortex-m4':
+            env_vars['CPU_FLAGS'].append('-DARM_MATH_CM4')
+        elif cortex == 'cortex-m7':
+            env_vars['CPU_FLAGS'].append('-DARM_MATH_CM7')
 
     if not mcu_series.startswith("STM32F1") and not args.bootloader:
         env_vars['CPU_FLAGS'].append('-u_printf_float')
