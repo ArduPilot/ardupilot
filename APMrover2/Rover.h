@@ -353,7 +353,7 @@ private:
     void update_mission(void);
 
     // balance_bot.cpp
-    void balancebot_pitch_control(float &throttle);
+    float balancebot_pitch_control(float target_speed);
     bool is_balancebot() const;
 
     // commands.cpp

@@ -165,8 +165,10 @@ void Sailboat::get_pilot_desired_mainsail(float &mainsail_out)
 }
 
 // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
-float Sailboat::update_sail_control(float desired_speed, float throttle_out)
+float Sailboat::update_sail_control(float desired_speed)
 {
+    float throttle_out = rover.control_mode->get_throttle_out(desired_speed);
+
     if (!sail_enabled()) {
         return throttle_out;
     }

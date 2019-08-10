@@ -273,25 +273,36 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
 
     // call throttle controller and convert output to -100 to +100 range
     float throttle_out;
+    if (rover.g2.sailboat.sail_enabled()) {
+        // sailboat speed controller
+        throttle_out = rover.g2.sailboat.update_sail_control(target_speed);
+
+    } else if (rover.is_balancebot()) {
+        // if vehicle is balance bot, calculate actual throttle required for balancing
+        throttle_out = rover.balancebot_pitch_control(target_speed);
+
+    } else {
+        // standard rover speed controller
+        throttle_out = get_throttle_out(target_speed);
+    }
+
+    // send to motor
+    g2.motors.set_throttle(throttle_out);
+}
+
+float Mode::get_throttle_out(float target_speed)
+{
+    float throttle_out;
 
     // call speed or stop controller
-    if (is_zero(target_speed) && !rover.is_balancebot()) {
+    if (is_zero(target_speed)) {
         bool stopped;
         throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
     } else {
         throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
     }
 
-    // if vehicle is balance bot, calculate actual throttle required for balancing
-    if (rover.is_balancebot()) {
-        rover.balancebot_pitch_control(throttle_out);
-    }
-
-    // update sail controller
-    throttle_out = rover.g2.sailboat.update_sail_control(target_speed, throttle_out);
-
-    // send to motor
-    g2.motors.set_throttle(throttle_out);
+    return throttle_out;
 }
 
 // performs a controlled stop with steering centered

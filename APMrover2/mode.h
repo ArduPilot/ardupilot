@@ -135,6 +135,9 @@ public:
     // handle tacking request (from auxiliary switch) in sailboats
     virtual void handle_tack_request();
 
+    // get throttle output required for given speed
+    float get_throttle_out(float target_speed);
+
 protected:
 
     // subclasses override this to perform checks before entering the mode

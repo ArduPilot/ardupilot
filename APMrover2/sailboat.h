@@ -45,7 +45,7 @@ public:
 
     // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
     // we return the throttle to output, this may be zeroed if the sail controller does not request throttle
-    float update_sail_control(float desired_speed, float throttle_out);
+    float update_sail_control(float desired_speed);
 
     // Velocity Made Good, this is the speed we are traveling towards the desired destination
     float get_VMG() const;

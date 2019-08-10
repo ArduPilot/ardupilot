@@ -2,8 +2,11 @@
 #include "Rover.h"
 
 // Function to set a desired pitch angle according to throttle
-void Rover::balancebot_pitch_control(float &throttle)
+float Rover::balancebot_pitch_control(float target_speed)
 {
+    // calculate desired throttle from target speed
+    float throttle = 100.0f * g2.attitude_control.get_throttle_out_speed(target_speed, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
+
     // calculate desired pitch angle
     const float demanded_pitch = radians(-throttle * 0.01f * g2.bal_pitch_max) + radians(g2.bal_pitch_trim);
 
@@ -16,6 +19,8 @@ void Rover::balancebot_pitch_control(float &throttle)
 
     // calculate required throttle using PID controller
     throttle = g2.attitude_control.get_throttle_out_from_pitch(demanded_pitch, veh_speed_pct, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, G_Dt) * 100.0f;
+
+    return throttle;
 }
 
 // returns true if vehicle is a balance bot
