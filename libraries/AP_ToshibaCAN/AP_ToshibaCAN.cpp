@@ -309,7 +309,7 @@ void AP_ToshibaCAN::loop()
                     motor_reply_data1_t reply_data;
                     memcpy(reply_data.data, recv_frame.data, sizeof(reply_data.data));
                     // store response in telemetry array
-                    uint8_t esc_id = recv_frame.id - MOTOR_DATA1;
+                    const uint8_t esc_id = recv_frame.id - MOTOR_DATA1;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
                         WITH_SEMAPHORE(_telem_sem);
                         _telemetry[esc_id].rpm = be16toh(reply_data.rpm);
@@ -328,10 +328,10 @@ void AP_ToshibaCAN::loop()
                     //    10 bits: W temperature
                     //    10 bits: motor temperature
                     //    remaining 24 bits: reserved
-                    uint16_t u_temp = ((uint16_t)recv_frame.data[0] << 2) | ((uint16_t)recv_frame.data[1] >> 6);
-                    uint16_t v_temp = (((uint16_t)recv_frame.data[1] & (uint16_t)0x3F) << 4) | (((uint16_t)recv_frame.data[2] & (uint16_t)0xF0) >> 4);
-                    uint16_t w_temp = (((uint16_t)recv_frame.data[2] & (uint16_t)0x0F) << 6) | (((uint16_t)recv_frame.data[3] & (uint16_t)0xFC) >> 2);
-                    uint16_t temp_max = MAX(u_temp, MAX(v_temp, w_temp));
+                    const uint16_t u_temp = ((uint16_t)recv_frame.data[0] << 2) | ((uint16_t)recv_frame.data[1] >> 6);
+                    const uint16_t v_temp = (((uint16_t)recv_frame.data[1] & (uint16_t)0x3F) << 4) | (((uint16_t)recv_frame.data[2] & (uint16_t)0xF0) >> 4);
+                    const uint16_t w_temp = (((uint16_t)recv_frame.data[2] & (uint16_t)0x0F) << 6) | (((uint16_t)recv_frame.data[3] & (uint16_t)0xFC) >> 2);
+                    const uint16_t temp_max = MAX(u_temp, MAX(v_temp, w_temp));
 
                     // store repose in telemetry array
                     uint8_t esc_id = recv_frame.id - MOTOR_DATA2;
@@ -403,12 +403,11 @@ void AP_ToshibaCAN::update()
         WITH_SEMAPHORE(_rc_out_sem);
         const bool armed = hal.util->get_soft_armed();
         for (uint8_t i = 0; i < MIN(TOSHIBACAN_MAX_NUM_ESCS, 16); i++) {
-            SRV_Channel *c = SRV_Channels::srv_channel(i);
-            if (c == nullptr) {
+            const SRV_Channel *c = SRV_Channels::srv_channel(i);
             if (!armed || (c == nullptr)) {
                 _scaled_output[i] = 0;
             } else {
-                uint16_t pwm_out = c->get_output_pwm();
+                const uint16_t pwm_out = c->get_output_pwm();
                 if (pwm_out <= 1000) {
                     _scaled_output[i] = 0;
                 } else if (pwm_out >= 2000) {
@@ -427,7 +426,7 @@ void AP_ToshibaCAN::update()
         WITH_SEMAPHORE(_telem_sem);
 
         // log if any new data received.  Logging only supports up to 8 ESCs
-        uint64_t time_us = AP_HAL::micros64();
+        const uint64_t time_us = AP_HAL::micros64();
         for (uint8_t i = 0; i < MIN(TOSHIBACAN_MAX_NUM_ESCS, 8); i++) {
             if (_telemetry[i].new_data) {
                 logger->Write_ESC(i, time_us,
