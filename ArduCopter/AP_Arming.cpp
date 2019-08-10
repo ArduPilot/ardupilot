@@ -241,6 +241,28 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         check_failed(ARMING_CHECK_NONE, display_failure, "check firmware or FRAME_CLASS");
         return false;
     }
+
+    // if this is a multicopter using ToshibaCAN ESCs ensure MOT_PMW_MIN = 1000, MOT_PWM_MAX = 2000
+#if HAL_WITH_UAVCAN && (FRAME_CONFIG != HELI_FRAME)
+    bool tcan_active = false;
+    const uint8_t num_drivers = AP::can().get_num_drivers();
+    for (uint8_t i = 0; i < num_drivers; i++) {
+        if (AP::can().get_protocol_type(i) == AP_BoardConfig_CAN::Protocol_Type_ToshibaCAN) {
+            tcan_active = true;
+        }
+    }
+    if (tcan_active) {
+        if (copter.motors->get_pwm_output_min() != 1000) {
+            check_failed(ARMING_CHECK_NONE, display_failure, "TCAN ESCs require MOT_PWM_MIN=1000");
+            return false;
+        }
+        if (copter.motors->get_pwm_output_max() != 2000) {
+            check_failed(ARMING_CHECK_NONE, display_failure, "TCAN ESCs require MOT_PWM_MAX=2000");
+            return false;
+        }
+    }
+#endif
+
     return true;
 }
 
