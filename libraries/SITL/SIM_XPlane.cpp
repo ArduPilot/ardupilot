@@ -366,33 +366,12 @@ void XPlane::send_data(const struct sitl_input &input)
     uint32_t now = AP_HAL::micros();
     float dt = constrain_float((now - last_send_time_us) * 1.0e-6, 0.001, 0.1);
     last_send_time_us = now;
-    float aileron  = filtered_servo_angle(input, 0, dt);
-    float elevator = filtered_servo_angle(input, 1, dt);
-    float throttle = filtered_servo_range(input, 2, dt);
-    float rudder   = filtered_servo_angle(input, 3, dt);
     struct PACKED {
         uint8_t  marker[5] { 'D', 'A', 'T', 'A', '0' };
         uint32_t code;
         float    data[8];
     } d {};
 
-    if (input.servos[0] == 0) {
-        aileron = 0;
-    }
-    if (input.servos[1] == 0) {
-        elevator = 0;
-    }
-    if (input.servos[2] == 0) {
-        throttle = 0;
-    }
-    if (input.servos[3] == 0) {
-        rudder = 0;
-    }
-    
-    // we add the throttle_magic to the throttle value we send so we
-    // can detect when we get it back
-    throttle = ((uint32_t)(throttle * 1000)) * 1.0e-3f + throttle_magic;
-    
     uint8_t flap_chan;
     if (SRV_Channels::find_channel(SRV_Channel::k_flap, flap_chan) ||
         SRV_Channels::find_channel(SRV_Channel::k_flap_auto, flap_chan)) {
@@ -404,66 +383,26 @@ void XPlane::send_data(const struct sitl_input &input)
     }
 
     /* setup for SilentArrow glider */
-    float rear_left   = filtered_servo_angle(input, 4, dt);
-    float rear_right  = filtered_servo_angle(input, 5, dt);
-    float front_left  = filtered_servo_angle(input, 6, dt);
-    float front_right = filtered_servo_angle(input, 7, dt);
+    float rear_left   = filtered_servo_angle(input, 1, dt);
+    float rear_right  = filtered_servo_angle(input, 3, dt);
+    float front_left  = filtered_servo_angle(input, 2, dt);
+    float front_right = filtered_servo_angle(input, 0, dt);
 
     // uses misc wings, setup for elevator control
     send_dref("sim/operation/override/override_control_surfaces", 1);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[12]", rear_right*20);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[12]", -rear_right*20);
     send_dref("sim/flightmodel2/wing/elevator1_deg[13]", rear_left*20);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[14]", front_left*20);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[15]", front_right*20);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[14]", -front_right*20);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[15]", front_left*20);
+
+    // 12 rear right
+    // 13 rear left
+    // 14 front right
+    // 15 front left
 
     // get wing sweep from SERVO9
     //float sweep = (input.servos[8]-1000)/1000.0;
     send_dref("sim/cockpit2/controls/wingsweep_ratio", 0);
-
-    d.code = FlightCon;
-    d.data[0] = elevator;
-    d.data[1] = aileron;
-    d.data[2] = rudder;
-    d.data[4] = rudder;
-    socket_out.send(&d, sizeof(d));
-
-    if (!heli_frame) {
-        d.code = ThrottleCommand;
-        d.data[0] = throttle;
-        d.data[1] = throttle;
-        d.data[2] = throttle;
-        d.data[3] = throttle;
-        d.data[4] = 0;
-        socket_out.send(&d, sizeof(d));
-    } else {
-        // send chan3 as collective pitch, on scale from -10 to +10
-        float collective = 10*(input.servos[2]-1500)/500.0;
-
-        // and send throttle from channel 8
-        throttle = (input.servos[7]-1000)/1000.0;
-
-        // allow for extra throttle outputs for special aircraft
-        float throttle2 = (input.servos[5]-1000)/1000.0;
-        float throttle3 = (input.servos[6]-1000)/1000.0;
-
-        d.code = PropPitch;
-        d.data[0] = collective;
-        d.data[1] = -rudder*15; // reverse sense of rudder, 15 degrees pitch range
-        d.data[2] = 0;
-        d.data[3] = 0;
-        d.data[4] = 0;
-        socket_out.send(&d, sizeof(d));
-
-        d.code = ThrottleCommand;
-        d.data[0] = throttle;
-        d.data[1] = throttle;
-        d.data[2] = throttle2;
-        d.data[3] = throttle3;
-        d.data[4] = 0;
-        socket_out.send(&d, sizeof(d));
-    }
-
-    throttle_sent = throttle;
 }
 
 
