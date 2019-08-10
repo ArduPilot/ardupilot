@@ -401,9 +401,11 @@ void AP_ToshibaCAN::update()
     // take semaphore and update outputs
     {
         WITH_SEMAPHORE(_rc_out_sem);
+        const bool armed = hal.util->get_soft_armed();
         for (uint8_t i = 0; i < MIN(TOSHIBACAN_MAX_NUM_ESCS, 16); i++) {
             SRV_Channel *c = SRV_Channels::srv_channel(i);
             if (c == nullptr) {
+            if (!armed || (c == nullptr)) {
                 _scaled_output[i] = 0;
             } else {
                 uint16_t pwm_out = c->get_output_pwm();
