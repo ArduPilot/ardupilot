@@ -44,18 +44,17 @@ public:
     static const int line_disp = 0;
 
     typedef uint32_t osd_frame_t[video_y][video_x/32];
-
+    osd_frame_t frame;
+    osd_frame_t frame_mask;
+    osd_frame_t frame_levl;
 private:
-
     void draw_char(int ch_x, int ch_y, char c);
     void draw_point(int x, int y);
     AP_OSD_INT(AP_OSD &osd);
     bool render_buffer();
     bool initialized;
-    osd_frame_t frame;
     static const uint32_t font_data[256 * 18];
 };
 
-void osd_setup();
-void osd_flush(AP_OSD_INT::osd_frame_t &b);
+void osd_setup(AP_OSD_INT *);
 

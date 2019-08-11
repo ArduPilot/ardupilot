@@ -28,7 +28,7 @@ AP_OSD_INT::AP_OSD_INT(AP_OSD &osd):
 
 bool AP_OSD_INT::init()
 {
-    osd_setup();
+    osd_setup(this);
     initialized = true;
     return true;
 }
@@ -46,10 +46,28 @@ AP_OSD_Backend *AP_OSD_INT::probe(AP_OSD &osd)
     return backend;
 }
 
-void AP_OSD_INT::flush()
-{
+void AP_OSD_INT::flush() {
     if (initialized) {
-        osd_flush(frame);
+        for (int iy = 0; iy < AP_OSD_INT::video_y; iy++) {
+            for (int ix = 0; ix < AP_OSD_INT::video_x / 32; ix++) {
+                frame_levl[iy][ix] = frame[iy][ix];
+                uint32_t mask = frame[iy][ix] | (frame[iy][ix] << 1)
+                        | (frame[iy][ix] >> 1);
+                if (iy - 1 >= 0) {
+                    mask |= frame[iy - 1][ix];
+                }
+                if (iy + 1 < AP_OSD_INT::video_y) {
+                    mask |= frame[iy + 1][ix];
+                }
+                if (ix - 1 >= 0) {
+                    mask |= ((frame[iy][ix - 1] & 1) << 31);
+                }
+                if (ix + 1 < AP_OSD_INT::video_x) {
+                    mask |= (frame[iy][ix + 1] >> 31);
+                }
+                frame_mask[iy][ix] = mask;
+            }
+        }
     }
 }
 

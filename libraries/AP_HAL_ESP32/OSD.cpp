@@ -3,7 +3,7 @@
 #ifdef WITH_INT_OSD
 
 #include "freertos/FreeRTOS.h"
-#include "rom/lldesc.h"
+
 #include "soc/mcpwm_struct.h"
 #include "soc/mcpwm_reg.h"
 #include "soc/i2s_struct.h"
@@ -20,17 +20,17 @@
 #define LINE_S 22
 #define LINE_F 310
 
-AP_OSD_INT::osd_frame_t osd_buffer_mask;
-AP_OSD_INT::osd_frame_t osd_buffer_levl;
-
+uint32_t *osd_buffer_mask;
+uint32_t *osd_buffer_levl;
 uint32_t line;
 
+//We use assembly cause high priority interrupt can not be written in C.
+//C reference version is below.
 __asm__(R"(
-        .data
+    .data
 _l5_intr_stack:
     .space      36
-
-    .section        .iram1,"ax",@progbits                                                                                                                                                                                                             
+    .section        .iram1,"ax",@progbits
     .literal_position
     .literal .LC100, 1073078548
     .literal .LC102, 1073078524
@@ -42,22 +42,21 @@ _l5_intr_stack:
     .literal .LC108, 1073016832
     .literal .LC109, 1073139712
     .literal .LC110, 1073078556
+    .align  4
+    .global xt_highint5
+    .type   xt_highint5, @function
+xt_highint5:
+    movi    a0, _l5_intr_stack
+    s32i    a8, a0, 0
+    s32i    a9, a0, 4
+    s32i    a10, a0, 8
+    s32i    a11, a0, 12
+    s32i    a12, a0, 16
+    s32i    a13, a0, 20
+    s32i    a14, a0, 24
+    s32i    a15, a0, 28
+    s32i    a2, a0, 32
 
-        .align  4                                                                                                                                                                                                                                            
-        .global xt_highint5                                                                                                                                                                                                                          
-        .type   xt_highint5, @function                                                                                                                                                                                                               
-xt_highint5:                                                                                                                                                                                                                                         
-        movi    a0, _l5_intr_stack
-        s32i    a8, a0, 0
-        s32i    a9, a0, 4
-        s32i    a10, a0, 8
-        s32i    a11, a0, 12
-        s32i    a12, a0, 16
-        s32i    a13, a0, 20
-        s32i    a14, a0, 24
-        s32i    a15, a0, 28
-        s32i    a2, a0, 32
-                                                                                                                                                                                                                                               
     l32r    a8, .LC100
     l32i.n  a8, a8, 0
     bbci    a8, 27, .L103
@@ -67,84 +66,88 @@ xt_highint5:
     movi    a8, -0x12d
     add.n   a8, a9, a8
     bltu    a10, a8, .L104
-    l32r    a9, .LC103
-    l32i.n  a8, a9, 0
-    addi.n  a10, a8, 1
-    s32i.n  a10, a9, 0
+    l32r    a10, .LC103
+    l32i.n  a8, a10, 0
+    addi.n  a9, a8, 1
+    s32i.n  a9, a10, 0
     addi    a8, a8, -21
-    movi    a9, 0x11f
-    bltu    a9, a8, .L103
+    movi    a10, 0x11f
+    bltu    a10, a8, .L103
+    l32r    a8, .LC104
     l32r    a14, .LC106
+    l32i.n  a10, a8, 0
+    l32r    a8, .LC105
     movi.n  a12, 0
     l32r    a13, .LC107
+    l32i.n  a8, a8, 0
     s32i.n  a12, a14, 0
     s32i.n  a12, a13, 0
-    movi.n  a9, 1
-    s32i.n  a9, a14, 0
-    s32i.n  a9, a13, 0
-    addx2   a8, a8, a8
-    l32r    a9, .LC104
+    movi.n  a11, 1
+    s32i.n  a11, a14, 0
+    s32i.n  a11, a13, 0
+    addx2   a9, a9, a9
+    movi    a11, -0x108
+    addx4   a9, a9, a11
     s32i.n  a12, a14, 0
-    slli    a8, a8, 4
+    slli    a9, a9, 2
     s32i.n  a12, a13, 0
-    add.n   a9, a8, a9
+    add.n   a10, a10, a9
     l32r    a11, .LC108
-    l32i.n  a10, a9, 0
-    movi.n  a15, 0x10
-    s32i.n  a10, a11, 0
-    l32r    a10, .LC105
-    add.n   a8, a10, a8
+    l32i.n  a15, a10, 0
+    add.n   a8, a8, a9
+    s32i.n  a15, a11, 0
+    l32r    a9, .LC109
     l32i.n  a2, a8, 0
-    l32r    a10, .LC109
-    s32i.n  a2, a10, 0
+    movi.n  a15, 0x10
+    s32i.n  a2, a9, 0
     s32i.n  a15, a14, 0
     s32i.n  a15, a13, 0
-    l32i.n  a13, a9, 4
+    l32i.n  a13, a10, 4
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 4
-    s32i.n  a13, a10, 0
-    l32i.n  a13, a9, 8
+    s32i.n  a13, a9, 0
+    l32i.n  a13, a10, 8
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 8
-    s32i.n  a13, a10, 0
-    l32i.n  a13, a9, 12
+    s32i.n  a13, a9, 0
+    l32i.n  a13, a10, 12
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 12
-    s32i.n  a13, a10, 0
-    l32i.n  a13, a9, 16
+    s32i.n  a13, a9, 0
+    l32i.n  a13, a10, 16
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 16
-    s32i.n  a13, a10, 0
-    l32i.n  a13, a9, 20
+    s32i.n  a13, a9, 0
+    l32i.n  a13, a10, 20
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 20
-    s32i.n  a13, a10, 0
-    l32i.n  a13, a9, 24
+    s32i.n  a13, a9, 0
+    l32i.n  a13, a10, 24
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 24
-    s32i.n  a13, a10, 0
-    l32i.n  a13, a9, 28
+    s32i.n  a13, a9, 0
+    l32i.n  a13, a10, 28
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 28
-    s32i.n  a13, a10, 0
-    l32i.n  a13, a9, 32
+    s32i.n  a13, a9, 0
+    l32i.n  a13, a10, 32
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 32
-    s32i.n  a13, a10, 0
-    l32i.n  a13, a9, 36
+    s32i.n  a13, a9, 0
+    l32i.n  a13, a10, 36
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 36
-    s32i.n  a13, a10, 0
-    l32i.n  a13, a9, 40
+    s32i.n  a13, a9, 0
+    l32i.n  a13, a10, 40
     s32i.n  a13, a11, 0
     l32i.n  a13, a8, 40
-    s32i.n  a13, a10, 0
-    l32i.n  a9, a9, 44
-    s32i.n  a9, a11, 0
+    s32i.n  a13, a9, 0
+    l32i.n  a10, a10, 44
+    s32i.n  a10, a11, 0
     l32i.n  a8, a8, 44
-    s32i.n  a8, a10, 0
+    s32i.n  a8, a9, 0
     s32i.n  a12, a11, 0
-    s32i.n  a12, a10, 0
+    s32i.n  a12, a9, 0
     j   .L103
 .L104:
     movi    a8, -0x7d1
@@ -159,75 +162,75 @@ xt_highint5:
     movi.n  a9, -1
     s32i.n  a9, a8, 0
 
-
-        movi    a0, _l5_intr_stack
-        l32i    a8, a0, 0
-        l32i    a9, a0, 4
-        l32i    a10, a0, 8
-        l32i    a11, a0, 12
-        l32i    a12, a0, 16
-        l32i    a13, a0, 20
-        l32i    a14, a0, 24
-        l32i    a15, a0, 28
-        l32i    a2, a0, 32
-        rsync
-        memw
-
-        rsr     a0, 213
-        rfi     5
-
+    movi    a0, _l5_intr_stack
+    l32i    a8, a0, 0
+    l32i    a9, a0, 4
+    l32i    a10, a0, 8
+    l32i    a11, a0, 12
+    l32i    a12, a0, 16
+    l32i    a13, a0, 20
+    l32i    a14, a0, 24
+    l32i    a15, a0, 28
+    l32i    a2, a0, 32
+    rsync
+    memw
+    rsr     a0, 213
+    rfi     5
 )");
 
-//inline bool normal_sync(uint32_t sync)
-//{
-//    return (sync > 300) && (sync < 400);
-//}
-//
-//inline bool long_sync(uint32_t sync)
-//{
-//    return (sync > 2000) && (sync < 2500);
-//}
-//
-//void IRAM_ATTR __attribute__((optimize("O3")))osd_mcpwm_isr(void *)
-//{     
-//    if((READ_PERI_REG(MCMCPWM_INT_RAW_MCPWM_REG(0)) & MCPWM_CAP0_INT_RAW_M) != 0) {
-//    uint32_t sync = READ_PERI_REG(MCPWM_CAP_CH0_REG(0));    
-//    if (normal_sync(sync)) {
-//        line++;
-//        if (line >= LINE_S && line < LINE_F) {
-//            uint32_t *tmp_mask = &(osd_buffer_mask[line-LINE_S][0]);
-//            uint32_t *tmp_levl = &(osd_buffer_levl[line-LINE_S][0]);
-//
-//            WRITE_PERI_REG(I2S_CONF_REG(0), 0);
-//            WRITE_PERI_REG(I2S_CONF_REG(1), 0);
-//                                  
-//            WRITE_PERI_REG(I2S_CONF_REG(0), I2S_TX_RESET_M);
-//            WRITE_PERI_REG(I2S_CONF_REG(1), I2S_TX_RESET_M);           
-//
-//            WRITE_PERI_REG(I2S_CONF_REG(0), 0);
-//            WRITE_PERI_REG(I2S_CONF_REG(1), 0);                        
-//                        
-//            WRITE_PERI_REG(REG_I2S_BASE(0), tmp_mask[0]);
-//            WRITE_PERI_REG(REG_I2S_BASE(1), tmp_levl[0]);
-//            
-//            WRITE_PERI_REG(I2S_CONF_REG(0), I2S_TX_START_M);
-//            WRITE_PERI_REG(I2S_CONF_REG(1), I2S_TX_START_M);
-//                        
-//            for(int ix = 1; ix < AP_OSD_INT::video_x/32; ix++) {
-//                WRITE_PERI_REG(REG_I2S_BASE(0), tmp_mask[ix]);
-//                WRITE_PERI_REG(REG_I2S_BASE(1), tmp_levl[ix]);
-//            }
-//            
-//            WRITE_PERI_REG(REG_I2S_BASE(0), 0);
-//            WRITE_PERI_REG(REG_I2S_BASE(1), 0);
-//            
-//        }
-//    } else if (long_sync(sync)) {
-//        line = 0;
-//    }
-//    }    
-//    WRITE_PERI_REG(MCMCPWM_INT_CLR_MCPWM_REG(0),  0xFFFFFFFF);    
-//}
+inline bool normal_sync(uint32_t sync) {
+    return (sync > 300) && (sync < 400);
+}
+
+inline bool long_sync(uint32_t sync) {
+    return (sync > 2000) && (sync < 2500);
+}
+
+//This function is not linked in the final binary,
+//it exist only to generate xt_highint5 above.
+//In xt_hightint we have fixed prolog and epilog and we removed
+//some 'memw' instructions, otherwise they are the same.
+void IRAM_ATTR __attribute__((optimize("O3"))) osd_mcpwm_isr(void *) {
+    if ((READ_PERI_REG(MCMCPWM_INT_RAW_MCPWM_REG(0)) & MCPWM_CAP0_INT_RAW_M)
+            != 0) {
+        uint32_t sync = READ_PERI_REG(MCPWM_CAP_CH0_REG(0));
+        if (normal_sync(sync)) {
+            line++;
+            if (line >= LINE_S && line < LINE_F) {
+                int disp = (line - LINE_S) * (AP_OSD_INT::video_x / 32);
+                uint32_t *tmp_mask = osd_buffer_mask + disp;
+                uint32_t *tmp_levl = osd_buffer_levl + disp;
+
+                WRITE_PERI_REG(I2S_CONF_REG(0), 0);
+                WRITE_PERI_REG(I2S_CONF_REG(1), 0);
+
+                WRITE_PERI_REG(I2S_CONF_REG(0), I2S_TX_RESET_M);
+                WRITE_PERI_REG(I2S_CONF_REG(1), I2S_TX_RESET_M);
+
+                WRITE_PERI_REG(I2S_CONF_REG(0), 0);
+                WRITE_PERI_REG(I2S_CONF_REG(1), 0);
+
+                WRITE_PERI_REG(REG_I2S_BASE(0), tmp_mask[0]);
+                WRITE_PERI_REG(REG_I2S_BASE(1), tmp_levl[0]);
+
+                WRITE_PERI_REG(I2S_CONF_REG(0), I2S_TX_START_M);
+                WRITE_PERI_REG(I2S_CONF_REG(1), I2S_TX_START_M);
+
+                for (int ix = 1; ix < AP_OSD_INT::video_x / 32; ix++) {
+                    WRITE_PERI_REG(REG_I2S_BASE(0), tmp_mask[ix]);
+                    WRITE_PERI_REG(REG_I2S_BASE(1), tmp_levl[ix]);
+                }
+
+                WRITE_PERI_REG(REG_I2S_BASE(0), 0);
+                WRITE_PERI_REG(REG_I2S_BASE(1), 0);
+
+            }
+        } else if (long_sync(sync)) {
+            line = 0;
+        }
+    }
+    WRITE_PERI_REG(MCMCPWM_INT_CLR_MCPWM_REG(0), 0xFFFFFFFF);
+}
 
 void config_mcpwm()
 {
@@ -290,9 +293,11 @@ void config_isr()
     printf("alloc intr error code %d\n", err);
 }
 
-void osd_setup()
+void osd_setup(AP_OSD_INT *d)
 {
     printf("osd setup start %d\n", xPortGetCoreID());
+    osd_buffer_mask = &(d->frame_mask[0][0]);
+    osd_buffer_levl = &(d->frame_levl[0][0]);
     config_mcpwm();
     config_i2s(&I2S0);
     config_i2s(&I2S1);
@@ -301,29 +306,4 @@ void osd_setup()
     printf("osd setup finish\n");
 }
 
-void osd_flush(AP_OSD_INT::osd_frame_t &b)
-{    
-    for(int iy = 0; iy < AP_OSD_INT::video_y; iy++) {
-        for(int ix = 0; ix < AP_OSD_INT::video_x/32; ix++) {
-                osd_buffer_levl[iy][ix] = b[iy][ix];
-                uint32_t mask = b[iy][ix] | (b[iy][ix] << 1) | (b[iy][ix] >> 1);
-                if (iy - 1 >= 0) {
-                    mask |= b[iy - 1][ix];
-                }
-                if (iy + 1 < AP_OSD_INT::video_y) {
-                    mask |= b[iy + 1][ix];
-                }
-                if (ix - 1 >= 0) {
-                    mask |= ((b[iy][ix - 1] & 1) << 31);
-                }
-                if (ix + 1 < AP_OSD_INT::video_x) {
-                    mask |= (b[iy][ix + 1] >> 31);
-                }
-                osd_buffer_mask[iy][ix] = mask;
-        }
-    }    
-}
-
 #endif
-
-
