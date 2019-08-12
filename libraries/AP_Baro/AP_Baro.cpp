@@ -182,7 +182,7 @@ AP_Baro *AP_Baro::_singleton;
 AP_Baro::AP_Baro()
 {
     _singleton = this;
-	_atm = UR_Atmosphere::get_instance();
+	_atm = UR_Atmosphere::get_singleton();
     AP_Param::setup_object_defaults(this, var_info);
 }
 
