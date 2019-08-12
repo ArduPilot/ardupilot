@@ -78,8 +78,7 @@ void UR_Atmosphere::update(uint8_t sensor)
 // Get the calculation altitude difference based on th Layer 0 > Troposphere.
 float UR_Atmosphere::calculate_altitude_difference(float base_pressure, float pressure, float temp, altitude_unit_t alt_diff_unit) const
 {
-    float result;
-    float tempcorrected  = Temp0 + temp - 15;
+    const float tempcorrected  = Temp0 + temp - 15;
     float unit_result = 1;
 
     switch (alt_diff_unit) {
@@ -89,10 +88,10 @@ float UR_Atmosphere::calculate_altitude_difference(float base_pressure, float pr
         unit_result = CftTOm;
         break;
     default:
-        ;
+        break;
     }
 
-    result = unit_result * (tempcorrected * (powf((base_pressure / pressure), (dTdh0SI / CgRGasSI)) - 1.0f) / dTdh0);
+    const float result = unit_result * (tempcorrected * (powf((base_pressure / pressure), (dTdh0SI / CgRGasSI)) - 1.0f) / dTdh0);
 
     return result;
 }
@@ -101,9 +100,8 @@ float UR_Atmosphere::calculate_altitude_difference(float base_pressure, float pr
 // [1] Meteorology Specification A2669 Version 4.00 Page 100
 float UR_Atmosphere::calculate_qnh(float alt_qnh, float pressure_qnh, float temp, altitude_unit_t alt_qnh_unit)
 {
-    uint8_t pQNHUnit = 0;
-    uint8_t resultQNHUnit = 0;
-    float resultQNH = 0;
+    uint8_t pQNHUnit = PRESSURE_UNIT::HECTO_PASCAL;
+    uint8_t resultQNHUnit = PRESSURE_UNIT::HECTO_PASCAL;
     float hQFE = 0;
     float pQFE = 0;
 
@@ -115,21 +113,21 @@ float UR_Atmosphere::calculate_qnh(float alt_qnh, float pressure_qnh, float temp
         hQFE = alt_qnh;
         break;
     default:
-        ;
+        break;
     }
 
     switch (pQNHUnit) {
-    case 0:                                 // [hPa]    hectoPascal
+    case HECTO_PASCAL:                      // [hPa]    hectoPascal
         pQFE = pressure_qnh;
         break;
-    case 1:                                 // [inHg]   inches mercury
+    case INCH_MERCURY:                      // [inHg]   inches mercury
         pQFE = pressure_qnh / ChPaTOinHG;
         break;
-    case 2:                                 // [mmHg]   millimiters mercury
+    case MILLIMETER_MERCURY:                // [mmHg]   millimiters mercury
         pQFE = pressure_qnh / ChPaTOmmHG;
         break;
     default:
-        ;
+        break;
     }
 
     // Calculation(s)
@@ -137,19 +135,19 @@ float UR_Atmosphere::calculate_qnh(float alt_qnh, float pressure_qnh, float temp
 
     // Unit Conversion(s)
     switch (resultQNHUnit) {
-    case 0:                                         // [hPa]    hectoPascal
+    case HECTO_PASCAL:                              // [hPa]    hectoPascal
         break;
-    case 1:                                         // [inHg]   inches mercury
+    case INCH_MERCURY:                              // [inHg]   inches mercury
         pressure_qnh = pressure_qnh * ChPaTOinHG;
         break;
-    case 2:                                         // [mmHg]   millimiters mercury
+    case MILLIMETER_MERCURY:                        // [mmHg]   millimiters mercury
         pressure_qnh = pressure_qnh * ChPaTOmmHG;
         break;
     default:
-        ;
+        break;
     }
 
-    resultQNH = pressure_qnh;
+    const float resultQNH = pressure_qnh;
     return resultQNH;
 }
 
@@ -157,8 +155,8 @@ float UR_Atmosphere::calculate_qnh(float alt_qnh, float pressure_qnh, float temp
 // [1] Meteorology Specification A2669 Version 4.00 Page 100
 float UR_Atmosphere::calculate_qfe(float alt_qfe, float pressure_qfe, float temp, altitude_unit_t alt_qfe_unit)
 {
-    uint8_t pQFEUnit = 0;
-    uint8_t resultQFEUnit = 0;
+    uint8_t pQFEUnit = PRESSURE_UNIT::HECTO_PASCAL;
+    uint8_t resultQFEUnit = PRESSURE_UNIT::HECTO_PASCAL;
     float resultQFE = 0;
     float hQNH = 0;
     float pQNH = 0;
@@ -171,21 +169,21 @@ float UR_Atmosphere::calculate_qfe(float alt_qfe, float pressure_qfe, float temp
         hQNH = alt_qfe;
         break;
     default:
-        ;
+        break;
     }
 
     switch (pQFEUnit) {
-    case 0:                                 // [hPa]    hectoPascal
+    case HECTO_PASCAL:                      // [hPa]    hectoPascal
         pQNH = pressure_qfe;
         break;
-    case 1:                                 // [inHg]   inches mercury
+    case INCH_MERCURY:                      // [inHg]   inches mercury
         pQNH = pressure_qfe / ChPaTOinHG;
         break;
-    case 2:                                 // [mmHg]   millimiters mercury
+    case MILLIMETER_MERCURY:                // [mmHg]   millimiters mercury
         pQNH = pressure_qfe / ChPaTOmmHG;
         break;
     default:
-        ;
+        break;
     }
 
     // Calculations
@@ -193,16 +191,16 @@ float UR_Atmosphere::calculate_qfe(float alt_qfe, float pressure_qfe, float temp
 
     // Unit Conversions
     switch (resultQFEUnit) {
-    case 0:                                 // [hPa]    hectoPascal
+    case HECTO_PASCAL:                      // [hPa]    hectoPascal
         break;
-    case 1:                                 // [inHg]   inches mercury
+    case INCH_MERCURY:                      // [inHg]   inches mercury
         alt_qfe = alt_qfe * ChPaTOinHG;
         break;
-    case 2:                                 // [mmHg]   millimiters mercury
+    case MILLIMETER_MERCURY:                // [mmHg]   millimiters mercury
         alt_qfe = alt_qfe * ChPaTOmmHG;
         break;
     default:
-        ;
+        break;
     }
 
     resultQFE = alt_qfe;
