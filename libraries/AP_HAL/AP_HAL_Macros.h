@@ -13,6 +13,14 @@
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 #endif
 
+#ifdef __GNUC__
+
+ #define GCC_VERSION (__GNUC__ * 10000 \
+                     + __GNUC_MINOR__ * 100 \
+                     + __GNUC_PATCHLEVEL__)
+
+#endif
+
 #if !defined(ALLOW_DOUBLE_MATH_FUNCTIONS)
 /* give warnings if we use double precision maths functions without
    specifying ALLOW_DOUBLE_TRIG_FUNCTIONS. Code should use the
