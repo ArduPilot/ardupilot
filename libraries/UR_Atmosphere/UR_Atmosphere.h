@@ -48,7 +48,7 @@ public:
     float get_altitude_amsl();
     float get_qnh();
 
-    static UR_Atmosphere *get_instance() {
+    static UR_Atmosphere *get_singleton() {
         return _instance;
     }
 
