@@ -98,7 +98,7 @@ float UR_Atmosphere::calculate_altitude_difference(float base_pressure, float pr
 
 // Calculate QNH by hPa and feet by default.
 // [1] Meteorology Specification A2669 Version 4.00 Page 100
-float UR_Atmosphere::calculate_qnh(float alt_qnh, float pressure_qnh, float temp, altitude_unit_t alt_qnh_unit)
+float UR_Atmosphere::calculate_qnh(float alt_qnh, float pressure_qnh, float temp, altitude_unit_t alt_qnh_unit) const
 {
     uint8_t pQNHUnit = PRESSURE_UNIT::HECTO_PASCAL;
     uint8_t resultQNHUnit = PRESSURE_UNIT::HECTO_PASCAL;
@@ -153,11 +153,10 @@ float UR_Atmosphere::calculate_qnh(float alt_qnh, float pressure_qnh, float temp
 
 // Calculate QFE by hPa and feet by default.
 // [1] Meteorology Specification A2669 Version 4.00 Page 100
-float UR_Atmosphere::calculate_qfe(float alt_qfe, float pressure_qfe, float temp, altitude_unit_t alt_qfe_unit)
+float UR_Atmosphere::calculate_qfe(float alt_qfe, float pressure_qfe, float temp, altitude_unit_t alt_qfe_unit) const
 {
     uint8_t pQFEUnit = PRESSURE_UNIT::HECTO_PASCAL;
     uint8_t resultQFEUnit = PRESSURE_UNIT::HECTO_PASCAL;
-    float resultQFE = 0;
     float hQNH = 0;
     float pQNH = 0;
 
@@ -203,7 +202,7 @@ float UR_Atmosphere::calculate_qfe(float alt_qfe, float pressure_qfe, float temp
         break;
     }
 
-    resultQFE = alt_qfe;
+    const float resultQFE = alt_qfe;
     return resultQFE;
 }
 
@@ -212,12 +211,12 @@ void UR_Atmosphere::consume_updated(void)
     atm_status.updated = false;
 }
 
-float UR_Atmosphere::get_altitude_amsl()
+float UR_Atmosphere::get_altitude_amsl() const
 {
     return atm_status.altitude_amsl;
 }
 
-float UR_Atmosphere::get_qnh()
+float UR_Atmosphere::get_qnh() const
 {
     return atm_status.qnh_pressure;
 }

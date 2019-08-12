@@ -36,8 +36,8 @@ public:
     void update(uint8_t sensor);
 
     float calculate_altitude_difference(float base_pressure, float pressure, float temp, altitude_unit_t alt_diff_unit = METER) const;
-    float calculate_qnh(float alt_qnh, float pressure_qnh, float temp, altitude_unit_t alt_qnh_unit);
-    float calculate_qfe(float alt_qfe, float pressure_qfe, float temp, altitude_unit_t alt_qfe_unit);
+    float calculate_qnh(float alt_qnh, float pressure_qnh, float temp, altitude_unit_t alt_qnh_unit) const;
+    float calculate_qfe(float alt_qfe, float pressure_qfe, float temp, altitude_unit_t alt_qfe_unit) const;
 
     static bool initialized(void) {
         return _initialized;
@@ -45,8 +45,8 @@ public:
 
     void consume_updated(void);
 
-    float get_altitude_amsl();
-    float get_qnh();
+    float get_altitude_amsl() const;
+    float get_qnh() const;
 
     static UR_Atmosphere *get_singleton() {
         return _instance;
