@@ -19,7 +19,9 @@
  */
 #pragma once
 
+#if (GCC_VERSION >= 40900)
 #pragma GCC optimize("O3")
+#endif
 
 #define EK3_DISABLE_INTERRUPTS 0
 
@@ -71,7 +73,7 @@ public:
 
     // setup this core backend
     bool setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _core_index);
-    
+
     // Initialise the states from accelerometer and magnetometer data (if present)
     // This method can only be used when the vehicle is static
     bool InitialiseFilterBootstrap(void);
@@ -365,7 +367,7 @@ public:
 
     // get timing statistics structure
     void getTimingStatistics(struct ekf_timing &timing);
-    
+
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;
@@ -829,7 +831,7 @@ private:
 
     // calculate the variances for the rotation vector equivalent
     Vector3f calcRotVecVariances(void);
-    
+
     // initialise the quaternion covariances using rotation vector variances
     void initialiseQuatCovariances(const Vector3f &rotVarVec);
 
@@ -838,7 +840,7 @@ private:
 
     // Update the state index limit based on which states are active
     void updateStateIndexLim(void);
-    
+
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check
@@ -1288,7 +1290,7 @@ private:
 
     // timing statistics
     struct ekf_timing timing;
-    
+
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 
