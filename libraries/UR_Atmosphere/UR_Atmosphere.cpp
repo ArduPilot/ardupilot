@@ -69,7 +69,7 @@ void UR_Atmosphere::update(uint8_t sensor)
 {
     if (!atm_status.updated) {
         atm_status.updated = true;
-        atm_status.altitude_amsl = calculate_altitude_difference(p0, _barometer->sensors[sensor].pressure, _barometer->sensors[sensor].temperature);
+        atm_status.altitude_amsl = calculate_altitude_difference(press0, _barometer->sensors[sensor].pressure, _barometer->sensors[sensor].temperature);
         atm_status.qnh_pressure = calculate_qnh(atm_status.altitude_amsl, (_barometer->sensors[sensor].pressure / 100), _barometer->sensors[sensor].temperature, ALTITUDE_UNIT::METER);
         atm_status.qfe_pressure = calculate_qfe(atm_status.altitude_amsl, atm_status.qnh_pressure, _barometer->sensors[sensor].temperature, ALTITUDE_UNIT::METER) * 100;
     }

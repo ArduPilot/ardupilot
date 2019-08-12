@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
 #include <cmath>
 
 #define INHG_TO_PA      3386.383613f
@@ -29,22 +27,22 @@ namespace ISA_MATH_CONST {
 
 using namespace std;
 
-    const float p0      = 101325.0f;                    // [N/m^2] = [Pa]
-    const float p1      = 22632.05545875171f;           // [N/m^2] = [Pa] Calculated @ 11000.0000000000001 [ft]
-    const float p2      = 5474.884659730908f;           // [N/m^2] = [Pa] Calculated @ 20000.000000000001  [ft]
-    const float p3      = 868.0176477556424f;           // [N/m^2] = [Pa] Calculated @ 32000.000000000001  [ft]
+    const float press0      = 101325.0f;               // [N/m^2] = [Pa]
+    const float press1      = 22632.05545875171f;      // [N/m^2] = [Pa] Calculated @ 11000.0000000000001 [ft]
+    const float press2      = 5474.884659730908f;      // [N/m^2] = [Pa] Calculated @ 20000.000000000001  [ft]
+    const float press3      = 868.0176477556424f;      // [N/m^2] = [Pa] Calculated @ 32000.000000000001  [ft]
 
     const float p0hPa   = 1013.25f;                     // [hPa]
     const float p0inHG  = 29.9213f;                     // [inHG] Truncated 29.9213
     const float p0mmHG  = p0inHG * 25.4f;               // [mmHG] w/ 25.4 [mm] = 1.0 [in]
 
-    const float Temp0      = 288.15f;                      // [K]
-    const float Temp1      = 216.65f;                      // [K]
-    const float Temp2      = 216.65f;                      // [K]
+    const float Temp0      = 288.15f;                   // [K]
+    const float Temp1      = 216.65f;                   // [K]
+    const float Temp2      = 216.65f;                   // [K]
 
-    const float h1      = 36089.238845144355f;          // [ft] = 11000 [m] w/ CftTOm
-    const float h2      = 65616.79790026246f;           // [ft] = 20000 [m] w/ CftTOm
-    const float h3      = 104986.87664041994f;          // [ft] = 32000 [m] w/ CftTOm
+    const float hgt1      = 36089.238845144355f;        // [ft] = 11000 [m] w/ CftTOm
+    const float hgt2      = 65616.79790026246f;         // [ft] = 20000 [m] w/ CftTOm
+    const float hgt3      = 104986.87664041994f;        // [ft] = 32000 [m] w/ CftTOm
 
     const float dTdh0   = -0.0019812f;                  // [K/ft] w/ CftTOm
     const float dTdh0SI = -0.0065f;                     // [K/m]
@@ -55,7 +53,7 @@ using namespace std;
     const float CPascalTOPSI   = 1.45037737730209e-04f;
     const float ChPaTOinHG     = p0inHG / p0hPa;
     const float ChPaTOmmHG     = p0mmHG / p0hPa;
-    const float CPaTOinHG     = p0inHG / p0;
+    const float CPaTOinHG     = p0inHG / press0;
 
     const float ClbPft3TOkgPm3 = 16.0184633739601f;     // [lb/ft^3] to [kg/m^3]
 
