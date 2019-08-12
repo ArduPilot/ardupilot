@@ -79,7 +79,7 @@ void UR_Atmosphere::update(uint8_t sensor)
 float UR_Atmosphere::calculate_altitude_difference(float base_pressure, float pressure, float temp, altitude_unit_t alt_diff_unit) const
 {
     float result;
-    float tempcorrected  = T0 + temp - 15;
+    float tempcorrected  = Temp0 + temp - 15;
     float unit_result = 1;
 
     switch (alt_diff_unit) {
@@ -133,7 +133,7 @@ float UR_Atmosphere::calculate_qnh(float alt_qnh, float pressure_qnh, float temp
     }
 
     // Calculation(s)
-    pressure_qnh = p0hPa * powf(powf((pQFE / p0hPa), (-1 * (CRGasSI * dTdh0SI)) / CgSI) - (hQFE * dTdh0SI) / (T0 + temp - 15), (-1 * CgSI) / (CRGasSI * dTdh0SI));
+    pressure_qnh = p0hPa * powf(powf((pQFE / p0hPa), (-1 * (CRGasSI * dTdh0SI)) / CgSI) - (hQFE * dTdh0SI) / (Temp0 + temp - 15), (-1 * CgSI) / (CRGasSI * dTdh0SI));
 
     // Unit Conversion(s)
     switch (resultQNHUnit) {
@@ -189,7 +189,7 @@ float UR_Atmosphere::calculate_qfe(float alt_qfe, float pressure_qfe, float temp
     }
 
     // Calculations
-    alt_qfe = p0hPa * powf(powf((pQNH / p0hPa), (-1 * (CRGasSI * dTdh0SI)) / CgSI) + ((hQNH * dTdh0SI) / (T0 + temp - 15)), (-1 * CgSI) / (CRGasSI * dTdh0SI));
+    alt_qfe = p0hPa * powf(powf((pQNH / p0hPa), (-1 * (CRGasSI * dTdh0SI)) / CgSI) + ((hQNH * dTdh0SI) / (Temp0 + temp - 15)), (-1 * CgSI) / (CRGasSI * dTdh0SI));
 
     // Unit Conversions
     switch (resultQFEUnit) {

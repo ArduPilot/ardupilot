@@ -38,9 +38,9 @@ using namespace std;
     const float p0inHG  = 29.9213f;                     // [inHG] Truncated 29.9213
     const float p0mmHG  = p0inHG * 25.4f;               // [mmHG] w/ 25.4 [mm] = 1.0 [in]
 
-    const float T0      = 288.15f;                      // [K]
-    const float T1      = 216.65f;                      // [K]
-    const float T2      = 216.65f;                      // [K]
+    const float Temp0      = 288.15f;                      // [K]
+    const float Temp1      = 216.65f;                      // [K]
+    const float Temp2      = 216.65f;                      // [K]
 
     const float h1      = 36089.238845144355f;          // [ft] = 11000 [m] w/ CftTOm
     const float h2      = 65616.79790026246f;           // [ft] = 20000 [m] w/ CftTOm
@@ -82,7 +82,7 @@ using namespace std;
     const float CGamma     = 1.4f;    // [-]
     const float CGammaRGas = (CGamma * CRGasSI) / (CftTOm * CftTOm);    // [ft^2/(s^2*K)]
 
-    const float CaSLSI         = sqrtf(CGamma * CRGasSI * T0);
+    const float CaSLSI         = sqrtf(CGamma * CRGasSI * Temp0);
     const float CPressureSLSI  = 101325.0f;                             // [Pa] = [N/m^2]
     const float CaSLNU         = CaSLSI * CmPsTOkn;                     // [kts] Nautical Unit
     const float CRhoSLSI       = 1.225f;                                // [kg/m^3]
