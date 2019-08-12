@@ -2610,6 +2610,7 @@ class AutoTest(ABC):
                              want_result=mavutil.mavlink.MAV_RESULT_FAILED
                              )
                 self.set_parameter("SIM_GPS_DISABLE", 0)
+                self.wait_ekf_happy() # EKF may stay unhappy for a while
                 self.progress("PASS not able to arm without Position in mode : %s" % mode)
             if mode in self.get_no_position_not_settable_modes_list():
                 self.progress("Setting mode need Position : %s" % mode)
