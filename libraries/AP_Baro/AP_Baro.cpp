@@ -777,7 +777,7 @@ void AP_Baro::update(void)
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
 
-            int alt_mode = _altcalc_mode;
+            int8_t alt_mode = _altcalc_mode;
             float altitude_am = 0;
             float corrected_pressure = sensors[i].pressure + sensors[i].p_correction;
             switch (alt_mode) {
@@ -788,7 +788,7 @@ void AP_Baro::update(void)
                 altitude_am = _atm->get_altitude_amsl();
                 break;
             default:
-                ;
+                break;
             }
 
             float altitude = sensors[i].altitude;
