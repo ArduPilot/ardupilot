@@ -647,14 +647,18 @@ size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key
  */
 bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
 {
-    chEvtGetAndClearEvents(EVT_DATA);
-    if (available() >= n) {
-        return true;
+    uint32_t t0 = AP_HAL::millis();
+    while (available() < n) {
+        chEvtGetAndClearEvents(EVT_DATA);
+        _wait.n = n;
+        _wait.thread_ctx = chThdGetSelfX();
+        uint32_t now = AP_HAL::millis();
+        if (now - t0 >= timeout_ms) {
+            break;
+        }
+        chEvtWaitAnyTimeout(EVT_DATA, chTimeMS2I(timeout_ms - (now - t0)));
     }
-    _wait.n = n;
-    _wait.thread_ctx = chThdGetSelfX();
-    eventmask_t mask = chEvtWaitAnyTimeout(EVT_DATA, chTimeMS2I(timeout_ms));
-    return (mask & EVT_DATA) != 0;
+    return available() >= n;
 }
 
 /*
