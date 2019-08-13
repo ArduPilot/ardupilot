@@ -71,5 +71,6 @@ enum ap_message : uint8_t {
     MSG_HOME,
     MSG_NAMED_FLOAT,
     MSG_EXTENDED_SYS_STATE,
+    MSG_AUTOPILOT_VERSION,
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
