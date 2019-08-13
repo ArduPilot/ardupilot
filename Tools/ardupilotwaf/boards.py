@@ -226,7 +226,7 @@ class Board:
                 '-Werror=unused-but-set-variable'
             ]
             (major, minor, patchlevel) = cfg.env.CC_VERSION
-            if int(major) >= 5 and int(minor) > 1:
+            if int(major) >= 5 and int(minor) > 1 and not self.with_uavcan:
                 env.CXXFLAGS += [
                     '-Werror=suggest-override',
                 ]

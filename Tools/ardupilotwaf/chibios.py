@@ -190,6 +190,12 @@ def setup_can_build(cfg):
         '-DUAVCAN_STM32_NUM_IFACES=2'
         ]
 
+    (major, minor, patchlevel) = cfg.env.CC_VERSION
+    if int(major) >= 5 and int(minor) > 1:
+        env.CXXFLAGS += [
+            '-Wno-error=suggest-override',
+        ]
+
     env.DEFINES += [
         'UAVCAN_CPP_VERSION=UAVCAN_CPP03',
         'UAVCAN_NO_ASSERTIONS=1',
