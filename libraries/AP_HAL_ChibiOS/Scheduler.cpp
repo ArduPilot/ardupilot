@@ -261,7 +261,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     sdcard_stop();
 #endif
 
-#if defined(HAL_USE_RTC) && HAL_USE_RTC
+#if !defined(NO_FASTBOOT)
     // setup RTC for fast reboot
     set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
 #endif
