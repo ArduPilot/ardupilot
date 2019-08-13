@@ -85,8 +85,8 @@ static uint16_t log_num;
 
 class AP_LoggerTest_AllTypes : public AP_HAL::HAL::Callbacks {
 public:
-    void setup();
-    void loop();
+    void setup() override;
+    void loop() override;
 
 private:
 
