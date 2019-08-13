@@ -27,7 +27,7 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Enable Sailboat
     // @Description: This enables Sailboat functionality
-    // @Values: 0:Disable,1:Enable sail assist only,2:Enable,3:Enable with speed controller
+    // @Values: 0:Disable,1:Enable sail assist only,2:Enable
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 1, Sailboat, enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -167,24 +167,16 @@ void Sailboat::get_pilot_desired_mainsail(float &mainsail_out)
 // update mainsail's desired angle based on wind speed and direction and desired speed (in m/s)
 float Sailboat::update_sail_control(float desired_speed)
 {
-    float throttle_out = rover.control_mode->get_throttle_out(desired_speed);
-
-    if (!sail_enabled()) {
-        return throttle_out;
-    }
-
-    // if we are motoring relax the sail
+    // if we are motoring relax the sail and use throttle
     if (throttle_state_t == Sailboat_Throttle::FORCE_MOTOR) {
         rover.g2.motors.set_mainsail(100.0f);
-        return throttle_out;
+        return rover.control_mode->get_throttle_out(desired_speed);
     }
 
-    // see if we should allow throttle
-    if (throttle_state_t == Sailboat_Throttle::NEVER || !throttle_assist()) {
-        throttle_out = 0.0f;
-        if (enable == 2) {
-            rover.g2.attitude_control.relax_throttle();
-        }
+    // see if we should use throttle and sail
+    float throttle_out = 0.0f;
+    if (throttle_assist()) {
+        throttle_out = rover.control_mode->get_throttle_out(desired_speed);
     }
 
     // relax sail if desired speed is zero
@@ -209,15 +201,7 @@ float Sailboat::update_sail_control(float desired_speed)
     // use PID controller to sheet out
     const float pid_offset = rover.g2.attitude_control.get_sail_out_from_heel(radians(sail_heel_angle_max), rover.G_Dt) * 100.0f;
 
-    // See if we should sheet out to slow down
-    float speed_offset = 0.0f;
-    if (!is_positive(throttle_out) && enable == 3) {
-        speed_offset = throttle_out;
-        // never try to reverse against the sail
-        throttle_out = 0.0f;
-    }
-
-    mainsail = constrain_float((mainsail + pid_offset + speed_offset), 0.0f ,100.0f);
+    mainsail = constrain_float((mainsail + pid_offset), 0.0f ,100.0f);
     rover.g2.motors.set_mainsail(mainsail);
 
     return throttle_out;
