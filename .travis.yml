@@ -18,8 +18,6 @@ addons:
       - python-pip
       - python-dev
       - zlib1g-dev
-      - gcc-4.9
-      - g++-4.9
       - gdb
       - cmake
       - cmake-data
