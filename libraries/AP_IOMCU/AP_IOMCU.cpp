@@ -286,7 +286,9 @@ void AP_IOMCU::read_rc_input()
 {
     // read a min of 9 channels and max of IOMCU_MAX_CHANNELS
     uint8_t n = MIN(MAX(9, rc_input.count), IOMCU_MAX_CHANNELS);
-    read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input);
+    if (!read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input)) {
+        return;
+    }
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
         rc_input.last_input_ms = AP_HAL::millis();
     }
@@ -298,7 +300,9 @@ void AP_IOMCU::read_rc_input()
 void AP_IOMCU::read_status()
 {
     uint16_t *r = (uint16_t *)&reg_status;
-    read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r);
+    if (!read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r)) {
+        return;
+    }
 
     check_iomcu_reset();
 
@@ -391,11 +395,23 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(count*2+4, 10)) {
+        debug("t=%u timeout read page=%u offset=%u count=%u\n",
+              AP_HAL::millis(), page, offset, count);
         return false;
     }
     
     uint8_t *b = (uint8_t *)&pkt;
     uint8_t n = uart.available();
+    if (n < offsetof(struct IOPacket, regs)) {
+        debug("t=%u small pkt %u\n", AP_HAL::millis(), n);
+        protocol_fail_count++;
+        return false;
+    }
+    if (pkt.get_size() != n) {
+        debug("t=%u bad len %u %u\n", AP_HAL::millis(), n, pkt.get_size());
+        protocol_fail_count++;
+        return false;
+    }
     for (uint8_t i=0; i<n; i++) {
         if (i < sizeof(pkt)) {
             b[i] = uart.read();
@@ -406,8 +422,8 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     pkt.crc = 0;
     uint8_t expected_crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
     if (got_crc != expected_crc) {
-        debug("bad crc %02x should be %02x n=%u %u/%u/%u\n",
-              got_crc, expected_crc,
+        debug("t=%u bad crc %02x should be %02x n=%u %u/%u/%u\n",
+              AP_HAL::millis(), got_crc, expected_crc,
               n, page, offset, count);
         protocol_fail_count++;
         return false;
@@ -919,9 +935,11 @@ void AP_IOMCU::check_iomcu_reset(void)
     if (last_iocmu_timestamp_ms == 0) {
         // initialisation
         last_iocmu_timestamp_ms = reg_status.timestamp_ms;
+        hal.console->printf("IOMCU startup\n");
         return;
     }
     uint32_t dt_ms = reg_status.timestamp_ms - last_iocmu_timestamp_ms;
+    uint32_t ts1 = last_iocmu_timestamp_ms;
     last_iocmu_timestamp_ms = reg_status.timestamp_ms;
     if (dt_ms < 500) {
         // all OK
@@ -929,7 +947,7 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     detected_io_reset = true;
     AP::internalerror().error(AP_InternalError::error_t::iomcu_reset);
-    hal.console->printf("IOMCU reset\n");
+    hal.console->printf("IOMCU reset t=%u %u %u dt=%u\n", AP_HAL::millis(), ts1, reg_status.timestamp_ms, dt_ms);
     // we need to ensure the mixer data and the rates are sent over to
     // the IOMCU
     if (mixing.enabled) {
