@@ -1,6 +1,5 @@
 #include "AP_Mount_Servo.h"
 #include <AP_GPS/AP_GPS.h>
-#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
