@@ -497,9 +497,25 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
 // update - give mount opportunity to update servos.  should be called at 10hz or higher
 void AP_Mount::update()
 {
+    AP_AHRS &ahrs = AP::ahrs();
+
     // update each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
+            if (state[instance]._retract_altitude != -1 && ahrs.get_likely_flying() && get_mode() != MAV_MOUNT_MODE_RETRACT) {
+                float alt;
+                ahrs.get_relative_position_D_home(alt);
+                if (-alt < state[instance]._retract_altitude) {
+                    if (_reached_altitude){
+                        _backends[instance]->set_mode(MAV_MOUNT_MODE_RETRACT);
+                        gcs().send_text(MAV_SEVERITY_INFO, "Low altitude %d. Retracting mount.", (int)alt);
+                        _reached_altitude = false;
+                    }
+                }
+                else
+                    _reached_altitude = true;
+            }
+
             _backends[instance]->update();
         }
     }

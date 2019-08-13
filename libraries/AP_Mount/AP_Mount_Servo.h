@@ -69,5 +69,4 @@ private:
     Vector3f _angle_bf_output_deg;  // final body frame output angle in degrees
 
     uint32_t _last_check_servo_map_ms;  // system time of latest call to check_servo_map function
-    bool _reached_altitude = false;  // flag to mark that minimum altitude reached to retract the mount
 };

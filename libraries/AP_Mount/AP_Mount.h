@@ -182,6 +182,7 @@ private:
 
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
+    bool _reached_altitude = false;  // flag to mark that minimum altitude reached to retract the mount
 
 };
 

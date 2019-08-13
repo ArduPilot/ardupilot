@@ -29,21 +29,6 @@ void AP_Mount_Servo::update()
 {
     static bool mount_open = 0;     // 0 is closed
 
-    // retract mount if altitude is low
-    if (_state._retract_altitude != -1 && _frontend._ahrs.get_likely_flying() && get_mode() != MAV_MOUNT_MODE_RETRACT) {
-        float alt;
-        _frontend._ahrs.get_relative_position_D_home(alt);
-        if (-alt < _state._retract_altitude) {
-            if (_reached_altitude){
-                set_mode(MAV_MOUNT_MODE_RETRACT);
-                gcs().send_text(MAV_SEVERITY_INFO, "Low altitude %d. Retracting mount.", (int)alt);
-                _reached_altitude = false;
-            }
-        }
-        else
-            _reached_altitude = true;
-    }
-
     // check servo map every three seconds to allow users to modify parameters
     uint32_t now = AP_HAL::millis();
     if (now - _last_check_servo_map_ms > 3000) {
