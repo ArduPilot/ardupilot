@@ -19,7 +19,7 @@ def parseFunctions(functions_lst):
     for func in funcs.splitlines():
         place = func.split(':')[0]
         symbol = func.split(':')[1]
-        if not mapping.has_key(place):
+        if not place in mapping:
             mapping[place] = list()
         mapping[place].append(symbol)
     return mapping
@@ -28,16 +28,18 @@ def parseFunctions(functions_lst):
 def processArchive(mapping, in_arch):
     global fcounter
     lines = subprocess.check_output([ar_p, 't', in_arch])
+    if not isinstance(lines, str):
+        lines = lines.decode()
     counting = dict()
     result = []
     for line in lines.splitlines():
-        if not counting.has_key(line):
+        if not line in counting:
             counting[line] = 0
         counting[line] = counting[line] + 1
         subprocess.call([ar_p, 'xN', str(counting[line]), in_arch,
                         line])
         fname = line.split('.')[0]
-        if mapping.has_key(fname):
+        if fname in mapping:
             cmd = [objcopy_p]
             for sym in mapping[fname]:
                 cmd.append('--rename-section')

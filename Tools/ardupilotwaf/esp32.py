@@ -30,6 +30,8 @@ def configure(cfg):
     env.AP_PROGRAM_FEATURES += ['esp32_ap_program']
     cmd = "cd {0}&&echo '{2}' > ../board.txt&&{1} defconfig BATCH_BUILD=1&&{1} showinc BATCH_BUILD=1".format(env.AP_HAL_PLANE, env.MAKE[0], env.BOARD)
     result = subprocess.check_output(cmd, shell=True)
+    if not isinstance(result, str):
+        result = result.decode()
     env.INCLUDES += parse_inc_dir(result)
 
 class build_esp32_image_plane(Task.Task):
