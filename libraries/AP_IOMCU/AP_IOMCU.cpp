@@ -18,6 +18,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -45,7 +46,9 @@ AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     uart(_uart)
 {}
 
-#if 0
+#define IOMCU_DEBUG_ENABLE 0
+
+#if IOMCU_DEBUG_ENABLE
 #define debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 #define debug(fmt, args ...)
@@ -220,13 +223,6 @@ void AP_IOMCU::thread_main(void)
             last_servo_read_ms = AP_HAL::millis();
         }
 
-#ifdef IOMCU_DEBUG
-        if (now - last_debug_ms > 1000) {
-            print_debug();
-            last_debug_ms = AP_HAL::millis();
-        }
-#endif // IOMCU_DEBUG
-
         if (now - last_safety_option_check_ms > 1000) {
             update_safety_options();
             last_safety_option_check_ms = now;
@@ -284,13 +280,12 @@ void AP_IOMCU::send_servo_out()
  */
 void AP_IOMCU::read_rc_input()
 {
-    // read a min of 9 channels and max of IOMCU_MAX_CHANNELS
-    uint8_t n = MIN(MAX(9, rc_input.count), IOMCU_MAX_CHANNELS);
-    if (!read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input)) {
+    uint16_t *r = (uint16_t *)&rc_input;
+    if (!read_registers(PAGE_RAW_RCIN, 0, sizeof(rc_input)/2, r)) {
         return;
     }
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
-        rc_input.last_input_ms = AP_HAL::millis();
+        rc_last_input_ms = AP_HAL::millis();
     }
 }
 
@@ -325,6 +320,31 @@ void AP_IOMCU::read_status()
             force_safety_off();
         }
     }
+
+    uint32_t now = AP_HAL::millis();
+    if (now - last_log_ms >= 1000U) {
+        last_log_ms = now;
+        AP::logger().Write("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2", "QHIIII",
+                           AP_HAL::micros64(),
+                           reg_status.freemem,
+                           reg_status.timestamp_ms,
+                           reg_status.total_pkts,
+                           total_errors,
+                           reg_status.num_errors);
+#if IOMCU_DEBUG_ENABLE
+        static uint32_t last_io_err;
+        if (last_io_err != reg_status.num_errors) {
+            debug("t=%u num=%u nerr=%u crc=%u opcode=%u rd=%u wr=%u ur=%u\n",
+                  now, reg_status.total_pkts, reg_status.num_errors,
+                  reg_status.err_crc,
+                  reg_status.err_bad_opcode,
+                  reg_status.err_read,
+                  reg_status.err_write,
+                  reg_status.err_uart);
+            last_io_err = reg_status.num_errors;
+        }
+#endif // IOMCU_DEBUG_ENABLE
+    }
 }
 
 /*
@@ -349,6 +369,21 @@ void AP_IOMCU::discard_input(void)
     }
 }
 
+/*
+  write a packet, retrying as needed
+ */
+size_t AP_IOMCU::write_wait(const uint8_t *pkt, uint8_t len)
+{
+    uint8_t wait_count = 20;
+    size_t ret;
+    do {
+        ret = uart.write(pkt, len);
+        if (ret == 0) {
+            hal.scheduler->delay_microseconds(100);
+        }
+    } while (ret == 0 && wait_count--);
+    return ret;
+}
 
 /*
   read count 16 bit registers
@@ -378,17 +413,22 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
 
     uint8_t pkt_size = pkt.get_size();
     if (is_chibios_backend) {
-        // save bandwidth on reads
+        /*
+          the original read protocol is a bit strange, as it
+          unnecessarily sends the same size packet that it expects to
+          receive. This means reading a large number of registers
+          wastes a lot of serial bandwidth. We avoid this overhead
+          when we know we are talking to a ChibiOS backend
+        */
         pkt_size = 4;
     }
     
-    /*
-      the protocol is a bit strange, as it unnecessarily sends the
-      same size packet that it expects to receive. This means reading
-      a large number of registers wastes a lot of serial bandwidth
-     */
     pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt_size);
-    if (uart.write((uint8_t *)&pkt, pkt_size) != pkt_size) {
+
+    size_t ret = write_wait((uint8_t *)&pkt, pkt_size);
+
+    if (ret != pkt_size) {
+        debug("write failed1 %u %u %u\n", unsigned(pkt_size), page, offset);
         protocol_fail_count++;
         return false;
     }
@@ -443,6 +483,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     if (protocol_fail_count > IOMCU_MAX_REPEATED_FAILURES) {
         handle_repeated_failures();
     }
+    total_errors += protocol_fail_count;
     protocol_fail_count = 0;
     protocol_count++;
     return true;
@@ -474,14 +515,19 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     pkt.crc = 0;
     memcpy(pkt.regs, regs, 2*count);
     pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
-    if (uart.write((uint8_t *)&pkt, pkt.get_size()) != pkt.get_size()) {
+
+    const uint8_t pkt_size = pkt.get_size();
+    size_t ret = write_wait((uint8_t *)&pkt, pkt_size);
+
+    if (ret != pkt_size) {
+        debug("write failed2 %u %u %u %u\n", pkt_size, page, offset, ret);
         protocol_fail_count++;
         return false;
     }
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(4, 10)) {
-        //debug("no reply for %u/%u/%u\n", page, offset, count);
+        debug("no reply for %u/%u/%u\n", page, offset, count);
         protocol_fail_count++;
         return false;
     }
@@ -512,6 +558,7 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     if (protocol_fail_count > IOMCU_MAX_REPEATED_FAILURES) {
         handle_repeated_failures();
     }
+    total_errors += protocol_fail_count;
     protocol_fail_count = 0;
     protocol_count++;
     return true;
@@ -543,17 +590,6 @@ void AP_IOMCU::write_channel(uint8_t chan, uint16_t pwm)
     if (!corked) {
         push();
     }
-}
-
-void AP_IOMCU::print_debug(void)
-{
-#ifdef IOMCU_DEBUG
-    const uint16_t *r = (const uint16_t *)&reg_status;
-    for (uint8_t i=0; i<sizeof(reg_status)/2; i++) {
-        hal.console->printf("%04x ", r[i]);
-    }
-    hal.console->printf("\n");
-#endif // IOMCU_DEBUG
 }
 
 // trigger an ioevent
@@ -644,10 +680,10 @@ bool AP_IOMCU::enable_sbus_out(uint16_t rate_hz)
 */
 bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_chan)
 {
-    if (last_frame_us != uint32_t(rc_input.last_input_ms * 1000U)) {
+    if (last_frame_us != uint32_t(rc_last_input_ms * 1000U)) {
         num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_CHANNELS), max_chan);
         memcpy(channels, rc_input.pwm, num_channels*2);
-        last_frame_us = uint32_t(rc_input.last_input_ms * 1000U);
+        last_frame_us = uint32_t(rc_last_input_ms * 1000U);
         return true;
     }
     return false;
@@ -909,7 +945,7 @@ const char *AP_IOMCU::get_rc_protocol(void)
     if (!is_chibios_backend) {
         return nullptr;
     }
-    return AP_RCProtocol::protocol_name_from_protocol((AP_RCProtocol::rcprotocol_t)rc_input.data);
+    return AP_RCProtocol::protocol_name_from_protocol((AP_RCProtocol::rcprotocol_t)rc_input.rc_protocol);
 }
 
 /*
