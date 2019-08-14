@@ -559,7 +559,7 @@ size_t UARTDriver::write(uint8_t c)
     }
 
     while (_writebuf.space() == 0) {
-        if (!_blocking_writes) {
+        if (!_blocking_writes || unbuffered_writes) {
             _write_mutex.give();
             return 0;
         }
@@ -579,8 +579,12 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 		return 0;
 	}
 
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
+    if (_blocking_writes && unbuffered_writes) {
+        _write_mutex.take_blocking();
+    } else {
+        if (!_write_mutex.take_nonblocking()) {
+            return 0;
+        }
     }
 
     if (_blocking_writes && !unbuffered_writes) {
