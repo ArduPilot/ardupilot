@@ -31,6 +31,7 @@
 #include <SITL/SIM_Morse.h>
 #include <SITL/SIM_AirSim.h>
 #include <SITL/SIM_Scrimmage.h>
+#include <SITL/SIM_Webots.h>
 
 #include <signal.h>
 #include <stdio.h>
@@ -135,6 +136,8 @@ static const struct {
     { "morse",              Morse::create },
     { "airsim",             AirSim::create},
     { "scrimmage",          Scrimmage::create },
+    { "webots",             Webots::create },
+
 };
 
 void SITL_State::_set_signal_handlers(void) const
