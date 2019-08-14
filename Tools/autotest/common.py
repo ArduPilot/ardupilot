@@ -1909,7 +1909,10 @@ class AutoTest(ABC):
                 return
         raise AutoTestTimeoutException("Failed to get EKF.flags=%u disabled" % not_required_value)
 
-    def wait_text(self, text, timeout=20, the_function=None):
+    def wait_text(self, *args, **kwargs):
+        self.wait_statustext(*args, **kwargs)
+
+    def wait_statustext(self, text, timeout=20, the_function=None):
         """Wait a specific STATUS_TEXT."""
         self.progress("Waiting for text : %s" % text.lower())
         tstart = self.get_sim_time()
