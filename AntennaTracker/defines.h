@@ -36,10 +36,6 @@ enum class PWMDisarmed {
     TRIM,
 };
 
-//  Filter
-#define SERVO_OUT_FILT_HZ               0.1f
-#define G_Dt                            0.02f
-
 //  Logging parameters
 #define MASK_LOG_ATTITUDE               (1<<0)
 #define MASK_LOG_GPS                    (1<<1)

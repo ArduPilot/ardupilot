@@ -13,22 +13,16 @@ void Tracker::update_auto(void)
     float yaw = wrap_180_cd((nav_status.bearing+g.yaw_trim)*100); // target yaw in centidegrees
     float pitch = constrain_float(nav_status.pitch+g.pitch_trim, g.pitch_min, g.pitch_max) * 100; // target pitch in centidegrees
 
-    bool direction_reversed = get_ef_yaw_direction();
-
-    calc_angle_error(pitch, yaw, direction_reversed);
-
-    float bf_pitch;
-    float bf_yaw;
-    convert_ef_to_bf(pitch, yaw, bf_pitch, bf_yaw);
+    calc_angle_error(pitch, yaw);
 
     // only move servos if target is at least distance_min away if we  have a target
     if ((g.distance_min <= 0) || (nav_status.distance >= g.distance_min) || !vehicle.location_valid) {
-        update_pitch_servo(bf_pitch);
-        update_yaw_servo(bf_yaw);
+        update_pitch_servo();
+        update_yaw_servo();
     }
 }
 
-void Tracker::calc_angle_error(float pitch, float yaw, bool direction_reversed)
+void Tracker::calc_angle_error(float pitch, float yaw)
 {
     // Pitch angle error in centidegrees
     // Positive error means the target is above current pitch
@@ -41,7 +35,7 @@ void Tracker::calc_angle_error(float pitch, float yaw, bool direction_reversed)
     // Negative error means the target is left of current yaw
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
     int32_t ef_yaw_angle_error = wrap_180_cd(yaw - ahrs_yaw_cd);
-    if (direction_reversed) {
+    if (get_ef_yaw_direction()) {
         if (ef_yaw_angle_error > 0) {
             ef_yaw_angle_error = (yaw - ahrs_yaw_cd) - 36000;
         } else {
@@ -53,6 +47,15 @@ void Tracker::calc_angle_error(float pitch, float yaw, bool direction_reversed)
     float bf_pitch_err;
     float bf_yaw_err;
     convert_ef_to_bf(ef_pitch_angle_error, ef_yaw_angle_error, bf_pitch_err, bf_yaw_err);
+
+    // convert desired angles to bodyframe
+    float bf_pitch;
+    float bf_yaw;
+    convert_ef_to_bf(pitch, yaw, bf_pitch, bf_yaw);
+
+    // constrain pitch error so as not hit pitch limits
+    bf_pitch_err = constrain_float(bf_pitch_err, bf_pitch - (g.pitch_min*100), (g.pitch_max*100 - bf_pitch));
+
     nav_status.angle_error_pitch = bf_pitch_err;
     nav_status.angle_error_yaw = bf_yaw_err;
 
@@ -85,11 +88,18 @@ bool Tracker::convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& e
 // return value is true if taking the long road to the target, false if normal, shortest direction should be used
 bool Tracker::get_ef_yaw_direction()
 {
+    if (g.yaw_range == 0 || g.servo_yaw_type != SERVO_TYPE_POSITION) {
+        // no limit on yaw movement so return
+        // makes no sense for none position yaw control
+        return false;
+    }
+
     // calculating distances from current pitch/yaw to lower and upper limits in centi-degrees
-    float yaw_angle_limit_lower =   (-g.yaw_range * 100.0f / 2.0f) - yaw_servo_out_filt.get();
-    float yaw_angle_limit_upper =   (g.yaw_range * 100.0f / 2.0f) - yaw_servo_out_filt.get();
-    float pitch_angle_limit_lower = (g.pitch_min * 100.0f) - pitch_servo_out_filt.get();
-    float pitch_angle_limit_upper = (g.pitch_max * 100.0f) - pitch_servo_out_filt.get();
+    // assume servo at zero is the center position
+    float yaw_angle_limit_lower =   - (g.yaw_range * 100.0f / 2.0f);
+    float yaw_angle_limit_upper =   g.yaw_range * 100.0f / 2.0f;
+    float pitch_angle_limit_lower = g.pitch_min * 100.0f;
+    float pitch_angle_limit_upper = g.pitch_max * 100.0f;
 
     // distances to earthframe angle limits in centi-degrees
     float ef_yaw_limit_lower = yaw_angle_limit_lower;

@@ -135,12 +135,6 @@ private:
     RC_Channels_Tracker rc_channels;
     SRV_Channels servo_channels;
 
-    LowPassFilterFloat yaw_servo_out_filt;
-    LowPassFilterFloat pitch_servo_out_filt;
-
-    bool yaw_servo_out_filt_init = false;
-    bool pitch_servo_out_filt_init = false;
-
     AP_SerialManager serial_manager;
     GCS_Tracker _gcs; // avoid using this; use gcs()
     GCS_Tracker &gcs() { return _gcs; }
@@ -215,7 +209,7 @@ private:
 
     // control_auto.cpp
     void update_auto(void);
-    void calc_angle_error(float pitch, float yaw, bool direction_reversed);
+    void calc_angle_error(float pitch, float yaw);
     void convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw);
     bool convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& ef_yaw);
     bool get_ef_yaw_direction();
@@ -255,14 +249,14 @@ private:
 
     // servos.cpp
     void init_servos();
-    void update_pitch_servo(float pitch);
-    void update_pitch_position_servo(void);
-    void update_pitch_onoff_servo(float pitch);
-    void update_pitch_cr_servo(float pitch);
-    void update_yaw_servo(float yaw);
-    void update_yaw_position_servo(void);
-    void update_yaw_onoff_servo(float yaw);
-    void update_yaw_cr_servo(float yaw);
+    void update_pitch_servo();
+    void update_pitch_position_servo();
+    void update_pitch_onoff_servo();
+    void update_pitch_cr_servo();
+    void update_yaw_servo();
+    void update_yaw_position_servo();
+    void update_yaw_onoff_servo();
+    void update_yaw_cr_servo();
 
     // system.cpp
     void init_tracker();

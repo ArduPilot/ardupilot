@@ -21,24 +21,21 @@ void Tracker::init_servos()
 
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
-
-    yaw_servo_out_filt.set_cutoff_frequency(SERVO_OUT_FILT_HZ);
-    pitch_servo_out_filt.set_cutoff_frequency(SERVO_OUT_FILT_HZ);
 }
 
 /**
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
  */
-void Tracker::update_pitch_servo(float pitch)
+void Tracker::update_pitch_servo()
 {
     switch ((enum ServoType)g.servo_pitch_type.get()) {
     case SERVO_TYPE_ONOFF:
-        update_pitch_onoff_servo(pitch);
+        update_pitch_onoff_servo();
         break;
 
     case SERVO_TYPE_CR:
-        update_pitch_cr_servo(pitch);
+        update_pitch_cr_servo();
         break;
 
     case SERVO_TYPE_POSITION:
@@ -87,13 +84,6 @@ void Tracker::update_pitch_position_servo()
     }
     // rate limit pitch servo
     SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, new_servo_out);
-
-    if (pitch_servo_out_filt_init) {
-        pitch_servo_out_filt.apply(new_servo_out, G_Dt);
-    } else {
-        pitch_servo_out_filt.reset(new_servo_out);
-        pitch_servo_out_filt_init = true;
-    }
 }
 
 
@@ -101,19 +91,20 @@ void Tracker::update_pitch_position_servo()
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
  */
-void Tracker::update_pitch_onoff_servo(float pitch)
+void Tracker::update_pitch_onoff_servo()
 {
-    int32_t pitch_min_cd = g.pitch_min*100;
-    int32_t pitch_max_cd = g.pitch_max*100;
-
     float acceptable_error = g.onoff_pitch_rate * g.onoff_pitch_mintime;
     if (fabsf(nav_status.angle_error_pitch) < acceptable_error) {
+        // not enough error to warrent moving
         SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, 0);
-    } else if ((nav_status.angle_error_pitch > 0) && (pitch*100>pitch_min_cd)) {
+        return;
+    }    
+    
+    if (is_positive(nav_status.angle_error_pitch)) {
         // positive error means we are pointing too low, so push the
         // servo up
         SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, -9000);
-    } else if (pitch*100<pitch_max_cd) {
+    } else {
         // negative error means we are pointing too high, so push the
         // servo down
         SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, 9000);
@@ -123,7 +114,7 @@ void Tracker::update_pitch_onoff_servo(float pitch)
 /**
    update the pitch for continuous rotation servo
 */
-void Tracker::update_pitch_cr_servo(float pitch)
+void Tracker::update_pitch_cr_servo()
 {
     const float pitch_out = constrain_float(g.pidPitch2Srv.update_error(nav_status.angle_error_pitch), -(-g.pitch_min+g.pitch_max) * 100/2, (-g.pitch_min+g.pitch_max) * 100/2);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, pitch_out);
@@ -132,15 +123,15 @@ void Tracker::update_pitch_cr_servo(float pitch)
 /**
    update the yaw (azimuth) servo.
  */
-void Tracker::update_yaw_servo(float yaw)
+void Tracker::update_yaw_servo()
 {
 	switch ((enum ServoType)g.servo_yaw_type.get()) {
     case SERVO_TYPE_ONOFF:
-        update_yaw_onoff_servo(yaw);
+        update_yaw_onoff_servo();
         break;
 
     case SERVO_TYPE_CR:
-        update_yaw_cr_servo(yaw);
+        update_yaw_cr_servo();
         break;
 
     case SERVO_TYPE_POSITION:
@@ -202,13 +193,6 @@ void Tracker::update_yaw_position_servo()
     }
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, new_servo_out);
-
-    if (yaw_servo_out_filt_init) {
-        yaw_servo_out_filt.apply(new_servo_out, G_Dt);
-    } else {
-        yaw_servo_out_filt.reset(new_servo_out);
-        yaw_servo_out_filt_init = true;
-    }
 }
 
 
@@ -217,7 +201,7 @@ void Tracker::update_yaw_position_servo()
    yaw to the requested yaw, so the board (and therefore the antenna)
    will be pointing at the target
  */
-void Tracker::update_yaw_onoff_servo(float yaw)
+void Tracker::update_yaw_onoff_servo()
 {
     float acceptable_error = g.onoff_yaw_rate * g.onoff_yaw_mintime;
     if (fabsf(nav_status.angle_error_yaw * 0.01f) < acceptable_error) {
@@ -236,7 +220,7 @@ void Tracker::update_yaw_onoff_servo(float yaw)
 /**
    update the yaw continuous rotation servo
  */
-void Tracker::update_yaw_cr_servo(float yaw)
+void Tracker::update_yaw_cr_servo()
 {
     const float yaw_out = constrain_float(-g.pidYaw2Srv.update_error(nav_status.angle_error_yaw), -g.yaw_range * 100/2, g.yaw_range * 100/2);
     SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, yaw_out);
