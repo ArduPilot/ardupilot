@@ -81,6 +81,9 @@ public:
     // get frame rate of model in Hz
     float get_rate_hz(void) const { return rate_hz; }
 
+    // set frame rate of model in Hz
+    void set_rate_hz(float _rate_hz);
+
     const Vector3f &get_gyro(void) const {
         return gyro;
     }

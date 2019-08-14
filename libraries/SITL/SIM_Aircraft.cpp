@@ -164,6 +164,10 @@ void Aircraft::set_precland(SIM_Precland *_precland) {
     precland->set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(get_home_yaw()));
 }
 
+void Aircraft::set_rate_hz(float _rate_hz) {
+    rate_hz = _rate_hz;
+}
+
 /*
    return current height above ground level (metres)
 */
