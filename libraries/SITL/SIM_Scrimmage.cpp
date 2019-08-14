@@ -18,16 +18,10 @@
 
 #include "SIM_Scrimmage.h"
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <cstdlib>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <algorithm>
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -128,7 +122,7 @@ void Scrimmage::start_scrimmage(void)
         int ret = system(full_exec_str);
 
         if (ret != 0) {
-            std::cerr << "scrimmage didn't open.\n";
+            ::fprintf(stderr, "scrimmage didn't open.\n");
             perror("scrimmage");
         }
 

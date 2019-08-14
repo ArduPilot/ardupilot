@@ -19,7 +19,6 @@
 #pragma once
 
 #include <string>
-#include <map>
 
 #include <AP_HAL/utility/Socket.h>
 
