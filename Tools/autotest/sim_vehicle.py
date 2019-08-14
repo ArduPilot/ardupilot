@@ -580,6 +580,7 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
+    cmd.extend(["--rate", str(opts.framerate)])
     cmd.extend(["--speedup", str(opts.speedup)])
     if opts.sitl_instance_args:
         # this could be a lot better:
