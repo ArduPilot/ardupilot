@@ -49,11 +49,6 @@ enum ioevents {
     IOEVENT_PWM=1,
 };
 
-static struct {
-    uint32_t num_code_read, num_bad_crc, num_write_pkt, num_unknown_pkt;
-    uint32_t num_idle_rx, num_dma_complete_rx, num_total_rx, num_rx_error;
-} stats;
-
 static void dma_rx_end_cb(UARTDriver *uart)
 {
     osalSysLockFromISR();
@@ -66,8 +61,6 @@ static void dma_rx_end_cb(UARTDriver *uart)
     dmaStreamDisable(uart->dmatx);
 
     iomcu.process_io_packet();
-    stats.num_total_rx++;
-    stats.num_dma_complete_rx = stats.num_total_rx - stats.num_idle_rx;
 
     dmaStreamSetMemory0(uart->dmarx, &iomcu.rx_io_packet);
     dmaStreamSetTransactionSize(uart->dmarx, sizeof(iomcu.rx_io_packet));
@@ -97,7 +90,8 @@ static void idle_rx_handler(UARTDriver *uart)
         osalSysLockFromISR();
         uart->usart->SR = ~USART_SR_LBD;
         uart->usart->CR1 |= USART_CR1_SBK;
-        stats.num_rx_error++;
+        iomcu.reg_status.num_errors++;
+        iomcu.reg_status.err_uart++;
         uart->usart->CR3 &= ~(USART_CR3_DMAT | USART_CR3_DMAR);
         (void)uart->usart->SR;
         (void)uart->usart->DR;
@@ -117,7 +111,6 @@ static void idle_rx_handler(UARTDriver *uart)
 
     if (sr & USART_SR_IDLE) {
         dma_rx_end_cb(uart);
-        stats.num_idle_rx++;
     }
 }
 
@@ -311,9 +304,9 @@ void AP_IOMCU_FW::rcin_update()
         for (uint8_t i = 0; i < IOMCU_MAX_CHANNELS; i++) {
             rc_input.pwm[i] = hal.rcin->read(i);
         }
-        rc_input.last_input_ms = last_ms;
-        rc_input.data = (uint16_t)rcprotocol->protocol_detected();
-    } else if (last_ms - rc_input.last_input_ms > 200U) {
+        rc_last_input_ms = last_ms;
+        rc_input.rc_protocol = (uint16_t)rcprotocol->protocol_detected();
+    } else if (last_ms - rc_last_input_ms > 200U) {
         rc_input.flags_rc_ok = false;
     }
     if (update_rcout_freq) {
@@ -345,6 +338,8 @@ void AP_IOMCU_FW::rcin_update()
 
 void AP_IOMCU_FW::process_io_packet()
 {
+    iomcu.reg_status.total_pkts++;
+
     uint8_t rx_crc = rx_io_packet.crc;
     uint8_t calc_crc;
     rx_io_packet.crc = 0;
@@ -365,12 +360,12 @@ void AP_IOMCU_FW::process_io_packet()
         tx_io_packet.page = 0;
         tx_io_packet.offset = 0;
         tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
-        stats.num_bad_crc++;
+        iomcu.reg_status.num_errors++;
+        iomcu.reg_status.err_crc++;
         return;
     }
     switch (rx_io_packet.code) {
     case CODE_READ: {
-        stats.num_code_read++;
         if (!handle_code_read()) {
             tx_io_packet.count = 0;
             tx_io_packet.code = CODE_ERROR;
@@ -378,11 +373,12 @@ void AP_IOMCU_FW::process_io_packet()
             tx_io_packet.page = 0;
             tx_io_packet.offset = 0;
             tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
+            iomcu.reg_status.num_errors++;
+            iomcu.reg_status.err_read++;
         }
     }
     break;
     case CODE_WRITE: {
-        stats.num_write_pkt++;
         if (!handle_code_write()) {
             tx_io_packet.count = 0;
             tx_io_packet.code = CODE_ERROR;
@@ -390,11 +386,14 @@ void AP_IOMCU_FW::process_io_packet()
             tx_io_packet.page = 0;
             tx_io_packet.offset = 0;
             tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
+            iomcu.reg_status.num_errors++;
+            iomcu.reg_status.err_write++;
         }
     }
     break;
     default: {
-        stats.num_unknown_pkt++;
+        iomcu.reg_status.num_errors++;
+        iomcu.reg_status.err_bad_opcode++;
     }
     break;
     }
@@ -585,8 +584,6 @@ bool AP_IOMCU_FW::handle_code_write()
             i++;
         }
         fmu_data_received_time = last_ms;
-        reg_status.flag_fmu_ok = true;
-        reg_status.flag_raw_pwm = true;
         chEvtSignalI(thread_ctx, EVENT_MASK(IOEVENT_PWM));
         break;
     }
