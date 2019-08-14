@@ -68,19 +68,19 @@ private:
         }
 
         uavcan::UtcDuration utc_adjustment;
-        virtual void adjustUtc(uavcan::UtcDuration adjustment)
+        virtual void adjustUtc(uavcan::UtcDuration adjustment) override
         {
             utc_adjustment = adjustment;
         }
 
     public:
-        virtual uavcan::MonotonicTime getMonotonic() const
+        virtual uavcan::MonotonicTime getMonotonic() const override
         {
             uavcan::uint64_t usec = 0;
             usec = AP_HAL::micros64();
             return uavcan::MonotonicTime::fromUSec(usec);
         }
-        virtual uavcan::UtcTime getUtc() const
+        virtual uavcan::UtcTime getUtc() const override
         {
             uavcan::UtcTime utc;
             uavcan::uint64_t usec = 0;
