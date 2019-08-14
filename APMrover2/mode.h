@@ -283,7 +283,8 @@ protected:
         Auto_HeadingAndSpeed,   // turn to a given heading
         Auto_RTL,               // perform RTL within auto mode
         Auto_Loiter,            // perform Loiter within auto mode
-        Auto_Guided             // handover control to external navigation system from within auto mode
+        Auto_Guided,            // handover control to external navigation system from within auto mode
+        Auto_Stop               // stop the vehicle as quickly as possible
     } _submode;
 
 private:
@@ -291,6 +292,7 @@ private:
     bool check_trigger(void);
     bool start_loiter();
     void start_guided(const Location& target_loc);
+    void start_stop();
     void send_guided_position_target();
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
@@ -351,7 +353,6 @@ private:
     // Delay the next navigation command
     uint32_t nav_delay_time_max_ms;  // used for delaying the navigation commands
     uint32_t nav_delay_time_start_ms;
-    AutoSubMode nav_delay_submode_backup; // back up sub_mode
 
 };
 

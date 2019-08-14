@@ -97,6 +97,10 @@ void ModeAuto::update()
             rover.mode_guided.update();
             break;
         }
+
+        case Auto_Stop:
+            stop_vehicle();
+            break;
     }
 }
 
@@ -117,6 +121,7 @@ float ModeAuto::get_distance_to_destination() const
     case Auto_WP:
         return _distance_to_destination;
     case Auto_HeadingAndSpeed:
+    case Auto_Stop:
         // no valid distance so return zero
         return 0.0f;
     case Auto_RTL:
@@ -142,6 +147,7 @@ bool ModeAuto::get_desired_location(Location& destination) const
         }
         return false;
     case Auto_HeadingAndSpeed:
+    case Auto_Stop:
         // no desired location for this submode
         return false;
     case Auto_RTL:
@@ -177,6 +183,7 @@ bool ModeAuto::reached_destination() const
         return g2.wp_nav.reached_destination();
         break;
     case Auto_HeadingAndSpeed:
+    case Auto_Stop:
         // always return true because this is the safer option to allow missions to continue
         return true;
         break;
@@ -293,6 +300,12 @@ void ModeAuto::start_guided(const Location& loc)
             guided_target.valid = false;
         }
     }
+}
+
+// start stopping vehicle as quickly as possible
+void ModeAuto::start_stop()
+{
+    _submode = Auto_Stop;
 }
 
 // send latest position target to offboard navigation system
@@ -550,11 +563,14 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
     nav_delay_time_start_ms = millis();
 
-    // act like we're just doing a heading hold that we instantly achieve.
-    // the behavior of this will put a boat into loiter, else stop
-    nav_delay_submode_backup = _submode;
-    _submode = Auto_HeadingAndSpeed;
-    _reached_heading = true;
+    // boats loiter, cars and balancebots stop
+    if (rover.is_boat()) {
+        if (!start_loiter()) {
+            start_stop();
+        }
+    } else {
+        start_stop();
+    }
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay
@@ -563,7 +579,7 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         // absolute delay to utc time
         nav_delay_time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",nav_delay_time_max_ms/1000);
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", nav_delay_time_max_ms/1000);
 }
 
 // start guided within auto to allow external navigation system to control vehicle
@@ -634,7 +650,6 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
     if (millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
         nav_delay_time_max_ms = 0;
-        _submode = nav_delay_submode_backup;
         return true;
     }
 
