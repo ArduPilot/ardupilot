@@ -879,6 +879,21 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Receiver not healthy")
         self.change_mode('MANUAL')
 
+        self.progress("Ensure long failsafe can trigger when short failsafe disabled")
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("FS_SHORT_ACTN", 3) # 3 means disabled
+            self.set_parameter("SIM_RC_FAIL", 1)
+            self.wait_statustext("Long event on")
+        except Exception as e:
+            self.progress("Exception caught:")
+            self.progress(self.get_exception_stacktrace(e))
+            ex = e
+        self.context_pop()
+        if ex is not None:
+            raise ex
+
     def test_gripper_mission(self):
         self.context_push()
         ex = None
