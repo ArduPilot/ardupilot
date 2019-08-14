@@ -36,8 +36,8 @@ public:
 
 #ifdef ENABLE_HEAP
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size);
-    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size);
+    virtual void *allocate_heap_memory(size_t size) override;
+    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size) override;
 #endif // ENABLE_HEAP
 
     /*
