@@ -207,6 +207,7 @@ private:
     uint32_t protocol_fail_count;
     uint32_t protocol_count;
     uint32_t total_errors;
+    uint32_t num_delayed;
     uint32_t last_iocmu_timestamp_ms;
 
     // firmware upload

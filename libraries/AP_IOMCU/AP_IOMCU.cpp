@@ -61,7 +61,7 @@ void AP_IOMCU::init(void)
 {
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 256, 256);
-    uart.set_blocking_writes(false);
+    uart.set_blocking_writes(true);
     uart.set_unbuffered_writes(true);
 
     AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
@@ -97,7 +97,7 @@ void AP_IOMCU::thread_main(void)
     chEvtSignal(thread_ctx, initial_event_mask);
 
     uart.begin(1500*1000, 256, 256);
-    uart.set_blocking_writes(false);
+    uart.set_blocking_writes(true);
     uart.set_unbuffered_writes(true);
     
     trigger_event(IOEVENT_INIT);
@@ -324,24 +324,29 @@ void AP_IOMCU::read_status()
     uint32_t now = AP_HAL::millis();
     if (now - last_log_ms >= 1000U) {
         last_log_ms = now;
-        AP::logger().Write("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2", "QHIIII",
+        AP::logger().Write("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHIIIII",
                            AP_HAL::micros64(),
                            reg_status.freemem,
                            reg_status.timestamp_ms,
                            reg_status.total_pkts,
                            total_errors,
-                           reg_status.num_errors);
+                           reg_status.num_errors,
+                           num_delayed);
 #if IOMCU_DEBUG_ENABLE
-        static uint32_t last_io_err;
-        if (last_io_err != reg_status.num_errors) {
-            debug("t=%u num=%u nerr=%u crc=%u opcode=%u rd=%u wr=%u ur=%u\n",
-                  now, reg_status.total_pkts, reg_status.num_errors,
+        static uint32_t last_io_print;
+        if (now - last_io_print >= 5000) {
+            last_io_print = now;
+            debug("t=%u num=%u terr=%u nerr=%u crc=%u opcode=%u rd=%u wr=%u ur=%u ndel=%u\n",
+                  now,
+                  reg_status.total_pkts,
+                  total_errors,
+                  reg_status.num_errors,
                   reg_status.err_crc,
                   reg_status.err_bad_opcode,
                   reg_status.err_read,
                   reg_status.err_write,
-                  reg_status.err_uart);
-            last_io_err = reg_status.num_errors;
+                  reg_status.err_uart,
+                  num_delayed);
         }
 #endif // IOMCU_DEBUG_ENABLE
     }
@@ -374,12 +379,13 @@ void AP_IOMCU::discard_input(void)
  */
 size_t AP_IOMCU::write_wait(const uint8_t *pkt, uint8_t len)
 {
-    uint8_t wait_count = 20;
+    uint8_t wait_count = 5;
     size_t ret;
     do {
         ret = uart.write(pkt, len);
         if (ret == 0) {
             hal.scheduler->delay_microseconds(100);
+            num_delayed++;
         }
     } while (ret == 0 && wait_count--);
     return ret;
@@ -983,7 +989,8 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     detected_io_reset = true;
     AP::internalerror().error(AP_InternalError::error_t::iomcu_reset);
-    hal.console->printf("IOMCU reset t=%u %u %u dt=%u\n", AP_HAL::millis(), ts1, reg_status.timestamp_ms, dt_ms);
+    hal.console->printf("IOMCU reset t=%u %u %u dt=%u\n",
+                        unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));
     // we need to ensure the mixer data and the rates are sent over to
     // the IOMCU
     if (mixing.enabled) {
