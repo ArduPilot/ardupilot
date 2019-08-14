@@ -113,4 +113,5 @@ cmake-build-*/
 /reports/
 /GCOV_*.log
 way.txt
-
+*.wbproj
+*.wbproj
