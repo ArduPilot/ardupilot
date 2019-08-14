@@ -77,7 +77,7 @@ public:
 class AP_UAVCAN_FileEventTracer : public uavcan::dynamic_node_id_server::IEventTracer
 {
 protected:
-    virtual void onEvent(uavcan::dynamic_node_id_server::TraceCode code, uavcan::int64_t argument)
+    virtual void onEvent(uavcan::dynamic_node_id_server::TraceCode code, uavcan::int64_t argument) override
     {
         AP::logger().Write("UCEV", "TimeUS,code,arg", "s--", "F--", "Qhq", AP_HAL::micros64(), code, argument);
     }
@@ -129,7 +129,7 @@ class AP_UAVCAN_FileStorageBackend : public uavcan::dynamic_node_id_server::ISto
 
     static uint8_t num_opens;
 protected:
-    virtual String get(const String& key) const
+    virtual String get(const String& key) const override
     {
         using namespace std;
         PathString path = base_path.c_str();
@@ -176,7 +176,7 @@ protected:
         return value;
     }
 
-    virtual void set(const String& key, const String& value)
+    virtual void set(const String& key, const String& value) override
     {
         using namespace std;
         PathString path = base_path.c_str();
