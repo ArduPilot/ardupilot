@@ -374,7 +374,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             printf("Creating model %s at speed %.1f\n", model_str, speedup);
             sitl_model = model_constructors[i].constructor(home_str, model_str);
             sitl_model->set_interface_ports(simulator_address, simulator_port_in, simulator_port_out);
-            sitl_model->set_speedup(speedup);
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
             sitl_model->set_config(config);
@@ -413,6 +412,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
     }
 
+    sitl_model->set_rate_hz (_framerate);
+    sitl_model->set_speedup(speedup);
+            
     _sitl_setup(home_str);
 }
 
