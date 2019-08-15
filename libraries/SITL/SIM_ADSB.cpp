@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 #include "SIM_Aircraft.h"
+#include <AP_HAL_SITL/SITL_State.h>
 
 namespace SITL {
 
@@ -30,7 +31,7 @@ SITL *_sitl;
 ADSB::ADSB(const struct sitl_fdm &_fdm, const char *_home_str)
 {
     float yaw_degrees;
-    Aircraft::parse_home(_home_str, home, yaw_degrees);
+    HALSITL::SITL_State::parse_home(_home_str, home, yaw_degrees);
 }
 
 
