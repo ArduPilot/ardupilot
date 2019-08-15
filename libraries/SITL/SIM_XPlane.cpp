@@ -32,8 +32,8 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-XPlane::XPlane(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+XPlane::XPlane(const char *frame_str) :
+    Aircraft(frame_str)
 {
     use_time_sync = false;
     const char *colon = strchr(frame_str, ':');

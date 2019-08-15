@@ -23,8 +23,8 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-BalanceBot::BalanceBot(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+BalanceBot::BalanceBot(const char *frame_str) :
+    Aircraft(frame_str),
     skid_turn_rate(140) // degrees/sec
 {
     dcm.from_euler(0,0,0); // initial yaw, pitch and roll in radians

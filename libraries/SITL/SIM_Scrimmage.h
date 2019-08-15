@@ -32,14 +32,14 @@ namespace SITL {
  */
 class Scrimmage : public Aircraft {
 public:
-    Scrimmage(const char *home_str, const char *frame_str);
+    Scrimmage(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new Scrimmage(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new Scrimmage(frame_str);
     }
 
     void set_config(const char *config) override;

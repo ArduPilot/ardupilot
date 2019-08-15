@@ -82,8 +82,8 @@ static const struct {
 };
 
 
-FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+FlightAxis::FlightAxis(const char *frame_str) :
+    Aircraft(frame_str)
 {
     use_time_sync = false;
     rate_hz = 250 / target_speedup;

@@ -16,8 +16,8 @@ extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
 
-AirSim::AirSim(const char *home_str, const char *frame_str) :
-	Aircraft(home_str, frame_str),
+AirSim::AirSim(const char *frame_str) :
+	Aircraft(frame_str),
 	sock(true)
 {
 	printf("Starting SITL Airsim\n");

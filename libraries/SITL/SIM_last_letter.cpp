@@ -29,8 +29,8 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-last_letter::last_letter(const char *home_str, const char *_frame_str) :
-    Aircraft(home_str, _frame_str),
+last_letter::last_letter(const char *_frame_str) :
+    Aircraft(_frame_str),
     last_timestamp_us(0),
     sock(true)
 {
