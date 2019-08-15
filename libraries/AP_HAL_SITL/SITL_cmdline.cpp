@@ -68,7 +68,7 @@ void SITL_State::_usage(void)
            "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
            // "\t--param|-P NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
-           "\t--home|-O HOME           set home location (lat,lng,alt,yaw)\n"
+           "\t--home|-O HOME           set start location (lat,lng,alt,yaw)\n"
            "\t--model|-M MODEL         set simulation model\n"
            "\t--config string          set additional simulation config string\n"
            "\t--fg|-F ADDRESS          set Flight Gear view address, defaults to 127.0.0.1\n"
@@ -163,7 +163,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _instance = 0;
     _synthetic_clock_mode = false;
     // default to CMAC
-    const char *home_str = "-35.363261,149.165230,584,353";
+    const char *home_str = nullptr;
     const char *model_str = nullptr;
     _use_fg_view = true;
     char *autotest_dir = nullptr;
@@ -371,9 +371,17 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
         if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
-            printf("Creating model %s at speed %.1f\n", model_str, speedup);
+            // printf("Creating model %f,%f,%f,%f at speed %.1f\n", opos.lat, opos.lng, opos.alt, opos.hdg, speedup);
             sitl_model = model_constructors[i].constructor(model_str);
-            sitl_model->set_start_location(home_str);
+            if (home_str != nullptr) {
+                Location home;
+                float home_yaw;
+                if (!parse_home(home_str, home, home_yaw)) {
+                    ::printf("Failed to parse home string (%s).  Should be LAT,LON,ALT,HDG e.g. 37.4003371,-122.0800351,0,353\n", home_str);
+                    exit(1);
+                }
+                sitl_model->set_start_location(home, home_yaw);
+            }
             sitl_model->set_interface_ports(simulator_address, simulator_port_in, simulator_port_out);
             sitl_model->set_speedup(speedup);
             sitl_model->set_instance(_instance);
@@ -415,6 +423,62 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     }
 
     _sitl_setup(home_str);
+}
+
+/*
+  parse a home string into a location and yaw
+ */
+bool SITL_State::parse_home(const char *home_str, Location &loc, float &yaw_degrees)
+{
+    char *saveptr = nullptr;
+    char *s = strdup(home_str);
+    if (!s) {
+        free(s);
+        ::printf("No home string supplied\n");
+        return false;
+    }
+    char *lat_s = strtok_r(s, ",", &saveptr);
+    if (!lat_s) {
+        free(s);
+        ::printf("Failed to parse latitude\n");
+        return false;
+    }
+    char *lon_s = strtok_r(nullptr, ",", &saveptr);
+    if (!lon_s) {
+        free(s);
+        ::printf("Failed to parse longitude\n");
+        return false;
+    }
+    char *alt_s = strtok_r(nullptr, ",", &saveptr);
+    if (!alt_s) {
+        free(s);
+        ::printf("Failed to parse altitude\n");
+        return false;
+    }
+    char *yaw_s = strtok_r(nullptr, ",", &saveptr);
+    if (!yaw_s) {
+        free(s);
+        ::printf("Failed to parse yaw\n");
+        return false;
+    }
+
+    loc = {};
+    loc.lat = static_cast<int32_t>(strtod(lat_s, nullptr) * 1.0e7);
+    loc.lng = static_cast<int32_t>(strtod(lon_s, nullptr) * 1.0e7);
+    loc.alt = static_cast<int32_t>(strtod(alt_s, nullptr) * 1.0e2);
+
+    if (loc.lat == 0 && loc.lng == 0) {
+        // default to CMAC instead of middle of the ocean. This makes
+        // SITL in MissionPlanner a bit more useful
+        loc.lat = -35.363261*1e7;
+        loc.lng = 149.165230*1e7;
+        loc.alt = 584*100;
+    }
+
+    yaw_degrees = strtof(yaw_s, nullptr);
+    free(s);
+
+    return true;
 }
 
 #endif
