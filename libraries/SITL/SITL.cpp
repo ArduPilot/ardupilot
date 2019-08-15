@@ -141,13 +141,14 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // @Path: ./SIM_Parachute.cpp
     AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SITL, Parachute),
 
-    // vibration frequencies on each axis
+    // enable bandwidth limitting on telemetry ports:
     AP_GROUPINFO("BAUDLIMIT_EN",   28, SITL,  telem_baudlimit_enable, 0),
 
     // @Group: PLD_
     // @Path: ./SIM_Precland.cpp
     AP_SUBGROUPINFO(precland_sim, "PLD_", 29, SITL, SIM_Precland),
 
+    // apply a force to the vehicle over a period of time:
     AP_GROUPINFO("SHOVE_X",     30, SITL,  shove.x, 0),
     AP_GROUPINFO("SHOVE_Y",     31, SITL,  shove.y, 0),
     AP_GROUPINFO("SHOVE_Z",     32, SITL,  shove.z, 0),
