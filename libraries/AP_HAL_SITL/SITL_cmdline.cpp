@@ -96,7 +96,7 @@ void SITL_State::_usage(void)
 
 static const struct {
     const char *name;
-    Aircraft *(*constructor)(const char *home_str, const char *frame_str);
+    Aircraft *(*constructor)(const char *frame_str);
 } model_constructors[] = {
     { "quadplane",          QuadPlane::create },
     { "xplane",             XPlane::create },
@@ -372,7 +372,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
         if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
             printf("Creating model %s at speed %.1f\n", model_str, speedup);
-            sitl_model = model_constructors[i].constructor(home_str, model_str);
+            sitl_model = model_constructors[i].constructor(model_str);
+            sitl_model->set_start_location(home_str);
             sitl_model->set_interface_ports(simulator_address, simulator_port_in, simulator_port_out);
             sitl_model->set_speedup(speedup);
             sitl_model->set_instance(_instance);
