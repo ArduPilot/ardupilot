@@ -268,6 +268,14 @@ public:
         AP_Float speed;     // m/s
     } tide;
 
+    // original simulated position
+    struct {
+        AP_Float lat;
+        AP_Float lng;
+        AP_Float alt; // metres
+        AP_Float hdg; // 0 to 360
+    } opos;
+
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);

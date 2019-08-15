@@ -180,6 +180,12 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("TIDE_DIR",    49, SITL,  tide.direction, 0.0f),
     AP_GROUPINFO("TIDE_SPEED",  50, SITL,  tide.speed, 0.0f),
 
+    // the following coordinates are for CMAC, in Canberra
+    AP_GROUPINFO("OPOS_LAT",    51, SITL,  opos.lat, -35.363261f),
+    AP_GROUPINFO("OPOS_LNG",    52, SITL,  opos.lng, 149.165230f),
+    AP_GROUPINFO("OPOS_ALT",    53, SITL,  opos.alt, 584.0f),
+    AP_GROUPINFO("OPOS_HDG",    54, SITL,  opos.hdg, 353.0f),
+
     AP_GROUPEND
 
 };
