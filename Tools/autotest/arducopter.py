@@ -1876,28 +1876,31 @@ class AutoTestCopter(AutoTest):
         hours = hour_ms / (60 * 60 * 1000)
         return (hours, mins, secs, 0)
 
-    def calc_delay(self, seconds):
+    def calc_delay(self, seconds, delay_for_seconds):
         # delay-for-seconds has to be long enough that we're at the
         # waypoint before that time.  Otherwise we'll try to wait a
         # day....
+        if delay_for_seconds >= 3600:
+            raise ValueError("Won't handle large delays")
         (hours,
          mins,
          secs,
          ms) = self.get_system_clock_utc(seconds)
         self.progress("Now is %uh %um %us" % (hours, mins, secs))
-        secs += 17 # add seventeen seconds
-        if secs >= 60:
-            secs %= 60
-            mins += 1 # add sixty seconds
-        mins += 1
-        if mins >= 60:
-            mins %= 60
-            hours += 1
-        if hours >= 24:
-            hours %= 24
+        secs += delay_for_seconds # add seventeen seconds
+        mins += int(secs/60)
+        secs %= 60
+
+        hours += int(mins / 60)
+        mins %= 60
+
+        if hours > 24:
+            raise ValueError("Way too big a delay")
+        self.progress("Delay until %uh %um %us" %
+                      (hours, mins, secs))
         return (hours, mins, secs, 0)
 
-    def reset_delay_item_seventyseven(self, seq):
+    def reset_delay_item(self, seq, seconds_in_future):
         while True:
             self.progress("Requesting request for seq %u" % (seq,))
             self.mav.mav.mission_write_partial_list_send(1, # target system
@@ -1974,11 +1977,7 @@ class AutoTestCopter(AutoTest):
                 raise PreconditionFailedException("Never got SYSTEM_TIME")
             if now.time_unix_usec == 0:
                 raise PreconditionFailedException("system time is zero")
-            (hours, mins, secs, ms) = self.calc_delay(
-                now.time_unix_usec/1000000)
-
-            self.progress("Delay until %uh %um %us" %
-                          (hours, mins, secs))
+            (hours, mins, secs, ms) = self.calc_delay(now.time_unix_usec/1000000, seconds_in_future)
 
             self.mav.mav.mission_item_send(
                 1, # target system
@@ -2003,6 +2002,13 @@ class AutoTestCopter(AutoTest):
 
     def fly_nav_delay_abstime(self):
         """fly a simple mission that has a delay in it"""
+        self.fly_nav_delay_abstime_x(87)
+
+    def fly_nav_delay_abstime_x(self, delay_for, expected_delay=None):
+        """fly a simple mission that has a delay in it, expect a delay"""
+
+        if expected_delay is None:
+            expected_delay = delay_for
 
         self.load_mission("copter_nav_delay.txt")
 
@@ -2011,8 +2017,8 @@ class AutoTestCopter(AutoTest):
         self.wait_ready_to_arm()
 
         delay_item_seq = 3
-        self.reset_delay_item_seventyseven(delay_item_seq)
-        delay_for_seconds = 77
+        self.reset_delay_item(delay_item_seq, delay_for)
+        delay_for_seconds = delay_for
         reset_at_m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
         reset_at = reset_at_m.time_unix_usec/1000000
 
@@ -2023,7 +2029,7 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
         while self.armed(): # we RTL at end of mission
             now = self.get_sim_time_cached()
-            if now - tstart > 120:
+            if now - tstart > 240:
                 raise AutoTestTimeoutException("Did not disarm as expected")
             m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
             at_delay_item = ""
@@ -2036,7 +2042,7 @@ class AutoTestCopter(AutoTest):
                                                        blocking=True)
                     count_stop = count_stop_m.time_unix_usec/1000000
         calculated_delay = count_stop - reset_at
-        error = abs(calculated_delay - delay_for_seconds)
+        error = abs(calculated_delay - expected_delay)
         self.progress("Stopped for %u seconds (want >=%u seconds)" %
                       (calculated_delay, delay_for_seconds))
         if error > 2:
@@ -2050,8 +2056,8 @@ class AutoTestCopter(AutoTest):
         self.wait_ready_to_arm()
 
         delay_item_seq = 2
-        self.reset_delay_item_seventyseven(delay_item_seq)
         delay_for_seconds = 77
+        self.reset_delay_item(delay_item_seq, delay_for_seconds)
         reset_at = self.get_sim_time_cached()
 
         self.arm_vehicle()
