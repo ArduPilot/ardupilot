@@ -1990,16 +1990,6 @@ class AutoTest(ABC):
         self.mav.message_hooks.append(self.message_hook)
         self.mav.idle_hooks.append(self.idle_hook)
 
-    def check_sitl_reset(self):
-        self.wait_heartbeat()
-        self.clear_mission_using_mavproxy()
-        if self.armed():
-            self.progress("Armed at end of test; force-rebooting SITL")
-            self.disarm_vehicle(force=True)
-            self.forced_post_test_sitl_reboots += 1
-            self.progress("Force-resetting SITL")
-            self.reboot_sitl() # that'll learn it
-
     def show_test_timings_key_sorter(self, t):
         (k, v) = t
         return ((v, k))
@@ -2042,6 +2032,7 @@ class AutoTest(ABC):
 
         start_time = time.time()
 
+        ex = None
         try:
             self.check_rc_defaults()
             self.change_mode(self.default_mode())
@@ -2050,21 +2041,37 @@ class AutoTest(ABC):
 
             test_function()
         except Exception as e:
-            self.test_timings[desc] = time.time() - start_time
-            self.progress("Exception caught: %s" % self.get_exception_stacktrace(e))
-            self.context_pop()
+            self.progress("Exception caught: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+        self.test_timings[desc] = time.time() - start_time
+        self.context_pop()
+
+        passed = True
+        if ex is not None:
+            passed = False
+
+        self.wait_heartbeat()
+        if self.armed():
+            self.progress("Armed at end of test; force-rebooting SITL")
+            self.disarm_vehicle(force=True)
+            self.forced_post_test_sitl_reboots += 1
+            self.progress("Force-resetting SITL")
+            self.reboot_sitl() # that'll learn it
+            passed = False
+
+        if passed:
+            self.progress('PASSED: "%s"' % prettyname)
+        else:
             self.progress('FAILED: "%s": %s (see %s)' %
-                          (prettyname, repr(e), test_output_filename))
-            self.fail_list.append((prettyname, e, test_output_filename))
+                          (prettyname, repr(ex), test_output_filename))
+            self.fail_list.append((prettyname, ex, test_output_filename))
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
-            tee.close()
-            self.check_sitl_reset()
-            return
-        self.test_timings[desc] = time.time() - start_time
-        self.context_pop()
-        self.progress('PASSED: "%s"' % prettyname)
+
+        self.clear_mission_using_mavproxy()
+
         tee.close()
 
     def check_test_syntax(self, test_file):
