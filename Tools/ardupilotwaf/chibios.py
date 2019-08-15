@@ -364,6 +364,14 @@ def build(bld):
 
     bld.env.LIB += ['ch']
     bld.env.LIBPATH += ['modules/ChibiOS/']
-    wraplist = ['strerror_r', 'fclose', 'freopen', 'fread', 'fprintf', 'sscanf', 'snprintf']
+    # list of functions that will be wrapped to move them out of libc into our
+    # own code note that we also include functions that we deliberately don't
+    # implement anywhere (the FILE* functions). This allows us to get link
+    # errors if we accidentially try to use one of those functions either
+    # directly or via another libc call
+    wraplist = ['sscanf', 'snprintf',
+                'fopen', 'fread', 'fprintf', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
+                'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
+                'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf' ]
     for w in wraplist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]
