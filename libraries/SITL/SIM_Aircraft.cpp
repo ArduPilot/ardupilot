@@ -38,7 +38,7 @@ using namespace SITL;
   parent class for all simulator types
  */
 
-Aircraft::Aircraft(const char *home_str, const char *frame_str) :
+Aircraft::Aircraft(const char *frame_str) :
     ground_level(0.0f),
     frame_height(0.0f),
     dcm(),
@@ -63,6 +63,19 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     // make the SIM_* variables available to simulator backends
     sitl = AP::sitl();
 
+    set_speedup(1.0f);
+
+    last_wall_time_us = get_wall_time_us();
+    frame_counter = 0;
+
+    // allow for orientation settings, such as with tailsitters
+    enum ap_var_type ptype;
+    ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
+    terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
+}
+
+void Aircraft::set_start_location(const char *home_str)
+{
     if (!parse_home(home_str, home, home_yaw)) {
         ::printf("Failed to parse home string (%s).  Should be LAT,LON,ALT,HDG e.g. 37.4003371,-122.0800351,0,353\n", home_str);
     }
@@ -75,18 +88,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     ground_level = home.alt * 0.01f;
 
     dcm.from_euler(0.0f, 0.0f, radians(home_yaw));
-
-    set_speedup(1.0f);
-
-    last_wall_time_us = get_wall_time_us();
-    frame_counter = 0;
-
-    // allow for orientation settings, such as with tailsitters
-    enum ap_var_type ptype;
-    ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
-    terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
 }
-
 
 /*
   parse a home string into a location and yaw

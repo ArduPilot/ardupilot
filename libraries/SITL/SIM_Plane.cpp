@@ -23,8 +23,8 @@
 
 using namespace SITL;
 
-Plane::Plane(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+Plane::Plane(const char *frame_str) :
+    Aircraft(frame_str)
 {
     mass = 2.0f;
 

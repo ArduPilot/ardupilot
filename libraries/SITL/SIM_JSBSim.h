@@ -29,14 +29,14 @@ namespace SITL {
  */
 class JSBSim : public Aircraft {
 public:
-    JSBSim(const char *home_str, const char *frame_str);
+    JSBSim(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new JSBSim(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new JSBSim(frame_str);
     }
 
 private:

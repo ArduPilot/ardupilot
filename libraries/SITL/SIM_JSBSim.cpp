@@ -36,8 +36,8 @@ namespace SITL {
 
 #define DEBUG_JSBSIM 1
 
-JSBSim::JSBSim(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+JSBSim::JSBSim(const char *frame_str) :
+    Aircraft(frame_str),
     sock_control(false),
     sock_fgfdm(true),
     initialised(false),

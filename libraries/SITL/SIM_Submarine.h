@@ -31,14 +31,14 @@ namespace SITL {
 
 class Submarine : public Aircraft {
 public:
-    Submarine(const char *home_str, const char *frame_str);
+    Submarine(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new Submarine(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new Submarine(frame_str);
     }
 
 

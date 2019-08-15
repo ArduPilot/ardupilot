@@ -26,14 +26,14 @@ namespace SITL {
 */
 class SilentWings : public Aircraft {
 public:
-    SilentWings(const char *home_str, const char *frame_str);
+    SilentWings(const char *frame_str);
 
     /* Updates the aircraft model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* Static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new SilentWings(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new SilentWings(frame_str);
     }
 
 private:

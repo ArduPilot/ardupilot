@@ -23,8 +23,8 @@
 
 using namespace SITL;
 
-MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+MultiCopter::MultiCopter(const char *frame_str) :
+    Aircraft(frame_str),
     frame(nullptr)
 {
     mass = 1.5f;
