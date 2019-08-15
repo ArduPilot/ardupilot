@@ -37,7 +37,10 @@ namespace SITL {
  */
 class Aircraft {
 public:
-    Aircraft(const char *home_str, const char *frame_str);
+    Aircraft(const char *frame_str);
+
+    // called directly after constructor:
+    virtual void set_start_location(const char *home_str);
 
     /*
       set simulation speedup

@@ -51,8 +51,8 @@ static const struct {
     { "INS_ACCSCAL_Z",     1.001 },
 };
 
-SilentWings::SilentWings(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+SilentWings::SilentWings(const char *frame_str) :
+    Aircraft(frame_str),
     last_data_time_ms(0),
     first_pkt_timestamp_ms(0),
     time_base_us(0),

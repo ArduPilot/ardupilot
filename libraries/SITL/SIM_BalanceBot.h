@@ -24,14 +24,14 @@ namespace SITL {
 
 class BalanceBot : public Aircraft {
 public:
-    BalanceBot(const char *home_str, const char *frame_str);
+    BalanceBot(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new BalanceBot(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new BalanceBot(frame_str);
     }
 
 private:

@@ -38,8 +38,8 @@ namespace SITL {
 #define WAVE_ANGLE_GAIN 1
 #define WAVE_HEAVE_GAIN 1
 
-Sailboat::Sailboat(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+Sailboat::Sailboat(const char *frame_str) :
+    Aircraft(frame_str),
     steering_angle_max(35),
     turning_circle(1.8)
 {

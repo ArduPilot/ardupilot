@@ -35,8 +35,8 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-Scrimmage::Scrimmage(const char *home_str, const char *_frame_str) :
-    Aircraft(home_str, _frame_str),
+Scrimmage::Scrimmage(const char *_frame_str) :
+    Aircraft(_frame_str),
     prev_timestamp_us(0),
     recv_sock(true),
     send_sock(true),

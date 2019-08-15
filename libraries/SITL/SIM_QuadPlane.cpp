@@ -22,8 +22,8 @@
 
 using namespace SITL;
 
-QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
-    Plane(home_str, frame_str)
+QuadPlane::QuadPlane(const char *frame_str) :
+    Plane(frame_str)
 {
     // default to X frame
     const char *frame_type = "x";

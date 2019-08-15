@@ -29,14 +29,14 @@ namespace SITL {
  */
 class FlightAxis : public Aircraft {
 public:
-    FlightAxis(const char *home_str, const char *frame_str);
+    FlightAxis(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new FlightAxis(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new FlightAxis(frame_str);
     }
 
     struct state {

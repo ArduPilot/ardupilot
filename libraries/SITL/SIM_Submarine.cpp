@@ -35,8 +35,8 @@ static Thruster vectored_thrusters[] =
 
 };
 
-Submarine::Submarine(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+Submarine::Submarine(const char *frame_str) :
+    Aircraft(frame_str),
     frame(NULL)
 {
     frame_height = 0.0;

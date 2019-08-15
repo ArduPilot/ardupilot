@@ -80,8 +80,8 @@ static const struct {
 };
 
 
-Morse::Morse(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+Morse::Morse(const char *frame_str) :
+    Aircraft(frame_str)
 {
     char *saveptr = nullptr;
     char *s = strdup(frame_str);

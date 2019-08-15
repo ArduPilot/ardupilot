@@ -22,8 +22,8 @@
 
 namespace SITL {
 
-Tracker::Tracker(const char *home_str, const char *frame_str) :
-Aircraft(home_str, frame_str)
+Tracker::Tracker(const char *frame_str) :
+Aircraft(frame_str)
 {}
 
 
