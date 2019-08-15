@@ -539,7 +539,7 @@ def start_antenna_tracker(autotest, opts):
     os.chdir(oldpwd)
 
 
-def start_vehicle(binary, autotest, opts, stuff, loc):
+def start_vehicle(binary, autotest, opts, stuff, loc=None):
     """Run the ArduPilot binary"""
 
     cmd_name = opts.vehicle
@@ -576,7 +576,8 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     cmd.append(binary)
     cmd.append("-S")
     cmd.append("-I" + str(opts.instance))
-    cmd.extend(["--home", loc])
+    if loc is not None:
+        cmd.extend(["--home", loc])
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
@@ -855,7 +856,7 @@ group_sim.add_option("-M", "--mavlink-gimbal",
                      default=False,
                      help="enable MAVLink gimbal")
 group_sim.add_option("-L", "--location", type='string',
-                     default='CMAC',
+                     default=None,
                      help="use start location from "
                      "Tools/autotest/locations.txt")
 group_sim.add_option("-l", "--custom-location",
@@ -1055,9 +1056,12 @@ if cmd_opts.tracker:
 if cmd_opts.custom_location:
     location = cmd_opts.custom_location
     progress("Starting up at %s" % (location,))
-else:
+elif cmd_opts.location is not None:
     location = find_location_by_name(find_autotest_dir(), cmd_opts.location)
     progress("Starting up at %s (%s)" % (location, cmd_opts.location))
+else:
+    progress("Starting up at SITL location")
+    location = None
 
 if cmd_opts.use_dir is not None:
     new_dir = cmd_opts.use_dir
@@ -1070,12 +1074,15 @@ if cmd_opts.use_dir is not None:
 
 if cmd_opts.hil:
     # (unlikely)
-    run_in_terminal_window(find_autotest_dir(),
-                           "JSBSim",
-                           [os.path.join(find_autotest_dir(),
-                                         "jsb_sim/runsim.py"),
-                            "--home", location,
-                            "--speedup=" + str(cmd_opts.speedup)])
+    jsbsim_opts = [
+        os.path.join(find_autotest_dir(),
+                     "jsb_sim/runsim.py"),
+        "--speedup=" + str(cmd_opts.speedup)
+    ]
+    if location is not None:
+        jsbsim_opts.extend(["--home", location])
+
+    run_in_terminal_window(find_autotest_dir(), "JSBSim", jsbsim_opts)
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
         do_build(vehicle_dir, cmd_opts, frame_infos)
@@ -1099,7 +1106,7 @@ else:
                   find_autotest_dir(),
                   cmd_opts,
                   frame_infos,
-                  location)
+                  loc=location)
 
 if cmd_opts.delay_start:
     progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
