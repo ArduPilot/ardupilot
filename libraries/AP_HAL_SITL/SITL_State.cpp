@@ -331,7 +331,7 @@ void SITL_State::_fdm_input_local(void)
     _simulator_servos(input);
 
     // update the model
-    sitl_model->update(input);
+    sitl_model->update_model(input);
 
     // get FDM output from the model
     if (_sitl) {
