@@ -779,7 +779,6 @@ protected:
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
-    void update_sensor_status_flags();
     virtual void update_vehicle_sensor_status_flags() {}
 
     GCS_MAVLINK_Parameters chan_parameters[MAVLINK_COMM_NUM_BUFFERS];
@@ -797,6 +796,8 @@ private:
         uint8_t                 bitmask;
         mavlink_statustext_t    msg;
     };
+
+    void update_sensor_status_flags();
 
 #if HAL_CPU_CLASS <= HAL_CPU_CLASS_150 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
     static const uint8_t _status_capacity = 5;
