@@ -70,7 +70,8 @@ void loop(void)
     }
     { // generally make sure time is moving forward / initial time
         // offset looks right
-        int32_t hour, min, sec, ms;
+        uint8_t hour, min, sec;
+        uint16_t ms;
         if (!rtc.get_system_clock_utc(hour, min, sec, ms)) {
             failed("Failed to get hour/min/sec/ms");
             return;
