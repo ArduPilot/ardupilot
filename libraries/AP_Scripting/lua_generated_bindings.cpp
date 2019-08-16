@@ -571,31 +571,6 @@ static int AP_Terrain_height_above_terrain(lua_State *L) {
     return 1;
 }
 
-static int AP_Terrain_height_relative_home_equivalent(lua_State *L) {
-    AP_Terrain * ud = AP_Terrain::get_singleton();
-    if (ud == nullptr) {
-        return luaL_argerror(L, 1, "terrain not supported on this firmware");
-    }
-
-    binding_argcheck(L, 3);
-    const float raw_data_2 = luaL_checknumber(L, 2);
-    luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "argument out of range");
-    const float data_2 = raw_data_2;
-    float data_5003 = {};
-    const bool data_4 = static_cast<bool>(lua_toboolean(L, 4));
-    const bool data = ud->height_relative_home_equivalent(
-            data_2,
-            data_5003,
-            data_4);
-
-    if (data) {
-        lua_pushnumber(L, data_5003);
-    } else {
-        lua_pushnil(L);
-    }
-    return 1;
-}
-
 static int AP_Terrain_height_terrain_difference_home(lua_State *L) {
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
@@ -1551,7 +1526,6 @@ const luaL_Reg AP_Relay_meta[] = {
 
 const luaL_Reg AP_Terrain_meta[] = {
     {"height_above_terrain", AP_Terrain_height_above_terrain},
-    {"height_relative_home_equivalent", AP_Terrain_height_relative_home_equivalent},
     {"height_terrain_difference_home", AP_Terrain_height_terrain_difference_home},
     {"height_amsl", AP_Terrain_height_amsl},
     {"status", AP_Terrain_status},
@@ -1642,6 +1616,12 @@ struct userdata_enum {
     int value;
 };
 
+struct userdata_enum AP_Terrain_enums[] = {
+    {"TerrainStatusOK", AP_Terrain::TerrainStatusOK},
+    {"TerrainStatusUnhealthy", AP_Terrain::TerrainStatusUnhealthy},
+    {"TerrainStatusDisabled", AP_Terrain::TerrainStatusDisabled},
+    {NULL, 0}};
+
 struct userdata_enum AP_GPS_enums[] = {
     {"GPS_OK_FIX_3D_RTK_FIXED", AP_GPS::GPS_OK_FIX_3D_RTK_FIXED},
     {"GPS_OK_FIX_3D_RTK_FLOAT", AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT},
@@ -1667,7 +1647,7 @@ const struct userdata_meta userdata_fun[] = {
 const struct userdata_meta singleton_fun[] = {
     {"gcs", GCS_meta, NULL},
     {"relay", AP_Relay_meta, NULL},
-    {"terrain", AP_Terrain_meta, NULL},
+    {"terrain", AP_Terrain_meta, AP_Terrain_enums},
     {"rangefinder", RangeFinder_meta, NULL},
     {"AP_Notify", AP_Notify_meta, NULL},
     {"notify", notify_meta, NULL},
