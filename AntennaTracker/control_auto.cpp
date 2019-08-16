@@ -114,16 +114,19 @@ bool Tracker::get_ef_yaw_direction()
         yaw_angle_error_lower = ef_yaw_angle_error;
     }
 
+    float lower_yaw_diff = ef_yaw_limit_lower - yaw_angle_error_lower;
+    float upper_yaw_diff = yaw_angle_error_upper - ef_yaw_limit_upper;
+
     // checks that the vehicle is outside the tracker's range
-    if ((yaw_angle_error_lower < ef_yaw_limit_lower) && (yaw_angle_error_upper > ef_yaw_limit_upper)) {
+    if (((lower_yaw_diff > 0) && (upper_yaw_diff > 0)) || ((lower_yaw_diff < 0) && (upper_yaw_diff < 0))) {
         // if the tracker is trying to move clockwise to reach the vehicle,
         // but the tracker could get closer to the vehicle by moving counter-clockwise then set direction_reversed to true
-        if (ef_yaw_angle_error>0 && ((ef_yaw_limit_lower - yaw_angle_error_lower) < (yaw_angle_error_upper - ef_yaw_limit_upper))) {
+        if (ef_yaw_angle_error>0 && (lower_yaw_diff - upper_yaw_diff < 0)) {
             return true;
         }
         // if the tracker is trying to move counter-clockwise to reach the vehicle,
         // but the tracker could get closer to the vehicle by moving then set direction_reversed to true
-        if (ef_yaw_angle_error<0 && ((ef_yaw_limit_lower - yaw_angle_error_lower) > (yaw_angle_error_upper - ef_yaw_limit_upper))) {
+        if (ef_yaw_angle_error<0 && (lower_yaw_diff - upper_yaw_diff > 0 )) {
             return true;
         }
     }
