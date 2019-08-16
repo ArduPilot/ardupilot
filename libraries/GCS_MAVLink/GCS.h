@@ -719,6 +719,10 @@ public:
     void service_statustext(void);
     virtual GCS_MAVLINK *chan(const uint8_t ofs) = 0;
     virtual const GCS_MAVLINK *chan(const uint8_t ofs) const = 0;
+
+    const GCS_MAVLINK_Parameters &chan_params_ref(const uint8_t ofs) const {
+        return chan_parameters[ofs];
+    };
     // return the number of valid GCS objects
     uint8_t num_gcs() const { return _num_gcs; };
     void send_message(enum ap_message id);
@@ -782,6 +786,12 @@ protected:
     virtual void update_vehicle_sensor_status_flags() {}
 
     GCS_MAVLINK_Parameters chan_parameters[MAVLINK_COMM_NUM_BUFFERS];
+    // The Parameters.cpp files call _gcs.chan_params_ref which
+    // returns a reference with no bounds checking.  So do some
+    // checking here.
+    static_assert(ARRAY_SIZE(chan_parameters) >= 4,
+                  "chan_parameters safe to accomodate up to SR3_");
+
     uint8_t _num_gcs;
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
 
