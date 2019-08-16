@@ -37,7 +37,7 @@ public:
     /*
       get time in UTC hours, minutes, seconds and milliseconds
      */
-    bool get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms);
+    bool get_system_clock_utc(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms);
 
     uint32_t get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms);
 
