@@ -283,12 +283,6 @@ void Rover::one_second_loop(void)
         update_home();
     }
 
-    // update error mask of sensors and subsystems. The mask uses the
-    // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
-    // indicates that the sensor or subsystem is present but not
-    // functioning correctly
-    gcs().update_sensor_status_flags();
-
     // need to set "likely flying" when armed to allow for compass
     // learning to run
     ahrs.set_likely_flying(hal.util->get_soft_armed());
