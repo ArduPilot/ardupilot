@@ -448,12 +448,6 @@ void Copter::one_hz_loop()
 #endif
 
     AP_Notify::flags.flying = !ap.land_complete;
-
-    // update error mask of sensors and subsystems. The mask uses the
-    // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
-    // indicates that the sensor or subsystem is present but not
-    // functioning correctly
-    gcs().update_sensor_status_flags();
 }
 
 // called at 50hz
