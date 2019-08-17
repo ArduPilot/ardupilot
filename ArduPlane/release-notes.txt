@@ -1,3 +1,10 @@
+Release 3.9.10beta1, 17th August 2019
+-------------------------------------
+
+This releases includes an important fix to IOMCU handling that fixes a
+problem where motors attached on the AUX channels can stop momentarily
+due to an error in the UART handling to the IOMCU.
+
 Release 3.9.9, 4th August 2019
 ------------------------------
 
