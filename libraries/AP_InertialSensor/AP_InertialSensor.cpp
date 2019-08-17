@@ -1127,8 +1127,6 @@ AP_InertialSensor::_init_gyro()
     // cold start
     hal.console->printf("Init Gyro");
 
-    EXPECT_DELAY_MS(60000);
-
     /*
       we do the gyro calibration with no board rotation. This avoids
       having to rotate readings during the calibration
@@ -1163,6 +1161,8 @@ AP_InertialSensor::_init_gyro()
         Vector3f accel_start;
         float diff_norm[INS_MAX_INSTANCES];
         uint8_t i;
+
+        EXPECT_DELAY_MS(1000);
 
         memset(diff_norm, 0, sizeof(diff_norm));
 
