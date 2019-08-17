@@ -551,6 +551,7 @@ static int AP_Relay_on(lua_State *L) {
 }
 
 static int AP_Terrain_height_above_terrain(lua_State *L) {
+#if AP_TERRAIN_AVAILABLE
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 1, "terrain not supported on this firmware");
@@ -568,10 +569,12 @@ static int AP_Terrain_height_above_terrain(lua_State *L) {
     } else {
         lua_pushnil(L);
     }
+#endif
     return 1;
 }
 
 static int AP_Terrain_height_terrain_difference_home(lua_State *L) {
+#if AP_TERRAIN_AVAILABLE
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 1, "terrain not supported on this firmware");
@@ -589,10 +592,12 @@ static int AP_Terrain_height_terrain_difference_home(lua_State *L) {
     } else {
         lua_pushnil(L);
     }
+#endif
     return 1;
 }
 
 static int AP_Terrain_height_amsl(lua_State *L) {
+#if AP_TERRAIN_AVAILABLE
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 1, "terrain not supported on this firmware");
@@ -612,10 +617,12 @@ static int AP_Terrain_height_amsl(lua_State *L) {
     } else {
         lua_pushnil(L);
     }
+#endif
     return 1;
 }
 
 static int AP_Terrain_status(lua_State *L) {
+#if AP_TERRAIN_AVAILABLE
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 1, "terrain not supported on this firmware");
@@ -625,10 +632,12 @@ static int AP_Terrain_status(lua_State *L) {
     const uint8_t data = ud->status();
 
     lua_pushinteger(L, data);
+#endif
     return 1;
 }
 
 static int AP_Terrain_enabled(lua_State *L) {
+#if AP_TERRAIN_AVAILABLE
     AP_Terrain * ud = AP_Terrain::get_singleton();
     if (ud == nullptr) {
         return luaL_argerror(L, 1, "terrain not supported on this firmware");
@@ -638,6 +647,7 @@ static int AP_Terrain_enabled(lua_State *L) {
     const bool data = ud->enabled();
 
     lua_pushboolean(L, data);
+#endif
     return 1;
 }
 
@@ -1617,9 +1627,11 @@ struct userdata_enum {
 };
 
 struct userdata_enum AP_Terrain_enums[] = {
+#if AP_TERRAIN_AVAILABLE
     {"TerrainStatusOK", AP_Terrain::TerrainStatusOK},
     {"TerrainStatusUnhealthy", AP_Terrain::TerrainStatusUnhealthy},
     {"TerrainStatusDisabled", AP_Terrain::TerrainStatusDisabled},
+#endif
     {NULL, 0}};
 
 struct userdata_enum AP_GPS_enums[] = {
