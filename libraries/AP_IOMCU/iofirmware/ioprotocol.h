@@ -97,62 +97,38 @@ enum iopage {
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
 #define FORCE_SAFETY_MAGIC 22027
 
-struct PACKED page_config {
+struct page_config {
     uint16_t protocol_version;
     uint16_t protocol_version2;
 };
 
-struct PACKED page_reg_status {
+struct page_reg_status {
     uint16_t freemem;
-    uint16_t cpuload;
-
-    // status flags
-    uint16_t flag_outputs_armed:1;
-    uint16_t flag_override:1;
-    uint16_t flag_rc_ok:1;
-    uint16_t flag_rc_ppm:1;
-    uint16_t flag_rc_dsm:1;
-    uint16_t flag_rc_sbus:1;
-    uint16_t flag_fmu_ok:1;
-    uint16_t flag_raw_pwm:1;
-    uint16_t flag_mixer_ok:1;
-    uint16_t flag_arm_sync:1;
-    uint16_t flag_init_ok:1;
-    uint16_t flag_failsafe:1;
-    uint16_t flag_safety_off:1;
-    uint16_t flag_fmu_initialised:1;
-    uint16_t flag_rc_st24:1;
-    uint16_t flag_rc_sumd_srxl:1;
-
-    uint16_t alarms;
     uint32_t timestamp_ms;
     uint16_t vservo;
     uint16_t vrssi;
-    uint16_t prssi;
+    uint32_t num_errors;
+    uint32_t total_pkts;
+    uint8_t flag_safety_off;
+    uint8_t err_crc;
+    uint8_t err_bad_opcode;
+    uint8_t err_read;
+    uint8_t err_write;
+    uint8_t err_uart;
 };
 
-struct PACKED page_rc_input {
-    uint16_t count;
-    uint16_t flags_frame_drop:1;
-    uint16_t flags_failsafe:1;
-    uint16_t flags_dsm11:1;
-    uint16_t flags_mapping_ok:1;
-    uint16_t flags_rc_ok:1;
-    uint16_t flags_unused:11;
-    uint16_t nrssi;
-    uint16_t data;
-    uint16_t frame_count;
-    uint16_t lost_frame_count;
+struct page_rc_input {
+    uint8_t count;
+    uint8_t flags_failsafe:1;
+    uint8_t flags_rc_ok:1;
+    uint8_t rc_protocol;
     uint16_t pwm[IOMCU_MAX_CHANNELS];
-    // the following two fields are not transferred to the FMU
-    uint16_t last_frame_count;
-    uint32_t last_input_ms;
 };
 
 /*
   data for mixing on FMU failsafe
  */
-struct PACKED page_mixing {
+struct page_mixing {
     uint16_t servo_min[IOMCU_MAX_CHANNELS];
     uint16_t servo_max[IOMCU_MAX_CHANNELS];
     uint16_t servo_trim[IOMCU_MAX_CHANNELS];
