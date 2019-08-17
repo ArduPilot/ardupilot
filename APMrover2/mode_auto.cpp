@@ -579,7 +579,7 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         // absolute delay to utc time
         nav_delay_time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", nav_delay_time_max_ms/1000);
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %lu sec", nav_delay_time_max_ms/1000);
 }
 
 // start guided within auto to allow external navigation system to control vehicle
