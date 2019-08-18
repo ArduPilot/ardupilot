@@ -1811,6 +1811,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.disarm_vehicle()
 
+    def test_motor_test(self):
+        '''AKA run-rover-run'''
+        magic_throttle_value = 1812
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+                     1, # p1 - motor instance
+                     mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM, # p2 - throttle type
+                     magic_throttle_value, # p3 - throttle
+                     5, # p4 - timeout
+                     1, # p5 - motor count
+                     0, # p6 - test order (see MOTOR_TEST_ORDER)
+                     0, # p7
+        )
+        self.mav.motors_armed_wait()
+        self.progress("Waiting for magic throttle value")
+        self.wait_servo_channel_value(3, magic_throttle_value)
+        self.wait_servo_channel_value(3, self.get_parameter("RC3_TRIM", 5), timeout=10)
+        self.mav.motors_disarmed_wait()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -1924,6 +1942,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("GCSRally",
              "Upload and download of rally",
              self.test_gcs_rally),
+
+            ("MotorTest",
+             "Motor Test triggered via mavlink",
+             self.test_motor_test),
 
             ("DataFlashOverMAVLink",
              "Test DataFlash over MAVLink",
