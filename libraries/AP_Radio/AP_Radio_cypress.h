@@ -71,7 +71,7 @@ public:
     const AP_Radio::stats &get_stats(void) override;
 
     // set the 2.4GHz wifi channel used by companion computer, so it can be avoided
-    void set_wifi_channel(uint8_t channel) {
+    void set_wifi_channel(uint8_t channel) override {
         t_status.wifi_chan = channel;
     }
     
