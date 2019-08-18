@@ -314,7 +314,7 @@ void Plane::update_fbwb_speed_height(void)
         change_target_altitude(alt_change_cm);
         
         if ((is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) ||
-            (g2.soaring_controller.is_active() && g2.soaring_controller.get_throttle_suppressed())) {
+            (g2.soaring_controller.active_state() && g2.soaring_controller.get_throttle_suppressed())) {
             // the user has just released the elevator, lock in
             // the current altitude
             // or we're in soaring mode with throttle suppressed
