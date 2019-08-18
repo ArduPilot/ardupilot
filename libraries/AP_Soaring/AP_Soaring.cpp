@@ -179,20 +179,21 @@ bool SoaringController::suppress_throttle()
 
 bool SoaringController::check_thermal_criteria()
 {
-    bool thermalling_allowed = soar_active_ch>0 ? RC_Channels::get_radio_in(soar_active_ch-1) >= 1700 : true;
+    ActiveStatus status = active_state();
 
-    return (soar_active
+    return (status == SOARING_STATUS_AUTO_MODE_CHANGE
             && ((AP_HAL::micros64() - _cruise_start_time_us) > ((unsigned)min_cruise_s * 1e6))
             && (_vario.filtered_reading - _vario.get_exp_thermalling_sink()) > thermal_vspeed
             && _vario.alt < alt_max
-            && _vario.alt > alt_min
-            && thermalling_allowed);
+            && _vario.alt > alt_min);
 }
 
 
 SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2f prev_wp, Vector2f next_wp)
 {
-    if (!soar_active) {
+    ActiveStatus status = active_state();
+
+    if (status != SOARING_STATUS_AUTO_MODE_CHANGE) {
         _cruise_criteria_msg_last = SOARING_DISABLED;
         return SOARING_DISABLED;
     }
@@ -281,7 +282,7 @@ void SoaringController::init_thermalling()
 
 void SoaringController::init_cruising()
 {
-    if (is_active()) {
+    if (active_state()) {
         _cruise_start_time_us = AP_HAL::micros64();
         // Start glide. Will be updated on the next loop.
         set_throttle_suppressed(true);
@@ -342,37 +343,46 @@ float SoaringController::McCready(float alt)
     return thermal_vspeed;
 }
 
-bool SoaringController::is_active() const
+SoaringController::ActiveStatus SoaringController::active_state() const
 {
     if (!soar_active) {
-        return false;
+        return SOARING_STATUS_DISABLED;
     }
     if (soar_active_ch <= 0) {
         // no activation channel
-        return true;
+        return SOARING_STATUS_MANUAL_MODE_CHANGE;
     }
-    // active when above 1400
-    return RC_Channels::get_radio_in(soar_active_ch-1) >= 1400;
+
+    uint16_t radio_in = RC_Channels::get_radio_in(soar_active_ch-1);
+
+    // active when above 1400, with auto mode changes when above 1700
+    if (radio_in >= 1700) {
+        return SOARING_STATUS_AUTO_MODE_CHANGE;
+    } else if (radio_in >= 1400) {
+        return SOARING_STATUS_MANUAL_MODE_CHANGE;
+    }
+
+    return SOARING_STATUS_DISABLED;
 }
 
-bool SoaringController::update_active_state()
+SoaringController::ActiveStatus SoaringController::update_active_state()
 {
-    bool active = is_active();
-    bool state_changed = !(active == _last_update_active);
+    ActiveStatus status = active_state();
+    bool state_changed = !(status == _last_update_status);
 
     if (state_changed) {
-        if (active) {
-            // It's active, but wasn't on the last loop.
+        if (status>=SOARING_STATUS_MANUAL_MODE_CHANGE) {
+            // It's enabled, but wasn't on the last loop.
             set_throttle_suppressed(true);
         } else {
-            // It's not active, but was active on the last loop.
+            // It's not enabled, but was enabled on the last loop.
             set_throttle_suppressed(false);
         }
     }
 
-    _last_update_active = active;
+    _last_update_status = status;
 
-    return active;
+    return status;
 }
 
 
