@@ -667,7 +667,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         // param3 : throttle (range depends upon param2)
         // param4 : timeout (in seconds)
         return rover.mavlink_motor_test_start(*this,
-                                              static_cast<uint8_t>(packet.param1),
+                                              (AP_MotorsUGV::motor_test_order)packet.param1,
                                               static_cast<uint8_t>(packet.param2),
                                               static_cast<int16_t>(packet.param3),
                                               packet.param4);
