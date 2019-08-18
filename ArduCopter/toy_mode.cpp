@@ -936,7 +936,7 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
         return;
     }
     mavlink_named_value_int_t m;
-    mavlink_msg_named_value_int_decode(msg, &m);
+    mavlink_msg_named_value_int_decode(&msg, &m);
     if (strncmp(m.name, "BLINKR", 10) == 0) {
         red_blink_pattern = (uint16_t)m.value;
         red_blink_count = m.value >> 16;
