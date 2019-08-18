@@ -11,7 +11,7 @@ static const int16_t MOTOR_TEST_TIMEOUT_MS_MAX = 30000; // max timeout is 30 sec
 
 static uint32_t motor_test_start_ms = 0;        // system time the motor test began
 static uint32_t motor_test_timeout_ms = 0;      // test will timeout this many milliseconds after the motor_test_start_ms
-static uint8_t motor_test_seq = 0;              // motor sequence number of motor being tested
+static AP_MotorsUGV::motor_test_order motor_test_instance;              // motor instance number of motor being tested (see AP_MotorsUGV::motor_test_order)
 static uint8_t motor_test_throttle_type = 0;    // motor throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through)
 static int16_t motor_test_throttle_value = 0;   // throttle to be sent to motor, value depends upon it's type
 
@@ -32,18 +32,18 @@ void Rover::motor_test_output()
         // calculate  based on throttle type
         switch (motor_test_throttle_type) {
             case MOTOR_TEST_THROTTLE_PERCENT:
-                test_result = g2.motors.output_test_pct((AP_MotorsUGV::motor_test_order)motor_test_seq, motor_test_throttle_value);
+                test_result = g2.motors.output_test_pct(motor_test_instance, motor_test_throttle_value);
                 break;
 
             case MOTOR_TEST_THROTTLE_PWM:
-                test_result = g2.motors.output_test_pwm((AP_MotorsUGV::motor_test_order)motor_test_seq, motor_test_throttle_value);
+                test_result = g2.motors.output_test_pwm(motor_test_instance, motor_test_throttle_value);
                 break;
 
             case MOTOR_TEST_THROTTLE_PILOT:
-                if ((AP_MotorsUGV::motor_test_order)motor_test_seq == AP_MotorsUGV::MOTOR_TEST_STEERING) {
-                    test_result = g2.motors.output_test_pct((AP_MotorsUGV::motor_test_order)motor_test_seq, channel_steer->norm_input_dz() * 100.0f);
+                if (motor_test_instance == AP_MotorsUGV::MOTOR_TEST_STEERING) {
+                    test_result = g2.motors.output_test_pct(motor_test_instance, channel_steer->norm_input_dz() * 100.0f);
                 } else {
-                    test_result = g2.motors.output_test_pct((AP_MotorsUGV::motor_test_order)motor_test_seq, channel_throttle->get_control_in());
+                    test_result = g2.motors.output_test_pct(motor_test_instance, channel_throttle->get_control_in());
                 }
                 break;
 
@@ -60,7 +60,7 @@ void Rover::motor_test_output()
 
 // mavlink_motor_test_check - perform checks before motor tests can begin
 // return true if tests can continue, false if not
-bool Rover::mavlink_motor_test_check(const GCS_MAVLINK &gcs_chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value)
+bool Rover::mavlink_motor_test_check(const GCS_MAVLINK &gcs_chan, bool check_rc, AP_MotorsUGV::motor_test_order motor_seq, uint8_t throttle_type, int16_t throttle_value)
 {
     // check board has initialised
     if (!initialised) {
@@ -108,15 +108,15 @@ bool Rover::mavlink_motor_test_check(const GCS_MAVLINK &gcs_chan, bool check_rc,
 
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 // returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
-MAV_RESULT Rover::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec)
+MAV_RESULT Rover::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, AP_MotorsUGV::motor_test_order motor_instance, uint8_t throttle_type, int16_t throttle_value, float timeout_sec)
 {
     // if test has not started try to start it
     if (!motor_test) {
         /* perform checks that it is ok to start test
            The RC calibrated check can be skipped if direct pwm is
-           supplied
+           suppliedo
         */
-        if (!mavlink_motor_test_check(gcs_chan, throttle_type != 1, motor_seq, throttle_type, throttle_value)) {
+        if (!mavlink_motor_test_check(gcs_chan, throttle_type != 1, motor_instance, throttle_type, throttle_value)) {
             return MAV_RESULT_FAILED;
         } else {
             // start test
@@ -142,7 +142,7 @@ MAV_RESULT Rover::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t 
     motor_test_timeout_ms = MIN(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
 
     // store required output
-    motor_test_seq = motor_seq;
+    motor_test_instance = motor_instance;
     motor_test_throttle_type = throttle_type;
     motor_test_throttle_value = throttle_value;
 
