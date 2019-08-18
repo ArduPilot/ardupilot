@@ -52,8 +52,6 @@ class SoaringController {
     float _thermalability;
     float _expected_sink;
 
-    bool _last_update_active;
-
 protected:
     AP_Int8 soar_active;
     AP_Int8 soar_active_ch;
@@ -85,6 +83,12 @@ public:
         THERMAL_GOOD_TO_KEEP_LOITERING
     } LoiterStatus;
 
+    typedef enum ActiveStatus {
+        SOARING_STATUS_DISABLED,
+        SOARING_STATUS_MANUAL_MODE_CHANGE,
+        SOARING_STATUS_AUTO_MODE_CHANGE
+    } ActiveStatus;    
+
     AP_Float max_radius;
 
     // this supports the TECS_* user settable parameters
@@ -97,7 +101,7 @@ public:
     void init_cruising();
     void update_thermalling();
     void update_cruising();
-    bool is_active() const;
+    ActiveStatus active_state() const;
     void set_throttle_suppressed(bool suppressed);
 
     bool get_throttle_suppressed() const
@@ -114,7 +118,9 @@ public:
 
     bool check_drift(Vector2f prev_wp, Vector2f next_wp);
 
-    bool update_active_state();
+    ActiveStatus update_active_state();
+
+    ActiveStatus _last_update_status;
 
 private:
     // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
