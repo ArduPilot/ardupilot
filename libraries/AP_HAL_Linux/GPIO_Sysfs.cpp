@@ -287,7 +287,10 @@ void GPIO_Sysfs::_gpio_script_thread(void)
             char cmd[100];
             snprintf(cmd, sizeof(cmd)-1, "/bin/sh %s %u %u", HAL_GPIO_SCRIPT, pv.pin, pv.value);
             hal.console->printf("Running: %s\n", cmd);
-            system(cmd);
+            const int system_ret = system(cmd);
+            if (system_ret != 0) {
+                hal.console->printf("Unexpected return value (%d)\n", system_ret);
+            }
         }
     }
 }
