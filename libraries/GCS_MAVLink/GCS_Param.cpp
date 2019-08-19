@@ -276,7 +276,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
 
     float old_value = vp->cast_to_float(var_type);
 
-    if (parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) {
+    if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
         // echo back the incorrect value so that we fulfull the
         // parameter state machine requirements:
