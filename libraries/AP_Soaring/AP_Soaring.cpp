@@ -216,7 +216,7 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2
         if (_thermalability < mcCreadyAlt) {
             result = THERMAL_WEAK;
             if (result != _cruise_criteria_msg_last) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: W %f.3 R %f.3 th %f.1 alt %dm Mc %dm", (double)_ekf.X[0], (double)_ekf.X[1], (double)_thermalability, (int32_t)alt, (int32_t)mcCreadyAlt);
+                gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak: th %3.1fm/s alt %3.1fm Mc %3.1fm/s", (double)_thermalability, (double)alt, (double)mcCreadyAlt);
             }
         } else if (alt < (-_thermal_start_pos.z) || _vario.smoothed_climb_rate < 0.0) {
             result = ALT_LOST;
