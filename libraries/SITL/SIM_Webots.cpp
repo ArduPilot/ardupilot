@@ -359,15 +359,16 @@ void Webots::output_rover(const struct sitl_input &input)
     const float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
     
     // construct a JSON packet for v and w
-    char buf[60];
+    char buf[200];
     
-    snprintf(buf, sizeof(buf)-1, "{\"rover\": [%f, %f]}\n",
-             motor1, motor2);
+    const int len = snprintf(buf, sizeof(buf)-1, "{\"rover\": [%f, %f], \"wnd\": [%f, %f, %f, %f]}\n",
+             motor1, motor2,
+             input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
     //printf("rover motors m1: %f m2: %f\n", steer_angle, speed_ms);
     
-    buf[sizeof(buf)-1] = 0;
+    buf[len] = 0;
 
-    sim_sock->send(buf, strlen(buf));
+    sim_sock->send(buf, len);
 }
 
 /*
@@ -394,12 +395,13 @@ void Webots::output_quad(const struct sitl_input &input)
     // m4: left
 
     // construct a JSON packet for motors
-    char buf[60];
-    snprintf(buf, sizeof(buf)-1, "{\"engines\": [%f, %f, %f, %f]}\n",
-             m_front, m_right, m_back, m_left);
-    buf[sizeof(buf)-1] = 0;
+    char buf[200];
+    const int len = snprintf(buf, sizeof(buf)-1, "{\"eng\": [%.3f, %.3f, %.3f, %.3f], \"wnd\": [%f, %3.1f, %1.1f, %2.1f]}\n",
+             m_front, m_right, m_back, m_left,
+             input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
+    buf[len] = 0;
 
-    sim_sock->send(buf, strlen(buf));
+    sim_sock->send(buf, len);
 }
 
 /*
@@ -409,13 +411,14 @@ void Webots::output_quad(const struct sitl_input &input)
 void Webots::output_pwm(const struct sitl_input &input)
 {
     char buf[200];
-    snprintf(buf, sizeof(buf)-1, "{\"pwm\": [%u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u]}\n",
+    const int len = snprintf(buf, sizeof(buf)-1, "{\"pwm\": [%u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u], \"wnd\": [%f, %f, %f, %f]}\n",
              input.servos[0], input.servos[1], input.servos[2], input.servos[3],
              input.servos[4], input.servos[5], input.servos[6], input.servos[7],
              input.servos[8], input.servos[9], input.servos[10], input.servos[11],
-             input.servos[12], input.servos[13], input.servos[14], input.servos[15]);
-    buf[sizeof(buf)-1] = 0;
-    sim_sock->send(buf, strlen(buf));
+             input.servos[12], input.servos[13], input.servos[14], input.servos[15],
+             input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
+    buf[len ] = 0;
+    sim_sock->send(buf, len);
 }
 
 
@@ -554,6 +557,7 @@ void Webots::update(const struct sitl_input &input)
         // update magnetic field
         update_mag_field_bf();
 
+        update_wind (input);
         output(input);
 
         report_FPS();
