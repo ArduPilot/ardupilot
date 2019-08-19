@@ -76,6 +76,7 @@ const AP_Param::Info *AP_Param::_var_info;
 
 struct AP_Param::param_override *AP_Param::param_overrides = nullptr;
 uint16_t AP_Param::num_param_overrides = 0;
+uint16_t AP_Param::num_read_only = 0;
 
 ObjectBuffer<AP_Param::param_save> AP_Param::save_queue{30};
 bool AP_Param::registered_save_handler;
@@ -1243,8 +1244,11 @@ bool AP_Param::configured_in_storage(void) const
     return scan(&phdr, &ofs) && (phdr.type == AP_PARAM_VECTOR3F || idx == 0);
 }
 
-bool AP_Param::configured_in_defaults_file(void) const
+bool AP_Param::configured_in_defaults_file(bool &read_only) const
 {
+    if (num_param_overrides == 0) {
+        return false;
+    }
     uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
     struct GroupNesting group_nesting {};
@@ -1257,10 +1261,29 @@ bool AP_Param::configured_in_defaults_file(void) const
 
     for (uint16_t i=0; i<num_param_overrides; i++) {
         if (this == param_overrides[i].object_ptr) {
+            read_only = param_overrides[i].read_only;
             return true;
         }
     }
 
+    return false;
+}
+
+bool AP_Param::configured(void) const
+{
+    bool read_only;
+    return configured_in_defaults_file(read_only) || configured_in_storage();
+}
+
+bool AP_Param::is_read_only(void) const
+{
+    if (num_read_only == 0) {
+        return false;
+    }
+    bool read_only;
+    if (configured_in_defaults_file(read_only)) {
+        return read_only;
+    }
     return false;
 }
 
@@ -1849,25 +1872,37 @@ void AP_Param::set_float(float value, enum ap_var_type var_type)
 /*
   parse a parameter file line
  */
-bool AP_Param::parse_param_line(char *line, char **vname, float &value)
+bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &read_only)
 {
     if (line[0] == '#') {
         return false;
     }
     char *saveptr = nullptr;
-    char *pname = strtok_r(line, ", =\t", &saveptr);
+    /*
+      note that we need the \r\n as delimiters to prevent us getting
+      strings with line termination in the results
+     */
+    char *pname = strtok_r(line, ", =\t\r\n", &saveptr);
     if (pname == nullptr) {
         return false;
     }
     if (strlen(pname) > AP_MAX_NAME_SIZE) {
         return false;
     }
-    const char *value_s = strtok_r(nullptr, ", =\t", &saveptr);
+    const char *value_s = strtok_r(nullptr, ", =\t\r\n", &saveptr);
     if (value_s == nullptr) {
         return false;
     }
     value = atof(value_s);
     *vname = pname;
+
+    const char *flags_s = strtok_r(nullptr, ", =\t\r\n", &saveptr);
+    if (flags_s && strcmp(flags_s, "@READONLY") == 0) {
+        read_only = true;
+    } else {
+        read_only = false;
+    }
+
     return true;
 }
 
@@ -1890,7 +1925,8 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
     while (fgets(line, sizeof(line)-1, f)) {
         char *pname;
         float value;
-        if (!parse_param_line(line, &pname, value)) {
+        bool read_only;
+        if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
         enum ap_var_type var_type;
@@ -1918,7 +1954,8 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
     while (fgets(line, sizeof(line)-1, f)) {
         char *pname;
         float value;
-        if (!parse_param_line(line, &pname, value)) {
+        bool read_only;
+        if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
         enum ap_var_type var_type;
@@ -1935,6 +1972,10 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
         }
         param_overrides[idx].object_ptr = vp;
         param_overrides[idx].value = value;
+        param_overrides[idx].read_only = read_only;
+        if (read_only) {
+            num_read_only++;
+        }
         idx++;
         if (!vp->configured_in_storage()) {
             vp->set_float(value, var_type);
@@ -1972,6 +2013,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 
     delete[] param_overrides;
     num_param_overrides = 0;
+    num_read_only = 0;
 
     param_overrides = new param_override[num_defaults];
     if (param_overrides == nullptr) {
@@ -2019,6 +2061,7 @@ bool AP_Param::count_embedded_param_defaults(uint16_t &count)
         char line[100];
         char *pname;
         float value;
+        bool read_only;
         uint16_t i;
         uint16_t n = MIN(length, sizeof(line)-1);
         for (i=0;i<n;i++) {
@@ -2041,7 +2084,7 @@ bool AP_Param::count_embedded_param_defaults(uint16_t &count)
             continue;
         }
 
-        if (!parse_param_line(line, &pname, value)) {
+        if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
 
@@ -2065,6 +2108,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
     delete[] param_overrides;
     param_overrides = nullptr;
     num_param_overrides = 0;
+    num_read_only = 0;
 
     uint16_t num_defaults = 0;
     if (!count_embedded_param_defaults(num_defaults)) {
@@ -2085,6 +2129,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         char line[100];
         char *pname;
         float value;
+        bool read_only;
         uint16_t i;
         uint16_t n = MIN(length, sizeof(line)-1);
         for (i=0;i<n;i++) {
@@ -2106,7 +2151,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
             continue;
         }
         
-        if (!parse_param_line(line, &pname, value)) {
+        if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
         enum ap_var_type var_type;
@@ -2123,6 +2168,10 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         }
         param_overrides[idx].object_ptr = vp;
         param_overrides[idx].value = value;
+        param_overrides[idx].read_only = read_only;
+        if (read_only) {
+            num_read_only++;
+        }
         idx++;
         if (!vp->configured_in_storage()) {
             vp->set_float(value, var_type);
