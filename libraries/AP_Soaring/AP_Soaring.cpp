@@ -350,7 +350,7 @@ SoaringController::ActiveStatus SoaringController::active_state() const
     }
     if (soar_active_ch <= 0) {
         // no activation channel
-        return SOARING_STATUS_MANUAL_MODE_CHANGE;
+        return SOARING_STATUS_AUTO_MODE_CHANGE;
     }
 
     uint16_t radio_in = RC_Channels::get_radio_in(soar_active_ch-1);
