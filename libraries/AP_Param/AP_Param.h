@@ -426,14 +426,17 @@ public:
     static bool             check_var_info(void);
 
     // return true if the parameter is configured in the defaults file
-    bool configured_in_defaults_file(void) const;
+    bool configured_in_defaults_file(bool &read_only) const;
 
     // return true if the parameter is configured in EEPROM/FRAM
     bool configured_in_storage(void) const;
 
     // return true if the parameter is configured
-    bool configured(void) const { return configured_in_defaults_file() || configured_in_storage(); }
+    bool configured(void) const;
 
+    // return true if the parameter is read-only
+    bool is_read_only(void) const;
+    
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
@@ -601,7 +604,7 @@ private:
     // find a default value given a pointer to a default value in flash
     static float get_default_value(const AP_Param *object_ptr, const float *def_value_ptr);
 
-    static bool parse_param_line(char *line, char **vname, float &value);
+    static bool parse_param_line(char *line, char **vname, float &value, bool &read_only);
 
 #if HAL_OS_POSIX_IO == 1
     /*
@@ -632,9 +635,11 @@ private:
     struct param_override {
         const AP_Param *object_ptr;
         float value;
+        bool read_only; // param is marked @READONLY
     };
     static struct param_override *param_overrides;
     static uint16_t num_param_overrides;
+    static uint16_t num_read_only;
 
     // values filled into the EEPROM header
     static const uint8_t        k_EEPROM_magic0      = 0x50;
