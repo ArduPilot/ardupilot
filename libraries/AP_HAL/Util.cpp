@@ -59,7 +59,7 @@ int AP_HAL::Util::vsnprintf(char* str, size_t size, const char *format, va_list 
     print_vprintf(&buf, format, ap);
     // null terminate
     int ret = buf._offs;
-    buf.write(0);
+    str[ret] = '\0';
     return ret;
 }
 
