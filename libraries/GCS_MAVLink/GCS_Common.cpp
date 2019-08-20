@@ -981,6 +981,9 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index()
             if (ms_since_last_sent > interval_ms) {
                 // should already have sent this one!
                 ms_before_send_this_message = 0;
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
+                try_send_message_stats.behind++;
+#endif
             } else {
                 ms_before_send_this_message = interval_ms - ms_since_last_sent;
             }
@@ -1023,6 +1026,9 @@ void GCS_MAVLINK::update_send()
     const uint32_t start = AP_HAL::millis();
     while (AP_HAL::millis() - start < 5) { // spend a max of 5ms sending messages.  This should never trigger - out_of_time() should become true
         if (gcs().out_of_time()) {
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
+            try_send_message_stats.out_of_time++;
+#endif
             break;
         }
 
@@ -1390,6 +1396,13 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
                             chan,
                             try_send_message_stats.no_space_for_message);
             try_send_message_stats.no_space_for_message = 0;
+        }
+        if (try_send_message_stats.out_of_time) {
+            gcs().send_text(MAV_SEVERITY_INFO,
+                            "GCS.chan(%u): out-of-time=%u",
+                            chan,
+                            try_send_message_stats.out_of_time);
+            try_send_message_stats.out_of_time = 0;
         }
         if (max_slowdown_ms) {
             gcs().send_text(MAV_SEVERITY_INFO,
