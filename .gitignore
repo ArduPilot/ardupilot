@@ -115,3 +115,10 @@ cmake-build-*/
 way.txt
 *.wbproj
 *.wbproj
+segv_*out
+/scripts/
+/APMrover2/scripts/
+/AntennaTracker/scripts/
+/ArduCopter/scripts/
+/ArduPlane/scripts/
+/ArduSub/scripts/
