@@ -133,16 +133,16 @@ void getGyro (const WbDeviceTag gyro, const double *northDirection, char *buf)
 
 void getLinearVelocity (WbNodeRef nodeRef, const double *northDirection,  char * buf)
 {
-    const double * vel = wb_supervisor_node_get_velocity (nodeRef);
-    if (vel != NULL)
+    linear_velocity = wb_supervisor_node_get_velocity (nodeRef);
+    if (linear_velocity != NULL)
     {
       if (northDirection[0] == 1)
       {
-        sprintf (buf,"[%f, %f, %f]", vel[0], vel[2], vel[1]);
+        sprintf (buf,"[%f, %f, %f]", linear_velocity[0], linear_velocity[2], linear_velocity[1]);
       }
       else
       {
-        sprintf (buf,"[%f, %f, %f]",  vel[2], -vel[0], vel[1]);
+        sprintf (buf,"[%f, %f, %f]",  linear_velocity[2], -linear_velocity[0], linear_velocity[1]);
       } 
     }
     
@@ -186,7 +186,7 @@ void getAllSensors (char *buf, const double *northDirection, WbDeviceTag gyro, W
         getCompass(compass, northDirection, compass_buf);
         getGPS(gps, northDirection, gps_buf);
         getInertia (inertial_unit, northDirection, inertial_buf);
-        getLinearVelocity(wb_supervisor_node_get_self(), northDirection, linear_velocity_buf);
+        getLinearVelocity(self_node, northDirection, linear_velocity_buf);
 
         sprintf (buf,"{\"ts\": %s,\"vehicle.imu\": {\"av\": %s,\"la\": %s,\"mf\": %s,\"vehicle.gps\":{%s},\"vehicle.velocity\":{\"wlv\": %s},\"vehicle.pose\":{%s,%s}}\r\n"
                                   , szTime,                                  gyro_buf,                    acc_buf,                 compass_buf,               gps_buf,                                  linear_velocity_buf,               gps_buf, inertial_buf );

@@ -1,9 +1,12 @@
-// #define DEBUG_MOTORS    
+// #define DEBUG_MOTORS 
+// #define DEBUG_WIND    
 // #define DEBUG_SENSORS   
- #define DEBUG_USE_KB 
+// #define DEBUG_USE_KB 
 // #define DEBUG_INPUT_DATA
-// #define LINEAR_THRUST   
+// #define LINEAR_THRUST
+#define WIND_SIMULATION
 
+#define VEHICLE_DRAG_FACTOR 0.001
 
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
@@ -24,7 +27,16 @@ typedef struct vector4f VECTOR4F;
 struct {
         double timestamp;
         VECTOR4F motors;
-        } state, last_state;
+        VECTOR4F wind; 
+        /*
+         struct {
+        float speed;      // m/s
+        float direction;  // degrees 0..360
+        float turbulence;
+        float dir_z;	  //degrees -90..90
+        } wind;
+        */
+       } state, last_state;
 
 
 
@@ -35,7 +47,15 @@ struct keytable {
         void *ptr;
         enum data_type type;
 
-} keytable[1] = {
+} keytable[2] = {
         //{ "", "timestamp", &state.timestamp, DATA_DOUBLE },
-        { "", "engines",    &state.motors, DATA_VECTOR4F }
+        { "", "eng",    &state.motors, DATA_VECTOR4F },
+        { "", "wnd",    &state.wind, DATA_VECTOR4F }
 };
+
+/*
+        w: wind speed
+        x , y, z: wind direction.
+*/
+VECTOR4F __attribute__((packed, aligned(1)))  wind_webots_axis;
+

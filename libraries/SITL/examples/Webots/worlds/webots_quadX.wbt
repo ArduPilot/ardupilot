@@ -1,6 +1,7 @@
 #VRML_SIM R2019b utf8
 WorldInfo {
   gravity 0 -9.80665 0
+  physics "sitl_physics_env"
   basicTimeStep 2
   FPS 25
   optimalThreadCount 4
@@ -47,10 +48,14 @@ Solid {
   ]
   name "solid(1)"
 }
-Robot {
+DEF DEF_VEHICLE Robot {
   translation -0.027601 0.674307 0.005031
   rotation 0 1 0 0.785388
   children [
+    Emitter {
+      name "emitter_plugin"
+      description "commuicates with physics plugin"
+    }
     Shape {
       appearance Appearance {
         material Material {
@@ -362,7 +367,7 @@ Robot {
   }
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
-  controllerArgs "-p 5599"
+  controllerArgs "-p 5599  -df 0.01"
   supervisor TRUE
 }
 DirectionalLight {
