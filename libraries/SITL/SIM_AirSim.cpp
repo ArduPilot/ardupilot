@@ -322,9 +322,6 @@ void AirSim::update(const struct sitl_input &input)
 {
 	send_servos(input);
     recv_fdm();
-    // Airsim takes approximately 3ms between each message (or 333 Hz)
-    adjust_frame_time(1.0e6/3000);
-    time_advance();
 
     // update magnetic field
     update_mag_field_bf();
