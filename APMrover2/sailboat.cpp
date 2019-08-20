@@ -1,6 +1,6 @@
 #include "Rover.h"
 
-#define SAILBOAT_AUTO_TACKING_TIMEOUT_MS 50000  // tacks in auto mode timeout if not successfully completed within this many milliseconds
+#define SAILBOAT_AUTO_TACKING_TIMEOUT_MS 5000   // tacks in auto mode timeout if not successfully completed within this many milliseconds
 #define SAILBOAT_TACKING_ACCURACY_DEG 10        // tack is considered complete when vehicle is within this many degrees of target tack angle
 /*
 To Do List
