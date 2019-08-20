@@ -11,7 +11,8 @@
 #include <webots/camera.h>
 
 
-
+WbNodeRef self_node;
+double *linear_velocity;
 
 void getInertia (const WbDeviceTag inertialUnit, const double *northDirection, char *buf);
 void getLinearVelocity (WbNodeRef nodeRef, const double *northDirection, char * buf);

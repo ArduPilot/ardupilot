@@ -364,7 +364,6 @@ void Webots::output_rover(const struct sitl_input &input)
     const int len = snprintf(buf, sizeof(buf)-1, "{\"rover\": [%f, %f], \"wnd\": [%f, %f, %f, %f]}\n",
              motor1, motor2,
              input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
-    //printf("rover motors m1: %f m2: %f\n", steer_angle, speed_ms);
     
     buf[len] = 0;
 
@@ -400,7 +399,6 @@ void Webots::output_quad(const struct sitl_input &input)
              m_front, m_right, m_back, m_left,
              input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
     buf[len] = 0;
-
     sim_sock->send(buf, len);
 }
 

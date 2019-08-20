@@ -4,6 +4,7 @@ WorldInfo {
     "World generated using the Open Street Map to Webots importer"
     "Author: David Mansolino <david.mansolino@epfl.ch>"
   ]
+  physics "sitl_physics_env"
   basicTimeStep 2
   FPS 5
   optimalThreadCount 4
@@ -34,9 +35,13 @@ Floor {
     metalness 0
   }
 }
-Robot {
+DEF DEF_VEHICLE Robot {
   rotation -1.6967771456756733e-10 1 2.4151813868919206e-10 -0.7512383045779282
   children [
+    Emitter {
+      name "emitter_plugin"
+      description "commuicates with physics plugin"
+    }
     Shape {
       appearance Appearance {
         material Material {
@@ -343,7 +348,7 @@ Robot {
   }
   rotationStep 0.261799
   controller "ardupilot_SITL_QUAD"
-  controllerArgs "-p 5599"
+  controllerArgs "-p 5599 -df 0.02"
   supervisor TRUE
 }
 Road {

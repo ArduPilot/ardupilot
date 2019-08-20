@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <webots/robot.h>
 #include <webots/supervisor.h>
+#include <webots/emitter.h>
 #include "ardupilot_SITL_QUAD.h"
 #include "sockets.h"
 #include "sensors.h"
@@ -49,12 +50,13 @@ static WbDeviceTag compass;
 static WbDeviceTag gps;
 static WbDeviceTag camera;
 static WbDeviceTag inertialUnit;
+static WbDeviceTag emitter;
 static WbNodeRef world_info;
 
 static const double *northDirection;
 static double v[MOTOR_NUM];
 int port;
-
+float drafFactor = VEHICLE_DRAG_FACTOR;
 
 static int timestep;
 
@@ -192,6 +194,41 @@ void update_controls()
   #endif
 
 
+  #ifdef WIND_SIMULATION
+  /*
+    Drag: Fd = ½ ρ Cd A v²
+
+    Fd is drag force in Newtons
+    ρ is the density of air in kg/m³
+    Cd is the drag coefficient
+    A is the cross section of our quad in m³ in the direction of movement
+    v is the velocity in m/s
+  */
+  if (northDirection[0] == 1)
+  {
+    wind_webots_axis.x =  state.wind.x - linear_velocity[0];
+    wind_webots_axis.z = -state.wind.y - linear_velocity[2];   // "-state.wind.y" as angle 90 wind is from EAST.
+    wind_webots_axis.y =  state.wind.z - linear_velocity[1];
+  }
+  else
+  { // as in pyramids and any open map street world.
+    wind_webots_axis.x =  state.wind.y - linear_velocity[0]; // always add "linear_velocity" as there is no axis transformation here.
+    wind_webots_axis.z = -state.wind.x - linear_velocity[2];
+    wind_webots_axis.y =  state.wind.z - linear_velocity[1];
+  }
+
+  wind_webots_axis.x = drafFactor * wind_webots_axis.x * abs(wind_webots_axis.x);
+  wind_webots_axis.z = drafFactor * wind_webots_axis.z * abs(wind_webots_axis.z);
+  wind_webots_axis.y = drafFactor * wind_webots_axis.y * abs(wind_webots_axis.y);
+
+  wb_emitter_send(emitter, &wind_webots_axis, sizeof(VECTOR4F));
+  
+  #ifdef DEBUG_WIND
+  printf("wind sitl: %f %f %f %f\n",state.wind.w, state.wind.x, state.wind.y, state.wind.z);
+  printf("wind ctrl: (drafFactor) %f %f %f %f %f\n",drafFactor, wind_webots_axis.w, wind_webots_axis.x, wind_webots_axis.y, wind_webots_axis.z);
+  #endif
+
+  #endif
 }
 
 
@@ -363,6 +400,15 @@ void initialize (int argc, char *argv[])
           if (argc > i+1 )
           {
             port = atoi (argv[i+1]);
+            printf("socket port %d\n",port);
+          }
+        }
+        else if (strcmp (argv[i],"-df")==0)
+        {
+          if (argc > i+1 )
+          {
+            drafFactor = atof (argv[i+1]);
+            printf("drag Factor %f\n",drafFactor);
           }
         }
     }
@@ -373,7 +419,7 @@ void initialize (int argc, char *argv[])
   /* necessary to initialize webots stuff */
   wb_robot_init();
   
-
+  // Get WorldInfo Node.
   WbNodeRef root, node;
   WbFieldRef children, field;
   int n, i;
@@ -390,19 +436,22 @@ void initialize (int argc, char *argv[])
     }
   }
 
-  printf("\n");
   node = wb_supervisor_field_get_mf_node(children, 0);
   field = wb_supervisor_node_get_field(node, "northDirection");
   northDirection = wb_supervisor_field_get_sf_vec3f(field);
   
   if (northDirection[0] == 1)
   {
-    printf ("Axis Default Directions");
+    printf ("Axis Default Directions\n");
   }
 
   printf("WorldInfo.northDirection = %g %g %g\n\n", northDirection[0], northDirection[1], northDirection[2]);
 
 
+
+  
+  // get Self Node
+  self_node = wb_supervisor_node_get_self();
 
   
   // keybaard
@@ -435,7 +484,11 @@ void initialize (int argc, char *argv[])
   camera = wb_robot_get_device("camera1");
    wb_camera_enable(camera, timestep);
 
-
+  #ifdef WIND_SIMULATION
+  // emitter
+  emitter = wb_robot_get_device("emitter_plugin");
+  #endif
+  
   const char *MOTOR_NAMES[] = {"motor1", "motor2", "motor3", "motor4"};
   
   // get motor device tags
