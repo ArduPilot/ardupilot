@@ -145,6 +145,7 @@ void GCS_MAVLINK::load_signing_key(void)
     for (uint8_t i=0; i<sizeof(key.secret_key); i++) {
         if (signing.secret_key[i] != 0) {
             all_zero = false;
+            break;
         }
     }
     
