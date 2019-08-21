@@ -66,7 +66,7 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("HEEL_MAX", 5, Sailboat, sail_heel_angle_max, 15),
 
-    // @Param: SAIL_NO_GO_ANGLE
+    // @Param: NO_GO_ANGLE
     // @DisplayName: Sailing no go zone angle
     // @Description: The typical closest angle to the wind the vehicle will sail at. the vehicle will sail at this angle when going upwind
     // @Units: deg
