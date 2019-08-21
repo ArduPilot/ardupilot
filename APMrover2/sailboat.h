@@ -27,7 +27,7 @@ public:
     bool sail_enabled() const { return enable > 0;}
 
     // true if sailboat navigation (aka tacking) is enabled
-    bool nav_enabled() const;
+    bool tack_enabled() const;
 
     // setup
     void init();
