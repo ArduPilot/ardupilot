@@ -118,6 +118,7 @@ protected:
     AP_Int8  _enable_RC_fs;
     AP_Int8  _rc_term_manual_only;
     AP_Int8  _enable_dual_loss;
+    AP_Int16  _max_range_km;
 
     bool _heartbeat_pin_value;
 
@@ -139,5 +140,13 @@ protected:
     // have the failsafe values been setup?
     bool _failsafe_setup:1;
 
+    Location _first_location;
+    bool _have_first_location;
+    uint32_t _term_range_notice_ms;
+
     bool check_altlimit(void);
+
+private:
+    // update maximum range check
+    void max_range_update();
 };
