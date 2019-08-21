@@ -570,6 +570,8 @@ private:
     // do we have new speed information?
     bool            _new_speed:1;
 
+    uint32_t        first_msss; // first milliseconds since startup seen
+
     uint8_t         _disable_counter;
 
     // Buffer parse & GPS state update

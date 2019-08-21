@@ -232,7 +232,7 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             }
             break;
         case MSG_STATUS:
-            desired_rate = havePvtMsg ? 0 : RATE_STATUS;
+            desired_rate = (havePvtMsg && (first_msss != 0)) ? 0 : RATE_STATUS;
             if(rate == desired_rate) {
                 _unconfigured_messages &= ~CONFIG_RATE_STATUS;
             } else {
@@ -935,7 +935,12 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.status.fix_status,
               _buffer.status.fix_type);
         _check_new_itow(_buffer.status.itow);
-        if (havePvtMsg) {
+        if (first_msss == 0 && _buffer.status.uptime != 0) {
+            first_msss = _buffer.status.uptime;
+            gcs().send_text(MAV_SEVERITY_DEBUG, "u-blox %d uptime on detection: %u",
+                                                state.instance+1, first_msss);
+        }
+        if (havePvtMsg && (first_msss != 0)) {
             _unconfigured_messages |= CONFIG_RATE_STATUS;
             break;
         }
@@ -1427,6 +1432,11 @@ void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
                                            state.instance+1,
                                            _version.hwVersion,
                                            _version.swVersion);
+    }
+    if (first_msss != 0) {
+        AP::logger().Write_MessageF("u-blox %d uptime on detection: %u",
+                                            state.instance+1,
+                                            first_msss);
     }
 }
 
