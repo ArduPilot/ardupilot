@@ -20,17 +20,14 @@ class Sailboat
 {
 public:
 
-    // var_info for holding Parameter information
-    static const struct AP_Param::GroupInfo var_info[];
+    // constructor
+    Sailboat();
 
     // enabled
     bool sail_enabled() const { return enable > 0;}
 
     // true if sailboat navigation (aka tacking) is enabled
     bool nav_enabled() const;
-
-    // constructor
-    Sailboat();
 
     // setup
     void init();
@@ -49,22 +46,22 @@ public:
     float get_VMG() const;
 
     // handle user initiated tack while in acro mode
-    void  handle_tack_request_acro();
+    void handle_tack_request_acro();
 
     // return target heading in radians when tacking (only used in acro)
     float get_tack_heading_rad() const;
 
     // handle user initiated tack while in autonomous modes (Auto, Guided, RTL, SmartRTL, etc)
-    void  handle_tack_request_auto();
+    void handle_tack_request_auto();
 
     // clear tacking state variables
-    void  clear_tack();
+    void clear_tack();
 
     // returns true if boat is currently tacking
-    bool  tacking() const;
+    bool tacking() const;
 
     // returns true if sailboat should take a indirect navigation route to go upwind
-    bool  use_indirect_route(float desired_heading_cd) const;
+    bool use_indirect_route(float desired_heading_cd) const;
 
     // calculate the heading to sail on if we cant go upwind
     float calc_heading(float desired_heading_cd);
@@ -75,6 +72,9 @@ public:
         ASSIST       = 1,
         FORCE_MOTOR  = 2
     } throttle_state;
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
