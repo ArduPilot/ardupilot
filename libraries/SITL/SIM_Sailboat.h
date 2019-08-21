@@ -69,6 +69,7 @@ private:
     Vector3f wave_gyro;         // rad/s
     float wave_heave;           // m/s/s
     float wave_phase;           // rads
+    bool motor_connected;       // true if this frame has a motor
 };
 
 } // namespace SITL

@@ -43,6 +43,7 @@ Sailboat::Sailboat(const char *frame_str) :
     steering_angle_max(35),
     turning_circle(1.8)
 {
+    motor_connected = (strcmp(frame_str, "sailboat-motor") == 0);
 }
 
 // calculate the lift and drag as values from 0 to 1
@@ -222,9 +223,9 @@ void Sailboat::update(const struct sitl_input &input)
     // throttle force (for motor sailing)
     // gives throttle force == hull drag at 10m/s
     float throttle_force = 0.0f;
-    uint16_t throttle_in = input.servos[THROTTLE_SERVO_CH];
-    if (throttle_in > 900 && throttle_in < 2100) {
-        throttle_force = (throttle_in-1500) * 0.1f;
+    if (motor_connected) {
+        const uint16_t throttle_out = constrain_int16(input.servos[THROTTLE_SERVO_CH], 1000, 2000);
+        throttle_force = (throttle_out-1500) * 0.1f;
     }
 
     // accel in body frame due acceleration from sail and deceleration from hull friction
