@@ -1653,7 +1653,7 @@ void QuadPlane::update(void)
     }
 
 #if ADVANCED_FAILSAFE == ENABLED
-    if (plane.afs.should_crash_vehicle()) {
+    if (plane.afs.should_crash_vehicle() && !plane.afs.terminating_vehicle_via_landing()) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         motors->output();
         return;
@@ -1845,7 +1845,9 @@ void QuadPlane::motors_output(bool run_rate_controller)
     }
 
 #if ADVANCED_FAILSAFE == ENABLED
-    if (!hal.util->get_soft_armed() || plane.afs.should_crash_vehicle() || SRV_Channels::get_emergency_stop()) {
+    if (!hal.util->get_soft_armed() ||
+        (plane.afs.should_crash_vehicle() && !plane.afs.terminating_vehicle_via_landing()) ||
+         SRV_Channels::get_emergency_stop()) {
 #else
     if (!hal.util->get_soft_armed() || SRV_Channels::get_emergency_stop()) {
 #endif
