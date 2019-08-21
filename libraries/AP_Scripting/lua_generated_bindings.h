@@ -14,6 +14,12 @@
 #include "lua/src/lua.hpp"
 #include <new>
 
+#if !defined(AP_TERRAIN_AVAILABLE) || (AP_TERRAIN_AVAILABLE != 1)
+  #error Scripting requires terrain to be available
+
+#endif // !defined(AP_TERRAIN_AVAILABLE) || (AP_TERRAIN_AVAILABLE != 1)
+
+
 int new_Vector2f(lua_State *L);
 Vector2f * check_Vector2f(lua_State *L, int arg);
 int new_Vector3f(lua_State *L);

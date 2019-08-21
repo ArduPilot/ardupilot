@@ -14,6 +14,12 @@
 #include <AP_Common/Location.h>
 
 
+#if !defined(AP_TERRAIN_AVAILABLE) || (AP_TERRAIN_AVAILABLE != 1)
+  #error Scripting requires terrain to be available
+
+#endif // !defined(AP_TERRAIN_AVAILABLE) || (AP_TERRAIN_AVAILABLE != 1)
+
+
 static int binding_argcheck(lua_State *L, int expected_arg_count) {
     const int args = lua_gettop(L);
     if (args > expected_arg_count) {
