@@ -25,59 +25,13 @@
  */
 #include <string.h>
 #include <hal.h>
-#include <memstreams.h>
 #include <chprintf.h>
 #include <ctype.h>
 #include "hwdef/common/posix.h"
 #include "hwdef/common/stdio.h"
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/print_vprintf.h>
 
 extern const AP_HAL::HAL& hal;
-
-/* Helper class implements AP_HAL::Print so we can use utility/vprintf */
-class StdioBufferPrinter : public AP_HAL::BetterStream {
-public:
-    StdioBufferPrinter(char* str, size_t size)  : _offs(0), _str(str), _size(size)  {}
-
-    size_t write(uint8_t c) override {
-        if (_offs < _size) {
-            _str[_offs] = c;
-            _offs++;
-            return 1;
-        } else if (_size == 0) {
-            _offs++;
-            return 1;
-        } else {
-            return 0;
-        }
-    }
-    size_t write(const uint8_t *buffer, size_t size) override {
-        size_t n = 0;
-        while (size--) {
-            n += write(*buffer++);
-        }
-        return n;
-    }
-
-    size_t _offs;
-    char* const  _str;
-    const size_t _size;
-
-    uint32_t available() override { return 0; }
-    int16_t read() override { return -1; }
-    uint32_t txspace() override { return 0; }
-};
-
-int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
-{
-    StdioBufferPrinter buf(str, size);
-    print_vprintf(&buf, fmt, ap);
-    // null terminate if possible
-    int ret = buf._offs;
-    buf.write(0);
-    return ret;
-}
 
 int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
 {
@@ -85,7 +39,7 @@ int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
    int done;
  
    va_start (arg, fmt);
-   done =  vsnprintf(str, size, fmt, arg);
+   done =  hal.util->vsnprintf(str, size, fmt, arg);
    va_end (arg);
  
    return done;
