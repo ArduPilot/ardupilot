@@ -97,7 +97,7 @@ Sailboat::Sailboat()
 }
 
 // Should we use sailboat navigation?
-bool Sailboat::nav_enabled() const
+bool Sailboat::tack_enabled() const
 {
     return (enable == 2) &&
            (throttle_state != Sailboat_Throttle::FORCE_MOTOR) &&
@@ -111,7 +111,7 @@ void Sailboat::init()
         rover.g2.crash_angle.set_default(0);
     }
 
-    if (nav_enabled()) {
+    if (tack_enabled()) {
         rover.g2.loit_type.set_default(1);
         rover.g2.loit_radius.set_default(5);
         rover.g2.wp_nav.set_default_overshoot(10);
@@ -224,7 +224,7 @@ float Sailboat::get_VMG() const
 // handle user initiated tack while in acro mode
 void Sailboat::handle_tack_request_acro()
 {
-    if (!nav_enabled() || currently_tacking) {
+    if (!tack_enabled() || currently_tacking) {
         return;
     }
     // set tacking heading target to the current angle relative to the true wind but on the new tack
@@ -243,7 +243,7 @@ float Sailboat::get_tack_heading_rad() const
 // handle user initiated tack while in autonomous modes (Auto, Guided, RTL, SmartRTL, etc)
 void Sailboat::handle_tack_request_auto()
 {
-    if (!nav_enabled() || currently_tacking) {
+    if (!tack_enabled() || currently_tacking) {
         return;
     }
 
@@ -262,14 +262,14 @@ void Sailboat::clear_tack()
 // returns true if boat is currently tacking
 bool Sailboat::tacking() const
 {
-    return nav_enabled() && currently_tacking;
+    return tack_enabled() && currently_tacking;
 }
 
 // returns true if sailboat should take a indirect navigation route to go upwind
 // desired_heading should be in centi-degrees
 bool Sailboat::use_indirect_route(float desired_heading_cd) const
 {
-    if (!nav_enabled()) {
+    if (!tack_enabled()) {
         return false;
     }
 
@@ -284,7 +284,7 @@ bool Sailboat::use_indirect_route(float desired_heading_cd) const
 // this function assumes the caller has already checked sailboat_use_indirect_route(desired_heading_cd) returned true
 float Sailboat::calc_heading(float desired_heading_cd)
 {
-    if (!nav_enabled()) {
+    if (!tack_enabled()) {
         return desired_heading_cd;
     }
 
