@@ -865,6 +865,16 @@ class AutoTestPlane(AutoTest):
             self.set_parameter("FS_SHORT_ACTN", 3) # 3 means disabled
             self.set_parameter("SIM_RC_FAIL", 1)
             self.wait_statustext("Long event on")
+            self.wait_mode("RTL")
+            self.set_parameter("SIM_RC_FAIL", 0)
+            self.wait_text("Long event off")
+            self.change_mode("MANUAL")
+
+            self.progress("Trying again with THR_FS_VALUE")
+            self.set_parameter("THR_FS_VALUE", 960)
+            self.set_parameter("SIM_RC_FAIL", 2)
+            self.wait_statustext("Long event on")
+            self.wait_mode("RTL")
         except Exception as e:
             self.progress("Exception caught:")
             self.progress(self.get_exception_stacktrace(e))
