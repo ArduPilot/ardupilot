@@ -71,7 +71,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
 #endif
 
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    switch (terrain.status()) {
+    switch (sub.terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
         break;
     case AP_Terrain::TerrainStatusUnhealthy:
