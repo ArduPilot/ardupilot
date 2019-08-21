@@ -146,6 +146,7 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
         return true;
     }
 
+#if GEOFENCE_ENABLED == ENABLED
     if (plane.g.fence_autoenable == 3) {
         if (!plane.geofence_set_enabled(true, AUTO_TOGGLED)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Fence: cannot enable for arming");
@@ -157,6 +158,7 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
             gcs().send_text(MAV_SEVERITY_WARNING, "Fence: auto-enabled for arming");
         }
     }
+#endif
     
     // call parent class checks
     return AP_Arming::arm_checks(method);
@@ -218,9 +220,11 @@ bool AP_Arming_Plane::disarm(void)
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
+#if GEOFENCE_ENABLED == ENABLED
     if (plane.g.fence_autoenable == 3) {
         plane.geofence_set_enabled(false, AUTO_TOGGLED);
     }
+#endif
     
     return true;
 }
