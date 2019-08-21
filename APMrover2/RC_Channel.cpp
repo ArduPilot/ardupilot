@@ -103,13 +103,13 @@ void RC_Channel_Rover::do_aux_function_sailboat_motor_3pos(const aux_switch_pos_
 {
     switch(ch_flag) {
     case HIGH:
-        rover.g2.sailboat.throttle_state = rover.g2.sailboat.Sailboat_Throttle::FORCE_MOTOR;
+        rover.g2.sailboat.set_motor_state(Sailboat::UseMotor::USE_MOTOR_ALWAYS);
         break;
     case MIDDLE:
-        rover.g2.sailboat.throttle_state = rover.g2.sailboat.Sailboat_Throttle::ASSIST;
+        rover.g2.sailboat.set_motor_state(Sailboat::UseMotor::USE_MOTOR_ASSIST);
         break;
     case LOW:
-        rover.g2.sailboat.throttle_state = rover.g2.sailboat.Sailboat_Throttle::NEVER;
+        rover.g2.sailboat.set_motor_state(Sailboat::UseMotor::USE_MOTOR_NEVER);
         break;
     }
 }
