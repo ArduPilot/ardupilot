@@ -187,7 +187,9 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             break;
 
         case Failsafe_Action_Parachute:
+#if PARACHUTE == ENABLED
             parachute_release();
+#endif
             break;
 
         case Failsafe_Action_None:
