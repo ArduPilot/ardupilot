@@ -673,6 +673,10 @@ is bob we will attempt to checkout bob-AVR'''
             self.progress("Removing (%s)" % (self.tmpdir,))
             shutil.rmtree(self.tmpdir)
 
+    def buildlogs_dirpath(self):
+        return os.getenv("BUILDLOGS",
+                         os.path.join(os.getcwd(), "..", "buildlogs"))
+
     def run(self):
         self.validate()
 
@@ -706,8 +710,7 @@ is bob we will attempt to checkout bob-AVR'''
 
         self.mkpath(os.path.join("binaries", self.hdate_ym,
                                  self.hdate_ymdhm))
-        self.binaries = os.path.join(os.getcwd(), "..", "buildlogs",
-                                     "binaries")
+        self.binaries = os.path.join(self.buildlogs_dirpath(), "binaries")
         self.basedir = os.getcwd()
         self.error_strings = []
 
