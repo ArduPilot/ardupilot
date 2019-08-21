@@ -66,20 +66,27 @@ public:
     // calculate the heading to sail on if we cant go upwind
     float calc_heading(float desired_heading_cd);
 
-    // throttle state used with throttle enum
-    enum Sailboat_Throttle {
-        NEVER        = 0,
-        ASSIST       = 1,
-        FORCE_MOTOR  = 2
-    } throttle_state;
+    // states of USE_MOTOR parameter and motor_state variable
+    enum class UseMotor {
+        USE_MOTOR_NEVER  = 0,
+        USE_MOTOR_ASSIST = 1,
+        USE_MOTOR_ALWAYS = 2
+    };
+
+    // set state of motor
+    // if report_failure is true a message will be sent to all GCSs
+    void set_motor_state(UseMotor state, bool report_failure = true);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
-    // Check if we should assist with throttle
-    bool throttle_assist() const;
+    // true if motor is on to assist with slow tack
+    bool motor_assist_tack() const;
+
+    // true if motor should be on to assist with low wind
+    bool motor_assist_low_wind() const;
 
     // parameters
     AP_Int8 enable;
@@ -88,7 +95,7 @@ private:
     AP_Float sail_angle_ideal;
     AP_Float sail_heel_angle_max;
     AP_Float sail_no_go;
-    AP_Float sail_assist_windspeed;
+    AP_Float sail_windspeed_min;
 
     enum Sailboat_Tack {
         TACK_PORT,
@@ -101,4 +108,5 @@ private:
     uint32_t auto_tack_request_ms;  // system time user requested tack in autonomous modes
     uint32_t auto_tack_start_ms;    // system time when tack was started in autonomous mode
     bool tack_assist;               // true if we should use some throttle to assist tack
+    UseMotor motor_state;           // current state of motor output
 };

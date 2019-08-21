@@ -25,7 +25,7 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Enable Sailboat
     // @Description: This enables Sailboat functionality
-    // @Values: 0:Disable,1:Enable sail assist only,2:Enable
+    // @Values: 0:Disable,1:Enable
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 1, Sailboat, enable, 0, AP_PARAM_FLAG_ENABLE),
@@ -82,7 +82,7 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @Range: 0 5
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("WNDSPD_MIN", 7, Sailboat, sail_assist_windspeed, 0),
+    AP_GROUPINFO("WNDSPD_MIN", 7, Sailboat, sail_windspeed_min, 0),
 
     AP_GROUPEND
 };
@@ -96,12 +96,26 @@ Sailboat::Sailboat()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// Should we use sailboat navigation?
+// true if sailboat navigation (aka tacking) is enabled
 bool Sailboat::tack_enabled() const
 {
-    return (enable == 2) &&
-           (throttle_state != Sailboat_Throttle::FORCE_MOTOR) &&
-           (!throttle_assist() || tack_assist);
+    // tacking disabled if not a sailboat
+    if (!sail_enabled()) {
+        return false;
+    }
+
+    // tacking disabled if motor is always on
+    if (motor_state == UseMotor::USE_MOTOR_ALWAYS) {
+        return false;
+    }
+
+    // disable tacking if motor is available and wind is below cutoff
+    if (motor_assist_low_wind()) {
+        return false;
+    }
+
+    // otherwise tacking is enabled
+    return true;
 }
 
 void Sailboat::init()
@@ -117,12 +131,9 @@ void Sailboat::init()
         rover.g2.wp_nav.set_default_overshoot(10);
     }
 
-    // if we have a throttle of some sort allow to use it
-    if (rover.g2.motors.have_skid_steering() ||
-        SRV_Channels::function_assigned(SRV_Channel::k_throttle) ||
-        rover.get_frame_type() != rover.g2.motors.frame_type::FRAME_TYPE_UNDEFINED) {
-        throttle_state = Sailboat_Throttle::ASSIST;
-    }
+    // initialise motor state to USE_MOTOR_ASSIST
+    // this will silently fail if there is no motor attached
+    set_motor_state(UseMotor::USE_MOTOR_ASSIST, false);
 }
 
 // initialise rc input (channel_mainsail), may be called intermittently
@@ -163,8 +174,10 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
         return;
     }
 
-    // run speed controller if motor is forced on or if assistance is enabled for low speeds or tacking
-    if ((throttle_state == Sailboat_Throttle::FORCE_MOTOR) || throttle_assist()) {
+    // run speed controller if motor is forced on or motor assistance is required for low speeds or tacking
+    if ((motor_state == UseMotor::USE_MOTOR_ALWAYS) ||
+         motor_assist_tack() ||
+         motor_assist_low_wind()) {
         // run speed controller - duplicate of calls found in mode::calc_throttle();
         throttle_out = 100.0f * rover.g2.attitude_control.get_throttle_out_speed(desired_speed,
                                                                         rover.g2.motors.limit.throttle_lower,
@@ -180,7 +193,7 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
     // mainsail control
     //
     // if we are motoring or attempting to reverse relax the sail
-    if (throttle_state == Sailboat_Throttle::FORCE_MOTOR || !is_positive(desired_speed)) {
+    if (motor_state == UseMotor::USE_MOTOR_ALWAYS || !is_positive(desired_speed)) {
         mainsail_out = 100.0f;
     } else {
         // + is wind over starboard side, - is wind over port side, but as the sails are sheeted the same on each side it makes no difference so take abs
@@ -348,7 +361,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
             clear_tack();
         } else if ((now - auto_tack_start_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS) {
             // tack has taken too long
-            if ((throttle_state == Sailboat_Throttle::ASSIST) && (now - auto_tack_start_ms) < (3.0f * SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
+            if ((motor_state == UseMotor::USE_MOTOR_ASSIST) && (now - auto_tack_start_ms) < (3.0f * SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
                 // if we have throttle available use it for another two time periods to get the tack done
                 tack_assist = true;
             } else {
@@ -368,25 +381,47 @@ float Sailboat::calc_heading(float desired_heading_cd)
     }
 }
 
-// should we use the throttle?
-bool Sailboat::throttle_assist() const
+// set state of motor
+void Sailboat::set_motor_state(UseMotor state, bool report_failure)
+{
+    // always allow motor to be disabled
+    if (state == UseMotor::USE_MOTOR_NEVER) {
+        motor_state = state;
+        return;
+    }
+
+    // enable assistance or always on if a motor is defined
+    if (rover.g2.motors.have_skid_steering() ||
+        SRV_Channels::function_assigned(SRV_Channel::k_throttle) ||
+        rover.get_frame_type() != rover.g2.motors.frame_type::FRAME_TYPE_UNDEFINED) {
+        motor_state = state;
+    } else if (report_failure) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Sailboat: failed to enable motor");
+    }
+}
+
+// true if motor is on to assist with slow tack
+bool Sailboat::motor_assist_tack() const
 {
     // throttle is assist is disabled
-    if (throttle_state != Sailboat_Throttle::ASSIST) {
+    if (motor_state != UseMotor::USE_MOTOR_ASSIST) {
         return false;
     }
 
-    // assist with a tack
-    if (tack_assist) {
-        return true;
+    // assist with a tack because it is taking too long
+    return tack_assist;
+}
+
+// true if motor should be on to assist with low wind
+bool Sailboat::motor_assist_low_wind() const
+{
+    // motor assist is disabled
+    if (motor_state != UseMotor::USE_MOTOR_ASSIST) {
+        return false;
     }
 
-    // wind speed is less than sailing cut-off
-    if (!is_zero(sail_assist_windspeed) &&
-        rover.g2.windvane.wind_speed_enabled() &&
-        rover.g2.windvane.get_true_wind_speed() < sail_assist_windspeed) {
-        return true;
-    }
-
-    return false;
+    // assist if wind speed is below cutoff
+    return (is_positive(sail_windspeed_min) &&
+            rover.g2.windvane.wind_speed_enabled() &&
+            (rover.g2.windvane.get_true_wind_speed() < sail_windspeed_min));
 }
