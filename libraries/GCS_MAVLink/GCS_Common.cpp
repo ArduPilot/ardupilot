@@ -1111,6 +1111,17 @@ void GCS_MAVLINK::update_send()
         send_packet_count += uint8_t(status->current_tx_seq - last_tx_seq);
         last_tx_seq = status->current_tx_seq;
     }
+
+    // update information about the output buffer:
+    const uint32_t txsp = _port->txspace();
+    qstats.tx_sum += txsp;
+    qstats.tx_count++;
+    if (txsp > qstats.tx_max) {
+        qstats.tx_max = txsp;
+    }
+    if (txsp < qstats.tx_min) {
+        qstats.tx_min = txsp;
+    }
 }
 
 void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
@@ -1303,6 +1314,15 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 
     // process received bytes
     uint16_t nbytes = comm_get_available(chan);
+    qstats.rx_sum += nbytes;
+    qstats.rx_count++;
+    if (nbytes > qstats.rx_max) {
+        qstats.rx_max = nbytes;
+    }
+    if (nbytes < qstats.rx_min) {
+        qstats.rx_min = nbytes;
+    }
+
     for (uint16_t i=0; i<nbytes; i++)
     {
         const uint8_t c = (uint8_t)_port->read();
@@ -1456,10 +1476,21 @@ void GCS_MAVLINK::log_mavlink_stats()
     chan                   : (uint8_t)chan,
     packet_tx_count        : send_packet_count,
     packet_rx_success_count: status->packet_rx_success_count,
-    packet_rx_drop_count   : status->packet_rx_drop_count
+    packet_rx_drop_count   : status->packet_rx_drop_count,
+    rxq_min           : qstats.rx_min,
+    rxq_max           : qstats.rx_max,
+    rxq_avg           : (qstats.rx_count == 0) ? (uint16_t)0 : uint16_t(qstats.rx_sum/qstats.rx_count),
+    txq_min           : qstats.tx_min,
+    txq_max           : qstats.tx_max,
+    txq_avg           : (qstats.tx_count == 0) ? (uint16_t)0 : uint16_t(qstats.tx_sum/qstats.tx_count),
     };
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
+
+    // reset statistics
+    memset(&qstats, 0, sizeof(qstats));
+    qstats.rx_min = -1; // using integer wrap
+    qstats.tx_min = -1; // using integer wrap
 }
 
 /*

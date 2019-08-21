@@ -666,6 +666,16 @@ private:
 
     uint8_t last_tx_seq;
     uint16_t send_packet_count;
+    struct {
+        uint16_t rx_min;
+        uint16_t rx_max;
+        uint32_t rx_sum;
+        uint16_t rx_count;
+        uint16_t tx_min;
+        uint16_t tx_max;
+        uint32_t tx_sum;
+        uint16_t tx_count;
+    } qstats;
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     struct {
