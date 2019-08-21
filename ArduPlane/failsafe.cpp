@@ -86,7 +86,9 @@ void Plane::failsafe_check(void)
 #if ADVANCED_FAILSAFE == ENABLED
         if (afs.should_crash_vehicle()) {
             afs.terminate_vehicle();
-            return;
+            if (!afs.terminating_vehicle_via_landing()) {
+                return;
+            }
         }
 #endif
 
