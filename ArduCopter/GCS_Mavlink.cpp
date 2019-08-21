@@ -113,6 +113,7 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
 
 void GCS_MAVLINK_Copter::send_position_target_local_ned()
 {
+#if MODE_GUIDED_ENABLED == ENABLED
     if (!copter.flightmode->in_guided_mode()) {
         return;
     }
@@ -150,6 +151,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         0.0f, // afz
         0.0f, // yaw
         0.0f); // yaw_rate
+#endif
 }
 
 void GCS_MAVLINK_Copter::send_nav_controller_output() const
