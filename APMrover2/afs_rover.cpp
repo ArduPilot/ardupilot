@@ -6,12 +6,6 @@
 
 #if ADVANCED_FAILSAFE == ENABLED
 
-// Constructor
-AP_AdvancedFailsafe_Rover::AP_AdvancedFailsafe_Rover(AP_Mission &_mission, const AP_GPS &_gps) :
-    AP_AdvancedFailsafe(_mission, _gps)
-{}
-
-
 /*
   Setup radio_out values for all channels to termination values
  */
