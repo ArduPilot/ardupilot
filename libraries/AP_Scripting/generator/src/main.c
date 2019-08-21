@@ -9,6 +9,7 @@
 
 char keyword_alias[]     = "alias";
 char keyword_comment[]   = "--";
+char keyword_depends[]   = "depends";
 char keyword_enum[]      = "enum";
 char keyword_field[]     = "field";
 char keyword_include[]   = "include";
@@ -45,6 +46,7 @@ enum error_codes {
   ERROR_INTERNAL        = 5, // internal error of some form
   ERROR_GENERAL         = 6, // general error
   ERROR_SINGLETON       = 7, // singletons
+  ERROR_DEPENDS         = 8, // dependencies
 };
 
 struct header {
@@ -73,6 +75,7 @@ enum trace_level {
   TRACE_GENERAL   = (1 << 2),
   TRACE_USERDATA  = (1 << 3),
   TRACE_SINGLETON = (1 << 4),
+  TRACE_DEPENDS   = (1 << 5),
 };
 
 enum access_flags {
@@ -309,6 +312,15 @@ struct userdata {
 };
 
 static struct userdata *parsed_userdata = NULL;
+
+struct dependency {
+  struct dependency * next;
+  char *symbol;    // dependency symbol to check
+  char *value;     // value to target
+  char *error_msg; // message if the check fails
+};
+
+static struct dependency *parsed_dependencies = NULL;
 
 // lazy helper that allocates a storage buffer and does strcpy for us
 void string_copy(char **dest, const char * src) {
@@ -678,7 +690,7 @@ void handle_userdata(void) {
   // read type
   char *type = next_token();
   if (type == NULL) {
-    error(ERROR_USERDATA, "Expected an access type for userdata %s", name);
+    error(ERROR_USERDATA, "Expected a access type for userdata %s", name);
   }
 
   // match type
@@ -724,7 +736,7 @@ void handle_singleton(void) {
   // read type
   char *type = next_token();
   if (type == NULL) {
-    error(ERROR_SINGLETON, "Expected an access type for userdata %s", name);
+    error(ERROR_SINGLETON, "Expected a access type for userdata %s", name);
   }
 
   if (strcmp(type, keyword_alias) == 0) {
@@ -754,6 +766,36 @@ void handle_singleton(void) {
   }
 }
 
+void handle_depends(void) {
+  trace(TRACE_DEPENDS, "Adding a dependency");
+
+  char *symbol = next_token();
+  if (symbol == NULL) {
+    error(ERROR_DEPENDS, "Expected a name symbol for the dependency");
+  }
+
+  // read value
+  char *value = next_token();
+  if (value == NULL) {
+    error(ERROR_DEPENDS, "Expected a required value for dependency on %s", symbol);
+  }
+
+  char *error_msg = strtok(NULL, "");
+  if (error_msg == NULL) {
+    error(ERROR_DEPENDS, "Expected a error message for dependency on %s", symbol);
+  }
+
+  trace(TRACE_SINGLETON, "Allocating new dependency for %s", symbol);
+  struct dependency * node = (struct dependency *)allocate(sizeof(struct dependency));
+  node->symbol = (char *)allocate(strlen(symbol) + 1);
+  strcpy(node->symbol, symbol);
+  node->value = (char *)allocate(strlen(value) + 1);
+  strcpy(node->value, value);
+  node->error_msg = (char *)allocate(strlen(error_msg) + 1);
+  strcpy(node->error_msg, error_msg);
+  node->next = parsed_dependencies;
+  parsed_dependencies = node;
+}
 void sanity_check_userdata(void) {
   struct userdata * node = parsed_userdata;
   while(node) {
@@ -768,6 +810,16 @@ void emit_headers(FILE *f) {
   struct header *node = headers;
   while (node) {
     fprintf(f, "#include <%s>\n", node->name);
+    node = node->next;
+  }
+}
+
+void emit_dependencies(FILE *f) {
+  struct dependency *node = parsed_dependencies;
+  while (node) {
+    fprintf(f, "#if !defined(%s) || (%s != %s)\n", node->symbol, node->symbol, node->value);
+    fprintf(f, "  #error %s\n", node->error_msg);
+    fprintf(f, "#endif // !defined(%s) || (%s != %s)\n", node->symbol, node->symbol, node->value);
     node = node->next;
   }
 }
@@ -1647,6 +1699,8 @@ int main(int argc, char **argv) {
         handle_userdata();
       } else if (strcmp (state.token, keyword_singleton) == 0){
         handle_singleton();
+      } else if (strcmp (state.token, keyword_depends) == 0){
+        handle_depends();
       } else {
         error(ERROR_UNKNOWN_KEYWORD, "Expected a keyword, got: %s", state.token);
       }
@@ -1678,6 +1732,10 @@ int main(int argc, char **argv) {
   trace(TRACE_GENERAL, "Starting emission");
 
   emit_headers(source);
+
+  fprintf(source, "\n\n");
+
+  emit_dependencies(source);
 
   fprintf(source, "\n\n");
 
@@ -1715,6 +1773,8 @@ int main(int argc, char **argv) {
   emit_headers(header);
   fprintf(header, "#include \"lua/src/lua.hpp\"\n");
   fprintf(header, "#include <new>\n\n");
+  emit_dependencies(header);
+  fprintf(header, "\n\n");
 
   emit_userdata_declarations();
 
