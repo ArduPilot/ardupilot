@@ -724,6 +724,10 @@
   #error Follow requires ModeGuided which is disabled
 #endif
 
+#if MODE_GUIDED_NOGPS_ENABLED && !MODE_GUIDED_ENABLED
+  #error ModeGuided-NoGPS requires ModeGuided which is disabled
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
