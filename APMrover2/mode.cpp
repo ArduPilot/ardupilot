@@ -242,6 +242,12 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
     // apply object avoidance to desired speed using half vehicle's maximum deceleration
     if (avoidance_enabled) {
         g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.yaw, target_speed, rover.G_Dt);
+        if (g2.sailboat.tack_enabled() && g2.avoid.limits_active()) {
+            // we are a sailboat trying to avoid fence, try a tack
+            if (rover.control_mode != &rover.mode_acro) {
+                rover.control_mode->handle_tack_request();
+            }
+        }
     }
 
     // call throttle controller and convert output to -100 to +100 range
