@@ -288,7 +288,9 @@ private:
         int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
         uint32_t last_healthy_ms;
         LowPassFilterFloat alt_cm_filt; // altitude filter
-        int8_t glitch_count;
+        int16_t alt_cm_glitch_protected;    // last glitch protected altitude
+        int8_t glitch_count;    // non-zero number indicates rangefinder is glitching
+        uint32_t glitch_cleared_ms; // system time glitch cleared
     } rangefinder_state;
 
     class SurfaceTracking {
@@ -307,6 +309,7 @@ private:
     private:
         float target_alt_cm;        // desired altitude in cm above the ground
         uint32_t last_update_ms;    // system time of last update to target_alt_cm
+        uint32_t last_glitch_cleared_ms;    // system time of last handle glitch recovery
         bool valid_for_logging;     // true if target_alt_cm is valid for logging
     } surface_tracking;
 

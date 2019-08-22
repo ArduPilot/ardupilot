@@ -6,8 +6,9 @@
 float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
 {
 #if RANGEFINDER_ENABLED == ENABLED
-    if (!copter.rangefinder_alt_ok()) {
-        // if rangefinder is not ok, do not use surface tracking
+    // if rangefinder alt is not ok or glitching, do not do surface tracking
+    if (!copter.rangefinder_alt_ok() ||
+        (copter.rangefinder_state.glitch_count != 0)) {
         return target_rate;
     }
 
@@ -18,6 +19,7 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
     const uint32_t now = millis();
     if (now - last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
         target_alt_cm = copter.rangefinder_state.alt_cm + current_alt_target - current_alt;
+        last_glitch_cleared_ms = copter.rangefinder_state.glitch_cleared_ms;
     }
     last_update_ms = now;
 
@@ -27,30 +29,11 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
     }
     valid_for_logging = true;
 
-    /*
-      handle rangefinder glitches. When we get a rangefinder reading
-      more than RANGEFINDER_GLITCH_ALT_CM different from the current
-      rangefinder reading then we consider it a glitch and reject
-      until we get RANGEFINDER_GLITCH_NUM_SAMPLES samples in a
-      row. When that happens we reset the target altitude to the new
-      reading
-     */
-    const int32_t glitch_cm = copter.rangefinder_state.alt_cm - target_alt_cm;
-    if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
-        copter.rangefinder_state.glitch_count = MAX(copter.rangefinder_state.glitch_count+1,1);
-    } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
-        copter.rangefinder_state.glitch_count = MIN(copter.rangefinder_state.glitch_count-1,-1);
-    } else {
-        copter.rangefinder_state.glitch_count = 0;
-    }
-    if (abs(copter.rangefinder_state.glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
+    // handle glitch recovery by resetting target
+    if (copter.rangefinder_state.glitch_cleared_ms != last_glitch_cleared_ms) {
         // shift to the new rangefinder reading
         target_alt_cm = copter.rangefinder_state.alt_cm;
-        copter.rangefinder_state.glitch_count = 0;
-    }
-    if (copter.rangefinder_state.glitch_count != 0) {
-        // we are currently glitching, just use the target rate
-        return target_rate;
+        last_glitch_cleared_ms = copter.rangefinder_state.glitch_cleared_ms;
     }
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
