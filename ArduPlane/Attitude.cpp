@@ -363,7 +363,9 @@ void Plane::stabilize_acro(float speed_scaler)
 void Plane::stabilize()
 {
     if (control_mode == &mode_manual) {
-        // nothing to do
+        // reset steering controls
+        steer_state.locked_course = false;
+        steer_state.locked_course_err = 0;
         return;
     }
     float speed_scaler = get_speed_scaler();
@@ -384,6 +386,10 @@ void Plane::stabilize()
         rollController.reset_I();
         pitchController.reset_I();
         yawController.reset_I();
+
+        // and reset steering controls
+        steer_state.locked_course = false;
+        steer_state.locked_course_err = 0;
     }
     last_stabilize_ms = now;
 
