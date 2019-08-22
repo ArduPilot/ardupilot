@@ -120,10 +120,12 @@ bool AP_RangeFinder_NMEA::decode(char c)
     }
 
     // ordinary characters are added to term
-    if (_term_offset < sizeof(_term) - 1)
+    if (_term_offset < sizeof(_term) - 1) {
         _term[_term_offset++] = c;
-    if (!_term_is_checksum)
+    }
+    if (!_term_is_checksum) {
         _checksum ^= c;
+    }
 
     return false;
 }

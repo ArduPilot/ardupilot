@@ -65,13 +65,11 @@ bool AP_RangeFinder_BBB_PRU::detect()
 
     // Load firmware (.text)
     FILE *file = fopen("/lib/firmware/rangefinderprutext.bin", "rb");
-    if(file == nullptr)
-    {
+    if (file == nullptr) {
         result = false;
     }
 
-    if(fread(ram, PRU0_IRAM_SIZE, 1, file) != 1)
-    {
+    if (fread(ram, PRU0_IRAM_SIZE, 1, file) != 1) {
         result = false;
     }
 
@@ -83,13 +81,11 @@ bool AP_RangeFinder_BBB_PRU::detect()
 
     // Load firmware (.data)
     file = fopen("/lib/firmware/rangefinderprudata.bin", "rb");
-    if(file == nullptr)
-    {
+    if (file == nullptr) {
         result = false;
     }
 
-    if(fread(ram, PRU0_DRAM_SIZE, 1, file) != 1)
-    {
+    if (fread(ram, PRU0_DRAM_SIZE, 1, file) != 1) {
         result = false;
     }
 

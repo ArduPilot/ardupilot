@@ -121,23 +121,25 @@ unsigned short AP_RangeFinder_Bebop::get_threshold_at(int i_capture)
      *  */
     switch (_mode) {
     case 0:
-        if (i_capture < 139)
+        if (i_capture < 139) {
             threshold_value = 4195;
-        else if (i_capture < 153)
+        ] else if (i_capture < 153) {
             threshold_value = waveform_mode0[i_capture - 139];
-        else
+        } else {
             threshold_value = 1200;
+        }
         break;
 
     case 1:
-        if (i_capture < 73)
+        if (i_capture < 73) {
             threshold_value = 4195;
-        else if (i_capture < 105)
+        } else if (i_capture < 105) {
             threshold_value = waveform_mode1[i_capture - 73];
-        else if (i_capture < 617)
+        } else if (i_capture < 617) {
             threshold_value = 1200;
-        else
+        } else {
             threshold_value = 4195;
+        }
         break;
 
     default:
@@ -171,10 +173,11 @@ int AP_RangeFinder_Bebop::_apply_averaging_filter(void)
 
         /* We keep on advancing in the captured buffer without registering the
          * filtered data until the signal first exceeds a given value */
-        if (!first_echo && current_value < threshold_echo_init)
+        if (!first_echo && current_value < threshold_echo_init) {
             continue;
-        else
+        } else {
             first_echo = true;
+        }
 
         filtered_value += current_value;
         if (i_capture % _filter_average == 0) {
@@ -202,8 +205,9 @@ int AP_RangeFinder_Bebop::_search_local_maxima(void)
                         get_threshold_at(i_capture - 1))) {
                 _echoes[i_echo].max_index = i_capture;
                 i_echo++;
-                if (i_echo >= RNFD_BEBOP_MAX_ECHOES)
+                if (i_echo >= RNFD_BEBOP_MAX_ECHOES) {
                     break;
+                }
             }
         }
     }
@@ -224,10 +228,11 @@ int AP_RangeFinder_Bebop::_search_maximum_with_max_amplitude(void)
         }
     }
 
-    if (max_idx >= 0)
+    if (max_idx >= 0) {
         return _echoes[max_idx].max_index;
-    else
+    } else {
         return -1;
+    }
 }
 
 void AP_RangeFinder_Bebop::_loop(void)
@@ -304,10 +309,12 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
 {
     /* configure the output buffer for a purge */
     /* perform a purge */
-    if (_launch_purge() < 0)
+    if (_launch_purge() < 0) {
         hal.console->printf("purge could not send data overspi");
-    if (_capture() < 0)
+    }
+    if (_capture() < 0) {
         hal.console->printf("purge could not capture data");
+    }
 
     _tx_buf = _tx[_mode];
     switch (_mode) {
@@ -342,8 +349,9 @@ int AP_RangeFinder_Bebop::_configure_capture()
     const char *adcchannel = "voltage2";
     /* configure adc interface using libiio */
     _iio = iio_create_local_context();
-    if (!_iio)
+    if (!_iio) {
         return -1;
+    }
     _adc.device = iio_context_find_device(_iio, adcname);
 
     if (!_adc.device) {
