@@ -171,8 +171,9 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::check_checksum(uint8_t *arr, int pkt_le
     int i;
 
     /* sum them all except the last (the checksum) */
-    for (i = 0; i < pkt_len - 1; i++)
+    for (i = 0; i < pkt_len - 1; i++) {
         checksum += arr[i];
+    }
 
     return checksum == arr[pkt_len - 1];
 }

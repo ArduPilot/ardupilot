@@ -250,7 +250,7 @@ bool AP_RangeFinder_VL53L1X::setMeasurementTimingBudget(uint32_t budget_us)
     // VL53L1_calc_timeout_register_values() begin
 
     uint8_t range_config_vcsel_period = 0;
-    if(!read_register(RANGE_CONFIG__VCSEL_PERIOD_A, range_config_vcsel_period)) {
+    if (!read_register(RANGE_CONFIG__VCSEL_PERIOD_A, range_config_vcsel_period)) {
         return false;
     }
 
