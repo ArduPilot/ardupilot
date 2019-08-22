@@ -172,6 +172,7 @@ public:
         CIRCLE    =           72, // circle mode
         DRIFT     =           73, // drift mode
         SAILBOAT_MOTOR_3POS = 74, // Sailboat motoring 3pos
+        SURFACE_TRACKING =    75, // Surface tracking upwards or downwards
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
