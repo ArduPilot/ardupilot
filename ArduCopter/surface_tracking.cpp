@@ -12,13 +12,13 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
         return target_rate;
     }
 
-    const float current_alt = copter.inertial_nav.get_altitude();
-    const float current_alt_target = copter.pos_control->get_alt_target();
+    // calculate current ekf based altitude error
+    const float current_alt_error = copter.pos_control->get_alt_target() - copter.inertial_nav.get_altitude();
 
     // reset target altitude if this controller has just been engaged
     const uint32_t now = millis();
     if (now - last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
-        target_alt_cm = copter.rangefinder_state.alt_cm + current_alt_target - current_alt;
+        target_alt_cm = copter.rangefinder_state.alt_cm + current_alt_error;
         last_glitch_cleared_ms = copter.rangefinder_state.glitch_cleared_ms;
     }
     last_update_ms = now;
@@ -32,12 +32,12 @@ float Copter::SurfaceTracking::adjust_climb_rate(float target_rate)
     // handle glitch recovery by resetting target
     if (copter.rangefinder_state.glitch_cleared_ms != last_glitch_cleared_ms) {
         // shift to the new rangefinder reading
-        target_alt_cm = copter.rangefinder_state.alt_cm;
+        target_alt_cm = copter.rangefinder_state.alt_cm + current_alt_error;
         last_glitch_cleared_ms = copter.rangefinder_state.glitch_cleared_ms;
     }
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
-    const float distance_error = (target_alt_cm - copter.rangefinder_state.alt_cm) - (current_alt_target - current_alt);
+    const float distance_error = (target_alt_cm - copter.rangefinder_state.alt_cm) - current_alt_error;
     float velocity_correction = distance_error * copter.g.rangefinder_gain;
     velocity_correction = constrain_float(velocity_correction, -SURFACE_TRACKING_VELZ_MAX, SURFACE_TRACKING_VELZ_MAX);
 
