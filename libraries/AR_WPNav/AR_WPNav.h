@@ -62,7 +62,7 @@ public:
     const Location &get_oa_destination() { return _oa_destination; }
 
     // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
-    float wp_bearing_cd() const { return _wp_bearing_cd; }
+    float wp_bearing_cd() const { return _oa_wp_bearing_cd; }
     float nav_bearing_cd() const { return _desired_heading_cd; }
     float crosstrack_error() const { return _cross_track_error; }
 
