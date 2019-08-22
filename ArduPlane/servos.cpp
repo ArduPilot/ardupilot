@@ -193,11 +193,15 @@ void Plane::dspoiler_update(void)
 {
     float roll_in = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     float pitch_in = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-    float dspoiler_front_left = g.mixing_gain * (pitch_in + roll_in);  // S3
-    float dspoiler_front_right = g.mixing_gain * (pitch_in - roll_in); // S1
-    float dspoiler_back_left = g.mixing_gain * (pitch_in - roll_in);   // S2
-    float dspoiler_back_right = g.mixing_gain * (pitch_in + roll_in);  // S4
-    float differential = constrain_float(roll_in * g.kff_rudder_mix * g.mixing_gain, -4500, 4500);
+    float mix_gain = g.mixing_gain;
+    if (control_mode == &plane.mode_manual) {
+        mix_gain = 1.0;
+    }
+    float dspoiler_front_left = mix_gain * (pitch_in + roll_in);  // S3
+    float dspoiler_front_right = mix_gain * (pitch_in - roll_in); // S1
+    float dspoiler_back_left = mix_gain * (pitch_in - roll_in);   // S2
+    float dspoiler_back_right = mix_gain * (pitch_in + roll_in);  // S4
+    float differential = constrain_float(roll_in * g.kff_rudder_mix * mix_gain, -4500, 4500);
     if (differential > 0) {
         dspoiler_front_left -= differential;
         dspoiler_back_left += differential;
