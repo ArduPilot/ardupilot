@@ -293,18 +293,16 @@ private:
 
     class SurfaceTracking {
     public:
+        // get desired climb rate (in cm/s) to achieve surface tracking
         float adjust_climb_rate(float target_rate);
+
+        // get/set target altitude (in cm) above ground
         bool get_target_alt_cm(float &target_alt_cm) const;
         void set_target_alt_cm(float target_alt_cm);
-        float logging_target_alt() const {
-            if (!valid_for_logging) {
-                return AP::logger().quiet_nan();
-            }
-            return target_alt_cm * 0.01f; // cm->m
-        }
-        void invalidate_for_logging() {
-            valid_for_logging = false;
-        }
+
+        // get target altitude (in cm) for logging purposes
+        float logging_target_alt() const;
+        void invalidate_for_logging() { valid_for_logging = false; }
 
     private:
         float target_alt_cm;        // desired altitude in cm above the ground
