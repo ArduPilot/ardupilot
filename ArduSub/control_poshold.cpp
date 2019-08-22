@@ -10,9 +10,11 @@
 bool Sub::poshold_init()
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!position_ok()) {
-        return false;
-    }
+    //if (!position_ok()) {
+    //    gcs().send_text(MAV_SEVERITY_INFO, "POSHOLD failed to init.");
+    //    return false;
+    //}
+    gcs().send_text(MAV_SEVERITY_INFO, "POSHOLD init success!");
 
     // initialize vertical speeds and acceleration
     pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
@@ -63,8 +65,13 @@ void Sub::poshold_run()
     float lateral_out = 0;
     float forward_out = 0;
 
+    // sets the minimum xy input signal magnitude that will result in the sub
+    // getting an xy command for its motors.
+    // currently set this low to allow small magnitudes!
+    const float minimum_xy_signal(0.000001);
+
     // Allow pilot to reposition the sub
-    if (fabsf(pilot_lateral) > 0.1 || fabsf(pilot_forward) > 0.1) {
+    if (fabsf(pilot_lateral) > minimum_xy_signal || fabsf(pilot_forward) > minimum_xy_signal) {
         lateral_out = pilot_lateral;
         forward_out = pilot_forward;
         loiter_nav.clear_pilot_desired_acceleration();
@@ -115,6 +122,7 @@ void Sub::poshold_run()
     // get pilot desired climb rate
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+    //gcs().send_text(MAV_SEVERITY_INFO, "targ climb: %f control in: %d", target_climb_rate, channel_throttle->get_control_in());
 
     // adjust climb rate using rangefinder
     if (rangefinder_alt_ok()) {
@@ -124,9 +132,11 @@ void Sub::poshold_run()
 
     // call z axis position controller
     if (ap.at_bottom) {
+        //gcs().send_text(MAV_SEVERITY_INFO, "At bottom");
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
         pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
     } else {
+        //gcs().send_text(MAV_SEVERITY_INFO, "setting alt targ w/ climb rate.");
         pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
     }
 

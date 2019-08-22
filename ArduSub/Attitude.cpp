@@ -89,9 +89,11 @@ float Sub::get_look_ahead_yaw()
 // without any deadzone at the bottom
 float Sub::get_pilot_desired_climb_rate(float throttle_control)
 {
-    // throttle failsafe check
+    // throttle failsafe check. Ignoring it for now since it does not work with 
+    // RC_OVERRIDE commands...
     if (failsafe.pilot_input) {
-        return 0.0f;
+        //gcs().send_text(MAV_SEVERITY_INFO, "failsafed...");
+        //return 0.0f;
     }
 
     float desired_rate = 0.0f;

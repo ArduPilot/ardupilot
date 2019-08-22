@@ -1,4 +1,5 @@
 #include "Sub.h"
+#include <GCS_MAVLink/GCS.h>
 
 /*
  * Init and run calls for guided flight mode

@@ -234,20 +234,27 @@ void Sub::startup_INS_ground()
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 bool Sub::position_ok()
 {
+    //gcs().send_text(MAV_SEVERITY_INFO, "~~~~~~~~~~~~~");
+    //gcs().send_text(MAV_SEVERITY_INFO, "in Sub::position_ok()");
+
     // return false if ekf failsafe has triggered
     if (failsafe.ekf) {
         return false;
     }
 
     // check ekf position estimate
-    return (ekf_position_ok() || optflow_position_ok());
+    bool result = (ekf_position_ok() || optflow_position_ok()); 
+
+    return result;
 }
 
 // ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
 bool Sub::ekf_position_ok()
 {
+    //gcs().send_text(MAV_SEVERITY_INFO, "in Sub::ekf_position_ok()");
     if (!ahrs.have_inertial_nav()) {
         // do not allow navigation with dcm position
+        //gcs().send_text(MAV_SEVERITY_INFO, "have_inertial_nav() is false");
         return false;
     }
 
@@ -256,21 +263,27 @@ bool Sub::ekf_position_ok()
 
     // if disarmed we accept a predicted horizontal position
     if (!motors.armed()) {
-        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+        bool result = ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+        //gcs().send_text(MAV_SEVERITY_INFO, "2");
+        return result;
     }
 
     // once armed we require a good absolute position and EKF must not be in const_pos_mode
+    //gcs().send_text(MAV_SEVERITY_INFO, "3");
     return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
 }
 
 // optflow_position_ok - returns true if optical flow based position estimate is ok
 bool Sub::optflow_position_ok()
 {
+    //gcs().send_text(MAV_SEVERITY_INFO, "in Sub::optflow_position_ok()");
 #if OPTFLOW != ENABLED
+    //gcs().send_text(MAV_SEVERITY_INFO, "optflow is disabled in firmware");
     return false;
 #else
     // return immediately if optflow is not enabled or EKF not used
     if (!optflow.enabled() || !ahrs.have_inertial_nav()) {
+        //gcs().send_text(MAV_SEVERITY_INFO, "no inertial_nav or optflow is disabled in code.");
         return false;
     }
 

@@ -96,11 +96,12 @@ void Sub::althold_run()
         }
     }
 
+    const float min_throttle_percent(0.005);
     // Hold actual position until zero derivative is detected
     static bool engageStopZ = true;
     // Get last user velocity direction to check for zero derivative points
     static bool lastVelocityZWasNegative = false;
-    if (fabsf(channel_throttle->norm_input()-0.5f) > 0.05f) { // Throttle input above 5%
+    if (fabsf(channel_throttle->norm_input()-0.5f) > min_throttle_percent) { // Throttle input above 0.05%.
         // output pilot's throttle
         attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
         // reset z targets to current values
