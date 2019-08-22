@@ -35,7 +35,28 @@ void Copter::read_rangefinder(void)
     temp_alt = (float)temp_alt * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
  #endif
 
+    // tilt corrected but unfiltered, not glitch protected alt
     rangefinder_state.alt_cm = temp_alt;
+
+    // glitch handling.  rangefinder readings more than RANGEFINDER_GLITCH_ALT_CM from the last good reading
+    // are considered a glitch and glitch_count becomes non-zero
+    // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
+    // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
+    const int32_t glitch_cm = rangefinder_state.alt_cm - rangefinder_state.alt_cm_glitch_protected;
+    if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
+        rangefinder_state.glitch_count = MAX(rangefinder_state.glitch_count+1, 1);
+    } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
+        rangefinder_state.glitch_count = MIN(rangefinder_state.glitch_count-1, -1);
+    } else {
+        rangefinder_state.glitch_count = 0;
+        rangefinder_state.alt_cm_glitch_protected = rangefinder_state.alt_cm;
+    }
+    if (abs(rangefinder_state.glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
+        // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
+        rangefinder_state.glitch_count = 0;
+        rangefinder_state.alt_cm_glitch_protected = rangefinder_state.alt_cm;
+        rangefinder_state.glitch_cleared_ms = AP_HAL::millis();
+    }
 
     // filter rangefinder for use by AC_WPNav
     uint32_t now = AP_HAL::millis();
