@@ -389,11 +389,12 @@ void XPlane::send_data(const struct sitl_input &input)
     float front_right = filtered_servo_angle(input, 0, dt);
 
     // uses misc wings, setup for elevator control
+    const float delfection_max = 15.0;
     send_dref("sim/operation/override/override_control_surfaces", 1);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[12]", -rear_right*20);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[13]", rear_left*20);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[14]", -front_right*20);
-    send_dref("sim/flightmodel2/wing/elevator1_deg[15]", front_left*20);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[12]", -rear_right*delfection_max);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[13]", rear_left*delfection_max);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[14]", -front_right*delfection_max);
+    send_dref("sim/flightmodel2/wing/elevator1_deg[15]", front_left*delfection_max);
 
     // 12 rear right
     // 13 rear left
