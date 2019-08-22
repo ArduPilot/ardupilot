@@ -327,7 +327,7 @@ void AR_WPNav::update_distance_and_bearing_to_destination()
     // update OA adjusted values
     if (_oa_active) {
         _oa_distance_to_destination = current_loc.get_distance(_oa_destination);
-        _oa_wp_bearing_cd = _oa_origin.get_bearing_to(_oa_destination);
+        _oa_wp_bearing_cd = current_loc.get_bearing_to(_oa_destination);
     } else {
         _oa_distance_to_destination = _distance_to_destination;
         _oa_wp_bearing_cd = _wp_bearing_cd;
