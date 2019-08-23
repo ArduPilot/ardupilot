@@ -626,6 +626,7 @@ private:
                                                      const float yaw,
                                                      const uint16_t payload_size);
     void log_vision_position_estimate_data(const uint64_t usec,
+                                           const uint32_t corrected_msec,
                                            const float x,
                                            const float y,
                                            const float z,
