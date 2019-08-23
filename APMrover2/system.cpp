@@ -60,6 +60,8 @@ void Rover::init_ardupilot()
     g2.gripper.init();
 #endif
 
+    g2.fence.init();
+
     // initialise notify system
     notify.init();
     notify_mode(control_mode);
