@@ -463,6 +463,11 @@ bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
 // check for new valid GPS data and update stored measurement if available
 void NavEKF2_core::readGpsData()
 {
+    if (frontend->_fusionModeGPS == 3) {
+        // don't read GPS data if GPS usage disabled
+        return;
+    }
+
     // check for new GPS data
     // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
     const AP_GPS &gps = AP::gps();
