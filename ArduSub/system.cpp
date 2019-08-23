@@ -63,6 +63,8 @@ void Sub::init_ardupilot()
     g2.gripper.init();
 #endif
 
+    fence.init();
+
     // initialise notify system
     notify.init();
 
