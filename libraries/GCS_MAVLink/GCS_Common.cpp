@@ -3673,6 +3673,41 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     return result;
 }
 
+bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
+{
+    switch(command) {
+    case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_NAV_TAKEOFF:
+        return true;
+    default:
+        return false;
+    }
+    return false;
+}
+
+void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out)
+{
+    out.target_system = in.target_system;
+    out.target_component = in.target_component;
+    out.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT; // FIXME?
+    out.command = in.command;
+    out.current = 0;
+    out.autocontinue = 0;
+    out.param1 = in.param1;
+    out.param2 = in.param2;
+    out.param3 = in.param3;
+    out.param4 = in.param4;
+    if (command_long_stores_location((MAV_CMD)in.command)) {
+        out.x = in.param5 *1e7;
+        out.y = in.param6 *1e7;
+    } else {
+        out.x = in.param5;
+        out.y = in.param6;
+    }
+    out.z = in.param7;
+}
+
 void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 {
     // decode packet
@@ -3685,6 +3720,11 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result);
+
+    // log the packet:
+    mavlink_command_int_t packet_int;
+    convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
+    AP::logger().Write_Command(packet_int, result, true);
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
@@ -3806,6 +3846,8 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result);
+
+    AP::logger().Write_Command(packet, result);
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
