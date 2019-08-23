@@ -682,6 +682,26 @@ struct PACKED log_Cmd {
     uint8_t frame;
 };
 
+struct PACKED log_MAVLink_Command {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t target_system;
+    uint8_t target_component;
+    uint8_t frame;
+    uint16_t command;
+    uint8_t current;
+    uint8_t autocontinue;
+    float param1;
+    float param2;
+    float param3;
+    float param4;
+    int32_t x;
+    int32_t y;
+    float z;
+    uint8_t result;
+    bool was_command_long;
+};
+
 struct PACKED log_Radio {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1307,6 +1327,8 @@ struct PACKED log_Arm_Disarm {
       "POWR","QffHB","TimeUS,Vcc,VServo,Flags,Safety", "svv--", "F00--" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "QHHHffffLLfB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
+    { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
+      "MAVC", "QBBBHBBffffiifBB","TimeUS,TS,TC,Fr,Cmd,Cur,AC,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------" }, \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
@@ -1637,6 +1659,7 @@ enum LogMessages : uint8_t {
     LOG_AHR2_MSG,
     LOG_SIMSTATE_MSG,
     LOG_CMD_MSG,
+    LOG_MAVLINK_COMMAND_MSG,
     LOG_RADIO_MSG,
     LOG_ATRP_MSG,
     LOG_CAMERA_MSG,
