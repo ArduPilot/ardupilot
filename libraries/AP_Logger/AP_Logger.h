@@ -257,6 +257,7 @@ public:
     void Write_Mode(uint8_t mode, uint8_t reason);
 
     void Write_EntireMission();
+    void Write_Command(const mavlink_command_int_t &packet, MAV_RESULT result, bool was_command_long=false);
     void Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
     void Write_Origin(uint8_t origin_type, const Location &loc);
