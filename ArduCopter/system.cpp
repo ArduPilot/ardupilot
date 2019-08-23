@@ -68,6 +68,8 @@ void Copter::init_ardupilot()
     g2.gripper.init();
 #endif
 
+    fence.init();
+
     // init winch and wheel encoder
     winch_init();
 
