@@ -66,6 +66,9 @@ public:
     float nav_bearing_cd() const { return _desired_heading_cd; }
     float crosstrack_error() const { return _cross_track_error; }
 
+    // return the heading (in centi-degrees) to the next waypoint accounting for OA, (used by sailboats)
+    float oa_wp_bearing_cd() const { return _oa_wp_bearing_cd; }
+
     // settor to allow vehicle code to provide turn related param values to this library (should be updated regularly)
     void set_turn_params(float turn_max_g, float turn_radius, bool pivot_possible);
 
