@@ -396,8 +396,7 @@ GCS_MAVFTP::FTPErrorCode GCS_MAVFTP::_ftp_List(FTPPayloadHeader *request_payload
             break;
         }
         // Determine the directory entry type
-        switch (result->d_type) {
-        case DT_REG: {
+        if (result->d_type == DT_REG) {
             // For files we get the file size as well
             response_payload->data[offset++] = kDirentFile;
             int ret = snprintf((char*)&response_payload->data[offset], remaining_space, "%s/%s", _ftp_current_abs_path, result->d_name);
@@ -408,22 +407,27 @@ GCS_MAVFTP::FTPErrorCode GCS_MAVFTP::_ftp_List(FTPPayloadHeader *request_payload
 
                 if (stat((char*)&response_payload->data[offset], &st) == 0) {
                     fileSize = st.st_size;
+                } else {
+                    //skip file
+                    offset--;
+                    continue;
                 }
+            } else if (!buf_is_ok && (ret < (int)MAX_FTP_DATA_LENGTH)) {
+                //do retry
+                offset--;
+                break;
+            } else if (!buf_is_ok) {
+                //skip file
+                offset--;
+                continue;
             }
-            break;
-        }
-
-        case DT_DIR: {
+            
+        } else if (result->d_type == DT_DIR) {
             response_payload->data[offset++] = kDirentDir;
-            break;
-        }
-
-        default: {
+        } else {
             // We only send back file and diretory entries, skip everything else
             response_payload->data[offset++] = kDirentSkip;
-            break;
         }
-        };
 
         if (response_payload->data[offset - 1] == kDirentSkip) {
             // Skip send only dirent identifier
