@@ -398,6 +398,32 @@ void AP_Logger::Write_Vibration()
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
+                              const MAV_RESULT result,
+                              bool was_command_long)
+{
+    const struct log_MAVLink_Command pkt{
+        LOG_PACKET_HEADER_INIT(LOG_MAVLINK_COMMAND_MSG),
+        time_us         : AP_HAL::micros64(),
+        target_system   : packet.target_system,
+        target_component: packet.target_component,
+        frame           : packet.frame,
+        command         : packet.command,
+        current         : packet.current,
+        autocontinue    : packet.autocontinue,
+        param1          : packet.param1,
+        param2          : packet.param2,
+        param3          : packet.param3,
+        param4          : packet.param4,
+        x               : packet.x,
+        y               : packet.y,
+        z               : packet.z,
+        result          : (uint8_t)result,
+        was_command_long:was_command_long,
+    };
+    return WriteBlock(&pkt, sizeof(pkt));
+}
+
 bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
                                               const AP_Mission::Mission_Command &cmd)
 {
