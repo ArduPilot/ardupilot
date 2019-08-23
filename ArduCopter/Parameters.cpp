@@ -1237,6 +1237,16 @@ void Copter::convert_pid_parameters(void)
         AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[i], 1.0f);
     }
 
+    // notch filter parameter conversions (changed position and type) for Copter-3.7
+    const AP_Param::ConversionInfo notchfilt_conversion_info[] = {
+        { Parameters::k_param_ins, 165, AP_PARAM_INT16, "INS_NOTCH_FREQ" },
+        { Parameters::k_param_ins, 229, AP_PARAM_INT16, "INS_NOTCH_BW" },
+    };
+    uint8_t notchfilt_table_size = ARRAY_SIZE(notchfilt_conversion_info);
+    for (uint8_t i=0; i<notchfilt_table_size; i++) {
+        AP_Param::convert_old_parameters(&notchfilt_conversion_info[i], 1.0f);
+    }
+
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
                                       Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
                                       Parameters::k_param_rc_5_old,  Parameters::k_param_rc_6_old,
