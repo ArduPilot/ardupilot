@@ -2832,10 +2832,11 @@ void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t use
                                timestamp_ms,
                                reset_timestamp_ms);
 
-    log_vision_position_estimate_data(usec, x, y, z, roll, pitch, yaw);
+    log_vision_position_estimate_data(usec, timestamp_ms, x, y, z, roll, pitch, yaw);
 }
 
 void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
+                                                    const uint32_t corrected_msec,
                                                     const float x,
                                                     const float y,
                                                     const float z,
@@ -2843,16 +2844,17 @@ void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
                                                     const float pitch,
                                                     const float yaw)
 {
-    AP::logger().Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
-                                           "ssmmmddh", "FF000000", "QQffffff",
-                                           (uint64_t)AP_HAL::micros64(),
-                                           (uint64_t)usec,
-                                           (double)x,
-                                           (double)y,
-                                           (double)z,
-                                           (double)(roll * RAD_TO_DEG),
-                                           (double)(pitch * RAD_TO_DEG),
-                                           (double)(yaw * RAD_TO_DEG));
+    AP::logger().Write("VISP", "TimeUS,RemTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw",
+                       "sssmmmddh", "FFC000000", "QQIffffff",
+                       (uint64_t)AP_HAL::micros64(),
+                       (uint64_t)usec,
+                       corrected_msec,
+                       (double)x,
+                       (double)y,
+                       (double)z,
+                       (double)(roll * RAD_TO_DEG),
+                       (double)(pitch * RAD_TO_DEG),
+                       (double)(yaw * RAD_TO_DEG));
 }
 
 void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
@@ -2888,7 +2890,7 @@ void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
     float yaw;
     attitude.to_euler(roll, pitch, yaw);
 
-    log_vision_position_estimate_data(m.time_usec, m.x, m.y, m.z, roll, pitch, yaw);
+    log_vision_position_estimate_data(m.time_usec, timestamp_ms, m.x, m.y, m.z, roll, pitch, yaw);
 }
 
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
