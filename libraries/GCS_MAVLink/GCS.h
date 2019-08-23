@@ -448,6 +448,9 @@ private:
 
     MAV_RESULT handle_servorelay_message(const mavlink_command_long_t &packet);
 
+    static bool command_long_stores_location(const MAV_CMD command);
+    static void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out);
+
     bool calibrate_gyros();
 
     /// The stream we are communicating over
