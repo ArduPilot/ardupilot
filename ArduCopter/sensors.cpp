@@ -17,6 +17,10 @@ void Copter::init_rangefinder(void)
    rangefinder.init(ROTATION_PITCH_270);
    rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
    rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
+
+   // upward facing range finder
+   rangefinder_up_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
+   rangefinder_up_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_90);
 #endif
 }
 
@@ -26,62 +30,81 @@ void Copter::read_rangefinder(void)
 #if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
 
-    rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
+#if RANGEFINDER_TILT_CORRECTION == ENABLED
+    const float tilt_correction = MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
+#else
+    const float tile_correction = 1.0f;
+#endif
 
-    int16_t temp_alt = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
+    // iterate through downward and upward facing lidar
+    struct {
+        RangeFinderState &state;
+        enum Rotation orientation;
+    } rngfnd[2] = { {rangefinder_state, ROTATION_PITCH_270}, {rangefinder_up_state, ROTATION_PITCH_90}};
 
- #if RANGEFINDER_TILT_CORRECTION == ENABLED
-    // correct alt for angle of the rangefinder
-    temp_alt = (float)temp_alt * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
- #endif
+    for (uint8_t i=0; i < ARRAY_SIZE(rngfnd); i++) {
+        // local variables to make accessing simpler
+        RangeFinderState &rf_state = rngfnd[i].state;
+        enum Rotation rf_orient = rngfnd[i].orientation;
 
-    // tilt corrected but unfiltered, not glitch protected alt
-    rangefinder_state.alt_cm = temp_alt;
+        // update health
+        rf_state.alt_healthy = ((rangefinder.status_orient(rf_orient) == RangeFinder::RangeFinder_Good) &&
+                                (rangefinder.range_valid_count_orient(rf_orient) >= RANGEFINDER_HEALTH_MAX));
 
-    // glitch handling.  rangefinder readings more than RANGEFINDER_GLITCH_ALT_CM from the last good reading
-    // are considered a glitch and glitch_count becomes non-zero
-    // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
-    // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
-    const int32_t glitch_cm = rangefinder_state.alt_cm - rangefinder_state.alt_cm_glitch_protected;
-    if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
-        rangefinder_state.glitch_count = MAX(rangefinder_state.glitch_count+1, 1);
-    } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
-        rangefinder_state.glitch_count = MIN(rangefinder_state.glitch_count-1, -1);
-    } else {
-        rangefinder_state.glitch_count = 0;
-        rangefinder_state.alt_cm_glitch_protected = rangefinder_state.alt_cm;
-    }
-    if (abs(rangefinder_state.glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
-        // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
-        rangefinder_state.glitch_count = 0;
-        rangefinder_state.alt_cm_glitch_protected = rangefinder_state.alt_cm;
-        rangefinder_state.glitch_cleared_ms = AP_HAL::millis();
-    }
+        // tilt corrected but unfiltered, not glitch protected alt
+        rf_state.alt_cm = tilt_correction * rangefinder.distance_cm_orient(rf_orient);
 
-    // filter rangefinder for use by AC_WPNav
-    uint32_t now = AP_HAL::millis();
-
-    const bool timed_out = now - rangefinder_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS;
-
-    if (rangefinder_state.alt_healthy) {
-        if (timed_out) {
-            // reset filter if we haven't used it within the last second
-            rangefinder_state.alt_cm_filt.reset(rangefinder_state.alt_cm);
+        // glitch handling.  rangefinder readings more than RANGEFINDER_GLITCH_ALT_CM from the last good reading
+        // are considered a glitch and glitch_count becomes non-zero
+        // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
+        // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
+        const int32_t glitch_cm = rf_state.alt_cm - rf_state.alt_cm_glitch_protected;
+        if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
+            rf_state.glitch_count = MAX(rf_state.glitch_count+1, 1);
+        } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
+            rf_state.glitch_count = MIN(rf_state.glitch_count-1, -1);
         } else {
-            rangefinder_state.alt_cm_filt.apply(rangefinder_state.alt_cm, 0.02f);
+            rf_state.glitch_count = 0;
+            rf_state.alt_cm_glitch_protected = rf_state.alt_cm;
         }
-        rangefinder_state.last_healthy_ms = now;
-    }
+        if (abs(rf_state.glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
+            // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
+            rf_state.glitch_count = 0;
+            rf_state.alt_cm_glitch_protected = rf_state.alt_cm;
+            rf_state.glitch_cleared_ms = AP_HAL::millis();
+        }
 
-    // send rangefinder altitude and health to waypoint navigation library
-    if (rangefinder_state.alt_healthy || timed_out) {
-        wp_nav->set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+        // filter rangefinder altitude
+        uint32_t now = AP_HAL::millis();
+        const bool timed_out = now - rf_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS;
+        if (rf_state.alt_healthy) {
+            if (timed_out) {
+                // reset filter if we haven't used it within the last second
+                rf_state.alt_cm_filt.reset(rf_state.alt_cm);
+            } else {
+                rf_state.alt_cm_filt.apply(rf_state.alt_cm, 0.02f);
+            }
+            rf_state.last_healthy_ms = now;
+        }
+
+        // send downward facing lidar altitude and health to waypoint navigation library
+        if (rf_orient == ROTATION_PITCH_270) {
+            if (rangefinder_state.alt_healthy || timed_out) {
+                wp_nav->set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+            }
+        }
     }
 
 #else
+    // downward facing rangefinder
     rangefinder_state.enabled = false;
     rangefinder_state.alt_healthy = false;
     rangefinder_state.alt_cm = 0;
+
+    // upward facing rangefinder
+    rangefinder_up_state.enabled = false;
+    rangefinder_up_state.alt_healthy = false;
+    rangefinder_up_state.alt_cm = 0;
 #endif
 }
 
@@ -89,6 +112,12 @@ void Copter::read_rangefinder(void)
 bool Copter::rangefinder_alt_ok()
 {
     return (rangefinder_state.enabled && rangefinder_state.alt_healthy);
+}
+
+// return true if rangefinder_alt can be used
+bool Copter::rangefinder_up_ok()
+{
+    return (rangefinder_up_state.enabled && rangefinder_up_state.alt_healthy);
 }
 
 /*
