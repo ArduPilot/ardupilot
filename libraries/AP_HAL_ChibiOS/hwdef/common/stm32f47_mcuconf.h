@@ -382,3 +382,8 @@
  * WDG driver system settings.
  */
 #define STM32_WDG_USE_IWDG                  FALSE
+
+// limit ISR count per byte
+#define STM32_I2C_ISR_LIMIT                 6
+
+
