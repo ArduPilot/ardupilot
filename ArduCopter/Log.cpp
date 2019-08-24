@@ -16,7 +16,7 @@ struct PACKED log_Control_Tuning {
     float    inav_alt;
     int32_t  baro_alt;
     float    desired_rangefinder_alt;
-    int16_t  rangefinder_alt;
+    float    rangefinder_alt;
     float    terr_alt;
     int16_t  target_climb_rate;
     int16_t  climb_rate;
@@ -39,6 +39,13 @@ void Copter::Log_Write_Control_Tuning()
         target_climb_rate_cms = pos_control->get_vel_target_z();
     }
 
+    // get surface tracking alts
+    float desired_rangefinder_alt, rangefinder_alt;
+    if (!surface_tracking.get_dist_for_logging(desired_rangefinder_alt, rangefinder_alt)) {
+        desired_rangefinder_alt = AP::logger().quiet_nan();
+        rangefinder_alt = AP::logger().quiet_nan();;
+    }
+
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         time_us             : AP_HAL::micros64(),
@@ -49,8 +56,8 @@ void Copter::Log_Write_Control_Tuning()
         desired_alt         : des_alt_m,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
-        desired_rangefinder_alt : surface_tracking.logging_target_alt(),
-        rangefinder_alt     : rangefinder_state.alt_cm,
+        desired_rangefinder_alt : desired_rangefinder_alt,
+        rangefinder_alt     : rangefinder_alt,
         terr_alt            : terr_alt,
         target_climb_rate   : target_climb_rate_cms,
         climb_rate          : int16_t(inertial_nav.get_velocity_z()) // float -> int16_t
@@ -386,7 +393,7 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
       "PTUN", "QBfff",         "TimeUS,Param,TunVal,TunMin,TunMax", "s----", "F----" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qffffffefcfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00B0BBBB" },
+      "CTUN", "Qffffffefffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00B00BBB" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
       "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-" },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
