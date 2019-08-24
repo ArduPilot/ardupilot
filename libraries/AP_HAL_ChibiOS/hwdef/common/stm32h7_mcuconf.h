@@ -439,3 +439,6 @@
 #define STM32_WDG_USE_IWDG                  FALSE
 
 #define STM32_EXTI_ENHANCED
+
+// limit ISR count per byte
+#define STM32_I2C_ISR_LIMIT                 6
