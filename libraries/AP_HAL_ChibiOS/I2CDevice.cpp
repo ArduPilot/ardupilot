@@ -22,6 +22,7 @@
 
 #include "Scheduler.h"
 #include "hwdef/common/stm32_util.h"
+#include <AP_InternalError/AP_InternalError.h>
 
 #include "ch.h"
 #include "hal.h"
@@ -271,9 +272,14 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 
         i2cSoftStop(I2CD[bus.busnum].i2c);
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
-        
+
         bus.dma_handle->unlock();
         
+        if (I2CD[bus.busnum].i2c->errors & I2C_ISR_LIMIT) {
+            AP::internalerror().error(AP_InternalError::error_t::i2c_isr);
+            break;
+        }
+
         if (ret == MSG_OK) {
             bus.bouncebuffer_finish(send, recv, recv_len);
             i2cReleaseBus(I2CD[bus.busnum].i2c);
