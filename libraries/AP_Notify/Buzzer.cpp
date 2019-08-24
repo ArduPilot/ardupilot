@@ -68,6 +68,35 @@ void Buzzer::update()
 
 void Buzzer::update_pattern_to_play()
 {
+    if (!_flags.initialize_done) {
+        // play a quick beep at startup
+        if (!_flags.startup_beep) {
+            _flags.startup_beep = true;
+            play_pattern(SINGLE_BUZZ);
+            return;
+        }
+        // play beeps when system initialization complete
+        if (!_flags.initialize_started) {
+            if (AP_Notify::flags.initialising) {
+                _flags.initialize_started = true;
+            }
+        } else if (!AP_Notify::flags.initialising) {
+            _flags.initialize_done = true;
+            play_pattern(INITIALIZE_BUZZ);
+            return;
+        }
+    }
+
+    // check if radio failsafe status has changed
+    if (_flags.failsafe_radio != AP_Notify::flags.failsafe_radio) {
+        _flags.failsafe_radio = AP_Notify::flags.failsafe_radio;
+        // play beeps to indicate radio status (if initialization completed)
+        if (_flags.initialize_done) {
+            play_pattern(_flags.failsafe_radio ? RADIOLOST_BUZZ : RADIOBACK_BUZZ);
+            return;
+        }
+    }
+
     // check for arming failed event
     if (AP_Notify::events.arming_failed) {
         // arming failed buzz
@@ -75,8 +104,21 @@ void Buzzer::update_pattern_to_play()
         return;
     }
 
-    if (AP_HAL::millis() - _pattern_start_time < _pattern_start_interval_time_ms) {
-        // do not interrupt playing patterns / enforce minumum separation
+    // do not interrupt playing patterns
+    if (is_playing_pattern()) {
+        return;
+    }
+
+    // if battery failsafe constantly buzz
+    if (AP_Notify::flags.failsafe_battery) {
+        play_pattern(CONSTANT_BUZZ);
+        return;
+    }
+
+    // if radio failsafe active and system was (ever) armed then
+    // repeat SOS beeps until radio recovered (for lost model locator)
+    if (_flags.failsafe_radio && _flags.was_armed) {
+        play_pattern(RADIOSOS_BUZZ);
         return;
     }
 
@@ -86,6 +128,7 @@ void Buzzer::update_pattern_to_play()
         if (_flags.armed) {
             // double buzz when armed
             play_pattern(ARMING_BUZZ);
+            _flags.was_armed = true;
         }else{
             // single buzz when disarmed
             play_pattern(SINGLE_BUZZ);
@@ -99,8 +142,8 @@ void Buzzer::update_pattern_to_play()
         if (_flags.ekf_bad) {
             // ekf bad warning buzz
             play_pattern(EKF_BAD);
+            return;
         }
-        return;
     }
 
     // if vehicle lost was enabled, starting beep
@@ -108,31 +151,37 @@ void Buzzer::update_pattern_to_play()
         play_pattern(DOUBLE_BUZZ);
         return;
     }
-
-    // if battery failsafe constantly single buzz
-    if (AP_Notify::flags.failsafe_battery) {
-        play_pattern(SINGLE_BUZZ);
-        return;
-    }
 }
 
 
 void Buzzer::update_playing_pattern()
 {
-    if (_pattern == 0UL) {
+    // if no '1's to play in pattern and buzzer not on then just return
+    if (_pattern == 0UL && !_flags.on) {
         return;
     }
 
-    const uint32_t now = AP_HAL::millis();
-    const uint32_t delta = now - _pattern_start_time;
-    if (delta >= 3200) {
-        // finished playing pattern
-        on(false);
-        _pattern = 0UL;
+    // reduce 50hz call down to 10hz
+    if (--_update_counter > 0) {
         return;
     }
-    const uint32_t bit = delta / 100UL; // each bit is 100ms
-    on(_pattern & (1U<<(31-bit)));
+    _update_counter = 5;
+
+    // put buzzer on if leftmost bit set, and then shift one bit to the left
+    const bool on_flag = _pattern & (0b10000000000000000000000000000000UL);
+    _pattern <<= 1;
+    ++_pattern_pos;
+    
+    // can use trailing '...001' in pattern to extend timing, so
+    // don't turn buzzer on if it's off when that last '1' is reached
+    if (_pattern_pos != (uint8_t)32 || _pattern != 0UL || _flags.on) {
+        on(on_flag);
+    }
+}
+
+bool Buzzer::is_playing_pattern()
+{
+    return (_pattern != 0UL || _flags.on);
 }
 
 // on - turns the buzzer on or off
@@ -154,6 +203,7 @@ void Buzzer::on(bool turn_on)
 void Buzzer::play_pattern(const uint32_t pattern)
 {
     _pattern = pattern;
-    _pattern_start_time = AP_HAL::millis();
+    _update_counter = 0;  // init counter for no initial delay
+    _pattern_pos = 0;
 }
 
