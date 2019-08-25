@@ -305,6 +305,7 @@ void AP_Scheduler::Log_Write_Performance()
         internal_error_count : AP::internalerror().count(),
         spi_count        : pd.spi_count,
         i2c_count        : pd.i2c_count,
+        i2c_isr_count    : pd.i2c_isr_count,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
