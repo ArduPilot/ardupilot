@@ -319,13 +319,18 @@ float AP_Baro::get_EAS2TAS(void)
         return _EAS2TAS;
     }
 
+    float pressure = get_pressure();
+    if (is_zero(pressure)) {
+        return 1.0f;
+    }
+
     // only estimate lapse rate for the difference from the ground location
     // provides a more consistent reading then trying to estimate a complete
     // ISA model atmosphere
     float tempK = get_ground_temperature() + C_TO_KELVIN - ISA_LAPSE_RATE * altitude;
-    const float eas2tas_squared = SSL_AIR_DENSITY / ((float)get_pressure() / (ISA_GAS_CONSTANT * tempK));
+    const float eas2tas_squared = SSL_AIR_DENSITY / (pressure / (ISA_GAS_CONSTANT * tempK));
     if (!is_positive(eas2tas_squared)) {
-        return 1.0;
+        return 1.0f;
     }
     _EAS2TAS = sqrtf(eas2tas_squared);
     _last_altitude_EAS2TAS = altitude;
