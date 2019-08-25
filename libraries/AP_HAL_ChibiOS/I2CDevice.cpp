@@ -248,7 +248,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
-        uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*MAX(send_len, recv_len))/1000);
+        uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*(send_len+recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
 
         // we get the lock and start the bus inside the retry loop to
