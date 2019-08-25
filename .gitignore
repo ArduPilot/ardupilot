@@ -122,3 +122,4 @@ segv_*out
 /ArduCopter/scripts/
 /ArduPlane/scripts/
 /ArduSub/scripts/
+persistent.dat
