@@ -225,7 +225,7 @@ void AP_Mission::update()
     }
 
     // save persistent waypoint_num for watchdog restore
-    hal.util->persistent_data.waypoint_num = _nav_cmd.index;
+    hal.util->persistent_data.waypoint_num = _prev_nav_cmd_wp_index != AP_MISSION_CMD_INDEX_NONE ? MIN(_nav_cmd.index,_prev_nav_cmd_wp_index+1) : _nav_cmd.index;
 
     // check if we have an active nav command
     if (!_flags.nav_cmd_loaded || _nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
