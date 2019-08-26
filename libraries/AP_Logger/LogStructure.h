@@ -1204,7 +1204,7 @@ struct PACKED log_Arm_Disarm {
 #define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS,Delta"
 #define GPA_FMT   "QCCCCBIH"
 #define GPA_UNITS "smmmn-ss"
-#define GPA_MULTS "FBBBB-CF"
+#define GPA_MULTS "FBBBB-CC"
 
 // see "struct GPS_State" and "Write_GPS":
 #define GPS_LABELS "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U"
