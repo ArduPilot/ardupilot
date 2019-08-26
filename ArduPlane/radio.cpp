@@ -182,12 +182,14 @@ void Plane::read_radio()
         return;
     }
 
-    if(!failsafe.rc_failsafe)
+    if (!failsafe.rc_failsafe)
     {
         failsafe.AFS_last_valid_rc_ms = millis();
     }
 
-    failsafe.last_valid_rc_ms = millis();
+    if (rc_throttle_value_ok()) {
+        failsafe.last_valid_rc_ms = millis();
+    }
 
     if (control_mode == &mode_training) {
         // in training mode we don't want to use a deadzone, as we
@@ -367,20 +369,31 @@ bool Plane::trim_radio()
 }
 
 /*
+  check if throttle value is within allowed range
+ */
+bool Plane::rc_throttle_value_ok(void) const
+{
+    if (!g.throttle_fs_enabled) {
+        return true;
+    }
+    if (channel_throttle->get_reverse()) {
+        return channel_throttle->get_radio_in() < g.throttle_fs_value;
+    }
+    return channel_throttle->get_radio_in() > g.throttle_fs_value;
+}
+
+/*
   return true if throttle level is below throttle failsafe threshold
   or RC input is invalid
  */
 bool Plane::rc_failsafe_active(void) const
 {
-    if (!g.throttle_fs_enabled) {
-        return false;
+    if (!rc_throttle_value_ok()) {
+        return true;
     }
     if (millis() - failsafe.last_valid_rc_ms > 1000) {
         // we haven't had a valid RC frame for 1 seconds
         return true;
     }
-    if (channel_throttle->get_reverse()) {
-        return channel_throttle->get_radio_in() >= g.throttle_fs_value;
-    }
-    return channel_throttle->get_radio_in() <= g.throttle_fs_value;
+    return false;
 }
