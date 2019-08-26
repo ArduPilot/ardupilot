@@ -1018,11 +1018,7 @@ void AP_Logger_File::_io_timer(void)
         if (_need_rtc_update) {
             uint64_t utc_usec;
             if (AP::rtc().get_utc_usec(utc_usec)) {
-                struct utimbuf t {};
-                t.modtime = utc_usec / (1000UL * 1000UL);
-                t.actime = t.modtime;
-                // we ignore return on utime() as there is nothing useful we can do
-                UNUSED_RESULT(utime(_write_filename, &t));
+                AP::FS().set_mtime(_write_filename, utc_usec/(1000U*1000U));
                 _need_rtc_update = false;
             }
         }
