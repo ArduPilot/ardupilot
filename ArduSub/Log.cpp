@@ -63,6 +63,7 @@ void Sub::Log_Write_Attitude()
     sitl.Log_Write_SIMSTATE();
 #endif
     logger.Write_POS(ahrs);
+    logger.Write_VEL();
 }
 
 struct PACKED log_MotBatt {

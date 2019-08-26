@@ -17,6 +17,7 @@ void Rover::Log_Write_Attitude()
     logger.Write_AHRS2(ahrs);
 #endif
     logger.Write_POS(ahrs);
+    logger.Write_VEL();
 
     // log steering rate controller
     logger.Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());

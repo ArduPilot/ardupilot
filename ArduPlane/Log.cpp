@@ -50,6 +50,7 @@ void Plane::Log_Write_Attitude(void)
     sitl.Log_Write_SIMSTATE();
 #endif
     logger.Write_POS(ahrs);
+    logger.Write_VEL();
 }
 
 // do logging at loop rate

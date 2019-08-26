@@ -240,6 +240,7 @@ public:
     void Write_Power(void);
     void Write_AHRS2(AP_AHRS &ahrs);
     void Write_POS(AP_AHRS &ahrs);
+    void Write_VEL();
 #if AP_AHRS_NAVEKF_AVAILABLE
     void Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
 #endif

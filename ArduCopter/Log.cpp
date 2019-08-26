@@ -82,6 +82,7 @@ void Copter::Log_Write_EKF_POS()
     sitl.Log_Write_SIMSTATE();
 #endif
     logger.Write_POS(ahrs);
+    logger.Write_VEL();
 }
 
 struct PACKED log_MotBatt {
