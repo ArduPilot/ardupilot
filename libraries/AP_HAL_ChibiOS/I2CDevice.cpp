@@ -284,8 +284,10 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
             break;
         }
 
+#ifdef STM32_I2C_ISR_LIMIT
         AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
         pd.i2c_isr_count += I2CD[bus.busnum].i2c->isr_count;
+#endif
 
         if (ret == MSG_OK) {
             bus.bouncebuffer_finish(send, recv, recv_len);
