@@ -178,6 +178,9 @@ public:
     /// calculate_wp_leash_length - calculates track speed, acceleration and leash lengths for waypoint controller
     void calculate_wp_leash_length();
 
+    /// returns true if we have just received a new destination.
+    bool get_new_wp_destination() const { return _flags.new_wp_destination; };
+
     ///
     /// spline methods
     ///
