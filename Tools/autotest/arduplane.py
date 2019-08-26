@@ -799,16 +799,7 @@ class AutoTestPlane(AutoTest):
         self.wait_mode('RTL') # long failsafe
         self.progress("Ensure we've had our throttle squashed to 950")
         self.wait_rc_channel_value(3, 950)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
+        self.drain_mav_unparsed()
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         print("%s" % str(m))
         self.progress("Testing receiver enabled")
@@ -822,10 +813,7 @@ class AutoTestPlane(AutoTest):
 #        if (m.onboard_control_sensors_health & receiver_bit):
 #            raise NotAchievedException("Sensor healthy when it shouldn't be")
         self.set_parameter("SIM_RC_FAIL", 0)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.drain_mav_unparsed()
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
@@ -835,23 +823,14 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Receiver not present")
         self.progress("Testing receiver health")
         if (not (m.onboard_control_sensors_health & receiver_bit)):
-            raise NotAchievedException("Receiver not healthy")
+            raise NotAchievedException("Receiver not healthy2")
         self.change_mode('MANUAL')
 
         self.progress("Failing receiver (no-pulses)")
         self.set_parameter("SIM_RC_FAIL", 1) # no-pulses
         self.wait_mode('CIRCLE') # short failsafe
         self.wait_mode('RTL') # long failsafe
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
+        self.drain_mav_unparsed()
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         print("%s" % str(m))
         self.progress("Testing receiver enabled")
