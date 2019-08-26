@@ -79,7 +79,7 @@ define HAL_GPIO_A_LED_PIN 1
 #dummy assignment required to allow AP_NOTIFY to use board led
 define HAL_GPIO_B_LED_PIN 2 
 
-PB4 TIM3_CH1 TIM3 GPIO(58) ALARM
+PB4 TIM3_CH1 TIM3 GPIO(58) ALARM LOW
 
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
