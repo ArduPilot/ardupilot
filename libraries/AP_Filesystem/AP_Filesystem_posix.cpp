@@ -21,6 +21,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include <sys/vfs.h>
+#include <utime.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -105,6 +106,18 @@ int64_t AP_Filesystem::disk_space(const char *path)
     return (((int64_t)stats.f_blocks) * stats.f_bsize);
 }
 
+
+/*
+  set mtime on a file
+ */
+bool AP_Filesystem::set_mtime(const char *filename, const time_t mtime_sec)
+{
+    struct utimbuf times {};
+    times.actime = mtime_sec;
+    times.modtime = mtime_sec;
+
+    return utime(filename, &times) == 0;
+}
 
 #endif // CONFIG_HAL_BOARD
 

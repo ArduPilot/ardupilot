@@ -780,6 +780,39 @@ int64_t AP_Filesystem::disk_space(const char *path)
 }
 
 /*
+  convert unix time_t to FATFS timestamp
+ */
+static void unix_time_to_fat(time_t epoch, uint16_t &date, uint16_t &time)
+{
+    struct tm *t = gmtime((time_t *)&epoch);
+
+    /* Pack date and time into a uint32_t variable */
+    date = ((uint16_t)(t->tm_year - 80) << 9)
+        | (((uint16_t)t->tm_mon+1) << 5)
+        | (((uint16_t)t->tm_mday));
+
+    time = ((uint16_t)t->tm_hour << 11)
+        | ((uint16_t)t->tm_min << 5)
+        | ((uint16_t)t->tm_sec >> 1);
+}
+
+/*
+  set mtime on a file
+ */
+bool AP_Filesystem::set_mtime(const char *filename, const time_t mtime_sec)
+{
+    FILINFO fno;
+    uint16_t fdate, ftime;
+
+    unix_time_to_fat(mtime_sec, fdate, ftime);
+
+    fno.fdate = fdate;
+    fno.ftime = ftime;
+
+    return f_utime(filename, (FILINFO *)&fno) == FR_OK;
+}
+
+/*
   convert POSIX errno to text with user message.
 */
 char *strerror(int errnum)
