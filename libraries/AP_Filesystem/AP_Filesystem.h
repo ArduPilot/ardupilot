@@ -60,6 +60,9 @@ public:
 
     // return total disk space in bytes, -1 on error
     int64_t disk_space(const char *path);
+
+    // set modification time on a file
+    bool set_mtime(const char *filename, const time_t mtime_sec);
 };
 
 namespace AP {
