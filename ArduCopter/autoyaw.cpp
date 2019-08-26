@@ -32,13 +32,17 @@ void Mode::AutoYaw::set_mode_to_default(bool rtl)
 
 // default_mode - returns auto_yaw.mode() based on WP_YAW_BEHAVIOR parameter
 // set rtl parameter to true if this is during an RTL
-autopilot_yaw_mode Mode::AutoYaw::default_mode(bool rtl) const
+autopilot_yaw_mode Mode::AutoYaw::default_mode(bool rtl)
 {
+    yaw_before_xy_moving = false;
     switch (copter.g.wp_yaw_behavior) {
 
     case WP_YAW_BEHAVIOR_NONE:
         return AUTO_YAW_HOLD;
 
+    case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL_BEFORE_MOVING:
+        yaw_before_xy_moving = true;
+        FALLTHROUGH;
     case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
         if (rtl) {
             return AUTO_YAW_HOLD;
@@ -213,8 +217,12 @@ float Mode::AutoYaw::yaw()
     case AUTO_YAW_LOOK_AT_NEXT_WP:
     default:
         // point towards next waypoint.
-        // we don't use wp_bearing because we don't want the copter to turn too much during flight
-        return copter.wp_nav->get_yaw();
+        if (yaw_before_xy_moving && copter.wp_nav->get_wp_distance_to_destination() > 400) {
+            return copter.wp_nav->get_wp_bearing_to_destination();
+        } else {
+            // we don't use wp_bearing because we don't want the copter to turn too much during flight
+            return copter.wp_nav->get_yaw();
+        }
     }
 }
 

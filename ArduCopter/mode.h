@@ -193,7 +193,7 @@ public:
         autopilot_yaw_mode mode() const { return (autopilot_yaw_mode)_mode; }
         void set_mode_to_default(bool rtl);
         void set_mode(autopilot_yaw_mode new_mode);
-        autopilot_yaw_mode default_mode(bool rtl) const;
+        autopilot_yaw_mode default_mode(bool rtl);
 
         // rate_cds(): desired yaw rate in centidegrees/second:
         float rate_cds() const;
@@ -206,6 +206,8 @@ public:
                            float turn_rate_dps,
                            int8_t direction,
                            bool relative_angle);
+
+        bool should_yaw_before_xy_moving() const { return yaw_before_xy_moving; };
 
     private:
 
@@ -235,6 +237,9 @@ public:
 
         // used to reduce update rate to 100hz:
         uint8_t roi_yaw_counter;
+
+        // Yaw to the direction of the next waypoint, before moving horizontally towards it
+        bool yaw_before_xy_moving;
 
     };
     static AutoYaw auto_yaw;

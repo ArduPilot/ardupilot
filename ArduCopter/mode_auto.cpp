@@ -773,8 +773,14 @@ void ModeAuto::wp_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // run waypoint controller
-    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    // Only run the update_wpnav() if not supposed to point at next wp before moving horizontally
+    // in that case check if we are within 5 degrees of the target heading before running it
+    if (   !auto_yaw.should_yaw_before_xy_moving()
+        || !wp_nav->get_new_wp_destination()
+        || fabsf(wrap_180_cd(ahrs.yaw_sensor-auto_yaw.yaw())) <= 500) {
+        // run waypoint controller
+        copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    }
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
