@@ -68,12 +68,10 @@ void AP_IOMCU_FW::rcin_serial_init(void)
                                &sd3_listener,
                                EVENT_MASK(1),
                                SD_PARITY_ERROR);
-    rcprotocol = AP_RCProtocol::get_singleton();
-
     // disable input for SBUS with pulses, we will use the UART for
     // SBUS.
-    rcprotocol->disable_for_pulses(AP_RCProtocol::SBUS);
-    rcprotocol->disable_for_pulses(AP_RCProtocol::SBUS_NI);
+    AP::RC().disable_for_pulses(AP_RCProtocol::SBUS);
+    AP::RC().disable_for_pulses(AP_RCProtocol::SBUS_NI);
 }
 
 static struct {
@@ -96,7 +94,7 @@ void AP_IOMCU_FW::rcin_serial_update(void)
         n = MIN(n, sizeof(b));
         rc_stats.num_dsm_bytes += n;
         for (uint8_t i=0; i<n; i++) {
-            rcprotocol->process_byte(b[i], 115200);
+            AP::RC().process_byte(b[i], 115200);
         }
         //BLUE_TOGGLE();
     }
@@ -111,7 +109,7 @@ void AP_IOMCU_FW::rcin_serial_update(void)
             n = MIN(n, sizeof(b));
             rc_stats.num_sbus_bytes += n;
             for (uint8_t i=0; i<n; i++) {
-                rcprotocol->process_byte(b[i], 100000);
+                AP::RC().process_byte(b[i], 100000);
             }
         }
     }
