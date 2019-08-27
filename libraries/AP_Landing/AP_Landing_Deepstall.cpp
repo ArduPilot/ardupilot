@@ -22,6 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Common/Location.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 // table of user settable parameters for deepstall
 const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
