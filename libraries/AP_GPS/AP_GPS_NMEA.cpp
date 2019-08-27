@@ -326,15 +326,15 @@ bool AP_GPS_NMEA::_term_complete()
             return false;
         }
         const char *term_type = &_term[2];
-        if (strcmp(term_type, "RMC") == 0) {
+        if (strncmp(term_type, "RMC", 4) == 0) {
             _sentence_type = _GPS_SENTENCE_RMC;
-        } else if (strcmp(term_type, "GGA") == 0) {
+        } else if (strncmp(term_type, "GGA", 4) == 0) {
             _sentence_type = _GPS_SENTENCE_GGA;
-        } else if (strcmp(term_type, "HDT") == 0) {
+        } else if (strncmp(term_type, "HDT", 4) == 0) {
             _sentence_type = _GPS_SENTENCE_HDT;
             // HDT doesn't have a data qualifier
             _gps_data_good = true;
-        } else if (strcmp(term_type, "VTG") == 0) {
+        } else if (strncmp(term_type, "VTG", 4) == 0) {
             _sentence_type = _GPS_SENTENCE_VTG;
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
