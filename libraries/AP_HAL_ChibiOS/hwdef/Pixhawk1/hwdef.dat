@@ -17,7 +17,7 @@ include ../fmuv3/hwdef.dat
 # and two SPIDEV endpoints, one for gyro, one for accel/mag
 
 IMU Invensense SPI:mpu6000 ROTATION_ROLL_180
-IMU LSM9DS0 SPI:lsm9ds0_g SPI:lsm9ds0_am ROTATION_ROLL_180
+IMU LSM9DS0 SPI:lsm9ds0_g SPI:lsm9ds0_am ROTATION_ROLL_180 ROTATION_ROLL_180_YAW_270 ROTATION_PITCH_180
 
 # define the barometers to probe with BARO lines. These follow the
 # same format as IMU lines
