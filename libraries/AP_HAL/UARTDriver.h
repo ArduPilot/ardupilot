@@ -50,6 +50,7 @@ public:
     
     // control optional features
     virtual bool set_options(uint8_t options) { return options==0; }
+    virtual uint8_t get_options(void) const { return 0; }
 
     enum {
         OPTION_RXINV=(1U<<0),  // invert RX line
