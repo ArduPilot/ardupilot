@@ -139,7 +139,7 @@ bool AP_WindVane_NMEA::decode_latest_term()
             return false;
         }
         const char *term_type = &_term[2];
-        if (strcmp(term_type, "MWV") == 0) {
+        if (strncmp(term_type, "MWV", 4) == 0) {
             // we found the sentence type for wind
             _sentence_valid = true;
         }
