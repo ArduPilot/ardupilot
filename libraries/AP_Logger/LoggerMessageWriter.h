@@ -31,6 +31,7 @@ private:
         ws_blockwriter_stage_firmware_string,
         ws_blockwriter_stage_git_versions,
         ws_blockwriter_stage_system_id,
+        ws_blockwriter_stage_param_space_used,
         ws_blockwriter_stage_rc_protocol
     };
     write_sysinfo_blockwriter_stage stage;
