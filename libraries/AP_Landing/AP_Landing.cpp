@@ -19,6 +19,7 @@
 
 #include "AP_Landing.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Landing::var_info[] = {
