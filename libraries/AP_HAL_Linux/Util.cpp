@@ -257,15 +257,15 @@ void *Util::heap_realloc(void *h, void *ptr, size_t new_size)
         old_size = old_header->allocation_size;
     }
 
+    if ((heapp->current_heap_usage + new_size - old_size) > heapp->max_heap_size) {
+        // fail the allocation as we don't have the memory. Note that we don't simulate fragmentation
+        return nullptr;
+    }
+
     heapp->current_heap_usage -= old_size;
     if (new_size == 0) {
        free(old_header);
        return nullptr;
-    }
-
-    if ((heapp->current_heap_usage + new_size - old_size) > heapp->max_heap_size) {
-        // fail the allocation as we don't have the memory. Note that we don't simulate fragmentation
-        return nullptr;
     }
 
     heap_allocation_header *new_header = (heap_allocation_header *)malloc(new_size + sizeof(heap_allocation_header));
