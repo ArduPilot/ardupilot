@@ -1,10 +1,13 @@
 #include "AP_Mount_Alexmos.h"
 #include <AP_GPS/AP_GPS.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL& hal;
 
-void AP_Mount_Alexmos::init(const AP_SerialManager& serial_manager)
+void AP_Mount_Alexmos::init()
 {
+    const AP_SerialManager& serial_manager = AP::serialmanager();
+
     // check for alexmos protcol
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_AlexMos, 0))) {
         _initialised = true;

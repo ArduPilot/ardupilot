@@ -24,7 +24,7 @@ public:
     AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
 
     // init - performs any required initialisation for this instance
-    void init(const AP_SerialManager& serial_manager) override;
+    void init() override;
 
     // update mount position - should be called periodically
     void update() override;
