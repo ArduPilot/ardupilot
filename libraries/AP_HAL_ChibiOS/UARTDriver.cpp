@@ -50,6 +50,9 @@ UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
 // caller threads
 #define EVT_DATA EVENT_MASK(0)
 
+// event for parity error
+#define EVT_PARITY EVENT_MASK(1)
+
 #ifndef HAL_UART_MIN_TX_SIZE
 #define HAL_UART_MIN_TX_SIZE 1024
 #endif
@@ -973,6 +976,12 @@ void UARTDriver::_timer_tick(void)
             if (ret < 0) {
                 break;
             }
+#if CH_CFG_USE_EVENTS == TRUE
+            if (parity_enabled && ((chEvtGetAndClearFlags(&ev_listener) & SD_PARITY_ERROR))) {
+                // discard bytes with parity error
+                ret = -1;
+            }
+#endif
             if (half_duplex) {
                 uint32_t now = AP_HAL::micros();
                 if (now - hd_write_us < hd_read_delay_us) {
@@ -1116,27 +1125,48 @@ void UARTDriver::configure_parity(uint8_t v)
 #if HAL_USE_SERIAL == TRUE
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
-    
+
+#ifdef USART_CR1_M0
+    // cope with F7 where there are 2 bits in CR1_M
+    const uint32_t cr1_m0 = USART_CR1_M0;
+#else
+    const uint32_t cr1_m0 = USART_CR1_M;
+#endif
+
     switch (v) {
     case 0:
         // no parity
-        sercfg.cr1 &= ~(USART_CR1_PCE | USART_CR1_PS);
+        sercfg.cr1 &= ~(USART_CR1_PCE | USART_CR1_PS | USART_CR1_M);
         break;
     case 1:
         // odd parity
         // setting USART_CR1_M ensures extra bit is used as parity
         // not last bit of data
-        sercfg.cr1 |= USART_CR1_M | USART_CR1_PCE;
+        sercfg.cr1 |= cr1_m0 | USART_CR1_PCE;
         sercfg.cr1 |= USART_CR1_PS;
         break;
     case 2:
         // even parity
-        sercfg.cr1 |= USART_CR1_M | USART_CR1_PCE;
+        sercfg.cr1 |= cr1_m0 | USART_CR1_PCE;
         sercfg.cr1 &= ~USART_CR1_PS;
         break;
     }
 
     sdStart((SerialDriver*)sdef.serial, &sercfg);
+
+#if CH_CFG_USE_EVENTS == TRUE
+    if (parity_enabled) {
+        chEvtUnregister(chnGetEventSource((SerialDriver*)sdef.serial), &ev_listener);
+    }
+    parity_enabled = (v != 0);
+    if (parity_enabled) {
+        chEvtRegisterMaskWithFlags(chnGetEventSource((SerialDriver*)sdef.serial),
+                                   &ev_listener,
+                                   EVT_PARITY,
+                                   SD_PARITY_ERROR);
+    }
+#endif
+    
 #ifndef HAL_UART_NODMA
     if(sdef.dma_rx) {
         //Configure serial driver to skip handling RX packets
@@ -1221,6 +1251,8 @@ bool UARTDriver::set_options(uint8_t options)
     }
     bool ret = true;
 
+    _last_options = options;
+
 #if HAL_USE_SERIAL == TRUE
     SerialDriver *sd = (SerialDriver*)(sdef.serial);
     uint32_t cr2 = sd->usart->CR2;
@@ -1297,6 +1329,12 @@ bool UARTDriver::set_options(uint8_t options)
     }
 #endif // HAL_USE_SERIAL == TRUE
     return ret;
+}
+
+// get optional features
+uint8_t UARTDriver::get_options(void) const
+{
+    return _last_options;
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

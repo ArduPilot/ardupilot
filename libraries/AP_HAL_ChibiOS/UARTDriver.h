@@ -55,7 +55,8 @@ public:
 
     // control optional features
     bool set_options(uint8_t options) override;
-
+    uint8_t get_options(void) const override;
+    
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
@@ -183,6 +184,7 @@ private:
     // we remember cr2 and cr2 options from set_options to apply on sdStart()
     uint32_t _cr3_options;
     uint32_t _cr2_options;
+    uint8_t _last_options;
 
     // half duplex control. After writing we throw away bytes for 4 byte widths to
     // prevent reading our own bytes back
@@ -193,6 +195,12 @@ private:
 
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;
+
+#if CH_CFG_USE_EVENTS == TRUE
+    // listener for parity error events
+    event_listener_t ev_listener;
+    bool parity_enabled;
+#endif
     
 #ifndef HAL_UART_NODMA
     static void rx_irq_cb(void* sd);
