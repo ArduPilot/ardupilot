@@ -157,9 +157,9 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
             return false;
         }
         const char *term_type = &_term[2];
-        if (strcmp(term_type, "DBT") == 0) {
+        if (strncmp(term_type, "DBT", 4) == 0) {
             _sentence_type = SONAR_DBT;
-        } else if (strcmp(term_type, "DPT") == 0) {
+        } else if (strncmp(term_type, "DPT", 4) == 0) {
             _sentence_type = SONAR_DPT;
         } else {
             _sentence_type = SONAR_UNKNOWN;
