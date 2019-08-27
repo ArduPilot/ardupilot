@@ -67,21 +67,10 @@
 #define HAL_INS_MPU60XX_SPI  2
 #define HAL_INS_MPU60XX_I2C  3
 #define HAL_INS_HIL          4
-#define HAL_INS_PX4          5
-#define HAL_INS_L3G4200D     7
 #define HAL_INS_VRBRAIN      8
 #define HAL_INS_MPU9250_SPI  9
-#define HAL_INS_L3GD20      10
-#define HAL_INS_LSM9DS0     11
 #define HAL_INS_MPU9250_I2C 13
-#define HAL_INS_BH          14
-#define HAL_INS_BBBMINI     17
-#define HAL_INS_AERO        18
 #define HAL_INS_MPU6500     19
-#define HAL_INS_EDGE        20
-#define HAL_INS_RST         21
-#define HAL_INS_LSM9DS1     22
-#define HAL_INS_ICM20789_SPI 23
 #define HAL_INS_INV2_I2C    24
 #define HAL_INS_INV2_SPI    25
 
