@@ -43,6 +43,7 @@
 #include "AP_GPS_UAVCAN.h"
 #endif
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 
 #define GPS_RTK_INJECT_TO_ALL 127
