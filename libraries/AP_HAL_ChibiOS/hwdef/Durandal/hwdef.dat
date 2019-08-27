@@ -315,7 +315,8 @@ define HAL_WITH_RAMTRON 1
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 
-define HAL_BARO_DEFAULT HAL_BARO_MS5611_SPI
+# one baro
+BARO MS56XX SPI:ms5611
 
 define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
