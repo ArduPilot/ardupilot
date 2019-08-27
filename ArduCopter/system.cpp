@@ -160,7 +160,7 @@ void Copter::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(serial_manager);
+    camera_mount.init();
 #endif
 
 #if PRECISION_LANDING == ENABLED
