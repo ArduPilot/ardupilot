@@ -36,7 +36,9 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 void RCInput::init()
 {
+#ifndef HAL_BUILD_AP_PERIPH
     AP::RC().init();
+#endif
 
 #if HAL_USE_ICU == TRUE
     //attach timer channel on which the signal will be received
@@ -121,6 +123,11 @@ void RCInput::_timer_tick(void)
         return;
     }
 
+#ifndef HAL_NO_UARTDRIVER
+    const char *rc_protocol = nullptr;
+#endif
+
+#ifndef HAL_BUILD_AP_PERIPH
 #if HAL_USE_ICU == TRUE
     const uint32_t *p;
     uint32_t n;
@@ -137,10 +144,6 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
-#ifndef HAL_NO_UARTDRIVER
-    const char *rc_protocol = nullptr;
-#endif
-
     if (AP::RC().new_input()) {
         rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
         _rcin_timestamp_last_signal = AP_HAL::micros();
@@ -154,6 +157,7 @@ void RCInput::_timer_tick(void)
         rc_protocol = AP::RC().protocol_name();
 #endif
     }
+#endif // HAL_BUILD_AP_PERIPH
 
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && radio->last_recv_us() != last_radio_us) {
@@ -205,8 +209,10 @@ bool RCInput::rc_bind(int dsmMode)
     rcin_mutex.give();
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // ask AP_RCProtocol to start a bind
     AP::RC().start_bind();
+#endif
 
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (radio) {
