@@ -23,9 +23,7 @@
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_ST24.h"
-
-// singleton
-AP_RCProtocol *AP_RCProtocol::_singleton;
+#include <AP_Math/AP_Math.h>
 
 void AP_RCProtocol::init()
 {
@@ -47,7 +45,6 @@ AP_RCProtocol::~AP_RCProtocol()
             backend[i] = nullptr;
         }
     }
-    _singleton = nullptr;
 }
 
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
@@ -157,10 +154,61 @@ void AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     }
 }
 
+/*
+  check for bytes from an additional uart. This is used to support RC
+  protocols from SERIALn_PROTOCOL
+ */
+void AP_RCProtocol::check_added_uart(void)
+{
+    if (!added.uart) {
+        return;
+    }
+    uint32_t now = AP_HAL::millis();
+    bool searching = (now - _last_input_ms >= 200);
+    if (!searching && !_detected_with_bytes) {
+        // not using this uart
+        return;
+    }
+    if (!added.opened) {
+        added.uart->begin(added.baudrate, 128, 128);
+        added.opened = true;
+        if (added.baudrate == 100000) {
+            // assume SBUS settings, even parity, 2 stop bits
+            added.uart->configure_parity(2);
+            added.uart->set_stop_bits(2);
+            added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
+        } else {
+            // setup for 115200 protocols
+            added.uart->configure_parity(0);
+            added.uart->set_stop_bits(1);
+            added.uart->set_options(added.uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
+        }
+        added.last_baud_change_ms = AP_HAL::millis();
+    }
+    uint32_t n = added.uart->available();
+    n = MIN(n, 255U);
+    for (uint8_t i=0; i<n; i++) {
+        int16_t b = added.uart->read();
+        if (b >= 0) {
+            process_byte(uint8_t(b), added.baudrate);
+        }
+    }
+    if (!_detected_with_bytes) {
+        if (now - added.last_baud_change_ms > 1000) {
+            // flip baudrates if not detected once a second
+            added.baudrate = (added.baudrate==100000)?115200:100000;
+            added.opened = false;
+        }
+    }
+}
+
 bool AP_RCProtocol::new_input()
 {
     bool ret = _new_input;
     _new_input = false;
+
+    // if we have an extra UART from a SERIALn_PROTOCOL then check it for data
+    check_added_uart();
 
     // run update function on backends
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
@@ -233,3 +281,21 @@ const char *AP_RCProtocol::protocol_name(void) const
 {
     return protocol_name_from_protocol(_detected_protocol);
 }
+
+/*
+  add a uart to decode
+ */
+void AP_RCProtocol::add_uart(AP_HAL::UARTDriver* uart)
+{
+    added.uart = uart;
+    // start with DSM
+    added.baudrate = 115200U;
+}
+
+namespace AP {
+    AP_RCProtocol &RC()
+    {
+        static AP_RCProtocol rcprot;
+        return rcprot;
+    }
+};

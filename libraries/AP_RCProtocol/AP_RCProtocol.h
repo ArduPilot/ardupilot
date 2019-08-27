@@ -25,9 +25,7 @@ class AP_RCProtocol_Backend;
 
 class AP_RCProtocol {
 public:
-    AP_RCProtocol() {
-        _singleton = this;
-    }
+    AP_RCProtocol() {}
     ~AP_RCProtocol();
 
     enum rcprotocol_t {
@@ -78,13 +76,13 @@ public:
     enum rcprotocol_t protocol_detected(void) const {
         return _detected_protocol;
     }
-    
-    // access to singleton
-    static AP_RCProtocol *get_singleton(void) {
-        return _singleton;
-    }
+
+    // add a UART for RCIN
+    void add_uart(AP_HAL::UARTDriver* uart);
 
 private:
+    void check_added_uart(void);
+
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
@@ -94,7 +92,17 @@ private:
     bool _valid_serial_prot = false;
     uint8_t _good_frames[NONE];
 
-    static AP_RCProtocol *_singleton;
+    // optional additional uart
+    struct {
+        AP_HAL::UARTDriver *uart;
+        uint32_t baudrate;
+        bool opened;
+        uint32_t last_baud_change_ms;
+    } added;
+};
+
+namespace AP {
+    AP_RCProtocol &RC();
 };
 
 #include "AP_RCProtocol_Backend.h"
