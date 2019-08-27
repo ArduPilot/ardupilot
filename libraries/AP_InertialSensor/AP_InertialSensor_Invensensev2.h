@@ -35,11 +35,11 @@ public:
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                            enum Rotation rotation = ROTATION_NONE);
+                                            enum Rotation rotation);
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
-                                            enum Rotation rotation = ROTATION_NONE);
+                                            enum Rotation rotation);
 
     /* update accel and gyro state */
     bool update() override;
