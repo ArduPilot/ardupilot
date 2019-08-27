@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_LandingGear/AP_LandingGear.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 
 void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
