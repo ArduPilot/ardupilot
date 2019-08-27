@@ -1262,10 +1262,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     // we exclude radio packets because we historically used this to
     // make it possible to use the CLI over the radio
     if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-        const uint8_t mask = (1U<<(chan-MAVLINK_COMM_0));
-        if (!(mask & mavlink_private)) {
-            mavlink_active |= mask;
-        }
+        mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
     }
     if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
         (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
@@ -1787,7 +1784,7 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
         // filter destination ports to only allow active ports.
         statustext_t statustext{};
         if (update_send_has_been_called) {
-            statustext.bitmask = (GCS_MAVLINK::active_channel_mask()  | GCS_MAVLINK::streaming_channel_mask() );
+            statustext.bitmask = statustext_send_channel_mask();
         } else {
             // we have not yet initialised the streaming-channel-mask,
             // which is done as part of the update() call.  So just send
