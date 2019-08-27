@@ -281,6 +281,9 @@ public:
     // return a bitmap of streaming channels
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
 
+    // return a bitmap of private channels
+    static uint8_t private_channel_mask(void) { return mavlink_private; }
+
     // set a channel as private. Private channels get sent heartbeats, but
     // don't get broadcast packets or forwarded packets
     static void set_channel_private(mavlink_channel_t chan);
@@ -877,6 +880,7 @@ public:
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t mask);
+    uint8_t statustext_send_channel_mask() const;
 
     virtual GCS_MAVLINK *chan(const uint8_t ofs) = 0;
     virtual const GCS_MAVLINK *chan(const uint8_t ofs) const = 0;

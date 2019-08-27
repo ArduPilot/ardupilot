@@ -53,7 +53,6 @@ void GCS_MAVLINK::set_channel_private(mavlink_channel_t _chan)
 {
     const uint8_t mask = (1U<<(unsigned)_chan);
     mavlink_private |= mask;
-    mavlink_active &= ~mask;
 }
 
 // return a MAVLink parameter type given a AP_Param type
