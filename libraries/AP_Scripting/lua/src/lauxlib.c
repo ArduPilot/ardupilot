@@ -166,7 +166,7 @@ LUALIB_API int luaL_argerror (lua_State *L, int arg, const char *extramsg) {
   if (!lua_getstack(L, 0, &ar))  /* no stack frame? */
     return luaL_error(L, "bad argument #%d (%s)", arg, extramsg);
   lua_getinfo(L, "n", &ar);
-  if (strcmp(ar.namewhat, "method") == 0) {
+  if (strncmp(ar.namewhat, "method", 7) == 0) {
     arg--;  /* do not count 'self' */
     if (arg == 0)  /* error is in the self argument itself? */
       return luaL_error(L, "calling '%s' on bad self (%s)",

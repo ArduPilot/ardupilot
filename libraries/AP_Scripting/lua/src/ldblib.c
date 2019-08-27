@@ -404,7 +404,7 @@ static int db_debug (lua_State *L) {
     char buffer[250];
     lua_writestringerror("%s", "lua_debug> ");
     if (fgets(buffer, sizeof(buffer), stdin) == 0 ||
-        strcmp(buffer, "cont\n") == 0)
+        strncmp(buffer, "cont\n", 6) == 0)
       return 0;
     if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
         lua_pcall(L, 0, 0, 0))
