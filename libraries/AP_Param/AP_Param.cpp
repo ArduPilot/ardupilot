@@ -36,6 +36,8 @@
 
 extern const AP_HAL::HAL &hal;
 
+uint16_t AP_Param::sentinal_offset;
+
 #define ENABLE_DEBUG 1
 
 #if ENABLE_DEBUG
@@ -117,6 +119,7 @@ void AP_Param::write_sentinal(uint16_t ofs)
     set_key(phdr, _sentinal_key);
     phdr.group_element = _sentinal_group;
     eeprom_write_check(&phdr, ofs, sizeof(phdr));
+    sentinal_offset = ofs;
 }
 
 // erase all EEPROM variables by re-writing the header and adding
@@ -695,6 +698,7 @@ bool AP_Param::scan(const AP_Param::Param_header *target, uint16_t *pofs)
         if (is_sentinal(phdr)) {
             // we've reached the sentinal
             *pofs = ofs;
+            sentinal_offset = ofs;
             return false;
         }
         ofs += type_size((enum ap_var_type)phdr.type) + sizeof(phdr);
@@ -1353,6 +1357,7 @@ bool AP_Param::load_all()
         // against power off while adding a variable
         if (is_sentinal(phdr)) {
             // we've reached the sentinal
+            sentinal_offset = ofs;
             return true;
         }
 
@@ -1438,6 +1443,7 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
             // against power off while adding a variable
             if (is_sentinal(phdr)) {
                 // we've reached the sentinal
+                sentinal_offset = ofs;
                 break;
             }
             if (get_key(phdr) == key) {
