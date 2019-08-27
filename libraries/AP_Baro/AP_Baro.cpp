@@ -45,6 +45,8 @@
 #include "AP_Baro_UAVCAN.h"
 #endif
 
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
