@@ -31,6 +31,7 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Declination/AP_Declination.h>
 
 using namespace SITL;
 
