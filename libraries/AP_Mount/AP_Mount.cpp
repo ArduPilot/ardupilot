@@ -408,7 +408,7 @@ AP_Mount::AP_Mount(const struct Location &current_loc) :
 }
 
 // init - detect and initialise all mounts
-void AP_Mount::init(const AP_SerialManager& serial_manager)
+void AP_Mount::init()
 {
     // check init has not been called before
     if (_num_instances != 0) {
@@ -466,7 +466,7 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
 
         // init new instance
         if (_backends[instance] != nullptr) {
-            _backends[instance]->init(serial_manager);
+            _backends[instance]->init();
             if (!primary_set) {
                 _primary = instance;
                 primary_set = true;
