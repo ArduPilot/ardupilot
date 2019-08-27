@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include "Storage.h"
 
+#include <stdio.h>
+
 using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
