@@ -43,7 +43,6 @@ private:
 
     int fd_sbus;
     int fd_115200;
-    AP_RCProtocol rcp;
 };
 };
 
