@@ -17,7 +17,7 @@ AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_sta
 {}
 
 // init - performs any required initialisation for this instance
-void AP_Mount_SoloGimbal::init(const AP_SerialManager& serial_manager)
+void AP_Mount_SoloGimbal::init()
 {
     _initialised = true;
     set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
