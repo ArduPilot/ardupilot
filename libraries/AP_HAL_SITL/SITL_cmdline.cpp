@@ -401,19 +401,19 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
 
-    if (strcmp(SKETCH, "ArduCopter") == 0) {
+    if (strncmp(SKETCH, "ArduCopter", 11) == 0) {
         _vehicle = ArduCopter;
         if (_framerate == 0) {
             _framerate = 200;
         }
-    } else if (strcmp(SKETCH, "APMrover2") == 0) {
+    } else if (strncmp(SKETCH, "APMrover2", 10) == 0) {
         _vehicle = APMrover2;
         if (_framerate == 0) {
             _framerate = 50;
         }
         // set right default throttle for rover (allowing for reverse)
         pwm_input[2] = 1500;
-    } else if (strcmp(SKETCH, "ArduSub") == 0) {
+    } else if (strncmp(SKETCH, "ArduSub", 8) == 0) {
         _vehicle = ArduSub;
         for(uint8_t i = 0; i < 8; i++) {
             pwm_input[i] = 1500;

@@ -61,11 +61,11 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         _uart_baudrate = baud;
     }
     
-    if (strcmp(path, "GPS1") == 0) {
+    if (strncmp(path, "GPS1", 5) == 0) {
         /* gps */
         _connected = true;
         _fd = _sitlState->gps_pipe();
-    } else if (strcmp(path, "GPS2") == 0) {
+    } else if (strncmp(path, "GPS2", 5) == 0) {
         /* 2nd gps */
         _connected = true;
         _fd = _sitlState->gps2_pipe();
@@ -87,29 +87,29 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         char *devtype = strtok_r(s, ":", &saveptr);
         char *args1 = strtok_r(nullptr, ":", &saveptr);
         char *args2 = strtok_r(nullptr, ":", &saveptr);
-        if (strcmp(devtype, "tcp") == 0) {
+        if (strncmp(devtype, "tcp", 4) == 0) {
             uint16_t port = atoi(args1);
-            bool wait = (args2 && strcmp(args2, "wait") == 0);
+            bool wait = (args2 && strncmp(args2, "wait", 5) == 0);
             _tcp_start_connection(port, wait);
-        } else if (strcmp(devtype, "tcpclient") == 0) {
+        } else if (strncmp(devtype, "tcpclient", 10) == 0) {
             if (args2 == nullptr) {
                 AP_HAL::panic("Invalid tcp client path: %s", path);
             }
             uint16_t port = atoi(args2);
             _tcp_start_client(args1, port);
-        } else if (strcmp(devtype, "uart") == 0) {
+        } else if (strncmp(devtype, "uart", 5) == 0) {
             uint32_t baudrate = args2? atoi(args2) : baud;
             ::printf("UART connection %s:%u\n", args1, baudrate);
             _uart_path = strdup(args1);
             _uart_baudrate = baudrate;
             _uart_start_connection();
-        } else if (strcmp(devtype, "sim") == 0) {
+        } else if (strncmp(devtype, "sim", 4) == 0) {
             ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
             if (!_connected) {
                 _connected = true;
                 _fd = _sitlState->sim_fd(args1, args2);
             }
-        } else if (strcmp(devtype, "udpclient") == 0) {
+        } else if (strncmp(devtype, "udpclient", 10) == 0) {
             // udp client connection
             const char *ip = args1;
             uint16_t port = args2?atoi(args2):14550;
@@ -117,7 +117,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
                 ::printf("UDP connection %s:%u\n", ip, port);
                 _udp_start_client(ip, port);
             }
-        } else if (strcmp(devtype, "mcast") == 0) {
+        } else if (strncmp(devtype, "mcast", 6) == 0) {
             // udp multicast connection
             const char *ip = args1 && *args1?args1:mcast_ip_default;
             uint16_t port = args2?atoi(args2):mcast_port_default;
