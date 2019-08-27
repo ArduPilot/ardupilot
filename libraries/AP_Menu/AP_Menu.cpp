@@ -141,7 +141,7 @@ Menu::_run_command(bool prompt_on_enter)
     
     // implicit commands
     if (i == _entries) {
-        if (!strcmp(_argv[0].str, "?") || (!strcasecmp(_argv[0].str, "help"))) {
+        if (!strncmp(_argv[0].str, "?", 2) || (!strcasecmp(_argv[0].str, "help"))) {
             _help();
             cmd_found=true;
         } else if (!strcasecmp(_argv[0].str, "exit")) {
