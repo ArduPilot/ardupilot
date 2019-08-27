@@ -117,8 +117,6 @@ public:
     uint32_t sbus_last_ms;
     uint32_t sbus_interval_ms;
 
-    AP_RCProtocol *rcprotocol;
-
     uint32_t fmu_data_received_time;
     uint32_t last_heater_ms;
     uint32_t reboot_time;
