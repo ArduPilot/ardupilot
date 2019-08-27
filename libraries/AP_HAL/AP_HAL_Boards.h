@@ -77,25 +77,10 @@
 
 /* Barometer driver types */
 #define HAL_BARO_NONE        0
-#define HAL_BARO_BMP085      1
-#define HAL_BARO_MS5611_I2C  2
-#define HAL_BARO_MS5611_SPI  3
-#define HAL_BARO_MS5607_I2C  4
-#define HAL_BARO_PX4         5
 #define HAL_BARO_HIL         6
-#define HAL_BARO_VRBRAIN     7
-#define HAL_BARO_MS5637_I2C  8
-#define HAL_BARO_BMP280_I2C 11
-#define HAL_BARO_BMP280_SPI 12
-#define HAL_BARO_LPS25H     13
 #define HAL_BARO_20789_I2C_I2C  14
 #define HAL_BARO_20789_I2C_SPI  15
-#define HAL_BARO_LPS22H_SPI	16
 #define HAL_BARO_LPS25H_IMU_I2C 17
-#define HAL_BARO_FBM320_I2C 18
-#define HAL_BARO_DPS280_I2C 19
-#define HAL_BARO_DPS280_SPI 20
-#define HAL_BARO_LPS22H_I2C 21
 
 /* Compass driver types */
 #define HAL_COMPASS_NONE                0
