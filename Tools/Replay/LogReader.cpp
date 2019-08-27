@@ -233,7 +233,7 @@ bool LogReader::save_message_type(const char *name)
 {
     bool save_message = !in_list(name, generated_names);
     save_message = save_message && !in_list(name, log_write_names);
-    if (save_chek_messages && strcmp(name, "CHEK") == 0) {
+    if (save_chek_messages && strncmp(name, "CHEK", 5) == 0) {
         save_message = true;
     }
     return save_message;

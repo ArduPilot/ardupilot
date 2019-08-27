@@ -422,7 +422,7 @@ bool Replay::find_log_info(struct log_information &info)
             hal.console->printf("Using clock source %s\n", clock_source);
         }
         // IMT if available always overrides
-        if (streq(type, "IMT") && strcmp(clock_source, "IMT") != 0) {
+        if (streq(type, "IMT") && strncmp(clock_source, "IMT", 4) != 0) {
             strcpy(clock_source, "IMT");
             hal.console->printf("Changing clock source to %s\n", clock_source);
             samplecount = 0;
