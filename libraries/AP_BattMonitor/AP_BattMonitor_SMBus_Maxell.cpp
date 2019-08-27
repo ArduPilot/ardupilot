@@ -160,7 +160,7 @@ bool AP_BattMonitor_SMBus_Maxell::check_pec_support()
     uint8_t buff[SMBUS_READ_BLOCK_MAXIMUM_TRANSFER + 1];
     if (read_block(BATTMONITOR_SMBUS_MANUFACTURE_NAME, buff, true)) {
         // Hitachi maxell batteries do not support PEC
-        if (strcmp((char*)buff, "Hitachi maxell") == 0) {
+        if (strncmp((char*)buff, "Hitachi maxell", 15) == 0) {
             _pec_supported = false;
             _pec_confirmed = true;
             return true;
