@@ -127,7 +127,7 @@ void Sub::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(serial_manager);
+    camera_mount.init();
 #endif
 
 #ifdef USERHOOK_INIT
