@@ -380,7 +380,7 @@ void Scheduler::_rcin_thread(void *arg)
         sched->delay_microseconds(20000);
     }
     while (true) {
-        sched->delay_microseconds(2500);
+        sched->delay_microseconds(1000);
         ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
