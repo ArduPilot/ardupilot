@@ -112,6 +112,7 @@ public:
         SerialProtocol_NMEAOutput = 20,
         SerialProtocol_WindVane = 21,
         SerialProtocol_SLCAN = 22,
+        SerialProtocol_RCIN = 23,
     };
 
     // get singleton instance
