@@ -576,7 +576,7 @@ int AP_Filesystem::stat(const char *name, struct stat *buf)
     errno = 0;
 
     // f_stat does not handle / or . as root directory
-    if (strcmp(name,"/") == 0 || strcmp(name,".") == 0) {
+    if (strncmp(name,"/", 2) == 0 || strncmp(name,".", 2) == 0) {
         buf->st_atime = 0;
         buf->st_mtime = 0;
         buf->st_ctime = 0;
