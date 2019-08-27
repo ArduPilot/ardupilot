@@ -1,4 +1,5 @@
 #include "MsgHandler.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 void fatal(const char *msg) {
     ::printf("%s",msg);
