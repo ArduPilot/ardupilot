@@ -181,6 +181,13 @@ void LoggerMessageWriter_WriteSysInfo::process() {
                 return; // call me again
             }
         }
+        stage = ws_blockwriter_stage_param_space_used;
+        FALLTHROUGH;
+
+    case ws_blockwriter_stage_param_space_used:
+        if (! _logger_backend->Write_MessageF("Param space used: %u/%u", AP_Param::storage_used(), AP_Param::storage_size())) {
+            return; // call me again
+        }
         stage = ws_blockwriter_stage_rc_protocol;
         FALLTHROUGH;
 
