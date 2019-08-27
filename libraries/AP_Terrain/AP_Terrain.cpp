@@ -20,6 +20,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include "AP_Terrain.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 #if AP_TERRAIN_AVAILABLE
 
