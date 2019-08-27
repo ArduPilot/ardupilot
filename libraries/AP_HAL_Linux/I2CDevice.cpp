@@ -298,7 +298,7 @@ I2CDeviceManager::get_device(std::vector<const char *> devpaths, uint8_t address
         char *str_device, *abs_str_device;
         const char *p;
 
-        if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0) {
+        if (strncmp(de->d_name, ".", 2) == 0 || strncmp(de->d_name, "..", 3) == 0) {
             continue;
         }
 

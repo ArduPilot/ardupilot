@@ -185,10 +185,10 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
 
     AP_HAL::OwnPtr<SerialDevice> device = nullptr;
 
-    if (strcmp(protocol, "udp") == 0 || strcmp(protocol, "udpin") == 0) {
-        bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
+    if (strncmp(protocol, "udp", 4) == 0 || strncmp(protocol, "udpin", 6) == 0) {
+        bool bcast = (_flag && strncmp(_flag, "bcast", 6) == 0);
         _packetise = true;
-        if (strcmp(protocol, "udp") == 0) {
+        if (strncmp(protocol, "udp", 4) == 0) {
             device = new UDPDevice(_ip, _base_port, bcast, false);
         } else {
             if (bcast) {
@@ -198,7 +198,7 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
 
         }
     } else {
-        bool wait = (_flag && strcmp(_flag, "wait") == 0);
+        bool wait = (_flag && strncmp(_flag, "wait", 5) == 0);
         device = new TCPServerDevice(_ip, _base_port, wait);
     }
 
