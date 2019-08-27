@@ -43,7 +43,7 @@ Sailboat::Sailboat(const char *frame_str) :
     steering_angle_max(35),
     turning_circle(1.8)
 {
-    motor_connected = (strcmp(frame_str, "sailboat-motor") == 0);
+    motor_connected = (strncmp(frame_str, "sailboat-motor", 15) == 0);
 }
 
 // calculate the lift and drag as values from 0 to 1

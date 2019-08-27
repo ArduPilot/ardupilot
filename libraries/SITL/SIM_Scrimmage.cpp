@@ -37,7 +37,7 @@ Scrimmage::Scrimmage(const char *_frame_str) :
     frame_str(_frame_str)
 {
     // Set defaults for scrimmage-copter
-    if (strcmp(frame_str, "scrimmage-copter")== 0) {
+    if (strncmp(frame_str, "scrimmage-copter", 17)== 0) {
         mission_name = "arducopter.xml";
         motion_model = "Multirotor";
         visual_model = "iris";
@@ -57,13 +57,13 @@ void Scrimmage::set_config(const char *config)
     {
         char *end_token;
         char *token2 = strtok_r(token, "=", &end_token);
-        if (strcmp(token2, "mission")==0) {
+        if (strncmp(token2, "mission", 8)==0) {
             mission_name = strtok_r(NULL, "=", &end_token);
-        } else if (strcmp(token2, "motion_model")==0) {
+        } else if (strncmp(token2, "motion_model", 13)==0) {
             motion_model = strtok_r(NULL, "=", &end_token);
-        } else if (strcmp(token2, "visual_model")==0) {
+        } else if (strncmp(token2, "visual_model", 13)==0) {
             visual_model = strtok_r(NULL, "=", &end_token);
-        } else if (strcmp(token2, "terrain")==0) {
+        } else if (strncmp(token2, "terrain", 8)==0) {
             terrain = strtok_r(NULL, "=", &end_token);
         } else {
             printf("Invalid scrimmage param: %s", token2);
