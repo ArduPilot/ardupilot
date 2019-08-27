@@ -720,23 +720,10 @@ AP_InertialSensor::detect_backends(void)
     ADD_BACKEND(AP_InertialSensor_SITL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_HIL
     ADD_BACKEND(AP_InertialSensor_HIL::detect(*this));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI && defined(HAL_INS_DEFAULT_ROTATION)
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME),
-                                                  HAL_INS_DEFAULT_ROTATION));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C && defined(HAL_INS_DEFAULT_ROTATION)
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR),
-                                                  HAL_INS_DEFAULT_ROTATION));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR)));
-#elif HAL_INS_DEFAULT == HAL_INS_BH
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU60x0_I2C_BUS, HAL_INS_MPU60x0_I2C_ADDR)));
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
 #elif AP_FEATURE_BOARD_DETECT
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
+        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_NONE));
         break;
 
     case AP_BoardConfig::PX4_BOARD_PIXHAWK:
@@ -853,32 +840,6 @@ AP_InertialSensor::detect_backends(void)
     default:
         break;
     }
-#elif HAL_INS_DEFAULT == HAL_INS_MPU9250_SPI && defined(HAL_INS_DEFAULT_ROTATION)
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), HAL_INS_DEFAULT_ROTATION));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU9250_SPI
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
-#elif HAL_INS_DEFAULT == HAL_INS_EDGE
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_YAW_90));
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME_EXT), ROTATION_YAW_90));
-#elif HAL_INS_DEFAULT == HAL_INS_L3G4200D
-    ADD_BACKEND(AP_InertialSensor_L3G4200D::probe(*this, hal.i2c_mgr->get_device(HAL_INS_L3G4200D_I2C_BUS, HAL_INS_L3G4200D_I2C_ADDR)));
-#elif HAL_INS_DEFAULT == HAL_INS_MPU9250_I2C
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU9250_I2C_BUS, HAL_INS_MPU9250_I2C_ADDR)));
-#elif HAL_INS_DEFAULT == HAL_INS_BBBMINI
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME_EXT)));
-#elif HAL_INS_DEFAULT == HAL_INS_AERO
-    ADD_BACKEND(AP_InertialSensor_BMI160::probe(*this, hal.spi->get_device("bmi160")));
-#elif HAL_INS_DEFAULT == HAL_INS_RST
-    ADD_BACKEND(AP_InertialSensor_RST::probe(*this, hal.spi->get_device(HAL_INS_RST_G_NAME), 
-                                             hal.spi->get_device(HAL_INS_RST_A_NAME),
-                                             HAL_INS_DEFAULT_G_ROTATION,
-                                             HAL_INS_DEFAULT_A_ROTATION));
-#elif HAL_INS_DEFAULT == HAL_INS_ICM20789_SPI
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20789")));
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_OMNIBUSF7V2
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("mpu6000"), ROTATION_NONE));
-    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("mpu6500"), ROTATION_YAW_90));
 #elif HAL_INS_DEFAULT == HAL_INS_NONE
     // no INS device
 #else
