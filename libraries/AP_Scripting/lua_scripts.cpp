@@ -393,8 +393,14 @@ void lua_scripts::run(void) {
             const uint32_t runEnd = AP_HAL::micros();
             const int endMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
             if (_debug_level > 1) {
-                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d", (unsigned int)(runEnd - loadEnd), (int)(endMem - startMem));
+                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d + %d",
+                                                    (unsigned int)(runEnd - loadEnd),
+                                                    (int)endMem,
+                                                    (int)(endMem - startMem));
             }
+
+            // garbage collect after each script, this shouldn't matter, but seems to resolve a memory leak
+            lua_gc(L, LUA_GCCOLLECT, 0);
 
         } else {
             gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
