@@ -853,7 +853,14 @@ AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
             AP_Param *ap = find_group(name + len, i, 0, group_info, ptype);
             if (ap != nullptr) {
                 if (flags != nullptr) {
-                    *flags = group_info->flags;
+                    uint32_t group_element = 0;
+                    const struct GroupInfo *ginfo;
+                    struct GroupNesting group_nesting {};
+                    uint8_t idx;
+                    ap->find_var_info(&group_element, ginfo, group_nesting, &idx);
+                    if (ginfo != nullptr) {
+                        *flags = ginfo->flags;
+                    }
                 }
                 return ap;
             }
