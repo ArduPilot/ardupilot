@@ -16,6 +16,8 @@
  */
 #pragma once
 
+#include <stdint.h>
+
 union nav_filter_status {
     struct {
         bool attitude           : 1; // 0 - true if attitude estimate is valid
@@ -73,3 +75,4 @@ struct ekf_timing {
     float delVelDT_max;
     float delVelDT_min;
 };
+void Log_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
