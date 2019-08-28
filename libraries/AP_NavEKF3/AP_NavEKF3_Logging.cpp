@@ -347,11 +347,11 @@ void NavEKF3::Log_Write()
         for (uint8_t i=0; i<activeCores(); i++) {
             getTimingStatistics(i, timing);
             if (i == 0) {
-                AP::logger().Write_EKF_Timing("XKT1", time_us, timing);
+                Log_EKF_Timing("XKT1", time_us, timing);
             } else if (i == 1) {
-                AP::logger().Write_EKF_Timing("XKT2", time_us, timing);
+                Log_EKF_Timing("XKT2", time_us, timing);
             } else if (i == 2) {
-                AP::logger().Write_EKF_Timing("XKT3", time_us, timing);
+                Log_EKF_Timing("XKT3", time_us, timing);
             }
         }
     }
