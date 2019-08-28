@@ -11,6 +11,7 @@
 #else
 #include <malloc.h>
 #endif
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 using namespace HALSITL;
 
@@ -209,6 +210,8 @@ void Scheduler::_run_io_procs()
     hal.storage->_timer_tick();
 
     check_thread_stacks();
+
+    AP::RC().update();
 }
 
 /*
