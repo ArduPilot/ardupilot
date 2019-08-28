@@ -84,11 +84,12 @@ int RCInput_RCProtocol::open_115200(const char *path)
         return -1;
     }
 
-    tio.c_cflag &= ~(PARENB|CSTOPB|CSIZE);
-    tio.c_cflag |= CS8 | B115200;
+    tio.c_cflag &= ~(PARENB|CSTOPB|CSIZE|CBAUD);
+    tio.c_cflag |= CS8 | CREAD | CLOCAL | B115200;
 
     tio.c_lflag &= ~(ICANON|ECHO|ECHOE|ISIG);
     tio.c_iflag &= ~(IXON|IXOFF|IXANY);
+    tio.c_iflag &= ~(INLCR|ICRNL|IGNCR|IUCLC|BRKINT);
     tio.c_oflag &= ~OPOST;
 
     if (ioctl(fd, TCSETS2, &tio) != 0) {
