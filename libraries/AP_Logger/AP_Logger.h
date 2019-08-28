@@ -23,7 +23,6 @@
 class AP_Logger_Backend;
 class AP_AHRS;
 class AP_AHRS_View;
-struct ekf_timing;
 
 // do not do anything here apart from add stuff; maintaining older
 // entries means log analysis is easier
@@ -242,7 +241,6 @@ public:
     void Write_Power(void);
     void Write_AHRS2(AP_AHRS &ahrs);
     void Write_POS(AP_AHRS &ahrs);
-    void Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
     void Write_MessageF(const char *fmt, ...);
