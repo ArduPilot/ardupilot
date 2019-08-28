@@ -66,6 +66,7 @@ private:
     double average_frame_time;
     uint64_t frame_counter;
     uint64_t last_frame_count;
+    uint64_t last_timestamp;
 
 	void send_servos(const struct sitl_input &input);
 	void recv_fdm();
@@ -107,7 +108,7 @@ private:
         struct {
             struct float_array rc_channels;
         } rc;
-    } state, last_state;
+    } state;
 
     // table to aid parsing of JSON sensor data
     struct keytable {
