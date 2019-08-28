@@ -3084,6 +3084,11 @@ switch value'''
         if old_mt != self.get_parameter("MIS_TOTAL"):
             raise NotAchievedException("Total has changed")
 
+        self.start_subtest("Ensure GCS is able to set other MIS_ parameters")
+        self.set_parameter("MIS_OPTIONS", 1)
+        if self.get_parameter("MIS_OPTIONS") != 1:
+            raise NotAchievedException("Failed to set MIS_OPTIONS")
+
     def disabled_tests(self):
         return {}
 
