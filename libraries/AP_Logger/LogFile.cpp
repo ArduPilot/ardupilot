@@ -533,31 +533,6 @@ void AP_Logger::Write_POS(AP_AHRS &ahrs)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-#if AP_AHRS_NAVEKF_AVAILABLE
-
-
-/*
-  write an EKF timing message
- */
-void AP_Logger::Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing)
-{
-    Write(name,
-              "TimeUS,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax",
-              "QIffffffff",
-              time_us,
-              timing.count,
-              (double)timing.dtIMUavg_min,
-              (double)timing.dtIMUavg_max,
-              (double)timing.dtEKFavg_min,
-              (double)timing.dtEKFavg_max,
-              (double)timing.delAngDT_min,
-              (double)timing.delAngDT_max,
-              (double)timing.delVelDT_min,
-              (double)timing.delVelDT_max);
-}
-
-#endif
-
 void AP_Logger::Write_Radio(const mavlink_radio_t &packet)
 {
     const struct log_Radio pkt{
