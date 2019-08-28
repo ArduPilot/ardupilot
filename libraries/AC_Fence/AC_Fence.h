@@ -41,6 +41,13 @@ public:
     AC_Fence(const AC_Fence &other) = delete;
     AC_Fence &operator=(const AC_Fence&) = delete;
 
+    void init() {
+        _poly_loader.init();
+    }
+
+    // get singleton instance
+    static AC_Fence *get_singleton() { return _singleton; }
+
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
     void enable(bool value);
 
@@ -49,6 +56,11 @@ public:
 
     /// get_enabled_fences - returns bitmask of enabled fences
     uint8_t get_enabled_fences() const;
+
+    // should be called @10Hz to handle loading from eeprom
+    void update() {
+        _poly_loader.update();
+    }
 
     /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
     bool pre_arm_check(const char* &fail_msg) const;
@@ -96,18 +108,15 @@ public:
     ///     has no effect if no breaches have occurred
     void manual_recovery_start();
 
-    static const struct AP_Param::GroupInfo var_info[];
-
     // methods for mavlink SYS_STATUS message (send_sys_status)
     bool sys_status_present() const;
     bool sys_status_enabled() const;
     bool sys_status_failed() const;
 
-    // get singleton instance
-    static AC_Fence *get_singleton() { return _singleton; }
+    AC_PolyFence_loader &polyfence();
+    const AC_PolyFence_loader &polyfence() const;
 
-    AC_PolyFence_loader &polyfence() { return _poly_loader; }
-    const AC_PolyFence_loader &polyfence_const() const { return _poly_loader; }
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
     static AC_Fence *_singleton;
@@ -131,9 +140,6 @@ private:
     bool pre_arm_check_polygon(const char* &fail_msg) const;
     bool pre_arm_check_circle(const char* &fail_msg) const;
     bool pre_arm_check_alt(const char* &fail_msg) const;
-
-    // returns true if we have breached the fence:
-    bool polygon_fence_is_breached();
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
@@ -166,7 +172,6 @@ private:
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
 
     AC_PolyFence_loader _poly_loader{_total}; // polygon fence
-
 };
 
 namespace AP {
