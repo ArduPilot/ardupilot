@@ -262,8 +262,8 @@ void AirSim::recv_fdm()
 
     dcm.from_euler(state.pose.roll, state.pose.pitch, state.pose.yaw);
 
-    if (last_state.timestamp) {
-        double deltat = state.timestamp - last_state.timestamp;
+    if (last_timestamp) {
+        int deltat = state.timestamp - last_timestamp;
         time_now_us += deltat;
 
         if (deltat > 0 && deltat < 100000) {
@@ -312,7 +312,7 @@ void AirSim::recv_fdm()
                        velocity_ef.z);
 #endif
 
-    last_state = state;
+    last_timestamp = state.timestamp;
 }
 
 /*
