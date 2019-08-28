@@ -16,44 +16,62 @@
 
 #include <AP_Math/AP_Math.h>
 #include <cmath>
-#include <inttypes.h>
 #include <AP_Param/AP_Param.h>
 #include "NotchFilter.h"
 
+/*
+  a filter that manages a set of notch filters targetted at a fundamental center frequency
+  and multiples of that fundamental frequency
+ */
 template <class T>
 class HarmonicNotchFilter {
 public:
-    // set parameters
-    void create(uint8_t harmonics);
-    void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
-    T apply(const T &sample);
-    void reset();
-    void update(float center_freq_hz);
     ~HarmonicNotchFilter();
+    // allocate a bank of notch filters for this harmonic notch filter
+    void allocate_filters(uint8_t harmonics);
+    // initialize the underlying filters using the provided filter parameters
+    void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
+    // update the underlying filters' center frequencies using center_freq_hz as the fundamental
+    void update(float center_freq_hz);
+    // apply a sample to each of the underlying filters in turn
+    T apply(const T &sample);
+    // reset each of the underlying filters
+    void reset();
 
 private:
+    // underlying bank of notch filters
     NotchFilter<T>*  _filters;
+    // sample frequency for each filter
     float _sample_freq_hz;
+    // attenuation for each filter
     float _A;
+    // quality factor of each filter
     float _Q;
+    // a bitmask of the harmonics to use
     uint8_t _harmonics;
+    // number of allocated filters
     uint8_t _num_filters;
     bool _initialised;
 };
 
 /*
-  notch filter enable and filter parameters
+  harmonic notch filter configuration parameters
  */
 class HarmonicNotchFilterParams : public NotchFilterParams {
 public:
     HarmonicNotchFilterParams(void);
+    // set the fundamental center frequency of the harmonic notch
     void set_center_freq_hz(float center_freq) { _center_freq_hz.set(center_freq); }
+    // harmonics enabled on the harmonic notch
     uint8_t harmonics(void) const { return _harmonics; }
+    // reference value of the harmonic notch
     float reference(void) const { return _reference; }
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    // notch harmonics
     AP_Int8 _harmonics;
+    // notch reference value
     AP_Float _reference;
 };
 

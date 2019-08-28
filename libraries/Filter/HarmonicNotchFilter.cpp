@@ -22,47 +22,47 @@
 const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
 
     // @Param: ENABLE
-    // @DisplayName: Enable
-    // @Description: Enable harmonic notch filter
+    // @DisplayName: Harmonic Notch Filter enable
+    // @Description: Harmonic Notch Filter enable
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE", 1, HarmonicNotchFilterParams, _enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: FREQ
-    // @DisplayName: Base Frequency
-    // @Description: Notch base center frequency in Hz
+    // @DisplayName: Harmonic Notch Filter base frequency
+    // @Description: Harmonic Notch Filter base center frequency in Hz
     // @Range: 10 400
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("FREQ", 2, HarmonicNotchFilterParams, _center_freq_hz, 80),
 
     // @Param: BW
-    // @DisplayName: Bandwidth
-    // @Description: Harmonic notch bandwidth in Hz
+    // @DisplayName: Harmonic Notch Filter bandwidth
+    // @Description: Harmonic Notch Filter bandwidth in Hz
     // @Range: 5 100
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("BW", 3, HarmonicNotchFilterParams, _bandwidth_hz, 20),
 
     // @Param: ATT
-    // @DisplayName: Attenuation
-    // @Description: Harmonic notch attenuation in dB
+    // @DisplayName: Harmonic Notch Filter attenuation
+    // @Description: Harmonic Notch Filter attenuation in dB
     // @Range: 5 30
     // @Units: dB
     // @User: Advanced
     AP_GROUPINFO("ATT", 4, HarmonicNotchFilterParams, _attenuation_dB, 15),
 
     // @Param: HMNCS
-    // @DisplayName: Harmonics
-    // @Description: Bitmask of harmonic frequencies to apply notches to. This option takes effect on the next reboot. A maximum of 3 harmonics can be used at any one time
+    // @DisplayName: Harmonic Notch Filter harmonics
+    // @Description: Bitmask of harmonic frequencies to apply Harmonic Notch Filter to. This option takes effect on the next reboot. A maximum of 3 harmonics can be used at any one time
     // @Bitmask: 0:1st harmonic,1:2nd harmonic,2:3rd harmonic,3:4th hamronic,4:5th harmonic,5:6th harmonic,6:7th harmonic,7:8th harmonic
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("HMNCS", 5, HarmonicNotchFilterParams, _harmonics, 3),
 
     // @Param: REF
-    // @DisplayName: Reference value
-    // @Description: Reference value associated with the specified frequency to facilitate frequency scaling
+    // @DisplayName: Harmonic Notch Filter reference value
+    // @Description: Reference value associated with the specified frequency to facilitate frequency scaling of the Harmonic Notch Filter
     // @User: Advanced
     // @Range: 0.1 0.9
     // @RebootRequired: True
@@ -71,9 +71,18 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     AP_GROUPEND
 };
 
+/*
+  destroy all of the associated notch filters
+ */
+template <class T>
+HarmonicNotchFilter<T>::~HarmonicNotchFilter() {
+    delete[] _filters;
+    _num_filters = 0;
+}
 
 /*
-  initialise filter
+  initialise the associated filters with the provided shaping constraints
+  the constraints are used to determine attenuation (A) and quality (Q) factors for the filter
  */
 template <class T>
 void HarmonicNotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB)
@@ -87,8 +96,10 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, fl
     // adjust the center frequency to be in the allowable range
     center_freq_hz = constrain_float(center_freq_hz, bandwidth_hz * 0.52f, sample_freq_hz * 0.48f);
 
+    // calculate attenuation and quality from the shaping constraints
     NotchFilter<T>::calculate_A_and_Q(center_freq_hz, bandwidth_hz, attenuation_dB, _A, _Q);
 
+    // initialize all the configured filters with the same A & Q and multiples of the center frequency
     for (uint8_t i = 0, filt = 0; i < HNF_MAX_HARMONICS && filt < _num_filters; i++) {
         if ((1U<<i) & _harmonics) {
             _filters[filt++].init_with_A_and_Q(sample_freq_hz, center_freq_hz * (i+1), _A, _Q);
@@ -98,10 +109,10 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, fl
 }
 
 /*
-  initialise filter
+  allocate a collection of, at most HNF_MAX_FILTERS, notch filters to be managed by this harmonic notch filter
  */
 template <class T>
-void HarmonicNotchFilter<T>::create(uint8_t harmonics)
+void HarmonicNotchFilter<T>::allocate_filters(uint8_t harmonics)
 {
     for (uint8_t i = 0; i < HNF_MAX_HARMONICS && _num_filters < HNF_MAX_FILTERS; i++) {
         if ((1U<<i) & harmonics) {
@@ -114,13 +125,10 @@ void HarmonicNotchFilter<T>::create(uint8_t harmonics)
     _harmonics = harmonics;
 }
 
-template <class T>
-HarmonicNotchFilter<T>::~HarmonicNotchFilter() {
-    if (_num_filters > 0) {
-        delete[] _filters;
-    }
-}
-
+/*
+  update the underlying filters' center frequency using the current attenuation and quality
+  this function is cheaper than init() because A & Q do not need to be recalculated
+ */
 template <class T>
 void HarmonicNotchFilter<T>::update(float center_freq_hz)
 {
@@ -131,6 +139,7 @@ void HarmonicNotchFilter<T>::update(float center_freq_hz)
     // adjust the center frequency to be in the allowable range
     center_freq_hz = constrain_float(center_freq_hz, 1.0f, _sample_freq_hz * 0.48f);
 
+    // update all of the filters using the new center frequency and existing A & Q
     for (uint8_t i = 0, filt = 0; i < HNF_MAX_HARMONICS && filt < _num_filters; i++) {
         if ((1U<<i) & _harmonics) {
             _filters[filt++].init_with_A_and_Q(_sample_freq_hz, center_freq_hz * (i+1), _A, _Q);
@@ -138,6 +147,9 @@ void HarmonicNotchFilter<T>::update(float center_freq_hz)
     }
 }
 
+/*
+  apply a sample to each of the underlying filters in turn and return the output
+ */
 template <class T>
 T HarmonicNotchFilter<T>::apply(const T &sample)
 {
@@ -152,6 +164,9 @@ T HarmonicNotchFilter<T>::apply(const T &sample)
     return output;
 }
 
+/*
+  reset all of the underlying filters
+ */
 template <class T>
 void HarmonicNotchFilter<T>::reset()
 {
@@ -164,9 +179,8 @@ void HarmonicNotchFilter<T>::reset()
     }
 }
 
-
 /*
-  a notch filter with enable and filter parameters - constructor
+  create parameters for the harmonic notch filter and initialise defaults
  */
 HarmonicNotchFilterParams::HarmonicNotchFilterParams(void)
 {
@@ -174,6 +188,6 @@ HarmonicNotchFilterParams::HarmonicNotchFilterParams(void)
 }
 
 /* 
-   instantiate template classes
+  instantiate template classes
  */
 template class HarmonicNotchFilter<Vector3f>;
