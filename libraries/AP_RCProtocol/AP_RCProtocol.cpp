@@ -202,6 +202,11 @@ void AP_RCProtocol::check_added_uart(void)
     }
 }
 
+void AP_RCProtocol::update()
+{
+    check_added_uart();
+}
+
 bool AP_RCProtocol::new_input()
 {
     bool ret = _new_input;
