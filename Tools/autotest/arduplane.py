@@ -542,8 +542,8 @@ class AutoTestPlane(AutoTest):
             0,
             0,
             0,
-            loc.lat*1e7,
-            loc.lng*1e7,
+            int(loc.lat*1e7),
+            int(loc.lng*1e7),
             new_alt,    # alt
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
         )
@@ -1345,14 +1345,14 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("AVD_ENABLE", 1)
         self.delay_sim_time(1) # TODO: work out why this is required...
         self.mav.mav.adsb_vehicle_send(37, # ICAO address
-                                       here.lat * 1e7,
-                                       here.lng * 1e7,
+                                       int(here.lat * 1e7),
+                                       int(here.lng * 1e7),
                                        mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
-                                       here.alt*1000 + 10000, # 10m up
+                                       int(here.alt*1000 + 10000), # 10m up
                                        0, # heading in cdeg
                                        0, # horizontal velocity cm/s
                                        0, # vertical velocity cm/s
-                                       "bob", # callsign
+                                       "bob".encode("ascii"), # callsign
                                        mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,
                                        1, # time since last communication
                                        65535, # flags
