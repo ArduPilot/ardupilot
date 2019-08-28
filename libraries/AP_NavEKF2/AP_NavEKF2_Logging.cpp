@@ -276,12 +276,12 @@ void NavEKF2::Log_Write()
         for (uint8_t i=0; i<activeCores(); i++) {
             getTimingStatistics(i, timing);
             if (i == 0) {
-                AP::logger().Write_EKF_Timing("NKT1", time_us, timing);
+                Log_EKF_Timing("NKT1", time_us, timing);
             } else if (i == 1) {
-                AP::logger().Write_EKF_Timing("NKT2", time_us, timing);
+                Log_EKF_Timing("NKT2", time_us, timing);
             } else if (i == 2) {
-                AP::logger().Write_EKF_Timing("NKT3", time_us, timing);
-            }            
+                Log_EKF_Timing("NKT3", time_us, timing);
+            }
         }
     }
 }
