@@ -70,11 +70,6 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_PROXIMITY;
     }
 #endif
-#if AC_FENCE == ENABLED
-    if (copter.fence.sys_status_present()) {
-        control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
-    }
-#endif
 #if RANGEFINDER_ENABLED == ENABLED
     const RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder && rangefinder->has_orientation(ROTATION_PITCH_270)) {
@@ -112,11 +107,6 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
         break;
     }
 
-#if AC_FENCE == ENABLED
-    if (copter.fence.sys_status_enabled()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
-    }
-#endif
 #if PROXIMITY_ENABLED == ENABLED
     if (copter.g2.proximity.sensor_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_PROXIMITY;
@@ -174,12 +164,6 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
         if (rangefinder && rangefinder->has_data_orient(ROTATION_PITCH_270)) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
-    }
-#endif
-
-#if AC_FENCE == ENABLED
-    if (!copter.fence.sys_status_failed()) {
-        control_sensors_health |= MAV_SYS_STATUS_GEOFENCE;
     }
 #endif
 }
