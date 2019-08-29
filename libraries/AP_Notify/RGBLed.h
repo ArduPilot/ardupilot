@@ -67,6 +67,7 @@ private:
     void update_colours();
     uint32_t get_colour_sequence() const;
     uint32_t get_colour_sequence_obc() const;
+    uint32_t get_colour_sequence_traffic_light() const;
 
     uint8_t get_brightness(void) const;
 
@@ -108,6 +109,7 @@ private:
         standard = 0,
         mavlink = 1,
         obc = 2,
+        traffic_light = 3,
     };
     rgb_source_t rgb_source() const;
 

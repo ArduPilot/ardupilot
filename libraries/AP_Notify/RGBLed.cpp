@@ -162,6 +162,30 @@ uint32_t RGBLed::get_colour_sequence(void) const
     return sequence_disarmed_bad_gps;
 }
 
+uint32_t RGBLed::get_colour_sequence_traffic_light(void) const
+{
+    if (AP_Notify::flags.initialising) {
+        return DEFINE_COLOUR_SEQUENCE(RED,GREEN,BLUE,RED,GREEN,BLUE,RED,GREEN,BLUE,OFF);
+    }
+
+    if (AP_Notify::flags.armed) {
+        return DEFINE_COLOUR_SEQUENCE_SLOW(RED);
+    }
+
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+        if (!AP_Notify::flags.pre_arm_check) {
+            return DEFINE_COLOUR_SEQUENCE_ALTERNATE(YELLOW, OFF);
+        } else {
+            return DEFINE_COLOUR_SEQUENCE_SLOW(YELLOW);
+        }
+    }
+
+    if (!AP_Notify::flags.pre_arm_check) {
+        return DEFINE_COLOUR_SEQUENCE_ALTERNATE(GREEN, OFF);
+    }
+    return DEFINE_COLOUR_SEQUENCE_SLOW(GREEN);
+}
+
 // update - updates led according to timed_updated.  Should be called
 // at 50Hz
 void RGBLed::update()
@@ -177,6 +201,9 @@ void RGBLed::update()
         break;
     case obc:
         current_colour_sequence = get_colour_sequence_obc();
+        break;
+    case traffic_light:
+        current_colour_sequence = get_colour_sequence_traffic_light();
         break;
     }
 
