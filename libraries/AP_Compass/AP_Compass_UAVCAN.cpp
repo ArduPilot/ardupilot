@@ -98,24 +98,12 @@ void AP_Compass_UAVCAN::init()
 {
     _instance = register_compass();
 
-    struct DeviceStructure {
-        uint8_t bus_type : 3;
-        uint8_t bus: 5;
-        uint8_t address;
-        uint8_t devtype;
-    };
-    union DeviceId {
-        struct DeviceStructure devid_s;
-        uint32_t devid;
-    };
-    union DeviceId d;
+    uint32_t devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
+                                                 _ap_uavcan->get_driver_index(),
+                                                 _node_id,
+                                                 1); // the 1 is arbitrary
 
-    d.devid_s.bus_type = 3;
-    d.devid_s.bus = _ap_uavcan->get_driver_index();
-    d.devid_s.address = _node_id;
-    d.devid_s.devtype = 1;
-
-    set_dev_id(_instance, d.devid);
+    set_dev_id(_instance, devid);
     set_external(_instance, true);
 
     debug_mag_uavcan(2, _ap_uavcan->get_driver_index(),  "AP_Compass_UAVCAN loaded\n\r");
