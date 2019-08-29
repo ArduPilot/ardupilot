@@ -100,24 +100,12 @@ bool AP_Compass_UAVCAN::register_uavcan_compass(uint8_t mgr, uint8_t node)
     if (ap_uavcan->register_mag_listener_to_node(this, node)) {
         _instance = register_compass();
 
-        struct DeviceStructure {
-            uint8_t bus_type : 3;
-            uint8_t bus: 5;
-            uint8_t address;
-            uint8_t devtype;
-        };
-        union DeviceId {
-            struct DeviceStructure devid_s;
-            uint32_t devid;
-        };
-        union DeviceId d;
+        uint32_t devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
+                                                     mgr,
+                                                     node,
+                                                     1); // the 1 is arbitrary
 
-        d.devid_s.bus_type = 3;
-        d.devid_s.bus = mgr;
-        d.devid_s.address = node;
-        d.devid_s.devtype = 1;
-
-        set_dev_id(_instance, d.devid);
+        set_dev_id(_instance, devid);
         set_external(_instance, true);
 
         _sum.zero();
