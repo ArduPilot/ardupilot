@@ -667,6 +667,9 @@ AP_InertialSensor::init(uint16_t sample_rate)
 
     for (uint8_t i=0; i<get_gyro_count(); i++) {
         _gyro_harmonic_notch_filter[i].allocate_filters(_harmonic_notch_filter.harmonics());
+        // initialise default settings, these will be subsequently changed in AP_InertialSensor_Backend::update_gyro()
+        _gyro_harmonic_notch_filter[i].init(_gyro_raw_sample_rates[i], _calculated_harmonic_notch_freq_hz,
+             _harmonic_notch_filter.bandwidth_hz(), _harmonic_notch_filter.attenuation_dB());
     }
 }
 
