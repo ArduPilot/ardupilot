@@ -693,11 +693,6 @@ void AP_Periph_FW::can_mag_update(void)
     if (last_mag_update_ms == compass.last_update_ms()) {
         return;
     }
-    static uint8_t counter;
-    if (counter++ != 100) {
-        return;
-    }
-    counter = 0;
 
     last_mag_update_ms = compass.last_update_ms();
     const Vector3f &field = compass.get_field();
