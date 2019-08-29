@@ -14,6 +14,7 @@
  */
 
 #include "HarmonicNotchFilter.h"
+#include <GCS_MAVLink/GCS.h>
 
 #define HNF_MAX_FILTERS 3
 #define HNF_MAX_HARMONICS 8
@@ -121,6 +122,11 @@ void HarmonicNotchFilter<T>::allocate_filters(uint8_t harmonics)
     }
     if (_num_filters > 0) {
         _filters = new NotchFilter<T>[_num_filters];
+        if (_filters == nullptr) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Failed to allocate %lu bytes for HarmonicNotchFilter", _num_filters * sizeof(NotchFilter<T>));
+            _num_filters = 0;
+        }
+
     }
     _harmonics = harmonics;
 }

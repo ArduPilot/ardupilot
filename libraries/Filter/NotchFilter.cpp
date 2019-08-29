@@ -90,6 +90,8 @@ const AP_Param::GroupInfo NotchFilterParams::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE", 1, NotchFilterParams, _enable, 0, AP_PARAM_FLAG_ENABLE),
 
+    // Slots 2 and 3 are reserved - they were integer versions of FREQ and BW which have since been converted to float
+
     // @Param: ATT
     // @DisplayName: Attenuation
     // @Description: Notch attenuation in dB
