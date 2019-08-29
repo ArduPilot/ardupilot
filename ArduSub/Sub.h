@@ -705,6 +705,8 @@ private:
                   "_failsafe_priorities is missing the sentinel");
 
 
+    bool handle_set_pos_control_alt_target(const mavlink_command_long_t& packet);
+
 public:
     void mavlink_delay_cb();
     void mainloop_failsafe_check();

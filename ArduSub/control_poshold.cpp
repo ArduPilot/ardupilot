@@ -14,7 +14,6 @@ bool Sub::poshold_init()
     //    gcs().send_text(MAV_SEVERITY_INFO, "POSHOLD failed to init.");
     //    return false;
     //}
-    gcs().send_text(MAV_SEVERITY_INFO, "POSHOLD init success!");
 
     // initialize vertical speeds and acceleration
     pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);

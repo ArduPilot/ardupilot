@@ -355,4 +355,13 @@ bool Sub::control_check_barometer()
     return true;
 }
 
+
+bool Sub::handle_set_pos_control_alt_target(const mavlink_command_long_t& packet) {
+    float alt_cm = packet.param1;
+    pos_control.set_alt_target(alt_cm);
+
+    return true;
+}
+
+
 AP_HAL_MAIN_CALLBACKS(&sub);
