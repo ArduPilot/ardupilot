@@ -8,7 +8,7 @@ Build ArduPilot with various build-time options enabled or disabled
 Usage is straight forward; invoke this script from the root directory
 of an ArduPilot checkout:
 
-pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ ./Tools/autotest/build-with-disabled-features.py 
+pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ ./Tools/autotest/build-with-disabled-features.py
 
 BWFD: Building
 Running: ("/home/pbarker/rc/ardupilot/Tools/autotest/autotest.py" "build.ArduCopter") in (.)
@@ -23,7 +23,7 @@ BWFD: Successes: ['MOUNT', 'AUTOTUNE_ENABLED', 'AC_FENCE', 'CAMERA', 'RANGEFINDE
 BWFD: Failures: ['LOGGING_ENABLED']
 pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ q
 
-'''
+''' # noqa
 
 import re
 import shutil
@@ -72,7 +72,7 @@ class Builder():
                 if match.group(1) in ("ENABLE", "DISABLE",
                                       "!HAL_MINIMIZE_FEATURES"):
                     continue
-                ret.append( (match.group(1), match.group(2) ))
+                ret.append((match.group(1), match.group(2)))
         return set(ret)
 
     def disable_option_in_config(self, var):
@@ -91,7 +91,7 @@ class Builder():
                         else:
                             fnoo = "ENABLED"
                             did_enable = True
-        
+
                         line = "#define %s %s\n" % (var[0], fnoo)
                     out_fd.write(line)
             # turn dependencies on or off:
@@ -109,7 +109,7 @@ class Builder():
                                 fnoo = "ENABLED"
                             else:
                                 fnoo = "DISABLED"
-        
+
                             line = "#define %s %s\n" % (thing, fnoo)
                     out_fd.write(line)
 
@@ -173,6 +173,7 @@ class Builder():
         self.progress("Successes: %s" % str(successes))
         self.progress("Failures: %s" % str(failures))
 
+
 class BuilderCopter(Builder):
     def get_config_variables(self):
         ret = []
@@ -196,13 +197,17 @@ specs = [
         "target_binary": "bin/arducopter",
         "reverse-deps": {
             "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
-            "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED" ],
+            "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "AC_RALLY": ["AC_TERRAIN"],
             "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED"],
             "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN", "MODE_SMARTRTL_ENABLED"],
             "BEACON_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
-            "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN", "ADSB_ENABLED", "MODE_FOLLOW_ENABLED", "MODE_GUIDED_NOGPS_ENABLED"],
+            "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED",
+                                    "AC_TERRAIN",
+                                    "ADSB_ENABLED",
+                                    "MODE_FOLLOW_ENABLED",
+                                    "MODE_GUIDED_NOGPS_ENABLED"],
             "AC_AVOID_ENABLED": ["MODE_FOLLOW_ENABLED"],
         },
     },
@@ -212,7 +217,7 @@ specs = [
         "target_binary": "bin/arducopter-heli",
         "reverse-deps": {
             "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
-            "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED" ],
+            "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "AC_RALLY": ["AC_TERRAIN"],
             "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED"],
             "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
@@ -249,7 +254,8 @@ specs = [
         "target_binary": "bin/antennatracker",
         "reverse-deps": {
         },
-    },]
+    },
+]
 
 
 builders = []
