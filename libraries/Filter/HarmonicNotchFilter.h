@@ -51,6 +51,8 @@ private:
     uint8_t _harmonics;
     // number of allocated filters
     uint8_t _num_filters;
+    // number of enabled filters
+    uint8_t _num_enabled_filters;
     bool _initialised;
 };
 
