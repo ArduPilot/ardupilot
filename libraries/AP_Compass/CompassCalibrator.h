@@ -132,6 +132,7 @@ private:
     bool set_status(compass_cal_status_t status);
 
     // returns true if sample should be added to buffer
+    bool accept_sample(const Vector3f &sample, const uint16_t idx);
     bool accept_sample(const Vector3f &sample);
     bool accept_sample(const CompassSample &sample);
 
