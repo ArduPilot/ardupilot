@@ -1019,7 +1019,17 @@ public:
     // for reporting to GCS
     bool get_wp(Location &loc) override;
 
-    RTLState state() { return _state; }
+    // RTL states
+    enum class State {
+        Starting,
+        InitialClimb,
+        ReturnHome,
+        LoiterAtHome,
+        FinalDescent,
+        Land
+    };
+
+    State state() const { return _state; }
 
     // this should probably not be exposed
     bool state_complete() { return _state_complete; }
@@ -1056,7 +1066,7 @@ private:
     void build_path();
     void compute_return_target();
 
-    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
+    State _state = State::InitialClimb;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {

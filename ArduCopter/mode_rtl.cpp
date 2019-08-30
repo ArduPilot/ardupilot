@@ -19,7 +19,7 @@ bool ModeRTL::init(bool ignore_checks)
     }
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init();
-    _state = RTL_Starting;
+    _state = State::Starting;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
     return true;
@@ -31,7 +31,7 @@ void ModeRTL::restart_without_terrain()
     AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::RESTARTED_RTL);
     if (rtl_path.terrain_used) {
         terrain_following_allowed = false;
-        _state = RTL_Starting;
+        _state = State::Starting;
         _state_complete = true;
         gcs().send_text(MAV_SEVERITY_CRITICAL,"Restarting RTL - Terrain data missing");
     }
@@ -48,27 +48,27 @@ void ModeRTL::run(bool disarm_on_land)
     // check if we need to move to next state
     if (_state_complete) {
         switch (_state) {
-        case RTL_Starting:
+        case State::Starting:
             build_path();
             climb_start();
             break;
-        case RTL_InitialClimb:
+        case State::InitialClimb:
             return_start();
             break;
-        case RTL_ReturnHome:
+        case State::ReturnHome:
             loiterathome_start();
             break;
-        case RTL_LoiterAtHome:
+        case State::LoiterAtHome:
             if (rtl_path.land || copter.failsafe.radio) {
                 land_start();
             }else{
                 descent_start();
             }
             break;
-        case RTL_FinalDescent:
+        case State::FinalDescent:
             // do nothing
             break;
-        case RTL_Land:
+        case State::Land:
             // do nothing - rtl_land_run will take care of disarming motors
             break;
         }
@@ -77,28 +77,28 @@ void ModeRTL::run(bool disarm_on_land)
     // call the correct run function
     switch (_state) {
 
-    case RTL_Starting:
+    case State::Starting:
         // should not be reached:
-        _state = RTL_InitialClimb;
+        _state = State::InitialClimb;
         FALLTHROUGH;
 
-    case RTL_InitialClimb:
+    case State::InitialClimb:
         climb_return_run();
         break;
 
-    case RTL_ReturnHome:
+    case State::ReturnHome:
         climb_return_run();
         break;
 
-    case RTL_LoiterAtHome:
+    case State::LoiterAtHome:
         loiterathome_run();
         break;
 
-    case RTL_FinalDescent:
+    case State::FinalDescent:
         descent_run();
         break;
 
-    case RTL_Land:
+    case State::Land:
         land_run(disarm_on_land);
         break;
     }
@@ -107,7 +107,7 @@ void ModeRTL::run(bool disarm_on_land)
 // rtl_climb_start - initialise climb to RTL altitude
 void ModeRTL::climb_start()
 {
-    _state = RTL_InitialClimb;
+    _state = State::InitialClimb;
     _state_complete = false;
 
     // RTL_SPEED == 0 means use WPNAV_SPEED
@@ -131,7 +131,7 @@ void ModeRTL::climb_start()
 // rtl_return_start - initialise return to home
 void ModeRTL::return_start()
 {
-    _state = RTL_ReturnHome;
+    _state = State::ReturnHome;
     _state_complete = false;
 
     if (!wp_nav->set_wp_destination(rtl_path.return_target)) {
@@ -188,7 +188,7 @@ void ModeRTL::climb_return_run()
 // rtl_loiterathome_start - initialise return to home
 void ModeRTL::loiterathome_start()
 {
-    _state = RTL_LoiterAtHome;
+    _state = State::LoiterAtHome;
     _state_complete = false;
     _loiter_start_time = millis();
 
@@ -255,7 +255,7 @@ void ModeRTL::loiterathome_run()
 // rtl_descent_start - initialise descent to final alt
 void ModeRTL::descent_start()
 {
-    _state = RTL_FinalDescent;
+    _state = State::FinalDescent;
     _state_complete = false;
 
     // Set wp navigation target to above home
@@ -335,7 +335,7 @@ void ModeRTL::descent_run()
 // rtl_loiterathome_start - initialise controllers to loiter over home
 void ModeRTL::land_start()
 {
-    _state = RTL_Land;
+    _state = State::Land;
     _state_complete = false;
 
     // Set wp navigation target to above home
@@ -353,15 +353,15 @@ void ModeRTL::land_start()
 
 bool ModeRTL::is_landing() const
 {
-    return _state == RTL_Land;
+    return _state == State::Land;
 }
 
 bool ModeRTL::landing_gear_should_be_deployed() const
 {
     switch(_state) {
-    case RTL_LoiterAtHome:
-    case RTL_Land:
-    case RTL_FinalDescent:
+    case State::LoiterAtHome:
+    case State::Land:
+    case State::FinalDescent:
         return true;
     default:
         return false;
@@ -500,13 +500,13 @@ bool ModeRTL::get_wp(Location& destination)
 {
     // provide target in states which use wp_nav
     switch (_state) {
-    case RTL_Starting:
-    case RTL_InitialClimb:
-    case RTL_ReturnHome:
-    case RTL_LoiterAtHome:
-    case RTL_FinalDescent:
+    case State::Starting:
+    case State::InitialClimb:
+    case State::ReturnHome:
+    case State::LoiterAtHome:
+    case State::FinalDescent:
         return wp_nav->get_oa_wp_destination(destination);
-    case RTL_Land:
+    case State::Land:
         return false;
     }
 
