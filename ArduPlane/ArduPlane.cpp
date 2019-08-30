@@ -532,7 +532,7 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
 
     if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
-                          auto_state.takeoff_altitude_rel_cm/100);
+                        int(auto_state.takeoff_altitude_rel_cm/100));
     }
 
     flight_stage = fs;
