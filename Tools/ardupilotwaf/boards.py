@@ -106,7 +106,7 @@ class Board:
 
             '-Wall',
             '-Wextra',
-            '-Wformat',
+            '-Werror=format',
             '-Wpointer-arith',
             '-Wcast-align',
             '-Wundef',
@@ -165,7 +165,6 @@ class Board:
 
             '-Wall',
             '-Wextra',
-            '-Wformat',
             '-Wpointer-arith',
             '-Wcast-align',
             '-Wundef',
@@ -179,6 +178,7 @@ class Board:
             '-Werror=format-security',
             '-Werror=format-extra-args',
             '-Werror=enum-compare',
+            '-Werror=format',
             '-Werror=array-bounds',
             '-Werror=uninitialized',
             '-Werror=init-self',
