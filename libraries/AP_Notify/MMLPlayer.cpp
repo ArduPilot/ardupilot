@@ -5,6 +5,11 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
+#if HAL_WITH_UAVCAN
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 void MMLPlayer::update()
@@ -51,6 +56,18 @@ void MMLPlayer::start_note(float duration, float frequency, float volume)
     _note_start_us = AP_HAL::micros();
     _note_duration_us = duration*1e6;
     hal.util->toneAlarm_set_buzzer_tone(frequency, volume, _note_duration_us/1000U);
+
+#if HAL_WITH_UAVCAN
+    // support CAN buzzers too
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
+
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_UAVCAN *uavcan = AP_UAVCAN::get_uavcan(i);
+        if (uavcan != nullptr) {
+            uavcan->set_buzzer_tone(frequency, _note_duration_us*1.0e-6);
+        }
+    }
+#endif
 }
 
 char MMLPlayer::next_char()
