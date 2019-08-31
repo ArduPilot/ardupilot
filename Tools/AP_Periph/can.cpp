@@ -371,7 +371,8 @@ static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
     fix_float16(req.duration);
     buzzer_start_ms = AP_HAL::millis();
     buzzer_len_ms = req.duration*1000;
-    hal.util->toneAlarm_set_buzzer_tone(req.frequency, 1, uint32_t(req.duration*1000));
+    float volume = constrain_float(periph.g.buzz_volume/100.0, 0, 1);
+    hal.util->toneAlarm_set_buzzer_tone(req.frequency, volume, uint32_t(req.duration*1000));
 }
 
 /*

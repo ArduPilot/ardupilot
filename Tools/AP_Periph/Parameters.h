@@ -17,11 +17,15 @@ public:
         k_param_can_node,
         k_param_can_baudrate,
         k_param_baro,
+        k_param_buzz_volume,
     };
 
     AP_Int16 format_version;
     AP_Int16 can_node;
     AP_Int32 can_baudrate;
+#ifdef HAL_PERIPH_ENABLE_BUZZER
+    AP_Int8 buzz_volume;
+#endif
 
     Parameters() {}
 };
