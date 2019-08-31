@@ -39,6 +39,7 @@
 #include "AP_RangeFinder_PWM.h"
 #include "AP_RangeFinder_BLPing.h"
 #include "AP_RangeFinder_UAVCAN.h"
+#include "AP_RangeFinder_Lanbao.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -510,6 +511,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_BLPing:
         if (AP_RangeFinder_BLPing::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_BLPing(state[instance], params[instance], serial_instance++);
+        }
+        break;
+    case RangeFinder_TYPE_Lanbao:
+        if (AP_RangeFinder_Lanbao::detect(serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_Lanbao(state[instance], params[instance], serial_instance++);
         }
         break;
     default:
