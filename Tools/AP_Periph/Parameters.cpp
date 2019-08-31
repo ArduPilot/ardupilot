@@ -26,6 +26,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // can node baudrate
     GSCALAR(can_baudrate,     "CAN_BAUDRATE", 1000000),
     
+#ifdef HAL_PERIPH_ENABLE_BUZZER
+    GSCALAR(buzz_volume,     "BUZZER_VOLUME", 100),
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_GPS
     // GPS driver
     // @Group: GPS_
@@ -45,7 +49,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(baro, "BARO_", AP_Baro),
 #endif
-    
+
     AP_VAREND
 };
 
