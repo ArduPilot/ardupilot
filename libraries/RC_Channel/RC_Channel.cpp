@@ -37,6 +37,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AC_Fence/AC_Fence.h>
 
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -87,7 +88,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @DisplayName: RC input option
     // @Description: Function assigned to this RC channel
     // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66:Relay5, 67:Relay6, 68:Stabilize, 69:PosHold, 70:AltHold, 71:FlowHold, 72:Circle, 73:Drift, 100:KillIMU1, 101:KillIMU2
-    // @Values{Rover}: 0:Do Nothing, 4:RTL, 7:Save WP, 9:Camera Trigger, 16:Auto, 19:Gripper, 24:Auto Mission Reset, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66:Relay5, 67:Relay6, 74:Sailboat motoring 3pos, 100:KillIMU1, 101:KillIMU2,207:MainSail
+    // @Values{Rover}: 0:Do Nothing, 4:RTL, 7:Save WP, 9:Camera Trigger, 11:Fence, 16:Auto, 19:Gripper, 24:Auto Mission Reset, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66:Relay5, 67:Relay6, 74:Sailboat motoring 3pos, 100:KillIMU1, 101:KillIMU2,207:MainSail
     // @Values{Plane}: 0:Do Nothing, 4:ModeRTL, 9:Camera Trigger, 16:ModeAuto, 24:Auto Mission Reset, 28:Relay On/Off, 29:Landing Gear, 34:Relay2 On/Off, 30:Lost Plane Sound, 31:Motor Emergency Stop, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 43:InvertedFlight, 46:RC Override Enable, 51:ModeManual, 55:ModeGuided, 58:Clear Waypoints, 62:Compass Learn, 64:Reverse Throttle, 65:GPS Disable, 66:Relay5, 67:Relay6, 72:ModeCircle, 100:KillIMU1, 101:KillIMU2
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE),
@@ -446,6 +447,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
 {
     // init channel options
     switch(ch_option) {
+    case AUX_FUNC::FENCE:  
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
     case AUX_FUNC::AVOID_PROXIMITY:
     case AUX_FUNC::MISSION_RESET:
@@ -536,6 +538,28 @@ void RC_Channel::do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag)
     }
     if (ch_flag == HIGH) {
         camera->take_picture();
+    }
+}
+
+// enable or disable the fence
+void RC_Channel::do_aux_function_fence(const aux_switch_pos_t ch_flag)
+{
+    AC_Fence *fence = AP::fence();
+    if (fence == nullptr) {
+        return;
+    }
+
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (ch_flag == HIGH) {
+        fence->enable(true);
+        if (logger != nullptr) {
+            logger->Write_Event(DATA_FENCE_ENABLE);
+        }
+    } else {
+        fence->enable(false);
+        if (logger != nullptr) {
+            logger->Write_Event(DATA_FENCE_DISABLE);
+        }
     }
 }
 
@@ -642,6 +666,10 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
     switch(ch_option) {
     case AUX_FUNC::CAMERA_TRIGGER:
         do_aux_function_camera_trigger(ch_flag);
+        break;
+
+    case AUX_FUNC::FENCE:
+        do_aux_function_fence(ch_flag);
         break;
 
     case AUX_FUNC::GRIPPER:
