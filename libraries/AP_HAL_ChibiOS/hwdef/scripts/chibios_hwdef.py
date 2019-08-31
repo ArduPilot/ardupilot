@@ -1102,7 +1102,7 @@ def write_PWM_config(f):
                 if p.type not in pwm_timers:
                     pwm_timers.append(p.type)
 
-    if not pwm_out:
+    if not pwm_out and not alarm:
         print("No PWM output defined")
         f.write('''
 #ifndef HAL_USE_PWM
