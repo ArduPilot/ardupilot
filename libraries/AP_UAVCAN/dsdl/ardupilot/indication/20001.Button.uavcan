@@ -1,0 +1,11 @@
+#
+# support for buttons on UAVCAN
+# while a button is being pressed this message should be sent at 10Hz
+
+uint8 BUTTON_SAFETY      = 1
+
+uint8 button
+
+# number of 0.1s units the button has been pressed for. If over 255
+# then send 255
+uint8 press_time
