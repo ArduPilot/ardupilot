@@ -34,6 +34,7 @@
 #include <uavcan/equipment/air_data/StaticTemperature.h>
 #include <uavcan/equipment/indication/BeepCommand.h>
 #include <ardupilot/indication/SafetyState.h>
+#include <ardupilot/indication/Button.h>
 #include <uavcan/protocol/debug/LogMessage.h>
 #include <stdio.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
@@ -431,6 +432,46 @@ static void can_safety_LED_update(void)
 }
 #endif // HAL_GPIO_PIN_SAFE_LED
 
+
+#ifdef HAL_GPIO_PIN_SAFE_BUTTON
+/*
+  update safety button
+ */
+static void can_safety_button_update(void)
+{
+    static uint32_t last_update_ms;
+    static uint8_t counter;
+    uint32_t now = AP_HAL::millis();
+    // send at 10Hz when pressed
+    if (!palReadLine(HAL_GPIO_PIN_SAFE_BUTTON)) {
+        counter = 0;
+        return;
+    }
+    if (now - last_update_ms < 100) {
+        return;
+    }
+    if (counter < 255) {
+        counter++;
+    }
+
+    last_update_ms = now;
+    ardupilot_indication_Button pkt {};
+    pkt.button = ARDUPILOT_INDICATION_BUTTON_BUTTON_SAFETY;
+    pkt.press_time = counter;
+
+    uint8_t buffer[ARDUPILOT_INDICATION_BUTTON_MAX_SIZE];
+    uint16_t total_size = ardupilot_indication_Button_encode(&pkt, buffer);
+
+    canardBroadcast(&canard,
+                    ARDUPILOT_INDICATION_BUTTON_SIGNATURE,
+                    ARDUPILOT_INDICATION_BUTTON_ID,
+                    &transfer_id,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    total_size);
+}
+#endif // HAL_GPIO_PIN_SAFE_BUTTON
+
 /**
  * This callback is invoked by the library when a new message or request or response is received.
  */
@@ -782,6 +823,9 @@ void AP_Periph_FW::can_update()
 #endif
 #ifdef HAL_GPIO_PIN_SAFE_LED
     can_safety_LED_update();
+#endif
+#ifdef HAL_GPIO_PIN_SAFE_BUTTON
+    can_safety_button_update();
 #endif
     processTx();
     processRx();
