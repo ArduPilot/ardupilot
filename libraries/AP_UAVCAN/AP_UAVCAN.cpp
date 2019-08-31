@@ -36,6 +36,7 @@
 #include <uavcan/equipment/indication/SingleLightCommand.hpp>
 #include <uavcan/equipment/indication/BeepCommand.hpp>
 #include <uavcan/equipment/indication/RGB565.hpp>
+#include <ardupilot/indication/SafetyState.hpp>
 
 #include <AP_Baro/AP_Baro_UAVCAN.h>
 #include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
@@ -100,6 +101,7 @@ static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_arr
 static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[MAX_NUMBER_OF_CAN_DRIVERS];
 
 AP_UAVCAN::AP_UAVCAN() :
     _node_allocator()
@@ -227,6 +229,10 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     buzzer[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::BeepCommand>(*_node);
     buzzer[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     buzzer[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
+    safety_state[driver_index] = new uavcan::Publisher<ardupilot::indication::SafetyState>(*_node);
+    safety_state[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    safety_state[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
     
     _led_conf.devices_count = 0;
     if (enable_filters) {
@@ -298,6 +304,7 @@ void AP_UAVCAN::loop(void)
 
         led_out_send();
         buzzer_send();
+        safety_state_send();
     }
 }
 
@@ -503,6 +510,30 @@ void AP_UAVCAN::set_buzzer_tone(float frequency, float duration_s)
     _buzzer.frequency = frequency;
     _buzzer.duration = duration_s;
     _buzzer.pending_mask = 0xFF;
+}
+
+// SafetyState send
+void AP_UAVCAN::safety_state_send()
+{
+    ardupilot::indication::SafetyState msg;
+    uint32_t now = AP_HAL::millis();
+    if (now - _last_safety_state_ms < 500) {
+        // update at 2Hz
+        return;
+    }
+    _last_safety_state_ms = now;
+    switch (hal.util->safety_switch_state()) {
+    case AP_HAL::Util::SAFETY_ARMED:
+        msg.status = ardupilot::indication::SafetyState::STATUS_SAFETY_OFF;
+        break;
+    case AP_HAL::Util::SAFETY_DISARMED:
+        msg.status = ardupilot::indication::SafetyState::STATUS_SAFETY_ON;
+        break;
+    default:
+        // nothing to send
+        return;
+    }
+    safety_state[_driver_index]->broadcast(msg);
 }
 
 #endif // HAL_WITH_UAVCAN
