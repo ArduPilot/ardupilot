@@ -196,6 +196,7 @@ protected:
 
     void do_aux_function_avoid_proximity(const aux_switch_pos_t ch_flag);
     void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
+    void do_aux_function_fence(const aux_switch_pos_t ch_flag);
     void do_aux_function_clear_wp(const aux_switch_pos_t ch_flag);
     void do_aux_function_gripper(const aux_switch_pos_t ch_flag);
     void do_aux_function_lost_vehicle_sound(const aux_switch_pos_t ch_flag);
