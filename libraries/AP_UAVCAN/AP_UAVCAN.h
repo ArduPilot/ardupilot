@@ -81,6 +81,8 @@ public:
     ///// LED /////
     bool led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue);
 
+    // buzzer
+    void set_buzzer_tone(float frequency, float duration_s);
 
     template <typename DataType_>
     class RegistryBinder {
@@ -147,6 +149,9 @@ private:
     ///// LED /////
     void led_out_send();
 
+    // buzzer
+    void buzzer_send();
+    
     uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
     // UAVCAN parameters
@@ -190,6 +195,14 @@ private:
     } _led_conf;
 
     HAL_Semaphore _led_out_sem;
+
+    // buzzer
+    struct {
+        HAL_Semaphore sem;
+        float frequency;
+        float duration;
+        uint8_t pending_mask; // mask of interfaces to send to
+    } _buzzer;
 };
 
 #endif /* AP_UAVCAN_H_ */

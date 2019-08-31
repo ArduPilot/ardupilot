@@ -34,6 +34,7 @@
 #include <uavcan/equipment/esc/RawCommand.hpp>
 #include <uavcan/equipment/indication/LightsCommand.hpp>
 #include <uavcan/equipment/indication/SingleLightCommand.hpp>
+#include <uavcan/equipment/indication/BeepCommand.hpp>
 #include <uavcan/equipment/indication/RGB565.hpp>
 
 #include <AP_Baro/AP_Baro_UAVCAN.h>
@@ -98,6 +99,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[MAX_NUMBER_OF_CAN_DRIVERS];
 
 AP_UAVCAN::AP_UAVCAN() :
     _node_allocator()
@@ -222,6 +224,10 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     rgb_led[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     rgb_led[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
+    buzzer[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::BeepCommand>(*_node);
+    buzzer[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    buzzer[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+    
     _led_conf.devices_count = 0;
     if (enable_filters) {
         configureCanAcceptanceFilters(*_node);
@@ -291,6 +297,7 @@ void AP_UAVCAN::loop(void)
         }
 
         led_out_send();
+        buzzer_send();
     }
 }
 
@@ -472,6 +479,30 @@ bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t
     }
 
     return true;
+}
+
+// buzzer send
+void AP_UAVCAN::buzzer_send()
+{
+    uavcan::equipment::indication::BeepCommand msg;
+    WITH_SEMAPHORE(_buzzer.sem);
+    uint8_t mask = (1U << _driver_index);
+    if ((_buzzer.pending_mask & mask) == 0) {
+        return;
+    }
+    _buzzer.pending_mask &= ~mask;
+    msg.frequency = _buzzer.frequency;
+    msg.duration = _buzzer.duration;
+    buzzer[_driver_index]->broadcast(msg);
+}
+
+// buzzer support
+void AP_UAVCAN::set_buzzer_tone(float frequency, float duration_s)
+{
+    WITH_SEMAPHORE(_buzzer.sem);
+    _buzzer.frequency = frequency;
+    _buzzer.duration = duration_s;
+    _buzzer.pending_mask = 0xFF;
 }
 
 #endif // HAL_WITH_UAVCAN
