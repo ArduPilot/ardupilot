@@ -33,6 +33,7 @@
 #include <uavcan/equipment/air_data/StaticPressure.h>
 #include <uavcan/equipment/air_data/StaticTemperature.h>
 #include <uavcan/equipment/indication/BeepCommand.h>
+#include <ardupilot/indication/SafetyState.h>
 #include <uavcan/protocol/debug/LogMessage.h>
 #include <stdio.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
@@ -387,6 +388,49 @@ static void can_buzzer_update(void)
 }
 #endif // HAL_PERIPH_ENABLE_BUZZER
 
+#ifdef HAL_GPIO_PIN_SAFE_LED
+static uint8_t safety_state;
+
+/*
+  handle SafetyState
+ */
+static void handle_safety_state(CanardInstance* ins, CanardRxTransfer* transfer)
+{
+    ardupilot_indication_SafetyState req;
+    if (ardupilot_indication_SafetyState_decode(transfer, transfer->payload_len, &req, nullptr) < 0) {
+        return;
+    }
+    safety_state = req.status;
+}
+
+/*
+  update safety LED
+ */
+static void can_safety_LED_update(void)
+{
+    static uint32_t last_update_ms;
+    switch (safety_state) {
+    case ARDUPILOT_INDICATION_SAFETYSTATE_STATUS_SAFETY_OFF:
+        palWriteLine(HAL_GPIO_PIN_SAFE_LED, SAFE_LED_ON);
+        break;
+    case ARDUPILOT_INDICATION_SAFETYSTATE_STATUS_SAFETY_ON: {
+        uint32_t now = AP_HAL::millis();
+        if (now - last_update_ms > 100) {
+            last_update_ms = now;
+            static uint8_t led_counter;
+            const uint16_t led_pattern = 0x5500;
+            led_counter = (led_counter+1) % 16;
+            palWriteLine(HAL_GPIO_PIN_SAFE_LED, (led_pattern & (1U << led_counter))?!SAFE_LED_ON:SAFE_LED_ON);
+        }
+        break;
+    }
+    default:
+        palWriteLine(HAL_GPIO_PIN_SAFE_LED, !SAFE_LED_ON);
+        break;
+    }
+}
+#endif // HAL_GPIO_PIN_SAFE_LED
+
 /**
  * This callback is invoked by the library when a new message or request or response is received.
  */
@@ -431,6 +475,12 @@ static void onTransferReceived(CanardInstance* ins,
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         handle_beep_command(ins, transfer);
+        break;
+#endif
+
+#ifdef HAL_GPIO_PIN_SAFE_LED
+    case ARDUPILOT_INDICATION_SAFETYSTATE_ID:
+        handle_safety_state(ins, transfer);
         break;
 #endif
     }
@@ -485,6 +535,11 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_SIGNATURE;
+        return true;
+#endif
+#ifdef HAL_GPIO_PIN_SAFE_LED
+    case ARDUPILOT_INDICATION_SAFETYSTATE_ID:
+        *out_data_type_signature = ARDUPILOT_INDICATION_SAFETYSTATE_SIGNATURE;
         return true;
 #endif
     default:
@@ -724,6 +779,9 @@ void AP_Periph_FW::can_update()
     can_baro_update();
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     can_buzzer_update();
+#endif
+#ifdef HAL_GPIO_PIN_SAFE_LED
+    can_safety_LED_update();
 #endif
     processTx();
     processRx();
