@@ -151,6 +151,9 @@ private:
 
     // buzzer
     void buzzer_send();
+
+    // SafetyState
+    void safety_state_send();
     
     uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
@@ -203,6 +206,8 @@ private:
         float duration;
         uint8_t pending_mask; // mask of interfaces to send to
     } _buzzer;
+
+    uint32_t _last_safety_state_ms;
 };
 
 #endif /* AP_UAVCAN_H_ */
