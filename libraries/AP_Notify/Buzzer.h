@@ -40,11 +40,12 @@ private:
 
     // Patterns - how many beeps will be played; read from
     // left-to-right, each bit represents 100ms
-    static const uint32_t    SINGLE_BUZZ = 0b10000000000000000000000000000000UL;
-    static const uint32_t    DOUBLE_BUZZ = 0b10100000000000000000000000000000UL;
-    static const uint32_t    ARMING_BUZZ = 0b11111111111111111111111111111100UL; // 3s
-    static const uint32_t      BARO_BUZZ = 0b10101010100000000000000000000000UL;
-    static const uint32_t        EKF_BAD = 0b11101101010000000000000000000000UL;
+    static const uint32_t     SINGLE_BUZZ = 0b10000000000000000000000000000000UL;
+    static const uint32_t     DOUBLE_BUZZ = 0b10100000000000000000000000000000UL;
+    static const uint32_t     ARMING_BUZZ = 0b11111111111111111111111111111100UL; // 3s
+    static const uint32_t       BARO_BUZZ = 0b10101010100000000000000000000000UL;
+    static const uint32_t         EKF_BAD = 0b11101101010000000000000000000000UL;
+    static const uint32_t MODEL_LOST_BUZZ = 0b00010100000000000000000000000000UL;
 
     /// play_pattern - plays the defined buzzer pattern
     void play_pattern(const uint32_t pattern);
@@ -61,9 +62,7 @@ private:
     uint32_t _pattern;           // current pattern
     uint8_t _pin;
     uint32_t _pattern_start_time;
-
-    // enforce minumum 100ms interval between patterns:
-    const uint16_t _pattern_start_interval_time_ms = 32*100 + 100;
+    int _current_bit_pos;
 
     void update_playing_pattern();
     void update_pattern_to_play();
