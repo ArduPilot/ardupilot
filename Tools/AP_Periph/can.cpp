@@ -32,6 +32,7 @@
 #include <uavcan/equipment/gnss/Auxiliary.h>
 #include <uavcan/equipment/air_data/StaticPressure.h>
 #include <uavcan/equipment/air_data/StaticTemperature.h>
+#include <uavcan/equipment/indication/BeepCommand.h>
 #include <uavcan/protocol/debug/LogMessage.h>
 #include <stdio.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
@@ -336,6 +337,56 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
     }
 }
 
+
+/*
+  fix value of a float for canard float16 format
+ */
+static void fix_float16(float &f)
+{
+    *(uint16_t *)&f = canardConvertNativeFloatToFloat16(f);
+}
+
+
+#ifdef HAL_PERIPH_ENABLE_BUZZER
+static uint32_t buzzer_start_ms;
+static uint32_t buzzer_len_ms;
+/*
+  handle BeepCommand
+ */
+static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
+{
+    uavcan_equipment_indication_BeepCommand req;
+    if (uavcan_equipment_indication_BeepCommand_decode(transfer, transfer->payload_len, &req, nullptr) < 0) {
+        return;
+    }
+    static bool initialised;
+    if (!initialised) {
+        initialised = true;
+        hal.rcout->init();
+        hal.util->toneAlarm_init();
+    }
+    fix_float16(req.frequency);
+    fix_float16(req.duration);
+    buzzer_start_ms = AP_HAL::millis();
+    buzzer_len_ms = req.duration*1000;
+    hal.util->toneAlarm_set_buzzer_tone(req.frequency, 1, uint32_t(req.duration*1000));
+}
+
+/*
+  update buzzer
+ */
+static void can_buzzer_update(void)
+{
+    if (buzzer_start_ms != 0) {
+        uint32_t now = AP_HAL::millis();
+        if (now - buzzer_start_ms > buzzer_len_ms) {
+            hal.util->toneAlarm_set_buzzer_tone(0, 0, 0);
+            buzzer_start_ms = 0;
+        }
+    }
+}
+#endif // HAL_PERIPH_ENABLE_BUZZER
+
 /**
  * This callback is invoked by the library when a new message or request or response is received.
  */
@@ -376,6 +427,12 @@ static void onTransferReceived(CanardInstance* ins,
     case UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID:
         handle_param_executeopcode(ins, transfer);
         break;
+
+#ifdef HAL_PERIPH_ENABLE_BUZZER
+    case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
+        handle_beep_command(ins, transfer);
+        break;
+#endif
     }
 }
 
@@ -425,6 +482,11 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
     case UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID:
         *out_data_type_signature = UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_SIGNATURE;
         return true;
+#ifdef HAL_PERIPH_ENABLE_BUZZER
+    case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
+        *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_SIGNATURE;
+        return true;
+#endif
     default:
         break;
     }
@@ -660,16 +722,11 @@ void AP_Periph_FW::can_update()
     can_mag_update();
     can_gps_update();
     can_baro_update();
+#ifdef HAL_PERIPH_ENABLE_BUZZER
+    can_buzzer_update();
+#endif
     processTx();
     processRx();
-}
-
-/*
-  fix value of a float for canard float16 format
- */
-static void fix_float16(float &f)
-{
-    *(uint16_t *)&f = canardConvertNativeFloatToFloat16(f);
 }
 
 /*
