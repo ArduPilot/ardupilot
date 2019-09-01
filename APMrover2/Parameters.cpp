@@ -628,30 +628,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 // @Increment: 1
 // @User: Standard
 
-// @Param: WP_RADIUS
-// @DisplayName: Waypoint radius
-// @Description: The distance in meters from a waypoint when we consider the waypoint has been reached. This determines when the rover will turn along the next waypoint path.
-// @Units: m
-// @Range: 0 1000
-// @Increment: 0.1
-// @User: Standard
-
-// @Param: WP_OVERSHOOT
-// @DisplayName: Waypoint overshoot maximum
-// @Description: Waypoint overshoot maximum in meters.  The vehicle will attempt to stay within this many meters of the track as it completes one waypoint and moves to the next.
-// @Units: m
-// @Range: 0 10
-// @Increment: 0.1
-// @User: Standard
-
-// @Param: WP_SPEED
-// @DisplayName: Waypoint speed default
-// @Description: Waypoint speed default.  If zero use CRUISE_SPEED.
-// @Units: m/s
-// @Range: 0 100
-// @Increment: 0.1
-// @User: Standard
-
 // @Param: PIVOT_TURN_RATE
 // @DisplayName: Pivot turn rate
 // @Description: Desired pivot turn rate in deg/s.
