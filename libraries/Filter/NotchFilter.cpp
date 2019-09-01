@@ -20,9 +20,13 @@
  */
 template <class T>
 void NotchFilter<T>::calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q) {
-    const float octaves = log2f(center_freq_hz / (center_freq_hz - bandwidth_hz / 2.0f)) * 2.0f;
     A = powf(10, -attenuation_dB / 40.0f);
-    Q = sqrtf(powf(2, octaves)) / (powf(2, octaves) - 1.0f);
+    if (center_freq_hz > 0.5 * bandwidth_hz) {
+        const float octaves = log2f(center_freq_hz / (center_freq_hz - bandwidth_hz / 2.0f)) * 2.0f;
+        Q = sqrtf(powf(2, octaves)) / (powf(2, octaves) - 1.0f);
+    } else {
+        Q = 0.0;
+    }
 }
 
 /*
@@ -31,26 +35,32 @@ void NotchFilter<T>::calculate_A_and_Q(float center_freq_hz, float bandwidth_hz,
 template <class T>
 void NotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB)
 {
-    // adjust the center frequency to be in the allowable range
-    center_freq_hz = constrain_float(center_freq_hz, bandwidth_hz * 0.52f, sample_freq_hz * 0.48f);
-
-    float A, Q;
-    calculate_A_and_Q(center_freq_hz, bandwidth_hz, attenuation_dB, A, Q);
-    init_with_A_and_Q(sample_freq_hz, center_freq_hz, A, Q);
+    // check center frequency is in the allowable range
+    if ((center_freq_hz > 0.5 * bandwidth_hz) && (center_freq_hz < 0.5 * sample_freq_hz)) {
+        float A, Q;
+        calculate_A_and_Q(center_freq_hz, bandwidth_hz, attenuation_dB, A, Q);
+        init_with_A_and_Q(sample_freq_hz, center_freq_hz, A, Q);
+    } else {
+        initialised = false;
+    }
 }
 
 template <class T>
 void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_hz, float A, float Q)
 {
-    float omega = 2.0 * M_PI * center_freq_hz / sample_freq_hz;
-    float alpha = sinf(omega) / (2 * Q/A);
-    b0 =  1.0 + alpha*A;
-    b1 = -2.0 * cosf(omega);
-    b2 =  1.0 - alpha*A;
-    a0_inv =  1.0/(1.0 + alpha/A);
-    a1 = -2.0 * cosf(omega);
-    a2 =  1.0 - alpha/A;
-    initialised = true;
+    if ((center_freq_hz > 0.0) && (center_freq_hz < 0.5 * sample_freq_hz) && (Q > 0.0)) {
+        float omega = 2.0 * M_PI * center_freq_hz / sample_freq_hz;
+        float alpha = sinf(omega) / (2 * Q);
+        b0 =  1.0 + alpha*sq(A);
+        b1 = -2.0 * cosf(omega);
+        b2 =  1.0 - alpha*sq(A);
+        a0_inv =  1.0/(1.0 + alpha);
+        a1 = b1;
+        a2 =  1.0 - alpha;
+        initialised = true;
+    } else {
+        initialised = false;
+    }
 }
 
 /*
@@ -61,7 +71,12 @@ T NotchFilter<T>::apply(const T &sample)
 {
     if (!initialised) {
         // if we have not been initialised when return the input
-        // sample as output
+        // sample as output and update delayed samples
+        ntchsig2 = ntchsig1;
+        ntchsig1 = ntchsig;
+        ntchsig = sample;
+        signal2 = signal1;
+        signal1 = sample;
         return sample;
     }
     ntchsig2 = ntchsig1;
