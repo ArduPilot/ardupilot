@@ -12,7 +12,7 @@ class AP_Compass_LSM9DS1 : public AP_Compass_Backend
 {
 public:
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                     enum Rotation rotation = ROTATION_NONE);
+                                     enum Rotation rotation);
 
     static constexpr const char *name = "LSM9DS1";
 
@@ -22,7 +22,7 @@ public:
 
 private:
     AP_Compass_LSM9DS1(AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                       enum Rotation rotation = ROTATION_NONE);
+                       enum Rotation rotation);
     bool init();
     bool _check_id(void);
     bool _configure(void);
