@@ -636,15 +636,18 @@ void Compass::_probe_external_i2c_compasses(void)
     
     //external i2c bus
     FOREACH_I2C_EXTERNAL(i) {
-        ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883L_I2C_ADDR),
+        ADD_BACKEND(DRIVER_QMC5883L, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883L_I2C_ADDR),
                                                                true, HAL_COMPASS_QMC5883L_ORIENTATION_EXTERNAL));
     }
     
-    //internal i2c bus
-    FOREACH_I2C_INTERNAL(i) {
-        ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883L_I2C_ADDR),
-                                                               all_external,
-                                                               all_external?HAL_COMPASS_QMC5883L_ORIENTATION_EXTERNAL:HAL_COMPASS_QMC5883L_ORIENTATION_INTERNAL));
+    // internal i2c bus
+    if (all_external) {
+        // only probe QMC5883L on internal if we are treating internals as externals
+        FOREACH_I2C_INTERNAL(i) {
+            ADD_BACKEND(DRIVER_QMC5883L, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883L_I2C_ADDR),
+                                                                    all_external,
+                                                                    all_external?HAL_COMPASS_QMC5883L_ORIENTATION_EXTERNAL:HAL_COMPASS_QMC5883L_ORIENTATION_INTERNAL));
+        }
     }
     
 #if !HAL_MINIMIZE_FEATURES
@@ -929,9 +932,9 @@ void Compass::_detect_backends(void)
     ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(HAL_COMPASS_IST8310_I2C_BUS, HAL_COMPASS_IST8310_I2C_ADDR),
                                                            true, ROTATION_PITCH_180_YAW_90));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QMC5883L
-    ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(1, HAL_COMPASS_QMC5883L_I2C_ADDR),
+    ADD_BACKEND(DRIVER_QMC5883L, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(1, HAL_COMPASS_QMC5883L_I2C_ADDR),
                                                            true, HAL_COMPASS_QMC5883L_ORIENTATION_EXTERNAL));
-    ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
+    ADD_BACKEND(DRIVER_QMC5883L, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
                                                            false, HAL_COMPASS_QMC5883L_ORIENTATION_INTERNAL));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_LIS3MDL_I2C
     FOREACH_I2C(i) {
