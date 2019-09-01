@@ -789,13 +789,13 @@ def parse_i2c_device(dev):
         error("Bad I2C device: %s" % dev)
     busaddr = int(a[2],base=0)
     if a[1] == 'ALL_EXTERNAL':
-        return ('FOREACH_I2C_EXTERNAL(b)', 'hal.i2c_mgr->get_device(b,0x%02x)' % (busaddr))
+        return ('FOREACH_I2C_EXTERNAL(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
     elif a[1] == 'ALL_INTERNAL':
-        return ('FOREACH_I2C_INTERNAL(b)', 'hal.i2c_mgr->get_device(b,0x%02x)' % (busaddr))
+        return ('FOREACH_I2C_INTERNAL(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
     elif a[1] == 'ALL':
-        return ('FOREACH_I2C(b)', 'hal.i2c_mgr->get_device(b,0x%02x)' % (busaddr))
+        return ('FOREACH_I2C(b)', 'GET_I2C_DEVICE(b,0x%02x)' % (busaddr))
     busnum = int(a[1])
-    return ('', 'hal.i2c_mgr->get_device(%u,0x%02x)' % (busnum, busaddr))
+    return ('', 'GET_I2C_DEVICE(%u,0x%02x)' % (busnum, busaddr))
 
 def write_IMU_config(f):
     '''write IMU config defines'''
