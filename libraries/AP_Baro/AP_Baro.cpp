@@ -473,6 +473,8 @@ void AP_Baro::init(void)
     }
 #endif
 
+#define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
+
 #if defined(HAL_BARO_PROBE_LIST)
     // probe list from BARO lines in hwdef.dat
     HAL_BARO_PROBE_LIST;
