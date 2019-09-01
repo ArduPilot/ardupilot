@@ -65,7 +65,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     switch(ch_option) {
     case AUX_FUNC::SIMPLE_MODE:
     case AUX_FUNC::RANGEFINDER:
-    case AUX_FUNC::FENCE:
     case AUX_FUNC::SUPERSIMPLE_MODE:
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::PARACHUTE_ENABLE:
@@ -241,19 +240,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 copter.rangefinder_state.enabled = true;
             } else {
                 copter.rangefinder_state.enabled = false;
-            }
-#endif
-            break;
-
-        case AUX_FUNC::FENCE:
-#if AC_FENCE == ENABLED
-            // enable or disable the fence
-            if (ch_flag == HIGH) {
-                copter.fence.enable(true);
-                copter.Log_Write_Event(DATA_FENCE_ENABLE);
-            } else {
-                copter.fence.enable(false);
-                copter.Log_Write_Event(DATA_FENCE_DISABLE);
             }
 #endif
             break;
