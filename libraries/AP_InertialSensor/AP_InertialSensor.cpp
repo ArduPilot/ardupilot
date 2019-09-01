@@ -708,7 +708,10 @@ AP_InertialSensor::detect_backends(void)
         } \
         probe_count++; \
 } while (0)
-    
+
+// macro for use by HAL_INS_PROBE_LIST
+#define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
+
     if (_hil_mode) {
         ADD_BACKEND(AP_InertialSensor_HIL::detect(*this));
         return;
