@@ -8,12 +8,17 @@
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
 
 // make sensor selection clearer
-#define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.i2c_mgr->get_device(bus, addr),##args))
+#define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
 #define PROBE_IMU_SPI2(driver, devname1, devname2, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname1),hal.spi->get_device(devname2),##args))
 
-#define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(hal.i2c_mgr->get_device(bus, addr)),##args))
+#define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
 #define PROBE_BARO_SPI(driver, devname, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(hal.spi->get_device(devname)),##args))
+
+#define PROBE_MAG_I2C(driver, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(GET_I2C_DEVICE(bus, addr),##args))
+#define PROBE_MAG_SPI(driver, devname, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(hal.spi->get_device(devname),##args))
+#define PROBE_MAG_IMU(driver, imudev, imu_instance, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(imu_instance,##args))
+#define PROBE_MAG_IMU_I2C(driver, imudev, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(GET_I2C_DEVICE(bus,addr),##args))
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
     #define HAL_BOARD_LOG_DIRECTORY "logs"
@@ -29,9 +34,8 @@
       #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_ROLL_180_YAW_90)
     #endif
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_MPU9250
-    #define HAL_COMPASS_HMC5843_I2C_BUS 1
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
     #define HAL_GPIO_A_LED_PIN        61
     #define HAL_GPIO_B_LED_PIN        48
     #define HAL_GPIO_C_LED_PIN        117
@@ -42,9 +46,7 @@
     #define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
     #define HAL_BOARD_STORAGE_DIRECTORY "/data/ftp/internal_000/ardupilot"
     #define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 2, 0x68, ROTATION_YAW_270)
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_I2C
-    #define HAL_COMPASS_AK8963_I2C_BUS 1
-    #define HAL_COMPASS_AK8963_I2C_ADDR 0x0d
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_I2C(AK8963, 1, 0x0d, ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 1, 0x77, AP_Baro_MS56XX::BARO_MS5607)
     #define HAL_HAVE_IMU_HEATER 1
     #define HAL_IMU_TEMP_DEFAULT 55
@@ -81,9 +83,7 @@
     #define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
     #define HAL_BOARD_STORAGE_DIRECTORY "/data/ftp/internal_000/ardupilot"
     #define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 2, 0x68, ROTATION_PITCH_180_YAW_90)
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_I2C
-    #define HAL_COMPASS_AK8963_I2C_BUS 1
-    #define HAL_COMPASS_AK8963_I2C_ADDR 0x0d
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_I2C(AK8963, 1, 0x0d, ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 1, 0x77, AP_Baro_MS56XX::BARO_MS5607)
     #define HAL_UTILS_HEAT HAL_LINUX_HEAT_PWM
     #define HAL_LINUX_HEAT_PWM_NUM  10
@@ -124,26 +124,21 @@
     #define HAL_GPIO_LED_OFF LOW
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 1, 0x77)
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NAVIO
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 1
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
     #define HAL_HAVE_SERVO_VOLTAGE 1
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
-    #define HAL_INS_LSM9DS1_NAME "lsm9ds1"
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 1, 0x77)
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NAVIO2
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 1
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE1 PROBE_MAG_SPI(LSM9DS1, "lsm9ds1_m",  ROTATION_ROLL_180)
+    #define HAL_MAG_PROBE2 PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+    #define HAL_MAG_PROBE_LIST HAL_MAG_PROBE1; HAL_MAG_PROBE2
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_YAW_270)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_MPU9250
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 1
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
     #define HAL_GPIO_A_LED_PIN        24
     #define HAL_GPIO_B_LED_PIN        25
     #define HAL_GPIO_C_LED_PIN        16
@@ -154,14 +149,14 @@
     #define HAL_INS_DEFAULT HAL_INS_HIL
     #define HAL_BARO_DEFAULT HAL_BARO_HIL
     #define HAL_COMPASS_DEFAULT HAL_COMPASS_HIL
+    // only external compasses
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_OCPOC_ZYNQ
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 4
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-    #define AP_COMPASS_OFFSETS_MAX_DEFAULT 1000
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     #define HAL_GPIO_A_LED_PIN 69
     #define HAL_GPIO_B_LED_PIN 68
@@ -173,10 +168,10 @@
     #define HAL_INS_PROBE2 PROBE_IMU_SPI(Invensense, "mpu9250ext", ROTATION_NONE)
     #define HAL_INS_PROBE_LIST HAL_INS_PROBE1; HAL_INS_PROBE2
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_BBBMINI
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 2
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE1 PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+    #define HAL_MAG_PROBE2 PROBE_MAG_IMU(AK8963, mpu9250, 1, ROTATION_NONE)
+    #define HAL_MAG_PROBE_LIST HAL_MAG_PROBE1; HAL_MAG_PROBE2
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
     #define HAL_OPTFLOW_PX4FLOW_I2C_BUS 2
     #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
     #define HAL_WITH_UAVCAN 1
@@ -187,12 +182,8 @@
     #define HAL_GPIO_LED_OFF   LOW
     #define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 2, 0x68, ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 2, 0x76)
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_MPU9250_I2C
-    #define HAL_COMPASS_AK8963_I2C_BUS 2
-    #define HAL_COMPASS_AK8963_I2C_ADDR 0x0C
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 1
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU_I2C(AK8963, mpu9250, 2, 0x0c, ROTATION_NONE)
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
     #define HAL_OPTFLOW_PX4FLOW_I2C_BUS 1
     #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 1
     #define HAL_WITH_UAVCAN 1
@@ -205,10 +196,8 @@
     #define HAL_BUZZER_PIN 28
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(BMP280, "bmp280")
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_MPU9250
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 2
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
     #define HAL_OPTFLOW_PX4FLOW_I2C_BUS 2
     #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
     #define HAL_WITH_UAVCAN 1
@@ -217,10 +206,8 @@
     #define HAL_INS_PROBE1 PROBE_IMU_I2C(Invensense, 1, 0x69, ROTATION_NONE)
     #define HAL_INS_PROBE2 PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_INS_PROBE_LIST HAL_INS_PROBE1; HAL_INS_PROBE2
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_BH
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 1
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
     #define HAL_GPIO_A_LED_PIN        17
     #define HAL_GPIO_B_LED_PIN        18
     #define HAL_GPIO_C_LED_PIN        22
@@ -232,10 +219,8 @@
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_YAW_270)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
-    #define HAL_COMPASS_DEFAULT       HAL_COMPASS_AK8963_MPU9250
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 1
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
     #define HAL_GPIO_A_LED_PIN        24
     #define HAL_GPIO_B_LED_PIN        25
     #define HAL_GPIO_C_LED_PIN        16
@@ -244,18 +229,15 @@
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(BMI160, "bmi160")
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 2, 0x76)
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_AERO
-    #define HAL_COMPASS_BMM150_I2C_BUS 2
-    #define HAL_COMPASS_BMM150_I2C_ADDR 0x12
-    #define HAL_COMPASS_IST8310_I2C_BUS 4
-    #define HAL_COMPASS_IST8310_I2C_ADDR 0x0E
-    #define HAL_COMPASS_HMC5843_I2C_BUS 4
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+    #define HAL_MAG_PROBE1 PROBE_MAG_I2C(BMM150, 2, 0x12, ROTATION_NONE)
+    #define HAL_MAG_PROBE2 PROBE_MAG_I2C(HMC5843, 4, 0x1e, true, ROTATION_NONE)
+    #define HAL_MAG_PROBE3 PROBE_MAG_I2C(IST8310, 4, 0x0e, true, ROTATION_PITCH_180_YAW_90)
+    #define HAL_MAG_PROBE_LIST HAL_MAG_PROBE1; HAL_MAG_PROBE2; HAL_MAG_PROBE3
     #define HAL_RCOUTPUT_TAP_DEVICE "/dev/ttyS1"
     #define HAL_WITH_UAVCAN 1
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_MPU9250
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 1, 0x77)
     #define HAL_GPIO_A_LED_PIN        24
     #define HAL_GPIO_B_LED_PIN        25
@@ -270,13 +252,10 @@
     #define HAL_INS_PROBE2 PROBE_IMU_SPI(Invensense, "mpu60x0ext", ROTATION_YAW_90)
     #define HAL_INS_PROBE_LIST HAL_INS_PROBE1; HAL_INS_PROBE2
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
-    #define HAL_COMPASS_HMC5843_I2C_BUS 1
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_EDGE
+    // only external compasses
+    #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
     #define HAL_WITH_UAVCAN 1
-    /* HMC5843 can be an external compass */
-    #define HAL_COMPASS_HMC5843_I2C_BUS 1
-    #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
     #define HAL_IMU_TEMP_DEFAULT 55
     #define HAL_HAVE_IMU_HEATER 1
     #define HAL_UTILS_HEAT HAL_LINUX_HEAT_PWM
@@ -289,8 +268,7 @@
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI2(Invensense, "rst_g", "rst_a", ROTATION_ROLL_180_YAW_90, ROTATION_ROLL_180_YAW_90)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_LIS3MDL
-    #define HAL_COMPASS_LIS3MDL_NAME "lis3mdl"
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_SPI(LIS3MDL, lis3mdl, false, ROTATION_ROLL_180_YAW_90)
     #define HAL_OPTFLOW_PX4FLOW_I2C_BUS 0
 
     #define HAL_HAVE_GETTIME_SETTIME 1
