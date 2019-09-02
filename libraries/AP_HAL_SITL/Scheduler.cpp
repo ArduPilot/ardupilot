@@ -29,6 +29,8 @@ uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
 bool Scheduler::_should_reboot = false;
 
+bool Scheduler::_in_semaphore_take_wait = false;
+
 Scheduler::thread_attr *Scheduler::threads;
 HAL_Semaphore Scheduler::_thread_sem;
 
@@ -49,6 +51,27 @@ bool Scheduler::in_main_thread() const
         return true;
     }
     return false;
+}
+
+/*
+ * semaphore_wait_hack_required - possibly move time input step
+ * forward even if we are currently pretending to be the IO or timer
+ * threads.
+ *
+ * Without this, if another thread has taken a semaphore (e.g. the
+ * Object Avoidance thread), and an "IO process" tries to take that
+ * semaphore with a timeout specified, then we end up not advancing
+ * time (due to the logic in SITL_State::wait_clock) and thus taking
+ * the semaphore never times out - meaning we essentially deadlock.
+ */
+bool Scheduler::semaphore_wait_hack_required()
+{
+    if (pthread_self() != _main_ctx) {
+        // only the main thread ever moves stuff forwards
+        return false;
+    }
+
+    return _in_semaphore_take_wait;
 }
 
 void Scheduler::delay_microseconds(uint16_t usec)
