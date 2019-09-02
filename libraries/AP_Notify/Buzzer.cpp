@@ -56,6 +56,10 @@ bool Buzzer::init()
     // warning in plane and rover on every boot
     _flags.armed = AP_Notify::flags.armed;
     _flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
+
+    // play a quick beep at startup
+    play_pattern(SINGLE_BUZZ);
+
     return true;
 }
 
@@ -68,6 +72,19 @@ void Buzzer::update()
 
 void Buzzer::update_pattern_to_play()
 {
+    if (!_flags.initialise_done) {
+        // play beeps when system initialization complete
+        if (!_flags.initialise_started) {
+            if (AP_Notify::flags.initialising) {
+                _flags.initialise_started = true;
+            }
+        } else if (!AP_Notify::flags.initialising) {
+            _flags.initialise_done = true;
+            play_pattern(INITIALISE_BUZZ);
+            return;
+        }
+    }
+
     // check for arming failed event
     if (AP_Notify::events.arming_failed) {
         // arming failed buzz
