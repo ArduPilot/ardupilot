@@ -453,6 +453,13 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
 
+    // @Param: DEBUG
+    // @DisplayName: IMU debug level
+    // @Description: Set to non-zero to enable IMU timing debug messages
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("DEBUG", 42, AP_InertialSensor, _debug, 0),
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -858,6 +865,15 @@ void AP_InertialSensor::periodic()
     batchsampler.periodic();
 }
 
+// log gyro performance statistics
+void AP_InertialSensor::update_logging()
+{
+    if (_debug > 0) {
+        for (uint8_t i = 0; i < get_gyro_count(); i++) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "INS PERF: id=%hu avg=%luus gyro=%luus", i, get_average_cycle_time_us(i), get_average_gyro_cycle_time_us(i));
+        }
+    }
+}
 
 /*
   _calculate_trim - calculates the x and y trim angles. The

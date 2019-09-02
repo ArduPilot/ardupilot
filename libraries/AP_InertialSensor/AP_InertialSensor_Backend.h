@@ -290,10 +290,32 @@ protected:
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available
 
+    // start timing a gyro/accel read cycle
+    void start_timing_cycle() { _cycle_start_us = AP_HAL::micros64(); }
+    // finish timing a gyro/accel read cycle and accumulate the results
+    void end_timing_cycle();
+    // return average gyro/accel processing time in us
+    uint32_t get_average_cycle_time_us() const { return _total_cycle_time_us / _total_cycles; }
+    // return average gyro filtering time in us
+    uint32_t get_average_gyro_cycle_time_us() const { return _total_gyro_cycle_time_us / _total_gyro_cycles; }
+    // timestamp at the start of the gyro/accel cycle, set by the driver
+    uint64_t _cycle_start_us;
+
 private:
 
     bool should_log_imu_raw() const;
     void log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel);
     void log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gryo);
 
+    // update the gyro/accel timing statistics
+    void update_gyro_accel_timing(uint64_t now);
+
+    // total counted timing cycles
+    uint64_t _total_cycles = 1;
+    // total time of the counted cycles
+    uint64_t _total_cycle_time_us;
+    // total counted gyro timing cycles
+    uint64_t _total_gyro_cycles = 1;
+    // total gyro filtering time of the counted cycles
+    uint64_t _total_gyro_cycle_time_us;
 };

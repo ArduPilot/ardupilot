@@ -574,6 +574,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
     }
     
     while (n_samples > 0) {
+        start_timing_cycle();
         uint8_t n = MIN(n_samples, MPU_FIFO_BUFFER_LEN);
         if (!_dev->set_chip_select(true)) {
             if (!_block_read(MPUREG_FIFO_R_W, rx, n * MPU_SAMPLE_SIZE)) {
@@ -594,7 +595,6 @@ void AP_InertialSensor_Invensense::_read_fifo()
             }
             _dev->set_chip_select(false);
         }
-
         if (_fast_sampling) {
             if (!_accumulate_sensor_rate_sampling(rx, n)) {
                 debug("IMU[%u] stop at %u of %u", _accel_instance, n_samples, bytes_read/MPU_SAMPLE_SIZE);
@@ -605,6 +605,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
                 break;
             }
         }
+        end_timing_cycle();
         n_samples -= n;
     }
 
