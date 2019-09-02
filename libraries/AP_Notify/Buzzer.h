@@ -46,6 +46,7 @@ private:
     static const uint32_t       BARO_BUZZ = 0b10101010100000000000000000000000UL;
     static const uint32_t         EKF_BAD = 0b11101101010000000000000000000000UL;
     static const uint32_t MODEL_LOST_BUZZ = 0b00010100000000000000000000000000UL;
+    static const uint32_t INITIALISE_BUZZ = 0b10101100000000000000000000000000UL;
 
     /// play_pattern - plays the defined buzzer pattern
     void play_pattern(const uint32_t pattern);
@@ -57,6 +58,8 @@ private:
         uint8_t armed               : 1;    // 0 = disarmed, 1 = armed
         uint8_t failsafe_battery    : 1;    // 1 if battery failsafe has triggered
         uint8_t ekf_bad             : 1;    // 1 if ekf position has gone bad
+        uint8_t initialise_started  : 1;    // 1 if system initialization started
+        uint8_t initialise_done     : 1;    // 1 if system initialization complete
     } _flags;
 
     uint32_t _pattern;           // current pattern
