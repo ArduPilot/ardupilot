@@ -81,7 +81,7 @@ public:
     float get_wheel_radius(uint8_t instance) const;
 
     // return a 3D vector defining the position offset of the center of the wheel in meters relative to the body frame origin
-    const Vector3f &get_pos_offset(uint8_t instance) const;
+    Vector3f &get_pos_offset(uint8_t instance) const;
 
     // get total delta angle (in radians) measured by the wheel encoder
     float get_delta_angle(uint8_t instance) const;
@@ -118,5 +118,8 @@ protected:
     WheelEncoder_State state[WHEELENCODER_MAX_INSTANCES];
     AP_WheelEncoder_Backend *drivers[WHEELENCODER_MAX_INSTANCES];
     uint8_t num_instances;
-    Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
+
+    Vector3f zero_wheel_offset; // allows returning position offsets of zero for invalid requests
+    // Extra variable to send _pos_offset to EKF3
+    Vector3f wheel_pos_offset[WHEELENCODER_MAX_INSTANCES];
 };

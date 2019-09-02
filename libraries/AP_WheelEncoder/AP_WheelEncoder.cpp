@@ -145,6 +145,11 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
 AP_WheelEncoder::AP_WheelEncoder(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // initialize position offsets which will be used by EKF3
+    for (int i=0; i<WHEELENCODER_MAX_INSTANCES; ++i) {
+        wheel_pos_offset[i] = _pos_offset[i];
+    }
 }
 
 // initialise the AP_WheelEncoder class.
@@ -245,13 +250,13 @@ float AP_WheelEncoder::get_wheel_radius(uint8_t instance) const
 }
 
 // return a 3D vector defining the position offset of the center of the wheel in meters relative to the body frame origin
-const Vector3f &AP_WheelEncoder::get_pos_offset(uint8_t instance) const
+Vector3f &AP_WheelEncoder::get_pos_offset(uint8_t instance) const
 {
     // for invalid instances return zero vector
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
-        return pos_offset_zero;
+        return const_cast<Vector3f &>(zero_wheel_offset);
     }
-    return _pos_offset[instance];
+    return const_cast<Vector3f &>(wheel_pos_offset[instance]);
 }
 
 // get total delta angle (in radians) measured by the wheel encoder
