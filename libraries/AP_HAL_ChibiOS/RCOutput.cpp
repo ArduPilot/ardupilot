@@ -1506,35 +1506,21 @@ void RCOutput::safety_update(void)
     
 #ifdef HAL_GPIO_PIN_SAFETY_IN
     // handle safety button
-    uint16_t safety_options = 0;
-    if (boardconfig) {
-        safety_options = boardconfig->get_safety_button_options();
-    }
     bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_IN);
-    if (!(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) &&
-        hal.util->get_soft_armed()) {
-        safety_pressed = false;
-    }
-    if (safety_state==AP_HAL::Util::SAFETY_DISARMED &&
-        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
-        safety_pressed = false;        
-    }
-    if (safety_state==AP_HAL::Util::SAFETY_ARMED &&
-        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
-        safety_pressed = false;        
-    }
     if (safety_pressed) {
-        safety_button_counter++;
-    } else {
-        safety_button_counter = 0;
-    }
-    if (safety_button_counter == 10) {
-        // safety has been pressed for 1 second, change state
-        if (safety_state==AP_HAL::Util::SAFETY_ARMED) {
-            safety_state = AP_HAL::Util::SAFETY_DISARMED;
-        } else {
-            safety_state = AP_HAL::Util::SAFETY_ARMED;
+        AP_BoardConfig *brdconfig = AP_BoardConfig::get_singleton();
+        if (safety_press_count < 255) {
+            safety_press_count++;
         }
+        if (brdconfig && brdconfig->safety_button_handle_pressed(safety_press_count)) {
+            if (safety_state ==AP_HAL::Util::SAFETY_ARMED) {
+                safety_state = AP_HAL::Util::SAFETY_DISARMED;
+            } else {
+                safety_state = AP_HAL::Util::SAFETY_ARMED;
+            }
+        }
+    } else {
+        safety_press_count = 0;
     }
 #elif HAL_WITH_IO_MCU
     safety_state = _safety_switch_state();

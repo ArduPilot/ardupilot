@@ -314,6 +314,7 @@ private:
     uint32_t safety_update_ms;
     uint8_t led_counter;
     int8_t safety_button_counter;
+    uint8_t safety_press_count; // 0.1s units
 
     // mask of channels to allow when safety on
     uint16_t safety_mask;
