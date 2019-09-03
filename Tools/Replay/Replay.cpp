@@ -331,8 +331,8 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 class IMUCounter : public AP_LoggerFileReader {
 public:
     IMUCounter() {}
-    bool handle_log_format_msg(const struct log_Format &f);
-    bool handle_msg(const struct log_Format &f, uint8_t *msg);
+    bool handle_log_format_msg(const struct log_Format &f) override;
+    bool handle_msg(const struct log_Format &f, uint8_t *msg) override;
 
     uint64_t last_clock_timestamp = 0;
     float last_parm_value = 0;
