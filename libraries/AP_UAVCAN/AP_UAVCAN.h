@@ -46,6 +46,9 @@
 
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 
+// fwd-declare callback classes
+class ButtonCb;
+
 /*
     Frontend Backend-Registry Binder: Whenever a message of said DataType_ from new node is received,
     the Callback will invoke registery to register the node as separate backend.
@@ -207,7 +210,11 @@ private:
         uint8_t pending_mask; // mask of interfaces to send to
     } _buzzer;
 
+    // safety status send state
     uint32_t _last_safety_state_ms;
+
+    // safety button handling
+    static void handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb);
 };
 
 #endif /* AP_UAVCAN_H_ */
