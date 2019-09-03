@@ -58,18 +58,12 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: STOP_PIN
     // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
+    // @Description: Digital pin that enables/disables rangefinder measurement for the pwm rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This is used to enable powersaving when out of range.
     // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     // @User: Standard
     AP_GROUPINFO("STOP_PIN", 8, AP_RangeFinder_Params, stop_pin, -1),
 
-    // @Param: SETTLE
-    // @DisplayName: Rangefinder settle time
-    // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: ms
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("SETTLE", 9, AP_RangeFinder_Params, settle_time_ms, 0),
+    // 9 was SETTLE
 
     // @Param: RMETRIC
     // @DisplayName: Ratiometric
