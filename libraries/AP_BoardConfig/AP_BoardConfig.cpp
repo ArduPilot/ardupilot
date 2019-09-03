@@ -51,13 +51,11 @@
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
 #endif
 
-#if HAL_HAVE_SAFETY_SWITCH
-#  ifndef BOARD_SAFETY_OPTION_DEFAULT
-#    define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
-#  endif
-#  ifndef BOARD_SAFETY_ENABLE
-#    define BOARD_SAFETY_ENABLE 1
-#  endif
+#ifndef BOARD_SAFETY_OPTION_DEFAULT
+#  define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
+#endif
+#ifndef BOARD_SAFETY_ENABLE
+#  define BOARD_SAFETY_ENABLE 1
 #endif
 
 #ifndef BOARD_PWM_COUNT_DEFAULT
@@ -187,14 +185,12 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_SUBGROUPINFO(_radio, "RADIO", 11, AP_BoardConfig, AP_Radio),
 #endif
 
-#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETYOPTION
     // @DisplayName: Options for safety button behavior
     // @Description: This controls the activation of the safety button. It allows you to control if the safety button can be used for safety enable and/or disable, and whether the button is only active when disarmed
     // @Bitmask: 0:ActiveForSafetyEnable,1:ActiveForSafetyDisable,2:ActiveWhenArmed,3:Force safety on when the aircraft disarms
     // @User: Standard
     AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
-#endif
 
     // @Group: RTC
     // @Path: ../AP_RTC/AP_RTC.cpp
@@ -344,4 +340,33 @@ void AP_BoardConfig::sensor_config_error(const char *reason)
 #endif
         hal.scheduler->delay(5);
     }
+}
+
+/*
+  handle logic for safety state button press. This should be called at
+  10Hz when the button is pressed. The button can either be directly
+  on a pin or on a UAVCAN device
+  This function returns true if the safety state should be toggled
+ */
+bool AP_BoardConfig::safety_button_handle_pressed(uint8_t press_count)
+{
+    if (press_count != 10) {
+        return false;
+    }
+    // get button options
+    uint16_t safety_options = get_safety_button_options();
+    if (!(safety_options & BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) &&
+        hal.util->get_soft_armed()) {
+        return false;
+    }
+    AP_HAL::Util::safety_state safety_state = hal.util->safety_switch_state();
+    if (safety_state == AP_HAL::Util::SAFETY_DISARMED &&
+        !(safety_options & BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
+        return false;
+    }
+    if (safety_state == AP_HAL::Util::SAFETY_ARMED &&
+        !(safety_options & BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
+        return false;
+    }
+    return true;
 }
