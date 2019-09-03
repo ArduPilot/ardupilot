@@ -158,6 +158,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
     uint8_t get_buzz_pin() const  { return _buzzer_pin; }
     uint8_t get_buzz_level() const  { return _buzzer_level; }
+    uint8_t get_buzz_volume() const  { return _buzzer_volume; }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     HAL_Semaphore sf_window_mutex;
@@ -181,6 +182,7 @@ private:
     AP_Int8 _buzzer_pin;
     AP_Int32 _led_type;
     AP_Int8 _buzzer_level;
+    AP_Int8 _buzzer_volume;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
