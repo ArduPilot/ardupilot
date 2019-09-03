@@ -105,11 +105,6 @@ public:
     virtual void     force_safety_off(void) {}
 
     /*
-      If we support async sends (px4), this will force it to be serviced immediately
-     */
-    virtual void     force_safety_no_wait(void) {}
-
-    /*
       setup scaling of ESC output for ESCs that can output a
       percentage of power (such as UAVCAN ESCs). The values are in
       microseconds, and represent minimum and maximum PWM values which
