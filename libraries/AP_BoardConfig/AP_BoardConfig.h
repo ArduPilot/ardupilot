@@ -115,7 +115,6 @@ public:
         return _singleton?_singleton->pwm_count.get():8;
     }
 
-#if HAL_HAVE_SAFETY_SWITCH
     enum board_safety_button_option {
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF= (1 << 0),
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=  (1 << 1),
@@ -127,7 +126,6 @@ public:
     uint16_t get_safety_button_options(void) {
         return uint16_t(state.safety_option.get());
     }
-#endif
 
     // return the value of BRD_SAFETY_MASK
     uint16_t get_safety_mask(void) const {
@@ -167,13 +165,16 @@ public:
         return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:false;
     }
 
+    // handle press of safety button. Return true if safety state
+    // should be toggled
+    bool safety_button_handle_pressed(uint8_t press_count);
+
 private:
     static AP_BoardConfig *_singleton;
     
     AP_Int16 vehicleSerialNumber;
     AP_Int8 pwm_count;
 
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || HAL_HAVE_SAFETY_SWITCH
     struct {
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
@@ -186,7 +187,6 @@ private:
         AP_Int8 board_type;
         AP_Int8 io_enable;
     } state;
-#endif
 
 #if AP_FEATURE_BOARD_DETECT
     static enum px4_board_type px4_configured_board;
