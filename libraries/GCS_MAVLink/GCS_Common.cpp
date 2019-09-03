@@ -2471,7 +2471,6 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     }
     // force safety on
     hal.rcout->force_safety_on();
-    hal.rcout->force_safety_no_wait();
 
     // flush pending parameter writes
     AP_Param::flush();
