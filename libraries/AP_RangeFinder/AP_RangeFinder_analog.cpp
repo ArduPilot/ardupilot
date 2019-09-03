@@ -41,8 +41,6 @@ AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_st
         set_status(RangeFinder::RangeFinder_NotConnected);
         return;
     }
-    source->set_stop_pin((uint8_t)_params.stop_pin);
-    source->set_settle_time((uint16_t)_params.settle_time_ms);
     set_status(RangeFinder::RangeFinder_NoData);
 }
 
@@ -71,8 +69,6 @@ void AP_RangeFinder_analog::update_voltage(void)
    }
    // cope with changed settings
    source->set_pin(params.pin);
-   source->set_stop_pin((uint8_t)params.stop_pin);
-   source->set_settle_time((uint16_t)params.settle_time_ms);
    if (params.ratiometric) {
        state.voltage_mv = source->voltage_average_ratiometric() * 1000U;
    } else {
