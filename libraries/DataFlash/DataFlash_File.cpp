@@ -128,11 +128,13 @@ void DataFlash_File::Init()
         _log_directory = custom_dir;
     }
 
+    hal.scheduler->expect_delay_ms(3000);
     ret = stat(_log_directory, &st);
     if (ret == -1) {
         ret = mkdir(_log_directory, 0777);
     }
-    if (ret == -1) {
+    hal.scheduler->expect_delay_ms(0);
+    if (ret == -1 && errno != EEXIST) {
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
     }
 
@@ -163,11 +165,14 @@ void DataFlash_File::Init()
 bool DataFlash_File::file_exists(const char *filename) const
 {
     struct stat st;
+    hal.scheduler->expect_delay_ms(3000);
     if (stat(filename, &st) == -1) {
         // hopefully errno==ENOENT.  If some error occurs it is
         // probably better to assume this file exists.
+        hal.scheduler->expect_delay_ms(0);
         return false;
     }
+    hal.scheduler->expect_delay_ms(0);
     return true;
 }
 
@@ -293,14 +298,18 @@ uint16_t DataFlash_File::find_oldest_log()
     // We could count up to find_last_log(), but if people start
     // relying on the min_avail_space_percent feature we could end up
     // doing a *lot* of asprintf()s and stat()s
+    hal.scheduler->expect_delay_ms(3000);
     DIR *d = opendir(_log_directory);
+    hal.scheduler->expect_delay_ms(0);
     if (d == nullptr) {
         internal_error();
         return 0;
     }
 
     // we only remove files which look like xxx.BIN
+    hal.scheduler->expect_delay_ms(3000);
     for (struct dirent *de=readdir(d); de; de=readdir(d)) {
+        hal.scheduler->expect_delay_ms(3000);
         uint8_t length = strlen(de->d_name);
         if (length < 5) {
             // not long enough for \d+[.]BIN
@@ -335,6 +344,7 @@ uint16_t DataFlash_File::find_oldest_log()
         }
     }
     closedir(d);
+    hal.scheduler->expect_delay_ms(0);
     _cached_oldest_log = current_oldest_log;
 
     return current_oldest_log;
@@ -342,6 +352,10 @@ uint16_t DataFlash_File::find_oldest_log()
 
 void DataFlash_File::Prep_MinSpace()
 {
+    if (hal.util->was_watchdog_reset()) {
+        // don't clear space if watchdog reset, it takes too long
+        return;
+    }
     const uint16_t first_log_to_remove = find_oldest_log();
     if (first_log_to_remove == 0) {
         // no files to remove
@@ -375,6 +389,7 @@ void DataFlash_File::Prep_MinSpace()
         if (file_exists(filename_to_remove)) {
             hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
                                 filename_to_remove, (double)avail, (double)min_avail_space_percent);
+            hal.scheduler->expect_delay_ms(2000);
             if (unlink(filename_to_remove) == -1) {
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
@@ -389,6 +404,7 @@ void DataFlash_File::Prep_MinSpace()
             } else {
                 free(filename_to_remove);
             }
+            hal.scheduler->expect_delay_ms(0);
         }
         log_to_remove++;
         if (log_to_remove > MAX_LOG_FILES) {
@@ -502,7 +518,9 @@ void DataFlash_File::EraseAll()
         if (fname == nullptr) {
             break;
         }
+        hal.scheduler->expect_delay_ms(3000);
         unlink(fname);
+        hal.scheduler->expect_delay_ms(0);
         free(fname);
     }
     char *fname = _lastlog_file_name();
@@ -596,7 +614,9 @@ uint16_t DataFlash_File::find_last_log()
     if (fname == nullptr) {
         return ret;
     }
+    hal.scheduler->expect_delay_ms(3000);
     int fd = open(fname, O_RDONLY|O_CLOEXEC);
+    hal.scheduler->expect_delay_ms(0);
     free(fname);
     if (fd != -1) {
         char buf[10];
@@ -629,11 +649,14 @@ uint32_t DataFlash_File::_get_log_size(const uint16_t log_num) const
         write_fd_semaphore->give();
     }
     struct stat st;
+    hal.scheduler->expect_delay_ms(3000);
     if (::stat(fname, &st) != 0) {
         printf("Unable to fetch Log File Size: %s\n", strerror(errno));
         free(fname);
+        hal.scheduler->expect_delay_ms(0);
         return 0;
     }
+    hal.scheduler->expect_delay_ms(0);
     free(fname);
     return st.st_size;
 }
@@ -658,11 +681,14 @@ uint32_t DataFlash_File::_get_log_time(const uint16_t log_num) const
         write_fd_semaphore->give();
     }
     struct stat st;
+    hal.scheduler->expect_delay_ms(3000);
     if (::stat(fname, &st) != 0) {
         free(fname);
+        hal.scheduler->expect_delay_ms(0);
         return 0;
     }
     free(fname);
+    hal.scheduler->expect_delay_ms(0);
     return st.st_mtime;
 }
 
@@ -730,7 +756,9 @@ int16_t DataFlash_File::get_log_data(const uint16_t list_entry, const uint16_t p
             return -1;
         }
         stop_logging();
+        hal.scheduler->expect_delay_ms(3000);
         _read_fd = ::open(fname, O_RDONLY|O_CLOEXEC);
+        hal.scheduler->expect_delay_ms(0);
         if (_read_fd == -1) {
             _open_error = true;
             int saved_errno = errno;
@@ -906,12 +934,14 @@ uint16_t DataFlash_File::start_new_log(void)
         write_fd_semaphore->give();
         return 0xFFFF;
     }
+    hal.scheduler->expect_delay_ms(3000);
 #if HAL_OS_POSIX_IO
     _write_fd = ::open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
 #else
     //TODO add support for mode flags
     _write_fd = ::open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
 #endif
+    hal.scheduler->expect_delay_ms(0);
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
@@ -935,11 +965,13 @@ uint16_t DataFlash_File::start_new_log(void)
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write
+    hal.scheduler->expect_delay_ms(3000);
 #if HAL_OS_POSIX_IO
     int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
 #else
     int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC);
 #endif
+    hal.scheduler->expect_delay_ms(0);
     free(fname);
     if (fd == -1) {
         _open_error = true;

@@ -153,7 +153,7 @@ bool AP_Baro_MS56XX::_init()
 /**
  * MS56XX crc4 method from datasheet for 16 bytes (8 short values)
  */
-static uint16_t crc4(uint16_t *data)
+uint16_t AP_Baro_MS56XX::crc4(uint16_t *data)
 {
     uint16_t n_rem = 0;
     uint8_t n_bit;
@@ -291,9 +291,10 @@ void AP_Baro_MS56XX::_timer(void)
     }
 
     /* if we had a failed read we are all done */
-    if (adc_val == 0) {
+    if (adc_val == 0 || adc_val == 0xFFFFFF) {
         // a failed read can mean the next returned value will be
-        // corrupt, we must discard it
+        // corrupt, we must discard it. This copes with MISO being
+        // pulled either high or low
         _discard_next = true;
         return;
     }

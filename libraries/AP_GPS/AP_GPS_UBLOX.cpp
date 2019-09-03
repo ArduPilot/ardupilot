@@ -73,13 +73,26 @@ AP_GPS_UBLOX::_request_next_config(void)
         return;
     }
 
-   Debug("Unconfigured messages: %d Current message: %d\n", _unconfigured_messages, _next_message);
+    if (_unconfigured_messages == CONFIG_RATE_SOL && havePvtMsg) {
+        /*
+          we don't need SOL if we have PVT and TIMEGPS. This is needed
+          as F9P doesn't support the SOL message
+         */
+        _unconfigured_messages &= ~CONFIG_RATE_SOL;
+    }
+
+    Debug("Unconfigured messages: 0x%x Current message: %u\n", (unsigned)_unconfigured_messages, (unsigned)_next_message);
 
    // check AP_GPS_UBLOX.h for the enum that controls the order.
    // This switch statement isn't maintained against the enum in order to reduce code churn
     switch (_next_message++) {
     case STEP_PVT:
         if(!_request_message_rate(CLASS_NAV, MSG_PVT)) {
+            _next_message--;
+        }
+        break;
+    case STEP_TIMEGPS:
+        if(!_request_message_rate(CLASS_NAV, MSG_TIMEGPS)) {
             _next_message--;
         }
         break;
@@ -217,10 +230,11 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             }
             break;
         case MSG_SOL:
-            if(rate == RATE_SOL) {
+            desired_rate = havePvtMsg ? 0 : RATE_SOL;
+            if(rate == desired_rate) {
                 _unconfigured_messages &= ~CONFIG_RATE_SOL;
             } else {
-                _configure_message_rate(msg_class, msg_id, RATE_SOL);
+                _configure_message_rate(msg_class, msg_id, desired_rate);
                 _unconfigured_messages |= CONFIG_RATE_SOL;
                 _cfg_needs_save = true;
             }
@@ -231,6 +245,15 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             } else {
                 _configure_message_rate(msg_class, msg_id, RATE_PVT);
                 _unconfigured_messages |= CONFIG_RATE_PVT;
+                _cfg_needs_save = true;
+            }
+            break;
+        case MSG_TIMEGPS:
+            if(rate == RATE_TIMEGPS) {
+                _unconfigured_messages &= ~CONFIG_RATE_TIMEGPS;
+            } else {
+                _configure_message_rate(msg_class, msg_id, RATE_TIMEGPS);
+                _unconfigured_messages |= CONFIG_RATE_TIMEGPS;
                 _cfg_needs_save = true;
             }
             break;
@@ -804,6 +827,11 @@ AP_GPS_UBLOX::_parse_gps(void)
                                              state.instance + 1,
                                              _version.hwVersion,
                                              _version.swVersion);
+            // check for F9. The F9 does not respond to SVINFO, so we need to use MON_VER
+            // for hardware generation
+            if (strncmp(_version.hwVersion, "00190000", 8) == 0) {
+                _hardware_generation = UBLOX_F9;
+            }
             break;
         default:
             unexpected_message();
@@ -1016,6 +1044,12 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.speed_accuracy = 0;
         next_fix = state.status;
 #endif
+        break;
+    case MSG_TIMEGPS:
+        Debug("MSG_TIMEGPS");
+        if (_buffer.timegps.valid & UBX_TIMEGPS_VALID_WEEK_MASK) {
+            state.time_week = _buffer.timegps.week;
+        }
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
@@ -1278,8 +1312,8 @@ static const char *reasons[] = {"navigation rate",
                                 "navigation settings",
                                 "GNSS settings",
                                 "SBAS settings",
-                                "PVT rate"};
-
+                                "PVT rate",
+                                "TIMEGPS rate"};
 
 void
 AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {
@@ -1312,6 +1346,11 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
     case UBLOX_7:
     case UBLOX_M8:
         // based on flight logs the 7 and 8 series seem to produce about 120ms lag
+        lag_sec = 0.12f;
+        break;
+    case UBLOX_F9:
+        // F9 lag not verified yet from flight log, but likely to be at least
+        // as good as M8
         lag_sec = 0.12f;
         break;
     };
