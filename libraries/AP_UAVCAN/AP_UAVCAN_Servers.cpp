@@ -77,7 +77,6 @@ public:
         }
         // force safety on
         hal.rcout->force_safety_on();
-        hal.rcout->force_safety_no_wait();
 
         // flush pending parameter writes
         AP_Param::flush();
