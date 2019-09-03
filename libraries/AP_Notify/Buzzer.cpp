@@ -97,6 +97,16 @@ void Buzzer::update_pattern_to_play()
         return;
     }
 
+    // check if radio failsafe status has changed
+    if (_flags.failsafe_radio != AP_Notify::flags.failsafe_radio) {
+        _flags.failsafe_radio = AP_Notify::flags.failsafe_radio;
+        // play beeps to indicate radio status (if init completed)
+        if (_flags.initialise_done) {
+            play_pattern(_flags.failsafe_radio ? RADIOLOST_BUZZ : RADIOBACK_BUZZ);
+            return;
+        }
+    }
+
     // check if armed status has changed
     if (_flags.armed != AP_Notify::flags.armed) {
         _flags.armed = AP_Notify::flags.armed;
