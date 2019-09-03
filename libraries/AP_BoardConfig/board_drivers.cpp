@@ -37,7 +37,6 @@ void AP_BoardConfig::board_init_safety()
     }
     if (force_safety_off) {
         hal.rcout->force_safety_off();
-        hal.rcout->force_safety_no_wait();
         // wait until safety has been turned off
         uint8_t count = 20;
         while (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED && count--) {
