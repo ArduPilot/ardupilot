@@ -4,6 +4,7 @@
 #include <math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Notify/AP_Notify.h>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -297,6 +298,8 @@ void MMLPlayer::next_action()
 
     float note_frequency = 880.0f * expf(logf(2.0f) * ((int)note - 46) / 12.0f);
     float note_volume = _volume/255.0f;
+    note_volume *= AP::notify().get_buzz_volume() * 0.01;
+    note_volume = constrain_float(note_volume, 0, 1);
 
     note_frequency = constrain_float(note_frequency, 10, 22000);
 
