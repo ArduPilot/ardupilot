@@ -34,8 +34,8 @@ public:
     void set_save_chek_messages(bool _save_chek_messages) { save_chek_messages = _save_chek_messages; }
 
     uint64_t last_timestamp_us(void) const { return last_timestamp_usec; }
-    virtual bool handle_log_format_msg(const struct log_Format &f);
-    virtual bool handle_msg(const struct log_Format &f, uint8_t *msg);
+    bool handle_log_format_msg(const struct log_Format &f) override;
+    bool handle_msg(const struct log_Format &f, uint8_t *msg) override;
 
     static bool in_list(const char *type, const char *list[]);
 
