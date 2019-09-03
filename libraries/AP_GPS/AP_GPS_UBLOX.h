@@ -281,6 +281,30 @@ private:
         uint32_t headVeh;
         uint8_t reserved2[4]; 
     };
+    struct PACKED ubx_nav_relposned {
+        uint8_t version;
+        uint8_t reserved1;
+        uint16_t refStationId;
+        uint32_t iTOW;
+        int32_t relPosN;
+        int32_t relPosE;
+        int32_t relPosD;
+        int32_t relPosLength;
+        int32_t relPosHeading;
+        uint8_t reserved2[4];
+        int8_t relPosHPN;
+        int8_t relPosHPE;
+        int8_t relPosHPD;
+        int8_t relPosHPLength;
+        uint32_t accN;
+        uint32_t accE;
+        uint32_t accD;
+        uint32_t accLength;
+        uint32_t accHeading;
+        uint8_t reserved3[4];
+        uint32_t flags;
+    };
+
     struct PACKED ubx_nav_velned {
         uint32_t itow;                                  // GPS msToW
         int32_t ned_north;
@@ -444,12 +468,25 @@ private:
 #endif
         ubx_cfg_sbas sbas;
         ubx_nav_svinfo_header svinfo_header;
+        ubx_nav_relposned relposned;
 #if UBLOX_RXM_RAW_LOGGING
         ubx_rxm_raw rxm_raw;
         ubx_rxm_rawx rxm_rawx;
 #endif
         ubx_ack_ack ack;
     } _buffer;
+
+    enum class RELPOSNED {
+        gnssFixOK          = 1U << 0,
+        diffSoln           = 1U << 1,
+        relPosValid        = 1U << 2,
+        carrSoln           = 1U << 3,
+        isMoving           = 1U << 5,
+        refPosMiss         = 1U << 6,
+        refObsMiss         = 1U << 7,
+        relPosHeadingValid = 1U << 8,
+        relPosNormalized   = 1U << 9
+    };
 
     enum ubs_protocol_bytes {
         PREAMBLE1 = 0xb5,
@@ -467,6 +504,7 @@ private:
         MSG_SOL = 0x6,
         MSG_PVT = 0x7,
         MSG_TIMEGPS = 0x20,
+        MSG_RELPOSNED = 0x3c,
         MSG_VELNED = 0x12,
         MSG_CFG_CFG = 0x09,
         MSG_CFG_RATE = 0x08,
