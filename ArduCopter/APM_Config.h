@@ -45,7 +45,6 @@
 //#define MODE_SPORT_ENABLED    DISABLED            // disable sport mode support
 //#define MODE_THROW_ENABLED    DISABLED            // disable throw mode support
 //#define MODE_ZIGZAG_ENABLED   DISABLED            // disable zigzag mode support
-//#define DEVO_TELEM_ENABLED    DISABLED            // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
 //#define OSD_ENABLED           DISABLED            // disable on-screen-display support
 
 
