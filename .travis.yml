@@ -32,6 +32,7 @@ cache:
     - $HOME/opt
 
 before_install:
+  - echo 0 | sudo dd of=/proc/sys/kernel/yama/ptrace_scope
   - Tools/scripts/configure-ci.sh
   - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then export CI_CRON_JOB=1 ; fi
 
