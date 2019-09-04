@@ -58,6 +58,9 @@ function run_autotest() {
     if [ $NAME == "Rover" ]; then
         w="$w --enable-math-check-indexes"
     fi
+    if [ "x$CI_BUILD_DEBUG" != "x" ]; then
+        w="$w --debug"
+    fi
     Tools/autotest/autotest.py --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
