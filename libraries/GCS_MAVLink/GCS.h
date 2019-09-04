@@ -761,8 +761,10 @@ public:
     // frsky backend
     AP_Frsky_Telem *frsky;
 
+#if !HAL_MINIMIZE_FEATURES
     // Devo backend
     AP_DEVO_Telem devo_telemetry;
+#endif
 
     // install an alternative protocol handler
     bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
