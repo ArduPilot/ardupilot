@@ -458,7 +458,7 @@ bool AP_AHRS_DCM::use_compass(void)
     // degrees and the estimated wind speed is less than 80% of the
     // ground speed, then switch to GPS navigation. This will help
     // prevent flyaways with very bad compass offsets
-    const int32_t error = abs(wrap_180_cd(yaw_sensor - AP::gps().ground_course_cd()));
+    const int32_t error = labs(wrap_180_cd(yaw_sensor - AP::gps().ground_course_cd()));
     if (error > 4500 && _wind.length() < AP::gps().ground_speed()*0.8f) {
         if (AP_HAL::millis() - _last_consistent_heading > 2000) {
             // start using the GPS for heading if the compass has been
