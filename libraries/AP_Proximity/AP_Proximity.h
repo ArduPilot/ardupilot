@@ -71,7 +71,7 @@ public:
     void update(void);
 
     // set pointer to rangefinder object
-    void set_rangefinder(const RangeFinder *rangefinder) { _rangefinder = rangefinder; }
+    void set_rangefinder(const class RangeFinder *rangefinder) { _rangefinder = rangefinder; }
     const RangeFinder *get_rangefinder() const { return _rangefinder; }
 
     // return sensor orientation and yaw correction
