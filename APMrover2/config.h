@@ -138,10 +138,6 @@
  # define STATS_ENABLED ENABLED
 #endif
 
-#ifndef DEVO_TELEM_ENABLED
- # define DEVO_TELEM_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
 #ifndef OSD_ENABLED
  #define OSD_ENABLED DISABLED
 #endif
