@@ -133,7 +133,6 @@ public:
 private:
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
     AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
-    bool _initialised_uart;
     uint16_t _crc;
 
     uint32_t check_sensor_status_timer;
@@ -203,7 +202,7 @@ private:
     // main transmission function when protocol is FrSky D
     void send_D(void);
     // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
-    void tick(void);
+    void loop(void);
 
     // methods related to the nuts-and-bolts of sending data
     void calc_crc(uint8_t byte);
