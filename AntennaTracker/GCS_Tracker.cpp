@@ -64,5 +64,7 @@ void GCS_Tracker::update_vehicle_sensor_status_flags()
     }
 }
 
+// avoid building/linking LTM:
+void AP_LTM_Telem::init() {};
 // avoid building/linking Devo:
 void AP_DEVO_Telem::init() {};
