@@ -127,6 +127,9 @@ void NavEKF3_core::controlMagYawReset()
                 gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
             }
 
+            // prevent reset of variances in ConstrainVariances()
+            inhibitMagStates = false;
+
             // update the yaw reset completed status
             recordYawReset();
 
