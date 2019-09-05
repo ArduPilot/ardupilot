@@ -40,6 +40,5 @@ public:
 
 private:
     SITL::SITL *sitl;
-    float distance_maximum;
 };
 #endif // CONFIG_HAL_BOARD
