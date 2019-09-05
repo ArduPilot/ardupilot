@@ -178,6 +178,7 @@ class Board:
             '-Wno-expansion-to-defined',
             '-Werror=attributes',
             '-Werror=format-security',
+            '-Werror=format-extra-args',
             '-Werror=enum-compare',
             '-Werror=array-bounds',
             '-Werror=uninitialized',
