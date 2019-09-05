@@ -107,34 +107,24 @@ bool AP_RangeFinder_LightWareI2C::write_bytes(uint8_t *write_buf_u8, uint32_t le
 /**
  * Disables "address tagging" in the sf20 response packets.
  */
-bool AP_RangeFinder_LightWareI2C::sf20_disable_address_tagging()
+void AP_RangeFinder_LightWareI2C::sf20_disable_address_tagging()
 {
-    if (!sf20_send_and_expect("#CT,0\r\n", "ct:0")) {
-        return false;
-    }
-    return true;
+    sf20_send_and_expect("#CT,0\r\n", "ct:0");
 }
 
-bool AP_RangeFinder_LightWareI2C::sf20_product_name_check()
-{
-    if (!sf20_send_and_expect("?P\r\n", "p:LW20,")) {
-        return false;
-    }
-    return true;
-}
-
+/*
+  send a native command and check for an expected reply
+ */
 bool AP_RangeFinder_LightWareI2C::sf20_send_and_expect(const char* send_msg, const char* expected_reply)
 {
-    uint8_t rx_bytes[lx20_max_reply_len_bytes + 1];
-    size_t expected_reply_len = strlen(expected_reply);
+    const size_t expected_reply_len = strlen(expected_reply);
+    uint8_t rx_bytes[expected_reply_len + 1];
+    memset(rx_bytes, 0, sizeof(rx_bytes));
 
     if ((expected_reply_len > lx20_max_reply_len_bytes) ||
         (expected_reply_len < 2)) {
         return false;
     }
-
-    rx_bytes[expected_reply_len] = 0;
-    rx_bytes[2] = 0;
 
     if (!write_bytes((uint8_t*)send_msg,
                      strlen(send_msg))) {
@@ -150,11 +140,48 @@ bool AP_RangeFinder_LightWareI2C::sf20_send_and_expect(const char* send_msg, con
         return false;
     }
 
-    if (!_dev->read(rx_bytes, expected_reply_len)) {
-        return false;
+    for (uint8_t i=0; i<10; i++) {
+        if (_dev->read(rx_bytes, expected_reply_len)) {
+            break;
+        }
+        // give a bit of time for the remaining bytes to be available
+        hal.scheduler->delay(1);
     }
 
     return memcmp(rx_bytes, expected_reply, expected_reply_len) == 0;
+}
+
+/*
+  send a native command and fill a reply into a buffer. Used for
+  version string
+ */
+void AP_RangeFinder_LightWareI2C::sf20_get_version(const char* send_msg, const char *reply_prefix, char reply[15])
+{
+    const size_t expected_reply_len = 16;
+    uint8_t rx_bytes[expected_reply_len + 1];
+    memset(rx_bytes, 0, sizeof(rx_bytes));
+
+    if (!write_bytes((uint8_t*)send_msg, strlen(send_msg))) {
+        return;
+    }
+
+    if (!sf20_wait_on_reply(rx_bytes)) {
+        return;
+    }
+
+    if ((rx_bytes[0] != uint8_t(reply_prefix[0])) ||
+        (rx_bytes[1] != uint8_t(reply_prefix[1])) ) {
+        return;
+    }
+
+    for (uint8_t i=0; i<10; i++) {
+        if (_dev->read(rx_bytes, expected_reply_len)) {
+            break;
+        }
+        // give a bit of time for the remaining bytes to be available
+        hal.scheduler->delay(1);
+    }
+    memcpy(reply, &rx_bytes[2], 14);
 }
 
 /* Driver first attempts to initialize the sf20.
@@ -212,21 +239,21 @@ bool AP_RangeFinder_LightWareI2C::legacy_init()
  */
 bool AP_RangeFinder_LightWareI2C::sf20_init()
 {
+    // version strings for reporting
+    char version[15] {};
+
+    sf20_get_version("?P\r\n", "p:", version);
+
+    if (version[0]) {
+        hal.console->printf("SF20 Lidar version %s\n", version);
+    }
+
     // Makes sure that "address tagging" is turned off.
     // Address tagging starts every response with "0x66".
     // Turns off Address Tagging just in case it was previously left on in the non-volatile configuration.
-    if (!sf20_disable_address_tagging()) {
-        return false;
-    }
-
-    if (!sf20_product_name_check()) {
-        return false;
-    }
-
-    // Disconnect the servo.
-    if (!sf20_send_and_expect("#SC,0\r\n", "sc:0")) {
-        return false;
-    }
+    sf20_disable_address_tagging();
+    // Disconnect the servo (if applicable)
+    sf20_send_and_expect("#SC,0\r\n", "sc:0");
 
     // Change the power consumption:
     // 0 = power off
@@ -254,13 +281,15 @@ bool AP_RangeFinder_LightWareI2C::sf20_init()
     }
 #endif
 
-    /* Sets the Laser Encoding to a fixed pattern to assess how well it improves operation with interference from
-     * the Precision Landing infrared beacon.
-     */
-    // Changes the laser encoding pattern: 3 (Random A) [0..4].
+#if 0
+    /*
+      this can be used to change the laser encoding pattern
+      Changes the laser encoding pattern: 3 (Random A) [0..4].
+    */
     if (!sf20_send_and_expect("#LE,3\r\n", "le:3")) {
         return false;
     }
+#endif
 
     // Sets datum offset [-10.00 ... 10.00].
     if (!sf20_send_and_expect("#LO,0.00\r\n", "lo:0.00")) {
