@@ -22,6 +22,7 @@ def build(bld):
             'AP_SmartRTL',
             'AC_Fence',
             'AC_AttitudeControl',
+            'AP_LTM_Telem',
             'AP_Devo_Telem',
             'AP_Follow',
             'AP_OSD',
