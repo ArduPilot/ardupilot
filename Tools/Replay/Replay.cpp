@@ -976,6 +976,8 @@ AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
 
+// avoid building/linking LTM:
+void AP_LTM_Telem::init() {};
 // avoid building/linking Devo:
 void AP_DEVO_Telem::init() {};
 
