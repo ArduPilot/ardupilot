@@ -31,6 +31,7 @@ class AP_WheelEncoder
 public:
     friend class AP_WheelEncoder_Backend;
     friend class AP_WheelEncoder_Quadrature;
+    friend class AP_WheelEncoder_SITL_Quadrature;
 
     AP_WheelEncoder(void);
 
@@ -40,8 +41,9 @@ public:
 
     // WheelEncoder driver types
     enum WheelEncoder_Type : uint8_t {
-        WheelEncoder_TYPE_NONE          = 0,
-        WheelEncoder_TYPE_QUADRATURE    = 1
+        WheelEncoder_TYPE_NONE             =   0,
+        WheelEncoder_TYPE_QUADRATURE       =   1,
+        WheelEncoder_TYPE_SITL_QUADRATURE  =  10,
     };
 
     // The WheelEncoder_State structure is filled in by the backend driver
