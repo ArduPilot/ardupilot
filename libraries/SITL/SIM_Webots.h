@@ -73,7 +73,6 @@ private:
     uint32_t connect_counter;
 
     double initial_time_s;
-    double time_diff;
     double extrapolated_s;
     double average_frame_time_s;
 
