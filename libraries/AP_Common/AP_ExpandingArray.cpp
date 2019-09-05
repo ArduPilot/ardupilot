@@ -14,6 +14,9 @@
  */
 
 #include "AP_ExpandingArray.h"
+#include <AP_HAL/AP_HAL.h>
+
+extern const AP_HAL::HAL& hal;
 
 AP_ExpandingArrayGeneric::~AP_ExpandingArrayGeneric(void)
 {
@@ -31,6 +34,10 @@ bool AP_ExpandingArrayGeneric::expand(uint16_t num_chunks)
     // expand chunk_ptrs array if necessary
     if (chunk_count + num_chunks >= chunk_count_max) {
         uint16_t chunk_ptr_size = chunk_count + num_chunks + chunk_ptr_increment;
+        if (hal.util->available_memory() < 100U + (chunk_ptr_size * sizeof(chunk_ptr_t))) {
+            // fail if reallocating would leave less than 100 bytes of memory free
+            return false;
+        }
         chunk_ptr_t *chunk_ptrs_new = (chunk_ptr_t*)realloc(chunk_ptrs, chunk_ptr_size * sizeof(chunk_ptr_t));
         if (chunk_ptrs_new == nullptr) {
             return false;
@@ -43,6 +50,10 @@ bool AP_ExpandingArrayGeneric::expand(uint16_t num_chunks)
 
     // allocate new chunks
     for (uint16_t i = 0; i < num_chunks; i++) {
+        if (hal.util->available_memory() < 100U + (chunk_size * elem_size)) {
+            // fail if reallocating would leave less than 100 bytes of memory free
+            return false;
+        }
         uint8_t *new_chunk = (uint8_t *)calloc(chunk_size, elem_size);
         if (new_chunk == nullptr) {
             // failed to allocate new chunk
