@@ -26,6 +26,7 @@ def build(bld):
             'AP_Beacon',
             'PID',
             'AP_Soaring',
+            'AP_LTM_Telem',
             'AP_Devo_Telem',
             'AP_OSD',
             'AC_AutoTune',
