@@ -708,15 +708,18 @@ void Compass::_probe_external_i2c_compasses(void)
         } else {
             default_rotation = ROTATION_PITCH_180;
         }
+        // probe all 4 possible addresses
+        const uint8_t ist8310_addr[] = { 0x0C, 0x0D, 0x0E, 0x0F };
 
-        FOREACH_I2C_EXTERNAL(i) {
-            ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8310_I2C_ADDR),
-                                                                  true, default_rotation));
-        }
-        
-        FOREACH_I2C_INTERNAL(i) {
-            ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8310_I2C_ADDR),
-                                                                  all_external, default_rotation));
+        for (uint8_t a=0; a<ARRAY_SIZE(ist8310_addr); a++) {
+            FOREACH_I2C_EXTERNAL(i) {
+                ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, ist8310_addr[a]),
+                                                                      true, default_rotation));
+            }
+            FOREACH_I2C_INTERNAL(i) {
+                ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, ist8310_addr[a]),
+                                                                      all_external, default_rotation));
+            }
         }
     }
 
