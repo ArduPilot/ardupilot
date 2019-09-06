@@ -349,12 +349,12 @@ class AutoTest(ABC):
         self.mavproxy.send("reboot\n")
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
-    def detect_and_handle_reboot(self, old_bootcount, required_bootcount=None):
+    def detect_and_handle_reboot(self, old_bootcount, required_bootcount=None, timeout=10):
         tstart = time.time()
         if required_bootcount is None:
             required_bootcount = old_bootcount + 1
         while True:
-            if time.time() - tstart > 10:
+            if time.time() - tstart > timeout:
                 raise AutoTestTimeoutException("Did not detect reboot")
             try:
                 current_bootcount = self.get_parameter('STAT_BOOTCNT', timeout=1)
