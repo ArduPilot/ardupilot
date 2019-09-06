@@ -1383,8 +1383,6 @@ void Copter::convert_tradheli_parameters(void)
                         AP_Param::set_and_save_by_name("H_SW_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);            
                     }
                 }
-            } else {
-                // none exist so this is either an upgrade or new install and we do nothing
             }
         }
     } else if (g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_DUAL) {
@@ -1408,28 +1406,52 @@ void Copter::convert_tradheli_parameters(void)
             AP_Param::convert_old_parameter(&dualheli_conversion_info[i], 1.0f);
         }
 
-        // convert swashplate 1 to known swash type for setups that match
-        AP_Int16 *swash_pos_1, *swash_pos_2, *swash_pos_3, *swash_phang, *swash_type;
-        enum ap_var_type ptype;
-        swash_pos_1 = (AP_Int16 *)AP_Param::find("H_SW1_H3_SV1_POS", &ptype);
-        swash_pos_2 = (AP_Int16 *)AP_Param::find("H_SW1_H3_SV2_POS", &ptype);
-        swash_pos_3 = (AP_Int16 *)AP_Param::find("H_SW1_H3_SV3_POS", &ptype);
-        swash_phang = (AP_Int16 *)AP_Param::find("H_SW1_H3_PHANG", &ptype);
-        swash_type = (AP_Int16 *)AP_Param::find("H_SW1_TYPE", &ptype);
-        if (swash_pos_1->get() == -60 && swash_pos_2->get() == 60 && swash_pos_3->get() == 180 && swash_phang->get() == 0 && swash_type->get() == 0) {
-            AP_Param::set_default_by_name("H_SW1_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3_120);
-        }
 
-        // convert swashplate 2 to known swash type for setups that match
-        swash_pos_1 = (AP_Int16 *)AP_Param::find("H_SW2_H3_SV1_POS", &ptype);
-        swash_pos_2 = (AP_Int16 *)AP_Param::find("H_SW2_H3_SV2_POS", &ptype);
-        swash_pos_3 = (AP_Int16 *)AP_Param::find("H_SW2_H3_SV3_POS", &ptype);
-        swash_phang = (AP_Int16 *)AP_Param::find("H_SW2_H3_PHANG", &ptype);
-        swash_type = (AP_Int16 *)AP_Param::find("H_SW2_TYPE", &ptype);
-        if (swash_pos_1->get() == -60 && swash_pos_2->get() == 60 && swash_pos_3->get() == 180 && swash_phang->get() == 0 && swash_type->get() == 0) {
-            AP_Param::set_default_by_name("H_SW2_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3_120);
-        }
+        // convert to known swash type for setups that match
+        AP_Int16 swash1_pos_1, swash1_pos_2, swash1_pos_3, swash1_phang, swash2_pos_1, swash2_pos_2, swash2_pos_3, swash2_phang; 
+        bool swash1_pos1_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[0], &swash1_pos_1);
+        bool swash1_pos2_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[1], &swash1_pos_2);
+        bool swash1_pos3_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[2], &swash1_pos_3);
+        bool swash1_phang_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[6], &swash1_phang);
+        bool swash2_pos1_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[3], &swash2_pos_1);
+        bool swash2_pos2_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[4], &swash2_pos_2);
+        bool swash2_pos3_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[5], &swash2_pos_3);
+        bool swash2_phang_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[7], &swash2_phang);
 
+        // SWASH 1
+        // old swash type is not in eeprom and thus type is default value of generic swash
+        if (swash1_pos1_exist || swash1_pos2_exist || swash1_pos3_exist || swash1_phang_exist) {
+            // if any params exist with the generic swash then the upgraded swash type must be generic
+            // find the new variable in the variable structures
+            enum ap_var_type ptype;
+            AP_Param *ap2;
+            ap2 = AP_Param::find("H_SW1_TYPE", &ptype);
+            // make sure the pointer is valid
+            if (ap2 != nullptr) {
+                // see if we can load it from EEPROM
+                if (!ap2->configured_in_storage()) {
+                    // the new parameter is not in storage so set generic swash
+                    AP_Param::set_and_save_by_name("H_SW1_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);            
+                }
+            }
+        }
+        //SWASH 2
+        // old swash type is not in eeprom and thus type is default value of generic swash
+        if (swash2_pos1_exist || swash2_pos2_exist || swash2_pos3_exist || swash2_phang_exist) {
+            // if any params exist with the generic swash then the upgraded swash type must be generic
+            // find the new variable in the variable structures
+            enum ap_var_type ptype;
+            AP_Param *ap2;
+            ap2 = AP_Param::find("H_SW2_TYPE", &ptype);
+            // make sure the pointer is valid
+            if (ap2 != nullptr) {
+                // see if we can load it from EEPROM
+                if (!ap2->configured_in_storage()) {
+                    // the new parameter is not in storage so set generic swash
+                    AP_Param::set_and_save_by_name("H_SW2_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);            
+                }
+            }
+        }
     }
     const AP_Param::ConversionInfo allheli_conversion_info[] = {
         { Parameters::k_param_motors, 1280, AP_PARAM_INT16, "H_RSC_CRV_000" },
