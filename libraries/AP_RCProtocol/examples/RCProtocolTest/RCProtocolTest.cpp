@@ -43,7 +43,8 @@ static bool check_result(const char *name, bool bytes, const uint16_t *values, u
         printf("%s: No new input\n", label);
         return false;
     }
-    if (strcmp(rcprot->protocol_name(), name) != 0) {
+    const char *pname = rcprot->protocol_name();
+    if (strncmp(pname, name, strlen(pname)) != 0) {
         printf("%s: wrong protocol detected %s\n", label, rcprot->protocol_name());
         return false;
     }
@@ -207,15 +208,21 @@ void loop()
                                   0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B, 0x60, 0x3B,
                                   0x60, 0x17, 0x02};
 
+    const uint8_t sumd_bytes3[] = {0xA8, 0x01, 0x10, 0x1F, 0x40, 0x2E, 0xE8, 0x2E, 0xE0, 0x2E, 0xE0, 0x2E, 0xE0,
+                                   0x2E, 0xE0, 0x2E, 0xE0, 0x22, 0x60, 0x2E, 0xE0, 0x2E, 0xE0, 0x2E, 0xE0, 0x2E,
+                                   0xE0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3B, 0x20, 0x4F, 0x10};
+
     const uint16_t sumd_output[] = {1597, 1076, 1514, 1514, 1100, 1100, 1500, 1500};
     const uint16_t sumd_output2[] = {1516, 1500, 1100, 1500, 1900, 1900, 1900, 1900, 1900, 1900, 1900, 1900};
-    
+    const uint16_t sumd_output3[] = {1501, 1500, 1000, 1500, 1500, 1500, 1500, 1100, 1500, 1500, 1500, 1500, 0, 0, 0, 1892};
+
     const uint8_t ibus_bytes[] = {0x20, 0x40, 0xdc, 0x05, 0xdc, 0x05, 0xe8, 0x03, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0x47, 0xf3};
     const uint16_t ibus_output[] = {1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
 
     test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output), 1);
     test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output), 1);
-    test_protocol("SUMD", 115200, sumd_bytes2, sizeof(sumd_bytes2), sumd_output2, ARRAY_SIZE(sumd_output2), 1);
+    test_protocol("SUMD2", 115200, sumd_bytes2, sizeof(sumd_bytes2), sumd_output2, ARRAY_SIZE(sumd_output2), 1);
+    test_protocol("SUMD3", 115200, sumd_bytes3, sizeof(sumd_bytes3), sumd_output3, ARRAY_SIZE(sumd_output3), 1);
     test_protocol("IBUS", 115200, ibus_bytes, sizeof(ibus_bytes), ibus_output, ARRAY_SIZE(ibus_output), 1);
 
     // SBUS needs 3 repeats to pass the RCProtocol 3 frames test
