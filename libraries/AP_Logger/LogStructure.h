@@ -1169,6 +1169,7 @@ struct PACKED log_OADijkstra {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t state;
+    uint8_t error_id;
     uint8_t curr_point;
     uint8_t tot_points;
     int32_t final_lat;
@@ -1395,7 +1396,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
       "OABR","QBHHfLLLL","TimeUS,Active,DesYaw,Yaw,Mar,DLat,DLng,OALat,OALng", "sbddmDUDU", "F----GGGG" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
-      "OADJ","QBBBLLLL","TimeUS,State,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbDUDU", "F---GGGG" }
+      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
