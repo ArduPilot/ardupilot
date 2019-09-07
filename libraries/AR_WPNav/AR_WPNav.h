@@ -72,13 +72,9 @@ public:
     // settor to allow vehicle code to provide turn related param values to this library (should be updated regularly)
     void set_turn_params(float turn_max_g, float turn_radius, bool pivot_possible);
 
-    // set default overshoot (used for sailboats)
-    void set_default_overshoot(float overshoot);
-
     // accessors for parameter values
     float get_default_speed() const { return _speed_max; }
     float get_radius() const { return _radius; }
-    float get_overshoot() const { return _overshoot; }
     float get_pivot_rate() const { return _pivot_rate; }
 
     // calculate stopping location using current position and attitude controller provided maximum deceleration
