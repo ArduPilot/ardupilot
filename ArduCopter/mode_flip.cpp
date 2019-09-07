@@ -36,15 +36,15 @@
 bool ModeFlip::init(bool ignore_checks)
 {
     // only allow flip from ACRO, Stabilize, AltHold or Drift flight modes
-    if (copter.control_mode != ACRO &&
-        copter.control_mode != STABILIZE &&
-        copter.control_mode != ALT_HOLD &&
-        copter.control_mode != FLOWHOLD) {
+    if (copter.control_mode != Mode::Number::ACRO &&
+        copter.control_mode != Mode::Number::STABILIZE &&
+        copter.control_mode != Mode::Number::ALT_HOLD &&
+        copter.control_mode != Mode::Number::FLOWHOLD) {
         return false;
     }
 
     // if in acro or stabilize ensure throttle is above zero
-    if (copter.ap.throttle_zero && (copter.control_mode == ACRO || copter.control_mode == STABILIZE)) {
+    if (copter.ap.throttle_zero && (copter.control_mode == Mode::Number::ACRO || copter.control_mode == Mode::Number::STABILIZE)) {
         return false;
     }
 
@@ -194,7 +194,7 @@ void ModeFlip::run()
             // restore original flight mode
             if (!copter.set_mode(orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
                 // this should never happen but just in case
-                copter.set_mode(STABILIZE, MODE_REASON_UNKNOWN);
+                copter.set_mode(Mode::Number::STABILIZE, MODE_REASON_UNKNOWN);
             }
             // log successful completion
             Log_Write_Event(DATA_FLIP_END);
@@ -205,7 +205,7 @@ void ModeFlip::run()
         // restore original flight mode
         if (!copter.set_mode(orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
             // this should never happen but just in case
-            copter.set_mode(STABILIZE, MODE_REASON_UNKNOWN);
+            copter.set_mode(Mode::Number::STABILIZE, MODE_REASON_UNKNOWN);
         }
         // log abandoning flip
         AP::logger().Write_Error(LogErrorSubsystem::FLIP, LogErrorCode::FLIP_ABANDONED);
