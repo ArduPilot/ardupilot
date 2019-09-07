@@ -596,10 +596,6 @@ void NavEKF2::check_log_write(void)
         AP::logger().Write_Compass(imuSampleTime_us);
         logging.log_compass = false;
     }
-    if (logging.log_gps) {
-        AP::logger().Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
-        logging.log_gps = false;
-    }
     if (logging.log_baro) {
         AP::logger().Write_Baro(imuSampleTime_us);
         logging.log_baro = false;
