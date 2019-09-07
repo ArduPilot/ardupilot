@@ -80,6 +80,9 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
+    // return sailboat loiter radius
+    float get_loiter_radius() const {return loit_radius;}
+
 private:
 
     // true if motor is on to assist with slow tack
@@ -96,6 +99,8 @@ private:
     AP_Float sail_heel_angle_max;
     AP_Float sail_no_go;
     AP_Float sail_windspeed_min;
+    AP_Float xtrack_max;
+    AP_Float loit_radius;
 
     RC_Channel *channel_mainsail;   // rc input channel for controlling mainsail
     bool currently_tacking;         // true when sailboat is in the process of tacking to a new heading

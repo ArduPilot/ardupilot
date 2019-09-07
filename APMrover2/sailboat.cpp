@@ -86,6 +86,24 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("WNDSPD_MIN", 7, Sailboat, sail_windspeed_min, 0),
 
+    // @Param: XTRACK_MAX
+    // @DisplayName: Sailing vehicle max cross track error
+    // @Description: The sail boat will tack when it reaches this cross track error, defines a corridor of 2 times this value wide, 0 disables
+    // @Units: m
+    // @Range: 5 25
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("XTRACK_MAX", 8, Sailboat, xtrack_max, 10),
+
+    // @Param: LOIT_RADIUS
+    // @DisplayName: Loiter radius
+    // @Description: When in sailing modes the vehicle will keep moving within this loiter radius
+    // @Units: m
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("LOIT_RADIUS", 9, Sailboat, loit_radius, 5),
+
     AP_GROUPEND
 };
 
@@ -129,8 +147,6 @@ void Sailboat::init()
 
     if (tack_enabled()) {
         rover.g2.loit_type.set_default(1);
-        rover.g2.loit_radius.set_default(5);
-        rover.g2.wp_nav.set_default_overshoot(10);
     }
 
     // initialise motor state to USE_MOTOR_ASSIST
@@ -361,10 +377,10 @@ float Sailboat::calc_heading(float desired_heading_cd)
         tack_request_ms = 0;
     }
 
-    // trigger tack if cross track error larger than waypoint_overshoot parameter
-    // this effectively defines a 'corridor' of width 2*waypoint_overshoot that the boat will stay within
+    // trigger tack if cross track error larger than xtrack_max parameter
+    // this effectively defines a 'corridor' of width 2*xtrack_max that the boat will stay within
     const float cross_track_error = rover.g2.wp_nav.crosstrack_error();
-    if ((fabsf(cross_track_error) >= rover.g2.wp_nav.get_overshoot()) && !is_zero(rover.g2.wp_nav.get_overshoot()) && !should_tack && !currently_tacking) {
+    if ((fabsf(cross_track_error) >= xtrack_max) && !is_zero(xtrack_max) && !should_tack && !currently_tacking) {
         // make sure the new tack will reduce the cross track error
         // if were on starboard tack we are traveling towards the left hand boundary
         if (is_positive(cross_track_error) && (current_tack == AP_WindVane::Sailboat_Tack::TACK_STARBOARD)) {
