@@ -24,7 +24,7 @@ void Copter::heli_init()
 void Copter::check_dynamic_flight(void)
 {
     if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED ||
-        control_mode == LAND || (control_mode==RTL && mode_rtl.state() == RTL_Land) || (control_mode == AUTO && mode_auto.mode() == Auto_Land)) {
+        control_mode == Mode::Number::LAND || (control_mode==Mode::Number::RTL && mode_rtl.state() == RTL_Land) || (control_mode == Mode::Number::AUTO && mode_auto.mode() == Auto_Land)) {
         heli_dynamic_flight_counter = 0;
         heli_flags.dynamic_flight = false;
         return;
@@ -94,21 +94,21 @@ void Copter::update_heli_control_dynamics(void)
 void Copter::heli_update_landing_swash()
 {
     switch (control_mode) {
-        case ACRO:
-        case STABILIZE:
-        case DRIFT:
-        case SPORT:
+        case Mode::Number::ACRO:
+        case Mode::Number::STABILIZE:
+        case Mode::Number::DRIFT:
+        case Mode::Number::SPORT:
             // manual modes always uses full swash range
             motors->set_collective_for_landing(false);
             break;
 
-        case LAND:
+        case Mode::Number::LAND:
             // landing always uses limit swash range
             motors->set_collective_for_landing(true);
             break;
 
-        case RTL:
-        case SMART_RTL:
+        case Mode::Number::RTL:
+        case Mode::Number::SMART_RTL:
             if (mode_rtl.state() == RTL_Land) {
                 motors->set_collective_for_landing(true);
             }else{
@@ -116,7 +116,7 @@ void Copter::heli_update_landing_swash()
             }
             break;
 
-        case AUTO:
+        case Mode::Number::AUTO:
             if (mode_auto.mode() == Auto_Land) {
                 motors->set_collective_for_landing(true);
             }else{

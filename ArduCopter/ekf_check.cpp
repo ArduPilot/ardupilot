@@ -144,7 +144,7 @@ void Copter::failsafe_ekf_event()
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
 
     // sometimes LAND *does* require GPS so ensure we are in non-GPS land
-    if (control_mode == LAND && landing_with_GPS()) {
+    if (control_mode == Mode::Number::LAND && landing_with_GPS()) {
         mode_land.do_not_use_GPS();
         return;
     }
@@ -158,7 +158,7 @@ void Copter::failsafe_ekf_event()
     switch (g.fs_ekf_action) {
         case FS_EKF_ACTION_ALTHOLD:
             // AltHold
-            if (failsafe.radio || !set_mode(ALT_HOLD, MODE_REASON_EKF_FAILSAFE)) {
+            if (failsafe.radio || !set_mode(Mode::Number::ALT_HOLD, MODE_REASON_EKF_FAILSAFE)) {
                 set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
             }
             break;

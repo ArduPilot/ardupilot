@@ -56,6 +56,13 @@ void ModeAcro::run()
                                        copter.g.throttle_filt);
 }
 
+float ModeAcro::throttle_hover() const
+{
+    if (g2.acro_thr_mid > 0) {
+        return g2.acro_thr_mid;
+    }
+    return Mode::throttle_hover();
+}
 
 // get_pilot_desired_angle_rates - transform pilot's roll pitch and yaw input into a desired lean angle rates
 // returns desired angle rates in centi-degrees-per-second

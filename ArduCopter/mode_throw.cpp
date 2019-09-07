@@ -85,14 +85,14 @@ void ModeThrow::run()
         copter.set_auto_armed(true);
     } else if (stage == Throw_PosHold && throw_position_good()) {
         if (!nextmode_attempted) {
-            switch (g2.throw_nextmode) {
-                case AUTO:
-                case GUIDED:
-                case RTL:
-                case LAND:
-                case BRAKE:
-                case LOITER:
-                    set_mode((control_mode_t)g2.throw_nextmode.get(), MODE_REASON_THROW_COMPLETE);
+            switch ((Mode::Number)g2.throw_nextmode.get()) {
+                case Mode::Number::AUTO:
+                case Mode::Number::GUIDED:
+                case Mode::Number::RTL:
+                case Mode::Number::LAND:
+                case Mode::Number::BRAKE:
+                case Mode::Number::LOITER:
+                    set_mode((Mode::Number)g2.throw_nextmode.get(), MODE_REASON_THROW_COMPLETE);
                     break;
                 default:
                     // do nothing
