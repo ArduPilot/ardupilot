@@ -380,6 +380,7 @@ bool AP_AdvancedFailsafe::should_crash_vehicle(void)
     // _terminate may be set via parameters, or a mavlink command
     if (_terminate &&
         (_terminate_action == TERMINATE_ACTION_TERMINATE ||
+         _terminate_action == TERMINATE_ACTION_DISARM ||
          _terminate_action == TERMINATE_ACTION_LAND)) {
         // we are terminating
         return true;
@@ -409,7 +410,8 @@ bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reaso
             gcs().send_text(MAV_SEVERITY_INFO, "Aborting termination due to %s", reason);
         }
         return true;
-    } else if (should_terminate && _terminate_action != TERMINATE_ACTION_TERMINATE) {
+    } else if (should_terminate && _terminate_action != TERMINATE_ACTION_TERMINATE &&
+               _terminate_action != TERMINATE_ACTION_DISARM) {
         gcs().send_text(MAV_SEVERITY_INFO, "Unable to terminate, termination is not configured");
     }
     return false;

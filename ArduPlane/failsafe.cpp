@@ -86,7 +86,8 @@ void Plane::failsafe_check(void)
 #if ADVANCED_FAILSAFE == ENABLED
         if (afs.should_crash_vehicle()) {
             afs.terminate_vehicle();
-            if (!afs.terminating_vehicle_via_landing()) {
+            // terminate via landing or disarm needs servo output to stay active
+            if ((!afs.terminating_vehicle_via_landing()) && (!afs.terminating_vehicle_via_disarm())) {
                 return;
             }
         }

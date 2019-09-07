@@ -16,44 +16,53 @@ AP_AdvancedFailsafe_Plane::AP_AdvancedFailsafe_Plane(AP_Mission &_mission) :
  */
 void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
 {
-    if (plane.quadplane.available() && _terminate_action == TERMINATE_ACTION_LAND) {
-        // perform a VTOL landing
-        plane.set_mode(plane.mode_qland, MODE_REASON_FENCE_BREACH);
-        return;
-    }
+    if (_terminate_action != TERMINATE_ACTION_DISARM) {
 
-    plane.g2.servo_channels.disable_passthrough(true);
-    
-    if (_terminate_action == TERMINATE_ACTION_LAND) {
-        plane.landing.terminate();
-    } else {
-        // aerodynamic termination is the default approach to termination
-        SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 100);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 100);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, SERVO_MAX);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, SERVO_MAX);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, SERVO_MAX);
-        if (plane.have_reverse_thrust()) {
-            // configured for reverse thrust, use TRIM
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        } else {
-            // use MIN
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+        if (plane.quadplane.available() && _terminate_action == TERMINATE_ACTION_LAND) {
+            // perform a VTOL landing
+            plane.set_mode(plane.mode_qland, MODE_REASON_FENCE_BREACH);
+            return;
         }
-        SRV_Channels::set_output_limit(SRV_Channel::k_manual, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_output_limit(SRV_Channel::k_none, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    }
-
-    plane.servos_output();
-
-    plane.quadplane.afs_terminate();
     
-    // also disarm to ensure that ignition is cut
-    plane.arming.disarm();
+        plane.g2.servo_channels.disable_passthrough(true);
+
+        if (_terminate_action == TERMINATE_ACTION_LAND) {
+            plane.landing.terminate();
+        } else {
+            // aerodynamic termination is the default approach to termination
+            SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 100);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 100);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, SERVO_MAX);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, SERVO_MAX);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, SERVO_MAX);
+            if (plane.have_reverse_thrust()) {
+                // configured for reverse thrust, use TRIM
+                SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+                SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+                SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            } else {
+                // use MIN
+                SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+                SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+                SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+            }
+            SRV_Channels::set_output_limit(SRV_Channel::k_manual, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_none, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        }
+
+        plane.servos_output();
+
+        plane.quadplane.afs_terminate();
+
+        // also disarm to ensure that ignition is cut
+        plane.arming.disarm();
+
+    } else {  // for TERMINATE_ACTION_DISARM set Stabilize mode and stop motor for glide to ground
+        if (plane.arming.is_armed()) {
+            plane.set_mode(plane.mode_stabilize, MODE_REASON_UNAVAILABLE);
+            plane.arming.disarm();
+        }
+    }
 }
 
 void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)

@@ -45,7 +45,8 @@ public:
 
     enum terminate_action {
         TERMINATE_ACTION_TERMINATE = 42,
-        TERMINATE_ACTION_LAND      = 43
+        TERMINATE_ACTION_LAND      = 43,
+        TERMINATE_ACTION_DISARM    = 44
     };
 
     // Constructor
@@ -83,6 +84,10 @@ public:
 
     bool terminating_vehicle_via_landing() const {
         return _terminate_action == TERMINATE_ACTION_LAND;
+    };
+
+    bool terminating_vehicle_via_disarm() const {
+        return _terminate_action == TERMINATE_ACTION_DISARM;
     };
 
 protected:
