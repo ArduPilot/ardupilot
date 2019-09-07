@@ -63,8 +63,8 @@ void ModeBrake::run()
     pos_control->update_z_controller();
 
     if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {
-        if (!copter.set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
-            copter.set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
+        if (!copter.set_mode(Mode::Number::LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
+            copter.set_mode(Mode::Number::ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
         }
     }
 }

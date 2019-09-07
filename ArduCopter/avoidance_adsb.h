@@ -17,7 +17,7 @@ public:
 
 private:
     // helper function to set modes and always succeed
-    void set_mode_else_try_RTL_else_LAND(control_mode_t mode);
+    void set_mode_else_try_RTL_else_LAND(Mode::Number mode);
 
 protected:
     // override avoidance handler
@@ -39,5 +39,5 @@ protected:
     bool handle_avoidance_perpendicular(const AP_Avoidance::Obstacle *obstacle, bool allow_mode_change);
 
     // control mode before avoidance began
-    control_mode_t prev_control_mode = RTL;
+    Mode::Number prev_control_mode = Mode::Number::RTL;
 };

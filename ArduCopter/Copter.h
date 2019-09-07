@@ -83,6 +83,18 @@
 #include "defines.h"
 #include "config.h"
 
+#if FRAME_CONFIG == HELI_FRAME
+    #define AC_AttitudeControl_t AC_AttitudeControl_Heli
+#else
+    #define AC_AttitudeControl_t AC_AttitudeControl_Multi
+#endif
+
+#if FRAME_CONFIG == HELI_FRAME
+ #define MOTOR_CLASS AP_MotorsHeli
+#else
+ #define MOTOR_CLASS AP_MotorsMulticopter
+#endif
+
 #include "RC_Channel.h"         // RC Channel Library
 
 #include "GCS_Mavlink.h"
@@ -178,18 +190,6 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
-#endif
-
-#if FRAME_CONFIG == HELI_FRAME
-    #define AC_AttitudeControl_t AC_AttitudeControl_Heli
-#else
-    #define AC_AttitudeControl_t AC_AttitudeControl_Multi
-#endif
-
-#if FRAME_CONFIG == HELI_FRAME
- #define MOTOR_CLASS AP_MotorsHeli
-#else
- #define MOTOR_CLASS AP_MotorsMulticopter
 #endif
 
 #include "mode.h"
@@ -387,10 +387,10 @@ private:
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
-    control_mode_t control_mode;
+    Mode::Number control_mode;
     mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
 
-    control_mode_t prev_control_mode;
+    Mode::Number prev_control_mode;
     mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
 
     RCMapper rcmap;
@@ -777,7 +777,7 @@ private:
     void log_init(void);
 
     // mode.cpp
-    bool set_mode(control_mode_t mode, mode_reason_t reason);
+    bool set_mode(Mode::Number mode, mode_reason_t reason);
     void update_flight_mode();
     void notify_flight_mode();
 
@@ -959,7 +959,7 @@ private:
 #endif
 
     // mode.cpp
-    Mode *mode_from_mode_num(const uint8_t mode);
+    Mode *mode_from_mode_num(const Mode::Number mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
 
 public:
