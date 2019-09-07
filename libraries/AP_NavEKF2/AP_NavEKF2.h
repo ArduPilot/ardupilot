@@ -457,7 +457,6 @@ private:
     struct {
         bool enabled:1;
         bool log_compass:1;
-        bool log_gps:1;
         bool log_baro:1;
         bool log_imu:1;
     } logging;
