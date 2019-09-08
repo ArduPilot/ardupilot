@@ -69,6 +69,9 @@ public:
     virtual bool landing_gear_should_be_deployed() const { return false; }
     virtual bool is_landing() const { return false; }
 
+    // mode requires terrain to be present to be functional
+    virtual bool requires_terrain_failsafe() const { return false; }
+
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) { return false; };
     virtual int32_t wp_bearing() const { return 0; }
@@ -362,6 +365,8 @@ public:
     bool landing_gear_should_be_deployed() const override;
 
     bool is_taking_off() const override;
+
+    bool requires_terrain_failsafe() const override { return true; }
 
     // return true if this flight mode supports user takeoff
     //  must_nagivate is true if mode must also control horizontal position
@@ -776,6 +781,8 @@ public:
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool in_guided_mode() const override { return true; }
 
+    bool requires_terrain_failsafe() const override { return true; }
+
     void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
@@ -1015,6 +1022,8 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
+
+    bool requires_terrain_failsafe() const override { return true; }
 
     // for reporting to GCS
     bool get_wp(Location &loc) override;
