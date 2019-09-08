@@ -44,6 +44,11 @@ int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
    return done;
 }
 
+int __wrap_vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
+{
+    return hal.util->vsnprintf(str, size, fmt, ap);
+}
+
 int vasprintf(char **strp, const char *fmt, va_list ap)
 {
     int len = vsnprintf(NULL, 0, fmt, ap);
