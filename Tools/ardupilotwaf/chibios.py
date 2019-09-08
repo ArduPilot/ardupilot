@@ -369,8 +369,9 @@ def build(bld):
     # implement anywhere (the FILE* functions). This allows us to get link
     # errors if we accidentially try to use one of those functions either
     # directly or via another libc call
-    wraplist = ['sscanf', 'snprintf', 'vsnprintf',
-                'fopen', 'fread', 'fprintf', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
+    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf','vasprintf','asprintf','vprintf','scanf',
+                'fiprintf','printf',
+                'fopen', 'fread', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                 'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf' ]
     for w in wraplist:
