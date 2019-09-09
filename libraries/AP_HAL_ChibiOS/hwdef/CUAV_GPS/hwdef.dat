@@ -95,6 +95,9 @@ define SAFE_LED_ON 0
 # safety button
 PB3 SAFE_BUTTON INPUT
 
+# WS2812 LED
+PB0 TIM3_CH3 TIM3 PWM(1)
+
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
 define HAL_USE_ADC FALSE
@@ -103,8 +106,7 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_GPIO_IRQ
 
-# avoid timer and RCIN threads to save memory
-define HAL_NO_TIMER_THREAD
+# avoid RCIN thread to save memory
 define HAL_NO_RCIN_THREAD
 
 define HAL_USE_RTC FALSE
@@ -151,11 +153,10 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 0
 define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 
-# GPS+MAG+BARO+Buzzer
+# GPS+MAG+BARO+Buzzer+NeoPixels
 define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_ENABLE_MAG
 define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_BUZZER
-
-
-
+define HAL_PERIPH_NEOPIXEL_COUNT 8
+define HAL_PERIPH_NEOPIXEL_CHAN 0
