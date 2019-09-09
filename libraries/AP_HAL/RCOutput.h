@@ -193,5 +193,20 @@ public:
      */
     virtual void set_telem_request_mask(uint16_t mask) {}
 
-    virtual void set_neopixel_rgb_data(const uint16_t i, const uint32_t rgb_data) {} 
+    /*
+      setup neopixel (WS2812B) output for a given channel number, with
+      the given max number of LEDs in the chain.
+     */
+    virtual bool set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds) { return false; }
+
+    /*
+      setup neopixel (WS2812B) output data for a given output channel
+      and mask of which LEDs in the chain
+     */
+    virtual void set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue) {}
+
+    /*
+      trigger send of neopixel data
+     */
+    virtual void neopixel_send(void) {}
 };
