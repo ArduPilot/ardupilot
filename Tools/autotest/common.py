@@ -923,6 +923,7 @@ class AutoTest(ABC):
     def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
+        tstart = self.get_sim_time()
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                      1,  # ARM
                      0,
@@ -932,7 +933,6 @@ class AutoTest(ABC):
                      0,
                      0,
                      timeout=timeout)
-        tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < timeout:
             self.wait_heartbeat()
             if self.mav.motors_armed():
@@ -946,6 +946,7 @@ class AutoTest(ABC):
         p2 = 0
         if force:
             p2 = 21196 # magic force disarm value
+        tstart = self.get_sim_time()
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                      0,  # DISARM
                      p2,
@@ -955,7 +956,6 @@ class AutoTest(ABC):
                      0,
                      0,
                      timeout=timeout)
-        tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < timeout:
             self.wait_heartbeat()
             if not self.mav.motors_armed():
