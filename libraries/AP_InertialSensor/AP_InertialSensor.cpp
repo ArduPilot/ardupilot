@@ -258,7 +258,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // @Param: GYRO_FILTER
     // @DisplayName: Gyro filter cutoff frequency
-    // @Description: Filter cutoff frequency for gyroscopes. This can be set to a lower value to try to cope with very high vibration levels in aircraft. This option takes effect on the next reboot. A value of zero means no filtering (not recommended!)
+    // @Description: Filter cutoff frequency for gyroscopes. This can be set to a lower value to try to cope with very high vibration levels in aircraft. A value of zero means no filtering (not recommended!)
     // @Units: Hz
     // @Range: 0 256
     // @User: Advanced
@@ -266,7 +266,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // @Param: ACCEL_FILTER
     // @DisplayName: Accel filter cutoff frequency
-    // @Description: Filter cutoff frequency for accelerometers. This can be set to a lower value to try to cope with very high vibration levels in aircraft. This option takes effect on the next reboot. A value of zero means no filtering (not recommended!)
+    // @Description: Filter cutoff frequency for accelerometers. This can be set to a lower value to try to cope with very high vibration levels in aircraft. A value of zero means no filtering (not recommended!)
     // @Units: Hz
     // @Range: 0 256
     // @User: Advanced

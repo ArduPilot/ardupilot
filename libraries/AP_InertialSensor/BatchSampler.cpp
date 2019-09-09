@@ -6,17 +6,19 @@
 const AP_Param::GroupInfo AP_InertialSensor::BatchSampler::var_info[] = {
     // @Param: BAT_CNT
     // @DisplayName: sample count per batch
-    // @Description: Number of samples to take when logging streams of IMU sensor readings.  Will be rounded down to a multiple of 32.
+    // @Description: Number of samples to take when logging streams of IMU sensor readings.  Will be rounded down to a multiple of 32. This option takes effect on the next reboot.
     // @User: Advanced
     // @Increment: 32
+    // @RebootRequired: True
     AP_GROUPINFO("BAT_CNT",  1, AP_InertialSensor::BatchSampler, _required_count,   1024),
 
     // @Param: BAT_MASK
     // @DisplayName: Sensor Bitmask
-    // @Description: Bitmap of which IMUs to log batch data for
+    // @Description: Bitmap of which IMUs to log batch data for. This option takes effect on the next reboot.
     // @User: Advanced
     // @Values: 0:None,1:First IMU,255:All
     // @Bitmask: 0:IMU1,1:IMU2,2:IMU3
+    // @RebootRequired: True
     AP_GROUPINFO("BAT_MASK",  2, AP_InertialSensor::BatchSampler, _sensor_mask,   DEFAULT_IMU_LOG_BAT_MASK),
 
     // @Param: BAT_OPT
