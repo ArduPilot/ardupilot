@@ -155,7 +155,22 @@ public:
         reversible_mask |= chanmask;
     }
 
-    void set_neopixel_rgb_data(const uint16_t i, const uint32_t rgb_data) override { neopixel_rgb_data[i] = rgb_data; }
+    /*
+      setup neopixel (WS2812B) output for a given channel number, with
+      the given max number of LEDs in the chain.
+     */
+    bool set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds) override;
+
+    /*
+      setup neopixel (WS2812B) output data for a given output channel
+      and mask of LEDs on the channel
+     */
+    void set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue) override;
+
+    /*
+      trigger send of neopixel data
+     */
+    void neopixel_send(void) override;
     
 private:
     struct pwm_group {
@@ -177,6 +192,7 @@ private:
         const stm32_dma_stream_t *dma;
         Shared_DMA *dma_handle;
         uint32_t *dma_buffer;
+        uint16_t dma_buffer_len;
         bool have_lock;
         bool pwm_started;
         uint32_t bit_width_mul;
@@ -184,6 +200,7 @@ private:
         bool in_serial_dma;
         uint64_t last_dmar_send_us;
         virtual_timer_t dma_timeout;
+        uint8_t neopixel_nleds;
         
         // serial output
         struct {
@@ -280,6 +297,9 @@ private:
     // are we using oneshot125 for the iomcu?
     bool iomcu_oneshot125;
 
+    // find a channel group given a channel number
+    struct pwm_group *find_chan(uint8_t chan, uint8_t &group_idx);
+
     // push out values to local PWM
     void push_local(void);
 
@@ -313,16 +333,11 @@ private:
     uint32_t dshot_pulse_time_us;
     uint16_t telem_request_mask;
 
-/*
-NeoPixel handling
-*/
-    uint32_t neopixel_rgb_data[4];
-    const uint16_t neopixel_bit_length = 24;
-    const uint16_t neopixel_buffer_length = (neopixel_bit_length+1)*4*sizeof(uint32_t);
+    /*
+      NeoPixel handling. Max of 32 LEDs uses max 12k of memory per group
+    */
     void neopixel_send(pwm_group &group);
-    void fill_DMA_buffer_neopixel(uint32_t *buffer, const uint8_t stride, uint32_t rgb, const uint16_t clockmul);
-
-
+    bool neopixel_pending;
 
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);    
