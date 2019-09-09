@@ -20,6 +20,10 @@
 // This limit is from the dshot driver rcout groups limit
 #define AP_NOTIFY_NEOPIXEL_MAX_INSTANCES        4
 
+#ifndef HAL_NEOPIXEL_COUNT
+#define HAL_NEOPIXEL_COUNT 1
+#endif
+
 // Datasheet: https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf
 // 24bit msg as 3 byte GRB (not RGB) where first bit is G7, and last bit is B0
 // (first) G7|G6|G5|G4|G3|G2|G1|G0|R7|R6|R5|R4|R3|R2|R1|R0|B7|B6|B5|B4|B3|B2|B1|B0 (last)
@@ -57,7 +61,7 @@ uint16_t NeoPixel::init_ports()
     if (mask != 0) {
         for (uint16_t chan=0; chan<16; chan++) {
             if ((1U<<chan) & mask) {
-                hal.rcout->set_neopixel_num_LEDs(chan, 1);
+                hal.rcout->set_neopixel_num_LEDs(chan, HAL_NEOPIXEL_COUNT);
             }
         }
     }
@@ -85,7 +89,7 @@ bool NeoPixel::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 
     for (uint16_t chan=0; chan<16; chan++) {
         if ((1U<<chan) & enable_mask) {
-            hal.rcout->set_neopixel_rgb_data(chan, 1, red, green, blue);
+            hal.rcout->set_neopixel_rgb_data(chan, (1U<<HAL_NEOPIXEL_COUNT)-1, red, green, blue);
         }
     }
     hal.rcout->neopixel_send();
