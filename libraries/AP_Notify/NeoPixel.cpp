@@ -38,25 +38,28 @@ NeoPixel::NeoPixel() :
 
 bool NeoPixel::hw_init()
 {
-    NeoPixel::init_ports();
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&NeoPixel::timer, void));
+    init_ports();
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&NeoPixel::timer, void));
     return true;
 }
 
 uint16_t NeoPixel::init_ports()
 {
-    static uint16_t last_mask = 0;
     uint16_t mask = 0;
     for (uint16_t i=0; i<AP_NOTIFY_NEOPIXEL_MAX_INSTANCES; i++) {
-        const SRV_Channel::Aux_servo_function_t chan = (SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_LED_neopixel1 + i);
-        if (!SRV_Channels::function_assigned(chan)) {
+        const SRV_Channel::Aux_servo_function_t fn = (SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_LED_neopixel1 + i);
+        if (!SRV_Channels::function_assigned(fn)) {
             continue;
         }
-        mask |= SRV_Channels::get_output_channel_mask(chan);
+        mask |= SRV_Channels::get_output_channel_mask(fn);
     }
 
-    if (mask != 0 && mask != last_mask) {
-        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_NEOPIXEL);
+    if (mask != 0) {
+        for (uint16_t chan=0; chan<16; chan++) {
+            if ((1U<<chan) & mask) {
+                hal.rcout->set_neopixel_num_LEDs(chan, 1);
+            }
+        }
     }
     last_mask = mask;
     return mask;
@@ -69,73 +72,22 @@ void NeoPixel::timer()
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _last_init_ms >= 1000) {
         _last_init_ms = now_ms;
-        enable_mask = NeoPixel::init_ports();
+        enable_mask = init_ports();
     }
-    if (enable_mask == 0) {
-        // nothing is enabled, no pins set as LED output
-        return;
-    }
-
-
-#if NEOPIXEL_WHITE_STROBE
-    if (now_ms - _white_long_ms >= 2000) {
-        //start white light
-        _white_long_ms = now_ms;
-        _white_short_ms = now_ms; // start 100ms WHITE pulse
-        hw_set_rgb(0xFF,0xFF,0xFF);
-    } else if (_white_short_ms > 0 && now_ms - _white_short_ms >= 100) {
-        // stop white light
-        _white_short_ms = 0;
-        hw_set_rgb(_last_rgb.r, _last_rgb.g, _last_rgb.b);
-    }
-#endif
 }
 
 bool NeoPixel::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    // always rememebr this even when disabled so when we enable it will show correct color
-    NeoPixel::RGB value {};
-    value.r = red;
-    value.g = green;
-    value.b = blue;
-    
-#if NEOPIXEL_WHITE_STROBE
-    if (_white_short_ms == 0) {
-        // if not during a WHITE BLINK then record last LED
-        _last_rgb.rgb = value.rgb;
-    }
-#endif
-
     if (enable_mask == 0) {
         // nothing is enabled, no pins set as LED output
         return true;
     }
 
-    NeoPixel::write_LED(value);
+    for (uint16_t chan=0; chan<16; chan++) {
+        if ((1U<<chan) & enable_mask) {
+            hal.rcout->set_neopixel_rgb_data(chan, 1, red, green, blue);
+        }
+    }
+    hal.rcout->neopixel_send();
     return true;
-}
-
-void NeoPixel::write_LED(NeoPixel::RGB value)
-{
-    for (uint16_t i=0; i<AP_NOTIFY_NEOPIXEL_MAX_INSTANCES; i++) {
-        NeoPixel::write_LED(i, value);
-    }
-}
-
-void NeoPixel::write_LED(uint16_t instance, NeoPixel::RGB value)
-{
-    if (instance >= AP_NOTIFY_NEOPIXEL_MAX_INSTANCES) {
-        return;
-    }
-    hal.rcout->set_neopixel_rgb_data(instance, value.rgb);
-}
-
-void NeoPixel::write_LED(uint16_t instance, uint8_t red, uint8_t green, uint8_t blue)
-{
-    NeoPixel::RGB value {};
-    value.r = red;
-    value.g = green;
-    value.b = blue;
-
-    NeoPixel::write_LED(instance, value);
 }
