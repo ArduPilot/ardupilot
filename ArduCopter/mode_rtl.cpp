@@ -242,7 +242,7 @@ void ModeRTL::loiterathome_run()
     if ((millis() - _loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
         if (auto_yaw.mode() == AUTO_YAW_RESETTOARMEDYAW) {
             // check if heading is within 2 degrees of heading when vehicle was armed
-            if (fabsf(wrap_180_cd(ahrs.yaw_sensor-copter.initial_armed_bearing)) <= 200) {
+            if (abs(wrap_180_cd(ahrs.yaw_sensor-copter.initial_armed_bearing)) <= 200) {
                 _state_complete = true;
             }
         } else {
