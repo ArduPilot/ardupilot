@@ -17,35 +17,25 @@
 #include "RGBLed.h"
 #include <AP_Common/AP_Common.h>
 
-#define NEOPIXEL_WHITE_STROBE 0
-
 class NeoPixel: public RGBLed {
 public:
     NeoPixel();
 
-    typedef union {
-        struct PACKED {
-            // **NOTE** These are GRB, not RGB
-            uint8_t b;
-            uint8_t r;
-            uint8_t g;
-            uint8_t unused;
-        };
-        uint32_t rgb;
+    struct {
+        uint8_t b;
+        uint8_t r;
+        uint8_t g;
     } RGB;
 
-    static void write_LED(NeoPixel::RGB value);
-    static void write_LED(uint16_t instance, NeoPixel::RGB value);
-    static void write_LED(uint16_t instance, uint8_t red, uint8_t green, uint8_t blue);
-    static uint16_t init_ports();
+    uint16_t init_ports();
 
 protected:
     bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
 private:
-
     uint16_t enable_mask;
+    uint16_t last_mask;
 
     // perdiodic tick to re-init
     uint32_t    _last_init_ms;
@@ -54,15 +44,4 @@ private:
     void timer();
     
     HAL_Semaphore_Recursive _sem;
-
-
-#if NEOPIXEL_WHITE_STROBE
-    // remember last RGB so we can resume after a white pulse
-    RGB         _last_rgb;
-    uint32_t    _white_long_ms;
-    uint32_t    _white_short_ms;
-#endif
-
-
-
 };
