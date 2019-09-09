@@ -738,6 +738,7 @@ private:
     void heli_init();
     void check_dynamic_flight(void);
     void update_heli_control_dynamics(void);
+    bool should_use_landing_swash() const;
     void heli_update_landing_swash();
     void heli_update_rotor_speed_targets();
 
