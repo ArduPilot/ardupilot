@@ -67,6 +67,11 @@ void AP_Periph_FW::init()
     baro.init();
     baro.calibrate(false);
 #endif
+
+#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+    hal.rcout->init();
+    hal.rcout->set_neopixel_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, HAL_PERIPH_NEOPIXEL_COUNT);
+#endif
 }
 
 void AP_Periph_FW::update()

@@ -33,6 +33,7 @@
 #include <uavcan/equipment/air_data/StaticPressure.h>
 #include <uavcan/equipment/air_data/StaticTemperature.h>
 #include <uavcan/equipment/indication/BeepCommand.h>
+#include <uavcan/equipment/indication/LightsCommand.h>
 #include <ardupilot/indication/SafetyState.h>
 #include <ardupilot/indication/Button.h>
 #include <uavcan/protocol/debug/LogMessage.h>
@@ -405,6 +406,27 @@ static void handle_safety_state(CanardInstance* ins, CanardRxTransfer* transfer)
     safety_state = req.status;
 }
 
+#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+/*
+  handle lightscommand
+ */
+static void handle_lightscommand(CanardInstance* ins, CanardRxTransfer* transfer)
+{
+    uavcan_equipment_indication_LightsCommand req;
+    uint8_t arraybuf[UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_MAX_SIZE];
+    uint8_t *arraybuf_ptr = arraybuf;
+    if (uavcan_equipment_indication_LightsCommand_decode(transfer, transfer->payload_len, &req, &arraybuf_ptr) < 0) {
+        return;
+    }
+    for (uint8_t i=0; i<req.commands.len; i++) {
+        uavcan_equipment_indication_SingleLightCommand &cmd = req.commands.data[i];
+        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, (1U<<HAL_PERIPH_NEOPIXEL_COUNT)-1,
+                                        cmd.color.red, cmd.color.green, cmd.color.blue);
+    }
+    hal.rcout->neopixel_send();
+}
+#endif
+
 /*
   update safety LED
  */
@@ -525,6 +547,12 @@ static void onTransferReceived(CanardInstance* ins,
         handle_safety_state(ins, transfer);
         break;
 #endif
+
+#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+    case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
+        handle_lightscommand(ins, transfer);
+        break;
+#endif
     }
 }
 
@@ -582,6 +610,11 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
 #ifdef HAL_GPIO_PIN_SAFE_LED
     case ARDUPILOT_INDICATION_SAFETYSTATE_ID:
         *out_data_type_signature = ARDUPILOT_INDICATION_SAFETYSTATE_SIGNATURE;
+        return true;
+#endif
+#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+    case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
+        *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_SIGNATURE;
         return true;
 #endif
     default:
