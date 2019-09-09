@@ -1,0 +1,4 @@
+# setup for LEDs on chan5
+SERVO5_FUNCTION 120
+NTF_LED_TYPES 256
+
