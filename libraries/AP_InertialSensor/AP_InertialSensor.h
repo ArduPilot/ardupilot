@@ -79,6 +79,9 @@ public:
     // a function called by the main thread at the main loop rate:
     void periodic();
 
+    // output timing information periodically
+    void update_logging();
+
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
@@ -214,6 +217,7 @@ public:
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
 
+
     // calculate vibration levels and check for accelerometer clipping (called by a backends)
     void calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt);
 
@@ -226,6 +230,7 @@ public:
 
     // check for vibration movement. True when all axis show nearly zero movement
     bool is_still();
+
 
     /*
       HIL set functions. The minimum for HIL is set_accel() and
@@ -276,6 +281,13 @@ public:
 
     // for killing an IMU for testing purposes
     void kill_imu(uint8_t imu_idx, bool kill_it);
+
+    // return timing debug parameter
+    uint8_t debug_flags(void) { return _debug; }
+    // return average gyro/accel processing time in us
+    uint32_t get_average_cycle_time_us(uint8_t instance) const { return _average_cycle_time[instance]; }
+    // return average gyro filtering time in us
+    uint32_t get_average_gyro_cycle_time_us(uint8_t instance) const { return _average_gyro_cycle_time[instance]; }
 
     enum IMU_SENSOR_TYPE {
         IMU_SENSOR_TYPE_ACCEL = 0,
@@ -532,6 +544,7 @@ private:
     // last time update() completed
     uint32_t _last_update_usec;
 
+
     // health of gyros and accels
     bool _gyro_healthy[INS_MAX_INSTANCES];
     bool _accel_healthy[INS_MAX_INSTANCES];
@@ -589,6 +602,13 @@ private:
     uint32_t _startup_ms;
 
     uint8_t imu_kill_mask;
+
+    // used to enable INS timing debugging
+    AP_Int8 _debug;
+    // average cycle time per-IMU in us
+    uint32_t _average_cycle_time[INS_MAX_INSTANCES];
+    // average gyro filter cycle time per-IMU in us
+    uint32_t _average_gyro_cycle_time[INS_MAX_INSTANCES];
 };
 
 namespace AP {

@@ -8,6 +8,7 @@
 #endif
 
 #define SENSOR_RATE_DEBUG 0
+#define TIMING_CYCLES_WRAP 5000
 
 const extern AP_HAL::HAL& hal;
 
@@ -235,6 +236,11 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
             _imu._gyro_notch_filter[instance].reset();
         }
         _imu._new_gyro_data[instance] = true;
+
+        // update debug timing information
+        if (_imu._debug > 0) {
+            update_gyro_accel_timing(now);
+        }
     }
 
     if (!_imu.batchsampler.doing_post_filter_logging()) {
@@ -268,6 +274,28 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
         }
     }
+}
+
+// update debug timing information
+void AP_InertialSensor_Backend::update_gyro_accel_timing(uint64_t now)
+{
+    if (_total_cycles >= TIMING_CYCLES_WRAP) {
+        _total_gyro_cycles = 0;
+        _total_gyro_cycle_time_us = 0;
+    }
+    _total_gyro_cycles++;
+    _total_gyro_cycle_time_us += (AP_HAL::micros64() - now);
+}
+
+// update debug timing information
+void AP_InertialSensor_Backend::end_timing_cycle()
+{
+    if (_total_cycles >= TIMING_CYCLES_WRAP) {
+        _total_cycles = 0;
+        _total_cycle_time_us = 0;
+    }
+    _total_cycles++;
+    _total_cycle_time_us += (AP_HAL::micros64() - _cycle_start_us);
 }
 
 /*
@@ -505,6 +533,12 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
         _last_notch_center_freq_hz[instance] = _gyro_notch_center_freq_hz();
         _last_notch_bandwidth_hz[instance] = _gyro_notch_bandwidth_hz();
         _last_notch_attenuation_dB[instance] = _gyro_notch_attenuation_dB();
+    }
+
+    // update timing counters
+    if (_imu._debug > 0) {
+        _imu._average_cycle_time[instance] = get_average_cycle_time_us();
+        _imu._average_gyro_cycle_time[instance] = get_average_gyro_cycle_time_us();
     }
 }
 

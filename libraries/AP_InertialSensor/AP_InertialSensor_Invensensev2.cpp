@@ -463,6 +463,7 @@ void AP_InertialSensor_Invensensev2::_read_fifo()
         }
     }
     while (n_samples > 0) {
+        start_timing_cycle();
         uint8_t n = MIN(n_samples, INV2_FIFO_BUFFER_LEN);
         if (!_dev->set_chip_select(true)) {
             if (!_block_read(INV2REG_FIFO_R_W, rx, n * INV2_SAMPLE_SIZE)) {
@@ -495,6 +496,7 @@ void AP_InertialSensor_Invensensev2::_read_fifo()
                 break;
             }
         }
+        end_timing_cycle();
         n_samples -= n;
     }
 
