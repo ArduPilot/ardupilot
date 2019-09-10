@@ -541,6 +541,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "airbotf4",
                 "revo-mini",
                 "CubeBlack",
+                "CubeBlack+",
                 "CubePurple",
                 "Pixhawk1",
                 "Pixhawk4",
