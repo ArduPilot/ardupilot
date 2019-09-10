@@ -152,6 +152,9 @@ void AP_Periph_FW::update()
         hal.scheduler->delay(1);
         show_stack_usage();
 #endif
+#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+        hal.rcout->set_neopixel_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, HAL_PERIPH_NEOPIXEL_COUNT);
+#endif
     }
     can_update();
     hal.scheduler->delay(1);
