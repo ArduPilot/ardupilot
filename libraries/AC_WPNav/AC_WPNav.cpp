@@ -603,16 +603,19 @@ bool AC_WPNav::set_spline_destination(const Location& destination, bool stopped_
         return false;
     }
 
-    // make altitude frames consistent
-    if (!next_destination.change_alt_frame(destination.get_alt_frame())) {
-        return false;
-    }
+    Vector3f next_dest_neu; // left uninitialised for valgrind
+    if (seg_end_type == SEGMENT_END_STRAIGHT ||
+        seg_end_type == SEGMENT_END_SPLINE) {
+        // make altitude frames consistent
+        if (!next_destination.change_alt_frame(destination.get_alt_frame())) {
+            return false;
+        }
 
-    // convert next destination to vector
-    Vector3f next_dest_neu;
-    bool next_dest_terr_alt;
-    if (!get_vector_NEU(next_destination, next_dest_neu, next_dest_terr_alt)) {
-        return false;
+        // convert next destination to vector
+        bool next_dest_terr_alt;
+        if (!get_vector_NEU(next_destination, next_dest_neu, next_dest_terr_alt)) {
+            return false;
+        }
     }
 
     // set target as vector from EKF origin
