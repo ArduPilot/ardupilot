@@ -395,8 +395,7 @@ int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
     float pwm_output;
     if (_spool_state == SpoolState::SHUT_DOWN) {
         // in shutdown mode, use PWM 0 or minimum PWM
-        if (_disarm_disable_pwm && is_equal(_disarm_safe_timer, 0.0f) && !armed()) {
-//        if (_disarm_disable_pwm && !armed()) {
+        if (_disarm_disable_pwm && !armed()) {
             pwm_output = 0;
         } else {
             pwm_output = get_pwm_output_min();
@@ -511,8 +510,8 @@ void AP_MotorsMulticopter::output_logic()
         } else {
             _disarm_safe_timer = _safe_time;
         }
-    } else if (_disarm_safe_timer > 0.0f) {
-        _disarm_safe_timer -= 1.0f/_loop_rate;;
+    } else {
+           _disarm_safe_timer = 0.0f;
     }
 
     // force desired and current spool mode if disarmed or not interlocked
