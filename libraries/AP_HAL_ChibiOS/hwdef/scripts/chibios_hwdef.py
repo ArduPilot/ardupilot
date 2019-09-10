@@ -1639,7 +1639,7 @@ def process_line(line):
         bylabel.pop(a[1],'')
         #also remove all occurences of defines in previous lines if any
         for line in alllines[:]:
-            if line.startswith('define') and a[1] in line:
+            if line.startswith('define') and a[1] == line.split()[1]:
                 alllines.remove(line)
         newpins = []
         for pin in allpins:
