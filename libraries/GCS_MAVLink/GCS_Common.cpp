@@ -1541,14 +1541,9 @@ bool GCS_MAVLINK::sending_mavlink1() const
 
 void GCS_MAVLINK::send_rc_channels_raw() const
 {
-    mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status == nullptr) {
-        // should not happen
-        return;
-    }
     // for mavlink1 send RC_CHANNELS_RAW, for compatibility with OSD
     // implementations
-    if (!(status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+    if (!sending_mavlink1()) {
         return;
     }
     AP_RSSI *rssi = AP::rssi();
