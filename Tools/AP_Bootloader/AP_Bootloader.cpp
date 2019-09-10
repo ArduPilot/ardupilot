@@ -42,6 +42,10 @@ struct boardinfo board_info;
 #define HAL_BOOTLOADER_TIMEOUT 5000
 #endif
 
+#ifndef HAL_STAY_IN_BOOTLOADER_VALUE
+#define HAL_STAY_IN_BOOTLOADER_VALUE 0
+#endif
+
 int main(void)
 {
     board_info.board_type = APJ_BOARD_ID;
@@ -80,9 +84,9 @@ int main(void)
 
 #ifdef HAL_GPIO_PIN_STAY_IN_BOOTLOADER
     // optional "stay in bootloader" pin
-    if (palReadLine(HAL_GPIO_PIN_STAY_IN_BOOTLOADER) == 0) {
+    if (palReadLine(HAL_GPIO_PIN_STAY_IN_BOOTLOADER) == HAL_STAY_IN_BOOTLOADER_VALUE) {
         try_boot = false;
-        timeout = 10000;
+        timeout = 0;
     }
 #endif
 
@@ -107,7 +111,7 @@ int main(void)
     // CAN only
     while (true) {
         uint32_t t0 = AP_HAL::millis();
-        while (AP_HAL::millis() - t0 <= timeout) {
+        while (timeout == 0 || AP_HAL::millis() - t0 <= timeout) {
             can_update();
             chThdSleep(chTimeMS2I(1));
         }
