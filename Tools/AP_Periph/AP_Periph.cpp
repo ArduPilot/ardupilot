@@ -45,6 +45,8 @@ void loop(void)
     periph.update();
 }
 
+static uint32_t start_ms;
+
 void AP_Periph_FW::init()
 {
     hal.uartA->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 128);
@@ -72,7 +74,62 @@ void AP_Periph_FW::init()
     hal.rcout->init();
     hal.rcout->set_neopixel_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, HAL_PERIPH_NEOPIXEL_COUNT);
 #endif
+    start_ms = AP_HAL::millis();
 }
+
+#if HAL_PERIPH_NEOPIXEL_COUNT == 8
+/*
+  rotating rainbow pattern on startup
+ */
+static void update_rainbow()
+{
+    static bool rainbow_done;
+    if (rainbow_done) {
+        return;
+    }
+    uint32_t now = AP_HAL::millis();
+    if (now-start_ms > 1500) {
+        rainbow_done = true;
+        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, 0xFF, 0, 0, 0);
+        hal.rcout->neopixel_send();
+        return;
+    }
+    static uint32_t last_update_ms;
+    const uint8_t step_ms = 30;
+    if (now - last_update_ms < step_ms) {
+        return;
+    }
+    const struct {
+        uint8_t red;
+        uint8_t green;
+        uint8_t blue;
+    } rgb_rainbow[] = {
+        { 255, 0, 0 },
+        { 255, 127, 0 },
+        { 255, 255, 0 },
+        { 0,   255, 0 },
+        { 0,   0,   255 },
+        { 75,  0,   130 },
+        { 143, 0,   255 },
+        { 0,   0,   0 },
+    };
+    last_update_ms = now;
+    static uint8_t step;
+    const uint8_t nsteps = ARRAY_SIZE(rgb_rainbow);
+    float brightness = 0.3;
+    for (uint8_t n=0; n<8; n++) {
+        uint8_t i = (step + n) % nsteps;
+        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, 1U<<n,
+                                         rgb_rainbow[i].red*brightness,
+                                         rgb_rainbow[i].green*brightness,
+                                         rgb_rainbow[i].blue*brightness);
+    }
+    step++;
+    hal.rcout->neopixel_send();
+}
+#endif
+
+
 
 void AP_Periph_FW::update()
 {
@@ -98,6 +155,9 @@ void AP_Periph_FW::update()
     }
     can_update();
     hal.scheduler->delay(1);
+#if HAL_PERIPH_NEOPIXEL_COUNT == 8
+    update_rainbow();
+#endif
 }
 
 AP_HAL_MAIN();
