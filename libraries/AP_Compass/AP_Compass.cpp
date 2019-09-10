@@ -601,16 +601,14 @@ void Compass::_probe_external_i2c_compasses(void)
 #if !HAL_MINIMIZE_FEATURES
     // AK09916 on ICM20948
     FOREACH_I2C_EXTERNAL(i) {
-        ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(*this,
-                                                                        GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
+        ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
                                                                         GET_I2C_DEVICE(i, HAL_COMPASS_ICM20948_I2C_ADDR),
                                                                         true, ROTATION_PITCH_180_YAW_90),
                     AP_Compass_AK09916::name, true);
     }
     
     FOREACH_I2C_INTERNAL(i) {
-        ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(*this,
-                                                                        GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
+        ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
                                                                         GET_I2C_DEVICE(i, HAL_COMPASS_ICM20948_I2C_ADDR),
                                                                         both_i2c_external, ROTATION_PITCH_180_YAW_90),
                     AP_Compass_AK09916::name, true);
@@ -646,12 +644,12 @@ void Compass::_probe_external_i2c_compasses(void)
         
     // AK09916. This can be found twice, due to the ICM20948 i2c bus pass-thru, so we need to be careful to avoid that
     FOREACH_I2C_EXTERNAL(i) {
-        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
+        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
                                                               true, ROTATION_YAW_270),
                     AP_Compass_AK09916::name, true);
     }
     FOREACH_I2C_INTERNAL(i) {
-        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
+        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
                                                               both_i2c_external, both_i2c_external?ROTATION_YAW_270:ROTATION_NONE),
                     AP_Compass_AK09916::name, both_i2c_external);
     }
@@ -949,6 +947,8 @@ void Compass::_detect_backends(void)
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BMM150_I2C
     ADD_BACKEND(DRIVER_BMM150, AP_Compass_BMM150::probe(*this, GET_I2C_DEVICE(HAL_COMPASS_BMM150_I2C_BUS, HAL_COMPASS_BMM150_I2C_ADDR)),
                 AP_Compass_BMM150::name, true);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MROCONTROLZEROF7
+    ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe_ICM20948(0, ROTATION_ROLL_180), AP_Compass_AK09916::name, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NONE
     // no compass
 #else
