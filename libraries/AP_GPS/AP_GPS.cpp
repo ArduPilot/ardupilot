@@ -560,19 +560,16 @@ void AP_GPS::send_blob_update(uint8_t instance)
         return;
     }
 
-    // see if we can write some more of the initialisation blob
-    if (initblob_state[instance].remaining > 0) {
-        int16_t space = _port[instance]->txspace();
-        if (space > (int16_t)initblob_state[instance].remaining) {
-            space = initblob_state[instance].remaining;
-        }
-        while (space > 0) {
-            _port[instance]->write(*initblob_state[instance].blob);
-            initblob_state[instance].blob++;
-            space--;
-            initblob_state[instance].remaining--;
-        }
+    if (initblob_state[instance].remaining == 0) {
+        return;
     }
+
+    // see if we can write some more of the initialisation blob
+    const uint16_t n = MIN(_port[instance]->txspace(),
+                           initblob_state[instance].remaining);
+    const size_t written = _port[instance]->write((const uint8_t*)initblob_state[instance].blob, n);
+    initblob_state[instance].blob += written;
+    initblob_state[instance].remaining -= written;
 }
 
 /*
