@@ -4,6 +4,9 @@
 
 include ../fmuv3/hwdef-bl.dat
 
+# board ID for firmware load
+APJ_BOARD_ID 1003
+
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
 USB_PRODUCT 0x1101
