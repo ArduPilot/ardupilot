@@ -15,6 +15,7 @@ import argparse
 parser = argparse.ArgumentParser(description='configure all ChibiOS boards')
 parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')
 parser.add_argument('--stop', action='store_true', default=False, help='stop on build fail')
+parser.add_argument('--no-bl', action='store_true', default=False, help="don't check bootloader builds")
 parser.add_argument('--pattern', default='*')
 args = parser.parse_args()
 
@@ -53,6 +54,8 @@ for board in get_board_list():
         else:
             target = "copter"
         run_program(["./waf", target], "build: " + board)
+    if args.no_bl:
+        continue
     # check for bootloader def
     hwdef_bl = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % board)
     if os.path.exists(hwdef_bl):
