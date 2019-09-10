@@ -2615,6 +2615,28 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_spline_last_waypoint(self):
+        self.context_push()
+        ex = None
+        try:
+            self.load_mission("copter-spline-last-waypoint.txt")
+            self.mavproxy.send('mode loiter\n')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.mavproxy.send('mode auto\n')
+            self.wait_mode('AUTO')
+            self.set_rc(3, 1500)
+            self.wait_altitude(10, 3000, relative=True)
+        except Exception as e:
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
+            ex = e
+        self.context_pop()
+        self.do_RTL()
+        self.mav.motors_disarmed_wait()
+        if ex is not None:
+            raise ex
+
     def fly_manual_throttle_mode_change(self):
         self.set_parameter("FS_GCS_ENABLE", 0) # avoid GUIDED instant disarm
         self.change_mode("STABILIZE")
@@ -3673,7 +3695,10 @@ class AutoTestCopter(AutoTest):
              "Fly copter mission",
              self.fly_auto_test),
 
-            # Gripper test
+            ("SplineLastWaypoint",
+             "Test Spline as last waypoint",
+             self.test_spline_last_waypoint),
+
             ("Gripper",
              "Test gripper",
              self.test_gripper),
