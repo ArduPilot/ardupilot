@@ -292,5 +292,5 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # use ChibiOS based IO firmware to avoid issue with SBUS
 # input on Pixhawk4. NuttX has no parity checking on UARTs
-ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO_ChibiOS.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
 
