@@ -540,6 +540,11 @@ private:
       are we in the descent phase of a VTOL landing?
      */
     bool in_vtol_land_descent(void) const;
+
+    /*
+      are we in the final landing phase of a VTOL landing?
+     */
+    bool in_vtol_land_final(void) const;
     
 public:
     void motor_test_output();
