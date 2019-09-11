@@ -1093,7 +1093,7 @@ void can_printf(const char *fmt, ...)
     va_start(ap, fmt);
     uint32_t n = vsnprintf(tbuf, sizeof(tbuf), fmt, ap);
     va_end(ap);
-    pkt.text.len = n;
+    pkt.text.len = MIN(n, sizeof(tbuf));
     pkt.text.data = (uint8_t *)&tbuf[0];
 
     uint32_t len = uavcan_protocol_debug_LogMessage_encode(&pkt, buffer);
