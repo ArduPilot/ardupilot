@@ -2795,7 +2795,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
         // lidar could cause the aircraft not to be able to
         // approach the landing point when landing below the takeoff point
         vel_forward.last_pct = vel_forward.integrator;
-    } else if (in_vtol_land_descent() && poscontrol.state == QPOS_LAND_FINAL && motors->limit.throttle_lower) {
+    } else if (in_vtol_land_final() && motors->limit.throttle_lower) {
         // we're in the settling phase of landing, disable fwd motor
         vel_forward.last_pct = 0;
         vel_forward.integrator = 0;
@@ -3108,4 +3108,12 @@ bool QuadPlane::in_vtol_land_descent(void) const
         return true;
     }
     return false;
+}
+
+/*
+  see if we are in the final phase of a VTOL landing
+ */
+bool QuadPlane::in_vtol_land_final(void) const
+{
+    return in_vtol_land_descent() && poscontrol.state == QPOS_LAND_FINAL;
 }
