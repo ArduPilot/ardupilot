@@ -48,6 +48,8 @@ public:
     bool motor_is_enabled(int motor_number);
 
     bool set_reversed(int motor_number, bool reversed);
+    
+    float get_throttle_in_bidirectional() const { return constrain_float(2*(_throttle_in - 0.5f), -1.0f, 1.0f); }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
