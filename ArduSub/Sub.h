@@ -447,6 +447,10 @@ private:
     AP_Param param_loader;
 
     uint32_t last_pilot_heading;
+    uint32_t last_input_ms;
+    int32_t last_roll;
+    int32_t last_pitch;
+    int32_t last_yaw;
     uint32_t last_pilot_yaw_input_ms;
     uint32_t fs_terrain_recover_start_ms;
 
@@ -518,6 +522,9 @@ private:
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
     bool althold_init(void);
     void althold_run();
+
+    // Handles attitude control for stabilize and althold modes
+    void handle_attitude();
     bool auto_init(void);
     void auto_run();
     void auto_wp_start(const Vector3f& destination);
