@@ -2229,9 +2229,11 @@ void GCS_MAVLINK::send_heartbeat() const
 
 MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_command_long_t &packet)
 {
-    const uint32_t msg_id = (uint32_t)packet.param1;
-    const int32_t interval_us = (int32_t)packet.param2;
+    return set_message_interval((uint32_t)packet.param1, (int32_t)packet.param2);
+}
 
+MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_us)
+{
     uint16_t interval_ms;
     if (interval_us == 0) {
         // zero is "reset to default rate"
@@ -2254,6 +2256,32 @@ MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_comman
     }
 
     return MAV_RESULT_FAILED;
+}
+
+/*
+  this function is reserved for use by scripting
+ */
+MAV_RESULT GCS::set_message_interval(uint8_t port_num, uint32_t msg_id, int32_t interval_us)
+{
+    uint8_t channel = get_channel_from_port_number(port_num);
+
+    if (channel < MAVLINK_COMM_NUM_BUFFERS && chan(channel) != nullptr)
+    {
+        chan(channel)->set_message_interval(msg_id, interval_us);
+    }
+
+    return MAV_RESULT_FAILED;
+}
+
+uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (chan(i)->get_uart() == AP::serialmanager().get_serial_by_id(port_num)) {
+            return i;
+        }
+    }
+
+    return UINT8_MAX;
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_long_t &packet)
