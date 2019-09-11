@@ -13,16 +13,15 @@
 /* Helper class implements AP_HAL::Print so we can use utility/vprintf */
 class BufferPrinter : public AP_HAL::BetterStream {
 public:
-    BufferPrinter(char* str, size_t size)  : _offs(0), _str(str), _size(size)  {}
+    BufferPrinter(char* str, size_t size)  :
+        _offs(0), _str(str), _size(size)  {}
 
     size_t write(uint8_t c) override {
         if (_offs < _size) {
             _str[_offs] = c;
-            _offs++;
-            return 1;
-        } else {
-            return 0;
         }
+        _offs++;
+        return 1;
     }
     size_t write(const uint8_t *buffer, size_t size) override {
         size_t n = 0;
@@ -52,15 +51,20 @@ int AP_HAL::Util::snprintf(char* str, size_t size, const char *format, ...)
 
 int AP_HAL::Util::vsnprintf(char* str, size_t size, const char *format, va_list ap)
 {
-    if (size == 0) {
-        return 0;
-    }
-    BufferPrinter buf(str, size-1);
+    // note that size==0 must be handled as functions like vasprintf() rely on the return
+    // value being the number of bytes that would be printed if there was enough space.
+    BufferPrinter buf(str, size?size-1:0);
     print_vprintf(&buf, format, ap);
     // null terminate
-    int ret = buf._offs;
-    str[ret] = '\0';
-    return ret;
+    size_t ret = buf._offs;
+    if (ret < size) {
+        // if the string did fit then nul terminate
+        str[ret] = '\0';
+    } else if (size > 0) {
+        // if it didn't fit then terminate using passed in size
+        str[size-1] = 0;
+    }
+    return int(ret);
 }
 
 uint64_t AP_HAL::Util::get_hw_rtc() const
