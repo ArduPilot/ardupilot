@@ -2631,6 +2631,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
                                     "SRC=%u/%u:",
                                     msg.sysid,
                                     msg.compid);
+        offset = MIN(offset, max_prefix_len);
     }
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
