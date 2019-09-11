@@ -49,7 +49,7 @@ public:
     void handle_tack_request_acro();
 
     // return target heading in radians when tacking (only used in acro)
-    float get_tack_heading_rad() const;
+    float get_tack_heading_rad();
 
     // handle user initiated tack while in autonomous modes (Auto, Guided, RTL, SmartRTL, etc)
     void handle_tack_request_auto();
@@ -97,16 +97,12 @@ private:
     AP_Float sail_no_go;
     AP_Float sail_windspeed_min;
 
-    enum Sailboat_Tack {
-        TACK_PORT,
-        TACK_STARBOARD
-    };
-
     RC_Channel *channel_mainsail;   // rc input channel for controlling mainsail
     bool currently_tacking;         // true when sailboat is in the process of tacking to a new heading
     float tack_heading_rad;         // target heading in radians while tacking in either acro or autonomous modes
-    uint32_t auto_tack_request_ms;  // system time user requested tack in autonomous modes
+    uint32_t tack_request_ms;       // system time user requested tack
     uint32_t auto_tack_start_ms;    // system time when tack was started in autonomous mode
+    uint32_t tack_clear_ms;         // system time when tack was cleared
     bool tack_assist;               // true if we should use some throttle to assist tack
     UseMotor motor_state;           // current state of motor output
 };
