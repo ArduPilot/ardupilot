@@ -402,7 +402,9 @@ void Mode::navigate_to_waypoint()
     if (g2.sailboat.use_indirect_route(desired_heading_cd)) {
         // sailboats use heading controller when tacking upwind
         desired_heading_cd = g2.sailboat.calc_heading(desired_heading_cd);
-        calc_steering_to_heading(desired_heading_cd, g2.wp_nav.get_pivot_rate());
+        // use pivot turn rate for tacks
+        const float turn_rate = g2.sailboat.tacking() ? g2.wp_nav.get_pivot_rate() : 0.0f;
+        calc_steering_to_heading(desired_heading_cd, turn_rate);
     } else {
         // call turn rate steering controller
         calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads(), desired_speed, g2.wp_nav.get_reversed());
