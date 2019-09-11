@@ -1,3 +1,15 @@
+Release 3.9.11, 12th September 2019
+------------------------------------
+
+This release fixes two bugs:
+
+ - fixed an uninitialised byte in UAVCAN compass device IDs that
+   caused users to need to re-calibrate UAVCAN compasses
+
+ - fixed an I2C interrupt storm that could potentially cause a
+   crash. This crash has never been shown to happen in our stable
+   releases, but is being fixed as a preventative measure
+
 Release 3.9.10, 26th August 2019
 -------------------------------------
 
