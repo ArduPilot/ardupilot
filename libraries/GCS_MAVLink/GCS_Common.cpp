@@ -2329,7 +2329,7 @@ bool GCS_MAVLINK::get_ap_message_interval(ap_message id, uint16_t &interval_ms) 
 
 MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_command_long_t &packet)
 {
-    if (comm_get_txspace(chan) < PAYLOAD_SIZE(chan, MESSAGE_INTERVAL) + PAYLOAD_SIZE(chan, COMMAND_ACK)) {
+    if (txspace() < PAYLOAD_SIZE(chan, MESSAGE_INTERVAL) + PAYLOAD_SIZE(chan, COMMAND_ACK)) {
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
