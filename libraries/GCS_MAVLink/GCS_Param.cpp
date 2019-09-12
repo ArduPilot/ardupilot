@@ -49,8 +49,8 @@ GCS_MAVLINK::queued_param_send()
     if (bytes_allowed < size_for_one_param_value_msg) {
         bytes_allowed = size_for_one_param_value_msg;
     }
-    if (bytes_allowed > comm_get_txspace(chan)) {
-        bytes_allowed = comm_get_txspace(chan);
+    if (bytes_allowed > txspace()) {
+        bytes_allowed = txspace();
     }
     uint32_t count = bytes_allowed / size_for_one_param_value_msg;
 

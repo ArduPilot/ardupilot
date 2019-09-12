@@ -44,31 +44,8 @@ static HAL_Semaphore chan_locks[MAVLINK_COMM_NUM_BUFFERS];
 
 mavlink_system_t mavlink_system = {7,1};
 
-// mask of serial ports disabled to allow for SERIAL_CONTROL
-static uint8_t mavlink_locked_mask;
-
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
-
-/*
-  lock a channel, preventing use by MAVLink
- */
-void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
-{
-    if (!valid_channel(chan)) {
-        return;
-    }
-    if (lock) {
-        mavlink_locked_mask |= (1U<<(unsigned)_chan);
-    } else {
-        mavlink_locked_mask &= ~(1U<<(unsigned)_chan);
-    }
-}
-
-bool GCS_MAVLINK::locked() const
-{
-    return (1U<<chan) & mavlink_locked_mask;
-}
 
 // set a channel as private. Private channels get sent heartbeats, but
 // don't get broadcast packets or forwarded packets
@@ -102,17 +79,11 @@ MAV_PARAM_TYPE GCS_MAVLINK::mav_param_type(enum ap_var_type t)
 /// @returns		Number of bytes available
 uint16_t comm_get_txspace(mavlink_channel_t chan)
 {
-    if (!valid_channel(chan)) {
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link == nullptr) {
         return 0;
     }
-    if ((1U<<chan) & mavlink_locked_mask) {
-        return 0;
-    }
-	int16_t ret = mavlink_comm_port[chan]->txspace();
-	if (ret < 0) {
-		ret = 0;
-	}
-    return (uint16_t)ret;
+    return link->txspace();
 }
 
 /*
