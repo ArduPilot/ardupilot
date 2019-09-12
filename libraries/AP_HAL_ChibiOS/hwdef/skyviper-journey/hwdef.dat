@@ -1,5 +1,5 @@
 # hw definition file for processing by chibios_pins.py
-# new F412 layout
+# new SkyViper 2018 Journey
 
 MCU STM32F4xx STM32F412Rx
 
