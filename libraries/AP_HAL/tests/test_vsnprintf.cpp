@@ -34,6 +34,29 @@ TEST(vsnprintf_Test, Basic)
         EXPECT_TRUE(streq(output, "0123"));
         EXPECT_EQ(bytes_required, 8);
     }
+    { // ensure rest of buffer survives
+        memset(output, 'A', 10);
+        const int bytes_required = snprintf(output, 5, "012345678");
+        EXPECT_TRUE(streq(output, "0123"));
+        EXPECT_EQ(bytes_required, 9);
+        EXPECT_EQ(output[6], 'A');
+    }
+    { // simple float
+        const int bytes_required = hal.util->snprintf(output, ARRAY_SIZE(output), "%f", 1/3.0);
+        EXPECT_EQ(bytes_required, 8);
+        EXPECT_TRUE(streq(output, "0.333333"));
+    }
+    { // less simple float
+        const int bytes_required = hal.util->snprintf(output, ARRAY_SIZE(output), "%30.9f", 1/3.0);
+        EXPECT_EQ(bytes_required, 28);
+        EXPECT_TRUE(streq(output, "                   0.3333333"));
+    }
+
+    { // simple string
+        const int bytes_required = hal.util->snprintf(output, ARRAY_SIZE(output), "%s %s %c", "ABC", "DEF", 'x');
+        EXPECT_EQ(bytes_required, 9);
+        EXPECT_TRUE(streq(output, "ABC DEF x"));
+    }
 }
 
 AP_GTEST_MAIN()
