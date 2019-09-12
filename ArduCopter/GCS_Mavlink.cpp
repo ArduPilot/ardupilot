@@ -570,11 +570,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_preflight_reboot(const mavlink_command_lon
     return GCS_MAVLINK::handle_preflight_reboot(packet);
 }
 
-bool GCS_MAVLINK_Copter::set_home_to_current_location(bool lock) {
-    return copter.set_home_to_current_location(lock);
+bool GCS_MAVLINK_Copter::set_home_to_current_location(bool _lock) {
+    return copter.set_home_to_current_location(_lock);
 }
-bool GCS_MAVLINK_Copter::set_home(const Location& loc, bool lock) {
-    return copter.set_home(loc, lock);
+bool GCS_MAVLINK_Copter::set_home(const Location& loc, bool _lock) {
+    return copter.set_home(loc, _lock);
 }
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_int_t &packet)
