@@ -709,22 +709,22 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 }
 
 
-bool GCS_MAVLINK_Plane::set_home_to_current_location(bool lock)
+bool GCS_MAVLINK_Plane::set_home_to_current_location(bool _lock)
 {
     if (!plane.set_home_persistently(AP::gps().location())) {
         return false;
     }
-    if (lock) {
+    if (_lock) {
         AP::ahrs().lock_home();
     }
     return true;
 }
-bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool lock)
+bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool _lock)
 {
     if (!AP::ahrs().set_home(loc)) {
         return false;
     }
-    if (lock) {
+    if (_lock) {
         AP::ahrs().lock_home();
     }
     return true;
