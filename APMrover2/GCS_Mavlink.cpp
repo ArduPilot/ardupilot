@@ -586,11 +586,11 @@ MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlin
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
 }
 
-bool GCS_MAVLINK_Rover::set_home_to_current_location(bool lock) {
-    return rover.set_home_to_current_location(lock);
+bool GCS_MAVLINK_Rover::set_home_to_current_location(bool _lock) {
+    return rover.set_home_to_current_location(_lock);
 }
-bool GCS_MAVLINK_Rover::set_home(const Location& loc, bool lock) {
-    return rover.set_home(loc, lock);
+bool GCS_MAVLINK_Rover::set_home(const Location& loc, bool _lock) {
+    return rover.set_home(loc, _lock);
 }
 
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_int_t &packet)
