@@ -642,6 +642,10 @@ public:
     AP_Int32 rtl_options;
 #endif
 
+#if MODE_FLIP_ENABLED == ENABLED
+    // mode_flip_ptr is here so flip can have parameters
+    void *mode_flip_ptr;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];
