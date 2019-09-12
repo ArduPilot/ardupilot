@@ -21,7 +21,6 @@
    https://github.com/esden/superbitrf-firmware
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-static THD_WORKING_AREA(_irq_handler_wa, 512);
 #define TIMEOUT_PRIORITY 181
 #define EVT_TIMEOUT EVENT_MASK(0)
 #define EVT_IRQ EVENT_MASK(1)
@@ -41,7 +40,7 @@ static THD_WORKING_AREA(_irq_handler_wa, 512);
 
 extern const AP_HAL::HAL& hal;
 
-#define Debug(level, fmt, args...)   do { if ((level) <= get_debug_level()) { hal.console->printf(fmt, ##args); }} while (0)
+#define Debug(level, fmt, args...)   do { if ((level) <= get_debug_level()) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
 
 #define LP_FIFO_SIZE  16      // Physical data FIFO lengths in Radio
 
@@ -262,15 +261,16 @@ bool AP_Radio_cypress::init(void)
 {
     dev = hal.spi->get_device(CYRF_SPI_DEVICE);
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    if(_irq_handler_ctx != nullptr) {
+    if (_irq_handler_ctx != nullptr) {
         AP_HAL::panic("AP_Radio_cypress: double instantiation of irq_handler\n");
     }
     chVTObjectInit(&timeout_vt);
-    _irq_handler_ctx = chThdCreateStatic(_irq_handler_wa,
-                     sizeof(_irq_handler_wa),
-                     TIMEOUT_PRIORITY,        /* Initial priority.    */
-                     irq_handler_thd,  /* Thread function.     */
-                     NULL);                     /* Thread parameter.    */
+    _irq_handler_ctx = chThdCreateFromHeap(NULL,
+                                           THD_WORKING_AREA_SIZE(2048),
+                                           "radio_cypress",
+                                           TIMEOUT_PRIORITY,
+                                           irq_handler_thd,
+                                           NULL);
 #endif
     load_bind_info();
 
@@ -335,7 +335,7 @@ void AP_Radio_cypress::update(void)
 {
     check_fw_ack();
 }
-    
+
 
 /*
   print one second debug info
@@ -350,7 +350,7 @@ void AP_Radio_cypress::print_debug_info(void)
           num_channels(),
           unsigned(dsm.send_irq_count),
           unsigned(dsm.send_count),
-          dsm.pwm_channels[0], dsm.pwm_channels[1], dsm.pwm_channels[2], dsm.pwm_channels[3], 
+          dsm.pwm_channels[0], dsm.pwm_channels[1], dsm.pwm_channels[2], dsm.pwm_channels[3],
           dsm.pwm_channels[4], dsm.pwm_channels[5], dsm.pwm_channels[6], dsm.pwm_channels[7],
           dsm.pwm_channels[13]);
 }
@@ -384,7 +384,7 @@ uint8_t AP_Radio_cypress::num_channels(void)
         dsm.pwm_channels[chan-1] = dsm.tx_pps;
         dsm.num_channels = MAX(dsm.num_channels, chan);
     }
-    
+
     if (now - last_debug_print_ms > 1000) {
         last_debug_print_ms = now;
         if (get_debug_level() > 1) {
@@ -437,92 +437,92 @@ bool AP_Radio_cypress::send(const uint8_t *pkt, uint16_t len)
 
 /* The PN codes */
 const uint8_t AP_Radio_cypress::pn_codes[5][9][8] = {
-{ /* Row 0 */
-  /* Col 0 */ {0x03, 0xBC, 0x6E, 0x8A, 0xEF, 0xBD, 0xFE, 0xF8},
-  /* Col 1 */ {0x88, 0x17, 0x13, 0x3B, 0x2D, 0xBF, 0x06, 0xD6},
-  /* Col 2 */ {0xF1, 0x94, 0x30, 0x21, 0xA1, 0x1C, 0x88, 0xA9},
-  /* Col 3 */ {0xD0, 0xD2, 0x8E, 0xBC, 0x82, 0x2F, 0xE3, 0xB4},
-  /* Col 4 */ {0x8C, 0xFA, 0x47, 0x9B, 0x83, 0xA5, 0x66, 0xD0},
-  /* Col 5 */ {0x07, 0xBD, 0x9F, 0x26, 0xC8, 0x31, 0x0F, 0xB8},
-  /* Col 6 */ {0xEF, 0x03, 0x95, 0x89, 0xB4, 0x71, 0x61, 0x9D},
-  /* Col 7 */ {0x40, 0xBA, 0x97, 0xD5, 0x86, 0x4F, 0xCC, 0xD1},
-  /* Col 8 */ {0xD7, 0xA1, 0x54, 0xB1, 0x5E, 0x89, 0xAE, 0x86}
-},
-{ /* Row 1 */
-  /* Col 0 */ {0x83, 0xF7, 0xA8, 0x2D, 0x7A, 0x44, 0x64, 0xD3},
-  /* Col 1 */ {0x3F, 0x2C, 0x4E, 0xAA, 0x71, 0x48, 0x7A, 0xC9},
-  /* Col 2 */ {0x17, 0xFF, 0x9E, 0x21, 0x36, 0x90, 0xC7, 0x82},
-  /* Col 3 */ {0xBC, 0x5D, 0x9A, 0x5B, 0xEE, 0x7F, 0x42, 0xEB},
-  /* Col 4 */ {0x24, 0xF5, 0xDD, 0xF8, 0x7A, 0x77, 0x74, 0xE7},
-  /* Col 5 */ {0x3D, 0x70, 0x7C, 0x94, 0xDC, 0x84, 0xAD, 0x95},
-  /* Col 6 */ {0x1E, 0x6A, 0xF0, 0x37, 0x52, 0x7B, 0x11, 0xD4},
-  /* Col 7 */ {0x62, 0xF5, 0x2B, 0xAA, 0xFC, 0x33, 0xBF, 0xAF},
-  /* Col 8 */ {0x40, 0x56, 0x32, 0xD9, 0x0F, 0xD9, 0x5D, 0x97}
-},
-{ /* Row 2 */
-  /* Col 0 */ {0x40, 0x56, 0x32, 0xD9, 0x0F, 0xD9, 0x5D, 0x97},
-  /* Col 1 */ {0x8E, 0x4A, 0xD0, 0xA9, 0xA7, 0xFF, 0x20, 0xCA},
-  /* Col 2 */ {0x4C, 0x97, 0x9D, 0xBF, 0xB8, 0x3D, 0xB5, 0xBE},
-  /* Col 3 */ {0x0C, 0x5D, 0x24, 0x30, 0x9F, 0xCA, 0x6D, 0xBD},
-  /* Col 4 */ {0x50, 0x14, 0x33, 0xDE, 0xF1, 0x78, 0x95, 0xAD},
-  /* Col 5 */ {0x0C, 0x3C, 0xFA, 0xF9, 0xF0, 0xF2, 0x10, 0xC9},
-  /* Col 6 */ {0xF4, 0xDA, 0x06, 0xDB, 0xBF, 0x4E, 0x6F, 0xB3},
-  /* Col 7 */ {0x9E, 0x08, 0xD1, 0xAE, 0x59, 0x5E, 0xE8, 0xF0},
-  /* Col 8 */ {0xC0, 0x90, 0x8F, 0xBB, 0x7C, 0x8E, 0x2B, 0x8E}
-},
-{ /* Row 3 */
-  /* Col 0 */ {0xC0, 0x90, 0x8F, 0xBB, 0x7C, 0x8E, 0x2B, 0x8E},
-  /* Col 1 */ {0x80, 0x69, 0x26, 0x80, 0x08, 0xF8, 0x49, 0xE7},
-  /* Col 2 */ {0x7D, 0x2D, 0x49, 0x54, 0xD0, 0x80, 0x40, 0xC1},
-  /* Col 3 */ {0xB6, 0xF2, 0xE6, 0x1B, 0x80, 0x5A, 0x36, 0xB4},
-  /* Col 4 */ {0x42, 0xAE, 0x9C, 0x1C, 0xDA, 0x67, 0x05, 0xF6},
-  /* Col 5 */ {0x9B, 0x75, 0xF7, 0xE0, 0x14, 0x8D, 0xB5, 0x80},
-  /* Col 6 */ {0xBF, 0x54, 0x98, 0xB9, 0xB7, 0x30, 0x5A, 0x88},
-  /* Col 7 */ {0x35, 0xD1, 0xFC, 0x97, 0x23, 0xD4, 0xC9, 0x88},
-  /* Col 8 */ {0x88, 0xE1, 0xD6, 0x31, 0x26, 0x5F, 0xBD, 0x40}
-},
-{ /* Row 4 */
-  /* Col 0 */ {0xE1, 0xD6, 0x31, 0x26, 0x5F, 0xBD, 0x40, 0x93},
-  /* Col 1 */ {0xDC, 0x68, 0x08, 0x99, 0x97, 0xAE, 0xAF, 0x8C},
-  /* Col 2 */ {0xC3, 0x0E, 0x01, 0x16, 0x0E, 0x32, 0x06, 0xBA},
-  /* Col 3 */ {0xE0, 0x83, 0x01, 0xFA, 0xAB, 0x3E, 0x8F, 0xAC},
-  /* Col 4 */ {0x5C, 0xD5, 0x9C, 0xB8, 0x46, 0x9C, 0x7D, 0x84},
-  /* Col 5 */ {0xF1, 0xC6, 0xFE, 0x5C, 0x9D, 0xA5, 0x4F, 0xB7},
-  /* Col 6 */ {0x58, 0xB5, 0xB3, 0xDD, 0x0E, 0x28, 0xF1, 0xB0},
-  /* Col 7 */ {0x5F, 0x30, 0x3B, 0x56, 0x96, 0x45, 0xF4, 0xA1},
-  /* Col 8 */ {0x03, 0xBC, 0x6E, 0x8A, 0xEF, 0xBD, 0xFE, 0xF8}
-},
+    { /* Row 0 */
+        /* Col 0 */ {0x03, 0xBC, 0x6E, 0x8A, 0xEF, 0xBD, 0xFE, 0xF8},
+        /* Col 1 */ {0x88, 0x17, 0x13, 0x3B, 0x2D, 0xBF, 0x06, 0xD6},
+        /* Col 2 */ {0xF1, 0x94, 0x30, 0x21, 0xA1, 0x1C, 0x88, 0xA9},
+        /* Col 3 */ {0xD0, 0xD2, 0x8E, 0xBC, 0x82, 0x2F, 0xE3, 0xB4},
+        /* Col 4 */ {0x8C, 0xFA, 0x47, 0x9B, 0x83, 0xA5, 0x66, 0xD0},
+        /* Col 5 */ {0x07, 0xBD, 0x9F, 0x26, 0xC8, 0x31, 0x0F, 0xB8},
+        /* Col 6 */ {0xEF, 0x03, 0x95, 0x89, 0xB4, 0x71, 0x61, 0x9D},
+        /* Col 7 */ {0x40, 0xBA, 0x97, 0xD5, 0x86, 0x4F, 0xCC, 0xD1},
+        /* Col 8 */ {0xD7, 0xA1, 0x54, 0xB1, 0x5E, 0x89, 0xAE, 0x86}
+    },
+    { /* Row 1 */
+        /* Col 0 */ {0x83, 0xF7, 0xA8, 0x2D, 0x7A, 0x44, 0x64, 0xD3},
+        /* Col 1 */ {0x3F, 0x2C, 0x4E, 0xAA, 0x71, 0x48, 0x7A, 0xC9},
+        /* Col 2 */ {0x17, 0xFF, 0x9E, 0x21, 0x36, 0x90, 0xC7, 0x82},
+        /* Col 3 */ {0xBC, 0x5D, 0x9A, 0x5B, 0xEE, 0x7F, 0x42, 0xEB},
+        /* Col 4 */ {0x24, 0xF5, 0xDD, 0xF8, 0x7A, 0x77, 0x74, 0xE7},
+        /* Col 5 */ {0x3D, 0x70, 0x7C, 0x94, 0xDC, 0x84, 0xAD, 0x95},
+        /* Col 6 */ {0x1E, 0x6A, 0xF0, 0x37, 0x52, 0x7B, 0x11, 0xD4},
+        /* Col 7 */ {0x62, 0xF5, 0x2B, 0xAA, 0xFC, 0x33, 0xBF, 0xAF},
+        /* Col 8 */ {0x40, 0x56, 0x32, 0xD9, 0x0F, 0xD9, 0x5D, 0x97}
+    },
+    { /* Row 2 */
+        /* Col 0 */ {0x40, 0x56, 0x32, 0xD9, 0x0F, 0xD9, 0x5D, 0x97},
+        /* Col 1 */ {0x8E, 0x4A, 0xD0, 0xA9, 0xA7, 0xFF, 0x20, 0xCA},
+        /* Col 2 */ {0x4C, 0x97, 0x9D, 0xBF, 0xB8, 0x3D, 0xB5, 0xBE},
+        /* Col 3 */ {0x0C, 0x5D, 0x24, 0x30, 0x9F, 0xCA, 0x6D, 0xBD},
+        /* Col 4 */ {0x50, 0x14, 0x33, 0xDE, 0xF1, 0x78, 0x95, 0xAD},
+        /* Col 5 */ {0x0C, 0x3C, 0xFA, 0xF9, 0xF0, 0xF2, 0x10, 0xC9},
+        /* Col 6 */ {0xF4, 0xDA, 0x06, 0xDB, 0xBF, 0x4E, 0x6F, 0xB3},
+        /* Col 7 */ {0x9E, 0x08, 0xD1, 0xAE, 0x59, 0x5E, 0xE8, 0xF0},
+        /* Col 8 */ {0xC0, 0x90, 0x8F, 0xBB, 0x7C, 0x8E, 0x2B, 0x8E}
+    },
+    { /* Row 3 */
+        /* Col 0 */ {0xC0, 0x90, 0x8F, 0xBB, 0x7C, 0x8E, 0x2B, 0x8E},
+        /* Col 1 */ {0x80, 0x69, 0x26, 0x80, 0x08, 0xF8, 0x49, 0xE7},
+        /* Col 2 */ {0x7D, 0x2D, 0x49, 0x54, 0xD0, 0x80, 0x40, 0xC1},
+        /* Col 3 */ {0xB6, 0xF2, 0xE6, 0x1B, 0x80, 0x5A, 0x36, 0xB4},
+        /* Col 4 */ {0x42, 0xAE, 0x9C, 0x1C, 0xDA, 0x67, 0x05, 0xF6},
+        /* Col 5 */ {0x9B, 0x75, 0xF7, 0xE0, 0x14, 0x8D, 0xB5, 0x80},
+        /* Col 6 */ {0xBF, 0x54, 0x98, 0xB9, 0xB7, 0x30, 0x5A, 0x88},
+        /* Col 7 */ {0x35, 0xD1, 0xFC, 0x97, 0x23, 0xD4, 0xC9, 0x88},
+        /* Col 8 */ {0x88, 0xE1, 0xD6, 0x31, 0x26, 0x5F, 0xBD, 0x40}
+    },
+    { /* Row 4 */
+        /* Col 0 */ {0xE1, 0xD6, 0x31, 0x26, 0x5F, 0xBD, 0x40, 0x93},
+        /* Col 1 */ {0xDC, 0x68, 0x08, 0x99, 0x97, 0xAE, 0xAF, 0x8C},
+        /* Col 2 */ {0xC3, 0x0E, 0x01, 0x16, 0x0E, 0x32, 0x06, 0xBA},
+        /* Col 3 */ {0xE0, 0x83, 0x01, 0xFA, 0xAB, 0x3E, 0x8F, 0xAC},
+        /* Col 4 */ {0x5C, 0xD5, 0x9C, 0xB8, 0x46, 0x9C, 0x7D, 0x84},
+        /* Col 5 */ {0xF1, 0xC6, 0xFE, 0x5C, 0x9D, 0xA5, 0x4F, 0xB7},
+        /* Col 6 */ {0x58, 0xB5, 0xB3, 0xDD, 0x0E, 0x28, 0xF1, 0xB0},
+        /* Col 7 */ {0x5F, 0x30, 0x3B, 0x56, 0x96, 0x45, 0xF4, 0xA1},
+        /* Col 8 */ {0x03, 0xBC, 0x6E, 0x8A, 0xEF, 0xBD, 0xFE, 0xF8}
+    },
 };
 const uint8_t AP_Radio_cypress::pn_bind[] = { 0x98, 0x88, 0x1B, 0xE4, 0x30, 0x79, 0x03, 0x84 };
 
 /*The CYRF initial config, binding config and transfer config */
 const AP_Radio_cypress::config AP_Radio_cypress::cyrf_config[] = {
-        {CYRF_MODE_OVERRIDE, CYRF_RST},                                         // Reset the device
-        {CYRF_CLK_EN, CYRF_RXF},                                                // Enable the clock
-        {CYRF_AUTO_CAL_TIME, 0x3C},                                             // From manual, needed for initialization
-        {CYRF_AUTO_CAL_OFFSET, 0x14},                                           // From manual, needed for initialization
-        {CYRF_RX_CFG, CYRF_LNA | CYRF_FAST_TURN_EN},                            // Enable low noise amplifier and fast turning
-        {CYRF_TX_OFFSET_LSB, 0x55},                                             // From manual, typical configuration
-        {CYRF_TX_OFFSET_MSB, 0x05},                                             // From manual, typical configuration
-        {CYRF_XACT_CFG, CYRF_MODE_SYNTH_RX | CYRF_FRC_END},                     // Force in Synth RX mode
-        {CYRF_TX_CFG, CYRF_DATA_CODE_LENGTH | CYRF_DATA_MODE_SDR | CYRF_PA_4},  // Enable 64 chip codes, SDR mode and amplifier +4dBm
-        {CYRF_DATA64_THOLD, 0x0E},                                              // From manual, typical configuration
-        {CYRF_XACT_CFG, CYRF_MODE_SYNTH_RX},                                    // Set in Synth RX mode (again, really needed?)
-        {CYRF_IO_CFG, CYRF_IRQ_POL},                                            // IRQ active high
+    {CYRF_MODE_OVERRIDE, CYRF_RST},                                         // Reset the device
+    {CYRF_CLK_EN, CYRF_RXF},                                                // Enable the clock
+    {CYRF_AUTO_CAL_TIME, 0x3C},                                             // From manual, needed for initialization
+    {CYRF_AUTO_CAL_OFFSET, 0x14},                                           // From manual, needed for initialization
+    {CYRF_RX_CFG, CYRF_LNA | CYRF_FAST_TURN_EN},                            // Enable low noise amplifier and fast turning
+    {CYRF_TX_OFFSET_LSB, 0x55},                                             // From manual, typical configuration
+    {CYRF_TX_OFFSET_MSB, 0x05},                                             // From manual, typical configuration
+    {CYRF_XACT_CFG, CYRF_MODE_SYNTH_RX | CYRF_FRC_END},                     // Force in Synth RX mode
+    {CYRF_TX_CFG, CYRF_DATA_CODE_LENGTH | CYRF_DATA_MODE_SDR | CYRF_PA_4},  // Enable 64 chip codes, SDR mode and amplifier +4dBm
+    {CYRF_DATA64_THOLD, 0x0E},                                              // From manual, typical configuration
+    {CYRF_XACT_CFG, CYRF_MODE_SYNTH_RX},                                    // Set in Synth RX mode (again, really needed?)
+    {CYRF_IO_CFG, CYRF_IRQ_POL},                                            // IRQ active high
 };
 
 const AP_Radio_cypress::config AP_Radio_cypress::cyrf_bind_config[] = {
-        {CYRF_TX_CFG, CYRF_DATA_CODE_LENGTH | CYRF_DATA_MODE_SDR | CYRF_PA_4},   // Enable 64 chip codes, SDR mode and amplifier +4dBm
-        {CYRF_FRAMING_CFG, CYRF_SOP_LEN | 0xE},                                  // Set SOP CODE to 64 chips and SOP Correlator Threshold to 0xE
-        {CYRF_RX_OVERRIDE, CYRF_FRC_RXDR | CYRF_DIS_RXCRC},                      // Force receive data rate and disable receive CRC checker
-        {CYRF_EOP_CTRL, 0x02},                                                   // Only enable EOP symbol count of 2
-        {CYRF_TX_OVERRIDE, CYRF_DIS_TXCRC},                                      // Disable transmit CRC generate
+    {CYRF_TX_CFG, CYRF_DATA_CODE_LENGTH | CYRF_DATA_MODE_SDR | CYRF_PA_4},   // Enable 64 chip codes, SDR mode and amplifier +4dBm
+    {CYRF_FRAMING_CFG, CYRF_SOP_LEN | 0xE},                                  // Set SOP CODE to 64 chips and SOP Correlator Threshold to 0xE
+    {CYRF_RX_OVERRIDE, CYRF_FRC_RXDR | CYRF_DIS_RXCRC},                      // Force receive data rate and disable receive CRC checker
+    {CYRF_EOP_CTRL, 0x02},                                                   // Only enable EOP symbol count of 2
+    {CYRF_TX_OVERRIDE, CYRF_DIS_TXCRC},                                      // Disable transmit CRC generate
 };
 const AP_Radio_cypress::config AP_Radio_cypress::cyrf_transfer_config[] = {
-        {CYRF_TX_CFG, CYRF_DATA_CODE_LENGTH | CYRF_DATA_MODE_8DR | CYRF_PA_4},   // Enable 64 chip codes, 8DR mode and amplifier +4dBm
-        {CYRF_FRAMING_CFG, CYRF_SOP_EN | CYRF_SOP_LEN | CYRF_LEN_EN | 0xE},      // Set SOP CODE enable, SOP CODE to 64 chips, Packet length enable, and SOP Correlator Threshold to 0xE
-        {CYRF_TX_OVERRIDE, 0x00},                                                // Reset TX overrides
-        {CYRF_RX_OVERRIDE, 0x00},                                                // Reset RX overrides
+    {CYRF_TX_CFG, CYRF_DATA_CODE_LENGTH | CYRF_DATA_MODE_8DR | CYRF_PA_4},   // Enable 64 chip codes, 8DR mode and amplifier +4dBm
+    {CYRF_FRAMING_CFG, CYRF_SOP_EN | CYRF_SOP_LEN | CYRF_LEN_EN | 0xE},      // Set SOP CODE enable, SOP CODE to 64 chips, Packet length enable, and SOP Correlator Threshold to 0xE
+    {CYRF_TX_OVERRIDE, 0x00},                                                // Reset TX overrides
+    {CYRF_RX_OVERRIDE, 0x00},                                                // Reset RX overrides
 };
 
 /*
@@ -617,7 +617,7 @@ void AP_Radio_cypress::radio_init(void)
     if (get_disable_crc()) {
         write_register(CYRF_RX_OVERRIDE, CYRF_DIS_RXCRC);
     }
-    
+
     dsm_setup_transfer_dsmx();
 
     write_register(CYRF_XTAL_CTRL,0x80);  // XOUT=BitSerial
@@ -632,9 +632,7 @@ void AP_Radio_cypress::radio_init(void)
     start_receive();
 
     // setup handler for rising edge of IRQ pin
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     hal.gpio->attach_interrupt(HAL_GPIO_RADIO_IRQ, trigger_irq_radio_event, AP_HAL::GPIO::INTERRUPT_RISING);
-#endif
 }
 
 void AP_Radio_cypress::dump_registers(uint8_t n)
@@ -714,7 +712,7 @@ void AP_Radio_cypress::map_stick_mode(uint16_t *channels)
         channels[3] = tmp;
         break;
     }
-        
+
     case 2:
     default:
         // nothing to do, transmitter is natively mode2
@@ -751,7 +749,7 @@ bool AP_Radio_cypress::parse_dsm_channels(const uint8_t *data)
 
     // default value for channels above 4 is previous value
     memcpy(&pwm_channels[4], &dsm.pwm_channels[4], (max_channels-4)*sizeof(uint16_t));
-    
+
     if (!dsm_decode(AP_HAL::micros64(),
                     data,
                     pwm_channels,
@@ -772,7 +770,7 @@ bool AP_Radio_cypress::parse_dsm_channels(const uint8_t *data)
     memcpy(dsm.pwm_channels, pwm_channels, num_values*sizeof(uint16_t));
 
     dsm.last_parse_us = AP_HAL::micros();
-    
+
     // suppress channel 8 ack values
     dsm.num_channels = num_values==8?7:num_values;
 
@@ -876,7 +874,7 @@ void AP_Radio_cypress::process_bind(const uint8_t *pkt, uint8_t len)
             ok = false;
         }
     }
-    
+
     if (ok) {
         uint8_t mfg_id[4] = {uint8_t(~pkt[0]), uint8_t(~pkt[1]), uint8_t(~pkt[2]), uint8_t(~pkt[3])};
         uint8_t num_chan = pkt[11];
@@ -906,7 +904,7 @@ void AP_Radio_cypress::process_bind(const uint8_t *pkt, uint8_t len)
         if (is_DSM2()) {
             dsm2_start_sync();
         }
-        
+
         dsm.need_bind_save = true;
     }
 }
@@ -932,9 +930,7 @@ void AP_Radio_cypress::dsm2_start_sync(void)
  */
 void AP_Radio_cypress::setup_timeout(uint32_t timeout_ms)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     chVTSet(&timeout_vt, chTimeMS2I(timeout_ms), trigger_timeout_event, nullptr);
-#endif
 }
 
 /*
@@ -946,7 +942,7 @@ void AP_Radio_cypress::process_packet(const uint8_t *pkt, uint8_t len)
         bool ok;
         const uint8_t *id = dsm.mfg_id;
         uint32_t now = AP_HAL::micros();
-        
+
         if (is_DSM2()) {
             ok = (pkt[0] == ((~id[2])&0xFF) && pkt[1] == (~id[3]&0xFF));
         } else {
@@ -961,7 +957,7 @@ void AP_Radio_cypress::process_packet(const uint8_t *pkt, uint8_t len)
             } else {
                 if (dsm.current_rf_channel != dsm.channels[0]) {
                     dsm.channels[1] = dsm.current_rf_channel;
-                    dsm.sync = DSM2_OK;                    
+                    dsm.sync = DSM2_OK;
                     Debug(2, "DSM2 SYNCB chan=%u\n", dsm.channels[1]);
                     dsm.last_recv_us = now;
                 }
@@ -991,7 +987,7 @@ void AP_Radio_cypress::process_packet(const uint8_t *pkt, uint8_t len)
             } else if (packet_dt_us < 8000) {
                 dsm.pkt_time2 = packet_dt_us;
             }
-            
+
             if (get_telem_enable()) {
                 if (packet_dt_us < 5000 &&
                     (get_autobind_time() == 0 || dsm.have_tx_pps)) {
@@ -1014,7 +1010,7 @@ void AP_Radio_cypress::process_packet(const uint8_t *pkt, uint8_t len)
             stats.bad_packets++;
         }
     } else {
-            stats.bad_packets++;
+        stats.bad_packets++;
     }
 }
 
@@ -1025,7 +1021,7 @@ void AP_Radio_cypress::process_packet(const uint8_t *pkt, uint8_t len)
 void AP_Radio_cypress::start_receive(void)
 {
     dsm_choose_channel();
-    
+
     write_register(CYRF_RX_IRQ_STATUS, CYRF_RXOW_IRQ);
     write_register(CYRF_RX_CTRL, CYRF_RX_GO | CYRF_RXC_IRQEN | CYRF_RXE_IRQEN);
 
@@ -1084,7 +1080,7 @@ void AP_Radio_cypress::irq_handler_recv(uint8_t rx_status)
     if (state == STATE_AUTOBIND) {
         state = STATE_RECV;
     }
-    
+
     if (state != STATE_SEND_TELEM) {
         start_receive();
     }
@@ -1101,7 +1097,7 @@ void AP_Radio_cypress::irq_handler_send(uint8_t tx_status)
         return;
     }
     state = STATE_RECV;
-    start_receive();        
+    start_receive();
 }
 
 
@@ -1121,7 +1117,7 @@ void AP_Radio_cypress::irq_handler(void)
 
     switch (state) {
     case STATE_AUTOBIND:
-        FALLTHROUGH;
+    // fallthrough
     case STATE_RECV:
     case STATE_BIND:
         irq_handler_recv(rx_status);
@@ -1137,7 +1133,7 @@ void AP_Radio_cypress::irq_handler(void)
         write_register(CYRF_RX_IRQ_STATUS, CYRF_RXOW_IRQ);
         write_register(CYRF_RX_CTRL, CYRF_RX_GO | CYRF_RXC_IRQEN | CYRF_RXE_IRQEN);
         break;
-        
+
     default:
         break;
     }
@@ -1163,7 +1159,7 @@ void AP_Radio_cypress::irq_timeout(void)
         Debug(3,"Ending FCC test\n");
         state = STATE_RECV;
     }
-    
+
     switch (state) {
     case STATE_SEND_TELEM:
         send_telem_packet();
@@ -1174,7 +1170,7 @@ void AP_Radio_cypress::irq_timeout(void)
     case STATE_AUTOBIND:
     case STATE_SEND_TELEM_WAIT:
         state = STATE_RECV;
-        FALLTHROUGH;
+    // fall through
     default:
         write_register(CYRF_XACT_CFG, CYRF_MODE_SYNTH_RX | CYRF_FRC_END);
         write_register(CYRF_RX_ABORT, 0);
@@ -1189,12 +1185,11 @@ void AP_Radio_cypress::irq_timeout(void)
 /*
   called on HRT timeout
  */
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 void AP_Radio_cypress::irq_handler_thd(void *arg)
 {
     _irq_handler_ctx = chThdGetSelfX();
     (void)arg;
-    while(true) {
+    while (true) {
         eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
         if (evt & EVT_IRQ) {
             radio_singleton->irq_handler();
@@ -1225,7 +1220,7 @@ void AP_Radio_cypress::trigger_irq_radio_event()
     }
     chSysUnlockFromISR();
 }
-#endif
+
 /*
  Set the current DSM channel with SOP, CRC and data code
  */
@@ -1263,7 +1258,7 @@ void AP_Radio_cypress::dsm_set_channel(uint8_t channel, bool is_dsm2, uint8_t so
         Debug(3,"Cypress: TXPOWER=%u\n", dsm.last_transmit_power);
         write_register(CYRF_TX_CFG, CYRF_DATA_CODE_LENGTH | CYRF_DATA_MODE_8DR | dsm.last_transmit_power);
     }
-    
+
     // Change channel
     set_channel(channel);
 }
@@ -1280,7 +1275,7 @@ void AP_Radio_cypress::dsm_generate_channels_dsmx(uint8_t mfg_id[4], uint8_t cha
     uint32_t id_tmp = id;
 
     // While not all channels are set
-    while(idx < 23) {
+    while (idx < 23) {
         int i;
         int count_3_27 = 0, count_28_51 = 0, count_52_76 = 0;
 
@@ -1298,7 +1293,7 @@ void AP_Radio_cypress::dsm_generate_channels_dsmx(uint8_t mfg_id[4], uint8_t cha
             }
 
             // Count the channel groups
-            if(channels[i] <= 27) {
+            if (channels[i] <= 27) {
                 count_3_27++;
             } else if (channels[i] <= 51) {
                 count_28_51++;
@@ -1347,7 +1342,7 @@ void AP_Radio_cypress::dsm_choose_channel(void)
     const uint32_t cycle_time = dsm.pkt_time1 + dsm.pkt_time2;
     uint8_t next_channel;
 
-    
+
     if (state == STATE_BIND) {
         if (now - dsm.last_chan_change_us > 15000) {
             // always use odd channel numbers for bind
@@ -1369,12 +1364,12 @@ void AP_Radio_cypress::dsm_choose_channel(void)
         dsm_set_channel(AUTOBIND_CHANNEL, true, 0, 0, 0);
 
         state = STATE_AUTOBIND;
-        
+
         Debug(3,"recv autobind %u\n", unsigned(now - dsm.last_autobind_send));
         dsm.last_autobind_send = now;
         return;
     }
-    
+
     if (is_DSM2() && dsm.sync == DSM2_SYNC_A) {
         if (now - dsm.last_chan_change_us > 15000) {
             // only even channels for DSM2 scan
@@ -1388,7 +1383,7 @@ void AP_Radio_cypress::dsm_choose_channel(void)
                         dsm.sync==DSM2_SYNC_B?~dsm.crc_seed:dsm.crc_seed);
         return;
     }
-    
+
     if (dt < 1000) {
         // normal channel advance
         next_channel = dsm.last_recv_chan + 1;
@@ -1420,7 +1415,7 @@ void AP_Radio_cypress::dsm_choose_channel(void)
             dsm.channels[1] = (dsm.channels[1]+2) % DSM_MAX_CHANNEL;
         } while (dsm.channels[1] == dsm.channels[0]);
     }
-    
+
     dsm.current_rf_channel = dsm.channels[dsm.current_channel];
 
     uint16_t seed = dsm.crc_seed;
@@ -1433,7 +1428,7 @@ void AP_Radio_cypress::dsm_choose_channel(void)
             dsm2_start_sync();
         }
     }
-    
+
     dsm_set_channel(dsm.current_rf_channel, is_DSM2(),
                     dsm.sop_col, dsm.data_col, seed);
 }
@@ -1452,7 +1447,7 @@ void AP_Radio_cypress::start_recv_bind(void)
 
     write_register(CYRF_XACT_CFG, CYRF_MODE_SYNTH_RX | CYRF_FRC_END);
     write_register(CYRF_RX_ABORT, 0);
-    
+
     state = STATE_BIND;
 
     radio_set_config(cyrf_bind_config, ARRAY_SIZE(cyrf_bind_config));
@@ -1502,7 +1497,7 @@ void AP_Radio_cypress::load_bind_info(void)
     struct bind_info info;
 
     uint8_t factory_test = get_factory_test();
-    
+
     if (factory_test != 0) {
         Debug(1, "In factory test %u\n", factory_test);
         memset(dsm.mfg_id, 0, sizeof(dsm.mfg_id));
@@ -1571,10 +1566,10 @@ void AP_Radio_cypress::send_telem_packet(void)
         memcpy(&pkt.payload.fw.data[0], &fwupload.pending_data[fwupload.acked], pkt.payload.fw.len);
         fwupload.len = pkt.payload.fw.len;
         Debug(4, "sent fw seq=%u offset=%u len=%u type=%u\n",
-               pkt.payload.fw.seq,
-               pkt.payload.fw.offset,
-               pkt.payload.fw.len,
-               pkt.type);
+              pkt.payload.fw.seq,
+              pkt.payload.fw.offset,
+              pkt.payload.fw.len,
+              pkt.type);
         sem.give();
         pkt.crc = crc_crc8((const uint8_t *)&pkt.type, 15);
     } else {
@@ -1583,7 +1578,7 @@ void AP_Radio_cypress::send_telem_packet(void)
         pkt.crc = crc_crc8((const uint8_t *)&pkt.type, 15);
         dsm.telem_send_count++;
     }
-    
+
     write_register(CYRF_XACT_CFG, CYRF_MODE_SYNTH_TX | CYRF_FRC_END);
     write_register(CYRF_RX_ABORT, 0);
     transmit16((uint8_t*)&pkt);
@@ -1602,7 +1597,7 @@ void AP_Radio_cypress::send_FCC_test_packet(void)
     state = STATE_SEND_FCC;
 
     uint8_t channel=0;
-    
+
     switch (get_fcc_test()) {
     case 0:
         // switch back to normal operation
@@ -1629,7 +1624,7 @@ void AP_Radio_cypress::send_FCC_test_packet(void)
     if (channel != dsm.forced_channel) {
         Debug(1,"FCC channel %u\n", channel);
         dsm.forced_channel = channel;
-    
+
         radio_set_config(cyrf_config, ARRAY_SIZE(cyrf_config));
         radio_set_config(cyrf_transfer_config, ARRAY_SIZE(cyrf_transfer_config));
 
@@ -1643,7 +1638,7 @@ void AP_Radio_cypress::send_FCC_test_packet(void)
         write_register(CYRF_PREAMBLE,0x01);
         write_register(CYRF_PREAMBLE,0x00);
         write_register(CYRF_PREAMBLE,0x00);
-    
+
         write_register(CYRF_TX_OVERRIDE, CYRF_FRC_PRE);
         write_register(CYRF_TX_CTRL, CYRF_TX_GO);
 
@@ -1687,7 +1682,7 @@ void AP_Radio_cypress::handle_data_packet(mavlink_channel_t chan, const mavlink_
             memcpy(&fwupload.pending_data[0], &m.data[4], fwupload.length);
         }
         sem.give();
-    } 
+    }
 }
 
 #endif // HAL_RCINPUT_WITH_AP_RADIO
