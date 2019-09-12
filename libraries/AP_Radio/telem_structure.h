@@ -24,7 +24,7 @@ struct PACKED telem_status {
     uint8_t pps; // packets per second received
     uint8_t rssi; // lowpass rssi
     uint8_t flags; // TELEM_FLAG_*
-    uint8_t flight_mode; // flight mode
+    uint8_t flight_mode; // flight mode (with profile number in high bit)
     uint8_t wifi_chan; // wifi channel number on Sonix
     uint8_t tx_max;  // max TX power
     uint8_t note_adjust; // buzzer tone adjustment
@@ -35,7 +35,7 @@ struct PACKED telem_firmware {
     uint8_t seq;
     uint8_t len;
     uint16_t offset;
-    uint8_t data[8];
+    uint8_t data[4];
 };
 
 /*
@@ -43,12 +43,26 @@ struct PACKED telem_firmware {
  */
 struct PACKED telem_packet_cypress {
     uint8_t crc; // simple CRC
-     enum telem_type type;
-     union {
+    enum telem_type type;
+    union {
         uint8_t pkt[14];
-         struct telem_status status;
-         struct telem_firmware fw;
-     } payload;
+        struct telem_status status;
+        struct telem_firmware fw;
+    } payload;
+};
+
+/*
+  cc2500 specific protocol structures
+ */
+struct PACKED telem_status_cc2500 {
+    uint8_t pps; // packets per second received
+    uint8_t rssi; // lowpass rssi
+    uint8_t flags; // TELEM_FLAG_*
+    uint8_t flight_mode; // flight mode (with profile number in high bit)
+    uint8_t wifi_chan; // wifi channel number on Sonix
+    uint8_t tx_max;  // max TX power
+    uint8_t note_adjust; // buzzer tone adjustment
+    uint8_t rxid[2]; // 16 bit ID for cc2500 to prevent double binds
 };
 
 /*
@@ -59,10 +73,23 @@ struct PACKED telem_packet_cc2500 {
     uint8_t type;
     uint8_t txid[2];
     union {
-        uint8_t pkt[12];
-        struct telem_status status;
+        uint8_t pkt[9];
+        struct telem_status_cc2500 status;
         struct telem_firmware fw;
     } payload;
+};
+
+/*
+  autobind packet from TX to RX for cc2500
+ */
+struct PACKED autobind_packet_cc2500 {
+    uint8_t length;
+    uint8_t magic1; // 0xC5
+    uint8_t magic2; // 0xA2
+    uint8_t txid[2];
+    uint8_t txid_inverse[2];
+    uint8_t wifi_chan;
+    uint8_t pad[3]; // pad to 13 bytes for fixed packet length
     uint8_t crc[2];
 };
 
@@ -79,11 +106,13 @@ enum packet_type {
     PKTYPE_TELEM_PPS  = 5,
     PKTYPE_BL_VERSION = 6,
     PKTYPE_FW_ACK     = 7,
-    PKTYPE_NUM_TYPES  = 8 // used for modulus
+    PKTYPE_RXID1      = 8,
+    PKTYPE_RXID2      = 9,
+    PKTYPE_NUM_TYPES  = 10 // used for modulus
 };
 
 /*
-  skyrocket specific packet for cc2500
+  skyrocket specific packet from TX to RX for cc2500
  */
 struct PACKED srt_packet {
     uint8_t length;     // required for cc2500 FIFO
@@ -99,5 +128,4 @@ struct PACKED srt_packet {
     uint8_t buttons;    // see channels.h
     uint8_t channr;
     uint8_t chanskip;
-    uint8_t crc[2];
 };
