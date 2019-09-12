@@ -539,9 +539,12 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
 
 void SITL_State::init(int argc, char * const argv[])
 {
-    pwm_input[0] = pwm_input[1] = pwm_input[3] = 1500;
-    pwm_input[4] = pwm_input[7] = 1800;
-    pwm_input[2] = pwm_input[5] = pwm_input[6] = 1000;
+    for (uint8_t i=0; i<ARRAY_SIZE(pwm_input); i++) {
+        // this is simply a magic flag value.  If you ever see this
+        // being used there is a bug as the values in this array
+        // should be overwritten before they are considered valid.
+        pwm_input[i] = 65530;
+    }
 
     _scheduler = Scheduler::from(hal.scheduler);
     _parse_command_line(argc, argv);
