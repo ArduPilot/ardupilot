@@ -446,11 +446,11 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_do_set_roi(const Location &roi_loc)
     return MAV_RESULT_ACCEPTED;
 }
 
-bool GCS_MAVLINK_Sub::set_home_to_current_location(bool lock) {
-    return sub.set_home_to_current_location(lock);
+bool GCS_MAVLINK_Sub::set_home_to_current_location(bool _lock) {
+    return sub.set_home_to_current_location(_lock);
 }
-bool GCS_MAVLINK_Sub::set_home(const Location& loc, bool lock) {
-    return sub.set_home(loc, lock);
+bool GCS_MAVLINK_Sub::set_home(const Location& loc, bool _lock) {
+    return sub.set_home(loc, _lock);
 }
 
 
