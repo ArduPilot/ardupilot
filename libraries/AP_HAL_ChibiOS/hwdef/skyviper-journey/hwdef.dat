@@ -131,7 +131,6 @@ define HAL_BARO_20789_I2C_ADDR_ICM   0x68
 define HAL_I2C_CLEAR_BUS
 
 env DEFINES CONFIG_HAL_BOARD_SUBTYPE='HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412'
-env DEFAULT_PARAMETERS 'Tools/Frame_params/SkyViper-F412/defaults.parm'
 
 # the web UI uses an abin file for firmware uploads
 env BUILD_ABIN True
