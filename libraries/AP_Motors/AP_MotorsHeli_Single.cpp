@@ -81,8 +81,58 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // Indices 16-19 were used by RSC_PWM_MIN, RSC_PWM_MAX, RSC_PWM_REV, and COL_CTRL_DIR and should not be used
 
-    // @Group: H3_SW_
-    // @Path: AP_MotorsHeli_Swash.cpp
+    // @Param: SW_TYPE
+    // @DisplayName: Swashplate 1 Type
+    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
+    // @Values: 0:H3 Generic,1:H1 non-CPPM,2:H3_140,3:H3_120,4:H4_90,5:H4_45
+    // @User: Standard
+
+    // @Param: SW_COL_DIR
+    // @DisplayName: Swashplate 1 Collective Control Direction
+    // @Description: Direction collective moves for positive pitch. 0 for Normal, 1 for Reversed
+    // @Values: 0:Normal,1:Reversed
+    // @User: Standard
+
+    // @Param: SW_LIN_SVO
+    // @DisplayName: Linearize Swashplate 1 Servo Mechanical Throw
+    // @Description: This linearizes the swashplate 1 servo's mechanical output to account for nonlinear output due to arm rotation.  This requires a specific setup procedure to work properly.  The servo arm must be centered on the mechanical throw at the servo trim position and the servo trim position kept as close to 1500 as possible. Leveling the swashplate can only be done through the pitch links.  See the ardupilot wiki for more details on setup.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+
+    // @Param: SW_H3_ENABLE
+    // @DisplayName: Swashplate 1 Enable Generic H3 Settings
+    // @Description: Automatically set when H3 generic swash type is selected for swashplate 1. Do not set manually.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+
+    // @Param: SW_H3_SV1_POS
+    // @DisplayName: Swashplate 1 Servo 1 Position
+    // @Description: Azimuth position on swashplate for servo 1 with the front of the heli being 0 deg
+    // @Range: -180 180
+    // @Units: deg
+    // @User: Advanced
+
+    // @Param: SW_H3_SV2_POS
+    // @DisplayName: Swashplate 1 Servo 2 Position
+    // @Description: Azimuth position on swashplate 1 for servo 2 with the front of the heli being 0 deg
+    // @Range: -180 180
+    // @Units: deg
+    // @User: Advanced
+
+    // @Param: SW_H3_SV3_POS
+    // @DisplayName: Swashplate 1 Servo 3 Position
+    // @Description: Azimuth position on swashplate 1 for servo 3 with the front of the heli being 0 deg
+    // @Range: -180 180
+    // @Units: deg
+    // @User: Advanced
+    
+    // @Param: SW_H3_PHANG
+    // @DisplayName: Swashplate 1 Phase Angle Compensation
+    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
+    // @Range: -30 30
+    // @Units: deg
+    // @User: Advanced
+    // @Increment: 1
     AP_SUBGROUPINFO(_swashplate, "SW_", 20, AP_MotorsHeli_Single, AP_MotorsHeli_Swash),
 
     AP_GROUPEND
