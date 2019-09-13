@@ -78,7 +78,7 @@ const struct LogStructure Tracker::log_structure[] = {
 
 void Tracker::Log_Write_Vehicle_Startup_Messages()
 {
-    logger.Write_Mode(control_mode, ModeReason::INITIALISED);
+    logger.Write_Mode((uint8_t)mode->number(), ModeReason::INITIALISED);
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
