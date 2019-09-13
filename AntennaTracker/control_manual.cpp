@@ -6,9 +6,9 @@
 
 /*
  * update_manual - runs the manual controller
- *  called at 50hz while control_mode is 'MANUAL'
+ *  called at 50hz while control mode is 'MANUAL'
  */
-void Tracker::update_manual(void)
+void ModeManual::update()
 {
     // copy yaw and pitch input to output
     SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_yaw, RC_Channels::rc_channel(CH_YAW)->get_radio_in());

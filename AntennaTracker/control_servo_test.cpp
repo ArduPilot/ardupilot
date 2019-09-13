@@ -5,10 +5,10 @@
  */
 
 /*
- * servo_test_set_servo - sets the yaw or pitch servo pwm directly
+ * set_servo - sets the yaw or pitch servo pwm directly
  *  servo_num are 1 for yaw, 2 for pitch
  */
-bool Tracker::servo_test_set_servo(uint8_t servo_num, uint16_t pwm)
+bool ModeServoTest::set_servo(uint8_t servo_num, uint16_t pwm)
 {
     // convert servo_num from 1~2 to 0~1 range
     servo_num--;
@@ -16,11 +16,6 @@ bool Tracker::servo_test_set_servo(uint8_t servo_num, uint16_t pwm)
     // exit immediately if servo_num is invalid
     if (servo_num != CH_YAW && servo_num != CH_PITCH) {
         return false;
-    }
-
-    // ensure we are in servo test mode
-    if (control_mode != SERVO_TEST) {
-        set_mode(SERVO_TEST, ModeReason::SERVOTEST);
     }
 
     // set yaw servo pwm and send output to servo

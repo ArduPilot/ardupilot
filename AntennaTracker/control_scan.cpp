@@ -6,10 +6,14 @@
 
 /*
  * update_scan - runs the scan controller
- *  called at 50hz while control_mode is 'SCAN'
+ *  called at 50hz while control mode is 'SCAN'
  */
-void Tracker::update_scan(void)
+void Mode::update_scan(void)
 {
+    struct Tracker::NavStatus &nav_status = tracker.nav_status;
+
+    Parameters &g = tracker.g;
+
     if (!nav_status.manual_control_yaw) {
         float yaw_delta = g.scan_speed_yaw * 0.02f;
         nav_status.bearing   += yaw_delta   * (nav_status.scan_reverse_yaw?-1:1);
