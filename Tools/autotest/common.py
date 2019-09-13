@@ -3072,6 +3072,10 @@ switch value'''
 
     def test_parameters(self):
         '''general small tests for parameter system'''
+        if self.is_tracker():
+            # uses CMD_TOTAL not MIS_TOTAL, and it's in a scalr not a
+            # group and it's generally all bad.
+            return
         self.start_subtest("Ensure GCS is not be able to set MIS_TOTAL")
         old_mt = self.get_parameter("MIS_TOTAL")
         ex = None
