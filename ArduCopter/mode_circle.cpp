@@ -33,18 +33,24 @@ void ModeCircle::run()
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
 
-    // get pilot's desired yaw rate (or zero if in radio failsafe)
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-    if (!is_zero(target_yaw_rate)) {
-        pilot_yaw_override = true;
-    }
+    float target_climb_rate = 0;
+    float target_yaw_rate = 0;
+    pilot_yaw_override = false;
 
-    // get pilot desired climb rate (or zero if in radio failsafe)
-    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    // adjust climb rate using rangefinder
-    if (copter.rangefinder_alt_ok()) {
-        // if rangefinder is ok, use surface tracking
-        target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
+    if (copter.ap.rc_receiver_present && !copter.failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            pilot_yaw_override = true;
+        }
+
+        // get pilot desired climb rate
+        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+        // adjust climb rate using rangefinder
+        if (copter.rangefinder_alt_ok()) {
+            // if rangefinder is ok, use surface tracking
+            target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
+        }
     }
 
     // if not armed set throttle to zero and exit immediately
