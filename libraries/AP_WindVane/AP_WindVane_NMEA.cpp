@@ -30,12 +30,9 @@ AP_WindVane_NMEA::AP_WindVane_NMEA(AP_WindVane &frontend) :
 }
 
 // init - performs any required initialization for this instance
-void AP_WindVane_NMEA::init(const AP_SerialManager& serial_manager)
+void AP_WindVane_NMEA::init()
 {
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_WindVane, 0);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_WindVane, 0));
-    }
+    NMEA_Driver = new AP_NMEA_Input_Windvane(*this, AP_SerialManager::SerialProtocol_WindVane);
 }
 
 void AP_WindVane_NMEA::update_direction()
@@ -53,102 +50,45 @@ void AP_WindVane_NMEA::update_speed()
 
 void AP_WindVane_NMEA::update()
 {
-    if (uart == nullptr) {
-        return;
-    }
-
-    // read any available lines from the windvane
-    int16_t nbytes = uart->available();
-    while (nbytes-- > 0) {
-        char c = uart->read();
-        if (decode(c)) {
-            // user may not have NMEA selected for both speed and direction
-            if (_frontend._direction_type.get() == _frontend.WindVaneType::WINDVANE_NMEA) {
-                direction_update_frontend(wrap_PI(radians(_wind_dir_deg + _frontend._dir_analog_bearing_offset.get()) + AP::ahrs().yaw));
-            }
-            if (_frontend._speed_sensor_type.get() == _frontend.Speed_type::WINDSPEED_NMEA) {
-                speed_update_frontend(_speed_ms);
-            }
-        }
+    if (NMEA_Driver != nullptr) {
+        NMEA_Driver->update();
     }
 }
 
-// add a single character to the buffer and attempt to decode
-// returns true if a complete sentence was successfully decoded
-bool AP_WindVane_NMEA::decode(char c)
+void AP_NMEA_Input_Windvane::write()
 {
-    switch (c) {
-    case ',':
-        // end of a term, add to checksum
-        _checksum ^= c;
-        FALLTHROUGH;
-    case '\r':
-    case '\n':
-    case '*':
-    {
-        // null terminate and decode latest term
-        _term[_term_offset] = 0;
-        bool valid_sentence = decode_latest_term();
-
-        // move onto next term
-        _term_number++;
-        _term_offset = 0;
-        _term_is_checksum = (c == '*');
-        return valid_sentence;
+    // user may not have NMEA selected for both speed and direction
+    if (Wind_vane_backend._frontend._direction_type.get() == Wind_vane_backend._frontend.WindVaneType::WINDVANE_NMEA) {
+        Wind_vane_backend.direction_update_frontend(wrap_PI(radians(_wind_dir_deg + Wind_vane_backend._frontend._dir_analog_bearing_offset.get()) + AP::ahrs().yaw));
     }
-
-    case '$': // sentence begin
-        _sentence_valid = false;
-        _term_number = 0;
-        _term_offset = 0;
-        _checksum = 0;
-        _term_is_checksum = false;
-        _wind_dir_deg = -1.0f;
-        _speed_ms = -1.0f;
-        return false;
+    if (Wind_vane_backend._frontend._speed_sensor_type.get() == Wind_vane_backend._frontend.Speed_type::WINDSPEED_NMEA) {
+        Wind_vane_backend.speed_update_frontend(_speed_ms);
     }
-
-    // ordinary characters are added to term
-    if (_term_offset < sizeof(_term) - 1) {
-        _term[_term_offset++] = c;
-    }
-    if (!_term_is_checksum) {
-        _checksum ^= c;
-    }
-
-    return false;
 }
 
 // decode the most recently consumed term
 // returns true if new sentence has just passed checksum test and is validated
-bool AP_WindVane_NMEA::decode_latest_term()
+void AP_NMEA_Input_Windvane::decode_latest_term()
 {
-    // handle the last term in a message
-    if (_term_is_checksum) {
-        uint8_t checksum = 16 * char_to_hex(_term[0]) + char_to_hex(_term[1]);
-        return ((checksum == _checksum) && _sentence_valid);
-    }
-
     // the first term determines the sentence type
     if (_term_number == 0) {
         // the first two letters of the NMEA term are the talker ID.
         // we accept any two characters here.
         if (_term[0] < 'A' || _term[0] > 'Z' ||
             _term[1] < 'A' || _term[1] > 'Z') {
-             // unknown ID (we are actually expecting II)
-            return false;
+            // unknown ID (we are actually expecting II)
+            return;
         }
         const char *term_type = &_term[2];
         if (strcmp(term_type, "MWV") == 0) {
             // we found the sentence type for wind
-            _sentence_valid = true;
+            _data_valid = true;
         }
-        return false;
     }
 
     // if this is not the sentence we want then wait for another
-    if (!_sentence_valid) {
-        return false;
+    if (!_data_valid) {
+        return;
     }
 
     switch (_term_number) {
@@ -156,7 +96,7 @@ bool AP_WindVane_NMEA::decode_latest_term()
             _wind_dir_deg = strtof(_term, NULL);
             // check for sensible value
             if (is_negative(_wind_dir_deg) || _wind_dir_deg > 360.0f) {
-                _sentence_valid = false;
+                _data_valid = false;
             }
             break;
 
@@ -164,7 +104,7 @@ bool AP_WindVane_NMEA::decode_latest_term()
             // we are expecting R for relative wind 
             // (could be T for true wind, maybe add in the future...)
             if (_term[0] != 'R') {
-                _sentence_valid = false;
+                _data_valid = false;
             }
             break;
 
@@ -183,28 +123,17 @@ bool AP_WindVane_NMEA::decode_latest_term()
             // could also be M for m/s, but we want that anyway so nothing to do
             // check for sensible value
             if (is_negative(_speed_ms) || _speed_ms > 100.0f) {
-                _sentence_valid = false;
+                _data_valid = false;
             }
             break;
 
         case 5:
             // expecting A for data valid
             if (_term[0] != 'A') {
-                _sentence_valid = false;
+                _data_valid = false;
             }
             break;
 
     }
-    return false;
-}
-
-// return the numeric value of an ascii hex character
-int16_t AP_WindVane_NMEA::char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
+    return;
 }

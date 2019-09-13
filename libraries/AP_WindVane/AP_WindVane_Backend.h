@@ -30,7 +30,7 @@ public:
     virtual ~AP_WindVane_Backend() {}
 
     // initialization
-    virtual void init(const AP_SerialManager& serial_manager) {};
+    virtual void init() {};
 
     // update the state structure
     virtual void update_speed() {};

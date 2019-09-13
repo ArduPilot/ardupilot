@@ -15,44 +15,47 @@
 #pragma once
 
 #include "AP_WindVane_Backend.h"
+#include <AP_NMEA/AP_NMEA_Input.h>
 
 class AP_WindVane_NMEA : public AP_WindVane_Backend
 {
+friend class AP_NMEA_Input_Windvane;
+
 public:
     // constructor
     AP_WindVane_NMEA(AP_WindVane &frontend);
 
     // initialization
-    void init(const AP_SerialManager& serial_manager) override;
+    void init() override;
 
     // update state
     void update_direction() override;
     void update_speed() override;
 
 private:
-    // pointer to serial uart
-    AP_HAL::UARTDriver *uart = nullptr; 
+    // pointer to NMEA input driver
+    AP_NMEA_Input *NMEA_Driver;
 
     // See if we can read in some data
     void update();
+};
 
-    // try and decode NMEA message
-    bool decode(char c);
+class AP_NMEA_Input_Windvane : public AP_NMEA_Input
+{
+public:
+    // constructor
+    AP_NMEA_Input_Windvane(AP_WindVane_NMEA &frontend, AP_SerialManager::SerialProtocol protocol):
+        AP_NMEA_Input(protocol),
+        Wind_vane_backend(frontend) {};
 
-    // decode each term
-    bool decode_latest_term();
+private:
+    void decode_latest_term() override;
 
-    // convert from char to hex value for checksum
-    int16_t char_to_hex(char a);
+    void write() override;
 
     // latest values read in
     float _speed_ms;
     float _wind_dir_deg;
 
-    char _term[15];            // buffer for the current term within the current sentence
-    uint8_t _term_offset;      // offset within the _term buffer where the next character should be placed
-    uint8_t _term_number;      // term index within the current sentence
-    uint8_t _checksum;         // checksum accumulator
-    bool _term_is_checksum;    // current term is the checksum
-    bool _sentence_valid;      // is current sentence valid so far
+    AP_WindVane_NMEA &Wind_vane_backend;
 };

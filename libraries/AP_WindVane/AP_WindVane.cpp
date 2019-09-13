@@ -181,7 +181,7 @@ bool AP_WindVane::wind_speed_enabled() const
 }
 
 // Initialize the Wind Vane object and prepare it for use
-void AP_WindVane::init(const AP_SerialManager& serial_manager)
+void AP_WindVane::init()
 {
     // don't construct twice
     if (_direction_driver != nullptr || _speed_driver != nullptr ) {
@@ -207,7 +207,7 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
             break;
         case WindVaneType::WINDVANE_NMEA:
             _direction_driver = new AP_WindVane_NMEA(*this);
-            _direction_driver->init(serial_manager);
+            _direction_driver->init();
             break;
     }
 
@@ -235,7 +235,7 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
             // single driver does both speed and direction
             if (_direction_type != WindVaneType::WINDVANE_NMEA) {
                 _speed_driver = new AP_WindVane_NMEA(*this);
-                _speed_driver->init(serial_manager);
+                _speed_driver->init();
             } else {
                 _speed_driver = _direction_driver;
             }
@@ -250,16 +250,16 @@ void AP_WindVane::init(const AP_SerialManager& serial_manager)
 void AP_WindVane::update()
 {
     bool have_speed = _speed_driver != nullptr;
-    bool have_direciton = _direction_driver != nullptr;
+    bool have_direction = _direction_driver != nullptr;
 
     // exit immediately if not enabled
-    if (!enabled() || (!have_speed && !have_direciton)) {
+    if (!enabled() || (!have_speed && !have_direction)) {
         return;
     }
 
     // calibrate if booted and disarmed
     if (!hal.util->get_soft_armed()) {
-        if (_calibration == 1 && have_direciton) {
+        if (_calibration == 1 && have_direction) {
             _direction_driver->calibrate();
         } else if (_calibration == 2 && have_speed) {
             _speed_driver->calibrate();
@@ -278,13 +278,13 @@ void AP_WindVane::update()
     }
 
     // read apparent wind direction
-    if (_speed_apparent >= _dir_speed_cutoff && have_direciton) {
+    if (_speed_apparent >= _dir_speed_cutoff && have_direction) {
         // only update if enough wind to move vane
         _direction_driver->update_direction();
     }
 
     // calculate true wind speed and direction from apparent wind
-    if (have_speed && have_direciton) {
+    if (have_speed && have_direction) {
         update_true_wind_speed_and_direction();
     } else {
         // no wind speed sensor, so can't do true wind calcs

@@ -36,6 +36,7 @@ class AP_WindVane
     friend class AP_WindVane_Airspeed;
     friend class AP_WindVane_RPM;
     friend class AP_WindVane_NMEA;
+    friend class AP_NMEA_Input_Windvane;
 
 public:
     AP_WindVane();
@@ -53,7 +54,7 @@ public:
     bool wind_speed_enabled() const;
 
     // Initialize the Wind Vane object and prepare it for use
-    void init(const AP_SerialManager& serial_manager);
+    void init();
 
     // update wind vane
     void update();
