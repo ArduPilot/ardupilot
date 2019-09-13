@@ -53,7 +53,7 @@ void Tracker::update_bearing_and_distance()
 
     // calculate bearing to vehicle
     // To-Do: remove need for check of control_mode
-    if (control_mode != SCAN && !nav_status.manual_control_yaw) {
+    if (mode != &mode_scan && !nav_status.manual_control_yaw) {
         nav_status.bearing  = current_loc.get_bearing_to(vehicle.location_estimate) * 0.01f;
     }
 
@@ -70,7 +70,7 @@ void Tracker::update_bearing_and_distance()
 
     // calculate pitch to vehicle
     // To-Do: remove need for check of control_mode
-    if (control_mode != SCAN && !nav_status.manual_control_pitch) {
+    if (mode->number() != Mode::Number::SCAN && !nav_status.manual_control_pitch) {
     	if (g.alt_source == ALT_SOURCE_BARO) {
     	    nav_status.pitch = degrees(atan2f(nav_status.alt_difference_baro, nav_status.distance));
     	} else {
@@ -117,28 +117,7 @@ void Tracker::update_tracking(void)
             break;
         }
     } else {
-        switch (control_mode) {
-        case AUTO:
-            if (vehicle.location_valid) {
-                update_auto();
-            } else if (tracker.target_set) {
-                update_scan();
-            }
-            break;
-
-        case MANUAL:
-            update_manual();
-            break;
-
-        case SCAN:
-            update_scan();
-            break;
-
-        case SERVO_TEST:
-        case STOP:
-        case INITIALISING:
-            break;
-        }
+        mode->update();
     }
 
     // convert servo_out to radio_out and send to servo
