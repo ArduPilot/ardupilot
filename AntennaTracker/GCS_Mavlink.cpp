@@ -30,17 +30,17 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    switch (tracker.control_mode) {
-    case MANUAL:
+    switch (tracker.mode->number()) {
+    case Mode::Number::MANUAL:
         _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
 
-    case STOP:
+    case Mode::Number::STOP:
         break;
 
-    case SCAN:
-    case SERVO_TEST:
-    case AUTO:
+    case Mode::Number::SCAN:
+    case Mode::Number::SERVOTEST:
+    case Mode::Number::AUTO:
         _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
             MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
@@ -48,13 +48,13 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
         // positions", which APM does not currently do
         break;
 
-    case INITIALISING:
+    case Mode::Number::INITIALISING:
         break;
     }
 
     // we are armed if safety switch is not disarmed
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED &&
-        tracker.control_mode != INITIALISING &&
+        tracker.mode != &tracker.mode_initialising &&
         hal.util->get_soft_armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
@@ -64,12 +64,12 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
 
 uint32_t GCS_Tracker::custom_mode() const
 {
-    return tracker.control_mode;
+    return (uint32_t)tracker.mode->number();
 }
 
 MAV_STATE GCS_MAVLINK_Tracker::system_status() const
 {
-    if (tracker.control_mode == INITIALISING) {
+    if (tracker.mode == &tracker.mode_initialising) {
         return MAV_STATE_CALIBRATING;
     }
     return MAV_STATE_ACTIVE;
@@ -399,14 +399,17 @@ MAV_RESULT GCS_MAVLINK_Tracker::handle_command_long_packet(const mavlink_command
         return MAV_RESULT_UNSUPPORTED;
 
     case MAV_CMD_DO_SET_SERVO:
-        if (!tracker.servo_test_set_servo(packet.param1, packet.param2)) {
+        // ensure we are in servo test mode
+        tracker.set_mode(tracker.mode_servotest, ModeReason::SERVOTEST);
+
+        if (!tracker.mode_servotest.set_servo(packet.param1, packet.param2)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
 
         // mavproxy/mavutil sends this when auto command is entered 
     case MAV_CMD_MISSION_START:
-        tracker.set_mode(AUTO, ModeReason::GCS_COMMAND);
+        tracker.set_mode(tracker.mode_auto, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     default:

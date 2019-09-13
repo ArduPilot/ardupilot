@@ -130,6 +130,32 @@ void Tracker::ten_hz_logging_loop()
     }
 }
 
+Mode *Tracker::mode_from_mode_num(const Mode::Number num)
+{
+    Mode *ret = nullptr;
+    switch (num) {
+    case Mode::Number::MANUAL:
+        ret = &mode_manual;
+        break;
+    case Mode::Number::STOP:
+        ret = &mode_stop;
+        break;
+    case Mode::Number::SCAN:
+        ret = &mode_scan;
+        break;
+    case Mode::Number::SERVOTEST:
+        ret = &mode_servotest;
+        break;
+    case Mode::Number::AUTO:
+        ret = &mode_auto;
+        break;
+    case Mode::Number::INITIALISING:
+        ret = &mode_initialising;
+        break;
+    }
+    return ret;
+}
+
 /*
   update AP_Stats
 */
