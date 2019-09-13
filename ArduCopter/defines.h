@@ -178,8 +178,6 @@ enum DevOptions {
 
 //  Logging parameters
 enum LoggingParameters {
-     TYPE_AIRSTART_MSG,
-     TYPE_GROUNDSTART_MSG,
      LOG_CONTROL_TUNING_MSG,
      LOG_DATA_INT16_MSG,
      LOG_DATA_UINT16_MSG,
