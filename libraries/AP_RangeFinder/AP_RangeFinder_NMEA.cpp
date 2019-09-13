@@ -27,14 +27,9 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_NMEA::AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
                                          AP_RangeFinder_Params &_params,
                                          uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state, _params),
-    _distance_m(-1.0f)
+    AP_RangeFinder_Backend(_state, _params)
 {
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
-    }
+    NMEA_Driver = new AP_NMEA_Input_RangeFinder(*this, AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
 }
 
 // detect if a NMEA rangefinder by looking to see if the user has configured it
@@ -59,21 +54,15 @@ void AP_RangeFinder_NMEA::update(void)
 // return last value measured by sensor
 bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
 {
-    if (uart == nullptr) {
+    if (NMEA_Driver == nullptr) {
         return false;
     }
 
     // read any available lines from the lidar
-    float sum = 0.0f;
-    uint16_t count = 0;
-    int16_t nbytes = uart->available();
-    while (nbytes-- > 0) {
-        char c = uart->read();
-        if (decode(c)) {
-            sum += _distance_m;
-            count++;
-        }
-    }
+    sum = 0.0f;
+    count = 0;
+
+    NMEA_Driver->update();
 
     // return false on failure
     if (count == 0) {
@@ -85,68 +74,15 @@ bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
     return true;
 }
 
-// add a single character to the buffer and attempt to decode
-// returns true if a complete sentence was successfully decoded
-bool AP_RangeFinder_NMEA::decode(char c)
-{
-    switch (c) {
-    case ',':
-        // end of a term, add to checksum
-        _checksum ^= c;
-        FALLTHROUGH;
-    case '\r':
-    case '\n':
-    case '*':
-    {
-        // null terminate and decode latest term
-        _term[_term_offset] = 0;
-        bool valid_sentence = decode_latest_term();
-
-        // move onto next term
-        _term_number++;
-        _term_offset = 0;
-        _term_is_checksum = (c == '*');
-        return valid_sentence;
-    }
-
-    case '$': // sentence begin
-        _sentence_type = SONAR_UNKNOWN;
-        _term_number = 0;
-        _term_offset = 0;
-        _checksum = 0;
-        _term_is_checksum = false;
-        _distance_m = -1.0f;
-        return false;
-    }
-
-    // ordinary characters are added to term
-    if (_term_offset < sizeof(_term) - 1) {
-        _term[_term_offset++] = c;
-    }
-    if (!_term_is_checksum) {
-        _checksum ^= c;
-    }
-
-    return false;
+void AP_NMEA_Input_RangeFinder::write() {
+    rangefinder_backend.sum += _distance_m;
+    rangefinder_backend.count++;
 }
 
 // decode the most recently consumed term
 // returns true if new sentence has just passed checksum test and is validated
-bool AP_RangeFinder_NMEA::decode_latest_term()
+void AP_NMEA_Input_RangeFinder::decode_latest_term()
 {
-    // handle the last term in a message
-    if (_term_is_checksum) {
-        uint8_t nibble_high = 0;
-        uint8_t nibble_low  = 0;
-        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
-            return false;
-        }
-        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
-        return ((checksum == _checksum) &&
-                !is_negative(_distance_m) &&
-                (_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT));
-    }
-
     // the first term determines the sentence type
     if (_term_number == 0) {
         // the first two letters of the NMEA term are the talker ID.
@@ -154,17 +90,19 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
         if (_term[0] < 'A' || _term[0] > 'Z' ||
             _term[1] < 'A' || _term[1] > 'Z') {
             _sentence_type = SONAR_UNKNOWN;
-            return false;
+            return;
         }
         const char *term_type = &_term[2];
         if (strcmp(term_type, "DBT") == 0) {
             _sentence_type = SONAR_DBT;
+            _data_valid = true;
         } else if (strcmp(term_type, "DPT") == 0) {
             _sentence_type = SONAR_DPT;
+            _data_valid = true;
         } else {
             _sentence_type = SONAR_UNKNOWN;
         }
-        return false;
+        return;
     }
 
     if (_sentence_type == SONAR_DBT) {
@@ -179,5 +117,5 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
         }
     }
 
-    return false;
+    return;
 }
