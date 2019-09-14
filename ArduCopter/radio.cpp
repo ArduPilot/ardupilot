@@ -94,11 +94,8 @@ void Copter::read_radio()
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
-        if (!ap.rc_receiver_present) {
-            // RC receiver must be attached if we've just got input and
-            // there are no overrides
-            ap.rc_receiver_present = !RC_Channels::has_active_overrides();
-        }
+        // RC receiver must be attached if we've just got input
+        ap.rc_receiver_present = true;
 
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
         radio_passthrough_to_motors();
