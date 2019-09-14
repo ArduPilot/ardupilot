@@ -1277,15 +1277,6 @@ void Copter::mavlink_delay_cb()
     logger.EnableWrites(true);
 }
 
-AP_AdvancedFailsafe *GCS_MAVLINK_Copter::get_advanced_failsafe() const
-{
-#if ADVANCED_FAILSAFE == ENABLED
-    return &copter.g2.afs;
-#else
-    return nullptr;
-#endif
-}
-
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_long_t &packet) {
     MAV_RESULT result = MAV_RESULT_FAILED;
 
