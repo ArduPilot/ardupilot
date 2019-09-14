@@ -1093,15 +1093,6 @@ void Rover::mavlink_delay_cb()
     logger.EnableWrites(true);
 }
 
-AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const
-{
-#if ADVANCED_FAILSAFE == ENABLED
-    return &rover.g2.afs;
-#else
-    return nullptr;
-#endif
-}
-
 bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
 {
     Mode *new_mode = rover.mode_from_mode_num((enum Mode::Number)mode);
