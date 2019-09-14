@@ -595,6 +595,7 @@ void Plane::rangefinder_terrain_correction(float &height)
     }
     float correction = (terrain_amsl1 - terrain_amsl2);
     height += correction;
+    auto_state.terrain_correction = correction;
 #endif
 }
 
