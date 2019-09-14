@@ -4,6 +4,10 @@
 // returns desired yaw rate in centi-degrees per second
 float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
+    // throttle failsafe check
+    if (failsafe.radio || !ap.rc_receiver_present) {
+        return 0.0f;
+    }
     float yaw_request;
 
     // calculate yaw rate request
@@ -76,7 +80,7 @@ void Copter::set_throttle_takeoff()
 float Copter::get_pilot_desired_climb_rate(float throttle_control)
 {
     // throttle failsafe check
-    if (failsafe.radio) {
+    if (failsafe.radio || !ap.rc_receiver_present) {
         return 0.0f;
     }
 
