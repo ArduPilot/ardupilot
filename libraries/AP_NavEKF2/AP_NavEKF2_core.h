@@ -306,6 +306,8 @@ public:
     // get the IMU index. For now we return the gyro index, as that is most
     // critical for use by other subsystems.
     uint8_t getIMUIndex(void) const { return gyro_index_active; }
+    //get the Baro index
+    uint8_t getBaroIndex(void) const{return activeHgtSource; }
 
     // get timing statistics structure
     void getTimingStatistics(struct ekf_timing &timing);

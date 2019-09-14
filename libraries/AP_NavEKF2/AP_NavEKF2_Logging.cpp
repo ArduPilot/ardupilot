@@ -125,6 +125,9 @@ void NavEKF2::Log_Write_NKF4(uint8_t _core, LogMessages msg_id, uint64_t time_us
     getFilterGpsStatus(_core,gpsStatus);
     float tiltError;
     getTiltError(_core,tiltError);
+    uint8_t magIndex = getActiveMag(_core);
+    int8_t imuIndex = getPrimaryCoreIMUIndex();
+    int8_t BaroIndex = getPrimaryCoreBaroIndex();
     int8_t primaryIndex = getPrimaryCoreIndex();
     const struct log_NKF4 pkt4{
         LOG_PACKET_HEADER_INIT(msg_id),
@@ -141,7 +144,12 @@ void NavEKF2::Log_Write_NKF4(uint8_t _core, LogMessages msg_id, uint64_t time_us
         timeouts : (uint8_t)(timeoutStatus),
         solution : (uint16_t)(solutionStatus.value),
         gps : (uint16_t)(gpsStatus.value),
-        primary : (int8_t)primaryIndex
+        primary : (int8_t)primaryIndex,
+        Used_Imu : (int8_t)imuIndex,
+        Used_Mag : (uint8_t)magIndex,
+        Used_Baro : (int8_t)BaroIndex
+        
+
     };
     AP::logger().WriteBlock(&pkt4, sizeof(pkt4));
 }

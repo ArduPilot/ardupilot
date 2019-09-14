@@ -862,7 +862,15 @@ int8_t NavEKF2::getPrimaryCoreIMUIndex(void) const
     }
     return core[primary].getIMUIndex();
 }
-
+// returns the index of the Baro of the primary core
+// return -1 if no primary core selected
+int8_t NavEKF2::getPrimaryCoreBaroIndex(void) const
+{
+    if (!core) {
+        return -1;
+    }
+    return core[primary].getBaroIndex();
+}
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control

@@ -546,6 +546,7 @@ struct PACKED log_EKF4 {
     uint8_t timeouts;
     uint16_t solution;
     uint16_t gps;
+
 };
 
 struct PACKED log_NKF4 {
@@ -564,6 +565,9 @@ struct PACKED log_NKF4 {
     uint16_t solution;
     uint16_t gps;
     int8_t primary;
+    int8_t Used_Imu;
+    uint8_t Used_Mag;
+    int8_t Used_Baro;
 };
 
 struct PACKED log_EKF5 {
