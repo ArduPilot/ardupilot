@@ -304,6 +304,9 @@ public:
                         char *failure_msg,
                         const uint8_t failure_msg_len);
 
+    // enable or disable high vibration compensation
+    void set_vibe_comp(bool on_off) { _vibe_comp_enabled = on_off; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -423,4 +426,7 @@ protected:
     // ekf reset handling
     uint32_t    _ekf_xy_reset_ms;      // system time of last recorded ekf xy position reset
     uint32_t    _ekf_z_reset_ms;       // system time of last recorded ekf altitude reset
+
+    // high vibration handling
+    bool        _vibe_comp_enabled;     // true when high vibration compensation is on
 };
