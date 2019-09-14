@@ -1418,6 +1418,10 @@ class AutoTestPlane(AutoTest):
              "Test ADSB",
              self.test_adsb),
 
+            ("AdvancedFailsafe",
+             "Test Advanced Failsafe",
+             self.test_advanced_failsafe),
+
             ("LogDownLoad",
              "Log download",
              lambda: self.log_download(
