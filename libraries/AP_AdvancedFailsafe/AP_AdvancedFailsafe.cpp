@@ -234,9 +234,15 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
         if (!gps_lock_ok) {
             gcs().send_text(MAV_SEVERITY_DEBUG, "AFS State: GPS_LOSS");
             _state = STATE_GPS_LOSS;
-            if (_wp_gps_loss) {
+            if (_wp_gps_loss > (int8_t)0) {
                 _saved_wp = mission.get_current_nav_cmd().index;
                 mission.set_current_cmd(_wp_gps_loss);
+            }
+            else if (_wp_gps_loss == -(int8_t)(TERMINATE_ACTION_TERMINATE) && mode == AFS_AUTO) {
+                if (!_terminate) {
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Terminating due to GPS loss");
+                    _terminate.set_and_notify(1);
+                }
             }
             // if two events happen within 30s we consider it to be part of the same event
             if (now - _last_gps_loss_ms > 30*1000UL) {
