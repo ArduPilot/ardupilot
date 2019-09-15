@@ -1,5 +1,5 @@
-Release 3.9.11, 12th September 2019
-------------------------------------
+Release 3.9.11, 15th September 2019
+-----------------------------------
 
 This release fixes two bugs:
 
