@@ -810,7 +810,8 @@ void AP_GPS::update_instance(uint8_t instance)
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
-        if (state[instance].status >= GPS_OK_FIX_2D) {
+        // if GPS disabled for flight testing then don't update fix timing value
+        if (state[instance].status >= GPS_OK_FIX_2D && !_force_disable_gps) {
             timing[instance].last_fix_time_ms = tnow;
         }
 
