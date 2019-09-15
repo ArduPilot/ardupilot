@@ -937,7 +937,12 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
     if (!battery.current_amps(amps)) {
         amps = 0;
     }
-    backend->write(x, y, false, "%2.1f%c", (double)amps, SYM_AMP);
+    if (amps < 10.0) {
+        backend->write(x, y, false, "%2.2f%c", amps, SYM_AMP);
+    }
+    else {
+        backend->write(x, y, false, "%2.1f%c", amps, SYM_AMP);
+    }
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
@@ -1044,8 +1049,11 @@ void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v, int32_t y
         int32_t interval = 36000 / SYM_ARROW_COUNT;
         arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
     }
-
-    backend->write(x, y, false, "%c%3d%c", arrow, (int)u_scale(SPEED, v_length), u_icon(SPEED));
+    if (u_scale(SPEED, v_length) < 10.0) {
+        backend->write(x, y, false, "%c%3.1f%c", arrow, u_scale(SPEED, v_length), u_icon(SPEED)); 
+    } else {
+        backend->write(x, y, false, "%c%3d%c", arrow, (int)u_scale(SPEED, v_length), u_icon(SPEED));
+    }
 }
 
 void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
