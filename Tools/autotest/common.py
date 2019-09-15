@@ -847,6 +847,14 @@ class AutoTest(ABC):
                 return True
         raise SetRCTimeout("Failed to send RC commands to channel %s" % str(chan))
 
+    def location_offset_ne(self, location, north, east):
+        '''move location in metres'''
+        print("old: %f %f" % (location.lat, location.lng))
+        (lat, lng) = mp_util.gps_offset(location.lat, location.lng, east, north)
+        location.lat = lat
+        location.lng = lng
+        print("new: %f %f" % (location.lat, location.lng))
+
     def zero_throttle(self):
         """Set throttle to zero."""
         if self.is_rover():
