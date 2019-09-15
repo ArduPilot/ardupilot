@@ -68,7 +68,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
         failsafe.bits != 0 &&
         millis() - failsafe.start_time > g.fs_timeout * 1000 &&
         control_mode != &mode_rtl &&
-        control_mode != &mode_hold) {
+        control_mode != &mode_smartrtl && (control_mode != &mode_hold || (enum frame_class)g2.frame_class.get() == FRAME_BOAT)  ) {
         failsafe.triggered = failsafe.bits;
         gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe trigger 0x%x", (unsigned int)failsafe.triggered);
 
