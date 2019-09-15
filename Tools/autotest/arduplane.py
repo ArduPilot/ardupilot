@@ -1104,14 +1104,6 @@ class AutoTestPlane(AutoTest):
         self.test_fence_breach_circle_at(self.home_position_as_mav_location(),
                                          disable_on_breach=True)
 
-    def location_offset_ne(self, location, north, east):
-        '''move location in metres'''
-        print("old: %f %f" % (location.lat, location.lng))
-        (lat, lng) = mp_util.gps_offset(location.lat, location.lng, east, north)
-        location.lat = lat
-        location.lng = lng
-        print("new: %f %f" % (location.lat, location.lng))
-
     def test_fence_rtl_rally(self):
         ex = None
         target_system = 1
