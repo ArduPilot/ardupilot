@@ -107,6 +107,8 @@ Webots::Webots(const char *frame_str) :
         output_type = OUTPUT_ROVER;
     } else if (strstr(frame_option, "-quad")) {
         output_type = OUTPUT_QUAD;
+    } else if (strstr(frame_option, "-tri")) {
+        output_type = OUTPUT_TRICOPTER;
     } else if (strstr(frame_option, "-pwm")) {
         output_type = OUTPUT_PWM;
     } else {
@@ -371,6 +373,34 @@ void Webots::output_rover(const struct sitl_input &input)
 }
 
 /*
+  output control command assuming a 3 channels motors and 1 channel servo
+*/
+void Webots::output_tricopter(const struct sitl_input &input)
+{
+    const float max_thrust = 1.0;
+    float motors[3];
+    const float servo = ((input.servos[6]-1000)/1000.0f - 0.5f);
+    motors[0] = constrain_float(((input.servos[0]-1000)/1000.0f) * max_thrust, 0, max_thrust); 
+    motors[1] = constrain_float(((input.servos[1]-1000)/1000.0f) * max_thrust, 0, max_thrust); 
+    motors[2] = constrain_float(((input.servos[3]-1000)/1000.0f) * max_thrust, 0, max_thrust); 
+
+    const float &m_right = motors[0]; 
+    const float &m_left  = motors[1]; 
+    const float &m_servo = servo ; 
+    const float &m_back  = motors[2]; 
+
+    // construct a JSON packet for motors
+    char buf[200];
+    const int len = snprintf(buf, sizeof(buf)-1, "{\"eng\": [%.3f, %.3f, %.3f, %.3f], \"wnd\": [%f, %3.1f, %1.1f, %2.1f]}\n",
+             m_right, m_left, m_servo, m_back,
+             input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
+    //printf("\"eng\": [%.3f, %.3f, %.3f, %.3f]\n",m_right, m_left, m_servo, m_back);
+    buf[len] = 0;
+
+    sim_sock->send(buf, len);
+}
+
+/*
   output control command assuming a 4 channel quad
 */
 void Webots::output_quad(const struct sitl_input &input)
@@ -429,6 +459,9 @@ void Webots::output (const struct sitl_input &input)
             break;
         case OUTPUT_QUAD:
             output_quad(input);
+            break;
+        case OUTPUT_TRICOPTER:
+            output_tricopter(input);
             break;
         case OUTPUT_PWM:
             output_pwm(input);
