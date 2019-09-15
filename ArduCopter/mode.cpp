@@ -28,133 +28,133 @@ Mode::Mode(void) :
 float Mode::auto_takeoff_no_nav_alt_cm = 0;
 
 // return the static controller object corresponding to supplied mode
-Mode *Copter::mode_from_mode_num(const uint8_t mode)
+Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 {
     Mode *ret = nullptr;
 
     switch (mode) {
 #if MODE_ACRO_ENABLED == ENABLED
-        case ACRO:
+        case Mode::Number::ACRO:
             ret = &mode_acro;
             break;
 #endif
 
-        case STABILIZE:
+        case Mode::Number::STABILIZE:
             ret = &mode_stabilize;
             break;
 
-        case ALT_HOLD:
+        case Mode::Number::ALT_HOLD:
             ret = &mode_althold;
             break;
 
 #if MODE_AUTO_ENABLED == ENABLED
-        case AUTO:
+        case Mode::Number::AUTO:
             ret = &mode_auto;
             break;
 #endif
 
 #if MODE_CIRCLE_ENABLED == ENABLED
-        case CIRCLE:
+        case Mode::Number::CIRCLE:
             ret = &mode_circle;
             break;
 #endif
 
 #if MODE_LOITER_ENABLED == ENABLED
-        case LOITER:
+        case Mode::Number::LOITER:
             ret = &mode_loiter;
             break;
 #endif
 
 #if MODE_GUIDED_ENABLED == ENABLED
-        case GUIDED:
+        case Mode::Number::GUIDED:
             ret = &mode_guided;
             break;
 #endif
 
-        case LAND:
+        case Mode::Number::LAND:
             ret = &mode_land;
             break;
 
 #if MODE_RTL_ENABLED == ENABLED
-        case RTL:
+        case Mode::Number::RTL:
             ret = &mode_rtl;
             break;
 #endif
 
 #if MODE_DRIFT_ENABLED == ENABLED
-        case DRIFT:
+        case Mode::Number::DRIFT:
             ret = &mode_drift;
             break;
 #endif
 
 #if MODE_SPORT_ENABLED == ENABLED
-        case SPORT:
+        case Mode::Number::SPORT:
             ret = &mode_sport;
             break;
 #endif
 
 #if MODE_FLIP_ENABLED == ENABLED
-        case FLIP:
+        case Mode::Number::FLIP:
             ret = &mode_flip;
             break;
 #endif
 
 #if AUTOTUNE_ENABLED == ENABLED
-        case AUTOTUNE:
+        case Mode::Number::AUTOTUNE:
             ret = &mode_autotune;
             break;
 #endif
 
 #if MODE_POSHOLD_ENABLED == ENABLED
-        case POSHOLD:
+        case Mode::Number::POSHOLD:
             ret = &mode_poshold;
             break;
 #endif
 
 #if MODE_BRAKE_ENABLED == ENABLED
-        case BRAKE:
+        case Mode::Number::BRAKE:
             ret = &mode_brake;
             break;
 #endif
 
 #if MODE_THROW_ENABLED == ENABLED
-        case THROW:
+        case Mode::Number::THROW:
             ret = &mode_throw;
             break;
 #endif
 
 #if ADSB_ENABLED == ENABLED
-        case AVOID_ADSB:
+        case Mode::Number::AVOID_ADSB:
             ret = &mode_avoid_adsb;
             break;
 #endif
 
 #if MODE_GUIDED_NOGPS_ENABLED == ENABLED
-        case GUIDED_NOGPS:
+        case Mode::Number::GUIDED_NOGPS:
             ret = &mode_guided_nogps;
             break;
 #endif
 
 #if MODE_SMARTRTL_ENABLED == ENABLED
-        case SMART_RTL:
+        case Mode::Number::SMART_RTL:
             ret = &mode_smartrtl;
             break;
 #endif
 
 #if OPTFLOW == ENABLED
-        case FLOWHOLD:
+        case Mode::Number::FLOWHOLD:
             ret = (Mode *)g2.mode_flowhold_ptr;
             break;
 #endif
 
 #if MODE_FOLLOW_ENABLED == ENABLED
-        case FOLLOW:
+        case Mode::Number::FOLLOW:
             ret = &mode_follow;
             break;
 #endif
 
 #if MODE_ZIGZAG_ENABLED == ENABLED
-        case ZIGZAG:
+        case Mode::Number::ZIGZAG:
             ret = &mode_zigzag;
             break;
 #endif
@@ -171,7 +171,7 @@ Mode *Copter::mode_from_mode_num(const uint8_t mode)
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was successfully set
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
-bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
+bool Copter::set_mode(Mode::Number mode, mode_reason_t reason)
 {
 
     // return immediately if we are already in the desired mode
@@ -180,7 +180,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return true;
     }
 
-    Mode *new_flightmode = mode_from_mode_num(mode);
+    Mode *new_flightmode = mode_from_mode_num((Mode::Number)mode);
     if (new_flightmode == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
@@ -242,11 +242,11 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     flightmode = new_flightmode;
     control_mode = mode;
     control_mode_reason = reason;
-    logger.Write_Mode(control_mode, reason);
+    logger.Write_Mode((uint8_t)control_mode, reason);
     gcs().send_message(MSG_HEARTBEAT);
 
 #if ADSB_ENABLED == ENABLED
-    adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
+    adsb.set_is_auto_mode((mode == Mode::Number::AUTO) || (mode == Mode::Number::RTL) || (mode == Mode::Number::GUIDED));
 #endif
 
 #if AC_FENCE == ENABLED
@@ -257,7 +257,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 #endif
 
 #if CAMERA == ENABLED
-    camera.set_is_auto_mode(control_mode == AUTO);
+    camera.set_is_auto_mode(control_mode == Mode::Number::AUTO);
 #endif
 
     // update notify object
@@ -337,7 +337,7 @@ void Copter::exit_mode(Mode *&old_flightmode,
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
 void Copter::notify_flight_mode() {
     AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
-    AP_Notify::flags.flight_mode = control_mode;
+    AP_Notify::flags.flight_mode = (uint8_t)control_mode;
     notify.set_flight_mode_str(flightmode->name4());
 }
 
@@ -524,8 +524,8 @@ void Mode::land_run_horizontal_control()
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             copter.Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
-            if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
-                set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
+            if (!set_mode(Mode::Number::LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
+                set_mode(Mode::Number::ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
             }
         }
 
@@ -720,7 +720,7 @@ void Mode::update_simple_mode(void) {
     copter.update_simple_mode();
 }
 
-bool Mode::set_mode(control_mode_t mode, mode_reason_t reason)
+bool Mode::set_mode(Mode::Number mode, mode_reason_t reason)
 {
     return copter.set_mode(mode, reason);
 }

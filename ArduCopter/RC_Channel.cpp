@@ -20,7 +20,7 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
         return;
     }
 
-    if (!copter.set_mode((control_mode_t)copter.flight_modes[new_pos].get(), MODE_REASON_TX_COMMAND)) {
+    if (!copter.set_mode((Mode::Number)copter.flight_modes[new_pos].get(), MODE_REASON_TX_COMMAND)) {
         // alert user to mode change failure
         if (copter.ap.initialised) {
             AP_Notify::events.user_mode_change_failed = 1;
@@ -117,7 +117,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
 
 // do_aux_function_change_mode - change mode based on an aux switch
 // being moved
-void RC_Channel_Copter::do_aux_function_change_mode(const control_mode_t mode,
+void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
                                                      const aux_switch_pos_t ch_flag)
 {
     switch(ch_flag) {
@@ -149,7 +149,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
         case AUX_FUNC::FLIP:
             // flip if switch is on, positive throttle and we're actually flying
             if (ch_flag == aux_switch_pos_t::HIGH) {
-                copter.set_mode(control_mode_t::FLIP, MODE_REASON_TX_COMMAND);
+                copter.set_mode(Mode::Number::FLIP, MODE_REASON_TX_COMMAND);
             }
             break;
 
@@ -165,12 +165,12 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
         case AUX_FUNC::RTL:
 #if MODE_RTL_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::RTL, ch_flag);
+            do_aux_function_change_mode(Mode::Number::RTL, ch_flag);
 #endif
             break;
 
         case AUX_FUNC::SAVE_TRIM:
-            if ((ch_flag == HIGH) && (copter.control_mode <= control_mode_t::ACRO) && (copter.channel_throttle->get_control_in() == 0)) {
+            if ((ch_flag == HIGH) && (copter.control_mode <= Mode::Number::ACRO) && (copter.channel_throttle->get_control_in() == 0)) {
                 copter.save_trim();
             }
             break;
@@ -181,7 +181,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             if (ch_flag == HIGH) {
 
                 // do not allow saving new waypoints while we're in auto or disarmed
-                if (copter.control_mode == control_mode_t::AUTO || !copter.motors->armed()) {
+                if (copter.control_mode == Mode::Number::AUTO || !copter.motors->armed()) {
                     return;
                 }
 
@@ -229,7 +229,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
         case AUX_FUNC::AUTO:
 #if MODE_AUTO_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::AUTO, ch_flag);
+            do_aux_function_change_mode(Mode::Number::AUTO, ch_flag);
 #endif
             break;
 
@@ -265,24 +265,24 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
         case AUX_FUNC::AUTOTUNE:
 #if AUTOTUNE_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::AUTOTUNE, ch_flag);
+            do_aux_function_change_mode(Mode::Number::AUTOTUNE, ch_flag);
 #endif
             break;
 
         case AUX_FUNC::LAND:
-            do_aux_function_change_mode(control_mode_t::LAND, ch_flag);
+            do_aux_function_change_mode(Mode::Number::LAND, ch_flag);
             break;
 
         case AUX_FUNC::GUIDED:
-            do_aux_function_change_mode(control_mode_t::GUIDED, ch_flag);
+            do_aux_function_change_mode(Mode::Number::GUIDED, ch_flag);
             break;
 
         case AUX_FUNC::LOITER:
-            do_aux_function_change_mode(control_mode_t::LOITER, ch_flag);
+            do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
             break;
 
         case AUX_FUNC::FOLLOW:
-            do_aux_function_change_mode(control_mode_t::FOLLOW, ch_flag);
+            do_aux_function_change_mode(Mode::Number::FOLLOW, ch_flag);
             break;
 
         case AUX_FUNC::PARACHUTE_ENABLE:
@@ -354,13 +354,13 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
         case AUX_FUNC::BRAKE:
 #if MODE_BRAKE_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::BRAKE, ch_flag);
+            do_aux_function_change_mode(Mode::Number::BRAKE, ch_flag);
 #endif
             break;
 
         case AUX_FUNC::THROW:
 #if MODE_THROW_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::THROW, ch_flag);
+            do_aux_function_change_mode(Mode::Number::THROW, ch_flag);
 #endif
             break;
 
@@ -412,7 +412,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
         case AUX_FUNC::SMART_RTL:
 #if MODE_SMARTRTL_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::SMART_RTL, ch_flag);
+            do_aux_function_change_mode(Mode::Number::SMART_RTL, ch_flag);
 #endif
             break;
 
@@ -487,7 +487,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
         case AUX_FUNC::ZIGZAG:
 #if MODE_ZIGZAG_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::ZIGZAG, ch_flag);
+            do_aux_function_change_mode(Mode::Number::ZIGZAG, ch_flag);
 #endif
             break;
 
@@ -510,34 +510,34 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             break;
 
         case AUX_FUNC::STABILIZE:
-            do_aux_function_change_mode(control_mode_t::STABILIZE, ch_flag);
+            do_aux_function_change_mode(Mode::Number::STABILIZE, ch_flag);
             break;
 
         case AUX_FUNC::POSHOLD:
 #if MODE_POSHOLD_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::POSHOLD, ch_flag);
+            do_aux_function_change_mode(Mode::Number::POSHOLD, ch_flag);
 #endif
             break;
 
         case AUX_FUNC::ALTHOLD:
-            do_aux_function_change_mode(control_mode_t::ALT_HOLD, ch_flag);
+            do_aux_function_change_mode(Mode::Number::ALT_HOLD, ch_flag);
             break;
 
 	case AUX_FUNC::FLOWHOLD:
 #if OPTFLOW == ENABLED
-            do_aux_function_change_mode(control_mode_t::FLOWHOLD, ch_flag);
+            do_aux_function_change_mode(Mode::Number::FLOWHOLD, ch_flag);
 #endif
             break;
 
         case AUX_FUNC::CIRCLE:
 #if MODE_CIRCLE_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::CIRCLE, ch_flag);
+            do_aux_function_change_mode(Mode::Number::CIRCLE, ch_flag);
 #endif
             break;
 
         case AUX_FUNC::DRIFT:
 #if MODE_DRIFT_ENABLED == ENABLED
-            do_aux_function_change_mode(control_mode_t::DRIFT, ch_flag);
+            do_aux_function_change_mode(Mode::Number::DRIFT, ch_flag);
 #endif
             break;
 

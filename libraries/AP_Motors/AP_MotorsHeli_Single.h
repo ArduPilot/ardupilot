@@ -10,7 +10,6 @@
 #include "AP_MotorsHeli_Swash.h"
 
 // rsc and extgyro function output channels. 
-#define AP_MOTORS_HELI_SINGLE_RSC                              CH_8
 #define AP_MOTORS_HELI_SINGLE_EXTGYRO                          CH_7
 #define AP_MOTORS_HELI_SINGLE_TAILRSC                          CH_7
 
@@ -21,7 +20,7 @@
 #define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH  3
 
 // direct-drive variable pitch defaults
-#define AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT               500
+#define AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT               50
 
 // default external gyro gain
 #define AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN                    350
@@ -39,7 +38,6 @@ public:
     AP_MotorsHeli_Single(uint16_t       loop_rate,
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
-        _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC),
         _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_TAILRSC),
         _swashplate()
     {
@@ -123,7 +121,6 @@ protected:
     void servo_test() override;
 
     // external objects we depend upon
-    AP_MotorsHeli_RSC   _main_rotor;            // main rotor
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
     AP_MotorsHeli_Swash _swashplate;            // swashplate
 

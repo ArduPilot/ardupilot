@@ -81,25 +81,25 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
 
     switch (copter.control_mode) {
-    case AUTO:
-    case AVOID_ADSB:
-    case GUIDED:
-    case LOITER:
-    case RTL:
-    case CIRCLE:
-    case LAND:
-    case POSHOLD:
-    case BRAKE:
-    case THROW:
-    case SMART_RTL:
+    case Mode::Number::AUTO:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::LOITER:
+    case Mode::Number::RTL:
+    case Mode::Number::CIRCLE:
+    case Mode::Number::LAND:
+    case Mode::Number::POSHOLD:
+    case Mode::Number::BRAKE:
+    case Mode::Number::THROW:
+    case Mode::Number::SMART_RTL:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
-    case ALT_HOLD:
-    case GUIDED_NOGPS:
-    case SPORT:
-    case AUTOTUNE:
-    case FLOWHOLD:
+    case Mode::Number::ALT_HOLD:
+    case Mode::Number::GUIDED_NOGPS:
+    case Mode::Number::SPORT:
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::FLOWHOLD:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:

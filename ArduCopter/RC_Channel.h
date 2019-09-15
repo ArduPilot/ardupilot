@@ -1,7 +1,7 @@
 #pragma once
 
 #include <RC_Channel/RC_Channel.h>
-#include "Copter.h"
+#include "mode.h"
 
 class RC_Channel_Copter : public RC_Channel
 {
@@ -15,7 +15,7 @@ protected:
 
 private:
 
-    void do_aux_function_change_mode(const control_mode_t mode,
+    void do_aux_function_change_mode(const Mode::Number mode,
                                      const aux_switch_pos_t ch_flag);
 
     // called when the mode switch changes position:
