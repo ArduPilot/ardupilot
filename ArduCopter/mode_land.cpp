@@ -35,6 +35,9 @@ bool Copter::ModeLand::init(bool ignore_checks)
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     ap.land_repo_active = false;
 
+    // initialise yaw
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
+
     return true;
 }
 
