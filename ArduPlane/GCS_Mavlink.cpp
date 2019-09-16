@@ -899,12 +899,12 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
         switch((uint16_t)packet.param1) {
         case 0:
-            if (! plane.geofence_set_enabled(false, GCS_TOGGLED)) {
+            if (! plane.geofence_set_enabled(false)) {
                 return MAV_RESULT_FAILED;
             }
             return MAV_RESULT_ACCEPTED;
         case 1:
-            if (! plane.geofence_set_enabled(true, GCS_TOGGLED)) {
+            if (! plane.geofence_set_enabled(true)) {
                 return MAV_RESULT_FAILED;
             }
             return MAV_RESULT_ACCEPTED;

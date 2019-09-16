@@ -904,7 +904,7 @@ private:
     void geofence_load(void);
     bool geofence_present(void);
     void geofence_update_pwm_enabled_state();
-    bool geofence_set_enabled(bool enable, GeofenceEnableReason r);
+    bool geofence_set_enabled(bool enable);
     bool geofence_enabled(void);
     bool geofence_set_floor_enabled(bool floor_enable);
     bool geofence_check_minalt(void);
