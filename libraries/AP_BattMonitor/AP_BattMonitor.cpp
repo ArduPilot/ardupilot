@@ -4,6 +4,7 @@
 #include "AP_BattMonitor_SMBus_Solo.h"
 #include "AP_BattMonitor_SMBus_Generic.h"
 #include "AP_BattMonitor_SMBus_Maxell.h"
+#include "AP_BattMonitor_SMBus_Rotoye.h"
 #include "AP_BattMonitor_Bebop.h"
 #include "AP_BattMonitor_BLHeliESC.h"
 #include "AP_BattMonitor_SMBus_SUI.h"
@@ -146,6 +147,13 @@ AP_BattMonitor::init()
             case Type::MAXELL:
                 _params[instance]._i2c_bus.set_default(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL);
                 drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance],
+                                                                    hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
+                                                                                            100000, true, 20));
+                break;
+            case Type::Rotoye:
+                // For the PixHawk4, the i2c_bus paramter did not work, had to hard-code this to 3 for testing
+                // See issue https://github.com/ArduPilot/ardupilot/issues/12327
+                drivers[instance] = new AP_BattMonitor_SMBus_Rotoye(*this, state[instance], _params[instance],
                                                                     hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                             100000, true, 20));
                 break;
