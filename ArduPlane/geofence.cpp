@@ -207,14 +207,20 @@ bool Plane::geofence_set_enabled(bool enable)
  */
 bool Plane::geofence_enabled(void)
 {
+    if (g.fence_action == FENCE_ACTION_NONE) {
+        if (geofence_state != nullptr) {
+            geofence_state->fence_triggered = false;
+        }
+        return false;
+    }
+
     geofence_update_pwm_enabled_state();
 
     if (geofence_state == nullptr) {
         return false;
     }
 
-    if (g.fence_action == FENCE_ACTION_NONE ||
-        !geofence_present() ||
+    if (!geofence_present() ||
         (g.fence_action != FENCE_ACTION_REPORT && !geofence_state->is_enabled)) {
         // geo-fencing is disabled
         // re-arm for when the channel trigger is switched on
