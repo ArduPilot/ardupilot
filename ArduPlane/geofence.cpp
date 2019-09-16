@@ -25,8 +25,6 @@ static struct GeofenceState {
     bool boundary_uptodate;
     bool fence_triggered;
     bool is_pwm_enabled;          //true if above FENCE_ENABLE_PWM threshold
-    bool previous_is_pwm_enabled; //true if above FENCE_ENALBE_PWM threshold
-                                  // last time we checked
     bool is_enabled;
     GeofenceEnableReason enable_reason;
     bool floor_enabled;          //typically used for landing
@@ -46,7 +44,7 @@ static const StorageAccess fence_storage(StorageManager::StorageFence);
 /*
   maximum number of fencepoints
  */
-uint8_t Plane::max_fencepoints(void)
+uint8_t Plane::max_fencepoints(void) const
 {
     return MIN(255U, fence_storage.size() / sizeof(Vector2l));
 }
@@ -54,19 +52,15 @@ uint8_t Plane::max_fencepoints(void)
 /*
  *  fence boundaries fetch/store
  */
-Vector2l Plane::get_fence_point_with_index(unsigned i)
+Vector2l Plane::get_fence_point_with_index(uint8_t i) const
 {
-    Vector2l ret;
-
-    if (i > (unsigned)g.fence_total || i >= max_fencepoints()) {
+    if (i > (uint8_t)g.fence_total || i >= max_fencepoints()) {
         return Vector2l(0,0);
     }
 
     // read fence point
-    ret.x = fence_storage.read_uint32(i * sizeof(Vector2l));
-    ret.y = fence_storage.read_uint32(i * sizeof(Vector2l) + sizeof(int32_t));
-
-    return ret;
+    return Vector2l(fence_storage.read_uint32(i * sizeof(Vector2l)),
+                    fence_storage.read_uint32(i * sizeof(Vector2l) + sizeof(int32_t)));
 }
 
 // save a fence point
@@ -90,8 +84,6 @@ void Plane::set_fence_point_with_index(const Vector2l &point, unsigned i)
  */
 void Plane::geofence_load(void)
 {
-    uint8_t i;
-
     if (geofence_state == nullptr) {
         uint16_t boundary_size = sizeof(Vector2l) * max_fencepoints();
         if (hal.util->available_memory() < 100 + boundary_size + sizeof(struct GeofenceState)) {
@@ -122,10 +114,10 @@ void Plane::geofence_load(void)
         return;
     }
 
-    for (i=0; i<g.fence_total; i++) {
+    for (uint8_t i = 0; i<g.fence_total; i++) {
         geofence_state->boundary[i] = get_fence_point_with_index(i);
     }
-    geofence_state->num_points = i;
+    geofence_state->num_points = g.fence_total;
 
     if (!Polygon_complete(&geofence_state->boundary[1], geofence_state->num_points-1)) {
         geofence_disable_and_send_error_msg("pt[1] and pt[total-1] must match");
@@ -188,11 +180,9 @@ void Plane::geofence_update_pwm_enabled_state()
         return;
     }
 
-    geofence_state->previous_is_pwm_enabled = geofence_state->is_pwm_enabled;
-    geofence_state->is_pwm_enabled = is_pwm_enabled;
-
-    if (geofence_state->is_pwm_enabled != geofence_state->previous_is_pwm_enabled) {
-        geofence_set_enabled(geofence_state->is_pwm_enabled, PWM_TOGGLED);
+    if (geofence_state->is_pwm_enabled != is_pwm_enabled) {
+        geofence_set_enabled(is_pwm_enabled, PWM_TOGGLED);
+        geofence_state->is_pwm_enabled = is_pwm_enabled;
     }    
 }
 
