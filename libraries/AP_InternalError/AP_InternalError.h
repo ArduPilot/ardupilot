@@ -53,6 +53,7 @@ public:
         bitmask_range               = (1U << 17),
         gcs_offset                  = (1U << 18),
         i2c_isr                     = (1U << 19),
+        flow_of_control             = (1U << 20), // for generic we-should-never-get-here situations
     };
 
     void error(const AP_InternalError::error_t error);
