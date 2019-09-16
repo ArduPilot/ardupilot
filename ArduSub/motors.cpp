@@ -147,7 +147,7 @@ bool Sub::init_motor_test()
     // Ten second cooldown period required with no do_set_motor requests required
     // after failure.
     if (tnow < last_do_motor_test_fail_ms + 10000 && last_do_motor_test_fail_ms > 0) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cool down required");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cooldown required after motor test");
         return false;
     }
 
