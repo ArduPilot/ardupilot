@@ -139,6 +139,13 @@ AP_BattMonitor::init()
                                                                     hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                             100000, true, 20));
                 break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_Rotoye:
+                // For the PixHawk4, the i2c_bus paramter did not work, had to hard-code this to 3 for testing
+                // See issue https://github.com/ArduPilot/ardupilot/issues/12327
+                drivers[instance] = new AP_BattMonitor_SMBus_Rotoye(*this, state[instance], _params[instance],
+                                                                    hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
+                                                                                            100000, true, 20));
+                break;   
 #endif // HAL_BATTMON_SMBUS_ENABLE
             case AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
