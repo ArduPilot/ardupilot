@@ -51,7 +51,7 @@ void AP_Proximity_SITL::update(void)
     if (!AP::fence()->polyfence().breached()) {
         // only called to prompt polyfence to reload fence if required
     }
-    if (AP::fence()->polyfence().valid()) {
+    if (AP::fence()->polyfence().inclusion_boundary_available()) {
         // update distance in one sector
         if (get_distance_to_fence(_sector_middle_deg[last_sector], _distance[last_sector])) {
             set_status(AP_Proximity::Proximity_Good);
@@ -73,7 +73,7 @@ void AP_Proximity_SITL::update(void)
 // get distance in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
 bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) const
 {
-    if (!AP::fence()->polyfence().valid()) {
+    if (!AP::fence()->polyfence().inclusion_boundary_available()) {
         return false;
     }
 
