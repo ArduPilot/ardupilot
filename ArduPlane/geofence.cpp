@@ -21,23 +21,21 @@
  *  very quickly at runtime
  */
 static struct GeofenceState {
+    Vector2l *boundary;   // point 0 is the return point
+    uint32_t breach_time;
+    int32_t guided_lat;
+    int32_t guided_lng;
+    uint16_t breach_count;
+    uint8_t breach_type;
+    GeofenceEnableReason enable_reason;
+    uint8_t old_switch_position;
     uint8_t num_points;
     bool boundary_uptodate;
     bool fence_triggered;
     bool is_pwm_enabled;          //true if above FENCE_ENABLE_PWM threshold
     bool is_enabled;
-    GeofenceEnableReason enable_reason;
     bool floor_enabled;          //typically used for landing
-    uint16_t breach_count;
-    uint8_t breach_type;
-    uint32_t breach_time;
-    uint8_t old_switch_position;
-    int32_t guided_lat;
-    int32_t guided_lng;
-    /* point 0 is the return point */
-    Vector2l *boundary;
 } *geofence_state;
-
 
 static const StorageAccess fence_storage(StorageManager::StorageFence);
 
