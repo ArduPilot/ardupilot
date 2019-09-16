@@ -86,16 +86,6 @@ enum ChannelMixing {
     MIXING_DNDN_SWP = 8,
 };
 
-/*
- * The cause for the most recent fence enable
- */
-typedef enum GeofenceEnableReason {
-    NOT_ENABLED = 0,     //The fence is not enabled
-    PWM_TOGGLED,         //Fence enabled/disabled by PWM signal
-    AUTO_TOGGLED,        //Fence auto enabled/disabled at takeoff.
-    GCS_TOGGLED          //Fence enabled/disabled by the GCS via Mavlink
-} GeofenceEnableReason;
-
 // PID broadcast bitmask
 enum tuning_pid_bits {
     TUNING_BITS_ROLL  = (1 <<  0),

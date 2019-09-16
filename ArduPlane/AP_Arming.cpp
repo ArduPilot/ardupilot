@@ -148,11 +148,11 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 
 #if GEOFENCE_ENABLED == ENABLED
     if (plane.g.fence_autoenable == 3) {
-        if (!plane.geofence_set_enabled(true, AUTO_TOGGLED)) {
+        if (!plane.geofence_set_enabled(true)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Fence: cannot enable for arming");
             return false;
         } else if (!plane.geofence_prearm_check()) {
-            plane.geofence_set_enabled(false, AUTO_TOGGLED);
+            plane.geofence_set_enabled(false);
             return false;
         } else {
             gcs().send_text(MAV_SEVERITY_WARNING, "Fence: auto-enabled for arming");
@@ -222,7 +222,7 @@ bool AP_Arming_Plane::disarm(void)
 
 #if GEOFENCE_ENABLED == ENABLED
     if (plane.g.fence_autoenable == 3) {
-        plane.geofence_set_enabled(false, AUTO_TOGGLED);
+        plane.geofence_set_enabled(false);
     }
 #endif
     

@@ -136,7 +136,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_FENCE_ENABLE:
 #if GEOFENCE_ENABLED == ENABLED
         if (cmd.p1 != 2) {
-            if (!geofence_set_enabled((bool) cmd.p1, AUTO_TOGGLED)) {
+            if (!geofence_set_enabled((bool) cmd.p1)) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "Unable to set fence. Enabled state to %u", cmd.p1);
             } else {
                 gcs().send_text(MAV_SEVERITY_INFO, "Set fence enabled state to %u", cmd.p1);
@@ -389,7 +389,7 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 
 #if GEOFENCE_ENABLED == ENABLED 
     if (g.fence_autoenable == 1) {
-        if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
+        if (! geofence_set_enabled(false)) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
         } else {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
