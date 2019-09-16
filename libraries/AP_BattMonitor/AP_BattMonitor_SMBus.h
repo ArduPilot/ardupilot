@@ -70,7 +70,7 @@ protected:
 
     // reads the temperature word from the battery
     // returns true if the read was successful
-    bool read_temp(void);
+    virtual bool read_temp(void);
 
     // reads the serial number if it's not already known
     // returns true if the read was successful, or the number was already known
