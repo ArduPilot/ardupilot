@@ -548,15 +548,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 49, NavEKF2, _originHgtMode, 0),
 
-    // @Param: EXTNAV_DELAY
-    // @DisplayName: external navigation system measurement delay (msec)
-    // @Description: This is the number of msec that the external navigation system measurements lag behind the inertial measurements.
-    // @Range: 0 127
-    // @Increment: 1
-    // @User: Advanced
-    // @Units: ms
-    // @RebootRequired: True
-    AP_GROUPINFO("EXTNAV_DELAY", 50, NavEKF2, _extnavDelay_ms, 10),
+    // 50 previously used for EK2_EXTNAV_DELAY parameter that has been moved to 53 due to changing the definition of _extnavDelay_ms from AP_Int8 to AP_Int16
 
     // @Param: FLOW_USE
     // @DisplayName: Optical flow use bitmask
@@ -573,6 +565,16 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 500
     // @Units: mGauss
     AP_GROUPINFO("MAG_EF_LIM", 52, NavEKF2, _mag_ef_limit, 50),
+
+    // @Param: EXTNAV_DELAY
+    // @DisplayName: external navigation system measurement delay (msec)
+    // @Description: This is the number of msec that the external navigation system measurements lag behind the inertial measurements.
+    // @Range: 0 250
+    // @Increment: 1
+    // @User: Advanced
+    // @Units: ms
+    // @RebootRequired: True
+    AP_GROUPINFO("EXTNAV_DELAY", 53, NavEKF2, _extnavDelay_ms, 10),
     
     AP_GROUPEND
 };
