@@ -85,7 +85,7 @@ known_units = {
              'mGauss'  : 'milligauss'            , # Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
 # pressure
              'Pa'      : 'pascal'                ,
-             'mbar'    : 'millibar'              ,
+             'hPa'     : 'hectopascal'           ,
 # ratio
              '%'       : 'percent'               ,
              '%/s'     : 'percent per second'    ,
