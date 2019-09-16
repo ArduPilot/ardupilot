@@ -27,7 +27,6 @@ static struct GeofenceState {
     int32_t guided_lng;
     uint16_t breach_count;
     uint8_t breach_type;
-    GeofenceEnableReason enable_reason;
     uint8_t old_switch_position;
     uint8_t num_points;
     bool boundary_uptodate;
@@ -179,13 +178,13 @@ void Plane::geofence_update_pwm_enabled_state()
     }
 
     if (geofence_state->is_pwm_enabled != is_pwm_enabled) {
-        geofence_set_enabled(is_pwm_enabled, PWM_TOGGLED);
+        geofence_set_enabled(is_pwm_enabled);
         geofence_state->is_pwm_enabled = is_pwm_enabled;
     }    
 }
 
 //return true on success, false on failure
-bool Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r) 
+bool Plane::geofence_set_enabled(bool enable) 
 {
     if (geofence_state == nullptr && enable) {
         geofence_load();
@@ -199,7 +198,6 @@ bool Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r)
         //turn the floor back on if it had been off
         geofence_set_floor_enabled(true);
     }
-    geofence_state->enable_reason = r;
     
     return true;
 }
@@ -518,7 +516,7 @@ bool Plane::geofence_present(void) {
     return false;
 }
 
-bool Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r) {
+bool Plane::geofence_set_enabled(bool enable) {
     return false;
 }
 
