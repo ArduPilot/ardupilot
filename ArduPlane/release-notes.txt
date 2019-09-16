@@ -1,3 +1,61 @@
+Release 4.0.0beta1, 16th September 2019
+---------------------------------------
+
+The 4.0.0 release of ArduPilot plane is a major release. It contains
+thousands of changes, some large and some small, developed over the
+last year. Key changes include:
+
+ - support STM32H7 MCUs (Durandal and CubeOrange currently)
+ - QAUTOTUNE mode
+ - in-flight compass calibration
+ - support for dynamic node allocation server in UAVCAN
+ - support for SLCAN pass-through
+ - support for up to 10 battery backends
+ - support for MAVLink message intervals
+ - initial support for onboard Lua scripting
+ - automatic remount of microSD cards
+ - support for additional RC input on any UART
+ - support for WS2812 LEDs
+ - new simulators: Morse, Webots, SilentWings, Scrimmage
+ - added AFS_MAX_RANGE for limiting vehicle range
+ - added support for @READONLY in embedded parameter lists
+ - added SERIALn_OPTIONS for inversion, half-duplex and swap
+ - added support for reversible blheli32 ESCs
+ - added GPS timing jitter correction
+ - added Sum battery backend type
+ - added fuel flow battery battery types
+ - support landing gear control based on altitude
+ - added loiter-to-alt approach for quadplane landing
+ - added REVERSE_THROTTLE RCn_OPTION
+ - added crow brakes for differential spoilers
+ - support newer versions of JSBSim in SITL
+ - added RObotis servo support
+ - added UAVCAN servo support
+ - added failure timer for quadplane forward transitions
+ - added KDECAN and ToshibaCAN support
+ - added RM3100 compass support
+ - support new Invensense IMUs
+ - many small improvements to tailsitter support
+ - added QACRO mode
+ - improved watchdog logging
+ - improved EKF compass handling based on WMM data
+ - added AP_Perip CAN peripheral firmware system
+ - added IBUS R/C input support
+ - support yaw from GPS
+ - support DLVR I2C airspeed sensors
+ - fixed FrSky telem packet loss
+ - fixed SUMD for 16 channels via pulse input
+ - support UAVCAN buzzers, safety switch, safety LED and airspeed
+ - added NTF_BUZZ_VOLUME parameter
+
+There are hundreds of other changes as well. I expect the beta period
+for this release to be quite long, and I would greatly appreciate as
+many test reports as possible. Please submit test results both for
+successful and unsuccessful tests!
+
+Happy flying!
+
+
 Release 3.9.11, 15th September 2019
 -----------------------------------
 
