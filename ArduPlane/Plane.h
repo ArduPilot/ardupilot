@@ -901,8 +901,8 @@ private:
     void failsafe_short_off_event(mode_reason_t reason);
     void failsafe_long_off_event(mode_reason_t reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
-    uint8_t max_fencepoints(void);
-    Vector2l get_fence_point_with_index(unsigned i);
+    uint8_t max_fencepoints(void) const;
+    Vector2l get_fence_point_with_index(uint8_t i) const;
     void set_fence_point_with_index(const Vector2l &point, unsigned i);
     void geofence_load(void);
     bool geofence_present(void);
