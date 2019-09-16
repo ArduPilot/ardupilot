@@ -18,7 +18,8 @@
 #include <AP_OSD/AP_OSD_Backend.h>
 #include <AP_Common/Bitmask.h>
 
-class AP_OSD_MAX7456 : public AP_OSD_Backend {
+class AP_OSD_MAX7456 : public AP_OSD_Backend
+{
 
 public:
 

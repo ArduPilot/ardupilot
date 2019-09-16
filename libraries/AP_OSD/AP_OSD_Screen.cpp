@@ -606,7 +606,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(btemp, "BTEMP", 37, AP_OSD_Screen, AP_OSD_Setting),
- 
+
     // @Param: ATEMP_EN
     // @DisplayName: ATEMP_EN
     // @Description: Displays temperature reported by primary airspeed sensor
@@ -622,7 +622,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(atemp, "ATEMP", 38, AP_OSD_Screen, AP_OSD_Setting),
-    
+
     // @Param: BAT2VLT_EN
     // @DisplayName: BAT2VLT_EN
     // @Description: Displays battery2 voltage
@@ -654,8 +654,8 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(bat2used, "BAT2USED", 40, AP_OSD_Screen, AP_OSD_Setting),
-    
-    
+
+
     // @Param: ASPD2_EN
     // @DisplayName: ASPD2_EN
     // @Description: Displays airspeed reported directly from secondary airspeed sensor
@@ -671,23 +671,23 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(aspd2, "ASPD2", 41, AP_OSD_Screen, AP_OSD_Setting),
-    
+
     // @Param: ASPD1_EN
     // @DisplayName: ASPD1_EN
     // @Description: Displays airspeed reported directly from primary airspeed sensor
     // @Values: 0:Disabled,1:Enabled
-	
+
     // @Param: ASPD1_X
-	// @DisplayName: ASPD1_X
-	// @Description: Horizontal position on screen
-	// @Range: 0 29
-	
-	// @Param: ASPD1_Y
-	// @DisplayName: ASPD1_Y
-	// @Description: Vertical position on screen
-	// @Range: 0 15
+    // @DisplayName: ASPD1_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: ASPD1_Y
+    // @DisplayName: ASPD1_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
     AP_SUBGROUPINFO(aspd1, "ASPD1", 42, AP_OSD_Screen, AP_OSD_Setting),
-    
+
     AP_GROUPEND
 };
 
@@ -1393,15 +1393,15 @@ void AP_OSD_Screen::draw_stat(uint8_t x, uint8_t y)
     backend->write(x, y+2, false, "%5.1f%c", (double)osd->max_current_a, SYM_AMP);
     backend->write(x, y+3, false, "%5d%c", (int)u_scale(ALTITUDE, osd->max_alt_m), u_icon(ALTITUDE));
     backend->write(x, y+4, false, "%c", SYM_HOME);
-    draw_distance(x+1, y+4, osd->max_dist_m); 
+    draw_distance(x+1, y+4, osd->max_dist_m);
     backend->write(x, y+5, false, "%c", SYM_DIST);
-    draw_distance(x+1, y+5, osd->last_distance_m);  
+    draw_distance(x+1, y+5, osd->last_distance_m);
 }
 
 void AP_OSD_Screen::draw_dist(uint8_t x, uint8_t y)
 {
     backend->write(x, y, false, "%c", SYM_DIST);
-    draw_distance(x+1, y, osd->last_distance_m);   
+    draw_distance(x+1, y, osd->last_distance_m);
 }
 
 void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
@@ -1410,7 +1410,7 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
     if (stats) {
         uint32_t t = stats->get_flight_time_s();
         backend->write(x, y, false, "%c%3u:%02u", SYM_FLY, t/60, t%60);
-    } 
+    }
 }
 
 void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
@@ -1421,7 +1421,7 @@ void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
     Vector2f v = ahrs.groundspeed_vector();
     float speed = u_scale(SPEED,v.length());
     float current_amps;
-    if ((speed > 2.0) && battery.current_amps(current_amps)){
+    if ((speed > 2.0) && battery.current_amps(current_amps)) {
         backend->write(x, y, false, "%c%3d%c", SYM_EFF,int(1000.0f*current_amps/speed),SYM_MAH);
     } else {
         backend->write(x, y, false, "%c---%c", SYM_EFF,SYM_MAH);
@@ -1442,14 +1442,16 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
         WITH_SEMAPHORE(baro.get_semaphore());
         vspd = baro.get_climb_rate();
     }
-    if (vspd < 0.0) vspd = 0.0;
+    if (vspd < 0.0) {
+        vspd = 0.0;
+    }
     AP_BattMonitor &battery = AP::battery();
     float amps;
     if (battery.current_amps(amps) && is_positive(amps)) {
         backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(double)(3.6f * u_scale(VSPEED,vspd)/amps),unit_icon);
     } else {
         backend->write(x, y, false,"%c%c---%c",SYM_PTCHUP,SYM_EFF,unit_icon);
-    } 
+    }
 }
 
 void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)

@@ -20,7 +20,8 @@
 #include <AP_OSD/AP_OSD.h>
 
 
-class AP_OSD_Backend {
+class AP_OSD_Backend
+{
 
 public:
     //constructor
