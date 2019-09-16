@@ -27,7 +27,8 @@ class AP_OSD_Backend;
 /*
   class to hold one setting
  */
-class AP_OSD_Setting {
+class AP_OSD_Setting
+{
 public:
     AP_Int8 enabled;
     AP_Int8 xpos;
@@ -44,7 +45,8 @@ class AP_OSD;
 /*
   class to hold one screen of settings
  */
-class AP_OSD_Screen {
+class AP_OSD_Screen
+{
 public:
     // constructor
     AP_OSD_Screen();
@@ -181,7 +183,8 @@ private:
     void draw_bat2used(uint8_t x, uint8_t y);
 };
 
-class AP_OSD {
+class AP_OSD
+{
 public:
     friend class AP_OSD_Screen;
     //constructor
@@ -253,7 +256,7 @@ public:
     };
 
     void set_nav_info(NavInfo &nav_info);
-    
+
 
 private:
     void osd_thread();
@@ -262,7 +265,7 @@ private:
     void update_current_screen();
     void next_screen();
     AP_OSD_Backend *backend;
-    
+
     //variables for screen switching
     uint8_t current_screen;
     uint16_t previous_channel_value;
@@ -273,7 +276,7 @@ private:
     int8_t pre_fs_screen;
     bool was_armed;
     bool was_failsafe;
-    
+
     uint32_t last_update_ms;
     float last_distance_m;
     float max_dist_m;
