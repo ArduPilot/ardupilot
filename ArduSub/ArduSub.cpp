@@ -40,6 +40,9 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_receive,     400, 180),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_send,        400, 550),
+#if AC_FENCE == ENABLED
+    SCHED_TASK_CLASS(AC_Fence,            &sub.fence,        update,              10, 100),
+#endif
 #if MOUNT == ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &sub.camera_mount, update,              50,  75),
 #endif
