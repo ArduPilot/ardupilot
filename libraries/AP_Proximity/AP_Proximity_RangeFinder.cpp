@@ -65,7 +65,7 @@ void AP_Proximity_RangeFinder::update(void)
                 int16_t up_distance_min = sensor->min_distance_cm();
                 int16_t up_distance_max = sensor->max_distance_cm();
                 if ((distance_upward >= up_distance_min) && (distance_upward <= up_distance_max)) {
-                    _distance_upward = distance_upward * 1e2;
+                    _distance_upward = distance_upward * 0.01f;
                 } else {
                     _distance_upward = -1.0; // mark an valid reading
                 }
