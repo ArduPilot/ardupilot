@@ -450,7 +450,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 raise NotAchievedException("Did not get home")
             self.progress("Distance home: %f (mode=%s)" %
                           (self.distance_to_home(), self.mav.flightmode))
-            if self.mode_is('HOLD') or self.mode_is('LOITER'): # loiter for balancebot
+            if self.mode_is('HOLD') or self.mode_is('ACRO'): # acro for balancebot
                 break
 
         # the EKF doesn't pull us down to 0 speed:
