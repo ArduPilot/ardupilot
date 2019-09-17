@@ -100,11 +100,32 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     body_accel -= linear_drag_forces / frame_property.weight;
 
     // Calculate angular drag forces
+    // TODO: This results in the wrong units. Fix the math.
     Vector3f angular_drag_forces;
     calculate_drag_force(gyro, frame_property.angular_drag_coefficient, angular_drag_forces);
+
+    // Calculate torque induced by buoyancy foams on the frame
+    Vector3f buoyancy_torque;
+    calculate_buoyancy_torque(buoyancy_torque);
     // Add forces in body frame accel
     rot_accel -= angular_drag_forces / frame_property.weight;
+    rot_accel += buoyancy_torque / frame_property.moment_of_inertia;
 }
+
+
+/**
+ * @brief Calculate the torque induced by buoyancy foam
+ *
+ * @param torque Output torques
+ */
+void Submarine::calculate_buoyancy_torque(Vector3f &torque)
+{
+    // Let's assume 2 Liters water displacement at the top, and ~ 2kg of weight at the bottom.
+    const Vector3f force_up(0,0,-40); // 40 N upwards
+    const Vector3f force_position = dcm.transposed() * Vector3f(0, 0, 0.15); // offset in meters
+    torque = force_position % force_up;
+}
+
 
 /**
  * @brief Calculate drag force against body
