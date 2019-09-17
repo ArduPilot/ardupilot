@@ -844,12 +844,12 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
 
 void AP_ADSB::push_sample(adsb_vehicle_t &vehicle)
 {
-    samples.push_back(vehicle);
+    samples.push(vehicle);
 }
 
 bool AP_ADSB::next_sample(adsb_vehicle_t &vehicle)
 {
-    return samples.pop_front(vehicle);
+    return samples.pop(vehicle);
 }
 
 void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg)
