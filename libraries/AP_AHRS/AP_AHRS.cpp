@@ -236,7 +236,7 @@ void AP_AHRS::update_orientation()
             _compass->set_board_orientation(orientation);
         }
     } else {
-        _custom_rotation.from_euler(_custom_roll, _custom_pitch, _custom_yaw);
+        _custom_rotation.from_euler(radians(_custom_roll), radians(_custom_pitch), radians(_custom_yaw));
         AP::ins().set_board_orientation(orientation, &_custom_rotation);
         if (_compass != nullptr) {
             _compass->set_board_orientation(orientation, &_custom_rotation);
