@@ -43,8 +43,8 @@ class AutoTestBalanceBot(AutoTestRover):
 
     def drive_rtl_mission(self):
         # if we Hold then the balancebot continues to wander
-        # indefinitely at ~1m/s
-        self.set_parameter("MIS_DONE_BEHAVE", 1)
+        # indefinitely at ~1m/s, hence we set to Acro
+        self.set_parameter("MIS_DONE_BEHAVE", 2)
         super(AutoTestBalanceBot, self).drive_rtl_mission()
 
     def tests(self):
