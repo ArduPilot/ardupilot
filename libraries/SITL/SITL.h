@@ -143,7 +143,8 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
-    
+    AP_Int32 loop_delay; // extra delay to add to every loop
+
     // wind control
     enum WindType {
         WIND_TYPE_SQRT = 0,
