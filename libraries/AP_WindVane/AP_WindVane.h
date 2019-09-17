@@ -18,6 +18,12 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+#define WINDVANE_DEFAULT_PIN 15                     // default wind vane sensor analog pin
+#define WINDSPEED_DEFAULT_SPEED_PIN 14              // default pin for reading speed from ModernDevice rev p wind sensor
+#define WINDSPEED_DEFAULT_TEMP_PIN 13               // default pin for reading temperature from ModernDevice rev p wind sensor
+#define WINDSPEED_DEFAULT_VOLT_OFFSET 1.346f        // default voltage offset between speed and temp pins from ModernDevice rev p wind sensor
+#define TACK_FILT_CUTOFF 0.1f                       // cutoff frequency in Hz used in low pass filter to determine the current tack
+
 class AP_WindVane_Backend;
 
 class AP_WindVane
@@ -66,6 +72,15 @@ public:
     // Return true wind speed
     float get_true_wind_speed() const { return _speed_true; }
 
+    // enum defining current tack
+    enum Sailboat_Tack {
+        TACK_PORT,
+        TACK_STARBOARD
+    };
+
+    // return the current tack
+    Sailboat_Tack get_current_tack() const { return _current_tack; }
+
     // record home heading for use as wind direction if no sensor is fitted
     void record_home_heading() { _home_heading = AP::ahrs().yaw; }
 
@@ -111,12 +126,15 @@ private:
     void update_true_wind_speed_and_direction();
 
     // wind direction variables
-    float _direction_apparent_ef;                   // wind's apparent direction in radians (0 = ahead of vehicle)
+    float _direction_apparent_ef;                   // wind's apparent direction in radians (0 = ahead of vehicle) in earth frame
     float _direction_true;                          // wind's true direction in radians (0 = North)
 
     // wind speed variables
     float _speed_apparent;                          // wind's apparent speed in m/s
     float _speed_true;                              // wind's true estimated speed in m/s
+
+    // current tack
+    Sailboat_Tack _current_tack;
 
     // heading in radians recorded when vehicle was armed
     float _home_heading;
