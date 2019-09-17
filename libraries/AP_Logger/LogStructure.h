@@ -1137,6 +1137,7 @@ struct PACKED log_Performance {
     uint32_t spi_count;
     uint32_t i2c_count;
     uint32_t i2c_isr_count;
+    uint32_t extra_loop_us;
 };
 
 struct PACKED log_SRTL {
@@ -1388,7 +1389,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
       "PRX", "QBfffffffffff", "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s-mmmmmmmmmhm", "F-00000000000" }, \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
-      "PM",  "QHHIIHIIIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,IntE,IntEC,SPIC,I2CC,I2CI", "s---b%-----", "F---0A-----" }, \
+      "PM",  "QHHIIHIIIIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,IntE,IntEC,SPIC,I2CC,I2CI,ExUS", "s---b%-----s", "F---0A-----F" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
