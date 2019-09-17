@@ -1935,6 +1935,12 @@ class AutoTest(ABC):
         """Disable GPS and wait for EKF to report the end of assistance from GPS."""
         self.set_parameter("SIM_GPS_DISABLE", 1)
         tstart = self.get_sim_time()
+
+        """ if using SITL estimates directly """
+        if (int(self.get_parameter('AHRS_EKF_TYPE')) == 10):
+            self.progress("GPS disable skipped")
+            return 
+
         # all of these must NOT be set for arming NOT to happen:
         not_required_value = mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL
         self.progress("Waiting for EKF not having bits %u" % not_required_value)
