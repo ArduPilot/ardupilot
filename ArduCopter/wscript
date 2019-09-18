@@ -8,7 +8,6 @@ def build(bld):
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AP_ADSB',
-            'AP_Buffer',
             'AC_AttitudeControl',
             'AC_InputManager',
             'AC_PID',
