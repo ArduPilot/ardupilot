@@ -9,7 +9,6 @@ def build(bld):
         name= 'AP_Periph_libs',
         ap_vehicle='AP_Periph',
         ap_libraries= [
-        'AP_Buffer',
         'AP_Common',
         'AP_HAL',
         'AP_HAL_Empty',
