@@ -129,54 +129,106 @@ float throttle_curve(float thr_mid, float alpha, float thr_in)
 }
 
 template <typename T>
-T wrap_180(const T angle, T unit_mod)
+T wrap_180(const T angle)
 {
-    auto res = wrap_360(angle, unit_mod);
-    if (res > T(180) * unit_mod) {
-        res -= T(360) * unit_mod;
+    auto res = wrap_360(angle);
+    if (res > T(180)) {
+        res -= T(360);
     }
     return res;
 }
 
-template int wrap_180<int>(const int angle, int unit_mod);
-template short wrap_180<short>(const short angle, short unit_mod);
-template float wrap_180<float>(const float angle, float unit_mod);
+template <typename T>
+T wrap_180_cd(const T angle)
+{
+    auto res = wrap_360_cd(angle);
+    if (res > T(18000)) {
+        res -= T(36000);
+    }
+    return res;
+}
+
+template int wrap_180<int>(const int angle);
+template short wrap_180<short>(const short angle);
+template float wrap_180<float>(const float angle);
 #ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
-template double wrap_180<double>(const double angle, double unit_mod);
+template double wrap_180<double>(const double angle);
 #endif
 
-float wrap_360(const float angle, float unit_mod)
+template int wrap_180_cd<int>(const int angle);
+template long wrap_180_cd<long>(const long angle);
+template short wrap_180_cd<short>(const short angle);
+template float wrap_180_cd<float>(const float angle);
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+template double wrap_180_cd<double>(const double angle);
+#endif
+
+float wrap_360(const float angle)
 {
-    const auto ang_360 = float(360) * unit_mod;
-    auto res = fmodf(angle, ang_360);
+    float res = fmodf(angle, 360.0f);
     if (res < 0) {
-        res += ang_360;
+        res += 360.0f;
     }
     return res;
 }
 
 #ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
-double wrap_360(const double angle, double unit_mod)
+double wrap_360(const double angle)
 {
-    const auto ang_360 = double(360) * unit_mod;
-    auto res = fmod(angle, ang_360);
+    double res = fmod(angle, 360.0);
     if (res < 0) {
-        res += ang_360;
+        res += 360.0;
     }
     return res;
 }
 #endif
 
-int wrap_360(const int angle, int unit_mod)
+int wrap_360(const int angle)
 {
-    const int ang_360 = 360 * unit_mod;
-    int res = angle % ang_360;
+    int res = angle % 360;
     if (res < 0) {
-        res += ang_360;
+        res += 360;
     }
     return res;
 }
 
+float wrap_360_cd(const float angle)
+{
+    float res = fmodf(angle, 36000.0f);
+    if (res < 0) {
+        res += 36000.0f;
+    }
+    return res;
+}
+
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+double wrap_360_cd(const double angle)
+{
+    double res = fmod(angle, 36000.0);
+    if (res < 0) {
+        res += 36000.0;
+    }
+    return res;
+}
+#endif
+
+int wrap_360_cd(const int angle)
+{
+    int res = angle % 36000;
+    if (res < 0) {
+        res += 36000;
+    }
+    return res;
+}
+
+long wrap_360_cd(const long angle)
+{
+    long res = angle % 36000;
+    if (res < 0) {
+        res += 36000;
+    }
+    return res;
+}
 template <typename T>
 float wrap_PI(const T radian)
 {
