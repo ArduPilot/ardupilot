@@ -83,9 +83,8 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
         }
 
         // 2.5 scalar for approximate real-life performance of T200 thruster
-        body_accel += t.linear * output * 2.5;
-
-        rot_accel += t.rotational * output;
+        body_accel += t.linear * output * frame_property.thrust / frame_property.weight;
+        rot_accel += t.rotational * output * frame_property.thrust * frame_property.thruster_mount_radius / frame_property.moment_of_inertia;
     }
 
     // Limit movement at the sea floor
