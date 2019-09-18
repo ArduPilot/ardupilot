@@ -2440,7 +2440,7 @@ class AutoTest(ABC):
         self.context_push()
         ex = None
         try:
-            self.set_parameter("LOG_BACKEND_TYPE", 3)
+            self.set_parameter("LOG_BACKEND_TYPE", 2)
             self.reboot_sitl()
             self.wait_ready_to_arm()
             self.mavproxy.send('arm throttle\n')
@@ -2452,6 +2452,16 @@ class AutoTest(ABC):
             self.delay_sim_time(1)
             self.drain_mav() # hopefully draining COMMAND_ACK from that failed arm
             self.arm_vehicle()
+            tstart = self.get_sim_time()
+            last_status = 0
+            while True:
+                now = self.get_sim_time()
+                if now - tstart > 60:
+                    break
+                if now - last_status > 5:
+                    last_status = now
+                    self.mavproxy.send('dataflash_logger status\n')
+                    self.mavproxy.expect("Active Rate\([0-9]s\):([1234])([0-9][0-9])[.]")
             self.disarm_vehicle()
         except Exception as e:
             self.progress("Exception (%s) caught" % str(e))
