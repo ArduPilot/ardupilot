@@ -320,6 +320,12 @@ public:
     // default speed for rtl
     AP_Float rtl_speed;
 
+    // gain for speed of correction in loiter
+    AP_Float loiter_speed_gain;
+
+    // maximum speed for vehicle
+    AP_Float speed_max;
+
     // frame class for vehicle
     AP_Int8 frame_class;
 

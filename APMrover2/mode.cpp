@@ -337,7 +337,11 @@ float Mode::calc_speed_max(float cruise_speed, float cruise_throttle) const
         speed_max = cruise_speed;
     } else {
         // project vehicle's maximum speed
-        speed_max = (1.0f / cruise_throttle) * cruise_speed;
+        if (g2.speed_max > 0.0f ) {
+             speed_max = g2.speed_max;
+        } else {
+             speed_max = (1.0f / cruise_throttle) * cruise_speed;
+        }
     }
 
     // constrain to 30m/s (108km/h) and return
