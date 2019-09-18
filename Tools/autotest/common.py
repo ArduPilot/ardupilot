@@ -2463,6 +2463,30 @@ class AutoTest(ABC):
         if ex is not None:
             raise ex
 
+    def test_dataflash_sitl(self):
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("LOG_BACKEND_TYPE", 5)
+            self.reboot_sitl()
+            self.drain_mav() # hopefully draining COMMAND_ACK from that failed arm
+            self.mavproxy.send("module load log\n")
+#            self.mavproxy.expect("Loaded module log\n")
+            self.mavproxy.send("log erase\n")
+            self.mavproxy.send("log list\n")
+            self.mavproxy.expect("Log 1  numLogs 1 lastLog 1 size")
+            self.reboot_sitl()
+            self.mavproxy.send("log list\n")
+            self.mavproxy.expect("Log 1  numLogs 2 lastLog 2 size")
+        except Exception as e:
+            self.progress("Exception (%s) caught" % str(e))
+            ex = e
+        self.mavproxy.send("module unload log\n")
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def test_arm_feature(self):
         """Common feature to test."""
         # TEST ARMING/DISARM
