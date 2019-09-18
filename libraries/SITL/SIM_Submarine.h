@@ -81,7 +81,7 @@ protected:
 
         // Frame drag coefficient
         const Vector3f linear_drag_coefficient = Vector3f(0.2, 0.3, 0.4);
-        const Vector3f angular_drag_coefficient = Vector3f(1, 1, 1);
+        const Vector3f angular_drag_coefficient = Vector3f(5, 5, 5);
         // Calculate total volume from water buoyancy
         // $ V = F_b / (rho * g) $
         // V = volume (m^3), rho = water density (kg/m^3), g = gravity (m/s^2), F_b = force (N)
@@ -103,6 +103,8 @@ protected:
     float calculate_buoyancy_acceleration();
     // calculate drag from velocity and drag coefficient
     void calculate_drag_force(const Vector3f &velocity, const Vector3f &drag_coefficient, Vector3f &force);
+    // calculate torque water resistance
+    void calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque);
     // calculate torque induced by buoyancy foams
     void calculate_buoyancy_torque(Vector3f &torque);
 
