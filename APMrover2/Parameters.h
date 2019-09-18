@@ -388,6 +388,12 @@ public:
 
     // object avoidance path planning
     AP_OAPathPlanner oa;
+
+    // maximum speed for vehicle
+    AP_Float speed_max;
+
+    // gain for speed of correction in loiter
+    AP_Float loiter_speed_gain;
 };
 
 extern const AP_Param::Info var_info[];

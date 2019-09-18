@@ -30,10 +30,8 @@ void ModeLoiter::update()
         const float desired_speed_within_radius = rover.g2.sailboat.tack_enabled() ? 0.1f : 0.0f;
         _desired_speed = attitude_control.get_desired_speed_accel_limited(desired_speed_within_radius, rover.G_Dt);
     } else {
-        // P controller with hard-coded gain to convert distance to desired speed
-        // To-Do: make gain configurable or calculate from attitude controller's maximum accelearation
-        _desired_speed = MIN((_distance_to_destination - g2.loit_radius) * 0.5f, g2.wp_nav.get_default_speed());
-
+        // P controller with hard-coded gain to convert distance to desired speed       
+        _desired_speed = MIN((_distance_to_destination - g2.loit_radius) * g2.loiter_speed_gain, g2.wp_nav.get_default_speed());
         // calculate bearing to destination
         _desired_yaw_cd = rover.current_loc.get_bearing_to(_destination);
         float yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
