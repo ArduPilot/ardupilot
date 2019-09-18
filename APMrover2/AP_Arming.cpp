@@ -85,7 +85,8 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
     return (AP_Arming::pre_arm_checks(report)
             & rover.g2.motors.pre_arm_check(report)
             & fence_checks(report)
-            & oa_check(report));
+            & oa_check(report)
+            & parameter_checks(report));
 }
 
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
@@ -176,3 +177,21 @@ bool AP_Arming_Rover::oa_check(bool report)
     }
     return false;
 }
+
+// perform parameter checks
+bool AP_Arming_Rover::parameter_checks(bool report)
+{
+    // success if parameter checks are disabled
+    if ((checks_to_perform != ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_PARAMETERS)) {
+        return true;
+    }
+
+    // check waypoint speed is positive
+    if (!is_positive(rover.g2.wp_nav.get_default_speed())) {
+        check_failed(ARMING_CHECK_PARAMETERS, report, "WP_SPEED too low");
+        return false;
+    }
+
+    return true;
+}
+
