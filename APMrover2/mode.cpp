@@ -335,6 +335,8 @@ float Mode::calc_speed_max(float cruise_speed, float cruise_throttle) const
     // sanity checks
     if (cruise_throttle > 1.0f || cruise_throttle < 0.05f) {
         speed_max = cruise_speed;
+    } else if (is_positive(g2.speed_max)) {
+        speed_max = g2.speed_max;
     } else {
         // project vehicle's maximum speed
         speed_max = (1.0f / cruise_throttle) * cruise_speed;
