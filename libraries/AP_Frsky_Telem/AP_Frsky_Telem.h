@@ -42,6 +42,7 @@ for FrSky D protocol (D-receivers)
 #define DATA_ID_GPS_LONG_EW         0x22
 #define DATA_ID_GPS_LAT_NS          0x23
 #define DATA_ID_CURRENT             0x28
+#define DATA_ID_VARIO               0x30
 #define DATA_ID_VFAS                0x39
 
 #define START_STOP_D                0x5E
@@ -157,6 +158,7 @@ private:
     
     struct
     {
+        int32_t vario_vspd;
         char lat_ns, lon_ew;
         uint16_t latdddmm;
         uint16_t latmmmm;
@@ -168,7 +170,8 @@ private:
         uint16_t alt_nav_cm;
         int16_t speed_in_meter;
         uint16_t speed_in_centimeter;
-    } _gps;
+        uint16_t yaw;
+    } _SPort_data;
 
     struct PACKED
     {
@@ -207,6 +210,7 @@ private:
         uint8_t gps_call;
         uint8_t vario_call;
         uint8_t various_call;
+        uint8_t next_sensor_id;
     } _SPort;
     
     struct
@@ -222,6 +226,7 @@ private:
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
     
+    float get_vspeed_ms(void);
     // passthrough WFQ scheduler
     void update_avg_packet_rate();
     void passthrough_wfq_adaptive_scheduler();
