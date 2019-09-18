@@ -100,14 +100,14 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
 
     // Calculate angular drag forces
     // TODO: This results in the wrong units. Fix the math.
-    Vector3f angular_drag_forces;
-    calculate_drag_force(gyro, frame_property.angular_drag_coefficient, angular_drag_forces);
+    Vector3f angular_drag_torque;
+    calculate_angular_drag_torque(gyro, frame_property.angular_drag_coefficient, angular_drag_torque);
 
     // Calculate torque induced by buoyancy foams on the frame
     Vector3f buoyancy_torque;
     calculate_buoyancy_torque(buoyancy_torque);
     // Add forces in body frame accel
-    rot_accel -= angular_drag_forces / frame_property.weight;
+    rot_accel -= angular_drag_torque / frame_property.moment_of_inertia;
     rot_accel += buoyancy_torque / frame_property.moment_of_inertia;
 }
 
@@ -151,6 +151,21 @@ void Submarine::calculate_drag_force(const Vector3f &velocity, const Vector3f &d
     force = (velocity_2 * water_density) * frame_property.equivalent_sphere_area / 2.0f;
     force *= drag_coefficient;
 }
+
+/**
+ * @brief Calculate angular drag torque
+ *
+ * @param angular_velocity Body frame velocity of fluid
+ * @param drag_coefficient Rotational drag coefficient of body
+ */
+void Submarine::calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque)
+{
+    // TODO: Find a good approximation for this.
+    // While this works, it is not accurate nor has the right dimensions.
+    torque = angular_velocity;
+    torque *= drag_coefficient;
+}
+
 
 /**
 * @brief Calculate buoyancy force of the frame
