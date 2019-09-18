@@ -23,7 +23,6 @@ This provides some support code and variables for MAVLink enabled sketches
 #include "GCS_MAVLink.h"
 
 #include <AP_Common/AP_Common.h>
-#include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
