@@ -14,10 +14,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_Common/AP_FWVersion.h"
 #include "GCS.h"
 #include <AP_Logger/AP_Logger.h>
 
