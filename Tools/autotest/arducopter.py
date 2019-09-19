@@ -3909,7 +3909,7 @@ class AutoTestHeli(AutoTestCopter):
         if ex is not None:
             raise ex
 
-    def fly_spline_waypoint(self):
+    def fly_spline_waypoint(self, timeout=600):
         """ensure basic spline functionality works"""
         self.load_mission("copter_spline_mission.txt")
         self.change_mode("LOITER")
@@ -3922,11 +3922,10 @@ class AutoTestHeli(AutoTestCopter):
         self.set_rc(3, 1500)
         tstart = self.get_sim_time()
         while True:
+            if self.get_sim_time() - tstart > timeout:
+                raise AutoTestTimeoutException("Vehicle did not disarm after mission")
             if not self.armed():
                 break
-            remaining = self.get_sim_time() - tstart
-            if remaining <= 0:
-                raise AutoTestTimeoutException("Vehicle did not disarm after mission")
             self.delay_sim_time(1)
         self.progress("Lowering rotor speed")
         self.set_rc(8, 1000)
