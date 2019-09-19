@@ -700,10 +700,6 @@ void CanIface::handleTxInterrupt(const uavcan::uint64_t utc_usec)
     update_event_.signalFromInterrupt();
 
     pollErrorFlagsFromISR();
-
-    #if UAVCAN_STM32_FREERTOS
-    update_event_.yieldFromISR();
-    #endif
 }
 
 void CanIface::handleRxInterrupt(uavcan::uint8_t fifo_index, uavcan::uint64_t utc_usec)
@@ -771,9 +767,6 @@ void CanIface::handleRxInterrupt(uavcan::uint8_t fifo_index, uavcan::uint64_t ut
 
     pollErrorFlagsFromISR();
 
-    #if UAVCAN_STM32_FREERTOS
-    update_event_.yieldFromISR();
-    #endif
 }
 
 void CanIface::pollErrorFlagsFromISR()
@@ -936,25 +929,6 @@ uavcan::int16_t CanDriver::select(uavcan::CanSelectMasks& inout_masks,
     return 1;                                   // Return value doesn't matter as long as it is non-negative
 }
 
-
-#if UAVCAN_STM32_BAREMETAL || UAVCAN_STM32_FREERTOS
-
-static void nvicEnableVector(IRQn_Type irq,  uint8_t prio)
-{
-    #if !defined (USE_HAL_DRIVER)
-      NVIC_InitTypeDef NVIC_InitStructure;
-      NVIC_InitStructure.NVIC_IRQChannel = irq;
-      NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = prio;
-      NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-      NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-      NVIC_Init(&NVIC_InitStructure);
-    #else
-      HAL_NVIC_SetPriority(irq, prio, 0);
-      HAL_NVIC_EnableIRQ(irq);
-    #endif
-}
-
-#endif
 
 void CanDriver::initOnce()
 {
