@@ -298,7 +298,7 @@ public:
     class BatchSampler {
     public:
         BatchSampler(const AP_InertialSensor &imu) :
-            type(IMU_SENSOR_TYPE_ACCEL),
+            _type(IMU_SENSOR_TYPE_ACCEL),
             _imu(imu) {
             AP_Param::setup_object_defaults(this, var_info);
         };
@@ -328,8 +328,7 @@ public:
         // you are running a on an FMU with three IMUs then you
         // will loop back around to the first sensor after about
         // twenty seconds.
-        AP_Int16 samples_per_msg;
-        AP_Int8 push_interval_ms;
+        AP_Int8 _push_interval_ms;
 
         // end Parameters
 
@@ -343,27 +342,31 @@ public:
         void rotate_to_next_sensor();
         void update_doing_sensor_rate_logging();
 
-        bool should_log(uint8_t instance, IMU_SENSOR_TYPE type);
+        bool should_log(uint8_t sensor_index);
         void push_data_to_log();
 
-        uint64_t measurement_started_us;
+        volatile uint64_t _measurement_started_us;
 
-        bool initialised : 1;
-        bool isbh_sent : 1;
+        bool _initialised : 1;
+        bool _isbh_sent : 1;
         bool _doing_sensor_rate_logging : 1;
         bool _doing_post_filter_logging : 1;
-        uint8_t instance : 3; // instance we are sending data for
-        AP_InertialSensor::IMU_SENSOR_TYPE type : 1;
-        uint16_t isb_seqnum;
-        int16_t *data_x;
-        int16_t *data_y;
-        int16_t *data_z;
-        uint16_t data_write_offset; // units: samples
-        uint16_t data_read_offset; // units: samples
-        uint32_t last_sent_ms;
+        uint8_t _instance : 3; // instance we are sending data for
+        AP_InertialSensor::IMU_SENSOR_TYPE _type : 1;
+        uint16_t _isb_seqnum;
+        int16_t *_data_x[INS_MAX_BACKENDS];
+        int16_t *_data_y[INS_MAX_BACKENDS];
+        int16_t *_data_z[INS_MAX_BACKENDS];
+        // data_write_offset is written and read from different threads, volatile, although not guaranteed, mitigates against this
+        // the alternative is locking inside the IMU driver, which given that this is only for logging doesn't seem worth it
+        volatile uint16_t _data_write_offset[INS_MAX_BACKENDS]; // units: samples
+        uint16_t _data_read_offset[INS_MAX_BACKENDS]; // units: samples
+        uint32_t _last_sent_ms;
+        uint8_t _sensor_index;
+        uint8_t _instance_count;
 
         // all samples are multiplied by this
-        uint16_t multiplier; // initialised as part of init()
+        uint16_t _multiplier; // initialised as part of init()
 
         const AP_InertialSensor &_imu;
     };
