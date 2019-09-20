@@ -35,6 +35,9 @@ public:
         return _singleton;
     }
 
+    // return true if any avoidance feature is enabled
+    bool enabled() const { return _enabled != AC_AVOID_DISABLED; }
+
     /*
      * Adjusts the desired velocity so that the vehicle can stop
      * before the fence/object.
@@ -75,6 +78,9 @@ public:
      // be exactly the input distance.
      // kP should be non-zero for Copter which has a non-linear response
     float get_max_speed(float kP, float accel_cmss, float distance_cm, float dt) const;
+
+    // return margin (in meters) that the vehicle should stay from objects
+    float get_margin() const { return _margin; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
