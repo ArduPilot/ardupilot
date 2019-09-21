@@ -281,3 +281,6 @@ bool is_valid_octal(uint16_t octal) WARN_IF_UNUSED;
 
 // return true if two rotations are equal
 bool rotation_equal(enum Rotation r1, enum Rotation r2) WARN_IF_UNUSED;
+
+// fill an array of float with NaN, used to invalidate memory in SITL
+void fill_nanf(float *f, uint16_t count);
