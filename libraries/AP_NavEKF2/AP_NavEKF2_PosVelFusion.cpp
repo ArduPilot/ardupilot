@@ -438,6 +438,7 @@ void NavEKF2_core::FuseVelPosNED()
     Vector6 R_OBS; // Measurement variances used for fusion
     Vector6 R_OBS_DATA_CHECKS; // Measurement variances used for data checks only
     float SK;
+    Vector28 Kfusion;
 
     // perform sequential fusion of GPS measurements. This assumes that the
     // errors in the different velocity and position components are
