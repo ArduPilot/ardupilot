@@ -18,13 +18,13 @@
 #define AP_UAVCAN_H_
 
 #include <uavcan/uavcan.hpp>
+#include "AP_UAVCAN_Server.h"
 
 #include <AP_HAL/CAN.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
-#include "AP_UAVCAN_Servers.h"
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192
@@ -172,10 +172,6 @@ private:
     uint8_t _driver_index;
     char _thread_name[9];
     bool _initialized;
-#ifdef HAS_UAVCAN_SERVERS
-    AP_UAVCAN_Servers _servers;
-#endif
-
     ///// SRV output /////
     struct {
         uint16_t pulse;
