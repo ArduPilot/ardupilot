@@ -549,6 +549,7 @@ def start_vehicle(binary, autotest, opts, stuff, loc=None):
         # adding this option allows valgrind to cope with the overload
         # of operator new
         cmd.append("--soname-synonyms=somalloc=nouserintercepts")
+        cmd.append("--track-origins=yes")
     if opts.callgrind:
         cmd_name += " (callgrind)"
         cmd.append("valgrind")
