@@ -5,7 +5,6 @@ script to run configre for all hwdef.dat, to check for syntax errors
 """
 
 import os
-import shutil
 import subprocess
 import sys
 import fnmatch

@@ -137,7 +137,6 @@ is bob we will attempt to checkout bob-AVR'''
                 return True
             except subprocess.CalledProcessError:
                 self.progress("Checkout branch %s failed" % branch)
-                pass
 
         self.progress("Failed to find tag for %s %s %s %s" %
                       (vehicle, ctag, cboard, cframe))

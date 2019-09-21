@@ -2,13 +2,9 @@
 
 from __future__ import print_function
 import os
-import pexpect
 from pymavlink import mavutil
 
 from common import AutoTest
-from pysim import util
-from pysim import vehicleinfo
-import operator
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
