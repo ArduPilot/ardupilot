@@ -22,7 +22,7 @@
 
    Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Jean-Louis Naudin, Grant Morphett
 
-   Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
+   Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier
 
    APMrover alpha version tester: Franco Borasio, Daniel Chapelat...
 
@@ -105,6 +105,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(afs_fs_check,           10,    200),
 #endif
     SCHED_TASK(read_airspeed,          10,    100),
+#if OSD_ENABLED == ENABLED
+    SCHED_TASK(publish_osd_info,        1,     10),
+#endif
 };
 
 constexpr int8_t Rover::_failsafe_priorities[7];
@@ -323,6 +326,24 @@ void Rover::update_mission(void)
         }
     }
 }
+
+#if OSD_ENABLED == ENABLED
+void Rover::publish_osd_info()
+{
+    AP_OSD::NavInfo nav_info {};
+    if (control_mode == &mode_loiter) {
+        nav_info.wp_xtrack_error = control_mode->get_distance_to_destination();
+    } else {
+        nav_info.wp_xtrack_error = control_mode->crosstrack_error();
+    }
+    nav_info.wp_distance = control_mode->get_distance_to_destination();
+    nav_info.wp_bearing = control_mode->wp_bearing() * 100.0f;
+    if (control_mode == &mode_auto) {
+         nav_info.wp_number = mode_auto.mission.get_current_nav_index();
+    }
+    osd.set_nav_info(nav_info);
+}
+#endif
 
 Rover rover;
 
