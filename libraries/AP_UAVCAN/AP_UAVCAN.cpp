@@ -49,6 +49,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_HereFlow.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include "AP_UAVCAN_Server.h"
 
 #define LED_DELAY_US 50000
 
@@ -204,7 +205,12 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     uint8_t uid_len = uid_buf_len;
     uint8_t unique_id[uid_buf_len];
 
+
     if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
+        //This is because we are maintaining a common Server Record for all UAVCAN Instances.
+        //In case the node IDs are different, and unique id same, it will create
+        //conflict in the Server Record.
+        unique_id[uid_len - 1] += _uavcan_node;
         uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
     }
     _node->setHardwareVersion(hw_version);
@@ -216,10 +222,13 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     }
 
     //Start Servers
-#ifdef HAS_UAVCAN_SERVERS
-    _servers.init(*_node);
-#endif
+    if (!AP::uavcan_server().init(this)) {
+        debug_uavcan(1, "UAVCAN: Failed to start DNA Server\n\r");
+        return;
+    }
+
     // Roundup all subscribers from supported drivers
+    AP_UAVCAN_Server::subscribe_msgs(this);
     AP_GPS_UAVCAN::subscribe_msgs(this);
     AP_Compass_UAVCAN::subscribe_msgs(this);
     AP_Baro_UAVCAN::subscribe_msgs(this);
@@ -329,6 +338,7 @@ void AP_UAVCAN::loop(void)
         led_out_send();
         buzzer_send();
         safety_state_send();
+        AP::uavcan_server().verify_nodes(this);
     }
 }
 
