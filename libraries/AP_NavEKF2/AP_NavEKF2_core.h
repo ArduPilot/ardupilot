@@ -492,6 +492,8 @@ private:
       would give us very high stack usage in some functions, which
       poses a risk of stack overflow until we have infrastructure in
       place to calculate maximum stack usage using static analysis.
+      On SITL this structure is assumed to contain only float
+      variables (for the fill_nanf())
      */
     struct core_common {
         Matrix24 KH;
