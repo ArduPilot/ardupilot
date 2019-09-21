@@ -561,7 +561,7 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
 #endif
     
 #if DF_MAVLINK_DISABLE_INTERRUPTS
-    irqstate_t istate = irqsave();
+    void *istate = hal.scheduler->disable_interrupts_save();
 #endif
 
 // DM_packing: 267039 events, 0 overruns, 8440834us elapsed, 31us avg, min 31us max 32us 0.488us rms
@@ -583,7 +583,7 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
     hal.util->perf_end(_perf_packing);
 
 #if DF_MAVLINK_DISABLE_INTERRUPTS
-    irqrestore(istate);
+    hal.scheduler->restore_interrupts(istate);
 #endif
 
     block.last_sent = AP_HAL::millis();
