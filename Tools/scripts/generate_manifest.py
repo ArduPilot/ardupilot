@@ -284,7 +284,7 @@ class ManifestGenerator():
             try:
                 firmware_version = open(firmware_version_file).read()
                 firmware_version = firmware_version.strip()
-                (version_numbers, release_type) = firmware_version.split("-")
+                (_, _) = firmware_version.split("-")
             except ValueError:
                 print("malformed firmware-version.txt at (%s)" % (firmware_version_file,), file=sys.stderr)
                 continue

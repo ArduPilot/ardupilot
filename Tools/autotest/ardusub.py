@@ -4,10 +4,7 @@
 from __future__ import print_function
 import os
 
-import pexpect
 from pymavlink import mavutil
-
-from pysim import util
 
 from common import AutoTest
 from common import NotAchievedException

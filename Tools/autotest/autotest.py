@@ -74,7 +74,7 @@ def get_default_params(atype, binary):
         util.pexpect_close(sitl)
         sitl = util.start_SITL(binary, model=frame, home=home, speedup=10)
         mavproxy = util.start_MAVProxy_SITL(atype)
-        idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
+        mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
     dest = buildlogs_path('%s-defaults.parm' % atype)
     shutil.copy(parmfile, dest)

@@ -5,18 +5,13 @@ from __future__ import print_function
 import math
 import os
 
-import pexpect
 from pymavlink import quaternion
 from pymavlink import mavutil
-
-from pysim import util
 
 from common import AutoTest
 from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
-
-from MAVProxy.modules.lib import mp_util
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -693,7 +688,6 @@ class AutoTestPlane(AutoTest):
             self.wait_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            tstart = self.get_sim_time_cached()
             last_mission_current_msg = 0
             last_seq = None
             while self.armed():
@@ -957,7 +951,6 @@ class AutoTestPlane(AutoTest):
             here = self.mav.location()
             got_radius = self.get_distance(loc, here)
             average_radius = 0.95*average_radius + 0.05*got_radius
-            now = self.get_sim_time()
             on_radius = abs(got_radius - want_radius) < epsilon
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             heading = m.heading
@@ -1185,7 +1178,7 @@ class AutoTestPlane(AutoTest):
         self.change_mode('MANUAL')
 
         # grab home position:
-        m = self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        self.mav.recv_match(type='HOME_POSITION', blocking=True)
         self.homeloc = self.mav.location()
 
         self.run_subtest("Takeoff", self.takeoff)
@@ -1239,6 +1232,7 @@ class AutoTestPlane(AutoTest):
         ex = None
         self.context_push()
         self.progress("Making sure we don't ordinarily get RANGEFINDER")
+        m = None
         try:
             m = self.mav.recv_match(type='RANGEFINDER',
                                     blocking=True,
@@ -1261,7 +1255,6 @@ class AutoTestPlane(AutoTest):
             self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            home = self.poll_home_position()
             self.wait_waypoint(5, 5, max_dist=100)
             rf = self.mav.recv_match(type="RANGEFINDER", timeout=1, blocking=True)
             if rf is None:
