@@ -346,6 +346,7 @@ void NavEKF2_core::FuseMagnetometer()
     Vector6 SK_MX;
     Vector6 SK_MY;
     Vector6 SK_MZ;
+    Vector28 Kfusion;
 
     hal.util->perf_end(_perf_test[1]);
     
@@ -780,6 +781,8 @@ void NavEKF2_core::fuseEulerYaw()
     float measured_yaw;
     float H_YAW[3];
     Matrix3f Tbn_zeroYaw;
+    Vector28 Kfusion;
+
     if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
         // calculate observation jacobian when we are observing the first rotation in a 321 sequence
         float t2 = q0*q0;
@@ -1037,6 +1040,8 @@ void NavEKF2_core::FuseDeclination(float declErr)
     float t12 = 1.0f/t11;
 
     float H_MAG[24];
+    Vector28 Kfusion;
+
     H_MAG[16] = -magE*t5;
     H_MAG[17] = magN*t5;
 
