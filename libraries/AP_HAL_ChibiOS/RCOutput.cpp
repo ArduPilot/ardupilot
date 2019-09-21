@@ -165,19 +165,22 @@ void RCOutput::set_freq_group(pwm_group &group)
  */
 void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
-    //check if the request spans accross any of the channel groups
-    uint8_t update_mask = 0;
-
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         // change frequency on IOMCU
         uint16_t io_chmask = chmask & 0xFF;
-        if (freq_hz > 50) {
-            io_fast_channel_mask |= io_chmask;
-        } else {
-            io_fast_channel_mask &= ~io_chmask;
-        }
         if (io_chmask) {
+            // disallow changing frequency of this group if it is greater than the default
+            for (uint8_t i=0; i<ARRAY_SIZE(iomcu.ch_masks); i++) {
+                const uint16_t mask = io_chmask & iomcu.ch_masks[i];
+                if (mask != 0) {
+                    if (freq_hz > 50) {
+                        io_fast_channel_mask |= mask;
+                    } else {
+                        io_fast_channel_mask &= ~mask;
+                    }
+                }
+            }
             iomcu.set_freq(io_fast_channel_mask, freq_hz);
         }
     }
@@ -193,7 +196,7 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
       we enable the new frequency on all groups that have one
       of the requested channels. This means we may enable high
       speed on some channels that aren't requested, but that
-      is needed in order to fly a vehicle such a a hex
+      is needed in order to fly a vehicle such as a hex
       multicopter properly
     */
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
@@ -207,10 +210,10 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         if ((group.ch_mask & chmask) != 0) {
             group.rc_frequency = group_freq;
             set_freq_group(group);
-            update_mask |= group.ch_mask;
-        }
-        if (group_freq > 50) {
-            fast_channel_mask |= group.ch_mask;
+            // disallow changing frequency of this group if it is greater than the default
+            if (group_freq > 50) {
+                fast_channel_mask |= group.ch_mask;
+            }
         }
     }
 }
