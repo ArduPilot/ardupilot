@@ -20,7 +20,7 @@ extern const AP_HAL::HAL& hal;
 #define GYRO_BIAS_LIMIT 0.5f
 
 // constructor
-NavEKF2_core::NavEKF2_core(void) :
+NavEKF2_core::NavEKF2_core(NavEKF2 *_frontend) :
     _perf_UpdateFilter(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_UpdateFilter")),
     _perf_CovariancePrediction(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_CovariancePrediction")),
     _perf_FuseVelPosNED(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseVelPosNED")),
@@ -28,7 +28,19 @@ NavEKF2_core::NavEKF2_core(void) :
     _perf_FuseAirspeed(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseAirspeed")),
     _perf_FuseSideslip(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseSideslip")),
     _perf_TerrainOffset(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_TerrainOffset")),
-    _perf_FuseOptFlow(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseOptFlow"))
+    _perf_FuseOptFlow(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseOptFlow")),
+    frontend(_frontend),
+    // setup the intermediate variables shared by all cores (to save memory)
+    common((struct core_common *)_frontend->core_common),
+    Kfusion(common->Kfusion),
+    KH(common->KH),
+    KHP(common->KHP),
+    nextP(common->nextP),
+    processNoise(common->processNoise),
+    SF(common->SF),
+    SG(common->SG),
+    SQ(common->SQ),
+    SPP(common->SPP)
 {
     _perf_test[0] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test0");
     _perf_test[1] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test1");
@@ -43,9 +55,8 @@ NavEKF2_core::NavEKF2_core(void) :
 }
 
 // setup this core backend
-bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index)
+bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
 {
-    frontend = _frontend;
     imu_index = _imu_index;
     gyro_index_active = _imu_index;
     accel_index_active = _imu_index;
@@ -156,8 +167,7 @@ void NavEKF2_core::InitialiseVariables()
     lastKnownPositionNE.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
-    memset(&nextP[0][0], 0, sizeof(nextP));
-    memset(&processNoise[0], 0, sizeof(processNoise));
+    memset(common, 0, sizeof(*common));
     flowDataValid = false;
     rangeDataToFuse  = false;
     Popt = 0.0f;
@@ -515,6 +525,12 @@ void NavEKF2_core::CovarianceInit()
 // Update Filter States - this should be called whenever new IMU data is available
 void NavEKF2_core::UpdateFilter(bool predict)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // fill the common variables with NaN, so we catch any cases in
+    // SITL where they are used without initialisation
+    fill_nanf((float *)common, sizeof(*common)/sizeof(float));
+#endif
+
     // Set the flag to indicate to the filter that the front-end has given permission for a new state prediction cycle to be started
     startPredictEnabled = predict;
 
