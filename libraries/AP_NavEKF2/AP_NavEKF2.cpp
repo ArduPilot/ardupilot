@@ -662,7 +662,7 @@ bool NavEKF2::InitialiseFilter(void)
         }
 
         // allocate common intermediate variable space
-        core_common = (struct CoreCommon *)hal.util->malloc_type(NavEKF2_core::get_core_common_size(), AP_HAL::Util::MEM_FAST);
+        core_common = (void *)hal.util->malloc_type(NavEKF2_core::get_core_common_size(), AP_HAL::Util::MEM_FAST);
         if (core_common == nullptr) {
             _enable.set(0);
             hal.util->free_type(core, sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);

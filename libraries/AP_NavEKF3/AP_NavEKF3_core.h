@@ -67,10 +67,10 @@ class NavEKF3_core
 {
 public:
     // Constructor
-    NavEKF3_core(void);
+    NavEKF3_core(NavEKF3 *_frontend);
 
     // setup this core backend
-    bool setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _core_index);
+    bool setup_core(uint8_t _imu_index, uint8_t _core_index);
     
     // Initialise the states from accelerometer and magnetometer data (if present)
     // This method can only be used when the vehicle is static
@@ -365,7 +365,10 @@ public:
 
     // get timing statistics structure
     void getTimingStatistics(struct ekf_timing &timing);
-    
+
+    // return size of core_common for use in frontend allocation
+    static uint32_t get_core_common_size(void) { return sizeof(core_common); }
+
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;
@@ -533,6 +536,21 @@ private:
         uint8_t     type;           // type specifiying Euler rotation order used, 1 = 312 (ZXY), 2 = 321 (ZYX)
     };
 
+    /*
+      common intermediate variables used by all cores. These save a
+      lot memory by avoiding allocating these arrays on every core
+      Having these as stack variables would save even more memory, but
+      would give us very high stack usage in some functions, which
+      poses a risk of stack overflow until we have infrastructure in
+      place to calculate maximum stack usage using static analysis.
+     */
+    struct core_common {
+        Vector28 Kfusion;
+        Matrix24 KH;
+        Matrix24 KHP;
+        Matrix24 nextP;
+    } *common;
+    
     // bias estimates for the IMUs that are enabled but not being used
     // by this core.
     struct {
@@ -855,9 +873,9 @@ private:
     bool badIMUdata;                // boolean true if the bad IMU data is detected
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
-    Vector28 Kfusion;               // Kalman gain vector
-    Matrix24 KH;                    // intermediate result used for covariance updates
-    Matrix24 KHP;                   // intermediate result used for covariance updates
+    Vector28 &Kfusion;              // Kalman gain vector
+    Matrix24 &KH;                   // intermediate result used for covariance updates
+    Matrix24 &KHP;                  // intermediate result used for covariance updates
     Matrix24 P;                     // covariance matrix
     imu_ring_buffer_t<imu_elements> storedIMU;      // IMU data buffer
     obs_ring_buffer_t<gps_elements> storedGPS;      // GPS data buffer
@@ -911,7 +929,7 @@ private:
     bool allMagSensorsFailed;       // true if all magnetometer sensors have timed out on this flight and we are no longer using magnetometer data
     uint32_t lastSynthYawTime_ms;   // time stamp when synthetic yaw measurement was last fused to maintain covariance health (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
-    Matrix24 nextP;                 // Predicted covariance matrix before addition of process noise to diagonals
+    Matrix24 &nextP;                // Predicted covariance matrix before addition of process noise to diagonals
     Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold

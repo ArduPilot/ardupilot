@@ -682,9 +682,20 @@ bool NavEKF3::InitialiseFilter(void)
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
             return false;
         }
+
+        // allocate common intermediate variable space
+        core_common = (void *)hal.util->malloc_type(NavEKF3_core::get_core_common_size(), AP_HAL::Util::MEM_FAST);
+        if (core_common == nullptr) {
+            _enable.set(0);
+            hal.util->free_type(core, sizeof(NavEKF3_core)*num_cores, AP_HAL::Util::MEM_FAST);
+            core = nullptr;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: common allocation failed");
+            return false;
+        }
+
+        // Call constructors on all cores
         for (uint8_t i = 0; i < num_cores; i++) {
-            //Call Constructors
-            new (&core[i]) NavEKF3_core();
+            new (&core[i]) NavEKF3_core(this);
         }
     }
 
@@ -694,7 +705,7 @@ bool NavEKF3::InitialiseFilter(void)
     bool core_setup_success = true;
     for (uint8_t core_index=0; core_index<num_cores; core_index++) {
         if (coreSetupRequired[core_index]) {
-            coreSetupRequired[core_index] = !core[core_index].setup_core(this, coreImuIndex[core_index], core_index);
+            coreSetupRequired[core_index] = !core[core_index].setup_core(coreImuIndex[core_index], core_index);
             if (coreSetupRequired[core_index]) {
                 core_setup_success = false;
             }
