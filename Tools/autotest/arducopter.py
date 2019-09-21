@@ -7,9 +7,7 @@ import math
 import os
 import shutil
 import time
-import traceback
 
-import pexpect
 from pymavlink import mavutil
 from pymavlink import mavextra
 
@@ -1833,7 +1831,6 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
 
             self.progress("Waiting for location")
-            old_pos = self.mav.location()
             self.zero_throttle()
             self.takeoff(10, 1800)
             self.change_mode("LAND")
@@ -3384,8 +3381,6 @@ class AutoTestCopter(AutoTest):
         self.takeoff(10, mode="LOITER")
         self.set_parameter("SIM_SPEEDUP", 1)
         self.change_mode("FOLLOW")
-        ex = None
-        tstart = self.get_sim_time_cached()
         new_loc = self.mav.location()
         new_loc_offset_n = 20
         new_loc_offset_e = 30
@@ -3405,13 +3400,12 @@ class AutoTestCopter(AutoTest):
         while True:
             now = self.get_sim_time_cached()
             if now - last_sent > 0.5:
-                last_run = now
                 gpi = self.global_position_int_for_location(new_loc,
                                                             now,
                                                             heading=heading)
                 gpi.pack(self.mav.mav)
                 self.mav.mav.send(gpi)
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             pos = self.mav.location()
             delta = self.get_distance(expected_loc, pos)
             max_delta = 2
@@ -3931,13 +3925,13 @@ class AutoTestHeli(AutoTestCopter):
         self.set_rc(8, 1000)
 
     def set_rc_default(self):
-        super(AutoTestCopter, self).set_rc_default()
+        super(AutoTestHeli, self).set_rc_default()
         self.progress("Lowering rotor speed")
         self.set_rc(8, 1000)
 
     def tests(self):
         '''return list of all tests'''
-        ret = super(AutoTestCopter, self).tests()
+        ret = AutoTest.tests(self)
         ret.extend([
             ("AVCMission", "Fly AVC mission", self.fly_avc_test),
 
