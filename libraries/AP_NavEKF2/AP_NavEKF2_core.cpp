@@ -46,15 +46,9 @@ NavEKF2_core::NavEKF2_core(NavEKF2 *_frontend) :
     frontend(_frontend),
     // setup the intermediate variables shared by all cores (to save memory)
     common((struct core_common *)_frontend->core_common),
-    Kfusion(common->Kfusion),
     KH(common->KH),
     KHP(common->KHP),
-    nextP(common->nextP),
-    processNoise(common->processNoise),
-    SF(common->SF),
-    SG(common->SG),
-    SQ(common->SQ),
-    SPP(common->SPP)
+    nextP(common->nextP)
 {
     _perf_test[0] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test0");
     _perf_test[1] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test1");

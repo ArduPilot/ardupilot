@@ -43,6 +43,7 @@ void NavEKF2_core::FuseRngBcn()
     float bcn_pd;
     const float R_BCN = sq(MAX(rngBcnDataDelayed.rngErr , 0.1f));
     float rngPred;
+    Vector28 Kfusion;
 
     // health is set bad until test passed
     rngBcnHealth = false;
