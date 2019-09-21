@@ -488,7 +488,6 @@ def run_in_terminal_window(autotest, name, cmd):
         # on MacOS record the window IDs so we can close them later
         out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
         out = out.decode('utf-8')
-        import re
         p = re.compile('tab 1 of window id (.*)')
 
         tstart = time.time()
@@ -506,7 +505,7 @@ def run_in_terminal_window(autotest, name, cmd):
         else:
             progress("Cannot find %s process terminal" % name)
     else:
-        p = subprocess.Popen(runme)
+        subprocess.Popen(runme)
 
 
 tracker_uarta = None  # blemish

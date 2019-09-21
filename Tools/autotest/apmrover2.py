@@ -4,7 +4,6 @@
 from __future__ import print_function
 
 import os
-import pexpect
 import time
 
 from common import AutoTest
@@ -13,8 +12,6 @@ from common import AutoTestTimeoutException
 from common import MsgRcvTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
-
-from pysim import util
 
 from pymavlink import mavutil
 
@@ -961,7 +958,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 success = False
             except AutoTestTimeoutException as e:
                 success = True
-                pass
             self.mav.mav.srcSystem = old_srcSystem
             if not success:
                 raise NotAchievedException(
@@ -976,7 +972,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.disarm_vehicle()
             except Exception as e:
                 comp_arm_exception = e
-                pass
             self.mav.mav.srcSystem = old_srcSystem
             if comp_arm_exception is not None:
                 raise comp_arm_exception
@@ -1078,11 +1073,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Testing FENCE_POINT protocol")
         self.set_parameter("FENCE_TOTAL", 1)
 
-        self.roundtrip_fencepoint_protocol(0, 1, 1.2345, 5.4321, target_system=target_component, target_component=target_component)
+        self.roundtrip_fencepoint_protocol(0, 1, 1.2345, 5.4321, target_system=target_system, target_component=target_component)
 
         lat = 2.345
         lng = 4.321
-        self.roundtrip_fencepoint_protocol(0, 1, lat, lng, target_system=target_component, target_component=target_component)
+        self.roundtrip_fencepoint_protocol(0, 1, lat, lng, target_system=target_system, target_component=target_component)
 
     def test_offboard(self, timeout=90):
         self.load_mission("rover-guided-mission.txt")
@@ -1469,7 +1464,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             m = self.get_mission_item_int_on_link(2, self.mav, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             if m2.x != m.x:
                 raise NotAchievedException("mission items do not match (%d vs %d)" % (m2.x, m.x))
-            m_nonint = self.get_mission_item_on_link(2, self.mav, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            self.get_mission_item_on_link(2, self.mav, target_system, target_component, mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             # ensure we get nacks for bad mission item requests:
             self.mav.mav.mission_request_send(target_system,
                                               target_component,
@@ -1563,7 +1558,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_MISSION, 0)
 
             self.progress("Answering request for mission item 0")
-            wp = self.mav.mav.mission_item_int_send(
+            self.mav.mav.mission_item_int_send(
                 target_system,
                 target_component,
                 0, # seq
@@ -1599,7 +1594,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
 
             self.progress("Answering request for waypoints item 1")
-            wp = self.mav.mav.mission_item_int_send(
+            self.mav.mav.mission_item_int_send(
                 target_system,
                 target_component,
                 1, # seq

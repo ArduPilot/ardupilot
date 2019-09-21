@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import abc
 import math
-import itertools
 import os
 import re
 import shutil
@@ -1269,13 +1268,13 @@ class AutoTest(ABC):
     def get_distance(loc1, loc2):
         """Get ground distance between two locations."""
         return AutoTest.get_distance_accurate(loc1, loc2)
-        dlat = loc2.lat - loc1.lat
-        try:
-            dlong = loc2.lng - loc1.lng
-        except AttributeError:
-            dlong = loc2.lon - loc1.lon
+        # dlat = loc2.lat - loc1.lat
+        # try:
+        #     dlong = loc2.lng - loc1.lng
+        # except AttributeError:
+        #     dlong = loc2.lon - loc1.lon
 
-        return math.sqrt((dlat*dlat) + (dlong*dlong)*AutoTest.longitude_scale(loc2.lat)) * 1.113195e5
+        # return math.sqrt((dlat*dlat) + (dlong*dlong)*AutoTest.longitude_scale(loc2.lat)) * 1.113195e5
 
     @staticmethod
     def get_distance_accurate(loc1, loc2):
@@ -1292,7 +1291,6 @@ class AutoTest(ABC):
     @staticmethod
     def get_latlon_attr(loc, attrs):
         '''return any found latitude attribute from loc'''
-        latattrs = "lat", "latitude"
         ret = None
         for attr in attrs:
             if hasattr(loc, attr):
@@ -2062,18 +2060,15 @@ class AutoTest(ABC):
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
             tee.close()
-            tee = None
             self.check_sitl_reset()
             return
         self.test_timings[desc] = time.time() - start_time
         self.context_pop()
         self.progress('PASSED: "%s"' % prettyname)
         tee.close()
-        tee = None
 
     def check_test_syntax(self, test_file):
         """Check mistake on autotest function syntax."""
-        import re
         self.start_test("Check for syntax mistake in autotest lambda")
         if not os.path.isfile(test_file):
             self.progress("File %s does not exist" % test_file)
@@ -2656,10 +2651,8 @@ class AutoTest(ABC):
                         self.change_mode(mode)
                     except AutoTestTimeoutException:
                         self.progress("PASS not able to set mode : %s disarmed" % mode)
-                        pass
                     except ValueError:
                         self.progress("PASS not able to set mode : %s disarmed" % mode)
-                        pass
                 else:
                     self.progress("Not armable mode : %s" % mode)
                     self.change_mode(mode)
@@ -2708,11 +2701,9 @@ class AutoTest(ABC):
                 except AutoTestTimeoutException:
                     self.set_parameter("SIM_GPS_DISABLE", 0)
                     self.progress("PASS not able to set mode without Position : %s" % mode)
-                    pass
                 except ValueError:
                     self.set_parameter("SIM_GPS_DISABLE", 0)
                     self.progress("PASS not able to set mode without Position : %s" % mode)
-                    pass
             if mode == "FOLLOW":
                 self.set_parameter("FOLL_ENABLE", 0)
         self.change_mode(self.default_mode())
