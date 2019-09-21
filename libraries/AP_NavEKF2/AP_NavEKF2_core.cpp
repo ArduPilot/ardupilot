@@ -32,15 +32,9 @@ NavEKF2_core::NavEKF2_core(NavEKF2 *_frontend) :
     frontend(_frontend),
     // setup the intermediate variables shared by all cores (to save memory)
     common((struct core_common *)_frontend->core_common),
-    Kfusion(common->Kfusion),
     KH(common->KH),
     KHP(common->KHP),
-    nextP(common->nextP),
-    processNoise(common->processNoise),
-    SF(common->SF),
-    SG(common->SG),
-    SQ(common->SQ),
-    SPP(common->SPP)
+    nextP(common->nextP)
 {
     _perf_test[0] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test0");
     _perf_test[1] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test1");
@@ -882,6 +876,10 @@ void NavEKF2_core::CovariancePrediction()
     float day_s;        // Y axis delta angle measurement scale factor
     float daz_s;        // Z axis delta angle measurement scale factor
     float dvz_b;        // Z axis delta velocity measurement bias (rad)
+    Vector25 SF;
+    Vector5 SG;
+    Vector8 SQ;
+    Vector24 processNoise;
 
     // calculate covariance prediction process noise
     // use filtered height rate to increase wind process noise when climbing or descending
@@ -979,6 +977,7 @@ void NavEKF2_core::CovariancePrediction()
     SQ[6] = 2*q1*q2;
     SQ[7] = SG[4];
 
+    Vector23 SPP;
     SPP[0] = SF[17]*(2*q0*q1 + 2*q2*q3) + SF[18]*(2*q0*q2 - 2*q1*q3);
     SPP[1] = SF[18]*(2*q0*q2 + 2*q1*q3) + SF[16]*(SF[24] - 2*q0*q3);
     SPP[2] = 2*q3*SF[8] + 2*q1*SF[11] - 2*q0*SF[14] - 2*q2*SF[13];

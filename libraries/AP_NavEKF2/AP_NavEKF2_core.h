@@ -494,15 +494,9 @@ private:
       place to calculate maximum stack usage using static analysis.
      */
     struct core_common {
-        Vector28 Kfusion;
         Matrix24 KH;
         Matrix24 KHP;
         Matrix24 nextP;
-        Vector24 processNoise;
-        Vector25 SF;
-        Vector5 SG;
-        Vector8 SQ;
-        Vector23 SPP;
     } *common;
 
     // bias estimates for the IMUs that are enabled but not being used
@@ -822,7 +816,6 @@ private:
     bool badIMUdata;                // boolean true if the bad IMU data is detected
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
-    Vector28 &Kfusion;              // Kalman gain vector
     Matrix24 &KH;                   // intermediate result used for covariance updates
     Matrix24 &KHP;                  // intermediate result used for covariance updates
     Matrix24 P;                     // covariance matrix
@@ -880,11 +873,6 @@ private:
     uint32_t lastYawTime_ms;        // time stamp when yaw observation was last fused (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
     Matrix24 &nextP;                // Predicted covariance matrix before addition of process noise to diagonals
-    Vector24 &processNoise;         // process noise added to diagonals of predicted covariance matrix
-    Vector25 &SF;                   // intermediate variables used to calculate predicted covariance matrix
-    Vector5 &SG;                    // intermediate variables used to calculate predicted covariance matrix
-    Vector8 &SQ;                    // intermediate variables used to calculate predicted covariance matrix
-    Vector23 &SPP;                  // intermediate variables used to calculate predicted covariance matrix
     Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
