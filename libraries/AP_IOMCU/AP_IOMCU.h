@@ -103,6 +103,9 @@ public:
     bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
     
+    // channel group masks
+    const uint8_t ch_masks[3] = { 0x03,0x0C,0xF0 };
+
 private:
     AP_HAL::UARTDriver &uart;
 

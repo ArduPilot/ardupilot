@@ -652,11 +652,10 @@ void AP_IOMCU::push(void)
 // set output frequency
 void AP_IOMCU::set_freq(uint16_t chmask, uint16_t freq)
 {
-    const uint8_t masks[] = { 0x03,0x0C,0xF0 };
     // ensure mask is legal for the timer layout
-    for (uint8_t i=0; i<ARRAY_SIZE(masks); i++) {
-        if (chmask & masks[i]) {
-            chmask |= masks[i];
+    for (uint8_t i=0; i<ARRAY_SIZE(ch_masks); i++) {
+        if (chmask & ch_masks[i]) {
+            chmask |= ch_masks[i];
         }
     }
     rate.freq = freq;
