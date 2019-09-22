@@ -15,8 +15,12 @@ AP_Logger *AP_Logger::_singleton;
 extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_FILE_BUFSIZE
+#if HAL_MEM_CLASS >= HAL_MEM_CLASS_300
+#define HAL_LOGGING_FILE_BUFSIZE  50
+#else
 #define HAL_LOGGING_FILE_BUFSIZE  16
-#endif 
+#endif
+#endif
 
 #ifndef HAL_LOGGING_MAV_BUFSIZE
 #define HAL_LOGGING_MAV_BUFSIZE  8
