@@ -217,7 +217,7 @@ float NavEKF2_core::getPosDownDerivative(void) const
 {
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     // correct for the IMU offset (EKF calculations are at the IMU)
-    return posDownDerivative + velOffsetNED.z;
+    return vertCompFiltState.vel + velOffsetNED.z;
 }
 
 // This returns the specific forces in the NED frame
