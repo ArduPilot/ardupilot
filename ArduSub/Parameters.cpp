@@ -701,6 +701,9 @@ void Sub::load_parameters()
     AP_Param::set_default_by_name("INS_GYR_CAL", 0);
     AP_Param::set_default_by_name("MNT_DEFLT_MODE", MAV_MOUNT_MODE_RC_TARGETING);
     AP_Param::set_default_by_name("MNT_JSTICK_SPD", 100);
+    AP_Param::set_by_name("MNT_RC_IN_PAN", 7);
+    AP_Param::set_by_name("MNT_RC_IN_TILT", 8);
+    AP_Param::set_default_by_name("RNGFND1_TYPE", RangeFinder::RangeFinder_TYPE_MAVLink);
 }
 
 void Sub::convert_old_parameters()

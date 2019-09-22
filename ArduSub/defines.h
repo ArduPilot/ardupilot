@@ -102,8 +102,6 @@ enum RTLState {
 
 //  Logging parameters
 enum LoggingParameters {
-    TYPE_AIRSTART_MSG,
-    TYPE_GROUNDSTART_MSG,
     LOG_CONTROL_TUNING_MSG,
     LOG_DATA_INT16_MSG,
     LOG_DATA_UINT16_MSG,
@@ -111,7 +109,6 @@ enum LoggingParameters {
     LOG_DATA_UINT32_MSG,
     LOG_DATA_FLOAT_MSG,
     LOG_MOTBATT_MSG,
-    LOG_PARAMTUNE_MSG,
     LOG_GUIDEDTARGET_MSG
 };
 

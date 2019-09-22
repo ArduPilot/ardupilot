@@ -27,6 +27,8 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 
+AP_AdvancedFailsafe *AP_AdvancedFailsafe::_singleton;
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -453,3 +455,12 @@ void AP_AdvancedFailsafe::max_range_update(void)
         _terminate.set_and_notify(1);
     }
 }
+
+namespace AP {
+
+AP_AdvancedFailsafe *advancedfailsafe()
+{
+    return AP_AdvancedFailsafe::get_singleton();
+}
+
+};

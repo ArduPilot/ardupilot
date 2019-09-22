@@ -968,6 +968,7 @@ void AP_Camera::send_feedback(mavlink_channel_t) {}
 void AP_Camera::control(float, float, float, float, float, float) {}
 void AP_Camera::configure(float, float, float, float, float, float, float) {}
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
+AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
 
 // avoid building/linking Devo:
 void AP_DEVO_Telem::init() {};

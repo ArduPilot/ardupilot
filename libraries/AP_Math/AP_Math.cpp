@@ -32,7 +32,12 @@ is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
         return fabs(v_1 - v_2) < std::numeric_limits<double>::epsilon();
     }
 #endif
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wabsolute-value"
+    // clang doesn't realise we catch the double case above and warns
+    // about loss of precision here.
     return fabsf(v_1 - v_2) < std::numeric_limits<float>::epsilon();
+#pragma clang diagnostic pop
 }
 
 template bool is_equal<int>(const int v_1, const int v_2);
@@ -124,60 +129,53 @@ float throttle_curve(float thr_mid, float alpha, float thr_in)
 }
 
 template <typename T>
-float wrap_180(const T angle, float unit_mod)
+T wrap_180(const T angle, T unit_mod)
 {
     auto res = wrap_360(angle, unit_mod);
-    if (res > 180.f * unit_mod) {
-        res -= 360.f * unit_mod;
+    if (res > T(180) * unit_mod) {
+        res -= T(360) * unit_mod;
     }
     return res;
 }
 
-template float wrap_180<int>(const int angle, float unit_mod);
-template float wrap_180<short>(const short angle, float unit_mod);
+template int wrap_180<int>(const int angle, int unit_mod);
+template short wrap_180<short>(const short angle, short unit_mod);
 template float wrap_180<float>(const float angle, float unit_mod);
-template float wrap_180<double>(const double angle, float unit_mod);
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+template double wrap_180<double>(const double angle, double unit_mod);
+#endif
 
-template <typename T>
-auto wrap_180_cd(const T angle) -> decltype(wrap_180(angle, 100.f))
+float wrap_360(const float angle, float unit_mod)
 {
-    return wrap_180(angle, 100.f);
-}
-
-template auto wrap_180_cd<float>(const float angle) -> decltype(wrap_180(angle, 100.f));
-template auto wrap_180_cd<int>(const int angle) -> decltype(wrap_180(angle, 100.f));
-template auto wrap_180_cd<long>(const long angle) -> decltype(wrap_180(angle, 100.f));
-template auto wrap_180_cd<short>(const short angle) -> decltype(wrap_180(angle, 100.f));
-template auto wrap_180_cd<double>(const double angle) -> decltype(wrap_360(angle, 100.f));
-
-template <typename T>
-float wrap_360(const T angle, float unit_mod)
-{
-    const float ang_360 = 360.f * unit_mod;
-    float res = fmodf(static_cast<float>(angle), ang_360);
+    const auto ang_360 = float(360) * unit_mod;
+    auto res = fmodf(angle, ang_360);
     if (res < 0) {
         res += ang_360;
     }
     return res;
 }
 
-template float wrap_360<int>(const int angle, float unit_mod);
-template float wrap_360<short>(const short angle, float unit_mod);
-template float wrap_360<long>(const long angle, float unit_mod);
-template float wrap_360<float>(const float angle, float unit_mod);
-template float wrap_360<double>(const double angle, float unit_mod);
-
-template <typename T>
-auto wrap_360_cd(const T angle) -> decltype(wrap_360(angle, 100.f))
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+double wrap_360(const double angle, double unit_mod)
 {
-    return wrap_360(angle, 100.f);
+    const auto ang_360 = double(360) * unit_mod;
+    auto res = fmod(angle, ang_360);
+    if (res < 0) {
+        res += ang_360;
+    }
+    return res;
 }
+#endif
 
-template auto wrap_360_cd<float>(const float angle) -> decltype(wrap_360(angle, 100.f));
-template auto wrap_360_cd<int>(const int angle) -> decltype(wrap_360(angle, 100.f));
-template auto wrap_360_cd<long>(const long angle) -> decltype(wrap_360(angle, 100.f));
-template auto wrap_360_cd<short>(const short angle) -> decltype(wrap_360(angle, 100.f));
-template auto wrap_360_cd<double>(const double angle) -> decltype(wrap_360(angle, 100.f));
+int wrap_360(const int angle, int unit_mod)
+{
+    const int ang_360 = 360 * unit_mod;
+    int res = angle % ang_360;
+    if (res < 0) {
+        res += ang_360;
+    }
+    return res;
+}
 
 template <typename T>
 float wrap_PI(const T radian)

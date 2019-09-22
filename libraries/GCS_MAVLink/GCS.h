@@ -282,7 +282,6 @@ protected:
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
     bool accept_packet(const mavlink_status_t &status, const mavlink_message_t &msg);
-    virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
     virtual bool set_mode(uint8_t mode) = 0;
     void set_ekf_origin(const Location& loc);
 

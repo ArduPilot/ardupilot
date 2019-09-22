@@ -544,7 +544,7 @@ AltFunction_map = {
 	"PC6:USART6_TX"     	:	8,
 	"PC6:DFSDM1_CKIN3"     	:	7,
 	"PC6:FMC_NWAIT"      	:	9,
-	"PC6:SDMMC_D6"     	:	10,
+    "PC6:SDMMC2_D6"     	:	10,
 	"PC7:DCMI_D1"       	:	13,
 	"PC7:EVENTOUT"      	:	15,
 	"PC7:I2S3_MCK"      	:	6,

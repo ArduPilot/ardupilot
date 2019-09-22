@@ -39,4 +39,6 @@ public:
 
 private:
     bool _new_data;
+    uint32_t first_week;
+    JitterCorrection jitter{2000};
 };
