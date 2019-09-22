@@ -268,7 +268,7 @@ class Board:
                 cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
 
-        if cfg.env.build_dates:
+        if cfg.options.build_dates:
             env.build_dates = True
 
         # We always want to use PRI format macros
