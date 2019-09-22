@@ -616,6 +616,14 @@ private:
         Failsafe_Action_Terminate      = 5
     };
 
+    enum class FailsafeOption {
+        RC_CONTINUE_IF_AUTO             = (1<<0),   // 1
+        GCS_CONTINUE_IF_AUTO            = (1<<1),   // 2
+        RC_CONTINUE_IF_GUIDED           = (1<<2),   // 4
+        CONTINUE_IF_LANDING             = (1<<3),   // 8
+        GCS_CONTINUE_IF_PILOT_CONTROL   = (1<<4),   // 16
+    };
+
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
                                                       Failsafe_Action_Land,
@@ -710,10 +718,12 @@ private:
     void esc_calibration_setup();
 
     // events.cpp
+    bool failsafe_option(FailsafeOption opt) const;
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     void failsafe_gcs_check();
+    void failsafe_gcs_on_event(void);
     void failsafe_gcs_off_event(void);
     void failsafe_terrain_check();
     void failsafe_terrain_set_status(bool data_ok);
@@ -723,6 +733,7 @@ private:
     void set_mode_SmartRTL_or_RTL(ModeReason reason);
     void set_mode_SmartRTL_or_land_with_pause(ModeReason reason);
     bool should_disarm_on_failsafe();
+    void do_failsafe_action(Failsafe_Action action, ModeReason reason);
 
     // failsafe.cpp
     void failsafe_enable();
@@ -813,6 +824,7 @@ private:
     void convert_pid_parameters(void);
     void convert_lgr_parameters(void);
     void convert_tradheli_parameters(void);
+    void convert_fs_options_params(void);
 
     // precision_landing.cpp
     void init_precland();

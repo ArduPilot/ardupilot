@@ -612,6 +612,9 @@ public:
 
     // vibration failsafe enable/disable
     AP_Int8 fs_vibe_enabled;
+
+    // Failsafe options bitmask #36
+    AP_Int32 fs_options;
 };
 
 extern const AP_Param::Info        var_info[];
