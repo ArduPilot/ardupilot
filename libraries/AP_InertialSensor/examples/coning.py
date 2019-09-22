@@ -207,7 +207,7 @@ def filter2p_1khz_30hz(sample, key):
     (delay_element_1, delay_element_2) = filter2p_1khz_30hz_data[key]
     sample_freq = 1000
     cutoff_freq = 30
-    fr = sample_freq/cutoff_freq
+    fr = sample_freq // cutoff_freq
     ohm = tan(pi/fr)
     c = 1.0+2.0*cos(pi/4.0)*ohm + ohm**2
     b0 = ohm**2/c
