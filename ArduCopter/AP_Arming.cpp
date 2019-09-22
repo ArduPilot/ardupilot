@@ -382,7 +382,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     Vector3f mag_variance;
     Vector2f offset;
     ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
-    if (mag_variance.length() >= copter.g.fs_ekf_thresh) {
+    if (copter.g.fs_ekf_thresh > 0 && mag_variance.length() >= copter.g.fs_ekf_thresh) {
         check_failed(ARMING_CHECK_NONE, display_failure, "EKF compass variance");
         return false;
     }
