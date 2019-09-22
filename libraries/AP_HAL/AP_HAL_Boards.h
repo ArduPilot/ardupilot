@@ -92,12 +92,26 @@
 /* CPU classes, used to select if CPU intensive algorithms should be used
  * Note that these are only approximate, not exact CPU speeds. */
 
-/* 150Mhz: PX4 or similar. Assumes:
+/* 150Mhz: STM32F4 or similar. Assumes:
  *  - hardware floating point
- *  - tens of kilobytes of memory available */
+ *  - tens of kilobytes of memory available
+*/
 #define HAL_CPU_CLASS_150  3
+
 /* GigaHz class: SITL, BeagleBone etc. Assumes megabytes of memory available. */
 #define HAL_CPU_CLASS_1000 4
+
+
+/*
+  memory classes, in kbytes. Board must have at least the given amount
+  of memory
+*/
+#define HAL_MEM_CLASS_20   1
+#define HAL_MEM_CLASS_64   2
+#define HAL_MEM_CLASS_192  3
+#define HAL_MEM_CLASS_300  4
+#define HAL_MEM_CLASS_500  5
+#define HAL_MEM_CLASS_1000 6
 
 /* Operating system features
  *
