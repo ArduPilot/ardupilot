@@ -310,7 +310,9 @@ void NavEKF3_core::SelectMagFusion()
         } else {
             // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
             // maintained by fusing declination as a synthesised observation
-            if (PV_AidingMode != AID_ABSOLUTE) {
+            // We also fuse declination if we are using the WMM tables
+            if (PV_AidingMode != AID_ABSOLUTE ||
+                (frontend->_mag_ef_limit > 0 && have_table_earth_field)) {
                 FuseDeclination(0.34f);
             }
             // fuse the three magnetometer componenents sequentially
@@ -782,6 +784,12 @@ void NavEKF3_core::FuseMagnetometer()
             for (uint8_t j= 0; j<=stateIndexLim; j++) {
                 statesArray[j] = statesArray[j] - Kfusion[j] * innovMag[obsIndex];
             }
+
+            // add table constraint here for faster convergence
+            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+                MagTableConstrain();
+            }
+
             stateStruct.quat.normalize();
 
         } else {
@@ -937,7 +945,7 @@ void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
             // Use the difference between the horizontal projection and declination to give the measured yaw
             // rotate measured mag components into earth frame
             Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
-            float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+            float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
             innovation = wrap_PI(yawAngPredicted - yawAngMeasured);
         } else {
             // use the external yaw sensor data
@@ -1170,7 +1178,7 @@ void NavEKF3_core::FuseDeclination(float declErr)
     }
 
     // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+    float magDecAng = MagDeclination();
 
     // Calculate the innovation
     float innovation = atan2f(magE , magN) - magDecAng;
@@ -1248,7 +1256,7 @@ void NavEKF3_core::alignMagStateDeclination()
     }
 
     // get the magnetic declination
-    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+    float magDecAng = MagDeclination();
 
     // rotate the NE values so that the declination matches the published value
     Vector3f initMagNED = stateStruct.earth_magfield;

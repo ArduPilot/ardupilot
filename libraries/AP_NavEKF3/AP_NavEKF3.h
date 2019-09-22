@@ -448,6 +448,7 @@ private:
     AP_Float _wencOdmVelErr;        // Observation 1-STD velocity error assumed for wheel odometry sensor (m/s)
     AP_Int8  _flowUse;              // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
+    AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
