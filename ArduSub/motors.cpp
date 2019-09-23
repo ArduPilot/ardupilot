@@ -128,6 +128,10 @@ void Sub::init_disarm_motors()
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Sub::motors_output()
 {
+    // Motor detection mode controls the thrusters directly
+    if (control_mode == MOTOR_DETECT){
+        return;
+    }
     // check if we are performing the motor test
     if (ap.motor_test) {
         verify_motor_test();
