@@ -551,3 +551,29 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
         }
     }
 }
+
+Vector3f AP_Motors6DOF::get_motor_angular_factors(int motor_number) {
+     if (motor_number < 0 || motor_number >= AP_MOTORS_MAX_NUM_MOTORS) {
+        return Vector3f(0,0,0);
+    }
+    return Vector3f(_roll_factor[motor_number], _pitch_factor[motor_number], _yaw_factor[motor_number]);
+}
+
+bool AP_Motors6DOF::motor_is_enabled(int motor_number) {
+    if (motor_number < 0 || motor_number >= AP_MOTORS_MAX_NUM_MOTORS) {
+        return false;
+    }
+    return motor_enabled[motor_number];
+}
+
+bool AP_Motors6DOF::set_reversed(int motor_number, bool reversed) {
+    if (motor_number < 0 || motor_number >= AP_MOTORS_MAX_NUM_MOTORS) {
+        return false;
+    }
+    if (reversed) {
+        _motor_reverse[motor_number].set_and_save(-1);
+    } else {
+        _motor_reverse[motor_number].set_and_save(1);
+    }
+    return true;
+}
