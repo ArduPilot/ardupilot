@@ -1,3 +1,17 @@
+Release 4.0.0beta2, 24th September 2019
+---------------------------------------
+
+A small set of improvements over beta1:
+
+ - Added autoranging to current and voltage in OSD
+ - fixed issue with motors spinning up in quadplane landing when below min lidar range
+ - fixed empty pre-arm warning string in EKF
+ - added code to cope with SCHED_LOOP_RATE being above max achievable rate
+ - fixed delay on oneshot125 channels which was limiting loop rate
+ - fixed use of uninitialised variable in mag fusion in EKF3
+
+Happy flying!
+
 Release 4.0.0beta1, 16th September 2019
 ---------------------------------------
 
