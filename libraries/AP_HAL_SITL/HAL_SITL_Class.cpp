@@ -122,11 +122,26 @@ static void sig_alrm(int signum)
     execv(new_argv[0], new_argv);
 }
 
+void HAL_SITL::exit_signal_handler(int signum)
+{
+    HALSITL::Scheduler::_should_exit = true;
+}
+
+void HAL_SITL::setup_signal_handlers() const
+{
+    struct sigaction sa = { };
+
+    sa.sa_flags = SA_NOCLDSTOP;
+    sa.sa_handler = HAL_SITL::exit_signal_handler;
+    sigaction(SIGTERM, &sa, NULL);
+}
+
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
 
     _sitl_state->init(argc, argv);
+
     scheduler->init();
     uartA->begin(115200);
 
@@ -173,10 +188,15 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         signal(SIGALRM, sig_alrm);
         alarm(2);
     }
+    setup_signal_handlers();
 
     uint32_t last_watchdog_save = AP_HAL::millis();
 
     while (!HALSITL::Scheduler::_should_reboot) {
+        if (HALSITL::Scheduler::_should_exit) {
+            ::fprintf(stderr, "Exitting\n");
+            exit(0);
+        }
         callbacks->loop();
         HALSITL::Scheduler::_run_io_procs();
 

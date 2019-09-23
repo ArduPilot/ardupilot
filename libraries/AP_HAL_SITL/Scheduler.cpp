@@ -28,6 +28,7 @@ AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullpt
 uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
 bool Scheduler::_should_reboot = false;
+bool Scheduler::_should_exit = false;
 
 bool Scheduler::_in_semaphore_take_wait = false;
 

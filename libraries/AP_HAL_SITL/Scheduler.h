@@ -50,6 +50,7 @@ public:
 
     static void _run_io_procs();
     static bool _should_reboot;
+    static bool _should_exit;
 
     /*
       create a new thread
