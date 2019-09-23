@@ -17,6 +17,7 @@
 #include <SITL/SIM_Rover.h>
 #include <SITL/SIM_BalanceBot.h>
 #include <SITL/SIM_Sailboat.h>
+#include <SITL/SIM_MotorBoat.h>
 #include <SITL/SIM_CRRCSim.h>
 #include <SITL/SIM_Gazebo.h>
 #include <SITL/SIM_last_letter.h>
@@ -122,6 +123,7 @@ static const struct {
     { "rover",              SimRover::create },
     { "balancebot",         BalanceBot::create },
     { "sailboat",           Sailboat::create },
+    { "motorboat",          MotorBoat::create },
     { "crrcsim",            CRRCSim::create },
     { "jsbsim",             JSBSim::create },
     { "flightaxis",         FlightAxis::create },
