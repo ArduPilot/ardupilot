@@ -558,6 +558,9 @@ private:
     bool poshold_init(void);
     void poshold_run();
 
+    bool motordetect_init();
+    void motordetect_run();
+
     bool stabilize_init(void);
     void stabilize_run();
     bool manual_init(void);
