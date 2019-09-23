@@ -16,6 +16,9 @@ public:
 
 private:
     HALSITL::SITL_State *_sitl_state;
+
+    void setup_signal_handlers() const;
+    static void exit_signal_handler(int);
 };
 
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
