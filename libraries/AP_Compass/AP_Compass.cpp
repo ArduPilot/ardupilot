@@ -741,12 +741,6 @@ void Compass::_detect_backends(void)
         return;
     }
 
-#if AP_FEATURE_BOARD_DETECT
-    if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
-        // default to disabling LIS3MDL on pixhawk2 due to hardware issue
-        _driver_type_mask.set_default(1U<<DRIVER_LIS3MDL);
-    }
-#endif
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
