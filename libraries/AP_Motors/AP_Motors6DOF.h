@@ -41,6 +41,14 @@ public:
     // output_to_motors - sends minimum values out to the motors
     void output_to_motors() override;
 
+    // returns a vector with roll, pitch, and yaw contributions
+    Vector3f get_motor_angular_factors(int motor_number);
+
+    // returns true if motor is enabled
+    bool motor_is_enabled(int motor_number);
+
+    bool set_reversed(int motor_number, bool reversed);
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
