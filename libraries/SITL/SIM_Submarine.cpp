@@ -153,17 +153,33 @@ void Submarine::calculate_drag_force(const Vector3f &velocity, const Vector3f &d
 }
 
 /**
- * @brief Calculate angular drag torque
+ * @brief Calculate angular drag torque using the equivalente sphere area and assuming a laminar external flow.
+ *
+ *  $F_D = C_D*A*\rho*V^2/2$
+ * where:
+ *      $F_D$ is the drag force
+ *      $C_D$ is the drag coefficient
+ *      $A$ is the surface area in contact with the fluid
+ *      $/rho$ is the fluid density (1000kg/m³ for water)
+ *      $V$ is the fluid velocity velocity relative to the surface
  *
  * @param angular_velocity Body frame velocity of fluid
  * @param drag_coefficient Rotational drag coefficient of body
  */
 void Submarine::calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque)
 {
-    // TODO: Find a good approximation for this.
-    // While this works, it is not accurate nor has the right dimensions.
-    torque = angular_velocity;
-    torque *= drag_coefficient;
+     /**
+     * @brief It's necessary to keep the velocity orientation from the body frame.
+     *     To do so, a mathematical artifice is used to do velocity square but without loosing the direction.
+     *  $(|V|/V)*V^2$ = $|V|*V$
+     */
+    Vector3f v_2(
+        fabsf(angular_velocity.x) * angular_velocity.x,
+        fabsf(angular_velocity.y) * angular_velocity.y,
+        fabsf(angular_velocity.z) * angular_velocity.z
+    );
+    Vector3f f_d = v_2 *= drag_coefficient * frame_property.equivalent_sphere_area * 1000 / 2;
+    torque = f_d * frame_property.equivalent_sphere_radius;
 }
 
 
