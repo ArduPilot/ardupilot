@@ -6,6 +6,7 @@ import os
 import random
 import re
 import shlex
+import signal
 import subprocess
 import sys
 import tempfile
@@ -165,6 +166,19 @@ def pexpect_close(p):
     """Close a pexpect child."""
     global close_list
 
+    ex = None
+    try:
+        p.kill(signal.SIGTERM)
+    except IOError as e:
+        print("Caught exception: %s" % str(e))
+        ex = e
+        pass
+    if ex is None:
+        # give the process some time to go away
+        for i in range(20):
+            if not p.isalive():
+                break
+            time.sleep(0.05)
     try:
         p.close()
     except Exception:
