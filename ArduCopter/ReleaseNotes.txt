@@ -5,10 +5,14 @@ Changes from 3.6.10
 1) EKF and IMU improvements:
     a) IMU3 enabled by default if present
     b) IMU3 fast sampling enabled by default on Cube autopilots
+    c) EKF protection against large baro spikes causing attitude error
+    d) EKF origin fixes (consistent across cores, set externally only when not using GPS)
+    e) EKF logging of 3rd core
 2) Minor enhancements:
     a) Land mode supports heading requests (ie. ROI)
     b) Support Hexa-H frame
     c) MatekF405-STD binaries created
+    d) Benewake TFminiPlus lidar support
 3) Bug Fixes
     a) Barometer health checks include sanity check of temperature
     b) Lightware serial driver handles invalid distances
