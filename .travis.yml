@@ -73,6 +73,9 @@ matrix:
       compiler: "clang-7"
       env: CI_BUILD_TARGET="sitltest-rover sitltest-sub sitltest-balancebot"
     - if: type != cron
+      compiler: "gcc"
+      env: CI_BUILD_TARGET="unit-tests"
+    - if: type != cron
       compiler: "clang-7"
       env: CI_BUILD_TARGET="sitl""
     - language: python
