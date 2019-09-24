@@ -92,6 +92,11 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "unit-tests" ]; then
+        run_autotest "Unit Tests" "build.unit_tests" "run.unit_tests"
+        continue
+    fi
+
     if [ "$t" == "revo-bootloader" ]; then
         echo "Building revo bootloader"
         $waf configure --board revo-mini --bootloader
