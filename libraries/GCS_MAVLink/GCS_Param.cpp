@@ -400,8 +400,8 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
     uint8_t async_replies_sent_count = 0;
 
     while (async_replies_sent_count < 5) {
-        if (param_replies.empty()) {
-            // nothing to do
+        struct pending_param_reply reply;
+        if (!param_replies.peek(reply)) {
             return async_replies_sent_count;
         }
 
@@ -411,17 +411,11 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
         */
         uint32_t saved_reserve_param_space_start_ms = reserve_param_space_start_ms;
         reserve_param_space_start_ms = 0; // bypass packet_overhead_chan reservation checking
-        if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+        if (!HAVE_PAYLOAD_SPACE(reply.chan, PARAM_VALUE)) {
             reserve_param_space_start_ms = AP_HAL::millis();
             return async_replies_sent_count;
         }
         reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
-
-        struct pending_param_reply reply;
-        if (!param_replies.pop(reply)) {
-            // internal error
-            return async_replies_sent_count;
-        }
 
         mavlink_msg_param_value_send(
             reply.chan,
@@ -433,6 +427,11 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
 
         _queued_parameter_send_time_ms = AP_HAL::millis();
         async_replies_sent_count++;
+
+        if (!param_replies.pop()) {
+            // internal error...
+            return async_replies_sent_count;
+        }
     }
     return async_replies_sent_count;
 }
