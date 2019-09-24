@@ -1125,6 +1125,8 @@ void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
         } else {
             fmt = "%4.0f%c";
         }
+    } else if (distance_scaled < 10.0f) {
+        fmt = "% 3.1f%c";
     }
     backend->write(x, y, false, fmt, (double)distance_scaled, unit_icon);
 }
@@ -1382,7 +1384,8 @@ void AP_OSD_Screen::draw_waypoint(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_xtrack_error(uint8_t x, uint8_t y)
 {
-    backend->write(x, y, false, "%c%4d", SYM_XERR, (int)osd->nav_info.wp_xtrack_error);
+    backend->write(x, y, false, "%c", SYM_XERR);
+    draw_distance(x+1, y, osd->nav_info.wp_xtrack_error);
 }
 
 void AP_OSD_Screen::draw_stat(uint8_t x, uint8_t y)
