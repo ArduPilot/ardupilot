@@ -134,3 +134,4 @@ singleton AP_Relay method toggle void uint8_t 0 AP_RELAY_NUM_RELAYS
 include GCS_MAVLink/GCS.h
 singleton GCS alias gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
+singleton GCS method set_message_interval MAV_RESULT uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t 0 UINT32_MAX int32_t -1 INT32_MAX
