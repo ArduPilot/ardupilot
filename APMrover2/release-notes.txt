@@ -1,5 +1,9 @@
 Rover Release Notes:
 --------------------------------
+Rover 3.5.2 24-Sep-2019
+Changes from 3.5.1
+1) fixed I2C storm lockup bug on ChibiOS
+--------------------------------
 Rover 3.5.1 17-May-2019 / 3.5.1-rc1 30-Apr-2019
 Changes from 3.5.0
 1) WHEEL_DISTANCE mavlink messages sent to ground station and companion computers
