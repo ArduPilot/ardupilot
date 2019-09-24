@@ -491,6 +491,32 @@ static int GCS_send_text(lua_State *L) {
     return 0;
 }
 
+static int GCS_set_message_interval(lua_State *L) {
+    GCS * ud = GCS::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "gcs not supported on this firmware");
+    }
+
+    binding_argcheck(L, 4);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && raw_data_2 <= MIN(MAVLINK_COMM_NUM_BUFFERS, UINT8_MAX)), 2, "argument out of range");
+    const uint32_t data_2 = static_cast<uint32_t>(raw_data_2);
+    const lua_Unsigned raw_data_3 = luaL_checkinteger(L, 3);
+    luaL_argcheck(L, (raw_data_3 <= UINT32_MAX), 3, "argument out of range");
+    const uint32_t data_3 = static_cast<uint32_t>(raw_data_3);
+    const lua_Integer raw_data_4 = luaL_checkinteger(L, 4);
+    luaL_argcheck(L, ((raw_data_4 >= -1) && (raw_data_4 <= INT32_MAX)), 4, "argument out of range");
+    const int32_t data_4 = static_cast<int32_t>(raw_data_4);
+    const MAV_RESULT data = ud->set_message_interval(
+            data_2,
+            data_3,
+            data_4);
+
+    lua_pushinteger(L, data);
+
+    return 1;
+}
+
 static int AP_Relay_toggle(lua_State *L) {
     AP_Relay * ud = AP_Relay::get_singleton();
     if (ud == nullptr) {
@@ -1519,6 +1545,7 @@ static int AP_AHRS_get_roll(lua_State *L) {
 
 const luaL_Reg GCS_meta[] = {
     {"send_text", GCS_send_text},
+    {"set_message_interval", GCS_set_message_interval},
     {NULL, NULL}
 };
 
