@@ -92,6 +92,7 @@ public:
         GPS_TYPE_MAV = 14,
         GPS_TYPE_NOVA = 15,
         GPS_TYPE_HEMI = 16, // hemisphere NMEA
+        GPS_TYPE_SBFINS = 17,
     };
 
     /// GPS status codes
@@ -135,9 +136,12 @@ public:
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
+        uint8_t atteulerMode;               ///< mode in which the Attitude is computed
         float ground_speed;                 ///< ground speed in m/sec
         float ground_course;                ///< ground course in degrees
         float gps_yaw;                      ///< GPS derived yaw information, if available (degrees)
+        float gps_pitch;                    ///< GPS derived pitch information, if available (degrees)
+        float gps_roll;                     ///< GPS derived roll information, if available (degrees)
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint16_t vdop;                      ///< vertical dilution of precision in cm
         uint8_t num_sats;                   ///< Number of visible satellites
@@ -150,6 +154,8 @@ public:
         bool have_horizontal_accuracy;    ///< does GPS give horizontal position accuracy? Set to true only once available.
         bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         bool have_gps_yaw;                ///< does GPS give yaw? Set to true only once available.
+        bool have_gps_roll;               ///< does GPS give roll? Set to true only once available.  
+        bool have_gps_pitch;              ///< does GPS give pitch? Set to true only once available. 
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
         uint32_t uart_timestamp_ms;         ///< optional timestamp from set_uart_timestamp()
 

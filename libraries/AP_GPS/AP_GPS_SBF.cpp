@@ -49,10 +49,19 @@ do {                                            \
                        OUTOFGEOFENCE)
 
 
+static uint8_t counter = 0;     // For Debuging
+
+
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
-                       AP_HAL::UARTDriver *_port) :
+                       AP_HAL::UARTDriver *_port, bool _asterx_i) :
     AP_GPS_Backend(_gps, _state, _port)
 {
+    if (_asterx_i) {
+        _asterx_type_is_i = true;
+    } else {
+        _asterx_type_is_i = false;
+    }
+
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
 
     port->write((const uint8_t*)_port_enable, strlen(_port_enable));
@@ -63,7 +72,8 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 //
 bool
 AP_GPS_SBF::read(void)
-{
+{   
+    const char* initialization_blob[5];
     bool ret = false;
     uint32_t available_bytes = port->available();
     for (uint32_t i = 0; i < available_bytes; i++) {
@@ -71,10 +81,16 @@ AP_GPS_SBF::read(void)
         ret |= parse(temp);
     }
 
+    if (_asterx_type_is_i == true) {
+        memcpy(initialization_blob, _initialisation_blob_i, sizeof(_initialisation_blob_i));
+    } else {
+        memcpy(initialization_blob, _initialisation_blob, sizeof(_initialisation_blob));
+    }
+
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
-        if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
+        if (_init_blob_index < ARRAY_SIZE(initialization_blob)) {
             uint32_t now = AP_HAL::millis();
-            const char *init_str = _initialisation_blob[_init_blob_index];
+            const char *init_str = initialization_blob[_init_blob_index];
 
             if (now > _init_blob_time) {
                 if (now > _config_last_ack_time + 2500) {
@@ -207,21 +223,32 @@ AP_GPS_SBF::parse(uint8_t temp)
 
                 // received the result, lets assess it
                 if (sbf_msg.data.bytes[0] == ':') {
+                    const char* initialization_blob[5];
+
+                    if (_asterx_type_is_i == true) {
+                        memcpy(initialization_blob, _initialisation_blob_i, sizeof(_initialisation_blob_i));
+                    } else {
+                        memcpy(initialization_blob, _initialisation_blob, sizeof(_initialisation_blob));
+                    }
+
                     // valid command, determine if it was the one we were trying
                     // to send in the configuration sequence
-                    if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-                        if (!strncmp(_initialisation_blob[_init_blob_index], (char *)(sbf_msg.data.bytes + 2),
+                    if (_init_blob_index < ARRAY_SIZE(initialization_blob)) {
+                        if (!strncmp(initialization_blob[_init_blob_index], (char *)(sbf_msg.data.bytes + 2),
                                      sbf_msg.read - SBF_EXCESS_COMMAND_BYTES)) {
                             Debug("SBF Ack Command: %s\n", sbf_msg.data.bytes);
+                            gcs().send_text(MAV_SEVERITY_CRITICAL, "SBF Ack Command: %s\n", sbf_msg.data.bytes);
                             _init_blob_index++;
                             _config_last_ack_time = AP_HAL::millis();
                         } else {
                             Debug("SBF Ack command (unexpected): %s\n", sbf_msg.data.bytes);
+                            gcs().send_text(MAV_SEVERITY_CRITICAL, "SBF Ack command (unexpected): %s\n", sbf_msg.data.bytes);
                         }
                     }
                 } else {
                     // rejected command, send it out as a debug
                     Debug("SBF NACK Command: %s\n", sbf_msg.data.bytes);
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "SBF NACK Command: %s\n", sbf_msg.data.bytes);
                 }
                 // resume normal parsing
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
@@ -237,6 +264,13 @@ bool
 AP_GPS_SBF::process_message(void)
 {
     uint16_t blockid = (sbf_msg.blockid & 8191u);
+    counter++;
+
+
+    if(counter > 2) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "BlockID %d", blockid);
+        
+    }
 
     Debug("BlockID %d", blockid);
 
@@ -287,6 +321,7 @@ AP_GPS_SBF::process_message(void)
         }
 
         Debug("temp.Mode=0x%02x\n", (unsigned)temp.Mode);
+        //gcs().send_text(MAV_SEVERITY_CRITICAL, "Got PVTGeodetic Message, temp.mode=0x%02x\n", (unsigned)temp.Mode);
         switch (temp.Mode & 15) {
             case 0: // no pvt
                 state.status = AP_GPS::NO_FIX;
@@ -323,6 +358,149 @@ AP_GPS_SBF::process_message(void)
             state.status = AP_GPS::GPS_OK_FIX_2D;
         }
                     
+        return true;
+    }
+    case INSNavGeod:
+    {
+        const msg4226 &temp = sbf_msg.data.msg4226u;
+
+        
+        if (counter > 2) {
+            counter = 0;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Got INSNavGeod Message, temp.Heading=0x%02x\n", (unsigned)temp.Heading);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Got INSNavGeod Message, temp.Mode=0x%02x\n", (unsigned)temp.Mode);
+        }
+
+        // Update time state
+        if (temp.WNc != 65535) {
+            state.time_week = temp.WNc;
+            state.time_week_ms = (uint32_t)(temp.TOW);
+        }
+
+        check_new_itow(temp.TOW, sbf_msg.length);
+        state.last_gps_time_ms = AP_HAL::millis();
+
+        // Update velocity state (don't use −2·10^10)
+        if (temp.Vn > -200000) {
+            state.velocity.x = (float)(temp.Vn);
+            state.velocity.y = (float)(temp.Ve);
+            state.velocity.z = (float)(-temp.Vu);
+
+            state.have_vertical_velocity = true;
+
+            float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
+            state.ground_speed = (float)safe_sqrt(ground_vector_sq);
+
+            state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+
+        }
+
+        // Update position state (don't use -2·10^10)
+        if (temp.Latitude > -200000) {
+            state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
+            state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
+            state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
+        }
+
+        // Update yaw (don't use -2·10^10)
+        if (temp.Heading > -200000) {
+            
+            state.gps_yaw = (float)(temp.Heading);
+            state.have_gps_yaw = true;
+        }
+
+        // Update roll (don't use -2·10^10)
+        if (temp.Roll > -200000) {
+            
+            state.gps_roll = (float)(temp.Roll);
+            state.have_gps_roll = true;
+        }
+
+        // Update pitch (don't use -2·10^10)
+        if (temp.Pitch > -200000) {
+            
+            state.gps_pitch = (float)(temp.Pitch);
+            state.have_gps_pitch = true;
+        }
+
+        Debug("temp.Mode=0x%02x\n", (unsigned)temp.Mode);
+        switch (temp.Mode & 15) {
+            case 0: // no pvt
+                state.status = AP_GPS::NO_FIX;
+                break;
+            case 1: // standalone
+                state.status = AP_GPS::GPS_OK_FIX_3D;
+                break;
+            case 2: // dgps
+                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                break;
+            case 3: // fixed location
+                state.status = AP_GPS::GPS_OK_FIX_3D;
+                break;
+            case 4: // rtk fixed
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                break;
+            case 5: // rtk float
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                break;
+            case 6: // sbas
+                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                break;
+            case 7: // moving rtk fixed
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                break;
+            case 8: // moving rtk float
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                break;
+        }
+        
+                    
+        return true;
+    }
+    case AttEuler:
+    {
+        // This message is used when the receiver has a dual antenna setup
+        const msg5938 &temp = sbf_msg.data.msg5938u;
+
+        // Update time state
+        if (temp.WNc != 65535) {
+            state.time_week = temp.WNc;
+            state.time_week_ms = (uint32_t)(temp.TOW);
+        }
+
+        if (temp.NrSV != 255) {
+            state.num_sats = temp.NrSV;
+        }
+
+        if ((temp.Mode) > 0) { // AttEauler mode can be parsed if needed. For now it is not
+            state.atteulerMode = temp.Mode;
+        } 
+
+        check_new_itow(temp.TOW, sbf_msg.length);
+        state.last_gps_time_ms = AP_HAL::millis();
+
+        // Update yaw (don't use -2·10^10)
+        if (temp.Heading > -200000) {
+            
+            state.gps_yaw = (float)(temp.Heading);
+            state.have_gps_yaw = true;
+        }
+
+        // Update roll (don't use -2·10^10)
+        if (temp.Roll > -200000) {
+            
+            state.gps_roll = (float)(temp.Roll);
+            state.have_gps_roll = true;
+        }
+
+        // Update pitch (don't use -2·10^10)
+        if (temp.Pitch > -200000) {
+            
+            state.gps_pitch = (float)(temp.Pitch);
+            state.have_gps_pitch = true;
+        }
+
+
         return true;
     }
     case DOP:
@@ -369,16 +547,32 @@ AP_GPS_SBF::process_message(void)
 
 void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
+    const char* initialization_blob[5];
+
+    if (_asterx_type_is_i == true) {
+        memcpy(initialization_blob, _initialisation_blob_i, sizeof(_initialisation_blob_i));
+    } else {
+        memcpy(initialization_blob, _initialisation_blob, sizeof(_initialisation_blob));
+    }
+
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
-        _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
+        _init_blob_index < ARRAY_SIZE(initialization_blob)) {
         gcs().send_text(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u)", state.instance + 1,
-                        _init_blob_index, (unsigned)ARRAY_SIZE(_initialisation_blob));
+                        _init_blob_index, (unsigned)ARRAY_SIZE(initialization_blob));
     }
 }
 
 bool AP_GPS_SBF::is_configured (void) {
+    const char* initialization_blob[5];
+
+    if (_asterx_type_is_i == true) {
+        memcpy(initialization_blob, _initialisation_blob_i, sizeof(_initialisation_blob_i));
+    } else {
+        memcpy(initialization_blob, _initialisation_blob, sizeof(_initialisation_blob));
+    }
+
     return (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE ||
-             _init_blob_index >= ARRAY_SIZE(_initialisation_blob));
+             _init_blob_index >= ARRAY_SIZE(initialization_blob));
 }
 
 bool AP_GPS_SBF::is_healthy (void) const {
