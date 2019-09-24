@@ -170,6 +170,7 @@ class AutoTest(ABC):
                  frame=None,
                  params=None,
                  gdbserver=False,
+                 lldb=False,
                  breakpoints=[],
                  disable_breakpoints=False,
                  viewerip=None,
@@ -179,6 +180,7 @@ class AutoTest(ABC):
         self.binary = binary
         self.valgrind = valgrind
         self.gdb = gdb
+        self.lldb = lldb
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
@@ -2134,6 +2136,7 @@ class AutoTest(ABC):
                                     defaults_file=self.defaults_filepath(),
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver,
+                                    lldb=self.lldb,
                                     home=self.sitl_home(),
                                     model=self.frame,
                                     speedup=self.speedup,
