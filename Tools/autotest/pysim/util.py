@@ -227,7 +227,6 @@ def kill_screen_gdb():
     cmd = ["screen", "-X", "-S", "ardupilot-gdb", "quit"]
     subprocess.Popen(cmd)
 
-
 def start_SITL(binary,
                valgrind=False,
                gdb=False,
@@ -241,7 +240,8 @@ def start_SITL(binary,
                gdbserver=False,
                breakpoints=[],
                disable_breakpoints=False,
-               vicon=False):
+               vicon=False,
+               lldb=False):
     """Launch a SITL instance."""
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
@@ -289,6 +289,19 @@ def start_SITL(binary,
                         '-m',
                         '-S', 'ardupilot-gdb',
                         'gdb', '-x', '/tmp/x.gdb', binary, '--args'])
+    elif lldb:
+        f = open("/tmp/x.lldb", "w")
+        for breakpoint in breakpoints:
+            f.write("b %s\n" % (breakpoint,))
+        if disable_breakpoints:
+            f.write("disable\n")
+        f.write("settings set target.process.stop-on-exec false\n")
+        f.write("process launch\n")
+        f.close()
+        if os.environ.get('DISPLAY'):
+            cmd.extend(['xterm', '-e', 'lldb', '-s','/tmp/x.lldb', '--'])
+        else:
+            raise RuntimeError("DISPLAY was not set")
 
     cmd.append(binary)
     if wipe:
@@ -328,7 +341,7 @@ def start_SITL(binary,
     pexpect_autoclose(child)
     # give time for parameters to properly setup
     time.sleep(3)
-    if gdb:
+    if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
         # connection" is never going to appear on xterm's output.
         # ... so let's give it another magic second.
