@@ -81,6 +81,16 @@ public:
     // add a UART for RCIN
     void add_uart(AP_HAL::UARTDriver* uart);
 
+    uint32_t get_dropped_frame_count(void);
+
+    void clear_dropped_frame_count(void) {
+        _dropped_frames = 0;
+    }
+
+    void inc_dropped_frame_count(void) {
+        _dropped_frames++;
+    }
+
 private:
     void check_added_uart(void);
 
@@ -92,6 +102,7 @@ private:
     uint32_t _last_input_ms;
     bool _valid_serial_prot = false;
     uint8_t _good_frames[NONE];
+    uint32_t _dropped_frames;
 
     // optional additional uart
     struct {

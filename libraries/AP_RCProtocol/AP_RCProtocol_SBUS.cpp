@@ -254,6 +254,11 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
                         &sbus_failsafe, &sbus_frame_drop, SBUS_INPUT_CHANNELS) &&
             num_values >= MIN_RCIN_CHANNELS) {
             add_input(num_values, values, sbus_failsafe);
+            if (sbus_failsafe) {
+                AP::RC().clear_dropped_frame_count();
+            } else if (sbus_frame_drop) {
+                AP::RC().inc_dropped_frame_count();
+            }
         }
         byte_input.ofs = 0;
     }

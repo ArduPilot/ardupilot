@@ -25,6 +25,12 @@
 #include "AP_RCProtocol_ST24.h"
 #include <AP_Math/AP_Math.h>
 
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
+
+
 void AP_RCProtocol::init()
 {
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
@@ -295,6 +301,14 @@ void AP_RCProtocol::add_uart(AP_HAL::UARTDriver* uart)
     added.uart = uart;
     // start with DSM
     added.baudrate = 115200U;
+}
+
+uint32_t AP_RCProtocol::get_dropped_frame_count(void) {
+#if HAL_WITH_IO_MCU
+        return iomcu.get_dropped_frame_count();
+#else
+        return _dropped_frames;
+#endif
 }
 
 namespace AP {
