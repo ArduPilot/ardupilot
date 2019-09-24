@@ -285,7 +285,7 @@ void NavEKF2_core::FuseOptFlow()
     Vector3f relVelSensor;
     Vector14 SH_LOS;
     Vector2 losPred;
-    Vector28 Kfusion;
+    Vector28 Kfusion {};
 
     // Copy required states to local variable names
     float q0  = stateStruct.quat[0];

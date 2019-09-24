@@ -1040,7 +1040,7 @@ void NavEKF2_core::FuseDeclination(float declErr)
     float t12 = 1.0f/t11;
 
     float H_MAG[24];
-    Vector28 Kfusion;
+    Vector28 Kfusion {};
 
     H_MAG[16] = -magE*t5;
     H_MAG[17] = magN*t5;
