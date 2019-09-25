@@ -2055,7 +2055,7 @@ class AutoTest(ABC):
             passed = False
 
         self.wait_heartbeat()
-        if self.armed():
+        if self.armed() and not self.is_tracker():
             ex = ArmedAtEndOfTestException("Still armed at end of test")
             self.progress("Armed at end of test; force-rebooting SITL")
             self.disarm_vehicle(force=True)
