@@ -143,6 +143,9 @@ Mode *Tracker::mode_from_mode_num(const Mode::Number num)
     case Mode::Number::SCAN:
         ret = &mode_scan;
         break;
+    case Mode::Number::GUIDED:
+        ret = &mode_guided;
+        break;
     case Mode::Number::SERVOTEST:
         ret = &mode_servotest;
         break;

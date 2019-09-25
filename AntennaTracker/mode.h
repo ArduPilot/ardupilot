@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <AP_Math/AP_Math.h>
 
 class Mode {
 public:
@@ -9,6 +10,7 @@ public:
         STOP=1,
         SCAN=2,
         SERVOTEST=3,
+        GUIDED=4,
         AUTO=10,
         INITIALISING=16
     };
@@ -42,6 +44,24 @@ public:
     Mode::Number number() const override { return Mode::Number::AUTO; }
     bool requires_armed_servos() const override { return true; }
     void update() override;
+};
+
+class ModeGuided : public Mode {
+public:
+    Mode::Number number() const override { return Mode::Number::GUIDED; }
+    bool requires_armed_servos() const override { return true; }
+    void update() override;
+
+    void set_angle(const Quaternion &target_att, bool use_yaw_rate, float yaw_rate_rads) {
+        _target_att = target_att;
+        _use_yaw_rate = use_yaw_rate;
+        _yaw_rate_rads = yaw_rate_rads;
+    }
+
+private:
+    Quaternion _target_att;
+    bool _use_yaw_rate;
+    float _yaw_rate_rads;
 };
 
 class ModeInitialising : public Mode {
