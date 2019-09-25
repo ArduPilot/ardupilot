@@ -96,7 +96,7 @@ void RCOutput_PCA9685::init()
 
 void RCOutput_PCA9685::reset_all_channels()
 {
-    if (!_dev->get_semaphore()->take(10)) {
+    if (!_dev || !_dev->get_semaphore()->take(10)) {
         return;
     }
 
@@ -117,7 +117,7 @@ void RCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
         write(i, _pulses_buffer[i]);
     }
 
-    if (!_dev->get_semaphore()->take(10)) {
+    if (!_dev || !_dev->get_semaphore()->take(10)) {
         return;
     }
 
@@ -225,7 +225,7 @@ void RCOutput_PCA9685::push()
         *d++ = length >> 8;
     }
 
-    if (!_dev->get_semaphore()->take_nonblocking()) {
+    if (!_dev || !_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 
