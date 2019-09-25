@@ -340,6 +340,8 @@ void Rover::publish_osd_info()
     nav_info.wp_bearing = control_mode->wp_bearing() * 100.0f;
     if (control_mode == &mode_auto) {
          nav_info.wp_number = mode_auto.mission.get_current_nav_index();
+    } else {
+         nav_info.wp_number = 0;
     }
     osd.set_nav_info(nav_info);
 }
