@@ -39,7 +39,7 @@ void NavEKF2_core::FuseAirspeed()
     float SK_TAS;
     Vector24 H_TAS;
     float VtasPred;
-    Vector28 Kfusion;
+    Vector28 Kfusion {};
 
     // health is set bad until test passed
     tasHealth = false;
