@@ -243,6 +243,9 @@ bool Tracker::set_mode(const uint8_t new_mode, const ModeReason reason)
     case Mode::Number::STOP:
         fred = &mode_stop;
         break;
+    case Mode::Number::GUIDED:
+        fred = &mode_guided;
+        break;
     }
     if (fred == nullptr) {
         return false;

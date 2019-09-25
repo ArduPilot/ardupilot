@@ -83,6 +83,7 @@ public:
     friend class GCS_Tracker;
     friend class Parameters;
     friend class ModeAuto;
+    friend class ModeGuided;
     friend class Mode;
 
     Tracker(void);
@@ -146,6 +147,7 @@ private:
     ModeAuto mode_auto;
     ModeInitialising mode_initialising;
     ModeManual mode_manual;
+    ModeGuided mode_guided;
     ModeScan mode_scan;
     ModeServoTest mode_servotest;
     ModeStop mode_stop;
