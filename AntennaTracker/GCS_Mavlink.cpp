@@ -41,6 +41,7 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
     case Mode::Number::SCAN:
     case Mode::Number::SERVOTEST:
     case Mode::Number::AUTO:
+    case Mode::Number::GUIDED:
         _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
             MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
@@ -89,6 +90,46 @@ void GCS_MAVLINK_Tracker::send_nav_controller_output() const
         alt_diff,
         0,
         0);
+}
+
+void GCS_MAVLINK_Tracker::handle_set_attitude_target(const mavlink_message_t &msg)
+{
+    // decode packet
+    mavlink_set_attitude_target_t packet;
+    mavlink_msg_set_attitude_target_decode(&msg, &packet);
+
+    // exit if vehicle is not in Guided mode
+    if (tracker.mode != &tracker.mode_guided) {
+        return;
+    }
+
+    // sanity checks:
+    if (!is_zero(packet.body_roll_rate)) {
+        return;
+    }
+    if (!(packet.type_mask & (1<<0))) {
+        // not told to ignore body roll rate
+        return;
+    }
+    if (!(packet.type_mask & (1<<6))) {
+        // not told to ignore throttle
+        return;
+    }
+    if (packet.type_mask & (1<<7)) {
+        // told to ignore attitude (we don't allow continuous motion yet)
+        return;
+    }
+    if ((packet.type_mask & (1<<3)) && (packet.type_mask&(1<<4))) {
+        // told to ignore both pitch and yaw rates - nothing to do?!
+        return;
+    }
+
+    const bool use_yaw_rate = !(packet.type_mask & (1<<2));
+
+    tracker.mode_guided.set_angle(
+        Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
+        use_yaw_rate,
+        packet.body_yaw_rate);
 }
 
 /*
@@ -427,6 +468,10 @@ bool GCS_MAVLINK_Tracker::set_home(const Location& loc, bool lock) {
 void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
+
+    case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
+        handle_set_attitude_target(msg);
+        break;
 
     // When mavproxy 'wp sethome' 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:

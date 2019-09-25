@@ -38,6 +38,8 @@ private:
     void handleMessage(const mavlink_message_t &msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
+    void handle_set_attitude_target(const mavlink_message_t &msg);
+
     void send_global_position_int() override;
 
     MAV_MODE base_mode() const override;
