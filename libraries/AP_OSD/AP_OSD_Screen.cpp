@@ -935,13 +935,15 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
     AP_BattMonitor &battery = AP::battery();
     float amps;
     if (!battery.current_amps(amps)) {
-        amps = 0;
+        osd->avg_current_a = 0;
     }
-    if (amps < 10.0) {
-        backend->write(x, y, false, "%2.2f%c", amps, SYM_AMP);
+    //filter current and display with autoranging for low values
+    osd->avg_current_a= osd->avg_current_a + (amps - osd->avg_current_a) * 0.33;
+    if (osd->avg_current_a < 10.0) {
+        backend->write(x, y, false, "%2.2f%c", osd->avg_current_a, SYM_AMP);
     }
     else {
-        backend->write(x, y, false, "%2.1f%c", amps, SYM_AMP);
+        backend->write(x, y, false, "%2.1f%c", osd->avg_current_a, SYM_AMP);
     }
 }
 
