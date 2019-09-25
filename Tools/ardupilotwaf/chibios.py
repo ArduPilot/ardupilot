@@ -53,8 +53,12 @@ class upload_fw(Task.Task):
     always_run = True
     def run(self):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
+        upload_port = self.generator.bld.options.upload_port
         src = self.inputs[0]
-        return self.exec_command("{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src))
+        cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src)
+        if upload_port is not None:
+            cmd += " '--port' '%s'" % upload_port
+        return self.exec_command(cmd)
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
