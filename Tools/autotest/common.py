@@ -109,6 +109,9 @@ class PreconditionFailedException(ErrorException):
     """Thrown when a precondition for a test is not met"""
     pass
 
+class ArmedAtEndOfTestException(ErrorException):
+    """Created when test left vehicle armed"""
+    pass
 
 class Context(object):
     def __init__(self):
@@ -2053,6 +2056,7 @@ class AutoTest(ABC):
 
         self.wait_heartbeat()
         if self.armed():
+            ex = ArmedAtEndOfTestException("Still armed at end of test")
             self.progress("Armed at end of test; force-rebooting SITL")
             self.disarm_vehicle(force=True)
             self.forced_post_test_sitl_reboots += 1
