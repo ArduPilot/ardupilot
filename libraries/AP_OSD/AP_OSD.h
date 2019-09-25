@@ -283,4 +283,5 @@ private:
     float max_alt_m;
     float max_speed_mps;
     float max_current_a;
+    float avg_current_a;
 };
