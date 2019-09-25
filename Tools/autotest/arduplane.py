@@ -81,8 +81,7 @@ class AutoTestPlane(AutoTest):
         if alt_max is None:
             alt_max = alt + 30
 
-        self.mavproxy.send('switch 4\n')
-        self.wait_mode('FBWA')
+        self.change_mode("FBWA")
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
