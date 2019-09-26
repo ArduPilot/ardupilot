@@ -467,6 +467,10 @@ AP_GPS_UBLOX::read(void)
 				goto reset;
             }
             _payload_counter = 0;                       // prepare to receive payload
+            if (_payload_length == 0) {
+                // bypass payload and go straight to checksum
+                _step++;
+            }
             break;
 
         // Receive message data
