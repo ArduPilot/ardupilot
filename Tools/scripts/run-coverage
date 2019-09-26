@@ -9,7 +9,6 @@ set -x
 # afterward report on the percentage of code executed and not executed
 # etc.
 
-export GCOV_ENABLED=1 # not sure this is required
 export CCFLAGS="$CCFLAGS -fprofile-arcs -ftest-coverage"
 export CXXFLAGS="$CXXFLAGS -fprofile-arcs -ftest-coverage"
 export LINKFLAGS="$LINKFLAGS -lgcov -coverage"
