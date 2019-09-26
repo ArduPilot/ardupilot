@@ -4,7 +4,9 @@
 bool ModeLoiter::_enter()
 {
     // set _destination to reasonable stopping point
-    calc_stopping_location(_destination);
+    if (!g2.wp_nav.get_stopping_location(_destination)) {
+        return false;
+    }
 
     // initialise desired speed to current speed
     if (!attitude_control.get_forward_speed(_desired_speed)) {
