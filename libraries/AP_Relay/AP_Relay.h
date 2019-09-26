@@ -27,10 +27,10 @@ public:
     void        init();
 
     // activate the relay
-    void        on(uint8_t relay);
+    void        on(uint8_t relay) { set(relay, true); }
 
     // de-activate the relay
-    void        off(uint8_t relay);
+    void        off(uint8_t relay) { set(relay, false); }
 
     // see if the relay is enabled
     bool        enabled(uint8_t relay) { return relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1; }
@@ -47,6 +47,8 @@ private:
 
     AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
     AP_Int8 _default;
+
+    void set(uint8_t relay, bool value);
 };
 
 namespace AP {

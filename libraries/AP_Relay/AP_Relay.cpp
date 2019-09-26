@@ -115,50 +115,33 @@ AP_Relay::AP_Relay(void)
 }
 
 
-void AP_Relay::init() 
+void AP_Relay::init()
 {
+    if (_default != 0 && _default != 1) {
+        return;
+    }
     for (uint8_t i=0; i<AP_RELAY_NUM_RELAYS; i++) {
-        if (_pin[i].get() != -1) {
-            switch (_default) {
-            case 0:
-                off(i);
-                break;
-            case 1:
-                on(i);
-                break;
-            default:
-                break;
-            }
-        }
+        set(i, _default);
     }
 }
 
-void AP_Relay::on(uint8_t relay) 
-{    
-    if (relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1) {
-        hal.gpio->pinMode(_pin[relay], HAL_GPIO_OUTPUT);
-        hal.gpio->write(_pin[relay], 1);
-    }
-}
-
-
-void AP_Relay::off(uint8_t relay) 
+void AP_Relay::set(const uint8_t relay, const bool value)
 {
-    if (relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1) {
-        hal.gpio->pinMode(_pin[relay], HAL_GPIO_OUTPUT);
-        hal.gpio->write(_pin[relay], 0);
+    if (relay >= AP_RELAY_NUM_RELAYS) {
+        return;
     }
+    if (_pin[relay] == -1) {
+        return;
+    }
+    hal.gpio->pinMode(_pin[relay], HAL_GPIO_OUTPUT);
+    hal.gpio->write(_pin[relay], value);
 }
-
 
 void AP_Relay::toggle(uint8_t relay) 
 {
     if (relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1) {
         bool ison = hal.gpio->read(_pin[relay]);
-        if (ison)
-            off(relay);
-        else
-            on(relay);
+        set(relay, !ison);
     }
 }
 
