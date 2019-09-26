@@ -451,31 +451,6 @@ void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max_deg
     set_steering(steering_out * 4500.0f);
 }
 
-// calculate vehicle stopping point using current location, velocity and maximum acceleration
-void Mode::calc_stopping_location(Location& stopping_loc)
-{
-    // default stopping location
-    stopping_loc = rover.current_loc;
-
-    // get current velocity vector and speed
-    const Vector2f velocity = ahrs.groundspeed_vector();
-    const float speed = velocity.length();
-
-    // avoid divide by zero
-    if (!is_positive(speed)) {
-        stopping_loc = rover.current_loc;
-        return;
-    }
-
-    // get stopping distance in meters
-    const float stopping_dist = attitude_control.get_stopping_distance(speed);
-
-    // calculate stopping position from current location in meters
-    const Vector2f stopping_offset = velocity.normalized() * stopping_dist;
-
-    stopping_loc.offset(stopping_offset.x, stopping_offset.y);
-}
-
 void Mode::set_steering(float steering_value)
 {
     if (allows_stick_mixing() && g2.stick_mixing > 0) {
