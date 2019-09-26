@@ -3,6 +3,7 @@
 #include <float.h>
 
 #include <AP_InternalError/AP_InternalError.h>
+#include <stdio.h>
 
 /*
  * is_equal(): Integer implementation, provided for convenience and
@@ -324,16 +325,15 @@ Vector3f rand_vec3f(void)
 bool is_valid_octal(uint16_t octal)
 {
     // treat "octal" as decimal and test if any decimal digit is > 7
-    if (octal > 7777) {
-        return false;
-    } else if (octal % 10 > 7) {
-        return false;
-    } else if ((octal % 100)/10 > 7) {
-        return false;
-    } else if ((octal % 1000)/100 > 7) {
-        return false;
-    } else if ((octal % 10000)/1000 > 7) {
-        return false;
+    char buffer[10];
+    snprintf(buffer, ARRAY_SIZE(buffer), "%u", octal);
+    for (uint8_t i=0; i<ARRAY_SIZE(buffer); i++) {
+        if (buffer[i] == '\0') {
+            break;
+        }
+        if (buffer[i] > '7') {
+            return false;
+        }
     }
     return true;
 }
