@@ -25,7 +25,7 @@ namespace SITL {
 
 BalanceBot::BalanceBot(const char *frame_str) :
     Aircraft(frame_str),
-    skid_turn_rate(140) // degrees/sec
+    skid_turn_rate(0.15708) // meters/sec
 {
     dcm.from_euler(0,0,0); // initial yaw, pitch and roll in radians
     printf("Balance Bot Simulation Started\n");
@@ -36,7 +36,8 @@ BalanceBot::BalanceBot(const char *frame_str) :
 */
 float BalanceBot::calc_yaw_rate(float steering)
 {
-    return steering * skid_turn_rate;
+    float wheel_base_length = 0.15f;
+    return steering * degrees( skid_turn_rate/wheel_base_length );
 }
 
 
