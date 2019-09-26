@@ -251,7 +251,7 @@ void AP_OSD::stats()
     AP_AHRS &ahrs = AP::ahrs();
     Vector2f v = ahrs.groundspeed_vector();
     float speed = v.length();
-    if (speed < 2.0) {
+    if (speed < 0.178) {
         speed = 0.0;
     }
     float dist_m = (speed * delta_ms)*0.001;
