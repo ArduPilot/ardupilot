@@ -1017,6 +1017,10 @@ void GCS_MAVLINK::update_send()
         AP::logger().handle_log_send();
     }
 
+#if HAVE_FILESYSTEM_SUPPORT
+    send_ftp_replies();
+#endif // HAVE_FILESYSTEM_SUPPORT
+
     if (!deferred_messages_initialised) {
         initialise_message_intervals_from_streamrates();
         deferred_messages_initialised = true;
@@ -3037,6 +3041,11 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         AP::logger().handle_mavlink_msg(*this, msg);
         break;
 
+    case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
+#if HAVE_FILESYSTEM_SUPPORT
+        handle_file_transfer_protocol(msg);
+#endif // HAVE_FILESYSTEM_SUPPORT
+        break;
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
         {
@@ -4692,10 +4701,16 @@ uint64_t GCS_MAVLINK::capabilities() const
     if (AP::rally()) {
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_RALLY;
     }
+
     if (AP::fence()) {
         // FIXME: plane also supports this...
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
     }
+
+#if HAVE_FILESYSTEM_SUPPORT
+    ret |= MAV_PROTOCOL_CAPABILITY_FTP;
+#endif // HAVE_FILESYSTEM_SUPPORT
+
     return ret;
 }
 
