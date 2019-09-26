@@ -497,9 +497,6 @@ def _build_post_funs(bld):
     if bld.env.SUBMODULE_UPDATE:
         bld.git_submodule_post_fun()
 
-    if bld.env.GCOV_ENABLED:
-      bld.add_post_fun(lcov_report)
-
 def _load_pre_build(bld):
     '''allow for a pre_build() function in build modules'''
     brd = bld.get_board()
