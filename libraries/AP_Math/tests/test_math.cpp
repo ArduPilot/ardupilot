@@ -322,6 +322,39 @@ TEST(MathWrapTest, Angle2PI)
     EXPECT_NEAR(0,    wrap_2PI(-M_2PI), accuracy);
 }
 
+TEST(IsValidOctal, Valid)
+{
+    EXPECT_TRUE(is_valid_octal(7777));
+    EXPECT_TRUE(is_valid_octal(777));
+    EXPECT_TRUE(is_valid_octal(77));
+    EXPECT_TRUE(is_valid_octal(7));
+    EXPECT_TRUE(is_valid_octal(0));
+    EXPECT_TRUE(is_valid_octal(1111));
+    EXPECT_TRUE(is_valid_octal(111));
+    EXPECT_TRUE(is_valid_octal(11));
+    EXPECT_TRUE(is_valid_octal(1));
+    EXPECT_TRUE(is_valid_octal(0));
+    EXPECT_TRUE(is_valid_octal(7654));
+    EXPECT_TRUE(is_valid_octal(321));
+    EXPECT_TRUE(is_valid_octal(23));
+    EXPECT_TRUE(is_valid_octal(5));
+    EXPECT_TRUE(is_valid_octal(5));
+}
+
+TEST(IsValidOctal, Invalid)
+{
+    EXPECT_FALSE(is_valid_octal(8888));
+    EXPECT_FALSE(is_valid_octal(888));
+    EXPECT_FALSE(is_valid_octal(88));
+    EXPECT_FALSE(is_valid_octal(8));
+    EXPECT_FALSE(is_valid_octal(9));
+
+    EXPECT_FALSE(is_valid_octal(7778));
+    EXPECT_FALSE(is_valid_octal(7788));
+    EXPECT_FALSE(is_valid_octal(7888));
+    EXPECT_FALSE(is_valid_octal(8888));
+}
+
 AP_GTEST_MAIN()
 
 #pragma GCC diagnostic pop
