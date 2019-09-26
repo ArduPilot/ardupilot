@@ -85,6 +85,8 @@ public:
     void set_special_ICAO_target(const uint32_t new_icao_target) { _special_ICAO_target = (int32_t)new_icao_target; };
     bool is_special_vehicle(uint32_t icao) const { return _special_ICAO_target != 0 && (_special_ICAO_target == (int32_t)icao); }
 
+    // confirm a value is a valid callsign
+    static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
 
 private:
     // initialize _vehicle_list
