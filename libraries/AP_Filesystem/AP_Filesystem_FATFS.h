@@ -20,6 +20,10 @@
 #define MAX_NAME_LEN 13
 #endif
 
+#define DT_REG 0
+#define DT_DIR 1
+
 struct dirent {
    char           d_name[MAX_NAME_LEN]; /* filename */
+   uint8_t d_type;
 };
