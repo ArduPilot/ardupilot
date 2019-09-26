@@ -94,16 +94,20 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     uint32_t tnow = AP_HAL::millis();
 
-    int16_t zTot = z + zTrim;
-    int16_t yTot = y + yTrim;
-    int16_t xTot = x + xTrim;
+    int16_t zTot;
+    int16_t yTot;
+    int16_t xTot;
 
     if (!controls_reset_since_input_hold) {
         zTot = zTrim + 500; // 500 is neutral for throttle
         yTot = yTrim;
         xTot = xTrim;
         // if all 3 axes return to neutral, than we're ready to accept input again
-        controls_reset_since_input_hold = (z == 500 && y == 0 && x == 0);
+        controls_reset_since_input_hold = (abs(z - 500) < 50) && (abs(y) < 50) && (abs(x) < 50);
+    } else {
+        zTot = z + zTrim;
+        yTot = y + yTrim;
+        xTot = x + xTrim;
     }
 
     RC_Channels::set_override(0, constrain_int16(pitchTrim + rpyCenter,1100,1900), tnow); // pitch
@@ -348,7 +352,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             yTrim = abs(y_last) > 50 ? y_last : 0;
             bool input_hold_engaged_last = input_hold_engaged;
             input_hold_engaged = zTrim || xTrim || yTrim;
-            if (input_hold_engaged) { 
+            if (input_hold_engaged) {
                 gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
             } else if (input_hold_engaged_last) {
                 gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Disabled");
