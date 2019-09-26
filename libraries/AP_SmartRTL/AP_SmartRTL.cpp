@@ -83,6 +83,12 @@ AP_SmartRTL::AP_SmartRTL(bool example_mode) :
 {
     AP_Param::setup_object_defaults(this, var_info);
     _simplify.bitmask.setall();
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_SmartRTL must be singleton");
+    }
+
+    _singleton = this;
 }
 
 // initialise safe rtl including setting up background processes
@@ -855,13 +861,3 @@ bool AP_SmartRTL::loops_overlap(const prune_loop_t &loop1, const prune_loop_t &l
     // if we got here, no overlap
     return false;
 }
-
-
-namespace AP {
-
-AP_SmartRTL *smartrtl()
-{
-    return AP_SmartRTL::get_singleton();
-}
-
-};

@@ -31,17 +31,10 @@ public:
     // constructor, destructor
     AP_SmartRTL(bool example_mode = false);
 
-    if (_singleton != nullptr) {
-                AP_HAL::panic("AP_Logger must be singleton");
-            }
-
-            _singleton = this;
-
     // get singleton instance
-    static AP_SmartRTL *get_singleton(void) {
+    static AP_SmartRTL *get_singleton() {
         return _singleton;
     }
-
 
     // initialise safe rtl including setting up background processes
     void init();
