@@ -3550,6 +3550,23 @@ class AutoTestCopter(AutoTest):
         self.wait_current_waypoint(0, timeout=10)
         self.set_rc(7, 1000)
 
+    def test_radio_failsafe(self):
+        self.start_subtest("If you haven't taken off yet RC failure should be instant disarm")
+        self.change_mode("STABILIZE")
+        self.set_parameter("DISARM_DELAY", 0)
+        self.arm_vehicle()
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.disarm_wait(timeout=1)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.set_parameter("DISARM_DELAY", 10)
+
+        self.start_subtest("Default behavour from loiter should be RTL")
+        self.takeoff(10, mode="LOITER")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_mode("RTL")
+        self.disarm_wait(timeout=100)
+
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
@@ -3660,6 +3677,10 @@ class AutoTestCopter(AutoTest):
             ("ModeLoiter",
              "Test Loiter Mode",
              self.loiter),
+
+            ("RadioFailsafe",
+             "Test radio failsafes",
+             self.test_radio_failsafe),
 
             ("SimpleMode",
              "Fly in SIMPLE mode",
