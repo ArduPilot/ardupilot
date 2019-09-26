@@ -1057,6 +1057,15 @@ class AutoTest(ABC):
         self.progress("Failed to DISARM with switch")
         return False
 
+    def disarm_wait(self, timeout=10):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not disarm")
+            self.wait_heartbeat()
+            if not self.mav.motors_armed():
+                return
+
     def wait_autodisarm_motors(self):
         """Wait for Autodisarm motors within disarm delay
         this feature is only available in copter (DISARM_DELAY) and plane (LAND_DISARMDELAY)."""
