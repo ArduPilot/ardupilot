@@ -330,7 +330,7 @@ void Rover::update_mission(void)
 #if OSD_ENABLED == ENABLED
 void Rover::publish_osd_info()
 {
-    AP_OSD::NavInfo nav_info {};
+    AP_OSD::NavInfo nav_info {0};
     if (control_mode == &mode_loiter) {
         nav_info.wp_xtrack_error = control_mode->get_distance_to_destination();
     } else {
