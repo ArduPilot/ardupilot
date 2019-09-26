@@ -24,9 +24,24 @@
 class AP_SmartRTL {
 
 public:
+    /* Do not allow copies */
+    AP_SmartRTL(const AP_SmartRTL &other) = delete;
+    AP_SmartRTL &operator=(const AP_SmartRTL&) = delete;
 
     // constructor, destructor
     AP_SmartRTL(bool example_mode = false);
+
+    if (_singleton != nullptr) {
+                AP_HAL::panic("AP_Logger must be singleton");
+            }
+
+            _singleton = this;
+
+    // get singleton instance
+    static AP_SmartRTL *get_singleton(void) {
+        return _singleton;
+    }
+
 
     // initialise safe rtl including setting up background processes
     void init();
@@ -78,6 +93,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    static AP_SmartRTL *_singleton;
 
     // enums for logging latest actions
     enum SRTL_Actions {
@@ -220,3 +236,9 @@ private:
     // returns true if the two loops overlap (used within add_loop to determine which loops to keep or throw away)
     bool loops_overlap(const prune_loop_t& loop1, const prune_loop_t& loop2) const;
 };
+
+
+namespace AP {
+    AP_SmartRTL *smartrtl();
+};
+

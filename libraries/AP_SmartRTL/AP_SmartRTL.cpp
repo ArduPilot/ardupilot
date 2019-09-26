@@ -17,6 +17,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
+AP_SmartRTL *AP_SmartRTL::_singleton;
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
@@ -853,3 +855,13 @@ bool AP_SmartRTL::loops_overlap(const prune_loop_t &loop1, const prune_loop_t &l
     // if we got here, no overlap
     return false;
 }
+
+
+namespace AP {
+
+AP_SmartRTL *smartrtl()
+{
+    return AP_SmartRTL::get_singleton();
+}
+
+};
