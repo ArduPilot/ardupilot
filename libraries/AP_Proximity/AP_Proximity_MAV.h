@@ -8,7 +8,7 @@ class AP_Proximity_MAV : public AP_Proximity_Backend
 
 public:
     // constructor
-    AP_Proximity_MAV(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
+    using AP_Proximity_Backend::AP_Proximity_Backend;
 
     // update state
     void update(void) override;
