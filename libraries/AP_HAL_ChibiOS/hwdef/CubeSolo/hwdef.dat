@@ -5,7 +5,7 @@
 
 include ../fmuv3/hwdef.dat
 
-env OPTIMIZE -O3
+env OPTIMIZE -O2
 
 SPIDEV icm20948_ext   SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
 SPIDEV icm20602_ext   SPI4 DEVID3  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
