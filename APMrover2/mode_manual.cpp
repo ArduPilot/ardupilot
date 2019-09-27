@@ -18,10 +18,12 @@ void ModeManual::update()
         rover.balancebot_pitch_control(desired_throttle);
     }
 
-    // set sailboat mainsail
+    // set sailboat sails
     float desired_mainsail;
-    g2.sailboat.get_pilot_desired_mainsail(desired_mainsail);
+    float desired_wingsail;
+    g2.sailboat.get_pilot_desired_mainsail(desired_mainsail, desired_wingsail);
     g2.motors.set_mainsail(desired_mainsail);
+    g2.motors.set_wingsail(desired_wingsail);
 
     // copy RC scaled inputs to outputs
     g2.motors.set_throttle(desired_throttle);
