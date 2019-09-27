@@ -53,10 +53,10 @@ public:
 #endif
     };
 
-    enum Proximity_Status {
-        Proximity_NotConnected = 0,
-        Proximity_NoData,
-        Proximity_Good
+    enum Status {
+        NotConnected = 0,
+        NoData,
+        Good
     };
 
     // structure holding distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
@@ -80,8 +80,8 @@ public:
     int16_t get_yaw_correction(uint8_t instance) const;
 
     // return sensor health
-    Proximity_Status get_status(uint8_t instance) const;
-    Proximity_Status get_status() const;
+    Status get_status(uint8_t instance) const;
+    Status get_status() const;
 
     // Return the number of proximity sensors
     uint8_t num_sensors(void) const {
@@ -119,7 +119,7 @@ public:
     // The Proximity_State structure is filled in by the backend driver
     struct Proximity_State {
         uint8_t                 instance;   // the instance number of this proximity sensor
-        enum Proximity_Status   status;     // sensor status
+        Status   status;     // sensor status
     };
 
     //
