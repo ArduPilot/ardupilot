@@ -236,6 +236,18 @@ public:
     AP_Int8 gyro_fail_mask;
     AP_Int8 accel_fail_mask;
 
+    // visual odometry: scale factor and error types
+    AP_Int8 viso_enable;
+    AP_Int8 viso_error_type;
+    AP_Float viso_scale_factor;
+    AP_Float viso_divergence_rate;
+
+    enum SITL_VISOFail {
+        SITL_VISOFail_None = 0,
+        SITL_VISOFail_Diverge = 1,
+        SITL_VISOFail_Jump = 2,
+    };
+
     struct {
         AP_Float x;
         AP_Float y;

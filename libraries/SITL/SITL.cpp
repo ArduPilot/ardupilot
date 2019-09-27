@@ -189,6 +189,12 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // extra delay per main loop
     AP_GROUPINFO("LOOP_DELAY",  55, SITL,  loop_delay, 0),
 
+    // parameters for visual odometry 
+    AP_GROUPINFO("VISO_ENABLE", 56, SITL,  viso_enable, 0),
+    AP_GROUPINFO("VISO_SCALE",  57, SITL,  viso_scale_factor, 1.0f),
+    AP_GROUPINFO("VISO_ERROR",  58, SITL,  viso_error_type, 0),
+    AP_GROUPINFO("VISO_DIVRATE",  59, SITL,  viso_divergence_rate, 1.01f),
+
     AP_GROUPEND
 
 };
