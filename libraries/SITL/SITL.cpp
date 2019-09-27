@@ -204,6 +204,9 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 
     AP_GROUPINFO("MAG_SCALING",    60, SITL,  mag_scaling, 1),
 
+    // max motor vibration frequency
+    AP_GROUPINFO("VIB_MOT_MAX", 61, SITL,  vibe_motor, 0.0f),
+
     AP_GROUPEND
 
 };

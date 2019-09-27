@@ -155,8 +155,8 @@ protected:
     float airspeed_pitot;                // m/s, apparent airspeed, as seen by fwd pitot tube
     float battery_voltage = -1.0f;
     float battery_current = 0.0f;
-    float rpm1 = 0;
-    float rpm2 = 0;
+    uint8_t num_motors = 1;
+    float rpm[12];
     uint8_t rcin_chan_count = 0;
     float rcin[8];
     float range = -1.0f;                 // rangefinder detection in m
