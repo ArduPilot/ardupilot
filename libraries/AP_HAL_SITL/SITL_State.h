@@ -24,6 +24,7 @@
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
 #include <SITL/SIM_Vicon.h>
+#include <SITL/SIM_VisualOdometry.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -221,6 +222,9 @@ private:
 
     // simulated vicon system:
     SITL::Vicon *vicon;
+
+    // simulated visual odometry system:
+    SITL::VisualOdometry *viso;
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};

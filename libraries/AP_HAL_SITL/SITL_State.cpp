@@ -222,6 +222,12 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         vicon = new SITL::Vicon();
         return vicon->fd();
+    } else if (streq(name, "viso")) {
+        if (viso != nullptr) {
+            AP_HAL::panic("Only one visual odometry system at a time");
+        }
+        viso = new SITL::VisualOdometry();
+        return viso->fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -356,6 +362,12 @@ void SITL_State::_fdm_input_local(void)
         Quaternion attitude;
         sitl_model->get_attitude(attitude);
         vicon->update(sitl_model->get_location(),
+                      sitl_model->get_position(),
+                      attitude);
+    } else if (viso != nullptr) {
+        Quaternion attitude;
+        sitl_model->get_attitude(attitude);
+        viso->update(sitl_model->get_location(),
                       sitl_model->get_position(),
                       attitude);
     }
