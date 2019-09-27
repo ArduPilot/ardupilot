@@ -18,7 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_MAX_IGNORE                6   // up to six areas can be ignored
@@ -70,10 +70,6 @@ public:
 
     // update state of all proximity sensors. Should be called at high rate from main loop
     void update(void);
-
-    // set pointer to rangefinder object
-    void set_rangefinder(const class RangeFinder *rangefinder) { _rangefinder = rangefinder; }
-    const RangeFinder *get_rangefinder() const { return _rangefinder; }
 
     // return sensor orientation and yaw correction
     uint8_t get_orientation(uint8_t instance) const;
@@ -147,7 +143,6 @@ private:
     static AP_Proximity *_singleton;
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
-    const RangeFinder *_rangefinder;
     uint8_t primary_instance;
     uint8_t num_instances;
 
