@@ -15,9 +15,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_RangeFinder.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
 extern const AP_HAL::HAL& hal;
@@ -33,7 +33,7 @@ AP_Proximity_RangeFinder::AP_Proximity_RangeFinder(AP_Proximity &_frontend,
 void AP_Proximity_RangeFinder::update(void)
 {
     // exit immediately if no rangefinder object
-    const RangeFinder *rngfnd = frontend.get_rangefinder();
+    const RangeFinder *rngfnd = AP::rangefinder();
     if (rngfnd == nullptr) {
         set_status(AP_Proximity::Status::NoData);
         return;
