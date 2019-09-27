@@ -92,7 +92,8 @@ public:
         GPS_TYPE_MAV = 14,
         GPS_TYPE_NOVA = 15,
         GPS_TYPE_HEMI = 16, // hemisphere NMEA
-        GPS_TYPE_SBFINS = 17,
+        GPS_TYPE_SBFINS = 17, // Septentrio gps with imu corrections (AsterRx-i S)
+        GPS_TYPE_SBFDUALANTENNA = 18, // Septentrio with dual antenna (AsteRx-m2)
     };
 
     /// GPS status codes

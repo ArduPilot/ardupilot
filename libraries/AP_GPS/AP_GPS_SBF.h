@@ -29,7 +29,7 @@
 class AP_GPS_SBF : public AP_GPS_Backend
 {
 public:
-    AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, bool _asterx_i);
+    AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, uint8_t _asterx_setup);
 
     AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
@@ -58,8 +58,6 @@ private:
     static const uint8_t SBF_PREAMBLE1 = '$';
     static const uint8_t SBF_PREAMBLE2 = '@';
 
-    sso, Stream1, COM1, PVTGeodetic+VelCovGeodetic, msec200
-
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
     const char* _initialisation_blob[5] = {
@@ -69,11 +67,17 @@ private:
     "spm, Rover, all\n",
     "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
     const char* _initialisation_blob_i[5] = {
-    "sso, Stream1, COM1, INSNavGeod+DOP+ReceiverStatus+VelCovGeodetic,sec1\n",
+    "sso, Stream1, COM1, PVTGeodetic+INSNavGeod+DOP+ReceiverStatus+VelCovGeodetic, msec100\n",
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, all\n",
-    "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, sec1\n"};
+    "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
+    const char* _initialisation_blob_dualantenna[5] = {
+    "sso, Stream1, COM1, PVTGeodetic+AttEuler+DOP+ReceiverStatus+VelCovGeodetic, msec100\n",
+    "srd, Moderate, UAV\n",
+    "sem, PVT, 5\n",
+    "spm, Rover, all\n",
+    "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
     uint32_t _config_last_ack_time;
 
     const char* _port_enable = "\nSSSSSSSSSS\n";
@@ -85,7 +89,9 @@ private:
     void mount_disk(void) const;
     void unmount_disk(void) const;
     bool _has_been_armed;
+    bool _asterx_type_is_singleantenna;
     bool _asterx_type_is_i;
+    bool _asterx_type_is_dualantenna;
 
     enum sbf_ids {
         DOP = 4001,
@@ -189,27 +195,28 @@ private:
         uint16_t Accuracy;
         uint16_t Latency;
         uint8_t Datum;
+        uint8_t Reserved;
         uint16_t SBList;
         // INSNavGeodPosStdDev sub-block
-        double LatitudeStdDev;
-        double LongitudeStdDev;
-        double HeightStdDev;
+        float LatitudeStdDev;
+        float LongitudeStdDev;
+        float HeightStdDev;
         // INSNavGeodAtt sub-block
-        double Heading;
-        double Pitch;
-        double Roll;
+        float Heading;
+        float Pitch;
+        float Roll;
         // INSNavGeodAttStdDev sub-block
-        double HeadingStdDev;
-        double PitchStdDev;
-        double RollStdDev;
+        float HeadingStdDev;
+        float PitchStdDev;
+        float RollStdDev;
         // INSNavGeodVel sub-block
-        double Ve;
-        double Vn;
-        double Vu;
+        float Ve;
+        float Vn;
+        float Vu;
         // INSNavGeodVelStdDev sub-block
-        double VestdDev;
-        double VnStdDev;
-        double VuStdDev;
+        float VestdDev;
+        float VnStdDev;
+        float VuStdDev;
     };
 
     struct PACKED msg5938 // AttEuler 
