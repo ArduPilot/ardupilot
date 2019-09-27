@@ -716,12 +716,12 @@ bool AP_Arming::proximity_checks(bool report) const
     if (proximity == nullptr) {
         return true;
     }
-    if (proximity->get_status() == AP_Proximity::Proximity_NotConnected) {
+    if (proximity->get_status() == AP_Proximity::Status::NotConnected) {
         return true;
     }
 
     // return false if proximity sensor unhealthy
-    if (proximity->get_status() < AP_Proximity::Proximity_Good) {
+    if (proximity->get_status() < AP_Proximity::Status::Good) {
         check_failed(report, "check proximity sensor");
         return false;
     }
