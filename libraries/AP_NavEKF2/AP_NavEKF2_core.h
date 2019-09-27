@@ -20,7 +20,7 @@
  */
 #pragma once
 
-#pragma GCC optimize("O3")
+#pragma GCC optimize("O2")
 
 #define EK2_DISABLE_INTERRUPTS 0
 
