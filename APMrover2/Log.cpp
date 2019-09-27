@@ -138,14 +138,15 @@ void Rover::Log_Write_Sail()
         wind_speed_true = g2.windvane.get_true_wind_speed();
         wind_speed_apparent = g2.windvane.get_apparent_wind_speed();
     }
-    logger.Write("SAIL", "TimeUS,WindDirTrue,WindDirApp,WindSpdTrue,WindSpdApp,SailOut,VMG",
-                        "shhnn%n", "F000000", "Qffffff",
+    logger.Write("SAIL", "TimeUS,WndDrTru,WndDrApp,WndSpdTru,WndSpdApp,MainOut,WingOut,VMG",
+                        "shhnn%%n", "F0000000", "Qfffffff",
                         AP_HAL::micros64(),
                         (double)wind_dir_abs,
                         (double)wind_dir_rel,
                         (double)wind_speed_true,
                         (double)wind_speed_apparent,
                         (double)g2.motors.get_mainsail(),
+                        (double)g2.motors.get_wingsail(),
                         (double)g2.sailboat.get_VMG());
 }
 
