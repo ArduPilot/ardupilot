@@ -32,7 +32,7 @@ extern const AP_HAL::HAL &hal;
 // we build this file with optimisation to lower the interrupt
 // latency. This helps reduce the chance of losing an RC input byte
 // due to missing a UART interrupt
-#pragma GCC optimize("O3")
+#pragma GCC optimize("O2")
 
 static AP_IOMCU_FW iomcu;
 
