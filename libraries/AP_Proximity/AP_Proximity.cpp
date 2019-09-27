@@ -178,8 +178,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Proximity::AP_Proximity(AP_SerialManager &_serial_manager) :
-    serial_manager(_serial_manager)
+AP_Proximity::AP_Proximity()
 {
     AP_Param::setup_object_defaults(this, var_info);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -284,16 +283,16 @@ void AP_Proximity::detect_instance(uint8_t instance)
 {
     uint8_t type = _type[instance];
     if (type == Proximity_Type_SF40C) {
-        if (AP_Proximity_LightWareSF40C::detect(serial_manager)) {
+        if (AP_Proximity_LightWareSF40C::detect()) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_LightWareSF40C(*this, state[instance], serial_manager);
+            drivers[instance] = new AP_Proximity_LightWareSF40C(*this, state[instance]);
             return;
         }
     }
     if (type == Proximity_Type_RPLidarA2) {
-        if (AP_Proximity_RPLidarA2::detect(serial_manager)) {
+        if (AP_Proximity_RPLidarA2::detect()) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance], serial_manager);
+            drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance]);
             return;
         }
     }
@@ -303,16 +302,16 @@ void AP_Proximity::detect_instance(uint8_t instance)
         return;
     }
     if (type == Proximity_Type_TRTOWER) {
-        if (AP_Proximity_TeraRangerTower::detect(serial_manager)) {
+        if (AP_Proximity_TeraRangerTower::detect()) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_TeraRangerTower(*this, state[instance], serial_manager);
+            drivers[instance] = new AP_Proximity_TeraRangerTower(*this, state[instance]);
             return;
         }
     }
     if (type == Proximity_Type_TRTOWEREVO) {
-        if (AP_Proximity_TeraRangerTowerEvo::detect(serial_manager)) {
+        if (AP_Proximity_TeraRangerTowerEvo::detect()) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_TeraRangerTowerEvo(*this, state[instance], serial_manager);
+            drivers[instance] = new AP_Proximity_TeraRangerTowerEvo(*this, state[instance]);
             return;
         }
     }

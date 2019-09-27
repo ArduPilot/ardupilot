@@ -18,7 +18,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
 #define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
@@ -33,7 +32,7 @@ class AP_Proximity
 public:
     friend class AP_Proximity_Backend;
 
-    AP_Proximity(AP_SerialManager &_serial_manager);
+    AP_Proximity();
 
     AP_Proximity(const AP_Proximity &other) = delete;
     AP_Proximity &operator=(const AP_Proximity) = delete;
@@ -149,7 +148,6 @@ private:
     const RangeFinder *_rangefinder;
     uint8_t primary_instance;
     uint8_t num_instances;
-    AP_SerialManager &serial_manager;
 
     // parameters for all instances
     AP_Int8  _type[PROXIMITY_MAX_INSTANCES];
