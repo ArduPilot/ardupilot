@@ -241,6 +241,7 @@ def start_SITL(binary,
                breakpoints=[],
                disable_breakpoints=False,
                vicon=False,
+               viso=False,
                lldb=False):
     """Launch a SITL instance."""
     cmd = []
@@ -320,6 +321,8 @@ def start_SITL(binary,
         cmd.extend(['--unhide-groups'])
     if vicon:
         cmd.extend(["--uartF=sim:vicon:"])
+    if viso:
+        cmd.extend(["--uartG=sim:viso:"])
 
     if gdb and not os.getenv('DISPLAY'):
         subprocess.Popen(cmd)

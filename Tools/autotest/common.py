@@ -2112,6 +2112,9 @@ class AutoTest(ABC):
     def uses_vicon(self):
         return False
 
+    def uses_viso(self):
+        return False
+
     def defaults_filepath(self):
         return None
 
@@ -2151,6 +2154,7 @@ class AutoTest(ABC):
                                     speedup=self.speedup,
                                     valgrind=self.valgrind,
                                     vicon=self.uses_vicon(),
+                                    viso=self.uses_viso(),
                                     wipe=True,
                                     )
 
