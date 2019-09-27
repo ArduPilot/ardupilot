@@ -342,7 +342,7 @@ void GCS_MAVLINK::send_proximity() const
     const uint16_t dist_max = (uint16_t)(proximity->distance_max() * 100.0f); // maximum distance the sensor can measure in centimeters
 
     // send horizontal distances
-    if (proximity->get_status() == AP_Proximity::Proximity_Good) {
+    if (proximity->get_status() == AP_Proximity::Status::Good) {
         AP_Proximity::Proximity_Distance_Array dist_array;
         if (proximity->get_horizontal_distances(dist_array)) {
             for (uint8_t i = 0; i < PROXIMITY_MAX_DIRECTION; i++) {
