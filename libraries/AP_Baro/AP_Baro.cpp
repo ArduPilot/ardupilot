@@ -692,6 +692,7 @@ void AP_Baro::_probe_i2c_barometers(void)
                                               std::move(GET_I2C_DEVICE(i, HAL_BARO_LPS25H_I2C_ADDR))));
         }
     }
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
     if (probe & PROBE_LPS25H) {
         FOREACH_I2C_MASK(i,mask) {
             ADD_BACKEND(AP_Baro_KellerLD::probe(*this,
@@ -704,6 +705,7 @@ void AP_Baro::_probe_i2c_barometers(void)
                                               std::move(GET_I2C_DEVICE(i, HAL_BARO_MS5837_I2C_ADDR)), AP_Baro_MS56XX::BARO_MS5837));
         }
     }
+#endif
 }
 
 bool AP_Baro::should_log() const
