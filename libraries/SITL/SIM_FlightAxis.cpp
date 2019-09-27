@@ -86,6 +86,7 @@ FlightAxis::FlightAxis(const char *frame_str) :
     Aircraft(frame_str)
 {
     use_time_sync = false;
+    num_motors = 2;
     rate_hz = 250 / target_speedup;
     heli_demix = strstr(frame_str, "helidemix") != nullptr;
     rev4_servos = strstr(frame_str, "rev4") != nullptr;
@@ -473,8 +474,8 @@ void FlightAxis::update(const struct sitl_input &input)
 
     battery_voltage = state.m_batteryVoltage_VOLTS;
     battery_current = state.m_batteryCurrentDraw_AMPS;
-    rpm1 = state.m_heliMainRotorRPM;
-    rpm2 = state.m_propRPM;
+    rpm[0] = state.m_heliMainRotorRPM;
+    rpm[1] = state.m_propRPM;
 
     /*
       the interlink interface supports 8 input channels
