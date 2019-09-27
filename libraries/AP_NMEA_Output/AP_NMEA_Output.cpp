@@ -67,24 +67,22 @@ uint8_t AP_NMEA_Output::_nmea_checksum(const char *str)
 
 void AP_NMEA_Output::update()
 {
-    uint16_t now = AP_HAL::millis16();
-    uint16_t time_diff = now - _last_sent;
+    const uint16_t now = AP_HAL::millis16();
 
     // only send at 10Hz
-    if (time_diff < 100) {
+    if (now - _last_run < 100) {
         return;
     }
+    _last_run = now;
 
     // get time and date
     uint64_t time_usec;
-    bool time_valid = AP::rtc().get_utc_usec(time_usec);
-
-    if (!time_valid) {
+    if (!AP::rtc().get_utc_usec(time_usec)) {
         return;
     }
 
     // not completely accurate, our time includes leap seconds and time_t should be without
-    time_t time_sec = time_usec / 1000000;
+    const time_t time_sec = time_usec / 1000000;
     struct tm* tm = gmtime(&time_sec);
 
     // format time string
@@ -132,6 +130,9 @@ void AP_NMEA_Output::update()
                                pos_valid ? 6 : 3,
                                2.0,
                                loc.alt * 0.01f);
+    if (gga_res == -1) {
+        return;
+    }
     char gga_end[6];
     snprintf(gga_end, sizeof(gga_end), "*%02X\r\n", (unsigned) _nmea_checksum(gga));
 
@@ -151,11 +152,21 @@ void AP_NMEA_Output::update()
                                speed_knots,
                                heading,
                                dstring);
+    if (rmc_res == -1) {
+        free(gga);
+        return;
+    }
     char rmc_end[6];
     snprintf(rmc_end, sizeof(rmc_end), "*%02X\r\n", (unsigned) _nmea_checksum(rmc));
 
+    const uint32_t space_required = strlen(gga) + strlen(gga_end) + strlen(rmc) + strlen(rmc_end);
+
     // send to all NMEA output ports
     for (uint8_t i = 0; i < _num_outputs; i++) {
+        if (_uart[i]->txspace() < space_required) {
+            continue;
+        }
+
         if (gga_res != -1) {
             _uart[i]->write(gga);
             _uart[i]->write(gga_end);
@@ -174,8 +185,6 @@ void AP_NMEA_Output::update()
     if (rmc_res != -1) {
         free(rmc);
     }
-
-    _last_sent = now;
 }
 
 #endif  // !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
