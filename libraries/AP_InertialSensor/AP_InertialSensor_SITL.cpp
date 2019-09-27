@@ -66,24 +66,44 @@ void AP_InertialSensor_SITL::generate_accel(uint8_t instance)
 
     if (sitl->motors_on) {
         // add extra noise when the motors are on
-        accel_noise += instance==0?sitl->accel_noise:sitl->accel2_noise;
+        accel_noise += instance == 0 ? sitl->accel_noise : sitl->accel2_noise;
     }
 
     // add accel bias and noise
-    Vector3f accel_bias = instance==0?sitl->accel_bias.get():sitl->accel2_bias.get();
+    Vector3f accel_bias = instance == 0 ? sitl->accel_bias.get() : sitl->accel2_bias.get();
     float xAccel = sitl->state.xAccel + accel_bias.x;
     float yAccel = sitl->state.yAccel + accel_bias.y;
     float zAccel = sitl->state.zAccel + accel_bias.z;
     const Vector3f &vibe_freq = sitl->vibe_freq;
-    if (vibe_freq.is_zero()) {
+    bool vibe_motor = !is_zero(sitl->vibe_motor);
+    if (vibe_freq.is_zero() && !vibe_motor) {
         xAccel += accel_noise * rand_float();
         yAccel += accel_noise * rand_float();
         zAccel += accel_noise * rand_float();
     } else {
-        float t = AP_HAL::micros() * 1.0e-6f;
-        xAccel += sinf(t * 2 * M_PI * vibe_freq.x) * accel_noise;
-        yAccel += sinf(t * 2 * M_PI * vibe_freq.y) * accel_noise;
-        zAccel += sinf(t * 2 * M_PI * vibe_freq.z) * accel_noise;
+        if (vibe_motor) {
+            for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
+                float& phase = accel_motor_phase[instance][i];
+                float motor_freq = sitl->state.rpm[i] / 60.0f;
+                float phase_incr = motor_freq * 2 * M_PI / accel_sample_hz[instance];
+                phase += phase_incr;
+                if (phase_incr > M_PI) {
+                    phase -= 2 * M_PI;
+                }
+                else if (phase_incr < -M_PI) {
+                    phase += 2 * M_PI;
+                }
+                xAccel += sinf(phase) * accel_noise;
+                yAccel += sinf(phase) * accel_noise;
+                zAccel += sinf(phase) * accel_noise;
+            }
+        }
+        if (!vibe_freq.is_zero()) {
+            float t = AP_HAL::micros() * 1.0e-6f;
+            xAccel += sinf(t * 2 * M_PI * vibe_freq.x) * accel_noise;
+            yAccel += sinf(t * 2 * M_PI * vibe_freq.y) * accel_noise;
+            zAccel += sinf(t * 2 * M_PI * vibe_freq.z) * accel_noise;
+        }
     }
     
     // correct for the acceleration due to the IMU position offset and angular acceleration
@@ -116,7 +136,7 @@ void AP_InertialSensor_SITL::generate_accel(uint8_t instance)
 
     _rotate_and_correct_accel(accel_instance[instance], accel);
 
-    uint8_t nsamples = enable_fast_sampling(accel_instance[instance])?4:1;
+    uint8_t nsamples = enable_fast_sampling(accel_instance[instance]) ? 4 : 1;
     for (uint8_t i=0; i<nsamples; i++) {
         _notify_new_accel_raw_sample(accel_instance[instance], accel);
     }
@@ -142,29 +162,50 @@ void AP_InertialSensor_SITL::generate_gyro(uint8_t instance)
     float r = radians(sitl->state.yawRate) + gyro_drift();
 
     const Vector3f &vibe_freq = sitl->vibe_freq;
-    if (vibe_freq.is_zero()) {
+    bool vibe_motor = !is_zero(sitl->vibe_motor);
+    if (vibe_freq.is_zero() && !vibe_motor) {
         p += gyro_noise * rand_float();
         q += gyro_noise * rand_float();
         r += gyro_noise * rand_float();
     } else {
-        float t = AP_HAL::micros() * 1.0e-6f;
-        p += sinf(t * 2 * M_PI * vibe_freq.x) * gyro_noise;
-        q += sinf(t * 2 * M_PI * vibe_freq.y) * gyro_noise;
-        r += sinf(t * 2 * M_PI * vibe_freq.z) * gyro_noise;
+        if (vibe_motor) {
+            for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
+                float motor_freq = sitl->state.rpm[i] / 60.0f;
+                float phase_incr = motor_freq * 2 * M_PI / gyro_sample_hz[instance];
+                float& phase = gyro_motor_phase[instance][i];
+                phase += phase_incr;
+                if (phase_incr > M_PI) {
+                    phase -= 2 * M_PI;
+                }
+                else if (phase_incr < -M_PI) {
+                    phase += 2 * M_PI;
+                }
+
+                p += sinf(phase) * gyro_noise;
+                q += sinf(phase) * gyro_noise;
+                r += sinf(phase) * gyro_noise;
+            }
+        }
+        if (!vibe_freq.is_zero()) {
+            float t = AP_HAL::micros() * 1.0e-6f;
+            p += sinf(t * 2 * M_PI * vibe_freq.x) * gyro_noise;
+            q += sinf(t * 2 * M_PI * vibe_freq.y) * gyro_noise;
+            r += sinf(t * 2 * M_PI * vibe_freq.z) * gyro_noise;
+        }
     }
 
     Vector3f gyro = Vector3f(p, q, r);
 
     // add in gyro scaling
     Vector3f scale = sitl->gyro_scale;
-    gyro.x *= (1 + scale.x*0.01f);
-    gyro.y *= (1 + scale.y*0.01f);
-    gyro.z *= (1 + scale.z*0.01f);
+    gyro.x *= (1 + scale.x * 0.01f);
+    gyro.y *= (1 + scale.y * 0.01f);
+    gyro.z *= (1 + scale.z * 0.01f);
 
     _rotate_and_correct_gyro(gyro_instance[instance], gyro);
     
-    uint8_t nsamples = enable_fast_sampling(gyro_instance[instance])?8:1;
-    for (uint8_t i=0; i<nsamples; i++) {
+    uint8_t nsamples = enable_fast_sampling(gyro_instance[instance]) ? 8 : 1;
+    for (uint8_t i = 0; i < nsamples; i++) {
         _notify_new_gyro_raw_sample(gyro_instance[instance], gyro);
     }
 }
@@ -183,16 +224,26 @@ void AP_InertialSensor_SITL::timer_update(void)
         if (now >= next_accel_sample[i]) {
             if (((1U<<i) & sitl->accel_fail_mask) == 0) {
                 generate_accel(i);
-                while (now >= next_accel_sample[i]) {
-                    next_accel_sample[i] += 1000000UL / accel_sample_hz[i];
+                if (next_accel_sample[i] == 0) {
+                    next_accel_sample[i] = now + 1000000UL / accel_sample_hz[i];
+                }
+                else {
+                    while (now >= next_accel_sample[i]) {
+                        next_accel_sample[i] += 1000000UL / accel_sample_hz[i];
+                    }
                 }
             }
         }
         if (now >= next_gyro_sample[i]) {
             if (((1U<<i) & sitl->gyro_fail_mask) == 0) {
                 generate_gyro(i);
-                while (now >= next_gyro_sample[i]) {
-                    next_gyro_sample[i] += 1000000UL / gyro_sample_hz[i];
+                if (next_gyro_sample[i] == 0) {
+                    next_gyro_sample[i] = now + 1000000UL / gyro_sample_hz[i];
+                }
+                else {
+                    while (now >= next_gyro_sample[i]) {
+                        next_gyro_sample[i] += 1000000UL / gyro_sample_hz[i];
+                    }
                 }
             }
         }
@@ -211,7 +262,6 @@ float AP_InertialSensor_SITL::gyro_drift(void)
         return minutes * ToRad(sitl->drift_speed);
     }
     return (period - minutes) * ToRad(sitl->drift_speed);
-
 }
 
 
