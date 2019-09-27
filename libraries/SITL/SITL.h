@@ -45,8 +45,8 @@ struct sitl_fdm {
     double airspeed; // m/s
     double battery_voltage; // Volts
     double battery_current; // Amps
-    double rpm1;            // main prop RPM
-    double rpm2;            // secondary RPM
+    uint8_t num_motors;
+    float rpm[12];         // RPM of all motors
     uint8_t rcin_chan_count;
     float  rcin[8];         // RC input 0..1
     double range;           // rangefinder value
@@ -247,6 +247,9 @@ public:
 
     // vibration frequencies in Hz on each axis
     AP_Vector3f vibe_freq;
+
+    // hover frequency to use as baseline for adding motor noise for the gyros and accels
+    AP_Float vibe_motor;
 
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;

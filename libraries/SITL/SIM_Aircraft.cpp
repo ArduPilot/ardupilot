@@ -55,6 +55,7 @@ Aircraft::Aircraft(const char *frame_str) :
     rate_hz(1200.0f),
     autotest_dir(nullptr),
     frame(frame_str),
+    num_motors(1),
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)
     min_sleep_time(20000)
 #else
@@ -341,8 +342,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.airspeed = airspeed_pitot;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
-    fdm.rpm1 = rpm1;
-    fdm.rpm2 = rpm2;
+    fdm.num_motors = num_motors;
+    memcpy(fdm.rpm, rpm, num_motors * sizeof(float));
     fdm.rcin_chan_count = rcin_chan_count;
     fdm.range = range;
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
