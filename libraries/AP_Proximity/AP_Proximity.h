@@ -38,17 +38,19 @@ public:
     AP_Proximity &operator=(const AP_Proximity) = delete;
 
     // Proximity driver types
-    enum Proximity_Type {
-        Proximity_Type_None    = 0,
-        Proximity_Type_SF40C   = 1,
-        Proximity_Type_MAV     = 2,
-        Proximity_Type_TRTOWER = 3,
-        Proximity_Type_RangeFinder = 4,
-        Proximity_Type_RPLidarA2 = 5,
-        Proximity_Type_TRTOWEREVO = 6,
-        Proximity_Type_SITL    = 10,
-        Proximity_Type_MorseSITL = 11,
-        Proximity_Type_AirSimSITL = 12,
+    enum class Type {
+        None    = 0,
+        SF40C   = 1,
+        MAV     = 2,
+        TRTOWER = 3,
+        RangeFinder = 4,
+        RPLidarA2 = 5,
+        TRTOWEREVO = 6,
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        SITL    = 10,
+        MorseSITL = 11,
+        AirSimSITL = 12,
+#endif
     };
 
     enum Proximity_Status {
@@ -128,7 +130,7 @@ public:
     bool get_upward_distance(uint8_t instance, float &distance) const;
     bool get_upward_distance(float &distance) const;
 
-    Proximity_Type get_type(uint8_t instance) const;
+    Type get_type(uint8_t instance) const;
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
@@ -148,6 +150,13 @@ private:
     const RangeFinder *_rangefinder;
     uint8_t primary_instance;
     uint8_t num_instances;
+
+    bool valid_instance(uint8_t i) const {
+        if (drivers[i] == nullptr) {
+            return false;
+        }
+        return (Type)_type[i].get() != Type::None;
+    }
 
     // parameters for all instances
     AP_Int8  _type[PROXIMITY_MAX_INSTANCES];
