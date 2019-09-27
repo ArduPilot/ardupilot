@@ -928,7 +928,7 @@ void AP_Logger::Write_Beacon(AP_Beacon &beacon)
 void AP_Logger::Write_Proximity(AP_Proximity &proximity)
 {
     // exit immediately if not enabled
-    if (proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+    if (proximity.get_status() == AP_Proximity::Status::NotConnected) {
         return;
     }
 
