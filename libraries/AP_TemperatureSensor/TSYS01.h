@@ -13,7 +13,7 @@
 class TSYS01 {
 public:
 
-    bool init(void);
+    bool init(uint8_t bus);
     float temperature(void) { return _temperature; } // temperature in degrees C
     bool healthy(void) { // do we have a valid temperature reading?
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

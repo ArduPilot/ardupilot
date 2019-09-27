@@ -13,9 +13,9 @@ static const uint8_t TSYS01_CMD_READ_PROM   = 0xA0;
 static const uint8_t TSYS01_CMD_CONVERT     = 0x40;
 static const uint8_t TSYS01_CMD_READ_ADC    = 0x00;
 
-bool TSYS01::init()
+bool TSYS01::init(uint8_t bus)
 {
-    _dev = std::move(hal.i2c_mgr->get_device(1, TSYS01_ADDR));
+    _dev = std::move(hal.i2c_mgr->get_device(bus, TSYS01_ADDR));
     if (!_dev) {
         printf("TSYS01 device is null!");
         return false;
