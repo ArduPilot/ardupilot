@@ -27,16 +27,16 @@ public:
     void        init();
 
     // activate the relay
-    void        on(uint8_t relay) { set(relay, true); }
+    void        on(uint8_t instance) { set(instance, true); }
 
     // de-activate the relay
-    void        off(uint8_t relay) { set(relay, false); }
+    void        off(uint8_t instance) { set(instance, false); }
 
     // see if the relay is enabled
-    bool        enabled(uint8_t relay) { return relay < AP_RELAY_NUM_RELAYS && _pin[relay] != -1; }
+    bool        enabled(uint8_t instance) { return instance < AP_RELAY_NUM_RELAYS && _pin[instance] != -1; }
 
     // toggle the relay status
-    void        toggle(uint8_t relay);
+    void        toggle(uint8_t instance);
 
     static AP_Relay *get_singleton(void) {return singleton; }
 
@@ -48,7 +48,7 @@ private:
     AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
     AP_Int8 _default;
 
-    void set(uint8_t relay, bool value);
+    void set(uint8_t instance, bool value);
 };
 
 namespace AP {
