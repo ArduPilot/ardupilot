@@ -199,7 +199,6 @@ void Copter::init_proximity(void)
 {
 #if PROXIMITY_ENABLED == ENABLED
     g2.proximity.init();
-    g2.proximity.set_rangefinder(&rangefinder);
 #endif
 }
 
