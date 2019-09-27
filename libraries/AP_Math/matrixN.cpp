@@ -2,7 +2,7 @@
  *  N dimensional matrix operations
  */
 
-#pragma GCC optimize("O3")
+#pragma GCC optimize("O2")
 
 #include "matrixN.h"
 

@@ -18,7 +18,7 @@
 
 #include "AP_Math.h"
 
-#pragma GCC optimize("O3")
+#pragma GCC optimize("O2")
 
 /*
  *  The point in polygon algorithm is based on:
