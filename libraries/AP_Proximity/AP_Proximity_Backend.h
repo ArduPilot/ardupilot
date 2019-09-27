@@ -68,7 +68,7 @@ public:
 protected:
 
     // set status and update valid_count
-    void set_status(AP_Proximity::Proximity_Status status);
+    void set_status(AP_Proximity::Status status);
 
     // find which sector a given angle falls into
     bool convert_angle_to_sector(float angle_degrees, uint8_t &sector) const;
