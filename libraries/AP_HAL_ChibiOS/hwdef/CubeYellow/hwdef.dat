@@ -33,7 +33,8 @@ define STM32_PLLQ_VALUE 9
 APJ_BOARD_ID 120
 
 # with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O3
+env OPTIMIZE -O2
+
 # on some boards you will need to also set the various PLL values. See
 # the defaults in common/mcuconf.h, and use the define mechanism
 # explained later in this file to override values suitable for your
