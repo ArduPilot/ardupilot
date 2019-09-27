@@ -27,11 +27,13 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the proximity sensor
 */
-AP_Proximity_TeraRangerTower::AP_Proximity_TeraRangerTower(AP_Proximity &_frontend,
-                                                         AP_Proximity::Proximity_State &_state,
-                                                         AP_SerialManager &serial_manager) :
+AP_Proximity_TeraRangerTower::AP_Proximity_TeraRangerTower(
+    AP_Proximity &_frontend,
+    AP_Proximity::Proximity_State &_state) :
     AP_Proximity_Backend(_frontend, _state)
 {
+    const AP_SerialManager &serial_manager = AP::serialmanager();
+
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
     if (uart != nullptr) {
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
@@ -39,10 +41,10 @@ AP_Proximity_TeraRangerTower::AP_Proximity_TeraRangerTower(AP_Proximity &_fronte
 }
 
 // detect if a TeraRanger Tower proximity sensor is connected by looking for a configured serial port
-bool AP_Proximity_TeraRangerTower::detect(AP_SerialManager &serial_manager)
+bool AP_Proximity_TeraRangerTower::detect()
 {
     AP_HAL::UARTDriver *uart = nullptr;
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
+    uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
     return uart != nullptr;
 }
 

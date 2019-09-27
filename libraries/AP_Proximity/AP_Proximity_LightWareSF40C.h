@@ -10,10 +10,11 @@ class AP_Proximity_LightWareSF40C : public AP_Proximity_Backend
 
 public:
     // constructor
-    AP_Proximity_LightWareSF40C(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state, AP_SerialManager &serial_manager);
+    AP_Proximity_LightWareSF40C(AP_Proximity &_frontend,
+                                AP_Proximity::Proximity_State &_state);
 
     // static detection function
-    static bool detect(AP_SerialManager &serial_manager);
+    static bool detect();
 
     // update state
     void update(void) override;
