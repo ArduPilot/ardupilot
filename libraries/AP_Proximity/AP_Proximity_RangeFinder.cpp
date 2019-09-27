@@ -20,15 +20,6 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
-extern const AP_HAL::HAL& hal;
-
-AP_Proximity_RangeFinder::AP_Proximity_RangeFinder(AP_Proximity &_frontend,
-                                   AP_Proximity::Proximity_State &_state) :
-    AP_Proximity_Backend(_frontend, _state),
-    _distance_upward(-1)
-{
-}
-
 // update the state of the sensor
 void AP_Proximity_RangeFinder::update(void)
 {
