@@ -214,14 +214,10 @@ void AP_Proximity::init(void)
 void AP_Proximity::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (drivers[i] != nullptr) {
-            if (get_type(i) == Type::None) {
-                // allow user to disable a proximity sensor at runtime
-                state[i].status = Proximity_NotConnected;
-                continue;
-            }
-            drivers[i]->update();
+        if (!valid_instance(i)) {
+            continue;
         }
+        drivers[i]->update();
     }
 
     // work out primary instance - first sensor returning good data
@@ -235,7 +231,7 @@ void AP_Proximity::update(void)
 // return sensor orientation
 uint8_t AP_Proximity::get_orientation(uint8_t instance) const
 {
-    if (instance >= PROXIMITY_MAX_INSTANCES) {
+    if (!valid_instance(instance)) {
         return 0;
     }
 
@@ -245,7 +241,7 @@ uint8_t AP_Proximity::get_orientation(uint8_t instance) const
 // return sensor yaw correction
 int16_t AP_Proximity::get_yaw_correction(uint8_t instance) const
 {
-    if (instance >= PROXIMITY_MAX_INSTANCES) {
+    if (!valid_instance(instance)) {
         return 0;
     }
 
@@ -256,7 +252,7 @@ int16_t AP_Proximity::get_yaw_correction(uint8_t instance) const
 AP_Proximity::Proximity_Status AP_Proximity::get_status(uint8_t instance) const
 {
     // sanity check instance number
-    if (instance >= num_instances) {
+    if (!valid_instance(instance)) {
         return Proximity_NotConnected;
     }
 
