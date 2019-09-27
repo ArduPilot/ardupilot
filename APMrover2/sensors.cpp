@@ -123,7 +123,6 @@ void Rover::read_rangefinders(void)
 void Rover::init_proximity(void)
 {
     g2.proximity.init();
-    g2.proximity.set_rangefinder(&rangefinder);
 }
 
 /*
