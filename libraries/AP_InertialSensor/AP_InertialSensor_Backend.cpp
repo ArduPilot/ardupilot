@@ -177,6 +177,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
         dt = 1.0f / _imu._gyro_raw_sample_rates[instance];
         _imu._gyro_last_sample_us[instance] = AP_HAL::micros64();
+        sample_us = _imu._gyro_last_sample_us[instance];
     }
 
 #if AP_MODULE_SUPPORTED
@@ -353,6 +354,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 
         dt = 1.0f / _imu._accel_raw_sample_rates[instance];
         _imu._accel_last_sample_us[instance] = AP_HAL::micros64();
+        sample_us = _imu._accel_last_sample_us[instance];
     }
 
 #if AP_MODULE_SUPPORTED
