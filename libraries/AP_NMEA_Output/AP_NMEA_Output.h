@@ -47,7 +47,7 @@ private:
     uint8_t _num_outputs;
     AP_HAL::UARTDriver* _uart[SERIALMANAGER_NUM_PORTS];
 
-    uint16_t _last_sent;
+    uint16_t _last_run;
 };
 
 #endif  // !HAL_MINIMIZE_FEATURES && AP_AHRS_NAVEKF_AVAILABLE
