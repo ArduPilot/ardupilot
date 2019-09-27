@@ -690,7 +690,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &d
 
     AP_Proximity &_proximity = *proximity;
 
-    if (_proximity.get_status() != AP_Proximity::Proximity_Good) {
+    if (_proximity.get_status() != AP_Proximity::Status::Good) {
         return;
     }
 
@@ -858,7 +858,7 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
     AP_Proximity &_proximity = *proximity;
 
     // exit immediately if proximity sensor is not present
-    if (_proximity.get_status() != AP_Proximity::Proximity_Good) {
+    if (_proximity.get_status() != AP_Proximity::Status::Good) {
         return;
     }
 
