@@ -206,7 +206,7 @@ void AP_Proximity::init(void)
         }
 
         // initialise status
-        state[i].status = Proximity_NotConnected;
+        state[i].status = Status::NotConnected;
     }
 }
 
@@ -222,7 +222,7 @@ void AP_Proximity::update(void)
 
     // work out primary instance - first sensor returning good data
     for (int8_t i=num_instances-1; i>=0; i--) {
-        if (drivers[i] != nullptr && (state[i].status == Proximity_Good)) {
+        if (drivers[i] != nullptr && (state[i].status == Status::Good)) {
             primary_instance = i;
         }
     }
@@ -249,17 +249,17 @@ int16_t AP_Proximity::get_yaw_correction(uint8_t instance) const
 }
 
 // return sensor health
-AP_Proximity::Proximity_Status AP_Proximity::get_status(uint8_t instance) const
+AP_Proximity::Status AP_Proximity::get_status(uint8_t instance) const
 {
     // sanity check instance number
     if (!valid_instance(instance)) {
-        return Proximity_NotConnected;
+        return Status::NotConnected;
     }
 
     return state[instance].status;
 }
 
-AP_Proximity::Proximity_Status AP_Proximity::get_status() const
+AP_Proximity::Status AP_Proximity::get_status() const
 {
     return get_status(primary_instance);
 }
@@ -458,7 +458,7 @@ AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
 
 bool AP_Proximity::sensor_present() const
 {
-    return get_status() != Proximity_NotConnected;
+    return get_status() != Status::NotConnected;
 }
 bool AP_Proximity::sensor_enabled() const
 {
@@ -466,7 +466,7 @@ bool AP_Proximity::sensor_enabled() const
 }
 bool AP_Proximity::sensor_failed() const
 {
-    return get_status() != Proximity_Good;
+    return get_status() != Status::Good;
 }
 
 AP_Proximity *AP_Proximity::_singleton;

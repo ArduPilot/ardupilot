@@ -142,7 +142,7 @@ bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Dist
 const Vector2f* AP_Proximity_Backend::get_boundary_points(uint16_t& num_points) const
 {
     // high-level status check
-    if (state.status != AP_Proximity::Proximity_Good) {
+    if (state.status != AP_Proximity::Status::Good) {
         num_points = 0;
         return nullptr;
     }
@@ -236,7 +236,7 @@ void AP_Proximity_Backend::update_boundary_for_sector(const uint8_t sector, cons
 }
 
 // set status and update valid count
-void AP_Proximity_Backend::set_status(AP_Proximity::Proximity_Status status)
+void AP_Proximity_Backend::set_status(AP_Proximity::Status status)
 {
     state.status = status;
 }

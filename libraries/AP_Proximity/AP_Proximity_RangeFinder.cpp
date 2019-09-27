@@ -35,7 +35,7 @@ void AP_Proximity_RangeFinder::update(void)
     // exit immediately if no rangefinder object
     const RangeFinder *rngfnd = frontend.get_rangefinder();
     if (rngfnd == nullptr) {
-        set_status(AP_Proximity::Proximity_NoData);
+        set_status(AP_Proximity::Status::NoData);
         return;
     }
 
@@ -76,9 +76,9 @@ void AP_Proximity_RangeFinder::update(void)
 
     // check for timeout and set health status
     if ((_last_update_ms == 0) || (now - _last_update_ms > PROXIMITY_RANGEFIDER_TIMEOUT_MS)) {
-        set_status(AP_Proximity::Proximity_NoData);
+        set_status(AP_Proximity::Status::NoData);
     } else {
-        set_status(AP_Proximity::Proximity_Good);
+        set_status(AP_Proximity::Status::Good);
     }
 }
 

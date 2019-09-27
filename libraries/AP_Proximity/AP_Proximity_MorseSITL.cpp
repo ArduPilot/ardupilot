@@ -41,11 +41,11 @@ void AP_Proximity_MorseSITL::update(void)
     SITL::float_array &ranges = sitl->state.scanner.ranges;
     if (points.length != ranges.length ||
         points.length == 0) {
-        set_status(AP_Proximity::Proximity_NoData);
+        set_status(AP_Proximity::Status::NoData);
         return;
     }
 
-    set_status(AP_Proximity::Proximity_Good);
+    set_status(AP_Proximity::Status::Good);
 
     memset(_distance_valid, 0, sizeof(_distance_valid));
     memset(_angle, 0, sizeof(_angle));
