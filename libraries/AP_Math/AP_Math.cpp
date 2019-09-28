@@ -339,10 +339,12 @@ bool rotation_equal(enum Rotation r1, enum Rotation r2)
 }
 
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // fill an array of float with NaN, used to invalidate memory in SITL
 void fill_nanf(float *f, uint16_t count)
 {
     while (count--) {
-        *f++ = nanf("fill");
+        *f++ = std::numeric_limits<float>::signaling_NaN();
     }
 }
+#endif
