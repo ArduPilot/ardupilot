@@ -136,6 +136,16 @@ void HAL_SITL::setup_signal_handlers() const
     sigaction(SIGTERM, &sa, NULL);
 }
 
+/*
+  fill 8k of stack with NaN. This allows us to find uses of
+  uninitialised memory without valgrind
+ */
+static void fill_stack_nan(void)
+{
+    float stk[2048];
+    fill_nanf(stk, ARRAY_SIZE(stk));
+}
+
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
@@ -168,6 +178,8 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         new_argv[new_argv_offset++] = argv[i];
     }
     
+    fill_stack_nan();
+
     callbacks->setup();
     scheduler->system_initialized();
 
@@ -197,6 +209,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
             ::fprintf(stderr, "Exitting\n");
             exit(0);
         }
+        fill_stack_nan();
         callbacks->loop();
         HALSITL::Scheduler::_run_io_procs();
 
