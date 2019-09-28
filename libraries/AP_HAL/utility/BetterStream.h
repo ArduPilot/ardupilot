@@ -33,7 +33,7 @@ public:
     void print(const char *str) { write(str); }
     void println(const char *str) { printf("%s\r\n", str); }
 
-    virtual size_t write(uint8_t) = 0;
+    size_t write(uint8_t c) { return write(&c, 1); }
     virtual size_t write(const uint8_t *buffer, size_t size) = 0;
     size_t write(const char *str);
 
