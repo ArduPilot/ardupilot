@@ -17,13 +17,7 @@ uint32_t Empty::UARTDriver::txspace() { return 1; }
 int16_t Empty::UARTDriver::read() { return -1; }
 
 /* Empty implementations of Print virtual methods */
-size_t Empty::UARTDriver::write(uint8_t c) { return 0; }
-
 size_t Empty::UARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    size_t n = 0;
-    while (size--) {
-        n += write(*buffer++);
-    }
-    return n;
+    return 0;
 }
