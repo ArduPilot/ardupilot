@@ -164,6 +164,12 @@ public:
     ///     this does not update the xy target
     void init_xy_controller();
 
+    /// standby_xyz_reset - resets I terms and removes position error
+    ///     This function will let Loiter and Alt Hold continue to operate
+    ///     in the event that the flight controller is in control of the
+    ///     aircraft when in standby.
+    void standby_xyz_reset();
+
     /// set_max_accel_xy - set the maximum horizontal acceleration in cm/s/s
     ///     leash length will be recalculated
     void set_max_accel_xy(float accel_cmss);
