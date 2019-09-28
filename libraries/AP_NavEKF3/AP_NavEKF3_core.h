@@ -27,6 +27,7 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_NavEKF3.h"
 #include <AP_Math/vectorN.h>
+#include <AP_NavEKF/AP_NavEKF_core_common.h>
 #include <AP_NavEKF3/AP_NavEKF3_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
@@ -63,7 +64,7 @@
 
 class AP_AHRS;
 
-class NavEKF3_core
+class NavEKF3_core : public NavEKF_core_common
 {
 public:
     // Constructor
@@ -366,9 +367,6 @@ public:
     // get timing statistics structure
     void getTimingStatistics(struct ekf_timing &timing);
 
-    // return size of core_common for use in frontend allocation
-    static uint32_t get_core_common_size(void) { return sizeof(core_common); }
-
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF3 *frontend;
@@ -400,7 +398,6 @@ private:
     typedef VectorN<ftype,24> Vector24;
     typedef VectorN<ftype,25> Vector25;
     typedef VectorN<ftype,31> Vector31;
-    typedef VectorN<ftype,28> Vector28;
     typedef VectorN<VectorN<ftype,3>,3> Matrix3;
     typedef VectorN<VectorN<ftype,24>,24> Matrix24;
     typedef VectorN<VectorN<ftype,34>,50> Matrix34_50;
@@ -424,7 +421,6 @@ private:
     typedef ftype Vector23[23];
     typedef ftype Vector24[24];
     typedef ftype Vector25[25];
-    typedef ftype Vector28[28];
     typedef ftype Matrix3[3][3];
     typedef ftype Matrix24[24][24];
     typedef ftype Matrix34_50[34][50];
@@ -536,21 +532,6 @@ private:
         uint8_t     type;           // type specifiying Euler rotation order used, 1 = 312 (ZXY), 2 = 321 (ZYX)
     };
 
-    /*
-      common intermediate variables used by all cores. These save a
-      lot memory by avoiding allocating these arrays on every core
-      Having these as stack variables would save even more memory, but
-      would give us very high stack usage in some functions, which
-      poses a risk of stack overflow until we have infrastructure in
-      place to calculate maximum stack usage using static analysis.
-     */
-    struct core_common {
-        Vector28 Kfusion;
-        Matrix24 KH;
-        Matrix24 KHP;
-        Matrix24 nextP;
-    } *common;
-    
     // bias estimates for the IMUs that are enabled but not being used
     // by this core.
     struct {
@@ -873,9 +854,6 @@ private:
     bool badIMUdata;                // boolean true if the bad IMU data is detected
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
-    Vector28 &Kfusion;              // Kalman gain vector
-    Matrix24 &KH;                   // intermediate result used for covariance updates
-    Matrix24 &KHP;                  // intermediate result used for covariance updates
     Matrix24 P;                     // covariance matrix
     imu_ring_buffer_t<imu_elements> storedIMU;      // IMU data buffer
     obs_ring_buffer_t<gps_elements> storedGPS;      // GPS data buffer
@@ -929,7 +907,6 @@ private:
     bool allMagSensorsFailed;       // true if all magnetometer sensors have timed out on this flight and we are no longer using magnetometer data
     uint32_t lastSynthYawTime_ms;   // time stamp when synthetic yaw measurement was last fused to maintain covariance health (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
-    Matrix24 &nextP;                // Predicted covariance matrix before addition of process noise to diagonals
     Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
