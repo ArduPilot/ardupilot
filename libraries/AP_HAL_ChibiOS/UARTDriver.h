@@ -47,7 +47,6 @@ public:
     int16_t read_locked(uint32_t key) override;
     void _timer_tick(void) override;
 
-    size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
 
     // lock a port for exclusive use. Use a key of 0 to unlock
