@@ -582,6 +582,8 @@ private:
         float takeoff_alt_cm;
     } gndeffect_state;
 
+    bool standby_active;
+
     // set when we are upgrading parameters from 3.4
     bool upgrading_frame_params;
 
@@ -743,6 +745,9 @@ private:
 
     // landing_gear.cpp
     void landinggear_update();
+
+    // standby.cpp
+    void standby_update();
 
     // Log.cpp
     void Log_Write_Control_Tuning();
