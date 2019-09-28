@@ -683,16 +683,6 @@ bool NavEKF3::InitialiseFilter(void)
             return false;
         }
 
-        // allocate common intermediate variable space
-        core_common = (void *)hal.util->malloc_type(NavEKF3_core::get_core_common_size(), AP_HAL::Util::MEM_FAST);
-        if (core_common == nullptr) {
-            _enable.set(0);
-            hal.util->free_type(core, sizeof(NavEKF3_core)*num_cores, AP_HAL::Util::MEM_FAST);
-            core = nullptr;
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: common allocation failed");
-            return false;
-        }
-
         // Call constructors on all cores
         for (uint8_t i = 0; i < num_cores; i++) {
             new (&core[i]) NavEKF3_core(this);
