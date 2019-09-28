@@ -35,6 +35,11 @@ public:
         YAW_BEHAVE_DIR_OF_FLIGHT = 3
     };
 
+    enum {
+        AP_FOLLOW_OPTION_AVOIDANCE=(1U<<0),
+        AP_FOLLOW_OPTION_GROUND_COURSE=(1U<<1),
+    };
+
     // constructor
     AP_Follow();
 
@@ -78,13 +83,16 @@ public:
     //
 
     // get horizontal distance to target (including offset) in meters (for reporting purposes)
-    float get_distance_to_target() const { return _dist_to_target; }
+    float get_distance_to_target() const { return _dist_to_target_xy; }
 
     // get bearing to target (including offset) in degrees (for reporting purposes)
     float get_bearing_to_target() const { return _bearing_to_target; }
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
+
+    // should we apply avoidance logic when following
+    bool avoidance_enabled(void) const { return (_options.get() & AP_FOLLOW_OPTION_AVOIDANCE) != 0; }
 
 private:
 
@@ -112,6 +120,7 @@ private:
     AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
+    AP_Int16    _options;
 
     // local variables
     bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
@@ -122,9 +131,15 @@ private:
     uint32_t _last_heading_update_ms;   // system time of last heading update
     float _target_heading;          // heading in degrees
     bool _automatic_sysid;          // did we lock onto a sysid automatically?
-    float   _dist_to_target;        // latest distance to target in meters (for reporting purposes)
+    float   _dist_to_target_xy;     // latest distance to target position (with offsets) in meters (for reporting purposes)
+    float   _dist_to_target_z;      // latest distance to target position (with offsets) in meters vertically (for reporting purposes)
     float   _bearing_to_target;     // latest bearing to target in degrees (for reporting purposes)
+    float   _dist_to_vehicle_xy;    // latest distance to target vehicle (for reporting purposes)
+    float   _dist_to_vehicle_z;     // latest distance to target vehicle vertically (for reporting purposes)
 
     // setup jitter correction with max transport lag of 3s
     JitterCorrection _jitter{3000};
+
+    AP_Int8 _ofs_x_chan;
+    AP_Float _ofs_x_max;
 };

@@ -116,6 +116,25 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALTITUDE_TYPE_RELATIVE),
 
+    // @Param: _OPTIONS
+    // @DisplayName: Follow options
+    // @Description: Follow options. The UseAvoidance option enables using vehicle avoidance logic to avoid coming too close to the other vehicle. If GroundCourse is set then lead vehicle ground course is used for offset direction, otherwise lead vehicle yaw is used.
+    // @Bitmask: 0:UseAvoidance,1:GroundCourse
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, AP_FOLLOW_OPTION_AVOIDANCE),
+
+    // @Param: _OFSX_CHAN
+    // @DisplayName: OffsetX channel
+    // @Description: Channel to add extra negative X offset
+    // @User: Standard
+    AP_GROUPINFO("_OFSX_CHAN", 12, AP_Follow, _ofs_x_chan, 0),
+
+    // @Param: _OFSX_MAX
+    // @DisplayName: OffsetX max
+    // @Description: max distance for offset X channel
+    // @User: Standard
+    AP_GROUPINFO("_OFSX_MAX", 13, AP_Follow, _ofs_x_max, 20),
+    
     AP_GROUPEND
 };
 
@@ -208,11 +227,15 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     dist_with_offs = dist_vec + offsets;
     vel_ned = veh_vel;
 
+    _dist_to_vehicle_xy = safe_sqrt(sq(dist_vec.x) + sq(dist_vec.y));
+    _dist_to_vehicle_z = dist_vec.z;
+
     // record distance and heading for reporting purposes
     if (is_zero(dist_with_offs.x) && is_zero(dist_with_offs.y)) {
         clear_dist_and_bearing_to_target();
     } else {
-        _dist_to_target = safe_sqrt(sq(dist_with_offs.x) + sq(dist_with_offs.y));
+        _dist_to_target_xy = safe_sqrt(sq(dist_with_offs.x) + sq(dist_with_offs.y));
+        _dist_to_target_z = dist_with_offs.z;
         _bearing_to_target = degrees(atan2f(dist_with_offs.y, dist_with_offs.x));
     }
 
@@ -297,8 +320,14 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         _target_velocity_ned.z = packet.vz * 0.01f; // velocity down
 
         // get a local timestamp with correction for transport jitter
-        _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
-        if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
+        uint32_t now = AP_HAL::millis();
+        _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, now);
+        if (_options.get() & AP_FOLLOW_OPTION_GROUND_COURSE) {
+            if (!is_zero(_target_velocity_ned.x) || !is_zero(_target_velocity_ned.y)) {
+                _target_heading = degrees(atan2f(_target_velocity_ned.y, _target_velocity_ned.x));
+                _last_heading_update_ms = _last_location_update_ms;
+            }
+        } else if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
             _target_heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
             _last_heading_update_ms = _last_location_update_ms;
         }
@@ -310,21 +339,31 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
         // log lead's estimated vs reported position
         AP::logger().Write("FOLL",
-                                               "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
-                                               "sDUmnnnDUm",    // units
-                                               "F--B000--B",    // mults
-                                               "QLLifffLLi",    // fmt
-                                               AP_HAL::micros64(),
-                                               _target_location.lat,
-                                               _target_location.lng,
-                                               _target_location.alt,
-                                               (double)_target_velocity_ned.x,
-                                               (double)_target_velocity_ned.y,
-                                               (double)_target_velocity_ned.z,
-                                               loc_estimate.lat,
-                                               loc_estimate.lng,
-                                               loc_estimate.alt
-                                               );
+                           "TimeUS,Lat,Lng,Alt,VelN,VelE,VelD,LatE,LngE,AltE",  // labels
+                           "sDUmnnnDUm",    // units
+                           "F--B000--B",    // mults
+                           "QLLifffLLi",    // fmt
+                           AP_HAL::micros64(),
+                           _target_location.lat,
+                           _target_location.lng,
+                           _target_location.alt,
+                           (double)_target_velocity_ned.x,
+                           (double)_target_velocity_ned.y,
+                           (double)_target_velocity_ned.z,
+                           loc_estimate.lat,
+                           loc_estimate.lng,
+                           loc_estimate.alt
+            );
+        AP::logger().Write("FOL2",
+                           "TimeUS,Lag,DistTgtXY,DistTgtZ,DistVehXY,DistVehZ",
+                           "Qfffff",
+                           AP_HAL::micros64(),
+                           (now - _last_location_update_ms)*0.001,
+                           _dist_to_target_xy,
+                           _dist_to_target_z,
+                           _dist_to_vehicle_xy,
+                           _dist_to_vehicle_z);
+        gcs().send_named_float("FollowDist", _dist_to_target_xy);
     }
 }
 
@@ -358,7 +397,16 @@ void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
 // get offsets in meters in NED frame
 bool AP_Follow::get_offsets_ned(Vector3f &offset) const
 {
-    const Vector3f &off = _offset.get();
+    Vector3f off = _offset.get();
+
+    if (_ofs_x_chan > 0) {
+        RC_Channel *chan = rc().channel(_ofs_x_chan-1);
+        if (chan) {
+            float pct = chan->percent_input();
+            float add_x = _ofs_x_max * pct * 0.01;
+            off.x -= add_x;
+        }
+    }
 
     // if offsets are zero or type is NED, simply return offset vector
     if (off.is_zero() || (_offset_type == AP_FOLLOW_OFFSET_TYPE_NED)) {
@@ -389,6 +437,9 @@ Vector3f AP_Follow::rotate_vector(const Vector3f &vec, float angle_deg) const
 // set recorded distance and bearing to target to zero
 void AP_Follow::clear_dist_and_bearing_to_target()
 {
-    _dist_to_target = 0.0f;
+    _dist_to_target_xy = 0.0f;
+    _dist_to_target_z = 0.0f;
+    _dist_to_vehicle_xy = 0.0f;
+    _dist_to_vehicle_z = 0.0f;
     _bearing_to_target = 0.0f;
 }
