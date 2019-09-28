@@ -16,19 +16,17 @@ public:
     BufferPrinter(char* str, size_t size)  :
         _offs(0), _str(str), _size(size)  {}
 
-    size_t write(uint8_t c) override {
-        if (_offs < _size) {
-            _str[_offs] = c;
-        }
-        _offs++;
-        return 1;
-    }
+    // we never fail to write all bytes - we just drop anything that
+    // doesn't fit on the ground.  _offs does move to indicate how
+    // much space would have been required.
     size_t write(const uint8_t *buffer, size_t size) override {
-        size_t n = 0;
-        while (size--) {
-            n += write(*buffer++);
+        if (_offs < _size) {
+            const size_t space_remaining = _size - _offs;
+            const size_t bytes_to_copy = (space_remaining < size) ? space_remaining : size;
+            memcpy(&_str[_offs], buffer, bytes_to_copy);
         }
-        return n;
+        _offs += size;
+        return size;
     }
 
     size_t _offs;
