@@ -292,27 +292,6 @@ int16_t UARTDriver::read()
 }
 
 /* Linux implementations of Print virtual methods */
-size_t UARTDriver::write(uint8_t c)
-{
-    if (!_initialised) {
-        return 0;
-    }
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
-    }
-
-    while (_writebuf.space() == 0) {
-        if (_nonblocking_writes) {
-            _write_mutex.give();
-            return 0;
-        }
-        hal.scheduler->delay(1);
-    }
-    size_t ret = _writebuf.write(&c, 1);
-    _write_mutex.give();
-    return ret;
-}
-
 /*
   write size bytes to the write buffer
  */
@@ -321,23 +300,27 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     if (!_initialised) {
         return 0;
     }
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
-    }
-    if (!_nonblocking_writes) {
-        /*
-          use the per-byte delay loop in write() above for blocking writes
-         */
-        _write_mutex.give();
-        size_t ret = 0;
-        while (size--) {
-            if (write(*buffer++) != 1) break;
-            ret++;
-        }
-        return ret;
-    }
 
-    size_t ret = _writebuf.write(buffer, size);
+    if (_blocking_writes) {
+        _write_mutex.take_blocking();
+    } else {
+        if (!_write_mutex.take_nonblocking()) {
+            return 0;
+        }
+    }
+    size_t ret = 0;
+    while (ret < size) {
+        const uint32_t written = _writebuf.write(buffer, size - ret);
+        if (written == 0) {
+            if (!_blocking_writes) {
+                break;
+            }
+            hal.scheduler->delay(1);
+            continue;
+        }
+        ret += written;
+        buffer += written;
+    }
     _write_mutex.give();
     return ret;
 }
