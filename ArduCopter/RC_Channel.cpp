@@ -77,6 +77,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case AUX_FUNC::PRECISION_LOITER:
     case AUX_FUNC::INVERTED:
     case AUX_FUNC::WINCH_ENABLE:
+    case AUX_FUNC::STAND_BY:
     case AUX_FUNC::SURFACE_TRACKING:
         do_aux_function(ch_option, ch_flag);
         break;
@@ -541,6 +542,22 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             do_aux_function_change_mode(Mode::Number::DRIFT, ch_flag);
 #endif
             break;
+
+        case AUX_FUNC::STAND_BY: {
+            switch (ch_flag) {
+                case HIGH:
+                    copter.standby_active = true;
+                    copter.Log_Write_Event(DATA_STAND_BY_ENABLE);
+                    gcs().send_text(MAV_SEVERITY_INFO, "Stand By Enabled");
+                    break;
+                default:
+                    copter.standby_active = false;
+                    copter.Log_Write_Event(DATA_STAND_BY_DISABLE);
+                    gcs().send_text(MAV_SEVERITY_INFO, "Stand By Disabled");
+                    break;
+                }
+            break;
+        }
 
         case AUX_FUNC::SURFACE_TRACKING:
             switch (ch_flag) {
