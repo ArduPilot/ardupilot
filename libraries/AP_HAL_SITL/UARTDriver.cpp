@@ -178,19 +178,6 @@ void UARTDriver::flush(void)
 {
 }
 
-// size_t UARTDriver::write(uint8_t c)
-// {
-//     if (txspace() <= 0) {
-//         return 0;
-//     }
-//     _writebuffer.write(&c, 1);
-//     return 1;
-// }
-
-size_t UARTDriver::write(uint8_t c)
-{
-    return write(&c, 1);
-}
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (txspace() <= size) {
