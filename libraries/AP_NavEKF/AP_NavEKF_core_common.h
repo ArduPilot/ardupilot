@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/vectorN.h>
 
 /*
   this declares a common parent class for AP_NavEKF2 and
