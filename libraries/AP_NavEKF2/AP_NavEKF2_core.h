@@ -328,9 +328,6 @@ public:
     // return true when external nav data is also being used as a yaw observation
     bool isExtNavUsedForYaw(void);
 
-    // return size of core_common for use in frontend allocation
-    static uint32_t get_core_common_size(void) { return sizeof(core_common); }
-
 private:
     // Reference to the global EKF frontend for parameters
     NavEKF2 *frontend;
@@ -482,22 +479,6 @@ private:
         uint32_t        time_ms;    // measurement timestamp (msec)
         bool            posReset;   // true when the position measurement has been reset
     };
-
-    /*
-      common intermediate variables used by all cores. These save a
-      lot memory by avoiding allocating these arrays on every core
-      Having these as stack variables would save even more memory, but
-      would give us very high stack usage in some functions, which
-      poses a risk of stack overflow until we have infrastructure in
-      place to calculate maximum stack usage using static analysis.
-      On SITL this structure is assumed to contain only float
-      variables (for the fill_nanf())
-     */
-    struct core_common {
-        Matrix24 KH;
-        Matrix24 KHP;
-        Matrix24 nextP;
-    } *common;
 
     // bias estimates for the IMUs that are enabled but not being used
     // by this core.
@@ -816,8 +797,6 @@ private:
     bool badIMUdata;                // boolean true if the bad IMU data is detected
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
-    Matrix24 &KH;                   // intermediate result used for covariance updates
-    Matrix24 &KHP;                  // intermediate result used for covariance updates
     Matrix24 P;                     // covariance matrix
     imu_ring_buffer_t<imu_elements> storedIMU;      // IMU data buffer
     obs_ring_buffer_t<gps_elements> storedGPS;      // GPS data buffer
@@ -872,7 +851,6 @@ private:
     bool allMagSensorsFailed;       // true if all magnetometer sensors have timed out on this flight and we are no longer using magnetometer data
     uint32_t lastYawTime_ms;        // time stamp when yaw observation was last fused (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
-    Matrix24 &nextP;                // Predicted covariance matrix before addition of process noise to diagonals
     Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
