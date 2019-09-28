@@ -763,6 +763,25 @@ void AC_PosControl::init_xy_controller()
     init_ekf_xy_reset();
 }
 
+/// standby_xyz_reset - resets I terms and removes position error
+///     This function will let Loiter and Alt Hold continue to operate
+///     in the event that the flight controller is in control of the
+///     aircraft when in standby.
+void AC_PosControl::standby_xyz_reset()
+{
+    // Set _pid_accel_z integrator to zero.
+    _pid_accel_z.set_integrator(0.0f);
+
+    // Set the target position to the current pos.
+    _pos_target = _inav.get_position();
+
+    // Set _pid_vel_xy integrators and derivative to zero.
+    _pid_vel_xy.reset_filter();
+
+    // initialise ekf xy reset handler
+    init_ekf_xy_reset();
+}
+
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
 void AC_PosControl::update_xy_controller()
 {
