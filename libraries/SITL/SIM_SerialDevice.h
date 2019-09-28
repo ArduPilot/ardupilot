@@ -18,9 +18,7 @@
 
 #pragma once
 
-#include <SITL/SITL.h>
-
-#include <AP_HAL/utility/RingBuffer.h>
+#include <unistd.h>
 
 namespace SITL {
 
@@ -40,7 +38,7 @@ public:
 
 protected:
 
-    SITL *_sitl;
+    class SITL *_sitl;
 
     int fd_their_end;
     int fd_my_end;

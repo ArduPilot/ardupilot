@@ -16,6 +16,7 @@
 #include "SIM_Sprayer.h"
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
+#include "SIM_RichenPower.h"
 
 namespace SITL {
 
@@ -351,6 +352,7 @@ public:
     Buzzer buzzer_sim;
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
+    RichenPower richenpower_sim;
 
     struct {
         // LED state, for serial LED emulation

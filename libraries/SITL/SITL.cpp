@@ -273,6 +273,9 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPINFO("MAG3_ORIENT",  30, SITL,  mag_orient[2], 0),
 #endif
 
+    // @Path: ./SIM_RichenPower.cpp
+    AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SITL, RichenPower),
+
     AP_GROUPEND
 
 };
