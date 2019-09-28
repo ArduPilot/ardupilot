@@ -29,9 +29,14 @@ public:
 
     SerialDevice();
 
-    // return fd on which data from the device can be read, and data
+    // return fd on which data from the device can be read
     // to the device can be written
     int fd() { return fd_their_end; }
+    // return fd on which data to the device can be written
+    int write_fd() { return read_fd_their_end; }
+
+    ssize_t read_from_autopilot(char *buffer, size_t size);
+    ssize_t write_to_autopilot(const char *buffer, size_t size);
 
 protected:
 
@@ -39,6 +44,9 @@ protected:
 
     int fd_their_end;
     int fd_my_end;
+
+    int read_fd_their_end;
+    int read_fd_my_end;
 
     bool init_sitl_pointer();
 };

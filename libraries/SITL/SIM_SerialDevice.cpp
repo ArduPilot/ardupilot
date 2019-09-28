@@ -25,6 +25,7 @@ using namespace SITL;
 
 SerialDevice::SerialDevice()
 {
+    // pipe for device to write to:
     int tmp[2];
     if (pipe(tmp) == -1) {
         AP_HAL::panic("pipe() failed");
@@ -39,6 +40,23 @@ SerialDevice::SerialDevice()
     // make sure we don't screw the simulation up by blocking:
     fcntl(fd_my_end, F_SETFL, fcntl(fd_my_end, F_GETFL, 0) | O_NONBLOCK);
     fcntl(fd_their_end, F_SETFL, fcntl(fd_their_end, F_GETFL, 0) | O_NONBLOCK);
+
+
+    // pipe for device to read from:
+    if (pipe(tmp) == -1) {
+        AP_HAL::panic("pipe() failed");
+    }
+    read_fd_my_end    = tmp[0];
+    read_fd_their_end = tmp[1];
+
+    // close file descriptors on exec:
+    fcntl(read_fd_my_end, F_SETFD, FD_CLOEXEC);
+    fcntl(read_fd_their_end, F_SETFD, FD_CLOEXEC);
+
+    // make sure we don't screw the simulation up by blocking:
+    fcntl(read_fd_my_end, F_SETFL, fcntl(fd_my_end, F_GETFL, 0) | O_NONBLOCK);
+    fcntl(read_fd_their_end, F_SETFL, fcntl(fd_their_end, F_GETFL, 0) | O_NONBLOCK);
+
 }
 
 bool SerialDevice::init_sitl_pointer()
@@ -52,3 +70,35 @@ bool SerialDevice::init_sitl_pointer()
     return true;
 }
 
+
+ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size)
+{
+    const ssize_t ret = ::read(read_fd_my_end, buffer, size);
+    // if (ret > 0) {
+    //     ::fprintf(stderr, "SIM_SerialDevice: read from autopilot: (");
+    //     for (ssize_t i=0; i<ret; i++) {
+    //         ::fprintf(stderr, "%02X", buffer[i]);
+    //     }
+    //     ::fprintf(stderr, " ");
+    //     for (ssize_t i=0; i<ret; i++) {
+    //         ::fprintf(stderr, "%c", buffer[i]);
+    //     }
+    //     ::fprintf(stderr, ")\n");
+    // }
+    return ret;
+}
+
+ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size)
+{
+    const ssize_t ret = write(fd_my_end, buffer, size);
+    // ::fprintf(stderr, "write to autopilot: (");
+    // for (ssize_t i=0; i<ret; i++) {
+    //     ::fprintf(stderr, "%02X", (uint8_t)buffer[i]);
+    // }
+    // ::fprintf(stderr, ") (\n");
+    // for (ssize_t i=0; i<ret; i++) {
+    //     ::fprintf(stderr, "%c", (uint8_t)buffer[i]);
+    // }
+    // ::fprintf(stderr, ")\n");
+    return ret;
+}
