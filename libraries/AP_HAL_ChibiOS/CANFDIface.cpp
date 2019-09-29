@@ -721,8 +721,6 @@ void CanIface::pollErrorFlagsFromISR()
             if (((1 << pending_tx_[i].index) & can_->TXBRP)) {
                 can_->TXBCR = 1 << pending_tx_[i].index;  // Goodnight sweet transmission
                 error_cnt_++;
-                //Wait for Cancelation to finish
-                while (!(can_->TXBCF & (1 << pending_tx_[i].index))) {}
                 served_aborts_cnt_++;
             }
         }
@@ -736,8 +734,6 @@ void CanIface::discardTimedOutTxMailboxes(uavcan::MonotonicTime current_time)
         if (((1 << pending_tx_[i].index) & can_->TXBRP) && pending_tx_[i].deadline < current_time) {
             can_->TXBCR = 1 << pending_tx_[i].index;  // Goodnight sweet transmission
             error_cnt_++;
-            //Wait for Cancelation to finish
-            while (!(can_->TXBCF & (1 << pending_tx_[i].index))) {}
         }
     }
 }
