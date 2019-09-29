@@ -1,0 +1,7 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Pixhawk1-1M, based on Pixhawk1
+
+include ../Pixhawk1/hwdef.dat
+
+FLASH_SIZE_KB 1024
+define HAL_MINIMIZE_FEATURES 1
