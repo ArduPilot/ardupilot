@@ -811,7 +811,7 @@ private:
 
     void update_sensor_status_flags();
 
-#if HAL_CPU_CLASS <= HAL_CPU_CLASS_150 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
     static const uint8_t _status_capacity = 5;
 #else
     static const uint8_t _status_capacity = 30;
