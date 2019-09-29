@@ -76,7 +76,15 @@ int main(void)
         can_set_node_id(m & 0xFF);
     }
 #endif
-    
+#if defined(HAL_GPIO_PIN_VBUS) && defined(HAL_ENABLE_VBUS_CHECK)
+#if HAL_USE_SERIAL_USB == TRUE
+    else if (palReadLine(HAL_GPIO_PIN_VBUS) == 0)  {
+        try_boot = true;
+        timeout = 0;
+    }
+#endif
+#endif
+
     // if we fail to boot properly we want to pause in bootloader to give
     // a chance to load new app code
     set_fast_reboot(RTC_BOOT_OFF);
