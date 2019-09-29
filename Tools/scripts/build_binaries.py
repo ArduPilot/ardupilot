@@ -543,6 +543,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "CubeBlack+",
                 "CubePurple",
                 "Pixhawk1",
+                "Pixhawk1-1M",
                 "Pixhawk4",
                 "PH4-mini",
                 "CUAVv5",
