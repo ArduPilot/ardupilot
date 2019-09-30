@@ -462,6 +462,10 @@ private:
         Failsafe_Action_Terminate     = 5
     };
 
+    enum class Failsafe_Options : uint32_t {
+        Failsafe_Option_Active_In_Hold = (1<<0)
+    };
+
     static constexpr int8_t _failsafe_priorities[] = {
                                                        Failsafe_Action_Terminate,
                                                        Failsafe_Action_Hold,
