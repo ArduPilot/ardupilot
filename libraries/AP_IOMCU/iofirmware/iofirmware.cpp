@@ -711,10 +711,15 @@ void AP_IOMCU_FW::safety_update(void)
  */
 void AP_IOMCU_FW::rcout_mode_update(void)
 {
-    bool use_oneshot = (reg_setup.features & P_SETUP_FEATURES_ONESHOT) != 0;
-    if (use_oneshot && !oneshot_enabled) {
+    if ((reg_setup.features & P_SETUP_FEATURES_ONESHOT) != 0) {
+        // unused?
         oneshot_enabled = true;
         hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+    }
+    if ((reg_setup.features & P_SETUP_FEATURES_ONESHOT125) != 0) {
+        oneshot_enabled = true;
+        hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
+        hal.rcout->set_freq(reg_setup.pwm_rates, 1);
     }
     bool use_brushed = (reg_setup.features & P_SETUP_FEATURES_BRUSHED) != 0;
     if (use_brushed && !brushed_enabled) {

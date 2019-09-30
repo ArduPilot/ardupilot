@@ -89,7 +89,8 @@ public:
 
     // set to oneshot mode
     void set_oneshot_mode(void);
-
+    void set_oneshot125_mode(void);
+    
     // set to brushed mode
     void set_brushed_mode(void);
     

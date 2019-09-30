@@ -6,7 +6,6 @@
  */
 
 #include "AP_IOMCU.h"
-
 #if HAL_WITH_IO_MCU
 
 #include <AP_Math/AP_Math.h>
@@ -29,6 +28,7 @@ enum ioevents {
     IOEVENT_FORCE_SAFETY_OFF,
     IOEVENT_FORCE_SAFETY_ON,
     IOEVENT_SET_ONESHOT_ON,
+    IOEVENT_SET_ONESHOT125_ON,
     IOEVENT_SET_BRUSHED_ON,
     IOEVENT_SET_RATES,
     IOEVENT_ENABLE_SBUS,
@@ -38,7 +38,7 @@ enum ioevents {
     IOEVENT_MIXING
 };
 
-// max number of consecutve protocol failures we accept before raising
+// max number of consecutive protocol failures we accept before raising
 // an error
 #define IOMCU_MAX_REPEATED_FAILURES 20
 
@@ -185,6 +185,13 @@ void AP_IOMCU::thread_main(void)
         if (mask & EVENT_MASK(IOEVENT_SET_ONESHOT_ON)) {
             if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_ONESHOT)) {
                 event_failed(IOEVENT_SET_ONESHOT_ON);
+                continue;
+            }
+        }
+
+        if (mask & EVENT_MASK(IOEVENT_SET_ONESHOT125_ON)) {
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_ONESHOT125)) {
+                event_failed(IOEVENT_SET_ONESHOT125_ON);
                 continue;
             }
         }
@@ -714,6 +721,12 @@ void AP_IOMCU::set_default_rate(uint16_t rate_hz)
 void AP_IOMCU::set_oneshot_mode(void)
 {
     trigger_event(IOEVENT_SET_ONESHOT_ON);
+}
+
+// setup for oneshot125 mode
+void AP_IOMCU::set_oneshot125_mode(void)
+{
+    trigger_event(IOEVENT_SET_ONESHOT125_ON);
 }
 
 // setup for brushed mode
