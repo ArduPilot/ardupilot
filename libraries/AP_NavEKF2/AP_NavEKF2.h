@@ -426,6 +426,10 @@ private:
     const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint8_t fusionTimeStep_ms = 10;          // The minimum time interval between covariance predictions and measurement fusions in msec
 
+    // origin set by one of the cores
+    struct Location common_EKF_origin;
+    bool common_origin_valid;
+
     struct {
         bool enabled:1;
         bool log_compass:1;

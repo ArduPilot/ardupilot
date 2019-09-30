@@ -203,8 +203,10 @@ void NavEKF2_core::ResetHeight(void)
 // Return true if the height datum reset has been performed
 bool NavEKF2_core::resetHeightDatum(void)
 {
-    if (activeHgtSource == HGT_SOURCE_RNG) {
-        // by definition the height datum is at ground level so cannot perform the reset
+    if (activeHgtSource == HGT_SOURCE_RNG || !onGround) {
+        // only allow resets when on the ground.
+        // If using using rangefinder for height then never perform a
+        // reset of the height datum
         return false;
     }
     // record the old height estimate
@@ -214,11 +216,26 @@ bool NavEKF2_core::resetHeightDatum(void)
     // reset the height state
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
+
     if (validOrigin) {
-        ekfGpsRefHgt += (double)oldHgt;
+        if (!gpsGoodToAlign) {
+            // if we don't have GPS lock then we shouldn't be doing a
+            // resetHeightDatum, but if we do then the best option is
+            // to maintain the old error
+            EKF_origin.alt += (int32_t)(100.0f * oldHgt);
+        } else {
+            // if we have a good GPS lock then reset to the GPS
+            // altitude. This ensures the reported AMSL alt from
+            // getLLH() is equal to GPS altitude, while also ensuring
+            // that the relative alt is zero
+            EKF_origin.alt = AP::gps().location().alt;
+        }
+        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     }
-    // adjust the terrain state
-    terrainState += oldHgt;
+
+    // set the terrain state to zero (on ground). The adjustment for
+    // frame height will get added in the later constraints
+    terrainState = 0;
     return true;
 }
 
@@ -583,10 +600,17 @@ void NavEKF2_core::FuseVelPosNED()
             varInnovVelPos[5] = P[8][8] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
             hgtTestRatio = sq(innovVelPos[5]) / (sq(MAX(0.01f * (float)frontend->_hgtInnovGate, 1.0f)) * varInnovVelPos[5]);
-            // fail if the ratio is > 1, but don't fail if bad IMU data
-            hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
+
+            // when on ground we accept a larger test ratio to allow
+            // the filter to handle large switch on IMU bias errors
+            // without rejecting the height sensor
+            const float maxTestRatio = (PV_AidingMode == AID_NONE && onGround)? 3.0 : 1.0;
+
+            // fail if the ratio is > maxTestRatio, but don't fail if bad IMU data
+            hgtHealth = (hgtTestRatio < maxTestRatio) || badIMUdata;
+
             // Fuse height data if healthy or timed out or in constant position mode
-            if (hgtHealth || hgtTimeout || (PV_AidingMode == AID_NONE && onGround)) {
+            if (hgtHealth || hgtTimeout) {
                 // Calculate a filtered value to be used by pre-flight health checks
                 // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
                 if (onGround) {
