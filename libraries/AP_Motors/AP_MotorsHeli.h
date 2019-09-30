@@ -122,7 +122,7 @@ public:
     float get_throttle_hover() const override { return 0.5f; }
 
     // support passing init_targets_on_arming flag to greater code
-    bool init_targets_on_arming() const { return _heliflags.init_targets_on_arming; }
+    bool init_targets_on_arming() const override { return _heliflags.init_targets_on_arming; }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];

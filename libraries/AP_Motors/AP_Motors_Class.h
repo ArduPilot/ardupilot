@@ -182,6 +182,10 @@ public:
     // using copter motors for forward flight
     virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
 
+    // This function required for tradheli. Tradheli initializes targets when going from unarmed to armed state.
+    // This function is overriden in motors_heli class.   Always true for multicopters.
+    virtual bool init_targets_on_arming() const { return true; }
+
     enum pwm_type { PWM_TYPE_NORMAL     = 0,
                     PWM_TYPE_ONESHOT    = 1,
                     PWM_TYPE_ONESHOT125 = 2,
