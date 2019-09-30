@@ -339,6 +339,11 @@ private:
     } cruise_learn_t;
     cruise_learn_t cruise_learn;
 
+    enum RTL_Done_Behave {
+        HOLD     =0,
+        LOITER   =1
+    };
+
 private:
 
     // APMrover2.cpp
@@ -462,6 +467,10 @@ private:
         Failsafe_Action_Terminate     = 5
     };
 
+    enum Failsafe_Options {
+        OPTION_HOLD_FS_ALLOW =  (1<<0)
+    };
+
     static constexpr int8_t _failsafe_priorities[] = {
                                                        Failsafe_Action_Terminate,
                                                        Failsafe_Action_Hold,
@@ -490,6 +499,7 @@ public:
 
     // Simple mode
     float simple_sin_yaw;
+
 };
 
 extern const AP_HAL::HAL& hal;

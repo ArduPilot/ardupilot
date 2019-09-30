@@ -48,7 +48,13 @@ void ModeRTL::update()
         // we have reached the destination
         // boats keep navigating, rovers stop
         if (rover.is_boat()) {
-            navigate_to_waypoint();
+            if (g2.rtl_done_behave == Rover::LOITER) {
+                if (!rover.set_mode(rover.mode_loiter, MODE_REASON_FAILSAFE)) {
+                    rover.set_mode(rover.mode_hold, MODE_REASON_FAILSAFE);
+                }          
+            } else {
+                rover.set_mode(rover.mode_hold, MODE_REASON_FAILSAFE);
+            }
         } else {
             stop_vehicle();
         }

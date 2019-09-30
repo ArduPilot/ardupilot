@@ -620,6 +620,21 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOIT_SPEED_GAIN", 47, ParametersG2, loiter_speed_gain, 0.5f),
 
+    // @Param: FS_OPTIONS
+    // @DisplayName: Rover Failsafe Options
+    // @Description: Bitmask to enable Rover failsafe options:
+    // @Values: 0:None,1:FS allowed in HOLD mode
+    // @Bitmask: 0:Enable FS in HOLD mode
+    // @User: Advanced
+    AP_GROUPINFO("FS_OPTIONS", 48, ParametersG2, fs_options, 0),
+
+    // @Param: RTL_DONE_BEHAVE
+    // @DisplayName: RTL Done Behavior
+    // @Description: End actions after rtl/srtl
+    // @Values: 0:HOLD in all vehicles, 1:LOITER if Boat-HOLD if Rover
+    // @User: Advanced
+    AP_GROUPINFO("RTL_DONE_BEHAVE", 49, ParametersG2, rtl_done_behave, 0),
+
     AP_GROUPEND
 };
 

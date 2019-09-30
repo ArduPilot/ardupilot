@@ -394,6 +394,12 @@ public:
 
     // gain for speed of correction in loiter
     AP_Float loiter_speed_gain;
+
+    // FS options
+    AP_Int32 fs_options;
+
+    // RTL end behaviour
+    AP_Int8 rtl_done_behave;
 };
 
 extern const AP_Param::Info var_info[];
