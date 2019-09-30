@@ -563,23 +563,23 @@ void NavEKF3_core::readGpsData()
                 useGpsVertVel = false;
             }
 
-            // Monitor quality of the GPS velocity data before and after alignment using separate checks
-            if (PV_AidingMode != AID_ABSOLUTE) {
-                // Pre-alignment checks
-                gpsGoodToAlign = calcGpsGoodToAlign();
-            } else {
-                gpsGoodToAlign = false;
-            }
+            // Monitor quality of the GPS velocity data before and after alignment
+            calcGpsGoodToAlign();
 
             // Post-alignment checks
             calcGpsGoodForFlight();
+
+            // see if we can get an origin from the frontend
+            if (!validOrigin && frontend->common_origin_valid) {
+                setOrigin(frontend->common_EKF_origin);
+            }
 
             // Read the GPS location in WGS-84 lat,long,height coordinates
             const struct Location &gpsloc = gps.location();
 
             // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
             if (gpsGoodToAlign && !validOrigin) {
-                setOrigin();
+                setOrigin(gpsloc);
 
                 // set the NE earth magnetic field states using the published declination
                 // and set the corresponding variances and covariances
@@ -596,7 +596,11 @@ void NavEKF3_core::readGpsData()
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
             if (validOrigin) {
                 gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
-                gpsDataNew.hgt = (float)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
+                if ((frontend->_originHgtMode & (1<<2)) == 0) {
+                    gpsDataNew.hgt = (float)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
+                } else {
+                    gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
+                }
                 storedGPS.push(gpsDataNew);
                 // declare GPS available for use
                 gpsNotAvailable = false;
