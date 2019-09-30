@@ -89,7 +89,7 @@ void Copter::read_radio()
     const uint32_t tnow_ms = millis();
 
     if (rc().read_input()) {
-        ap.new_radio_frame = true;
+        ap.simple_mode_new_frame = true;
 
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
         set_throttle_zero_flag(channel_throttle->get_control_in());
