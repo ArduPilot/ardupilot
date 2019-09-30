@@ -53,30 +53,29 @@ static uint8_t counter = 0;     // For Debuging
 
 
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
-                       AP_HAL::UARTDriver *_port, uint8_t _asterx_setup) :
+                       AP_HAL::UARTDriver *_port, SBF_Type _asterx_setup) :
     AP_GPS_Backend(_gps, _state, _port)
 {
     switch(_asterx_setup) {
-        case 0:
+        case SBF_SINGLE_ANTENNA:
             _asterx_type_is_singleantenna = true;
             _asterx_type_is_i = false;
             _asterx_type_is_dualantenna = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "SBF Single Antenna\n");
             break;
-        case 1:
+        case SBF_INS:
             _asterx_type_is_singleantenna = false;
             _asterx_type_is_i = true;
             _asterx_type_is_dualantenna = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "SBF INS\n");
             break;
-        case 2:
+        case SBF_DUAL_ANTENNA:
             _asterx_type_is_singleantenna = false;
             _asterx_type_is_i = false;
             _asterx_type_is_dualantenna = true;
-            gcs().send_text(MAV_SEVERITY_INFO, "SBF Dual Antenna\n");
             break;
         default:
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "No correct value for sbf selection\n");
+            _asterx_type_is_singleantenna = true;
+            _asterx_type_is_i = false;
+            _asterx_type_is_dualantenna = false;
             break;
     }
 
@@ -419,17 +418,6 @@ AP_GPS_SBF::process_message(void)
             state.have_gps_yaw = true;
         }
 
-        // Update roll (don't use -2·10^10)
-        if (temp.Roll > -200000) {
-            state.gps_roll = (float)(temp.Roll);
-            state.have_gps_roll = true;
-        }
-
-        // Update pitch (don't use -2·10^10)
-        if (temp.Pitch > -200000) 
-            state.gps_pitch = (float)(temp.Pitch);
-            state.have_gps_pitch = true;
-        }
 
         Debug("temp.Mode=0x%02x\n", (unsigned)temp.Mode);
         switch (temp.Mode & 15) {
@@ -495,13 +483,6 @@ AP_GPS_SBF::process_message(void)
             state.gps_yaw = (float)(temp.Heading);
             state.have_gps_yaw = true;
         }
-
-        // Update pitch (don't use -2·10^10)
-        if (temp.Pitch > -200000) {
-            state.gps_pitch = (float)(temp.Pitch);
-            state.have_gps_pitch = true;
-        }
-
 
         return true;
     }

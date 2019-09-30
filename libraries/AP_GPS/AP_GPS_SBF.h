@@ -277,4 +277,10 @@ private:
         INVALIDCONFIG = (1 << 10),  // set if one or more configuration file (permission or channel configuration) is invalid or absent.
         OUTOFGEOFENCE = (1 << 11),  // set if the receiver is currently out of its permitted region of operation (geo-fencing).
     };
+
+    enum SBF_Type {
+        SBF_SINGLE_ANTENNA  = 0,
+        SBF_INS             = 1,
+        SBF_DUAL_ANTENNA    = 2,
+    };
 };
