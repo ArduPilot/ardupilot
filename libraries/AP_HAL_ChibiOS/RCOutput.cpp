@@ -312,11 +312,6 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     // handle IO MCU channels
     if (AP_BoardConfig::io_enabled()) {
         uint16_t io_period_us = period_us;
-        if (iomcu_oneshot125 && ((1U<<chan) & io_fast_channel_mask)) {
-            // the iomcu only has one oneshot setting, so we need to scale by a factor
-            // of 8 here for oneshot125
-            io_period_us /= 8;
-        }
         iomcu.write_channel(chan, io_period_us);
     }
 #endif
@@ -690,11 +685,17 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
         }
     }
 #if HAL_WITH_IO_MCU
-    if ((mode == MODE_PWM_ONESHOT ||
-         mode == MODE_PWM_ONESHOT125) &&
+    if (mode == MODE_PWM_ONESHOT125 &&
         (mask & ((1U<<chan_offset)-1)) &&
         AP_BoardConfig::io_enabled()) {
-        iomcu_oneshot125 = (mode == MODE_PWM_ONESHOT125);
+        // also setup IO to use a 1Hz frequency, so we only get output
+        // when we trigger
+        iomcu.set_freq(io_fast_channel_mask, 1);
+        return iomcu.set_oneshot125_mode();
+    }
+    if (mode == MODE_PWM_ONESHOT &&
+        (mask & ((1U<<chan_offset)-1)) &&
+        AP_BoardConfig::io_enabled()) {
         // also setup IO to use a 1Hz frequency, so we only get output
         // when we trigger
         iomcu.set_freq(io_fast_channel_mask, 1);

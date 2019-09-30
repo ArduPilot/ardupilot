@@ -294,9 +294,6 @@ private:
     // widest pulse for oneshot triggering
     uint16_t trigger_widest_pulse;
 
-    // are we using oneshot125 for the iomcu?
-    bool iomcu_oneshot125;
-
     // find a channel group given a channel number
     struct pwm_group *find_chan(uint8_t chan, uint8_t &group_idx);
 
