@@ -620,6 +620,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOIT_SPEED_GAIN", 47, ParametersG2, loiter_speed_gain, 0.5f),
 
+    // @Param: FS_OPTIONS
+    // @DisplayName: Rover Failsafe Options
+    // @Description: Bitmask to enable Rover failsafe options
+    // @Values: 0:None,1:Failsafe enabled in Hold mode
+    // @Bitmask: 0:Failsafe enabled in Hold mode
+    // @User: Advanced
+    AP_GROUPINFO("FS_OPTIONS", 48, ParametersG2, fs_options, 0),
+
     AP_GROUPEND
 };
 
