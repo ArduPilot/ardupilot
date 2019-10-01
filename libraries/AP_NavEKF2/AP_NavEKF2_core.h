@@ -63,10 +63,10 @@ class NavEKF2_core : public NavEKF_core_common
 {
 public:
     // Constructor
-    NavEKF2_core(void);
+    NavEKF2_core(NavEKF2 *_frontend);
 
     // setup this core backend
-    bool setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index);
+    bool setup_core(uint8_t _imu_index, uint8_t _core_index);
     
     // Initialise the states from accelerometer and magnetometer data (if present)
     // This method can only be used when the vehicle is static

@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 #define ENABLE_EKF_TIMING 0
 
 // constructor
-NavEKF2_core::NavEKF2_core(void) :
+NavEKF2_core::NavEKF2_core(NavEKF2 *_frontend) :
     _perf_UpdateFilter(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_UpdateFilter")),
     _perf_CovariancePrediction(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_CovariancePrediction")),
     _perf_FuseVelPosNED(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseVelPosNED")),
@@ -58,9 +58,8 @@ NavEKF2_core::NavEKF2_core(void) :
 }
 
 // setup this core backend
-bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index)
+bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
 {
-    frontend = _frontend;
     imu_index = _imu_index;
     gyro_index_active = _imu_index;
     accel_index_active = _imu_index;
@@ -894,6 +893,10 @@ void NavEKF2_core::CovariancePrediction()
     float day_s;        // Y axis delta angle measurement scale factor
     float daz_s;        // Z axis delta angle measurement scale factor
     float dvz_b;        // Z axis delta velocity measurement bias (rad)
+    Vector25 SF;
+    Vector5 SG;
+    Vector8 SQ;
+    Vector24 processNoise;
 
     // calculate covariance prediction process noise
     // use filtered height rate to increase wind process noise when climbing or descending
@@ -991,6 +994,7 @@ void NavEKF2_core::CovariancePrediction()
     SQ[6] = 2*q1*q2;
     SQ[7] = SG[4];
 
+    Vector23 SPP;
     SPP[0] = SF[17]*(2*q0*q1 + 2*q2*q3) + SF[18]*(2*q0*q2 - 2*q1*q3);
     SPP[1] = SF[18]*(2*q0*q2 + 2*q1*q3) + SF[16]*(SF[24] - 2*q0*q3);
     SPP[2] = 2*q3*SF[8] + 2*q1*SF[11] - 2*q0*SF[14] - 2*q2*SF[13];

@@ -10,7 +10,7 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-NavEKF3_core::NavEKF3_core(void) :
+NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend) :
     _perf_UpdateFilter(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_UpdateFilter")),
     _perf_CovariancePrediction(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_CovariancePrediction")),
     _perf_FuseVelPosNED(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseVelPosNED")),
@@ -19,7 +19,8 @@ NavEKF3_core::NavEKF3_core(void) :
     _perf_FuseSideslip(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseSideslip")),
     _perf_TerrainOffset(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_TerrainOffset")),
     _perf_FuseOptFlow(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseOptFlow")),
-    _perf_FuseBodyOdom(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseBodyOdom"))
+    _perf_FuseBodyOdom(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseBodyOdom")),
+    frontend(_frontend)
 {
     _perf_test[0] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test0");
     _perf_test[1] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test1");
@@ -36,9 +37,8 @@ NavEKF3_core::NavEKF3_core(void) :
 }
 
 // setup this core backend
-bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _core_index)
+bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
 {
-    frontend = _frontend;
     imu_index = _imu_index;
     gyro_index_active = imu_index;
     accel_index_active = imu_index;
@@ -59,15 +59,15 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     }
 
     // find the maximum time delay for all potential sensors
-    uint16_t maxTimeDelay_ms = MAX(_frontend->_hgtDelay_ms ,
-            MAX(_frontend->_flowDelay_ms ,
-                MAX(_frontend->_rngBcnDelay_ms ,
-                    MAX(_frontend->magDelay_ms ,
+    uint16_t maxTimeDelay_ms = MAX(frontend->_hgtDelay_ms ,
+            MAX(frontend->_flowDelay_ms ,
+                MAX(frontend->_rngBcnDelay_ms ,
+                    MAX(frontend->magDelay_ms ,
                         (uint16_t)(EKF_TARGET_DT_MS)
                                   ))));
 
     // GPS sensing can have large delays and should not be included if disabled
-    if (_frontend->_fusionModeGPS != 3) {
+    if (frontend->_fusionModeGPS != 3) {
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
         float gps_delay_sec = 0;
         if (!AP::gps().get_lag(gps_delay_sec)) {
@@ -90,7 +90,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
 
     // airspeed sensing can have large delays and should not be included if disabled
     if (_ahrs->airspeed_sensor_enabled()) {
-        maxTimeDelay_ms = MAX(maxTimeDelay_ms , _frontend->tasDelay_ms);
+        maxTimeDelay_ms = MAX(maxTimeDelay_ms , frontend->tasDelay_ms);
     }
 
     // calculate the IMU buffer length required to accommodate the maximum delay with some allowance for jitter
@@ -100,13 +100,13 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     // with the worst case delay from current time to ekf fusion time
     // allow for worst case 50% extension of the ekf fusion time horizon delay due to timing jitter
     uint16_t ekf_delay_ms = maxTimeDelay_ms + (int)(ceilf((float)maxTimeDelay_ms * 0.5f));
-    obs_buffer_length = (ekf_delay_ms / _frontend->sensorIntervalMin_ms) + 1;
+    obs_buffer_length = (ekf_delay_ms / frontend->sensorIntervalMin_ms) + 1;
 
     // limit to be no longer than the IMU buffer (we can't process data faster than the EKF prediction rate)
     obs_buffer_length = MIN(obs_buffer_length,imu_buffer_length);
 
     // calculate buffer size for optical flow data
-    const uint8_t flow_buffer_length = MIN((ekf_delay_ms / _frontend->flowIntervalMin_ms) + 1, imu_buffer_length);
+    const uint8_t flow_buffer_length = MIN((ekf_delay_ms / frontend->flowIntervalMin_ms) + 1, imu_buffer_length);
 
     if(!storedGPS.init(obs_buffer_length)) {
         return false;
@@ -211,6 +211,8 @@ void NavEKF3_core::InitialiseVariables()
     lastKnownPositionNE.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
+    memset(&KH[0][0], 0, sizeof(KH));
+    memset(&KHP[0][0], 0, sizeof(KHP));
     memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
     rangeDataToFuse  = false;
@@ -577,9 +579,11 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
     // start the timer used for load measurement
 #if EK3_DISABLE_INTERRUPTS
-    irqstate_t istate = irqsave();
+    void *istate = hal.scheduler->disable_interrupts_save();
 #endif
     hal.util->perf_begin(_perf_UpdateFilter);
+
+    fill_scratch_variables();
 
     // TODO - in-flight restart method
 
@@ -628,7 +632,7 @@ void NavEKF3_core::UpdateFilter(bool predict)
     // stop the timer used for load measurement
     hal.util->perf_end(_perf_UpdateFilter);
 #if EK3_DISABLE_INTERRUPTS
-    irqrestore(istate);
+    hal.scheduler->restore_interrupts(istate);
 #endif
 }
 

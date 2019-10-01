@@ -663,15 +663,14 @@ bool NavEKF2::InitialiseFilter(void)
 
         //Call Constructors on all cores
         for (uint8_t i = 0; i < num_cores; i++) {
-            //Call Constructors
-            new (&core[i]) NavEKF2_core();
+            new (&core[i]) NavEKF2_core(this);
         }
 
         // set the IMU index for the cores
         num_cores = 0;
         for (uint8_t i=0; i<7; i++) {
             if (_imuMask & (1U<<i)) {
-                if(!core[num_cores].setup_core(this, i, num_cores)) {
+                if(!core[num_cores].setup_core(i, num_cores)) {
                     return false;
                 }
                 num_cores++;
