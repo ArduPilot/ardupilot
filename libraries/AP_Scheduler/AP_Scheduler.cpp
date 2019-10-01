@@ -114,6 +114,18 @@ void AP_Scheduler::tick(void)
     _tick_counter++;
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+/*
+  fill stack with NaN so we can catch use of uninitialised stack
+  variables in SITL
+ */
+static void fill_nanf_stack(void)
+{
+    float v[1024];
+    fill_nanf(v, ARRAY_SIZE(v));
+}
+#endif
+
 /*
   run one tick
   this will run as many scheduler tasks as we can in the specified time
@@ -173,6 +185,9 @@ void AP_Scheduler::run(uint32_t time_available)
         if (_debug > 1 && _perf_counters && _perf_counters[i]) {
             hal.util->perf_begin(_perf_counters[i]);
         }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        fill_nanf_stack();
+#endif
         _tasks[i].function();
         if (_debug > 1 && _perf_counters && _perf_counters[i]) {
             hal.util->perf_end(_perf_counters[i]);
