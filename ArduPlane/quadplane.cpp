@@ -2387,7 +2387,7 @@ void QuadPlane::waypoint_controller(void)
 /*
   handle auto-mode when auto_state.vtol_mode is true
  */
-void QuadPlane::control_auto(const Location &loc)
+void QuadPlane::control_auto(void)
 {
     if (!setup()) {
         return;
