@@ -57,7 +57,7 @@ void ModeAuto::update()
     uint16_t nav_cmd_id = plane.mission.get_current_nav_cmd().id;
 
     if (plane.quadplane.in_vtol_auto()) {
-        plane.quadplane.control_auto(plane.next_WP_loc);
+        plane.quadplane.control_auto();
     } else if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
         (nav_cmd_id == MAV_CMD_NAV_LAND && plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)) {
         plane.takeoff_calc_roll();
