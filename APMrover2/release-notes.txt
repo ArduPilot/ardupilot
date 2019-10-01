@@ -1,5 +1,33 @@
 Rover Release Notes:
 --------------------------------
+Rover 4.0.0-rc1 01-Oct-2019
+Changes from 3.5.2
+1) Path Planning for Object Avoidance (aka Bendy Ruler and Dijkstra's) replaces "Dodge" avoidance
+2) Complex Fence support (aka stay-out zones)
+3) Flight mode changes:
+    a) LOIT_SPEED_GAIN provides tuning of loiter mode aggressiveness
+    b) NAV_DELAY command support for clock-based start of mission commands
+    c) Simple mode (was present in 5.1 but was undocumented and untested)
+    d) SPEED_MIN parameter allows setting minimum speed during missions (reducing slow down at corners)
+4) Sailboat improvements:
+    a) motor support
+    b) tacking improvements
+    c) NMEA windvanes 
+5) New flight controllers:
+    a) Hex Cube Orange
+    b) Holybro Durandal
+6) Sensor and peripheral related changes
+    a) Fuel flow battery battery types
+    b) IBUS R/C input support
+    c) "Inflight" compass calibration
+    d) NTF_BUZZ_VOLUME allows controlling buzzer volume
+    e) OSD support
+    f) UAVCAN improvements including dynamic node allocation
+    g) WS2812 LEDs
+    h) Yaw from some GPSs 
+7) Safety Improvements:
+    a) Improved watchdog logging allows distinguishing between brown-outs from software failures
+--------------------------------
 Rover 3.5.2 24-Sep-2019
 Changes from 3.5.1
 1) fixed I2C storm lockup bug on ChibiOS
