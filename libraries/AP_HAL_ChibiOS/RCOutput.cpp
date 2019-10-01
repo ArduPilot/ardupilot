@@ -685,26 +685,30 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
         }
     }
 #if HAL_WITH_IO_MCU
-    if (mode == MODE_PWM_ONESHOT125 &&
-        (mask & ((1U<<chan_offset)-1)) &&
+    // TODO: a warm reboot doesn't change mode from oneshot to normal; must need to clear something
+    // chan_offset is the number of channels controlled by the IO_MCU
+    if ((mask & ((1U<<chan_offset)-1)) &&
         AP_BoardConfig::io_enabled()) {
-        // also setup IO to use a 1Hz frequency, so we only get output
-        // when we trigger
-        iomcu.set_freq(io_fast_channel_mask, 1);
-        return iomcu.set_oneshot125_mode();
-    }
-    if (mode == MODE_PWM_ONESHOT &&
-        (mask & ((1U<<chan_offset)-1)) &&
-        AP_BoardConfig::io_enabled()) {
-        // also setup IO to use a 1Hz frequency, so we only get output
-        // when we trigger
-        iomcu.set_freq(io_fast_channel_mask, 1);
-        return iomcu.set_oneshot_mode();
-    }
-    if (mode == MODE_PWM_BRUSHED &&
-        (mask & ((1U<<chan_offset)-1)) &&
-        AP_BoardConfig::io_enabled()) {
-        return iomcu.set_brushed_mode();
+
+        switch (mode) {
+        case MODE_PWM_ONESHOT:
+            // also setup IO to use a 1Hz frequency, so we only get output
+            // when we trigger
+            iomcu.set_freq(io_fast_channel_mask, 1);
+            iomcu.set_oneshot_mode();
+            break;
+        case MODE_PWM_ONESHOT125:
+            // also setup IO to use a 1Hz frequency, so we only get output
+            // when we trigger
+            iomcu.set_freq(io_fast_channel_mask, 1);
+            iomcu.set_oneshot125_mode();
+            break;
+        case MODE_PWM_BRUSHED:
+            iomcu.set_brushed_mode();
+            break;
+        default:
+            break;
+        }
     }
 #endif
 }
