@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.11-rc1 16-Sep-2019
+Copter 3.6.11 01-Oct-2019 / 3.6.11-rc1 16-Sep-2019
 Changes from 3.6.10
 1) EKF and IMU improvements:
     a) IMU3 enabled by default if present
@@ -19,6 +19,7 @@ Changes from 3.6.10
     c) IO firmware fix involving delayed writes to serial ports (ChibiOS only)
     d) CAN Compass fis to for unintialised device IDs
     e) mRo x2.1-777 USB ID fix
+    f) ChibiOS fix for I2C storm
 ------------------------------------------------------------------
 Copter 3.6.10 29-Jul-2019 / 3.6.10-rc2 2-Jul-2019
 Changes from 3.6.10-rc1
