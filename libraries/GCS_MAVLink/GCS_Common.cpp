@@ -2265,9 +2265,9 @@ MAV_RESULT GCS::set_message_interval(uint8_t port_num, uint32_t msg_id, int32_t 
 {
     uint8_t channel = get_channel_from_port_number(port_num);
 
-    if (channel < MAVLINK_COMM_NUM_BUFFERS && chan(channel) != nullptr)
-    {
+    if ((channel < MAVLINK_COMM_NUM_BUFFERS) && (chan(channel) != nullptr)) {
         chan(channel)->set_message_interval(msg_id, interval_us);
+        return MAV_RESULT_ACCEPTED;
     }
 
     return MAV_RESULT_FAILED;
@@ -2275,8 +2275,9 @@ MAV_RESULT GCS::set_message_interval(uint8_t port_num, uint32_t msg_id, int32_t 
 
 uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
 {
+    const AP_HAL::UARTDriver *u = AP::serialmanager().get_serial_by_id(port_num);
     for (uint8_t i=0; i<num_gcs(); i++) {
-        if (chan(i)->get_uart() == AP::serialmanager().get_serial_by_id(port_num)) {
+        if (chan(i)->get_uart() == u) {
             return i;
         }
     }
