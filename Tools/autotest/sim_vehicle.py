@@ -720,6 +720,8 @@ def start_mavproxy(opts, stuff):
         cmd.append('--console')
     if opts.aircraft is not None:
         cmd.extend(['--aircraft', opts.aircraft])
+    if opts.moddebug:
+        cmd.append('--moddebug=%u' % opts.moddebug)
 
     if opts.fresh_params:
         # these were built earlier:
@@ -979,6 +981,10 @@ group.add_option("", "--console",
 group.add_option("", "--aircraft",
                  default=None,
                  help="store state and logs in named directory")
+group.add_option("", "--moddebug",
+                 default=0,
+                 type=int,
+                 help="mavproxy module debug")
 parser.add_option_group(group)
 
 cmd_opts, cmd_args = parser.parse_args()
