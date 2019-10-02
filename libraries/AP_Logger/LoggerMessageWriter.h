@@ -68,7 +68,7 @@ private:
     };
 
     uint16_t _rally_number_to_send;
-    all_rally_points_blockwriter_stage stage;
+    all_rally_points_blockwriter_stage stage = ar_blockwriter_stage_write_new_rally_message;
 };
 
 class LoggerMessageWriter_DFLogStart : public LoggerMessageWriter {
