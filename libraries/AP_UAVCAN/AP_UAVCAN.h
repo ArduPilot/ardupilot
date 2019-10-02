@@ -48,6 +48,7 @@
 
 // fwd-declare callback classes
 class ButtonCb;
+class TrafficReportCb;
 
 /*
     Frontend Backend-Registry Binder: Whenever a message of said DataType_ from new node is received,
@@ -215,6 +216,7 @@ private:
 
     // safety button handling
     static void handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb);
+    static void handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb);
 };
 
 #endif /* AP_UAVCAN_H_ */
