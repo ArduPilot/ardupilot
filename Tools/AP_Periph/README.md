@@ -21,7 +21,7 @@ MissionPlanner.
 
 To load directly with a stlink-v2, do this:
 
- - st-flash write build/f103-periph/bin/AP_Periph.bin 0x8006000
+ - st-flash write build/f103-periph/bin/AP_Periph.bin 0x8006400
 
 for the CUAV_GPS which loads at offset 0x10000 use this:
 
