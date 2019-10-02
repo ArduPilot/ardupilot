@@ -77,7 +77,7 @@ void AP_Periph_FW::init()
     start_ms = AP_HAL::millis();
 }
 
-#if HAL_PERIPH_NEOPIXEL_COUNT == 8
+#if defined(HAL_PERIPH_NEOPIXEL_COUNT) && HAL_PERIPH_NEOPIXEL_COUNT == 8
 /*
   rotating rainbow pattern on startup
  */
@@ -158,7 +158,7 @@ void AP_Periph_FW::update()
     }
     can_update();
     hal.scheduler->delay(1);
-#if HAL_PERIPH_NEOPIXEL_COUNT == 8
+#if defined(HAL_PERIPH_NEOPIXEL_COUNT) && HAL_PERIPH_NEOPIXEL_COUNT == 8
     update_rainbow();
 #endif
 }
