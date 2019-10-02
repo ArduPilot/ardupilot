@@ -94,12 +94,14 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OFS", 7, AP_Follow, _offset, 0),
 
+#if !(APM_BUILD_TYPE(APM_BUILD_APMrover2))
     // @Param: _YAW_BEHAVE
     // @DisplayName: Follow yaw behaviour
     // @Description: Follow yaw behaviour
     // @Values: 0:None,1:Face Lead Vehicle,2:Same as Lead vehicle,3:Direction of Flight
     // @User: Standard
     AP_GROUPINFO("_YAW_BEHAVE", 8, AP_Follow, _yaw_behave, 1),
+#endif
 
     // @Param: _POS_P
     // @DisplayName: Follow position error P gain
@@ -109,12 +111,14 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(_p_pos, "_POS_", 9, AP_Follow, AC_P),
 
+#if !(APM_BUILD_TYPE(APM_BUILD_APMrover2)) 
     // @Param: _ALT_TYPE
     // @DisplayName: Follow altitude type
     // @Description: Follow altitude type
     // @Values: 0:absolute, 1: relative
     // @User: Standard
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALTITUDE_TYPE_RELATIVE),
+#endif
 
     AP_GROUPEND
 };
