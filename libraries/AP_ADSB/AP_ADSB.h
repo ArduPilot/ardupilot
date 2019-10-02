@@ -29,10 +29,8 @@
 
 class AP_ADSB {
 public:
-    AP_ADSB()
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
+    // constructor
+    AP_ADSB();
 
     /* Do not allow copies */
     AP_ADSB(const AP_ADSB &other) = delete;
@@ -88,7 +86,14 @@ public:
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
 
+    // get singleton instance
+    static AP_ADSB *get_singleton(void) {
+        return _singleton;
+    }
+
 private:
+    static AP_ADSB *_singleton;
+
     // initialize _vehicle_list
     void init();
 
@@ -202,4 +207,10 @@ private:
         SPECIAL_ONLY    = 1,
         ALL             = 2
     };
+
+
+};
+
+namespace AP {
+    AP_ADSB *ADSB();
 };
