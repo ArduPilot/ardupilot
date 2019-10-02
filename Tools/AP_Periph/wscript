@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+import fnmatch
+
 def build(bld):
-    if not bld.env.BOARD in ['f103-periph', 'CUAV_GPS']:
+    targets = ['f103-*', 'CUAV_GPS']
+    valid_target = False
+    for t in targets:
+        if fnmatch.fnmatch(bld.env.BOARD, t):
+            valid_target = True
+    if not valid_target:
         return
 
     bld.ap_stlib(
@@ -24,6 +31,7 @@ def build(bld):
         'AP_Baro',
         'Filter',
         'AP_InternalError',
+        'GCS_MAVLink',
         ],
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'

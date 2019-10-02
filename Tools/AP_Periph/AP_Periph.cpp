@@ -74,6 +74,11 @@ void AP_Periph_FW::init()
     hal.rcout->init();
     hal.rcout->set_neopixel_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, HAL_PERIPH_NEOPIXEL_COUNT);
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_ADSB
+    adsb_init();
+#endif
+
     start_ms = AP_HAL::millis();
 }
 
@@ -160,6 +165,9 @@ void AP_Periph_FW::update()
     hal.scheduler->delay(1);
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT) && HAL_PERIPH_NEOPIXEL_COUNT == 8
     update_rainbow();
+#endif
+#ifdef HAL_PERIPH_ENABLE_ADSB
+    adsb_update();
 #endif
 }
 

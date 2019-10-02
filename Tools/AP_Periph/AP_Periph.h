@@ -34,6 +34,16 @@ public:
 #ifdef HAL_PERIPH_ENABLE_BARO
     AP_Baro baro;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_ADSB
+    void adsb_init();
+    void adsb_update();
+    void can_send_ADSB(struct __mavlink_adsb_vehicle_t &msg);
+    struct {
+        mavlink_message_t msg;
+        mavlink_status_t status;
+    } adsb;
+#endif
     
     // setup the var_info table
     AP_Param param_loader{var_info};
