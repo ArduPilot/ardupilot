@@ -786,7 +786,10 @@ public:
     virtual bool simple_input_active() const { return false; }
     virtual bool supersimple_input_active() const { return false; }
 
+    // set message interval for a given serial port and message id
+    // this function is for use by lua scripts, most consumers should use the channel level function
     MAV_RESULT set_message_interval(uint8_t port_num, uint32_t msg_id, int32_t interval_us);
+
     uint8_t get_channel_from_port_number(uint8_t port_num);
 
 protected:
