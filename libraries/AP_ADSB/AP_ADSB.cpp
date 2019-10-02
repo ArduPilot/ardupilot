@@ -413,7 +413,7 @@ bool AP_ADSB::find_index(const adsb_vehicle_t &vehicle, uint16_t *index) const
  * Update the vehicle list. If the vehicle is already in the
  * list then it will update it, otherwise it will be added.
  */
-void AP_ADSB::handle_vehicle(const mavlink_message_t &packet)
+void AP_ADSB::handle_adsb_vehicle(const adsb_vehicle_t &vehicle)
 {
     if (in_state.vehicle_list == nullptr) {
         // We are only null when disabled. Updating is inhibited.
@@ -421,8 +421,6 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t &packet)
     }
 
     uint16_t index = in_state.list_size + 1; // initialize with invalid index
-    adsb_vehicle_t vehicle {};
-    mavlink_msg_adsb_vehicle_decode(&packet, &vehicle.info);
     const Location vehicle_loc = AP_ADSB::get_location(vehicle);
     const bool my_loc_is_zero = _my_loc.is_zero();
     const float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
@@ -431,9 +429,6 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t &packet)
     const bool out_of_range_alt = in_state.list_altitude > 0 && !my_loc_is_zero && abs(vehicle_loc.alt - _my_loc.alt) > in_state.list_altitude*100 && !is_special;
     const bool is_tracked_in_list = find_index(vehicle, &index);
     const uint32_t now = AP_HAL::millis();
-
-    // note the last time the receiver got a packet from the aircraft
-    vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
 
     const uint16_t required_flags_position = ADSB_FLAGS_VALID_COORDS | ADSB_FLAGS_VALID_ALTITUDE;
     const bool detected_ourself = (out_state.cfg.ICAO_id != 0) && ((uint32_t)out_state.cfg.ICAO_id == vehicle.info.ICAO_address);
@@ -498,6 +493,19 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t &packet)
     if (vehicle.info.flags & required_flags_avoidance) {
         push_sample(vehicle); // note that set_vehicle modifies vehicle
     }
+}
+
+/*
+ * Update the vehicle list. If the vehicle is already in the
+ * list then it will update it, otherwise it will be added.
+ */
+void AP_ADSB::handle_vehicle(const mavlink_message_t &packet)
+{
+    adsb_vehicle_t vehicle {};
+    const uint32_t now = AP_HAL::millis();
+    mavlink_msg_adsb_vehicle_decode(&packet, &vehicle.info);
+    vehicle.last_update_ms = now - (vehicle.info.tslc * 1000);
+    handle_adsb_vehicle(vehicle);
 }
 
 /*
@@ -871,7 +879,7 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
 }
 
 
-void AP_ADSB::push_sample(adsb_vehicle_t &vehicle)
+void AP_ADSB::push_sample(const adsb_vehicle_t &vehicle)
 {
     samples.push(vehicle);
 }
