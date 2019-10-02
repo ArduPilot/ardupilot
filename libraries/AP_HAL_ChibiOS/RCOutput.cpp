@@ -168,7 +168,7 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         // change frequency on IOMCU
-        uint16_t io_chmask = chmask & 0xFF;
+        uint16_t io_chmask = chmask & ((1U<<chan_offset)-1);
         if (io_chmask) {
             // disallow changing frequency of this group if it is greater than the default
             for (uint8_t i=0; i<ARRAY_SIZE(iomcu.ch_masks); i++) {
