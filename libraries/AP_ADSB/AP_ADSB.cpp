@@ -50,6 +50,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_ADSB *AP_ADSB::_singleton;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: ENABLE
@@ -158,6 +160,16 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     AP_GROUPEND
 };
+
+// constructor
+AP_ADSB::AP_ADSB()
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_ADSB must be singleton");
+    }
+    _singleton = this;
+}
 
 /*
  * Initialize variables and allocate memory for array
@@ -940,3 +952,9 @@ void AP_ADSB::write_log(const adsb_vehicle_t &vehicle)
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+
+AP_ADSB *AP::ADSB()
+{
+    return AP_ADSB::get_singleton();
+}
+
