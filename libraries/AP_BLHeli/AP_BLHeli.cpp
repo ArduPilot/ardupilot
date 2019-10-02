@@ -1274,7 +1274,7 @@ void AP_BLHeli::update(void)
     motor_mask = mask;
     debug("ESC: %u motors mask=0x%04x", num_motors, mask);
 
-    if (telem_rate > 0) {
+    if (num_motors != 0 && telem_rate > 0) {
         AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
         if (serial_manager) {
             telem_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry,0);
