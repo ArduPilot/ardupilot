@@ -173,6 +173,7 @@ private:
     uint32_t _last_position_save_ms;    // the system time a position was saved to the path (used for timeout)
     uint32_t _thorough_clean_request_ms;// the last system time the thorough cleanup was requested (set by thorough_cleanup method, used by background cleanup)
     uint32_t _thorough_clean_complete_ms; // set to _thorough_clean_request_ms when the background thread completes the thorough cleanup
+    uint32_t _last_low_space_notify_ms; //last time low on SmartRTL space was notified on Mavlink. Minimum time is required before re-notification to avoid nagging.
     ThoroughCleanupType _thorough_clean_type;   // used by example sketch to test simplify and prune separately
 
     // path variables
