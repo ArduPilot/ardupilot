@@ -172,6 +172,12 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
 #endif
 
+        // pilot-speed-up parameter check
+        if (copter.g.pilot_speed_up <= 0) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check PILOT_SPEED_UP");
+            return false;
+        }
+
         #if FRAME_CONFIG == HELI_FRAME
         if (copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
             copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_DUAL &&
