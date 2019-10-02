@@ -241,6 +241,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_init()
 {
     // version strings for reporting
     char version[15] {};
+    int retry_count = 0;
 
     sf20_get_version("?P\r\n", "p:", version);
 
@@ -291,43 +292,48 @@ bool AP_RangeFinder_LightWareI2C::sf20_init()
     }
 #endif
 
-    // Sets datum offset [-10.00 ... 10.00].
-    if (!sf20_send_and_expect("#LO,0.00\r\n", "lo:0.00")) {
-        return false;
-    }
+    while (1) {
+        retry_count++;
+        // Sets datum offset [-10.00 ... 10.00].
+        if (!sf20_send_and_expect("#LO,0.00\r\n", "lo:0.00")) {
+            if (retry_count > 5) return false; else continue;
+        }
 
-    // Changes to a new measuring mode (update rate):
-    //    1 = 388 readings per second
-    //    2 = 194 readings per second
-    //    3 = 129 readings per second
-    //    4 = 97 readings per second
-    //    5 = 78 readings per second
-    //    6 = 65 readings per second
-    //    7 = 55 readings per second
-    //    8 = 48 readings per second
-    if (!sf20_send_and_expect("#LM,7\r\n", "lm:7")) {
-        return false;
-    }
+        // Changes to a new measuring mode (update rate):
+        //    1 = 388 readings per second
+        //    2 = 194 readings per second
+        //    3 = 129 readings per second
+        //    4 = 97 readings per second
+        //    5 = 78 readings per second
+        //    6 = 65 readings per second
+        //    7 = 55 readings per second
+        //    8 = 48 readings per second
+        if (!sf20_send_and_expect("#LM,7\r\n", "lm:7")) {
+            if (retry_count > 5) return false; else continue;
+        }
 
-    // Changes the gain boost value:
-    //     Adjustment range = -20.00 ... 5.00
-    if (!sf20_send_and_expect("#LB,0.00\r\n", "lb:0.00")) {
-        return false;
-    }
+        // Changes the gain boost value:
+        //     Adjustment range = -20.00 ... 5.00
+        if (!sf20_send_and_expect("#LB,0.00\r\n", "lb:0.00")) {
+            if (retry_count > 5) return false; else continue;
+        }
 
-    // Switches distance streaming on or off:
-    // 0 = off
-    // 1 = on
-    if (!sf20_send_and_expect("#SU,1\r\n", "su:1")) {
-        return false;
-    }
+        // Switches distance streaming on or off:
+        // 0 = off
+        // 1 = on
+        if (!sf20_send_and_expect("#SU,1\r\n", "su:1")) {
+            if (retry_count > 5) return false; else continue;
+        }
 
-    // Changes the laser state:
-    //    0 = laser is off
-    //    1 = laser is running
-    if (!sf20_send_and_expect("#LF,1\r\n", "lf:1")) {
-        return false;
+        // Changes the laser state:
+        //    0 = laser is off
+        //    1 = laser is running
+        if (!sf20_send_and_expect("#LF,1\r\n", "lf:1")) {
+            if (retry_count > 5) return false; else continue;
+        }
+        break;
     }
+    if (retry_count > 1) hal.console->printf("SF20 native driver retry %d\n", retry_count - 1);
 
     // Requests the measurement specified in the first stream.
     write_bytes((uint8_t*)init_stream_id[0], strlen(init_stream_id[0]));
