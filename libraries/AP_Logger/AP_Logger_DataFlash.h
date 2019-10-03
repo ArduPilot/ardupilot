@@ -27,7 +27,8 @@ private:
     void              WaitReady();
     bool              Busy();
     uint8_t           ReadStatusReg();
-    
+    void              Enter4ByteAddressMode(void);
+
     void              WriteEnable();
     bool              getSectorCount(void);
     void              flash_test(void);
