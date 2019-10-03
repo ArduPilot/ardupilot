@@ -11,6 +11,7 @@ import traceback
 import pexpect
 import fnmatch
 import operator
+import numpy
 
 from MAVProxy.modules.lib import mp_util
 
@@ -3713,3 +3714,98 @@ switch value'''
         ret = self.run_tests(tests)
         self.post_tests_announcements()
         return ret
+
+    def mavfft_fttd(self, sensor_type, sensor_instance, since, until):
+        '''display fft for raw ACC data in current logfile'''
+
+        '''object to store data about a single FFT plot'''
+        class MessageData(object):
+            def __init__(self, ffth):
+                self.seqno = -1
+                self.fftnum = ffth.N
+                self.sensor_type = ffth.type
+                self.instance = ffth.instance
+                self.sample_rate_hz = ffth.smp_rate
+                self.multiplier = ffth.mul
+                self.sample_us = ffth.SampleUS
+                self.data = {}
+                self.data["X"] = []
+                self.data["Y"] = []
+                self.data["Z"] = []
+                self.holes = False
+                self.freq = None
+
+            def add_fftd(self, fftd):
+                self.seqno += 1
+                self.data["X"].extend(fftd.x)
+                self.data["Y"].extend(fftd.y)
+                self.data["Z"].extend(fftd.z)
+
+        mlog = self.dfreader_for_current_onboard_log()
+
+        # see https://holometer.fnal.gov/GH_FFT.pdf for a description of the techniques used here
+        messages = []
+        messagedata = None
+        while True:
+            m = mlog.recv_match()
+            if m is None:
+                break
+            msg_type = m.get_type()
+            if msg_type == "ISBH":
+                if messagedata is not None:
+                    if messagedata.sensor_type == sensor_type and messagedata.instance == sensor_instance and messagedata.sample_us > since and messagedata.sample_us < until:
+                        messages.append(messagedata)
+                messagedata = MessageData(m)
+                continue
+
+            if msg_type == "ISBD":
+                if messagedata is not None and messagedata.sensor_type == sensor_type and messagedata.instance == sensor_instance:
+                    messagedata.add_fftd(m)
+
+        fft_len = len(messages[0].data["X"])
+        sum_fft = {
+                "X": numpy.zeros(fft_len/2+1),
+                "Y": numpy.zeros(fft_len/2+1),
+                "Z": numpy.zeros(fft_len/2+1),
+            }
+        sample_rate = 0
+        counts = 0
+        window = numpy.hanning(fft_len)
+        freqmap = numpy.fft.rfftfreq(fft_len, 1.0 / messages[0].sample_rate_hz)
+
+        # calculate NEBW constant
+        S2 = numpy.inner(window, window)
+
+        for message in messages:
+            for axis in [ "X","Y","Z" ]:
+                # normalize data and convert to dps in order to produce more meaningful magnitudes
+                if message.sensor_type == 1:
+                    d = numpy.array(numpy.degrees(message.data[axis])) / float(message.multiplier)
+                else:
+                    d = numpy.array(message.data[axis]) / float(message.multiplier)
+
+                # apply window to the input
+                d *= window
+                # perform RFFT
+                d_fft = numpy.fft.rfft(d)
+                # convert to squared complex magnitude
+                d_fft = numpy.square(abs(d_fft))
+                # remove DC component
+                d_fft[0] = 0
+                d_fft[-1] = 0
+                # accumulate the sums
+                sum_fft[axis] += d_fft
+
+            sample_rate = message.sample_rate_hz
+            counts += 1
+
+        numpy.seterr(divide = 'ignore')
+        psd = {}
+        for axis in [ "X","Y","Z" ]:
+            # normalize output to averaged PSD
+            psd[axis] = 2 * (sum_fft[axis] / counts) / (sample_rate * S2)
+            psd[axis] = 10 * numpy.log10 (psd[axis])
+
+        psd["F"] = freqmap
+
+        return psd
