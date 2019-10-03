@@ -11,7 +11,7 @@ extern AP_HAL::HAL& hal;
 
 // the last page holds the log format in first 4 bytes. Please change
 // this if (and only if!) the low level format changes
-#define DF_LOGGING_FORMAT    0x19012019
+#define DF_LOGGING_FORMAT    0x1901201A
 
 AP_Logger_Block::AP_Logger_Block(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
     writebuf(0),
@@ -464,20 +464,20 @@ uint32_t AP_Logger_Block::find_last_page(void)
     uint32_t look;
     uint32_t bottom = 1;
     uint32_t top = df_NumPages;
-    uint32_t look_hash;
-    uint32_t bottom_hash;
-    uint32_t top_hash;
+    uint64_t look_hash;
+    uint64_t bottom_hash;
+    uint64_t top_hash;
 
     WITH_SEMAPHORE(sem);
 
     StartRead(bottom);
-    bottom_hash = ((int32_t)GetFileNumber()<<16) | df_FilePage;
+    bottom_hash = ((int64_t)GetFileNumber()<<32) | df_FilePage;
 
     while (top-bottom > 1) {
         look = (top+bottom)/2;
         StartRead(look);
-        look_hash = (int32_t)GetFileNumber()<<16 | df_FilePage;
-        if (look_hash >= 0xFFFF0000) {
+        look_hash = (int64_t)GetFileNumber()<<32 | df_FilePage;
+        if (look_hash >= 0xFFFF00000000) {
             look_hash = 0;
         }
 
@@ -492,8 +492,8 @@ uint32_t AP_Logger_Block::find_last_page(void)
     }
 
     StartRead(top);
-    top_hash = ((int32_t)GetFileNumber()<<16) | df_FilePage;
-    if (top_hash >= 0xFFFF0000) {
+    top_hash = ((int64_t)GetFileNumber()<<32) | df_FilePage;
+    if (top_hash >= 0xFFFF00000000) {
         top_hash = 0;
     }
     if (top_hash > bottom_hash) {
@@ -509,8 +509,8 @@ uint32_t AP_Logger_Block::find_last_page_of_log(uint16_t log_number)
     uint32_t look;
     uint32_t bottom;
     uint32_t top;
-    uint32_t look_hash;
-    uint32_t check_hash;
+    uint64_t look_hash;
+    uint64_t check_hash;
 
     WITH_SEMAPHORE(sem);
 
@@ -529,13 +529,13 @@ uint32_t AP_Logger_Block::find_last_page_of_log(uint16_t log_number)
         top = find_last_page();
     }
 
-    check_hash = (int32_t)log_number<<16 | 0xFFFF;
+    check_hash = (int64_t)log_number<<32 | 0xFFFFFFFF;
 
     while (top-bottom > 1) {
         look = (top+bottom)/2;
         StartRead(look);
-        look_hash = (int32_t)GetFileNumber()<<16 | df_FilePage;
-        if (look_hash >= 0xFFFF0000) {
+        look_hash = (int64_t)GetFileNumber()<<32 | df_FilePage;
+        if (look_hash >= 0xFFFF00000000) {
             look_hash = 0;
         }
 

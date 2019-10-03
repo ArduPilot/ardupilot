@@ -46,9 +46,9 @@ private:
     virtual void StartErase() = 0;
     virtual bool InErase() = 0;
 
-    struct PageHeader {
+    struct PACKED PageHeader {
+        uint32_t FilePage;
         uint16_t FileNumber;
-        uint16_t FilePage;
     };
 
     HAL_Semaphore_Recursive sem;

@@ -68,6 +68,10 @@ void AP_Logger_DataFlash::Init()
         return;
     }
 
+    if (use_32bit_address) {
+        Enter4ByteAddressMode();
+    }
+
     flash_died = false;
 
     AP_Logger_Block::Init();
@@ -174,6 +178,13 @@ bool AP_Logger_DataFlash::Busy()
     return (status & JEDEC_STATUS_BUSY) != 0;
 }
 
+void AP_Logger_DataFlash::Enter4ByteAddressMode(void)
+{
+    WITH_SEMAPHORE(dev_sem);
+
+    const uint8_t cmd = 0xB7;
+    dev->transfer(&cmd, 1, NULL, 0);
+}
 
 /*
   send a command with an address
