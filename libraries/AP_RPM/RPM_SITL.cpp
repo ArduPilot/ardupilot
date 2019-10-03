@@ -36,9 +36,9 @@ void AP_RPM_SITL::update(void)
         return;
     }
     if (instance == 0) {
-        state.rate_rpm = sitl->state.rpm1;
+        state.rate_rpm = sitl->state.rpm[0];
     } else {
-        state.rate_rpm = sitl->state.rpm2;
+        state.rate_rpm = sitl->state.rpm[1];
     }
     state.rate_rpm *= ap_rpm._scaling[state.instance];
     state.signal_quality = 0.5f;
