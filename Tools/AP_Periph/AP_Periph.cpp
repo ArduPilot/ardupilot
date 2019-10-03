@@ -79,6 +79,10 @@ void AP_Periph_FW::init()
     adsb_init();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+    airspeed.init();
+#endif
+    
     start_ms = AP_HAL::millis();
 }
 
