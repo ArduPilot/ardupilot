@@ -32,6 +32,7 @@ def build(bld):
         'Filter',
         'AP_InternalError',
         'GCS_MAVLink',
+        'AP_Airspeed',
         ],
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'

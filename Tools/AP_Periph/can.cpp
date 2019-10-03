@@ -32,6 +32,7 @@
 #include <uavcan/equipment/gnss/Auxiliary.h>
 #include <uavcan/equipment/air_data/StaticPressure.h>
 #include <uavcan/equipment/air_data/StaticTemperature.h>
+#include <uavcan/equipment/air_data/RawAirData.h>
 #include <uavcan/equipment/indication/BeepCommand.h>
 #include <uavcan/equipment/indication/LightsCommand.h>
 #include <ardupilot/indication/SafetyState.h>
@@ -261,6 +262,9 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
 #endif
 #ifdef HAL_PERIPH_ENABLE_BARO
         AP_Param::setup_object_defaults(&periph.baro, periph.baro.var_info);
+#endif
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+        AP_Param::setup_object_defaults(&periph.airspeed, periph.airspeed.var_info);
 #endif
     }
 
@@ -894,6 +898,7 @@ void AP_Periph_FW::can_update()
     can_mag_update();
     can_gps_update();
     can_baro_update();
+    can_airspeed_update();
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     can_buzzer_update();
 #endif
@@ -1123,6 +1128,64 @@ void AP_Periph_FW::can_baro_update(void)
                         total_size);
     }
 #endif // HAL_PERIPH_ENABLE_BARO
+}
+
+
+/*
+  update CAN airspeed
+ */
+void AP_Periph_FW::can_airspeed_update(void)
+{
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+    if (!airspeed.healthy()) {
+        static uint32_t last_probe_ms;
+        uint32_t now = AP_HAL::millis();
+        if (now - last_probe_ms >= 1000) {
+            last_probe_ms = now;
+            airspeed.init();
+        }
+    }
+    airspeed.update(false);
+    if (last_airspeed_update_ms == airspeed.last_update_ms()) {
+        return;
+    }
+
+    last_airspeed_update_ms = airspeed.last_update_ms();
+    if (!airspeed.healthy()) {
+        // don't send any data
+        return;
+    }
+    const float press = airspeed.get_differential_pressure();
+    float temp;
+    if (!airspeed.get_temperature(temp)) {
+        temp = nanf("");
+    } else {
+        temp += C_TO_KELVIN;
+    }
+
+    uavcan_equipment_air_data_RawAirData pkt {};
+    pkt.differential_pressure = press;
+    pkt.static_air_temperature = temp;
+    fix_float16(pkt.differential_pressure);
+    fix_float16(pkt.static_air_temperature);
+
+    // unfilled elements are NaN
+    pkt.static_pressure = nanf("");
+    pkt.static_pressure_sensor_temperature = nanf("");
+    pkt.differential_pressure_sensor_temperature = nanf("");
+    pkt.pitot_temperature = nanf("");
+
+    uint8_t buffer[UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_MAX_SIZE];
+    uint16_t total_size = uavcan_equipment_air_data_RawAirData_encode(&pkt, buffer);
+
+    canardBroadcast(&canard,
+                    UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_SIGNATURE,
+                    UAVCAN_EQUIPMENT_AIR_DATA_RAWAIRDATA_ID,
+                    &transfer_id,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    total_size);
+#endif // HAL_PERIPH_ENABLE_AIRSPEED
 }
 
 #ifdef HAL_PERIPH_ENABLE_ADSB

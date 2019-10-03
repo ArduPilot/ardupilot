@@ -3,6 +3,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED)
 #define AP_PERIPH_HAVE_LED
@@ -24,6 +25,7 @@ public:
     void can_mag_update();
     void can_gps_update();
     void can_baro_update();
+    void can_airspeed_update();
 
     void load_parameters();
 
@@ -50,6 +52,10 @@ public:
         mavlink_status_t status;
     } adsb;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+    AP_Airspeed airspeed;
+#endif
     
     // setup the var_info table
     AP_Param param_loader{var_info};
@@ -59,6 +65,7 @@ public:
     uint32_t last_mag_update_ms;
     uint32_t last_gps_update_ms;
     uint32_t last_baro_update_ms;
+    uint32_t last_airspeed_update_ms;
 };
 
 extern AP_Periph_FW periph;
