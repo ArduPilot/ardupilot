@@ -58,6 +58,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(led_brightness, "LED_BRIGHTNESS", AP_PERIPH_LED_BRIGHT_DEFAULT),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+    // Airspeed driver
+    // @Group: ARSP
+    // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
+    GOBJECT(airspeed, "ARSP", AP_Airspeed),
+#endif
+    
     AP_VAREND
 };
 
