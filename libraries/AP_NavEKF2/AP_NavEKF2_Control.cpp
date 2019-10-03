@@ -250,6 +250,9 @@ void NavEKF2_core::setAidingMode()
             tasTimeout = true;
             gpsNotAvailable = true;
         } else if (posAidLossCritical) {
+            if ((frontend->_flowUse & FLOW_USE_NAV) && optFlowDataPresent()) {
+                PV_AidingMode = AID_NONE;
+            }
             // if the loss of position is critical, declare all sources of position aiding as being timed out
             posTimeout = true;
             velTimeout = true;
