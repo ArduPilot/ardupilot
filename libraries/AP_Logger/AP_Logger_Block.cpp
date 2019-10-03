@@ -344,7 +344,7 @@ uint16_t AP_Logger_Block::get_num_logs(void)
     last = GetFileNumber();
     StartRead(lastpage + 2);
     if (GetFileNumber() == 0xFFFF) {
-        StartRead(((lastpage >> 8) + 1) << 8);    // next sector
+        StartRead(((((lastpage-1)>>8)+1)<<8)+1);    // next sector
     }
     first = GetFileNumber();
     if (first > last) {
