@@ -8,7 +8,13 @@
 
 class AP_Airspeed_Backend;
 
+#ifndef AIRSPEED_MAX_SENSORS
 #define AIRSPEED_MAX_SENSORS 2
+#endif
+
+#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
+#define AP_AIRSPEED_AUTOCAL_ENABLE !defined(HAL_BUILD_AP_PERIPH)
+#endif
 
 class Airspeed_Calibration {
 public:
@@ -106,7 +112,11 @@ public:
 
     // return health status of sensor
     bool healthy(uint8_t i) const {
-        return state[i].healthy && (fabsf(param[i].offset) > 0 || state[i].use_zero_offset) && enabled(i);
+        bool ok = state[i].healthy && enabled(i);
+#ifndef HAL_BUILD_AP_PERIPH
+        ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset);
+#endif
+        return ok;
     }
     bool healthy(void) const { return healthy(primary); }
 
@@ -180,7 +190,7 @@ private:
         float   hil_pressure;
         uint32_t last_update_ms;
         bool use_zero_offset;
-        
+
         // state of runtime calibration
         struct {
             uint32_t start_ms;
@@ -189,9 +199,11 @@ private:
             uint16_t read_count;
         } cal;
 
+#if AP_AIRSPEED_AUTOCAL_ENABLE
         Airspeed_Calibration calibration;
         float last_saved_ratio;
         uint8_t counter;
+#endif // AP_AIRSPEED_AUTOCAL_ENABLE
 
         struct {
             uint32_t last_check_ms;
