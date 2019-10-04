@@ -41,6 +41,7 @@
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
+  #include <AP_UAVCAN/AP_UAVCAN.h>
 #endif
 
 #include <AP_Logger/AP_Logger.h>
@@ -732,7 +733,7 @@ bool AP_Arming::can_checks(bool report)
 {
 #if HAL_WITH_UAVCAN
     if (check_enabled(ARMING_CHECK_SYSTEM)) {
-        const char *fail_msg = nullptr;
+        char fail_msg[50] = {};
         uint8_t num_drivers = AP::can().get_num_drivers();
 
         for (uint8_t i = 0; i < num_drivers; i++) {
@@ -741,21 +742,22 @@ bool AP_Arming::can_checks(bool report)
 // To be replaced with macro saying if KDECAN library is included
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
                     AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
-                    if (ap_kdecan != nullptr && !ap_kdecan->pre_arm_check(fail_msg)) {
-                        if (fail_msg == nullptr) {
-                            check_failed(ARMING_CHECK_SYSTEM, report, "KDECAN failed");
-                        } else {
-                            check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
-                        }
-
+                    snprintf(fail_msg, ARRAY_SIZE(fail_msg), "KDECAN failed");
+                    if (ap_kdecan != nullptr && !ap_kdecan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                        check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
                         return false;
                     }
                     break;
-#else
-                    UNUSED_RESULT(fail_msg); // prevent unused variable error
 #endif
                 }
                 case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
+                {
+                    snprintf(fail_msg, ARRAY_SIZE(fail_msg), "UAVCAN failed");
+                    if (!AP::uavcan_server().prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                        check_failed(ARMING_CHECK_SYSTEM, report, "%s", fail_msg);
+                        return false;
+                    }
+                }
                 case AP_BoardConfig_CAN::Protocol_Type_None:
                 default:
                     break;
