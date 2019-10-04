@@ -49,7 +49,7 @@ public:
     void update();
     
     // check that arming can happen
-    bool pre_arm_check(const char* &reason);
+    bool pre_arm_check(char* reason, uint8_t reason_len);
 
     // send MAVLink telemetry packets
     void send_mavlink(uint8_t chan);
