@@ -22,11 +22,20 @@ bool AP_Mission::verify_command_wait_location(const AP_Mission::Mission_Command&
         min_dist = dist;
     }
     const uint32_t now = AP_HAL::millis();
-    if (now - last_print > 100) { // 10Hz
-        gcs().send_text(MAV_SEVERITY_INFO, "distance: %f (min=%f) %s", dist, min_dist, (dist <= cmd.p1) ? "Y" : "N");
+    if (now - last_print > 200) { // 5Hz
+        gcs().send_text(MAV_SEVERITY_INFO, "distance: %.02f (min=%.02f)", dist, min_dist);
     }
 
-    return dist <= cmd.p1;
+    if (dist <= cmd.p1) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Drop");
+        return true;
+    }
+    if (dist > min_dist+1) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Drop (missed!)");
+        return true;
+    }
+
+    return false;
 }
 
 bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd)
