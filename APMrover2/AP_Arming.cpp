@@ -47,13 +47,13 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         if (reason == nullptr) {
             reason = "AHRS not healthy";
         }
-        check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
+        check_failed(display_failure, "%s", reason);
         return false;
     }
 
     // check for ekf failsafe
     if (rover.failsafe.ekf) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "EKF failsafe");
+        check_failed(display_failure, "EKF failsafe");
         return false;
     }
 
@@ -63,7 +63,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         if (reason == nullptr) {
             reason = "Need Position Estimate";
         }
-        check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
+        check_failed(display_failure, "%s", reason);
         return false;
     }
 
@@ -74,11 +74,11 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 bool AP_Arming_Rover::pre_arm_checks(bool report)
 {
     //are arming checks disabled?
-    if (checks_to_perform == ARMING_CHECK_NONE) {
+    if (checks_to_perform == 0) {
         return true;
     }
     if (SRV_Channels::get_emergency_stop()) {
-        check_failed(ARMING_CHECK_NONE, report, "Motors Emergency Stopped");
+        check_failed(report, "Motors Emergency Stopped");
         return false;
     }
 
@@ -92,7 +92,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
 {
     //are arming checks disabled?
-    if (checks_to_perform == ARMING_CHECK_NONE) {
+    if (checks_to_perform == 0) {
         return true;
     }
     return AP_Arming::arm_checks(method);
@@ -171,9 +171,9 @@ bool AP_Arming_Rover::oa_check(bool report)
 
     // display failure
     if (strlen(failure_msg) == 0) {
-        check_failed(ARMING_CHECK_NONE, report, "Check Object Avoidance");
+        check_failed(report, "Check Object Avoidance");
     } else {
-        check_failed(ARMING_CHECK_NONE, report, "%s", failure_msg);
+        check_failed(report, "%s", failure_msg);
     }
     return false;
 }
