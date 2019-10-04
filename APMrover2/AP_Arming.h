@@ -31,7 +31,4 @@ protected:
     bool oa_check(bool report);
     bool parameter_checks(bool report);
 
-private:
-
-    void change_arm_state(void);
 };
