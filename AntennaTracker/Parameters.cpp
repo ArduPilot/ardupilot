@@ -163,7 +163,7 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Param: YAW_RANGE
     // @DisplayName: Yaw Angle Range
-    // @Description: Yaw axis total range of motion in degrees
+    // @Description: Yaw axis total range of motion in degrees, set to zero to disable limit
     // @Units: deg
     // @Increment: 0.1
     // @Range: 0 360

@@ -32,7 +32,7 @@
 // yaw and pitch axis angle range defaults
 //
 #ifndef YAW_RANGE_DEFAULT
- # define YAW_RANGE_DEFAULT 360
+ # define YAW_RANGE_DEFAULT 355
 #endif
 #ifndef PITCH_MIN_DEFAULT
  # define PITCH_MIN_DEFAULT -90
