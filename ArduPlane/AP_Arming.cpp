@@ -165,11 +165,10 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 }
 
 /*
-  update HAL soft arm state and log as needed
+  update HAL soft arm state
 */
 void AP_Arming_Plane::change_arm_state(void)
 {
-    Log_Write_Arm_Disarm();
     update_soft_armed();
     plane.quadplane.set_armed(hal.util->get_soft_armed());
 }
