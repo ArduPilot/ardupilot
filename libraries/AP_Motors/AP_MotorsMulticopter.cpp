@@ -139,7 +139,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Enable/Disable automatic learning of hover throttle
     // @Values{Copter}: 0:Disabled, 1:Learn, 2:LearnAndSave
     // @Values{Sub}: 0:Disabled
-    // @Values{Plane}: 0:Disabled
+    // @Values{Plane}: 0:Disabled, 1:Learn, 2:LearnAndSave
     // @User: Advanced
     AP_GROUPINFO("HOVER_LEARN", 22, AP_MotorsMulticopter, _throttle_hover_learn, HOVER_LEARN_AND_SAVE),
 
