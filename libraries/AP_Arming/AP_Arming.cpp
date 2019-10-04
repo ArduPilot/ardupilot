@@ -155,8 +155,7 @@ bool AP_Arming::check_enabled(const enum AP_Arming::ArmingChecks check) const
 
 MAV_SEVERITY AP_Arming::check_severity(const enum AP_Arming::ArmingChecks check) const
 {
-    // A check value of ARMING_CHECK_NONE means that the check is always run
-    if (check_enabled(check) || check == ARMING_CHECK_NONE) {
+    if (check_enabled(check)) {
         return MAV_SEVERITY_CRITICAL;
     }
     return MAV_SEVERITY_DEBUG; // technically should be NOTICE, but will annoy users at that level
@@ -173,6 +172,19 @@ void AP_Arming::check_failed(const enum AP_Arming::ArmingChecks check, bool repo
     va_list arg_list;
     va_start(arg_list, fmt);
     gcs().send_textv(severity, taggedfmt, arg_list);
+    va_end(arg_list);
+}
+
+void AP_Arming::check_failed(bool report, const char *fmt, ...) const
+{
+    if (!report) {
+        return;
+    }
+    char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "PreArm: %s", fmt);
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);
     va_end(arg_list);
 }
 
@@ -356,13 +368,13 @@ bool AP_Arming::compass_checks(bool report)
 
     // check if compass is calibrating
     if (_compass.is_calibrating()) {
-        check_failed(ARMING_CHECK_NONE, report, "Compass calibration running");
+        check_failed(report, "Compass calibration running");
         return false;
     }
 
     // check if compass has calibrated and requires reboot
     if (_compass.compass_cal_requires_reboot()) {
-        check_failed(ARMING_CHECK_NONE, report, "Compass calibrated requires reboot");
+        check_failed(report, "Compass calibrated requires reboot");
         return false;
     }
 
@@ -628,18 +640,18 @@ bool AP_Arming::servo_checks(bool report) const
 
         const uint16_t trim = c->get_trim();
         if (c->get_output_min() > trim) {
-            check_failed(ARMING_CHECK_NONE, report, "SERVO%d minimum is greater than trim", i + 1);
+            check_failed(report, "SERVO%d minimum is greater than trim", i + 1);
             check_passed = false;
         }
         if (c->get_output_max() < trim) {
-            check_failed(ARMING_CHECK_NONE, report, "SERVO%d maximum is less than trim", i + 1);
+            check_failed(report, "SERVO%d maximum is less than trim", i + 1);
             check_passed = false;
         }
     }
 
 #if HAL_WITH_IO_MCU
     if (!iomcu.healthy()) {
-        check_failed(ARMING_CHECK_NONE, report, "IOMCU is unhealthy");
+        check_failed(report, "IOMCU is unhealthy");
         check_passed = false;
     }
 #endif
@@ -687,7 +699,7 @@ bool AP_Arming::system_checks(bool report)
         }
     }
     if (AP::internalerror().errors() != 0) {
-        check_failed(ARMING_CHECK_NONE, report, "Internal errors (0x%x)", (unsigned int)AP::internalerror().errors());
+        check_failed(report, "Internal errors (0x%x)", (unsigned int)AP::internalerror().errors());
         return false;
     }
 
@@ -709,7 +721,7 @@ bool AP_Arming::proximity_checks(bool report) const
 
     // return false if proximity sensor unhealthy
     if (proximity->get_status() < AP_Proximity::Proximity_Good) {
-        check_failed(ARMING_CHECK_NONE, report, "check proximity sensor");
+        check_failed(report, "check proximity sensor");
         return false;
     }
 
@@ -769,9 +781,9 @@ bool AP_Arming::fence_checks(bool display_failure)
     }
 
     if (fail_msg == nullptr) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Check fence");
+        check_failed(display_failure, "Check fence");
     } else {
-        check_failed(ARMING_CHECK_NONE, display_failure, "%s", fail_msg);
+        check_failed(display_failure, "%s", fail_msg);
     }
 
     return false;
