@@ -637,16 +637,16 @@ void AP_KDECAN::update()
     }
 }
 
-bool AP_KDECAN::pre_arm_check(const char* &reason)
+bool AP_KDECAN::pre_arm_check(char* reason, uint8_t reason_len)
 {
     if (!_enum_sem.take(1)) {
         debug_can(2, "KDECAN: failed to get enumeration semaphore on read\n\r");
-        reason = "KDECAN enumeration state unknown";
+        snprintf(reason, reason_len ,"KDECAN enumeration state unknown");
         return false;
     }
 
     if (_enumeration_state != ENUMERATION_STOPPED) {
-        reason = "KDECAN enumeration running";
+        snprintf(reason, reason_len ,"KDECAN enumeration running");
         _enum_sem.give();
         return false;
     }
@@ -664,17 +664,17 @@ bool AP_KDECAN::pre_arm_check(const char* &reason)
     uint8_t num_present_escs = __builtin_popcount(_esc_present_bitmask);
 
     if (num_present_escs < num_expected_motors) {
-        reason = "Not enough KDECAN ESCs detected";
+        snprintf(reason, reason_len ,"Not enough KDECAN ESCs detected");
         return false;
     }
 
     if (num_present_escs > num_expected_motors) {
-        reason = "Too many KDECAN ESCs detected";
+        snprintf(reason, reason_len ,"Too many KDECAN ESCs detected");
         return false;
     }
 
     if (_esc_max_node_id != num_expected_motors) {
-        reason = "Wrong KDECAN node IDs, run enumeration";
+        snprintf(reason, reason_len ,"Wrong KDECAN node IDs, run enumeration");
         return false;
     }
 
