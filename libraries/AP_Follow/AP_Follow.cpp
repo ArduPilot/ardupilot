@@ -134,6 +134,15 @@ AP_Follow::AP_Follow() :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+// restore offsets to zero if necessary, should be called when vehicle exits follow mode
+void AP_Follow::clear_offsets_if_required()
+{
+    if (_offsets_were_zero) {
+        _offset = Vector3f();
+    }
+    _offsets_were_zero = false;
+}
+
 // get target's estimated location
 bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
 {
@@ -346,6 +355,7 @@ void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
     if (!_offset.get().is_zero()) {
         return;
     }
+    _offsets_were_zero = true;
 
     float target_heading_deg;
     if ((_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) && get_target_heading_deg(target_heading_deg)) {
