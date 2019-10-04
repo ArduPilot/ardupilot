@@ -352,9 +352,10 @@ void AP_SmartRTL::run_background_cleanup()
     routine_cleanup(path_points_count, path_points_completed_limit);
 
     // warn if buffer is about to be filled
-    if ((path_points_count >0) && (path_points_count >= _path_points_max - 9) && (AP_HAL::millis() - _last_low_space_notify_ms > 10000)) {
+    uint32_t now_ms = AP_HAL::millis();
+    if ((path_points_count >0) && (path_points_count >= _path_points_max - 9) && (now_ms - _last_low_space_notify_ms > 10000)) {
         gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL Low on space!");
-       _last_low_space_notify_ms = now;
+       _last_low_space_notify_ms = now_ms;
     }
 
 }
