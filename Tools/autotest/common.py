@@ -1463,6 +1463,10 @@ class AutoTest(ABC):
         loc1_lon = AutoTest.get_lon_attr(loc1)
         loc2_lon = AutoTest.get_lon_attr(loc2)
 
+        return AutoTest.get_distance_accurate(
+            mavutil.location(loc1_lat*1e-7, loc1_lon*1e-7),
+            mavutil.location(loc2_lat*1e-7, loc2_lon*1e-7))
+
         dlat = loc2_lat - loc1_lat
         dlong = loc2_lon - loc1_lon
 
