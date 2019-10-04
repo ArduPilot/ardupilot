@@ -402,9 +402,6 @@ private:
     Mode::Number control_mode;
     mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
 
-    Mode::Number prev_control_mode;
-    mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
-
     RCMapper rcmap;
 
     // intertial nav alt when we armed
