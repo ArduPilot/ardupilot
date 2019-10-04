@@ -5,6 +5,29 @@
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_AHRS/AP_AHRS.h>
+
+#include <stdio.h>
+
+bool AP_Mission::verify_command_wait_location(const AP_Mission::Mission_Command& cmd)
+{
+    Location loc;
+    if (!AP::ahrs().get_position(loc)) {
+        return false;
+    }
+    const float dist = loc.get_distance(cmd.content.location);
+    static uint32_t last_print;
+    static float min_dist = 9999999999;
+    if (dist < min_dist) {
+        min_dist = dist;
+    }
+    const uint32_t now = AP_HAL::millis();
+    if (now - last_print > 100) { // 10Hz
+        gcs().send_text(MAV_SEVERITY_INFO, "distance: %f (min=%f) %s", dist, min_dist, (dist <= cmd.p1) ? "Y" : "N");
+    }
+
+    return dist <= cmd.p1;
+}
 
 bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd)
 {

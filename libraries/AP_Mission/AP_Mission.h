@@ -586,6 +586,9 @@ private:
     bool start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd);
     bool start_command_camera(const AP_Mission::Mission_Command& cmd);
     bool start_command_parachute(const AP_Mission::Mission_Command& cmd);
+
+    bool verify_command_wait_location(const AP_Mission::Mission_Command& cmd);
+
 };
 
 namespace AP {

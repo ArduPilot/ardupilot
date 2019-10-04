@@ -264,6 +264,8 @@ void AP_Mission::update()
 bool AP_Mission::verify_command(const Mission_Command& cmd)
 {
     switch (cmd.id) {
+    case MAV_CMD_DO_WAIT_LOCATION:
+        return verify_command_wait_location(cmd);
         // do-commands always return true for verify:
     case MAV_CMD_DO_GRIPPER:
     case MAV_CMD_DO_SET_SERVO:
@@ -286,6 +288,8 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     switch (cmd.id) {
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
+    case MAV_CMD_DO_WAIT_LOCATION:
+        return true;
     case MAV_CMD_DO_SET_SERVO:
     case MAV_CMD_DO_SET_RELAY:
     case MAV_CMD_DO_REPEAT_SERVO:
@@ -577,6 +581,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_GUIDED_ENABLE:
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_LAND_START:
+    case MAV_CMD_DO_WAIT_LOCATION:
     case MAV_CMD_DO_GO_AROUND:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -856,6 +861,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
+        break;
+
+    case MAV_CMD_DO_WAIT_LOCATION:
+        cmd.p1 = packet.param1;                         // acceptance radius in metres
         break;
 
     case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
@@ -1288,6 +1297,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
+        break;
+
+    case MAV_CMD_DO_WAIT_LOCATION:
+        packet.param1 = cmd.p1;                         // acceptance radius in metres
         break;
 
     case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
@@ -1929,6 +1942,8 @@ const char *AP_Mission::Mission_Command::type() const {
         return "CondYaw";
     case MAV_CMD_DO_LAND_START:
         return "LandStart";
+    case MAV_CMD_DO_WAIT_LOCATION:
+        return "DropAt";
     case MAV_CMD_NAV_DELAY:
         return "Delay";
     case MAV_CMD_DO_GRIPPER:
