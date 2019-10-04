@@ -33,6 +33,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_RTC/AP_RTC.h>
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -688,6 +689,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(aspd1, "ASPD1", 42, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Param: CLK_EN
+    // @DisplayName: CLK_EN
+    // @Description: Displays a clock panel based on AP_RTC local time
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CLK_X
+    // @DisplayName: CLK_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: CLK_Y
+    // @DisplayName: CLK_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
+    
     AP_GROUPEND
 };
 
@@ -782,6 +799,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_FLY       0x9C
 #define SYM_EFF       0xF2
 #define SYM_AH        0xF3
+#define SYM_CLK       0xBC
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -1523,6 +1541,18 @@ void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
     }
 }
 
+void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
+{
+    AP_RTC &rtc = AP::rtc();
+    uint8_t hour, min, sec;
+    uint16_t ms;
+    if (!rtc.get_local_time(hour, min, sec, ms)) {
+    backend->write(x, y, false, "%c--:--%", SYM_CLK);
+    } else {
+    backend->write(x, y, false, "%c%02u:%02u", SYM_CLK, hour, min);
+    }
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -1564,6 +1594,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(atemp);
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
+    DRAW_SETTING(clk);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     DRAW_SETTING(blh_temp);
