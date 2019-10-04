@@ -14,6 +14,12 @@ bool ModeFollow::_enter()
     return true;
 }
 
+// exit handling
+void ModeFollow::_exit()
+{
+    g2.follow.clear_offsets_if_required();
+}
+
 void ModeFollow::update()
 {
     // stop vehicle if no speed estimate
