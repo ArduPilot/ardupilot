@@ -588,6 +588,15 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
+    // enum for ESC CALIBRATION
+    enum ESCCalibrationModes : uint8_t {
+        ESCCAL_NONE = 0,
+        ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH = 1,
+        ESCCAL_PASSTHROUGH_ALWAYS = 2,
+        ESCCAL_AUTO = 3,
+        ESCCAL_DISABLED = 9,
+    };
+
     enum Failsafe_Action {
         Failsafe_Action_None           = 0,
         Failsafe_Action_Land           = 1,
