@@ -126,6 +126,7 @@ enum class LogErrorSubsystem : uint8_t {
     FAILSAFE_SENSORS = 26,
     FAILSAFE_LEAK = 27,
     PILOT_INPUT = 28,
+    FAILSAFE_VIBE = 29,
 };
 
 // bizarrely this enumeration has lots of duplicate values, offering
