@@ -30,10 +30,10 @@ bool AP_Mission::verify_command_wait_location(const AP_Mission::Mission_Command&
         gcs().send_text(MAV_SEVERITY_INFO, "Drop");
         return true;
     }
-    if (dist > min_dist+1) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Drop (missed!)");
-        return true;
-    }
+    // if (dist > min_dist+1) {
+    //     gcs().send_text(MAV_SEVERITY_INFO, "Drop (missed!)");
+    //     return true;
+    // }
 
     return false;
 }
