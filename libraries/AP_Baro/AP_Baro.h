@@ -215,6 +215,7 @@ private:
         PROBE_KELLER=(1<<8),
         PROBE_MS5837=(1<<9),
         PROBE_BMP388=(1<<10),
+        PROBE_SPL06=(1<<11),
     };
     
     struct sensor {
