@@ -660,6 +660,8 @@ bool NavEKF2::InitialiseFilter(void)
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
             return false;
         }
+
+        //Call Constructors on all cores
         for (uint8_t i = 0; i < num_cores; i++) {
             //Call Constructors
             new (&core[i]) NavEKF2_core();
