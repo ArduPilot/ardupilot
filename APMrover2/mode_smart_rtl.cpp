@@ -28,6 +28,7 @@ bool ModeSmartRTL::_enter()
 
     // init state
     smart_rtl_state = SmartRTL_WaitForPathCleanup;
+    _loitering = false;
 
     return true;
 }
@@ -80,14 +81,15 @@ void ModeSmartRTL::update()
             if (!rover.is_boat()) {
                stop_vehicle();
             } else {
-               // if not loitering yet, start loitering
-               if (!_srtl_loiter) {
-                    if (!start_loiter()) {
-                        stop_vehicle();
-                    }
+                // if not loitering yet, start loitering
+                if (!_loitering) {
+                    _loitering = rover.mode_loiter.enter();
+                }
+                if (_loitering) {
+                    rover.mode_loiter.update();
+                } else {
+                    stop_vehicle();
                }
-            // otherwise update the loiter
-            rover.mode_loiter.update();
             }
             break;
     }
@@ -118,14 +120,4 @@ void ModeSmartRTL::save_position()
 {
     const bool save_pos = (rover.control_mode != &rover.mode_smartrtl);
     g2.smart_rtl.update(true, save_pos);
-}
-
-bool ModeSmartRTL::start_loiter()
-{
-    if (rover.mode_loiter.enter()) {
-        _srtl_loiter = true;
-        return true;
-    }
-    _srtl_loiter= false;
-    return false;
 }

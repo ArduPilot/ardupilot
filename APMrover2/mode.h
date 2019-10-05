@@ -518,16 +518,12 @@ public:
     float get_distance_to_destination() const override { return _distance_to_destination; }
     bool reached_destination() const override;
 
-    // vehicle start loiter
-    bool start_loiter();
-
 protected:
 
     bool _enter() override;
 
     bool sent_notification; // used to send one time notification to ground station
-
-    bool _rtl_loiter;       //if loitering at end of RTL
+    bool _loitering;        // true if loitering at end of RTL
 
 };
 
@@ -554,9 +550,6 @@ public:
     // save current position for use by the smart_rtl flight mode
     void save_position();
 
-    // vehicle start loiter
-    bool start_loiter();
-
 protected:
 
     // Safe RTL states
@@ -569,7 +562,7 @@ protected:
 
     bool _enter() override;
     bool _load_point;
-    bool _srtl_loiter;
+    bool _loitering;        // true if loitering at end of SRTL
 };
 
    
