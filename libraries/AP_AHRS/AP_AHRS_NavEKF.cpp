@@ -1643,6 +1643,38 @@ bool AP_AHRS_NavEKF::get_location(struct Location &loc) const
     }
 }
 
+// return the innovations for the primariy EKF
+// boolean false is returned if innovations are not available
+bool AP_AHRS_NavEKF::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+{
+    switch (ekf_type()) {
+    case EKF_TYPE_NONE:
+        // We are not using an EKF so no data
+        return false;
+
+    case EKF_TYPE2:
+    default:
+        // use EKF to get innovations
+        EKF2.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
+        return true;
+
+    case EKF_TYPE3:
+        // use EKF to get innovations
+        EKF3.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
+        return true;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL:
+        velInnov.zero();
+        posInnov.zero();
+        magInnov.zero();
+        tasInnov = 0.0f;
+        yawInnov = 0.0f;
+        return true;
+#endif
+    }
+}
+
 // get_variances - provides the innovations normalised using the innovation variance where a value of 0
 // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
 // inconsistency that will be accpeted by the filter
