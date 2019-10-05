@@ -282,7 +282,7 @@ void Plane::one_second_loop()
 
     // update home position if NOT armed and gps position has
     // changed. Update every 5s at most
-    if (!arming.is_armed() &&
+    if (!hal.util->get_soft_armed() &&
         gps.last_message_time_ms() - last_home_update_ms > 5000 &&
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             last_home_update_ms = gps.last_message_time_ms();
