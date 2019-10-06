@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
     AP_SUBGROUPINFO(_drivers[2], "D3_", 6, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Driver),
 #endif
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
     // @Group: SLCAN_
     // @Path: ../AP_BoardConfig/canbus_slcan.cpp
     AP_SUBGROUPINFO(_slcan, "SLCAN_", 7, AP_BoardConfig_CAN, AP_BoardConfig_CAN::SLCAN_Interface),
@@ -102,7 +102,7 @@ void AP_BoardConfig_CAN::init()
 {
     // Create all drivers that we need
     bool initret = true;
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
     reset_slcan_serial();
 #endif
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
@@ -122,12 +122,12 @@ void AP_BoardConfig_CAN::init()
             // For this now existing driver (manager), start the physical interface
             if (hal.can_mgr[drv_num - 1] != nullptr) {
                 initret = initret && hal.can_mgr[drv_num - 1]->begin(_interfaces[i]._bitrate, i);
-                #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
                     if (_slcan._can_port == (i+1) && hal.can_mgr[drv_num - 1] != nullptr ) {
                         ChibiOS_CAN::CanDriver* drv = (ChibiOS_CAN::CanDriver*)hal.can_mgr[drv_num - 1]->get_driver();
                         ChibiOS_CAN::CanIface::slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
                     }
-                #endif
+#endif
             } else {
                 printf("Failed to initialize can interface %d\n\r", i + 1);
             }
@@ -177,7 +177,7 @@ void AP_BoardConfig_CAN::init()
             } else {
                 continue;
             }
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
             if (_slcan._can_port == 0) {
                 _drivers[i]._driver->init(i, true);
             } else {
@@ -187,7 +187,8 @@ void AP_BoardConfig_CAN::init()
         }
     }
 }
-#if !HAL_MINIMIZE_FEATURES
+
+#if AP_UAVCAN_SLCAN_ENABLED
 AP_HAL::UARTDriver *AP_BoardConfig_CAN::get_slcan_serial()
 {
     if (_slcan._ser_port != -1) {
