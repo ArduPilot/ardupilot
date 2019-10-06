@@ -19,7 +19,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
 #include "CAN.h"
 #include <AP_UAVCAN/AP_UAVCAN_SLCAN.h>
 
@@ -65,4 +65,5 @@ public:
 
 };
 
-#endif
+#endif // AP_UAVCAN_SLCAN_ENABLED
+
