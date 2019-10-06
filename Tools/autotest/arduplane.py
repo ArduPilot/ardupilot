@@ -839,9 +839,11 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Sensor healthy when it shouldn't be")
         self.progress("Making RC work again")
         self.set_parameter("SIM_RC_FAIL", 0)
+        # have to allow time for RC to be fetched from SITL
         self.progress("Giving receiver time to recover")
-        for i in range(1, 10):
-            m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.delay_sim_time(0.5)
+        self.drain_mav_unparsed()
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
             raise NotAchievedException("Receiver not enabled")
