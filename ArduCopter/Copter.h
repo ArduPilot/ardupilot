@@ -72,7 +72,6 @@
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
-#include <AP_Button/AP_Button.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
@@ -155,6 +154,9 @@
 #endif
 #if CAMERA == ENABLED
  # include <AP_Camera/AP_Camera.h>
+#endif
+#if BUTTON_ENABLED == ENABLED
+ # include <AP_Button/AP_Button.h>
 #endif
 
 #if OSD_ENABLED == ENABLED
@@ -551,6 +553,11 @@ private:
     // Parachute release
 #if PARACHUTE == ENABLED
     AP_Parachute parachute{relay};
+#endif
+
+    // Button 
+#if BUTTON_ENABLED == ENABLED
+    AP_Button button;
 #endif
 
     // Landing Gear Controller
