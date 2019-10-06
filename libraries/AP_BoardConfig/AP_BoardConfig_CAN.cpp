@@ -183,6 +183,8 @@ void AP_BoardConfig_CAN::init()
             } else {
                 _drivers[i]._driver->init(i, false);
             }
+#else
+            _drivers[i]._driver->init(i, true);
 #endif
         }
     }
