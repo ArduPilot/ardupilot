@@ -2,7 +2,8 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#if HAL_WITH_UAVCAN && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+
+#if AP_UAVCAN_SLCAN_ENABLED
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include "AP_HAL/utility/RingBuffer.h"
@@ -235,4 +236,5 @@ public:
 }
 #include <AP_HAL_ChibiOS/CANSerialRouter.h>
 
-#endif //#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
+#endif // AP_UAVCAN_SLCAN_ENABLED
+

@@ -19,7 +19,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_UAVCAN_SLCAN_ENABLED
 
 #include "AP_UAVCAN_SLCAN.h"
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -568,4 +568,5 @@ void SLCAN::CANManager::reader_trampoline(void)
     }
 }
 
-#endif //HAL_WITH_UAVCAN
+#endif // AP_UAVCAN_SLCAN_ENABLED
+
