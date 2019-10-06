@@ -8,6 +8,8 @@ import os
 from apmrover2 import AutoTestRover
 from common import AutoTest
 
+from common import NotAchievedException
+
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
@@ -46,6 +48,49 @@ class AutoTestBalanceBot(AutoTestRover):
         # indefinitely at ~1m/s, hence we set to Acro
         self.set_parameter("MIS_DONE_BEHAVE", 2)
         super(AutoTestBalanceBot, self).drive_rtl_mission()
+    
+    def test_wheelencoders(self):
+        '''make sure wheel encoders are generally working'''
+        ex = None
+        try:
+            self.set_parameter("ATC_BAL_SPD_FF", 0)
+            self.set_parameter("WENC_TYPE", 10)
+            self.set_parameter("AHRS_EKF_TYPE", 10)
+            self.reboot_sitl()
+            self.set_parameter("WENC2_TYPE", 10)
+            self.set_parameter("WENC_POS_Y", 0.075)
+            self.set_parameter("WENC2_POS_Y", -0.075)
+            self.reboot_sitl()
+            self.change_mode("HOLD")
+            self.wait_ready_to_arm()
+            self.change_mode("ACRO")
+            self.arm_vehicle()
+            self.set_rc(3, 1600)
+
+            m = self.mav.recv_match(type='WHEEL_DISTANCE', blocking=True, timeout=5)
+            if m is None:
+                raise NotAchievedException("Did not get WHEEL_DISTANCE")
+
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    break
+                dist_home = self.distance_to_home(use_cached_home=True)
+                m = self.mav.messages.get("WHEEL_DISTANCE")
+                delta = abs(m.distance[0] - dist_home)
+                self.progress("dist-home=%f wheel-distance=%f delta=%f" %
+                              (dist_home, m.distance[0], delta))
+                if delta > 5:
+                    raise NotAchievedException("wheel distance incorrect")
+            self.disarm_vehicle()
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            self.disarm_vehicle()
+            ex = e
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
 
     def tests(self):
         '''return list of all tests'''
@@ -63,6 +108,10 @@ inherit Rover's tests!'''
             ("DriveMission",
              "Drive Mission %s" % "balancebot1.txt",
              lambda: self.drive_mission("balancebot1.txt")),
+
+            ("TestWheelEncoder",
+             "Test wheel encoders",
+             self.test_wheelencoders),
 
             ("GetBanner", "Get Banner", self.do_get_banner),
 
@@ -82,7 +131,7 @@ inherit Rover's tests!'''
              self.log_download(
                  self.buildlogs_path("APMrover2-log.bin"),
                  upload_logs=len(self.fail_list) > 0)),
-            ])
+        ])
         return ret
 
     def default_mode(self):
