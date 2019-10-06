@@ -87,7 +87,7 @@ struct CanRxItem {
  */
 class CanIface : public uavcan::ICanIface, uavcan::Noncopyable {
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
     friend class ::SLCANRouter;
     static SLCANRouter _slcan_router;
 #endif
@@ -285,7 +285,7 @@ public:
     {
         return uavcan::uint8_t(peak_tx_mailbox_index_ + 1);
     }
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
     static SLCANRouter &slcan_router() { return _slcan_router; }
 #endif
 };

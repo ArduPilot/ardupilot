@@ -17,7 +17,7 @@
 
 #include "CANSerialRouter.h"
 
-#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
