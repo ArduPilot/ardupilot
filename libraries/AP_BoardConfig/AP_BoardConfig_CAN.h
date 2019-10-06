@@ -87,7 +87,7 @@ public:
     }
 
     static const struct AP_Param::GroupInfo var_info[];
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
     AP_HAL::UARTDriver *get_slcan_serial();
     uint8_t get_slcan_timeout() { return _slcan._timeout; }
     void reset_slcan_serial() { _slcan._ser_port.set_and_save_ifchanged(-1); }
@@ -131,7 +131,7 @@ private:
         AP_HAL::CANProtocol* _tcan;
     };
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_UAVCAN_SLCAN_ENABLED
     class SLCAN_Interface {
         friend class AP_BoardConfig_CAN;
 
