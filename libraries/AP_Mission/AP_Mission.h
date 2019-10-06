@@ -589,6 +589,8 @@ private:
 
     bool verify_command_wait_location(const AP_Mission::Mission_Command& cmd);
 
+    float drop_min_dist = 9999999999;
+
 };
 
 namespace AP {

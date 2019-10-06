@@ -289,6 +289,7 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
     case MAV_CMD_DO_WAIT_LOCATION:
+        drop_min_dist = 9999999999;
         return true;
     case MAV_CMD_DO_SET_SERVO:
     case MAV_CMD_DO_SET_RELAY:

@@ -17,20 +17,19 @@ bool AP_Mission::verify_command_wait_location(const AP_Mission::Mission_Command&
     }
     const float dist = loc.get_distance(cmd.content.location);
     static uint32_t last_print;
-    static float min_dist = 9999999999;
-    if (dist < min_dist) {
-        min_dist = dist;
+    if (dist < drop_min_dist) {
+        drop_min_dist = dist;
     }
     const uint32_t now = AP_HAL::millis();
     if (now - last_print > 200) { // 5Hz
-        gcs().send_text(MAV_SEVERITY_INFO, "distance: %.02f (min=%.02f)", dist, min_dist);
+        gcs().send_text(MAV_SEVERITY_INFO, "distance: %.02f (min=%.02f)", dist, drop_min_dist);
     }
 
     if (dist <= cmd.p1) {
         gcs().send_text(MAV_SEVERITY_INFO, "Drop");
         return true;
     }
-    // if (dist > min_dist+1) {
+    // if (dist > drop_min_dist+1) {
     //     gcs().send_text(MAV_SEVERITY_INFO, "Drop (missed!)");
     //     return true;
     // }
