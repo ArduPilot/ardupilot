@@ -255,3 +255,14 @@ uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len)
     }
     return crc;
 }
+
+// FNV-1a implementation
+#define FNV_1_PRIME_64 1099511628211UL
+void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
+{
+    uint32_t i;
+    for (i=0; i<len; i++) {
+        *hash ^= (uint64_t)buf[i];
+        *hash *= FNV_1_PRIME_64;
+    }
+}
