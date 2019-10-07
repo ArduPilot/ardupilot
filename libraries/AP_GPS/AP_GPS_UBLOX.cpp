@@ -1036,21 +1036,27 @@ AP_GPS_UBLOX::_parse_gps(void)
         {
             const Vector3f &offset0 = gps._antenna_offset[0].get();
             const Vector3f &offset1 = gps._antenna_offset[1].get();
+            // note that we require the yaw to come from a fixed solution, not a float solution
+            // yaw from a float solution would only be acceptable with a very large separation between
+            // GPS modules
             const uint32_t valid_mask = static_cast<uint32_t>(RELPOSNED::relPosHeadingValid) |
                                         static_cast<uint32_t>(RELPOSNED::relPosValid) |
                                         static_cast<uint32_t>(RELPOSNED::gnssFixOK) |
                                         static_cast<uint32_t>(RELPOSNED::isMoving) |
-                                        (2 << static_cast<uint32_t>(RELPOSNED::carrSoln)); // require fixed ambiguity
+                                        static_cast<uint32_t>(RELPOSNED::carrSolnFixed);
             const uint32_t invalid_mask = static_cast<uint32_t>(RELPOSNED::refPosMiss) |
-                                          static_cast<uint32_t>(RELPOSNED::refObsMiss);
+                                          static_cast<uint32_t>(RELPOSNED::refObsMiss) |
+                                          static_cast<uint32_t>(RELPOSNED::carrSolnFloat);
 
+            const float offset_dist = (offset0 - offset1).length();
+            const float rel_dist = _buffer.relposned.relPosLength * 1.0e-2;
+            const float strict_length_error_allowed = 0.2; // allow for up to 20% error
+            const float min_separation = 0.05;
             if (((_buffer.relposned.flags & valid_mask) == valid_mask) &&
-                ((_buffer.relposned.flags & invalid_mask) == 0)
-#if defined(STRICT_LENGTH_CHECK)
-                // force the estimated position to be within
-                && (fabsf(offset0.distance(offset1) - (_buffer.relposned.relPosLength * 1e-2)) < STRICT_LENGTH_CHECK)
-#endif // defined(STRICT_LENGTH_CHECK)
-                ) {
+                ((_buffer.relposned.flags & invalid_mask) == 0) &&
+                rel_dist > min_separation &&
+                offset_dist > min_separation &&
+                fabsf(offset_dist - rel_dist) / MIN(offset_dist, rel_dist) < strict_length_error_allowed) {
                 float rotation_offset_rad;
                 if (offset0.is_zero()) {
                     rotation_offset_rad = Vector2f(offset1.x, offset1.y).angle();
