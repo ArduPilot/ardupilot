@@ -28,6 +28,7 @@
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Parachute.h"
 #include "SIM_Precland.h"
+#include "SIM_Buzzer.h"
 #include <Filter/Filter.h>
 
 namespace SITL {
@@ -121,6 +122,7 @@ public:
     const Location &get_home() const { return home; }
     float get_home_yaw() const { return home_yaw; }
 
+    void set_buzzer(Buzzer *_buzzer) { buzzer = _buzzer; }
     void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
     void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
@@ -272,6 +274,7 @@ private:
 
     LowPassFilterFloat servo_filter[4];
 
+    Buzzer *buzzer;
     Sprayer *sprayer;
     Gripper_Servo *gripper;
     Gripper_EPM *gripper_epm;
