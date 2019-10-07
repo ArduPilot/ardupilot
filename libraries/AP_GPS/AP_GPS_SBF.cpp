@@ -49,33 +49,25 @@ do {                                            \
                        OUTOFGEOFENCE)
 
 
-static uint8_t counter = 0;     // For Debuging
-
 
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
-                       AP_HAL::UARTDriver *_port, SBF_Type _asterx_setup) :
+                       AP_HAL::UARTDriver *_port, uint8_t _asterx_setup) :
     AP_GPS_Backend(_gps, _state, _port)
 {
-    switch(_asterx_setup) {
+    asterx_type = _asterx_setup;
+
+    switch(asterx_type) {
         case SBF_SINGLE_ANTENNA:
-            _asterx_type_is_singleantenna = true;
-            _asterx_type_is_i = false;
-            _asterx_type_is_dualantenna = false;
-            break;
-        case SBF_INS:
-            _asterx_type_is_singleantenna = false;
-            _asterx_type_is_i = true;
-            _asterx_type_is_dualantenna = false;
+            initialization_blob = &_initialisation_blob;
             break;
         case SBF_DUAL_ANTENNA:
-            _asterx_type_is_singleantenna = false;
-            _asterx_type_is_i = false;
-            _asterx_type_is_dualantenna = true;
+            initialization_blob = &_initialisation_blob_dualantenna;
+            break;
+        case SBF_INS:
+            initialization_blob = &_initialisation_blob_i;
             break;
         default:
-            _asterx_type_is_singleantenna = true;
-            _asterx_type_is_i = false;
-            _asterx_type_is_dualantenna = false;
+            initialization_blob = &_initialisation_blob;
             break;
     }
 
@@ -90,7 +82,6 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_SBF::read(void)
 {   
-    const char* initialization_blob[5];
     bool ret = false;
     uint32_t available_bytes = port->available();
     for (uint32_t i = 0; i < available_bytes; i++) {
@@ -98,18 +89,12 @@ AP_GPS_SBF::read(void)
         ret |= parse(temp);
     }
 
-    if (_asterx_type_is_i) {
-        memcpy(initialization_blob, _initialisation_blob_i, sizeof(_initialisation_blob_i));
-    } else if (_asterx_type_is_singleantenna){
-        memcpy(initialization_blob, _initialisation_blob, sizeof(_initialisation_blob));
-    } else if (_asterx_type_is_dualantenna) {
-        memcpy(initialization_blob, _initialisation_blob_dualantenna, sizeof(_initialisation_blob_dualantenna));
-    }
+
 
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         if (_init_blob_index < ARRAY_SIZE(initialization_blob)) {
             uint32_t now = AP_HAL::millis();
-            const char *init_str = initialization_blob[_init_blob_index];
+            const char **init_str = initialization_blob[_init_blob_index];
 
             if (now > _init_blob_time) {
                 if (now > _config_last_ack_time + 2500) {
@@ -119,7 +104,7 @@ AP_GPS_SBF::read(void)
                     _config_last_ack_time = now;
                 } else {
                     Debug("SBF sending init string: %s", init_str);
-                    port->write((const uint8_t*)init_str, strlen(init_str));
+                    port->write((const uint8_t*)init_str, strlen(*init_str));
                 }
                 _init_blob_time = now + 1000;
             }
@@ -242,20 +227,11 @@ AP_GPS_SBF::parse(uint8_t temp)
 
                 // received the result, lets assess it
                 if (sbf_msg.data.bytes[0] == ':') {
-                    const char* initialization_blob[5];
-
-                    if (_asterx_type_is_i) {
-                        memcpy(initialization_blob, _initialisation_blob_i, sizeof(_initialisation_blob_i));
-                    } else if (_asterx_type_is_singleantenna){
-                        memcpy(initialization_blob, _initialisation_blob, sizeof(_initialisation_blob));
-                    } else if (_asterx_type_is_dualantenna) {
-                        memcpy(initialization_blob, _initialisation_blob_dualantenna, sizeof(_initialisation_blob_dualantenna));
-                    }
 
                     // valid command, determine if it was the one we were trying
                     // to send in the configuration sequence
                     if (_init_blob_index < ARRAY_SIZE(initialization_blob)) {
-                        if (!strncmp(initialization_blob[_init_blob_index], (char *)(sbf_msg.data.bytes + 2),
+                        if (!strncmp(*initialization_blob[_init_blob_index], (char *)(sbf_msg.data.bytes + 2),
                                      sbf_msg.read - SBF_EXCESS_COMMAND_BYTES)) {
                             Debug("SBF Ack Command: %s\n", sbf_msg.data.bytes);
                             _init_blob_index++;
@@ -282,7 +258,6 @@ bool
 AP_GPS_SBF::process_message(void)
 {
     uint16_t blockid = (sbf_msg.blockid & 8191u);
-    counter++;
 
     Debug("BlockID %d", blockid);
 
@@ -304,7 +279,7 @@ AP_GPS_SBF::process_message(void)
         if (temp.Vn > -200000) {
  
             // if using the AsteRx-i we need to parse it from the INSNavGeod
-            if(_asterx_type_is_i == false){
+            if(asterx_type != SBF_INS){
                 state.velocity.x = (float)(temp.Vn);
                 state.velocity.y = (float)(temp.Ve);
                 state.velocity.z = (float)(-temp.Vu);
@@ -327,7 +302,7 @@ AP_GPS_SBF::process_message(void)
         }
 
         // Update position state (don't use -2·10^10) and prefer the INSNavGeod lat, lng and alt
-        if (temp.Latitude > -200000 && _asterx_type_is_i == false) {
+        if (temp.Latitude > -200000 && asterx_type != SBF_INS) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
@@ -486,6 +461,21 @@ AP_GPS_SBF::process_message(void)
 
         return true;
     }
+    case AttCovEuler:
+    {   
+        const msg5939 &temp = sbf_msg.data.msg5939u;
+        // Update time state
+        if (temp.WNc != 65535) {
+            state.time_week = temp.WNc;
+            state.time_week_ms = (uint32_t)(temp.TOW);
+        }
+
+        check_new_itow(temp.TOW, sbf_msg.length);
+
+        if(temp.Cov_HeadHead > -200000) {
+            state.gps_yaw_accuracy = temp.Cov_HeadHead; // variance in degree²
+        }
+    }
     case DOP:
     {
         const msg4001 &temp = sbf_msg.data.msg4001u;
@@ -530,16 +520,6 @@ AP_GPS_SBF::process_message(void)
 
 void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
-    const char* initialization_blob[5];
-
-    if (_asterx_type_is_i == true) {
-        memcpy(initialization_blob, _initialisation_blob_i, sizeof(_initialisation_blob_i));
-    } else if (_asterx_type_is_singleantenna){
-        memcpy(initialization_blob, _initialisation_blob, sizeof(_initialisation_blob));
-    } else if (_asterx_type_is_dualantenna) {
-        memcpy(initialization_blob, _initialisation_blob_dualantenna, sizeof(_initialisation_blob_dualantenna));
-    }
-
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
         _init_blob_index < ARRAY_SIZE(initialization_blob)) {
         gcs().send_text(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u)", state.instance + 1,
@@ -548,16 +528,6 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 }
 
 bool AP_GPS_SBF::is_configured (void) {
-    const char* initialization_blob[5];
-
-    if (_asterx_type_is_i == true) {
-        memcpy(initialization_blob, _initialisation_blob_i, sizeof(_initialisation_blob_i));
-    } else if (_asterx_type_is_singleantenna){
-        memcpy(initialization_blob, _initialisation_blob, sizeof(_initialisation_blob));
-    } else if (_asterx_type_is_dualantenna) {
-        memcpy(initialization_blob, _initialisation_blob_dualantenna, sizeof(_initialisation_blob_dualantenna));
-    }
-
     return (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE ||
              _init_blob_index >= ARRAY_SIZE(initialization_blob));
 }

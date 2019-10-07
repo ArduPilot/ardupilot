@@ -49,6 +49,12 @@ public:
 
     bool prepare_for_arming(void) override;
 
+    enum sbf_type {
+        SBF_SINGLE_ANTENNA  = 0,
+        SBF_INS             = 1,
+        SBF_DUAL_ANTENNA    = 2,
+    };
+
 
 private:
 
@@ -57,6 +63,8 @@ private:
 
     static const uint8_t SBF_PREAMBLE1 = '$';
     static const uint8_t SBF_PREAMBLE2 = '@';
+
+    int asterx_type;
 
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
@@ -73,11 +81,12 @@ private:
     "spm, Rover, all\n",
     "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
     const char* _initialisation_blob_dualantenna[5] = {
-    "sso, Stream1, COM1, PVTGeodetic+AttEuler+DOP+ReceiverStatus+VelCovGeodetic, msec100\n",
+    "sso, Stream1, COM1, PVTGeodetic+AttEuler+AtCovEuler+DOP+ReceiverStatus+VelCovGeodetic, msec100\n",
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, all\n",
     "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
+    const char* (*initialization_blob)[5];
     uint32_t _config_last_ack_time;
 
     const char* _port_enable = "\nSSSSSSSSSS\n";
@@ -89,9 +98,6 @@ private:
     void mount_disk(void) const;
     void unmount_disk(void) const;
     bool _has_been_armed;
-    bool _asterx_type_is_singleantenna;
-    bool _asterx_type_is_i;
-    bool _asterx_type_is_dualantenna;
 
     enum sbf_ids {
         DOP = 4001,
@@ -99,7 +105,8 @@ private:
         ReceiverStatus = 4014,
         VelCovGeodetic = 5908,
         INSNavGeod = 4226,
-        AttEuler = 5938
+        AttEuler = 5938,
+        AttCovEuler= 5939
     };
 
     struct PACKED msg4007 // PVTGeodetic
@@ -235,6 +242,20 @@ private:
         float HeadingDot;
     };
 
+    struct PACKED msg5939 // AttCovEuler
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint8_t Reserved;
+        uint8_t Error;
+        float Cov_HeadHead;
+        float Cov_PitchPitch;
+        float Cov_RollRoll;
+        float Cov_HeadPitch;    // Septentrio states :The values are currently set to their Do-Not-Use values.
+        float Cov_HeadRoll;     // Septentrio states :The values are currently set to their Do-Not-Use values.
+        float Cov_PitchRoll;    // Septentrio states :The values are currently set to their Do-Not-Use values.
+    };
+
     union PACKED msgbuffer {
         msg4007 msg4007u;
         msg4001 msg4001u;
@@ -242,6 +263,7 @@ private:
         msg5908 msg5908u;
         msg4226 msg4226u;
         msg5938 msg5938u;
+        msg5939 msg5939u;
         uint8_t bytes[256];
     };
 
@@ -278,9 +300,4 @@ private:
         OUTOFGEOFENCE = (1 << 11),  // set if the receiver is currently out of its permitted region of operation (geo-fencing).
     };
 
-    enum SBF_Type {
-        SBF_SINGLE_ANTENNA  = 0,
-        SBF_INS             = 1,
-        SBF_DUAL_ANTENNA    = 2,
-    };
 };

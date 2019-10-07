@@ -478,15 +478,15 @@ void AP_GPS::detect_instance(uint8_t instance)
     switch (_type[instance]) {
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
-        new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance], SBF_SINGLE_ANTENNA);
+        new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance], AP_GPS_SBF::SBF_SINGLE_ANTENNA);
         break;
 
     case GPS_TYPE_SBFINS:
-        new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance], SBF_INS);
+        new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance], AP_GPS_SBF::SBF_INS);
         break;
 
     case GPS_TYPE_SBFDUALANTENNA:
-        new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance], SBF_DUAL_ANTENNA);
+        new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance], AP_GPS_SBF::SBF_DUAL_ANTENNA);
         break;
 
     case GPS_TYPE_GSOF:
