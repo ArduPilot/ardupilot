@@ -189,6 +189,9 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // extra delay per main loop
     AP_GROUPINFO("LOOP_DELAY",  55, SITL,  loop_delay, 0),
 
+    // @Path: ./SIM_Buzzer.cpp
+    AP_SUBGROUPINFO(buzzer_sim, "BZ_", 56, SITL, Buzzer),
+
     AP_GROUPEND
 
 };
