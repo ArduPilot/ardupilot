@@ -731,6 +731,11 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         external_payload_mass += sprayer->payload_mass();
     }
 
+    // update buzzer
+    if (buzzer && buzzer->is_enabled()) {
+        buzzer->update(input);
+    }
+
     // update grippers
     if (gripper && gripper->is_enabled()) {
         gripper->set_alt(hagl());
