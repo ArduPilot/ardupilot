@@ -66,6 +66,10 @@ void Storage::_storage_open(void)
         }
     }
 
+    #if defined(HAL_RAMTRON_NO_FALLBACK) && HAL_RAMTRON_NO_FALLBACK
+        AP_HAL::panic("Unable to init RAMTRON storage");
+    #endif
+
     // allow for FMUv3 with no FRAM chip, fall through to flash storage
 #endif
 
