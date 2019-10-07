@@ -48,13 +48,6 @@ void Storage::_storage_open(void)
         return;
     }
 
-#ifdef USE_POSIX
-    // if we have failed filesystem init don't try again
-    if (log_fd == -1) {
-        return;
-    }
-#endif
-
     _dirty_mask.clearall();
 
 #if HAL_WITH_RAMTRON
@@ -62,6 +55,7 @@ void Storage::_storage_open(void)
         if (fram.read(0, _buffer, CH_STORAGE_SIZE) == CH_STORAGE_SIZE) {
             _save_backup();
             _initialisedType = StorageBackend::FRAM;
+            hal.console->printf("Initialised Storage type=%d\n", _initialisedType);
             return;
         }
     }
@@ -70,43 +64,54 @@ void Storage::_storage_open(void)
         AP_HAL::panic("Unable to init RAMTRON storage");
     #endif
 
-    // allow for FMUv3 with no FRAM chip, fall through to flash storage
-#endif
+#endif // HAL_WITH_RAMTRON
 
+// allow for devices with no FRAM chip to fall through to other storage
 #ifdef STORAGE_FLASH_PAGE
-    // load from storage backend
-    _flash_load();
-    _save_backup();
-    _initialisedType = StorageBackend::Flash;
+        // load from storage backend
+        _flash_load();
+        _save_backup();
+        _initialisedType = StorageBackend::Flash;
 #elif defined(USE_POSIX)
-    // allow for fallback to microSD based storage
-    sdcard_retry();
+        // if we have failed filesystem init don't try again
+        if (log_fd == -1) {
+            return;
+        }
 
-    log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
-    if (log_fd == -1) {
-        ::printf("open failed of " HAL_STORAGE_FILE "\n");
-        return;
-    }
-    int ret = AP::FS().read(log_fd, _buffer, CH_STORAGE_SIZE);
-    if (ret < 0) {
-        ::printf("read failed for " HAL_STORAGE_FILE "\n");
-        AP::FS().close(log_fd);
-        log_fd = -1;
-        return;
-    }
-    // pre-fill to full size
-    if (AP::FS().lseek(log_fd, ret, SEEK_SET) != ret ||
-        AP::FS().write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret) {
-        ::printf("setup failed for " HAL_STORAGE_FILE "\n");
-        AP::FS().close(log_fd);
-        log_fd = -1;
-        return;
-    }
-    _save_backup();
-    _initialisedType = StorageBackend::SDCard;
+        // allow for fallback to microSD based storage
+        if (sdcard_retry()) {
+            log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
+            if (log_fd == -1) {
+                hal.console->printf("open failed of " HAL_STORAGE_FILE "\n");
+                return;
+            }
+            int ret = AP::FS().read(log_fd, _buffer, CH_STORAGE_SIZE);
+            if (ret < 0) {
+                hal.console->printf("read failed for " HAL_STORAGE_FILE "\n");
+                AP::FS().close(log_fd);
+                log_fd = -1;
+                return;
+            }
+            // pre-fill to full size
+            if (AP::FS().lseek(log_fd, ret, SEEK_SET) != ret ||
+                AP::FS().write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret) {
+                hal.console->printf("setup failed for " HAL_STORAGE_FILE "\n");
+                AP::FS().close(log_fd);
+                log_fd = -1;
+                return;
+            }
+            _save_backup();
+            _initialisedType = StorageBackend::SDCard;
+        }
 #elif !HAL_WITH_RAMTRON
-    #error No Storage Backend!
+        #error No Storage Backend defined!
 #endif
+
+    if (_initialisedType != StorageBackend::None) {
+        hal.console->printf("Initialised Storage type=%d\n", _initialisedType);
+    } else {
+        AP_HAL::panic("Unable to init Storage backend");
+    }
 }
 
 /*
@@ -234,7 +239,7 @@ void Storage::_flash_load(void)
 #ifdef STORAGE_FLASH_PAGE
     _flash_page = STORAGE_FLASH_PAGE;
 
-    ::printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
+    hal.console->printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
 
     if (!_flash.init()) {
         AP_HAL::panic("Unable to init flash storage");
@@ -277,8 +282,8 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
         if (now - _last_re_init_ms > 5000) {
             _last_re_init_ms = now;
             bool ok = _flash.re_initialise();
-            ::printf("Storage: failed at %u:%u for %u - re-init %u\n",
-                     (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
+            hal.console->printf("Storage: failed at %u:%u for %u - re-init %u\n",
+                                (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
         }
     }
     return false;
