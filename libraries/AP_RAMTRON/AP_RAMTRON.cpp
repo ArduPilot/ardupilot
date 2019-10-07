@@ -118,6 +118,7 @@ bool AP_RAMTRON::init(void)
     // Ensure Block Protect is disabled
     if ((status_register & kBlockProtect) != 0x00) {
         status_register &= ~kBlockProtect;
+        status_register |= kWriteEnableLatch; // Ensure Write Enable is not overwritten
         if (!dev->write_register(RAMTRON_WRSR, status_register)) {
             hal.console->printf("Failed to disable RAMTRON BlockProtect!");
             return false;
