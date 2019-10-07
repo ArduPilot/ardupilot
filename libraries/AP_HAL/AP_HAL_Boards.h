@@ -13,6 +13,7 @@
 #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
 #define HAL_BOARD_F4LIGHT  11 // reserved
+#define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_EMPTY    99
 
 /* Default board subtype is -1 */
@@ -61,6 +62,10 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51  5018
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10    5019
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54   5020
+
+/* HAL ESP#@ sub-types, starting at 6000 */
+#define HAL_BOARD_SUBTYPE_ESP32_DIY			6001
+#define HAL_BOARD_SUBTYPE_ESP32_ICARUS		6002
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -133,6 +138,8 @@
     #include <AP_HAL/board/vrbrain.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 	#include <AP_HAL/board/chibios.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+    #include <AP_HAL/board/esp32.h>
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif

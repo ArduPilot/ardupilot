@@ -51,19 +51,19 @@ class Board:
              (cfg.env.BOARD_FLASH_SIZE > 1024))):
 
             env.DEFINES.update(
-                ENABLE_SCRIPTING = 1,
+#                ENABLE_SCRIPTING = 1,
                 ENABLE_HEAP = 1,
                 LUA_32BITS = 1,
                 )
 
-            env.ROMFS_FILES += [
-                ('sandbox.lua', 'libraries/AP_Scripting/scripts/sandbox.lua'),
-                ]
+#            env.ROMFS_FILES += [
+#                ('sandbox.lua', 'libraries/AP_Scripting/scripts/sandbox.lua'),
+#                ]
 
-            env.AP_LIBRARIES += [
-                'AP_Scripting',
-                'AP_Scripting/lua/src',
-                ]
+#            env.AP_LIBRARIES += [
+#                'AP_Scripting',
+#                'AP_Scripting/lua/src',
+#                ]
 
             env.CXXFLAGS += [
                 '-DHAL_HAVE_AP_ROMFS_EMBEDDED_H'
@@ -412,6 +412,58 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
+
+class esp32(Board):
+    abstract = True
+    toolchain = 'xtensa-esp32-elf'
+    def configure_env(self, cfg, env):
+        def expand_path(p):
+            idf = os.environ['IDF_PATH']
+            return cfg.root.find_dir(idf+p).abspath()
+        super(esp32, self).configure_env(cfg, env)
+        cfg.load('esp32')
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32'
+        )
+        env.AP_LIBRARIES += [
+            'AP_HAL_ESP32',
+        ]
+        env.CXXFLAGS += ['-mlongcalls',
+                         '-Os',
+                         '-g',
+                         '-ffunction-sections',
+                         '-fdata-sections',
+                         '-fno-exceptions',
+                         '-fno-rtti',
+                         '-nostdlib',
+                         '-fstrict-volatile-bitfields',
+                         '-DCYGWIN_BUILD']
+        env.CXXFLAGS.remove('-Wundef')
+        env.CXXFLAGS.remove('-Werror=shadow')
+        env.INCLUDES += [
+                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
+            ]
+        env.AP_PROGRAM_AS_STLIB = True
+       # if cfg.options.enable_profile:
+       #     env.CXXFLAGS += ['-pg',
+       #                      '-DENABLE_PROFILE=1']
+    def build(self, bld):
+        super(esp32, self).build(bld)
+        bld.load('esp32')
+
+class esp32diy(esp32):
+    def configure_env(self, cfg, env):
+        super(esp32diy, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_DIY'
+        )
+
+class esp32icarus(esp32):
+    def configure_env(self, cfg, env):
+        super(esp32icarus, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_ICARUS'
+        )
 
 class chibios(Board):
     abstract = True
