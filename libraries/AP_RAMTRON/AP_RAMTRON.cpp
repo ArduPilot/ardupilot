@@ -93,9 +93,37 @@ bool AP_RAMTRON::init(void)
         return false;
     }
 
+    uint8_t status_register;
+    if (!dev->read_registers(RAMTRON_RDSR, &status_register, sizeof(status_register))) {
+        hal.console->printf("Unable to read RAMTRON RDSR!\n");
+        return false;
+    }
 
     char const * const manufacturer = (ramtron_ids[id].rdid_type == FUJITSU_RDID) ? "Fujitsu" : "Cypress";
-    hal.console->printf("Found %s RAMTRON idx=%u\n", manufacturer, id);
+    hal.console->printf("Found %s RAMTRON idx=%u sr=0x%02x\n", manufacturer, id, status_register);
+
+    const uint8_t kWriteEnableLatch   = (1 << 1);
+    const uint8_t kBlockProtect0      = (1 << 2);
+    const uint8_t kBlockProtect1      = (1 << 3);
+    const uint8_t kBlockProtect       = kBlockProtect0 | kBlockProtect1;
+
+    // Ensure Write Enable is set properly
+    if ((status_register & kWriteEnableLatch) != kWriteEnableLatch) {
+        if (!dev->transfer(&RAMTRON_WREN, 1, nullptr, 0)) {
+            hal.console->printf("Failed to set RAMTRON WriteEnableLatch!");
+            return false;
+        }
+    }
+
+    // Ensure Block Protect is disabled
+    if ((status_register & kBlockProtect) != 0x00) {
+        status_register &= ~kBlockProtect;
+        if (!dev->write_register(RAMTRON_WRSR, status_register)) {
+            hal.console->printf("Failed to disable RAMTRON BlockProtect!");
+            return false;
+        }
+    }
+
     return true;
 }
 
