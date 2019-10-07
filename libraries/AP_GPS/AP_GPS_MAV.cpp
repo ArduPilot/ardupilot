@@ -105,7 +105,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             }
 
             if (have_yaw) {
-                state.gps_yaw = wrap_360(packet.yaw*0.01);
+                state.gps_yaw = wrap_360(packet.yaw*0.01f);
                 state.have_gps_yaw = true;
             }
 
