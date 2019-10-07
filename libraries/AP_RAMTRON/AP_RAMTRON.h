@@ -15,10 +15,10 @@ public:
     uint32_t get_size(void) const { return (id == UINT8_MAX) ? 0 : ramtron_ids[id].size_kbyte * 1024UL; }
 
     // read from device
-    uint32_t read(uint32_t offset, uint8_t *buf, uint32_t size);
+    uint32_t read(uint32_t offset, uint8_t * const buf, uint32_t size);
 
     // write to device
-    uint32_t write(uint32_t offset, const uint8_t *buf, uint32_t size);
+    uint32_t write(uint32_t offset, uint8_t const * const buf, uint32_t size);
 
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;

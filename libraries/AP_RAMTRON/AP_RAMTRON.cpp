@@ -102,10 +102,10 @@ bool AP_RAMTRON::init(void)
     char const * const manufacturer = (ramtron_ids[id].rdid_type == FUJITSU_RDID) ? "Fujitsu" : "Cypress";
     hal.console->printf("Found %s RAMTRON idx=%u sr=0x%02x\n", manufacturer, id, status_register);
 
-    const uint8_t kWriteEnableLatch   = (1 << 1);
-    const uint8_t kBlockProtect0      = (1 << 2);
-    const uint8_t kBlockProtect1      = (1 << 3);
-    const uint8_t kBlockProtect       = kBlockProtect0 | kBlockProtect1;
+    uint8_t const kWriteEnableLatch   = (1 << 1);
+    uint8_t const kBlockProtect0      = (1 << 2);
+    uint8_t const kBlockProtect1      = (1 << 3);
+    uint8_t const kBlockProtect       = kBlockProtect0 | kBlockProtect1;
 
     // Ensure Write Enable is set properly
     if ((status_register & kWriteEnableLatch) != kWriteEnableLatch) {
@@ -143,7 +143,7 @@ bool AP_RAMTRON::_populate_addr(uint8_t cmdBuffer[], uint32_t const kCmdBufferSz
 }
 
 // read from device
-uint32_t AP_RAMTRON::read(uint32_t offset, uint8_t *buf, uint32_t size)
+uint32_t AP_RAMTRON::read(uint32_t offset, uint8_t * const buf, uint32_t size)
 {
     // Don't allow reads outside of the FRAM memory.
     // NOTE: The FRAM devices will wrap back to address 0x0000 if they read past
@@ -154,25 +154,23 @@ uint32_t AP_RAMTRON::read(uint32_t offset, uint8_t *buf, uint32_t size)
         return 0;
     }
 
-    const uint32_t kMaxReadSz = 128;
+    uint32_t const kMaxReadSz = 128;
     uint32_t numRead = 0;
 
     while (size > 0) {
         uint32_t const kCmdBufferSz = ramtron_ids[id].addrlen + 1;
         uint8_t cmdBuffer[kCmdBufferSz] = { RAMTRON_READ, };
-        if (!_populate_addr(cmdBuffer, kCmdBufferSz, offset)) {
+        if (!_populate_addr(cmdBuffer, kCmdBufferSz, (offset + numRead))) {
             break;
         } else {
             WITH_SEMAPHORE(dev->get_semaphore());
 
             uint32_t const kReadSz = MIN(size, kMaxReadSz);
             bool ok = dev->set_chip_select(true);
-            ok = ok && dev->transfer(cmdBuffer, kCmdBufferSz, buf, kReadSz);
+            ok = ok && dev->transfer(cmdBuffer, kCmdBufferSz, &buf[numRead], kReadSz);
             ok &= dev->set_chip_select(false);
 
             numRead += kReadSz;
-            offset += kReadSz;
-            buf += kReadSz;
             size -= kReadSz;
         }
     }
@@ -181,7 +179,7 @@ uint32_t AP_RAMTRON::read(uint32_t offset, uint8_t *buf, uint32_t size)
 }
 
 // write to device
-uint32_t AP_RAMTRON::write(uint32_t offset, const uint8_t *buf, uint32_t size)
+uint32_t AP_RAMTRON::write(uint32_t offset, uint8_t const * const buf, uint32_t size)
 {
     // Don't allow writes outside of the FRAM memory.
     // NOTE: The FRAM devices will wrap back to address 0x0000 if they write past
