@@ -103,8 +103,6 @@ void Storage::_storage_open(void)
             _save_backup();
             _initialisedType = StorageBackend::SDCard;
         }
-#elif !HAL_WITH_RAMTRON
-        #error No Storage Backend defined!
 #endif
 
     if (_initialisedType != StorageBackend::None) {
