@@ -1,3 +1,25 @@
+Release 4.0.0beta3, 7th October 2019
+------------------------------------
+
+A small set of improvements over beta2:
+
+ - added Pixhawk1-1M build (for Pixhawk1 with 1M flash bug)
+ - fixed a bug handling UART corruption for u-blox driver
+ - fixed a CAN ISR latency bug for STM32H7 boards
+ - fixed FMU channel mask to correctly obey SERVO_RATE
+ - fixed use of DMA on Pixracer WiFi UART
+ - reduced flash size and memory usage with EKF optimisation changes
+ - fixed a BLHeli bug when no motors enabled
+ - raise default LOG_FILE_BUFSIZE on boards with more memory
+ - fixed units of custom AHRS orientations
+ - fixed LOG_FILE_DSRMROT with delayed log stop on disarm
+ - fixed block flash logging
+ - fixed SLCAN bug on Pixhawk1 and fmuv2
+ - added check for airspeed and Z controller active for hover throttle learning
+ - enable hover learning by default in quadplanes
+
+Happy flying!
+
 Release 4.0.0beta2, 24th September 2019
 ---------------------------------------
 
