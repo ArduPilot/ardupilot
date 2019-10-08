@@ -92,6 +92,7 @@ void SITL_State::_sitl_setup(const char *home_str)
             gimbal = new SITL::Gimbal(_sitl->state);
         }
 
+        sitl_model->set_buzzer(&_sitl->buzzer_sim);
         sitl_model->set_sprayer(&_sitl->sprayer_sim);
         sitl_model->set_gripper_servo(&_sitl->gripper_sim);
         sitl_model->set_gripper_epm(&_sitl->gripper_epm_sim);
