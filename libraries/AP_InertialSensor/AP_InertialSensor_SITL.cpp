@@ -120,6 +120,8 @@ void AP_InertialSensor_SITL::generate_accel(uint8_t instance)
     for (uint8_t i=0; i<nsamples; i++) {
         _notify_new_accel_raw_sample(accel_instance[instance], accel);
     }
+
+    _publish_temperature(instance, 23);
 }
 
 /*
