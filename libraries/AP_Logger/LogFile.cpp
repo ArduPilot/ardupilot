@@ -643,7 +643,7 @@ void AP_Logger::Write_Current_instance(const uint64_t time_us,
     float temp;
     bool has_temp = battery.get_temperature(temp, battery_instance);
     float current, consumed_mah, consumed_wh;
-    if (!battery.current_amps(current)) {
+    if (!battery.current_amps(current, battery_instance)) {
         current = quiet_nanf();
     }
     if (!battery.consumed_mah(consumed_mah, battery_instance)) {
