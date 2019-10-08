@@ -310,6 +310,7 @@ void AP_Notify::add_backends(void)
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(new AP_ToneAlarm());
+    ADD_BACKEND(new Buzzer());
 #ifdef WITH_SITL_RGBLED
     ADD_BACKEND(new SITL_SFML_LED());
 #endif
