@@ -1601,8 +1601,9 @@ void GCS_MAVLINK::send_raw_imu()
         gyro.z * 1000.0f,
         mag.x,
         mag.y,
-        mag.z, 0,
-        ins.get_temperature(0)*100);
+        mag.z,
+        0,  // we use SCALED_IMU and SCALED_IMU2 for other IMUs
+        int16_t(ins.get_temperature(0)*100));
 }
 
 void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag, int16_t temperature))
@@ -1641,7 +1642,7 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
         mag.x,
         mag.y,
         mag.z,
-        ins.get_temperature(instance));
+        int16_t(ins.get_temperature(instance)*100));
 }
 
 
