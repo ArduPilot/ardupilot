@@ -2222,8 +2222,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Did not get expected file content (want=%s) (got=%s)" % (want, got))
 
     def mavproxy_can_do_mision_item_protocols(self):
+        return False
         mavproxy_version = self.mavproxy_version()
-        if False and not self.mavproxy_version_gt(1, 8, 12):
+        if not self.mavproxy_version_gt(1, 8, 12):
             self.progress("MAVProxy is too old; skipping tests")
             return False
         return True
