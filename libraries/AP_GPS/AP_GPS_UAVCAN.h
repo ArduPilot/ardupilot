@@ -57,6 +57,7 @@ private:
     HAL_Semaphore sem;
 
     uint8_t _detected_module;
+    bool seen_message;
 
     // Module Detection Registry
     static struct DetectedModules {
