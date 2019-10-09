@@ -944,8 +944,8 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
         forced_max = "UINT16_MAX";
         break;
       case TYPE_UINT32_T:
-        forced_min = "0";
-        forced_max = "UINT16_MAX";
+        forced_min = "0U";
+        forced_max = "UINT32_MAX";
         break;
       case TYPE_ENUM:
         forced_min = forced_max = NULL;
@@ -975,7 +975,7 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
         fprintf(source, "%sconst lua_Integer raw_data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number);
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "%sconst uint32_t raw_data_%d = coerce_to_uint32_t(L, %d);\n", indentation, arg_number, arg_number);
+        fprintf(source, "%sconst uint32_t raw_data_%d = *check_uint32_t(L, %d);\n", indentation, arg_number, arg_number);
         break;
       case TYPE_NONE:
       case TYPE_STRING:
