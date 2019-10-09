@@ -192,6 +192,9 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // @Path: ./SIM_Buzzer.cpp
     AP_SUBGROUPINFO(buzzer_sim, "BZ_", 56, SITL, Buzzer),
 
+    // @Path: ./SIM_ToneAlarm.cpp
+    AP_SUBGROUPINFO(tonealarm_sim, "TA_", 57, SITL, ToneAlarm),
+
     AP_GROUPINFO("MAG_SCALING",    60, SITL,  mag_scaling, 1),
 
     AP_GROUPEND

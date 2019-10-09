@@ -5,11 +5,12 @@
 #include <AP_Common/Location.h>
 
 #include "SIM_Buzzer.h"
-#include "SIM_Sprayer.h"
-#include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
+#include "SIM_Gripper_Servo.h"
 #include "SIM_Parachute.h"
 #include "SIM_Precland.h"
+#include "SIM_Sprayer.h"
+#include "SIM_ToneAlarm.h"
 
 namespace SITL {
 
@@ -300,6 +301,7 @@ public:
 
     Parachute parachute_sim;
     Buzzer buzzer_sim;
+    ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
 };
 
