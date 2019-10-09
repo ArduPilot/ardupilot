@@ -607,10 +607,11 @@ void RCOutput::set_group_mode(pwm_group &group)
         const uint32_t bit_period = 20;
 
         // configure timer driver for DMAR at requested rate
-        const uint8_t pad_bits = 50;
+        const uint8_t pad_end_bits = 8;
+        const uint8_t pad_start_bits = 1;
         const uint8_t bits_per_pixel = 24;
         const uint8_t channels_per_group = 4;
-        const uint16_t neopixel_bit_length = bits_per_pixel * channels_per_group * group.neopixel_nleds + pad_bits;
+        const uint16_t neopixel_bit_length = bits_per_pixel * channels_per_group * group.neopixel_nleds + (pad_start_bits + pad_end_bits) * channels_per_group;
         const uint16_t neopixel_buffer_length = neopixel_bit_length * sizeof(uint32_t);
         if (!setup_group_DMA(group, rate, bit_period, true, neopixel_buffer_length)) {
             group.current_mode = MODE_PWM_NONE;
@@ -1627,9 +1628,10 @@ void RCOutput::set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint
     uint8_t led = 0;
     while (ledmask) {
         if (ledmask & 1) {
+            const uint8_t pad_start_bits = 1;
             const uint8_t neopixel_bit_length = 24;
             const uint8_t stride = 4;
-            uint32_t *buf = grp->dma_buffer + (led * neopixel_bit_length) * stride + i;
+            uint32_t *buf = grp->dma_buffer + (led * neopixel_bit_length + pad_start_bits) * stride + i;
             uint32_t bits = (green<<16) | (red<<8) | blue;
             const uint32_t BIT_0 = 7 * grp->bit_width_mul;
             const uint32_t BIT_1 = 14 * grp->bit_width_mul;
