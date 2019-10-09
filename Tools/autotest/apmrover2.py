@@ -2128,7 +2128,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                          mission_type)
         m = mav.recv_match(type='MISSION_ITEM_INT',
                            blocking=True,
-                           timeout=1)
+                           timeout=1,
+                           condition='MISSION_ITEM_INT.mission_type==%u' % mission_type)
         if m is None:
             raise NotAchievedException("Did not receive mission item int")
         if m.mission_type != mission_type:
