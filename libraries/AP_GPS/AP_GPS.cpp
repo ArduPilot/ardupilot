@@ -635,7 +635,7 @@ void AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
-    if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
+    if (drivers[instance] == nullptr) {
         // we don't yet know the GPS type of this one, or it has timed
         // out and needs to be re-initialised
         detect_instance(instance);
@@ -721,7 +721,7 @@ void AP_GPS::update(void)
 
     // calculate number of instances
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (state[i].status != NO_GPS) {
+        if (drivers[i] != nullptr) {
             num_instances = i+1;
         }
     }
