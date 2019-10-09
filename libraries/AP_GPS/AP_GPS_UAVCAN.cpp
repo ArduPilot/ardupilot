@@ -418,6 +418,10 @@ bool AP_GPS_UAVCAN::read(void)
 
         return true;
     }
+    if (!seen_message) {
+        // start with NO_GPS until we get first packet
+        state.status = AP_GPS::GPS_Status::NO_GPS;
+    }
 
     return false;
 }
