@@ -50,6 +50,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(baro, "BARO_", AP_Baro),
 #endif
 
+#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+    GSCALAR(led_brightness, "LED_BRIGHTNESS", 50),
+#endif
+
     AP_VAREND
 };
 
