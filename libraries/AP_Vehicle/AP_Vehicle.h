@@ -36,7 +36,13 @@ class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
 public:
 
-    AP_Vehicle() {}
+    AP_Vehicle();
+
+    /* Do not allow copies */
+    AP_Vehicle(const AP_Vehicle &other) = delete;
+    AP_Vehicle &operator=(const AP_Vehicle&) = delete;
+
+    static AP_Vehicle *get_singleton();
 
     /*
       common parameters for fixed wing aircraft
@@ -121,7 +127,15 @@ protected:
     // false disables external leds)
     AP_Notify notify;
 
+private:
+    static AP_Vehicle *_singleton;
+
 };
+
+namespace AP {
+    AP_Vehicle &vehicle();
+};
+
 
 extern const AP_HAL::HAL& hal;
 
