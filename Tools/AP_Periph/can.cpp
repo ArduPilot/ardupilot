@@ -422,9 +422,15 @@ static void handle_lightscommand(CanardInstance* ins, CanardRxTransfer* transfer
         uavcan_equipment_indication_SingleLightCommand &cmd = req.commands.data[i];
         // to get the right color proportions we scale the green so that is uses the
         // same number of bits as red and blue
-        const uint8_t red = cmd.color.red<<3;
-        const uint8_t green = (cmd.color.green>>1)<<3;
-        const uint8_t blue = cmd.color.blue<<3;
+        uint8_t red = cmd.color.red<<3;
+        uint8_t green = (cmd.color.green>>1)<<3;
+        uint8_t blue = cmd.color.blue<<3;
+        if (periph.g.led_brightness != 100 && periph.g.led_brightness >= 0) {
+            float scale = periph.g.led_brightness * 0.01;
+            red = constrain_int16(red * scale, 0, 255);
+            green = constrain_int16(green * scale, 0, 255);
+            blue = constrain_int16(blue * scale, 0, 255);
+        }
         hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, (1U<<HAL_PERIPH_NEOPIXEL_COUNT)-1,
                                          red, green, blue);
     }
