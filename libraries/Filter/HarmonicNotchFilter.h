@@ -68,6 +68,8 @@ public:
     uint8_t harmonics(void) const { return _harmonics; }
     // reference value of the harmonic notch
     float reference(void) const { return _reference; }
+    // notch dynamic tracking mode
+    uint8_t tracking_mode(void) const { return _tracking_mode; }
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -75,6 +77,8 @@ private:
     AP_Int8 _harmonics;
     // notch reference value
     AP_Float _reference;
+    // notch dynamic tracking mode
+    AP_Int8 _tracking_mode;
 };
 
 typedef HarmonicNotchFilter<Vector3f> HarmonicNotchFilterVector3f;
