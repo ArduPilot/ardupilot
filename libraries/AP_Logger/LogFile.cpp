@@ -5,6 +5,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Motors/AP_Motors.h>
@@ -242,8 +243,9 @@ void AP_Logger::Write_RSSI()
 
     const struct log_RSSI pkt{
         LOG_PACKET_HEADER_INIT(LOG_RSSI_MSG),
-        time_us       : AP_HAL::micros64(),
-        RXRSSI        : rssi->read_receiver_rssi()
+        time_us        : AP_HAL::micros64(),
+        RXRSSI         : rssi->read_receiver_rssi(),
+        dropped_frames : AP::RC().get_dropped_frame_count()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
