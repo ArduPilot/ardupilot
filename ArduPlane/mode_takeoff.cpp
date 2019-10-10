@@ -64,6 +64,17 @@ bool ModeTakeoff::_enter()
 void ModeTakeoff::update()
 {
     if (!takeoff_started) {
+        // see if we will skip takeoff as already flying
+        if (plane.is_flying() && plane.ahrs.groundspeed() > 3) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Takeoff skipped - circling");
+            plane.prev_WP_loc = plane.current_loc;
+            plane.next_WP_loc = plane.current_loc;
+            takeoff_started = true;
+            plane.set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
+        }
+    }
+
+    if (!takeoff_started) {
         // setup target location 1.5 times loiter radius from the
         // takeoff point, at a height of TKOFF_ALT
         const float dist = target_dist;
