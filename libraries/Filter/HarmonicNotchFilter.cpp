@@ -17,7 +17,6 @@
 #include <GCS_MAVLink/GCS.h>
 
 #define HNF_MAX_FILTERS 3
-#define HNF_MAX_HARMONICS 8
 
 // table of user settable parameters
 const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
@@ -71,9 +70,9 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
 
     // @Param: MODE
     // @DisplayName: Harmonic Notch Filter dynamic frequency tracking mode
-    // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor or ESC telemetry based. Throttle-based updates should only be used with multicopters.
-    // @Range: 0 3
-    // @Values: 0:Disabled,1:Throttle,2:RPM Sensor,3:ESC Telemetry
+    // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based updates should only be used with multicopters.
+    // @Range: 0 4
+    // @Values: 0:Disabled,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT
     // @User: Advanced
     AP_GROUPINFO("MODE", 7, HarmonicNotchFilterParams, _tracking_mode, 1),
 
