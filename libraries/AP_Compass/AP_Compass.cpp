@@ -48,6 +48,10 @@ extern const AP_HAL::HAL& hal;
 #define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 #endif
 
+#ifndef HAL_COMPASS_MAX_SENSORS
+#define HAL_COMPASS_MAX_SENSORS 3
+#endif
+
 const AP_Param::GroupInfo Compass::var_info[] = {
     // index 0 was used for the old orientation matrix
 
@@ -152,6 +156,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state[0].external, 0),
 
+#if HAL_COMPASS_MAX_SENSORS > 1
     // @Param: OFS2_X
     // @DisplayName: Compass2 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame
@@ -208,7 +213,9 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:FirstCompass,1:SecondCompass,2:ThirdCompass
     // @User: Advanced
     AP_GROUPINFO("PRIMARY", 12, Compass, _primary, 0),
+#endif // HAL_COMPASS_MAX_SENSORS
 
+#if HAL_COMPASS_MAX_SENSORS > 2
     // @Param: OFS3_X
     // @DisplayName: Compass3 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame
@@ -258,6 +265,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("MOT3",    14, Compass, _state[2].motor_compensation, 0),
+#endif // HAL_COMPASS_MAX_SENSORS
 
     // @Param: DEV_ID
     // @DisplayName: Compass device id
@@ -266,20 +274,25 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEV_ID",  15, Compass, _state[0].dev_id, 0),
 
+#if HAL_COMPASS_MAX_SENSORS > 1
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID2", 16, Compass, _state[1].dev_id, 0),
+#endif // HAL_COMPASS_MAX_SENSORS
 
+#if HAL_COMPASS_MAX_SENSORS > 2
     // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID3", 17, Compass, _state[2].dev_id, 0),
+#endif // HAL_COMPASS_MAX_SENSORS
 
+#if HAL_COMPASS_MAX_SENSORS > 1
     // @Param: USE2
     // @DisplayName: Compass2 used for yaw
     // @Description: Enable or disable the second compass for determining heading.
@@ -300,7 +313,9 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN2",20, Compass, _state[1].external, 0),
+#endif // HAL_COMPASS_MAX_SENSORS
 
+#if HAL_COMPASS_MAX_SENSORS > 2
     // @Param: USE3
     // @DisplayName: Compass3 used for yaw
     // @Description: Enable or disable the third compass for determining heading.
@@ -321,6 +336,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERN3",23, Compass, _state[2].external, 0),
+#endif // HAL_COMPASS_MAX_SENSORS
 
     // @Param: DIA_X
     // @DisplayName: Compass soft-iron diagonal X component
@@ -354,6 +370,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ODI",    25, Compass, _state[0].offdiagonals, 0),
 
+#if HAL_COMPASS_MAX_SENSORS > 1
     // @Param: DIA2_X
     // @DisplayName: Compass2 soft-iron diagonal X component
     // @Description: DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
@@ -385,7 +402,9 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     AP_GROUPINFO("ODI2",    27, Compass, _state[1].offdiagonals, 0),
+#endif // HAL_COMPASS_MAX_SENSORS
 
+#if HAL_COMPASS_MAX_SENSORS > 2
     // @Param: DIA3_X
     // @DisplayName: Compass3 soft-iron diagonal X component
     // @Description: DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
@@ -417,6 +436,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     AP_GROUPINFO("ODI3",    29, Compass, _state[2].offdiagonals, 0),
+#endif // HAL_COMPASS_MAX_SENSORS
 
     // @Param: CAL_FIT
     // @DisplayName: Compass calibration fitness
@@ -468,17 +488,21 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("EXP_DID",  36, Compass, _state[0].expected_dev_id, -1),
 
+#if HAL_COMPASS_MAX_SENSORS > 1
     // @Param: EXP_DID2
     // @DisplayName: Compass2 device id expected
     // @Description: The expected value of COMPASS_DEV_ID2, used by arming checks. Setting this to -1 means "don't care."
     // @User: Advanced
     AP_GROUPINFO("EXP_DID2", 37, Compass, _state[1].expected_dev_id, -1),
+#endif // HAL_COMPASS_MAX_SENSORS
 
+#if HAL_COMPASS_MAX_SENSORS > 2
     // @Param: EXP_DID3
     // @DisplayName: Compass3 device id expected
     // @Description: The expected value of COMPASS_DEV_ID3, used by arming checks. Setting this to -1 means "don't care."
     // @User: Advanced
     AP_GROUPINFO("EXP_DID3", 38, Compass, _state[2].expected_dev_id, -1),
+#endif // HAL_COMPASS_MAX_SENSORS
 
     // @Param: ENABLE
     // @DisplayName: Enable Compass
