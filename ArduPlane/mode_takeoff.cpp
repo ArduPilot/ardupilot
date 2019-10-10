@@ -81,12 +81,11 @@ void ModeTakeoff::update()
         const float alt = target_alt;
         const float direction = degrees(plane.ahrs.yaw);
 
+        start_loc = plane.current_loc;
         plane.prev_WP_loc = plane.current_loc;
         plane.next_WP_loc = plane.current_loc;
         plane.next_WP_loc.alt += alt*100.0;
         plane.next_WP_loc.offset_bearing(direction, dist);
-
-        initial_alt_cm = plane.current_loc.alt;
 
         plane.crash_state.is_crashed = false;
 
@@ -105,9 +104,17 @@ void ModeTakeoff::update()
     // TKOFF_LVL_ALT or we pass the target location. The check for
     // target location prevents us flying forever if we can't climb
     if (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
-        (plane.current_loc.alt - initial_alt_cm >= level_alt*100 ||
-         plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc))) {
-        // reached level alt
+        (plane.current_loc.alt - start_loc.alt >= level_alt*100 ||
+         start_loc.get_distance(plane.current_loc) >= target_dist)) {
+        // reached level alt, re-calculate bearing to cope with systems with no compass
+        // or with poor initial compass
+        float direction = start_loc.get_bearing_to(plane.current_loc) * 0.01;
+        float dist_done = start_loc.get_distance(plane.current_loc);
+        const float dist = target_dist;
+
+        plane.next_WP_loc = plane.current_loc;
+        plane.next_WP_loc.offset_bearing(direction, MAX(dist-dist_done, 0));
+
         plane.set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
         plane.complete_auto_takeoff();
     }
