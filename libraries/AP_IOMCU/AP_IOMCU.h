@@ -70,6 +70,9 @@ public:
 
     // get the name of the RC protocol
     const char *get_rc_protocol(void);
+    
+    // get dropped frame counter
+    uint32_t get_dropped_frame_count(void) { return reg_status.dropped_frames; }
 
     /*
       get servo rail voltage

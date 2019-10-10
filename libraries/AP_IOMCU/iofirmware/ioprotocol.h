@@ -115,6 +115,7 @@ struct page_reg_status {
     uint8_t err_read;
     uint8_t err_write;
     uint8_t err_uart;
+    uint32_t dropped_frames;
 };
 
 struct page_rc_input {

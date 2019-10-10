@@ -411,6 +411,7 @@ void AP_IOMCU_FW::page_status_update(void)
         reg_status.vrssi = 0;
     }
     reg_status.vservo = adc_sample_vservo();
+    reg_status.dropped_frames = AP::RC().get_dropped_frame_count();
 }
 
 bool AP_IOMCU_FW::handle_code_read()
