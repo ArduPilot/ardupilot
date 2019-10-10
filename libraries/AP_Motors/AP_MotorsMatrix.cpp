@@ -152,7 +152,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
     throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
-    throttle_thrust_max = _thrust_boost_ratio + (1.0f - _thrust_boost_ratio) * _throttle_thrust_max;
+    throttle_thrust_max = _thrust_boost_ratio + (1.0f - _thrust_boost_ratio) * _throttle_thrust_max * compensation_gain;
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
@@ -360,7 +360,7 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
     }
 
     // check to see if thrust boost is using more throttle than _throttle_thrust_max
-    if (_throttle_thrust_max > throttle_thrust_best_plus_adj && rpyt_high < 0.9f && _thrust_balanced) {
+    if ((_throttle_thrust_max * get_compensation_gain() > throttle_thrust_best_plus_adj) && (rpyt_high < 0.9f) && _thrust_balanced) {
         _thrust_boost = false;
     }
 }
