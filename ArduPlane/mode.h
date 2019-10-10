@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
+#include <AP_Common/Location.h>
 #include <stdint.h>
 
 class Mode
@@ -474,8 +475,8 @@ protected:
     AP_Int16 level_alt;
     AP_Int8 level_pitch;
 
-    int32_t initial_alt_cm;
     bool takeoff_started;
+    Location start_loc;
 
     bool _enter() override;
 };
