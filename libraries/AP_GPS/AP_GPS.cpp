@@ -752,7 +752,7 @@ void AP_GPS::update(void)
         primary_instance = GPS_BLENDED_INSTANCE;
     } else {
         // use switch logic to find best GPS
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (_auto_switch == 3) {
             // select the second GPS instance
             primary_instance = 1;
@@ -950,7 +950,7 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         last_send_time_ms[chan] = last_message_time_ms(0);
     } else {
         // when we don't have a GPS then send at 1Hz
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - last_send_time_ms[chan] < 1000) {
             return;
         }

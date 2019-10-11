@@ -237,7 +237,7 @@ AP_GPS_SBP::_attempt_state_update()
     //
     // If we have a full update available, save it
     //
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     bool ret = false;
 
     if (now - last_heatbeat_received_ms > SBP_TIMEOUT_HEATBEAT) {

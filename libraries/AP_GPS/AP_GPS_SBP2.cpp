@@ -229,7 +229,7 @@ AP_GPS_SBP2::_attempt_state_update()
     if (last_heartbeat_received_ms == 0)
         return false;
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     if (now - last_heartbeat_received_ms > SBP_TIMEOUT_HEARTBEAT) {
 

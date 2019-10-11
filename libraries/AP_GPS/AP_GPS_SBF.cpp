@@ -73,7 +73,7 @@ AP_GPS_SBF::read(void)
 
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-            uint32_t now = AP_HAL::millis();
+            const uint32_t now = AP_HAL::millis();
             const char *init_str = _initialisation_blob[_init_blob_index];
 
             if (now > _init_blob_time) {
@@ -94,7 +94,7 @@ AP_GPS_SBF::read(void)
             } else if (_has_been_armed && (RxState & SBF_DISK_MOUNTED)) {
                 // since init is done at this point and unmounting should be rate limited,
                 // take over the _init_blob_time variable
-                uint32_t now = AP_HAL::millis();
+                const uint32_t now = AP_HAL::millis();
                 if (now > _init_blob_time) {
                     unmount_disk();
                     _init_blob_time = now + 1000;

@@ -254,7 +254,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         // get the time the packet arrived on the UART
         uint64_t uart_us = port->receive_time_constraint_us(msg_length);
 
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         uint32_t dt_ms = now - _last_ms;
         _last_ms = now;
 

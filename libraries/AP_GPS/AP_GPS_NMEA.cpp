@@ -197,7 +197,7 @@ bool AP_GPS_NMEA::_have_new_message()
         _last_GGA_ms == 0) {
         return false;
     }
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_RMC_ms > 150 ||
         now - _last_GGA_ms > 150) {
         return false;
@@ -235,7 +235,7 @@ bool AP_GPS_NMEA::_term_complete()
         const uint8_t checksum = (nibble_high << 4u) | nibble_low;
         if (checksum == _parity) {
             if (_gps_data_good) {
-                uint32_t now = AP_HAL::millis();
+                const uint32_t now = AP_HAL::millis();
                 switch (_sentence_type) {
                 case _GPS_SENTENCE_RMC:
                     _last_RMC_ms = now;
