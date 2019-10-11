@@ -92,6 +92,8 @@ public:
         GPS_TYPE_MAV = 14,
         GPS_TYPE_NOVA = 15,
         GPS_TYPE_HEMI = 16, // hemisphere NMEA
+        GPS_TYPE_SBFINS = 17, // Septentrio gps with imu corrections (AsterRx-i S)
+        GPS_TYPE_SBFDUALANTENNA = 18, // Septentrio with dual antenna (AsteRx-m2a)
     };
 
     /// GPS status codes
@@ -135,6 +137,7 @@ public:
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
+        uint8_t atteulerMode;               ///< mode in which the Attitude is computed
         float ground_speed;                 ///< ground speed in m/sec
         float ground_course;                ///< ground course in degrees
         float gps_yaw;                      ///< GPS derived yaw information, if available (degrees)
@@ -145,11 +148,12 @@ public:
         float speed_accuracy;               ///< 3D velocity RMS accuracy estimate in m/s
         float horizontal_accuracy;          ///< horizontal RMS accuracy estimate in m
         float vertical_accuracy;            ///< vertical RMS accuracy estimate in m
+        float gps_yaw_accuracy;             ///< Accuracy of yaw by gps in degree
         bool have_vertical_velocity;      ///< does GPS give vertical velocity? Set to true only once available.
         bool have_speed_accuracy;         ///< does GPS give speed accuracy? Set to true only once available.
         bool have_horizontal_accuracy;    ///< does GPS give horizontal position accuracy? Set to true only once available.
         bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
-        bool have_gps_yaw;                ///< does GPS give yaw? Set to true only once available.
+        bool have_gps_yaw;                ///< does GPS give yaw? Set to true only once available. 
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
         uint32_t uart_timestamp_ms;         ///< optional timestamp from set_uart_timestamp()
 

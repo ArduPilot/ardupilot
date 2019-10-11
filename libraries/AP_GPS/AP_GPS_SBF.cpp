@@ -49,10 +49,28 @@ do {                                            \
                        OUTOFGEOFENCE)
 
 
+
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
-                       AP_HAL::UARTDriver *_port) :
+                       AP_HAL::UARTDriver *_port, uint8_t _asterx_setup) :
     AP_GPS_Backend(_gps, _state, _port)
 {
+    asterx_type = _asterx_setup;
+
+    switch(asterx_type) {
+        case SBF_SINGLE_ANTENNA:
+            initialization_blob = &_initialisation_blob;
+            break;
+        case SBF_DUAL_ANTENNA:
+            initialization_blob = &_initialisation_blob_dualantenna;
+            break;
+        case SBF_INS:
+            initialization_blob = &_initialisation_blob_i;
+            break;
+        default:
+            initialization_blob = &_initialisation_blob;
+            break;
+    }
+
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
 
     port->write((const uint8_t*)_port_enable, strlen(_port_enable));
@@ -63,7 +81,7 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 //
 bool
 AP_GPS_SBF::read(void)
-{
+{   
     bool ret = false;
     uint32_t available_bytes = port->available();
     for (uint32_t i = 0; i < available_bytes; i++) {
@@ -71,10 +89,12 @@ AP_GPS_SBF::read(void)
         ret |= parse(temp);
     }
 
+
+
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
-        if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
+        if (_init_blob_index < ARRAY_SIZE(initialization_blob)) {
             uint32_t now = AP_HAL::millis();
-            const char *init_str = _initialisation_blob[_init_blob_index];
+            const char **init_str = initialization_blob[_init_blob_index];
 
             if (now > _init_blob_time) {
                 if (now > _config_last_ack_time + 2500) {
@@ -84,7 +104,7 @@ AP_GPS_SBF::read(void)
                     _config_last_ack_time = now;
                 } else {
                     Debug("SBF sending init string: %s", init_str);
-                    port->write((const uint8_t*)init_str, strlen(init_str));
+                    port->write((const uint8_t*)init_str, strlen(*init_str));
                 }
                 _init_blob_time = now + 1000;
             }
@@ -207,10 +227,11 @@ AP_GPS_SBF::parse(uint8_t temp)
 
                 // received the result, lets assess it
                 if (sbf_msg.data.bytes[0] == ':') {
+
                     // valid command, determine if it was the one we were trying
                     // to send in the configuration sequence
-                    if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-                        if (!strncmp(_initialisation_blob[_init_blob_index], (char *)(sbf_msg.data.bytes + 2),
+                    if (_init_blob_index < ARRAY_SIZE(initialization_blob)) {
+                        if (!strncmp(*initialization_blob[_init_blob_index], (char *)(sbf_msg.data.bytes + 2),
                                      sbf_msg.read - SBF_EXCESS_COMMAND_BYTES)) {
                             Debug("SBF Ack Command: %s\n", sbf_msg.data.bytes);
                             _init_blob_index++;
@@ -256,16 +277,21 @@ AP_GPS_SBF::process_message(void)
 
         // Update velocity state (don't use −2·10^10)
         if (temp.Vn > -200000) {
-            state.velocity.x = (float)(temp.Vn);
-            state.velocity.y = (float)(temp.Ve);
-            state.velocity.z = (float)(-temp.Vu);
+ 
+            // if using the AsteRx-i we need to parse it from the INSNavGeod
+            if(asterx_type != SBF_INS){
+                state.velocity.x = (float)(temp.Vn);
+                state.velocity.y = (float)(temp.Ve);
+                state.velocity.z = (float)(-temp.Vu);
 
-            state.have_vertical_velocity = true;
+                state.have_vertical_velocity = true;
 
-            float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
-            state.ground_speed = (float)safe_sqrt(ground_vector_sq);
+                float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
+                state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
-            state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+                state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+
+            }
             state.rtk_age_ms = temp.MeanCorrAge * 10;
 
             // value is expressed as twice the rms error = int16 * 0.01/2
@@ -275,8 +301,8 @@ AP_GPS_SBF::process_message(void)
             state.have_vertical_accuracy = true;
         }
 
-        // Update position state (don't use -2·10^10)
-        if (temp.Latitude > -200000) {
+        // Update position state (don't use -2·10^10) and prefer the INSNavGeod lat, lng and alt
+        if (temp.Latitude > -200000 && asterx_type != SBF_INS) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
@@ -325,6 +351,131 @@ AP_GPS_SBF::process_message(void)
                     
         return true;
     }
+    case INSNavGeod:
+    {
+        const msg4226 &temp = sbf_msg.data.msg4226u;
+
+
+        // Update time state
+        if (temp.WNc != 65535) {
+            state.time_week = temp.WNc;
+            state.time_week_ms = (uint32_t)(temp.TOW);
+        }
+
+        check_new_itow(temp.TOW, sbf_msg.length);
+        state.last_gps_time_ms = AP_HAL::millis();
+
+        // Update velocity state (don't use −2·10^10)
+        if (temp.Vn > -200000) {
+            state.velocity.x = (float)(temp.Vn);
+            state.velocity.y = (float)(temp.Ve);
+            state.velocity.z = (float)(-temp.Vu);
+
+            state.have_vertical_velocity = true;
+
+            float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
+            state.ground_speed = (float)safe_sqrt(ground_vector_sq);
+
+            state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+
+        }
+
+        // Update position state (don't use -2·10^10)
+        if (temp.Latitude > -200000) {
+            state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
+            state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
+            state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
+        }
+
+        // Update yaw (don't use -2·10^10)
+        if (temp.Heading > -200000) {
+            state.gps_yaw = (float)(temp.Heading);
+            state.have_gps_yaw = true;
+        }
+
+
+        Debug("temp.Mode=0x%02x\n", (unsigned)temp.Mode);
+        switch (temp.Mode & 15) {
+            case 0: // no pvt
+                state.status = AP_GPS::NO_FIX;
+                break;
+            case 1: // standalone
+                state.status = AP_GPS::GPS_OK_FIX_3D;
+                break;
+            case 2: // dgps
+                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                break;
+            case 3: // fixed location
+                state.status = AP_GPS::GPS_OK_FIX_3D;
+                break;
+            case 4: // rtk fixed
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                break;
+            case 5: // rtk float
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                break;
+            case 6: // sbas
+                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                break;
+            case 7: // moving rtk fixed
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                break;
+            case 8: // moving rtk float
+                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                break;
+        }
+        
+                    
+        return true;
+    }
+    case AttEuler:
+    {
+        // This message is used when the receiver has a dual antenna setup
+        // It contains the heading, roll and pitch. 
+        // Roll is not yet implemented with AttEuler but Septentrio included it in this message
+
+        const msg5938 &temp = sbf_msg.data.msg5938u;
+
+        // Update time state
+        if (temp.WNc != 65535) {
+            state.time_week = temp.WNc;
+            state.time_week_ms = (uint32_t)(temp.TOW);
+        }
+
+        if (temp.NrSV != 255) {
+            state.num_sats = temp.NrSV;
+        }
+
+        if ((temp.Mode) > 0) { // AttEauler mode can be parsed if needed. For now it is not
+            state.atteulerMode = temp.Mode;
+        } 
+
+        check_new_itow(temp.TOW, sbf_msg.length);
+        state.last_gps_time_ms = AP_HAL::millis();
+
+        // Update yaw (don't use -2·10^10)
+        if (temp.Heading > -200000) {
+            state.gps_yaw = (float)(temp.Heading);
+            state.have_gps_yaw = true;
+        }
+
+        return true;
+    }
+    case AttCovEuler:
+    {   
+        const msg5939 &temp = sbf_msg.data.msg5939u;
+        // Update time state
+        if (temp.WNc != 65535) {
+            state.time_week = temp.WNc;
+            state.time_week_ms = (uint32_t)(temp.TOW);
+        }
+
+        check_new_itow(temp.TOW, sbf_msg.length);
+
+        if(temp.Cov_HeadHead > -200000) {
+            state.gps_yaw_accuracy = temp.Cov_HeadHead; // variance in degree²
+        }
+    }
     case DOP:
     {
         const msg4001 &temp = sbf_msg.data.msg4001u;
@@ -370,15 +521,15 @@ AP_GPS_SBF::process_message(void)
 void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
-        _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
+        _init_blob_index < ARRAY_SIZE(initialization_blob)) {
         gcs().send_text(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u)", state.instance + 1,
-                        _init_blob_index, (unsigned)ARRAY_SIZE(_initialisation_blob));
+                        _init_blob_index, (unsigned)ARRAY_SIZE(initialization_blob));
     }
 }
 
 bool AP_GPS_SBF::is_configured (void) {
     return (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE ||
-             _init_blob_index >= ARRAY_SIZE(_initialisation_blob));
+             _init_blob_index >= ARRAY_SIZE(initialization_blob));
 }
 
 bool AP_GPS_SBF::is_healthy (void) const {

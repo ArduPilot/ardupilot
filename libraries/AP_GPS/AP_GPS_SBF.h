@@ -29,7 +29,7 @@
 class AP_GPS_SBF : public AP_GPS_Backend
 {
 public:
-    AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, uint8_t _asterx_setup);
 
     AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
@@ -49,6 +49,12 @@ public:
 
     bool prepare_for_arming(void) override;
 
+    enum sbf_type {
+        SBF_SINGLE_ANTENNA  = 0,
+        SBF_INS             = 1,
+        SBF_DUAL_ANTENNA    = 2,
+    };
+
 
 private:
 
@@ -58,6 +64,8 @@ private:
     static const uint8_t SBF_PREAMBLE1 = '$';
     static const uint8_t SBF_PREAMBLE2 = '@';
 
+    int asterx_type;
+
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
     const char* _initialisation_blob[5] = {
@@ -66,6 +74,19 @@ private:
     "sem, PVT, 5\n",
     "spm, Rover, all\n",
     "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
+    const char* _initialisation_blob_i[5] = {
+    "sso, Stream1, COM1, PVTGeodetic+INSNavGeod+DOP+ReceiverStatus+VelCovGeodetic, msec100\n",
+    "srd, Moderate, UAV\n",
+    "sem, PVT, 5\n",
+    "spm, Rover, all\n",
+    "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
+    const char* _initialisation_blob_dualantenna[5] = {
+    "sso, Stream1, COM1, PVTGeodetic+AttEuler+AtCovEuler+DOP+ReceiverStatus+VelCovGeodetic, msec100\n",
+    "srd, Moderate, UAV\n",
+    "sem, PVT, 5\n",
+    "spm, Rover, all\n",
+    "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
+    const char* (*initialization_blob)[5];
     uint32_t _config_last_ack_time;
 
     const char* _port_enable = "\nSSSSSSSSSS\n";
@@ -82,7 +103,10 @@ private:
         DOP = 4001,
         PVTGeodetic = 4007,
         ReceiverStatus = 4014,
-        VelCovGeodetic = 5908
+        VelCovGeodetic = 5908,
+        INSNavGeod = 4226,
+        AttEuler = 5938,
+        AttCovEuler= 5939
     };
 
     struct PACKED msg4007 // PVTGeodetic
@@ -163,11 +187,83 @@ private:
         float Cov_VuDt;
     };
 
+    struct PACKED msg4226 // INSNavGeod
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint8_t Mode;
+        uint8_t Error;
+        uint16_t Info;
+        uint16_t GNSSAge;
+        double Latitude;
+        double Longitude;
+        double Height;
+        float Undulation;
+        uint16_t Accuracy;
+        uint16_t Latency;
+        uint8_t Datum;
+        uint8_t Reserved;
+        uint16_t SBList;
+        // INSNavGeodPosStdDev sub-block
+        float LatitudeStdDev;
+        float LongitudeStdDev;
+        float HeightStdDev;
+        // INSNavGeodAtt sub-block
+        float Heading;
+        float Pitch;
+        float Roll;
+        // INSNavGeodAttStdDev sub-block
+        float HeadingStdDev;
+        float PitchStdDev;
+        float RollStdDev;
+        // INSNavGeodVel sub-block
+        float Ve;
+        float Vn;
+        float Vu;
+        // INSNavGeodVelStdDev sub-block
+        float VestdDev;
+        float VnStdDev;
+        float VuStdDev;
+    };
+
+    struct PACKED msg5938 // AttEuler 
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint8_t NrSV;
+        uint8_t Error;
+        uint16_t Mode;
+        uint16_t Reserved;
+        float Heading;
+        float Pitch;
+        float Roll;
+        float PitchDot;
+        float RollDot;
+        float HeadingDot;
+    };
+
+    struct PACKED msg5939 // AttCovEuler
+    {
+        uint32_t TOW;
+        uint16_t WNc;
+        uint8_t Reserved;
+        uint8_t Error;
+        float Cov_HeadHead;
+        float Cov_PitchPitch;
+        float Cov_RollRoll;
+        float Cov_HeadPitch;    // Septentrio states :The values are currently set to their Do-Not-Use values.
+        float Cov_HeadRoll;     // Septentrio states :The values are currently set to their Do-Not-Use values.
+        float Cov_PitchRoll;    // Septentrio states :The values are currently set to their Do-Not-Use values.
+    };
+
     union PACKED msgbuffer {
         msg4007 msg4007u;
         msg4001 msg4001u;
         msg4014 msg4014u;
         msg5908 msg5908u;
+        msg4226 msg4226u;
+        msg5938 msg5938u;
+        msg5939 msg5939u;
         uint8_t bytes[256];
     };
 
@@ -203,4 +299,5 @@ private:
         INVALIDCONFIG = (1 << 10),  // set if one or more configuration file (permission or channel configuration) is invalid or absent.
         OUTOFGEOFENCE = (1 << 11),  // set if the receiver is currently out of its permitted region of operation (geo-fencing).
     };
+
 };
