@@ -185,7 +185,7 @@ void ModeThrow::run()
     }
 
     // log at 10hz or if stage changes
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if ((stage != prev_stage) || (now - last_log_ms) > 100) {
         prev_stage = stage;
         last_log_ms = now;

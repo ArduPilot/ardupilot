@@ -150,7 +150,7 @@ void Copter::esc_calibration_auto()
 void Copter::esc_calibration_notify()
 {
     AP_Notify::flags.esc_calibration = true;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - esc_calibration_notify_update_ms > 20) {
         esc_calibration_notify_update_ms = now;
         notify.update();

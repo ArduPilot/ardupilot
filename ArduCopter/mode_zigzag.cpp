@@ -230,7 +230,7 @@ bool ModeZigZag::reached_destination()
     }
 
     // wait at least one second
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (reach_wp_time_ms == 0) {
         reach_wp_time_ms = now;
     }

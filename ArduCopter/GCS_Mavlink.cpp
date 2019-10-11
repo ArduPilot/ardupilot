@@ -902,7 +902,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             break;
         }
 
-        uint32_t tnow = AP_HAL::millis();
+        const uint32_t tnow = AP_HAL::millis();
 
         manual_override(copter.channel_roll, packet.y, 1000, 2000, tnow);
         manual_override(copter.channel_pitch, packet.x, 1000, 2000, tnow, true);

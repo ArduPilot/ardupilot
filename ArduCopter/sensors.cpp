@@ -75,7 +75,7 @@ void Copter::read_rangefinder(void)
         }
 
         // filter rangefinder altitude
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         const bool timed_out = now - rf_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS;
         if (rf_state.alt_healthy) {
             if (timed_out) {

@@ -118,7 +118,7 @@ bool ModeFlowHold::init(bool ignore_checks)
  */
 void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // get corrected raw flow rate
     Vector2f raw_flow = copter.optflow.flowRate() - copter.optflow.bodyRate();

@@ -28,7 +28,7 @@ void Copter::motor_test_output()
     EXPECT_DELAY_MS(2000);
 
     // check for test timeout
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if ((now - motor_test_start_ms) >= motor_test_timeout_ms) {
         if (motor_test_count > 1) {
             if (now - motor_test_start_ms < motor_test_timeout_ms*1.5) {

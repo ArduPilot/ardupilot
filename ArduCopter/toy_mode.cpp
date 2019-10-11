@@ -239,7 +239,7 @@ void ToyMode::update()
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     
     if (is_v2450_buttons()) {
         // V2450 button mapping from cypress radio. It maps the
@@ -729,7 +729,7 @@ void ToyMode::trim_update(void)
         }
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     
     if (trim.start_ms == 0) {
         // start timer
@@ -835,7 +835,7 @@ void ToyMode::action_arm(void)
 */
 void ToyMode::throttle_adjust(float &throttle_control)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     const uint32_t soft_start_ms = 5000;
     const uint16_t throttle_start = 600 + copter.g.throttle_deadzone;
     if (!copter.motors->armed() && (flags & FLAG_THR_ARM)) {
@@ -888,7 +888,7 @@ void ToyMode::blink_update(void)
     }
 
     // let the TX know we are recording video
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_video_ms < 1000) {
         AP_Notify::flags.video_recording = 1;
     } else {
