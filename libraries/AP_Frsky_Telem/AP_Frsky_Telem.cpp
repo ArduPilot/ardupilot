@@ -124,7 +124,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 _passthrough.send_attiandrng = false; // next iteration, check if we should send something other
             } else { // send other sensor data if it's time for them, and reset the corresponding timer if sent
                 _passthrough.send_attiandrng = true; // next iteration, send attitude b/c it needs frequent updates to remain smooth
-                uint32_t now = AP_HAL::millis();
+                const uint32_t now = AP_HAL::millis();
                 if ((now - _passthrough.params_timer) >= 1000) {
                     send_uint32(DIY_FIRST_ID+7, calc_param());
                     _passthrough.params_timer = AP_HAL::millis();
@@ -307,7 +307,7 @@ void AP_Frsky_Telem::send_D(void)
     const AP_AHRS &_ahrs = AP::ahrs();
     const AP_BattMonitor &_battery = AP::battery();
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     // send frame1 every 200ms
     if (now - _D.last_200ms_frame >= 200) {
         _D.last_200ms_frame = now;
@@ -515,7 +515,7 @@ void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
  */
 void AP_Frsky_Telem::check_sensor_status_flags(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     const uint32_t _sensor_status_flags = sensor_status_flags();
 
@@ -574,7 +574,7 @@ void AP_Frsky_Telem::check_ekf_status(void)
     Vector3f magVar;
     Vector2f offset;
     if (_ahrs.get_variances(velVar, posVar, hgtVar, magVar, tasVar, offset)) {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if ((now - check_ekf_status_timer) >= 10000) { // prevent repeating any ekf_status message unless 10 seconds have passed
             // multiple errors can be reported at a time. Same setup as Mission Planner.
             if (velVar >= 1) {
