@@ -238,7 +238,7 @@ void AP_OSD::update_osd()
 //update maximums and totals
 void AP_OSD::stats()
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (!AP_Notify::flags.armed) {
         last_update_ms = now;
         return;
@@ -353,7 +353,7 @@ void AP_OSD::update_current_screen()
     case AUTO_SWITCH:
         if (channel_value > channel->get_radio_trim()) {
             if (switch_debouncer) {
-                uint32_t now = AP_HAL::millis();
+                const uint32_t now = AP_HAL::millis();
                 if (now - last_switch_ms > 1000) {
                     next_screen();
                     last_switch_ms = now;

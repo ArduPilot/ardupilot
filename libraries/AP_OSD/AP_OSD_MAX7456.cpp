@@ -277,7 +277,7 @@ void AP_OSD_MAX7456::check_reinit()
 
     _dev->read_registers(MAX7456ADD_VM0|MAX7456ADD_READ, &check, 1);
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // Stall check
     if (check != video_signal_reg) {
