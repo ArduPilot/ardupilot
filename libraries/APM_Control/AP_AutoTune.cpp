@@ -114,7 +114,7 @@ void AP_AutoTune::start(void)
 {
     running = true;
     state = DEMAND_UNSATURATED;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     state_enter_ms = now;
     last_save_ms = now;
@@ -170,7 +170,7 @@ void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_ou
     // see what state we are in
     ATState new_state;
     float abs_desired_rate = fabsf(desired_rate);
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     if (fabsf(servo_out) >= 45) {
         // we have saturated the servo demand (not including
