@@ -129,7 +129,7 @@ float AP_WheelRateControl::get_rate_controlled_throttle(uint8_t instance, float 
     rate_pid.set_dt(dt);
 
     // check for timeout
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_update_ms > AP_WHEEL_RATE_CONTROL_TIMEOUT_MS) {
         rate_pid.reset_filter();
         rate_pid.reset_I();
