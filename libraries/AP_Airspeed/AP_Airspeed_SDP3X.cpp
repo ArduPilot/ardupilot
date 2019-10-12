@@ -162,7 +162,7 @@ void AP_Airspeed_SDP3X::_timer()
     // read 6 bytes from the sensor
     uint8_t val[6];
     int ret = _dev->transfer(nullptr, 0, &val[0], sizeof(val));
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (!ret) {
         if (now - _last_sample_time_ms > 200) {
             // try and re-connect
@@ -278,7 +278,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_SDP3X::get_differential_pressure(float &pressure)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_sample_time_ms > 100) {
         return false;
     }
