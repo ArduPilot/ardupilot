@@ -39,7 +39,7 @@ void AP_BattMonitor_BLHeliESC::read(void)
     float current_sum = 0;
     float consumed_sum = 0;
     float temperature_sum = 0;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     uint32_t highest_ms = 0;
 
     for (uint8_t i=0; i<AP_BLHELI_MAX_ESCS; i++) {

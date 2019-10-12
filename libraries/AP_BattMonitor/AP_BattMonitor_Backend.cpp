@@ -66,7 +66,7 @@ void AP_BattMonitor_Backend::update_resistance_estimate()
     }
 
     // calculate time since last update
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     float loop_interval = (now - _resistance_timer_ms) / 1000.0f;
     _resistance_timer_ms = now;
 
