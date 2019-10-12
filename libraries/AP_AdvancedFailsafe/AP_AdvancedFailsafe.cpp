@@ -203,7 +203,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
         hal.gpio->write(_manual_pin, mode==AFS_MANUAL);
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
     bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);
 
@@ -447,7 +447,7 @@ void AP_AdvancedFailsafe::max_range_update(void)
     // check distance from first location
     float distance_km = _first_location.get_distance(AP::gps().location()) * 0.001;
     if (distance_km > _max_range_km) {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - _term_range_notice_ms > 5000) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Terminating due to range %.1fkm", distance_km);
             _term_range_notice_ms = now;
