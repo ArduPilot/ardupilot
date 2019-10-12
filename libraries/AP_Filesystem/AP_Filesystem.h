@@ -22,11 +22,7 @@
 #include <stdint.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
-#define HAVE_FILESYSTEM_SUPPORT 1
-#else
-#define HAVE_FILESYSTEM_SUPPORT 0
-#endif
+#include "AP_Filesystem_Available.h"
 
 #if HAVE_FILESYSTEM_SUPPORT
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
