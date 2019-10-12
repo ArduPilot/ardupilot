@@ -508,7 +508,7 @@ void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     if (in_state.send_index[chan] >= in_state.vehicle_count) {
         // we've finished a list
