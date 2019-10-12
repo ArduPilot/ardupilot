@@ -142,7 +142,7 @@ void AP_ICEngine::update(void)
     }
 
     bool should_run = false;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     if (state == ICE_OFF && cvalue >= 1700) {
         should_run = true;
