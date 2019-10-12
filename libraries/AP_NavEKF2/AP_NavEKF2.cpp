@@ -789,7 +789,7 @@ void NavEKF2::UpdateFilter(void)
 */
 void NavEKF2::checkLaneSwitch(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (lastLaneSwitch_ms != 0 && now - lastLaneSwitch_ms < 5000) {
         // don't switch twice in 5 seconds
         return;
