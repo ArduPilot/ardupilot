@@ -343,7 +343,7 @@ bool RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
     const uint8_t dsm_frame_size = sizeof(dsm.frame);
     bool ret = false;
     
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - dsm.last_input_ms > 5) {
         // resync based on time
         dsm.partial_frame_count = 0;
@@ -504,7 +504,7 @@ void RCInput::add_sbus_input(const uint8_t *bytes, size_t nbytes)
     }
     const uint8_t sbus_frame_size = sizeof(sbus.frame);
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - sbus.last_input_ms > 5) {
         // resync based on time
         sbus.partial_frame_count = 0;
