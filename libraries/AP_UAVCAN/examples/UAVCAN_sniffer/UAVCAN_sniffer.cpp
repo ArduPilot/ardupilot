@@ -285,7 +285,7 @@ void loop(void)
 {
     sniffer.loop();
     static uint32_t last_print_ms;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_print_ms >= 1000) {
         last_print_ms = now;
         sniffer.print_stats();
