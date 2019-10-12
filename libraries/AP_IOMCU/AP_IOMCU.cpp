@@ -204,7 +204,7 @@ void AP_IOMCU::thread_main(void)
         }
 
         // check for regular timed events
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - last_rc_read_ms > 20) {
             // read RC input at 50Hz
             read_rc_input();
@@ -321,7 +321,7 @@ void AP_IOMCU::read_status()
         }
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_log_ms >= 1000U) {
         last_log_ms = now;
         AP::logger().Write("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHIIIII",
