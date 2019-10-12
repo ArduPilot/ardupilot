@@ -126,7 +126,7 @@ void AP_DEVO_Telem::send_frames()
 
 void AP_DEVO_Telem::tick(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     if (now - _last_frame_ms > 1000) {
         _last_frame_ms = now;
