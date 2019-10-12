@@ -564,6 +564,8 @@ struct PACKED log_NKF4 {
     uint16_t solution;
     uint16_t gps;
     int8_t primary;
+    int8_t UsedImu;
+    uint8_t UsedMag;
 };
 
 struct PACKED log_EKF5 {
@@ -1417,7 +1419,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
       "NKF3","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGG??", "FBBBBBBCCCBB" }, \
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
-      "NKF4","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s------??-----", "F------??-----" }, \
+      "NKF4","QcccccfbbHBHHbbB","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PE,UI,UM", "s------??-------", "F------??-------" }, \
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
       "NKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
     { LOG_NKF6_MSG, sizeof(log_EKF1), \
@@ -1427,7 +1429,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_NKF8_MSG, sizeof(log_NKF3), \
       "NKF8","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGGd?", "FBBBBBBCCCBB" }, \
     { LOG_NKF9_MSG, sizeof(log_NKF4), \
-      "NKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s-----???-----", "F-----???-----" }, \
+      "NKF9","QcccccfbbHBHHbbB","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PE,UI,UM", "s-----???-------", "F-----???-------" }, \
     { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
       "NKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s-m---mmmmmmmm", "F-B---BBBBBBBB" }, \
     { LOG_NKF11_MSG, sizeof(log_EKF1), \
@@ -1437,7 +1439,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_NKF13_MSG, sizeof(log_NKF3), \
       "NK13","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGGd?", "FBBBBBBCCCBB" }, \
     { LOG_NKF14_MSG, sizeof(log_NKF4), \
-      "NK14","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s-----???-----", "F-----???-----" }, \
+      "NK14","QcccccfbbHBHHbbB","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PE,UI,UM", "s-----???-------", "F-----???-------" }, \
     { LOG_NKQ1_MSG, sizeof(log_Quaternion), "NKQ1", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_NKQ2_MSG, sizeof(log_Quaternion), "NKQ2", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_NKQ3_MSG, sizeof(log_Quaternion), "NKQ3", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
@@ -1448,7 +1450,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_XKF3_MSG, sizeof(log_NKF3), \
       "XKF3","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGG??", "FBBBBBBCCCBB" }, \
     { LOG_XKF4_MSG, sizeof(log_NKF4), \
-      "XKF4","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s------??-----", "F------??-----" }, \
+      "XKF4","QcccccfbbHBHHbbB","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PE,UI,UM", "s------??-------", "F------??-------" }, \
     { LOG_XKF5_MSG, sizeof(log_NKF5), \
       "XKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
     { LOG_XKF6_MSG, sizeof(log_EKF1), \
@@ -1458,7 +1460,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_XKF8_MSG, sizeof(log_NKF3), \
       "XKF8","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGGd?", "FBBBBBBCCCBB" }, \
     { LOG_XKF9_MSG, sizeof(log_NKF4), \
-      "XKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s-----???-----", "F-----???-----" }, \
+      "XKF9","QcccccfbbHBHHbbB","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PE,UI,UM", "s-----???-------", "F-----???-------" }, \
     { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
       "XKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s-m---mmmmmmmm", "F-B---BBBBBBBB" }, \
     { LOG_XKF11_MSG, sizeof(log_EKF1), \
@@ -1468,7 +1470,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_XKF13_MSG, sizeof(log_NKF3), \
       "XK13","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "snnnmmmGGGd?", "FBBBBBBCCCBB" }, \
     { LOG_XKF14_MSG, sizeof(log_NKF4), \
-      "XK14","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s-----???-----", "F-----???-----" }, \
+      "XK14","QcccccfbbHBHHbbB","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PE,UI,UM", "s-----???-------", "F-----???-------" }, \
     { LOG_XKQ1_MSG, sizeof(log_Quaternion), "XKQ1", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_XKQ2_MSG, sizeof(log_Quaternion), "XKQ2", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_XKQ3_MSG, sizeof(log_Quaternion), "XKQ3", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
