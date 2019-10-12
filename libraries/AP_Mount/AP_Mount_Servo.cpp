@@ -29,7 +29,7 @@ void AP_Mount_Servo::update()
     static bool mount_open = 0;     // 0 is closed
 
     // check servo map every three seconds to allow users to modify parameters
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_check_servo_map_ms > 3000) {
         check_servo_map();
         _last_check_servo_map_ms = now;
