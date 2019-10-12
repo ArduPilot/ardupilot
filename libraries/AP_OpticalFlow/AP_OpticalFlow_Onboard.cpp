@@ -42,7 +42,7 @@ void AP_OpticalFlow_Onboard::update()
 {
     AP_HAL::OpticalFlow::Data_Frame data_frame;
     // read at maximum 10Hz
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_read_ms < 100) {
         return;
     }

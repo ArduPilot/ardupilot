@@ -42,7 +42,7 @@ void AP_OpticalFlow_SITL::update(void)
     }
 
     // update at the requested rate
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_flow_ms < 1000*(1.0f/_sitl->flow_rate)) {
         return;
     }

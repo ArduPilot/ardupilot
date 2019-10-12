@@ -309,7 +309,7 @@ void AP_OpticalFlow_Pixart::timer(void)
     sum_x += burst.delta_x;
     sum_y += burst.delta_y;
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_print_ms >= 100 && (sum_x != 0 || sum_y != 0)) {
         last_print_ms = now;
         dprintf(fd, "Motion: %d %d obs:0x%02x squal:%u rds:%u maxr:%u minr:%u sup:%u slow:%u\n",
@@ -323,7 +323,7 @@ void AP_OpticalFlow_Pixart::timer(void)
 // update - read latest values from sensor and fill in x,y and totals.
 void AP_OpticalFlow_Pixart::update(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_update_ms < 100) {
         return;
     }
