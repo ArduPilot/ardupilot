@@ -107,7 +107,7 @@ void AP_AccelCal::update()
                     }
                 }
 
-                uint32_t now = AP_HAL::millis();
+                const uint32_t now = AP_HAL::millis();
                 if (now - _last_position_request_ms > AP_ACCELCAL_POSITION_REQUEST_INTERVAL_MS) {
                     _last_position_request_ms = now;
                     _gcs->send_accelcal_vehicle_position(step);
@@ -163,7 +163,7 @@ void AP_AccelCal::update()
         }
     } else if (_last_result != ACCEL_CAL_NOT_STARTED) {
         // only continuously report if we have ever completed a calibration
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - _last_position_request_ms > AP_ACCELCAL_POSITION_REQUEST_INTERVAL_MS) {
             _last_position_request_ms = now;
             switch (_last_result) {
