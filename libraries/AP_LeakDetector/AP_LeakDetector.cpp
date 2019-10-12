@@ -87,7 +87,7 @@ void AP_LeakDetector::init()
 
 bool AP_LeakDetector::update()
 {
-    uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::millis();
 
     for (int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
         if (_drivers[i] != NULL) {
