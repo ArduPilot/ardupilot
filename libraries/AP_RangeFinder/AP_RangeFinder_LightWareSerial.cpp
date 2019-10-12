@@ -84,7 +84,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
         }
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (last_init_ms == 0 ||
         (now - last_init_ms > 1000 &&
          now - state.last_reading_ms > 1000)) {

@@ -46,7 +46,7 @@ bool AP_RangeFinder_NMEA::detect(uint8_t serial_instance)
 // update the state of the sensor
 void AP_RangeFinder_NMEA::update(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
         state.last_reading_ms = now;
