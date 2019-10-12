@@ -327,7 +327,7 @@ void AP_RCProtocol_DSM::update(void)
         break;
 
     case BIND_STATE2: {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - bind_last_ms > 500) {
             hal.gpio->write(HAL_GPIO_SPEKTRUM_PWR, HAL_SPEKTRUM_PWR_ENABLED);
             bind_last_ms = now;
@@ -337,7 +337,7 @@ void AP_RCProtocol_DSM::update(void)
     }
 
     case BIND_STATE3: {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - bind_last_ms > 72) {
             // 9 pulses works with all satellite receivers, and supports the highest
             // available protocol
@@ -355,7 +355,7 @@ void AP_RCProtocol_DSM::update(void)
     }
 
     case BIND_STATE4: {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - bind_last_ms > 50) {
             hal.gpio->pinMode(HAL_GPIO_SPEKTRUM_RC, 0);
             bind_state = BIND_STATE_NONE;

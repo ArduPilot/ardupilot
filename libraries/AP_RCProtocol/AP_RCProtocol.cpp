@@ -49,7 +49,7 @@ AP_RCProtocol::~AP_RCProtocol()
 
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
     if (_detected_protocol != AP_RCProtocol::NONE && _detected_with_bytes && !searching) {
         // we're using byte inputs, discard pulses
@@ -116,7 +116,7 @@ void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool 
 
 void AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
     if (_detected_protocol != AP_RCProtocol::NONE && !_detected_with_bytes && !searching) {
         // we're using pulse inputs, discard bytes
@@ -163,7 +163,7 @@ void AP_RCProtocol::check_added_uart(void)
     if (!added.uart) {
         return;
     }
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
     if (!searching && !_detected_with_bytes) {
         // not using this uart
