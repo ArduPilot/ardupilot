@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include <AP_BLHeli/AP_BLHeli.h>
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -294,18 +295,31 @@ void Copter::update_dynamic_notch()
         return;
     }
 
-    if (is_tradheli()) {
+    switch (ins.get_gyro_harmonic_notch_tracking_mode()) {
+        case HarmonicNotch_UpdateThrottle: // throttle based tracking
+            // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
+            ins.update_harmonic_notch_freq_hz(ref_freq * MAX(1.0f, sqrtf(motors->get_throttle_out() / ref)));
+            break;
+
 #if RPM_ENABLED == ENABLED
-        if (rpm_sensor.healthy(0)) {
-            // set the harmonic notch filter frequency from the main rotor rpm
-            ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm_sensor.get_rpm(0) * ref / 60.0f));
-        } else {
-            ins.update_harmonic_notch_freq_hz(ref_freq);
-        }
+        case HarmonicNotch_UpdateRPM: // rpm sensor based tracking
+            if (rpm_sensor.healthy(0)) {
+                // set the harmonic notch filter frequency from the main rotor rpm
+                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm_sensor.get_rpm(0) * ref / 60.0f));
+            } else {
+                ins.update_harmonic_notch_freq_hz(ref_freq);
+            }
+            break;
 #endif
-    } else {
-        // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
-        ins.update_harmonic_notch_freq_hz(ref_freq * MAX(1.0f, sqrtf(motors->get_throttle_out() / ref)));
+#ifdef HAVE_AP_BLHELI_SUPPORT
+        case HarmonicNotch_UpdateBLHeli: // BLHeli based tracking
+            ins.update_harmonic_notch_freq_hz(MAX(ref_freq, AP_BLHeli::get_singleton()->get_average_motor_frequency_hz() * ref));
+            break;
+#endif
+        case HarmonicNotch_Fixed: // static
+        default:
+            ins.update_harmonic_notch_freq_hz(ref_freq);
+            break;
     }
 }
 
