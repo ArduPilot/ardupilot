@@ -354,7 +354,7 @@ void RCOutput_Tap::init()
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now < MIN_BOOT_TIME_MSEC) {
         hal.scheduler->delay(MIN_BOOT_TIME_MSEC - now);
     }
