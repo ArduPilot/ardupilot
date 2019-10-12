@@ -278,18 +278,16 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_SDP3X::get_differential_pressure(float &pressure)
 {
-    uint32_t now = AP_HAL::millis();
-    if (now - _last_sample_time_ms > 100) {
+    WITH_SEMAPHORE(sem);
+
+    if (AP_HAL::millis() - _last_sample_time_ms > 100) {
         return false;
     }
 
-    {
-        WITH_SEMAPHORE(sem);
-        if (_press_count > 0) {
-            _press = _press_sum / _press_count;
-            _press_count = 0;
-            _press_sum = 0;
-        }
+    if (_press_count > 0) {
+        _press = _press_sum / _press_count;
+        _press_count = 0;
+        _press_sum = 0;
     }
 
     pressure = _correct_pressure(_press);
@@ -299,11 +297,11 @@ bool AP_Airspeed_SDP3X::get_differential_pressure(float &pressure)
 // return the current temperature in degrees C, if available
 bool AP_Airspeed_SDP3X::get_temperature(float &temperature)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-
-    WITH_SEMAPHORE(sem);
 
     if (_temp_count > 0) {
         _temp = _temp_sum / _temp_count;
