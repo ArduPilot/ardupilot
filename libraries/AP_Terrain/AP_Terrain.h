@@ -17,7 +17,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/Location.h>
-#include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Filesystem/AP_Filesystem_Available.h>
 
 #if HAVE_FILESYSTEM_SUPPORT && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
