@@ -60,7 +60,7 @@ void AP_Logger_Backend::periodic_fullrate()
 
 void AP_Logger_Backend::periodic_tasks()
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_periodic_1Hz > 1000) {
         periodic_1Hz();
         _last_periodic_1Hz = now;

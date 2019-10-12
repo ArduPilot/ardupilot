@@ -1173,7 +1173,7 @@ bool AP_Logger::log_while_disarmed(void) const
         return true;
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
 
     // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming

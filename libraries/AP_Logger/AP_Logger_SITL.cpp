@@ -88,7 +88,7 @@ bool AP_Logger_SITL::InErase()
     if (erase_started_ms == 0) {
         return false;
     }
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - erase_started_ms < ERASE_TIME_MS) {
         return true;
     }
