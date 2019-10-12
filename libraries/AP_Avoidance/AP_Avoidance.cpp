@@ -411,7 +411,7 @@ void AP_Avoidance::handle_threat_gcs_notify(AP_Avoidance::Obstacle *threat)
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (threat->threat_level == MAV_COLLISION_THREAT_LEVEL_NONE) {
         // only send cleared messages for a few seconds:
         if (_gcs_cleared_messages_first_sent == 0) {
@@ -545,7 +545,7 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
 		}
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     if (new_threat_level != _threat_level) {
         // transition to higher states immediately, recovery to lower states more slowly
