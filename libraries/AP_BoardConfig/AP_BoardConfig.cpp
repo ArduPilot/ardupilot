@@ -329,7 +329,7 @@ void AP_BoardConfig::sensor_config_error(const char *reason)
     */
     uint32_t last_print_ms = 0;
     while (true) {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - last_print_ms >= 3000) {
             last_print_ms = now;
             printf("Sensor failure: %s\n", reason);
