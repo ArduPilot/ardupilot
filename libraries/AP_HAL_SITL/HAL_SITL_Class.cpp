@@ -213,7 +213,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         callbacks->loop();
         HALSITL::Scheduler::_run_io_procs();
 
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - last_watchdog_save >= 100 && using_watchdog) {
             // save persistent data every 100ms
             last_watchdog_save = now;
