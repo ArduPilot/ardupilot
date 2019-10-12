@@ -531,7 +531,7 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     if (serial_start_ms == 0) {
         serial_start_ms = AP_HAL::millis();
     }
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (serial_start_ms == 0 || now - serial_start_ms < 1000) {
         /*
           we've just started the interface. We want it idle for at
@@ -1445,7 +1445,7 @@ void AP_BLHeli::send_esc_telemetry_mavlink(uint8_t mav_chan)
     uint16_t totalcurrent[4] {};
     uint16_t rpm[4] {};
     uint16_t count[4] {};
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     for (uint8_t i=0; i<num_motors; i++) {
         uint8_t idx = i % 4;
         if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
