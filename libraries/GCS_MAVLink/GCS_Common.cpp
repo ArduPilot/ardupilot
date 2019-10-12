@@ -4572,7 +4572,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
 void GCS::update_passthru(void)
 {
     WITH_SEMAPHORE(_passthru.sem);
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s);
     if (enabled && !_passthru.enabled) {
@@ -4614,7 +4614,7 @@ void GCS::passthru_timer(void)
         return;
     }
     if (_passthru.start_ms != 0) {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - _passthru.start_ms < 1000) {
             // delay for 1s so the reply for the SERIAL0_PASSTHRU param set can be seen by GCS
             return;

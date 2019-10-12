@@ -200,7 +200,7 @@ void GCS_MAVLINK::update_signing_timestamp(uint64_t timestamp_usec)
  */
 void GCS_MAVLINK::save_signing_timestamp(bool force_save_now)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     // we save the timestamp every 30s, unless forced by a GPS update
     if (!force_save_now &&  now - last_signing_save_ms < 30*1000UL) {
         return;
