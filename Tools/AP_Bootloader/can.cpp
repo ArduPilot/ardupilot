@@ -150,7 +150,7 @@ static void handle_get_node_info(CanardInstance* ins,
  */
 static void send_fw_read(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - fw_update.last_ms < 500) {
         return;
     }
@@ -573,7 +573,7 @@ void can_update()
         processRx();
         can_handle_DNA();
         static uint32_t last_1Hz_ms;
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - last_1Hz_ms >= 1000) {
             last_1Hz_ms = now;
             process1HzTasks(AP_HAL::micros64());
