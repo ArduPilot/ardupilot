@@ -146,7 +146,7 @@ void AP_Radio_cc2500::update(void)
  */
 uint8_t AP_Radio_cc2500::num_channels(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     uint8_t chan = get_rssi_chan();
     if (chan > 0) {
         pwm_channels[chan-1] = t_status.rssi;
@@ -1013,7 +1013,7 @@ void AP_Radio_cc2500::irq_timeout(void)
             }
             bindOffset = -126;
         }
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - timeTunedMs > 20) {
             timeTunedMs = now;
             bindOffset += 5;
@@ -1050,7 +1050,7 @@ void AP_Radio_cc2500::irq_timeout(void)
     }
 
     case STATE_SEARCH: {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         search_count++;
         if (stats.recv_packets == 0 &&
             get_autobind_time() != 0 &&

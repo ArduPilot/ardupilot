@@ -189,7 +189,7 @@ void AP_Radio_beken::update(void)
  */
 uint8_t AP_Radio_beken::num_channels(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     uint8_t chan = get_rssi_chan();
     if ((chan > 0) && ((chan-1) < BEKEN_MAX_CHANNELS)) {
         uint8_t value = BK_RSSI_DEFAULT; // Fixed value that will not update (halfway in the RSSI range for Cypress chips, 0..31)
@@ -809,7 +809,7 @@ uint8_t AP_Radio_beken::ProcessPacket(const uint8_t* packet, uint8_t rxaddr)
                 Debug(2, "X2");
                 break;
             }
-            uint32_t now = AP_HAL::millis();
+            const uint32_t now = AP_HAL::millis();
             if (now < get_autobind_time() * 1000) { // Is this too soon from rebooting/powering up to autobind?
                 Debug(2, "X3");
                 break;

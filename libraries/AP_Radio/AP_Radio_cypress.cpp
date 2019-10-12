@@ -360,7 +360,7 @@ void AP_Radio_cypress::print_debug_info(void)
  */
 uint8_t AP_Radio_cypress::num_channels(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     uint8_t chan = get_rssi_chan();
     if (chan > 0) {
         dsm.pwm_channels[chan-1] = dsm.rssi;
