@@ -190,7 +190,7 @@ void AP_TempCalibration::learn_calibration(void)
     }
     learn_i = MAX(learn_i, idx);
     
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_learn_ms > 100 &&
         idx*learn_temp_step > min_learn_temp_range &&
         temp - learn_temp_start > temp_max - temp_min) {
