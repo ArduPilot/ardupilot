@@ -224,6 +224,9 @@ public:
     // harmonic notch reference scale factor
     float get_gyro_harmonic_notch_reference(void) const { return _harmonic_notch_filter.reference(); }
 
+    // harmonic notch tracking mode
+    uint8_t get_gyro_harmonic_notch_tracking_mode(void) const { return _harmonic_notch_filter.tracking_mode(); }
+
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
 
