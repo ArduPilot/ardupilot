@@ -808,7 +808,7 @@ void AP_TECS::_update_pitch(void)
     // A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected. In this instance, if airspeed
     // rises above the demanded value, the pitch angle will be increased by the TECS controller.
     float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-    if (!_ahrs.airspeed_sensor_enabled()) {
+    if (!(_ahrs.airspeed_sensor_enabled()|| _use_synthetic_airspeed)) {
         SKE_weighting = 0.0f;
     } else if (_flight_stage == AP_Vehicle::FixedWing::FLIGHT_VTOL) {
         // if we are in VTOL mode then control pitch without regard to
