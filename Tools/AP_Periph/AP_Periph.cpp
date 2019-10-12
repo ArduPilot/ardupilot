@@ -87,7 +87,7 @@ static void update_rainbow()
     if (rainbow_done) {
         return;
     }
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now-start_ms > 1500) {
         rainbow_done = true;
         hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, 0xFF, 0, 0, 0);
@@ -134,7 +134,7 @@ static void update_rainbow()
 void AP_Periph_FW::update()
 {
     static uint32_t last_led_ms;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_led_ms > 1000) {
         last_led_ms = now;
         palToggleLine(HAL_GPIO_PIN_LED);

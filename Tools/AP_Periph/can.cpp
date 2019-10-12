@@ -382,7 +382,7 @@ static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
 static void can_buzzer_update(void)
 {
     if (buzzer_start_ms != 0) {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - buzzer_start_ms > buzzer_len_ms) {
             hal.util->toneAlarm_set_buzzer_tone(0, 0, 0);
             buzzer_start_ms = 0;
@@ -443,7 +443,7 @@ static void can_safety_LED_update(void)
         palWriteLine(HAL_GPIO_PIN_SAFE_LED, SAFE_LED_ON);
         break;
     case ARDUPILOT_INDICATION_SAFETYSTATE_STATUS_SAFETY_ON: {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - last_update_ms > 100) {
             last_update_ms = now;
             static uint8_t led_counter;
@@ -469,7 +469,7 @@ static void can_safety_button_update(void)
 {
     static uint32_t last_update_ms;
     static uint8_t counter;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     // send at 10Hz when pressed
     if (!palReadLine(HAL_GPIO_PIN_SAFE_BUTTON)) {
         counter = 0;
@@ -849,7 +849,7 @@ void AP_Periph_FW::can_start()
 void AP_Periph_FW::can_update()
 {
     static uint32_t last_1Hz_ms;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_1Hz_ms >= 1000) {
         last_1Hz_ms = now;
         process1HzTasks(AP_HAL::micros64());
@@ -880,7 +880,7 @@ void AP_Periph_FW::can_mag_update(void)
 #if 1
     if (compass.get_count() == 0) {
         static uint32_t last_probe_ms;
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - last_probe_ms >= 1000) {
             last_probe_ms = now;
             compass.init();
