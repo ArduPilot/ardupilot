@@ -135,7 +135,7 @@ void Util::set_imu_temp(float current)
     heater.sum += current;
     
     // update once a second
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - heater.last_update_ms < 1000) {
 #if defined(HAL_HEATER_GPIO_PIN)
         // output as duty cycle to local pin. Use a random sequence to

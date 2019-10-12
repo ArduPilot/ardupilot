@@ -1496,7 +1496,7 @@ void RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
  */
 void RCOutput::safety_update(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - safety_update_ms < 100) {
         // update safety at 10Hz
         return;

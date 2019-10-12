@@ -681,7 +681,7 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
         chEvtGetAndClearEvents(EVT_DATA);
         _wait.n = n;
         _wait.thread_ctx = chThdGetSelfX();
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - t0 >= timeout_ms) {
             break;
         }

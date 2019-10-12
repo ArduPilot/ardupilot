@@ -261,7 +261,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
     if (_flash_erase_ok()) {
         // we are getting flash write errors while disarmed. Try
         // re-writing all of flash
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - _last_re_init_ms > 5000) {
             _last_re_init_ms = now;
             bool ok = _flash.re_initialise();

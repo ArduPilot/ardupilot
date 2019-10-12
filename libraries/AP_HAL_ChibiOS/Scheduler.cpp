@@ -322,7 +322,7 @@ void Scheduler::_timer_thread(void *arg)
         hal.rcout->timer_tick();
 
         if (sched->expect_delay_start != 0) {
-            uint32_t now = AP_HAL::millis();
+            const uint32_t now = AP_HAL::millis();
             if (now - sched->expect_delay_start <= sched->expect_delay_length) {
                 sched->watchdog_pat();
             }
@@ -346,7 +346,7 @@ void Scheduler::_monitor_thread(void *arg)
         if (using_watchdog) {
             stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
         }
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
         if (loop_delay >= 200) {
             // the main loop has been stuck for at least
@@ -423,7 +423,7 @@ void Scheduler::_io_thread(void* arg)
         if (!hal.util->get_soft_armed()) {
             // if sdcard hasn't mounted then retry it every 3s in the IO
             // thread when disarmed
-            uint32_t now = AP_HAL::millis();
+            const uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
                 last_sd_start_ms = now;
                 sdcard_retry();
@@ -551,7 +551,7 @@ void Scheduler::expect_delay_ms(uint32_t ms)
             expect_delay_start = 0;
         }
     } else {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (expect_delay_start != 0) {
             // we already have a delay running, possibly extend it
             uint32_t done = now - expect_delay_start;
