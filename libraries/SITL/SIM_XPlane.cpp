@@ -113,7 +113,7 @@ bool XPlane::receive_data(void)
     Location loc {};
     Vector3f pos;
     uint32_t wait_time_ms = 1;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // if we are about to get another frame from X-Plane then wait longer
     if (xplane_frame_time > wait_time_ms &&
@@ -467,7 +467,7 @@ void XPlane::update(const struct sitl_input &input)
         send_data(input);
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (report.last_report_ms == 0) {
         report.last_report_ms = now;
     }

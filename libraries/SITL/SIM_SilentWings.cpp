@@ -300,7 +300,7 @@ void SilentWings::update(const struct sitl_input &input)
     
     update_mag_field_bf();
     
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     
     if (report.last_report_ms == 0) {
         report.last_report_ms = now;

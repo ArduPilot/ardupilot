@@ -247,7 +247,7 @@ void Gimbal::param_send(const struct gimbal_param *p)
 */
 void Gimbal::send_report(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now < 10000) {
         // don't send gimbal reports until 10s after startup. This
         // avoids a windows threading issue with non-blocking sockets

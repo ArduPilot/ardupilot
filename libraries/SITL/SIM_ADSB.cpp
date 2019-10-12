@@ -151,7 +151,7 @@ void ADSB::send_report(void)
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     mavlink_message_t msg;
     uint16_t len;
 
