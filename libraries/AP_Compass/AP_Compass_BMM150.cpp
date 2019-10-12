@@ -291,7 +291,7 @@ void AP_Compass_BMM150::_update()
     /* Checking data ready status */
     if (!ret || !(data[3] & 0x1)) {
         _dev->check_next_register();
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - _last_read_ms > 250) {
             // cope with power cycle to sensor
             _last_read_ms = now;

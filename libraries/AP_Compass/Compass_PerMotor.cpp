@@ -156,7 +156,7 @@ void Compass_PerMotor::calibration_start(void)
 // per-motor calibration update
 void Compass_PerMotor::calibration_update(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     
     // accumulate per-motor sums
     for (uint8_t i=0; i<4; i++) {

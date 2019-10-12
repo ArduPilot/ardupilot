@@ -124,7 +124,7 @@ void AP_Compass_MMC3416::timer()
     const uint16_t sensitivity = 2048; // counts per Gauss, 16 bit mode
     const float counts_to_milliGauss = 1.0e3f / sensitivity;
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_sample_ms > 500) {
         // seems to be stuck or on first sample, reset state machine
         state = STATE_REFILL1;
