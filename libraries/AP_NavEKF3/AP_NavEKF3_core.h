@@ -1022,8 +1022,11 @@ private:
     resetDataSource velResetSource; // preferred source of data for a velocity reset
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the vertical position
-    float posDownDerivative;        // Rate of change of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
-    float posDown;                  // Down position state used in calculation of posDownRate
+    struct {
+        float pos;
+        float vel;
+        float acc;
+    } vertCompFiltState;
 
     // variables used by the pre-initialisation GPS checks
     struct Location gpsloc_prev;    // LLH location of previous GPS measurement

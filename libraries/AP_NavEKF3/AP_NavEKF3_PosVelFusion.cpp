@@ -157,6 +157,7 @@ void NavEKF3_core::ResetHeight(void)
     for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].position.z = stateStruct.position.z;
     }
+    vertCompFiltState.pos = stateStruct.position.z;
 
     // Calculate the position jump due to the reset
     posResetD = stateStruct.position.z - posResetD;
@@ -187,6 +188,7 @@ void NavEKF3_core::ResetHeight(void)
     }
     outputDataNew.velocity.z = stateStruct.velocity.z;
     outputDataDelayed.velocity.z = stateStruct.velocity.z;
+    vertCompFiltState.vel = outputDataNew.velocity.z;
 
     // reset the corresponding covariances
     zeroRows(P,6,6);
@@ -339,6 +341,7 @@ void NavEKF3_core::SelectVelPosFusion()
 
             // Add the offset to the output observer states
             outputDataNew.position.z += posResetD;
+            vertCompFiltState.pos = outputDataNew.position.z;
             outputDataDelayed.position.z += posResetD;
             for (uint8_t i=0; i<imu_buffer_length; i++) {
                 storedOutput[i].position.z += posResetD;
