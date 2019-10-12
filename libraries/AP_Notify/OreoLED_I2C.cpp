@@ -429,7 +429,7 @@ void OreoLED_I2C::update_timer(void)
 {
     WITH_SEMAPHORE(_sem);
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     if (_boot_count < 20 &&
         now - _last_boot_ms > 100) {
