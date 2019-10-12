@@ -98,17 +98,16 @@ void AP_Airspeed_DLVR::timer()
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_DLVR::get_differential_pressure(float &_pressure)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
 
-    {
-        WITH_SEMAPHORE(sem);
-        if (press_count > 0) {
-            pressure = pressure_sum / press_count;
-            press_count = 0;
-            pressure_sum = 0;
-        }
+    if (press_count > 0) {
+        pressure = pressure_sum / press_count;
+        press_count = 0;
+        pressure_sum = 0;
     }
 
     _pressure = pressure;
@@ -118,11 +117,11 @@ bool AP_Airspeed_DLVR::get_differential_pressure(float &_pressure)
 // return the current temperature in degrees C, if available
 bool AP_Airspeed_DLVR::get_temperature(float &_temperature)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-
-    WITH_SEMAPHORE(sem);
 
     if (temp_count > 0) {
         temperature = temperature_sum / temp_count;
