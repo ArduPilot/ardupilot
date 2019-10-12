@@ -240,7 +240,7 @@ void AP_Proximity_LightWareSF40C::request_new_data()
     }
 
     // after timeout assume no reply will ever come
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if ((_last_request_type != RequestType_None) && ((now - _last_request_ms) > PROXIMITY_SF40C_TIMEOUT_MS)) {
         _last_request_type = RequestType_None;
         _last_request_ms = 0;
