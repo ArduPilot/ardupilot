@@ -56,7 +56,7 @@ bool AP_Beacon_SITL::healthy()
 // update the state of the sensor
 void AP_Beacon_SITL::update(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - last_update_ms < 10) {
         return;
     }
