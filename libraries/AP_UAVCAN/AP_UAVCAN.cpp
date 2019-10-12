@@ -527,7 +527,7 @@ void AP_UAVCAN::set_buzzer_tone(float frequency, float duration_s)
 void AP_UAVCAN::safety_state_send()
 {
     ardupilot::indication::SafetyState msg;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_safety_state_ms < 500) {
         // update at 2Hz
         return;
