@@ -57,6 +57,8 @@ public:
 
     // get the most recent telemetry data packet for a motor
     bool get_telem_data(uint8_t esc_index, struct telem_data &td);
+    // return the average motor frequency in Hz for dynamic filtering
+    float get_average_motor_frequency_hz() const;
 
     static AP_BLHeli *get_singleton(void) {
         return _singleton;
