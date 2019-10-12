@@ -142,7 +142,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
     }
     
     // only adjust values at 10Hz
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     uint32_t dt_ms = now - last_check_ms;
     if (dt_ms < 100) {
         return;
@@ -336,7 +336,7 @@ void AP_Tuning::check_controller_error(void)
 {
     float err = controller_error(current_parm);
     if (err > error_threshold) {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         if (now - last_controller_error_ms > 2000 && hal.util->get_soft_armed()) {
             AP_Notify::events.tune_error = 1;
             gcs().send_text(MAV_SEVERITY_INFO, "Tuning: error %.2f", (double)err);
