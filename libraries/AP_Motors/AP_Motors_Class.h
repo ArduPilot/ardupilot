@@ -220,7 +220,8 @@ public:
                     PWM_TYPE_DSHOT150   = 4,
                     PWM_TYPE_DSHOT300   = 5,
                     PWM_TYPE_DSHOT600   = 6,
-                    PWM_TYPE_DSHOT1200  = 7};
+                    PWM_TYPE_DSHOT1200  = 7,
+                    PWM_TYPE_PWM_RANGE  = 8 };
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
 
     MAV_TYPE get_frame_mav_type() const { return _mav_type; }
@@ -273,6 +274,9 @@ protected:
     // mask of what channels need fast output
     uint16_t            _motor_fast_mask;
 
+    // mask of what channels need to use SERVOn_MIN/MAX for output mapping
+    uint16_t            _motor_pwm_range_mask;
+    
     // pass through variables
     float _roll_radio_passthrough;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
     float _pitch_radio_passthrough;    // pitch input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
