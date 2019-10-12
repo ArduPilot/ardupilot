@@ -1666,7 +1666,7 @@ void AP_InertialSensor::set_accel_peak_hold(uint8_t instance, const Vector3f &ac
         // we only record for primary accel
         return;
     }
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // negative x peak(min) hold detector
     if (accel.x < _peak_hold_state.accel_peak_hold_neg_x ||
