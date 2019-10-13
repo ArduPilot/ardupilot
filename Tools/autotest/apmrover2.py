@@ -314,7 +314,7 @@ class AutoTestRover(AutoTest):
         self.set_rc(3, 1500)
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist=5)
-        self.wait_mode('HOLD', timeout=300)
+        self.mavproxy.expect("Mission Complete")
         self.disarm_vehicle()
         self.progress("Mission OK")
 
@@ -325,7 +325,7 @@ class AutoTestRover(AutoTest):
         self.arm_vehicle()
         self.mavproxy.expect("Gripper Grabbed")
         self.mavproxy.expect("Gripper Released")
-        self.wait_mode("HOLD")
+        self.mavproxy.expect("Mission Complete")
         self.disarm_vehicle()
 
     def do_get_banner(self):
@@ -444,14 +444,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("NAV_CONTROLLER_OUTPUT.wp_dist looks good (%u >= %u)" %
                       (m.wp_dist, wp_dist_min,))
 
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time_cached() - tstart > 600:
-                raise NotAchievedException("Did not get home")
-            self.progress("Distance home: %f (mode=%s)" %
-                          (self.distance_to_home(), self.mav.flightmode))
-            if self.mode_is('HOLD') or self.mode_is('ACRO'): # acro for balancebot
-                break
+        # wait for mission to complete
+        self.mavproxy.expect("Mission Complete")
 
         # the EKF doesn't pull us down to 0 speed:
         self.wait_groundspeed(0, 0.5, timeout=600)
@@ -2021,9 +2015,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         magic_waypoint_tstart = 0
         magic_waypoint_tstop = 0
         while True:
-            if self.mode_is("HOLD", cached=True):
-                break
-
             now = self.get_sim_time_cached()
             if now - last_heartbeat_sent > 1:
                 last_heartbeat_sent = now
@@ -2036,10 +2027,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if now - tstart > timeout:
                 raise AutoTestTimeoutException("Didn't complete")
             magic_waypoint = 3
-#            mc = self.mav.messages.get("MISSION_CURRENT", None)
-            mc = self.mav.recv_match(type="MISSION_CURRENT", blocking=False)
+            mc = self.mav.recv_match(type=["MISSION_CURRENT", "STATUSTEXT"],
+                                     blocking=False)
             if mc is not None:
                 print("%s" % str(mc))
+                if mc.get_type() == "STATUSTEXT":
+                    if "Mission Complete" in mc.text:
+                        break
+                    continue
                 if mc.seq == magic_waypoint:
                     print("At magic waypoint")
                     if magic_waypoint_tstart == 0:
