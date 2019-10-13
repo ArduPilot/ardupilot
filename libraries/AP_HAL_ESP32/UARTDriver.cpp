@@ -51,12 +51,22 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                          uart_desc[uart_num].tx,
                          uart_desc[uart_num].rx,
                          UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-            uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
+            //uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
+            uart_driver_install(p, 2*UART_FIFO_LEN, 2*UART_FIFO_LEN, 0, nullptr, 0);
             _readbuf.set_size(RX_BUF_SIZE);
             _writebuf.set_size(TX_BUF_SIZE);
             _initialized = true;
         } else {
             uart_set_baudrate(p, b);
+			uart_config_t config = {
+                .baud_rate = (int)b,
+                .data_bits = UART_DATA_8_BITS,
+                .parity = UART_PARITY_DISABLE,
+                .stop_bits = UART_STOP_BITS_1,
+                .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+            };
+            uart_param_config(p, &config);
+
         }
     }
 }

@@ -46,7 +46,7 @@
 
 #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 0, 0x77)
 
-//#define HAL_ESP32_WIFI 1
+#define HAL_ESP32_WIFI 1
 
 //TODO RCOUT config
 #define HAL_ESP32_RCOUT {GPIO_NUM_22, GPIO_NUM_21, GPIO_NUM_19, GPIO_NUM_18}
@@ -64,7 +64,6 @@
     {.port=UART_NUM_0, .rx=GPIO_NUM_34, .tx=GPIO_NUM_1 },\
 	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
 	{.port=UART_NUM_2, .rx=GPIO_NUM_36, .tx=GPIO_NUM_32 }
-	//{.port=UART_NUM_1, .rx=GPIO_NUM_32, .tx=GPIO_NUM_33 }
 
 
 

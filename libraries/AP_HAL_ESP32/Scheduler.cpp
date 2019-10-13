@@ -398,7 +398,7 @@ void Scheduler::set_position(void* arg)
 void Scheduler::_main_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    hal.uartA->begin(57600);
+    hal.uartA->begin(115200);
     hal.uartB->begin(57600);
     //hal.uartC->begin(57600);
     hal.uartC->begin(921600);
