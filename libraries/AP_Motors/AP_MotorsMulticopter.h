@@ -133,7 +133,10 @@ protected:
 
     // output booster throttle, if any
     virtual void        output_boost_throttle(void);
-    
+
+    // output roll/pitch/yaw/thrust
+    virtual void        output_rpyt(void);
+
     // save parameters as part of disarming
     void                save_params_on_disarm() override;
 

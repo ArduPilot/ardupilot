@@ -255,6 +255,9 @@ void AP_MotorsMulticopter::output()
 
     // output any booster throttle
     output_boost_throttle();
+
+    // output raw roll/pitch/yaw/thrust
+    output_rpyt();
 };
 
 // output booster throttle, if any
@@ -264,6 +267,15 @@ void AP_MotorsMulticopter::output_boost_throttle(void)
         float throttle = constrain_float(get_throttle() * _boost_scale, 0, 1);
         SRV_Channels::set_output_scaled(SRV_Channel::k_boost_throttle, throttle * 1000);
     }
+}
+
+// output roll/pitch/yaw/thrust
+void AP_MotorsMulticopter::output_rpyt(void)
+{
+    SRV_Channels::set_output_scaled(SRV_Channel::k_roll_out, _roll_in_ff * 4500);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_pitch_out, _pitch_in_ff * 4500);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_yaw_out, _yaw_in_ff * 4500);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_thrust_out, get_throttle() * 1000);
 }
 
 // sends minimum values out to the motors
