@@ -26,6 +26,7 @@ extern const AP_HAL::HAL& hal;
 #define BENEWAKE_DIST_MAX_CM 32768
 #define BENEWAKE_TFMINI_OUT_OF_RANGE_CM 1200
 #define BENEWAKE_TF02_OUT_OF_RANGE_CM 2200
+#define BENEWAKE_TF03_OUT_OF_RANGE_CM 18000
 #define BENEWAKE_OUT_OF_RANGE_ADD_CM 100
 
 // format of serial packets received from benewake lidar
@@ -37,9 +38,12 @@ extern const AP_HAL::HAL& hal;
 // byte 2               DIST_L          Distance (in cm) low 8 bits
 // byte 3               DIST_H          Distance (in cm) high 8 bits
 // byte 4               STRENGTH_L      Strength low 8 bits
+// bute 4 (TF03)        (Reserved)
 // byte 5               STRENGTH_H      Strength high 8 bits
+// bute 5 (TF03)        (Reserved)
 // byte 6 (TF02)        SIG             Reliability in 8 levels, 7 & 8 means reliable
 // byte 6 (TFmini)      Distance Mode   0x02 for short distance (mm), 0x07 for long distance (cm)
+// byte 6 (TF03)        (Reserved)
 // byte 7 (TF02 only)   TIME            Exposure time in two levels 0x03 and 0x06
 // byte 8               Checksum        Checksum byte, sum of bytes 0 to bytes 7
 
@@ -121,7 +125,7 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
                     if (dist >= BENEWAKE_DIST_MAX_CM) {
                         // this reading is out of range
                         count_out_of_range++;
-                    } else if (model_type == BENEWAKE_TFmini) {
+                    } else if (model_type == BENEWAKE_TFmini || model_type == BENEWAKE_TF03) {
                         // no signal byte from TFmini so add distance to sum
                         sum_cm += dist;
                         count++;
@@ -152,7 +156,18 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
     if (count_out_of_range > 0) {
         // if only out of range readings return larger of
         // driver defined maximum range for the model and user defined max range + 1m
-        float model_dist_max_cm = (model_type == BENEWAKE_TFmini) ? BENEWAKE_TFMINI_OUT_OF_RANGE_CM : BENEWAKE_TF02_OUT_OF_RANGE_CM;
+        float model_dist_max_cm = 0.0f;
+        switch (model_type) {
+        case BENEWAKE_TFmini:
+            model_dist_max_cm = BENEWAKE_TFMINI_OUT_OF_RANGE_CM;
+            break;
+        case BENEWAKE_TF02:
+            model_dist_max_cm = BENEWAKE_TF02_OUT_OF_RANGE_CM;
+            break;
+        case BENEWAKE_TF03:
+            model_dist_max_cm = BENEWAKE_TF03_OUT_OF_RANGE_CM;
+            break;
+        }
         reading_cm = MAX(model_dist_max_cm, max_distance_cm() + BENEWAKE_OUT_OF_RANGE_ADD_CM);
         return true;
     }
