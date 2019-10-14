@@ -104,6 +104,7 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_heli_tail_rsc:
     case k_motor_tilt:
     case k_boost_throttle:
+    case k_thrust_out:
         set_range(1000);
         break;
     case k_aileron_with_input:
@@ -124,6 +125,9 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_elevon_right:
     case k_vtail_left:
     case k_vtail_right:
+    case k_roll_out:
+    case k_pitch_out:
+    case k_yaw_out:
         set_angle(4500);
         break;
     case k_throttle:
