@@ -10,7 +10,8 @@ public:
 
     enum benewake_model_type {
         BENEWAKE_TF02 = 0,
-        BENEWAKE_TFmini = 1
+        BENEWAKE_TFmini = 1,
+        BENEWAKE_TF03 = 2,
     };
 
     // constructor
