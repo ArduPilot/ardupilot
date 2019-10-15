@@ -3080,6 +3080,7 @@ class AutoTest(ABC):
             self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
             if not self.is_sub() and not self.is_tracker():
                 self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+            self.last_wp_load = time.time()
             return
 
         self.mav.mav.mission_count_send(target_system,
@@ -3101,6 +3102,10 @@ class AutoTest(ABC):
             raise NotAchievedException("Expected MAV_MISSION_ACCEPTED got %s" %
                                        (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name,))
 
+        if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+            self.last_wp_load = time.time()
+
+
     def clear_fence_using_mavproxy(self, timeout=10):
         self.mavproxy.send("fence clear\n")
         tstart = self.get_sim_time_cached()
@@ -3121,6 +3126,7 @@ class AutoTest(ABC):
         num_wp = mavwp.MAVWPLoader().count()
         if num_wp != 0:
             raise NotAchievedException("Failed to clear mission")
+        self.last_wp_load = time.time()
 
     def test_sensor_config_error_loop(self):
         '''test the sensor config error loop works and that parameter sets are persistent'''
