@@ -57,7 +57,7 @@ void Sub::motordetect_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Force all motors to stop
         for(uint8_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motors.motor_is_enabled(i)) {
