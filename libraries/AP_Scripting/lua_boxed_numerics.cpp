@@ -4,19 +4,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-int new_uint32_t(lua_State *L) {
-    luaL_checkstack(L, 2, "Out of stack");
-    *static_cast<uint32_t *>(lua_newuserdata(L, sizeof(uint32_t))) = 0; // allocated memory is already zerod, no need to manipulate this
-    luaL_getmetatable(L, "uint32_t");
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
-uint32_t * check_uint32_t(lua_State *L, int arg) {
-    void *data = luaL_checkudata(L, arg, "uint32_t");
-    return static_cast<uint32_t *>(data);
-}
-
 static uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
     { // userdata
         const uint32_t * ud = static_cast<uint32_t *>(luaL_testudata(L, arg, "uint32_t"));
@@ -45,6 +32,25 @@ static uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
     }
     // failure
     return luaL_argerror(L, arg, "Unable to coerce to uint32_t");
+}
+
+int new_uint32_t(lua_State *L) {
+    luaL_checkstack(L, 2, "Out of stack");
+
+    const int args = lua_gettop(L);
+    if (args > 1) {
+        return luaL_argerror(L, args, "too many arguments");
+    }
+
+    *static_cast<uint32_t *>(lua_newuserdata(L, sizeof(uint32_t))) = (args == 1) ? coerce_to_uint32_t(L, 1) : 0;
+    luaL_getmetatable(L, "uint32_t");
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+uint32_t * check_uint32_t(lua_State *L, int arg) {
+    void *data = luaL_checkudata(L, arg, "uint32_t");
+    return static_cast<uint32_t *>(data);
 }
 
 #define UINT32_T_BOX_OP(name, sym) \
