@@ -3496,10 +3496,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                           mavutil.location(expected_stopping_point.lat, expected_stopping_point.lng, 0, 0))
                 print("delta: %s want_delta<%f" % (str(delta), expected_distance_epsilon))
                 at_stopping_point = delta < expected_distance_epsilon
-
-            if at_stopping_point:
-                if t == "VFR_HUD":
-                    print("groundspeed: %f" % m.groundspeed)
+            elif t == "VFR_HUD":
+                print("groundspeed: %f" % m.groundspeed)
+                if at_stopping_point:
                     if m.groundspeed < 1:
                         self.progress("Seemed to have stopped at stopping point")
                         return
@@ -4461,7 +4460,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             fence_middle,
             expected_stopping_point,
             target_system=target_system,
-            target_component=target_component)
+            target_component=target_component,
+            expected_distance_epsilon=2.5)
         self.set_parameter("AVOID_ENABLE", 0)
         self.do_RTL()
 
@@ -4473,6 +4473,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode("LOITER")
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        self.change_mode("MANUAL")
+        self.reach_heading_manual(180, turn_right=False)
         self.change_mode("GUIDED")
 
         self.test_poly_fence_avoidance_dont_breach_exclusion(target_system=target_system, target_component=target_component)
