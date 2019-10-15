@@ -66,6 +66,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif
     SCHED_TASK(one_second_loop,         1,    400),
     SCHED_TASK(check_long_failsafe,     3,    400),
+    SCHED_TASK(check_gcs_failsafe,      1,    400),
     SCHED_TASK(rpm_update,             10,    100),
     SCHED_TASK(airspeed_ratio_update,   1,    100),
 #if MOUNT == ENABLED

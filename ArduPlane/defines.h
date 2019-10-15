@@ -31,6 +31,14 @@ enum gcs_failsafe {
                                  // while in AUTO mode
 };
 
+// GCS failsafe actions
+enum failsafe_action_gcs {
+    FS_ACTION_GCS_CONTINUE = 0,
+    FS_ACTION_GCS_RTL = 1,
+    FS_ACTION_GCS_GLIDE = 2,
+    FS_ACTION_GCS_PARACHUTE = 3,
+};
+
 enum failsafe_action_short {
     FS_ACTION_SHORT_BESTGUESS = 0,      // CIRCLE/no change(if already in AUTO|GUIDED|LOITER)
     FS_ACTION_SHORT_CIRCLE = 1,
@@ -65,6 +73,9 @@ enum mode_reason_t {
     MODE_REASON_VTOL_FAILED_TRANSITION,
     MODE_REASON_UNAVAILABLE,
     MODE_REASON_VTOL_FAILED_TAKEOFF,
+    MODE_REASON_GCS_FAILSAFE_HEARTBEAT,
+    MODE_REASON_GCS_FAILSAFE_HEARTBEAT_AND_REM_RSSI,
+    MODE_REASON_GCS_FAILSAFE_HEARTBEAT_AND_AUTO,
 };
 
 // type of stick mixing enabled
