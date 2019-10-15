@@ -235,8 +235,8 @@ public:
         //
         k_param_battery = 166,
         k_param_rssi_pin,               // unused, replaced by rssi_ library parameters - 167
-        k_param_battery_volt_pin,       // unused - 168
-        k_param_battery_curr_pin,       // unused - 169
+        k_param_fs_action,
+        k_param_fs_timeout_gcs,       // unused - 169
 
         //
         // 170: Radio settings - all unused now
@@ -420,8 +420,10 @@ public:
     // Failsafe
     AP_Int8 fs_action_short;
     AP_Int8 fs_action_long;
+    AP_Int8 fs_action;
     AP_Float fs_timeout_short;
     AP_Float fs_timeout_long;
+    AP_Int32 fs_timeout_gcs;
     AP_Int8 gcs_heartbeat_fs_enabled;
 
     // Flight modes

@@ -318,13 +318,13 @@ bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const mode_re
     }
     return set_mode(*new_mode, reason);
 }
-
+    
 void Plane::check_long_failsafe()
 {
     uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if (failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS && flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
+    if (failsafe.state != FAILSAFE_LONG && flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
         uint32_t radio_timeout_ms = failsafe.last_valid_rc_ms;
         if (failsafe.state == FAILSAFE_SHORT) {
             // time is relative to when short failsafe enabled
@@ -333,34 +333,19 @@ void Plane::check_long_failsafe()
         if (failsafe.rc_failsafe &&
             (tnow - radio_timeout_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_LONG, MODE_REASON_RADIO_FAILSAFE);
-        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == &mode_auto &&
-                   failsafe.last_heartbeat_ms != 0 &&
-                   (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
-        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HEARTBEAT &&
-                   failsafe.last_heartbeat_ms != 0 &&
-                   (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
-        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
-                   gcs().chan(0) != nullptr &&
-                   gcs().chan(0)->last_radio_status_remrssi_ms != 0 &&
-                   (tnow - gcs().chan(0)->last_radio_status_remrssi_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
-        }
+        } 
     } else {
         uint32_t timeout_seconds = g.fs_timeout_long;
-        if (g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
+        if (g.fs_action_short != FS_ACTION_SHORT_DISABLED) {            
             // avoid dropping back into short timeout
             timeout_seconds = g.fs_timeout_short;
         }
         // We do not change state but allow for user to change mode
-        if (failsafe.state == FAILSAFE_GCS && 
-            (tnow - failsafe.last_heartbeat_ms) < timeout_seconds*1000) {
-            failsafe_long_off_event(MODE_REASON_GCS_FAILSAFE);
-        } else if (failsafe.state == FAILSAFE_LONG && 
+        if (failsafe.state == FAILSAFE_LONG && 
                    !failsafe.rc_failsafe) {
             failsafe_long_off_event(MODE_REASON_RADIO_FAILSAFE);
         }
+        timeout_seconds = timeout_seconds;
     }
 }
 
@@ -384,6 +369,41 @@ void Plane::check_short_failsafe()
     }
 }
 
+void Plane::check_gcs_failsafe()
+{
+    uint32_t tnow = millis();
+
+    // only act on changes
+    // -------------------   
+    if (g.fs_timeout_gcs !=  0 && g.gcs_heartbeat_fs_enabled != 0
+        && failsafe.state != FAILSAFE_GCS && flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {      
+        if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO &&
+            control_mode == &mode_auto && failsafe.last_heartbeat_ms != 0 &&
+            (tnow - failsafe.last_heartbeat_ms) > (uint32_t) g.fs_timeout_gcs*1000) {
+            failsafe_gcs_on_event(g.fs_action, FAILSAFE_GCS,
+                                  MODE_REASON_GCS_FAILSAFE_HEARTBEAT_AND_AUTO);
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HEARTBEAT &&
+                   failsafe.last_heartbeat_ms != 0 &&
+                   (tnow - failsafe.last_heartbeat_ms) > (uint32_t) g.fs_timeout_gcs*1000) {
+            failsafe_gcs_on_event(g.fs_action, FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE_HEARTBEAT);
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
+                   gcs().chan(0) != nullptr &&
+                   gcs().chan(0)->last_radio_status_remrssi_ms != 0 &&
+                   (tnow - gcs().chan(0)->last_radio_status_remrssi_ms)
+                      > (uint32_t) g.fs_timeout_gcs*1000) {
+            failsafe_gcs_on_event(g.fs_action, FAILSAFE_GCS,
+                                  MODE_REASON_GCS_FAILSAFE_HEARTBEAT_AND_REM_RSSI);
+        }
+    } else {
+        uint32_t timeout_seconds = g.fs_timeout_gcs;
+        
+        // We do not change state but allow for user to change mode
+        if (failsafe.state == FAILSAFE_GCS && 
+            (tnow - failsafe.last_heartbeat_ms) < timeout_seconds*1000) {
+            failsafe_gcs_off_event(MODE_REASON_GCS_FAILSAFE);
+        }
+    } 
+}    
 
 void Plane::startup_INS_ground(void)
 {

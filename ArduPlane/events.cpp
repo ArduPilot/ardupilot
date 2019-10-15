@@ -152,6 +152,77 @@ void Plane::failsafe_long_off_event(mode_reason_t reason)
     failsafe.state = FAILSAFE_NONE;
 }
 
+void Plane::failsafe_gcs_on_event(const int8_t action, enum failsafe_state fstype,
+                                  mode_reason_t reason)
+{
+    // This is how to handle a gcs loss of control signal failsafe.
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. GCS event on: reason=%u", reason);
+    //  If the GCS is locked up we allow control to revert to RC
+    RC_Channels::clear_overrides();
+
+    switch ((Failsafe_Action)action) {
+        case Failsafe_Action_QLand:
+            if (quadplane.available()) {
+                plane.set_mode(mode_qland, reason);
+                break;
+            }
+            FALLTHROUGH;
+        case Failsafe_Action_Land:
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND
+                && control_mode != &mode_qland) {
+                // never stop a landing if we were already committed
+                if (plane.mission.jump_to_landing_sequence()) {
+                    plane.set_mode(mode_auto, reason);
+                }
+            }
+            break;
+            
+        case Failsafe_Action_RTL:
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND
+                && control_mode != &mode_qland ) {
+                // never stop a landing if we were already committed
+                set_mode(mode_rtl, reason);
+                aparm.throttle_cruise.load();
+            }
+            break;
+
+        case Failsafe_Action_Continue:
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND
+                && control_mode != &mode_qland ) {
+                set_mode(mode_fbwa, reason);
+            } 
+            break;
+
+        case Failsafe_Action_Terminate:
+#if ADVANCED_FAILSAFE == ENABLED          
+            afs.gcs_terminate(true, "GCS");
+#else
+            arming.disarm();
+#endif
+            break;
+
+        case Failsafe_Action_Parachute:
+#if PARACHUTE == ENABLED
+            parachute_release();
+#endif
+            break;
+
+        case Failsafe_Action_None:
+            // don't actually do anything, however we should still flag the system as having hit a failsafe
+            // and ensure all appropriate flags are going off to the user
+            break;
+    }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode->mode_number());
+}
+
+void Plane::failsafe_gcs_off_event(mode_reason_t reason)
+{
+    // We're back in radio contact
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. GCS event off: reason=%u", reason);
+    failsafe.state = FAILSAFE_NONE;
+}
+
 void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
     switch ((Failsafe_Action)action) {
@@ -178,6 +249,13 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             break;
 
+        case Failsafe_Action_Continue:
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND
+                && control_mode != &mode_qland ) {
+                set_mode(mode_fbwa, MODE_REASON_BATTERY_FAILSAFE);
+            }
+            break;
+            
         case Failsafe_Action_Terminate:
 #if ADVANCED_FAILSAFE == ENABLED
             char battery_type_str[17];
@@ -193,7 +271,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             parachute_release();
 #endif
             break;
-
+            
         case Failsafe_Action_None:
             // don't actually do anything, however we should still flag the system as having hit a failsafe
             // and ensure all appropriate flags are going off to the user

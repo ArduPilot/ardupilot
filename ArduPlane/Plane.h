@@ -857,8 +857,11 @@ private:
     bool fly_inverted(void);
     void failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t reason);
     void failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason);
+    void failsafe_gcs_on_event(const int8_t action, enum failsafe_state fstype,
+                               mode_reason_t reason);
     void failsafe_short_off_event(mode_reason_t reason);
     void failsafe_long_off_event(mode_reason_t reason);
+    void failsafe_gcs_off_event(mode_reason_t reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     uint8_t max_fencepoints(void) const;
     Vector2l get_fence_point_with_index(uint8_t i) const;
@@ -911,6 +914,7 @@ private:
     Mode *mode_from_mode_num(const enum Mode::Number num);
     void check_long_failsafe();
     void check_short_failsafe();
+    void check_gcs_failsafe();
     void startup_INS_ground(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
@@ -1033,10 +1037,11 @@ private:
     enum Failsafe_Action {
         Failsafe_Action_None      = 0,
         Failsafe_Action_RTL       = 1,
-        Failsafe_Action_Land      = 2,
-        Failsafe_Action_Terminate = 3,
+        Failsafe_Action_Continue  = 2,
+        Failsafe_Action_Land      = 3,
         Failsafe_Action_QLand     = 4,
-        Failsafe_Action_Parachute = 5
+        Failsafe_Action_Terminate = 5,
+        Failsafe_Action_Parachute = 6,
     };
 
     // list of priorities, highest priority first
@@ -1046,6 +1051,7 @@ private:
                                                       Failsafe_Action_QLand,
                                                       Failsafe_Action_Land,
                                                       Failsafe_Action_RTL,
+                                                      Failsafe_Action_Continue,
                                                       Failsafe_Action_None,
                                                       -1 // the priority list must end with a sentinel of -1
                                                      };
