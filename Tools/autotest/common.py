@@ -560,7 +560,7 @@ class AutoTest(ABC):
         """Get SITL time in seconds."""
         x = self.mav.messages.get("SYSTEM_TIME", None)
         if x is None:
-            return self.get_sim_time()
+            raise NotAchievedException("No cached time available")
         return x.time_boot_ms * 1.0e-3
 
     def delay_sim_time(self, delay):
