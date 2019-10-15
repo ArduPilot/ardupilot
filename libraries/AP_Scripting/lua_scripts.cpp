@@ -16,6 +16,7 @@
 #include "lua_scripts.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
+#include "AP_Scripting.h"
 #include <AP_ROMFS/AP_ROMFS.h>
 
 #include "lua_generated_bindings.h"
@@ -348,7 +349,7 @@ void lua_scripts::run(void) {
     // Scan the filesystem in an appropriate manner and autostart scripts
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
 
-    while (true) {
+    while (AP_Scripting::get_singleton()->enabled()) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         if (lua_gettop(L) != 0) {
             AP_HAL::panic("Lua: Stack should be empty before running scripts");

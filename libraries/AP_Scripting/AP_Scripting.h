@@ -30,6 +30,8 @@ public:
 
     bool init(void);
 
+    bool enabled(void) const { return _enable != 0; };
+
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
     static const struct AP_Param::GroupInfo var_info[];
