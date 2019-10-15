@@ -13,16 +13,16 @@ const AP_Param::GroupInfo ModeSystemId::var_info[] = {
     // @Description: Controls which axis are being excited
     // @User: Standard
     // @Values: 0:None, 1:Input Roll Angle, 2:Input Pitch Angle, 3:Input Yaw Angle, 4:Recovery Roll Angle, 5:Recovery Pitch Angle, 6:Recovery Yaw Angle, 7:Rate Roll, 8:Rate Pitch, 9:Rate Yaw, 10:Mixer Roll, 11:Mixer Pitch, 12:Mixer Yaw, 13:Mixer Thrust
-    AP_GROUPINFO("_AXIS", 1, ModeSystemId, systemID_axis, 0),
+    AP_GROUPINFO("_AXIS", 1, ModeSystemId, axis, 0),
 
-    // @Param: _MAG
-    // @DisplayName: Chirp Magnitude
+    // @Param: _MAGNITUDE
+    // @DisplayName: System identification Chirp Magnitude
     // @Description: Magnitude of sweep in deg, deg/s and 0-1 for mixer outputs.
     // @User: Standard
-    AP_GROUPINFO("_MAG", 2, ModeSystemId, waveform_magnitude, 15),
+    AP_GROUPINFO("_MAGNITUDE", 2, ModeSystemId, waveform_magnitude, 15),
 
     // @Param: _F_START_HZ
-    // @DisplayName: Start Frequency
+    // @DisplayName: System identification Start Frequency
     // @Description: Frequency at the start of the sweep
     // @Range: 0.01 100
     // @Units: Hz
@@ -30,7 +30,7 @@ const AP_Param::GroupInfo ModeSystemId::var_info[] = {
     AP_GROUPINFO("_F_START_HZ", 3, ModeSystemId, frequency_start, 0.5f),
 
     // @Param: _F_STOP_HZ
-    // @DisplayName: Stop Frequency
+    // @DisplayName: System identification Stop Frequency
     // @Description: Frequency at the end of the sweep
     // @Range: 0.01 100
     // @Units: Hz
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo ModeSystemId::var_info[] = {
     AP_GROUPINFO("_F_STOP_HZ", 4, ModeSystemId, frequency_stop, 40),
 
     // @Param: _T_FADE_IN
-    // @DisplayName: Fade in time
+    // @DisplayName: System identification Fade in time
     // @Description: Time to reach maximum amplitude of sweep
     // @Range: 0 20
     // @Units: s
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo ModeSystemId::var_info[] = {
     AP_GROUPINFO("_T_FADE_IN", 5, ModeSystemId, time_fade_in, 15),
 
     // @Param: _T_REC
-    // @DisplayName: Total Sweep length
+    // @DisplayName: System identification Total Sweep length
     // @Description: Time taken to complete the sweep
     // @Range: 0 255
     // @Units: s
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo ModeSystemId::var_info[] = {
     AP_GROUPINFO("_T_REC", 6, ModeSystemId, time_record, 70),
 
     // @Param: _T_FADE_OUT
-    // @DisplayName: Fade out time
+    // @DisplayName: System identification Fade out time
     // @Description: Time to reach zero amplitude at the end of the sweep
     // @Range: 0 5
     // @Units: s
@@ -86,12 +86,12 @@ bool ModeSystemId::init(bool ignore_checks)
     att_bf_feedforward = attitude_control->get_bf_feedforward();
     waveform_time = 0.0f;
     time_const_freq = 2.0f / frequency_start; // Two full cycles at the starting frequency
-    systemIDState = SystemID_Testing;
+    systemid_state = SystemIDModeState::SYSTEMID_STATE_TESTING;
     log_subsample = 0;
 
-    gcs().send_text(MAV_SEVERITY_INFO, "SystemID Starting: axis=%d", (unsigned)systemID_axis);
+    gcs().send_text(MAV_SEVERITY_INFO, "SystemID Starting: axis=%d", (unsigned)axis);
 
-    copter.Log_Write_SysID_Setup(systemID_axis, waveform_magnitude, frequency_start, frequency_stop, time_fade_in, time_const_freq, time_record, time_fade_out);
+    copter.Log_Write_SysID_Setup(axis, waveform_magnitude, frequency_start, frequency_stop, time_fade_in, time_const_freq, time_record, time_fade_out);
 
     return true;
 }
@@ -156,81 +156,82 @@ void ModeSystemId::run()
     float pilot_throttle_scaled = get_pilot_desired_throttle();
 #endif
 
-    if((systemIDState == SystemID_Testing) && (!is_positive(frequency_start) || !is_positive(frequency_stop) || is_negative(time_fade_in) || !is_positive(time_record) || is_negative(time_fade_out) || (time_record <= time_const_freq))) {
-        systemIDState = SystemID_Stopped;
+    if ((systemid_state == SystemIDModeState::SYSTEMID_STATE_TESTING) &&
+        (!is_positive(frequency_start) || !is_positive(frequency_stop) || is_negative(time_fade_in) || !is_positive(time_record) || is_negative(time_fade_out) || (time_record <= time_const_freq))) {
+        systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
         gcs().send_text(MAV_SEVERITY_INFO, "SystemID Parameter Error");
     }
 
     waveform_time += G_Dt;
     waveform_sample = waveform(waveform_time - SYSTEM_ID_DELAY);
 
-    switch (systemIDState) {
-        case SystemID_Stopped:
+    switch (systemid_state) {
+        case SystemIDModeState::SYSTEMID_STATE_STOPPED:
             break;
-        case SystemID_Testing:
+        case SystemIDModeState::SYSTEMID_STATE_TESTING:
             attitude_control->bf_feedforward(att_bf_feedforward);
 
-            if(copter.ap.land_complete) {
-                systemIDState = SystemID_Stopped;
+            if (copter.ap.land_complete) {
+                systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
                 gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
                 break;
             }
-            if(attitude_control->lean_angle()*100 > attitude_control->lean_angle_max()) {
-                systemIDState = SystemID_Stopped;
+            if (attitude_control->lean_angle()*100 > attitude_control->lean_angle_max()) {
+                systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
                 gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle(), (double)attitude_control->lean_angle_max());
                 break;
             }
-            if(waveform_time > SYSTEM_ID_DELAY + time_fade_in + time_const_freq + time_record + time_fade_out) {
-                systemIDState = SystemID_Stopped;
+            if (waveform_time > SYSTEM_ID_DELAY + time_fade_in + time_const_freq + time_record + time_fade_out) {
+                systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
                 gcs().send_text(MAV_SEVERITY_INFO, "SystemID Finished");
                 break;
             }
 
-            switch (systemID_axis) {
-                case NONE:
-                    systemIDState = SystemID_Stopped;
+            switch ((AxisType)axis.get()) {
+                case AxisType::NONE:
+                    systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
                     gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: axis = 0");
                     break;
-                case INPUT_ROLL:
+                case AxisType::INPUT_ROLL:
                     target_roll += waveform_sample*100.0f;
                     break;
-                case INPUT_PITCH:
+                case AxisType::INPUT_PITCH:
                     target_pitch += waveform_sample*100.0f;
                     break;
-                case INPUT_YAW:
+                case AxisType::INPUT_YAW:
                     target_yaw_rate += waveform_sample*100.0f;
                     break;
-                case RECOVER_ROLL:
+                case AxisType::RECOVER_ROLL:
                     target_roll += waveform_sample*100.0f;
                     attitude_control->bf_feedforward(false);
                     break;
-                case RECOVER_PITCH:
+                case AxisType::RECOVER_PITCH:
                     target_pitch += waveform_sample*100.0f;
                     attitude_control->bf_feedforward(false);
                     break;
-                case RECOVER_YAW:
+                case AxisType::RECOVER_YAW:
                     target_yaw_rate += waveform_sample*100.0f;
                     attitude_control->bf_feedforward(false);
                     break;
-                case RATE_ROLL:
+                case AxisType::RATE_ROLL:
                     attitude_control->rate_bf_roll_sysid(radians(waveform_sample));
                     break;
-                case RATE_PITCH:
+                case AxisType::RATE_PITCH:
                     attitude_control->rate_bf_pitch_sysid(radians(waveform_sample));
                     break;
-                case RATE_YAW:
+                case AxisType::RATE_YAW:
                     attitude_control->rate_bf_yaw_sysid(radians(waveform_sample));
                     break;
-                case MIX_ROLL:
+                case AxisType::MIX_ROLL:
                     attitude_control->actuator_roll_sysid(waveform_sample);
                     break;
-                case MIX_PITCH:
+                case AxisType::MIX_PITCH:
                     attitude_control->actuator_pitch_sysid(waveform_sample);
                     break;
-                case MIX_YAW:
+                case AxisType::MIX_YAW:
                     attitude_control->actuator_yaw_sysid(waveform_sample);
                     break;
-                case MIX_THROTTLE:
+                case AxisType::MIX_THROTTLE:
                     pilot_throttle_scaled += waveform_sample;
                     break;
             }
@@ -240,8 +241,6 @@ void ModeSystemId::run()
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
-    // body-frame rate controller is run directly from 100hz loop
-
     // output pilot's throttle
     if (copter.is_tradheli()) {
         attitude_control->set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
@@ -249,13 +248,13 @@ void ModeSystemId::run()
         attitude_control->set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);
     }
 
-    if(log_subsample <= 0){
+    if (log_subsample <= 0) {
         log_data();
-        if(copter.should_log(MASK_LOG_ATTITUDE_FAST) && copter.should_log(MASK_LOG_ATTITUDE_MED)) {
+        if (copter.should_log(MASK_LOG_ATTITUDE_FAST) && copter.should_log(MASK_LOG_ATTITUDE_MED)) {
             log_subsample = 1;
-        } else if(copter.should_log(MASK_LOG_ATTITUDE_FAST)){
+        } else if (copter.should_log(MASK_LOG_ATTITUDE_FAST)) {
             log_subsample = 2;
-        } else if(copter.should_log(MASK_LOG_ATTITUDE_MED)){
+        } else if (copter.should_log(MASK_LOG_ATTITUDE_MED)) {
             log_subsample = 4;
         } else {
             log_subsample = 8;
@@ -264,26 +263,20 @@ void ModeSystemId::run()
     log_subsample -= 1;
 }
 
-// init_test - initialises the test
+// log system id and attitude
 void ModeSystemId::log_data()
 {
-    int8_t index = copter.ahrs.get_primary_gyro_index();
-    if(index < 0){
-        index = 0;
-    }
+    uint8_t index = copter.ahrs.get_primary_gyro_index();
     Vector3f delta_angle;
     copter.ins.get_delta_angle(index, delta_angle);
     float delta_angle_dt = copter.ins.get_delta_angle_dt(index);
 
     index = copter.ahrs.get_primary_accel_index();
-    if(index < 0){
-        index = 0;
-    }
     Vector3f delta_velocity;
     copter.ins.get_delta_velocity(index, delta_velocity);
     float delta_velocity_dt = copter.ins.get_delta_velocity_dt(index);
 
-    if(is_positive(delta_angle_dt) && is_positive(delta_velocity_dt)){
+    if (is_positive(delta_angle_dt) && is_positive(delta_velocity_dt)) {
         copter.Log_Write_SysID_Data(waveform_time, waveform_sample, waveform_freq_rads / (2 * M_PI), degrees(delta_angle.x / delta_angle_dt), degrees(delta_angle.y / delta_angle_dt), degrees(delta_angle.z / delta_angle_dt), delta_velocity.x / delta_velocity_dt, delta_velocity.y / delta_velocity_dt, delta_velocity.z / delta_velocity_dt);
     }
 
@@ -302,7 +295,7 @@ float ModeSystemId::waveform(float time)
 
     float B = logf(wMax / wMin);
 
-    if(time <= 0.0f) {
+    if (time <= 0.0f) {
         window = 0.0f;
     } else if (time <= time_fade_in) {
         window = 0.5 - 0.5 * cosf(M_PI * time / time_fade_in);
@@ -314,7 +307,7 @@ float ModeSystemId::waveform(float time)
         window = 0.0;
     }
 
-    if(time <= 0.0f) {
+    if (time <= 0.0f) {
         waveform_freq_rads = wMin;
         output = 0.0f;
     } else if (time <= time_const_freq) {
