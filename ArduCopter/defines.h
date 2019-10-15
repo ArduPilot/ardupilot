@@ -95,7 +95,7 @@ enum tuning_func {
     TUNING_RATE_MOT_YAW_HEADROOM =      55, // motors yaw headroom minimum
     TUNING_RATE_YAW_FILT =              56, // yaw rate input filter
     TUNING_WINCH =                      57, // winch control (not actually a value to be tuned)
-    SYSTEM_ID_MAGNITUDE =               58  // magnitude of the system ID signal
+    TUNING_SYSTEM_ID_MAGNITUDE =        58  // magnitude of the system ID signal
 };
 
 // Acro Trainer types
