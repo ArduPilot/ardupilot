@@ -228,10 +228,10 @@ void Copter::tuning()
          break;
 #endif
 
-#if MODE_SYSTEMID_ENABLED == ENABLED
      case TUNING_SYSTEM_ID_MAGNITUDE:
+#if MODE_SYSTEMID_ENABLED == ENABLED
          copter.mode_systemid.set_magnitude(tuning_value);
-         break;
-     }
 #endif
+         break;
+    }
 }
