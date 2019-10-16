@@ -34,9 +34,18 @@ static uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
     return luaL_argerror(L, arg, "Unable to coerce to uint32_t");
 }
 
+// creates a new userdata for a uint32_t
 int new_uint32_t(lua_State *L) {
     luaL_checkstack(L, 2, "Out of stack");
 
+    *static_cast<uint32_t *>(lua_newuserdata(L, sizeof(uint32_t))) = 0;
+    luaL_getmetatable(L, "uint32_t");
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+// the exposed constructor to lua calls to create a uint32_t
+int lua_new_uint32_t(lua_State *L) {
     const int args = lua_gettop(L);
     if (args > 1) {
         return luaL_argerror(L, args, "too many arguments");
@@ -199,6 +208,6 @@ void load_boxed_numerics(lua_State *L) {
 void load_boxed_numerics_sandbox(lua_State *L) {
     // if there are ever more drivers then move to a table based solution
     lua_pushstring(L, "uint32_t");
-    lua_pushcfunction(L, new_uint32_t);
+    lua_pushcfunction(L, lua_new_uint32_t);
     lua_settable(L, -3);
 }
