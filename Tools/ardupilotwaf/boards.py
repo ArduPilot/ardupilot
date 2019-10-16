@@ -124,7 +124,6 @@ class Board:
             '-Werror=overflow',
             '-Werror=parentheses',
             '-Werror=format-extra-args',
-            '-Werror=delete-non-virtual-dtor',
             '-Werror=ignored-qualifiers',
         ]
 
@@ -191,6 +190,7 @@ class Board:
             '-Werror=unused-result',
             '-Werror=shadow',
             '-Werror=unused-variable',
+            '-Werror=delete-non-virtual-dtor',
             '-Wfatal-errors',
             '-Wno-trigraphs',
             '-Werror=parentheses',
