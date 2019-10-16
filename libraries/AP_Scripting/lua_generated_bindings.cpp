@@ -688,7 +688,7 @@ static int RangeFinder_num_sensors(lua_State *L) {
 static int AP_Notify_play_tune(lua_State *L) {
     AP_Notify * ud = AP_Notify::get_singleton();
     if (ud == nullptr) {
-        return luaL_argerror(L, 1, "AP_Notify not supported on this firmware");
+        return luaL_argerror(L, 1, "notify not supported on this firmware");
     }
 
     binding_argcheck(L, 2);
@@ -1575,10 +1575,6 @@ const luaL_Reg AP_Notify_meta[] = {
     {NULL, NULL}
 };
 
-const luaL_Reg notify_meta[] = {
-    {NULL, NULL}
-};
-
 const luaL_Reg AP_GPS_meta[] = {
     {"first_unconfigured_gps", AP_GPS_first_unconfigured_gps},
     {"get_antenna_offset", AP_GPS_get_antenna_offset},
@@ -1681,8 +1677,7 @@ const struct userdata_meta singleton_fun[] = {
     {"relay", AP_Relay_meta, NULL},
     {"terrain", AP_Terrain_meta, AP_Terrain_enums},
     {"rangefinder", RangeFinder_meta, NULL},
-    {"AP_Notify", AP_Notify_meta, NULL},
-    {"notify", notify_meta, NULL},
+    {"notify", AP_Notify_meta, NULL},
     {"gps", AP_GPS_meta, AP_GPS_enums},
     {"battery", AP_BattMonitor_meta, NULL},
     {"arming", AP_Arming_meta, NULL},
@@ -1732,7 +1727,6 @@ const char *singletons[] = {
     "relay",
     "terrain",
     "rangefinder",
-    "AP_Notify",
     "notify",
     "gps",
     "battery",

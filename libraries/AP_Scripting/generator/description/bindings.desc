@@ -103,7 +103,7 @@ userdata Vector2f operator +
 userdata Vector2f operator -
 
 include AP_Notify/AP_Notify.h
-singleton notify alias notify
+singleton AP_Notify alias notify
 singleton AP_Notify method play_tune void string
 
 include AP_RangeFinder/AP_RangeFinder.h
