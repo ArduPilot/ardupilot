@@ -241,8 +241,8 @@ public:
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
     */
-    static void send_to_components(const mavlink_message_t &msg) { routing.send_to_components(msg); }
-    
+    static void send_to_components(uint32_t msgid, const char *pkt, uint8_t pkt_len) { routing.send_to_components(msgid, pkt, pkt_len); }
+
     /*
       allow forwarding of packets / heartbeats to be blocked as required by some components to reduce traffic
     */
