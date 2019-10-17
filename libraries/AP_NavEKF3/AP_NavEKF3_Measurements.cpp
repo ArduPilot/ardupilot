@@ -140,9 +140,10 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     // It uses the exisiting body frame velocity fusion.
     // TODO implement a dedicated wheel odometry observation model
 
+    // rate limiting to 50hz should be done by the caller
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - wheelOdmMeasTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
+    if ((delTime < dtEkfAvg) || !statesInitialised) {
         return;
     }
 

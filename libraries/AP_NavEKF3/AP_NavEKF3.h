@@ -233,6 +233,7 @@ public:
      * timeStamp_ms is the time when the rotation was last measured (msec)
      * posOffset is the XYZ body frame position of the wheel hub (m)
      * radius is the effective rolling radius of the wheel (m)
+     * this should not be called at more than the EKF's update rate (50hz or 100hz)
     */
     void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
 
