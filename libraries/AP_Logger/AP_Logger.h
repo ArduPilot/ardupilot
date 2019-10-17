@@ -18,6 +18,7 @@
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_InertialSensor/AP_InertialSensor_Backend.h>
+#include <AP_Vehicle/ModeReason.h>
 
 #include <stdint.h>
 
@@ -258,7 +259,7 @@ public:
     void Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets);
     void Write_Current();
     void Write_Compass(uint64_t time_us=0);
-    void Write_Mode(uint8_t mode, uint8_t reason);
+    void Write_Mode(uint8_t mode, const ModeReason reason);
 
     void Write_EntireMission();
     void Write_Command(const mavlink_command_int_t &packet, MAV_RESULT result, bool was_command_long=false);

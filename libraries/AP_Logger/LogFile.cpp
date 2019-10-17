@@ -760,14 +760,15 @@ void AP_Logger::Write_Compass(uint64_t time_us)
 }
 
 // Write a mode packet.
-bool AP_Logger_Backend::Write_Mode(uint8_t mode, uint8_t reason)
+bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
 {
+    static_assert(sizeof(ModeReason) <= sizeof(uint8_t), "Logging expects the ModeReason to fit in 8 bits");
     const struct log_Mode pkt{
         LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
         time_us  : AP_HAL::micros64(),
         mode     : mode,
         mode_num : mode,
-        mode_reason : reason
+        mode_reason : static_cast<uint8_t>(reason)
     };
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }

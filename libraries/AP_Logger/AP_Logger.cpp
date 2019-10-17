@@ -705,7 +705,7 @@ void AP_Logger::Write_Message(const char *message)
     FOR_EACH_BACKEND(Write_Message(message));
 }
 
-void AP_Logger::Write_Mode(uint8_t mode, uint8_t reason)
+void AP_Logger::Write_Mode(uint8_t mode, const ModeReason reason)
 {
     FOR_EACH_BACKEND(Write_Mode(mode, reason));
 }
