@@ -36,32 +36,32 @@ void Copter::fence_check()
 
                 // if more than 100m outside the fence just force a land
                 if (fence.get_breach_distance(new_breaches) > AC_FENCE_GIVE_UP_DISTANCE) {
-                    set_mode(Mode::Number::LAND, MODE_REASON_FENCE_BREACH);
+                    set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                 } else {
                     switch (fence_act) {
                     case AC_FENCE_ACTION_RTL_AND_LAND:
                     default:
                         // switch to RTL, if that fails then Land
-                        if (!set_mode(Mode::Number::RTL, MODE_REASON_FENCE_BREACH)) {
-                            set_mode(Mode::Number::LAND, MODE_REASON_FENCE_BREACH);
+                        if (!set_mode(Mode::Number::RTL, ModeReason::FENCE_BREACHED)) {
+                            set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                         }
                         break;
                     case AC_FENCE_ACTION_ALWAYS_LAND:
                         // if always land option mode is specified, land
-                        set_mode(Mode::Number::LAND, MODE_REASON_FENCE_BREACH);
+                        set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                         break;
                     case AC_FENCE_ACTION_SMART_RTL:
                         // Try SmartRTL, if that fails, RTL, if that fails Land
-                        if (!set_mode(Mode::Number::SMART_RTL, MODE_REASON_FENCE_BREACH)) {
-                            if (!set_mode(Mode::Number::RTL, MODE_REASON_FENCE_BREACH)) {
-                                set_mode(Mode::Number::LAND, MODE_REASON_FENCE_BREACH);
+                        if (!set_mode(Mode::Number::SMART_RTL, ModeReason::FENCE_BREACHED)) {
+                            if (!set_mode(Mode::Number::RTL, ModeReason::FENCE_BREACHED)) {
+                                set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                             }
                         }
                         break;
                     case AC_FENCE_ACTION_BRAKE:
                         // Try Brake, if that fails Land
-                        if (!set_mode(Mode::Number::BRAKE, MODE_REASON_FENCE_BREACH)) {
-                            set_mode(Mode::Number::LAND, MODE_REASON_FENCE_BREACH);
+                        if (!set_mode(Mode::Number::BRAKE, ModeReason::FENCE_BREACHED)) {
+                            set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                         }
                         break;
                     }
