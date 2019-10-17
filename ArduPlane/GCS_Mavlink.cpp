@@ -774,7 +774,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     // location is valid load and set
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
         (plane.control_mode == &plane.mode_guided)) {
-        plane.set_mode(plane.mode_guided, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
         plane.guided_WP_loc = requested_position;
 
         // add home alt if needed
@@ -827,11 +827,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     }
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        plane.set_mode(plane.mode_loiter, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        plane.set_mode(plane.mode_rtl, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_TAKEOFF: {
@@ -845,13 +845,13 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     }
 
     case MAV_CMD_MISSION_START:
-        plane.set_mode(plane.mode_auto, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_DO_LAND_START:
         // attempt to switch to next DO_LAND_START command in the mission
         if (plane.mission.jump_to_landing_sequence()) {
-            plane.set_mode(plane.mode_auto, MODE_REASON_UNKNOWN);
+            plane.set_mode(plane.mode_auto, ModeReason::UNKNOWN);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -1384,18 +1384,6 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const ma
     if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
-}
-
-/*
-  set_mode() wrapper for MAVLink SET_MODE
- */
-bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
-{
-    Mode *new_mode = plane.mode_from_mode_num((enum Mode::Number)mode);
-    if (new_mode == nullptr) {
-        return false;
-    }
-    return plane.set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
 }
 
 uint64_t GCS_MAVLINK_Plane::capabilities() const

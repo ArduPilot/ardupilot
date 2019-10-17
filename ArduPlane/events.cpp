@@ -1,11 +1,11 @@
 #include "Plane.h"
 
-void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t reason)
+void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reason)
 {
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
     failsafe.short_timer_ms = millis();
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%u/reason=%u", fstype, reason);
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%u/reason=%u", fstype, static_cast<unsigned>(reason));
     switch (control_mode->mode_number())
     {
     case Mode::Number::MANUAL:
@@ -65,10 +65,10 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode->mode_number());
 }
 
-void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason)
+void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
 {
     // This is how to handle a long loss of control signal failsafe.
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event on: type=%u/reason=%u", fstype, reason);
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event on: type=%u/reason=%u", fstype, static_cast<unsigned>(reason));
     //  If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
     failsafe.state = fstype;
@@ -131,10 +131,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode->mode_number());
 }
 
-void Plane::failsafe_short_off_event(mode_reason_t reason)
+void Plane::failsafe_short_off_event(ModeReason reason)
 {
     // We're back in radio contact
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off: reason=%u", reason);
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off: reason=%u", static_cast<unsigned>(reason));
     failsafe.state = FAILSAFE_NONE;
 
     // re-read the switch so we can return to our preferred mode
@@ -145,10 +145,10 @@ void Plane::failsafe_short_off_event(mode_reason_t reason)
     }
 }
 
-void Plane::failsafe_long_off_event(mode_reason_t reason)
+void Plane::failsafe_long_off_event(ModeReason reason)
 {
     // We're back in radio contact
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event off: reason=%u", reason);
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event off: reason=%u", static_cast<unsigned>(reason));
     failsafe.state = FAILSAFE_NONE;
 }
 
@@ -157,7 +157,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
     switch ((Failsafe_Action)action) {
         case Failsafe_Action_QLand:
             if (quadplane.available()) {
-                plane.set_mode(mode_qland, MODE_REASON_BATTERY_FAILSAFE);
+                plane.set_mode(mode_qland, ModeReason::BATTERY_FAILSAFE);
                 break;
             }
             FALLTHROUGH;
@@ -165,7 +165,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland) {
                 // never stop a landing if we were already committed
                 if (plane.mission.jump_to_landing_sequence()) {
-                    plane.set_mode(mode_auto, MODE_REASON_BATTERY_FAILSAFE);
+                    plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE);
                     break;
                 }
             }
@@ -173,7 +173,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
         case Failsafe_Action_RTL:
             if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland ) {
                 // never stop a landing if we were already committed
-                set_mode(mode_rtl, MODE_REASON_BATTERY_FAILSAFE);
+                set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE);
                 aparm.throttle_cruise.load();
             }
             break;

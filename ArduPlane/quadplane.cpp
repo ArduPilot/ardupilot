@@ -1456,7 +1456,7 @@ void QuadPlane::update_transition(void)
         (transition_failure > 0) &&
         ((now - transition_start_ms) > ((uint32_t)transition_failure * 1000))) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Transition failed, exceeded time limit");
-        plane.set_mode(plane.mode_qland, MODE_REASON_VTOL_FAILED_TRANSITION);
+        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TRANSITION);
     }
 
     float aspeed;
@@ -2576,13 +2576,13 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     // check for failure conditions
     if (is_positive(takeoff_failure_scalar) && ((now - takeoff_start_time_ms) > takeoff_time_limit_ms)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff within time limit");
-        plane.set_mode(plane.mode_qland, MODE_REASON_VTOL_FAILED_TAKEOFF);
+        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF);
         return false;
     }
 
     if (is_positive(maximum_takeoff_airspeed) && (plane.airspeed.get_airspeed() > maximum_takeoff_airspeed)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff, excessive wind");
-        plane.set_mode(plane.mode_qland, MODE_REASON_VTOL_FAILED_TAKEOFF);
+        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF);
         return false;
     }
 
