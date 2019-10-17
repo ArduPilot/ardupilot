@@ -861,7 +861,7 @@ void emit_userdata_declarations(void) {
 }
 
 #define NULLABLE_ARG_COUNT_BASE 5000
-void emit_checker(const struct type t, int arg_number, const char *indentation, const char *name) {
+void emit_checker(const struct type t, int arg_number, int skipped, const char *indentation, const char *name) {
   assert(indentation != NULL);
 
   if (arg_number > NULLABLE_ARG_COUNT_BASE) {
@@ -964,7 +964,7 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
     // non down cast
     switch (t.type) {
       case TYPE_FLOAT:
-        fprintf(source, "%sconst float raw_data_%d = luaL_checknumber(L, %d);\n", indentation, arg_number, arg_number);
+        fprintf(source, "%sconst float raw_data_%d = luaL_checknumber(L, %d);\n", indentation, arg_number, arg_number - skipped);
         break;
       case TYPE_INT8_T:
       case TYPE_INT16_T:
@@ -972,10 +972,10 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
       case TYPE_ENUM:
-        fprintf(source, "%sconst lua_Integer raw_data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number);
+        fprintf(source, "%sconst lua_Integer raw_data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number - skipped);
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "%sconst uint32_t raw_data_%d = *check_uint32_t(L, %d);\n", indentation, arg_number, arg_number);
+        fprintf(source, "%sconst uint32_t raw_data_%d = *check_uint32_t(L, %d);\n", indentation, arg_number, arg_number - skipped);
         break;
       case TYPE_NONE:
       case TYPE_STRING:
@@ -1026,7 +1026,7 @@ void emit_checker(const struct type t, int arg_number, const char *indentation, 
                  indentation,
                  arg_number, cast_target, t.range->low,
                  arg_number, cast_target, t.range->high,
-                 arg_number, name);
+                 arg_number - skipped, name);
        }
     }
 
@@ -1120,7 +1120,7 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
 
   if (field->access_flags & ACCESS_FLAG_WRITE) {
     fprintf(source, "        case 2: {\n");
-    emit_checker(field->type, 2, "            ", field->name);
+    emit_checker(field->type, 2, 0, "            ", field->name);
     fprintf(source, "            ud->%s = data_2;\n", field->name);
     fprintf(source, "            return 0;\n");
     fprintf(source, "         }\n");
@@ -1184,11 +1184,15 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   // extract the arguments
   arg = method->arguments;
   arg_count = 2;
+  int skipped = 0;
   while (arg != NULL) {
     if (arg->type.type != TYPE_LITERAL) {
       // emit_checker will emit a nullable argument for us
-      emit_checker(arg->type, arg_count, "    ", "argument");
+      emit_checker(arg->type, arg_count, skipped, "    ", "argument");
       arg_count++;
+    }
+    if (arg->type.type != TYPE_LITERAL || arg->type.flags & TYPE_FLAGS_NULLABLE) {
+      skipped++;
     }
     arg = arg->next;
   }
