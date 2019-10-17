@@ -92,7 +92,7 @@ void ModeThrow::run()
                 case Mode::Number::LAND:
                 case Mode::Number::BRAKE:
                 case Mode::Number::LOITER:
-                    set_mode((Mode::Number)g2.throw_nextmode.get(), MODE_REASON_THROW_COMPLETE);
+                    set_mode((Mode::Number)g2.throw_nextmode.get(), ModeReason::THROW_COMPLETE);
                     break;
                 default:
                     // do nothing

@@ -18,8 +18,6 @@ protected:
     uint8_t sysid_my_gcs() const override;
     bool sysid_enforce() const override;
 
-    bool set_mode(uint8_t mode) override;
-
     bool params_ready() const override;
     void send_banner() override;
 
