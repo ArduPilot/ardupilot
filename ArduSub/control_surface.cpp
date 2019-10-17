@@ -35,7 +35,7 @@ void Sub::surface_run()
 
     // Already at surface, hold depth at surface
     if (ap.at_surface) {
-        set_mode(ALT_HOLD, MODE_REASON_SURFACE_COMPLETE);
+        set_mode(ALT_HOLD, ModeReason::SURFACE_COMPLETE);
     }
 
     // convert pilot input to lean angles

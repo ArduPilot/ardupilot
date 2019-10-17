@@ -30,7 +30,7 @@ enum autopilot_yaw_mode {
 };
 
 // Auto Pilot Modes enumeration
-enum control_mode_t {
+enum control_mode_t : uint8_t {
     STABILIZE =     0,  // manual angle with manual depth/throttle
     ACRO =          1,  // manual body-frame angular rate with manual depth/throttle
     ALT_HOLD =      2,  // manual angle with automatic depth/throttle
@@ -41,24 +41,6 @@ enum control_mode_t {
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
     MANUAL =       19,  // Pass-through input with no stabilization
     MOTOR_DETECT = 20   // Automatically detect motors orientation
-};
-
-enum mode_reason_t {
-    MODE_REASON_UNKNOWN=0,
-    MODE_REASON_TX_COMMAND,
-    MODE_REASON_GCS_COMMAND,
-    MODE_REASON_RADIO_FAILSAFE,
-    MODE_REASON_BATTERY_FAILSAFE,
-    MODE_REASON_GCS_FAILSAFE,
-    MODE_REASON_EKF_FAILSAFE,
-    MODE_REASON_GPS_GLITCH,
-    MODE_REASON_MISSION_END,
-    MODE_REASON_THROTTLE_SURFACE_ESCAPE,
-    MODE_REASON_FENCE_BREACH,
-    MODE_REASON_TERRAIN_FAILSAFE,
-    MODE_REASON_SURFACE_COMPLETE,
-    MODE_REASON_LEAK_FAILSAFE,
-    MODE_REASON_BAD_DEPTH
 };
 
 // Acro Trainer types

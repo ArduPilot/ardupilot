@@ -216,7 +216,7 @@ void Sub::exit_mission()
 
     // Try to enter loiter, if that fails, go to depth hold
     if (!auto_loiter_start()) {
-        set_mode(ALT_HOLD, MODE_REASON_MISSION_END);
+        set_mode(ALT_HOLD, ModeReason::MISSION_END);
     }
 }
 

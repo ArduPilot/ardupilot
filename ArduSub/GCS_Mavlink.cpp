@@ -458,13 +458,13 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
 {
     switch (packet.command) {
     case MAV_CMD_NAV_LOITER_UNLIM:
-        if (!sub.set_mode(POSHOLD, MODE_REASON_GCS_COMMAND)) {
+        if (!sub.set_mode(POSHOLD, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_LAND:
-        if (!sub.set_mode(SURFACE, MODE_REASON_GCS_COMMAND)) {
+        if (!sub.set_mode(SURFACE, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
@@ -494,7 +494,7 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_MISSION_START:
-        if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
+        if (sub.motors.armed() && sub.set_mode(AUTO, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -823,11 +823,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
-}
-
-bool GCS_MAVLINK_Sub::set_mode(uint8_t mode)
-{
-    return sub.set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
 }
 
 int32_t GCS_MAVLINK_Sub::global_position_int_alt() const {

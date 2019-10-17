@@ -90,7 +90,7 @@ void Sub::failsafe_sensors_check()
 
     if (control_mode == ALT_HOLD || control_mode == SURFACE || mode_requires_GPS(control_mode)) {
         // This should always succeed
-        if (!set_mode(MANUAL, MODE_REASON_BAD_DEPTH)) {
+        if (!set_mode(MANUAL, ModeReason::BAD_DEPTH)) {
             // We should never get here
             arming.disarm();
         }
@@ -157,7 +157,7 @@ void Sub::handle_battery_failsafe(const char* type_str, const int8_t action)
 
     switch((Failsafe_Action)action) {
         case Failsafe_Action_Surface:
-            set_mode(SURFACE, MODE_REASON_BATTERY_FAILSAFE);
+            set_mode(SURFACE, ModeReason::BATTERY_FAILSAFE);
             break;
         case Failsafe_Action_Disarm:
             arming.disarm();
@@ -300,7 +300,7 @@ void Sub::failsafe_leak_check()
 
     // Handle failsafe action
     if (failsafe.leak && g.failsafe_leak == FS_LEAK_SURFACE && motors.armed()) {
-        set_mode(SURFACE, MODE_REASON_LEAK_FAILSAFE);
+        set_mode(SURFACE, ModeReason::LEAK_FAILSAFE);
     }
 }
 
@@ -347,11 +347,11 @@ void Sub::failsafe_gcs_check()
     if (g.failsafe_gcs == FS_GCS_DISARM) {
         arming.disarm();
     } else if (g.failsafe_gcs == FS_GCS_HOLD && motors.armed()) {
-        if (!set_mode(ALT_HOLD, MODE_REASON_GCS_FAILSAFE)) {
+        if (!set_mode(ALT_HOLD, ModeReason::GCS_FAILSAFE)) {
             arming.disarm();
         }
     } else if (g.failsafe_gcs == FS_GCS_SURFACE && motors.armed()) {
-        if (!set_mode(SURFACE, MODE_REASON_GCS_FAILSAFE)) {
+        if (!set_mode(SURFACE, ModeReason::GCS_FAILSAFE)) {
             arming.disarm();
         }
     }
@@ -477,14 +477,14 @@ void Sub::failsafe_terrain_act()
 {
     switch (g.failsafe_terrain) {
     case FS_TERRAIN_HOLD:
-        if (!set_mode(POSHOLD, MODE_REASON_TERRAIN_FAILSAFE)) {
-            set_mode(ALT_HOLD, MODE_REASON_TERRAIN_FAILSAFE);
+        if (!set_mode(POSHOLD, ModeReason::TERRAIN_FAILSAFE)) {
+            set_mode(ALT_HOLD, ModeReason::TERRAIN_FAILSAFE);
         }
         AP_Notify::events.failsafe_mode_change = 1;
         break;
 
     case FS_TERRAIN_SURFACE:
-        set_mode(SURFACE, MODE_REASON_TERRAIN_FAILSAFE);
+        set_mode(SURFACE, ModeReason::TERRAIN_FAILSAFE);
         AP_Notify::events.failsafe_mode_change = 1;
         break;
 
