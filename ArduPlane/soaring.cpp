@@ -24,7 +24,7 @@ void Plane::update_soaring() {
     case Mode::Number::CRUISE:
         if (!g2.soaring_controller.suppress_throttle()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Soaring: forcing RTL");
-            set_mode(mode_rtl, MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING);
+            set_mode(mode_rtl, ModeReason::SOARING_FBW_B_WITH_MOTOR_RUNNING);
         }
         break;
     case Mode::Number::LOITER:
@@ -51,7 +51,7 @@ void Plane::update_soaring() {
 
         if (g2.soaring_controller.check_thermal_criteria()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering loiter");
-            set_mode(mode_loiter, MODE_REASON_SOARING_THERMAL_DETECTED);
+            set_mode(mode_loiter, ModeReason::SOARING_THERMAL_DETECTED);
         }
         break;
 
@@ -64,14 +64,14 @@ void Plane::update_soaring() {
             switch (previous_mode->mode_number()) {
             case Mode::Number::FLY_BY_WIRE_B:
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, entering RTL");
-                set_mode(mode_rtl, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
+                set_mode(mode_rtl, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 break;
 
             case Mode::Number::CRUISE: {
                 // return to cruise with old ground course
                 CruiseState cruise = cruise_state;
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring CRUISE");
-                set_mode(mode_cruise, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
+                set_mode(mode_cruise, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 cruise_state = cruise;
                 set_target_altitude_current();
                 break;
@@ -79,7 +79,7 @@ void Plane::update_soaring() {
 
             case Mode::Number::AUTO:
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring AUTO");
-                set_mode(mode_auto, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
+                set_mode(mode_auto, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 break;
 
             default:

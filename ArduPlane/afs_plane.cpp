@@ -18,7 +18,7 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
 {
     if (plane.quadplane.available() && _terminate_action == TERMINATE_ACTION_LAND) {
         // perform a VTOL landing
-        plane.set_mode(plane.mode_qland, MODE_REASON_FENCE_BREACH);
+        plane.set_mode(plane.mode_qland, ModeReason::FENCE_BREACHED);
         return;
     }
 

@@ -49,7 +49,7 @@ void ModeAuto::update()
     if (plane.mission.state() != AP_Mission::MISSION_RUNNING) {
         // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
         // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
-        plane.set_mode(plane.mode_rtl, MODE_REASON_MISSION_END);
+        plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END);
         gcs().send_text(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }

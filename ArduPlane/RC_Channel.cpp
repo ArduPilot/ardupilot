@@ -33,7 +33,7 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     switch(ch_flag) {
     case HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        const bool success = plane.set_mode_by_number(number, MODE_REASON_TX_COMMAND);
+        const bool success = plane.set_mode_by_number(number, ModeReason::RC_COMMAND);
         if (plane.control_mode != &plane.mode_initializing) {
             if (success) {
                 AP_Notify::events.user_mode_change = 1;
