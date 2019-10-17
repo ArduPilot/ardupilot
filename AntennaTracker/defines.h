@@ -24,13 +24,6 @@ enum AltSource {
 	ALT_SOURCE_GPS_VEH_ONLY=2
 };
 
-enum mode_reason_t {
-    MODE_REASON_INITIALISED = 0,
-    MODE_REASON_STARTUP,
-    MODE_REASON_SERVOTEST,
-    MODE_REASON_GCS_COMMAND,
-};
-
 enum class PWMDisarmed {
     ZERO = 0,
     TRIM,

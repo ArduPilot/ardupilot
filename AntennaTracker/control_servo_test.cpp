@@ -20,7 +20,7 @@ bool Tracker::servo_test_set_servo(uint8_t servo_num, uint16_t pwm)
 
     // ensure we are in servo test mode
     if (control_mode != SERVO_TEST) {
-        set_mode(SERVO_TEST, MODE_REASON_SERVOTEST);
+        set_mode(SERVO_TEST, ModeReason::SERVOTEST);
     }
 
     // set yaw servo pwm and send output to servo
