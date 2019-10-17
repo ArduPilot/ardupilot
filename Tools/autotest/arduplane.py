@@ -546,10 +546,38 @@ class AutoTestPlane(AutoTest):
         self.fly_home_land_and_disarm()
 
     def fly_deepstall(self):
+#        self.fly_deepstall_absolute()
+        self.fly_deepstall_relative()
+
+    def fly_deepstall_absolute(self):
+        self.start_subtest("DeepStall Relative Absolute")
         self.set_parameter("LAND_TYPE", 1)
         deepstall_elevator_pwm = 1661
         self.set_parameter("LAND_DS_ELEV_PWM", deepstall_elevator_pwm)
         self.load_mission("plane-deepstall-mission.txt")
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.progress("Waiting for deepstall messages")
+
+        self.wait_text("Deepstall: Entry: ", timeout=240)
+
+        # assume elevator is on channel 2:
+        self.wait_servo_channel_value(2, deepstall_elevator_pwm)
+
+        self.disarm_wait(timeout=120)
+
+        self.progress("Flying home")
+        self.takeoff(10)
+        self.set_parameter("LAND_TYPE", 0)
+        self.fly_home_land_and_disarm()
+
+    def fly_deepstall_relative(self):
+        self.start_subtest("DeepStall Relative")
+        self.set_parameter("LAND_TYPE", 1)
+        deepstall_elevator_pwm = 1661
+        self.set_parameter("LAND_DS_ELEV_PWM", deepstall_elevator_pwm)
+        self.load_mission("plane-deepstall-relative-mission.txt")
         self.change_mode("AUTO")
         self.wait_ready_to_arm()
         self.arm_vehicle()
