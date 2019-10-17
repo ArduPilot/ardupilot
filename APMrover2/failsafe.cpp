@@ -84,23 +84,23 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
             case Failsafe_Action_None:
                 break;
             case Failsafe_Action_RTL:
-                if (!set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
-                    set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                if (!set_mode(mode_rtl, ModeReason::FAILSAFE)) {
+                    set_mode(mode_hold, ModeReason::FAILSAFE);
                 }
                 break;
             case Failsafe_Action_Hold:
-                set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                set_mode(mode_hold, ModeReason::FAILSAFE);
                 break;
             case Failsafe_Action_SmartRTL:
-                if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
-                    if (!set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
-                        set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                if (!set_mode(mode_smartrtl, ModeReason::FAILSAFE)) {
+                    if (!set_mode(mode_rtl, ModeReason::FAILSAFE)) {
+                        set_mode(mode_hold, ModeReason::FAILSAFE);
                     }
                 }
                 break;
             case Failsafe_Action_SmartRTL_Hold:
-                if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
-                    set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                if (!set_mode(mode_smartrtl, ModeReason::FAILSAFE)) {
+                    set_mode(mode_hold, ModeReason::FAILSAFE);
                 }
                 break;
             }
@@ -114,21 +114,21 @@ void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
             case Failsafe_Action_None:
                 break;
             case Failsafe_Action_SmartRTL:
-                if (set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
+                if (set_mode(mode_smartrtl, ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
                 FALLTHROUGH;
             case Failsafe_Action_RTL:
-                if (set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
+                if (set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
                 FALLTHROUGH;
             case Failsafe_Action_Hold:
-                set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
                 break;
             case Failsafe_Action_SmartRTL_Hold:
-                if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
-                    set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                if (!set_mode(mode_smartrtl, ModeReason::BATTERY_FAILSAFE)) {
+                    set_mode(mode_hold, ModeReason::BATTERY_FAILSAFE);
                 }
                 break;
             case Failsafe_Action_Terminate:

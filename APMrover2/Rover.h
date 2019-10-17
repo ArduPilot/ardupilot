@@ -214,7 +214,7 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, AUTO, ...
     Mode *control_mode;
-    mode_reason_t control_mode_reason = MODE_REASON_INITIALISED;
+    ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
     // Used to maintain the state of the previous control switch position
     // This is set to -1 when we need to re-read the switch
@@ -401,7 +401,8 @@ private:
     void init_ardupilot();
     void startup_ground(void);
     void update_ahrs_flyforward();
-    bool set_mode(Mode &new_mode, mode_reason_t reason);
+    bool set_mode(Mode &new_mode, ModeReason reason);
+    bool set_mode(const uint8_t new_mode, ModeReason reason) override;
     bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
     void notify_mode(const Mode *new_mode);
