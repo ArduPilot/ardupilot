@@ -26,7 +26,7 @@ void Rover::set_control_channels(void)
         // For a rover safety is TRIM throttle
         g2.motors.setup_safety_output();
     }
-    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+    // setup correct scaling for ESCs like the UAVCAN ESCs which
     // take a proportion of speed. Default to 1000 to 2000 for systems without
     // a k_throttle output
     hal.rcout->set_esc_scaling(1000, 2000);
