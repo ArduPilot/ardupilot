@@ -441,7 +441,7 @@ void ModeAuto::exit_mission()
         return;
     }
 
-    if (g2.mis_done_behave == MIS_DONE_BEHAVE_ACRO && rover.set_mode(rover.mode_acro, MODE_REASON_MISSION_END)) {
+    if (g2.mis_done_behave == MIS_DONE_BEHAVE_ACRO && rover.set_mode(rover.mode_acro, ModeReason::MISSION_END)) {
         return;
     }
 
