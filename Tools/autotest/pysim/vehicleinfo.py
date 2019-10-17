@@ -199,6 +199,10 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["default_params/plane.parm", "default_params/plane-soaring.parm"]
             },
+            "plane-soaring-k1000": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/plane.parm", "default_params/plane-soaring.parm","default_params/plane-soaring-k1000.parm"]
+            },
             "gazebo-zephyr": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/gazebo-zephyr.parm",

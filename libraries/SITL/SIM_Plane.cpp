@@ -88,6 +88,19 @@ Plane::Plane(const char *frame_str) :
         mass = 2.0;
         coefficient.c_drag_p = 0.05;
     }
+
+    if (strstr(frame_str, "-k1000")) {
+        mass = 10.5;
+        coefficient.c_drag_p = 0.05;
+        coefficient.s = 1.04;
+        coefficient.b = 5.0;
+        coefficient.c = 0.25;
+        thrust_scale = 40;
+        have_launcher = true;
+        launch_accel = 2;
+        launch_time = 15;
+        reverse_thrust = true;
+    }
 }
 
 /*
@@ -263,7 +276,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float aileron  = filtered_servo_angle(input, 0);
     float elevator = filtered_servo_angle(input, 1);
     float rudder   = filtered_servo_angle(input, 3);
-    bool launch_triggered = input.servos[6] > 1700;
+    bool launch_triggered = filtered_servo_angle(input, 2) > 0.55;
     float throttle;
     if (reverse_elevator_rudder) {
         elevator = -elevator;
@@ -361,7 +374,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         add_noise(fabsf(thrust) / thrust_scale);
     }
 
-    if (on_ground() && !tailsitter) {
+    if (on_ground() && !tailsitter && !(have_launcher && launch_triggered)) {
         // add some ground friction
         Vector3f vel_body = dcm.transposed() * velocity_ef;
         accel_body.x -= vel_body.x * 0.3f;
