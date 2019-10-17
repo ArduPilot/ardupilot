@@ -18,7 +18,6 @@ protected:
 
     uint8_t sysid_my_gcs() const override;
 
-    bool set_mode(uint8_t mode) override;
     bool should_zero_rc_outputs_on_reboot() const override { return true; }
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
