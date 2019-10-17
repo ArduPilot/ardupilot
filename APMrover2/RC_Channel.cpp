@@ -23,7 +23,7 @@ void RC_Channel_Rover::mode_switch_changed(modeswitch_pos_t new_pos)
     }
     Mode *new_mode = rover.mode_from_mode_num((Mode::Number)rover.modes[new_pos].get());
     if (new_mode != nullptr) {
-        rover.set_mode(*new_mode, MODE_REASON_TX_COMMAND);
+        rover.set_mode(*new_mode, ModeReason::RC_COMMAND);
     }
 }
 
@@ -71,7 +71,7 @@ void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
 {
     switch (ch_flag) {
     case HIGH:
-        rover.set_mode(mode, MODE_REASON_TX_COMMAND);
+        rover.set_mode(mode, ModeReason::RC_COMMAND);
         break;
     case MIDDLE:
         // do nothing
