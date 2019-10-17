@@ -577,7 +577,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: HRT_FILT
     // @DisplayName: Height rate filter crossover frequency
     // @Description: Specifies the crossover frequency of the complementary filter used to calculate the output predictor height rate derivative.
-    // @Range: 0.1 100.0
+    // @Range: 0.1 30.0
     // @Units: Hz
     // @RebootRequired: False
     AP_GROUPINFO("HRT_FILT", 53, NavEKF2, _hrt_filt_freq, 2.0f),
