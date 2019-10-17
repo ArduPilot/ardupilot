@@ -388,10 +388,10 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
     Mode::Number control_mode;
-    mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
+    ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
     Mode::Number prev_control_mode;
-    mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
+    ModeReason prev_control_mode_reason = ModeReason::UNKNOWN;
 
     RCMapper rcmap;
 
@@ -719,9 +719,9 @@ private:
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
     void gpsglitch_check();
-    void set_mode_RTL_or_land_with_pause(mode_reason_t reason);
-    void set_mode_SmartRTL_or_RTL(mode_reason_t reason);
-    void set_mode_SmartRTL_or_land_with_pause(mode_reason_t reason);
+    void set_mode_RTL_or_land_with_pause(ModeReason reason);
+    void set_mode_SmartRTL_or_RTL(ModeReason reason);
+    void set_mode_SmartRTL_or_land_with_pause(ModeReason reason);
     bool should_disarm_on_failsafe();
 
     // failsafe.cpp
@@ -782,12 +782,13 @@ private:
     void log_init(void);
 
     // mode.cpp
-    bool set_mode(Mode::Number mode, mode_reason_t reason);
+    bool set_mode(Mode::Number mode, ModeReason reason);
+    bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
     void update_flight_mode();
     void notify_flight_mode();
 
     // mode_land.cpp
-    void set_mode_land_with_pause(mode_reason_t reason);
+    void set_mode_land_with_pause(ModeReason reason);
     bool landing_with_GPS();
 
     // motor_test.cpp

@@ -12,7 +12,7 @@ class Mode {
 public:
 
     // Auto Pilot Modes enumeration
-    enum class Number {
+    enum class Number : uint8_t {
         STABILIZE =     0,  // manual airframe angle with manual throttle
         ACRO =          1,  // manual body-frame angular rate with manual throttle
         ALT_HOLD =      2,  // manual airframe angle with automatic throttle
@@ -238,7 +238,7 @@ public:
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
-    bool set_mode(Mode::Number mode, mode_reason_t reason);
+    bool set_mode(Mode::Number mode, ModeReason reason);
     void set_land_complete(bool b);
     GCS_Copter &gcs();
     void Log_Write_Event(Log_Event id);

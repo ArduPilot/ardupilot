@@ -192,9 +192,9 @@ void ModeFlip::run()
         // check for successful recovery
         if (fabsf(recovery_angle) <= FLIP_RECOVERY_ANGLE) {
             // restore original flight mode
-            if (!copter.set_mode(orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
+            if (!copter.set_mode(orig_control_mode, ModeReason::FLIP_COMPLETE)) {
                 // this should never happen but just in case
-                copter.set_mode(Mode::Number::STABILIZE, MODE_REASON_UNKNOWN);
+                copter.set_mode(Mode::Number::STABILIZE, ModeReason::UNKNOWN);
             }
             // log successful completion
             Log_Write_Event(DATA_FLIP_END);
@@ -203,9 +203,9 @@ void ModeFlip::run()
     }
     case FlipState::Abandon:
         // restore original flight mode
-        if (!copter.set_mode(orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
+        if (!copter.set_mode(orig_control_mode, ModeReason::FLIP_COMPLETE)) {
             // this should never happen but just in case
-            copter.set_mode(Mode::Number::STABILIZE, MODE_REASON_UNKNOWN);
+            copter.set_mode(Mode::Number::STABILIZE, ModeReason::UNKNOWN);
         }
         // log abandoning flip
         AP::logger().Write_Error(LogErrorSubsystem::FLIP, LogErrorCode::FLIP_ABANDONED);

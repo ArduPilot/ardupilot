@@ -539,7 +539,7 @@ void ModeAuto::exit_mission()
     if (!copter.ap.land_complete) {
         // try to enter loiter but if that fails land
         if (!loiter_start()) {
-            set_mode(Mode::Number::LAND, MODE_REASON_MISSION_END);
+            set_mode(Mode::Number::LAND, ModeReason::MISSION_END);
         }
     } else {
         // if we've landed it's safe to disarm
