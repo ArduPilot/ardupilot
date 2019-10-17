@@ -90,18 +90,6 @@ enum fs_ekf_action {
 
 #define DISTANCE_HOME_MINCHANGE 0.5f  // minimum distance to adjust home location
 
-enum mode_reason_t {
-    MODE_REASON_INITIALISED = 0,
-    MODE_REASON_TX_COMMAND,
-    MODE_REASON_GCS_COMMAND,
-    MODE_REASON_FAILSAFE,
-    MODE_REASON_MISSION_END,
-    MODE_REASON_CRASH_FAILSAFE,
-    MODE_REASON_MISSION_COMMAND,
-    MODE_REASON_FENCE_BREACH,
-    MODE_REASON_EKF_FAILSAFE,
-};
-
 enum pilot_steer_type_t {
     PILOT_STEER_TYPE_DEFAULT = 0,
     PILOT_STEER_TYPE_TWO_PADDLES = 1,

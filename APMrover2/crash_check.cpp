@@ -56,7 +56,7 @@ void Rover::crash_check()
             // send message to gcs
             gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash: Going to HOLD");
             // change mode to hold and disarm
-            set_mode(mode_hold, MODE_REASON_CRASH_FAILSAFE);
+            set_mode(mode_hold, ModeReason::CRASH_FAILSAFE);
             if (g.fs_crash_check == FS_CRASH_HOLD_AND_DISARM) {
                 arming.disarm();
             }
