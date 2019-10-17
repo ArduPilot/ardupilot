@@ -758,7 +758,7 @@ void NavEKF2_core::calcOutputStates()
 
     // Perform filter calculation using backwards Euler integration
     // Coefficients selected to place all three filter poles at omega
-    const float CompFiltOmega = M_2PI * constrain_float(frontend->_hrt_filt_freq, 0.1f, 100.0f);
+    const float CompFiltOmega = M_2PI * constrain_float(frontend->_hrt_filt_freq, 0.1f, 30.0f);
     float omega2 = CompFiltOmega * CompFiltOmega;
     float pos_err = outputDataNew.position.z - vertCompFiltState.pos;
     float integ1_input = pos_err * omega2 * CompFiltOmega * imuDataNew.delVelDT;
