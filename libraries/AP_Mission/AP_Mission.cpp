@@ -538,6 +538,14 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
     }
 
     if (stored_in_location(cmd.id)) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        // NOTE!  no 16-bit command may be stored_in_location as only
+        // 10 bytes are available for storage and lat/lon/alt required
+        // 4*sizeof(float) == 12 bytes of storage.
+        if (b1 == 0) {
+            AP_HAL::panic("May not store location for 16-bit commands");
+        }
+#endif
         // Location is not PACKED; field-wise copy it:
         cmd.content.location.relative_alt = packed_content.location.flags.relative_alt;
         cmd.content.location.loiter_ccw = packed_content.location.flags.loiter_ccw;
