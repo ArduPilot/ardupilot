@@ -294,9 +294,9 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     Mode *control_mode = &mode_initializing;
-    mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
+    ModeReason control_mode_reason = ModeReason::UNKNOWN;
     Mode *previous_mode = &mode_initializing;
-    mode_reason_t previous_mode_reason = MODE_REASON_UNKNOWN;
+    ModeReason previous_mode_reason = ModeReason::UNKNOWN;
 
     // time of last mode change
     uint32_t last_mode_change_ms;
@@ -855,10 +855,10 @@ private:
     void autotune_restore(void);
     void autotune_enable(bool enable);
     bool fly_inverted(void);
-    void failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t reason);
-    void failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason);
-    void failsafe_short_off_event(mode_reason_t reason);
-    void failsafe_long_off_event(mode_reason_t reason);
+    void failsafe_short_on_event(enum failsafe_state fstype, ModeReason reason);
+    void failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason);
+    void failsafe_short_off_event(ModeReason reason);
+    void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     uint8_t max_fencepoints(void) const;
     Vector2l get_fence_point_with_index(uint8_t i) const;
@@ -906,8 +906,9 @@ private:
     void rpm_update(void);
     void init_ardupilot();
     void startup_ground(void);
-    bool set_mode(Mode& new_mode, const mode_reason_t reason);
-    bool set_mode_by_number(const Mode::Number new_mode_number, const mode_reason_t reason);
+    bool set_mode(Mode& new_mode, const ModeReason reason);
+    bool set_mode(const uint8_t mode, const ModeReason reason) override;
+    bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
     Mode *mode_from_mode_num(const enum Mode::Number num);
     void check_long_failsafe();
     void check_short_failsafe();

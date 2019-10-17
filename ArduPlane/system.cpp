@@ -163,7 +163,7 @@ void Plane::init_ardupilot()
     // choose the nav controller
     set_nav_controller();
 
-    set_mode_by_number((enum Mode::Number)g.initial_mode.get(), MODE_REASON_UNKNOWN);
+    set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::UNKNOWN);
 
     // set the correct flight mode
     // ---------------------------
@@ -194,7 +194,7 @@ void Plane::init_ardupilot()
 //********************************************************************************
 void Plane::startup_ground(void)
 {
-    set_mode(mode_initializing, MODE_REASON_UNKNOWN);
+    set_mode(mode_initializing, ModeReason::UNKNOWN);
 
 #if (GROUND_START_DELAY > 0)
     gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
@@ -241,7 +241,7 @@ void Plane::startup_ground(void)
 }
 
 
-bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
+bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 {
     if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
@@ -251,7 +251,7 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
 #if !QAUTOTUNE_ENABLED
     if (&new_mode == &plane.mode_qautotune) {
         gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
-        set_mode(plane.mode_qhover, MODE_REASON_UNAVAILABLE);
+        set_mode(plane.mode_qhover, ModeReason::UNAVAILABLE);
         return false;
     }
 #endif
@@ -259,7 +259,7 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
     // backup current control_mode and previous_mode
     Mode &old_previous_mode = *previous_mode;
     Mode &old_mode = *control_mode;
-    const mode_reason_t previous_mode_reason_backup = previous_mode_reason;
+    const ModeReason previous_mode_reason_backup = previous_mode_reason;
 
     // update control_mode assuming success
     // TODO: move these to be after enter() once start_command_callback() no longer checks control_mode
@@ -309,7 +309,18 @@ bool Plane::set_mode(Mode &new_mode, const mode_reason_t reason)
     return true;
 }
 
-bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const mode_reason_t reason)
+bool Plane::set_mode(const uint8_t new_mode, const ModeReason reason)
+{
+    static_assert(sizeof(Mode::Number) == sizeof(new_mode), "The new mode can't be mapped to the vehicles mode number");
+    Mode *mode = plane.mode_from_mode_num(static_cast<Mode::Number>(new_mode));
+    if (mode == nullptr) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Error: invalid mode number: %u", (unsigned)new_mode);
+        return false;
+    }
+    return set_mode(*mode, reason);
+}
+
+bool Plane::set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason)
 {
     Mode *new_mode = plane.mode_from_mode_num(new_mode_number);
     if (new_mode == nullptr) {
@@ -332,20 +343,20 @@ void Plane::check_long_failsafe()
         }
         if (failsafe.rc_failsafe &&
             (tnow - radio_timeout_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(FAILSAFE_LONG, MODE_REASON_RADIO_FAILSAFE);
+            failsafe_long_on_event(FAILSAFE_LONG, ModeReason::RADIO_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == &mode_auto &&
                    failsafe.last_heartbeat_ms != 0 &&
                    (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
+            failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HEARTBEAT &&
                    failsafe.last_heartbeat_ms != 0 &&
                    (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
+            failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
                    gcs().chan(0) != nullptr &&
                    gcs().chan(0)->last_radio_status_remrssi_ms != 0 &&
                    (tnow - gcs().chan(0)->last_radio_status_remrssi_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
+            failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);
         }
     } else {
         uint32_t timeout_seconds = g.fs_timeout_long;
@@ -356,10 +367,10 @@ void Plane::check_long_failsafe()
         // We do not change state but allow for user to change mode
         if (failsafe.state == FAILSAFE_GCS && 
             (tnow - failsafe.last_heartbeat_ms) < timeout_seconds*1000) {
-            failsafe_long_off_event(MODE_REASON_GCS_FAILSAFE);
+            failsafe_long_off_event(ModeReason::GCS_FAILSAFE);
         } else if (failsafe.state == FAILSAFE_LONG && 
                    !failsafe.rc_failsafe) {
-            failsafe_long_off_event(MODE_REASON_RADIO_FAILSAFE);
+            failsafe_long_off_event(ModeReason::RADIO_FAILSAFE);
         }
     }
 }
@@ -373,13 +384,13 @@ void Plane::check_short_failsafe()
        flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // The condition is checked and the flag rc_failsafe is set in radio.cpp
         if(failsafe.rc_failsafe) {
-            failsafe_short_on_event(FAILSAFE_SHORT, MODE_REASON_RADIO_FAILSAFE);
+            failsafe_short_on_event(FAILSAFE_SHORT, ModeReason::RADIO_FAILSAFE);
         }
     }
 
     if(failsafe.state == FAILSAFE_SHORT) {
         if(!failsafe.rc_failsafe || g.fs_action_short == FS_ACTION_SHORT_DISABLED) {
-            failsafe_short_off_event(MODE_REASON_RADIO_FAILSAFE);
+            failsafe_short_off_event(ModeReason::RADIO_FAILSAFE);
         }
     }
 }
