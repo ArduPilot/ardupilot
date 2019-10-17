@@ -19,6 +19,8 @@
   parameters needed by multiple libraries
  */
 
+#include "ModeReason.h" // reasons can't be defined in this header due to circular loops
+
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -48,6 +50,8 @@ public:
     AP_Vehicle &operator=(const AP_Vehicle&) = delete;
 
     static AP_Vehicle *get_singleton();
+
+    bool virtual set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
 
     /*
       common parameters for fixed wing aircraft
