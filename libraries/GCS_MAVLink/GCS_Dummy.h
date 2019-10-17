@@ -38,7 +38,6 @@ private:
 protected:
 
     uint8_t sysid_my_gcs() const override { return 1; }
-    bool set_mode(uint8_t mode) override { return false; };
 
     // dummy information:
     MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
