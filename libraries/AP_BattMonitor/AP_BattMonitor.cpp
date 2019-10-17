@@ -465,12 +465,10 @@ void AP_BattMonitor::checkPoweringOff(void)
             AP_Notify::flags.powering_off = true;
 
             // Send a Mavlink broadcast announcing the shutdown
-            mavlink_message_t msg;
             mavlink_command_long_t cmd_msg{};
             cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
             cmd_msg.param1 = i+1;
-            mavlink_msg_command_long_encode(mavlink_system.sysid, MAV_COMP_ID_ALL, &msg, &cmd_msg);
-            GCS_MAVLINK::send_to_components(msg);
+            GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg, sizeof(cmd_msg));
             gcs().send_text(MAV_SEVERITY_WARNING, "Vehicle %d battery %d is powering off", mavlink_system.sysid, i+1);
 
             // only send this once
