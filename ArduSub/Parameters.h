@@ -60,7 +60,7 @@ public:
         k_param_sysid_my_gcs,
 
         // Hardware/Software configuration
-        k_param_BoardConfig = 20, // Board configuration (PX4/Linux/etc)
+        k_param_BoardConfig = 20, // Board configuration (Pixhawk/Linux/etc)
         k_param_scheduler, // Scheduler (for debugging/perf_info)
         k_param_logger, // AP_Logger Logging
         k_param_serial_manager, // Serial ports, AP_SerialManager
