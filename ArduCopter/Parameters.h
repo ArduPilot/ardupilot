@@ -620,6 +620,10 @@ public:
     // Autonmous autorotation
     AC_Autorotation arot;
 #endif
+
+#if ENABLE_DATALOGGER == ENABLED
+    AP_DataLogger datalogger;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

@@ -176,6 +176,10 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#if ENABLE_DATALOGGER == ENABLED
+#include <AP_DataLogger/AP_DataLogger.h>
+#endif
+
 // Local modules
 #ifdef USER_PARAMS_ENABLED
 #include "UserParameters.h"
