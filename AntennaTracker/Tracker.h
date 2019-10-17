@@ -246,7 +246,8 @@ private:
     void arm_servos();
     void disarm_servos();
     void prepare_servos();
-    void set_mode(enum ControlMode mode, mode_reason_t reason);
+    void set_mode(enum ControlMode mode, ModeReason reason);
+    bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
     bool should_log(uint32_t mask);
     bool start_command_callback(const AP_Mission::Mission_Command& cmd) { return false; }
     void exit_mission_callback() { return; }
