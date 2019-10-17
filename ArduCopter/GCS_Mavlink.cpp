@@ -640,19 +640,19 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
     }
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        if (!copter.set_mode(Mode::Number::LOITER, MODE_REASON_GCS_COMMAND)) {
+        if (!copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        if (!copter.set_mode(Mode::Number::RTL, MODE_REASON_GCS_COMMAND)) {
+        if (!copter.set_mode(Mode::Number::RTL, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_LAND:
-        if (!copter.set_mode(Mode::Number::LAND, MODE_REASON_GCS_COMMAND)) {
+        if (!copter.set_mode(Mode::Number::LAND, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
@@ -704,7 +704,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 #if MODE_AUTO_ENABLED == ENABLED
     case MAV_CMD_MISSION_START:
         if (copter.motors->armed() &&
-            copter.set_mode(Mode::Number::AUTO, MODE_REASON_GCS_COMMAND)) {
+            copter.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
             copter.set_auto_armed(true);
             if (copter.mode_auto.mission.state() != AP_Mission::MISSION_RUNNING) {
                 copter.mode_auto.mission.start_or_resume();
@@ -800,8 +800,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         }
 
         // set mode to Loiter or fall back to AltHold
-        if (!copter.set_mode(Mode::Number::LOITER, MODE_REASON_GCS_COMMAND)) {
-            copter.set_mode(Mode::Number::ALT_HOLD, MODE_REASON_GCS_COMMAND);
+        if (!copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
+            copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
         }
         return MAV_RESULT_ACCEPTED;
     }
@@ -817,12 +817,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             copter.arming.arm(AP_Arming::Method::MAVLINK);
         } else if (copter.ap.land_complete) {
             // if armed and landed, takeoff
-            if (copter.set_mode(Mode::Number::LOITER, MODE_REASON_GCS_COMMAND)) {
+            if (copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
                 copter.flightmode->do_user_takeoff(packet.param1*100, true);
             }
         } else {
             // if flying, land
-            copter.set_mode(Mode::Number::LAND, MODE_REASON_GCS_COMMAND);
+            copter.set_mode(Mode::Number::LAND, ModeReason::GCS_COMMAND);
         }
         return MAV_RESULT_ACCEPTED;
     }
@@ -844,13 +844,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
                 if (!shot_mode) {
 #if MODE_BRAKE_ENABLED == ENABLED
-                    if (copter.set_mode(Mode::Number::BRAKE, MODE_REASON_GCS_COMMAND)) {
+                    if (copter.set_mode(Mode::Number::BRAKE, ModeReason::GCS_COMMAND)) {
                         copter.mode_brake.timeout_to_loiter_ms(2500);
                     } else {
-                        copter.set_mode(Mode::Number::ALT_HOLD, MODE_REASON_GCS_COMMAND);
+                        copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
                     }
 #else
-                    copter.set_mode(Mode::Number::ALT_HOLD, MODE_REASON_GCS_COMMAND);
+                    copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
 #endif
                 } else {
                     // SoloLink is expected to handle pause in shots
@@ -1306,17 +1306,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_l
 #endif
 
     return result;
-}
-
-bool GCS_MAVLINK_Copter::set_mode(const uint8_t mode)
-{
-#ifdef DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE
-    if (copter.failsafe.radio) {
-        // don't allow mode changes while in radio failsafe
-        return false;
-    }
-#endif
-    return copter.set_mode((Mode::Number)mode, MODE_REASON_GCS_COMMAND);
 }
 
 float GCS_MAVLINK_Copter::vfr_hud_alt() const
