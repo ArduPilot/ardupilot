@@ -71,7 +71,7 @@ void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
 void GCS::send_named_float(const char *name, float value) const
 {
 
-    mavlink_named_value_float_t packet;
+    mavlink_named_value_float_t packet {};
     packet.time_boot_ms = AP_HAL::millis();
     packet.value = value;
     memcpy(packet.name, name, MIN(strlen(name), (uint8_t)MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN));
