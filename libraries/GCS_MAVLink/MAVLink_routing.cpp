@@ -184,27 +184,54 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
 
   This is a no-op if no routes to components have been learned
 */
-void MAVLink_routing::send_to_components(const mavlink_message_t &msg)
+void MAVLink_routing::send_to_components(uint32_t msgid, const char *pkt, uint8_t pkt_len)
 {
-    bool sent_to_chan[MAVLINK_COMM_NUM_BUFFERS];
-    memset(sent_to_chan, 0, sizeof(sent_to_chan));
+    const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
+    if (entry == nullptr) {
+        return;
+    }
+    send_to_components(pkt, entry, pkt_len);
+}
+
+void MAVLink_routing::send_to_components(const char *pkt, const mavlink_msg_entry_t *entry, const uint8_t pkt_len)
+{
+    bool sent_to_chan[MAVLINK_COMM_NUM_BUFFERS] {};
 
     // check learned routes
     for (uint8_t i=0; i<num_routes; i++) {
-        if ((routes[i].sysid == mavlink_system.sysid) && !sent_to_chan[routes[i].channel]) {
-            if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg.len) +
-                GCS_MAVLINK::packet_overhead_chan(routes[i].channel)) {
-#if ROUTING_DEBUG
-                ::printf("send msg %u on chan %u sysid=%u compid=%u\n",
-                         msg.msgid,
-                         (unsigned)routes[i].channel,
-                         (unsigned)routes[i].sysid,
-                         (unsigned)routes[i].compid);
-#endif
-                _mavlink_resend_uart(routes[i].channel, &msg);
-                sent_to_chan[routes[i].channel] = true;
-            }
+        if (routes[i].sysid != mavlink_system.sysid) {
+            // our system ID hasn't been seen on this link
+            continue;
         }
+        if (sent_to_chan[routes[i].channel]) {
+            // we've already send it on this link
+            continue;
+        }
+        if (comm_get_txspace(routes[i].channel) <
+            ((uint16_t)entry->max_msg_len) + GCS_MAVLINK::packet_overhead_chan(routes[i].channel)) {
+            // it doesn't fit on this channel
+            continue;
+        }
+#if ROUTING_DEBUG
+        ::printf("send msg %u on chan %u sysid=%u compid=%u\n",
+                 msg.msgid,
+                 (unsigned)routes[i].channel,
+                 (unsigned)routes[i].sysid,
+                 (unsigned)routes[i].compid);
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (entry->max_msg_len > pkt_len) {
+            AP_HAL::panic("Passed packet message length (%u > %u)",
+                          entry->max_msg_len, pkt_len);
+        }
+#endif
+        _mav_finalize_message_chan_send(routes[i].channel,
+                                        entry->msgid,
+                                        pkt,
+                                        entry->min_msg_len,
+                                        MIN(entry->max_msg_len, pkt_len),
+                                        entry->crc_extra);
+        sent_to_chan[routes[i].channel] = true;
     }
 }
 
