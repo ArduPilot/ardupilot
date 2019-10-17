@@ -545,6 +545,28 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm()
 
+    def fly_deepstall(self):
+        self.set_parameter("LAND_TYPE", 1)
+        deepstall_elevator_pwm = 1661
+        self.set_parameter("LAND_DS_ELEV_PWM", deepstall_elevator_pwm)
+        self.load_mission("plane-deepstall-mission.txt")
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.progress("Waiting for deepstall messages")
+
+        self.wait_text("Deepstall: Entry: ", timeout=240)
+
+        # assume elevator is on channel 2:
+        self.wait_servo_channel_value(2, deepstall_elevator_pwm)
+
+        self.disarm_wait(timeout=120)
+
+        self.progress("Flying home")
+        self.takeoff(10)
+        self.set_parameter("LAND_TYPE", 0)
+        self.fly_home_land_and_disarm()
+
     def fly_do_change_speed(self):
         # the following lines ensure we revert these parameter values
         # - DO_CHANGE_AIRSPEED is a permanent vehicle change!
@@ -1417,6 +1439,10 @@ class AutoTestPlane(AutoTest):
             ("AdvancedFailsafe",
              "Test Advanced Failsafe",
              self.test_advanced_failsafe),
+
+            ("DeepStall",
+             "Test DeepStall Landing",
+             self.fly_deepstall),
 
             ("LogDownLoad",
              "Log download",
