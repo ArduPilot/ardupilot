@@ -14,7 +14,7 @@ public:
 
     // Auto Pilot modes
     // ----------------
-    enum Number {
+    enum Number : uint8_t {
         MANUAL        = 0,
         CIRCLE        = 1,
         STABILIZE     = 2,
