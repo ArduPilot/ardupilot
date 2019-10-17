@@ -95,7 +95,7 @@ Plane::Plane(const char *frame_str) :
         coefficient.s = 1.04;
         coefficient.b = 5.0;
         coefficient.c = 0.25;
-        thrust_scale = 40;
+        thrust_scale = 45;
         have_launcher = true;
         launch_accel = 2;
         launch_time = 15;
