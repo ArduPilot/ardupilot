@@ -8,6 +8,7 @@ function get_sandbox_env ()
           tonumber = tonumber,
           tostring = tostring,
           type = type,
+          error = error,
           unpack = unpack,
           io = { close = io.close, flush = io.flush, input = io.input, open = io.open, output = io.output,
                  popen = io.popen, read = io.read, type = io.type, write = io.write},
