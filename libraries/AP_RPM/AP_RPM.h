@@ -38,7 +38,7 @@ public:
     // RPM driver types
     enum RPM_Type {
         RPM_TYPE_NONE    = 0,
-        RPM_TYPE_PX4_PWM = 1,
+        RPM_TYPE_PWM     = 1,
         RPM_TYPE_PIN     = 2
     };
 

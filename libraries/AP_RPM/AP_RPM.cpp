@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PX4-PWM,2:AUXPIN
+    // @Values: 0:None,1:PWM,2:AUXPIN
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, AP_RPM, _type[0], 0),
 
@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PX4-PWM,2:AUXPIN
+    // @Values: 0:None,1:PWM,2:AUXPIN
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    10, AP_RPM, _type[1], 0),
 
@@ -111,8 +111,8 @@ void AP_RPM::init(void)
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
         uint8_t type = _type[i];
 
-        if (type == RPM_TYPE_PX4_PWM) {
-            // on non-PX4 treat PX4-pin as AUXPIN option, for upgrade
+        if (type == RPM_TYPE_PWM) {
+            // PWM option same as PIN option, for upgrade
             type = RPM_TYPE_PIN;
         }
         if (type == RPM_TYPE_PIN) {
