@@ -390,6 +390,17 @@ static int Vector3f___sub(lua_State *L) {
     return 1;
 }
 
+static int Location_get_bearing(lua_State *L) {
+    binding_argcheck(L, 2);
+    Location * ud = check_Location(L, 1);
+    Location & data_2 = *check_Location(L, 2);
+    const float data = ud->get_bearing(
+            data_2);
+
+    lua_pushnumber(L, data);
+    return 1;
+}
+
 static int Location_get_vector_from_origin_NEU(lua_State *L) {
     binding_argcheck(L, 1);
     Location * ud = check_Location(L, 1);
@@ -412,7 +423,7 @@ static int Location_offset(lua_State *L) {
     const float raw_data_2 = luaL_checknumber(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_2 <= MIN(FLT_MAX, INFINITY))), 2, "argument out of range");
     const float data_2 = raw_data_2;
-    const float raw_data_3 = luaL_checknumber(L, 3);
+    const float raw_data_3 = luaL_checknumber(L, 2);
     luaL_argcheck(L, ((raw_data_3 >= MAX(-FLT_MAX, -INFINITY)) && (raw_data_3 <= MIN(FLT_MAX, INFINITY))), 3, "argument out of range");
     const float data_3 = raw_data_3;
     ud->offset(
@@ -467,6 +478,7 @@ const luaL_Reg Location_meta[] = {
     {"relative_alt", Location_relative_alt},
     {"lng", Location_lng},
     {"lat", Location_lat},
+    {"get_bearing", Location_get_bearing},
     {"get_vector_from_origin_NEU", Location_get_vector_from_origin_NEU},
     {"offset", Location_offset},
     {"get_distance", Location_get_distance},
@@ -501,10 +513,10 @@ static int GCS_set_message_interval(lua_State *L) {
     const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(MAVLINK_COMM_NUM_BUFFERS, UINT8_MAX))), 2, "argument out of range");
     const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
-    const uint32_t raw_data_3 = *check_uint32_t(L, 3);
+    const uint32_t raw_data_3 = *check_uint32_t(L, 2);
     luaL_argcheck(L, ((raw_data_3 >= MAX(0U, 0U)) && (raw_data_3 <= MIN(UINT32_MAX, UINT32_MAX))), 3, "argument out of range");
     const uint32_t data_3 = static_cast<uint32_t>(raw_data_3);
-    const lua_Integer raw_data_4 = luaL_checkinteger(L, 4);
+    const lua_Integer raw_data_4 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_4 >= MAX(-1, INT32_MIN)) && (raw_data_4 <= MIN(INT32_MAX, INT32_MAX))), 4, "argument out of range");
     const int32_t data_4 = raw_data_4;
     const MAV_RESULT &data = ud->set_message_interval(
@@ -1084,7 +1096,7 @@ static int AP_BattMonitor_get_temperature(lua_State *L) {
 
     binding_argcheck(L, 2);
     float data_5002 = {};
-    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(ud->num_instances(), UINT8_MAX))), 3, "argument out of range");
     const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
     const bool data = ud->get_temperature(
@@ -1171,7 +1183,7 @@ static int AP_BattMonitor_consumed_wh(lua_State *L) {
 
     binding_argcheck(L, 2);
     float data_5002 = {};
-    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(ud->num_instances(), UINT8_MAX))), 3, "argument out of range");
     const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
     const bool data = ud->consumed_wh(
@@ -1194,7 +1206,7 @@ static int AP_BattMonitor_consumed_mah(lua_State *L) {
 
     binding_argcheck(L, 2);
     float data_5002 = {};
-    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(ud->num_instances(), UINT8_MAX))), 3, "argument out of range");
     const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
     const bool data = ud->consumed_mah(
@@ -1217,7 +1229,7 @@ static int AP_BattMonitor_current_amps(lua_State *L) {
 
     binding_argcheck(L, 2);
     float data_5002 = {};
-    const lua_Integer raw_data_3 = luaL_checkinteger(L, 3);
+    const lua_Integer raw_data_3 = luaL_checkinteger(L, 2);
     luaL_argcheck(L, ((raw_data_3 >= MAX(0, 0)) && (raw_data_3 <= MIN(ud->num_instances(), UINT8_MAX))), 3, "argument out of range");
     const uint8_t data_3 = static_cast<uint8_t>(raw_data_3);
     const bool data = ud->current_amps(
