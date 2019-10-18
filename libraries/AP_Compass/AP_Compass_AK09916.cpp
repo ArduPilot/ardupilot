@@ -25,11 +25,7 @@
 #include <AP_InertialSensor/AP_InertialSensor_Invensensev2.h>
 #include <GCS_MAVLink/GCS.h>
 
-#ifdef HAL_NO_GCS
-#define GCS_SEND_TEXT(severity, format, args...)
-#else
-#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
-#endif
+extern const AP_HAL::HAL &hal;
 
 #define REG_COMPANY_ID      0x00
 #define REG_DEVICE_ID       0x01
@@ -158,7 +154,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2
     if (dev->read_registers(REG_COMPANY_ID, (uint8_t *)&whoami, 2)) {
         // a device is replying on the AK09916 I2C address, don't
         // load the ICM20948
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ICM20948: AK09916 bus conflict\n");
+        hal.console->printf("ICM20948: AK09916 bus conflict\n");
         goto fail;
     }
 
@@ -201,27 +197,27 @@ bool AP_Compass_AK09916::init()
     }
 
     if (!_bus->configure()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Could not configure the bus\n");
+        hal.console->printf("AK09916: Could not configure the bus\n");
         goto fail;
     }
 
     if (!_reset()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Reset Failed\n");
+        hal.console->printf("AK09916: Reset Failed\n");
         goto fail;
     }
 
     if (!_check_id()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Wrong id\n");
+        hal.console->printf("AK09916: Wrong id\n");
         goto fail;
     }
 
     if (!_setup_mode()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Could not setup mode\n");
+        hal.console->printf("AK09916: Could not setup mode\n");
         goto fail;
     }
 
     if (!_bus->start_measurements()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"AK09916: Could not start measurements\n");
+        hal.console->printf("AK09916: Could not start measurements\n");
         goto fail;
     }
 
