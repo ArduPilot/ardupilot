@@ -231,10 +231,9 @@ void Copter::check_vibration()
     if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance, offset)) {
         checks_succeeded = false;
     }
-    const bool var_vel_hgt_high = (vel_variance >= 1.0f);
 
     // if no failure
-    if ((g2.fs_vibe_enabled == 0) || !checks_succeeded || !motors->armed() || !innov_velD_posD_positive || !var_vel_hgt_high) {
+    if ((g2.fs_vibe_enabled == 0) || !checks_succeeded || !motors->armed() || !innov_velD_posD_positive || (vel_variance < 1.0f)) {
         if (vibration_check.high_vibes) {
             // start clear time
             if (vibration_check.clear_ms == 0) {
