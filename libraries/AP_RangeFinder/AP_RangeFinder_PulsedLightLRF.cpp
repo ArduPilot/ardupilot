@@ -30,6 +30,7 @@ extern const AP_HAL::HAL& hal;
 #define LL40LS_HW_VERSION         0x41
 #define LL40LS_INTERVAL           0x45
 #define LL40LS_SW_VERSION         0x4f
+#define LL40LS_STATUS             0x01
 
 // bit values
 #define LL40LS_MSRREG_RESET       0x00        /* reset to power on defaults */
@@ -91,11 +92,17 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
     switch (phase) {
     case PHASE_COLLECT: {
         be16_t val;
+        uint8_t hw_status;
         // read the high and low byte distance registers
         if (_dev->read_registers(LL40LS_DISTHIGH_REG | LL40LS_AUTO_INCREMENT, (uint8_t*)&val, sizeof(val))) {
             uint16_t _distance_cm = be16toh(val);
-            // remove momentary spikes
-            if (abs(_distance_cm - last_distance_cm) < 100) {
+            // check rangefinder status before using distance
+            if (v3_hardware) {
+                _dev->read_registers(LL40LS_STATUS, &hw_status, 1);
+            }
+            // remove momentary spikes. for v3 hw also check rangefinder hardware status flag.
+            if (abs(_distance_cm - last_distance_cm) < 100
+            	    && (!v3_hardware || ((hw_status & (1<<3)) == 0))) {
                 state.distance_cm = _distance_cm;
                 state.last_reading_ms = AP_HAL::millis();
                 update_status();                
@@ -108,8 +115,8 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
             // for v2 hw we use continuous mode
             phase = PHASE_MEASURE;
         }
-        if (!v3hp_hardware) {
-            // for v3hp hw we start PHASE_MEASURE immediately after PHASE_COLLECT 
+        if (!v3hp_hardware && !v3_hardware) {
+            // for v3 and v3hp we start PHASE_MEASURE immediately after PHASE_COLLECT
             break;
         }
     }
@@ -148,7 +155,7 @@ static const struct settings_table settings_v2[] = {
 };
 
 /*
-  register setup table for V3HP Lidar
+  register setup table for V3 and V3HP Lidar
  */
 static const struct settings_table settings_v3hp[] = {
     { LL40LS_SIG_COUNT_VAL, 0x80 }, // 0x80 = 128 acquisitions
@@ -168,7 +175,7 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
     _dev->set_split_transfers(true);
 
     if (rftype == RangeFinder::RangeFinder_TYPE_PLI2CV3) {
-        v2_hardware = true;
+    	    v3_hardware = true;
     } else if (rftype == RangeFinder::RangeFinder_TYPE_PLI2CV3HP) {
         v3hp_hardware = true;
     } else {
@@ -191,7 +198,7 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
         table = settings_v2;
         num_settings = sizeof(settings_v2) / sizeof(settings_table);
         phase = PHASE_COLLECT;
-    } else if (v3hp_hardware) {
+    } else if (v3hp_hardware || v3_hardware) {
         table = settings_v3hp;
         num_settings = sizeof(settings_v3hp) / sizeof(settings_table);
         phase = PHASE_MEASURE;
@@ -209,7 +216,7 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
         }
     }
 
-    printf("Found LidarLite device=0x%x v2=%d v3hp=%d\n", _dev->get_bus_id(), (int)v2_hardware, (int)v3hp_hardware);
+    printf("Found LidarLite device=0x%x v2=%d v3=%d v3hp=%d\n", _dev->get_bus_id(), (int)v2_hardware, (int)v3_hardware, (int)v3hp_hardware);
     
     _dev->get_semaphore()->give();
 
