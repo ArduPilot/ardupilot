@@ -3072,7 +3072,7 @@ class AutoTestCopter(AutoTest):
                          0,
                          0,
                          0,
-                         timeout=1)
+                         timeout=2)
             tstart = self.get_sim_time()
             last_twist_time = 0
             while True:
