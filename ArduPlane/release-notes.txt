@@ -1,3 +1,14 @@
+Release 4.0.0beta4, 19th October 2019
+------------------------------------
+
+A small set of improvements over beta3:
+
+ - fixed time race in airspeed driver (thanks to liang)
+ - fixed uninitialsed bytes in send_named_float()
+ - added TAKEOFF flight mode
+
+Happy flying!
+
 Release 4.0.0beta3, 7th October 2019
 ------------------------------------
 
