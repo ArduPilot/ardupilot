@@ -1317,6 +1317,16 @@ struct PACKED log_Arm_Disarm {
 #define ARSP_UNITS "snPOPP----"
 #define ARSP_MULTS "F00B00----"
 
+
+// @LoggerMessage: FMT
+// @Description: Message defining the format of messages in this file
+// @URL: https://ardupilot.org/dev/docs/code-overview-adding-a-new-log-message.html
+// @Field: type: unique-to-this-log identifier for message being defined
+// @Field: length: the number of bytes taken up by this message (including all headers)
+// @Field: name: name of the message being defined
+// @Field: format: character string defining the C-storage-type of the fields in this message
+// @Field: labels: the labels of the message being defined
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
