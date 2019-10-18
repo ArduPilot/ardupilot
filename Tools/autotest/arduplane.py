@@ -1353,7 +1353,7 @@ class AutoTestPlane(AutoTest):
         # message ADSB_VEHICLE 37 -353632614 1491652305 0 584070 0 0 0 "bob" 3 1 255 17
         self.set_parameter("ADSB_ENABLE", 1)
         self.set_parameter("AVD_ENABLE", 1)
-        self.delay_sim_time(1) # TODO: work out why this is required...
+        self.delay_sim_time(2) # TODO: work out why this is required...
         self.mav.mav.adsb_vehicle_send(37, # ICAO address
                                        int(here.lat * 1e7),
                                        int(here.lng * 1e7),
@@ -1369,7 +1369,7 @@ class AutoTestPlane(AutoTest):
                                        17 # squawk
         )
         self.progress("Waiting for collision message")
-        m = self.mav.recv_match(type='COLLISION', blocking=True, timeout=2)
+        m = self.mav.recv_match(type='COLLISION', blocking=True, timeout=4)
         if m is None:
             raise NotAchievedException("Did not get collision message")
         if m.threat_level != 2:
