@@ -36,7 +36,7 @@
 /**
  * @brief   STM32 GPIO static initialization data.
  */
-#if defined(STM32F100_MCUCONF) || defined(STM32F103_MCUCONF)
+#if defined(STM32F100_MCUCONF) || defined(STM32F103_MCUCONF) || defined(STM32F105_MCUCONF)
 
 const PALConfig pal_default_config =
 {
@@ -222,7 +222,7 @@ static void stm32_gpio_init(void) {
  *          and before any other initialization.
  */
 void __early_init(void) {
-#if !defined(STM32F100_MCUCONF) && !defined(STM32F103_MCUCONF)
+#if !defined(STM32F1)
   stm32_gpio_init();
 #endif
   stm32_clock_init();
