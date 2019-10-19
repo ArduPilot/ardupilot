@@ -1138,19 +1138,20 @@ void AP_Periph_FW::can_airspeed_update(void)
 {
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     if (!airspeed.healthy()) {
-        static uint32_t last_probe_ms;
         uint32_t now = AP_HAL::millis();
+        static uint32_t last_probe_ms;
         if (now - last_probe_ms >= 1000) {
             last_probe_ms = now;
             airspeed.init();
         }
     }
-    airspeed.update(false);
-    if (last_airspeed_update_ms == airspeed.last_update_ms()) {
+    uint32_t now = AP_HAL::millis();
+    if (now - last_airspeed_update_ms < 50) {
+        // max 20Hz data
         return;
     }
-
-    last_airspeed_update_ms = airspeed.last_update_ms();
+    last_airspeed_update_ms = now;
+    airspeed.update(false);
     if (!airspeed.healthy()) {
         // don't send any data
         return;
