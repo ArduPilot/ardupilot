@@ -176,6 +176,7 @@ public:
         STAND_BY  =           76, // Standy signal magnitude
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
+        TAKEOFF   =          102, // takeoff mode
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 

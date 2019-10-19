@@ -61,6 +61,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::INVERTED:
     case AUX_FUNC::RTL:
+    case AUX_FUNC::TAKEOFF:
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
@@ -114,6 +115,10 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
         do_aux_function_change_mode(Mode::Number::RTL, ch_flag);
         break;
 
+    case AUX_FUNC::TAKEOFF:
+        do_aux_function_change_mode(Mode::Number::TAKEOFF, ch_flag);
+        break;
+            
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
         break;
