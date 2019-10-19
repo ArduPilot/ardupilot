@@ -27,7 +27,7 @@ public:
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     AP_Int8 buzz_volume;
 #endif
-#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+#ifdef AP_PERIPH_HAVE_LED
     AP_Int8 led_brightness;
 #endif
 
