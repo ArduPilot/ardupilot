@@ -2,6 +2,10 @@
 
 extern const AP_HAL::HAL &hal;
 
+#ifndef AP_PERIPH_LED_BRIGHT_DEFAULT
+#define AP_PERIPH_LED_BRIGHT_DEFAULT 100
+#endif
+
 /*
  *  AP_Periph parameter definitions
  *
@@ -50,8 +54,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(baro, "BARO_", AP_Baro),
 #endif
 
-#ifdef HAL_PERIPH_NEOPIXEL_COUNT
-    GSCALAR(led_brightness, "LED_BRIGHTNESS", 50),
+#ifdef AP_PERIPH_HAVE_LED
+    GSCALAR(led_brightness, "LED_BRIGHTNESS", AP_PERIPH_LED_BRIGHT_DEFAULT),
 #endif
 
     AP_VAREND
