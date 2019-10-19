@@ -52,7 +52,7 @@ extern const AP_HAL::HAL &hal;
 extern AP_Periph_FW periph;
 
 static CanardInstance canard;
-static uint32_t canard_memory_pool[1024/4];
+static uint32_t canard_memory_pool[2048/4];
 #ifndef HAL_CAN_DEFAULT_NODE_ID
 #define HAL_CAN_DEFAULT_NODE_ID CANARD_BROADCAST_NODE_ID
 #endif
