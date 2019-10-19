@@ -3,8 +3,14 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
+
+#if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED)
+#define AP_PERIPH_HAVE_LED
+#endif
+
 #include "Parameters.h"
 #include "ch.h"
+
 
 class AP_Periph_FW {
 public:
