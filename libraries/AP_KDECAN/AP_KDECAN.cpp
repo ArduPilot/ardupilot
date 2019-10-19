@@ -55,6 +55,33 @@ const AP_Param::GroupInfo AP_KDECAN::var_info[] = {
 };
 
 
+const uint8_t AP_KDECAN::AUTOPILOT_NODE_ID;
+const uint8_t AP_KDECAN::BROADCAST_NODE_ID;
+const uint8_t AP_KDECAN::ESC_NODE_ID_FIRST;
+
+const uint8_t AP_KDECAN::ESC_INFO_OBJ_ADDR;
+const uint8_t AP_KDECAN::SET_PWM_OBJ_ADDR;
+const uint8_t AP_KDECAN::VOLTAGE_OBJ_ADDR;
+const uint8_t AP_KDECAN::CURRENT_OBJ_ADDR;
+const uint8_t AP_KDECAN::RPM_OBJ_ADDR;
+const uint8_t AP_KDECAN::TEMPERATURE_OBJ_ADDR;
+const uint8_t AP_KDECAN::GET_PWM_INPUT_OBJ_ADDR;
+const uint8_t AP_KDECAN::GET_PWM_OUTPUT_OBJ_ADDR;
+const uint8_t AP_KDECAN::MCU_ID_OBJ_ADDR;
+const uint8_t AP_KDECAN::UPDATE_NODE_ID_OBJ_ADDR;
+const uint8_t AP_KDECAN::ENUM_OBJ_ADDR;
+const uint8_t AP_KDECAN::TELEMETRY_OBJ_ADDR;
+
+const uint16_t AP_KDECAN::SET_PWM_MIN_INTERVAL_US;
+const uint32_t AP_KDECAN::TELEMETRY_INTERVAL_US;
+
+const uint32_t AP_KDECAN::SET_PWM_TIMEOUT_US;
+const uint16_t AP_KDECAN::TELEMETRY_TIMEOUT_US;
+const uint16_t AP_KDECAN::ENUMERATION_TIMEOUT_MS;
+
+const uint8_t AP_KDECAN::CAN_IFACE_INDEX;
+
+
 AP_KDECAN::AP_KDECAN()
 {
     AP_Param::setup_object_defaults(this, var_info);
