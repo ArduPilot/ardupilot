@@ -20,6 +20,7 @@ public:
         k_param_buzz_volume,
         k_param_led_brightness,
         k_param_airspeed,
+        k_param_rangefinder,
     };
 
     AP_Int16 format_version;
