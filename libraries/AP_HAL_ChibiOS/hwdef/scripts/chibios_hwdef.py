@@ -213,6 +213,8 @@ class generic_pin(object):
                     self.sig_dir = 'OUTPUT'
                 elif l == 'I2C':
                     self.sig_dir = 'OUTPUT'
+                elif l == 'OTG':
+                    self.sig_dir = 'OUTPUT'
                 else:
                     error("Unknown signal type %s:%s for %s!" % (self.portpin, self.label, mcu_type))
 
@@ -377,6 +379,8 @@ class generic_pin(object):
                 if e in speed_values:
                     v = e
             speed_str = "PIN_%s(%uU) |" % (v, self.pin)
+        elif self.is_CS():
+            speed_str = "PIN_SPEED_LOW(%uU) |" % (self.pin)
         else:
             speed_str = ""
         if self.af is not None:
@@ -390,6 +394,8 @@ class generic_pin(object):
                 v = "AF_OD"
             else:
                 v = "AF_PP"
+        elif self.is_CS():
+            v = "OUTPUT_PP"
         elif self.sig_dir == 'OUTPUT':
             if 'OPENDRAIN' in self.extra:
                 v = 'OUTPUT_OD'
