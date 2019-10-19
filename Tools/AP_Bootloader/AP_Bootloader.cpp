@@ -58,6 +58,14 @@ int main(void)
     bool try_boot = false;
     uint32_t timeout = HAL_BOOTLOADER_TIMEOUT;
 
+#ifdef HAL_BOARD_AP_PERIPH_ZUBAXGNSS
+    // setup remapping register for ZubaxGNSS
+    uint32_t mapr = AFIO->MAPR;
+    mapr &= ~AFIO_MAPR_SWJ_CFG;
+    mapr |= AFIO_MAPR_SWJ_CFG_JTAGDISABLE;
+    AFIO->MAPR = mapr | AFIO_MAPR_CAN_REMAP_REMAP2 | AFIO_MAPR_SPI3_REMAP;
+#endif
+
 #ifndef NO_FASTBOOT
     enum rtc_boot_magic m = check_fast_reboot();
     if (stm32_was_watchdog_reset()) {
