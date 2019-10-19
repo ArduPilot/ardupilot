@@ -274,7 +274,10 @@ void uprintf(const char *fmt, ...)
     va_start(ap, fmt);
     uint32_t n = vsnprintf(umsg, sizeof(umsg), fmt, ap);
     va_end(ap);
-    chnWriteTimeout(&BOOTLOADER_DEBUG, (const uint8_t *)umsg, MIN(n,sizeof(umsg)), chTimeMS2I(100));
+    if (n > sizeof(umsg)) {
+        n = sizeof(umsg);
+    }
+    chnWriteTimeout(&BOOTLOADER_DEBUG, (const uint8_t *)umsg, n, chTimeMS2I(100));
 #endif
 }
 
