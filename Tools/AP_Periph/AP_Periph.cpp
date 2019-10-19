@@ -57,6 +57,14 @@ void AP_Periph_FW::init()
 
     serial_manager.init();
 
+#ifdef HAL_BOARD_AP_PERIPH_ZUBAXGNSS
+    // setup remapping register for ZubaxGNSS
+    uint32_t mapr = AFIO->MAPR;
+    mapr &= ~AFIO_MAPR_SWJ_CFG;
+    mapr |= AFIO_MAPR_SWJ_CFG_JTAGDISABLE;
+    AFIO->MAPR = mapr | AFIO_MAPR_CAN_REMAP_REMAP2 | AFIO_MAPR_SPI3_REMAP;
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_GPS
     gps.init(serial_manager);
 #endif
