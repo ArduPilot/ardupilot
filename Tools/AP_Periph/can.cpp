@@ -41,8 +41,10 @@
 #include <stdio.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include <drivers/stm32/canard_stm32.h>
+#include <AP_HAL/I2CDevice.h>
 
 #include "i2c.h"
+#include <utility>
 
 extern const AP_HAL::HAL &hal;
 extern AP_Periph_FW periph;
@@ -406,8 +408,37 @@ static void handle_safety_state(CanardInstance* ins, CanardRxTransfer* transfer)
     }
     safety_state = req.status;
 }
+#endif // HAL_GPIO_PIN_SAFE_LED
 
+#ifdef AP_PERIPH_HAVE_LED
+static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
+{
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
+    hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, (1U<<HAL_PERIPH_NEOPIXEL_COUNT)-1,
+                                     red, green, blue);
+    hal.rcout->neopixel_send();
+#endif // HAL_PERIPH_NEOPIXEL_COUNT
+#ifdef HAL_PERIPH_ENABLE_NCP5623_LED
+    {
+        const uint8_t i2c_address = 0x38;
+        static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+        if (!dev) {
+            dev = std::move(hal.i2c_mgr->get_device(0, i2c_address));
+        }
+        WITH_SEMAPHORE(dev->get_semaphore());
+        dev->set_retries(0);
+        uint8_t v = 0x3f; // enable LED
+        dev->transfer(&v, 1, nullptr, 0);
+        v = 0x40 | red >> 3; // red
+        dev->transfer(&v, 1, nullptr, 0);
+        v = 0x60 | green >> 3; // green
+        dev->transfer(&v, 1, nullptr, 0);
+        v = 0x80 | blue >> 3; // blue
+        dev->transfer(&v, 1, nullptr, 0);
+    }
+#endif // HAL_PERIPH_ENABLE_NCP5623_LED
+}
+
 /*
   handle lightscommand
  */
@@ -432,13 +463,12 @@ static void handle_lightscommand(CanardInstance* ins, CanardRxTransfer* transfer
             green = constrain_int16(green * scale, 0, 255);
             blue = constrain_int16(blue * scale, 0, 255);
         }
-        hal.rcout->set_neopixel_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, (1U<<HAL_PERIPH_NEOPIXEL_COUNT)-1,
-                                         red, green, blue);
+        set_rgb_led(red, green, blue);
     }
-    hal.rcout->neopixel_send();
 }
-#endif
+#endif // AP_PERIPH_HAVE_LED
 
+#ifdef HAL_GPIO_PIN_SAFE_LED
 /*
   update safety LED
  */
@@ -560,7 +590,7 @@ static void onTransferReceived(CanardInstance* ins,
         break;
 #endif
 
-#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+#ifdef AP_PERIPH_HAVE_LED
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         handle_lightscommand(ins, transfer);
         break;
@@ -624,7 +654,7 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
         *out_data_type_signature = ARDUPILOT_INDICATION_SAFETYSTATE_SIGNATURE;
         return true;
 #endif
-#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+#ifdef AP_PERIPH_HAVE_LED
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_SIGNATURE;
         return true;
