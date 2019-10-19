@@ -325,6 +325,8 @@ class generic_pin(object):
         v = 'HIGH'
         if self.type == 'OUTPUT':
             v = 'LOW'
+        elif self.label is not None and self.label.startswith('I2C'):
+            v = 'LOW'
         for e in self.extra:
             if e in values:
                 v = e
@@ -384,6 +386,8 @@ class generic_pin(object):
                     v = 'PUD'
                 else:
                     v = "NOPULL"
+            elif self.label.startswith('I2C'):
+                v = "AF_OD"
             else:
                 v = "AF_PP"
         elif self.sig_dir == 'OUTPUT':
@@ -1443,20 +1447,20 @@ def write_hwdef_header(outfilename):
  * in the initialization code.
  * Please refer to the STM32 Reference Manual for details.
  */
-#define PIN_MODE_OUTPUT_PP(n)         (0 << (((n) & 7) * 4))
-#define PIN_MODE_OUTPUT_OD(n)         (4 << (((n) & 7) * 4))
-#define PIN_MODE_AF_PP(n)             (8 << (((n) & 7) * 4)) 
-#define PIN_MODE_AF_OD(n)             (12 << (((n) & 7) * 4))
-#define PIN_MODE_ANALOG(n)            (0 << (((n) & 7) * 4))
-#define PIN_MODE_NOPULL(n)            (4 << (((n) & 7) * 4))
-#define PIN_MODE_PUD(n)               (8 << (((n) & 7) * 4)) 
-#define PIN_SPEED_MEDIUM(n)           (1 << (((n) & 7) * 4))
-#define PIN_SPEED_LOW(n)              (2 << (((n) & 7) * 4))
-#define PIN_SPEED_HIGH(n)             (3 << (((n) & 7) * 4))
-#define PIN_ODR_HIGH(n)               (1 << (((n) & 15)))
-#define PIN_ODR_LOW(n)                (0 << (((n) & 15)))
-#define PIN_PULLUP(n)                 (1 << (((n) & 15)))
-#define PIN_PULLDOWN(n)               (0 << (((n) & 15)))
+#define PIN_MODE_OUTPUT_PP(n)         (0U << (((n) & 7) * 4))
+#define PIN_MODE_OUTPUT_OD(n)         (4U << (((n) & 7) * 4))
+#define PIN_MODE_AF_PP(n)             (8U << (((n) & 7) * 4))
+#define PIN_MODE_AF_OD(n)             (12U << (((n) & 7) * 4))
+#define PIN_MODE_ANALOG(n)            (0U << (((n) & 7) * 4))
+#define PIN_MODE_NOPULL(n)            (4U << (((n) & 7) * 4))
+#define PIN_MODE_PUD(n)               (8U << (((n) & 7) * 4))
+#define PIN_SPEED_MEDIUM(n)           (1U << (((n) & 7) * 4))
+#define PIN_SPEED_LOW(n)              (2U << (((n) & 7) * 4))
+#define PIN_SPEED_HIGH(n)             (3U << (((n) & 7) * 4))
+#define PIN_ODR_HIGH(n)               (1U << (((n) & 15)))
+#define PIN_ODR_LOW(n)                (0U << (((n) & 15)))
+#define PIN_PULLUP(n)                 (1U << (((n) & 15)))
+#define PIN_PULLDOWN(n)               (0U << (((n) & 15)))
 #define PIN_UNDEFINED(n)                PIN_INPUT_PUD(n)
 ''')
     else:
