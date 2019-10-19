@@ -338,8 +338,9 @@ void RangeFinder::update(void)
             drivers[i]->update();
         }
     }
-
+#ifndef HAL_BUILD_AP_PERIPH
     Log_RFND();
+#endif
 }
 
 bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
