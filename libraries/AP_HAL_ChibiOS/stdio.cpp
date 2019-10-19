@@ -46,7 +46,11 @@ int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
 
 int __wrap_vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 {
-    return hal.util->vsnprintf(str, size, fmt, ap);
+#ifdef HAL_BOOTLOADER_BUILD
+    return chvsnprintf(str, size, fmt, ap);
+#else
+  return hal.util->vsnprintf(str, size, fmt, ap);
+#endif
 }
 
 int __wrap_vasprintf(char **strp, const char *fmt, va_list ap)
