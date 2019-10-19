@@ -37,20 +37,20 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #ifdef HAL_PERIPH_ENABLE_GPS
     // GPS driver
     // @Group: GPS_
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
+    // @Path: ../../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS_", AP_GPS),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
     // @Group: COMPASS_
-    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
+    // @Path: ../../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,         "COMPASS_",     Compass),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BARO
     // Baro driver
     // @Group: BARO_
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
+    // @Path: ../../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(baro, "BARO_", AP_Baro),
 #endif
 
@@ -61,8 +61,15 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     // Airspeed driver
     // @Group: ARSP
-    // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
+    // @Path: ../../libraries/AP_Airspeed/AP_Airspeed.cpp
     GOBJECT(airspeed, "ARSP", AP_Airspeed),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    // Rangefinder driver
+    // @Group: RNGFND
+    // @Path: ../../libraries/AP_RangeFinder/Rangefinder.cpp
+    GOBJECT(rangefinder, "RNGFND", RangeFinder),
 #endif
     
     AP_VAREND

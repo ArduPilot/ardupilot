@@ -35,6 +35,7 @@
 #include <uavcan/equipment/air_data/RawAirData.h>
 #include <uavcan/equipment/indication/BeepCommand.h>
 #include <uavcan/equipment/indication/LightsCommand.h>
+#include <uavcan/equipment/range_sensor/Measurement.h>
 #include <ardupilot/indication/SafetyState.h>
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
@@ -265,6 +266,9 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
 #endif
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
         AP_Param::setup_object_defaults(&periph.airspeed, periph.airspeed.var_info);
+#endif
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+        AP_Param::setup_object_defaults(&periph.rangefinder, periph.rangefinder.var_info);
 #endif
     }
 
@@ -899,6 +903,7 @@ void AP_Periph_FW::can_update()
     can_gps_update();
     can_baro_update();
     can_airspeed_update();
+    can_rangefinder_update();
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     can_buzzer_update();
 #endif
@@ -1188,6 +1193,82 @@ void AP_Periph_FW::can_airspeed_update(void)
                     total_size);
 #endif // HAL_PERIPH_ENABLE_AIRSPEED
 }
+
+
+/*
+  update CAN rangefinder
+ */
+void AP_Periph_FW::can_rangefinder_update(void)
+{
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    if (rangefinder.num_sensors() == 0) {
+        uint32_t now = AP_HAL::millis();
+        static uint32_t last_probe_ms;
+        if (now - last_probe_ms >= 1000) {
+            last_probe_ms = now;
+            rangefinder.init(ROTATION_NONE);
+        }
+    }
+    uint32_t now = AP_HAL::millis();
+    static uint32_t last_update_ms;
+    if (now - last_update_ms < 20) {
+        // max 50Hz data
+        return;
+    }
+    last_update_ms = now;
+    rangefinder.update();
+    RangeFinder::RangeFinder_Status status = rangefinder.status_orient(ROTATION_NONE);
+    if (status <= RangeFinder::RangeFinder_NoData) {
+        // don't send any data
+        return;
+    }
+    uint16_t dist_cm = rangefinder.distance_cm_orient(ROTATION_NONE);
+    uavcan_equipment_range_sensor_Measurement pkt {};
+    switch (status) {
+    case RangeFinder::RangeFinder_OutOfRangeLow:
+        pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_CLOSE;
+        break;
+    case RangeFinder::RangeFinder_OutOfRangeHigh:
+        pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_FAR;
+        break;
+    case RangeFinder::RangeFinder_Good:
+        pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_VALID_RANGE;
+        break;
+    default:
+        pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_UNDEFINED;
+        break;
+    }
+    switch (rangefinder.get_mav_distance_sensor_type_orient(ROTATION_NONE)) {
+    case MAV_DISTANCE_SENSOR_LASER:
+        pkt.sensor_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_LIDAR;
+        break;
+    case MAV_DISTANCE_SENSOR_ULTRASOUND:
+        pkt.sensor_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_SONAR;
+        break;
+    case MAV_DISTANCE_SENSOR_RADAR:
+        pkt.sensor_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_RADAR;
+        break;
+    default:
+        pkt.sensor_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_UNDEFINED;
+        break;
+    }
+
+    pkt.range = dist_cm * 0.01;
+    fix_float16(pkt.range);
+
+    uint8_t buffer[UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_MAX_SIZE];
+    uint16_t total_size = uavcan_equipment_range_sensor_Measurement_encode(&pkt, buffer);
+
+    canardBroadcast(&canard,
+                    UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SIGNATURE,
+                    UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_ID,
+                    &transfer_id,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    total_size);
+#endif // HAL_PERIPH_ENABLE_RANGEFINDER
+}
+
 
 #ifdef HAL_PERIPH_ENABLE_ADSB
 /*

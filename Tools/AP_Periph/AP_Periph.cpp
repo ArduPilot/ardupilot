@@ -82,6 +82,10 @@ void AP_Periph_FW::init()
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     airspeed.init();
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+    rangefinder.init(ROTATION_NONE);
+#endif
     
     start_ms = AP_HAL::millis();
 }
