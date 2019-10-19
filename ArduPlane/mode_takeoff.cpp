@@ -114,6 +114,7 @@ void ModeTakeoff::update()
 
         plane.next_WP_loc = plane.current_loc;
         plane.next_WP_loc.offset_bearing(direction, MAX(dist-dist_done, 0));
+        plane.next_WP_loc.alt = start_loc.alt + target_alt*100.0;
 
         plane.set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
         plane.complete_auto_takeoff();
