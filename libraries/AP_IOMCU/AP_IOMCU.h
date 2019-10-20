@@ -54,7 +54,7 @@ public:
 
     // set PWM of channels when in FMU failsafe
     void set_failsafe_pwm(uint16_t chmask, uint16_t period_us);
-    
+
     /*
       enable sbus output
     */
@@ -92,7 +92,7 @@ public:
 
     // set to brushed mode
     void set_brushed_mode(void);
-    
+
     // check if IO is healthy
     bool healthy(void);
 
@@ -102,7 +102,7 @@ public:
     // setup for FMU failsafe mixing
     bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
-    
+
     // channel group masks
     const uint8_t ch_masks[3] = { 0x03,0x0C,0xF0 };
 
@@ -121,7 +121,7 @@ private:
     bool write_register(uint8_t page, uint8_t offset, uint16_t v) {
         return write_registers(page, offset, 1, &v);
     }
-    
+
     // modify a single register
     bool modify_register(uint8_t page, uint8_t offset, uint16_t clearbits, uint16_t setbits);
 
@@ -166,7 +166,7 @@ private:
 
     // MIXER values
     struct page_mixing mixing;
-    
+
     // output pwm values
     struct {
         uint8_t num_channels;

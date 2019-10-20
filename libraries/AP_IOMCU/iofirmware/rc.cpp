@@ -181,4 +181,3 @@ void AP_IOMCU_FW::dsm_bind_step(void)
         break;
     }
 }
-

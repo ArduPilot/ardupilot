@@ -421,7 +421,7 @@ bool AP_IOMCU::verify_rev3(uint32_t fw_size_local)
     }
 
     crc_is_ok = true;
-    
+
     return true;
 }
 
