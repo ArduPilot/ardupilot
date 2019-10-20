@@ -557,7 +557,7 @@ bool AP_IOMCU_FW::handle_code_write()
                 dsm_bind_state = 1;
             }
             break;
-            
+
         default:
             break;
         }
@@ -749,6 +749,3 @@ void AP_IOMCU_FW::fill_failsafe_pwm(void)
 }
 
 AP_HAL_MAIN();
-
-
-
