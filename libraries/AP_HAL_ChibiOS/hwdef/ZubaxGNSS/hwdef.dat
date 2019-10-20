@@ -68,6 +68,9 @@ PB11 USART3_RX USART3 SPEED_HIGH NODMA
 # don't enable DMA in UART driver
 define HAL_UART_NODMA
 
+# enable watchdog
+define HAL_WATCHDOG_ENABLED_DEFAULT true
+
 # enable CAN support
 PA11 CAN_RX CAN
 PB9 CAN_TX CAN
