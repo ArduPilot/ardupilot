@@ -1449,6 +1449,21 @@ void RCOutput::serial_end(void)
 }
 
 /*
+  enable telemetry request for a mask of channels. This is used
+  with DShot to get telemetry feedback
+ */
+void RCOutput::set_telem_request_mask(uint16_t mask)
+{
+    telem_request_mask = (mask >> chan_offset);
+#if HAL_WITH_IO_MCU
+    if ((mask & ((1U<<chan_offset)-1)) &&
+        AP_BoardConfig::io_enabled()) {
+        return iomcu.set_dshot_telem(mask);
+    }
+#endif
+}
+
+/*
   get safety switch state for Util.cpp
  */
 AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)

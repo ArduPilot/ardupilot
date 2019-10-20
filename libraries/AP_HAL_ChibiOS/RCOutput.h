@@ -125,7 +125,7 @@ public:
       enable telemetry request for a mask of channels. This is used
       with DShot to get telemetry feedback
      */
-    void set_telem_request_mask(uint16_t mask) override { telem_request_mask = (mask >> chan_offset); }
+    void set_telem_request_mask(uint16_t mask) override;
 
     /*
       get safety switch state, used by Util.cpp
