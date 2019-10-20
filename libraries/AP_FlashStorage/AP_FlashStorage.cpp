@@ -120,7 +120,7 @@ bool AP_FlashStorage::init(void)
     // erase any sectors marked full
     for (uint8_t i=0; i<2; i++) {
         if (states[i] == SECTOR_STATE_FULL) {
-            if (!erase_sector(i)) {
+            if (!erase_sector(i, true)) {
                 return false;
             }
         }
@@ -148,7 +148,7 @@ bool AP_FlashStorage::switch_full_sector(void)
         return false;
     }
 
-    if (!erase_sector(current_sector ^ 1)) {
+    if (!erase_sector(current_sector ^ 1, true)) {
         return false;
     }
 
@@ -276,12 +276,14 @@ bool AP_FlashStorage::load_sector(uint8_t sector)
 /*
   erase one sector
  */
-bool AP_FlashStorage::erase_sector(uint8_t sector)
+bool AP_FlashStorage::erase_sector(uint8_t sector, bool mark_available)
 {
     if (!flash_erase(sector)) {
         return false;
     }
-
+    if (!mark_available) {
+        return true;
+    }
     struct sector_header header;
     header.signature = signature;
     header.state = SECTOR_STATE_AVAILABLE;
@@ -298,7 +300,10 @@ bool AP_FlashStorage::erase_all(void)
     current_sector = 0;
     write_offset = sizeof(struct sector_header);
     
-    if (!erase_sector(0) || !erase_sector(1)) {
+    if (!erase_sector(0, current_sector!=0)) {
+        return false;
+    }
+    if (!erase_sector(1, current_sector!=1)) {
         return false;
     }
     

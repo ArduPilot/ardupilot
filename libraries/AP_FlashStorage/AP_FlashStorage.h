@@ -160,7 +160,7 @@ private:
     bool load_sector(uint8_t sector);
 
     // erase a sector and write header
-    bool erase_sector(uint8_t sector);
+    bool erase_sector(uint8_t sector, bool mark_available);
 
     // erase all sectors and reset
     bool erase_all();
