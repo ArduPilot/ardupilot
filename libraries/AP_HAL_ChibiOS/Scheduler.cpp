@@ -543,6 +543,10 @@ void Scheduler::expect_delay_ms(uint32_t ms)
         // only for main thread
         return;
     }
+
+    // pat once immediately
+    watchdog_pat();
+
     if (ms == 0) {
         if (expect_delay_nesting > 0) {
             expect_delay_nesting--;
