@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -54,7 +54,7 @@ private:
 class ChibiOS::AnalogIn : public AP_HAL::AnalogIn {
 public:
     friend class AnalogSource;
-    
+
     void init() override;
     AP_HAL::AnalogSource* channel(int16_t pin) override;
     void _timer_tick(void);
@@ -66,7 +66,7 @@ public:
 private:
     void read_adc(uint32_t *val);
     void update_power_flags(void);
-    
+
     int _battery_handle;
     int _servorail_handle;
     int _system_power_handle;
@@ -84,9 +84,9 @@ private:
     struct pin_info {
         uint8_t channel;
         float scaling;
-    }; 
+    };
     static const pin_info pin_config[];
-    
+
     static adcsample_t *samples;
     static uint32_t sample_sum[];
     static uint32_t sample_count;

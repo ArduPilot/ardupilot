@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -56,11 +56,11 @@ public:
     // control optional features
     bool set_options(uint8_t options) override;
     uint8_t get_options(void) const override;
-    
+
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
-    
+
     struct SerialDef {
         BaseSequentialStream* serial;
         bool is_usb;
@@ -159,7 +159,7 @@ private:
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
 #endif
-    virtual_timer_t tx_timeout;    
+    virtual_timer_t tx_timeout;
     bool _in_timer;
     bool _blocking_writes;
     bool _initialised;
@@ -201,7 +201,7 @@ private:
     event_listener_t ev_listener;
     bool parity_enabled;
 #endif
-    
+
 #ifndef HAL_UART_NODMA
     static void rx_irq_cb(void* sd);
 #endif
@@ -223,7 +223,7 @@ private:
     void write_pending_bytes(void);
 
     void receive_timestamp_update(void);
-    
+
     void thread_init();
     static void uart_thread(void *);
 };

@@ -63,7 +63,7 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
     for (int i=0; i< EICU_CHANNEL_ENUM_END; i++) {
         icucfg.iccfgp[i]=nullptr;
     }
-    
+
     //configure main channel
     icucfg.iccfgp[chan] = &channel_config;
 #ifdef HAL_RCIN_IS_INVERTED
@@ -72,7 +72,7 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
     channel_config.alvl = EICU_INPUT_ACTIVE_LOW;
 #endif
     channel_config.capture_cb = nullptr;
-    
+
     //configure aux channel
     icucfg.iccfgp[aux_chan] = &aux_channel_config;
 #ifdef HAL_RCIN_IS_INVERTED
@@ -85,7 +85,7 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
     eicuStart(_icu_drv, &icucfg);
     //sets input filtering to 4 timer clock
     stm32_timer_set_input_filter(_icu_drv->tim, chan, 2);
-    //sets input for aux_chan 
+    //sets input for aux_chan
     stm32_timer_set_channel_input(_icu_drv->tim, aux_chan, 2);
     eicuEnable(_icu_drv);
 }
@@ -96,10 +96,10 @@ void SoftSigReaderInt::_irq_handler(EICUDriver *eicup, eicuchannel_t aux_channel
     pulse_t pulse;
     pulse.w0 = eicup->tim->CCR[channel];
     pulse.w1 = eicup->tim->CCR[aux_channel];
-    
+
     _singleton->sigbuf.push(pulse);
 
-    //check for missed interrupt 
+    //check for missed interrupt
     uint32_t mask = (STM32_TIM_SR_CC1OF << channel) | (STM32_TIM_SR_CC1OF << aux_channel);
     if ((eicup->tim->SR & mask) != 0) {
         //we have missed some pulses

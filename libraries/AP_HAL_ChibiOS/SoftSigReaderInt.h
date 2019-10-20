@@ -47,7 +47,7 @@ private:
     static SoftSigReaderInt *_singleton;
 
     static void _irq_handler(EICUDriver *eicup, eicuchannel_t channel);
-    
+
     static eicuchannel_t get_pair_channel(eicuchannel_t channel);
     typedef struct PACKED {
         uint16_t w0;
@@ -62,4 +62,3 @@ private:
 };
 
 #endif // HAL_USE_EICU
-

@@ -66,4 +66,3 @@ public:
 };
 
 #endif // AP_UAVCAN_SLCAN_ENABLED
-

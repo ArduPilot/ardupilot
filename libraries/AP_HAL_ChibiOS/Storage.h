@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -69,7 +69,7 @@ private:
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_ok, bool)};
 #endif
-    
+
     void _flash_load(void);
     void _flash_write(uint16_t line);
 
