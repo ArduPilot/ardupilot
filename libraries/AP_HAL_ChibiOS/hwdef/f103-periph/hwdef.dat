@@ -16,6 +16,9 @@ APJ_BOARD_ID 1000
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
+# enable watchdog
+define HAL_WATCHDOG_ENABLED_DEFAULT true
+
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
