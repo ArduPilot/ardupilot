@@ -714,17 +714,19 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
          mode == MODE_PWM_ONESHOT125) &&
         (mask & ((1U<<chan_offset)-1)) &&
         AP_BoardConfig::io_enabled()) {
-        iomcu_oneshot125 = (mode == MODE_PWM_ONESHOT125);
-        // also setup IO to use a 1Hz frequency, so we only get output
-        // when we trigger
-        iomcu.set_freq(io_fast_channel_mask, 1);
-        return iomcu.set_oneshot_mode();
+            iomcu_oneshot125 = (mode == MODE_PWM_ONESHOT125);
+            // also setup IO to use a 1Hz frequency, so we only get output
+            // when we trigger
+            iomcu.set_freq(io_fast_channel_mask, 1);
     }
-    if (mode == MODE_PWM_BRUSHED &&
-        (mask & ((1U<<chan_offset)-1)) &&
-        AP_BoardConfig::io_enabled()) {
-        return iomcu.set_brushed_mode();
-    }
+    if ((mode == MODE_PWM_ONESHOT ||
+         mode == MODE_PWM_ONESHOT125 ||
+         mode == MODE_PWM_BRUSHED ||
+         mode >= MODE_PWM_DSHOT150) &&
+         (mask & ((1U<<chan_offset)-1)) &&
+         AP_BoardConfig::io_enabled()) {
+             return iomcu.set_output_mode(mask, mode);
+         }
 #endif
 }
 
