@@ -535,6 +535,10 @@ bool AP_IOMCU_FW::handle_code_write()
             mode_out.mode = rx_io_packet.regs[1];
             break;
 
+        case PAGE_REG_SETUP_DSHOT_TLM:
+            hal.rcout->set_telem_request_mask(rx_io_packet.regs[0]);
+            break;
+
         case PAGE_REG_SETUP_HEATER_DUTY_CYCLE:
             reg_setup.heater_duty_cycle = rx_io_packet.regs[0];
             last_heater_ms = last_ms;
