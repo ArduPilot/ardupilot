@@ -42,6 +42,7 @@
 #include <uavcan/protocol/debug/LogMessage.h>
 #include <stdio.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include <drivers/stm32/canard_stm32.h>
 #include <AP_HAL/I2CDevice.h>
 
@@ -145,6 +146,9 @@ static void handle_get_node_info(CanardInstance* ins,
  */
 static void handle_param_getset(CanardInstance* ins, CanardRxTransfer* transfer)
 {
+    // param fetch all can take a long time, so pat watchdog
+    stm32_watchdog_pat();
+
     uavcan_protocol_param_GetSetRequest req;
     uint8_t arraybuf[UAVCAN_PROTOCOL_PARAM_GETSET_REQUEST_NAME_MAX_LENGTH];
     uint8_t *arraybuf_ptr = arraybuf;
