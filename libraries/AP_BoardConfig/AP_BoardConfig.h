@@ -29,6 +29,10 @@
 #include <AP_Radio/AP_Radio.h>
 #endif
 
+#ifndef HAL_WATCHDOG_ENABLED_DEFAULT
+#define HAL_WATCHDOG_ENABLED_DEFAULT false
+#endif
+
 extern "C" typedef int (*main_fn_t)(int argc, char **);
 
 class AP_BoardConfig {
@@ -162,7 +166,7 @@ public:
 
     // return true if watchdog enabled
     static bool watchdog_enabled(void) {
-        return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:false;
+        return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:HAL_WATCHDOG_ENABLED_DEFAULT;
     }
 
     // handle press of safety button. Return true if safety state
