@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -37,13 +37,13 @@ public:
 
     // initialise the stream locks
     static void init(void);
-    
+
     // blocking lock call
     void lock(void);
 
     // non-blocking lock call
     bool lock_nonblock(void);
-    
+
     // unlock call. The DMA channel will not be immediately
     // deallocated. Instead it will be deallocated if another driver
     // needs it
@@ -54,17 +54,17 @@ public:
 
     // unlock call from a chSysLock zone
     void unlock_from_lockzone(void);
-    
+
     //should be called inside the destructor of Shared DMA participants
     void unregister(void);
 
     // return true if this DMA channel is being actively contended for
     // by multiple drivers
     bool has_contention(void) const { return contention; }
-    
+
     // lock all shared DMA channels. Used on reboot
     static void lock_all(void);
-    
+
 private:
     dma_allocate_fn_t allocate;
     dma_allocate_fn_t deallocate;
@@ -90,7 +90,7 @@ private:
 
     // lock one stream, non-blocking
     bool lock_stream_nonblocking(uint8_t stream_id);
-    
+
     static struct dma_lock {
         // semaphore to ensure only one peripheral uses a DMA channel at a time
 #if CH_CFG_USE_SEMAPHORES == TRUE
@@ -104,6 +104,3 @@ private:
         Shared_DMA *obj;
     } locks[SHARED_DMA_MAX_STREAM_ID+1];
 };
-
-
-

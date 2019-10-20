@@ -37,7 +37,7 @@ public:
     void dma_deallocate(Shared_DMA *ctx);
     bool spi_started;
     uint8_t slowdown;
-    
+
     // we need an additional lock in the dma_allocate and
     // dma_deallocate functions to cope with 3-way contention as we
     // have two DMA channels that we are handling with the shared_dma
@@ -82,12 +82,12 @@ public:
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
 
-    /* 
+    /*
      *  send N bytes of clock pulses without taking CS. This is used
      *  when initialising microSD interfaces over SPI
     */
     bool clock_pulse(uint32_t len) override;
-    
+
     /* See AP_HAL::Device::get_semaphore() */
     AP_HAL::Semaphore *get_semaphore() override;
 

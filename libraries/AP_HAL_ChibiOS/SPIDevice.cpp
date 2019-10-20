@@ -62,7 +62,7 @@ static const uint32_t bus_clocks[6] = {
     SPI1_CLOCK, SPI2_CLOCK, SPI3_CLOCK, SPI4_CLOCK, SPI5_CLOCK, SPI6_CLOCK
 };
 
-static const struct SPIDriverInfo {    
+static const struct SPIDriverInfo {
     SPIDriver *driver;
     uint8_t busid; // used for device IDs in parameters
     uint8_t dma_channel_rx;
@@ -79,13 +79,13 @@ SPIBus::SPIBus(uint8_t _bus) :
     bus(_bus)
 {
     chMtxObjectInit(&dma_lock);
-    
+
     // allow for sharing of DMA channels with other peripherals
     dma_handle = new Shared_DMA(spi_devices[bus].dma_channel_rx,
                                 spi_devices[bus].dma_channel_tx,
                                 FUNCTOR_BIND_MEMBER(&SPIBus::dma_allocate, void, Shared_DMA *),
                                 FUNCTOR_BIND_MEMBER(&SPIBus::dma_deallocate, void, Shared_DMA *));
-        
+
 }
 
 /*
@@ -101,13 +101,13 @@ void SPIBus::dma_allocate(Shared_DMA *ctx)
  */
 void SPIBus::dma_deallocate(Shared_DMA *ctx)
 {
-    chMtxLock(&dma_lock);    
+    chMtxLock(&dma_lock);
     // another non-SPI peripheral wants one of our DMA channels
     if (spi_started) {
         spiStop(spi_devices[bus].driver);
         spi_started = false;
     }
-    chMtxUnlock(&dma_lock);    
+    chMtxUnlock(&dma_lock);
 }
 
 
@@ -242,7 +242,7 @@ uint32_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
         spi_clock_freq >>= 1;
         i++;
     }
-    
+
     // assuming the bitrate bits are consecutive in the CR1 register,
     // we can just multiply by BR_0 to get the right bits for the desired
     // scaling
