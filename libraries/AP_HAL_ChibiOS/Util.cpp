@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
@@ -133,7 +133,7 @@ void Util::set_imu_temp(float current)
     // average over temperatures to remove noise
     heater.count++;
     heater.sum += current;
-    
+
     // update once a second
     uint32_t now = AP_HAL::millis();
     if (now - heater.last_update_ms < 1000) {
@@ -158,14 +158,14 @@ void Util::set_imu_temp(float current)
 
     // limit to 65 degrees to prevent damage
     target = constrain_float(target, 0, 65);
-    
+
     float err = target - current;
 
     heater.integrator += kI * err;
     heater.integrator = constrain_float(heater.integrator, 0, 70);
 
     heater.output = constrain_float(kP * err + heater.integrator, 0, 100);
-    
+
     //hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", heater.integrator, heater.output, current, err);
 
 #if HAL_WITH_IO_MCU
@@ -281,16 +281,16 @@ bool Util::get_system_id(char buf[40])
 {
     uint8_t serialid[12];
     char board_name[14];
-    
+
     memcpy(serialid, (const void *)UDID_START, 12);
     strncpy(board_name, CHIBIOS_SHORT_BOARD_NAME, 13);
     board_name[13] = 0;
-    
+
     // this format is chosen to match the format used by HAL_PX4
     snprintf(buf, 40, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
              board_name,
-             (unsigned)serialid[3], (unsigned)serialid[2], (unsigned)serialid[1], (unsigned)serialid[0], 
-             (unsigned)serialid[7], (unsigned)serialid[6], (unsigned)serialid[5], (unsigned)serialid[4], 
+             (unsigned)serialid[3], (unsigned)serialid[2], (unsigned)serialid[1], (unsigned)serialid[0],
+             (unsigned)serialid[7], (unsigned)serialid[6], (unsigned)serialid[5], (unsigned)serialid[4],
              (unsigned)serialid[11], (unsigned)serialid[10], (unsigned)serialid[9],(unsigned)serialid[8]);
     buf[39] = 0;
     return true;
