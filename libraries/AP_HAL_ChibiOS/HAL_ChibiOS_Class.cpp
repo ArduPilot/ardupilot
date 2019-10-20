@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
@@ -178,13 +178,13 @@ static void main_loop()
 
     ChibiOS::Shared_DMA::init();
     peripheral_power_enable();
-        
+
     hal.uartA->begin(115200);
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // optional test of SPI clock frequencies
     ChibiOS::SPIDevice::test_clock_freq();
-#endif 
+#endif
 
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
@@ -242,7 +242,7 @@ static void main_loop()
 
     thread_running = true;
     chRegSetThreadName(SKETCHNAME);
-    
+
     /*
       switch to high priority for main loop
      */
@@ -282,7 +282,7 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
 #ifdef HAL_USB_PRODUCT_ID
   setup_usb_strings();
 #endif
-    
+
 #ifdef HAL_STDOUT_SERIAL
     //STDOUT Initialistion
     SerialConfig stdoutcfg =

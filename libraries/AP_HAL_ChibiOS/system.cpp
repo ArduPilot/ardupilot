@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <stdarg.h>
@@ -40,7 +40,7 @@ typedef enum  {
 
 void *__dso_handle;
 
-void __cxa_pure_virtual(void);    
+void __cxa_pure_virtual(void);
 void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate a traceback
 
 void NMI_Handler(void);

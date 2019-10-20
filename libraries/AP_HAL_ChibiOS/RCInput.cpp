@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include "RCInput.h"
@@ -73,7 +73,7 @@ bool RCInput::new_input()
             radio->init();
         }
     }
-#endif    
+#endif
     return valid;
 }
 
@@ -107,7 +107,7 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     if (!_init) {
         return false;
     }
- 
+
     if (len > RC_INPUT_MAX_CHANNELS) {
         len = RC_INPUT_MAX_CHANNELS;
     }

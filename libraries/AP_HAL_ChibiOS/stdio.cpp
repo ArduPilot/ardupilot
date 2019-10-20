@@ -36,11 +36,11 @@ int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
 {
    va_list arg;
    int done;
- 
+
    va_start (arg, fmt);
    done =  hal.util->vsnprintf(str, size, fmt, arg);
    va_end (arg);
- 
+
    return done;
 }
 
@@ -91,11 +91,11 @@ int __wrap_printf(const char *fmt, ...)
 #ifndef HAL_NO_PRINTF
    va_list arg;
    int done;
- 
+
    va_start (arg, fmt);
    done =  vprintf_console_hook(fmt, arg);
    va_end (arg);
- 
+
    return done;
 #else
    (void)fmt;
@@ -112,11 +112,11 @@ int __wrap_fprintf(void *f, const char *fmt, ...)
 #ifndef HAL_NO_PRINTF
    va_list arg;
    int done;
- 
+
    va_start (arg, fmt);
    done =  vprintf_console_hook(fmt, arg);
    va_end (arg);
- 
+
    return done;
 #else
    (void)fmt;
@@ -135,4 +135,3 @@ extern "C" {
     // alias fiprintf() to fprintf(). This saves flash space
     int __wrap_fiprintf(const char *fmt, ...) __attribute__((alias("__wrap_fprintf")));
 }
-
