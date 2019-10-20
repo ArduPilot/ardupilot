@@ -36,7 +36,8 @@ enum ioevents {
     IOEVENT_SET_DEFAULT_RATE,
     IOEVENT_SET_SAFETY_MASK,
     IOEVENT_MIXING,
-    IOEVENT_SET_OUTPUT_MODE
+    IOEVENT_SET_OUTPUT_MODE,
+    IOEVENT_SET_DSHOT_TLM
 };
 
 // max number of consecutve protocol failures we accept before raising
@@ -206,6 +207,13 @@ void AP_IOMCU::thread_main(void)
                 event_failed(IOEVENT_SET_OUTPUT_MODE);
                 continue;
             }
+        }
+
+        if (mask & EVENT_MASK(IOEVENT_SET_DSHOT_TLM)) {
+             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_DSHOT_TLM, dshot_telem_mask)) {
+                 event_failed(IOEVENT_SET_DSHOT_TLM);
+                 continue;
+             }
         }
 
         if (mask & EVENT_MASK(IOEVENT_SET_SAFETY_MASK)) {
@@ -751,6 +759,22 @@ void AP_IOMCU::set_output_mode(uint16_t mask, uint16_t mode)
     mode_out.mask = mask;
     mode_out.mode = mode;
     trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
+// set output mode
+void AP_IOMCU::set_dshot_telem(uint16_t mask)
+{
+#if 0
+    const uint8_t masks[] = { 0x03,0x0C,0xF0 };
+    // ensure mask is legal for the timer layout
+    for (uint8_t i=0; i<ARRAY_SIZE(masks); i++) {
+        if (chmask & masks[i]) {
+            chmask |= masks[i];
+        }
+    }
+#endif
+    dshot_telem_mask = mask;
+    trigger_event(IOEVENT_SET_DSHOT_TLM);
 }
 
 // handling of BRD_SAFETYOPTION parameter
