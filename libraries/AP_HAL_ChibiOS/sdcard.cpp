@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include "SPIDevice.h"
@@ -97,7 +97,7 @@ bool sdcard_init()
         return false;
     }
     device->set_slowdown(sd_slowdown);
-    
+
     mmcObjectInit(&MMCD1);
 
     mmcconfig.spip =
@@ -224,4 +224,3 @@ void spiReceiveHook(SPIDriver *spip, size_t n, void *rxbuf)
 }
 
 #endif
-

@@ -65,9 +65,9 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 void I2CBus::dma_init(void)
 {
     chMtxObjectInit(&dma_lock);
-    dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx, 
+    dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx,
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void, Shared_DMA *),
-                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void, Shared_DMA *));    
+                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void, Shared_DMA *));
 }
 
 // Clear Bus to avoid bus lockup
@@ -174,7 +174,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
 I2CDevice::~I2CDevice()
 {
 #if 0
-    printf("I2C device bus %u address 0x%02x closed\n", 
+    printf("I2C device bus %u address 0x%02x closed\n",
            (unsigned)bus.busnum, (unsigned)_address);
 #endif
     free(pname);
@@ -201,7 +201,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         hal.console->printf("I2C: not owner of 0x%x for addr 0x%02x\n", (unsigned)get_bus_id(), _address);
         return false;
     }
-    
+
 #if defined(STM32F7) || defined(STM32H7)
     if (_use_smbus) {
         bus.i2ccfg.cr1 |= I2C_CR1_SMBHEN;
@@ -248,7 +248,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
     i2cAcquireBus(I2CD[bus.busnum].i2c);
 
     bus.bouncebuffer_setup(send, send_len, recv, recv_len);
-    
+
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
@@ -262,7 +262,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 
         i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
-        
+
         osalSysLock();
         hal.util->persistent_data.i2c_count++;
         osalSysUnlock();
@@ -278,7 +278,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
 
         bus.dma_handle->unlock();
-        
+
         if (I2CD[bus.busnum].i2c->errors & I2C_ISR_LIMIT) {
             AP::internalerror().error(AP_InternalError::error_t::i2c_isr);
             break;
@@ -311,7 +311,7 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
     return false;
 }
 
-    
+
 /*
   register a periodic callback
 */
@@ -319,7 +319,7 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
 {
     return bus.register_periodic_callback(period_usec, cb, this);
 }
-    
+
 
 /*
   adjust a periodic callback

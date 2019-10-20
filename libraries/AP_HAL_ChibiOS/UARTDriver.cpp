@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
@@ -139,7 +139,7 @@ static int hal_console_vprintf(const char *fmt, va_list arg)
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     thread_init();
-    
+
     if (sdef.serial == nullptr) {
         return;
     }
@@ -150,7 +150,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         // give more buffer space for log download on USB
         min_tx_buffer *= 4;
     }
-    
+
     // on PX4 we have enough memory to have a larger transmit and
     // receive buffer for all ports. This means we don't get delays
     // while waiting to write GPS config packets
@@ -184,7 +184,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         }
         _baudrate = b;
     }
-    
+
     if (clear_buffers) {
         _readbuf.clear();
     }
@@ -382,9 +382,9 @@ void UARTDriver::tx_complete(void* self, uint32_t flags)
     UARTDriver* uart_drv = (UARTDriver*)self;
     chSysLockFromISR();
     if (!uart_drv->tx_bounce_buf_ready) {
-        // reset timeout 
+        // reset timeout
         chVTResetI(&uart_drv->tx_timeout);
-        
+
         uart_drv->_last_write_completed_us = AP_HAL::micros();
         uart_drv->tx_bounce_buf_ready = true;
         if (uart_drv->unbuffered_writes && uart_drv->_writebuf.available()) {
@@ -444,14 +444,14 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 
         uart_drv->receive_timestamp_update();
     }
-    
+
     //restart the DMA transfers
     dmaStreamSetMemory0(uart_drv->rxdma, uart_drv->rx_bounce_buf);
     dmaStreamSetTransactionSize(uart_drv->rxdma, RX_BOUNCE_BUFSIZE);
     dmaStreamEnable(uart_drv->rxdma);
     if (uart_drv->_wait.thread_ctx && uart_drv->_readbuf.available() >= uart_drv->_wait.n) {
         chSysLockFromISR();
-        chEvtSignalI(uart_drv->_wait.thread_ctx, EVT_DATA);                    
+        chEvtSignalI(uart_drv->_wait.thread_ctx, EVT_DATA);
         chSysUnlockFromISR();
     }
     if (uart_drv->_rts_is_active) {
@@ -549,7 +549,7 @@ int16_t UARTDriver::read()
     if (!_rts_is_active) {
         update_rts_line();
     }
-    
+
     return byte;
 }
 
@@ -577,7 +577,7 @@ size_t UARTDriver::write(uint8_t c)
     if (lock_write_key != 0 || !_write_mutex.take_nonblocking()) {
         return 0;
     }
-    
+
     if (!_initialised) {
         _write_mutex.give();
         return 0;
@@ -651,7 +651,7 @@ bool UARTDriver::lock_port(uint32_t write_key, uint32_t read_key)
     return true;
 }
 
-/* 
+/*
    write to a locked port. If port is locked and key is not correct then 0 is returned
    and write is discarded. All writes are non-blocking
 */
@@ -811,7 +811,7 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
             nwritten += ret;
         }
         _writebuf.advance(ret);
-        
+
         /* We wrote less than we asked for, stop */
         if ((unsigned)ret != vec[i].len) {
             break;
@@ -843,7 +843,7 @@ void UARTDriver::write_pending_bytes(void)
     if (n <= 0) {
         return;
     }
-    
+
 #ifndef HAL_UART_NODMA
     if (sdef.dma_tx) {
         write_pending_bytes_DMA(n);
@@ -852,7 +852,7 @@ void UARTDriver::write_pending_bytes(void)
     {
         write_pending_bytes_NODMA(n);
     }
-    
+
     // handle AUTO flow control mode
     if (_flow_control == FLOW_CONTROL_AUTO) {
         if (_first_write_started_us == 0) {
@@ -991,7 +991,7 @@ void UARTDriver::_timer_tick(void)
             _readbuf.commit((unsigned)ret);
 
             receive_timestamp_update();
-            
+
             /* stop reading as we read less than we asked for */
             if ((unsigned)ret < vec[i].len) {
                 break;
@@ -999,7 +999,7 @@ void UARTDriver::_timer_tick(void)
         }
     }
     if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
-        chEvtSignal(_wait.thread_ctx, EVT_DATA);                    
+        chEvtSignal(_wait.thread_ctx, EVT_DATA);
     }
     if (unbuffered_writes) {
         // now send pending bytes. If we are doing "unbuffered" writes
@@ -1025,7 +1025,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
     if (sdef.rts_line == 0 || sdef.is_usb) {
         // no hw flow control available
         return;
-    }    
+    }
 #if HAL_USE_SERIAL == TRUE
     SerialDriver *sd = (SerialDriver*)(sdef.serial);
     _flow_control = flowcontrol;
@@ -1034,7 +1034,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         return;
     }
     switch (_flow_control) {
-        
+
     case FLOW_CONTROL_DISABLE:
         // force RTS active when flow disabled
         palSetLineMode(sdef.rts_line, 1);
@@ -1096,7 +1096,7 @@ void UARTDriver::update_rts_line(void)
     }
 }
 
-/* 
+/*
    setup unbuffered writes for lower latency
  */
 bool UARTDriver::set_unbuffered_writes(bool on)
@@ -1166,7 +1166,7 @@ void UARTDriver::configure_parity(uint8_t v)
                                    SD_PARITY_ERROR);
     }
 #endif
-    
+
 #ifndef HAL_UART_NODMA
     if(sdef.dma_rx) {
         //Configure serial driver to skip handling RX packets
@@ -1189,7 +1189,7 @@ void UARTDriver::set_stop_bits(int n)
 #if HAL_USE_SERIAL
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
-    
+
     switch (n) {
     case 1:
         sercfg.cr2 = _cr2_options | USART_CR2_STOP1_BITS;
@@ -1211,7 +1211,7 @@ void UARTDriver::set_stop_bits(int n)
 }
 
 
-// record timestamp of new incoming data 
+// record timestamp of new incoming data
 void UARTDriver::receive_timestamp_update(void)
 {
     _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
@@ -1224,11 +1224,11 @@ void UARTDriver::receive_timestamp_update(void)
   time constraint, not an exact time. It is guaranteed that the
   packet did not start being received after this time, but it
   could have been in a system buffer before the returned time.
-  
+
   This takes account of the baudrate of the link. For transports
   that have no baudrate (such as USB) the time estimate may be
   less accurate.
-  
+
   A return value of zero means the HAL does not support this API
 */
 uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
