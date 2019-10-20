@@ -98,6 +98,9 @@ public:
     // set to brushed mode
     void set_brushed_mode(void);
 
+    // set output mode
+    void set_output_mode(uint16_t mask, uint16_t mode);
+
     // check if IO is healthy
     bool healthy(void);
 
@@ -201,6 +204,12 @@ private:
         uint16_t default_freq = 50;
         uint16_t sbus_rate_hz;
     } rate;
+
+    // output mode values
+    struct {
+        uint16_t mask;
+        uint16_t mode;
+    } mode_out;
 
     // IMU heater duty cycle
     uint8_t heater_duty_cycle;
