@@ -13,7 +13,6 @@ import shutil
 import sys
 import re
 import pickle
-import zlib
 import struct
 
 _dynamic_env_data = {}
@@ -126,9 +125,12 @@ class set_app_descriptor(Task.Task):
         # to CRC32 of image after descriptor. This is very efficient
         # for bootloader to calculate
         # after CRC comes image length and 32 bit git hash
+        upload_tools = self.env.get_flat('UPLOAD_TOOLS')
+        sys.path.append(upload_tools)
+        from uploader import crc32
         desc_len = 16
-        crc1 = to_unsigned(zlib.crc32(img[:offset]))
-        crc2 = to_unsigned(zlib.crc32(img[offset+desc_len:]))
+        crc1 = to_unsigned(crc32(bytearray(img[:offset])))
+        crc2 = to_unsigned(crc32(bytearray(img[offset+desc_len:])))
         githash = to_unsigned(int('0x' + self.generator.bld.git_head_hash(short=True),16))
         desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
         img = img[:offset] + desc + img[offset+desc_len:]
