@@ -31,6 +31,7 @@
 #include "can.h"
 #include "bl_protocol.h"
 #include <drivers/stm32/canard_stm32.h>
+#include "app_comms.h"
 
 
 static CanardInstance canard;
@@ -57,10 +58,6 @@ static CANConfig cancfg = {
 #ifndef CAN_APP_NODE_NAME
 #define CAN_APP_NODE_NAME                                               "org.ardupilot.ap_periph"
 #endif
-
-// darn, libcanard generates the wrong signature for file read
-//#undef UAVCAN_PROTOCOL_FILE_READ_SIGNATURE
-//#define UAVCAN_PROTOCOL_FILE_READ_SIGNATURE                0x8DCDCA939F33F678ULL
 
 static uint8_t node_id_allocation_transfer_id;
 static uavcan_protocol_NodeStatus node_status;
@@ -151,7 +148,8 @@ static void handle_get_node_info(CanardInstance* ins,
 static void send_fw_read(void)
 {
     uint32_t now = AP_HAL::millis();
-    if (now - fw_update.last_ms < 500) {
+    if (now - fw_update.last_ms < 250) {
+        // the server may still be responding
         return;
     }
     fw_update.last_ms = now;
@@ -170,7 +168,7 @@ static void send_fw_read(void)
                            UAVCAN_PROTOCOL_FILE_READ_SIGNATURE,
                            UAVCAN_PROTOCOL_FILE_READ_ID,
                            &fw_update.transfer_id,
-                           CANARD_TRANSFER_PRIORITY_LOW,
+                           CANARD_TRANSFER_PRIORITY_HIGH,
                            CanardRequest,
                            &buffer[0],
                            total_size);
@@ -542,6 +540,18 @@ void can_set_node_id(uint8_t node_id)
 
 void can_start()
 {
+#if HAL_RAM_RESERVE_START >= 256
+    // check for a firmware update marker left by app
+    struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
+    if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC) {
+        can_set_node_id(comms->my_node_id);
+        fw_update.node_id = comms->server_node_id;
+        memcpy(fw_update.path, comms->path, UAVCAN_PROTOCOL_FILE_PATH_PATH_MAX_LENGTH+1);
+    }
+    // clear comms region
+    memset(comms, 0, sizeof(struct app_bootloader_comms));
+#endif
+
     // calculate optimal CAN timings given PCLK1 and baudrate
     CanardSTM32CANTimings timings {};
     canardSTM32ComputeCANTimings(STM32_PCLK1, baudrate, &timings);
