@@ -43,6 +43,8 @@ public:
     static void handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const FixCb &cb);
     static void handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AuxCb &cb);
 
+    void inject_data(const uint8_t *data, uint16_t len) override;
+
 private:
     void handle_fix_msg(const FixCb &cb);
     void handle_aux_msg(const AuxCb &cb);

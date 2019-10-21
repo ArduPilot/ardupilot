@@ -292,4 +292,17 @@ bool AP_GPS_UAVCAN::read(void)
     return false;
 }
 
+/*
+  handle RTCM data from MAVLink GPS_RTCM_DATA, forwarding it over MAVLink
+ */
+void AP_GPS_UAVCAN::inject_data(const uint8_t *data, uint16_t len)
+{
+    // we only handle this if we are the first UAVCAN GPS, as we send
+    // the data as broadcast on all UAVCAN devive ports and we don't
+    // want to send duplicates
+    if (_detected_module == 0) {
+        _detected_modules[0].ap_uavcan->send_RTCMStream(data, len);
+    }
+}
+
 #endif // HAL_WITH_UAVCAN

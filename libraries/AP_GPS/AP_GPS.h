@@ -436,6 +436,9 @@ public:
         _force_disable_gps = disable;
     }
 
+    // handle possibly fragmented RTCM injection data
+    void handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_t len);
+
 protected:
 
     // configuration parameters
@@ -546,9 +549,8 @@ private:
     void handle_gps_inject(const mavlink_message_t &msg);
 
     //Inject a packet of raw binary to a GPS
-    void inject_data(uint8_t *data, uint16_t len);
-    void inject_data(uint8_t instance, uint8_t *data, uint16_t len);
-
+    void inject_data(const uint8_t *data, uint16_t len);
+    void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);
 
     // GPS blending and switching
     Vector2f _NE_pos_offset_m[GPS_MAX_RECEIVERS]; // Filtered North,East position offset from GPS instance to blended solution in _output_state.location (m)
