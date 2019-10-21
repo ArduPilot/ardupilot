@@ -106,3 +106,6 @@ define BOOTLOADER_BAUDRATE 57600
 
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 1000
+
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
