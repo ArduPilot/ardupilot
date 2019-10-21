@@ -83,6 +83,15 @@ int main(void)
         timeout = 10000;
         can_set_node_id(m & 0xFF);
     }
+    if (!can_check_firmware()) {
+        // bad firmware CRC, don't try and boot
+        timeout = 0;
+        try_boot = false;
+    } else if (timeout != 0) {
+        // fast boot for good firmware
+        try_boot = true;
+        timeout = 1000;
+    }
 #endif
     
     // if we fail to boot properly we want to pause in bootloader to give
