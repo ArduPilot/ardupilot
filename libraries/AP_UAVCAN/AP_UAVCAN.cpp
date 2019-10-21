@@ -40,6 +40,7 @@
 #include <ardupilot/indication/Button.hpp>
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.hpp>
+#include <uavcan/equipment/gnss/RTCMStream.hpp>
 
 #include <AP_Baro/AP_Baro_UAVCAN.h>
 #include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
