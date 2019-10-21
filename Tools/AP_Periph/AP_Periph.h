@@ -13,6 +13,27 @@
 #include "Parameters.h"
 #include "ch.h"
 
+#ifndef CAN_APP_VERSION_MAJOR
+#define CAN_APP_VERSION_MAJOR                                           1
+#endif
+#ifndef CAN_APP_VERSION_MINOR
+#define CAN_APP_VERSION_MINOR                                           0
+#endif
+
+/*
+  app descriptor compatible with MissionPlanner
+ */
+struct app_descriptor {
+    uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
+    uint32_t image_crc1 = 0;
+    uint32_t image_crc2 = 0;
+    uint32_t image_size = 0;
+    uint32_t git_hash = 0;
+    uint8_t  version_major = CAN_APP_VERSION_MAJOR;
+    uint8_t version_minor = CAN_APP_VERSION_MINOR;
+    uint8_t reserved[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+};
+extern const struct app_descriptor app_descriptor;
 
 class AP_Periph_FW {
 public:
