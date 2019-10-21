@@ -613,6 +613,11 @@ def write_mcu_config(f):
     f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
     f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % total_memory)
 
+    f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[0][0])
+    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    if ram_reserve_start > 0:
+        f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
+
     f.write('\n// CPU serial number (12 bytes)\n')
     f.write('#define UDID_START 0x%08x\n\n' % get_mcu_config('UDID_START', True))
 
@@ -696,15 +701,23 @@ def write_ldscript(fname):
 
     print("Generating ldscript.ld")
     f = open(fname, 'w')
+    ram0_start = ram_map[0][0]
+    ram0_len = ram_map[0][1] * 1024
+
+    # possibly reserve some memory for app/bootloader comms
+    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    ram0_start += ram_reserve_start
+    ram0_len -= ram_reserve_start
+
     f.write('''/* generated ldscript.ld */
 MEMORY
 {
     flash : org = 0x%08x, len = %uK
-    ram0  : org = 0x%08x, len = %uk
+    ram0  : org = 0x%08x, len = %u
 }
 
 INCLUDE common.ld
-''' % (flash_base, flash_length, ram_map[0][0], ram_map[0][1]))
+''' % (flash_base, flash_length, ram0_start, ram0_len))
 
 def copy_common_linkerscript(outdir, hwdef):
     dirpath = os.path.dirname(hwdef)
