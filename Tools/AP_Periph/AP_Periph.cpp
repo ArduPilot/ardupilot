@@ -47,6 +47,8 @@ void loop(void)
 
 static uint32_t start_ms;
 
+const struct app_descriptor app_descriptor __attribute__((section(".app_descriptor")));;
+
 void AP_Periph_FW::init()
 {
     hal.uartA->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 128);
@@ -64,6 +66,17 @@ void AP_Periph_FW::init()
     mapr |= AFIO_MAPR_SWJ_CFG_JTAGDISABLE;
     AFIO->MAPR = mapr | AFIO_MAPR_CAN_REMAP_REMAP2 | AFIO_MAPR_SPI3_REMAP;
 #endif
+
+    printf("Booting %08x:%08x %u/%u len=%u 0x%08x\n",
+           app_descriptor.image_crc1,
+           app_descriptor.image_crc2,
+           app_descriptor.version_major, app_descriptor.version_minor,
+           app_descriptor.image_size,
+           app_descriptor.git_hash);
+
+    if (hal.util->was_watchdog_reset()) {
+        printf("Reboot after watchdog reset\n");
+    }
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     gps.init(serial_manager);
