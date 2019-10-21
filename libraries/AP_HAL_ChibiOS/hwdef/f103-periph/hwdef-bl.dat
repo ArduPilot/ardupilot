@@ -95,3 +95,6 @@ define HAL_BOOTLOADER_TIMEOUT 1000
 # and look for it low then we know user has pulled it down and
 # want to stay in the bootloader
 PB6 STAY_IN_BOOTLOADER INPUT FLOATING
+
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256

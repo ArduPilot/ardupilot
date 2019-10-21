@@ -12,6 +12,9 @@ define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_ZubaxGNSS"
 # bootloader starts firmware at 34k
 FLASH_RESERVE_START_KB 34
 
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
+
 # store parameters in last 2 pages
 define STORAGE_FLASH_PAGE 126
 define HAL_STORAGE_SIZE 800
