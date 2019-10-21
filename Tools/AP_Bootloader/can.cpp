@@ -243,19 +243,21 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
     if (transfer->payload_len < 1 || transfer->payload_len > sizeof(fw_update.path)+1) {
         return;
     }
-    uint32_t offset = 0;
-    canardDecodeScalar(transfer, 0, 8, false, (void*)&fw_update.node_id);
-    offset += 8;
-    for (uint8_t i=0; i<transfer->payload_len-1; i++) {
-        canardDecodeScalar(transfer, offset, 8, false, (void*)&fw_update.path[i]);
-        offset += 8;
-    }
-    fw_update.ofs = 0;
-    fw_update.last_ms = 0;
-    fw_update.sector = 0;
-    fw_update.sector_ofs = 0;
     if (fw_update.node_id == 0) {
-        fw_update.node_id = transfer->source_node_id;
+        uint32_t offset = 0;
+        canardDecodeScalar(transfer, 0, 8, false, (void*)&fw_update.node_id);
+        offset += 8;
+        for (uint8_t i=0; i<transfer->payload_len-1; i++) {
+            canardDecodeScalar(transfer, offset, 8, false, (void*)&fw_update.path[i]);
+            offset += 8;
+        }
+        fw_update.ofs = 0;
+        fw_update.last_ms = 0;
+        fw_update.sector = 0;
+        fw_update.sector_ofs = 0;
+        if (fw_update.node_id == 0) {
+            fw_update.node_id = transfer->source_node_id;
+        }
     }
 
     uint8_t buffer[UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_MAX_SIZE];
@@ -547,6 +549,10 @@ void can_set_node_id(uint8_t node_id)
  */
 bool can_check_firmware(void)
 {
+    if (fw_update.node_id != 0) {
+        // we're doing an update, don't boot this fw
+        return false;
+    }
     const uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
     const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + FLASH_BOOTLOADER_LOAD_KB*1024);
     const uint32_t flash_size = (BOARD_FLASH_SIZE - FLASH_BOOTLOADER_LOAD_KB)*1024;
@@ -579,10 +585,10 @@ bool can_check_firmware(void)
     return true;
 }
 
-void can_start()
+// check for a firmware update marker left by app
+void can_check_update(void)
 {
 #if HAL_RAM_RESERVE_START >= 256
-    // check for a firmware update marker left by app
     struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
     if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC) {
         can_set_node_id(comms->my_node_id);
@@ -592,7 +598,10 @@ void can_start()
     // clear comms region
     memset(comms, 0, sizeof(struct app_bootloader_comms));
 #endif
+}
 
+void can_start()
+{
     // calculate optimal CAN timings given PCLK1 and baudrate
     CanardSTM32CANTimings timings {};
     canardSTM32ComputeCANTimings(STM32_PCLK1, baudrate, &timings);
