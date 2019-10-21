@@ -647,6 +647,20 @@ class AutoTest(ABC):
         wploader.load(filename)
         return wploader.count()
 
+    def install_message_hook(self, hook):
+        self.mav.message_hooks.append(hook)
+
+    def remove_message_hook(self, hook):
+        oldlen = len(self.mav.message_hooks)
+        self.mav.message_hooks = list(filter(lambda x : x != hook,
+                                        self.mav.message_hooks))
+        if len(self.mav.message_hooks) == oldlen:
+            raise NotAchievedException("Failed to remove hook")
+
+    def rootdir(self):
+        this_dir = os.path.dirname(__file__)
+        return os.path.realpath(os.path.join(this_dir, "../.."))
+
     def mission_directory(self):
         return testdir
 
