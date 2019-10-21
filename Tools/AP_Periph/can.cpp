@@ -45,6 +45,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include <drivers/stm32/canard_stm32.h>
 #include <AP_HAL/I2CDevice.h>
+#include "../AP_Bootloader/app_comms.h"
 
 #include "i2c.h"
 #include <utility>
@@ -293,11 +294,56 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
                            total_size);
 }
 
+static void processTx(void);
+static void processRx(void);
+
 static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* transfer)
 {
+#if HAL_RAM_RESERVE_START >= 256
+    // setup information on firmware request at start of ram
+    struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
+    memset(comms, 0, sizeof(struct app_bootloader_comms));
+    comms->magic = APP_BOOTLOADER_COMMS_MAGIC;
+
+    // manual decoding due to TAO bug in libcanard generated code
+    if (transfer->payload_len < 1 || transfer->payload_len > sizeof(comms->path)+1) {
+        return;
+    }
+    uint32_t offset = 0;
+    canardDecodeScalar(transfer, 0, 8, false, (void*)&comms->server_node_id);
+    offset += 8;
+    for (uint8_t i=0; i<transfer->payload_len-1; i++) {
+        canardDecodeScalar(transfer, offset, 8, false, (void*)&comms->path[i]);
+        offset += 8;
+    }
+    if (comms->server_node_id == 0) {
+        comms->server_node_id = transfer->source_node_id;
+    }
+    comms->my_node_id = canardGetLocalNodeID(ins);
+
+    uint8_t buffer[UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_MAX_SIZE];
+    uavcan_protocol_file_BeginFirmwareUpdateResponse reply {};
+    reply.error = UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_ERROR_OK;
+
+    uint32_t total_size = uavcan_protocol_file_BeginFirmwareUpdateResponse_encode(&reply, buffer);
+    canardRequestOrRespond(ins,
+                           transfer->source_node_id,
+                           UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_SIGNATURE,
+                           UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_ID,
+                           &transfer->transfer_id,
+                           transfer->priority,
+                           CanardResponse,
+                           &buffer[0],
+                           total_size);
+    uint8_t count = 50;
+    while (count--) {
+        processTx();
+        hal.scheduler->delay(1);
+    }
+#endif
+
     // instant reboot, with backup register used to give bootloader
-    // the node_id we rely on the caller re-sending the firmware
-    // update request to the bootloader
+    // the node_id
     set_fast_reboot((rtc_boot_magic)(RTC_BOOT_CANBL | canardGetLocalNodeID(ins)));
     NVIC_SystemReset();
 }
