@@ -142,3 +142,6 @@ define HAL_COMPASS_MAX_SENSORS 1
 
 # use the app descriptor needed by MissionPlanner for CAN upload
 env APP_DESCRIPTOR MissionPlanner
+
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256

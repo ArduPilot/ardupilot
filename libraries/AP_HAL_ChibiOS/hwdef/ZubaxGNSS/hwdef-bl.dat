@@ -29,6 +29,9 @@ FLASH_SIZE_KB 256
 # reserve space for params
 FLASH_RESERVE_END_KB 2
 
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
+
 # USART3 for debug
 #STDOUT_SERIAL SD3
 #STDOUT_BAUDRATE 115200
