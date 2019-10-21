@@ -39,6 +39,7 @@
 #include <ardupilot/indication/SafetyState.h>
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
+#include <uavcan/equipment/gnss/RTCMStream.h>
 #include <uavcan/protocol/debug/LogMessage.h>
 #include <stdio.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
@@ -472,6 +473,23 @@ static void handle_safety_state(CanardInstance* ins, CanardRxTransfer* transfer)
 }
 #endif // HAL_GPIO_PIN_SAFE_LED
 
+#ifdef HAL_PERIPH_ENABLE_GPS
+/*
+  handle gnss::RTCMStream
+ */
+static void handle_RTCMStream(CanardInstance* ins, CanardRxTransfer* transfer)
+{
+    uavcan_equipment_gnss_RTCMStream req;
+    uint8_t arraybuf[UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_DATA_MAX_LENGTH];
+    uint8_t *arraybuf_ptr = arraybuf;
+    if (uavcan_equipment_gnss_RTCMStream_decode(transfer, transfer->payload_len, &req, &arraybuf_ptr) < 0) {
+        return;
+    }
+    periph.gps.handle_gps_rtcm_fragment(0, req.data.data, req.data.len);
+}
+#endif // HAL_PERIPH_ENABLE_GPS
+
+
 #ifdef AP_PERIPH_HAVE_LED
 static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
 {
@@ -656,6 +674,12 @@ static void onTransferReceived(CanardInstance* ins,
         break;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_GPS
+    case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
+        handle_RTCMStream(ins, transfer);
+        break;
+#endif
+        
 #ifdef AP_PERIPH_HAVE_LED
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         handle_lightscommand(ins, transfer);
@@ -723,6 +747,11 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
 #ifdef AP_PERIPH_HAVE_LED
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_SIGNATURE;
+        return true;
+#endif
+#ifdef HAL_PERIPH_ENABLE_GPS
+    case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
+        *out_data_type_signature = UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_SIGNATURE;
         return true;
 #endif
     default:
