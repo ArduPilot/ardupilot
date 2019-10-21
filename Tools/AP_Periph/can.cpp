@@ -60,12 +60,6 @@ static uint32_t canard_memory_pool[2048/4];
 static uint8_t PreferredNodeID = HAL_CAN_DEFAULT_NODE_ID;
 static uint8_t transfer_id;
 
-#ifndef CAN_APP_VERSION_MAJOR
-#define CAN_APP_VERSION_MAJOR                                           1
-#endif
-#ifndef CAN_APP_VERSION_MINOR
-#define CAN_APP_VERSION_MINOR                                           0
-#endif
 #ifndef CAN_APP_NODE_NAME
 #define CAN_APP_NODE_NAME                                               "org.ardupilot.ap_periph"
 #endif
@@ -117,6 +111,11 @@ static void handle_get_node_info(CanardInstance* ins,
     pkt.status = node_status;
     pkt.software_version.major = CAN_APP_VERSION_MAJOR;
     pkt.software_version.minor = CAN_APP_VERSION_MINOR;
+    pkt.software_version.optional_field_flags = UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_VCS_COMMIT | UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_IMAGE_CRC;
+    pkt.software_version.vcs_commit = app_descriptor.git_hash;
+    uint32_t *crc = (uint32_t *)&pkt.software_version.image_crc;
+    crc[0] = app_descriptor.image_crc1;
+    crc[1] = app_descriptor.image_crc2;
 
     readUniqueID(pkt.hardware_version.unique_id);
 
@@ -555,6 +554,10 @@ static void can_safety_button_update(void)
 static void onTransferReceived(CanardInstance* ins,
                                CanardRxTransfer* transfer)
 {
+#ifdef HAL_GPIO_PIN_LED_CAN1
+    palToggleLine(HAL_GPIO_PIN_LED_CAN1);
+#endif
+
     /*
      * Dynamic node ID allocation protocol.
      * Taking this branch only if we don't have a node ID, ignoring otherwise.
