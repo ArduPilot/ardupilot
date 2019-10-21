@@ -121,7 +121,10 @@ public:
         k_param_scan_speed_yaw,
         k_param_scan_speed_pitch,
         k_param_initial_mode,
-        k_param_disarm_pwm
+        k_param_disarm_pwm,
+
+        // ADS-B
+        k_param_adsb = 235
     };
 
     AP_Int16 format_version;

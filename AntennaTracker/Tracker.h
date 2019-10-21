@@ -57,6 +57,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_ADSB/AP_ADSB.h>
 
 // Configuration
 #include "config.h"
@@ -98,6 +99,8 @@ private:
     uint32_t start_time_ms = 0;
 
     AP_Logger logger;
+
+    AP_ADSB adsb;
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -143,13 +146,14 @@ private:
 
     // Vehicle state
     struct {
-        bool location_valid;    // true if we have a valid location for the vehicle
-        Location location;      // lat, long in degrees * 10^7; alt in meters * 100
-        Location location_estimate; // lat, long in degrees * 10^7; alt in meters * 100
-        uint32_t last_update_us;    // last position update in microseconds
-        uint32_t last_update_ms;    // last position update in milliseconds
-        Vector3f vel;           // the vehicle's velocity in m/s
-        int32_t relative_alt;	// the vehicle's relative altitude in meters * 100
+        bool location_valid;             // true if we have a valid location for the vehicle
+        Location location;               // lat, long in degrees * 10^7; alt in meters * 100
+        Location location_estimate;      // lat, long in degrees * 10^7; alt in meters * 100
+        uint32_t last_update_us;         // last position update in microseconds
+        uint32_t last_update_ms;         // last position update in milliseconds
+        Vector3f vel;                    // the vehicle's velocity in m/s
+        int32_t relative_alt;            // the vehicle's relative altitude in meters * 100
+        uint32_t mavlink_last_update_us; // last vehicle position update via mavlink in microseconds, used to switch to ADS-B tracking on mavlink loss
     } vehicle;
 
     // Navigation controller state
@@ -259,6 +263,7 @@ private:
     void update_bearing_and_distance();
     void update_tracking(void);
     void tracking_update_position(const mavlink_global_position_int_t &msg);
+    void adsb_tracking_update_position();
     void tracking_update_pressure(const mavlink_scaled_pressure_t &msg);
     void tracking_manual_control(const mavlink_manual_control_t &msg);
     void update_armed_disarmed();

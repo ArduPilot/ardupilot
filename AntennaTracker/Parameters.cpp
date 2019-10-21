@@ -413,6 +413,10 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Stats/AP_Stats.cpp
     GOBJECT(stats, "STAT",  AP_Stats),
 
+    // @Group: ADSB_
+    // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
+    GOBJECT(adsb, "ADSB_", AP_ADSB),
+
     AP_VAREND
 };
 

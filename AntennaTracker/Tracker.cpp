@@ -52,7 +52,8 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(one_second_loop,         1,   3900),
     SCHED_TASK_CLASS(Compass,          &tracker.compass,              cal_update, 50, 100),
     SCHED_TASK(stats_update,            1,    200),
-    SCHED_TASK(accel_cal_update,       10,    100)
+    SCHED_TASK(accel_cal_update,       10,    100),
+    SCHED_TASK_CLASS(AP_ADSB,           &tracker.adsb,      update,         10,  100),
 };
 
 /**
@@ -147,5 +148,4 @@ Tracker::Tracker(void)
 }
 
 Tracker tracker;
-
 AP_HAL_MAIN_CALLBACKS(&tracker);
