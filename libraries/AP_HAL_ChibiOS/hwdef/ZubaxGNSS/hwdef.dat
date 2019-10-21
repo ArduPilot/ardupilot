@@ -29,6 +29,9 @@ define CH_CFG_ST_FREQUENCY 1000
 
 FLASH_SIZE_KB 256
 
+# use the app descriptor needed by MissionPlanner for CAN upload
+env APP_DESCRIPTOR MissionPlanner
+
 # reserve space for params
 FLASH_RESERVE_END_KB 2
 

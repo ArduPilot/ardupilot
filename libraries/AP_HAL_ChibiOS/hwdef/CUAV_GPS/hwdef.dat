@@ -165,3 +165,6 @@ define HAL_PERIPH_ENABLE_BUZZER
 define HAL_PERIPH_NEOPIXEL_COUNT 8
 define HAL_PERIPH_NEOPIXEL_CHAN 0
 define AP_PERIPH_LED_BRIGHT_DEFAULT 50
+
+# use the app descriptor needed by MissionPlanner for CAN upload
+env APP_DESCRIPTOR MissionPlanner
