@@ -614,8 +614,8 @@ void Morse::send_report(void)
         uint8_t saved_seq = chan0_status->current_tx_seq;
         chan0_status->current_tx_seq = mavlink.seq;
         uint16_t len = mavlink_msg_obstacle_distance_encode(
-                0,
-                0,
+                mavlink_system.sysid,
+                13,
                 &msg, &packet);
         chan0_status->current_tx_seq = saved_seq;
 
