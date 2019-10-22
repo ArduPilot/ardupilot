@@ -40,6 +40,32 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define AUTOPILOT_NODE_ID 0u
+#define BROADCAST_NODE_ID 1u
+#define ESC_NODE_ID_FIRST 2u
+
+#define ESC_INFO_OBJ_ADDR 0u
+#define SET_PWM_OBJ_ADDR 1u
+#define VOLTAGE_OBJ_ADDR 2u
+#define CURRENT_OBJ_ADDR 3u
+#define RPM_OBJ_ADDR 4u
+#define TEMPERATURE_OBJ_ADDR 5u
+#define GET_PWM_INPUT_OBJ_ADDR 6u
+#define GET_PWM_OUTPUT_OBJ_ADDR 7u
+#define MCU_ID_OBJ_ADDR 8u
+#define UPDATE_NODE_ID_OBJ_ADDR 9u
+#define ENUM_OBJ_ADDR 10u
+#define TELEMETRY_OBJ_ADDR 11u
+
+#define SET_PWM_MIN_INTERVAL_US 2500u
+#define TELEMETRY_INTERVAL_US 100000u
+
+#define SET_PWM_TIMEOUT_US 2000u
+#define TELEMETRY_TIMEOUT_US 500u
+#define ENUMERATION_TIMEOUT_MS 30000u
+
+#define CAN_IFACE_INDEX 0u
+
 #define debug_can(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_driver_index)) { printf(fmt, ##args); }} while (0)
 
 #define DEFAULT_NUM_POLES 14

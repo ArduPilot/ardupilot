@@ -108,30 +108,4 @@ private:
         };
         uint32_t value;
     };
-    
-    static const uint8_t AUTOPILOT_NODE_ID = 0;
-    static const uint8_t BROADCAST_NODE_ID = 1;
-    static const uint8_t ESC_NODE_ID_FIRST = 2;
-
-    static const uint8_t ESC_INFO_OBJ_ADDR = 0;
-    static const uint8_t SET_PWM_OBJ_ADDR = 1;
-    static const uint8_t VOLTAGE_OBJ_ADDR = 2;
-    static const uint8_t CURRENT_OBJ_ADDR = 3;
-    static const uint8_t RPM_OBJ_ADDR = 4;
-    static const uint8_t TEMPERATURE_OBJ_ADDR = 5;
-    static const uint8_t GET_PWM_INPUT_OBJ_ADDR = 6;
-    static const uint8_t GET_PWM_OUTPUT_OBJ_ADDR = 7;
-    static const uint8_t MCU_ID_OBJ_ADDR = 8;
-    static const uint8_t UPDATE_NODE_ID_OBJ_ADDR = 9;
-    static const uint8_t ENUM_OBJ_ADDR = 10;
-    static const uint8_t TELEMETRY_OBJ_ADDR = 11;
-
-    static const uint16_t SET_PWM_MIN_INTERVAL_US = 2500;
-    static const uint32_t TELEMETRY_INTERVAL_US = 100000;
-
-    static const uint32_t SET_PWM_TIMEOUT_US = 2000;
-    static const uint16_t TELEMETRY_TIMEOUT_US = 500;
-    static const uint16_t ENUMERATION_TIMEOUT_MS = 30000;
-
-    static const uint8_t CAN_IFACE_INDEX = 0;
 };
