@@ -54,6 +54,7 @@ const AP_Param::GroupInfo AP_KDECAN::var_info[] = {
     AP_GROUPEND
 };
 
+const uint16_t AP_KDECAN::SET_PWM_MIN_INTERVAL_US;
 
 AP_KDECAN::AP_KDECAN()
 {
