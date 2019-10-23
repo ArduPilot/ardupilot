@@ -673,6 +673,8 @@ def write_mcu_config(f):
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
 ''')
+    if env_vars.get('ROMFS_UNCOMPRESSED', False):
+        f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
 
 def write_ldscript(fname):
     '''write ldscript.ld for this board'''

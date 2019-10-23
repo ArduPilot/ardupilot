@@ -233,7 +233,7 @@ bool Util::flash_bootloader()
 
     EXPECT_DELAY_MS(11000);
 
-    uint8_t *fw = AP_ROMFS::find_decompress(fw_name, fw_size);
+    const uint8_t *fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
         hal.console->printf("failed to find %s\n", fw_name);
         return false;
@@ -242,14 +242,14 @@ bool Util::flash_bootloader()
     const uint32_t addr = hal.flash->getpageaddr(0);
     if (!memcmp(fw, (const void*)addr, fw_size)) {
         hal.console->printf("Bootloader up-to-date\n");
-        free(fw);
+        AP_ROMFS::free(fw);
         return true;
     }
 
     hal.console->printf("Erasing\n");
     if (!hal.flash->erasepage(0)) {
         hal.console->printf("Erase failed\n");
-        free(fw);
+        AP_ROMFS::free(fw);
         return false;
     }
     hal.console->printf("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
@@ -264,12 +264,12 @@ bool Util::flash_bootloader()
             continue;
         }
         hal.console->printf("Flash OK\n");
-        free(fw);
+        AP_ROMFS::free(fw);
         return true;
     }
 
     hal.console->printf("Flash failed after %u attempts\n", max_attempts);
-    free(fw);
+    AP_ROMFS::free(fw);
     return false;
 }
 #endif // !HAL_NO_FLASH_SUPPORT && !HAL_NO_ROMFS_SUPPORT
