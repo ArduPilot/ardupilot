@@ -34,6 +34,7 @@ def build(bld):
         'GCS_MAVLink',
         'AP_Airspeed',
         'AP_RangeFinder',
+        'AP_ROMFS',
         ],
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'
