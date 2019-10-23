@@ -47,7 +47,7 @@ void AP_OSD_SITL::load_font(void)
     char fontname[] = "font0.bin";
     last_font = get_font_num();
     fontname[4] = last_font + '0';
-    uint8_t *font_data = AP_ROMFS::find_decompress(fontname, font_size);
+    const uint8_t *font_data = AP_ROMFS::find_decompress(fontname, font_size);
     if (font_data == nullptr && last_font != 0) {
         last_font = 0;
         fontname[4] = last_font + '0';
@@ -97,7 +97,7 @@ void AP_OSD_SITL::load_font(void)
         }
         font[i].update(pixels);
     }
-    free(font_data);
+    AP_ROMFS::free(font_data);
 }
 
 void AP_OSD_SITL::write(uint8_t x, uint8_t y, const char* text)
