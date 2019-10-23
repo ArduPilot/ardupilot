@@ -1,0 +1,154 @@
+#compdef sim_vehicle.py
+#autoload
+
+local temp_word
+local cur cword prev
+_sim_vehicle() {
+  typeset -A opt_args
+  local context state state_descr line curcontext="$curcontext"
+    cur=${words[CURRENT]}
+    prev=${words[CURRENT-1]}
+  _arguments -C -A -s -S \
+    '(- 1 *)'{-h,--help}'[show help options and exit]' \
+    '(-j --jobs)'{-j,--jobs}'[number of processors to use during build]:int:' \
+    '(-N --no-rebuild)'{-N,--no-rebuild}'[do not rebuild before starting ardupilot]' \
+    '(-D --debug)'{-D,--debug}'[build with debugging]' \
+    '(-c --clean)'{-c,--clean}'[do a make clean before building]' \
+    '(-I --instance=)'{-I,--instance=}'[instance of simulator]:int:' \
+    '(-V --valgrind)'{-V,--valgrind}'[enable valgrind for memory access checking (slow!)]' \
+    '--callgrind[enable valgrind for performance analysis (slow!!)]' \
+    '(-T --tracker)'{-T,--tracker}'[start an antenna tracker instance]' \
+    '(-A --sitl-instance-args)'{-A,--sitl-instance-args}'[pass arguments to SITL instance]:SITL_INSTANCE_ARGS:' \
+    '(-G --gdb)'{-G,--gdb}'[use gdb for debugging ardupilot]' \
+    '(-g --gdb-stopped)'{-g,--gdb-stopped}'[use gdb for debugging ardupilot (no auto-start)]' \
+    '--lldb[use lldb for debugging ardupilot]' \
+    '--lldb-stopped[use ldb for debugging ardupilot (no auto-start)]' \
+    '(-d --delay-start=)'{-d,--delay-start=}'[delay start of mavproxy by this number of seconds]:int:' \
+    '(-B --breakpoint=)'{-B,--breakpoint=}'[add a breakpoint at given location in debugger]:LOCATION:' \
+    '(-M --mavlink-gimbal)'{-M,--mavlink-gimbal}'[enable MAVLink gimbal]' \
+    '(-L --location=)'{-L,--location=}'[use start location from Tools/autotest/locations.txt]:LOCATION:' \
+    '(-l --custom-location=)'{-l,--custom-location=}'[set custom start location (lat,lon,alt,heading)]:LOCATION:' \
+    '(-S --speedup=)'{-S,--speedup=}'[set simulation speedup (1 for wall clock time)]:SPEEDUP:' \
+    '(-t --tracker-location=)'{-t,--tracker-location=}'[set antenna tracker start location]:TRACKER_LOCATION:' \
+    '(-w --wipe-eeprom)'{-w,--wipe-eeprom}'[wipe EEPROM and reload parameters]' \
+    '(-m --mavproxy-args=)'{-m,--mavproxy-args=}'[additional arguments to pass to mavproxy.py]:MAVPROXY_ARGS:' \
+    '--strace[strace the ArduPilot binary]' \
+    '--model=[Override simulation model to use]:MODEL:' \
+    '--use-dir=[Store SITL state and output in named directory]:DIR:' \
+    '--no-mavproxy[Do notlaunch MAVProxy]' \
+    '--fresh-params[Generate and use local parameter help XML]' \
+    '--mcast[Use multicasting at default 239.255.145.50:14550]' \
+    '--osd[Enable SITL OSD]' \
+    '--tonealarm[Enable SITL ToneAlarm]' \
+    '--rgbled[Enable SITL RGBLed]' \
+    '--add-param-file=[Add a parameters file to use]:ADD_PARAM_FILE:' \
+    '--no-extra-ports[Disable setup of UDP 14550 and 14551 output]' \
+    '(-Z --swarm=)'{-Z,--swarm=}'[Specify path of swarminit.txt for shifting spawn
+                        location]:SWARM:' \
+    '--flash-storage[enable use of flash storage emulation]' \
+    '--out=[create an additional mavlink output]:OUT:' \
+    '--map[load map module on startup]' \
+    '--console[load console module on startup]' \
+    '--aircraft=[store state and logs in named directory]:AIRCRAFT:' \
+    '--moddebug=[mavproxy module debug]:int:' \
+    '(-v --vehicle)'{-v,--vehicle}'[vehicle type]:vehicle:_sim_vehicle_vehicles' \
+    '(-f --frame)'{-f,--frame}'[set vehicle frame type]:frame:_copter_frames' \
+  && ret=0
+  
+
+}
+
+# TODO : generate with regex from sim_vehicle help
+(( $+functions[_sim_vehicle_vehicles] )) ||
+_sim_vehicle_vehicles() {
+  local vehicles; vehicles=(
+    'ArduCopter:Copter type' \
+    'AntennaTracker:Tracker type' \
+    'APMrover2:Rover type' \
+    'ArduSub:Sub type' \
+    'ArduPlane:Plane type'
+  )
+  _describe -t vehicles 'vehicle' vehicles "$@" && ret=0
+}
+
+# TODO : generate with regex from sim_vehicle help
+(( $+functions[_copter_frames] )) ||
+_copter_frames() {
+search_vehicle=true
+local_current=$CURRENT
+vehicle=''
+while ( $search_vehicle || $local_current -eq 0 )
+do
+    case $words[$local_current] in 
+        ("ArduCopter" | "AntennaTracker" | "APMrover2" | "ArduSub" | "ArduPlane")
+            search_vehicle=false
+            vehicle=$words[$local_current]
+            ;;
+    esac
+    local_current=$(( $local_current - 1 ))
+done
+local frames; 
+case $vehicle in
+    ("ArduCopter")
+       frames=(
+            '+:Copter type +' \
+            'X:Copter type X' \
+            'airsim-copter:Copter for AirSim' \
+            'coaxcopter:Copter type Coaxial' \
+            'djix:Copter type DJI X' \
+            'dodeca-hexa:Copter type Dodeca-hexa' \
+            'gazebo-iris:Copter type iris for Gazebo' \
+            'heli:Heli' \
+            'heli-compound:Heli with compound' \
+            'heli-dual:Dual Heli' \
+            'hexa:Copter type hexa' \
+            'octa:Copter type octa' \
+            'octa-quad:Copter type octa-quad' \
+            'quad:Copter type quad' \
+            'scrimmage-copter:Copter for scrimmage' \
+            'singlecopter:Copter type singlecopter' \
+            'tri:Copter type tri' \
+            'y6:Copter type y6' \
+            
+          );;
+    ("APMrover2")
+       frames=(
+            'balancebot:Balance Bot' \
+            'gazebo-rover:Rover for Gazebo' \
+            'rover:Rover type ackerman' \
+            'rover-skid:Rover type skidsteering' \
+            'sailboat:Boat type sailboat' \
+            'sailboat-motor:Boat type sailboat with motor' \
+            'balancebot:Balance Bot' \
+          );;
+   ("ArduSub")
+          frames=(
+            'gazebo-bluerov2:Sub for Gazebo' \
+            'vectored:Sub vectored' \
+          );;
+   ("AntennaTracker")
+          frames=(
+            'tracker:Antenna Tracker' \
+          );;
+    ("ArduPlane")
+       frames=(
+            'CRRCSim:Plane for CRRCSim' \
+            'gazebo-zephyr:Plane for Gazebo' \
+            'jsbsim:Plane for jsbsim' \
+            'plane:Plane type plane' \
+            'plane-dspoilers:Plane with dspoilers' \
+            'plane-elevon:Plane with elevon' \
+            'plane-jet:Plane type jet' \
+            'plane-tailsitter:Plane type tailsitter' \
+            'plane-vtailjet:Plane type vtail' \
+            'quadplane:Plane type quadplane' \
+            'quadplane-cl84:Plane type quadplane-cl84' \
+            'quadplane-tilttrivec:Plane type quadplane-tilttrivec' \
+            'quadplane-tri:Plane type quadplane-tri' \
+            'scrimmage-plane:Plane for scrimmage' \
+          );;
+    esac
+  _describe -t frames 'frame' frames "$@" && ret=0
+}
+
+_sim_vehicle "$@"
