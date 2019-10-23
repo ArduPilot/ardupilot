@@ -12,7 +12,7 @@ import os, sys, tempfile, gzip
 def write_encode(out, s):
     out.write(s.encode())
 
-def embed_file(out, f, idx, embedded_name):
+def embed_file(out, f, idx, embedded_name, uncompressed):
     '''embed one file'''
     try:
         contents = open(f,'rb').read()
@@ -36,12 +36,20 @@ def embed_file(out, f, idx, embedded_name):
 
     write_encode(out, 'static const uint8_t ap_romfs_%u[] = {' % idx)
 
-    # compress it
     compressed = tempfile.NamedTemporaryFile()
-    f = open(compressed.name, "wb")
-    with gzip.GzipFile(fileobj=f, mode='wb', filename='', compresslevel=9, mtime=0) as g:
-        g.write(contents)
-    f.close()
+    if uncompressed:
+        compressed.write(open(f,'rb').read())
+        # ensure nul termination
+        if sys.version_info[0] >= 3:
+            compressed.write(bytearray(0))
+        else:
+            compressed.write(chr(0))
+    else:
+        # compress it
+        f = open(compressed.name, "wb")
+        with gzip.GzipFile(fileobj=f, mode='wb', filename='', compresslevel=9, mtime=0) as g:
+            g.write(contents)
+        f.close()
 
     compressed.seek(0)
     b = bytearray(compressed.read())
@@ -52,7 +60,7 @@ def embed_file(out, f, idx, embedded_name):
     write_encode(out, '};\n\n');
     return True
 
-def create_embedded_h(filename, files):
+def create_embedded_h(filename, files, uncompressed=False):
     '''create a ap_romfs_embedded.h file'''
 
     out = open(filename, "wb")
@@ -60,14 +68,18 @@ def create_embedded_h(filename, files):
 
     for i in range(len(files)):
         (name, filename) = files[i]
-        if not embed_file(out, filename, i, name):
+        if not embed_file(out, filename, i, name, uncompressed):
             return False
 
     write_encode(out, '''const AP_ROMFS::embedded_file AP_ROMFS::files[] = {\n''')
 
     for i in range(len(files)):
         (name, filename) = files[i]
-        print(("Embedding file %s:%s" % (name, filename)).encode())
+        if uncompressed:
+            ustr = ' (uncompressed)'
+        else:
+            ustr = ''
+        print("Embedding file %s:%s%s" % (name, filename, ustr))
         write_encode(out, '{ "%s", sizeof(ap_romfs_%u), ap_romfs_%u },\n' % (name, i, i))
     write_encode(out, '};\n')
     out.close()
