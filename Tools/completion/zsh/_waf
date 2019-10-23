@@ -1,0 +1,80 @@
+#compdef waf waf-light
+#autoload
+
+_waf() {
+  typeset -A opt_args
+  local context state line curcontext="$curcontext"
+
+  _arguments -C -A -s -S \
+    '(- 1 *)--version[show version and exit]' \
+    '(- 1 *)'{-h,--help}'[show help options and exit]' \
+    '1:first arg:_waf_cmds' \
+    '*:: :->args' \
+  && ret=0
+
+    case "$state" in
+      (args)
+        _arguments -C -A -s -S \
+          '(- 1 *)--version[show version and exit]' \
+          '(- 1 *)'{-h,--help}'[show help options and exit]' \
+          '(-j --jobs)'{-j,--jobs}'[amount of parallel jobs]:int:' \
+          '--verbose[verbosity level -v -vv or -vvv]' \
+          '*-v[verbosity level -v -vv or -vvv]' \
+          '--debug[Configure as debug variant.]' \
+          '--bootloader[Configure for building a bootloader.]' \
+          '--default-parameters[set default parameters to embed in the firmware]' \
+          '--enable-sfml[Enable SFML graphics library]' \
+          '--enable-sfml-audio[Enable SFML audio library]' \
+          '--sitl-osd[Enable SITL OSD]' \
+          '--sitl-rgbled[Enable SITL RGBLed]' \
+          '--build-dates[Include build date in binaries]' \
+          '--sitl-flash-storage[Building SITL with flash storage emulation.]' \
+          '--upload[Upload applicable targets to a connected device]' \
+          '--board[Board name]:board:_waf_boards' \
+          '*:: :->args' \
+        && ret=0
+      ;;
+    esac
+}
+
+# TODO : generate with regex from waf help
+(( $+functions[_waf_boards] )) ||
+_waf_boards() {
+  local boards; boards=(
+    'CubeBlack:builds CubeBlack' \
+    'bbbmini:build bbbmini' \
+    'fmuv2:build fmuv2' \
+    'fmuv3:build fmuv3' \
+    'fmuv4:build fmuv4' \
+    'iomcu:build iomcu' \
+    'sitl:build sitl'
+  )
+  _describe -t boards 'board' boards "$@" && ret=0
+}
+
+# TODO generate with regex from waf help
+(( $+functions[_waf_cmds] )) ||
+_waf_cmds() {
+  local commands; commands=(
+    'AP_Periph:builds AP_Periph programs' \
+    'copter:builds copter programs' \
+    'heli:builds heli programs' \
+    'plane:builds plane programs' \
+    'rover:builds rover programs' \
+    'sub:builds sub programs' \
+    'antennatracker:builds antennatracker programs' \
+    'tools:builds all programs of tools group' \
+    'examples:builds all programs of examples group' \
+    'bootloader:builds bootloader programs' \
+    'iofirmware:builds iofirmware programs' \
+    'list:lists the targets to execute' \
+    'all:builds all programs of all group' \
+    'build:executes the build' \
+    'configure:configures the project' \
+    'clean:cleans the project' \
+    'distclean:removes build folders and data'
+  )
+  _describe -t commands 'command' commands "$@" && ret=0
+}
+
+_waf "$@"
