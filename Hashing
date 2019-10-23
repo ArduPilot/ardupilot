@@ -1,0 +1,39 @@
+// C++ program for above implementation 
+#include <bits/stdc++.h> 
+using namespace std; 
+
+// Function to check occurrence of each element 
+bool checkCount(int arr[], int n, int k) 
+{ 
+	int count; 
+
+	// Start traversing the elements 
+	for (int i = 0; i < n; i++) { 
+
+		// Count occurrences of current element 
+		count = 0; 
+		for (int j = 0; j < n; j++) { 
+			if (arr[j] == arr[i]) 
+				count++; 
+
+			// If count of any element is greater 
+			// than 2*k then return false 
+			if (count > 2 * k) 
+				return false; 
+		} 
+	} 
+
+	return true; 
+} 
+
+// Drivers code 
+int main() 
+{ 
+	int arr[] = { 1, 1, 2, 3, 1 }; 
+	int n = sizeof(arr) / sizeof(arr[0]); 
+	int k = 2; 
+	checkCount(arr, n, k) ? cout << "Yes"
+						: cout << "No"; 
+
+	return 0; 
+} 
