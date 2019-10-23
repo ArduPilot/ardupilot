@@ -215,7 +215,7 @@ private:
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
-    uint8_t *fw;
+    const uint8_t *fw;
     uint32_t fw_size;
 
     size_t write_wait(const uint8_t *pkt, uint8_t len);

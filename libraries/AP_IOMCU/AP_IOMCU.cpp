@@ -781,7 +781,7 @@ bool AP_IOMCU::check_crc(void)
     if (io_crc == crc) {
         hal.console->printf("IOMCU: CRC ok\n");
         crc_is_ok = true;
-        free(fw);
+        AP_ROMFS::free(fw);
         fw = nullptr;
         return true;
     } else {
@@ -792,12 +792,12 @@ bool AP_IOMCU::check_crc(void)
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
 
     if (!upload_fw()) {
-        free(fw);
+        AP_ROMFS::free(fw);
         fw = nullptr;
         AP_BoardConfig::sensor_config_error("Failed to update IO firmware");
     }
 
-    free(fw);
+    AP_ROMFS::free(fw);
     fw = nullptr;
     return false;
 }
