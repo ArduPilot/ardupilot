@@ -758,10 +758,12 @@ void Compass::_probe_external_i2c_compasses(void)
  */
 void Compass::_detect_backends(void)
 {
+#ifndef HAL_BUILD_AP_PERIPH
     if (_hil_mode) {
         _add_backend(AP_Compass_HIL::detect());
         return;
     }
+#endif
 
 #if AP_FEATURE_BOARD_DETECT
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
