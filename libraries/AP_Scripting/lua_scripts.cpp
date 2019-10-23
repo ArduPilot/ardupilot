@@ -334,7 +334,7 @@ void lua_scripts::run(void) {
 
     // load the sandbox creation function
     uint32_t sandbox_size;
-    char *sandbox_data = (char *)AP_ROMFS::find_decompress("sandbox.lua", sandbox_size);
+    const char *sandbox_data = (const char *)AP_ROMFS::find_decompress("sandbox.lua", sandbox_size);
     if (sandbox_data == nullptr) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Could not find sandbox");
         return;
@@ -344,7 +344,7 @@ void lua_scripts::run(void) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Loading sandbox: %s", lua_tostring(L, -1));
         return;
     }
-    free(sandbox_data);
+    AP_ROMFS::free((const uint8_t *)sandbox_data);
 
     // Scan the filesystem in an appropriate manner and autostart scripts
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
