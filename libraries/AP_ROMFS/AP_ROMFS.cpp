@@ -45,7 +45,7 @@ const uint8_t *AP_ROMFS::find_file(const char *name, uint32_t &size)
   data after use. The next byte after the file data is guaranteed to
   be null
 */
-uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
+const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
     uint32_t compressed_size;
     const uint8_t *compressed_data = find_file(name, compressed_size);
@@ -53,6 +53,9 @@ uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
         return nullptr;
     }
 
+#ifdef HAL_ROMFS_UNCOMPRESSED
+    return compressed_data;
+#else
     // last 4 bytes of gzip file are length of decompressed data
     const uint8_t *p = &compressed_data[compressed_size-4];
     uint32_t decompressed_size = p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
@@ -67,7 +70,7 @@ uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 
     TINF_DATA *d = (TINF_DATA *)malloc(sizeof(TINF_DATA));
     if (!d) {
-        free(decompressed_data);
+        ::free(decompressed_data);
         return nullptr;
     }
     uzlib_uncompress_init(d, NULL, 0);
@@ -78,8 +81,8 @@ uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
     // assume gzip format
     int res = uzlib_gzip_parse_header(d);
     if (res != TINF_OK) {
-        free(decompressed_data);
-        free(d);
+        ::free(decompressed_data);
+        ::free(d);
         return nullptr;
     }
 
@@ -90,13 +93,22 @@ uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
     // ROMFS data
     res = uzlib_uncompress(d);
 
-    free(d);
+    ::free(d);
     
     if (res != TINF_OK) {
-        free(decompressed_data);
+        ::free(decompressed_data);
         return nullptr;
     }
 
     size = decompressed_size;
     return decompressed_data;
+#endif
+}
+
+// free returned data
+void AP_ROMFS::free(const uint8_t *data)
+{
+#ifndef HAL_ROMFS_UNCOMPRESSED
+    ::free(const_cast<uint8_t *>(data));
+#endif
 }
