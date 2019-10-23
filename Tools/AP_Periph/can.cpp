@@ -162,9 +162,9 @@ static void handle_param_getset(CanardInstance* ins, CanardRxTransfer* transfer)
     AP_Param *vp;
     enum ap_var_type ptype;
 
-    if (req.name.len != 0 && req.name.len >= AP_MAX_NAME_SIZE) {
+    if (req.name.len != 0 && req.name.len > AP_MAX_NAME_SIZE) {
         vp = nullptr;
-    } else if (req.name.len != 0 && req.name.len < AP_MAX_NAME_SIZE) {
+    } else if (req.name.len != 0 && req.name.len <= AP_MAX_NAME_SIZE) {
         strncpy((char *)name, (char *)req.name.data, req.name.len);
         vp = AP_Param::find((char *)name, &ptype);
     } else {
