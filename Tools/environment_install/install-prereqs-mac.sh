@@ -16,6 +16,16 @@ brew update
 brew install genromfs
 brew install gcc-arm-none-eabi
 brew install gawk
+brew install pyenv
+
+SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
+ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
+ARDUPILOT_TOOLS="Tools/autotest"
+
+pushd $ARDUPILOT_ROOT
+
+pyenv install 3.7.3
+pyenv local 3.7.3
 
 echo "Checking pip..."
 $(which -s pip)
@@ -26,11 +36,9 @@ else
     echo "pip installed"
 fi
 
-pip2 install --user pyserial future empy mavproxy pexpect
+pip install --user pyserial future empy mavproxy pexpect 
 
-SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
-ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
-ARDUPILOT_TOOLS="Tools/autotest"
+
 
 exportline="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
 grep -Fxq "$exportline" ~/.profile 2>/dev/null || {
