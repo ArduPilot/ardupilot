@@ -828,6 +828,17 @@ static void process1HzTasks(uint64_t timestamp_usec)
         }
     }
 
+#if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
+    if (periph.g.flash_bootloader.get()) {
+        periph.g.flash_bootloader.set_and_save_ifchanged(0);
+        if (hal.util->flash_bootloader()) {
+            can_printf("Flash bootloader OK\n");
+        } else {
+            can_printf("Flash bootloader FAILED\n");
+        }
+    }
+#endif
+
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
 }
 
