@@ -210,7 +210,7 @@ void *SITL_SFML_LED::update_thread_start(void *obj)
 
 bool SITL_SFML_LED::hw_init()
 {
-    pthread_create(&thread, NULL, update_thread_start, this);
+    pthread_create(&thread, nullptr, update_thread_start, this);
 
     return true;
 }

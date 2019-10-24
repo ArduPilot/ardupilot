@@ -114,7 +114,7 @@ void *Display_SITL::update_thread_start(void *obj)
 
 bool Display_SITL::hw_init()
 {
-    pthread_create(&thread, NULL, update_thread_start, this);
+    pthread_create(&thread, nullptr, update_thread_start, this);
     _need_hw_update = true;
 
     return true;
