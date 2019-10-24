@@ -35,7 +35,7 @@ public:
 
     void set_blocking_writes(bool blocking) override
     {
-        _nonblocking_writes = !blocking;
+        _blocking_writes = blocking;
     }
 
     bool tx_pending() override {
@@ -88,7 +88,7 @@ private:
     int _listen_fd;  // socket we are listening on
     int _serial_port;
     static bool _console;
-    bool _nonblocking_writes;
+    bool _blocking_writes = true;
     ByteBuffer _readbuffer{16384};
     ByteBuffer _writebuffer{16384};
 
