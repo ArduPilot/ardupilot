@@ -195,7 +195,7 @@ void *AP_OSD_SITL::update_thread_start(void *obj)
 // initialise backend
 bool AP_OSD_SITL::init(void)
 {
-    pthread_create(&thread, NULL, update_thread_start, this);
+    pthread_create(&thread, nullptr, update_thread_start, this);
     return true;
 }
 
