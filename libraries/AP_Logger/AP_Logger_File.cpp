@@ -545,7 +545,7 @@ uint16_t AP_Logger_File::find_last_log()
         char buf[10];
         memset(buf, 0, sizeof(buf));
         if (AP::FS().read(fd, buf, sizeof(buf)-1) > 0) {
-            ret = strtol(buf, NULL, 10);
+            ret = strtol(buf, nullptr, 10);
         }
         AP::FS().close(fd);
     }

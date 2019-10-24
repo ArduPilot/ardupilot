@@ -184,7 +184,7 @@ void AP_Logger_DataFlash::Enter4ByteAddressMode(void)
     WITH_SEMAPHORE(dev_sem);
 
     const uint8_t cmd = 0xB7;
-    dev->transfer(&cmd, 1, NULL, 0);
+    dev->transfer(&cmd, 1, nullptr, 0);
 }
 
 /*
@@ -205,7 +205,7 @@ void AP_Logger_DataFlash::send_command_addr(uint8_t command, uint32_t PageAdr)
         cmd[3] = (PageAdr >>  0) & 0xff;
     }
 
-    dev->transfer(cmd, use_32bit_address?5:4, NULL, 0);
+    dev->transfer(cmd, use_32bit_address?5:4, nullptr, 0);
 }
 
 
@@ -223,7 +223,7 @@ void AP_Logger_DataFlash::PageToBuffer(uint32_t pageNum)
     WITH_SEMAPHORE(dev_sem);
     dev->set_chip_select(true);
     send_command_addr(JEDEC_READ_DATA, PageAdr);
-    dev->transfer(NULL, 0, buffer, df_PageSize);
+    dev->transfer(nullptr, 0, buffer, df_PageSize);
     dev->set_chip_select(false);
 }
 
@@ -241,7 +241,7 @@ void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
 
     dev->set_chip_select(true);
     send_command_addr(JEDEC_PAGE_WRITE, PageAdr);
-    dev->transfer(buffer, df_PageSize, NULL, 0);
+    dev->transfer(buffer, df_PageSize, nullptr, 0);
     dev->set_chip_select(false);
 }
 
@@ -277,7 +277,7 @@ void AP_Logger_DataFlash::StartErase()
     WITH_SEMAPHORE(dev_sem);
 
     uint8_t cmd = JEDEC_BULK_ERASE;
-    dev->transfer(&cmd, 1, NULL, 0);
+    dev->transfer(&cmd, 1, nullptr, 0);
 
     erase_start_ms = AP_HAL::millis();
     printf("Dataflash: erase started\n");
@@ -297,7 +297,7 @@ void AP_Logger_DataFlash::WriteEnable(void)
     WaitReady();
     WITH_SEMAPHORE(dev_sem);
     uint8_t b = JEDEC_WRITE_ENABLE;
-    dev->transfer(&b, 1, NULL, 0);
+    dev->transfer(&b, 1, nullptr, 0);
 }
 
 void AP_Logger_DataFlash::flash_test()
