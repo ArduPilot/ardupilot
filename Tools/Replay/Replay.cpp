@@ -619,10 +619,10 @@ void Replay::write_ekf_logs(void)
         _vehicle.ahrs.Log_Write();
     }
     if (!LogReader::in_list("AHRS2", nottypes)) {
-        _vehicle.logger.Write_AHRS2(_vehicle.ahrs);
+        _vehicle.logger.Write_AHRS2();
     }
     if (!LogReader::in_list("POS", nottypes)) {
-        _vehicle.logger.Write_POS(_vehicle.ahrs);
+        _vehicle.logger.Write_POS();
     }
 }
 
