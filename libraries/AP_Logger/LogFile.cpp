@@ -488,8 +488,9 @@ void AP_Logger::Write_Power(void)
 }
 
 // Write an AHRS2 packet
-void AP_Logger::Write_AHRS2(AP_AHRS &ahrs)
+void AP_Logger::Write_AHRS2()
 {
+    const AP_AHRS &ahrs = AP::ahrs();
     Vector3f euler;
     struct Location loc;
     Quaternion quat;
@@ -514,8 +515,10 @@ void AP_Logger::Write_AHRS2(AP_AHRS &ahrs)
 }
 
 // Write a POS packet
-void AP_Logger::Write_POS(AP_AHRS &ahrs)
+void AP_Logger::Write_POS()
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
     Location loc;
     if (!ahrs.get_position(loc)) {
         return;
@@ -600,8 +603,10 @@ void AP_Logger::Write_Trigger(const Location &current_loc)
 }
 
 // Write an attitude packet
-void AP_Logger::Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets)
+void AP_Logger::Write_Attitude(const Vector3f &targets)
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
     const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
         time_us         : AP_HAL::micros64(),
