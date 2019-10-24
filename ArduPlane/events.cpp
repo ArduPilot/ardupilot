@@ -152,6 +152,79 @@ void Plane::failsafe_long_off_event(mode_reason_t reason)
     failsafe.state = FAILSAFE_NONE;
 }
 
+void Plane::failsafe_gcs_on_event(enum failsafe_state fstype, mode_reason_t reason)
+{
+    // This is how to handle a gcs loss of control signal failsafe.
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. GCS event on: type=%u/reason=%u", fstype, reason);
+    //  If the GCS is locked up we allow control to revert to RC
+    RC_Channels::clear_overrides();
+    failsafe.state = fstype;
+    switch (control_mode->mode_number())
+    {
+    case Mode::Number::MANUAL:
+    case Mode::Number::STABILIZE:
+    case Mode::Number::ACRO:
+    case Mode::Number::FLY_BY_WIRE_A:
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CRUISE:
+    case Mode::Number::TRAINING:
+    case Mode::Number::CIRCLE:
+        if(g.fs_action_gcs == FS_ACTION_GCS_PARACHUTE) {
+#if PARACHUTE == ENABLED
+            parachute_release();
+#endif
+        } else if (g.fs_action_gcs == FS_ACTION_GCS_GLIDE) {
+            set_mode(mode_fbwa, reason);
+        } else {
+            set_mode(mode_rtl, reason);
+        }
+        break;
+
+    case Mode::Number::QSTABILIZE:
+    case Mode::Number::QHOVER:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QACRO:
+    case Mode::Number::QAUTOTUNE:
+        if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
+            set_mode(mode_qrtl, reason);
+        } else {
+            set_mode(mode_qland, reason);
+        }
+        break;
+        
+    case Mode::Number::AUTO:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::LOITER:
+        if(g.fs_action_gcs == FS_ACTION_GCS_PARACHUTE) {
+#if PARACHUTE == ENABLED
+            parachute_release();
+#endif
+        } else if (g.fs_action_gcs == FS_ACTION_GCS_GLIDE) {
+            set_mode(mode_fbwa, reason);
+        } else if (g.fs_action_gcs == FS_ACTION_GCS_RTL) {
+            set_mode(mode_rtl, reason);
+        }
+        break;
+
+    case Mode::Number::TAKEOFF:
+    case Mode::Number::RTL:
+    case Mode::Number::QLAND:
+    case Mode::Number::QRTL:
+    case Mode::Number::INITIALISING:
+        break;
+    }
+    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode->mode_number());
+}
+
+void Plane::failsafe_gcs_off_event(mode_reason_t reason)
+{
+    // We're back in radio contact
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. GCS event off: reason=%u", reason);
+    failsafe.state = FAILSAFE_NONE;
+}
+
 void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
     switch ((Failsafe_Action)action) {

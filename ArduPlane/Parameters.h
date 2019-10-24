@@ -245,12 +245,12 @@ public:
         k_param_rc_2_old,
         k_param_rc_3_old,
         k_param_rc_4_old,
-        k_param_rc_5_old,
+        k_param_rc_5_old, 
         k_param_rc_6_old,
         k_param_rc_7_old,
         k_param_rc_8_old,
         k_param_rc_9_old,
-        k_param_rc_10_old,
+        k_param_rc_10_old, 
         k_param_rc_11_old,
 
         k_param_throttle_min,
@@ -266,8 +266,8 @@ public:
         k_param_throttle_suppress_manual,
         k_param_throttle_passthru_stabilize,
         k_param_rc_12_old,
-        k_param_fs_batt_voltage, // unused - moved to AP_BattMonitor
-        k_param_fs_batt_mah,     // unused - moved to AP_BattMonitor
+        k_param_fs_action_gcs,
+        k_param_fs_timeout_gcs,     
         k_param_fs_timeout_short,
         k_param_fs_timeout_long,
         k_param_rc_13_old,
@@ -422,6 +422,8 @@ public:
     AP_Int8 fs_action_long;
     AP_Float fs_timeout_short;
     AP_Float fs_timeout_long;
+    AP_Int32 fs_timeout_gcs;
+    AP_Int16 fs_action_gcs;
     AP_Int8 gcs_heartbeat_fs_enabled;
 
     // Flight modes

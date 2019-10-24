@@ -522,12 +522,29 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(fs_timeout_long,        "FS_LONG_TIMEOUT", 5),
 
+    // @Param: FS_GCS_TIMEOUT
+    // @DisplayName: GCS failsafe timeout
+    // @Description: The time in seconds that a GCS failsafe condition has to persist. This defaults to 0 seconds which means "disabled".  
+    // @Units: s
+    // @Range: 3 2147483647
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(fs_timeout_gcs,        "FS_GCS_TIMEOUT", FS_ACTION_GCS_CONTINUE),
+    
     // @Param: FS_GCS_ENABL
     // @DisplayName: GCS failsafe enable
-    // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after FS_LONG_TIMEOUT seconds of no MAVLink heartbeat messages. There are three possible enabled settings. Seeing FS_GCS_ENABL to 1 means that GCS failsafe will be triggered when the aircraft has not received a MAVLink HEARTBEAT message. Setting FS_GCS_ENABL to 2 means that GCS failsafe will be triggered on either a loss of HEARTBEAT messages, or a RADIO_STATUS message from a MAVLink enabled 3DR radio indicating that the ground station is not receiving status updates from the aircraft, which is indicated by the RADIO_STATUS.remrssi field being zero (this may happen if you have a one way link due to asymmetric noise on the ground station and aircraft radios).Setting FS_GCS_ENABL to 3 means that GCS failsafe will be triggered by Heartbeat(like option one), but only in AUTO mode. WARNING: Enabling this option opens up the possibility of your plane going into failsafe mode and running the motor on the ground it it loses contact with your ground station. If this option is enabled on an electric plane then you should enable ARMING_REQUIRED.
+    // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after FS_GCS_TIMEOUT seconds of no MAVLink heartbeat messages. There are three possible enabled settings. Seeing FS_GCS_ENABL to 1 means that GCS failsafe will be triggered when the aircraft has not received a MAVLink HEARTBEAT message. Setting FS_GCS_ENABL to 2 means that GCS failsafe will be triggered on either a loss of HEARTBEAT messages, or a RADIO_STATUS message from a MAVLink enabled 3DR radio indicating that the ground station is not receiving status updates from the aircraft, which is indicated by the RADIO_STATUS.remrssi field being zero (this may happen if you have a one way link due to asymmetric noise on the ground station and aircraft radios).Setting FS_GCS_ENABL to 3 means that GCS failsafe will be triggered by Heartbeat(like option one), but only in AUTO mode. WARNING: Enabling this option opens up the possibility of your plane going into failsafe mode and running the motor on the ground it it loses contact with your ground station. If this option is enabled on an electric plane then you should enable ARMING_REQUIRED.
     // @Values: 0:Disabled,1:Heartbeat,2:HeartbeatAndREMRSSI,3:HeartbeatAndAUTO
     // @User: Standard
     GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL", GCS_FAILSAFE_OFF),
+
+    // @Param: FS_GCS_ACTION
+    // @DisplayName: GCS failsafe action
+    // @Description: The action to take on a GCS failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a GCS failsafe occurs then it will change to RTL mode if FS_GCS_ACTION is 0 or 1, and will change to FBWA if FS_GCS_ACTION is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_GCS_ACTION is set to 0, will change to RTL mode if FS_GCS_ACTION is set to 1 and will change to FBWA mode if FS_GCS_ACTION is set to 2. If FS_GCS_ACTION is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). 
+    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide,3:Deploy Parachute
+    // @User: Standard
+    GSCALAR(fs_action_gcs, "FS_GCS_ACTION", FS_ACTION_GCS_CONTINUE),
+    
 
     // @Param: FLTMODE_CH
     // @DisplayName: Flightmode channel
@@ -1300,10 +1317,6 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_land_then_servos_neutral,0, AP_PARAM_INT8,  "LAND_THEN_NEUTRAL" },
     { Parameters::k_param_land_abort_throttle_enable,0,AP_PARAM_INT8, "LAND_ABORT_THR" },
     { Parameters::k_param_land_flap_percent,  0,      AP_PARAM_INT8,  "LAND_FLAP_PERCENT" },
-
-    // battery failsafes
-    { Parameters::k_param_fs_batt_voltage,    0,      AP_PARAM_FLOAT, "BATT_LOW_VOLT" },
-    { Parameters::k_param_fs_batt_mah,        0,      AP_PARAM_FLOAT, "BATT_LOW_MAH" },
 
     { Parameters::k_param_arming,             3,      AP_PARAM_INT8,  "ARMING_RUDDER" },
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
