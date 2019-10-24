@@ -571,6 +571,15 @@ is bob we will attempt to checkout bob-AVR'''
                 "SITL_arm_linux_gnueabihf",
                 ]
 
+    def AP_Periph_boards(self):
+        '''returns list of boards for AP_Periph'''
+        return ["f103-GPS",
+                "f103-ADSB",
+                "f103-RangeFinder",
+                "CUAV_GPS",
+                "ZubaxGNSS",
+                ]
+
     def build_arducopter(self, tag):
         '''build Copter binaries'''
         boards = []
@@ -624,6 +633,17 @@ is bob we will attempt to checkout bob-AVR'''
                            "ardusub",
                            "ArduSub")
 
+    def build_AP_Periph(self, tag):
+        '''build AP_Periph binaries'''
+        boards = self.AP_Periph_boards()
+        self.build_vehicle(tag,
+                           "AP_Periph",
+                           boards,
+                           "AP_Periph",
+                           "AP_Periph",
+                           "AP_Periph")
+
+        
     def generate_manifest(self):
         '''generate manigest files for GCS to download'''
         self.progress("Generating manifest")
@@ -731,6 +751,7 @@ is bob we will attempt to checkout bob-AVR'''
             self.build_rover(tag)
             self.build_antennatracker(tag)
             self.build_ardusub(tag)
+            self.build_AP_Periph(tag)
 
         if os.path.exists(self.tmpdir):
             shutil.rmtree(self.tmpdir)
