@@ -428,7 +428,7 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
 static void processTx(void)
 {
     static uint8_t fail_count;
-    for (const CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&canard)) != NULL;) {
+    for (const CanardCANFrame* txf = nullptr; (txf = canardPeekTxQueue(&canard)) != nullptr;) {
         CANTxFrame txmsg {};
         txmsg.DLC = txf->data_len;
         memcpy(txmsg.data8, txf->data, 8);
@@ -634,7 +634,7 @@ void can_start()
     canStart(&CAND1, &cancfg);
 
     canardInit(&canard, (uint8_t *)canard_memory_pool, sizeof(canard_memory_pool),
-               onTransferReceived, shouldAcceptTransfer, NULL);
+               onTransferReceived, shouldAcceptTransfer, nullptr);
 
     if (initial_node_id != CANARD_BROADCAST_NODE_ID) {
         canardSetLocalNodeID(&canard, initial_node_id);
