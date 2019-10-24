@@ -137,7 +137,7 @@ void HAL_SITL::setup_signal_handlers() const
 
     sa.sa_flags = SA_NOCLDSTOP;
     sa.sa_handler = HAL_SITL::exit_signal_handler;
-    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGTERM, &sa, nullptr);
 }
 
 /*
