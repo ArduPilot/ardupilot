@@ -28,13 +28,6 @@ namespace SITL {
 
 SITL *_sitl;
 
-ADSB::ADSB(const struct sitl_fdm &_fdm, const char *_home_str)
-{
-    float yaw_degrees;
-    HALSITL::SITL_State::parse_home(_home_str, home, yaw_degrees);
-}
-
-
 /*
   update a simulated vehicle
  */
