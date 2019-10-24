@@ -4710,6 +4710,47 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_scripting_hello_world()
         self.test_scripting_simple_loop()
 
+    def test_send_to_components(self):
+        self.progress("Introducing ourselves to the autopilot as a component")
+        old_srcSystem = self.mav.mav.srcSystem
+        self.mav.mav.srcSystem = 1
+        self.mav.mav.heartbeat_send(
+            mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+            mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+            0,
+            0,
+            0)
+        self.progress("Sending control message")
+        self.mav.mav.digicam_control_send(
+            1, # target_system
+            1, # target_component
+            1, # start or keep it up
+            1, # zoom_pos
+            0, # zoom_step
+            0, # focus_lock
+            1, # 1 shot or start filming
+            17, # command id (de-dupe field)
+            0, # extra_param
+            0.0, # extra_value
+        )
+        self.mav.mav.srcSystem = old_srcSystem
+
+        self.progress("Expecting a command long")
+        tstart = self.get_sim_time_cached()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 2:
+                raise NotAchievedException("Did not receive digicam_control message")
+            m = self.mav.recv_match(type='COMMAND_LONG', blocking=True, timeout=0.1)
+            self.progress("Message: %s" % str(m))
+            if m is None:
+                continue
+            if m.command != mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL:
+                raise NotAchievedException("Did not get correct command")
+            if m.param6 != 17:
+                raise NotAchievedException("Did not get correct command_id")
+            break
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -4859,6 +4900,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("PolyFenceObjectAvoidanceBendyRuler",
              "PolyFence object avoidance tests - bendy ruler",
              self.test_poly_fence_object_avoidance_bendy_ruler),
+
+            ("SendToComponents",
+             "Test ArduPilot send_to_components function",
+             self.test_send_to_components),
 
             ("PolyFenceObjectAvoidanceBendyRulerEasier",
              "PolyFence object avoidance tests - easier bendy ruler test",
