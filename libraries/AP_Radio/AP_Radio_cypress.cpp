@@ -265,12 +265,12 @@ bool AP_Radio_cypress::init(void)
         AP_HAL::panic("AP_Radio_cypress: double instantiation of irq_handler\n");
     }
     chVTObjectInit(&timeout_vt);
-    _irq_handler_ctx = chThdCreateFromHeap(NULL,
+    _irq_handler_ctx = chThdCreateFromHeap(nullptr,
                                            THD_WORKING_AREA_SIZE(2048),
                                            "radio_cypress",
                                            TIMEOUT_PRIORITY,
                                            irq_handler_thd,
-                                           NULL);
+                                           nullptr);
 #endif
     load_bind_info();
 

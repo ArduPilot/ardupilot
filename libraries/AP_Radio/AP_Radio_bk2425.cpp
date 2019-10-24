@@ -129,12 +129,12 @@ bool AP_Radio_beken::init(void)
         AP_HAL::panic("AP_Radio_beken: double instantiation of irq_handler\n");
     }
     chVTObjectInit(&timeout_vt);
-    _irq_handler_ctx = chThdCreateFromHeap(NULL,
+    _irq_handler_ctx = chThdCreateFromHeap(nullptr,
                                            THD_WORKING_AREA_SIZE(2048),
                                            "radio_bk2425",
                                            TIMEOUT_PRIORITY,          /* Initial priority.    */
                                            irq_handler_thd,           /* Thread function.     */
-                                           NULL);                     /* Thread parameter.    */
+                                           nullptr);                     /* Thread parameter.    */
     return reset();
 }
 

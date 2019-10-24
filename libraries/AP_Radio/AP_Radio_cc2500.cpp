@@ -87,12 +87,12 @@ bool AP_Radio_cc2500::init(void)
         AP_HAL::panic("AP_Radio_cc2500: double instantiation of irq_handler\n");
     }
     chVTObjectInit(&timeout_vt);
-    _irq_handler_ctx = chThdCreateFromHeap(NULL,
+    _irq_handler_ctx = chThdCreateFromHeap(nullptr,
                                            THD_WORKING_AREA_SIZE(2048),
                                            "radio_cc2500",
                                            TIMEOUT_PRIORITY,
                                            irq_handler_thd,
-                                           NULL);
+                                           nullptr);
 #endif
 
     return reset();
