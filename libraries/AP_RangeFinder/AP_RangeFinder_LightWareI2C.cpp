@@ -96,7 +96,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder::RangeFi
  */
 bool AP_RangeFinder_LightWareI2C::write_bytes(uint8_t *write_buf_u8, uint32_t len_u8)
 {
-    return _dev->transfer(write_buf_u8, len_u8, NULL, 0);
+    return _dev->transfer(write_buf_u8, len_u8, nullptr, 0);
 }
 
 /**
