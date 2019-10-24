@@ -10,13 +10,13 @@ void Rover::Log_Write_Attitude()
     float desired_pitch_cd = degrees(g2.attitude_control.get_desired_pitch()) * 100.0f;
     const Vector3f targets(0.0f, desired_pitch_cd, 0.0f);
 
-    logger.Write_Attitude(ahrs, targets);
+    logger.Write_Attitude(targets);
 
 #if AP_AHRS_NAVEKF_AVAILABLE
     AP::ahrs_navekf().Log_Write();
-    logger.Write_AHRS2(ahrs);
+    logger.Write_AHRS2();
 #endif
-    logger.Write_POS(ahrs);
+    logger.Write_POS();
 
     // log steering rate controller
     logger.Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());
