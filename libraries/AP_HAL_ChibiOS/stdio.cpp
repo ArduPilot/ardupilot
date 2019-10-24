@@ -59,7 +59,7 @@ int __wrap_vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 
 int __wrap_vasprintf(char **strp, const char *fmt, va_list ap)
 {
-    int len = vsnprintf(NULL, 0, fmt, ap);
+    int len = vsnprintf(nullptr, 0, fmt, ap);
     if (len <= 0) {
         return -1;
     }

@@ -210,7 +210,7 @@ void AnalogIn::init()
 
     samples = (adcsample_t *)hal.util->malloc_type(sizeof(adcsample_t)*ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS, AP_HAL::Util::MEM_DMA_SAFE);
 
-    adcStart(&ADCD1, NULL);
+    adcStart(&ADCD1, nullptr);
     memset(&adcgrpcfg, 0, sizeof(adcgrpcfg));
     adcgrpcfg.circular = true;
     adcgrpcfg.num_channels = ADC_GRP1_NUM_CHANNELS;

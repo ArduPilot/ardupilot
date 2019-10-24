@@ -43,12 +43,12 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=tr
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         if (pin_num == _gpio_tab[i].pin_num) {
             if (check_enabled && !_gpio_tab[i].enabled) {
-                return NULL;
+                return nullptr;
             }
             return &_gpio_tab[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 static void pal_interrupt_cb(void *arg);

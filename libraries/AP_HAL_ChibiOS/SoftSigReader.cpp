@@ -61,9 +61,9 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
 
     icucfg.frequency = INPUT_CAPTURE_FREQUENCY;
     icucfg.channel = chan;
-    icucfg.width_cb = NULL;
-    icucfg.period_cb = NULL;
-    icucfg.overflow_cb = NULL;
+    icucfg.width_cb = nullptr;
+    icucfg.period_cb = nullptr;
+    icucfg.overflow_cb = nullptr;
 
     if (chan == ICU_CHANNEL_1) {
         icucfg.dier = STM32_TIM_DIER_CC1DE;
