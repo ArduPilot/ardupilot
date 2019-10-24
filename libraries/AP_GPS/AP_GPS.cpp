@@ -301,14 +301,33 @@ AP_GPS::AP_GPS()
     _singleton = this;
 }
 
+// return true if a specific type of GPS uses a UART
+bool AP_GPS::needs_uart(GPS_Type type) const
+{
+    switch (type) {
+    case GPS_TYPE_NONE:
+    case GPS_TYPE_HIL:
+    case GPS_TYPE_UAVCAN:
+    case GPS_TYPE_MAV:
+        return false;
+    default:
+        break;
+    }
+    return true;
+}
+
 /// Startup initialisation.
 void AP_GPS::init(const AP_SerialManager& serial_manager)
 {
     primary_instance = 0;
 
     // search for serial ports with gps protocol
+    uint8_t uart_idx = 0;
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        _port[i] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, i);
+        if (needs_uart((GPS_Type)_type[i].get())) {
+            _port[i] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, uart_idx);
+            uart_idx++;
+        }
     }
     _last_instance_swap_ms = 0;
 
