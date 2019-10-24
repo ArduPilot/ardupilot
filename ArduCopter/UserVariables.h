@@ -2,7 +2,7 @@
 
 // example variables used in Wii camera testing - replace with your own variables
 
-#define TMRS_ENABLED ENABLED
+#define TMRS_ENABLED DISABLED
 
 #ifdef USERHOOK_VARIABLES
 

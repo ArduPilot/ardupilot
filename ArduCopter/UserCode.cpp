@@ -1,11 +1,15 @@
+// TMRS v1 hooks
+
 #include "Copter.h"
 
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
+#if TMRS_ENABLED == ENABLED
     tmrs_motor_power_monitor.init();
     tmrs_tether_power_monitor.init();
     tmrs_payload_controller.init();
+#endif
 }
 #endif
 
@@ -40,6 +44,7 @@ void Copter::userhook_SlowLoop()
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Copter::userhook_SuperSlowLoop()
 {
+#if TMRS_ENABLED == ENABLED
     /**
      * TMRS sensors
      */
@@ -51,6 +56,7 @@ void Copter::userhook_SuperSlowLoop()
             tmrs_payload_controller.send_mavlink_tmrs_payload_status(gcs().chan(i).get_chan());
         }
     }
+#endif
 }
 #endif
 
