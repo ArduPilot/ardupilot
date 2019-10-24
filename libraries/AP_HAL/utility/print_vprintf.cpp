@@ -378,9 +378,12 @@ flt_oper:
                 }
 
                 while (size) {
-                    s->write(*pnt++);
-                    if (width) width -= 1;
-                    size -= 1;
+                    const uint32_t written = s->write((uint8_t*)pnt, size);
+                    if (written == 0) {
+                        break;
+                    }
+                    width -= (written < width) ? written : width;
+                    size -= written;
                 }
                 goto tail;
             }
