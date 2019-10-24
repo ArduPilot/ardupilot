@@ -49,7 +49,7 @@ static Thruster vectored_6dof_thrusters[] =
 
 Submarine::Submarine(const char *frame_str) :
     Aircraft(frame_str),
-    frame(NULL)
+    frame(nullptr)
 {
     frame_height = 0.0;
     ground_behavior = GROUND_BEHAVIOR_NONE;

@@ -53,22 +53,22 @@ void Scrimmage::set_config(const char *config)
     char *end_str;
     char* copy_config = strdup(config);
     char *token = strtok_r(copy_config, ",", &end_str);
-    while (token != NULL)
+    while (token != nullptr)
     {
         char *end_token;
         char *token2 = strtok_r(token, "=", &end_token);
         if (strcmp(token2, "mission")==0) {
-            mission_name = strtok_r(NULL, "=", &end_token);
+            mission_name = strtok_r(nullptr, "=", &end_token);
         } else if (strcmp(token2, "motion_model")==0) {
-            motion_model = strtok_r(NULL, "=", &end_token);
+            motion_model = strtok_r(nullptr, "=", &end_token);
         } else if (strcmp(token2, "visual_model")==0) {
-            visual_model = strtok_r(NULL, "=", &end_token);
+            visual_model = strtok_r(nullptr, "=", &end_token);
         } else if (strcmp(token2, "terrain")==0) {
-            terrain = strtok_r(NULL, "=", &end_token);
+            terrain = strtok_r(nullptr, "=", &end_token);
         } else {
             printf("Invalid scrimmage param: %s", token2);
         }
-        token = strtok_r(NULL, ",", &end_str);
+        token = strtok_r(nullptr, ",", &end_str);
     }
     free(copy_config);
 
@@ -105,7 +105,7 @@ void Scrimmage::start_scrimmage(void)
         char* full_exec_str;
         int len;
         // Get required string length
-        len = snprintf(NULL, 0, "xterm +hold -T SCRIMMAGE -e 'scrimmage %s -o \"latitude_origin=%f,"
+        len = snprintf(nullptr, 0, "xterm +hold -T SCRIMMAGE -e 'scrimmage %s -o \"latitude_origin=%f,"
         "longitude_origin=%f,altitude_origin=%f,heading=%f,motion_model=%s,visual_model=%s,terrain=%s,"
         "to_ardupilot_port=%d,from_ardupilot_port=%d,to_ardupilot_ip=%s\"'", mission_name, home.lat*1.0e-7f,home.lng*1.0e-7f,
         home.alt*1.0e-2f, home_yaw, motion_model, visual_model, terrain, fdm_port_in, fdm_port_out, fdm_address);

@@ -107,7 +107,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         roll,
         pitch,
         yaw,
-        NULL, 0);
+        nullptr, 0);
 #else
     mavlink_msg_vicon_position_estimate_pack_chan(
         system_id,
@@ -121,7 +121,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         roll,
         pitch,
         yaw,
-        NULL);
+        nullptr);
 #endif // USE_VISION_POSITION_ESTIMATE
 
     uint32_t delay_ms = 25 + unsigned(random()) % 300;

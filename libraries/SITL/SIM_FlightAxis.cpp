@@ -105,7 +105,7 @@ FlightAxis::FlightAxis(const char *frame_str) :
         }
     }
 
-    int ret = pthread_create(&thread, NULL, update_thread, this);
+    int ret = pthread_create(&thread, nullptr, update_thread, this);
     if (ret != 0) {
         AP_HAL::panic("SIM_FlightAxis: failed to create thread");
     }
