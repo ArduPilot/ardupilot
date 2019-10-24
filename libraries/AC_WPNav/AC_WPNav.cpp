@@ -178,6 +178,9 @@ bool AC_WPNav::set_wp_destination(const Location_Class& destination)
     bool terr_alt;
     Vector3f dest_neu;
 
+    // reset reach destination flag
+    _flags.reached_destination = false;
+
     // convert destination location to vector
     if (!get_vector_NEU(destination, dest_neu, terr_alt)) {
         return false;
@@ -211,6 +214,9 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
         _pos_control.get_stopping_point_xy(origin);
         _pos_control.get_stopping_point_z(origin);
     }
+
+    // reset reach destination flag
+    _flags.reached_destination = false;
 
     // convert origin to alt-above-terrain
     if (terrain_alt) {
@@ -270,7 +276,6 @@ bool AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     // initialise intermediate point to the origin
     _pos_control.set_pos_target(origin + Vector3f(0,0,origin_terr_offset));
     _track_desired = 0;             // target is at beginning of track
-    _flags.reached_destination = false;
     _flags.fast_waypoint = false;   // default waypoint back to slow
     _flags.slowing_down = false;    // target is not slowing down yet
     _flags.segment_type = SEGMENT_STRAIGHT;
@@ -612,6 +617,10 @@ bool AC_WPNav::set_spline_destination(const Location_Class& destination, bool st
     // convert destination location to vector
     Vector3f dest_neu;
     bool dest_terr_alt;
+
+    // reset reach destination flag
+    _flags.reached_destination = false;
+
     if (!get_vector_NEU(destination, dest_neu, dest_terr_alt)) {
         return false;
     }
@@ -650,6 +659,9 @@ bool AC_WPNav::set_spline_destination(const Vector3f& destination, bool terrain_
         _pos_control.get_stopping_point_xy(origin);
         _pos_control.get_stopping_point_z(origin);
     }
+
+    // reset reach destination flag
+    _flags.reached_destination = false;
 
     // convert origin to alt-above-terrain
     if (terrain_alt) {
@@ -769,7 +781,6 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
 
     // initialise intermediate point to the origin
     _pos_control.set_pos_target(origin + Vector3f(0,0,terr_offset));
-    _flags.reached_destination = false;
     _flags.segment_type = SEGMENT_SPLINE;
     _flags.new_wp_destination = true;   // flag new waypoint so we can freeze the pos controller's feed forward and smooth the transition
     _flags.wp_yaw_set = false;
