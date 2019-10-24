@@ -68,7 +68,7 @@ public:
 
 private:
     AP_HAL::OwnPtr<SerialDevice> _device;
-    bool _nonblocking_writes;
+    bool _blocking_writes = true;
     bool _console;
     volatile bool _in_timer;
     uint16_t _base_port;

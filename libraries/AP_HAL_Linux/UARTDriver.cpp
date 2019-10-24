@@ -243,7 +243,7 @@ bool UARTDriver::is_initialized()
  */
 void UARTDriver::set_blocking_writes(bool blocking)
 {
-    _nonblocking_writes = !blocking;
+    _blocking_writes = blocking;
 }
 
 
