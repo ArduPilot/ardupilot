@@ -120,6 +120,11 @@ static void handle_get_node_info(CanardInstance* ins,
 
     readUniqueID(pkt.hardware_version.unique_id);
 
+    // use hw major/minor for APJ_BOARD_ID so we know what fw is
+    // compatible with this hardware
+    pkt.hardware_version.major = APJ_BOARD_ID >> 8;
+    pkt.hardware_version.minor = APJ_BOARD_ID & 0xFF;
+
     char name[strlen(CAN_APP_NODE_NAME)+1];
     strcpy(name, CAN_APP_NODE_NAME);
     pkt.name.len = strlen(CAN_APP_NODE_NAME);
