@@ -62,20 +62,20 @@ static int new_file_descriptor(const char *pathname)
         if (isatty_(i)) {
             continue;
         }
-        if ( file_table[i] == NULL) {
+        if ( file_table[i] == nullptr) {
             stream = (FAT_FILE *) calloc(sizeof(FAT_FILE),1);
-            if (stream == NULL) {
+            if (stream == nullptr) {
                 errno = ENOMEM;
                 return -1;
             }
             fh = (FIL *) calloc(sizeof(FIL),1);
-            if (fh == NULL) {
+            if (fh == nullptr) {
                 free(stream);
                 errno = ENOMEM;
                 return -1;
             }
             char *fname = (char *)malloc(strlen(pathname)+1);
-            if (fname == NULL) {
+            if (fname == nullptr) {
                 free(fh);
                 free(stream);
                 errno = ENOMEM;
@@ -102,7 +102,7 @@ static FAT_FILE *fileno_to_stream(int fileno)
     }
 
     stream = file_table[fileno];
-    if (stream == NULL) {
+    if (stream == nullptr) {
         errno = EBADF;
         return nullptr;
     }
@@ -121,20 +121,20 @@ static int free_file_descriptor(int fileno)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         return -1;
     }
 
     fh = stream->fh;
 
-    if (fh != NULL) {
+    if (fh != nullptr) {
         free(fh);
     }
 
     free(stream->name);
-    stream->name = NULL;
+    stream->name = nullptr;
 
-    file_table[fileno]  = NULL;
+    file_table[fileno]  = nullptr;
     free(stream);
     return fileno;
 }
@@ -151,12 +151,12 @@ static FIL *fileno_to_fatfs(int fileno)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if ( stream == NULL ) {
+    if ( stream == nullptr ) {
         return nullptr;
     }
 
     fh = stream->fh;
-    if (fh == NULL) {
+    if (fh == nullptr) {
         errno = EBADF;
         return nullptr;
     }
@@ -232,7 +232,7 @@ static int fatfs_to_errno( FRESULT Result )
 
 // check for a remount and return -1 if it fails
 #define CHECK_REMOUNT() do { if (remount_needed && !remount_file_system()) { errno = EIO; return -1; }} while (0)
-#define CHECK_REMOUNT_NULL() do { if (remount_needed && !remount_file_system()) { errno = EIO; return NULL; }} while (0)
+#define CHECK_REMOUNT_NULL() do { if (remount_needed && !remount_file_system()) { errno = EIO; return nullptr; }} while (0)
 
 // we allow for IO retries if either not armed or not in main thread
 #define RETRY_ALLOWED() (!hal.scheduler->in_main_thread() || !hal.util->get_soft_armed())
@@ -311,14 +311,14 @@ int AP_Filesystem_FATFS::open(const char *pathname, int flags)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         free_file_descriptor(fileno);
         return -1;
     }
 
     // fileno_to_fatfs checks for fileno out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == NULL) {
+    if (fh == nullptr) {
         free_file_descriptor(fileno);
         errno = EBADF;
         return -1;
@@ -364,13 +364,13 @@ int AP_Filesystem_FATFS::close(int fileno)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         return -1;
     }
 
     // fileno_to_fatfs checks for fileno out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == NULL) {
+    if (fh == nullptr) {
         return -1;
     }
     res = f_close(fh);
@@ -400,7 +400,7 @@ ssize_t AP_Filesystem_FATFS::read(int fd, void *buf, size_t count)
 
     // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fd);
-    if ( fh == NULL ) {
+    if ( fh == nullptr ) {
         errno = EBADF;
         return -1;
     }
@@ -444,7 +444,7 @@ ssize_t AP_Filesystem_FATFS::write(int fd, const void *buf, size_t count)
 
     // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fd);
-    if ( fh == NULL ) {
+    if ( fh == nullptr ) {
         errno = EBADF;
         return -1;
     }
@@ -491,13 +491,13 @@ int AP_Filesystem_FATFS::fsync(int fileno)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         return -1;
     }
 
     // fileno_to_fatfs checks for fileno out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == NULL) {
+    if (fh == nullptr) {
         return -1;
     }
     res = f_sync(fh);
@@ -518,7 +518,7 @@ off_t AP_Filesystem_FATFS::lseek(int fileno, off_t position, int whence)
 
     // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == NULL) {
+    if (fh == nullptr) {
         errno = EMFILE;
         return -1;
     }
@@ -906,7 +906,7 @@ char *strerror(int errnum)
 
 #undef SWITCH_ERROR
 
-    return NULL;
+    return nullptr;
 }
 
 #endif // CONFIG_HAL_BOARD

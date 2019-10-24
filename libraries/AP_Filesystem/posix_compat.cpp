@@ -38,7 +38,7 @@ struct apfs_file {
     char *tmpfile_name;
 };
 
-#define CHECK_STREAM(stream, ret) while (stream == NULL || stream->fd < 0) { errno = EBADF; return ret; }
+#define CHECK_STREAM(stream, ret) while (stream == nullptr || stream->fd < 0) { errno = EBADF; return ret; }
 
 #define modecmp(str, pat) (strcmp(str, pat) == 0 ? 1: 0)
 
@@ -91,7 +91,7 @@ int apfs_fprintf(APFS_FILE *stream, const char *fmt, ...)
 {
     CHECK_STREAM(stream, -1);
     va_list va;
-    char* buf = NULL;
+    char* buf = nullptr;
     int16_t len;
     va_start(va, fmt);
     len = vasprintf(&buf, fmt, va);
@@ -145,11 +145,11 @@ int apfs_fputs(const char *s, APFS_FILE *stream)
 
 char *apfs_fgets(char *s, int size, APFS_FILE *stream)
 {
-    CHECK_STREAM(stream, NULL);
+    CHECK_STREAM(stream, nullptr);
     ssize_t ret = AP::FS().read(stream->fd, s, size-1);
     if (ret < 0) {
         stream->error = true;
-        return NULL;
+        return nullptr;
     }
     s[ret] = 0;
     return s;
@@ -181,7 +181,7 @@ int apfs_fclose(APFS_FILE *stream)
     if (stream->tmpfile_name) {
         AP::FS().unlink(stream->tmpfile_name);
         free(stream->tmpfile_name);
-        stream->tmpfile_name = NULL;
+        stream->tmpfile_name = nullptr;
     }
     delete stream;
     return ret;
@@ -189,14 +189,14 @@ int apfs_fclose(APFS_FILE *stream)
 
 APFS_FILE *apfs_tmpfile(void)
 {
-    char *fname = NULL;
+    char *fname = nullptr;
     if (asprintf(&fname, "tmp.%03u", unsigned(get_random16()) % 1000) <= 0) {
-        return NULL;
+        return nullptr;
     }
     APFS_FILE *ret = apfs_fopen(fname, "w");
     if (!ret) {
         free(fname);
-        return NULL;
+        return nullptr;
     }
     ret->tmpfile_name = fname;
     return ret;
@@ -234,15 +234,15 @@ int apfs_feof(APFS_FILE *stream)
 
 APFS_FILE *apfs_freopen(const char *pathname, const char *mode, APFS_FILE *stream)
 {
-    CHECK_STREAM(stream, NULL);
+    CHECK_STREAM(stream, nullptr);
     int ret = AP::FS().close(stream->fd);
     if (ret < 0) {
-        return NULL;
+        return nullptr;
     }
     if (stream->tmpfile_name) {
         AP::FS().unlink(stream->tmpfile_name);
         free(stream->tmpfile_name);
-        stream->tmpfile_name = NULL;
+        stream->tmpfile_name = nullptr;
     }
     stream->fd = AP::FS().open(pathname, posix_fopen_modes_to_open(mode));
     stream->error = false;
