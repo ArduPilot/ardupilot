@@ -79,7 +79,7 @@ void AP_LeakDetector::init()
             _drivers[i] = new AP_LeakDetector_Analog(*this, _state[i]);
             break;
         default:
-            _drivers[i] = NULL;
+            _drivers[i] = nullptr;
             break;
         }
     }
@@ -90,7 +90,7 @@ bool AP_LeakDetector::update()
     uint32_t tnow = AP_HAL::millis();
 
     for (int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
-        if (_drivers[i] != NULL) {
+        if (_drivers[i] != nullptr) {
             _drivers[i]->read();
             if (_state[i].status) {
                 _last_detect_ms = tnow;
