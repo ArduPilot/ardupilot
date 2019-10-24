@@ -185,17 +185,17 @@ const char **Replay::parse_list_from_string(const char *str_in)
     }
 
     char *str = strdup(str_in);
-    if (str == NULL) {
-        return NULL;
+    if (str == nullptr) {
+        return nullptr;
     }
     const char **ret = (const char **)calloc(comma_count+2, sizeof(char *));
-    if (ret == NULL) {
+    if (ret == nullptr) {
         free(str);
-        return NULL;
+        return nullptr;
     }
-    char *saveptr = NULL;
+    char *saveptr = nullptr;
     uint16_t idx = 0;
-    for (p=strtok_r(str, ",", &saveptr); p; p=strtok_r(NULL, ",", &saveptr)) {
+    for (p=strtok_r(str, ",", &saveptr); p; p=strtok_r(nullptr, ",", &saveptr)) {
         ret[idx++] = p;
     }
     return ret;
@@ -233,15 +233,15 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     while ((opt = gopt.getoption()) != -1) {
 		switch (opt) {
         case 'g':
-            logreader.set_gyro_mask(strtol(gopt.optarg, NULL, 0));
+            logreader.set_gyro_mask(strtol(gopt.optarg, nullptr, 0));
             break;
 
         case 'a':
-            logreader.set_accel_mask(strtol(gopt.optarg, NULL, 0));
+            logreader.set_accel_mask(strtol(gopt.optarg, nullptr, 0));
             break;
 
         case 'A':
-            arm_time_ms = strtol(gopt.optarg, NULL, 0);
+            arm_time_ms = strtol(gopt.optarg, nullptr, 0);
             break;
 
         case 'n':
@@ -251,7 +251,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 
         case 'p': {
             const char *eq = strchr(gopt.optarg, '=');
-            if (eq == NULL) {
+            if (eq == nullptr) {
                 ::printf("Usage: -p NAME=VALUE\n");
                 exit(1);
             }
@@ -866,7 +866,7 @@ void Replay::report_checks(void)
         tolerance_euler = 0.01f;
     }
     FILE *f = fopen("replay_results.txt","a");
-    if (f != NULL) {
+    if (f != nullptr) {
         fprintf(f, "%s\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n",
                 log_filename, 
                 check_result.max_roll_error,
@@ -897,16 +897,16 @@ bool Replay::parse_param_line(char *line, char **vname, float &value)
     if (line[0] == '#') {
         return false;
     }
-    char *saveptr = NULL;
+    char *saveptr = nullptr;
     char *pname = strtok_r(line, ", =\t", &saveptr);
-    if (pname == NULL) {
+    if (pname == nullptr) {
         return false;
     }
     if (strlen(pname) > AP_MAX_NAME_SIZE) {
         return false;
     }
-    const char *value_s = strtok_r(NULL, ", =\t", &saveptr);
-    if (value_s == NULL) {
+    const char *value_s = strtok_r(nullptr, ", =\t", &saveptr);
+    if (value_s == nullptr) {
         return false;
     }
     value = atof(value_s);
@@ -921,7 +921,7 @@ bool Replay::parse_param_line(char *line, char **vname, float &value)
 void Replay::load_param_file(const char *pfilename)
 {
     FILE *f = fopen(pfilename, "r");
-    if (f == NULL) {
+    if (f == nullptr) {
         printf("Failed to open parameter file: %s\n", pfilename);
         exit(1);
     }

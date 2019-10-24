@@ -10,7 +10,7 @@ void fatal(const char *msg) {
 char *xstrdup(const char *string)
 {
     char *ret = strdup(string);
-    if (ret == NULL) {
+    if (ret == nullptr) {
         perror("strdup");
         fatal("strdup failed");
     }
@@ -62,7 +62,7 @@ struct MsgHandler::format_field_info *MsgHandler::find_field_info(const char *la
             return &field_info[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 MsgHandler::MsgHandler(const struct log_Format &_f) : next_field(0), f(_f)
@@ -89,7 +89,7 @@ void MsgHandler::parse_format_fields()
     char *next_label;
     uint8_t msg_offset = 3; // 3 bytes for the header
 
-    while ((next_label = strtok(arg, ",")) != NULL) {
+    while ((next_label = strtok(arg, ",")) != nullptr) {
 	if (label_offset > strlen(f.format)) {
 	    free(labels);
 	    printf("too few field times for labels %s (format=%s) (labels=%s)\n",
@@ -99,7 +99,7 @@ void MsgHandler::parse_format_fields()
         uint8_t field_type = f.format[label_offset];
         uint8_t length = size_for_type(field_type);
         add_field(next_label, field_type, msg_offset, length);
-        arg = NULL;
+        arg = nullptr;
         msg_offset += length;
         label_offset++;
     }
@@ -115,7 +115,7 @@ void MsgHandler::parse_format_fields()
 bool MsgHandler::field_value(uint8_t *msg, const char *label, char *ret, uint8_t retlen)
 {
     struct format_field_info *info = find_field_info(label);
-    if (info == NULL) {
+    if (info == nullptr) {
       ::printf("No info for (%s)\n",label);
       exit(1);
     }
@@ -166,7 +166,7 @@ void MsgHandler::string_for_labels(char *buffer, uint bufferlen)
 
     char *pos = buffer;
     for (uint8_t k=0; k<LOGREADER_MAX_FIELDS; k++) {
-        if (field_info[k].label != NULL) {
+        if (field_info[k].label != nullptr) {
             uint8_t remaining = bufferlen - (pos - buffer);
             uint8_t label_length = strlen(field_info[k].label);
             uint8_t required = label_length;
@@ -190,7 +190,7 @@ void MsgHandler::string_for_labels(char *buffer, uint bufferlen)
 MsgHandler::~MsgHandler()
 {
     for (uint8_t k=0; k<LOGREADER_MAX_FIELDS; k++) {
-        if (field_info[k].label != NULL) {
+        if (field_info[k].label != nullptr) {
             free(field_info[k].label);
         }
     }

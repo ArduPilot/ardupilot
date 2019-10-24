@@ -127,7 +127,7 @@ static const char *generated_names[] = {
     "MAG", "MAG2",
     "BARO", "BAR2",
     "GPS","GPA",
-    NULL,
+    nullptr,
 };
 
 // these names we emit from the code as normal, but are emitted using
@@ -150,10 +150,10 @@ static const char *log_write_names[] = {
  */
 bool LogReader::in_list(const char *type, const char *list[])
 {
-    if (list == NULL) {
+    if (list == nullptr) {
         return false;
     }
-    for (uint8_t i=0; list[i] != NULL; i++) {
+    for (uint8_t i=0; list[i] != nullptr; i++) {
         if (strcmp(type, list[i]) == 0) {
             return true;
         }
@@ -294,7 +294,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 
-    if (msgparser[f.type] != NULL) {
+    if (msgparser[f.type] != nullptr) {
         return true;
     }
 
@@ -433,7 +433,7 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
     }
 
     LR_MsgHandler *p = msgparser[f.type];
-    if (p == NULL) {
+    if (p == nullptr) {
 	return true;
     }
 
@@ -462,7 +462,7 @@ bool LogReader::set_parameter(const char *name, float value)
 {
     enum ap_var_type var_type;
     AP_Param *vp = AP_Param::find(name, &var_type);
-    if (vp == NULL) {
+    if (vp == nullptr) {
         return false;
     }
     float old_value = 0;
