@@ -74,7 +74,7 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
         ::free(decompressed_data);
         return nullptr;
     }
-    uzlib_uncompress_init(d, NULL, 0);
+    uzlib_uncompress_init(d, nullptr, 0);
 
     d->source = compressed_data;
     d->source_limit = compressed_data + compressed_size - 4;
