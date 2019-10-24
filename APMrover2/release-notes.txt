@@ -1,5 +1,19 @@
 Rover Release Notes:
 --------------------------------
+Rover 4.0.0-rc2 24-Oct-2019
+Changes from 4.0.0-rc1
+1) Vehicle stays in Auto mode after completing missions using RTL-within-Auto, Hold-within-Auto 
+2) Sailboat gets dedicated parameters SAIL_LOIT_RADIUS and SAIL_XTRACK_MAX
+3) RTL/SmartRTL fixes:
+    a) Boats loiter instead of circling at end of RTL/SmartRTL
+    b) Warning sent to GCS when SmartRTL buffer is nearly full
+4) OSD improvements including total distance fix for slow vehicles 
+5) Bug Fixes and minor enhancements
+    a) Wheel encoder fix to use both wheel encoders (if present)
+    b) EKF failsafe and pre-arm checks when only wheel encoders used for non-GPS navigation
+    c) Follow mode offsets reset to zero when vehicle leaves follow mode
+    d) FS_OPTIONS parameter allows enabling failsafes to trigger while in Hold mode
+--------------------------------
 Rover 4.0.0-rc1 01-Oct-2019
 Changes from 3.5.2
 1) Path Planning for Object Avoidance (aka Bendy Ruler and Dijkstra's) replaces "Dodge" avoidance
