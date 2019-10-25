@@ -20,7 +20,7 @@
 
 #if HAL_WITH_UAVCAN
 
-#include "AP_UAVCAN_Server.h"
+#include "AP_UAVCAN_DNA_Server.h"
 #include "AP_UAVCAN.h"
 #include <StorageManager/StorageManager.h>
 #include <AP_HAL/AP_HAL.h>
@@ -50,7 +50,7 @@ static uavcan::Publisher<uavcan::protocol::dynamic_node_id::Allocation>* allocat
 
 /* Subscribe to all the messages we are going to handle for
 Server registry and Node allocation. */
-void AP_UAVCAN_Server::subscribe_msgs(AP_UAVCAN* ap_uavcan)
+void AP_UAVCAN_DNA_Server::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 {
     if (ap_uavcan == nullptr) {
         return;
@@ -88,7 +88,7 @@ void AP_UAVCAN_Server::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 
 /* Method to generate 6byte hash from the Unique ID.
 We return it packed inside the referenced NodeData structure */
-void AP_UAVCAN_Server::getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const
+void AP_UAVCAN_DNA_Server::getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const
 {
     uint64_t hash = FNV_1_OFFSET_BASIS_64;
     hash_fnv_1a(size, unique_id, &hash);
@@ -103,7 +103,7 @@ void AP_UAVCAN_Server::getHash(NodeData &node_data, const uint8_t unique_id[], u
 }
 
 //Read Node Data from Storage Region
-bool AP_UAVCAN_Server::readNodeData(NodeData &data, uint8_t node_id)
+bool AP_UAVCAN_DNA_Server::readNodeData(NodeData &data, uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -117,7 +117,7 @@ bool AP_UAVCAN_Server::readNodeData(NodeData &data, uint8_t node_id)
 }
 
 //Write Node Data to Storage Region
-bool AP_UAVCAN_Server::writeNodeData(const NodeData &data, uint8_t node_id)
+bool AP_UAVCAN_DNA_Server::writeNodeData(const NodeData &data, uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -132,7 +132,7 @@ bool AP_UAVCAN_Server::writeNodeData(const NodeData &data, uint8_t node_id)
 
 /* Set Occupation Mask, handy for keeping track of all node ids that
 are allocated and all that are available. */
-bool AP_UAVCAN_Server::setOccupationMask(uint8_t node_id)
+bool AP_UAVCAN_DNA_Server::setOccupationMask(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -143,7 +143,7 @@ bool AP_UAVCAN_Server::setOccupationMask(uint8_t node_id)
 
 /* Remove Node Data from Server Record in Storage,
 and also clear Occupation Mask */
-bool AP_UAVCAN_Server::freeNodeID(uint8_t node_id)
+bool AP_UAVCAN_DNA_Server::freeNodeID(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -164,7 +164,7 @@ bool AP_UAVCAN_Server::freeNodeID(uint8_t node_id)
 /* Sets the verification mask. This is to be called, once
 The Seen Node has been both registered and verified against the
 Server Records. */
-void AP_UAVCAN_Server::setVerificationMask(uint8_t node_id)
+void AP_UAVCAN_DNA_Server::setVerificationMask(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return;
@@ -174,7 +174,7 @@ void AP_UAVCAN_Server::setVerificationMask(uint8_t node_id)
 
 /* Checks if the NodeID is occupied, i.e. its recorded
 in the Server Records against a unique ID */
-bool AP_UAVCAN_Server::isNodeIDOccupied(uint8_t node_id) const
+bool AP_UAVCAN_DNA_Server::isNodeIDOccupied(uint8_t node_id) const
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -184,7 +184,7 @@ bool AP_UAVCAN_Server::isNodeIDOccupied(uint8_t node_id) const
 
 /* Checks if NodeID is verified, i.e. the unique id in
 Storage Records matches the one provided by Device with this node id. */
-bool AP_UAVCAN_Server::isNodeIDVerified(uint8_t node_id) const
+bool AP_UAVCAN_DNA_Server::isNodeIDVerified(uint8_t node_id) const
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -195,7 +195,7 @@ bool AP_UAVCAN_Server::isNodeIDVerified(uint8_t node_id) const
 /* Go through Server Records, and fetch node id that matches the provided
 Unique IDs hash.
 Returns 255 if no Node ID was detected */
-uint8_t AP_UAVCAN_Server::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size)
+uint8_t AP_UAVCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size)
 {
     uint8_t node_id = 255;
     NodeData node_data, cmp_node_data;
@@ -218,7 +218,7 @@ uint8_t AP_UAVCAN_Server::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_
 
 /* Hash the Unique ID and add it to the Server Record
 for specified Node ID. */
-bool AP_UAVCAN_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size)
+bool AP_UAVCAN_DNA_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size)
 {
     NodeData node_data;
     getHash(node_data, unique_id, size);
@@ -237,7 +237,7 @@ bool AP_UAVCAN_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t uniqu
 }
 
 //Checks if a valid Server Record is present for specified Node ID
-bool AP_UAVCAN_Server::isValidNodeDataAvailable(uint8_t node_id)
+bool AP_UAVCAN_DNA_Server::isValidNodeDataAvailable(uint8_t node_id)
 {
     NodeData node_data;
     readNodeData(node_data, node_id);
@@ -252,7 +252,7 @@ bool AP_UAVCAN_Server::isValidNodeDataAvailable(uint8_t node_id)
 Also resets the Server Record in case there is a mismatch
 between specified node id and unique id against the existing
 Server Record. */
-bool AP_UAVCAN_Server::init(AP_UAVCAN *ap_uavcan)
+bool AP_UAVCAN_DNA_Server::init(AP_UAVCAN *ap_uavcan)
 {
     if (ap_uavcan == nullptr) {
         return false;
@@ -353,7 +353,7 @@ bool AP_UAVCAN_Server::init(AP_UAVCAN *ap_uavcan)
 
 
 //Reset the Server Records
-void AP_UAVCAN_Server::reset()
+void AP_UAVCAN_DNA_Server::reset()
 {
     NodeData node_data;
     memset(&node_data, 0, sizeof(node_data));
@@ -371,7 +371,7 @@ void AP_UAVCAN_Server::reset()
 /* Go through the Occupation mask for available Node ID
 based on pseudo code provided in
 uavcan/protocol/dynamic_node_id/1.Allocation.uavcan */
-uint8_t AP_UAVCAN_Server::findFreeNodeID(uint8_t preferred)
+uint8_t AP_UAVCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
 {
     // Search up
     uint8_t candidate = (preferred > 0) ? preferred : 125;
@@ -394,7 +394,7 @@ uint8_t AP_UAVCAN_Server::findFreeNodeID(uint8_t preferred)
 }
 
 //Check if we have received Node Status from this node_id
-bool AP_UAVCAN_Server::isNodeSeen(uint8_t node_id)
+bool AP_UAVCAN_DNA_Server::isNodeSeen(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -404,7 +404,7 @@ bool AP_UAVCAN_Server::isNodeSeen(uint8_t node_id)
 
 /* Set the Seen Node Mask, to be called when received
 Node Status from the node id */
-void AP_UAVCAN_Server::addToSeenNodeMask(uint8_t node_id)
+void AP_UAVCAN_DNA_Server::addToSeenNodeMask(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return;
@@ -416,7 +416,7 @@ void AP_UAVCAN_Server::addToSeenNodeMask(uint8_t node_id)
 than once per 5 second. We continually verify the nodes in our 
 seen list, So that we can raise issue if there are duplicates
 on the bus. */
-void AP_UAVCAN_Server::verify_nodes(AP_UAVCAN *ap_uavcan)
+void AP_UAVCAN_DNA_Server::verify_nodes(AP_UAVCAN *ap_uavcan)
 {
     uint32_t now = AP_HAL::millis();
     if ((now - last_verification_request) < 5000) {
@@ -464,7 +464,7 @@ void AP_UAVCAN_Server::verify_nodes(AP_UAVCAN *ap_uavcan)
 /* Handles Node Status Message, adds to the Seen Node list
 Also starts the Service call for Node Info to complete the
 Verification process. */
-void AP_UAVCAN_Server::handleNodeStatus(uint8_t node_id, const NodeStatusCb &cb)
+void AP_UAVCAN_DNA_Server::handleNodeStatus(uint8_t node_id, const NodeStatusCb &cb)
 {
     if (node_id > MAX_NODE_ID) {
         return;
@@ -489,7 +489,7 @@ void trampoline_handleNodeStatus(AP_UAVCAN* ap_uavcan, uint8_t node_id, const No
         return;
     }
 
-    AP::uavcan_server().handleNodeStatus(node_id, cb);
+    AP::uavcan_dna_server().handleNodeStatus(node_id, cb);
 }
 
 
@@ -498,7 +498,7 @@ Handle responses from GetNodeInfo Request. We verify the node info
 against our records. Marks Verification mask if already recorded,
 Or register if the node id is available and not recorded for the
 received Unique ID */
-void AP_UAVCAN_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], char name[])
+void AP_UAVCAN_DNA_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], char name[])
 {
     if (node_id > MAX_NODE_ID) {
         return;
@@ -548,12 +548,12 @@ void trampoline_handleNodeInfo(const uavcan::ServiceCallResult<uavcan::protocol:
                  resp.getResponse().hardware_version.unique_id.end(),
                  unique_id);
     snprintf(name, ARRAY_SIZE(name), "%s", resp.getResponse().name.c_str());
-    AP::uavcan_server().handleNodeInfo(node_id, unique_id, name);
+    AP::uavcan_dna_server().handleNodeInfo(node_id, unique_id, name);
 }
 
 /* Handle the allocation message from the devices supporting
 dynamic node allocation. */
-void AP_UAVCAN_Server::handleAllocation(uint8_t driver_index, uint8_t node_id, const AllocationCb &cb)
+void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_id, const AllocationCb &cb)
 {
     if (allocation_pub[driver_index] == nullptr) {
         //init has not been called for this driver.
@@ -634,11 +634,11 @@ void trampoline_handleAllocation(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Al
     if (ap_uavcan == nullptr) {
         return;
     }
-    AP::uavcan_server().handleAllocation(ap_uavcan->get_driver_index(), node_id, cb);
+    AP::uavcan_dna_server().handleAllocation(ap_uavcan->get_driver_index(), node_id, cb);
 }
 
 //report the server state, along with failure message if any
-bool AP_UAVCAN_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) const
+bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) const
 {
     if (server_state == HEALTHY) {
         return true;
@@ -664,9 +664,9 @@ bool AP_UAVCAN_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) const
 
 namespace AP
 {
-AP_UAVCAN_Server& uavcan_server()
+AP_UAVCAN_DNA_Server& uavcan_dna_server()
 {
-    static AP_UAVCAN_Server _server(StorageAccess(StorageManager::StorageCANDNA));
+    static AP_UAVCAN_DNA_Server _server(StorageAccess(StorageManager::StorageCANDNA));
     return _server;
 }
 }
