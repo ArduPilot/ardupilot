@@ -110,8 +110,8 @@ static void handle_get_node_info(CanardInstance* ins,
     node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
     pkt.status = node_status;
-    pkt.software_version.major = CAN_APP_VERSION_MAJOR;
-    pkt.software_version.minor = CAN_APP_VERSION_MINOR;
+    pkt.software_version.major = AP::fwversion().major;
+    pkt.software_version.minor = AP::fwversion().minor;
     pkt.software_version.optional_field_flags = UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_VCS_COMMIT | UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_IMAGE_CRC;
     pkt.software_version.vcs_commit = app_descriptor.git_hash;
     uint32_t *crc = (uint32_t *)&pkt.software_version.image_crc;
