@@ -54,6 +54,7 @@ const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
     }
 
 #ifdef HAL_ROMFS_UNCOMPRESSED
+    size = compressed_size;
     return compressed_data;
 #else
     // last 4 bytes of gzip file are length of decompressed data
