@@ -54,7 +54,7 @@ extern const AP_HAL::HAL &hal;
 extern AP_Periph_FW periph;
 
 static CanardInstance canard;
-static uint32_t canard_memory_pool[2048/4];
+static uint32_t canard_memory_pool[3000/4];
 #ifndef HAL_CAN_DEFAULT_NODE_ID
 #define HAL_CAN_DEFAULT_NODE_ID CANARD_BROADCAST_NODE_ID
 #endif
@@ -836,6 +836,7 @@ static void process1HzTasks(uint64_t timestamp_usec)
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     if (periph.g.flash_bootloader.get()) {
         periph.g.flash_bootloader.set_and_save_ifchanged(0);
+        hal.scheduler->delay(1000);
         AP_HAL::Util::FlashBootloader res = hal.util->flash_bootloader();
         switch (res) {
         case AP_HAL::Util::FlashBootloader::OK:
