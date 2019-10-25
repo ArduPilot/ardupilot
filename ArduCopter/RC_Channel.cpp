@@ -562,13 +562,13 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
         case AUX_FUNC::SURFACE_TRACKING:
             switch (ch_flag) {
             case LOW:
-                copter.surface_tracking.set_state(Copter::SurfaceTracking::SurfaceTrackingState::SURFACE_TRACKING_GROUND);
+                copter.surface_tracking.set_surface(Copter::SurfaceTracking::Surface::GROUND);
                 break;
             case MIDDLE:
-                copter.surface_tracking.set_state(Copter::SurfaceTracking::SurfaceTrackingState::SURFACE_TRACKING_DISABLED);
+                copter.surface_tracking.set_surface(Copter::SurfaceTracking::Surface::NONE);
                 break;
             case HIGH:
-                copter.surface_tracking.set_state(Copter::SurfaceTracking::SurfaceTrackingState::SURFACE_TRACKING_CEILING);
+                copter.surface_tracking.set_surface(Copter::SurfaceTracking::Surface::CEILING);
                 break;
             }
             break;
