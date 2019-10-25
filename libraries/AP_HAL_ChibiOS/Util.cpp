@@ -238,6 +238,8 @@ Util::FlashBootloader Util::flash_bootloader()
         hal.console->printf("failed to find %s\n", fw_name);
         return FlashBootloader::NOT_AVAILABLE;
     }
+    // make sure size is multiple of 32
+    fw_size = (fw_size + 31U) & ~31U;
 
     const uint32_t addr = hal.flash->getpageaddr(0);
     if (!memcmp(fw, (const void*)addr, fw_size)) {
@@ -250,13 +252,14 @@ Util::FlashBootloader Util::flash_bootloader()
     uint32_t erased_size = 0;
     uint8_t erase_page = 0;
     while (erased_size < fw_size) {
-        if (!hal.flash->erasepage(erase_page)) {
-            hal.console->printf("Erase %u failed\n", erase_page);
+        uint32_t page_size = hal.flash->getpagesize(erase_page);
+        if (page_size == 0) {
             AP_ROMFS::free(fw);
             return FlashBootloader::FAIL;
         }
-        uint32_t page_size = hal.flash->getpagesize(erase_page);
-        if (page_size == 0) {
+        hal.scheduler->expect_delay_ms(1000);
+        if (!hal.flash->erasepage(erase_page)) {
+            hal.console->printf("Erase %u failed\n", erase_page);
             AP_ROMFS::free(fw);
             return FlashBootloader::FAIL;
         }
@@ -266,20 +269,24 @@ Util::FlashBootloader Util::flash_bootloader()
 
     hal.console->printf("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
     const uint8_t max_attempts = 10;
+    hal.flash->keep_unlocked(true);
     for (uint8_t i=0; i<max_attempts; i++) {
+        hal.scheduler->expect_delay_ms(1000);
         bool ok = hal.flash->write(addr, fw, fw_size);
         if (!ok) {
             hal.console->printf("Flash failed! (attempt=%u/%u)\n",
                                 i+1,
                                 max_attempts);
-            hal.scheduler->delay(1000);
+            hal.scheduler->delay(100);
             continue;
         }
         hal.console->printf("Flash OK\n");
+        hal.flash->keep_unlocked(false);
         AP_ROMFS::free(fw);
         return FlashBootloader::OK;
     }
 
+    hal.flash->keep_unlocked(false);
     hal.console->printf("Flash failed after %u attempts\n", max_attempts);
     AP_ROMFS::free(fw);
     return FlashBootloader::FAIL;
