@@ -12,7 +12,7 @@ class NodeStatusCb;
 class NodeInfoCb;
 class AP_UAVCAN;
 
-class AP_UAVCAN_Server
+class AP_UAVCAN_DNA_Server
 {
     StorageAccess storage;
 
@@ -83,11 +83,11 @@ class AP_UAVCAN_Server
     bool isValidNodeDataAvailable(uint8_t node_id);
 
 public:
-    AP_UAVCAN_Server(StorageAccess _storage) : storage(_storage) {}
+    AP_UAVCAN_DNA_Server(StorageAccess _storage) : storage(_storage) {}
 
     // Do not allow copies
-    AP_UAVCAN_Server(const AP_UAVCAN_Server &other) = delete;
-    AP_UAVCAN_Server &operator=(const AP_UAVCAN_Server&) = delete;
+    AP_UAVCAN_DNA_Server(const AP_UAVCAN_DNA_Server &other) = delete;
+    AP_UAVCAN_DNA_Server &operator=(const AP_UAVCAN_DNA_Server&) = delete;
 
     //Initialises publisher and Server Record for specified uavcan driver
     bool init(AP_UAVCAN *ap_uavcan);
@@ -119,6 +119,6 @@ public:
 
 namespace AP
 {
-AP_UAVCAN_Server& uavcan_server();
+AP_UAVCAN_DNA_Server& uavcan_dna_server();
 }
 #endif
