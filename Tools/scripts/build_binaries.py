@@ -224,12 +224,18 @@ is bob we will attempt to checkout bob-AVR'''
         with open(filepath, "w") as x:
             x.write(string)
 
+    def version_h_path(self, src):
+        '''return path to version.h'''
+        if src == 'AP_Periph':
+            return os.path.join('Tools', src, "version.h")
+        return os.path.join(src, "version.h")
+
     def addfwversion_gitversion(self, destdir, src):
         # create git-version.txt:
         gitlog = self.run_git(["log", "-1"])
         gitversion_filepath = os.path.join(destdir, "git-version.txt")
         gitversion_content = gitlog
-        versionfile = os.path.join(src, "version.h")
+        versionfile = self.version_h_path(src)
         if os.path.exists(versionfile):
             content = self.read_string_from_filepath(versionfile)
             match = re.search('define.THISFIRMWARE "([^"]+)"', content)
@@ -246,7 +252,7 @@ is bob we will attempt to checkout bob-AVR'''
 
     def addfwversion_firmwareversiontxt(self, destdir, src):
         # create firmware-version.txt
-        versionfile = os.path.join(src, "version.h")
+        versionfile = self.version_h_path(src)
         if not os.path.exists(versionfile):
             self.progress("%s does not exist" % (versionfile,))
             return
