@@ -398,6 +398,10 @@ public:
 
     // FS options
     AP_Int32 fs_options;
+
+#if ENABLE_DATALOGGER == ENABLED
+    AP_DataLogger datalogger;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

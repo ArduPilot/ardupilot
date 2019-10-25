@@ -132,6 +132,11 @@ void Rover::init_ardupilot()
     camera_mount.init();
 #endif
 
+#if ENABLE_DATALOGGER == ENABLED
+    // init datalogger library
+    g2.datalogger.init();
+#endif
+
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.

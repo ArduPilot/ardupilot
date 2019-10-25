@@ -89,6 +89,9 @@
 #if ADVANCED_FAILSAFE == ENABLED
 #include "afs_rover.h"
 #endif
+#if ENABLE_DATALOGGER  == ENABLED
+#include <AP_DataLogger/AP_DataLogger.h>
+#endif
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
