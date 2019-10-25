@@ -285,7 +285,7 @@ void ModeRTL::descent_run()
     // process pilot's input
     if (!copter.failsafe.radio) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
-            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            AP::logger().Write_Event(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!copter.set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
                 copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
@@ -302,7 +302,7 @@ void ModeRTL::descent_run()
             // record if pilot has overridden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
                 if (!copter.ap.land_repo_active) {
-                    copter.Log_Write_Event(DATA_LAND_REPO_ACTIVE);
+                    AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
                 }
                 copter.ap.land_repo_active = true;
             }

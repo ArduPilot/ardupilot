@@ -191,7 +191,7 @@ void Copter::check_ekf_reset()
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
         attitude_control->inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
-        Log_Write_Event(DATA_EKF_YAW_RESET);
+        AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
     }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
