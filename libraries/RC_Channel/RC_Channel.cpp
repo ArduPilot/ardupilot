@@ -553,12 +553,12 @@ void RC_Channel::do_aux_function_fence(const aux_switch_pos_t ch_flag)
     if (ch_flag == HIGH) {
         fence->enable(true);
         if (logger != nullptr) {
-            logger->Write_Event(DATA_FENCE_ENABLE);
+            logger->Write_Event(LogEvent::FENCE_ENABLE);
         }
     } else {
         fence->enable(false);
         if (logger != nullptr) {
-            logger->Write_Event(DATA_FENCE_DISABLE);
+            logger->Write_Event(LogEvent::FENCE_DISABLE);
         }
     }
 }
@@ -605,14 +605,14 @@ void RC_Channel::do_aux_function_gripper(const aux_switch_pos_t ch_flag)
     switch(ch_flag) {
     case LOW:
         gripper->release();
-//        copter.Log_Write_Event(DATA_GRIPPER_RELEASE);
+//        copter.Log_Write_Event(LogEvent::GRIPPER_RELEASE);
         break;
     case MIDDLE:
         // nothing
         break;
     case HIGH:
         gripper->grab();
-//        copter.Log_Write_Event(DATA_GRIPPER_GRAB);
+//        copter.Log_Write_Event(LogEvent::GRIPPER_GRAB);
         break;
     }
 }
@@ -771,7 +771,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             // log E-stop
             AP_Logger *logger = AP_Logger::get_singleton();
             if (logger && logger->logging_enabled()) {
-                logger->Write_Event(DATA_MOTORS_EMERGENCY_STOPPED);
+                logger->Write_Event(LogEvent::MOTORS_EMERGENCY_STOPPED);
             }
             break;
         }
@@ -784,7 +784,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             // log E-stop cleared
             AP_Logger *logger = AP_Logger::get_singleton();
             if (logger && logger->logging_enabled()) {
-                logger->Write_Event(DATA_MOTORS_EMERGENCY_STOP_CLEARED);
+                logger->Write_Event(LogEvent::MOTORS_EMERGENCY_STOP_CLEARED);
             }
             break;
         }
