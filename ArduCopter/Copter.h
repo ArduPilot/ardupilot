@@ -289,17 +289,17 @@ private:
         bool get_dist_for_logging(float &target_dist, float &actual_dist) const;
         void invalidate_for_logging() { valid_for_logging = false; }
 
-        // surface tracking states
-        enum class SurfaceTrackingState {
-            SURFACE_TRACKING_DISABLED = 0,
-            SURFACE_TRACKING_GROUND = 1,
-            SURFACE_TRACKING_CEILING = 2
+        // surface tracking surface
+        enum class Surface {
+            NONE = 0,
+            GROUND = 1,
+            CEILING = 2
         };
-        // set direction
-        void set_state(SurfaceTrackingState state);
+        // set surface to track
+        void set_surface(Surface new_surface);
 
     private:
-        SurfaceTrackingState tracking_state = SurfaceTrackingState::SURFACE_TRACKING_GROUND;
+        Surface surface = Surface::GROUND;
         float target_dist_cm;       // desired distance in cm from ground or ceiling
         uint32_t last_update_ms;    // system time of last update to target_alt_cm
         uint32_t last_glitch_cleared_ms;    // system time of last handle glitch recovery
