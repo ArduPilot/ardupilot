@@ -34,12 +34,14 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
 
     compressed = tempfile.NamedTemporaryFile()
     if uncompressed:
-        compressed.write(open(f,'rb').read())
         # ensure nul termination
         if sys.version_info[0] >= 3:
-            compressed.write(bytearray(0))
+            nul = bytearray(0)
         else:
-            compressed.write(chr(0))
+            nul = chr(0)
+        if contents[-1] != nul:
+            contents += nul
+        compressed.write(contents)
     else:
         # compress it
         f = open(compressed.name, "wb")
