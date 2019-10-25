@@ -1,5 +1,61 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.0-rc1 25-Oct-2019
+Changes from 3.6.11
+1) Path Planning for Object Avoidance (aka Bendy Ruler and Dijkstra's) replaces "Dodge" avoidance
+2) Complex Fence support (aka stay-out zones)
+3) Lua scripting support on the flight controller
+4) New flight controllers:
+    a) Hex Cube Orange
+    b) Holybro Durandal
+5) Attitude Control changes:
+    a) Attitude Control filters on target, Error and D-term (see ATC_RAT_x_FLTT/FLTE/FLTD)
+    b) Harmonic notch filter
+6) Flight mode changes:
+    a) ZigZag mode (designed for crop spraying) 
+    b) SystemId for "chirping" attitude controllers to determine vehicle response
+    c) StandBy mode for vehicles with multiple flight controllers
+    d) SmartRTL provides warnings when buffer is nearly full
+    e) Follow mode offsets reset to zero when vehicle leaves follow mode
+    f) Upward facing surface tracking using lidar
+    g) Circle mode points more accurately towards center
+7) Traditional Heli:
+    a) Swash plate and rotor-speed-control parameter rationalisation
+8) Frames:
+    a) BiCopter support
+    b) OctoV mixing improvements 
+9) RC input/output changes:
+    a) Serial protocols supported on any serial port
+    b) IBUS R/C input support
+    c) DO_SET_SERVO and manual passthrough can operate on the same channel
+10) Battery improvements:
+    a) Up to 10 batteries can be monitored
+    b) "Sum" type consolidates monitoring across batteries
+    c) Fuel flow battery (for use with gas tanks)
+11) Sensor/Accessory changes:
+    a) Robotis servo support
+    b) KDECAN ESCs
+    c) ToshibaCAN ESCs
+    d) BenewakeTF03 lidar
+    e) SD Card reliability improvements (if card removed, logging restarts)
+    f) Yaw from some GPS (including uBlox RTK GPS with moving baseline)
+    g) WS2812 LEDs (aka NeoPixel LEDs)
+    h) NTF_BUZZ_VOLUME allows controlling buzzer volume
+12) Landing Gear:
+    a) Retracts automatically after Takeoff in Auto completes
+    b) Deployed automatically using SRTM database or Lidar
+13) UAVCAN improvements:
+    a) dynamic node allocation
+    b) SLCAN pass-through
+    c) support for UAVCAN rangefinders, buzzers, safety switch, safety LED
+14) Serial and Telemetry:
+    a) MAVLink Message-Interval allows reducing telemetry bandwidth requirements
+    b) SERIALn_OPTIONS for inversion, half-duplex and swap 
+15) Safety Improvements:
+    a) Vibration failsafe (switches to vibration resistant estimation and control)
+    b) Independent WatchDog gets improved logging
+    c) EKF failsafe triggers slightly more quickly  
+------------------------------------------------------------------
 Copter 3.6.11 01-Oct-2019 / 3.6.11-rc1 16-Sep-2019
 Changes from 3.6.10
 1) EKF and IMU improvements:
