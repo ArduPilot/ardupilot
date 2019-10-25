@@ -226,7 +226,7 @@ uint64_t Util::get_hw_rtc() const
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
-bool Util::flash_bootloader()
+Util::FlashBootloader Util::flash_bootloader()
 {
     uint32_t fw_size;
     const char *fw_name = "bootloader.bin";
@@ -236,22 +236,34 @@ bool Util::flash_bootloader()
     const uint8_t *fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
         hal.console->printf("failed to find %s\n", fw_name);
-        return false;
+        return FlashBootloader::NOT_AVAILABLE;
     }
 
     const uint32_t addr = hal.flash->getpageaddr(0);
     if (!memcmp(fw, (const void*)addr, fw_size)) {
         hal.console->printf("Bootloader up-to-date\n");
         AP_ROMFS::free(fw);
-        return true;
+        return FlashBootloader::NO_CHANGE;
     }
 
     hal.console->printf("Erasing\n");
-    if (!hal.flash->erasepage(0)) {
-        hal.console->printf("Erase failed\n");
-        AP_ROMFS::free(fw);
-        return false;
+    uint32_t erased_size = 0;
+    uint8_t erase_page = 0;
+    while (erased_size < fw_size) {
+        if (!hal.flash->erasepage(erase_page)) {
+            hal.console->printf("Erase %u failed\n", erase_page);
+            AP_ROMFS::free(fw);
+            return FlashBootloader::FAIL;
+        }
+        uint32_t page_size = hal.flash->getpagesize(erase_page);
+        if (page_size == 0) {
+            AP_ROMFS::free(fw);
+            return FlashBootloader::FAIL;
+        }
+        erased_size += page_size;
+        erase_page++;
     }
+
     hal.console->printf("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
     const uint8_t max_attempts = 10;
     for (uint8_t i=0; i<max_attempts; i++) {
@@ -265,12 +277,12 @@ bool Util::flash_bootloader()
         }
         hal.console->printf("Flash OK\n");
         AP_ROMFS::free(fw);
-        return true;
+        return FlashBootloader::OK;
     }
 
     hal.console->printf("Flash failed after %u attempts\n", max_attempts);
     AP_ROMFS::free(fw);
-    return false;
+    return FlashBootloader::FAIL;
 }
 #endif // !HAL_NO_FLASH_SUPPORT && !HAL_NO_ROMFS_SUPPORT
 
