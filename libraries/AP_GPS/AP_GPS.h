@@ -61,6 +61,7 @@ class AP_GPS
     friend class AP_GPS_SBP2;
     friend class AP_GPS_SIRF;
     friend class AP_GPS_UBLOX;
+    friend class AP_GPS_UAVCAN;
     friend class AP_GPS_Backend;
 
 public:
@@ -129,7 +130,7 @@ public:
      */
     struct GPS_State {
         uint8_t instance; // the instance number of this GPS
-
+        uint8_t devid;  // device id of the instance
         // all the following fields must all be filled by the backend driver
         GPS_Status status;                  ///< driver fix status
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
@@ -440,6 +441,7 @@ protected:
 
     // configuration parameters
     AP_Int8 _type[GPS_MAX_RECEIVERS];
+    AP_Int32 _devid[GPS_MAX_RECEIVERS];
     AP_Int8 _navfilter;
     AP_Int8 _auto_switch;
     AP_Int8 _min_dgps;
@@ -520,7 +522,8 @@ private:
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
-
+    void set_and_save_devid(int32_t instance, uint8_t value);
+    bool is_registered_devid(int32_t value) const;
     /*
       buffer for re-assembling RTCM data for GPS injection.
       The 8 bit flags field in GPS_RTCM_DATA is interpreted as:

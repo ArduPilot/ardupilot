@@ -284,6 +284,24 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("BLEND_TC", 21, AP_GPS, _blend_tc, 10.0f),
 #endif
 
+    // @Param: DEVID
+    // @DisplayName: GPS device id
+    // @Description: GPS device id, if set to 0, autoset based on boot sequence
+    // @Range: 0 255
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("DEVID",    22, AP_GPS, _devid[0], 0),
+
+#if GPS_MAX_RECEIVERS > 1
+    // @Param: DEVID2
+    // @DisplayName: 2nd GPS device id
+    // @Description: GPS device id of 2nd GPS, if set to 0, autoset based on boot sequence
+    // @Range: 0 255
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("DEVID2",   23, AP_GPS, _devid[1], 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -321,6 +339,13 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
 {
     primary_instance = 0;
 
+    // reset the GPS ID if not UAVCAN
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_type[i] != GPS_TYPE_UAVCAN) {
+            set_and_save_devid(i, 0);
+        }
+    }
+
     // search for serial ports with gps protocol
     uint8_t uart_idx = 0;
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
@@ -337,6 +362,7 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
     // prep the state instance fields
     for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
         state[i].instance = i;
+        state[i].devid = _devid[i];
     }
 
     // sanity check update rate
@@ -346,6 +372,24 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
         }
     }
 }
+
+// set and save the device id parameter for the instance
+void AP_GPS::set_and_save_devid(int32_t instance, uint8_t value)
+{
+    _devid[instance].set_and_save(value);
+}
+
+// return if the devid is recorded in the params
+bool AP_GPS::is_registered_devid(int32_t value) const
+{
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (value == _devid[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 // return number of active GPS sensors. Note that if the first GPS
 // is not present but the 2nd is then we return 2. Note that a blended
@@ -677,12 +721,13 @@ void AP_GPS::update_instance(uint8_t instance)
         if (tnow - timing[instance].last_message_time_ms > GPS_TIMEOUT_MS) {
             memset((void *)&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
+            state[instance].devid = _devid[instance];
             state[instance].hdop = GPS_UNKNOWN_DOP;
             state[instance].vdop = GPS_UNKNOWN_DOP;
             timing[instance].last_message_time_ms = tnow;
             timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
-            // do not try to detect again if type is MAV
-            if (_type[instance] == GPS_TYPE_MAV) {
+            // do not try to detect again if type is MAV or UAVCAN
+            if (_type[instance] == GPS_TYPE_MAV || _type[instance] == GPS_TYPE_UAVCAN) {
                 state[instance].status = NO_FIX;
             } else {
                 // free the driver before we run the next detection, so we
@@ -1411,6 +1456,7 @@ void AP_GPS::calc_blended_state(void)
 {
     // initialise the blended states so we can accumulate the results using the weightings for each GPS receiver
     state[GPS_BLENDED_INSTANCE].instance = GPS_BLENDED_INSTANCE;
+    state[GPS_BLENDED_INSTANCE].devid = 0;
     state[GPS_BLENDED_INSTANCE].status = NO_FIX;
     state[GPS_BLENDED_INSTANCE].time_week_ms = 0;
     state[GPS_BLENDED_INSTANCE].time_week = 0;

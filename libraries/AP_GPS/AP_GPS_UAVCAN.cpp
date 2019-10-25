@@ -74,12 +74,21 @@ void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     }
 }
 
+// The Intended behaviour of this method is to ensure that if Two GPSes are connected
+// the boot up is always in order, but in scenarios where one of the GPS is removed, the other
+// GPS whatever be its sequence in the list, is automatically moved up to be the first GPS.
 AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 {
     WITH_SEMAPHORE(_sem_registry);
 
     AP_GPS_UAVCAN* backend = nullptr;
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        // if we have a detected node that matches a devid skip this time, we will initialise
+        // when its turn to do so.
+        if (_gps.is_registered_devid(_detected_modules[i].node_id) && _detected_modules[i].node_id != _state.devid) {
+            continue;
+        }
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
             backend = new AP_GPS_UAVCAN(_gps, _state);
             if (backend == nullptr) {
@@ -91,9 +100,11 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
             } else {
                 _detected_modules[i].driver = backend;
                 backend->_detected_module = i;
-                debug_gps_uavcan(2,
-                                 _detected_modules[i].ap_uavcan->get_driver_index(),
-                                 "Registered UAVCAN GPS Node %d on Bus %d\n",
+                if (_state.devid != _detected_modules[i].node_id) {
+                    _state.devid = _detected_modules[i].node_id;
+                    _gps.set_and_save_devid(_state.instance, _detected_modules[i].node_id);
+                }
+                hal.console->printf("Registered UAVCAN GPS Node %d on Bus %d\n",
                                  _detected_modules[i].node_id,
                                  _detected_modules[i].ap_uavcan->get_driver_index());
             }
@@ -135,6 +146,21 @@ AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t n
             }
         }
     }
+
+    struct DetectedModules tempslot;
+    // Sort based on the node_id, larger values first
+    // we do this, so that we have potentially repeatable
+    // initialisation order
+    for (uint8_t i = 1; i < GPS_MAX_RECEIVERS; i++) {
+        for (uint8_t j = i; j > 0; j--) {
+            if (_detected_modules[j].node_id > _detected_modules[j-1].node_id) {
+                tempslot = _detected_modules[j];
+                _detected_modules[j] = _detected_modules[j-1];
+                _detected_modules[j-1] = tempslot;
+            }
+        }
+    }
+
     return nullptr;
 }
 
