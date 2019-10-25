@@ -605,14 +605,12 @@ void RC_Channel::do_aux_function_gripper(const aux_switch_pos_t ch_flag)
     switch(ch_flag) {
     case LOW:
         gripper->release();
-//        copter.Log_Write_Event(LogEvent::GRIPPER_RELEASE);
         break;
     case MIDDLE:
         // nothing
         break;
     case HIGH:
         gripper->grab();
-//        copter.Log_Write_Event(LogEvent::GRIPPER_GRAB);
         break;
     }
 }
