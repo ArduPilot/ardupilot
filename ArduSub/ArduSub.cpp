@@ -268,7 +268,7 @@ void Sub::one_hz_loop()
     AP_Notify::flags.flying = motors.armed();
 
     if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(DATA_AP_STATE, ap.value);
+        Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
 
     if (!motors.armed()) {

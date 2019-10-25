@@ -121,7 +121,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
 
         // Always use absolute altitude for ROV
         // ahrs.resetHeightDatum();
-        // Log_Write_Event(DATA_EKF_ALT_RESET);
+        // AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
     } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         if (!sub.set_home_to_current_location(false)) {
@@ -139,7 +139,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     // finally actually arm the motors
     sub.motors.armed(true);
 
-    AP::logger().Write_Event(DATA_ARMED);
+    AP::logger().Write_Event(LogEvent::ARMED);
 
     // log flight mode in case it was changed while vehicle was disarmed
     AP::logger().Write_Mode(sub.control_mode, sub.control_mode_reason);
@@ -184,7 +184,7 @@ bool AP_Arming_Sub::disarm()
         }
     }
 
-    AP::logger().Write_Event(DATA_DISARMED);
+    AP::logger().Write_Event(LogEvent::DISARMED);
 
     // send disarm command to motors
     sub.motors.armed(false);

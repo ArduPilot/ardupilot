@@ -88,12 +88,6 @@ void Sub::Log_Write_MotBatt()
     logger.WriteBlock(&pkt_mot, sizeof(pkt_mot));
 }
 
-// Wrote an event packet
-void Sub::Log_Write_Event(Log_Event id)
-{
-    logger.Write_Event(id);
-}
-
 struct PACKED log_Data_Int16t {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -103,13 +97,13 @@ struct PACKED log_Data_Int16t {
 
 // Write an int16_t data packet
 UNUSED_FUNCTION
-void Sub::Log_Write_Data(uint8_t id, int16_t value)
+void Sub::Log_Write_Data(LogDataID id, int16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int16t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_INT16_MSG),
             time_us     : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -125,13 +119,13 @@ struct PACKED log_Data_UInt16t {
 
 // Write an uint16_t data packet
 UNUSED_FUNCTION
-void Sub::Log_Write_Data(uint8_t id, uint16_t value)
+void Sub::Log_Write_Data(LogDataID id, uint16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt16t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_UINT16_MSG),
             time_us     : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -146,13 +140,13 @@ struct PACKED log_Data_Int32t {
 };
 
 // Write an int32_t data packet
-void Sub::Log_Write_Data(uint8_t id, int32_t value)
+void Sub::Log_Write_Data(LogDataID id, int32_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int32t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_INT32_MSG),
             time_us  : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -167,13 +161,13 @@ struct PACKED log_Data_UInt32t {
 };
 
 // Write a uint32_t data packet
-void Sub::Log_Write_Data(uint8_t id, uint32_t value)
+void Sub::Log_Write_Data(LogDataID id, uint32_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt32t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_UINT32_MSG),
             time_us     : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -189,13 +183,13 @@ struct PACKED log_Data_Float {
 
 // Write a float data packet
 UNUSED_FUNCTION
-void Sub::Log_Write_Data(uint8_t id, float value)
+void Sub::Log_Write_Data(LogDataID id, float value)
 {
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Float pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_FLOAT_MSG),
             time_us     : AP_HAL::micros64(),
-            id          : id,
+            id          : (uint8_t)id,
             data_value  : value
         };
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -290,7 +284,6 @@ void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Performance() {}
 void Sub::Log_Write_Attitude(void) {}
 void Sub::Log_Write_MotBatt() {}
-void Sub::Log_Write_Event(Log_Event id) {}
 void Sub::Log_Write_Data(uint8_t id, int32_t value) {}
 void Sub::Log_Write_Data(uint8_t id, uint32_t value) {}
 void Sub::Log_Write_Data(uint8_t id, int16_t value) {}
