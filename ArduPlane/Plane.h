@@ -106,6 +106,10 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#if ENABLE_DATALOGGER  == ENABLED
+#include <AP_DataLogger/AP_DataLogger.h>
+#endif
+
 #include "RC_Channel.h"     // RC Channel Library
 #include "Parameters.h"
 #include "avoidance_adsb.h"

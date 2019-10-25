@@ -308,3 +308,9 @@
 #ifndef LANDING_GEAR_ENABLED
  #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Data Logger - support for logging none flight related sensores
+#ifndef ENABLE_DATALOGGER
+ #define ENABLE_DATALOGGER !HAL_MINIMIZE_FEATURES
+#endif
