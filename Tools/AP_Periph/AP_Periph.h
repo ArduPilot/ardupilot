@@ -5,6 +5,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Common/AP_FWVersion.h>
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED)
 #define AP_PERIPH_HAVE_LED
@@ -12,13 +13,6 @@
 
 #include "Parameters.h"
 #include "ch.h"
-
-#ifndef CAN_APP_VERSION_MAJOR
-#define CAN_APP_VERSION_MAJOR                                           1
-#endif
-#ifndef CAN_APP_VERSION_MINOR
-#define CAN_APP_VERSION_MINOR                                           0
-#endif
 
 /*
   app descriptor compatible with MissionPlanner
@@ -29,8 +23,8 @@ struct app_descriptor {
     uint32_t image_crc2 = 0;
     uint32_t image_size = 0;
     uint32_t git_hash = 0;
-    uint8_t  version_major = CAN_APP_VERSION_MAJOR;
-    uint8_t version_minor = CAN_APP_VERSION_MINOR;
+    uint8_t  version_major = AP::fwversion().major;
+    uint8_t version_minor = AP::fwversion().minor;
     uint8_t reserved[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 };
 extern const struct app_descriptor app_descriptor;
