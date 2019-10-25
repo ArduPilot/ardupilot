@@ -836,10 +836,17 @@ static void process1HzTasks(uint64_t timestamp_usec)
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     if (periph.g.flash_bootloader.get()) {
         periph.g.flash_bootloader.set_and_save_ifchanged(0);
-        if (hal.util->flash_bootloader()) {
+        AP_HAL::Util::FlashBootloader res = hal.util->flash_bootloader();
+        switch (res) {
+        case AP_HAL::Util::FlashBootloader::OK:
             can_printf("Flash bootloader OK\n");
-        } else {
+            break;
+        case AP_HAL::Util::FlashBootloader::NO_CHANGE:
+            can_printf("Bootloader unchanged\n");
+            break;
+        default:
             can_printf("Flash bootloader FAILED\n");
+            break;
         }
     }
 #endif
