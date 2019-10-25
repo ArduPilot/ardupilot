@@ -1138,12 +1138,12 @@ bool AP_Logger::Write_ISBD(const uint16_t isb_seqno,
 }
 
 // Wrote an event packet
-void AP_Logger::Write_Event(Log_Event id)
+void AP_Logger::Write_Event(LogEvent id)
 {
     const struct log_Event pkt{
         LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
         time_us  : AP_HAL::micros64(),
-        id       : id
+        id       : (uint8_t)id
     };
     WriteCriticalBlock(&pkt, sizeof(pkt));
 }
