@@ -3274,7 +3274,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_lo
         return MAV_RESULT_FAILED;
     }
 
-    if (!hal.util->flash_bootloader()) {
+    if (hal.util->flash_bootloader() != AP_HAL::Util::FlashBootloader::OK) {
         return MAV_RESULT_FAILED;
     }
 
