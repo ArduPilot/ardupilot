@@ -454,12 +454,11 @@ private:
     void Log_Write_Performance();
     void Log_Write_Attitude();
     void Log_Write_MotBatt();
-    void Log_Write_Event(Log_Event id);
-    void Log_Write_Data(uint8_t id, int32_t value);
-    void Log_Write_Data(uint8_t id, uint32_t value);
-    void Log_Write_Data(uint8_t id, int16_t value);
-    void Log_Write_Data(uint8_t id, uint16_t value);
-    void Log_Write_Data(uint8_t id, float value);
+    void Log_Write_Data(LogDataID id, int32_t value);
+    void Log_Write_Data(LogDataID id, uint32_t value);
+    void Log_Write_Data(LogDataID id, int16_t value);
+    void Log_Write_Data(LogDataID id, uint16_t value);
+    void Log_Write_Data(LogDataID id, float value);
     void Log_Sensor_Health();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
