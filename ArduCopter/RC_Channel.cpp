@@ -205,7 +205,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                     // only altitude will matter to the AP mission script for takeoff.
                     if (copter.mode_auto.mission.add_cmd(cmd)) {
                         // log event
-                        copter.Log_Write_Event(DATA_SAVEWP_ADD_WP);
+                        AP::logger().Write_Event(LogEvent::SAVEWP_ADD_WP);
                     }
                 }
 
@@ -223,7 +223,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 // save command
                 if (copter.mode_auto.mission.add_cmd(cmd)) {
                     // log event
-                    copter.Log_Write_Event(DATA_SAVEWP_ADD_WP);
+                    AP::logger().Write_Event(LogEvent::SAVEWP_ADD_WP);
                 }
             }
 #endif
@@ -250,16 +250,16 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 #if MODE_ACRO_ENABLED == ENABLED
             switch(ch_flag) {
                 case LOW:
-                    copter.g.acro_trainer = ACRO_TRAINER_DISABLED;
-                    copter.Log_Write_Event(DATA_ACRO_TRAINER_DISABLED);
+                    copter.g.acro_trainer = (uint8_t)ModeAcro::Trainer::OFF;
+                    AP::logger().Write_Event(LogEvent::ACRO_TRAINER_OFF);
                     break;
                 case MIDDLE:
-                    copter.g.acro_trainer = ACRO_TRAINER_LEVELING;
-                    copter.Log_Write_Event(DATA_ACRO_TRAINER_LEVELING);
+                    copter.g.acro_trainer = (uint8_t)ModeAcro::Trainer::LEVELING;
+                    AP::logger().Write_Event(LogEvent::ACRO_TRAINER_LEVELING);
                     break;
                 case HIGH:
-                    copter.g.acro_trainer = ACRO_TRAINER_LIMITED;
-                    copter.Log_Write_Event(DATA_ACRO_TRAINER_LIMITED);
+                    copter.g.acro_trainer = (uint8_t)ModeAcro::Trainer::LIMITED;
+                    AP::logger().Write_Event(LogEvent::ACRO_TRAINER_LIMITED);
                     break;
             }
 #endif
@@ -308,11 +308,11 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             switch (ch_flag) {
                 case LOW:
                     copter.parachute.enabled(false);
-                    copter.Log_Write_Event(DATA_PARACHUTE_DISABLED);
+                    AP::logger().Write_Event(LogEvent::PARACHUTE_DISABLED);
                     break;
                 case MIDDLE:
                     copter.parachute.enabled(true);
-                    copter.Log_Write_Event(DATA_PARACHUTE_ENABLED);
+                    AP::logger().Write_Event(LogEvent::PARACHUTE_ENABLED);
                     break;
                 case HIGH:
                     copter.parachute.enabled(true);
@@ -371,10 +371,10 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             // enable or disable AP_Avoidance
             if (ch_flag == HIGH) {
                 copter.avoidance_adsb.enable();
-                copter.Log_Write_Event(DATA_AVOIDANCE_ADSB_ENABLE);
+                AP::logger().Write_Event(LogEvent::AVOIDANCE_ADSB_ENABLE);
             } else {
                 copter.avoidance_adsb.disable();
-                copter.Log_Write_Event(DATA_AVOIDANCE_ADSB_DISABLE);
+                AP::logger().Write_Event(LogEvent::AVOIDANCE_ADSB_DISABLE);
             }
 #endif
             break;
@@ -444,12 +444,12 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 case HIGH:
                     // high switch maintains current position
                     copter.g2.winch.release_length(0.0f);
-                    copter.Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
+                    AP::logger().Write_Event(LogEvent::WINCH_LENGTH_CONTROL);
                     break;
                 default:
                     // all other position relax winch
                     copter.g2.winch.relax();
-                    copter.Log_Write_Event(DATA_WINCH_RELAXED);
+                    AP::logger().Write_Event(LogEvent::WINCH_RELAXED);
                     break;
                 }
 #endif
@@ -547,12 +547,12 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             switch (ch_flag) {
                 case HIGH:
                     copter.standby_active = true;
-                    copter.Log_Write_Event(DATA_STANDBY_ENABLE);
+                    AP::logger().Write_Event(LogEvent::STANDBY_ENABLE);
                     gcs().send_text(MAV_SEVERITY_INFO, "Stand By Enabled");
                     break;
                 default:
                     copter.standby_active = false;
-                    copter.Log_Write_Event(DATA_STANDBY_DISABLE);
+                    AP::logger().Write_Event(LogEvent::STANDBY_DISABLE);
                     gcs().send_text(MAV_SEVERITY_INFO, "Stand By Disabled");
                     break;
                 }
@@ -586,7 +586,7 @@ void Copter::save_trim()
     float roll_trim = ToRad((float)channel_roll->get_control_in()/100.0f);
     float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
-    Log_Write_Event(DATA_SAVE_TRIM);
+    AP::logger().Write_Event(LogEvent::SAVE_TRIM);
     gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
 }
 

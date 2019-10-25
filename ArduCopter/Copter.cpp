@@ -428,7 +428,7 @@ void Copter::three_hz_loop()
 void Copter::one_hz_loop()
 {
     if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(DATA_AP_STATE, ap.value);
+        Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
 
     arming.update();
@@ -498,7 +498,7 @@ void Copter::init_simple_bearing()
 
     // log the simple bearing
     if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, ahrs.yaw_sensor);
+        Log_Write_Data(LogDataID::INIT_SIMPLE_BEARING, ahrs.yaw_sensor);
     }
 }
 
