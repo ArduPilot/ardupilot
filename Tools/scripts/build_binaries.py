@@ -401,7 +401,11 @@ is bob we will attempt to checkout bob-AVR'''
                                          "bin",
                                          "".join([binaryname, framesuffix]))
                 files_to_copy = []
-                for extension in [".px4", ".apj", ".abin", "_with_bl.hex", ".hex"]:
+                extensions = [".px4", ".apj", ".abin", "_with_bl.hex", ".hex"]
+                if vehicle == 'AP_Periph':
+                    # need bin file for uavcan-gui-tool and MissionPlanner
+                    extensions.append('.bin')
+                for extension in extensions:
                     filepath = "".join([bare_path, extension])
                     if os.path.exists(filepath):
                         files_to_copy.append(filepath)
