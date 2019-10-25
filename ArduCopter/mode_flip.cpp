@@ -79,7 +79,7 @@ bool ModeFlip::init(bool ignore_checks)
     }
 
     // log start of flip
-    Log_Write_Event(DATA_FLIP_START);
+    AP::logger().Write_Event(LogEvent::FLIP_START);
 
     // capture current attitude which will be used during the FlipState::Recovery stage
     const float angle_max = copter.aparm.angle_max;
@@ -197,7 +197,7 @@ void ModeFlip::run()
                 copter.set_mode(Mode::Number::STABILIZE, ModeReason::UNKNOWN);
             }
             // log successful completion
-            Log_Write_Event(DATA_FLIP_END);
+            AP::logger().Write_Event(LogEvent::FLIP_END);
         }
         break;
     }

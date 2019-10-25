@@ -21,9 +21,9 @@ void Copter::landinggear_update()
     // send event message to datalog if status has changed
     if (landinggear.deployed() != last_deploy_status) {
         if (landinggear.deployed()) {
-            Log_Write_Event(DATA_LANDING_GEAR_DEPLOYED);
+            AP::logger().Write_Event(LogEvent::LANDING_GEAR_DEPLOYED);
         } else {
-            Log_Write_Event(DATA_LANDING_GEAR_RETRACTED);
+            AP::logger().Write_Event(LogEvent::LANDING_GEAR_RETRACTED);
         }
     }
 

@@ -455,7 +455,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Type of trainer used in acro mode
     // @Values: 0:Disabled,1:Leveling,2:Leveling and Limited
     // @User: Advanced
-    GSCALAR(acro_trainer,   "ACRO_TRAINER",     ACRO_TRAINER_LIMITED),
+    GSCALAR(acro_trainer,   "ACRO_TRAINER",     (uint8_t)ModeAcro::Trainer::LIMITED),
 
     // @Param: ACRO_RP_EXPO
     // @DisplayName: Acro Roll/Pitch Expo

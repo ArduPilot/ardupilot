@@ -720,11 +720,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         switch ((uint16_t)packet.param1) {
         case PARACHUTE_DISABLE:
             copter.parachute.enabled(false);
-            copter.Log_Write_Event(DATA_PARACHUTE_DISABLED);
+            AP::logger().Write_Event(LogEvent::PARACHUTE_DISABLED);
             return MAV_RESULT_ACCEPTED;
         case PARACHUTE_ENABLE:
             copter.parachute.enabled(true);
-            copter.Log_Write_Event(DATA_PARACHUTE_ENABLED);
+            AP::logger().Write_Event(LogEvent::PARACHUTE_ENABLED);
             return MAV_RESULT_ACCEPTED;
         case PARACHUTE_RELEASE:
             // treat as a manual release which performs some additional check of altitude
@@ -758,17 +758,17 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         switch ((uint8_t)packet.param2) {
         case WINCH_RELAXED:
             copter.g2.winch.relax();
-            copter.Log_Write_Event(DATA_WINCH_RELAXED);
+            AP::logger().Write_Event(LogEvent::WINCH_RELAXED);
             return MAV_RESULT_ACCEPTED;
         case WINCH_RELATIVE_LENGTH_CONTROL: {
             copter.g2.winch.release_length(packet.param3, fabsf(packet.param4));
-            copter.Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
+            AP::logger().Write_Event(LogEvent::WINCH_LENGTH_CONTROL);
             return MAV_RESULT_ACCEPTED;
         }
         case WINCH_RATE_CONTROL:
             if (fabsf(packet.param4) <= copter.g2.winch.get_rate_max()) {
                 copter.g2.winch.set_desired_rate(packet.param4);
-                copter.Log_Write_Event(DATA_WINCH_RATE_CONTROL);
+                AP::logger().Write_Event(LogEvent::WINCH_RATE_CONTROL);
                 return MAV_RESULT_ACCEPTED;
             }
             return MAV_RESULT_FAILED;

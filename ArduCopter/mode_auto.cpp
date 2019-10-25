@@ -1456,15 +1456,15 @@ void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
     switch (cmd.content.winch.action) {
         case WINCH_RELAXED:
             g2.winch.relax();
-            Log_Write_Event(DATA_WINCH_RELAXED);
+            AP::logger().Write_Event(LogEvent::WINCH_RELAXED);
             break;
         case WINCH_RELATIVE_LENGTH_CONTROL:
             g2.winch.release_length(cmd.content.winch.release_length, cmd.content.winch.release_rate);
-            Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
+            AP::logger().Write_Event(LogEvent::WINCH_LENGTH_CONTROL);
             break;
         case WINCH_RATE_CONTROL:
             g2.winch.set_desired_rate(cmd.content.winch.release_rate);
-            Log_Write_Event(DATA_WINCH_RATE_CONTROL);
+            AP::logger().Write_Event(LogEvent::WINCH_RATE_CONTROL);
             break;
         default:
             // do nothing

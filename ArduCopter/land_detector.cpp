@@ -102,9 +102,9 @@ void Copter::set_land_complete(bool b)
     land_detector_count = 0;
 
     if(b){
-        Log_Write_Event(DATA_LAND_COMPLETE);
+        AP::logger().Write_Event(LogEvent::LAND_COMPLETE);
     } else {
-        Log_Write_Event(DATA_NOT_LANDED);
+        AP::logger().Write_Event(LogEvent::NOT_LANDED);
     }
     ap.land_complete = b;
 
@@ -132,7 +132,7 @@ void Copter::set_land_complete_maybe(bool b)
         return;
 
     if (b) {
-        Log_Write_Event(DATA_LAND_COMPLETE_MAYBE);
+        AP::logger().Write_Event(LogEvent::LAND_COMPLETE_MAYBE);
     }
     ap.land_complete_maybe = b;
 }

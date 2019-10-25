@@ -76,11 +76,6 @@ enum tuning_func {
     TUNING_SYSTEM_ID_MAGNITUDE =        58  // magnitude of the system ID signal
 };
 
-// Acro Trainer types
-#define ACRO_TRAINER_DISABLED   0
-#define ACRO_TRAINER_LEVELING   1
-#define ACRO_TRAINER_LIMITED    2
-
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
