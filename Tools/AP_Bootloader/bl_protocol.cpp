@@ -48,6 +48,7 @@
 #include "bl_protocol.h"
 #include "support.h"
 #include "can.h"
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 
 // #pragma GCC optimize("O0")
 
@@ -230,6 +231,15 @@ jump_to_app()
     if (app_base[1] >= (APP_START_ADDRESS + board_info.fw_size)) {
         return;
     }
+
+#if HAL_USE_CAN == TRUE
+    // for CAN firmware we start the watchdog before we run the
+    // application code, to ensure we catch a bad firmare. If we get a
+    // watchdog reset and the firmware hasn't changed the RTC flag to
+    // indicate that it has been running OK for 30s then we will stay
+    // in bootloader
+    stm32_watchdog_init();
+#endif
 
     flash_set_keep_unlocked(false);
     

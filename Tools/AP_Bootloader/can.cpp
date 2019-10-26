@@ -561,29 +561,30 @@ bool can_check_firmware(void)
     const uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
     const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + FLASH_BOOTLOADER_LOAD_KB*1024);
     const uint32_t flash_size = (BOARD_FLASH_SIZE - FLASH_BOOTLOADER_LOAD_KB)*1024;
-    const uint8_t desc_len = 16;
-    const uint8_t *ptr = (const uint8_t *)memmem(flash, flash_size-(desc_len+sizeof(sig)), sig, sizeof(sig));
-    if (ptr == nullptr) {
+    const app_descriptor *ad = (const app_descriptor *)memmem(flash, flash_size-sizeof(app_descriptor), sig, sizeof(sig));
+    if (ad == nullptr) {
         // no application signature
         printf("No app sig\n");
         return false;
     }
-    ptr += sizeof(sig);
-    uint32_t desc[4];
-    memcpy(desc, ptr, sizeof(desc));
-
     // check length
-    if (desc[2] > flash_size) {
-        printf("Bad fw length %u\n", desc[2]);
+    if (ad->image_size > flash_size) {
+        printf("Bad fw length %u\n", ad->image_size);
         return false;
     }
 
-    uint32_t len1 = ptr - flash;
-    uint32_t len2 = desc[2] - (len1 + sizeof(desc));
+    if (ad->board_id != APJ_BOARD_ID) {
+        printf("Bad board_id %u should be %u\n", ad->board_id, APJ_BOARD_ID);
+        return false;
+    }
+
+    const uint8_t desc_len = offsetof(app_descriptor, version_major) - offsetof(app_descriptor, image_crc1);
+    uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash;
+    uint32_t len2 = ad->image_size - (len1 + desc_len);
     uint32_t crc1 = crc_crc32(0, flash, len1);
-    uint32_t crc2 = crc_crc32(0, ptr+sizeof(desc), len2);
-    if (crc1 != desc[0] || crc2 != desc[1]) {
-        printf("Bad app CRC 0x%08x:0x%08x 0x%08x:0x%08x\n", desc[0], desc[1], crc1, crc2);
+    uint32_t crc2 = crc_crc32(0, (const uint8_t *)&ad->version_major, len2);
+    if (crc1 != ad->image_crc1 || crc2 != ad->image_crc2) {
+        printf("Bad app CRC 0x%08x:0x%08x 0x%08x:0x%08x\n", ad->image_crc1, ad->image_crc2, crc1, crc2);
         return false;
     }
     printf("Good firmware\n");
