@@ -260,8 +260,10 @@ enum rtc_boot_magic check_fast_reboot(void)
 // set RTC register for a fast reboot
 void set_fast_reboot(enum rtc_boot_magic v)
 {
-    uint32_t vv = (uint32_t)v;
-    set_rtc_backup(0, &vv, 1);
+    if (check_fast_reboot() != v) {
+        uint32_t vv = (uint32_t)v;
+        set_rtc_backup(0, &vv, 1);
+    }
 }
 
 #else // NO_FASTBOOT
