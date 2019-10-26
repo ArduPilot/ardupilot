@@ -4657,6 +4657,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         try:
             self.set_parameter("SCR_ENABLE", 1)
             self.install_example_script(example_script)
+            self.delay_sim_time(10)
             self.reboot_sitl()
         except Exception as e:
             ex = e
