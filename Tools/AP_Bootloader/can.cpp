@@ -539,7 +539,7 @@ static void process1HzTasks(uint64_t timestamp_usec)
     canardCleanupStaleTransfers(&canard, timestamp_usec);
 
     if (canardGetLocalNodeID(&canard) != CANARD_BROADCAST_NODE_ID) {
-        node_status.mode = fw_update.node_id?UAVCAN_PROTOCOL_NODESTATUS_MODE_SOFTWARE_UPDATE:UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+        node_status.mode = fw_update.node_id?UAVCAN_PROTOCOL_NODESTATUS_MODE_SOFTWARE_UPDATE:UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
         send_node_status();
     }
 }
@@ -608,6 +608,8 @@ void can_check_update(void)
 
 void can_start()
 {
+    node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
+
     // calculate optimal CAN timings given PCLK1 and baudrate
     CanardSTM32CANTimings timings {};
     canardSTM32ComputeCANTimings(STM32_PCLK1, baudrate, &timings);
