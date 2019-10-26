@@ -25,6 +25,7 @@
 #include "hal.h"
 #include <stdio.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -47,17 +48,41 @@ void loop(void)
 
 static uint32_t start_ms;
 
-const struct app_descriptor app_descriptor __attribute__((section(".app_descriptor")));;
+/*
+  declare constant app_descriptor in flash
+ */
+const struct app_descriptor app_descriptor __attribute__((section(".app_descriptor"))) = {
+    .sig = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 },
+    .image_crc1 = 0,
+    .image_crc2 = 0,
+    .image_size = 0,
+    .git_hash = 0,
+    .version_major = AP::fwversion().major,
+    .version_minor = AP::fwversion().minor,
+    .board_id = APJ_BOARD_ID,
+    .reserved = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
+};
 
 void AP_Periph_FW::init()
 {
+    // always run with watchdog enabled. This should have already been
+    // setup by the bootloader, but if not then enable now
+    stm32_watchdog_init();
+
+    stm32_watchdog_pat();
+
     hal.uartA->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 128);
     hal.uartB->begin(115200, 32, 128);
 
     load_parameters();
+
+    stm32_watchdog_pat();
+
     can_start();
 
     serial_manager.init();
+
+    stm32_watchdog_pat();
 
 #ifdef HAL_BOARD_AP_PERIPH_ZUBAXGNSS
     // setup remapping register for ZubaxGNSS
