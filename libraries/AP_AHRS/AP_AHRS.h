@@ -587,6 +587,10 @@ public:
         return _rsem;
     }
 
+    virtual uint8_t get_active_EKF_type(void) const {
+        return 0;
+    }
+
 protected:
     void update_nmea_out();
 

@@ -965,7 +965,7 @@ uint8_t AP_AHRS_NavEKF::ekf_type(void) const
 
 AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
 {
-    EKF_TYPE ret = EKF_TYPE_NONE;
+    _active_EKF_type = EKF_TYPE_NONE;
 
     switch (ekf_type()) {
     case 0:
@@ -980,10 +980,10 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             uint16_t ekf2_faults;
             EKF2.getFilterFaults(-1,ekf2_faults);
             if (ekf2_faults == 0) {
-                ret = EKF_TYPE2;
+                _active_EKF_type = EKF_TYPE2;
             }
         } else if (EKF2.healthy()) {
-            ret = EKF_TYPE2;
+            _active_EKF_type = EKF_TYPE2;
         }
         break;
     }
@@ -997,17 +997,17 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             uint16_t ekf3_faults;
             EKF3.getFilterFaults(-1,ekf3_faults);
             if (ekf3_faults == 0) {
-                ret = EKF_TYPE3;
+                _active_EKF_type = EKF_TYPE3;
             }
         } else if (EKF3.healthy()) {
-            ret = EKF_TYPE3;
+            _active_EKF_type = EKF_TYPE3;
         }
         break;
     }
         
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
-        ret = EKF_TYPE_SITL;
+        _active_EKF_type = EKF_TYPE_SITL;
         break;
 #endif
     }
@@ -1020,17 +1020,17 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
       that the arming checks do wait for good GPS position on fixed
       wing and rover
      */
-    if (ret != EKF_TYPE_NONE &&
+    if (_active_EKF_type != EKF_TYPE_NONE &&
         (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
          _vehicle_class == AHRS_VEHICLE_GROUND) &&
         (_flags.fly_forward || !hal.util->get_soft_armed())) {
         nav_filter_status filt_state;
-        if (ret == EKF_TYPE2) {
+        if (_active_EKF_type == EKF_TYPE2) {
             EKF2.getFilterStatus(-1,filt_state);
-        } else if (ret == EKF_TYPE3) {
+        } else if (_active_EKF_type == EKF_TYPE3) {
             EKF3.getFilterStatus(-1,filt_state);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        } else if (ret == EKF_TYPE_SITL) {
+        } else if (_active_EKF_type == EKF_TYPE_SITL) {
             get_filter_status(filt_state);
 #endif
         }
@@ -1061,13 +1061,13 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
                   speed the EKF should get yaw alignment
                 */
                 if (filt_state.flags.gps_quality_good) {
-                    return ret;
+                    return _active_EKF_type;
                 }
             }
             return EKF_TYPE_NONE;
         }
     }
-    return ret;
+    return _active_EKF_type;
 }
 
 /*

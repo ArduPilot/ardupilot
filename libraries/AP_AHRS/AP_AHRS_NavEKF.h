@@ -271,6 +271,10 @@ public:
     // check whether compass can be bypassed for arming check in case when external navigation data is available 
     bool is_ext_nav_used_for_yaw(void) const;
 
+    uint8_t get_active_EKF_type(void) const override {
+        return _active_EKF_type;
+    }
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
                    EKF_TYPE3=3,
@@ -279,6 +283,9 @@ private:
                    ,EKF_TYPE_SITL=10
 #endif
     };
+
+    mutable EKF_TYPE _active_EKF_type;
+
     EKF_TYPE active_EKF_type(void) const;
 
     bool always_use_EKF() const {
