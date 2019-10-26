@@ -1549,7 +1549,7 @@ uint32_t NavEKF3::getLastVelNorthEastReset(Vector2f &vel) const
 const char *NavEKF3::prearm_failure_reason(void) const
 {
     if (!core) {
-        return nullptr;
+        return "no EKF3 cores";
     }
     for (uint8_t i = 0; i < num_cores; i++) {
         const char * failure = core[primary].prearm_failure_reason();
