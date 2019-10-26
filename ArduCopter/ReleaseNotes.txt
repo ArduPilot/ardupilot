@@ -20,7 +20,16 @@ Changes from 3.6.11
     f) Upward facing surface tracking using lidar
     g) Circle mode points more accurately towards center
 7) Traditional Heli:
-    a) Swash plate and rotor-speed-control parameter rationalisation
+    a) Removed the parameter H_LAND_COL_MIN and functionality now uses H_COL_MID. CAUTION: ensure H_COL_MID is set to collective blade pitch that produces zero thrust
+    b) Incorporated a rotor speed governor in rotor speed control (RSC)
+    c) Moved all RSC parameters to the RSC library
+    d) Converted throttle curve parameters to percent
+    e) Converted RSC_CRITICAL, RSC_IDLE, and RSC_SETPOINT to percent
+    f) Created swashplate library that has presaved swashplate types for use with Heli_Single and Heli_Dual frames
+    g) Motor interlock with passthrough settable through RC option feature 
+    h) Removed collective too high pre-arm check
+    i) Added virtual flybar for Acro flight mode
+    j) Fixed H_SV_MAN minimum and maximum settings for Heli_Dual
 8) Frames:
     a) BiCopter support
     b) OctoV mixing improvements 
