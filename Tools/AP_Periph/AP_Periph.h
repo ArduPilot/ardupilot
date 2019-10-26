@@ -6,6 +6,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Common/AP_FWVersion.h>
+#include "../AP_Bootloader/app_comms.h"
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED)
 #define AP_PERIPH_HAVE_LED
@@ -17,16 +18,6 @@
 /*
   app descriptor compatible with MissionPlanner
  */
-struct app_descriptor {
-    uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
-    uint32_t image_crc1 = 0;
-    uint32_t image_crc2 = 0;
-    uint32_t image_size = 0;
-    uint32_t git_hash = 0;
-    uint8_t  version_major = AP::fwversion().major;
-    uint8_t version_minor = AP::fwversion().minor;
-    uint8_t reserved[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-};
 extern const struct app_descriptor app_descriptor;
 
 class AP_Periph_FW {
