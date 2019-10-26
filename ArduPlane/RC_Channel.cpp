@@ -60,7 +60,12 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     // the following functions do not need to be initialised:
     case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::INVERTED:
+    case AUX_FUNC::AUTO:
+    case AUX_FUNC::CIRCLE:
+    case AUX_FUNC::GUIDED:
+    case AUX_FUNC::MANUAL:
     case AUX_FUNC::RTL:
+    case AUX_FUNC::TAKEOFF:
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
