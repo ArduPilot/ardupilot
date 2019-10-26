@@ -54,10 +54,10 @@ public:
     void update_resistance_estimate();
 
     // updates failsafe timers, and returns what failsafes are active
-    AP_BattMonitor::BatteryFailsafe update_failsafes(void);
+    virtual AP_BattMonitor::BatteryFailsafe update_failsafes(void);
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-    bool arming_checks(char * buffer, size_t buflen) const;
+    virtual bool arming_checks(char * buffer, size_t buflen) const;
 
     // reset remaining percentage to given value
     virtual bool reset_remaining(float percentage);
