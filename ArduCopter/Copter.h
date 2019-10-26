@@ -171,6 +171,10 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#if ENABLE_FUELCELL  == ENABLED
+#include <AP_FuelCell/AP_FuelCell.h>
+#endif
+
 // Local modules
 #ifdef USER_PARAMS_ENABLED
 #include "UserParameters.h"

@@ -237,6 +237,11 @@ void Copter::init_ardupilot()
     }
 #endif // ENABLE_SCRIPTING
 
+#if ENABLE_FUELCELL == ENABLED
+    // init fuel cell library
+    g2.fuelcell.init();
+#endif
+
     // set landed flags
     set_land_complete(true);
     set_land_complete_maybe(true);
