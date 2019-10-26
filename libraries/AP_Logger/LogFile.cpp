@@ -510,6 +510,7 @@ void AP_Logger::Write_AHRS2()
         q2    : quat.q2,
         q3    : quat.q3,
         q4    : quat.q4,
+        ekf   : ahrs.get_active_EKF_type(),
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
