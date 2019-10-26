@@ -1022,6 +1022,8 @@ private:
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     Vector3f delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     float delTimeOF;                // time that delAngBodyOF is summed across
+    bool flowFusionActive;          // true when optical flow fusion is active
+
     Vector3f accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
 
 

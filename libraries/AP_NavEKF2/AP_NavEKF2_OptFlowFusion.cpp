@@ -654,7 +654,10 @@ void NavEKF2_core::FuseOptFlow()
         if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
-
+            if (!flowFusionActive) {
+                flowFusionActive = true;
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u fusing optical flow",(unsigned)imu_index);
+            }
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations

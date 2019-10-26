@@ -243,6 +243,7 @@ void NavEKF2_core::InitialiseVariables()
     memset(&statesArray, 0, sizeof(statesArray));
     memset(&vertCompFiltState, 0, sizeof(vertCompFiltState));
     posVelFusionDelayed = false;
+    flowFusionActive = false;
     optFlowFusionDelayed = false;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
