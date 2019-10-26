@@ -105,6 +105,10 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#if ENABLE_FUELCELL  == ENABLED
+#include <AP_FuelCell/AP_FuelCell.h>
+#endif
+
 #include "RC_Channel.h"     // RC Channel Library
 #include "Parameters.h"
 #include "avoidance_adsb.h"

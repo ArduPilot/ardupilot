@@ -308,3 +308,9 @@
 #ifndef LANDING_GEAR_ENABLED
  #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Fuel Cell - support for complex power systems
+#ifndef ENABLE_FUELCELL
+ #define ENABLE_FUELCELL !HAL_MINIMIZE_FEATURES
+#endif

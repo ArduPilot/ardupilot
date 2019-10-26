@@ -106,6 +106,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landing_gear_update, 5, 50),
 #endif
+#if ENABLE_FUELCELL == ENABLED
+    SCHED_TASK_CLASS(AP_FuelCell, &plane.g2.fuelcell, update, 20, 100),
+#endif
 };
 
 constexpr int8_t Plane::_failsafe_priorities[7];

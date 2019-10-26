@@ -1239,6 +1239,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_AILMTCH", 21, ParametersG2, crow_flap_aileron_matching, 100),
 
+#if ENABLE_FUELCELL == ENABLED
+    // @Group: FUELCEL_
+    // @Path: ../libraries/AP_FuelCell/AP_FuelCell.cpp
+    AP_SUBGROUPINFO(fuelcell, "FUELCEL_", 22, ParametersG2, AP_FuelCell),
+#endif
+
     AP_GROUPEND
 };
 

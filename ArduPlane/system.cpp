@@ -132,6 +132,11 @@ void Plane::init_ardupilot()
     camera_mount.init();
 #endif
 
+#if ENABLE_FUELCELL == ENABLED
+    // init fuel cell library
+    g2.fuelcell.init();
+#endif
+
 #if LANDING_GEAR_ENABLED == ENABLED
     // initialise landing gear position
     g2.landing_gear.init();
