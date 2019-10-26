@@ -853,6 +853,20 @@ static void process1HzTasks(uint64_t timestamp_usec)
 #endif
 
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+
+#if 0
+    // test code for watchdog reset
+    if (AP_HAL::millis() > 15000) {
+        while (true) ;
+    }
+#endif
+
+    if (AP_HAL::millis() > 30000) {
+        // use RTC to mark that we have been running fine for
+        // 30s. This is used along with watchdog resets to ensure the
+        // user has a chance to load a fixed firmware
+        set_fast_reboot(RTC_BOOT_FWOK);
+    }
 }
 
 /*
@@ -865,6 +879,8 @@ static void can_wait_node_id(void)
     while (canardGetLocalNodeID(&canard) == CANARD_BROADCAST_NODE_ID)
     {
         printf("Waiting for dynamic node ID allocation... (pool %u)\n", pool_peak_percent());
+
+        stm32_watchdog_pat();
 
         send_next_node_id_allocation_request_at_ms =
             AP_HAL::millis() + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
