@@ -31,6 +31,7 @@
 #include "support.h"
 #include "bl_protocol.h"
 #include "can.h"
+#include <stdio.h>
 
 extern "C" {
     int main(void);
@@ -68,7 +69,8 @@ int main(void)
 
 #ifndef NO_FASTBOOT
     enum rtc_boot_magic m = check_fast_reboot();
-    if (stm32_was_watchdog_reset()) {
+    bool was_watchdog = stm32_was_watchdog_reset();
+    if (was_watchdog) {
         try_boot = true;
         timeout = 0;
     } else if (m == RTC_BOOT_HOLD) {
@@ -92,6 +94,14 @@ int main(void)
         // fast boot for good firmware
         try_boot = true;
         timeout = 1000;
+    }
+    if (was_watchdog && m != RTC_BOOT_FWOK) {
+        // we've had a watchdog within 30s of booting main CAN
+        // firmware. We will stay in bootloader to allow the user to
+        // load a fixed firmware
+        stm32_watchdog_clear_reason();
+        try_boot = false;
+        timeout = 0;
     }
 #endif
     
