@@ -57,11 +57,7 @@ public:
     bool requires_3_frames(enum rcprotocol_t p) {
         return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM);
     }
-    
-    enum rcprotocol_t protocol_detected()
-    {
-        return _detected_protocol;
-    }
+
     uint8_t num_channels();
     uint16_t read(uint8_t chan);
     bool new_input();
@@ -73,7 +69,7 @@ public:
     // return protocol name as a string
     const char *protocol_name(void) const;
 
-    // return protocol name as a string
+    // return detected protocol
     enum rcprotocol_t protocol_detected(void) const {
         return _detected_protocol;
     }
