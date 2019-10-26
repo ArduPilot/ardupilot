@@ -398,6 +398,10 @@ public:
 
     // FS options
     AP_Int32 fs_options;
+
+#if ENABLE_FUELCELL == ENABLED
+    AP_FuelCell fuelcell;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

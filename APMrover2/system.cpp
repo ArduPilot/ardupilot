@@ -132,6 +132,11 @@ void Rover::init_ardupilot()
     camera_mount.init();
 #endif
 
+#if ENABLE_FUELCELL  == ENABLED
+    // init fuelcell library
+    g2.fuelcell.init();
+#endif
+
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.

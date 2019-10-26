@@ -111,6 +111,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info,        1,     10),
 #endif
+#if ENABLE_FUELCELL == ENABLED
+    SCHED_TASK_CLASS(AP_FuelCell,         &rover.g2.fuelcell,       update,          20, 100),
+#endif
 };
 
 constexpr int8_t Rover::_failsafe_priorities[7];

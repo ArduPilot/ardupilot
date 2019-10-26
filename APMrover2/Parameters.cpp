@@ -628,6 +628,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 48, ParametersG2, fs_options, 0),
 
+#if ENABLE_FUELCELL == ENABLED
+    // @Group: FUELCEL_
+    // @Path: ../libraries/AP_FuelCell/AP_FuelCell.cpp
+    AP_SUBGROUPINFO(fuelcell, "FUELCEL_", 49, ParametersG2, AP_FuelCell),
+#endif
+
     AP_GROUPEND
 };
 
