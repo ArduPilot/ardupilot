@@ -240,6 +240,7 @@ jump_to_app()
     // indicate that it has been running OK for 30s then we will stay
     // in bootloader
     stm32_watchdog_init();
+    stm32_watchdog_pat();
 #endif
 
     flash_set_keep_unlocked(false);
