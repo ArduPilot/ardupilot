@@ -763,12 +763,12 @@ bool AP_IOMCU::check_crc(void)
         hal.console->printf("failed to find %s\n", fw_name);
         return false;
     }
-    uint32_t crc = crc_crc32(0, fw, fw_size);
+    uint32_t crc = crc32_small(0, fw, fw_size);
 
     // pad CRC to max size
 	for (uint32_t i=0; i<flash_size-fw_size; i++) {
 		uint8_t b = 0xff;
-		crc = crc_crc32(crc, &b, 1);
+        crc = crc32_small(crc, &b, 1);
 	}
 
     uint32_t io_crc = 0;
