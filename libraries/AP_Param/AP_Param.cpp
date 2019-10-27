@@ -1893,7 +1893,7 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
     if (value_s == nullptr) {
         return false;
     }
-    value = atof(value_s);
+    value = strtof(value_s, NULL);
     *vname = pname;
 
     const char *flags_s = strtok_r(nullptr, ", =\t\r\n", &saveptr);
