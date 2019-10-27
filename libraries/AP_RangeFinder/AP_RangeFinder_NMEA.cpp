@@ -170,12 +170,12 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
     if (_sentence_type == SONAR_DBT) {
         // parse DBT messages
         if (_term_number == 3) {
-            _distance_m = atof(_term);
+            _distance_m = strtof(_term, NULL);
         }
     } else if (_sentence_type == SONAR_DPT) {
         // parse DPT messages
         if (_term_number == 1) {
-            _distance_m = atof(_term);
+            _distance_m = strtof(_term, NULL);
         }
     }
 
