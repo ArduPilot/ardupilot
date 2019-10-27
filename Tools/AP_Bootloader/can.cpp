@@ -33,6 +33,7 @@
 #include "bl_protocol.h"
 #include <drivers/stm32/canard_stm32.h>
 #include "app_comms.h"
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include <stdio.h>
 
 
@@ -77,6 +78,14 @@ static struct {
     uint32_t sector_ofs;
 } fw_update;
 
+enum {
+    FAIL_REASON_NO_APP_SIG = 10,
+    FAIL_REASON_BAD_LENGTH = 11,
+    FAIL_REASON_BAD_BOARD_ID = 12,
+    FAIL_REASON_BAD_CRC = 13,
+    FAIL_REASON_IN_UPDATE = 14,
+    FAIL_REASON_WATCHDOG = 15,
+};
 
 /*
   get cpu unique ID
@@ -556,6 +565,7 @@ bool can_check_firmware(void)
 {
     if (fw_update.node_id != 0) {
         // we're doing an update, don't boot this fw
+        node_status.vendor_specific_status_code = FAIL_REASON_IN_UPDATE;
         return false;
     }
     const uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
@@ -564,16 +574,19 @@ bool can_check_firmware(void)
     const app_descriptor *ad = (const app_descriptor *)memmem(flash, flash_size-sizeof(app_descriptor), sig, sizeof(sig));
     if (ad == nullptr) {
         // no application signature
+        node_status.vendor_specific_status_code = FAIL_REASON_NO_APP_SIG;
         printf("No app sig\n");
         return false;
     }
     // check length
     if (ad->image_size > flash_size) {
+        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH;
         printf("Bad fw length %u\n", ad->image_size);
         return false;
     }
 
     if (ad->board_id != APJ_BOARD_ID) {
+        node_status.vendor_specific_status_code = FAIL_REASON_BAD_BOARD_ID;
         printf("Bad board_id %u should be %u\n", ad->board_id, APJ_BOARD_ID);
         return false;
     }
@@ -584,6 +597,7 @@ bool can_check_firmware(void)
     uint32_t crc1 = crc32_small(0, flash, len1);
     uint32_t crc2 = crc32_small(0, (const uint8_t *)&ad->version_major, len2);
     if (crc1 != ad->image_crc1 || crc2 != ad->image_crc2) {
+        node_status.vendor_specific_status_code = FAIL_REASON_BAD_CRC;
         printf("Bad app CRC 0x%08x:0x%08x 0x%08x:0x%08x\n", ad->image_crc1, ad->image_crc2, crc1, crc2);
         return false;
     }
@@ -629,6 +643,10 @@ void can_start()
     send_next_node_id_allocation_request_at_ms =
         AP_HAL::millis() + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
         (uint32_t)(getRandomFloat() * UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_FOLLOWUP_DELAY_MS);
+
+    if (stm32_was_watchdog_reset()) {
+        node_status.vendor_specific_status_code = FAIL_REASON_WATCHDOG;
+    }
 }
 
 
