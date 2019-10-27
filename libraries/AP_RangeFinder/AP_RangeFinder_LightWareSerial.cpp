@@ -67,7 +67,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(uint16_t &reading_cm)
         char c = uart->read();
         if (c == '\r') {
             linebuf[linebuf_len] = 0;
-            const float dist = (float)atof(linebuf);
+            const float dist = strtof(linebuf, NULL);
             if (!is_negative(dist)) {
                 sum += dist;
                 valid_count++;

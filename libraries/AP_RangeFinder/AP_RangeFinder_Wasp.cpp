@@ -108,7 +108,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
             if (isalpha(linebuf[0])) {
                 parse_response();
             } else {
-                float read_value = (float)atof(linebuf);
+                float read_value = strtof(linebuf, NULL);
                 if (read_value > 0) {
                     sum += read_value;
                     count++;
